@@ -625,7 +625,6 @@ async function auditStateAndMethods() {
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
-                "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`
                 "_bpEditTick", // V18.358 — Bauplan-Part-Edit-Zähler für die Recipe-Book-Signatur, `(state.X || 0) + 1`
                 "treeImpostors", // Subsystem S2 (V18.387) — Impostor-Toggle, `state.X !== false` (undefined = an), lazy/undefined-sicher
                 "lodUniforms", // Subsystem A (V18.387) — lazy TSL-LOD-Uniforms via `_ensureLodUniforms()`, wie windUniforms (nicht in init())
@@ -684,29 +683,18 @@ function auditAtmosphereHardcode() {
     // nächsten Methode (Zeile beginnt mit 4-Space + identifier(args).
     const lines = src.split("\n");
     const atmosphereMethods = [];
+    // Die Methode unter dem Marker am AST (stammLib.glieder, K38-N2): ein Kopf-Muster übersah umbrochene Köpfe und Getter,
+    // das Klammer-Zählen las Klammern in Zeichenketten mit.
+    const gl = stammLib.glieder(src);
     for (let i = 0; i < lines.length; i++) {
         if (!/\[ATMOSPHERE\]/.test(lines[i])) continue;
         // Suche die Methode darunter (überspringe Comment-Lines)
         let j = i + 1;
         while (j < lines.length && /^\s*\/\//.test(lines[j])) j++;
         // j sollte jetzt auf der Methoden-Signatur sein
-        const sigMatch = /^\s{4}([\w_]+)\s*\(/.exec(lines[j] || "");
-        if (!sigMatch) continue;
-        const methodName = sigMatch[1];
-        // Methode endet beim nächsten gleich-eingerückten `}`
-        let k = j + 1;
-        let depth = 0;
-        while (k < lines.length) {
-            const line = lines[k];
-            for (const ch of line) {
-                if (ch === "{") depth++;
-                else if (ch === "}") depth--;
-            }
-            if (depth < 0) break;
-            k++;
-        }
-        const body = lines.slice(j, k + 1).join("\n");
-        atmosphereMethods.push({ name: methodName, body, startLine: j + 1 });
+        const g = gl.find((x) => x.zeile === j + 1);
+        if (!g) continue;
+        atmosphereMethods.push({ name: g.name, body: src.slice(g.start, g.ende), startLine: g.zeile });
     }
     if (atmosphereMethods.length === 0) {
         warn("ATMOSPHERE", "Keine `[ATMOSPHERE]`-Marker gefunden", "Marker fehlen oder Audit-Regex passt nicht");

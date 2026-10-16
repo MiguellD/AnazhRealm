@@ -18,14 +18,14 @@
 //   (3) DER STOFF der Nah-Streu: jede Senke zeichnet mit dem Studio-Stoff (`_foundryTreeMaterial` — Standard bzw.
 //       Physical, nie Lambert), eine Art mit weichem Gewebe mit seiner wiegenden Fassung (der EINE Wind
 //       `_windSwayOffset`), kein eigener Stoff im Host;
-//   (4) DIE LAMBERT-WAND: der kommentar-freie Stamm baut keinen Lambert-Stoff, _archFundMat ist Standard;
+//   (4) DIE LAMBERT-WAND: der kommentar-freie Stamm baut keinen Lambert-Stoff (das Fundament fiel mit dem Podest, K10);
 //   (5) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Schicht ist sRGB markiert — der
 //       Karten-Codec (phyto-core impostorMips) kodiert jede Mip-Stufe linear → sRGB, gemessen am echten Codec gegen
 //       die Referenz-Formel (alle 256 Stufen, Stufe 0 und die linear gemittelte Stufe 1); Normalen bleiben Daten.
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
 // --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, ein Senken-Stoff
-// am Studio vorbei, eine Nah-Streu ohne Wind, Lambert-Wege, ein Lambert-Fundament und die Karten-Brüche → alle
+// am Studio vorbei, eine Nah-Streu ohne Wind, Lambert-Wege und die Karten-Brüche → alle
 // MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
@@ -231,11 +231,11 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     if (!weich) fehler.push("keine Art mit weichem Gewebe geprüft — das Farb-Gesetz der Nah-Streu bliebe ungesehen");
     // (3) DER STOFF der Nah-Streu: der Studio-Stoff, wiegend nur über den EINEN Wind.
     const nc = ohneKommentare(src);
-    const senke = rumpf(nc, /\n {4}_streuNahSenke\(art, v, stufe, p, lf, wiegt\)\s*\{/) || "";
+    const senke = rumpf(nc, /\n {4}_streuNahSenke\([^)]*\)\s*\{/) || "";
     if (!senke) fehler.push("_streuNahSenke(art, v, stufe, p, lf, wiegt) nicht gefunden");
-    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true\) : lf\.mat,/.test(senke))
+    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/.test(senke))
         fehler.push("_streuNahSenke: der Senken-Stoff ist nicht der Studio-Stoff (lf.mat bzw. _foundryTreeMaterial wiegend)");
-    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*\{/) || "";
+    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen, baum) nicht gefunden");
     else {
         if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
@@ -248,12 +248,11 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
     const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
     if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
-    // das Fundament ist ein Standard-Stoff im Licht-Pool (K11: `_leuchtStoff` trägt jedem beleuchteten Stoff das Feuer)
-    if (!/\(this\._archFundMat = this\._leuchtStoff\(\s*new THREE\.MeshStandardNodeMaterial\(/.test(nc))
-        fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial im Licht-Pool (`_leuchtStoff`)");
+    // das Fundament (`_archFundMat`, der Stoff des Podests) fiel mit dem Podest (K10: der Erdbau des Plans trägt das Haus) —
+    // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
     for (const f of kartenFarbe(phytoSrc)) fehler.push(f);
-    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\(at, bedarf\)\s*\{/) || "";
+    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\([^)]*\)\s*\{/) || "";
     // beide Format-Stufen (BC1 und rgba8) markieren ihre Albedo sRGB
     if ((texturen.match(/map\.colorSpace = T\.SRGBColorSpace;/g) || []).length !== 2)
         fehler.push("die Atlas-Albedo ist nicht in jeder Format-Stufe sRGB markiert — die GPU läse die kodierten Bytes linear");
@@ -277,7 +276,7 @@ function main() {
             [
                 "Senken-Stoff am Studio vorbei",
                 QUELLE.replace(
-                    "mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true) : lf.mat,",
+                    /mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/,
                     "mat: new THREE.MeshStandardNodeMaterial(),"
                 ),
                 /Senken-Stoff ist nicht der Studio-Stoff/,
@@ -298,19 +297,6 @@ function main() {
                     "new THREE.MeshLambertMaterial({ color: 0xffffff })"
                 ),
                 /Lambert-Stoff/,
-            ],
-            [
-                "Lambert-Fundament",
-                QUELLE.replace(
-                    /(\(this\._archFundMat = this\._leuchtStoff\(\s*)new THREE\.MeshStandardNodeMaterial\(/,
-                    "$1new THREE.MeshLambertMaterial("
-                ),
-                /_archFundMat/,
-            ],
-            [
-                "Fundament ohne Licht-Pool",
-                QUELLE.replace("(this._archFundMat = this._leuchtStoff(", "(this._archFundMat = ("),
-                /_archFundMat \(das Fundament\) baut nicht MeshStandardNodeMaterial im Licht-Pool/,
             ],
             [
                 "Karte ohne Kodierung",

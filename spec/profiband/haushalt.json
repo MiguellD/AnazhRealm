@@ -42,15 +42,35 @@
     "messorte": [
         {
             "id": "wiese",
-            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung das Dorf der Zelle -4,-4 (12 Häuser, Fundament, Zaun) — gemessen 07.10. in je einer frischen Welt am Kopf 516e704a: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle.",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene (bis T2 nach −z, seither nach WSW). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf (am alten Ort 12 Häuser: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle, 07.10.).",
             "spieler": [
-                -900,
-                -850
+                -280.4,
+                -1045.6
             ],
             "blick": [
-                -900,
-                -840
+                -289.6,
+                -1049.5
             ],
+            "wiese": {
+                "ring": 25,
+                "hangMax": 5,
+                "trockenMarge": 1.5,
+                "kroneMax": 0.12,
+                "rand": [
+                    30,
+                    90
+                ],
+                "randMin": 0.12,
+                "blickFrei": 15,
+                "blickWinkel": 55,
+                "fern": [
+                    40,
+                    1200
+                ],
+                "horizontMax": 3,
+                "grasMin": 0.5,
+                "quelle": "K55 (14.10.): das Wiesen-Gesetz der Mess-Wiese — gemessen von `wieseMessen` (scripts/lib/welt-orte.cjs), in der Welt beim Umstellen (werkbank, mit Gras) und am Gesetz in gate:profiband H1. Ring 25 m: Ausgleichs-Ebene ≤ 5°, kein Wasser, Kronen-Deckung der stehenden Bäume ≤ 0,12 (der Wald des Gesetzes deckt gesättigt 0,16–0,19), Waldrand im Kranz 30–90 m ≥ 0,12, keine Krone binnen 15 m im Sektor ±55° des Blicks, Horizont längs des Blicks 40–1200 m ≤ 3° über dem Auge, Wiesen-Gewicht der Boden-Karte ≥ 0,5. Gemessen an b0df2d93: −278/−1038 Hang 1,75° · Krone 0,08 · Kranz 0,19 · Horizont −0,19° · Gras 0,96; der alte Ort −900/−850 Hang 16,83° · Krone 0,141 · Horizont 8,08° (an 9fb869a5 Hang 1,89° · Krone 0,213 · Horizont 3,2°). T2 (16.10.): der Pflanz-Abstand liest die gewachsene Krone (Eiche 5,2 → 4,0 m), am alten Ort stand eine Tanne 15,6 m im Blick (−279/−1054); `__weltOrte(\"wiese\")` um ihn fand in 8 m −280,4/−1045,6 mit Blick nach WSW: Hang 1,81° · Krone 0,108 · Kranz 0,204 · Horizont 2,63° · Gras 1,0."
+            },
             "dorfZug": false,
             "ortTakt": []
         },
@@ -84,14 +104,14 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick nach Nordost (45°): der Zug rückt das Dorf in seinen Blickkegel (`_siedlungsAnker`: jedes Haus mit Reichweite + 3,5 m vor dem Spieler — derselbe Plan-Anker −763,2/−828,7 für denselben Spieler-Ort, in jedem Boot). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 80 m weiter auf −812,7/−819,0 — am Wunsch lief der Fluss 18 m neben dem Anker, vier Häuser fielen ins Bett; seit die Würfe des Felds dem Ort weichen (`_weichtDemBau`), wählt das Spiel denselben Ort wie gate:settlement (vorher schob eine Feuerstelle des Glut-Felds im Grundriss eines Hauses die Wahl auf 96 m) —, die Mitte −802,8/−821,0 liegt 55 m nordöstlich (Achse 0,690/0,723; bis K10-6 Ostsüdost 0,953/−0,304, bis K10 Nordost 45°), die 16 Häuser zwischen 25 und 95 m. Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
             "spieler": [
                 -841,
                 -861
             ],
             "blick": [
-                -834,
-                -854
+                -834.1,
+                -853.8
             ],
             "dorfZug": true,
             "ortTakt": [],
@@ -428,7 +448,7 @@
                     "muster": "^bau:"
                 },
                 {
-                    "muster": "^(bau-fundament|siedlung-zaun)$"
+                    "muster": "^siedlung-zaun$"
                 },
                 {
                     "muster": "^bauSatz$"
@@ -478,7 +498,7 @@
             "dreiecke": 15000,
             "regeln": [
                 {
-                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|pfeil|portal-membran|portal-nebel|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
+                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|pfeil|portal-membran|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
                 }
             ]
         },

@@ -1,6 +1,6 @@
 // ===== ATLAS §26c · AUSSEN-KONSTANTEN — ab AnazhRealm.FOREST =====
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
-// Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
+// Kronen-Schüchternheit + Arten-Nische. `crown` = Radius der gewachsenen Krone (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.
 // Gelesen NUR von `_forestCellDarts`/`_forestPlantChunk`.
 AnazhRealm.FOREST = Object.freeze({
@@ -14,14 +14,17 @@ AnazhRealm.FOREST = Object.freeze({
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
-    crown: Object.freeze({
-        baum_kiefer: 2.75, // Fichte-Nische — schmale Lichtkrone (trockene Höhen)
-        baum_tanne: 2.95, // Tanne (höher/feuchter)
-        baum_eiche: 5.2, // Eiche — breiter Beästungsradius (tiefe, feuchte Lagen)
-        baum_birke: 3.2, // Birke — Pionier
-        baum_erle: 4.5, // Weide-Nische — nasser Saum
-        baum_mammut: 9.2, // Mammut-Nische — selten, riesig (dichte trockene Kerne)
-    }),
+    // DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2): phyto-core FOREST_PACK.crown (die gewachsene Krone je Art) unter den
+    // Wirts-Namen (FOREST_SPECIES.labToHost, eine Auto-Art des Buchs unter dem Präfix ihrer Art) — kein zweiter Wert hier.
+    crown: (() => {
+        const core = globalThis.__phytoCore;
+        if (!core || !core.FOREST_PACK)
+            throw new Error("phyto-core fehlt: FOREST_PACK.crown (die Kronen-Tafel des Walds)");
+        const out = {};
+        for (const [id, r] of Object.entries(core.FOREST_PACK.crown))
+            out[core.FOREST_SPECIES.labToHost[id] || AnazhRealm.KIND_POLICY.tree.prefix + id] = r;
+        return Object.freeze(out);
+    })(),
 });
 
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
@@ -1012,6 +1015,20 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
+// Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
+// Term einen Fall her, ein Term ohne Fall ist ROT.
+AnazhRealm.WELTBILD_TERME = Object.freeze([
+    "welt",
+    "boden",
+    "horizont",
+    "leib",
+    "buch",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten",
+    "dorf",
+]);
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
@@ -1020,19 +1037,16 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
 // Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
 // Rayleigh bei 550 nm auf Meereshöhe (1,16·10⁻⁵/m, V ≈ 340 km). Der Dunst sitzt in der Grenzschicht: Skalenhöhe
-// 1 km über dem Meeresspiegel. Die Keule: Anteil und Schärfe der Sonnen-Vorwärtsstreuung im Dunst (Henyey-
-// Greenstein g ≈ 0,7 ≈ cos^8 in der Keule), Glanz = ihre Helligkeit relativ zum Horizont-Himmel.
-AnazhRealm.LUFT = Object.freeze({
-    sichtKlarM: 20000,
-    sichtSturmM: 1500,
-    betaRayleigh: 1.16e-5,
-    kontrast: 0.02,
-    skalenHoeheM: 1000,
-    unterwasserM: 30,
-    mieKeule: 8,
-    mieAnteil: 0.45,
-    mieGlanz: 1.6,
-});
+// 1 km über dem Meeresspiegel — dieselbe Luft ist das Aerosol der EINEN Atmosphäre (D3, `_atmoMedium`): ihre Keule zur
+// Sonne trägt die Mie-Phase des Gesetzes. Die Anker wohnen EINMAL im Gesetz (foundry-core `ATMO_GESETZ.luft`, auch das Labor
+// liest sie); hier kommt nur die Sicht unter Wasser hinzu. Fehlt der Kern, bricht es laut.
+AnazhRealm._atmoKern = function () {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const G = tc ? tc.ATMO_GESETZ : null;
+    if (!G || !G.luft || !G.nacht) throw new Error("Die Atmosphäre: foundry-core.js fehlt (__terrainCore.ATMO_GESETZ)");
+    return G;
+};
+AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
@@ -1067,26 +1081,50 @@ AnazhRealm.HIMMEL = Object.freeze({
 });
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
-// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc, die EINE Mond-Farb-Quelle — `_atmosphere(e)` lerpt unter dem
-// Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
-AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 255, intensity: 0.22 });
-// V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111). Rayleigh
-// optische Tiefe auf Meereshöhe/Zenit (Bucholtz 1995): blau streut ~5× rot → Beer-Lambert
-// über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
-AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
-// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
-// ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
+// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen
+// unter dem Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
+AnazhRealm.MOONLIGHT = Object.freeze({
+    r: AnazhRealm._atmoKern().nacht.mond[0],
+    g: AnazhRealm._atmoKern().nacht.mond[1],
+    b: AnazhRealm._atmoKern().nacht.mond[2],
+    intensity: 0.22,
+});
+// DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
+// 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+// mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
+// der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
+AnazhRealm.ATMO_LUT = Object.freeze({
+    mediumStufe: 0.02,
+    durchlass: Object.freeze([256, 64]),
+    mehrfach: Object.freeze([32, 32]),
+    himmel: Object.freeze([192, 108]),
+    umgebung: Object.freeze([128, 64]),
+    schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
+});
+// DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
+// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
+AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
+// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
-// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
-// der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
-// linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
-// Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
-AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
+// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
+// Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` die Leuchtdichte der 18-%-Karte nach der
+// Belichtung, die DIESE Kurve auf Mittelgrau + 1 EV legt (`npm run look-lens` rechnet sie aus der Kurve nach). Neutral gibt
+// unter der Schulter x − 0,04 aus: Mittelgrau (sRGB 118 = linear 0,18) braucht den Eingang 0,22, also k·L = 2 · 0,22 = 0,44
+// (unter ACES bis F1: 2 · 0,26227 · 0,6 = 0,3147). `max` hält die geeichte Nacht (über ihn hebt nur das Licht des Himmels,
+// D3-N2): die Nacht ist auf die Karte geeicht (Mond, Sternen-Licht, Hemi-Boden) — der Deckel legt sie so weit unter
+// Mittelgrau + 1 wie bis F1 die Belichtung 1,0 unter ACES, 0,44 / 0,3147 = 1,4. `min` ist nur die Wand gegen ein entartetes Licht.
+AnazhRealm.BELICHTUNG = Object.freeze({ kurve: "NeutralToneMapping", zielKarte: 0.44, min: 0.25, max: 1.4 });
+// DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
+// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
+// die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
+// der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
+AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.
@@ -1131,12 +1169,6 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
 // −906/−634): eine Kiefer stand 0,5 m neben 2,4 m tiefem Wasser, zwei Hasel 0,23 und 0,52 m im Uferwasser — die Wand fragte
 // nur die Achse.
 AnazhRealm.STAMM_FUSS_M = 0.5;
-// DER SOCKEL EINES FUNDAMENTS (m): so weit steht das Podest über den Grundriss hinaus (`_archFundamentBox`, der Sockel-Look
-// deckt die Fachwerk-Traufkante) — und so weit fragt die Wasser-Wand des Fundaments das Land (`_fundamentLand`). EINE Zahl
-// für Podest und Land (Integration V18.540, K02b × S3-Haus): die Wand fragte den Grundriss ohne Sockel, der Stempel und
-// gate:werk-im-wasser Z messen das Podest — am vereinigten Baum standen drei Dorf-Häuser mit 1 Punkt der Hülle 0,25–0,81 m
-// im Fluss, jeder am Rand des Sockels.
-AnazhRealm.FUNDAMENT_SOCKEL_M = 0.35;
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
 AnazhRealm.STUDIO_SATZ =
@@ -1175,6 +1207,14 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
+// (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
+AnazhRealm.LADE_TAKT_MS = 100;
+// Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
+AnazhRealm.LADE_BILD_MS = 500;
+// Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
+// Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
+AnazhRealm.DIRTY_IM_FLUG = 3;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
 // die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
 // 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
@@ -1209,10 +1249,10 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanf
 // trägt die Layer ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unverändert), ist so aber für einen
 // Laub-Pass (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1.
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
-// Schatten-Zwilling-Layer (0 = Welt, 1 = Laub-Pass, 2 = Zwilling): `mesh.layers.set(2)` nimmt den
-// opaken Kronen-Caster AUS Layer 0 → die Haupt-Kamera sieht ihn nie;
-// `directionalLight.shadow.camera.layers.enable(2)` (vor der CSM-Konstruktion, die Kaskaden erben
-// es) lässt nur den Schatten-Render ihn als Caster zählen.
+// Die Wurf-Ebene (0 = Welt, 1 = Laub-Pass, 2 = Wurf): K72 — `castShadow` IST das Bit dieser Ebene (`_wurfEbene`), jedes
+// Licht liegt auf ihr, die Schatten-Kamera sieht NUR sie (`layers.set(2)` vor der CSM-Konstruktion, die Kaskaden erben
+// es). Der Zwilling (der opake Kronen-Caster, die Grobstufe nah, der Wurf-Satz, der Leib im 1st) verlässt Ebene 0 und
+// wirft auf ihr — die Haupt-Kamera sieht ihn nie.
 AnazhRealm.SHADOW_TWIN_LAYER = 2;
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
@@ -1223,6 +1263,38 @@ AnazhRealm.SZENE_SKALA_MIN = 0.5;
 AnazhRealm.ZEIT_KERN = 7;
 AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 AnazhRealm.ZEIT_SCHAERFE = 1;
+// Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
+// läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
+AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (Höhen
+// RGBA-Halbfloat + Stoff RGBA8, je Gestalt eine von laubFarben Kronen-Farben; neu bei drift m), gebacken im Worker in
+// Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je Wasser-Pixel `schritte` Schritte: über der Höchsten eines Blocks von `block` × `block` Zellen ein Sprung an seinen Rand,
+// darunter Lipschitz-Schritte von höchstens `fein` Zellen (mindestens `wachs` der Strecke), dann `halbierungen` vor der
+// Sekante; das Laub im Licht seiner Tiefe unter dem Kronen-Dach (Beer-Lambert: e-Länge `laubTiefe` m, das Himmelslicht unter
+// dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
+// backt das Feld neu, wenn neue Kronen darin stehen (höchstens je nachleseMs; die Krone liest das Kronen-Buch, Beipack
+// `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
+AnazhRealm.SPIEGEL = Object.freeze({
+    n: 384,
+    texel: 2,
+    drift: 60,
+    zeilen: 16,
+    block: 8,
+    teil: 4,
+    schritte: 96,
+    wachs: 0.04,
+    fein: 0.75,
+    halbierungen: 4,
+    laubTiefe: 3,
+    laubGrund: 0.25,
+    laubFarben: 256,
+    kronenSaum: 1,
+    nachleseMs: 4000,
+    ruheM: 0.01,
+    ruheRad: 0.0003,
+    ruheLicht: 0.001,
+});
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
@@ -1248,8 +1320,14 @@ AnazhRealm.FOUNDRY_LESEN = [
 AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
-// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`).
-AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern", __mass: "_mass" });
+// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
+// `__krone` (D10) die gezeichnete Krone eines Baums oder Strauchs (das Kronen-Buch, `_foundryBaumKrone`).
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
+    __huelle: "_huelle",
+    __fern: "_fern",
+    __mass: "_mass",
+    __krone: "_krone",
+});
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });
@@ -1265,6 +1343,20 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
+// DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein lebendes Tier außer Bild, dem das Feld die Gestalt
+// trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
+// nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
+// mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
+// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (der Hüllen-Kontakt schiebt hinaus,
+// er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
+// Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
+// des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
+AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
+// Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
+// steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
+// `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.
+AnazhRealm._ruhendeWurzel = function ruhendeWurzel() {};
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
 // in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse diag-fell-blick, git-Archiv, 720p, fov 75°): die Strähnen ändern
@@ -1288,9 +1380,15 @@ AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
 // (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
 // DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
-// Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m)
+// Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m,
+// `KRONE_MAX_M`: die größte Krone eines Darts; auch die Reichweite, in der ein Erdbau Darts fällt, `_forestDartsFallen`)
+AnazhRealm.KRONE_MAX_M = 36;
 AnazhRealm.ORT_SAME_EIMER = 48;
-AnazhRealm.ORT_SAME_REICH = 96;
+AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
+// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
+// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
+// `ms` lang, mit ihm reisen sie in Aufträgen von `faden` Zellen, höchstens `fadenFlug` im Flug (`_waldFadenSchicken`, K60-4).
+AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64, fadenFlug: 2 });
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
@@ -1302,6 +1400,8 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
+// Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
+AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
 // Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
 // Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
 // vier tragen ihn, ein toter Auftrag fällt.
@@ -1359,10 +1459,20 @@ AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
 AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;
 // alle fünf Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen diesen
-// Chokepoint → die erzwungene Welt fährt EIN Backend.
+// Chokepoint über `_rendererGeraet` → die erzwungene Welt fährt EIN Backend.
 AnazhRealm._forceWebGL = function () {
     return typeof window !== "undefined" && window.__anazhForceWebGL === true;
 };
+// DIE GERÄTE-GRENZEN (G1): die Grenzen je Shader-Stufe, die jedes Gerät der Seite in der Höhe seines Adapters verlangt
+// (`_rendererGeraet` → `requiredLimits`) — die WebGPU-Standards (16 Texturen · 16 Sampler · 8 Speicher-Puffer · 4 Speicher-
+// Texturen · 12 Uniform-Puffer) gelten sonst auch auf einem Adapter, der mehr trägt (Radeon 890M: 48 · 16 · 16 · 8 · 12).
+AnazhRealm.GERAET_GRENZEN = Object.freeze([
+    "maxSampledTexturesPerShaderStage",
+    "maxSamplersPerShaderStage",
+    "maxStorageBuffersPerShaderStage",
+    "maxStorageTexturesPerShaderStage",
+    "maxUniformBuffersPerShaderStage",
+]);
 // Performance-Regelkreis: die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
 // Die DECKE: über dieser Frame-Zeit drosselt der Regler die Qualität (≈59 fps); der Wachstums-Boden
@@ -1424,6 +1534,23 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     normalTexel: 0.5,
     tiefeTexel: 0.75,
     zuwendungSaum: 0.08,
+});
+// DIE HORIZONT-KARTE (D3, `_horizontKarte`): der Schatten JENSEITS der Kaskaden. Das Licht sieht die drei Schalen des Fern-Rings
+// (dieselben Geometrien, ein eigener Stoff) orthografisch auf `texel`² Texel über ±`randM` um den Anker; je Texel bleibt die
+// Fläche, die dem Licht am nächsten liegt (r16f, Max-Blende, ohne Tiefen-Puffer: 0,5 MB). Ein Empfänger liegt im Schatten,
+// wenn die Karte über ihm mehr als den Bias näher am Licht trägt. Quer zum Licht nimmt die Karte nur das Bild des Rings
+// (±randM · sin h + Höhe · cos h); der Bias ist `biasTexel` × (senkrechte Texel-Kante / tan h, ab `hoeheMin`, + die halbe waagrechte). `versatzM` hält jede Licht-Tiefe positiv (r16f: ≤ 16 m Stufe), die
+// Kamera steht `hoeheM` vor dem Anker. Neu gezeichnet wird, wenn das Licht sich um einen Texel über die Karte gedreht hat
+// (`texelM / randM`), der Anker wandert oder der Ring voll ist — nie je Frame. Die Kaskaden tragen bis `SCHATTEN_FERN_FAKTOR`
+// × Reichweite; die Karte blendet über `blende` dieser Reichweite ein.
+AnazhRealm.HORIZONT_KARTE = Object.freeze({
+    texel: 512,
+    randM: 8400,
+    versatzM: 16384,
+    hoeheM: 30000,
+    biasTexel: 1.5,
+    hoeheMin: 0.08,
+    blende: 0.2,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
@@ -1599,8 +1726,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
     }
     // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
-    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber hebt oder dessen Wert
-    // ein Wachsen tauscht) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
+    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber oder ein Wachsen hebt,
+    // `_texturAbschied`) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
     const texturen = nbs.updateBeforeNodes.filter((n) => n.isTextureNode === true);
     for (const g of ro.getBindings())
         for (const b of g.bindings)
@@ -1665,13 +1792,29 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
         rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };
+// (8) GETRAGEN (K71): trägt die GPU die Version dieses Attributs schon? r184 lädt ein Attribut EINMAL je Version für alle
+// Render-Objekte (`Attributes.update`: Daten je Attribut-Objekt, `version` die hochgeladene) — hat ein anderer Pass es
+// hochgeladen, bringt ein Refresh dieses Render-Objekts nichts Neues zur GPU.
+AnazhRealm._diaetGetragen = function (A, a) {
+    if (!A || !A.has(a)) return false;
+    const v = A.get(a).version;
+    return v !== undefined && v >= (a.isInterleavedBufferAttribute ? a.data.version : a.version);
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    // (8) eine neue VERSION desselben Attributs (Id gleich) ist ein Refresh-Grund nur, solange die GPU sie nicht trägt: der
+    // erste Pass, der sie sieht, lädt sie hoch, jeder weitere frischte bis K71 voll auf und lud nichts (an Genesis Third in
+    // Ruhe die Kaskaden-Zeichner der @wahl-Senken nach jedem Tausch ihres Hauptbilds, jeder Satz nach dem Index-Schreiben
+    // eines anderen Passes). Eine neue Id (ein gewachsener Puffer) bleibt ein Grund für jedes Render-Objekt.
+    const A = frame && frame.renderer ? frame.renderer._attributes : null;
     // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
     // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas). Eine Senke zeichnet über ihren Zeichner (1410-1):
     // ihre Instanz-Puffer sind die der Senke.
+    // Beide Wächter merken jeden Blick, bevor einer den Refresh meldet: ein Instanz-Grund, der vor dem Geometrie-Wächter
+    // zurückkehrte, ließ dessen Stempel stehen — jedes neue Instanz-Objekt frischte im Render danach ein zweites Mal auf.
     const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
-    let d = null;
+    let d = null,
+        grund = false;
     if (senke && senke.isInstancedMesh === true) {
         const im = senke.instanceMatrix,
             ic = senke.instanceColor;
@@ -1681,11 +1824,15 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             cV = ic ? ic.version : -1;
         d = obs.getRenderObjectData(ro);
         if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
+            grund =
+                d._anazhIId !== iId ||
+                d._anazhICId !== cId ||
+                (d._anazhIV !== iV && !AnazhRealm._diaetGetragen(A, im)) ||
+                (d._anazhICV !== cV && !AnazhRealm._diaetGetragen(A, ic));
             d._anazhIId = iId;
             d._anazhIV = iV;
             d._anazhICId = cId;
             d._anazhICV = cV;
-            return true;
         }
     }
     // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
@@ -1698,7 +1845,10 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         if (d === null) d = obs.getRenderObjectData(ro);
         const g = d._anazhGeoV || (d._anazhGeoV = []);
         const ix = geo.index;
-        let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
+        let anders =
+            g[0] !== geo.id ||
+            g[1] !== (ix ? ix.id : -1) ||
+            (g[2] !== (ix ? ix.version : -1) && !(ix && AnazhRealm._diaetGetragen(A, ix)));
         g[0] = geo.id;
         g[1] = ix ? ix.id : -1;
         g[2] = ix ? ix.version : -1;
@@ -1706,9 +1856,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         for (const k in geo.attributes) {
             const a = geo.attributes[k];
             if (g[i] !== a.id || g[i + 1] !== a.version) {
+                if (g[i] !== a.id || !AnazhRealm._diaetGetragen(A, a)) anders = true;
                 g[i] = a.id;
                 g[i + 1] = a.version;
-                anders = true;
             }
             i += 2;
         }
@@ -1716,8 +1866,20 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders) return true;
+        if (anders || grund) return true;
+        // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
+        // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
+        // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
+        // Pass seinen Abschnitt, und der Vendor-Vergleich frischte jeden Satz in jedem Render voll auf; eine Attribut-Änderung,
+        // die der Wächter schon trug, frischte im nächsten Render ein zweites Mal auf.
+        d.geometryId = geo.id;
+        if (frame) {
+            const gd = obs.getGeometryData(geo);
+            gd._renderId = frame.renderId;
+            gd._equal = true;
+        }
     }
+    if (grund) return true;
     const rend = frame && frame.renderer;
     if (
         !rend ||
@@ -2403,6 +2565,9 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Die Spanne, um die der gezeichnete Boden über dem Gesetz liegen kann (Lehre 22: Surface-Nets auf 1,8 m trägt die Feinform
+// ±0,2 m): der Schritt eines Leibs (`_koerperSchritt`) verlangt über dem Grund des Gesetzes Luft bis Leib-Höhe + Spanne.
+AnazhRealm.KOERPER_SICHT_SPANNE = 0.2;
 // DER DECKEL DES GANGS (rad, ~34°): so weit nickt und wankt ein gehender Leib höchstens — steiler ist Kletterwand, kein Gang.
 // Leser: `_slopePitch` (Mensch und Tier), der Wank der Tier-Proben, die Kletterwand des Tier-Schritts (`_kreaturKletterwand`).
 AnazhRealm.GANG_DECKEL_RAD = 0.6;

@@ -46,6 +46,54 @@ class AnazhRealm_Z20b {
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
+    // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
+    // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
+    // für immer (Zweig-CI 38453848494: „keine Vorschau-Gestalt" nach 90 s, der Körper lag längst im Cache), die Hand trug
+    // dafür ihren eigenen 45-s-Poll. Jetzt hält `f.zuege` je Schlüssel im Flug EINE Zusage: der erste Besteller stellt den
+    // Auftrag, jeder spätere hängt sich an (`_foundryWecker`) und hebt den Rang auf seine Nähe (`_foundryNaeher`). Die
+    // Zusage löst mit true, wenn der Körper im Cache liegt, mit false nach Ablauf (die Wache gibt den Schlüssel frei, der
+    // nächste Leser fragt neu). `erst` gilt nur dem ersten Besteller: `vor` läuft vor dem Auftrag (der Wurf-Körper reist
+    // im selben Zug davor), `nach(ok)` nach der Ankunft.
+    _foundryZug(key, preset, variant, lod, ov, wo, erst) {
+        const f = this._foundry;
+        if (!f) return Promise.resolve(false);
+        const zuege = f.zuege || (f.zuege = new Map());
+        const da = zuege.get(key);
+        if (da) {
+            if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
+            this._streuWartetAuf(da);
+            return da;
+        }
+        if (!f.requested) f.requested = new Set();
+        f.requested.add(key);
+        if (erst && erst.vor) erst.vor();
+        const zug = this._foundryRequest(preset, variant, lod, ov || undefined, wo).then((meshes) => {
+            if (zuege.get(key) === zug) zuege.delete(key);
+            if (meshes) {
+                this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                return true;
+            }
+            f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
+            return false;
+        });
+        zuege.set(key, zug);
+        if (erst && erst.nach) zug.then(erst.nach);
+        this._streuWartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
+        return zug;
+    }
+    // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
+    // Poll, keine Frist (bis K38 gab je Wartendem auf das Buch ein 20-s-Poll still auf);
+    // fragt er im selben Warten erneut, bleibt es der eine Wecker. Seinen Neubau fängt der Wartende selbst LAUT beim Namen
+    // (`_stoffBruch`, K22: der Versuch steht dort, wo die Stoff-Wand ihn sieht); jede Zusage trägt je Wartenden eine
+    // eigene Kette — ein gerissener Neubau stoppt keinen anderen.
+    _foundryWecker(zusage, wer, fn) {
+        const hoerer = this._foundryHoerer || (this._foundryHoerer = new WeakMap());
+        let w = hoerer.get(zusage);
+        if (!w) hoerer.set(zusage, (w = new Set()));
+        if (w.has(wer)) return;
+        w.add(wer);
+        zusage.then(fn);
+    }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
     _foundryIngestTakt(x) {
@@ -92,13 +140,32 @@ class AnazhRealm_Z20b {
     // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
     // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
+    // DIE UHR STARTET AM EREIGNIS (K38-N2): ein Auftrag meldet seine Frist an (`f.fristen`), `_foundryUhren` stellt sie,
+    // sobald kein früherer seines Fadens offen ist — beim Anmelden, nach jeder Antwort und beim Fall eines Geistes. Bis
+    // K38-N2 fragte je Auftrag im Flug ein 1-s-Poll, ob er schon der älteste sei (die Uhr lief bis 1 s zu spät an).
     _foundryFrist(f, reqId, dauerMs, beiAblauf) {
-        const nr = (id) => Number(String(id).replace(/^\D+/, ""));
-        const meine = nr(reqId);
-        const bahn = this._foundryBahn(reqId);
-        let start = null;
-        const pruefe = () => {
-            if (!f.pending.has(reqId)) return; // beantwortet
+        const fristen = f.fristen || (f.fristen = new Map());
+        fristen.set(reqId, { dauerMs, beiAblauf, uhr: null });
+        this._foundryUhren(f);
+    }
+    _foundryUhren(f) {
+        const fristen = f.fristen;
+        if (!fristen || !fristen.size) return;
+        // die Nummer steht am Ende (die Bahn eines Werk-Helfers trägt ihren Faden davor, `_foundryPumpe`)
+        const nr = (id) => {
+            const m = /(\d+)$/.exec(String(id));
+            return m ? Number(m[1]) : NaN;
+        };
+        for (const [reqId, fr] of fristen) {
+            if (!f.pending.has(reqId)) {
+                // beantwortet: die Uhr fällt mit
+                if (fr.uhr !== null) clearTimeout(fr.uhr);
+                fristen.delete(reqId);
+                continue;
+            }
+            if (fr.uhr !== null) continue;
+            const meine = nr(reqId);
+            const bahn = this._foundryBahn(reqId);
             let vorMir = false;
             for (const k of f.pending.keys()) {
                 if (nr(k) < meine && this._foundryBahn(k) === bahn) {
@@ -106,24 +173,24 @@ class AnazhRealm_Z20b {
                     break;
                 }
             }
-            const jetzt = performance.now();
-            if (vorMir) start = null;
-            else if (start === null) start = jetzt;
-            if (start !== null && jetzt - start > dauerMs) {
-                const geist = () => {};
-                f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
-                setTimeout(() => {
-                    if (f.pending.get(reqId) === geist) {
-                        f.pending.delete(reqId);
-                        this._foundryPumpe(f);
-                    }
-                }, dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
-                beiAblauf();
-                return;
+            if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);
+        }
+    }
+    _foundryAblauf(f, reqId) {
+        const fr = f.fristen && f.fristen.get(reqId);
+        if (!fr) return;
+        f.fristen.delete(reqId);
+        if (!f.pending.has(reqId)) return; // beantwortet im selben Takt
+        const geist = () => {};
+        f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
+        setTimeout(() => {
+            if (f.pending.get(reqId) === geist) {
+                f.pending.delete(reqId);
+                this._foundryPumpe(f);
+                this._foundryUhren(f); // der Geist fällt: die Uhr des nächsten seines Fadens läuft an
             }
-            setTimeout(pruefe, 1000);
-        };
-        setTimeout(pruefe, 1000);
+        }, fr.dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
+        fr.beiAblauf();
     }
     _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
@@ -197,24 +264,58 @@ class AnazhRealm_Z20b {
         return dx * dx + dz * dz;
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
-    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk.
+    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk. Ein Werk-Helfer (`_foundryHelfer`) trägt
+    // seinen Faden in der Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>".
     _foundryBahn(reqIdOderMsg) {
-        if (typeof reqIdOderMsg === "string") return reqIdOderMsg.startsWith("imp") ? "baecker" : "werk";
+        if (typeof reqIdOderMsg === "string") {
+            if (reqIdOderMsg.startsWith("imp")) {
+                const b = /b(\d+)_\d+$/.exec(reqIdOderMsg);
+                return b ? "baecker" + b[1] : "baecker";
+            }
+            const h = /w(\d+)_\d+$/.exec(reqIdOderMsg);
+            return h ? "werk" + h[1] : "werk";
+        }
         return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
     }
-    // Die Pumpe speist ZWEI Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
-    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Der Bäcker wird beim
-    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt.
+    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
+    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Die Bäcker kommen mit dem
+    // Studio (echter Renderer) oder beim ersten Karten-Auftrag (`_foundryBaecker`); bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
+    // die Werk-Bahn mit den meisten freien Plätzen (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen
+    // das Werk).
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
         let werkFrei = 0,
-            baeckerFrei = 0;
+            baeckerFrei = 0,
+            werkZiel = null,
+            baeckerZiel = null;
+        const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
+        for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
+        // die Bäcker-Bahnen (K60-2): der erste Bäcker und jeder bereite weitere (`_foundryBaecker`)
+        const baecker = [];
+        if (f.baecker && f.baeckerBereit) baecker.push({ bahn: "baecker", ziel: f.baecker, k: 0 });
+        for (const h of f.baeckerHelfer || []) if (h.bereit) baecker.push({ bahn: "baecker" + h.k, ziel: h.w, k: h.k });
+        // die Bahn mit den meisten freien Plätzen (unter Gleichen die erste)
+        const freiste = (bahnen, im) => {
+            let frei = 0,
+                ziel = null;
+            for (const w of bahnen) {
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
+                if (fr > frei) {
+                    frei = fr;
+                    ziel = w;
+                }
+            }
+            return [frei, ziel];
+        };
         const plaetze = () => {
-            let b = 0;
-            for (const k of f.pending.keys()) if (this._foundryBahn(k) === "baecker") b++;
-            werkFrei = AnazhRealm.FOUNDRY_IM_FLUG - (f.pending.size - b);
-            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - b : 0;
+            const im = new Map();
+            for (const k of f.pending.keys()) {
+                const b = this._foundryBahn(k);
+                im.set(b, (im.get(b) || 0) + 1);
+            }
+            [werkFrei, werkZiel] = freiste(werke, im);
+            [baeckerFrei, baeckerZiel] = freiste(baecker, im);
         };
         const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
         for (plaetze(); q.length; plaetze()) {
@@ -240,8 +341,10 @@ class AnazhRealm_Z20b {
                 }
             }
             const a = q.splice(i, 1)[0];
-            const reqId = a.praefix + f.reqSeq++;
-            const ziel = this._foundryBahn(a.msg) === "baecker" ? f.baecker : f.worker;
+            const imBaecker = this._foundryBahn(a.msg) === "baecker";
+            const bahnZiel = imBaecker ? baeckerZiel : werkZiel;
+            const reqId = a.praefix + (bahnZiel.k ? (imBaecker ? "b" : "w") + bahnZiel.k + "_" : "") + f.reqSeq++;
+            const ziel = bahnZiel.ziel;
             f.pending.set(reqId, a.resolve);
             try {
                 ziel.postMessage(Object.assign({ reqId }, a.msg));
@@ -840,8 +943,9 @@ class AnazhRealm_Z20b {
     // Die ZELLE einer (Art, Gestalt[, ov]) im EINEN Karten-Atlas (`_impostorAtlas`): null = die Geometrie für den
     // Rahmen lädt (Null-Renderer), false = gescheitert (der Aufrufer serviert Geometrie), sonst die Zelle. Mit echtem
     // Renderer entsteht sie rahmenlos und reiht ihren Bake sofort ein — Rahmen und Pixel liefert die Schicht; keine
-    // Körper-Stufe wird für die Karte gezogen.
-    _foundryEnsureImpostorRecord(preset, variant, ov) {
+    // Körper-Stufe wird für die Karte gezogen. `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — er bekommt
+    // den Zug der Rahmen-Stufe und stellt ihn in seinen Rang.
+    _foundryEnsureImpostorRecord(preset, variant, ov, wer) {
         const at = this._impostorAtlas();
         if (!at) return null;
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seine eigene Zelle: Schlüssel und Bake tragen den
@@ -862,29 +966,24 @@ class AnazhRealm_Z20b {
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
-            const f = this._ensureAssetFoundry();
-            if (!f) return null;
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(gkey)) {
-                f.requested.add(gkey);
-                this._foundryRequest(preset, variant, bakeLod, ov || undefined).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
+            if (!this._ensureAssetFoundry()) return null;
+            const zug = this._foundryZug(gkey, preset, variant, bakeLod, ov, wer ? wer.wo : undefined, {
+                nach: (ok) => {
+                    if (ok) {
                         this._scatterRefillPending = true;
                         // Im Ankunfts-Moment die Zelle anlegen (Cache-Hit → Rahmen) — sonst entsteht sie erst beim
                         // nächsten zufälligen Leser.
                         this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
-                    } else {
-                        f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
                     }
                     this._foundryRewarmColdTrees();
-                });
-            }
+                },
+            });
+            if (wer) wer.wecke(zug);
             return null; // die Geometrie lädt (der Aufrufer lässt L2 kalt)
         }
         const z = this._impostorZelleNeu(at, key, preset, variant, ovK);
         if (group === null || !group.children || !group.children.some((c) => c.geometry && c.material)) {
-            z.gescheitert = true; // Foundry kann das nicht → Aufrufer nimmt Geometrie
+            this._karteEndet(z, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
             return false;
         }
         const box = new THREE.Box3().setFromObject(group);
@@ -901,35 +1000,41 @@ class AnazhRealm_Z20b {
     // L2 — die Studio-Karte als HISM-Flat: das Einheits-Quad des Atlas mit dem EINEN Karten-Material, Schicht und
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
-    _foundryBuildImpostorFlat(entry, preset) {
+    // `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — die Werkstatt-Vorschau. Liefert die Karte noch nichts,
+    // bekommt er die EINE Zusage, auf die sie wartet (das Buch, der Zug ihrer Höhen-Stufe, ihr Bake), und `wo` ist sein
+    // Rang in Schlange und Bäcker; ohne Zusage kann die Karte nicht kommen. Die Welt ruft ohne `wer` (ihr Tick baut nach).
+    _foundryBuildImpostorFlat(entry, preset, wer) {
         const variant = this._foundryGestaltFor(entry, preset);
-        if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
+        if (variant == null) {
+            if (wer && this._foundry) wer.wecke(this._foundry.buchDa);
+            return null; // Buch kalt — L2 kalt, der Tick baut nach
+        }
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
         const ovE = this._artifactStudioOv(entry);
-        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
+        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined, ovE ? undefined : wer);
         if (z === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!z) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
-        if (!z.gebacken && entry && entry.position) {
-            const pp = this.state.playerMesh && this.state.playerMesh.position;
-            if (pp) {
-                const bx = entry.position.x - pp.x,
-                    bz = entry.position.z - pp.z;
-                const d2 = bx * bx + bz * bz;
-                if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
-            }
+        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
+        // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
+        if (!z.gebacken) {
+            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && entry.position);
+            if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
         // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
-        if (!z.gebacken && rendB && !rendB._isHeadlessNull) return false;
+        if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
+            if (wer) wer.wecke(z.ende);
+            this._streuWartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
+            return false;
+        }
         if (z._flat) return z._flat;
         // Die Karte blendet nach DERSELBEN Sichthöhe wie ihre 3D-Stufen (das Studio: die Karten-Instanz trägt bh, die
         // Sichthöhe des echten Baums): die Höhe der Höhen-Stufe aus dem Höhen-Buch, je Slot × Instanz-Skala gestempelt
         // (|aKarte.w|) — nie die Rahmen-Höhe des Bakes (sie wich bis ~2 % + Bake-Rand ab). Unbekannt: die Karte wartet.
-        const hz = this._foundryBaumHoehe(preset, entry);
+        const hz = this._foundryBaumHoehe(preset, entry, wer);
         if (hz == null) return null;
         // PARITÄT: der Rahmen ist TEMPLATE-lokal → dieselbe Template→Welt-Übersetzung wie die 3D-Stufen
         // (localMatrix), sonst wäre der ferne Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).
@@ -937,95 +1042,6 @@ class AnazhRealm_Z20b {
         if (!leaf) return false;
         z._flat = { instanceable: true, reason: "foundry-impostor", foundry: true, lod: 2, leaves: [leaf] };
         return z._flat;
-    }
-    // Vorlagen-Rinden-Normalmap (`makeBarkNormal`, byte-treu portiert): Hauptfissuren + Querrisse +
-    // Knubbel → Höhenfeld → Normalmap. EINE gecachte Textur für alle Rinden; mulberry32(99) wie im Studio.
-    _foundryBarkNormalTexture() {
-        if (this._foundryBarkNormal !== undefined) return this._foundryBarkNormal;
-        this._foundryBarkNormal = null;
-        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        try {
-            const N = 512;
-            const c = document.createElement("canvas");
-            c.width = c.height = N;
-            const x = c.getContext("2d");
-            if (!x) return null;
-            const img = x.createImageData(N, N);
-            const h = new Float32Array(N * N);
-            const mk = (a) =>
-                function () {
-                    a |= 0;
-                    a = (a + 0x6d2b79f5) | 0;
-                    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-                    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                };
-            const s = mk(99);
-            for (let i = 0; i < 300; i++) {
-                const cx = s() * N,
-                    w = 1 + s() * 3.5,
-                    dep = 0.6 + s() * 0.7; // vertikale Hauptfissuren
-                for (let y = 0; y < N; y++) {
-                    const wob = Math.sin(y * 0.05 + i) * 4 + Math.sin(y * 0.013 + i * 2.1) * 7;
-                    const px = Math.floor(cx + wob);
-                    for (let d = -w; d <= w; d++) {
-                        const xx = (((px + d) % N) + N) % N;
-                        h[y * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
-                    }
-                }
-            }
-            for (let i = 0; i < 95; i++) {
-                const cy = s() * N,
-                    len = N * (0.2 + s() * 0.5),
-                    x0 = s() * N,
-                    w = 0.8 + s() * 2.0,
-                    dep = 0.5 + s() * 0.6; // horizontale Querrisse -> Platten
-                for (let t = 0; t < len; t++) {
-                    const wob = Math.sin(t * 0.06 + i) * 3;
-                    const yy = Math.floor(cy + wob),
-                        xx = ((Math.floor(x0 + t) % N) + N) % N;
-                    for (let d = -w; d <= w; d++) {
-                        const y2 = (((yy + d) % N) + N) % N;
-                        h[y2 * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
-                    }
-                }
-            }
-            for (let i = 0; i < 1500; i++) {
-                const px = Math.floor(s() * N),
-                    py = Math.floor(s() * N),
-                    r = 2 + s() * 5,
-                    amp = (s() - 0.5) * 0.55; // Knubbel/Rauheit
-                for (let dy = -r; dy <= r; dy++)
-                    for (let dx = -r; dx <= r; dx++) {
-                        const xx = (((px + dx) % N) + N) % N,
-                            yy = (((py + dy) % N) + N) % N;
-                        h[yy * N + xx] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
-                    }
-            }
-            for (let i = 0; i < h.length; i++) h[i] += (s() - 0.5) * 0.18;
-            const G = 6.5;
-            for (let y = 0; y < N; y++)
-                for (let xx = 0; xx < N; xx++) {
-                    const dx = (h[y * N + ((xx + 1) % N)] - h[y * N + ((xx - 1 + N) % N)]) * G;
-                    const dy = (h[((y + 1) % N) * N + xx] - h[((y - 1 + N) % N) * N + xx]) * G;
-                    const l = Math.sqrt(dx * dx + dy * dy + 1);
-                    const p = (y * N + xx) * 4;
-                    img.data[p] = ((dx / l) * 0.5 + 0.5) * 255;
-                    img.data[p + 1] = ((dy / l) * 0.5 + 0.5) * 255;
-                    img.data[p + 2] = (1 / l) * 255;
-                    img.data[p + 3] = 255;
-                }
-            x.putImageData(img, 0, 0);
-            const tex = new THREE.CanvasTexture(c);
-            tex.name = "rinde-normal";
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(2, 7);
-            tex.needsUpdate = true;
-            this._foundryBarkNormal = tex;
-        } catch (_e) {
-            throw this._stoffBruch("die Rinden-Normale (Vorlagen-Textur)", _e);
-        }
-        return this._foundryBarkNormal;
     }
     // ═══ DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker) ═══
     // Rastert DREIECKE statt Vertices (ein Vertex-Splat lässt die meisten Oberflächen-Voxel leer → Matsch
@@ -1696,6 +1712,9 @@ class AnazhRealm_Z20b {
     _kreaturTrefferGlieder(cr) {
         const u = cr && cr.userData;
         if (!u) return null;
+        // wer die Glieder eines RUHENDEN Leibs bekommt (K59), bekommt sie frisch: seine Wurzel hält den Szenen-Gang aus dem
+        // Skelett, die Anker-Matrizen stünden sonst, wo die Ruhe begann (jeder Leser — Biss, Maul, Treffer, Tod)
+        if (u._ruht === true) this._leibMatrix(cr);
         if (u._trefferGlieder !== undefined) return u._trefferGlieder;
         // KERN-PFLICHT (Welle L): ohne tetrapoda trefferZone gibt es kein Treffer-Volumen — ein lauter BRUCH wie im
         // Treffer-Urteil (_kampfUrteil), nie ein still je Tier gespeichertes null (jedes Wesen wäre unverwundbar).
@@ -1773,7 +1792,7 @@ class AnazhRealm_Z20b {
     _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius, flaeche = false) {
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return null;
-        cr.updateMatrixWorld(true);
+        this._leibMatrix(cr);
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = null;
         let bestTiefe = Infinity;
@@ -1900,7 +1919,10 @@ class AnazhRealm_Z20b {
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
     // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
-    _foundryTreeMaterial(kind, mp, wiegen, baum) {
+    // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
+    // legt die Normale der Krone darüber), auch ohne `baum` — der wiegende Stoff der Nah-Streu erbt sie vom Stoff der Art
+    // (`userData.krone`); die Karte (foliageTex) ist immer Krone.
+    _foundryTreeMaterial(kind, mp, wiegen, baum, krone) {
         const satz = !!(mp && mp.satzRegler === true);
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -1929,12 +1951,15 @@ class AnazhRealm_Z20b {
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
+        // DIE KRONE (K68-N1): Karte immer, Klinge am Baum und Strauch — sie lichtet flip-frei (`_laubStoffNormale`)
+        const _krone = kind === "foliageTex" || (kind === "foliage" && (!!baum || krone === true));
         const key =
             globalThis.__phytoCore.budgetStoff(kind, mp) +
             (xfade ? "|xf" : "") +
             (wiegen === true ? "|wiegt" : "") +
             (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
-            (satz === true ? "|satz" : "");
+            (satz === true ? "|satz" : "") +
+            (_krone ? "|krone" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -1959,10 +1984,11 @@ class AnazhRealm_Z20b {
                   : null;
         // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
         // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
-        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
+        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek — gefragt wird die Bibliothek selbst, nie
+        // die Flagge (eine Linse lüftet `_isHeadlessNull` am Null-Renderer, gate:leistungs-vertrag: die Lieferung brach).
         const rendM = this.state && this.state.renderer;
         const MatK =
-            ccSoll && rendM && !rendM._isHeadlessNull
+            ccSoll && rendM && rendM.library
                 ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
                 : T.MeshStandardNodeMaterial;
         mat = new MatK({
@@ -1996,6 +2022,7 @@ class AnazhRealm_Z20b {
         // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
+        if (_krone) mat.userData.krone = true;
         // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.
@@ -2019,23 +2046,21 @@ class AnazhRealm_Z20b {
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
-        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
-        // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
-        // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
-        const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
-        const laubFarbe = _BU
-            ? TSL.mix(
-                  laubFarbe0,
-                  TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
-                      _BU.hell
-                  ),
-                  TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
-              )
-            : laubFarbe0;
+        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
+        // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
+        const laubFarbe =
+            kind === "foliage" || kind === "foliageTex" ? this._laubUnterseite(TSL, laubFarbe0) : laubFarbe0;
+        // DIE NORMALE DER KRONE (K68-N1): die Studio-Krone (foundry-core `emitTreeRezept`: jede Karte, jede Klinge und Nadel
+        // eines Baums und Strauchs) trägt die Normale der Krone und lichtet flip-frei (`_laubStoffNormale`). Die Karte
+        // (foliageTex) ist immer Krone; das Klingen-Laub (foliage) ist es am Baum und Strauch (`_krone`: die Wind-Daten der
+        // Art oder der Stoff, von dem die Nah-Streu erbt) — Farn, Blüte, Schilf und Gestrüpp tragen ihre eigene Fläche, deren
+        // Wicklung frei ist: sie lesen die Seite (r184 faceDirection), sonst läge jeder zweite Wedel im Dunkel.
+        if (_krone) this._laubStoffNormale(TSL, mat);
         if (isBark) {
             // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
             // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-            // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
+            // Vertex-Farben) + Roughness 0.93. Ihr Spiegel der Studio-Rinden-Normale (`_foundryBarkNormalTexture`) hatte
+            // keinen Leser und fiel mit K60-2; die Normale lebt im Studio (foundry-core `makeBarkNormal`).
             mat.colorNode = TSL.vec4(vcol, 1.0);
         } else if (kind === "foliageTex") {
             // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
@@ -2043,13 +2068,19 @@ class AnazhRealm_Z20b {
             // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
             // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
             // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-            const atl = this._blattAtlasProbe(TSL);
+            const atl = this._blattAtlasProbe(
+                TSL,
+                mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5
+            );
             if (atl) {
                 // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                 // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
+                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`). Die Alpha
+                // ist die Kante von EINEM Pixel um die Schwelle des Stoffs (K68, `_laubKante`): der Bild-Pass schneidet
+                // sie am Rauschen der zeitlichen Auflösung (`alphaTestNode`), der Schatten an der Zahl 0,5.
                 mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
+                mat.alphaTest = 0.5;
+                mat.alphaTestNode = atl.schwelle;
                 mat.transparent = false;
             } else {
                 // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.

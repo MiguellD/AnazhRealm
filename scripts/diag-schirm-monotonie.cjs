@@ -34,6 +34,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.SCHIRM_PORT || 4579);
 const root = path.resolve(__dirname, "..");
@@ -57,7 +58,6 @@ const ERLAUBT = {
     _installHelpPopovers: "UI-Lage (Hilfe-Popover im Fenster)",
     _installResizeHandle: "UI-Lage (Panel-Griff)",
 };
-const KOPF = /^ {4}(?:static\s+)?(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{\s*$/;
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
 function ohneKommentare(src) {
     return src
@@ -72,13 +72,19 @@ const ALIAS_ZUWEISUNG = /(?:^|[\s,(;{])([A-Za-z_$][\w$]*)\s*=\s*[^;=]*?\bdomElem
 function quellBefunde(src) {
     const b = [];
     const zeilen = ohneKommentare(src).split("\n");
+    // Die Methode einer Zeile am AST (stammLib.glieder, K38-N2): ein umbrochener Kopf oder ein Kopf mit `)` im
+    // Default-Parameter fiel aus dem Kopf-Muster, und seine Zeilen lasen still unter dem Namen der Methode davor.
+    const gl = stammLib.glieder(src);
+    const roh = src.split("\n");
+    const ab = [];
+    for (let i = 0, o = 0; i < roh.length; o += roh[i].length + 1, i++) ab.push(o);
     let methode = null;
     let quelleLiest = false;
     let aliase = new Set();
     zeilen.forEach((z, i) => {
-        const k = KOPF.exec(z);
-        if (k) {
-            methode = k[1];
+        const g = stammLib.gliedAn(gl, ab[i] + roh[i].search(/\S|$/));
+        if ((g ? g.name : null) !== methode) {
+            methode = g ? g.name : null;
             aliase = new Set();
         }
         ALIAS_ZUWEISUNG.lastIndex = 0;
@@ -157,6 +163,7 @@ async function welt() {
     });
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL);
     const ende = async () => {
@@ -234,8 +241,7 @@ async function welt() {
             lauf(st.scene);
             return z;
         };
-        const x = -900,
-            z = -850;
+        const [x, z] = window.__messWiese;
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const offen = () =>
             (f.pending ? f.pending.size : 0) +

@@ -196,22 +196,9 @@ function wasserKoerper(opts) {
         const A = r.constructor;
         const DT = A.FIXED_DT;
         const ziel = o.see || window.__wasserOrte({}).see.mitte;
-        // die Region des Sees (Heimat oder Kachel — der See der Landform liegt jenseits ±1024 m)
-        const h = r._hydroFor(ziel[0], ziel[1]);
-        if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const seen = (h.lakes || []).filter((l) => l.level > (st.waterLevel || 0) + 2 && l.cells && l.cells.length > 8);
-        let see = null,
-            best = Infinity;
-        for (const l of seen) {
-            const cx = (l.bbox.minX + l.bbox.maxX) / 2,
-                cz = (l.bbox.minZ + l.bbox.maxZ) / 2;
-            const d = Math.hypot(cx - ziel[0], cz - ziel[1]);
-            if (d < best) {
-                best = d;
-                see = l;
-            }
-        }
-        if (!see) return { fehler: "kein See" };
+        const seeAm = window.__wasserSeeAm(r, ziel);
+        if (seeAm.fehler) return { fehler: seeAm.fehler };
+        const see = seeAm.see;
         const spiegel = see.level;
         // Der Weg des Befunds (06.10., Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
         // tief) — kein Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
@@ -451,69 +438,122 @@ function wasserKoerper(opts) {
                 st.scene.remove(peer.mesh);
                 r._disposeSoulGroup(peer.mesh); // die EINE Entsorgungs-Regel (Frost 08.10.: `_p2pDisposeMesh` fiel)
             }
-            // (8) DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
-            // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
-            // der Spiegel des Wassers) am Horizont vor dem Tauchen und danach — der Tauchgang darf sie nicht färben.
-            const camL = st.camera;
-            const luftL = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
-            if (camL && luftL && luftL.U && luftL.U.farbe) {
-                const camAltL = camL.position.clone();
-                const zeitAlt = st.timeOfDay;
-                const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
-                const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-                const augenAltL = st.playerEyesUnderwater;
-                const luft = (zeit, camY) => {
-                    // Kamera UND Augen im selben Medium (vor der Welle L folgte die Luft den Augen, nachher der Kamera).
-                    st.playerEyesUnderwater = camY < spiegel;
-                    st.timeOfDay = zeit;
-                    if (st.world) st.world.timeOfDay = zeit;
-                    camL.position.set(mx, camY, mz);
-                    camL.updateMatrixWorld(true);
-                    r._applyDayNightToScene();
-                    return lum(luftL.U.farbe.value);
-                };
-                const himmel = () => {
-                    if (typeof r._ensureSkyEnvironment !== "function" || !r._ensureSkyEnvironment(true)) return null;
-                    const tx = r._himmelUmgebungTex();
-                    const W = tx.image.width,
-                        H = tx.image.height,
-                        d = st._skyEnvData;
-                    if (!d) return null;
-                    const i = ((H >> 1) * W + (W >> 1)) * 4;
-                    return [d[i], d[i + 1], d[i + 2]];
-                };
-                try {
-                    const nachtOben = luft(0.0, spiegel + 10);
-                    const nachtUnten = luft(0.0, spiegel - 3);
-                    const mittagUnten = luft(0.5, spiegel - 3);
-                    const mittagOben = luft(0.5, spiegel + 10);
-                    const vorTauchen = himmel();
-                    luft(0.5, spiegel - 3);
-                    const getaucht = himmel();
-                    luft(0.5, spiegel + 10);
-                    aus.licht = {
-                        nachtOben: R(nachtOben, 4),
-                        nachtUnten: R(nachtUnten, 4),
-                        mittagOben: R(mittagOben, 4),
-                        mittagUnten: R(mittagUnten, 4),
-                        himmelVor: vorTauchen,
-                        himmelGetaucht: getaucht,
-                    };
-                } finally {
-                    st.playerEyesUnderwater = augenAltL;
-                    st.timeOfDay = zeitAlt;
-                    if (st.world && weltZeitAlt !== undefined) st.world.timeOfDay = weltZeitAlt;
-                    camL.position.copy(camAltL);
-                    camL.updateMatrixWorld(true);
-                    r._applyDayNightToScene();
-                }
-            }
+            // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
         } finally {
             st.keys = keysAlt || {};
             st.yaw = yawAlt;
             r._loopFixedStep = vorher.loop;
         }
         return aus;
+    })();
+}
+
+// Der See am Ziel (die Region der Hydrosphäre, Heimat oder Kachel — der See der Landform liegt jenseits ±1024 m): der nächste
+// mit Spiegel über dem Meer und mehr als 8 Zellen; ein Fehler-Befund, wenn keiner trägt.
+function __wasserSeeAm(r, ziel) {
+    const st = r.state;
+    const h = r._hydroFor(ziel[0], ziel[1]);
+    if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
+    const seen = (h.lakes || []).filter((l) => l.level > (st.waterLevel || 0) + 2 && l.cells && l.cells.length > 8);
+    let see = null,
+        best = Infinity;
+    for (const l of seen) {
+        const cx = (l.bbox.minX + l.bbox.maxX) / 2,
+            cz = (l.bbox.minZ + l.bbox.maxZ) / 2;
+        const d = Math.hypot(cx - ziel[0], cz - ziel[1]);
+        if (d < best) {
+            best = d;
+            see = l;
+        }
+    }
+    return see ? { see } : { fehler: "kein See" };
+}
+
+// ── K9: DAS LICHT AM WASSER (W-L-a, W-L-b) — mit dem echten Renderer ──
+// Seit D3 ist der Himmel über dem Wasser die Himmels-Sicht der EINEN Atmosphäre, gemalt auf der GPU und EINE Lesung später auf
+// der CPU (`_himmelFrisch`): der Null-Renderer malt keinen Himmel (Lehre 16). Die Probe fährt darum im Bild-Lauf (B), am See
+// nächst der Mess-Wiese, die Kamera 10 m über und 3 m unter seinem Spiegel.
+function wasserLicht(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        if (!st.renderer || st.renderer._isHeadlessNull) return { fehler: "kein echter Renderer (der Himmel lebt auf der GPU)" };
+        const ziel = o.see || window.__wasserOrte({}).see.mitte;
+        const seeAm = window.__wasserSeeAm(r, ziel);
+        if (seeAm.fehler) return { fehler: seeAm.fehler };
+        const spiegel = seeAm.see.level;
+        const mx = ziel[0];
+        const mz = (o.start || window.__wasserOrte({}).see.ufer)[1];
+        const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const aus = {};
+        // DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
+        // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
+        // der Spiegel des Wassers) am Horizont vor dem Tauchen und danach — der Tauchgang darf sie nicht färben.
+        const camL = st.camera;
+        const luftL = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
+        if (camL && luftL && luftL.U && luftL.U.farbe) {
+            const camAltL = camL.position.clone();
+            const zeitAlt = st.timeOfDay;
+            const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
+            const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+            const augenAltL = st.playerEyesUnderwater;
+            // Die Umgebung der EINEN Atmosphäre (D3) kommt EINE Lesung nach der Malung auf die CPU (`_himmelFrisch`, linear
+            // Float32): neu gezeichnet und ihre Lesung abgewartet — eine alte Lesung trüge die vorige Uhrzeit.
+            const frisch = () => r._himmelFrisch();
+            const luft = async (zeit, camY) => {
+                // Kamera UND Augen im selben Medium (vor der Welle L folgte die Luft den Augen, nachher der Kamera).
+                st.playerEyesUnderwater = camY < spiegel;
+                st.timeOfDay = zeit;
+                if (st.world) st.world.timeOfDay = zeit;
+                camL.position.set(mx, camY, mz);
+                camL.updateMatrixWorld(true);
+                r._applyDayNightToScene();
+                if (!(await frisch())) return null;
+                r._applyDayNightToScene();
+                // unter Wasser: das Medium der Kamera (`U.farbe`); darüber streut die Luft den Himmel der Atmosphäre
+                // (D3, `himmelFarbe`) — seine Leuchtdichte über dem Wasser ist E/π der waagrechten Normale
+                if (luftL.U.unterWasser.value > 0.5) return lum(luftL.U.farbe.value);
+                const e = r._himmelsIrradianz();
+                return e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : null;
+            };
+            const himmel = async () => {
+                if (!(await frisch())) return null;
+                const tx = r._himmelUmgebungTex();
+                const W = tx.image.width,
+                    H = tx.image.height,
+                    d = st._skyEnvData;
+                if (!d) return null;
+                const i = ((H >> 1) * W + (W >> 1)) * 4;
+                return [d[i], d[i + 1], d[i + 2]].map((x) => R(x, 5));
+            };
+            try {
+                const nachtOben = await luft(0.0, spiegel + 10);
+                const nachtUnten = await luft(0.0, spiegel - 3);
+                const mittagUnten = await luft(0.5, spiegel - 3);
+                const mittagOben = await luft(0.5, spiegel + 10);
+                const vorTauchen = await himmel();
+                await luft(0.5, spiegel - 3);
+                const getaucht = await himmel();
+                await luft(0.5, spiegel + 10);
+                aus.licht = {
+                    nachtOben: R(nachtOben, 4),
+                    nachtUnten: R(nachtUnten, 4),
+                    mittagOben: R(mittagOben, 4),
+                    mittagUnten: R(mittagUnten, 4),
+                    himmelVor: vorTauchen,
+                    himmelGetaucht: getaucht,
+                };
+            } finally {
+                st.playerEyesUnderwater = augenAltL;
+                st.timeOfDay = zeitAlt;
+                if (st.world && weltZeitAlt !== undefined) st.world.timeOfDay = weltZeitAlt;
+                camL.position.copy(camAltL);
+                camL.updateMatrixWorld(true);
+                r._applyDayNightToScene();
+            }
+        }
+        return aus.licht || { fehler: "keine Kamera oder Luft" };
     })();
 }
 
@@ -2306,7 +2346,9 @@ function wasserFlora(opts) {
 }
 
 // ── Q7-Gestalt: die Bank (Gegenprüfung 07.10.: „die neuen Kanal-Banken sind Steilwände mit Rauten-Muster") ──
-// Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
+// Je Fluss-Punkt binnen `r` m (Vorgabe 240) um den Fluss der Mess-Wiese (`ort`, Vorgabe `__wasserOrte` fluss; die Kacheln
+// dort rechnet die Probe selbst) ein Profil-Schnitt quer zum Lauf — die Stichprobe ist das GESETZ an diesem Ort (K55-5: bis
+// dahin zählten nur Punkte in schon gestreamten LOD-0-Chunks; die Zahl hing am Streaming-Stand, CI 12–22, lokal 4): der
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
 // (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
@@ -2321,15 +2363,14 @@ function wasserBank(opts) {
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
     const G = r.constructor.TERRAIN_GEOLOGY;
-    const span = r._voxelChunkConfig(0).span;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
         geroellGrad = grad(G.schuttKandidat);
-    const nah = (x, z) => {
-        const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
-        return e && e.mesh && e.lod === 0 ? e : null;
-    };
+    const ort = o.ort || (({ fluss }) => fluss && [fluss.x, fluss.z])(window.__wasserOrte({}));
+    if (!ort) return { fehler: "kein Fluss an der Mess-Wiese" };
+    const rad = o.r || 240;
+    r._ensureHydroTilesAround(ort[0], ort[1], rad + 64);
     const punkte = [];
     // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
     const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
@@ -2338,7 +2379,7 @@ function wasserBank(opts) {
         for (let k = 0; k + 1 < P.length; k++) {
             const a = P[k],
                 b = P[k + 1];
-            if (a.inLake || b.inLake || !nah(a.x, a.z)) continue;
+            if (a.inLake || b.inLake || Math.hypot(a.x - ort[0], a.z - ort[1]) > rad) continue;
             punkte.push([a, b]);
         }
     }
@@ -2448,6 +2489,9 @@ function wasserBank(opts) {
     const s = winkel.slice().sort((x, y) => x - y);
     const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
     return {
+        ort,
+        r: rad,
+        segmente: punkte.length,
         profile: s.length,
         felsGrad: R(felsGrad, 1),
         winkelP50: R(q(0.5), 1),
@@ -2796,6 +2840,8 @@ module.exports = {
         `window.__wasserUferFarbe = ${wasserUferFarbe.toString()};` +
         `window.__wasserKoerper = ${wasserKoerper.toString()};` +
         `window.__wasserBild = ${wasserBild.toString()};` +
+        `window.__wasserSeeAm = ${__wasserSeeAm.toString()};` +
+        `window.__wasserLicht = ${wasserLicht.toString()};` +
         `window.__wasserRegen = ${wasserRegen.toString()};`,
     wasserQuellTeil,
     quellTeileVereinen,

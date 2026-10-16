@@ -15,6 +15,7 @@ class AnazhRealm_Z07 {
             let worker;
             try {
                 worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
+                this._voxelFadenQuelle = srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`; // der Wald-Faden lädt dieselbe
             } catch (_workerErr) {
                 // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
                 // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
@@ -93,6 +94,17 @@ class AnazhRealm_Z07 {
                                 aSlope: new Float32Array(msg.aSlope),
                             });
                         }
+                    }
+                } else if (msg.type === "spiegel-feld-result" && msg.requestId) {
+                    // D10 — ein Rechteck des Spiegel-Felds (`_voxelWorkerSpiegel`), zero-copy per Transferable
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve({
+                            hoehen: new Uint16Array(msg.hoehen),
+                            stoff: new Uint8Array(msg.stoff),
+                            hoechste: new Float32Array(msg.hoechste),
+                        });
                     }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
@@ -175,6 +187,8 @@ class AnazhRealm_Z07 {
             // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
             // rechnet dieselben Zahlen, nie eine eigene Ableitung.
             erbgut: this._erbgut(),
+            // DER ERDBAU DER ORTE (K10): die Splat-Liste in der Reihenfolge der Orte — der Worker legt sie in die Normalform
+            erdbau: this._erdbauRoh(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
@@ -183,6 +197,14 @@ class AnazhRealm_Z07 {
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
+            // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`)
+            fern: {
+                forest: AnazhRealm.FOREST,
+                kronenSchatten: AnazhRealm.FERN_FARBE.kronenSchatten,
+                geoSchutt: AnazhRealm.TERRAIN_GEOLOGY.schutt,
+                felsMittel: AnazhRealm.FELS_STOFF.mittel,
+                memo: AnazhRealm.FERN_FARBE.memo,
+            },
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -245,6 +267,20 @@ class AnazhRealm_Z07 {
         return edits.map((ed) => ({ ...ed }));
     }
 
+    // DER EINE SENDER DES VOXEL-ZUSTANDS (K60-3): jede Zustands-Nachricht (init · state-set · state-update) reist in
+    // derselben Reihe an JEDEN Faden, der am Zustand rechnet — den Voxel-Faden und jeden geborenen Neben-Faden
+    // (`_nebenFaden`: Wald, Ferne — ohne Rückfrage-Nummer: seine Nummern sind seine Aufträge). Der Wald-Faden bekommt bei der Geburt
+    // EINEN vollen Stand, danach dieselben Deltas wie der Voxel-Faden. Bis zur Prüfung K60-3-1 schickte er sich je
+    // Stand-Wechsel (Generation + Edit-ZAHL) den vollen Zustand samt Hydro-Kacheln ein zweites Mal — ein ersetzter Edit bei
+    // gleicher Zahl reiste nie, und jeder Wechsel klonte die Welt im Haupt-Faden.
+    _voxelZustandPost(msg) {
+        const w = this.state.voxelWorker;
+        if (w) w.postMessage(msg);
+        if (!this._nebenFaeden) return;
+        const ohne = msg.requestId == null ? msg : Object.assign({}, msg, { requestId: null });
+        for (const f of this._nebenFaeden.values()) f.worker.postMessage(ohne);
+    }
+
     // State-Snapshot zum Worker: `op="init"` befüllt erstmalig (ack setzt voxelWorkerReady=true),
     // `op="state-set"` = voller Re-Sync nach Welt-Wechsel/Worldgen. Promise<true> beim ack.
     _voxelWorkerSyncState(opts = {}) {
@@ -258,7 +294,7 @@ class AnazhRealm_Z07 {
         const promise = new Promise((resolve, reject) => {
             this.state.voxelWorkerPending.set(requestId, { resolve, reject });
         });
-        worker.postMessage({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
+        this._voxelZustandPost({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
         return promise.then(() => {
             this.state.voxelWorkerReady = true;
             return true;
@@ -283,7 +319,8 @@ class AnazhRealm_Z07 {
 
     // Voller Chunk-Mesh im Worker → {empty, positions, indices, normals, colors, waterCells, lod}
     // (`empty` = kein Iso). Density/Iso/Cells/Colors (~145 ms) laufen off-thread; der Main baut nur
-    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach.
+    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach. Der Auftrag trägt die Flut-Saat der Nachbarn
+    // (`_flutSaat`, null ohne Carve im 3×3) — der Worker flutet damit wie der Sync-Bau.
     _voxelWorkerComputeChunkMesh(cx, cz, lod) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
@@ -293,9 +330,100 @@ class AnazhRealm_Z07 {
             const promise = new Promise((resolve, reject) => {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
-            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            const saat = this._flutSaat(cx, cz);
+            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, saat, requestId });
             return promise;
         });
+    }
+
+    // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
+    // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { hoehen (RGBA-Halbfloat), stoff (RGBA8), hoechste je Block, wasser,
+    // hMax } am
+    // synchronisierten Zustand.
+    _voxelWorkerSpiegel(auftrag) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage(Object.assign({ type: "spiegel-feld", requestId }, auftrag));
+            return promise;
+        });
+    }
+
+    // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem
+    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens. Er rechnet im WALD-FADEN: einem eigenen Faden
+    // desselben Gesetzes (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter
+    // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
+    // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
+    // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
+    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
+    _voxelWorkerWaldDarts(zellen, seedInt, extras) {
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST }, [
+            zellen.buffer,
+        ]).then((msg) => ({
+            anzahl: new Int32Array(msg.anzahl),
+            werte: new Float64Array(msg.werte),
+            arten: msg.arten,
+        }));
+    }
+
+    // DIE NEBEN-FÄDEN DES GESETZES (K60-3, B2): eigene Fäden aus DERSELBEN Quelle wie der Voxel-Faden (`voxel-worker.js`,
+    // derselbe Gelände-Kern, dieselben Spiegel) — der Wald-Faden (die Darts) und der Fern-Faden (der Horizont, `_fernAuftrag`).
+    // Im Voxel-Faden stünde jeder Auftrag hinter jedem Chunk (K60-3: die Darts kamen 3,5 s nach der Bestellung). Den Zustand
+    // bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach dieselben Nachrichten wie der
+    // Voxel-Faden — ein Auftrag rechnet am Zustand, der vor ihm reiste. Ein Wurf des Fadens bricht laut beim Namen.
+    _nebenFaden(name) {
+        const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
+        let f = alle.get(name);
+        if (f) return f;
+        // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
+        if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
+        const worker = new Worker(this._voxelFadenQuelle);
+        f = { worker, pending: new Map(), next: 1 };
+        const NAME = name.toUpperCase();
+        const Name = name[0].toUpperCase() + name.slice(1);
+        worker.onmessage = (e) => {
+            const msg = e.data;
+            if (!msg) return;
+            if (msg.type === "error") this._bruchMelden(`${NAME}: der ${Name}-Faden warf (${msg.op}) — ${msg.message}`);
+            const p = msg.requestId ? f.pending.get(msg.requestId) : null;
+            if (!p) return;
+            f.pending.delete(msg.requestId);
+            if (msg.type === "error") p.reject(new Error(msg.message));
+            else p.resolve(msg);
+        };
+        worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
+        // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
+        worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+        alle.set(name, f);
+        return f;
+    }
+    _nebenAuftrag(name, msg, transfer) {
+        const f = this._nebenFaden(name);
+        if (!f) return Promise.reject(new Error("kein Voxel-Faden"));
+        const requestId = f.next++;
+        const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
+        f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
+        return promise;
+    }
+
+    // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im
+    // Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
+    // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
+    _fernAuftrag(art, msg, transfer) {
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        return this._nebenAuftrag(
+            "fern",
+            Object.assign(
+                { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
+                msg
+            ),
+            transfer
+        );
     }
 
     // Wasser-Sheet off-thread: der 3×3-Zell-Block (`entry.waterCells`, KOPIERT — der Main braucht ihn
@@ -517,9 +645,17 @@ class AnazhRealm_Z07 {
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
     // und Pad ±1 Cell → die Box deckt den Mesh-Footprint konservativ.
     _chunkFootprintEditFrei(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        // der Erdbau eines Orts (K10) formt den Boden wie ein Edit: sein Umkreis liest nie alte Bytes der Platte
+        const E = this._erdbauLage();
+        if (E) {
+            const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+            for (let a = Math.floor(((cx - 1) * span) / Z); a <= Math.floor(((cx + 2) * span) / Z); a++)
+                for (let b = Math.floor(((cz - 1) * span) / Z); b <= Math.floor(((cz + 2) * span) / Z); b++)
+                    if (E.zellen.has((a + 32768) * 65536 + (b + 32768))) return false;
+        }
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return true;
-        const { span } = this._voxelChunkConfig();
         const loX = (cx - 1) * span,
             hiX = (cx + 2) * span,
             loZ = (cz - 1) * span,
@@ -809,7 +945,7 @@ class AnazhRealm_Z07 {
                     for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
         }
         try {
-            this.state.voxelWorker.postMessage({
+            this._voxelZustandPost({
                 type: "state-update",
                 delta: {
                     voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },
@@ -1275,6 +1411,12 @@ class AnazhRealm_Z07 {
                 const N = rend._nodes,
                     P = rend._pipelines;
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
+                // wer auf seine Pipeline wartet, läuft durch keinen Knoten (`_renderObjectDirect`: wer nicht zeichnet …)
+                const imBau = P.get(ro).pipeline;
+                if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
+                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
                 const refresh = N.needsRefresh(ro);
                 if (refresh) {
                     N.updateBefore(ro);
@@ -1314,6 +1456,10 @@ class AnazhRealm_Z07 {
                 );
                 ro.drawRange = object.geometry.drawRange;
                 ro.group = group;
+                // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
+                // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
+                // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
+                if (ro.getDrawParameters() === null) return;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 if (scene !== welt.state.scene) {
@@ -1338,7 +1484,10 @@ class AnazhRealm_Z07 {
                     if (E.aufruf !== this.info.calls) {
                         E.aufruf = this.info.calls;
                         E.aufrufMs = 0;
-                    } else if (E.aufrufMs >= AnazhRealm.ERST_BAU_MS) {
+                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
+                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
+                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
+                    } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
@@ -1369,6 +1518,7 @@ class AnazhRealm_Z07 {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,

@@ -161,13 +161,19 @@ function albedoSicht(opts) {
             for (const z of opts.zeilen) {
                 const ex = (z.welt && z.welt.exemplar) || {};
                 let pos = null,
-                    gesetzt = false;
+                    gesetzt = false,
+                    verweigert = null,
+                    eintrag = null;
                 if (ex.typ === "architektur") {
                     let best = null;
                     for (const e of st.architectures || [])
                         if (e && e.type === ex.name && e.position) {
                             const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            if (d <= 80 && (!best || d < best.d)) best = { e, d };
+                            // `nah` (K63-n4): nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
+                            // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
+                            // `nah: 0` (K63-n6): nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
+                            // folgt dem LACK_GESETZ der Saat; ein Wagen der Welt trug am 15.10. Orange gegen das Schwarz des Labors)
+                            if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
                         }
                     let e = best && best.e;
                     if (!e) {
@@ -181,12 +187,16 @@ function albedoSicht(opts) {
                             { seed: ex.seed || 7 }
                         );
                         gesetzt = true;
+                        // ein verweigerter Platz (K63-n5: der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
+                        // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
+                        if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
                     }
                     if (e) {
                         await ticke(600, () => r._archIsRendered(e));
                         // Ein frisch gesetztes Exemplar zieht seine Instanz-Gruppe erst im nächsten Takt nach.
                         await ticke(gesetzt ? 20 : 0, () => false);
                         pos = new T.Vector3(e.position.x, e.position.y, e.position.z);
+                        eintrag = e;
                     }
                 } else if (ex.typ === "tier") {
                     const tierOf = (c) => {
@@ -216,7 +226,73 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
-                exemplare.push({ zeile: z, pos, gesetzt });
+                else if (ex.typ === "boden" && ex.wald) {
+                    // DER WALD-BODEN (K63-n7; gemessen 15.10., Radeon: unter dem Spieler am Genesis-Ring liegt seit K52 der Platz —
+                    // Gesetz-Farbe 0,0721 wie `dirt` —, das Labor zeigt den Wald-Boden der Pflanzen-Welt): die nächste Stelle um
+                    // den Spieler, an der das Wald-Gesetz steht (`_forestCellDarts` → `_forestDartSteht` → `_wildnisTraegt`, derselbe
+                    // Gang wie `_forestPlantChunk`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m, trockenes Land
+                    const W0 = ex.wald,
+                        C = r.constructor.FOREST.cell,
+                        seedInt = r._forestSeedInt(),
+                        memo = new Map();
+                    const zelle = (gx, gz) => {
+                        const k = gx + "," + gz;
+                        let d = memo.get(k);
+                        if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
+                        return d;
+                    };
+                    const wald = (x, z) => {
+                        let b = 0,
+                            nah = Infinity;
+                        for (let gz = Math.floor((z - W0.r) / C); gz <= Math.floor((z + W0.r) / C); gz++)
+                            for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
+                                for (const d of zelle(gx, gz)) {
+                                    const dd = Math.hypot(d.x - x, d.z - z);
+                                    if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
+                                        b++;
+                                        nah = Math.min(nah, dd);
+                                    }
+                                }
+                        return b >= W0.baeume && nah > W0.frei;
+                    };
+                    for (let rr = W0.ab; rr <= W0.bis && !pos; rr += 8) {
+                        const n = Math.max(1, Math.round((2 * Math.PI * rr) / 8));
+                        for (let q = 0; q < n && !pos; q++) {
+                            const a = (q / n) * Math.PI * 2,
+                                x = pp.x + Math.cos(a) * rr,
+                                zz = pp.z + Math.sin(a) * rr;
+                            if (!r._landAt(x, zz) || (r._nassAt && r._nassAt(x, zz)) || !wald(x, zz)) continue;
+                            pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
+                        }
+                    }
+                    if (!pos) verweigert = `kein Wald-Boden binnen ${W0.ab}–${W0.bis} m um den Spieler`;
+                }
+                exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
+            }
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
+            // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
+            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
+            // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
+            // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+            const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
+            if (nahe.length > 1) throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+            for (const x of nahe) {
+                const e = x.eintrag;
+                const l0 = () => {
+                    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
+                        if (g && g.slotEntry && g.mesh && /:L0$/.test(r._taeterKlasse(g.mesh) || ""))
+                            for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
+                    return false;
+                };
+                const auge = new T.Vector3(e.position.x + 3, e.position.y + 1.7, e.position.z + 3);
+                r._lodAuge = () => auge;
+                try {
+                    await ticke(600, l0);
+                    await ticke(20, () => false);
+                } finally {
+                    delete r._lodAuge;
+                }
+                if (!l0()) x.verweigert = `das Exemplar zeigt seine Stufe 0 nicht (das Auge 4,2 m vor ihm, 30 s)`;
             }
         }
         const karte = new T.Mesh(
@@ -279,9 +355,14 @@ function albedoSicht(opts) {
             q: st.camera.quaternion.clone(),
             fov: st.camera.fov,
             aspect: st.camera.aspect,
+            layers: st.camera.layers.mask,
         };
         if (luftU) luftU.beta.value = 0;
         sc.environment = null;
+        // DIE SCHICHTEN (K63-n7; gemessen 15.10., Radeon: die Haut las „kein Pixel" — in der Ich-Sicht trägt der eigene Leib
+        // nur seinen Schatten-Zwilling, alle 14 Spieler-Meshes auf Schicht 2, die das Auge nie zeichnet): der Schuss zeichnet
+        // jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
+        st.camera.layers.enableAll();
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
         const half = (h) => {
@@ -319,12 +400,7 @@ function albedoSicht(opts) {
                 A.color.setRGB(1, 1, 1);
                 A.intensity = e;
                 if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                await window.__linseRuhe(rend, rt, sc, cam, "die Albedo-Sicht");
                 return lies();
             };
             await pass(Math.PI);
@@ -374,12 +450,87 @@ function albedoSicht(opts) {
             const c = bb.getCenter(new T.Vector3());
             return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
+        // DER SATZ DES EXEMPLARS (K63-n6; gemessen 15.10., Radeon: das Tor Kathedrale las in der Welt 0,0226 gegen das Gold
+        // 0,6496 des Labors — der Bau-Satz zeichnete im Schuss die Metalle der Nachbar-Tore mit): ein Stoff-Satz trägt viele
+        // Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr
+        // Eintrag). Für den Schuss zeichnet ein Ausschnitt nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt kopiert,
+        // derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein Mesh, das kein Satz ist, bleibt (es selbst).
+        // DIE BASIS IM SATZ (gemessen 15.10., Radeon: die Nieten des Tors lasen Y 0,0000): der Satz-Stoff liest sein Metall je
+        // Ecke (`aRegler.y`, `_satzBlock`) — `metalness = 0` am Stoff erreicht ihn nie, das Metall blieb schwarz ohne Umgebung;
+        // mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke (0 ist in jeder Packung 0).
+        const ausschnitte = [];
+        const satzAusschnitt = (m, eintrag, basis) => {
+            let s = null;
+            for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
+            if (!s || !st.archInstanceGroups) return m;
+            const tri = [];
+            const stufen = new Set(); // die Stufen der Gruppen des Exemplars (die Täter-Klasse der Gruppe `f:<art>:L<n>`)
+            let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
+            for (const [key, g] of st.archInstanceGroups) {
+                if (!g || g.satz !== s.art || !g.slotEntry) continue;
+                bau = true;
+                const b = s.bloecke.get(key);
+                const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
+                    if (g.slotEntry[i] !== eintrag) continue;
+                    const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
+                    if (sk) stufen.add(+sk[1]);
+                    const v0 = b.vStart + i * n,
+                        v1 = v0 + n;
+                    for (let t = 0; t + 2 < b.idx.length; t += 3)
+                        if (b.idx[t] >= v0 && b.idx[t] < v1) tri.push(b.idx[t], b.idx[t + 1], b.idx[t + 2]);
+                }
+            }
+            if (!bau) return m;
+            if (!tri.length) return null;
+            const neu = new Map(),
+                alt = [];
+            const ix = new Uint32Array(tri.length);
+            for (let k = 0; k < tri.length; k++) {
+                let j = neu.get(tri[k]);
+                if (j === undefined) {
+                    j = alt.length;
+                    neu.set(tri[k], j);
+                    alt.push(tri[k]);
+                }
+                ix[k] = j;
+            }
+            const g2 = new T.BufferGeometry();
+            for (const [name, a] of Object.entries(m.geometry.attributes)) {
+                if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
+                const w = a.itemSize;
+                const out = new a.array.constructor(alt.length * w);
+                for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
+                if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
+                g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
+            }
+            g2.setIndex(new T.BufferAttribute(ix, 1));
+            const t = new T.Mesh(g2, m.material);
+            t.name = m.name;
+            t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art, satzStufen: [...stufen] });
+            t.matrixAutoUpdate = false;
+            t.matrix.copy(m.matrixWorld);
+            t.matrixWorld.copy(m.matrixWorld);
+            t.frustumCulled = false;
+            t.layers.mask = m.layers.mask;
+            t.renderOrder = m.renderOrder;
+            sc.add(t);
+            ausschnitte.push(t);
+            return t;
+        };
+        const ausschnitteFort = () => {
+            for (const t of ausschnitte.splice(0)) {
+                sc.remove(t);
+                t.geometry.dispose();
+            }
+        };
         const ergebnisse = [];
         const metallAlt = new Map();
         const ahnenAlt = new Map();
         try {
             if (opts.zeilen) {
                 for (const ex of exemplare) {
+                    ausschnitteFort(); // der Ausschnitt der vorigen Zeile zeichnet nie in dieser
                     const z = ex.zeile;
                     const w = z.welt || {};
                     const kre = new RegExp(w.klasse || "^$");
@@ -387,6 +538,10 @@ function albedoSicht(opts) {
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
                     let sel = meshes.filter((m) => visAlt.get(m) && passt(m));
+                    if (ex.eintrag)
+                        sel = sel
+                            .map((m) => (m.isInstancedMesh ? m : satzAusschnitt(m, ex.eintrag, z.basis !== false)))
+                            .filter(Boolean);
                     const e = {
                         id: z.id,
                         name: z.id,
@@ -394,6 +549,10 @@ function albedoSicht(opts) {
                         exemplar: w.exemplar || null,
                         gesetzt: ex.gesetzt,
                     };
+                    if (ex.verweigert) {
+                        ergebnisse.push(Object.assign(e, { pixel: 0, fehler: ex.verweigert }));
+                        continue;
+                    }
                     const um = ex.pos || pp;
                     // DAS EXEMPLAR, nicht die Klasse: eine Instanz-Gruppe zählt, wenn ihre nächste Instanz im Umkreis des
                     // Exemplars steht (L0 und L1 einer Art tragen sonst je ein anderes Exemplar ins Bild), ein Satz mit
@@ -475,8 +634,20 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    ergebnisse.push(Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe] }));
+                    // DIE STUFEN DES SCHUSSES (K63-n7; gemessen 15.10., Radeon: der Wagen gt des Lacks stand 11,3 m vor dem Spieler,
+                    // in der Blende L0/L1 — die Stufe 1 faltet die Stoffe ihrer Seh-Klasse, Chrom und Glas lasen im Lack, 0,0175
+                    // gegen 0,0066): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
+                    const stufen = new Set();
+                    for (const m of sel) {
+                        const sk = /:L(\d+)$/.exec(kl.get(m) || "");
+                        if (sk) stufen.add(+sk[1]);
+                        for (const x of (m.userData && m.userData.satzStufen) || []) stufen.add(x);
+                    }
+                    ergebnisse.push(
+                        Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe], stufen: [...stufen].sort() })
+                    );
                 }
+                ausschnitteFort();
                 // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
                 cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
                 cam.lookAt(karte.position);
@@ -516,6 +687,7 @@ function albedoSicht(opts) {
                 }
             }
         } finally {
+            ausschnitteFort();
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             for (const [a, v] of ahnenAlt) a.visible = v;
             for (const [mt, v] of metallAlt) mt.metalness = v;
@@ -533,6 +705,7 @@ function albedoSicht(opts) {
             cam.quaternion.copy(kamAlt.q);
             cam.fov = kamAlt.fov;
             cam.aspect = kamAlt.aspect;
+            cam.layers.mask = kamAlt.layers;
             cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
             rt.dispose();
@@ -540,6 +713,24 @@ function albedoSicht(opts) {
         }
         return ergebnisse;
     })();
+}
+
+// DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
+// Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
+// und Renders am Stück lassen kein Versprechen reifen (gemessen 15.10., Radeon, frische Welt: die Licht-Bilanz las E 0 statt 9,51,
+// die Welt-Seite der Albedo-Tafel jede Zeile stumm und die Karte null). Die Linse schaltet ihren Frame, bis nichts mehr baut —
+// dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
+function linseRuhe(rend, rt, sc, cam, wer) {
+    if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
+    const zeichne = () => {
+        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        rend.setRenderTarget(rt);
+        rend.setClearColor(0x000000, 0);
+        rend.clear();
+        rend.render(sc, cam);
+        rend.setRenderTarget(null);
+    };
+    return window.__erstRuhe(zeichne, {}, wer);
 }
 
 function lichtBilanz() {
@@ -564,6 +755,16 @@ function lichtBilanz() {
         );
         const basis = new T.Vector3(pp.x + 6, gy + 45, pp.z + 6);
         sc.add(karte);
+        // DIE ATMOSPHÄRE AM AUGE DER KARTE (D3): Sonne, Himmel und Umgebung rechnet die Welt für die Höhe des Auges
+        // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
+        // Boden; der Hillaire-Richter des D3-Spikes rechnete dieselbe Höhe, git 637de30b), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
+        const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
+        if (typeof r._atmoTakt === "function") {
+            st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
+            st.camera.updateMatrixWorld(true);
+            r._applyDayNightToScene();
+            r._ensureSkyEnvironment(true);
+        }
         const meshes = [];
         sc.traverse((o) => {
             if ((o.isMesh || o.isSprite || o.isPoints) && o !== karte) meshes.push(o);
@@ -577,7 +778,6 @@ function lichtBilanz() {
         // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
-        const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
@@ -600,13 +800,18 @@ function lichtBilanz() {
             cam.position.copy(basis.clone().add(n.clone().multiplyScalar(1.5)));
             cam.lookAt(basis);
             cam.updateMatrixWorld(true);
-            const lauf = async () => {
+            const zeichne = () => {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
                 rend.setClearColor(0x000000, 0);
                 rend.clear();
                 rend.render(sc, cam);
                 rend.setRenderTarget(null);
+            };
+            // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`linseRuhe`)
+            await window.__linseRuhe(rend, rt, sc, cam, "die Licht-Bilanz");
+            const lauf = async () => {
+                zeichne();
                 const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
                 const zeile = W * 4;
                 const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
@@ -652,11 +857,6 @@ function lichtBilanz() {
                 }
             }
         } finally {
-            if (freiAlt) {
-                freiIx.array.set(freiAlt);
-                freiIx.needsUpdate = true;
-                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
-            }
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
@@ -716,7 +916,7 @@ function nahFernSicht(opts) {
                 [-fuss, fuss],
                 [-fuss, -fuss],
             ].every(([a, b]) => drin(x + a, z + b));
-        const teile = new Float32Array(7);
+        // die Deckung an der Stelle aus dem Fern-Faden (B2: die Fern-Farbe rechnet nur er) — EIN Auftrag für alle Kandidaten
         const kand = [];
         for (let dx = -220; dx <= 220; dx += 11)
             for (let dz = -220; dz <= 220; dz += 11) {
@@ -725,9 +925,15 @@ function nahFernSicht(opts) {
                 if (!gedeckt(x, z)) continue;
                 const y = r._voxelSurfaceY(x, z);
                 if (!(y > wl + 1)) continue;
-                r._fernFarbeTeile(x, y, z, teile);
-                kand.push({ x, z, y, deckung: teile[6] });
+                kand.push({ x, z, y, deckung: NaN });
             }
+        if (kand.length) {
+            const a = await r._fernAuftrag("teile", {
+                punkte: new Float64Array(kand.flatMap((k) => [k.x, k.z])),
+                y: new Float64Array(kand.map((k) => k.y)),
+            });
+            kand.forEach((k, i) => (k.deckung = a.teile[i * 8 + 6]));
+        }
         const waehle = (liste) => {
             const aus = [];
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
@@ -794,15 +1000,21 @@ function nahFernSicht(opts) {
         // Fern-Ring an seinen Schnapp-Punkten (Schale 0: 24 m), die Karte des Boden-Stoffs im Raster N — hier das Mittel
         // derselben Formel (Boden unter dem Kronendach × Saison zur Deckung) fein über den Fußabdruck (32 × 32 Punkte).
         const saison = r._fernSaison();
-        const gesetz = (x0, z0) => {
+        const gesetz = async (x0, z0) => {
             const c = [0, 0, 0];
             let d = 0;
+            // die Teile am Gesetz aus dem Fern-Faden (B2), unter dem Meeresspiegel das Wasser des Rings
+            const pts = new Float64Array(2048);
             for (let i = 0; i < 32; i++)
                 for (let j = 0; j < 32; j++) {
-                    const x = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32),
-                        z = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
-                    const law = r._terrainMacroSurfaceY(x, z, false);
-                    const t = r._fernRingTeile(x, z, law, law < wl, true);
+                    pts[(i * 32 + j) * 2] = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32);
+                    pts[(i * 32 + j) * 2 + 1] = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
+                }
+            const a = await r._fernAuftrag("teile", { punkte: pts });
+            for (let i = 0; i < 32; i++)
+                for (let j = 0; j < 32; j++) {
+                    const k = i * 32 + j;
+                    const t = a.law[k] < wl ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
                     const sm = [saison.r, saison.g, saison.b];
                     for (let k = 0; k < 3; k++) c[k] += t[k] + (t[3 + k] * sm[k] - t[k]) * t[6];
                     d += t[6];
@@ -855,6 +1067,7 @@ function nahFernSicht(opts) {
                 laeufe = 0;
             const spur = [];
             const frist = performance.now() + 20000;
+            await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
             for (let lauf = 0; ; lauf++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
@@ -954,10 +1167,17 @@ function nahFernSicht(opts) {
                     fern: jetzt.fern,
                     runden,
                     verworfen: verworfen.length ? verworfen : undefined,
-                    gesetz: gesetz(o.x, o.z),
+                    gesetz: await gesetz(o.x, o.z),
                 });
             }
         } finally {
+            // die Teilung des Rings steht wieder, wie sie war (9ca8b242 setzte diese Rückgabe in die Licht-Bilanz, wo `freiAlt`
+            // nie stand: `werkbank licht` brach seither mit „freiAlt is not defined", K63)
+            if (freiAlt) {
+                freiIx.array.set(freiAlt);
+                freiIx.needsUpdate = true;
+                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
+            }
             for (const m of meshes) m.visible = visAlt.get(m);
             for (const [l, i] of lichter) l.intensity = i;
             sc.remove(A);
@@ -1220,7 +1440,15 @@ function laubGegenlicht(opts) {
                 sc.environmentIntensity = 0;
                 dl.castShadow = false; // der Stoff allein: kein Schatten, kein Himmel
             }
+            const bild = await lies("das Laub im Gegenlicht");
+            sc.environmentIntensity = envAlt;
+            dl.castShadow = schattenAlt;
+            return bild;
+        };
+        // Ein Bild der sichtbaren Züge aus `cam` in das Halb-Float-Ziel: je Pixel die lineare Luma (−1 ungeschrieben) und das Bild.
+        const lies = async (wer) => {
             let px = null;
+            await window.__linseRuhe(rend, rt, sc, cam, wer);
             for (let k = 0; k < 3; k++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
@@ -1230,8 +1458,6 @@ function laubGegenlicht(opts) {
                 rend.setRenderTarget(null);
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             }
-            sc.environmentIntensity = envAlt;
-            dl.castShadow = schattenAlt;
             const zeile = W * 4;
             const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
             const cv = document.createElement("canvas");
@@ -1267,6 +1493,99 @@ function laubGegenlicht(opts) {
             for (const m of alle) m.visible = laub.includes(m);
             bundles();
             if (luftU) luftU.beta.value = 0;
+            if (opts.oben) {
+                // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
+                // über dem Exemplar, die Licht-Kette der Bühne unberührt (Mittag, Sommer, Sonne mit Schatten, Himmel). Drei Bilder
+                // aus demselben Auge: die Krone im Licht (L), dieselbe Krone unter weißem Umgebungslicht π und 0 (A = hell − dunkel,
+                // die Blatt-Albedo derselben Pixel) und allein eine waagrechte 18-%-Karte über der Spitze (Lk, unbeschattet).
+                // Die Reflexion der Krone R = 0,18 · L / Lk (= π·L/E); das Soll rechnet `kronenObenUrteil` aus A.
+                const kopf = ziel.box.max.y;
+                const breit = Math.max(ziel.box.max.x - ziel.box.min.x, ziel.box.max.z - ziel.box.min.z, 2);
+                const fov = (cam.fov * Math.PI) / 180;
+                cam.position.set(mitte.x, kopf + (0.75 * breit) / Math.tan(fov / 2), mitte.z);
+                cam.quaternion.setFromEuler(new T.Euler(-Math.PI / 2, 0, 0));
+                cam.updateMatrixWorld(true);
+                const krone = await lies("die Krone von oben");
+                const lichter = [];
+                sc.traverse((o) => {
+                    if (o.isLight) lichter.push([o, o.intensity]);
+                });
+                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
+                // jedes Programms — gemessen 15.10.: A 0,002–0,06 statt der Tafel 0,16), die übrigen Lichter und der Himmel still
+                const envA = sc.environment;
+                let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
+                const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);
+                if (ambEigen) sc.add((amb = ambEigen));
+                const ambFarbe = amb.color.clone();
+                let hell, dunkel;
+                try {
+                    for (const [l] of lichter) l.intensity = 0;
+                    sc.environment = null;
+                    amb.color.setRGB(1, 1, 1);
+                    amb.intensity = Math.PI;
+                    await lies("die Albedo der Krone");
+                    hell = await lies("die Albedo der Krone");
+                    amb.intensity = 0;
+                    dunkel = await lies("die Albedo der Krone");
+                } finally {
+                    if (ambEigen) sc.remove(ambEigen);
+                    amb.color.copy(ambFarbe);
+                    for (const [l, i] of lichter) l.intensity = i;
+                    sc.environment = envA;
+                }
+                const karte = new T.Mesh(
+                    new T.PlaneGeometry(breit * 2, breit * 2),
+                    new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+                );
+                karte.rotation.x = -Math.PI / 2;
+                karte.position.set(mitte.x, kopf + 0.05, mitte.z);
+                karte.updateMatrixWorld(true);
+                let kb;
+                try {
+                    sc.add(karte);
+                    for (const m of laub) m.visible = false;
+                    bundles();
+                    kb = await lies("die 18-%-Karte über der Krone");
+                } finally {
+                    sc.remove(karte);
+                    karte.geometry.dispose();
+                    karte.material.dispose();
+                    for (const m of laub) m.visible = true;
+                    bundles();
+                }
+                let sl = 0,
+                    sa = 0,
+                    n = 0,
+                    sk = 0,
+                    nk = 0;
+                for (let i = 0; i < W * H; i++) {
+                    if (kb.Yp[i] >= 0) {
+                        sk += kb.Yp[i];
+                        nk++;
+                    }
+                    if (krone.Yp[i] >= 0 && hell.Yp[i] >= 0 && dunkel.Yp[i] >= 0) {
+                        sl += krone.Yp[i];
+                        sa += hell.Yp[i] - dunkel.Yp[i];
+                        n++;
+                    }
+                }
+                const LL = window.__phytoCore && window.__phytoCore.LAUB_LICHT;
+                const sd = dl.position.clone().sub(dl.target.position).normalize();
+                out.oben = {
+                    pixel: n,
+                    L: n ? +(sl / n).toFixed(5) : null,
+                    Lk: nk ? +(sk / nk).toFixed(5) : null,
+                    A: n ? +(sa / n).toFixed(4) : null,
+                    R: n && nk && sk > 0 ? +((0.18 * (sl / n)) / (sk / nk)).toFixed(4) : null,
+                    tau: LL ? [LL.tauNadel, LL.tauLaub] : null,
+                    sonneGrad: +((Math.asin(Math.max(-1, Math.min(1, sd.y))) * 180) / Math.PI).toFixed(1),
+                    // die Stufe des Exemplars (die Täter-Klasse seiner Laub-Senke) — der Täter beim Namen
+                    stufe: r._taeterKlasse(ziel.o),
+                    png: krone.png,
+                };
+                out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
+                return out;
+            }
             // Gezählt wird jedes Pixel, das BEIDE Lagen zeichnen (die Stufen-Blende der Nachbarn wechselt ihr Dither je Bild).
             const paar = (g, a) => {
                 let sg = 0,
@@ -1337,9 +1656,75 @@ function laubLichtUrteil(messung, band) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
+// DIE KRONE VON OBEN (K68-N3): die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
+// Albedo A und dem Durchlass tau (phyto-core LAUB_LICHT: T = tau · R) streut ω = A · (1 + tau); eine dichte, isotrop streuende
+// Blattschicht wirft davon R∞ = (1 − √(1−ω)) / (1 + √(1−ω)) zurück (Zwei-Strom / Kubelka–Munk: Meador & Weaver 1980, J. Atmos.
+// Sci. 37:630; Sellers 1985, Int. J. Remote Sens. 6:1335 — die Natur: Nadelwald sichtbar 0,03–0,05, Laubwald 0,04–0,06, wo
+// das Blatt R(550) ≈ 0,13 trägt). Das Band reicht vom Nadel- bis zum Laub-Durchlass (`tau` [Nadel, Laub]) über der GEMESSENEN
+// Albedo derselben Pixel — eine Krone als EINE besonnte Schale läge bei A · cos θ, um das Zwei- bis Dreifache darüber.
+function kronenReflexionSoll(A, tau) {
+    const km = (w) => {
+        const s = Math.sqrt(Math.max(0, 1 - Math.min(1, w)));
+        return (1 - s) / (1 + s);
+    };
+    return [+km(A * (1 + tau[0])).toFixed(4), +km(A * (1 + tau[1])).toFixed(4)];
+}
+function kronenObenUrteil(messung) {
+    const befunde = [];
+    const zeilen = [];
+    for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
+        const o = w && w.oben;
+        if (!o || !(o.R > 0) || !(o.A > 0) || !Array.isArray(o.tau)) {
+            befunde.push(
+                `KRONE-OBEN ${art}: keine Messung (${(w && w.fehler) || "kein Kronen-Pixel, keine Karte oder kein tau"})`
+            );
+            continue;
+        }
+        const band = kronenReflexionSoll(o.A, o.tau);
+        zeilen.push({ art, R: o.R, A: o.A, band, pixel: o.pixel, sonneGrad: o.sonneGrad });
+        if (o.R > band[1] || o.R < band[0])
+            befunde.push(
+                `KRONE-OBEN ${art}: Reflexion ${o.R} außerhalb [${band.join(", ")}] (Blatt-Albedo ${o.A}, ${o.pixel} px, Stoffe ${w.stoffe}) — ${o.R > band[1] ? "die Krone lichtet als besonnte Schale" : "die Krone schluckt mehr als ihr Blatt"}`
+            );
+    }
+    if (!zeilen.length && !befunde.length) befunde.push("KRONE-OBEN: keine Art gemessen");
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
+}
+
+// DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang
+// (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve)` ist das k·L, das die 18-%-Karte
+// auf Mittelgrau + 1 EV legt: kurve(k·L / 2) = 0,18. Eine Kurve ohne Zeile hat keine Eichung (null) — die Linse nennt sie.
+const TONKURVE_GRAU = {
+    ACESFilmicToneMapping: (v) => {
+        const x = v / 0.6;
+        return Math.min(1, (x * (x + 0.0245786) - 0.000090537) / (x * (0.983729 * x + 0.432951) + 0.238081));
+    },
+    NeutralToneMapping: (v) => {
+        const c = v - (v < 0.08 ? v - 6.25 * v * v : 0.04);
+        return c < 0.76 ? c : 1 - (0.24 * 0.24) / (c + 0.24 - 0.76);
+    },
+};
+function kartenEichung(kurve) {
+    const f = TONKURVE_GRAU[kurve];
+    if (!f) return null;
+    let lo = 0;
+    let hi = 4;
+    for (let i = 0; i < 60; i++) {
+        const m = (lo + hi) / 2;
+        if (f(m) < 0.18) lo = m;
+        else hi = m;
+    }
+    return 2 * lo;
+}
+
 module.exports = {
+    TONKURVE_GRAU,
+    kartenEichung,
     laubLichtUrteil,
+    kronenObenUrteil,
+    kronenReflexionSoll,
     LINSEN_INSTALL:
+        `window.__linseRuhe = ${linseRuhe.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +

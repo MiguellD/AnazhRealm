@@ -1123,6 +1123,65 @@ class AnazhRealm_Z16 {
                     },
                 ],
             },
+            // DIE LATERNE (K10 × K11) — der Welt-Körper der laternen-Schicht aus fachwerk exportSettlement, gehoben über den
+            // EINEN Chokepoint `_spawnSettlementErlebnis` → `spawnArchitecture`. Die GESTALT baut das Gesetzbuch (fachwerk
+            // AUSSTATTUNG `laterne`: Eisenmast, Glas-Kopf, Haube), ihr Licht ist das Datum ihres Rezepts (fx.licht =
+            // LICHT_GESETZ.laterne, `_lichtDatumDerGestalt`) — der Leib und das Licht EINER Quelle. Die Parts sind ihre
+            // unsichtbare Substanz in ihren Maßen (Fuß Ø 0,24 m bis 0,55 m, Mast bis 3,4 m): eisen dicht → solide.
+            laterne_dorf: {
+                name: "laterne_dorf",
+                label: "Laterne",
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "laterne",
+                parts: [
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 0, y: 0.275, z: 0 },
+                        size: { x: 0.24, y: 0.55, z: 0.24 },
+                        segments: 8,
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 0, y: 1.975, z: 0 },
+                        size: { x: 0.09, y: 2.85, z: 0.09 },
+                        segments: 8,
+                    },
+                ],
+            },
+            // DIE WANDLATERNE (K66-2) — derselbe Kopf am Arm vor der Hauswand (fachwerk AUSSTATTUNG `wandlaterne`, ihr Licht
+            // LICHT_GESETZ.wandlaterne): die Leuchte der dichten Gasse und der Tür von Gasthaus und Schmiede, gehoben über
+            // denselben Chokepoint `_spawnSettlementErlebnis`. Der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand
+            // (armM 0,4 m); die Parts sind ihre Substanz über dem Kopf des Spielers: Kopf, Arm, Wandplatte.
+            wandlaterne_dorf: {
+                name: "wandlaterne_dorf",
+                label: "Wandlaterne",
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "wandlaterne",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 2.8, z: 0 },
+                        size: { x: 0.22, y: 0.34, z: 0.22 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0.2, y: 3.2, z: 0 },
+                        size: { x: 0.4, y: 0.035, z: 0.035 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0.385, y: 3.09, z: 0 },
+                        size: { x: 0.03, y: 0.34, z: 0.14 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },

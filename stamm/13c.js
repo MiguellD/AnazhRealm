@@ -221,25 +221,15 @@ class AnazhRealm_Z13c {
         const f = this._ensureAssetFoundry(); // der Chokepoint prüft das Regime selbst (N7.4-Muster)
         if (!f) return null;
         if (!f.ready || !f.recipes) {
-            // Worker bootet / Buch kalt: EIN Warte-Poll (Guard f._heldWaiting, das
-            // _workshopWaiting-Muster) baut die Hand GENAU EINMAL neu, sobald das Buch
-            // steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
-            if (!f._heldWaiting) {
-                f._heldWaiting = true;
-                const t0 = performance.now();
-                const poll = () => {
-                    if (f.ready && f.recipes) {
-                        f._heldWaiting = false;
-                        try {
-                            this._refreshHeldMesh();
-                        } catch (_e) {
-                            this._stoffBruch("die Hand (Neubau nach dem Buch)", _e);
-                        }
-                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
-                    else f._heldWaiting = false;
-                };
-                setTimeout(poll, 150);
-            }
+            // Worker bootet / Buch kalt: die Hand hängt sich an die EINE Buch-Zusage und baut GENAU EINMAL neu, sobald das
+            // Buch steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
+            this._foundryWecker(f.buchDa, "hand", () => {
+                try {
+                    this._refreshHeldMesh();
+                } catch (_e) {
+                    this._stoffBruch("die Hand (Neubau nach dem Buch)", _e);
+                }
+            });
             return preset ? "pending" : null;
         }
         if (!preset) return null;
@@ -254,41 +244,16 @@ class AnazhRealm_Z13c {
         const key = this._foundryKoerperKey(preset, variant, 0, heldOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, heldOv || undefined, 0).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
-                        try {
-                            this._refreshHeldMesh(); // Ankunft → die Hand einmal neu (Cache-Treffer, kein Loop)
-                        } catch (_e) {
-                            this._stoffBruch("die Hand (Neubau nach der Lieferung)", _e);
-                        }
-                    } else {
-                        f.requested.delete(key); // Timeout: nicht dauerhaft doomen — der nächste Equip fragt neu
-                    }
-                });
-            } else if (!f._heldCacheWait) {
-                // Schlüssel schon UNTERWEGS (die requested-Wache dedupt global, der fremde Callback kennt die Hand
-                // nicht): ein begrenzter Poll (EIN Guard, 45 s = Worker-Timeout) baut die Hand GENAU EINMAL neu,
-                // sobald der Cache trägt; starb die fremde Anfrage, fragt der Neubau selbst frisch an.
-                f._heldCacheWait = key;
-                const tw0 = performance.now();
-                const cachePoll = () => {
-                    const arrived = f.cache && f.cache.has(key);
-                    if (arrived || !f.requested.has(key)) {
-                        f._heldCacheWait = null;
-                        try {
-                            this._refreshHeldMesh();
-                        } catch (_e) {
-                            this._stoffBruch("die Hand (Neubau nach dem Cache)", _e);
-                        }
-                    } else if (performance.now() - tw0 < 45000) setTimeout(cachePoll, 150);
-                    else f._heldCacheWait = null;
-                };
-                setTimeout(cachePoll, 150);
-            }
+            // Der EINE Zug des Schlüssels (zog ihn schon die Werkstatt oder die Welt, hängt sich die Hand an): bei Ankunft
+            // die Hand GENAU EINMAL neu (Cache-Treffer, kein Loop); nach Ablauf fragt der nächste Equip neu.
+            this._foundryWecker(this._foundryZug(key, preset, variant, 0, heldOv, 0), "hand", (ok) => {
+                if (!ok) return;
+                try {
+                    this._refreshHeldMesh();
+                } catch (_e) {
+                    this._stoffBruch("die Hand (Neubau nach der Lieferung)", _e);
+                }
+            });
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return null;
@@ -1531,7 +1496,7 @@ class AnazhRealm_Z13c {
         canvas.height = h;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
         } catch (err) {
             this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;

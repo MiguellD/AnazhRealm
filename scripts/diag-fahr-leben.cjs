@@ -132,9 +132,9 @@ function fnBody(src, sigRe) {
 }
 function taktWand(src) {
     const nc = ohneKommentare(src);
-    const sim = fnBody(nc, /\n {4}_stepFixedSim\(simTime, dt\) \{/);
-    const frame = fnBody(nc, /\n {4}_tickMountedMovement\(_?dt\) \{/);
-    const ritt = fnBody(nc, /\n {4}_rittSchritt\(dt\) \{/);
+    const sim = fnBody(nc, /\n {4}_stepFixedSim\([^)]*\) \{/);
+    const frame = fnBody(nc, /\n {4}_tickMountedMovement\([^)]*\) \{/);
+    const ritt = fnBody(nc, /\n {4}_rittSchritt\([^)]*\) \{/);
     const flag = (nc.match(/_rideSteer(?!Yaw)\b/g) || []).length;
     return [
         [
@@ -155,7 +155,7 @@ function fahrWand(stamm, garage, kern) {
     const st = ohneKommentare(stamm);
     const ga = ohneKommentare(garage);
     const ke = ohneKommentare(kern);
-    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{/) || "";
+    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\([^)]*\) \{/) || "";
     const upd = fnBody(ga, /\nfunction updateVehicle\(dt,t\)\{/) || "";
     const kopieStamm = (st.match(/\bFlatF\b/g) || []).length;
     const kopieLab = (ga.match(/\bFlatF\b/g) || []).length;
@@ -242,7 +242,7 @@ function pflichtWand(stamm) {
 function huelleWand(stamm) {
     const st = ohneKommentare(stamm);
     const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
-    const kapsel = fnBody(st, /\n {4}_stepCharacter\(delta, currentTime\) \{/) || "";
+    const kapsel = fnBody(st, /\n {4}_stepCharacter\([^)]*\) \{/) || "";
     const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
     const tierHuelle = fnBody(st, /\n {4}_kreaturHuellenKontakt\([^)]*\) \{/) || "";
     const ruftK = /this\._wandGleiten\(/.test(kapsel);
@@ -717,6 +717,10 @@ function stationVerdict(s) {
                 out.push(`leib-wand ${k}: der gestoßene Bär geht ${m.durch}/${m.n} Mal durch die 0,35-m-Wand`);
         }
     if (!s.lockstep) out.push("lockstep keine Probe");
+    else if (s.lockstep.ruhe !== true)
+        out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
+    else if (s.lockstep.gleicherStart !== true)
+        out.push(`lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`);
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
             `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
@@ -777,6 +781,7 @@ async function probeLeben(expected) {
             if (l > -6 && l < w.len && Math.abs(dx * w.uz - dz * w.ux) < w.quer) {
                 r.removeArchitecture(e);
                 w.n++;
+                (w.typen || (w.typen = [])).push(e.type + "@" + l.toFixed(1));
             }
         }
     };
@@ -907,6 +912,28 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
+    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht — der Ring der Chunks
+    // ändert sich 80 Frames lang nicht, kein Bau wartet (höchstens 3000 Frames). Die Orte der Stationen kommen aus der Welt und
+    // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
+    // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
+    const ankommen = async (x, zz) => {
+        st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        let stabil = 0;
+        let zuletzt = -1;
+        for (let i = 0; i < 3000; i++) {
+            frame(i);
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n === zuletzt) stabil++;
+            else {
+                stabil = 0;
+                zuletzt = n;
+            }
+            if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
+            if (i % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+        }
+    };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
         st.playerMesh.position.set(x, hh(x, zz) + 1.2, zz);
@@ -1023,26 +1050,20 @@ async function probeLeben(expected) {
             };
         }
         if (gt) weg(gt);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°).
-        let hang = null;
-        for (let dx = -48; dx <= 48 && !hang; dx += 6)
-            for (let dz = -48; dz <= 48 && !hang; dz += 6) {
-                const x = mo[0] + dx;
-                const zz = mo[1] + dz;
-                const gx = (hh(x + 3, zz) - hh(x - 3, zz)) / 6;
-                const gz = (hh(x, zz + 3) - hh(x, zz - 3)) / 6;
-                const g = Math.hypot(gx, gz);
-                if (!(g >= 0.2 && g <= 0.45) || nass(x, zz)) continue;
-                // gleichmäßig: dieselbe Steigung 6 m bergab
-                const ux = gx / g;
-                const uz = gz / g;
-                const g2 = Math.hypot(
-                    (hh(x - ux * 6 + 3, zz - uz * 6) - hh(x - ux * 6 - 3, zz - uz * 6)) / 6,
-                    (hh(x - ux * 6, zz - uz * 6 + 3) - hh(x - ux * 6, zz - uz * 6 - 3)) / 6
-                );
-                if (!(g2 >= 0.15)) continue;
-                hang = { x, z: zz, g, fahrt: Math.atan2(ux, uz) };
-            }
+        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
+        // Welt (welt-orte `hang`, K55-2 — bis dahin ±48 m um die Mess-Wiese, die flache Aue trug keinen): das Gefälle über ±3 m
+        // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
+        const grad = (t) => (Math.atan(t) * 180) / Math.PI;
+        const hangOrt = window.__weltOrt("hang", {
+            min: grad(0.2),
+            max: grad(0.45),
+            basis: 3,
+            bergab: [6, grad(0.15)],
+            rMax: 800,
+        });
+        const hang = hangOrt
+            ? { x: hangOrt.x, z: hangOrt.z, g: Math.tan((hangOrt.neigung * Math.PI) / 180), fahrt: hangOrt.gier }
+            : null;
         res.hang = hang;
         if (hang) {
             const gh = await setzen("fahrzeug_gt", hang.x, hang.z, hang.fahrt);
@@ -1277,39 +1298,15 @@ async function probeLeben(expected) {
             S.labor = { schritte: spur.length, maxM, bei, maxY, kontakte, weg: Math.hypot(q.x - z0.x, q.z - z0.z) };
         }
         if (g1) weg(g1);
-        // S2 KLIPPE: Anlauf 24 m trocken und flach (≤ 15 %), dann fällt der Grund 3–14 m (der Befund fand 8,5 m) — und zwar an
-        // einer KANTE: die schärfste im Fenster ± 160 m um den Messort (der größte Fall in den ersten 3 m, mindestens 1,5 m),
-        // nie die erste. Die billigen Proben (Kante, Fall) zuerst, der Anlauf danach. Die Station bleibt an der Wiese: eine Reise
-        // zum Schicht-Ort vor L8 streamt die Welt neu (L1, L2 und L8 fielen, Lauf 13.10.).
-        let kl = null;
-        let klKante = 1.5;
-        const kanteSuche = (cx, cz, R) => {
-            for (let dx = -R; dx <= R; dx += 8)
-                for (let dz = -R; dz <= R; dz += 8)
-                    for (let k = 0; k < 8; k++) {
-                        const x = cx + dx;
-                        const zz = cz + dz;
-                        const ux = Math.sin((k * Math.PI) / 4);
-                        const uz = Math.cos((k * Math.PI) / 4);
-                        const h0 = hh(x, zz);
-                        if (!Number.isFinite(h0)) continue;
-                        const kante = h0 - hh(x + ux * 3, zz + uz * 3);
-                        if (!(kante > klKante)) continue;
-                        const fall = h0 - hh(x + ux * 6, zz + uz * 6);
-                        if (!(fall >= 3 && fall <= 14) || nass(x + ux * 6, zz + uz * 6)) continue;
-                        let gut = true;
-                        for (let s = 2; s <= 24 && gut; s += 2) {
-                            const a = hh(x - ux * s, zz - uz * s);
-                            const b = hh(x - ux * (s - 2), zz - uz * (s - 2));
-                            if (!Number.isFinite(a) || Math.abs(a - b) > 0.3 || nass(x - ux * s, zz - uz * s))
-                                gut = false;
-                        }
-                        if (!gut) continue;
-                        klKante = kante;
-                        kl = { x, z: zz, fall, kante, fahrt: Math.atan2(ux, uz), sx: x - ux * 24, sz: zz - uz * 24 };
-                    }
-        };
-        kanteSuche(mo[0], mo[1], 160);
+        // S2 KLIPPE: Anlauf 24 m trocken und eben (≤ 0,3 m je 2 m), dann fällt der Grund binnen 6 m um 3–14 m (der Befund fand
+        // 8,5 m) — an einer KANTE: binnen 3 m mehr als 3 m, binnen 6 m 6–14 m Fall (an einer Kante von 2,15 m auf 3 m flog der
+        // Wagen in S4 nie, an 3,13 m mit 3–4 m Fall zwei Takte 0,05 m hoch). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
+        // dahin die schärfste Kante ± 160 m um die Mess-Wiese; die flache Aue trug keine): die nächste Stelle um die Mitte der
+        // Welt, dort die schärfste der 8 Richtungen.
+        const kOrt = window.__weltOrt("kante", { kanteMin: 3, fall: [6, 14], schritt: 4, rMax: 1600 });
+        const kl = kOrt
+            ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
+            : null;
         S.klippeOrt = kl;
         // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
         // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
@@ -1342,11 +1339,30 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
+        // DER FAHRER DER LINIE (K55-5): W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
+        // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
+        // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
+        // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
+        let gierVor = null;
+        const halteLinie = (g, k) => {
+            for (const t of ["w", "a", "s", "d", "shift", " "]) st.keys[t] = false;
+            st.keys.w = true;
+            const gier = Number.isFinite(g._rideYaw) ? g._rideYaw : k.fahrt;
+            const q = (g.position.x - k.sx) * Math.cos(k.fahrt) - (g.position.z - k.sz) * Math.sin(k.fahrt);
+            const ziel = k.fahrt - Math.max(-0.6, Math.min(0.6, 0.35 * q));
+            const dreh = gierVor === null ? 0 : gier - gierVor;
+            gierVor = gier;
+            let e = ziel - gier - 3 * dreh;
+            e = Math.atan2(Math.sin(e), Math.cos(e));
+            if (e > 0.02) st.keys.a = true;
+            else if (e < -0.02) st.keys.d = true;
+        };
         if (kl) {
             bahnWache = klippenBahn(kl);
             const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g2) {
                 tasten(true, false);
+                gierVor = null;
                 let yv = g2.position.y;
                 let sprung = 0;
                 let luft = 0;
@@ -1359,7 +1375,10 @@ async function probeLeben(expected) {
                     schritte++;
                     if (g2._fahr && g2._fahr.luft) luft++;
                 };
-                for (let i = 0; i < 420; i++) frame(i);
+                for (let i = 0; i < 420; i++) {
+                    halteLinie(g2, kl);
+                    frame(i);
+                }
                 tasten(false);
                 for (let i = 0; i < 60; i++) frame(i);
                 r._stepFixedSim = P2;
@@ -1387,7 +1406,9 @@ async function probeLeben(expected) {
                 let hoeheMax = -Infinity;
                 let luftN = 0;
                 let gefahren = 0;
+                gierVor = null;
                 for (let i = 0; i < 420; i++) {
+                    halteLinie(g4, kl);
                     frame(i);
                     gefahren++;
                     hoehe = g4.position.y - 0.5 - hh(g4.position.x, g4.position.z);
@@ -1397,7 +1418,14 @@ async function probeLeben(expected) {
                     }
                     if (g4._fahr && g4._fahr.luft && hoehe >= expected.flugM) break;
                 }
-                const diag4 = `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m`;
+                const weg4 =
+                    (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
+                const diag4 =
+                    `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m` +
+                    ` · ${weg4.toFixed(1)} m längs der Bahn, ` +
+                    `${((g4.position.x - kl.sx) * Math.cos(kl.fahrt) - (g4.position.z - kl.sz) * Math.sin(kl.fahrt)).toFixed(2)} m quer, in ${gefahren} Frames (Kante bei ` +
+                    `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
+                    (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
                 const imFlug = !!(g4._fahr && g4._fahr.luft);
                 r.dismountArchitecture();
@@ -1430,53 +1458,12 @@ async function probeLeben(expected) {
             }
             bahnWache = null;
         }
-        // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W.
-        let qh = null;
-        for (let dx = -160; dx <= 160 && !qh; dx += 4)
-            for (let dz = -160; dz <= 160 && !qh; dz += 4) {
-                const x = mo[0] + dx;
-                const zz = mo[1] + dz;
-                const grad = (a, b) => [(hh(a + 1, b) - hh(a - 1, b)) / 2, (hh(a, b + 1) - hh(a, b - 1)) / 2];
-                const [gx, gz] = grad(x, zz);
-                const g = Math.hypot(gx, gz);
-                if (!(g >= Math.tan(0.44) && g <= Math.tan(0.7)) || nass(x, zz)) continue;
-                const cx = -gz / g;
-                const cz = gx / g;
-                let gut = true;
-                for (let s = -8; s <= 8 && gut; s += 2) {
-                    const [ax, az] = grad(x + cx * s, zz + cz * s);
-                    const ag = Math.hypot(ax, az);
-                    if (
-                        !(ag >= 0.3) ||
-                        (ax * gx + az * gz) / (ag * g) < Math.cos(0.35) ||
-                        nass(x + cx * s, zz + cz * s)
-                    )
-                        gut = false;
-                }
-                if (!gut) continue;
-                // Die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H): seit die Stamm-Hülle eines Studio-Baums
-                // im Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen — in der CI nach 3,2 m.
-                const sx0 = x - cx * 8;
-                const sz0 = zz - cz * 8;
-                let blockiert = false;
-                for (const e of st.architectures) {
-                    if (blockiert) break;
-                    if (!e || !e.position || !e.blockerAABBs) continue;
-                    if (Math.hypot(e.position.x - x, e.position.z - zz) > 40) continue;
-                    for (const b of e.blockerAABBs) {
-                        const bx = (b.minX + b.maxX) / 2 - sx0;
-                        const bz = (b.minZ + b.maxZ) / 2 - sz0;
-                        const l = bx * cx + bz * cz;
-                        const q = Math.abs(bx * cz - bz * cx);
-                        if (l > -4 && l < 22 && q < 3 + Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2) {
-                            blockiert = true;
-                            break;
-                        }
-                    }
-                }
-                if (blockiert) continue;
-                qh = { x: x - cx * 8, z: zz - cz * 8, grad: (Math.atan(g) * 180) / Math.PI, fahrt: Math.atan2(cx, cz) };
-            }
+        // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
+        // kommt aus der Welt (welt-orte `querhang`, K55-2 — bis dahin ± 160 m um die Mess-Wiese, die flache Aue trug keinen):
+        // die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H) — seit die Stamm-Hülle eines Studio-Baums im
+        // Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
+        const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
+        const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
         if (qh) {
             bahnWache = { sx: qh.x, sz: qh.z, ux: Math.sin(qh.fahrt), uz: Math.cos(qh.fahrt), len: 24, quer: 4, n: 0 };
@@ -1984,8 +1971,7 @@ async function probeLeben(expected) {
         // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), nimmt den nächsten Glutbrunnen des Bestands und fährt ihn mit dem
         // Tempo und der Gier der Schau an (Start 5,6 m, Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
         const D = expected.dorf;
-        st.playerMesh.position.set(D.x, hh(D.x, D.z) + 2, D.z);
-        for (let i = 0; i < 240; i++) frame(i);
+        await ankommen(D.x, D.z);
         let G = null;
         for (const e of st.architectures)
             if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
@@ -2237,6 +2223,7 @@ async function probeLeben(expected) {
         // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
         if (gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(gasse.x, gasse.z);
             const ux = Math.sin(gasse.fahrt);
             const uz = Math.cos(gasse.fahrt);
             const gt = async (x, zz, rotY) => {
@@ -2253,19 +2240,36 @@ async function probeLeben(expected) {
                 }
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
-            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen
+            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen —
+            // im Rahmen der Box: ein Teil quer zu den Welt-Achsen trägt seine gedrehte Box (`obb` { cx, cz, c, s, hx, hz }, lokal
+            // = (Δx·c − Δz·s, Δx·s + Δz·c)), in der die Kapsel löst; die Welt-AABB ist nur ihr Vorfilter. An der Gasse von K55
+            // (diagonal) las die Welt-AABB den Spieler 1,97 m „im Wagen", wo er an der gedrehten Flanke abprallte.
+            // Gezählt wird nur eine WAND des Lösers (`_resolveCapsuleVsAABB`): die Oberkante der Box über der Stufe des Fußes
+            // (Fuß + PLAYER_STEP_UP), ihre Unterkante unter dem Kopf. Eine Box, die der Fuß als Stufe nimmt, trägt ihn — W gegen
+            // die frische Wand KLETTERT (Parkour): an der Gasse von K55 stieg der Spieler auf den Wagen (Fuß 0,85 m über dem Grund,
+            // über der Unterkörper-Box), und die flache Probe las ihn 0,42 m „im Wagen", während er auf ihm stand.
+            const AK = r.constructor;
             const kapselAbstand = (e) => {
                 const pmP = st.playerMesh.position;
+                const fuss = pmP.y - AK.PLAYER_FOOT_OFFSET;
+                const kopf = pmP.y + AK.PLAYER_FOOT_OFFSET;
                 let d = Infinity;
                 for (const b of e.blockerAABBs) {
-                    const ix = Math.max(b.minX - pmP.x, 0, pmP.x - b.maxX);
-                    const iz = Math.max(b.minZ - pmP.z, 0, pmP.z - b.maxZ);
+                    if (!(b.topY > fuss + AK.PLAYER_STEP_UP && b.botY < kopf)) continue;
+                    const ob = b.obb;
+                    const dx = pmP.x - (ob ? ob.cx : (b.minX + b.maxX) / 2);
+                    const dz = pmP.z - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
+                    const lx = ob ? dx * ob.c - dz * ob.s : dx;
+                    const lz = ob ? dx * ob.s + dz * ob.c : dz;
+                    const hx = ob ? ob.hx : (b.maxX - b.minX) / 2;
+                    const hz = ob ? ob.hz : (b.maxZ - b.minZ) / 2;
+                    const ix = Math.max(Math.abs(lx) - hx, 0);
+                    const iz = Math.max(Math.abs(lz) - hz, 0);
                     const aussen = Math.hypot(ix, iz);
-                    const innen =
-                        aussen > 0 ? 0 : Math.min(pmP.x - b.minX, b.maxX - pmP.x, pmP.z - b.minZ, b.maxZ - pmP.z);
+                    const innen = aussen > 0 ? 0 : Math.min(hx - Math.abs(lx), hz - Math.abs(lz));
                     d = Math.min(d, aussen > 0 ? aussen : -innen);
                 }
-                return d - 0.35;
+                return d - AK.PLAYER_WALL_RADIUS;
             };
             const sw = { a: null, b: null };
             // (a) der GT quer zur Gasse 8 m voraus, der Spieler 3,5 m vor der Gasse, Blick und W längs der Gasse
@@ -2382,6 +2386,7 @@ async function probeLeben(expected) {
         // 60 fps und bei gemischten Frames — sie muss gleich sein (der Stoß des Leibs lebt im festen Schritt).
         if (start && gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(start.x, start.z);
             const A = Object.getPrototypeOf(r).constructor;
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));
@@ -2479,6 +2484,31 @@ async function probeLeben(expected) {
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
+                    // DER GLEICHE START (K70-N1): beide Läufe beginnen am RUHENDEN Wagen. `setzen` schwingt 12 Bilder im
+                    // Muster ein — wie viele Sim-Schritte das sind, hängt am Rest des Akkumulators: im roten Lauf begann der
+                    // 60-fps-Lauf am frisch gesetzten Stand (vy 0), der gemischte einen Schritt später (vy −g·dt) — 1,2 mm
+                    // nach 200 Schritten (CI 38712496194; lokal 1 von 4 Läufen). Gewartet wird auf das Ereignis (der
+                    // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit
+                    // (`start`), die Bilder bis zur Ruhe auch.
+                    let ruhe = 0;
+                    let stand = null;
+                    let bilder = 0;
+                    let unruhe = null; // die Größe, die zuletzt um mehr als 1 nm ging (die Linse nennt sie)
+                    const namen = ["x", "z", "y", "vy", "speed", "yaw", "steig", "wank"];
+                    for (; bilder < 600 && ruhe < 3; bilder++) {
+                        tMs += 1000 / 60;
+                        r._gameLoopTick(tMs);
+                        const fz = gS._fahr;
+                        const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
+                        const d =
+                            jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
+                        ruhe = d <= 1e-9 ? ruhe + 1 : 0;
+                        if (d > 1e-9 && jetzt && stand) {
+                            const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
+                            unruhe = namen[k] + " " + d.toExponential(2);
+                        }
+                        stand = jetzt;
+                    }
                     const kappeL = st.maxCreatures;
                     st.maxCreatures = st.creatures.length + 1;
                     const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
@@ -2532,7 +2562,13 @@ async function probeLeben(expected) {
                     }
                     weg(gS);
                     r.removeCreature(b);
-                    if (lage) lage.spur = spur;
+                    if (lage) {
+                        lage.spur = spur;
+                        lage.start = stand;
+                        lage.ruhe = ruhe >= 3;
+                        lage.bilder = bilder;
+                        lage.unruhe = unruhe;
+                    }
                     return lage;
                 };
                 const l60 = await lockProbe(KADENZ[60]);
@@ -2558,6 +2594,16 @@ async function probeLeben(expected) {
                         ? {
                               abw: +Math.hypot(l60.x - lMix.x, l60.z - lMix.z).toFixed(6),
                               baerAbw: +Math.hypot(l60.bx - lMix.bx, l60.bz - lMix.bz).toFixed(6),
+                              ruhe: l60.ruhe && lMix.ruhe,
+                              ruheBilder: [l60.bilder, lMix.bilder],
+                              unruhe: [l60.unruhe, lMix.unruhe],
+                              startAbw:
+                                  l60.start && lMix.start
+                                      ? Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k])))
+                                      : null,
+                              gleicherStart:
+                                  !!(l60.start && lMix.start) &&
+                                  Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k]))) <= 1e-7,
                               erst,
                           }
                         : null;
@@ -3971,7 +4017,7 @@ function quellenAbgriff() {
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
             leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
-            lockstep: { abw: 0, baerAbw: 0 },
+            lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true },
             reiter: [
                 {
                     typ: "fahrzeug_gt",
@@ -4112,8 +4158,18 @@ function quellenAbgriff() {
             ],
             [
                 "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
-                { lockstep: { abw: 0.06, baerAbw: 0 } },
+                { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
                 "lockstep",
+            ],
+            [
+                "der 60-fps-Lauf beginnt am frisch gesetzten Stand, der gemischte einen Schritt später (K70-N1: 1,2 mm nach 200 Schritten)",
+                { lockstep: { abw: 0.001239, baerAbw: 0, ruhe: true, gleicherStart: false, startAbw: 0.163 } },
+                "lockstep start",
+            ],
+            [
+                "der Wagen kriecht vor der Probe (der Stand kommt nie zur Ruhe)",
+                { lockstep: { abw: 0, baerAbw: 0, ruhe: false, gleicherStart: true, startAbw: 0 } },
+                "lockstep start",
             ],
             [
                 "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus (Gegenprüfung 0710-4 Klasse 4)",
@@ -4174,7 +4230,7 @@ function quellenAbgriff() {
             ],
             [
                 "der Bär steht je nach Bildrate anders, der Wagen gleich (Gegenprüfung 0710-5: 1,39 m)",
-                { lockstep: { abw: 0, baerAbw: 1.39 } },
+                { lockstep: { abw: 0, baerAbw: 1.39, ruhe: true, gleicherStart: true } },
                 "lockstep",
             ],
             [
@@ -4334,7 +4390,7 @@ function quellenAbgriff() {
         const vorStand = quelle
             .replace("        this._rittSchritt(dt);\n", "")
             .replace(
-                /(\n {4}_tickMountedMovement\(_?dt\) \{)/,
+                /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
                 "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"
             );
         const rot = taktWand(vorStand);
@@ -4353,7 +4409,7 @@ function quellenAbgriff() {
                 .join(" | ")
         );
         const kRot = fahrWand(
-            quelle.replace(/(\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{)/, "$1\n        let FlatF = 0;"),
+            quelle.replace(/(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
             garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;"),
             kern.replace("fahrSchritt: fahrSchritt", "")
         );
@@ -4421,10 +4477,10 @@ function quellenAbgriff() {
         const pRot = pflichtWand(
             quelle
                 .replace(
-                    /(\n {4}_fahrSatz\(entry, prof\) \{)/,
+                    /(\n {4}_fahrSatz\([^)]*\) \{)/,
                     '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'
                 )
-                .replace(/(\n {4}_fahrHuelle\(entry\) \{)/, "$1\n        const radR = 0.34;")
+                .replace(/(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;")
         );
         check(
             "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",
@@ -4646,7 +4702,11 @@ function quellenAbgriff() {
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 300000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
+    const browser = await starteBrowser({
+        art: "linse",
+        frist: 300000,
+        zusatz: ["--autoplay-policy=no-user-gesture-required"],
+    });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -4895,7 +4955,7 @@ function quellenAbgriff() {
         !hat("kern") && !hat("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
-                ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
                 : "keine Probe")
     );
     const reiterZeile = (q) =>

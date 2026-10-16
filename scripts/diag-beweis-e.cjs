@@ -19,6 +19,7 @@
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -137,7 +138,7 @@ const SCHUSS_FN = async (kam) => {
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
     r._schattenAlleNeu();
-    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, ACES + sRGB)
+    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, Tonkurve + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
     const auf = await window.__ausgabeAufnahme(640, 360, 1);
     const renderMs = auf.ms;
@@ -214,6 +215,7 @@ const SCHUSS_FN = async (kam) => {
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
@@ -298,14 +300,13 @@ const SCHUSS_FN = async (kam) => {
         `Boot OK · V${boot.version} · ${boot.renderer} (WebGPU-Backend=${boot.backendWebGPU}) · Chunks=${boot.chunks} · Foundry=${boot.foundryBereit}`
     );
 
-    // ── 1b: auf die Mess-Wiese −900/−850 (flach + grün, PFLICHT D). Befund 30.09.: am Spawn
+    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D). Befund 30.09.: am Spawn
     // stand die Kamera unter der Start-Plattform bzw. im Hang (Bühnen-Spanne bis 13 m) —
     // alle Klassen stehen darum auf der Wiese, wo Bühne und Kamera wirklich eben sind.
     const wieseStart = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
-        const X = -900,
-            Z = -850;
+        const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         const dl = performance.now() + 240000;
         let stable = 0,
@@ -653,7 +654,7 @@ const SCHUSS_FN = async (kam) => {
                 const zensus =
                     `Bühne ${r.state._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0} (Platte ${z.vonPlatte || 0})` +
                     ` · gescheitert ${z.gescheitert || 0} · wartend ${z.wartend || 0} · hängend ${z.haengendeBakes || 0}` +
-                    ` · Queue ${(r._impostorBakeQueue || []).length}${r._impostorBakePending ? " (Bake in Flug)" : ""}` +
+                    ` · Queue ${(r._impostorBakeQueue || []).length}${r._impostorBakeFlug && r._impostorBakeFlug.size ? ` (${r._impostorBakeFlug.size} Bakes im Flug)` : ""}` +
                     (z.gescheitertArten && z.gescheitertArten.length
                         ? ` · Fehler: ${z.gescheitertArten.join(", ").slice(0, 80)}`
                         : "");

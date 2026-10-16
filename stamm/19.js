@@ -138,12 +138,12 @@ class AnazhRealm_Z19 {
 
     // WELLE J4-Regler — die Kanten-Schärfe (Post-FX local-contrast/Unsharp).
     // Verstärkt Helligkeits-Kanten (schärft Cel-/Facetten-Grenzen NACH, screen-
-    // space → flackert) — der zweite Verdacht. 0 = aus, 0.5 = Default (V17.13).
+    // space → flackert) — der zweite Verdacht. 0 = aus und Default (F1, die Foto-Kette).
     setEdgeSharp(amount) {
         const v = Math.max(0, Math.min(1, Number(amount)));
-        const m = Number.isFinite(v) ? v : 0.5;
+        const m = Number.isFinite(v) ? v : 0;
         if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.edgeSharp = m;
+        this.state.atmosphere.kantenSchaerfe = m;
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
             this.state.postProcessingUniforms.localContrast.value = m;
         if (typeof this.saveState === "function") this.saveState();

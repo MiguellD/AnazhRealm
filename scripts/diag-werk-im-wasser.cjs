@@ -19,7 +19,8 @@
 //       seinem Stempel; ein anderes Werk hält dort das Wasser über dem Boden im Umkreis von 18 m fest (1-m-Gitter, Bild UND
 //       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
-//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m.                                              Soll 0 im Wasser
+//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
+//       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
 //   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
 //       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
 //       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
@@ -115,7 +116,10 @@ function urteil(b) {
     const H = b.hain;
     if (!H || H.fehler) v.push(`H: ${H ? H.fehler : "die Hain-Probe lief nicht"}`);
     else {
-        if (!(H.satz >= S.hainMin)) v.push(`H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen`);
+        if (!(H.satz >= S.hainMin))
+            v.push(
+                `H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen${H.chat ? ` — „${H.chat}"` : ""}${H.bauten && H.bauten.length ? ` — Bauten am Ufer: ${H.bauten.join(", ")}` : ""}${b.uferWahl ? ` — Ufer-Wahl ${JSON.stringify(b.uferWahl)}` : ""}`
+            );
         for (const s of H.staemme || [])
             if (s.tiefe > S.tiefeStamm)
                 v.push(
@@ -147,6 +151,10 @@ function urteil(b) {
         if (!(Z.haeuser >= S.haeuserMin)) v.push(`Z LEER: nur ${Z.haeuser} Häuser im Zensus (Soll ≥ ${S.haeuserMin})`);
         for (const w of Z.ohneHuelle || [])
             v.push(`Z LEER: ${w.typ} #${w.id} (${w.quelle}) stand ohne Hülle — sein Fundament blieb ungemessen`);
+        for (const w of Z.ohneWand || [])
+            v.push(
+                `Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) hängt an keiner Wand — kein stehendes Haus trägt es (${w.quelle})`
+            );
         for (const w of Z.imWasser || [])
             v.push(
                 `Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) ${w.wo} ${m(w.tiefe)} m im Wasser${w.punkte ? ` (${w.punkte})` : ""} (${w.quelle})`
@@ -271,7 +279,13 @@ function urteil(b) {
             v.push(
                 `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"}; Nexus-Deckel ${RD.deckel ? `${RD.deckel.max}, autonome Bauten ${RD.deckel.autosVor} → ${RD.deckel.autosNach}` : "ungemessen"})`
             );
-        if (RD.invalidierungen > 0)
+        // ohne Wasser in der Reichweite seines Erdbaus prüft R nichts: kein Stempel des Dorfs kann dort Wasser verdrängen
+        else if (!(RD.nassImErdbau > 0))
+            v.push(
+                `R LEER: der Erdbau des Dorfs (${RD.erdbau} Orte) reicht an keine nasse Spalte — das Rand-Haus ${RD.randHaus} steht ${RD.randM} m vom Seeufer, die Ort-Wahl rückte das Dorf ${RD.ortWahlM} m`
+            );
+        // ein Wecken ist ein Befund, wenn keine Wasser-Zelle eines geladenen Chunks sich änderte (`zellenWechsel`)
+        if (RD.invalidierungen > 0 && !(RD.zellenWechsel > 0))
             v.push(
                 `R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — ${RD.invalidierungen} Invalidierungen, ${RD.ca} Chunks wach nach ${RD.takte} Takten (${RD.randHaus})`
             );
@@ -358,12 +372,12 @@ function leserUrteil(srcRoh) {
         zeilen++;
     }
     if (!zeilen) v.push("kein Aufruf von `_waterLevelAt` gefunden (die Probe prüft nichts)");
-    const wald = fnBody(src, /\n {4}_forestCellDarts\(cx, cz, seedInt\) \{/);
+    const wald = fnBody(src, /\n {4}_forestCellDarts\([^)]*\) \{/);
     const waldWasser = wald ? /waterYAt:([\s\S]*?)slopeAt:/.exec(wald) : null;
     if (!waldWasser) v.push("`_forestCellDarts` mit waterYAt nicht gefunden");
     else if (!/_atlasWaterLevelAt\(/.test(waldWasser[1]) || /_waterLevelAt\(/.test(waldWasser[1]))
         v.push("der Wald (`_forestCellDarts` waterYAt) plant nicht gegen das Gesetz des Wassers `_atlasWaterLevelAt`");
-    const wand = fnBody(src, /\n {4}_naturWand\(name, position, opts\) \{/);
+    const wand = fnBody(src, /\n {4}_naturWand\([^)]*\) \{/);
     if (!wand || !/_stammFussLand\(/.test(wand))
         v.push("die Natur-Wand (`_naturWand`) fragt den Fuß des Stamms nicht (`_stammFussLand`)");
     const fuss = fnBody(src, /\n {4}_stammFussLand\([^)]*\) \{/);
@@ -448,7 +462,9 @@ function leserUrteil(srcRoh) {
     // jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, das Haus am Gleithang stand 13,5 m vom Wasser
     const wos = fnBody(src, /\n {4}_werkOrtSuchen\([^)]*\) \{/);
     if (!wos || !/p0\.x \+ Math\.cos\(a\) \* r/.test(wos) || !/Math\.hypot\(q\.x - p0\.x, q\.z - p0\.z\)/.test(wos))
-        v.push("die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)");
+        v.push(
+            "die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)"
+        );
     const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
     if (!slot || !/_fundamentLand\(/.test(slot))
         v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
@@ -642,7 +658,16 @@ async function probe(A) {
     // ── Z: der Setz-Punkt als Beobachtungs-Punkt ──
     // Ein Stamm misst VOR seinem Stempel; jedes andere Werk (kein Fahrzeug) hält am Setz-Punkt das Wasser über dem Boden im
     // Umkreis von `gitterR` m fest (1-m-Gitter, Bild UND Gesetz) und wird gemessen, wenn es steht (`werkeMessen`: seine Hülle).
-    const zensus = { werke: 0, haeuser: 0, baeume: 0, imWasser: [], ohneHuelle: [], quelle: "strom" };
+    const zensus = {
+        werke: 0,
+        haeuser: 0,
+        baeume: 0,
+        imWasser: [],
+        ohneHuelle: [],
+        ohneWand: [],
+        anDerWand: 0,
+        quelle: "strom",
+    };
     const werke = [];
     const R = A.gitterR;
     const gitter = (x0, z0) => {
@@ -700,12 +725,50 @@ async function probe(A) {
     // Jedes festgehaltene Werk, wenn es steht: ein Haus wartet auf die Hülle seines Gesetzbuchs (`_hausHuelle`, die Solids
     // der Stufe 0), jedes andere misst seine Blocker. Gemessen wird jede Box, die den Boden trägt (Unterkante ≤ 0,6 m über
     // der Haus-Basis: das Podest, die Wände des Erdgeschosses, Treppe und Tritt — nie ein Balkon), auf einem Raster ≤ 1 m.
+    // DAS WERK AN DER WAND (K66-2 N1): was hängt — das Rezept seiner Studio-Gestalt nennt den Ort „wand" (fachwerk PRESETS
+    // fx.place.siteTag, die Wandlaterne) —, trägt keinen Boden: sein Fundament ist die Wand eines stehenden Hauses. Gemessen wird,
+    // dass die Hülle eines Hauses (seine Boxen am Boden, wie das Fundament) höchstens `wandM` von der Achse des Werks liegt; das
+    // Haus misst sein Fundament selbst. Ohne Haus hängt es an keiner Wand (ein Haus, das ins Wasser fiel, eine fremde Nummer).
+    // Bis N1 suchte der Zensus an ihm die Box am Boden: „wandlaterne_dorf stand ohne Hülle".
+    const FCw = globalThis.__fachwerkCore;
+    const anDerWand = (e) => {
+        const bp = st.blueprints && st.blueprints[e.type];
+        const p =
+            bp && typeof bp.studioGestalt === "string" && FCw && FCw.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
+        return !!(p && p.fx && p.fx.place && p.fx.place.siteTag === "wand");
+    };
+    const traegerHaus = (e) => {
+        for (const h of st.architectures) {
+            if (!/^haus_/.test(h.type) || !h._hausHuelle) continue;
+            for (const b of h.blockerAABBs || []) {
+                if (!b || !Number.isFinite(b.botY) || b.botY > h.position.y - 0.5 + 0.6) continue;
+                const o = b.obb || {
+                    cx: (b.minX + b.maxX) / 2,
+                    cz: (b.minZ + b.maxZ) / 2,
+                    c: 1,
+                    s: 0,
+                    hx: (b.maxX - b.minX) / 2,
+                    hz: (b.maxZ - b.minZ) / 2,
+                };
+                const dx = e.position.x - o.cx;
+                const dz = e.position.z - o.cz;
+                const lx = Math.abs(dx * o.c - dz * o.s) - o.hx;
+                const lz = Math.abs(dx * o.s + dz * o.c) - o.hz;
+                if (Math.hypot(Math.max(0, lx), Math.max(0, lz)) <= A.wandM) return h;
+            }
+        }
+        return null;
+    };
     const werkeMessen = async () => {
         const dl = performance.now() + A.huelleMs;
         const fertig = (w) =>
             w.done ||
             !st.architectures.includes(w.e) ||
-            (/^haus_/.test(w.e.type) ? !!w.e._hausHuelle : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
+            (anDerWand(w.e)
+                ? !!traegerHaus(w.e)
+                : /^haus_/.test(w.e.type)
+                  ? !!w.e._hausHuelle
+                  : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
         while (performance.now() < dl && !werke.every(fertig)) {
             for (let i = 0; i < 30; i++)
                 try {
@@ -718,6 +781,12 @@ async function probe(A) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
             w.done = true;
+            if (anDerWand(e)) {
+                zensus.anDerWand++;
+                if (!traegerHaus(e))
+                    zensus.ohneWand.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, quelle: w.quelle });
+                continue;
+            }
             const boxen = (e.blockerAABBs || []).filter(
                 (b) => b && Number.isFinite(b.botY) && b.botY <= e.position.y - 0.5 + 0.6
             );
@@ -852,14 +921,41 @@ async function probe(A) {
         }
     };
     try {
-        const X = A.ort[0];
-        const Z = A.ort[1];
         const worker = st.voxelWorker;
         st.voxelWorker = null;
-        await stroemen(X, Z, 240);
+        // DIE WAHL DES UFERS (K55-5): das erste Ufer der Kandidaten (`weltOrte`), an dem nach dem Strömen kein Bau mit
+        // Grundriss binnen 25 m steht — im Grundriss eines Baus wächst nichts (die Natur-Wand); an der Mess-Wiese −278/−1038
+        // trug das erste Ufer drei Glutbrunnen, der Hain setzte 3 von 6 Eichen. Alle besetzt: das letzte, die Probe nennt sie.
+        const bautenAm = (x, z) =>
+            st.architectures.filter(
+                (a) =>
+                    a &&
+                    a.position &&
+                    !r._istNatur(a) &&
+                    r._grundrissVon(a) &&
+                    Math.hypot(a.position.x - x, a.position.z - z) <= 25
+            ).length;
+        const uferListe =
+            A.uferKandidaten && A.uferKandidaten.length ? A.uferKandidaten : [{ ufer: A.ort, eiche: A.eiche }];
+        let X = A.ort[0];
+        let Z = A.ort[1];
+        out.uferWahl = [];
+        for (const c of uferListe) {
+            X = c.ufer[0];
+            Z = c.ufer[1];
+            A.eiche = c.eiche;
+            await stroemen(X, Z, 240);
+            const n = bautenAm(X, Z);
+            out.uferWahl.push({ ufer: [+X.toFixed(1), +Z.toFixed(1)], bauten: n });
+            if (!n) break;
+        }
         // ── H: der Schau-Ablauf ──
         if (soll("hain"))
             try {
+                // die Linse nennt, wer am Ufer steht (`out.hain.bauten`): was am Ufer steht, weiß erst die gestreamte Welt (die
+                // Glutbrunnen des Affinitäts-Felds wachsen mit dem Chunk) — an der Mess-Wiese −278/−1038 standen drei am ersten Ufer
+                const hx = X,
+                    hz = Z;
                 st.yaw = Math.PI / 2;
                 const caVor = st.waterCAActive ? st.waterCAActive.size : 0;
                 zensus.quelle = "Bau-Eiche";
@@ -892,6 +988,20 @@ async function probe(A) {
                     })),
                 };
                 out.hain.satz = neu.length; // die Eichen des Satzes (die Bau-Eiche steht mit in der Flut-Probe)
+                // der Satz des Ergebnisses (`_ergebnisSatz`): die Linse nennt den Grund jeder gefallenen Eiche beim Namen
+                const co = document.getElementById("chat-output");
+                out.hain.chat = co && co.lastElementChild ? co.lastElementChild.textContent : null;
+                // und die Bauten mit Grundriss am Ufer (≤ 25 m): wer die Würfe trug
+                out.hain.bauten = st.architectures
+                    .filter(
+                        (a) =>
+                            a &&
+                            a.position &&
+                            !r._istNatur(a) &&
+                            r._grundrissVon(a) &&
+                            Math.hypot(a.position.x - hx, a.position.z - hz) <= 25
+                    )
+                    .map((a) => `${a.type} #${a.id} (${a.position.x.toFixed(1)}/${a.position.z.toFixed(1)})`);
             } catch (e) {
                 out.hain = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
@@ -1504,9 +1614,9 @@ async function probe(A) {
                 out.setzen = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
         // ── R: das Dorf des Nexus am Seerand — ein Bau, dessen Stempel kein Wasser der Zellen verdrängt, weckt den Automaten
-        //    nicht, das Wasser bleibt, wie es war. Der Spieler steht am Rand des Plans (der Anker bleibt der verlangte Ort, das
-        //    Haus am Seerand entsteht), die Häuser bekommen ihre Hülle, die Chunks am Rand entstehen neu (wie beim
-        //    Wieder-Strömen), dann laufen die Takte. ──
+        //    nicht, das Wasser bleibt, wie es war. Der Wunsch-Anker stellt das Rand-Haus ans Ufer, der Spieler steht am Rand
+        //    des Plans, die Ort-Wahl stellt das Dorf, wohin das Gesetz es trägt (K10-6), die Häuser bekommen ihre Hülle, die
+        //    Chunks am Rand entstehen neu (wie beim Wieder-Strömen), dann laufen die Takte. ──
         if (soll("rand"))
             try {
                 if (!A.rand.ufer || !A.rand.see) throw new Error("kein See mit Ufer in der Welt (Orte aus der Welt)");
@@ -1615,6 +1725,21 @@ async function probe(A) {
                 geladen = new Set();
                 for (const [k, e] of st.voxelChunks) if (e && e.waterCells) geladen.add(k);
                 vor = zaehlen();
+                // DIE ZELLEN SELBST (K10): je geladenem Chunk die Zahl seiner Wasser-Zellen — ändert das Dorf sie (der Erdbau
+                // am Ufer rückt einen Grund unter Wasser in eine andere Zelle), ist das Wecken des Automaten verdient
+                const ZW = r.constructor.CELL_STATE.WATER;
+                const wasserZellen = () => {
+                    const m = new Map();
+                    for (const k of geladen) {
+                        const e = st.voxelChunks.get(k);
+                        if (!e || !e.waterCells) continue;
+                        let n = 0;
+                        for (let q = 0; q < e.waterCells.length; q++) if (e.waterCells[q] === ZW) n++;
+                        m.set(k, n);
+                    }
+                    return m;
+                };
+                const zellenVor = wasserZellen();
                 const inv = { n: 0 };
                 const invAlt = r._invalidateWaterCapsAround;
                 r._invalidateWaterCapsAround = function () {
@@ -1631,6 +1756,7 @@ async function probe(A) {
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
                 const autosVor = autos();
+                const erdbauVor = new Set(Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}));
                 Klasse.MAX_NEXUS_STRUCTURES = Infinity;
                 try {
                     zensus.quelle = "Nexus-Dorf";
@@ -1665,11 +1791,46 @@ async function probe(A) {
                 }
                 const autosNach = autos();
                 const nach = zaehlen();
-                const randHaus = st.architectures.find(
-                    (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
+                const zellenNach = wasserZellen();
+                let zellenWechsel = 0;
+                for (const [k, n] of zellenVor) if (zellenNach.has(k) && zellenNach.get(k) !== n) zellenWechsel++;
+                // DAS RAND-HAUS IST, WO DAS GESETZ ES STELLT (K10-6): die Ort-Wahl (`_ortWahl`) hält jedes Haus samt Saum aus dem
+                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `_ortTraegt`) und rückt das Dorf vom Wunsch
+                // am Ufer Ring um Ring landein (am Seerand 1807,8/−6152 vier Ringe, 64 m) — das Haus am Wunsch fand R nie mehr
+                // (R LEER: 19 Häuser, keins am Seerand). Das Rand-Haus ist das Haus des Dorfs, das dem Ufer am nächsten steht;
+                // R prüft, was den Automaten weckt: den Erdbau des Dorfs, und der muss an Wasser reichen — je Zelle seiner
+                // Reichweite (gelaende-core `zellen`, das Raster von `_erdbauAmWasser`) die nassen Spalten (`_nassAt`)
+                let randHaus = null;
+                let randM = Infinity;
+                for (const e of st.architectures)
+                    if (e && !v0.has(e) && /^haus_/.test(e.type) && e.position) {
+                        const d = Math.hypot(e.position.x - ex0, e.position.z - ez0);
+                        if (d < randM) ((randM = d), (randHaus = e));
+                    }
+                const GK = window.__gelaendeCore;
+                const ZM = GK.ERDBAU.zelleM;
+                let nassImErdbau = 0;
+                const erdbauNeu = Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}).filter(
+                    (k) => !erdbauVor.has(k)
                 );
+                for (const key of erdbauNeu) {
+                    const E = GK.erdbauNormal(st.worldMeta.erdbau[key]);
+                    if (!E) continue;
+                    for (const c of E.zellen.keys()) {
+                        const a = Math.floor(c / 65536) - 32768;
+                        const b = (c % 65536) - 32768;
+                        for (let i = 1; i < ZM; i += 2)
+                            for (let j = 1; j < ZM; j += 2) if (r._nassAt(a * ZM + i, b * ZM + j)) nassImErdbau++;
+                    }
+                }
                 out.rand = {
                     reste,
+                    // so weit rückte die Ort-Wahl das Dorf vom Wunsch (`_ortWahlMass.abstandM`), so weit steht das Rand-Haus
+                    // vom Ufer-Punkt, so viele nasse Spalten trägt die Reichweite des neuen Erdbaus
+                    ortWahlM: r._ortWahlMass ? r._ortWahlMass.abstandM : null,
+                    randM: Number.isFinite(randM) ? +randM.toFixed(1) : null,
+                    erdbau: erdbauNeu.length,
+                    nassImErdbau,
                     haeuser: res ? res.placed : 0,
                     spieler: [+PX.toFixed(1), +PZ.toFixed(1)],
                     randHaus: randHaus
@@ -1679,6 +1840,7 @@ async function probe(A) {
                     // der Nexus-Deckel: so viele autonome Bauten vor und nach dem Dorf — über dem Deckel fiele das Fernste
                     deckel: { max: deckel, autosVor, autosNach, ueber: Math.max(0, autosNach - deckel) },
                     invalidierungen: inv.n,
+                    zellenWechsel,
                     ca: st.waterCAActive ? st.waterCAActive.size : 0,
                     nass0: vor.nass,
                     nass1: nach.nass,
@@ -1894,7 +2056,7 @@ function selbsttest() {
             caChunks: 0,
             staemme: Array.from({ length: 7 }, (_, i) => ({ typ: "baum_eiche", id: i, x: 0, z: 0, tiefe: -0.4 })),
         },
-        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [] },
+        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [], ohneWand: [], anDerWand: 4 },
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
@@ -1965,6 +2127,10 @@ function selbsttest() {
         rand: {
             haeuser: 9,
             randHaus: "haus_provenzalisch #600 (-1129.0/-1099.0)",
+            ortWahlM: 64,
+            randM: 52.4,
+            erdbau: 1,
+            nassImErdbau: 120,
             deckel: { max: 48, autosVor: 27, autosNach: 57, ueber: 9 },
             invalidierungen: 0,
             ca: 0,
@@ -2026,6 +2192,11 @@ function selbsttest() {
             "Z ohne Hülle",
             (b) => b.zensus.ohneHuelle.push({ typ: "haus_x", id: 7, quelle: "Haus-Satz" }),
             /Z LEER: haus_x #7 \(Haus-Satz\) stand ohne Hülle/,
+        ],
+        [
+            "Z ohne Wand",
+            (b) => b.zensus.ohneWand.push({ typ: "wandlaterne_dorf", id: 9, x: 12.5, z: -3, quelle: "Dorf" }),
+            /Z: wandlaterne_dorf #9 \(12\.50\/-3\.00\) hängt an keiner Wand — kein stehendes Haus trägt es \(Dorf\)/,
         ],
         ["S keine Orte", (b) => (b.satz.orte = 2), /S LEER: nur 2 Uferorte/],
         ["S keine Häuser", (b) => (b.satz.haeuser = 0), /S LEER: der Haus-Satz setzte 0 Häuser/],
@@ -2114,6 +2285,12 @@ function selbsttest() {
         ],
         // K16: der Gesamtlauf warf das Haus am Seerand über den Nexus-Deckel — R LEER nennt den Deckel mit seinen Zahlen
         ["R leer", (b) => (b.rand.randHaus = null), /R LEER: .*Nexus-Deckel 48, autonome Bauten 27 → 57/],
+        // K10-6: die Ort-Wahl rückt das Dorf aus dem Becken — reicht sein Erdbau an kein Wasser, prüft R nichts
+        [
+            "R ohne Wasser am Erdbau",
+            (b) => (b.rand.nassImErdbau = 0),
+            /R LEER: der Erdbau des Dorfs \(1 Orte\) reicht an keine nasse Spalte — .* 52\.4 m vom Seeufer, die Ort-Wahl rückte das Dorf 64 m/,
+        ],
         [
             "E Wunsch-Zahl der Kreaturen (Befund am Kopf f5b331ae)",
             (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
@@ -2172,8 +2349,8 @@ function selbsttest() {
             "Zwilling zurück",
             (s) =>
                 s.replace(
-                    "    _nassAt(x, z, marge = -0.05) {",
-                    "    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt(x, z, marge = -0.05) {"
+                    /\n {4}_nassAt\(/,
+                    "\n    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt("
                 ),
             /Zwillings-Probe/,
         ],
@@ -2201,8 +2378,8 @@ function selbsttest() {
             "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
             (s) =>
                 s.replace(
-                    "    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {",
-                    "    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {"
+                    /\n {4}_stempelSpanne\(/,
+                    "\n    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne("
                 ),
             /zweite Wasser-Wahrheit/,
         ],
@@ -2305,9 +2482,10 @@ function selbsttest() {
         [
             "Siedlung fragt die Mitte",
             (s) =>
+                // die Zeile bricht der Formatierer um (der Saum macht sie länger als 120): das Gift greift über den Umbruch
                 s.replace(
-                    "if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? AnazhRealm.FUNDAMENT_SOCKEL_M : 0)) return null;",
-                    "if (!this._landAt(wx, wz, 0.2)) return null;"
+                    /if \(!this\._fundamentLand\(wx, wz, ry, fp, tu, [^\n]*\)\)\s*return false;/,
+                    "if (!this._landAt(wx, wz, 0.2)) return false;"
                 ),
             /die Siedlung .* fragt nicht das Land des Fundaments/,
         ],
@@ -2412,13 +2590,19 @@ async function weltOrte(A) {
     // das Wasser des Atlas) — das Atlas-Wasser allein fand Flüsse, an denen kein Körper-Wasser steht
     const nass = (x, z) => tiefe(x, z) > 0 && r._nassAt(x, z);
     const out = { fluss: null, ufer: null, eiche: null, see: null, seeUfer: null, rampe: null };
-    // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese
-    for (let R = 0; R <= A.R && !out.fluss; R += 6) {
+    // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese — und
+    // bis zu drei weitere, je mehr als 150 m von den anderen und höchstens 480 m hinter dem ersten (`uferKandidaten`): ob ein
+    // Ufer frei von Bauten ist, weiß erst die gestreamte Welt (die Glutbrunnen des Affinitäts-Felds wachsen mit dem Chunk) —
+    // die Hain-Probe wählt dort das erste freie (K55-5)
+    out.uferKandidaten = [];
+    let R1 = null;
+    for (let R = 0; R <= A.R && out.uferKandidaten.length < 4 && !(R1 !== null && R > R1 + 480); R += 6) {
         if (R % 192 === 0) r._ensureHydroTilesAround(MX, MZ, R);
         const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
-        for (let k = 0; k < n && !out.fluss; k++) {
+        for (let k = 0; k < n && out.uferKandidaten.length < 4; k++) {
             const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
             const z = Math.round(MZ + R * Math.sin((k / n) * 2 * Math.PI));
+            if (out.uferKandidaten.some((c) => Math.hypot(c.fluss.x - x, c.fluss.z - z) <= 150)) continue;
             const rv = r._hydroRiverAt(x, z);
             if (!rv || !(rv.centerness > 0.7) || !nass(x, z)) continue;
             const fm = Math.hypot(rv.flowX, rv.flowZ);
@@ -2432,12 +2616,19 @@ async function weltOrte(A) {
             }
             const breite = rand[0] + rand[1];
             if (!(breite > 2 && breite < 14)) continue;
-            out.fluss = { x, z, quer, breite };
             // das Ufer: 4 m hinter der Wasserkante auf der Seite zur Mess-Wiese; die Bau-Eiche 12 m weiter landein
             const sg = (MX - x) * quer[0] + (MZ - z) * quer[1] >= 0 ? 1 : -1;
             const k0 = sg === 1 ? rand[0] : rand[1];
-            out.ufer = [x + quer[0] * sg * (k0 + 4), z + quer[1] * sg * (k0 + 4)];
-            out.eiche = [x + quer[0] * sg * (k0 + 16), z + quer[1] * sg * (k0 + 16)];
+            const ufer = [x + quer[0] * sg * (k0 + 4), z + quer[1] * sg * (k0 + 4)];
+            const eiche = [x + quer[0] * sg * (k0 + 16), z + quer[1] * sg * (k0 + 16)];
+            // (ob das Ufer frei von Bauten ist, weiß erst die gestreamte Welt: die Hain-Probe prüft es dort, `bauNah`)
+            out.uferKandidaten.push({ fluss: { x, z, quer, breite }, ufer, eiche });
+            if (R1 === null) {
+                R1 = R;
+                out.fluss = { x, z, quer, breite };
+                out.ufer = ufer;
+                out.eiche = eiche;
+            }
         }
     }
     // 2) der See: die nächste benannte Senke, deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen)
@@ -2556,6 +2747,7 @@ async function lauf() {
             throw new Error("ORTE LEER: kein Fluss (2–14 m) oder kein See nächst der Mess-Wiese");
         const out = await page.evaluate(probe, {
             ort: ORTE.ufer,
+            uferKandidaten: ORTE.uferKandidaten,
             eiche: ORTE.eiche,
             takte: 1200,
             hainMin: SCHWELLE.hainMin,
@@ -2569,6 +2761,7 @@ async function lauf() {
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
             huelleMs: 60000,
+            wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,
             satzNah: [ORTE.ufer, [ORTE.fluss.x, ORTE.fluss.z]],
@@ -2612,7 +2805,10 @@ async function lauf() {
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
                     const t0 = performance.now();
-                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t0 < 120000)
+                    while (
+                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
+                        performance.now() - t0 < 120000
+                    )
                         await new Promise((res) => setTimeout(res, 200));
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;

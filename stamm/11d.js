@@ -1066,7 +1066,7 @@ class AnazhRealm_Z11d {
 
     // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
     // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
-    // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
+    // und die Himmels-Umgebung (Irradianz aus der zurückgelesenen Umgebung der EINEN Atmosphäre, `_himmelsIrradianz`).
     // Die Luft legt der Pass-Knoten aus `_luftEnsure` auf (dieselben Fn wie `scene.fogNode`).
     _feldLichtSync(U) {
         const st = this.state;
@@ -1096,8 +1096,7 @@ class AnazhRealm_Z11d {
     }
 
     // Die Himmels-Irradianz (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der
-    // Kosinus-gefaltete Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt),
-    // sRGB-dekodiert wie die Textur. Neu gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde.
+    // Kosinus-gefaltete Mittelwert der Umgebung (`_himmelsIrradianz`). Neu gerechnet nur, wenn eine neue Lesung kam.
     _feldEnvIrradianz(U) {
         const e = this._himmelsIrradianz();
         if (!e) {
@@ -1111,58 +1110,53 @@ class AnazhRealm_Z11d {
         U.envOben.value.fromArray(e.oben);
     }
 
-    // DIE HIMMELS-IRRADIANZ (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der Kosinus-gefaltete
-    // Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt), sRGB-dekodiert wie die Textur. Neu
-    // gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde. Leser: der Feld-Pass und die Belichtung.
+    // DIE HIMMELS-IRRADIANZ (diffuse IBL, E/π) für drei Normalen (unten · waagrecht · oben) aus der Umgebung der EINEN
+    // Atmosphäre, wie die CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω,
+    // die waagrechte Normale gemittelt über vier Azimute (die Umgebung ist azimut-abhängig). Neu gerechnet nur, wenn eine
+    // neue Lesung kam. Leser: der Feld-Pass, die Belichtung, das Wasser.
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
-        const tex = st._skyEnvTex;
+        const A = st.atmoLut;
         const scene = st.scene;
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
-        if (!d || !tex || !env) return null;
-        const stempel = (tex.version || 0) + ":" + ei;
+        if (!d || !A || !env) return null;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
-        const W = tex.image.width;
-        const H = tex.image.height;
-        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        // Zeile y → Elevation (v = y/(H−1): 0 Nadir … 1 Zenit, dieselbe Zeilen-Richtung wie das GPU-Sampling,
-        // `_ensureSkyEnvironment`), Farbe der Zeile (Spalte 0: azimut-konstant)
-        const zeilen = [];
+        const W = A.rtEq.width;
+        const H = A.rtEq.height;
+        const oben = [0, 0, 0],
+            unten = [0, 0, 0],
+            mitte = [0, 0, 0];
+        const dEl = Math.PI / H,
+            dPhi = (2 * Math.PI) / W;
         for (let y = 0; y < H; y++) {
-            const v = y / (H - 1);
-            const el = (v - 0.5) * Math.PI; // −π/2 … π/2
-            const i = y * W * 4;
-            zeilen.push({ el, r: lin(d[i] / 255), g: lin(d[i + 1] / 255), b: lin(d[i + 2] / 255) });
-        }
-        // E(n) = (1/π)∫ L(ω) max(n·ω,0) dω; n in der x-y-Ebene (azimut-invariant), numerisch über
-        // Elevation × Azimut.
-        const falte = (nY) => {
-            const nX = Math.sqrt(Math.max(0, 1 - nY * nY));
-            let r = 0,
-                g = 0,
-                b = 0;
-            const AZ = 32;
-            for (const z of zeilen) {
-                const ce = Math.cos(z.el);
-                const se = Math.sin(z.el);
-                const dA = ((Math.PI / (H - 1)) * ce * (2 * Math.PI)) / AZ;
-                for (let a = 0; a < AZ; a++) {
-                    const phi = ((a + 0.5) / AZ) * 2 * Math.PI;
-                    const cos = nX * ce * Math.cos(phi) + nY * se;
-                    if (cos <= 0) continue;
-                    const w = cos * dA;
-                    r += z.r * w;
-                    g += z.g * w;
-                    b += z.b * w;
+            const el = ((y + 0.5) / H - 0.5) * Math.PI;
+            const ce = Math.cos(el),
+                se = Math.sin(el);
+            const dA = ce * dEl * dPhi;
+            for (let x = 0; x < W; x++) {
+                const phi = ((x + 0.5) / W - 0.5) * 2 * Math.PI;
+                const cx = ce * Math.cos(phi),
+                    cz = ce * Math.sin(phi);
+                // die vier waagrechten Normalen (±x, ±z) zusammen: (|cx| + |cz|) / 4 je Halbraum
+                const wO = Math.max(se, 0) * dA,
+                    wU = Math.max(-se, 0) * dA,
+                    wM = ((Math.abs(cx) + Math.abs(cz)) / 4) * dA;
+                const i = (y * W + x) * 4;
+                for (let c = 0; c < 3; c++) {
+                    const L = d[i + c];
+                    oben[c] += L * wO;
+                    unten[c] += L * wU;
+                    mitte[c] += L * wM;
                 }
             }
-            const k = ei / Math.PI;
-            return [r * k, g * k, b * k];
-        };
-        this._himmelsIrr = { unten: falte(-1), mitte: falte(0), oben: falte(1) };
+        }
+        const k = ei / Math.PI;
+        const s = (v) => v.map((x) => x * k);
+        this._himmelsIrr = { unten: s(unten), mitte: s(mitte), oben: s(oben) };
         return this._himmelsIrr;
     }
 
@@ -1184,12 +1178,10 @@ class AnazhRealm_Z11d {
     // durch alle Schalen), Refresh-Scheibe.
     _tickFernRing(playerPos) {
         const st = this.state;
-        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
-        if (hook === false) {
+        if (!this._fernRingGilt()) {
             if (st.fernRing) this._fernRingDispose();
             return;
         }
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
         if (!playerPos || !st.scene || typeof THREE === "undefined") return;
         const F = AnazhRealm.FERN_RING;
         let fr = st.fernRing;
@@ -1207,20 +1199,24 @@ class AnazhRealm_Z11d {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
-            fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
-            fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
+            fr.cursor = 0; // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
+            fr.auftrag = 0;
+            fr.flug = 0;
+            fr.einhaengen.length = 0;
+            fr.gen = (fr.gen || 0) + 1; // laufende Scheiben des Fern-Fadens sind überholt
             fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
             fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
-            fr.gpuFlug = false;
         }
-        // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
-        for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
+        // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
+        // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).
+        for (const m of fr.meshes) {
+            const soll = (1 | (m.layers.mask & (1 << AnazhRealm.SHADOW_TWIN_LAYER))) >>> 0;
+            if (m.layers.mask !== soll) m.layers.mask = soll;
+        }
         this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
-        // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
-        // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
-        // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
-        if (fr.cursor === 0) this._fernRingGpuMal(fr);
-        this._fernRingRefresh(F.refreshVertsProTick);
+        // DER HORIZONT AUS DEM FADEN (B2): der Ring bestellt seine Scheiben beim Fern-Faden und hängt die Antworten ein
+        // (`_fernRingRefresh`) — Boot wie Re-Anker, EIN Weg; der Haupt-Faden rechnet kein Gesetz der Ferne.
+        this._fernRingRefresh();
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
         // DIE KOSTEN AN DER NAHT: die Dreiecke der Schale 0 folgen Maske und Lage (frei · Naht · getragen, `_fernRingTeilung`).
@@ -1228,9 +1224,8 @@ class AnazhRealm_Z11d {
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
-        // DAS FERN-FARB-BUDGET: die Fern-Krone des nahen Bodens, die offenen Ring-Farben (nah zuerst), dann der Farb-Job des
-        // Feld-Passes.
-        this._fernFarbTakt(fr);
+        // DIE FERN-KRONE DES NAHEN BODENS: wechselt das Quadrat, bestellt sie ihre Karte beim Fern-Faden.
+        this._fernKroneNahTakt();
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
         // alte far wieder her.
@@ -1242,13 +1237,24 @@ class AnazhRealm_Z11d {
         }
     }
 
+    // Gehört der Horizont zu dieser Welt? Die EINE Frage für seinen Takt (`_tickFernRing`) und das erste Weltbild
+    // (`_weltbildLuecken`, Term „horizont"): der Linsen-Hook `__anazhFernRing` (false: aus, true: auch headless), sonst
+    // jede Welt mit Renderer — headless ruht der Ring.
+    _fernRingGilt() {
+        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
+        if (hook === false) return false;
+        const r = this.state.renderer;
+        return hook === true || !(r && r._isHeadlessNull);
+    }
+
     // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen
     // (der Tick baut die neue Welt lazy nach).
     _fernRingDispose() {
         this._feldPassDispose(); // der Pass ist Ring-Besitz — er fällt mit
-        this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
+        this._fernMemoGen = (this._fernMemoGen | 0) + 1; // die Fern-Farben gehören der Welt, die den Ring trug (das Gedächtnis des Fern-Fadens)
         const fr = this.state.fernRing;
         if (!fr) return;
+        this._horizontKarteLeeren(); // die Zeichen-Meshes der Horizont-Karte lesen die Geometrien des Rings — sie fallen zuerst
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {
@@ -1310,10 +1316,19 @@ class AnazhRealm_Z11d {
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
         // Frame → kleinerer Spike. `?? 4/6` = sicherer Default (alte Welten/Tests).
-        const FRAME_BUDGET_MS = Number.isFinite(this.state._voxelStreamBudgetMs) ? this.state._voxelStreamBudgetMs : 4;
-        const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
-            ? this.state._voxelStreamMaxPerFrame
-            : 6;
+        // Im Lade-Takt (`_ladeTakt`) trägt der Strom das Budget des Lade-Frames, ohne Stück-Deckel: der Boden des ersten
+        // Weltbilds (RING_EXIST_FLOOR) wuchs sonst mit einem Chunk je Lade-Frame.
+        const lade = this._ladeTakt();
+        const FRAME_BUDGET_MS = lade
+            ? AnazhRealm.LADE_TAKT_MS
+            : Number.isFinite(this.state._voxelStreamBudgetMs)
+              ? this.state._voxelStreamBudgetMs
+              : 4;
+        const MAX_PER_FRAME = lade
+            ? Infinity
+            : Number.isFinite(this.state._voxelStreamMaxPerFrame)
+              ? this.state._voxelStreamMaxPerFrame
+              : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
@@ -1506,9 +1521,8 @@ class AnazhRealm_Z11d {
         return { ok: false, reason: "kein Material" };
     }
 
-    // Liegt ein CARVE-Edit in der 3×3-Chunk-Region um (cx,cz)? Nur dort seedet die Flut aus Nachbar-
-    // Zellen (`_buildVoxelChunkWaterCells`) und baut der Chunk SYNC-MAIN (`_rebuildVoxelChunk`), damit
-    // die Flut über die Naht läuft; unberührte Chunks bleiben atlas-only = bit-identisch zum Worker.
+    // Liegt ein CARVE-Edit in der 3×3-Chunk-Region um (cx,cz)? Nur dort seedet die Flut aus Nachbar-Zellen (`_flutSaat`,
+    // im Sync-Bau wie im Worker-Auftrag), damit sie über die Naht läuft; unberührte Chunks bleiben atlas-only.
     _chunkRegionHasCarve(cx, cz) {
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return false;
@@ -1576,39 +1590,50 @@ class AnazhRealm_Z11d {
         }
     }
 
-    // Game-Loop-Hook: rebuildet je Frame max EINEN dirty Chunk, den nächsten zum Spieler (Manhattan) —
-    // der Klick-Ort zuerst, Skirt-Nachbarn folgen. Leeres Set kostet eine `size`-Prüfung; Pending/Fail
-    // re-dirtyt `_rebuildVoxelChunk` selbst.
+    // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST (Lehre 25). Je Takt gehen die Aufträge der
+    // nächsten `DIRTY_IM_FLUG` voraus (billig, der Worker baut sie nacheinander), eingebaut wird höchstens EINER — der
+    // nächste fertige (`_finalizeVoxelChunkBuild`, am Dorf 15–60 ms je Chunk). Hat der Strom-Takt in diesem Frame schon
+    // einen Chunk eingebaut (`state._bodenEinbau`, seine Ring-Distanz), wartet ein fertiger, der nicht näher liegt, auf
+    // den nächsten Frame: zwei Einbauten trägt ein Frame nur für den nächsten Chunk. Bis K69-2 kam je Frame EIN Chunk
+    // dran (Manhattan), sein Auftrag allein im Flug, und der Spieler-Chunk baute synchron. Pending/Fail re-dirtyt
+    // `_rebuildVoxelChunk` selbst; ohne Worker baut jeder Neubau synchron — dann einer je Frame.
     _tickDirtyVoxelChunks(playerPos) {
-        if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return;
+        const dirty = this.state.dirtyVoxelChunks;
+        if (!dirty || dirty.size === 0) return;
         if (!this.state.voxelChunks || !playerPos) return;
         const { span } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
-        let bestKey = null;
-        let bestDist = Infinity;
-        for (const key of this.state.dirtyVoxelChunks) {
-            // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt
-            // haben (Spieler ging weg) — Marker stumm verwerfen.
+        const reihe = [];
+        for (const key of dirty) {
+            // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt haben (Spieler ging weg) — Marker stumm verwerfen.
             if (!this.state.voxelChunks.has(key)) {
-                this.state.dirtyVoxelChunks.delete(key);
+                dirty.delete(key);
                 continue;
             }
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            const d = Math.abs(cx - pcx) + Math.abs(cz - pcz);
-            if (d < bestDist) {
-                bestDist = d;
-                bestKey = key;
-            }
+            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) });
         }
-        if (!bestKey) return;
-        this.state.dirtyVoxelChunks.delete(bestKey);
-        const comma = bestKey.indexOf(",");
-        const cx = parseInt(bestKey.slice(0, comma), 10);
-        const cz = parseInt(bestKey.slice(comma + 1), 10);
-        this._rebuildVoxelChunk(cx, cz);
+        reihe.sort((a, b) => a.d - b.d);
+        const st = this.state;
+        const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+        const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;
+        const strom = st._bodenEinbau; // die Ring-Distanz des Einbaus, den der Strom in diesem Frame schon tat
+        let einbau = false;
+        for (let i = 0; i < reihe.length && i < imFlug; i++) {
+            const c = reihe[i];
+            if (einbau || (Number.isFinite(strom) && c.d >= strom)) {
+                // der Frame hat seinen Einbau: ein fertiger Chunk wartet (sein Netz liegt im Cache), ein offener fragt an
+                const e = this.state.voxelChunks.get(c.key);
+                const lod = e && Number.isFinite(e.lod) ? e.lod : 0;
+                if (st.voxelMeshCache && st.voxelMeshCache.has(`${c.cx},${c.cz},${lod}`)) continue;
+            }
+            dirty.delete(c.key);
+            this._rebuildVoxelChunk(c.cx, c.cz);
+            if (!dirty.has(c.key)) einbau = true; // eingebaut (oder aufgegeben)
+        }
     }
 
     // Test-Naht: rebuildet ALLE dirty Chunks sofort mit `forceSync: true` (sonst liefe der Drain

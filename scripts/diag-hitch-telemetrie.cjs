@@ -39,6 +39,10 @@ const PORT = Number(process.env.HITCH_PORT || 4463);
 // Laufzeit nach dem Welt-Settle: ~15 s echte Loop-Zeit, damit Sekunden-Grenzen,
 // EWMA und Ringe wirklich GEFÜLLT sind (nicht nur initialisiert).
 const LAUFZEIT_MS = 15000;
+// Die Frist JE BAU der Erst-Zeichnungs-Wand (`ruf`): so lange darf EIN Pipeline-Bau im Flug sein (swiftshader am Läufer:
+// 1–292 s je Pipeline), bevor die Wand den GPU-Prozess für hängend erklärt. HITCH_BAU_FRIST_S verkürzt sie für die Probe der
+// Wand selbst (die Summe einer Probe darf jede Frist übersteigen, solange jeder Bau sich erfüllt).
+const BAU_FRIST_MS = Number(process.env.HITCH_BAU_FRIST_S || 600) * 1000;
 const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
 if (![0, 1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
 // trägt dieser Lauf den Teil t? (ohne --teil beide)
@@ -82,7 +86,7 @@ function bauUhrInstall() {
             const p = roh.call(this, d);
             const t0 = performance.now();
             U.angelegt++;
-            U.imFlug.set(p, (d && d.label) || name);
+            U.imFlug.set(p, { name: (d && d.label) || name, t0 });
             const ende = (ok) => {
                 const ms = performance.now() - t0;
                 U.imFlug.delete(p);
@@ -122,7 +126,6 @@ function erstWandInstall() {
         boot: ESt
             ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
             : null,
-        budgetMs: r.constructor.ERST_BAU_MS,
         bauUhr: U ? { angelegt: U.angelegt, gebaut: U.gebaut, imFlug: U.imFlug.size } : null,
     };
     const welt = r.state.scene;
@@ -159,7 +162,10 @@ function erstWandInstall() {
         const aus = gfr.apply(this, arguments);
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
-            const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [] };
+            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort gesetzt hat (`E.deckel`: im Spiel ERST_BAU_MS, unter dem
+            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse (bis K60-3 las sie ERST_BAU_MS und fiel am Lade-Takt)
+            const E = r._erstZeichnung;
+            const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
             b.n++;
             b.ms += performance.now() - t0;
@@ -197,6 +203,19 @@ function erstWandInstall() {
     // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
     // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe (bis K25: 60 s und 120 s Wanduhr).
     const STILL_BILDER = 3;
+    // DER GEGENDRUCK DER GPU (K60-N3): jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
+    // (`queue.onSubmittedWorkDone`), bevor das nächste kommt. Ohne ihn schob die Probe alle 20 ms ein Bild in den GPU-Prozess,
+    // gleich wie schnell swiftshader rastert: der Rückstau wuchs über die Probe, und die Rückmeldung jedes asynchronen
+    // Pipeline-Baus wartete hinter ihm (ein unbeleuchteter Würfel 46 s asynchron, derselbe Stoff synchron < 1 s; am Läufer
+    // Probe 222 s und Neubau über 600 s, CI 38670118945). `gpuStau` trägt die längste Wartezeit je Probe.
+    const gpuStau = { maxMs: 0 };
+    const gpuTakt = async () => {
+        const d = rend.backend && rend.backend.device;
+        if (!d || !d.queue || typeof d.queue.onSubmittedWorkDone !== "function") return;
+        const t0 = performance.now();
+        await d.queue.onSubmittedWorkDone();
+        gpuStau.maxMs = Math.max(gpuStau.maxMs, performance.now() - t0);
+    };
     const bisEreignis = async (ziel, pauseMs) => {
         let bilder = 0,
             still = 0;
@@ -206,6 +225,7 @@ function erstWandInstall() {
                 a0 = U ? U.angelegt : 0;
             bild();
             bilder++;
+            await gpuTakt();
             await sleep(pauseMs);
             const ruhig =
                 (!U || (U.imFlug.size === 0 && U.angelegt === a0)) &&
@@ -234,6 +254,13 @@ function erstWandInstall() {
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
+        // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
+        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS (233ccebf) — am Runner steht er beim Einbau der Wand
+        // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
+        const lade = document.getElementById("ladeschirm");
+        const ladeVor = lade ? lade.hidden : null;
+        if (lade) lade.hidden = true;
+        const imSpiel = !r._ladeTakt();
         const ruheMs = await ruhe();
         Z.sync = Z.async = 0;
         Z.bau.clear();
@@ -272,6 +299,7 @@ function erstWandInstall() {
         } finally {
             rend.backend.draw = drawRoh;
             if (vendor && eigen) rend._renderObjectDirect = stamm;
+            if (lade) lade.hidden = ladeVor;
             for (const m of meshes) {
                 welt.remove(m);
                 m.geometry.dispose();
@@ -279,9 +307,11 @@ function erstWandInstall() {
         }
         let maxBau = 0,
             ueberBudget = 0;
+        const deckel = new Set();
         for (const b of Z.bau.values()) {
             maxBau = Math.max(maxBau, b.n);
-            for (let j = 1; j < b.vorMs.length; j++) if (b.vorMs[j] >= res.erst.budgetMs) ueberBudget++;
+            deckel.add(b.deckel);
+            for (let j = 1; j < b.vorMs.length; j++) if (!(b.vorMs[j] < b.deckel)) ueberBudget++;
         }
         return {
             sync: Z.sync,
@@ -289,6 +319,8 @@ function erstWandInstall() {
             aufrufeMitBau: Z.bau.size,
             maxBau,
             ueberBudget,
+            deckel: [...deckel],
+            imSpiel,
             gezeichnet: gezeichnet.size,
             frames,
             ms: Math.round(performance.now() - t0),
@@ -423,6 +455,7 @@ function erstWandInstall() {
             bild();
             frames++;
             nachBereit++;
+            await gpuTakt();
             await sleep(20);
         }
         return {
@@ -613,6 +646,7 @@ function erstWandInstall() {
         aufnahme,
         absage,
         zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        gpuStau,
     };
 }
 
@@ -667,6 +701,8 @@ function erstWandInstall() {
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
         res.headlessNull = !!rend._isHeadlessNull;
         if (rend._isHeadlessNull) return { fatal: "Renderer fiel auf headless-Null zurück — kein echter WebGPU-Lauf" };
+        // DIE GERÄTE-GRENZEN (G1): jede Stufen-Grenze, in der das Gerät der Welt unter seinem Adapter bleibt (ohne requiredLimits)
+        res.grenzenUnter = await navigator.gpu.requestAdapter({ featureLevel: "compatibility" }).then((a) => Object.keys(Object.getPrototypeOf(a.limits)).filter((k) => /PerShaderStage$/.test(k) && rend.backend.device.limits[k] < a.limits[k]).map((k) => `${k} ${rend.backend.device.limits[k]} < ${a.limits[k]}`)); // prettier-ignore
         // ~15 s echte Laufzeit: der rAF-Loop läuft; falls die Frames stocken
         // (headless-Drossel), treiben wir den Loop von Hand (wie diag-blick).
         const frGet = () => r.state.flightRecorder || null;
@@ -768,15 +804,75 @@ function erstWandInstall() {
     }, IN(1) ? LAUFZEIT_MS : 0);
     // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
-        // eine Probe ohne Sekunden-Frist: hängt der GPU-Prozess selbst (ein Bau, der sich nie erfüllt), bricht erst die
-        // Protokoll-Frist (600 s) — dann nennt der Wurf die Probe beim Namen
+        // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
+        // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug
+        // ist (der GPU-Prozess hängt: ein Bau, der sich nie erfüllt — er steht beim Namen im Wurf) oder so lange kein Bau-
+        // Ereignis kommt, während die Probe läuft. Bis K60-N3 trug EIN Protokoll-Aufruf die ganze Probe samt ihrer Ruhe:
+        // seine Frist (600 s) urteilte über die Summe der Bauten des Läufers (CI 38670118945: Probe 222 s, der Neubau riss
+        // nach 600 s ohne einen Namen; an 91dff111 mit demselben Code 39 s).
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
-            await page.evaluate(() => (window.__erstWandRuhe = null));
-            const v = await page.evaluate(fn, arg).catch((e) => {
-                throw new Error(`[Erst-Zeichnung] ${name} nach ${Math.round((Date.now() - t0) / 1000)} s: ${(e && e.message) || e}`);
+            const sek = () => Math.round((Date.now() - t0) / 1000);
+            await page.evaluate(
+                `(() => { window.__erstWandRuhe = null; if (window.__erstWand) window.__erstWand.gpuStau.maxMs = 0; const lauf = (window.__erstRuf = { fertig: false, wert: undefined, fehler: null });` +
+                    ` Promise.resolve().then(() => (${fn.toString()})(${JSON.stringify(arg)})).then(` +
+                    `(v) => { lauf.wert = v; lauf.fertig = true; }, (e) => { lauf.fehler = String((e && e.stack) || e); lauf.fertig = true; }); })()`
+            );
+            let ereignis = null,
+                ereignisAm = Date.now(),
+                meldungAm = Date.now();
+            for (;;) {
+                const s = await page
+                    .evaluate(() => {
+                        const lauf = window.__erstRuf;
+                        const U = window.__bauUhr;
+                        const jetzt = performance.now();
+                        let alt = null;
+                        if (U)
+                            for (const b of U.imFlug.values())
+                                if (!alt || b.t0 < alt.t0) alt = b;
+                        return {
+                            fertig: lauf.fertig,
+                            fehler: lauf.fehler,
+                            ereignis: U ? `${U.angelegt}/${U.gebaut}/${U.abgesagt}` : "",
+                            imFlug: U ? U.imFlug.size : 0,
+                            gebaut: U ? U.gebaut : 0,
+                            aeltester: alt ? { name: alt.name, ms: Math.round(jetzt - alt.t0) } : null,
+                        };
+                    })
+                    .catch((e) => {
+                        throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${(e && e.message) || e}`);
+                    });
+                if (s.fehler) throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${s.fehler}`);
+                if (s.fertig) break;
+                if (s.ereignis !== ereignis) {
+                    ereignis = s.ereignis;
+                    ereignisAm = Date.now();
+                }
+                if (s.aeltester && s.aeltester.ms > BAU_FRIST_MS)
+                    throw new Error(
+                        `[Erst-Zeichnung] ${name} nach ${sek()} s: der Bau „${s.aeltester.name}" hängt seit ${Math.round(s.aeltester.ms / 1000)} s (Frist je Bau ${BAU_FRIST_MS / 1000} s, ${s.imFlug} im Flug)`
+                    );
+                if (Date.now() - ereignisAm > BAU_FRIST_MS)
+                    throw new Error(
+                        `[Erst-Zeichnung] ${name} nach ${sek()} s: kein Bau-Ereignis seit ${Math.round((Date.now() - ereignisAm) / 1000)} s, die Probe steht (Bau-Uhr angelegt/gebaut/abgesagt ${s.ereignis})`
+                    );
+                if (Date.now() - meldungAm >= 60000) {
+                    meldungAm = Date.now();
+                    console.log(
+                        `  [Erst-Zeichnung] ${name}: ${sek()} s, ${s.imFlug} Bauten im Flug` +
+                            (s.aeltester ? ` (ältester „${s.aeltester.name}" seit ${Math.round(s.aeltester.ms / 1000)} s)` : "") +
+                            `, Bau-Uhr angelegt/gebaut/abgesagt ${s.ereignis}`
+                    );
+                }
+                await new Promise((r) => setTimeout(r, 250));
+            }
+            const { v, stauMs } = await page.evaluate(() => {
+                const w = window.__erstRuf.wert;
+                window.__erstRuf = null;
+                return { v: w, stauMs: window.__erstWand ? Math.round(window.__erstWand.gpuStau.maxMs) : -1 };
             });
-            console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            console.log(`  [Erst-Zeichnung] ${name}: ${sek()} s (GPU-Gegendruck je Bild bis ${stauMs} ms)`);
             const ru = await page.evaluate(() => window.__erstWandRuhe);
             if (ru && ru.offen)
                 console.log(
@@ -911,10 +1007,15 @@ function erstWandInstall() {
     );
     const pr = ez.probe || {};
     bandIn(1)(
-        pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0 && pr.ruheOffen === 0,
+        pr.imSpiel === true &&
+            pr.gezeichnet === 3 &&
+            pr.sync === 0 &&
+            pr.async >= 3 &&
+            pr.ueberBudget === 0 &&
+            pr.ruheOffen === 0,
         "ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget)",
         `Ruhe davor ${pr.ruheMs} ms (offen danach ${pr.ruheOffen}) · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
-            `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Budget (${ez.budgetMs} ms) ${pr.ueberBudget}`
+            `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Deckel des Aufrufs (${(pr.deckel || []).join("/")} ms, im Spiel ${pr.imSpiel}) ${pr.ueberBudget}`
     );
     const gg = ez.gegen || {};
     bandIn(1)(
@@ -1007,6 +1108,7 @@ function erstWandInstall() {
         `Schlange +${wg.offenZuwachs} · wartende Draws +${wg.wartetZuwachs}`
     );
 
+    bandIn(1)(Array.isArray(out.grenzenUnter) && !out.grenzenUnter.length, "GERÄTE-GRENZEN (G1: das Gerät der Welt trägt je Stufe die Grenze seines Adapters)", (out.grenzenUnter || ["nicht gemessen"]).join(" · ") || "jede Stufe = Adapter"); // prettier-ignore
     // Band 6 — kein pageerror.
     band(pageErrors.length === 0, "KEIN PAGE-ERROR", pageErrors.length ? pageErrors.slice(0, 3).join(" | ") : "sauber");
 

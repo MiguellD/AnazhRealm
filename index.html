@@ -306,6 +306,17 @@
                     transform: scaleX(1);
                 }
             }
+            /* WENIGER BEWEGUNG (K67): wer sie wünscht (prefers-reduced-motion), bekommt keine Deko-Animation — die vier dieser
+               Seite laufen endlos (Glimmen des Ladeschirms, Puls von Stats-HUD, Regel und Taste), und jede hält den Compositor
+               im Takt, auch wenn der Haupt-Thread steht. Jede Linse auf swiftshader wünscht sie (Start-Schalter in
+               scripts/lib/software-gpu.cjs): dort rastert der GPU-Prozess jedes Compositor-Bild auf der CPU. */
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation: none !important;
+                }
+            }
             /* DAS FADENKREUZ (Leben-Schau 07.10., L1): die Mitte des Bilds ist der Strahl der Kamera (1st das Auge, 3rd die
                Verfolger-Kamera — `_blickZiel`), dort trifft jeder Klick. Es weicht, wo der Zeiger der UI gehört: eine offene
                Schublade, das Inventar. */
@@ -9411,8 +9422,8 @@
                             </div>
                             <div class="slider-row">
                                 <label for="slider-edgesharp">Kanten-Schärfe</label>
-                                <input type="range" id="slider-edgesharp" min="0" max="100" value="46" />
-                                <span class="slider-value" id="slider-edgesharp-val">0.46</span>
+                                <input type="range" id="slider-edgesharp" min="0" max="100" value="0" />
+                                <span class="slider-value" id="slider-edgesharp-val">0.00</span>
                             </div>
                             <div class="slider-row">
                                 <label for="slider-surftex">Oberflächen-Textur</label>

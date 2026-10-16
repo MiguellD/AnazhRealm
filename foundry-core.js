@@ -228,6 +228,107 @@ var SAISON_GESETZ = {
 
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
 
+// D3 (15.10., rein additiv) — DAS ATMOSPHAEREN-GESETZ nach Hillaire (EGSR 2020, "A Scalable and Production Ready Sky and
+// Atmosphere Rendering Technique", CGF 39(4)), die EINE Quelle fuer Welt UND Labor (phytogenesis): die Rayleigh-TIEFE je
+// Kanal (Zenit, Meereshoehe), die EINE Luft (Koschmieder-Anker, ihr Aerosol: beta = -ln(kontrast)/sichtKlarM - betaRayleigh,
+// Skalenhoehe skalenHoeheM), die Hoehen, die Phase, die Einfach-Albedo des Aerosols, das Ozon-Zelt, die Radien
+// (Bruneton/Hillaire-Erde) und der Mond unter dem Horizont. Den Boden (die gemessene Welt-Albedo) traegt der Leser.
+// prettier-ignore
+var ATMO_GESETZ = {
+    erdeM: 6360e3, randM: 6460e3,  // Radius des Bodens / des Rands der Atmosphaere
+    rayleighH: 8000,               // Skalenhoehe der Rayleigh-Dichte (m)
+    rayleighTiefe: [0.044, 0.1, 0.23], // optische Tiefe Meereshoehe/Zenit je Kanal (Bucholtz 1995): blau streut ~5x rot
+    mieG: 0.8,                     // Henyey-Greenstein-Asymmetrie des Aerosols
+    mieAlbedo: 0.9,                // Einfach-Streualbedo des Aerosols (Streuung / Extinktion)
+    ozon: { mitteM: 25000, halbM: 15000, absorption: [0.65e-6, 1.881e-6, 0.085e-6] }, // Zelt-Profil, Absorption je m am Gipfel (R/G/B)
+    // DIE LUFT (V18.530): beobachtbare Sichtweiten — ein klarer Sommertag traegt Gelaende-Silhouetten 20 km weit, Starkregen
+    // 1,5 km; reine Luft = Rayleigh bei 550 nm auf Meereshoehe (1,16e-5/m); der Dunst sitzt in der Grenzschicht (1 km)
+    luft: { sichtKlarM: 20000, sichtSturmM: 1500, betaRayleigh: 1.16e-5, kontrast: 0.02, skalenHoeheM: 1000 },
+    // unter dem Horizont: der Farbton wandert ueber nacht.skala (sin Hoehe) zum Mond-Hue (Purkinje 0x9fb8dc), die Menge zu nacht.lum.
+    // DAS STERNEN-LICHT (D3-2): der Nachthimmel leuchtet selbst (Airglow und das Licht der Sterne) aus einer Schicht glutHoeheM
+    // ueber dem Boden; himmel = seine Leuchtdichte im Zenit (linear, Welt-Einheiten, in der Eichung der Nacht auf dem Deckel 1,0,
+    // wie der Mond): der Nacht-Anker der Gelaende-Welt 0x0a1326 (roh, wie die Luft der Welt ihn las) x 1,3 = 0x0d1931, geeicht
+    // an der Nacht vor D3 (Wiese, Uhr 0,76-0,80 und Mitternacht nicht dunkler). Schraeg gesehen heller (van Rhijn), durch
+    // dieselbe Luft gedaempft wie jeder Strahl; es leuchtet im Mass der Grenzgroesse (sichtbar, wie die Sterne erscheinen)
+    nacht: { skala: 0.16, lum: 0.06, mond: [0x9f / 255, 0xb8 / 255, 0xdc / 255], himmel: [0x0d / 255, 0x19 / 255, 0x31 / 255], glutHoeheM: 90000 },
+    durchlassSchritte: 40,         // Marsch-Schritte des Durchlasses (Sonne auf der CPU UND die Transmittance-Tafel)
+};
+__terrainCore.ATMO_GESETZ = ATMO_GESETZ;
+// DIE RECHNUNG des Gesetzes (rein, THREE-frei; Einheiten km und 1/km wie Hillaire) — die Welt (`_atmoSonne`, die Tafeln) und
+// das Labor (phytogenesis `atmosphere`) rufen DIESELBEN Funktionen. medium: das Medium bei der Extinktion der Luft
+// betaLuft (1/m; das Aerosol ist ihr Anteil ueber dem Rayleigh) und dem Boden albedo. durchlass: rgb von der Hoehe h (km
+// ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
+// sonne: e = sin(Hoehe); col = Farbton (unter dem Horizont zum Mond), lum = hellster Kanal — col*lum IST der Durchlass.
+var ATMO_RECHNUNG = {
+    betaKlar: function (G) {
+        return -Math.log(G.luft.kontrast) / G.luft.sichtKlarM;
+    },
+    medium: function (G, betaLuft, albedo) {
+        var HR = G.rayleighH / 1000;
+        var mie = Math.max(0, betaLuft - G.luft.betaRayleigh) * 1000;
+        var t = G.rayleighTiefe;
+        return {
+            RG: G.erdeM / 1000,
+            RT: G.randM / 1000,
+            HR: HR,
+            betaR: [t[0] / HR, t[1] / HR, t[2] / HR],
+            HM: G.luft.skalenHoeheM / 1000,
+            mieExt: mie,
+            mieSca: mie * G.mieAlbedo,
+            g: G.mieG,
+            ozon: G.ozon.absorption.map(function (x) {
+                return x * 1000;
+            }),
+            ozonMitte: G.ozon.mitteM / 1000,
+            ozonHalb: G.ozon.halbM / 1000,
+            albedo: albedo || null,
+        };
+    },
+    durchlass: function (M, h, mu, N, out) {
+        var r = M.RG + Math.max(0, h);
+        var dB = r * r * (mu * mu - 1) + M.RG * M.RG;
+        if (mu < 0 && dB >= 0) {
+            out[0] = out[1] = out[2] = 0;
+            return out;
+        }
+        var d = -r * mu + Math.sqrt(Math.max(0, r * r * (mu * mu - 1) + M.RT * M.RT));
+        var dt = d / N;
+        var t0 = 0,
+            t1 = 0,
+            t2 = 0;
+        for (var s = 0; s < N; s++) {
+            var t = (s + 0.5) * dt;
+            var hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
+            var dR = Math.exp(-hi / M.HR);
+            var dM = Math.exp(-hi / M.HM) * M.mieExt;
+            var dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
+            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
+            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
+            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
+        }
+        out[0] = Math.exp(-t0);
+        out[1] = Math.exp(-t1);
+        out[2] = Math.exp(-t2);
+        return out;
+    },
+    sonne: function (G, M, h, e, N, T) {
+        ATMO_RECHNUNG.durchlass(M, h, e, N, T);
+        var mx = Math.max(T[0], T[1], T[2], 1e-4);
+        var n = G.nacht;
+        var night = Math.max(0, Math.min(1, -e / n.skala));
+        return {
+            col: {
+                r: T[0] / mx + (n.mond[0] - T[0] / mx) * night,
+                g: T[1] / mx + (n.mond[1] - T[1] / mx) * night,
+                b: T[2] / mx + (n.mond[2] - T[2] / mx) * night,
+            },
+            lum: mx * (1.0 - night) + n.lum * night,
+            day: Math.max(0, Math.min(1, e)),
+        };
+    },
+};
+__terrainCore.ATMO_RECHNUNG = ATMO_RECHNUNG;
+
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
 // (REZEPTE/BUILD); SOLL/DARF-Blöcke wachsen unter v1 (must-ignore trägt sie).
@@ -301,7 +402,7 @@ const PORTAL_RENDER_CONFIG = {
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
         // Laub-Karte in Blatt-Groessen), lagen · quote · geruest · wedel (S3, docs/studio-vertrag.md B2c „Die Kronen-Kosten";
         // wedel.holz und straehne.holz: der Holz-Anteil an der Farbe von Wedel und Straehne, geeicht an der Kronenfarbe der
-        // Karten von V18.536), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
+        // Karten von V18.536; wedel.spalte: die groesste Breite einer Wedel-Karte in Stueck-Laengen, L2 15.10.), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
         // 05.10.: die schlanke Trauer-Klinge der L1 ist gefallen, sie las als Papier-Streifen), rinde (L0: ast/reisig in
         // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
@@ -329,7 +430,7 @@ const PORTAL_RENDER_CONFIG = {
                     lagen: 16,
                     blattKarte: 4.0,
                     geruest: 0.1,
-                    wedel: { ab: 0.35, teile: 1, breite: 1.65, nadel: 0.025, rand: 0.5, winkel: 10, holz: 0.15 },
+                    wedel: { ab: 0.35, teile: 1, breite: 1.65, nadel: 0.016, rand: 0.5, winkel: 40, spalte: 1.25, holz: 0.15 },
                     straehne: { teile: 2, breite: 0.72, holz: 0 },
                     rinde: { ast: 0.4, reisig: 0.1 },
                     boden: 0.02,
@@ -342,7 +443,7 @@ const PORTAL_RENDER_CONFIG = {
                     quote: 0.35,
                     blattKarte: 2.2,
                     geruest: 0.25,
-                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.05, rand: 0.3, winkel: 5, holz: 0.15 },
+                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
                     straehne: { teile: 1, breite: 0.95, holz: 0.06 },
                     deckung: [0.8, 1.15],
                     ringToleranz: 0.001,
@@ -401,8 +502,12 @@ const PORTAL_RENDER_CONFIG = {
             // DER HALM-TEPPICH (K56, 14.10.): der Büschel deckt seine Raster-Zelle (TEPPICH_REICH), die Dreiecke wandern
             // von der Rispe in die Halme — L1 Halme 3 Segmente, 0,8 der Labor-Zahl, Rispe 4 × 1 bei 1,6 (862/1 000, vorher
             // 1 188); die Nah-Wiese an der Wiese −278/−1038 74,1k → 74,8k Dreiecke, Halm-Deckung des Bodens 0,230 → 0,460.
+            // DIE GRASNARBE (K70): die Rispe der L1 ist EINE nickende Ähre (1 × 2 Segmente, tastet die Kurve ab) statt vier
+            // gestreckter Grannen (4 × 1), die aus 2–5 m als helle V-Zeichen über der Narbe standen; 8 → 4 Dreiecke je Rispe
+            // (L1 798/990 → 702/858 an den zwei Vorlagen) — die Dreiecke tragen die Narbe, die das Bodenlicht der stehenden
+            // Kronen dichter wirft (`_bodenLichtFeld`).
             grass: {
-                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
@@ -471,13 +576,12 @@ const PORTAL_RENDER_CONFIG = {
         },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
-    // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
-    // Kronen-Radien je Art. AnazhRealm adoptiert diese in seine FOREST-Oekologie.
+    // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2). Die
+    // Kronen-Radien je Art traegt EINE Tafel: phyto-core FOREST_PACK.crown, die gewachsene Krone (T2).
     density: {
         cell: 12,
         pack: 1.16,
         dartsPerM2: 1.2,
-        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
     },
     // Understory — der Raster-Abstand (m) je Schicht ueber den aktiven Radius: Gras dicht, Blumen mittel,
     // Buesche weit. AnazhRealm pflanzt dieselbe Wiese/Blumen/Buesche im selben Radius.
@@ -661,7 +765,9 @@ function baumWindGlsl(foliage) {
         (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
     );
 }
-function injectWind(mat, foliage, isGrass, baum) {
+// `krone` (K68-N1): das Laub einer Krone (emitTreeRezept: Karte, Klinge, Nadel) trägt die Normale der Krone (phyto-core
+// kronenNormalen) und liest sie FLIP-FREI — die doppelseitige Rückseite kehrte sie nach innen (die Welt: `_laubStoffNormale`).
+function injectWind(mat, foliage, isGrass, baum, krone) {
     mat.onBeforeCompile = function (sh) {
         sh.uniforms.uTime = WIND.uTime;
         if (baum) sh.uniforms.uWindBaum = WIND.uWindBaum;
@@ -756,14 +862,20 @@ function injectWind(mat, foliage, isGrass, baum) {
                         ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
                 );
             }
-            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Seite nach unten gewandt (die
-            // Normale ist nach normal_fragment_begin seiten-gespiegelt) → heller und matter. Laub und Blüte, nie Gras;
-            // dieselben Zahlen liest der Laub-Stoff der Welt.
+            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene FLÄCHE nach unten gewandt (K68-N1: die
+            // Fläche aus den Ableitungen, zum Auge gewandt — nie die Licht-Normale, die an der Krone die Krone ist) → heller
+            // und matter. Laub und Blüte, nie Gras; dieselben Zahlen liest der Laub-Stoff der Welt (`_laubUnterseite`).
+            // DIE KRONE FLIP-FREI (K68-N1): nach normal_fragment_begin trägt `normal` wieder die Normale der Krone ohne Seite.
             if (!isGrass) {
                 const BU = self.__phytoCore.BLATT_UNTERSEITE;
+                if (krone)
+                    sh.fragmentShader = sh.fragmentShader.replace(
+                        "#include <normal_fragment_begin>",
+                        "#include <normal_fragment_begin>\n#ifndef FLAT_SHADED\n normal = normalize( vNormal );\n#endif"
+                    );
                 sh.fragmentShader = sh.fragmentShader.replace(
                     "#include <normal_fragment_maps>",
-                    "#include <normal_fragment_maps>\n{ float _ny=dot(normal,normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
+                    "#include <normal_fragment_maps>\n{ float _ny=dot(normalize(cross(dFdx(vViewPosition),dFdy(vViewPosition))),normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
                         BU.steil.toFixed(3) +
                         ",0.0,1.0); float _ul=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)); diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(_ul)," +
                         BU.grau.toFixed(3) +
@@ -775,7 +887,11 @@ function injectWind(mat, foliage, isGrass, baum) {
         }
     };
     mat.customProgramCacheKey = function () {
-        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v9laublicht") : "bark") + "_v9overlap";
+        return (
+            "wind_" +
+            (foliage ? (isGrass ? "grass_v8tint" : "fol_v10seite" + (krone ? "_krone" : "")) : "bark") +
+            "_v9overlap"
+        );
     };
     return mat;
 }
@@ -798,6 +914,14 @@ function makeBarkNormal() {
     const img = x.createImageData(N, N);
     const h = new Float32Array(N * N);
     let s = mulberry32(99);
+    // DIE SCHREIB-REGEL DES FLOAT32ARRAY (K60-2, Byte-Beweis): ein Index, der keine ganze Zahl ist, schreibt nichts (die
+    // Spezifikation verwirft ihn, sein Lesen ist undefined) — die Kerne laufen ab -w bzw. -r, und eine gebrochene Breite
+    // trifft so keinen Texel. Bis K60-2 nahm jeder solche Zugriff den langsamen Pfad der Eigenschafts-Namen: 1,3 s je Faden
+    // allein, 2,0–3,1 s, wenn die acht Studio-Fäden beim Start zugleich rechneten (Radeon kalt, vor dem Buch und vor jeder
+    // Karte). Jetzt fragt jeder Zugriff zuerst, ob er schreibt — dieselben Bytes (sha 039367ab31640d7f, 1 048 576 Bytes).
+    // Von den 1 181 630 Kern-Zugriffen der Saat 99 schreibt keiner: die Rinde trägt allein ihr Rauschen. Die Kerne auf ganze
+    // Texel zu legen, ändert das Bild — ein Re-Mint, der Vertrags-Akt des Studios.
+    const ganz = (k) => k === Math.floor(k);
     for (let i = 0; i < 300; i++) {
         const cx = s() * N,
             w = 1 + s() * 3.5,
@@ -807,7 +931,8 @@ function makeBarkNormal() {
             const px = Math.floor(cx + wob);
             for (let d = -w; d <= w; d++) {
                 const xx = (((px + d) % N) + N) % N;
-                h[y * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                const k = y * N + xx;
+                if (ganz(k)) h[k] -= Math.exp(-(d * d) / (w * w)) * dep;
             }
         }
     }
@@ -823,7 +948,8 @@ function makeBarkNormal() {
                 xx = ((Math.floor(x0 + t) % N) + N) % N;
             for (let d = -w; d <= w; d++) {
                 const y2 = (((yy + d) % N) + N) % N;
-                h[y2 * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                const k = y2 * N + xx;
+                if (ganz(k)) h[k] -= Math.exp(-(d * d) / (w * w)) * dep;
             }
         }
     }
@@ -836,7 +962,8 @@ function makeBarkNormal() {
             for (let dx = -r; dx <= r; dx++) {
                 const xx = (((px + dx) % N) + N) % N,
                     yy = (((py + dy) % N) + N) % N;
-                h[yy * N + xx] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
+                const k = yy * N + xx;
+                if (ganz(k)) h[k] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
             }
     }
     for (let i = 0; i < h.length; i++) h[i] += (s() - 0.5) * 0.18;
@@ -891,6 +1018,15 @@ function buildMaterials() {
         false,
         true
     );
+    // DAS KLINGEN-LAUB DER KRONE (K68-N1): Klinge und Nadel eines Baums und Strauchs tragen die Normale der Krone — ihr Stoff
+    // liest sie flip-frei; Farn, Blüte, Schilf und Gestrüpp (foliageMat) tragen ihre eigene Fläche und lesen die Seite.
+    foliageMatKrone = injectWind(
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide }),
+        true,
+        false,
+        true,
+        true
+    );
     foliageMatTex = injectWind(
         new THREE.MeshStandardMaterial({
             vertexColors: true,
@@ -901,6 +1037,7 @@ function buildMaterials() {
         }),
         true,
         false,
+        true,
         true
     ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
     grassMat = injectWind(
@@ -1207,43 +1344,51 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
                 sn = Math.sin(phi);
             karten = [vnorm(vadd(vscl(q2, c), vscl(q1, sn))), vnorm(vsub(vscl(q2, c), vscl(q1, sn)))];
         } else karten = [q1, q2];
-        for (const q of karten) {
-            const nrm = vnorm(vcross(q, e1)).map((c) => (Math.abs(c) < 1e-9 ? 0 : c));
-            const pos = [],
-                nor = [],
-                col = [],
-                uvs = [],
-                aw = [],
-                ac = [],
-                at = [];
-            for (let i = 0; i < 4; i++) {
-                const cx = corner[i][0] * hq,
-                    cy = corner[i][1] * al * 0.5;
-                pos.push(
-                    mitte[0] + q[0] * cx + e1[0] * cy,
-                    mitte[1] + q[1] * cx + e1[1] * cy,
-                    mitte[2] + q[2] * cx + e1[2] * cy
-                );
-                nor.push(nrm[0], nrm[1], nrm[2]);
-                col.push(fc.r, fc.g, fc.b);
-                // v laeuft entlang der Kette (oben = der Zweig-Ansatz v0, unten = die Spitze v0 + kern), u quer — der
-                // Kern-Ausschnitt der Zelle wie die Laub-Karte
-                uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
-                aw.push(bl.sway, bl.phase, bl.omega);
-                ac.push(mitte[0], mitte[1], mitte[2]);
-                at.push(1);
+        // DIE SPALTEN DES WEDELS (L2, 15.10.): ein Stück, dessen Nadel-Wolke breiter reicht als `spalte` × seine Länge, trägt
+        // die Zelle in M Spalten nebeneinander — jede Karte höchstens so breit wie `spalte` × lang, die Zelle nie quer
+        // gestreckt. Befund: die Koniferen-L0 trug Karten 2,3–6,5 × so breit wie lang (L1 bis 3,5–5,5 ×), die Zweiglein der
+        // Zelle lasen quer gezogen als lange gerade Striche — die Laub-Kante der Mess-Wiese 0,33. Der Schatten-Teil trägt die Hülle.
+        const M = wedel && !nurQuer ? Math.max(1, Math.ceil((2 * hq) / (halb.spalte * al) - 1e-9)) : 1;
+        const hs = hq / M;
+        for (const q of karten)
+            for (let j = 0; j < M; j++) {
+                const nrm = vnorm(vcross(q, e1)).map((c) => (Math.abs(c) < 1e-9 ? 0 : c));
+                const mj = M > 1 ? vadd(mitte, vscl(q, (2 * j + 1 - M) * hs)) : mitte;
+                const pos = [],
+                    nor = [],
+                    col = [],
+                    uvs = [],
+                    aw = [],
+                    ac = [],
+                    at = [];
+                for (let i = 0; i < 4; i++) {
+                    const cx = corner[i][0] * hs,
+                        cy = corner[i][1] * al * 0.5;
+                    pos.push(
+                        mj[0] + q[0] * cx + e1[0] * cy,
+                        mj[1] + q[1] * cx + e1[1] * cy,
+                        mj[2] + q[2] * cx + e1[2] * cy
+                    );
+                    nor.push(nrm[0], nrm[1], nrm[2]);
+                    col.push(fc.r, fc.g, fc.b);
+                    // v laeuft entlang der Kette (oben = der Zweig-Ansatz v0, unten = die Spitze v0 + kern), u quer — der
+                    // Kern-Ausschnitt der Zelle wie die Laub-Karte
+                    uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
+                    aw.push(bl.sway, bl.phase, bl.omega);
+                    ac.push(mitte[0], mitte[1], mitte[2]);
+                    at.push(1);
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+                g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+                g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+                g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+                g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
+                g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
+                g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
+                g.setIndex([0, 1, 2, 0, 2, 3]);
+                arr.push(g);
             }
-            const g = new THREE.BufferGeometry();
-            g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-            g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-            g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-            g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-            g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
-            g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
-            g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
-            g.setIndex([0, 1, 2, 0, 2, 3]);
-            arr.push(g);
-        }
     }
 }
 
@@ -1597,21 +1742,43 @@ function __ringBahn(R, tol, festUnter) {
 }
 // DIE LAGEN-WAHL (S3, 09.10.): die Blattstellen einer Baum-Krone, deren Karten (Kante `kante` Blatt-Groessen) die Zeile
 // `lagen` halten — phyto-core `kronenLagen` schaetzt die Lagen der vollen Krone (gerastert, 8 Ansichten, 64 px), die
-// Stufe traegt den Anteil LAGEN_RESERVE·lagen / Schaetzung im Index-Stride (gleichmaessig ueber die Krone, kein rnd():
-// FIX v35). Die Reserve deckt den Abstand der Schaetzung zur Messung der Wand (kronen-linse, 24 Ansichten: die Krone
-// eines Anteils f traegt 1,0–1,15 × f × die volle; Schaetzung/Messung 0,87–0,94 — gemessen an 16 Laub-Gestalten).
+// Stufe traegt den Anteil f im Index-Stride (gleichmaessig ueber die Krone, kein rnd(): FIX v35). Die Wahl ist
+// GESCHLOSSEN (T2, 16.10.): sie beginnt bei f = LAGEN_RESERVE·lagen / Schaetzung, schaetzt die gewaehlte Krone mit
+// demselben Raster nach und korrigiert f (× LAGEN_ZIEL·lagen / Schaetzung), bis die Schaetzung die Zeile haelt — sie
+// liefert die groesste haltende Wahl. Befund: die schmale Bestandskrone (Hub der Krone, BESTAND) traegt mit dem Anteil f
+// 1,1–1,3 × f × die volle (die offene Wahl mit Reserve riss die Wand: Eiche/Buche L0 16,1–17,0 > 16, L1 13,0–14,7 > 13);
+// die Schaetzung liegt 2–13 % ueber der Wand (kronen-linse, 24 Ansichten, H/120 — 16 Laub-Goldens), die Wahl haelt also
+// auch dort. Die Peitschen der Trauer-Krone waehlen offen (LAGEN_RESERVE, unten).
 const LAGEN_RESERVE = 0.82;
+const LAGEN_ZIEL = 0.97;
+const LAGEN_SCHRITTE = 6;
 function __lagenWahl(blaetter, kante, lagen) {
     if (blaetter.length <= 3) return blaetter;
-    const PC = self.__phytoCore;
-    const voll = PC.kronenLagen(blaetter, kante, PC.BLATT_ATLAS_BREIT.kern, 64);
-    const f = voll > 0 ? Math.min(1, (LAGEN_RESERVE * lagen) / voll) : 1;
-    if (f >= 1) return blaetter;
-    const keep = Math.max(3, Math.round(blaetter.length * f)),
-        st = blaetter.length / keep,
-        K = [];
-    for (let t = 0; t < keep; t++) K.push(blaetter[Math.floor(t * st)]);
-    return K;
+    const PC = self.__phytoCore,
+        kern = PC.BLATT_ATLAS_BREIT.kern;
+    const voll = PC.kronenLagen(blaetter, kante, kern, 64);
+    if (!(voll > lagen)) return blaetter;
+    const wahl = (f) => {
+        const keep = Math.max(3, Math.round(blaetter.length * f)),
+            st = blaetter.length / keep,
+            K = [];
+        for (let t = 0; t < keep; t++) K.push(blaetter[Math.floor(t * st)]);
+        return K;
+    };
+    let f = (LAGEN_RESERVE * lagen) / voll,
+        best = null,
+        bestL = 0;
+    for (let i = 0; !best || (i < LAGEN_SCHRITTE && bestL < LAGEN_ZIEL * lagen); i++) {
+        const K = wahl(f),
+            l = PC.kronenLagen(K, kante, kern, 64);
+        if (l <= lagen && (!best || K.length > best.length)) {
+            best = K;
+            bestL = l;
+        }
+        if (K.length <= 3) return best || K;
+        f = Math.min(1, (f * LAGEN_ZIEL * lagen) / l);
+    }
+    return best;
 }
 // Die Bahn eines Strangs bis zum Anteil `ab` ihrer Bogenlaenge (der Nadel-Ast der L0: Roehre bis `wedel.ab`) — die Ringe
 // davor und ein Ring genau an der Grenze (Mitte und Schwung linear); dort läuft die Röhre spitz aus (`BAHN_SPITZE` ihres
@@ -1810,11 +1977,12 @@ function emitTreeRezept(P, stufe) {
             _wedel.rand >= 0 &&
             _wedel.winkel > 0 &&
             _wedel.winkel < 45 &&
+            _wedel.spalte > 0 &&
             _wedel.holz >= 0 &&
             _wedel.holz < 1
         )
     )
-        throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
+        throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, spalte > 0, 0 <= holz < 1})");
     const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
@@ -1899,7 +2067,7 @@ function emitTreeRezept(P, stufe) {
     // jede neue Art erbt die Baum-Krone nicht still):
     //  - DIE LAGEN-WAHL (S3): Laub-Karten aus dem EINEN Blatt-Atlas (Breitblatt-Zellen) auf so vielen Blattstellen, dass die
     //    Krone die Zeile `lagen` haelt (`__lagenWahl`: phyto-core `kronenLagen` schaetzt die Lagen der vollen Krone, die
-    //    Stufe traegt den Anteil LAGEN_RESERVE·lagen / Schaetzung im Index-Stride — gleichmaessig ueber die Krone).
+    //    Stufe traegt den groessten Anteil im Index-Stride, dessen Krone die Zeile haelt — geschlossen nachgeschaetzt).
     //    Befund (Kern V18.536, kronen-linse 24 Ansichten): die Laub-L0 trug 35–72 Quad-Lagen je Kronen-Pixel (jede Lage
     //    alpha-getestet und schattiert, 65 % ihrer Fragmente verworfen), die L1 24–47 — der Blatt-Stride `dichte.laub`
     //    war nur gegen die saettigende binaere Deckung geeicht. Die ZWEIG-WAHL (der Anteil der Laeufe traegt alle seine
@@ -2276,8 +2444,14 @@ function emitTreeRezept(P, stufe) {
             .lerp(lc2, (s - Math.floor(s)) * 0.5)
             .lerp(vegFarbe(P.leafCol), P.kind === "shrub" ? 0.72 : 0.45);
     };
+    // DIE PARTIEN DER KRONE (T2): die Laubkrone (Baum, keine Konifere, kein Trauer-Vorhang) lichtet je Ast-Partie — jede
+    // Laub-Geometrie traegt die Partie ihres Blatts (phyto-core kronenPartien) in die Normale der Krone (unten).
+    const _partieVon = P.kind === "tree" && !P.conifer && !_trauer ? _atl.kronenPartien(nodes.runMeta) : null;
+    const _partie = new Map();
     // Die Trauer-L0 und -L1 tragen keine Klinge: ihre Blaetter reisen in den Straehnen (unten).
     for (const l of (_L0 || _trauerL1) && _trauer ? [] : nodes.leaves) {
+        const _g0 = folGeos.length,
+            _t0 = folGeosTex.length;
         if (l.needle) {
             // Die Nadel der L2 (die Baum-L0/-L1 tragen Wedel): FIX v38 — Deckung ~ n*len^2, die gehaltenen Nadeln der L2
             // sind laenger, die Krone bleibt dicht.
@@ -2319,6 +2493,11 @@ function emitTreeRezept(P, stufe) {
                 const lp = P.leafShape;
                 pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5);
             }
+        }
+        if (_partieVon) {
+            const p = _partieVon(l.run);
+            for (let k = _g0; k < folGeos.length; k++) _partie.set(folGeos[k], p);
+            for (let k = _t0; k < folGeosTex.length; k++) _partie.set(folGeosTex[k], p);
         }
     }
     // DIE TRAUER-STRAEHNE der L0 (S7) und der L1 (05.10.): jede gehaltene Peitsche wird EINE Karten-Kette entlang ihrer
@@ -2379,9 +2558,10 @@ function emitTreeRezept(P, stufe) {
     // Strähne aus der Wedel-Zelle entlang seiner ganzen gewachsenen Bahn, je Stück so breit, wie die Nadel-Wolke dort reicht
     // (`__wedelBreiten` × `wedel.breite`, die Kette vom Röhren-Ende bis zur Spitze), nie unter `boden`·Baumhoehe; Farbe und
     // Wind tragen seine Nadeln. Die Röhre der L0 (bis `wedel.ab`) läuft im Wedel spitz aus. Die zwei Karten je Stück
-    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast: von der Seite deckt sie
-    // wie V18.536 — waagrecht und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 %
-    // weniger); der Schatten-Teil (L1) trägt je Stück die waagrechte.
+    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast); der Schatten-Teil (L1)
+    // trägt je Stück die waagrechte. L2 (15.10.): das Kreuz öffnet auf ±40° — bei ±10°/±5° stand jede Karte von unten auf der
+    // Kante und las als Strich (der Spieler sieht die Krone von unten); ein Stück breiter als `wedel.spalte` × lang trägt die
+    // Zelle in Spalten (pushStraehne), nie quer gestreckt.
     if (_wedel) {
         const _bodenY = nodes.height * _b0.boden;
         const nadelFarbe = vegFarbe(0x2e5526).lerp(lc, 0.2);
@@ -2405,7 +2585,7 @@ function emitTreeRezept(P, stufe) {
             }
             if (!h.some((x) => x > 0)) continue;
             const farben = A.blaetter.map(() => fWedel);
-            const form = { breiten: h, winkel: (_wedel.winkel * Math.PI) / 180 };
+            const form = { breiten: h, winkel: (_wedel.winkel * Math.PI) / 180, spalte: _wedel.spalte };
             for (const [ziel, nurQuer] of _wurf1 ? [[folGeosTex, false], [wurfKarten, true]] : [[folGeosTex, false]])
                 pushStraehne(
                     ziel,
@@ -2445,7 +2625,17 @@ function emitTreeRezept(P, stufe) {
     }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
-    addMerged(folGeos, foliageMat);
+    // DIE NORMALE DER KRONE (K68): Klingen, Nadeln, Karten und Wedel der Krone lichten mit dem Kronen-Ellipsoid (phyto-core
+    // kronenNormalen) — EINE Krone ueber alle Laub-Teile, damit L0 (Klinge), L1 (Karte) und die gebackene Karte (L2, aus der
+    // L1) dieselbe Licht- und Schattenseite tragen; die Laubkrone je Ast-Partie (T2, `_partie`), jede Partie ihr Ellipsoid.
+    {
+        const _kn = [...folGeos, ...folGeosTex].filter((g) => g.attributes && g.attributes.normal && g.attributes.position);
+        if (_kn.length)
+            self.__phytoCore.kronenNormalen(
+                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array, partie: _partie.get(g) }))
+            );
+    }
+    addMerged(folGeos, foliageMatKrone);
     if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
     if (_wurf1) {
         // DER SCHATTEN-TEIL: das Geruest als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) — EIN Gitter, EIN Stoff.
@@ -2688,28 +2878,84 @@ function emitFlower(P) {
 const GRAS_SPITZE_HELL = 1.08;
 // Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
 const TEPPICH_REICH = 0.7;
+// DIE WIESEN-FARBE (W1, 16.10.): die Streuung der Wiese als EIN Gesetz für Labor und Welt. (a) je HALM (emitGrass, Vertex-
+// Farbe) aus einem EIGENEN Γ5-Strom (SEED ^ 0x3c6e) — der Gestalt-Strom bleibt byte-gleich: Helligkeit, Farbton gelb- ↔
+// blaugrün, trockene Halme, strohige Spitzen; (b) je BÜSCHEL der Tint `wiesenTint` (Labor `aTintI`, Welt Instanz-Farbe).
+const WIESEN_FARBE = Object.freeze({
+    halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62 }),
+});
+// Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): der Labor-Tint
+// FIX v27 (phytogenesis addTiled) wörtlich — hell + trocken wärmeres Oliv, Schatten und Nässe tiefes kühles Grün, ein
+// Helligkeits-Jitter je Büschel —, das Licht um die offene Wiese zentriert (dort neutral, die Eichung der Halm-Albedo
+// bleibt). Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2] und gibt `aus` zurück.
+function wiesenTint(x, z, lit, wet, aus, o) {
+    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+    const n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453,
+        jt = n - Math.floor(n) - 0.5;
+    const val = (lit - 1) * 0.45 + jt * 0.18,
+        warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
+    aus[o] = cl(1 + val + warm, 0, 2);
+    aus[o + 1] = cl(1 + val + warm * 0.35, 0, 2);
+    aus[o + 2] = cl(1 + val - warm * 0.8 + (wet - 0.5) * 0.12, 0, 2);
+    return aus;
+}
+/* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
+   Labor pflanzt danach, die Nah-Wiese der Welt wirft ihre Büschel gegen `grass`; td = Abstand zum Pfad) */
+function groundCover(L, m, rk, td) {
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x)),
+        sstep = (a, b, x) => {
+            const t = clamp((x - a) / (b - a), 0, 1);
+            return t * t * (3 - 2 * t);
+        };
+    if (td < 3.0) return { grass: 0, flower: 0, shrub: 0, pebble: 0.2, bare: 1 }; // breiter gepflegter Pfad: nackte Erde, sichtbarer Weg
+    const edge = td < 3.4 ? 0.55 : 0.3;
+    const meadow = clamp(L * 1.08 - rk * 0.85 + m * 0.22, 0, 1); // hell+feucht+nicht steinig = Wiese
+    return {
+        grass: clamp(meadow * 1.12, 0, 1), // TEPPICH in Lichtungen
+        flower: sstep(0.4, 0.7, L) * (1 - rk) * edge, // Saum/Sonne
+        shrub: Math.exp(-((L - 0.4) * (L - 0.4)) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42, // Halbschatten
+        pebble: clamp(rk * 1.05 - L * 0.15, 0, 1) * 0.3, // FIX v27: steinige Flecken, aber sparsam (0.55->0.30) -> kein Konfetti-Rauschen
+        bare: 0,
+    };
+}
+// DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
+// 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
+// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), er ist
+// LINEAL wie ein Grasblatt — parallele Ränder, die Spitze erst im letzten Drittel (Breite 1 − 0,86·f³, Fläche 0,76 statt
+// 0,57 des Rechtecks bei denselben Dreiecken) —, und die Fernstufe L2 ist ein gerader Halm (ein Segment, 2 Dreiecke) in
+// 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
     const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
+    // DIE WIESEN-FARBE je Halm (W1): eigener Strom, fünf Würfe je Halm, gezogen vor jeder Zeile
+    const WH = WIESEN_FARBE.halm,
+        farbStrom = mulberry32(((Math.floor(SEED) ^ 0x3c6e) + 7) >>> 0),
+        stroh = seedCol.clone().multiplyScalar(WH.stroh);
     for (let i = 0; i < N; i++) {
+        const hl = WH.hell[0] + (WH.hell[1] - WH.hell[0]) * farbStrom(),
+            ton = (farbStrom() - 0.5) * WH.ton;
+        const tw = farbStrom(),
+            tg = farbStrom();
+        const trk = tw < WH.trockenAnteil ? WH.trocken[0] + (WH.trocken[1] - WH.trocken[0]) * tg : 0,
+            spz = Math.pow(farbStrom(), 2) * WH.spitze;
         const a = i * GOLDEN,
             rr = Math.sqrt(i / N) * P.clump;
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 2.6 : 6.0;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 6.5;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 3,
+        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 1,
             positions = [],
             idx = [],
             uvs = [],
@@ -2723,17 +2969,25 @@ function emitGrass(P) {
         for (let s = 0; s <= K; s++) {
             const f = s / K,
                 dd = Math.pow(f, 1.8) * droop;
-            dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
-            dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
-            p = vadd(p, vscl(dir, L / K));
+            // die erste Zeile steht am Fuß (K70), jede weitere eine Segment-Länge entlang der gebogenen Richtung
+            if (s > 0) {
+                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
+                dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
+                p = vadd(p, vscl(dir, L / K));
+            }
             tip = p.slice();
-            const halfW = w * (1 - f * 0.86) * 0.5,
+            const halfW = w * (1 - f * f * f * 0.86) * 0.5,
                 rt = vnorm(vcross(dir, [0, 1, 0]));
             const cl = vadd(p, vscl(rt, -halfW)),
                 cr = vadd(p, vscl(rt, halfW));
             positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
             uvs.push(0, f, 1, f);
             const c = baseCol.clone().lerp(tipCol, f);
+            c.r *= hl * (1 + ton);
+            c.g *= hl;
+            c.b *= hl * (1 - ton * 1.2);
+            const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
+            c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
             for (let q = 0; q < 2; q++) {
                 const sw = Math.pow(f, 1.4) * P.windGain;
                 sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
@@ -4484,7 +4738,9 @@ function deriveParamsPlant(pre) {
         const fine = clamp(api, 0, 1); // api: breitblaettrig(0) -> feinhalmig(1)
         return {
             kind: "grass",
-            bladeLen: lerp(0.55, 2.0, slim) * J(0.16),
+            // K70: der Halm wurzelt (emitGrass) — 1,35 × die Länge hält die Höhe der Narbe (vorher schwebte L1/L2 ein Drittel
+            // über dem Grund) und füllt sie bis zum Boden.
+            bladeLen: lerp(0.74, 2.7, slim) * J(0.16),
             bladeW: lerp(0.1, 0.035, fine) * J(0.15),
             density: clamp(leaf * J(0.2), 0.06, 1),
             // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt
@@ -7434,6 +7690,9 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 // Die Halm-Spitze des Grases (emitGrass) reist mit: der Stamm hellt den Saison-Akzent um DIESELBE Zahl auf (rein additiv).
 __terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
+// DIE WIESE (W1): der Büschel-Tint und die Bodenschicht reisen zum Stamm — Labor und Nah-Wiese lesen dasselbe Gesetz.
+__terrainCore.wiesenTint = wiesenTint;
+__terrainCore.groundCover = groundCover;
 // DIE PLATZIERUNG (Welt-Skala je Preset) reist mit zum SYNCHRONEN Stamm-Leser (rein additiv, Leben-Schau 2, 09.10.): die
 // Kollision eines Studio-Werks misst in derselben Welt-Skala, in der es gezeichnet wird — ab dem Spawn, nicht erst nach dem
 // async Buch (vorher trug ein Hand-Spiegel nur die Baeume: ein Fels kollidierte bis zum Buch in Vorlagen-Groesse).

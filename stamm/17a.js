@@ -485,6 +485,9 @@ class AnazhRealm_Z17a {
     _tickBlueprintPrebake() {
         const st = this.state;
         if (st._frameOverBudget) return; // erst die Frame-Zeit, dann vorausplanen (V18.282-Wand)
+        // erst das Bild, dann vorausplanen (K60-2): kein Leser des ersten Weltbilds wählt einen Bauplan — unter dem Ladeschirm
+        // (`_ladeTakt`, der kein Budget reißt) wärmte das Vorbacken Radeon kalt 0,71 s Geister vor dem Bild (K602/p1)
+        if (this._ladeTakt()) return;
         if (!st.blueprints) return;
         if (!this._prebakedBlueprints) this._prebakedBlueprints = new Set();
         const done = this._prebakedBlueprints;
@@ -668,7 +671,9 @@ class AnazhRealm_Z17a {
     // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
     // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
-    _blattAtlasProbe(T) {
+    // DIE KANTE (K68): `a` ist die Deckung als Kante von EINEM Pixel um die Schwelle `c` (`_laubKante`), `schwelle` der
+    // Knoten, mit dem der Bild-Pass sie schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
+    _blattAtlasProbe(T, c) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
         const uv = T.attribute("uv", "vec2");
@@ -678,8 +683,48 @@ class AnazhRealm_Z17a {
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: deckung.a,
+            a: this._laubKante(T, deckung.a, c),
+            schwelle: this._laubSchwelle(T),
         };
+    }
+
+    // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
+    // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
+    // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
+    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster).
+    // Der Bild-Pass vergleicht ihn mit dem Rauschen der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist die
+    // geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL alphaTest
+    // 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
+    _laubKante(T, a, c) {
+        const s = T.float(c == null ? 0.5 : c);
+        return a
+            .sub(s)
+            .div(T.fwidth(a).max(T.float(1e-4)))
+            .add(T.float(0.5))
+            .clamp(0.0, 1.0);
+    }
+
+    // DIE SCHWELLE DER KANTE (K68): das Interleaved-Gradient-Rauschen über den gespiegelten Achsen (y, x) — unabhängig vom
+    // Rauschen der Stufen-Blende und der Durchsicht (`__phytoCore.lodDitherIGN` über (x, y)) —, je Frame um 1/g (die
+    // Plastik-Zahl, `uLaubKante.x`) gedreht: neben der Goldenen Drehung der Blende (`uDitherT`) ist das Paar je Pixel über
+    // die Frames gleichverteilt, Blende und Kante multiplizieren ihre Deckung. Ohne zeitliche Auflösung (`uLaubKante.y` 0,
+    // Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt von vorher, kein stehendes Rauschen. EIN Knoten je Welt.
+    // DIE ZAHL DES STOFFS TRÄGT DIE SCHWELLE (K68-N1, Prüfer K68: das Phantom klont den Knoten, `_ghostMaterialFor` senkt nur
+    // die Zahl — bei Deckkraft 0,4 fiel unter kienspan jedes Laub-Fragment, das Baum-Phantom war wieder unsichtbar): die
+    // Schwelle ist alphaTest × (1 | 2·Rauschen), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`, derselbe Leser
+    // wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert, ändert den Schnitt mit.
+    _laubSchwelle(T) {
+        if (this._laubSchwelleKnoten) return this._laubSchwelleKnoten;
+        const lu = this._ensureLodUniforms();
+        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
+        const fc = T.screenCoordinate;
+        const h = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
+                .add(lu.uLaubKante.x)
+        );
+        this._laubSchwelleKnoten = T.materialAlphaTest.mul(T.mix(T.float(1), h.mul(2), lu.uLaubKante.y));
+        return this._laubSchwelleKnoten;
     }
 
     // Stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen (aH0/aH0L) auf eine Laub-Geometrie — EINE Quelle
@@ -703,45 +748,37 @@ class AnazhRealm_Z17a {
         return g;
     }
 
-    // ANALYTISCHE KUPPEL-NORMALE: das Laub-Shading liest die Richtung vom KRONEN-BODEN (min-Y der
-    // Kartenwolke − 0.5) + Up-Bias, NIE die Facing-Normale. Boden statt Mitte: darunter zeigten die
-    // Normalen nach unten (dunkle Unterkrone); facing-unabhängig, weil DoubleSide back-facende Normalen
-    // negiert. Konsum flip-frei via mat.normalNode (_buildPbrNodeMaterial, foliageLeaf); EINE Quelle
-    // für Karten + phyto-Klingen.
-    _stampFoliageDomeNormals(g) {
+    // DIE NORMALE DER KRONE AUF EINER LAUB-GEOMETRIE (K68-N1): das EINE Gesetz ist der Kern (phyto-core `kronenNormalen`, das
+    // Kronen-Ellipsoid × die zur Außenseite gewendete Karte) — derselbe, den der Ofen der Welt über jede Studio-Krone legt
+    // (foundry-core `emitTreeRezept`). Der Grammatik-Baum der Werkstatt (Klingen, Karten, Anker-Karten) liest ihn hier; die
+    // Kuppel vom Kronen-Boden mit Up-Bias des Wirts (bis K68) war sein Zwilling und ist gefallen. Der Stoff liest die Normale
+    // flip-frei (`_laubStoffNormale`).
+    _kronenNormalenAuf(g) {
         if (!g || !g.attributes || !g.attributes.position || !g.attributes.normal) return g;
-        const pos = g.attributes.position.array;
-        const nor = g.attributes.normal.array;
-        const vc = g.attributes.position.count;
-        if (!(vc > 0)) return g;
-        let cx = 0,
-            cz = 0,
-            minY = Infinity;
-        for (let i = 0; i < vc; i++) {
-            cx += pos[i * 3];
-            cz += pos[i * 3 + 2];
-            if (pos[i * 3 + 1] < minY) minY = pos[i * 3 + 1];
-        }
-        cx /= vc;
-        cz /= vc;
-        const oy = minY - 0.5; // Kuppel-Ursprung: der Kronen-BODEN, nie die Mitte
-        const UP = 0.3; // Up-Bias: Rand-Karten sampeln Himmel statt Horizont
-        for (let i = 0; i < vc; i++) {
-            const i3 = i * 3;
-            let nx = pos[i3] - cx;
-            let ny = pos[i3 + 1] - oy;
-            let nz = pos[i3 + 2] - cz;
-            const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-            nx /= l;
-            ny = ny / l + UP;
-            nz /= l;
-            const l2 = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-            nor[i3] = nx / l2;
-            nor[i3 + 1] = ny / l2;
-            nor[i3 + 2] = nz / l2;
-        }
+        globalThis.__phytoCore.kronenNormalen([{ pos: g.attributes.position.array, nor: g.attributes.normal.array }]);
         g.attributes.normal.needsUpdate = true;
         return g;
+    }
+
+    // DIE NORMALE DES LAUB-STOFFS (K68-N1): eine Krone mit der Normale der Krone lichtet FLIP-FREI — r184 kehrt die Normale
+    // back-facender Fragmente eines doppelseitigen Stoffs um (normalView = normalViewGeometry × faceDirection), die Rückseite
+    // einer Karte läse das Ellipsoid nach innen (Prüfer K68: 45–51 % der nahen Dreiecke vom Auge weg, die Nadel-Wedel
+    // milchig). Die Normale ist die Geometrie-Normale des Renderers selbst (Instanz-, Batch- und Modell-Rotation), ohne die
+    // Seite: beide Seiten einer Karte tragen die Krone an ihrer Stelle. EIN Ort für jeden Kronen-Stoff (Studio, Grammatik).
+    _laubStoffNormale(T, mat) {
+        mat.normalNode = T.normalViewGeometry;
+        return mat;
+    }
+
+    // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.; K68-N1): ist die GESEHENE Seite des Blatts nach unten gewandt,
+    // trägt das Laub die hellere, mattere Unterseite — die Seite ist die Fläche selbst (`normalFlat`, zum Auge gewandt), nie die
+    // Licht-Normale: mit der Normale der Krone hieß von unten die ganze Krone Unterseite (Prüfer K68: Nadel-Wedel von unten
+    // mint-weiß, Kronen-Luma +15–49 %). Dieselben Zahlen wie das Labor (foundry-core `injectWind`). EIN Ort für jeden Laub-Stoff.
+    _laubUnterseite(T, farbe) {
+        const BU = globalThis.__phytoCore.BLATT_UNTERSEITE;
+        const ny = T.normalFlat.transformDirection(T.cameraViewMatrix).y;
+        const grau = T.mix(farbe, T.vec3(farbe.dot(T.vec3(0.2126, 0.7152, 0.0722))), BU.grau).mul(BU.hell);
+        return T.mix(farbe, grau, T.float(0.5).sub(ny.mul(BU.steil)).clamp(0.0, 1.0));
     }
 
     // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
@@ -782,10 +819,8 @@ class AnazhRealm_Z17a {
         g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
         g.setIndex(new THREE.BufferAttribute(q.indices, 1));
-        // KUPPEL-NORMALE auch für die Klingen (22.07.): die Core-cup-Normalen litten
-        // denselben DoubleSide-Flip — der Host überstempelt das Shading-Attribut
-        // (phyto-core unberührt, seine Rückgabe bleibt byte-identisch).
-        this._stampFoliageDomeNormals(g);
+        // DIE NORMALE DER KRONE auch für die Klingen (K68-N1, das EINE Kern-Gesetz)
+        this._kronenNormalenAuf(g);
         // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
         // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
         this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
@@ -831,6 +866,8 @@ class AnazhRealm_Z17a {
                 g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+                // DIE NORMALE DER KRONE (K68-N1): die Karten lichten wie die Studio-Krone (bis K68-N1 flach)
+                this._kronenNormalenAuf(g);
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
                 this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
                 g.computeBoundingBox();
@@ -861,7 +898,7 @@ class AnazhRealm_Z17a {
         const cardH = baseSize * _hByKind * _lodCardBoost;
         const totalH = Math.max(1, skeleton.totalH);
         // Kronen-Zentrum (Mitte der Anchor-Wolke, leicht angehoben) — NUR für Positionen (innerFill-Pull +
-        // Spitzen-Curl); die Shading-Normale stempelt _stampFoliageDomeNormals.
+        // Spitzen-Curl); die Shading-Normale stempelt die Normale der Krone (`_kronenNormalenAuf`).
         let cx = 0,
             cy = 0,
             cz = 0;
@@ -961,7 +998,7 @@ class AnazhRealm_Z17a {
                 const cR = Math.cos(rot),
                     sR = Math.sin(rot);
                 // Tangenten (um y gedreht): t1=(cR,0,−sR), t2=(sR,0,cR) (⟂). Keine Facing-Normale:
-                // _stampFoliageDomeNormals überschreibt das normal-Attribut nach dem Bau.
+                // `_kronenNormalenAuf` überschreibt das normal-Attribut nach dem Bau.
                 // Eck-Halbbreiten (Blatt-Form): unten ±hw, oben ±tw.
                 const lxs = [-hw, hw, tw, -tw];
                 const lys = [-hh, -hh, hh, hh];
@@ -1016,8 +1053,8 @@ class AnazhRealm_Z17a {
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
-        // Kuppel-Normale vom Kronen-Boden (facing-unabhängig, s. Helper).
-        this._stampFoliageDomeNormals(g);
+        // die Normale der Krone (K68-N1, das EINE Kern-Gesetz)
+        this._kronenNormalenAuf(g);
         // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
         this._stampFoliageVisHeights(g, totalH);
         g.computeBoundingBox();
@@ -1421,8 +1458,10 @@ class AnazhRealm_Z17a {
     }
 
     // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
-    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen baut neue Texturen, kopiert
-    // die Schichten und tauscht den Wert der Basis-Knoten — das EINE Material bleibt, die Bundles zeichnen neu.
+    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen geschieht IN den
+    // beiden Texturen: ein neues Bild mit den kopierten Schichten, needsUpdate — die neue GPU-Form legt der EINE Abschied an
+    // (`_texturAbschied`: die alte fällt nach dem Submit, jedes Bündel nimmt neu auf). Knoten, Programm-Vorlage und jedes
+    // Render-Objekt binden so immer DIESELBE Textur (ein Tausch ließ die Textur des Programm-Baus wieder aufsteigen).
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
         // Der Karten-Codec ist KERN-PFLICHT: fehlt er (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
@@ -1449,8 +1488,7 @@ class AnazhRealm_Z17a {
         while (cap < soll) cap += S;
         const M = at.masse;
         const T = THREE;
-        // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
-        let map, nmap;
+        const da = !!at.map;
         if (at.fmt === "bc") {
             const mips = (stufen, alt) =>
                 stufen.map((s, k) => {
@@ -1458,63 +1496,49 @@ class AnazhRealm_Z17a {
                     if (alt) data.set(alt[k].data);
                     return { data, width: s.w, height: s.h };
                 });
-            map = new T.CompressedArrayTexture(
-                mips(M.a, at.map && at.map.mipmaps),
-                M.w,
-                M.h,
-                cap,
-                T.RGBA_S3TC_DXT1_Format
-            );
-            map.name = "karte-albedo:atlas";
-            map.colorSpace = T.SRGBColorSpace;
-            nmap = new T.CompressedArrayTexture(
-                mips(M.n, at.nmap && at.nmap.mipmaps),
-                M.nw,
-                M.nh,
-                cap,
-                T.RED_GREEN_RGTC2_Format
-            );
-            nmap.name = "karte-normal:atlas";
-            for (const t of [map, nmap]) {
-                t.generateMipmaps = false;
-                t.minFilter = T.LinearMipmapLinearFilter;
+            const a = mips(M.a, da && at.map.mipmaps),
+                n = mips(M.n, da && at.nmap.mipmaps);
+            if (da) {
+                at.map.mipmaps = a;
+                at.map.image = { width: M.w, height: M.h, depth: cap };
+                at.nmap.mipmaps = n;
+                at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
+            } else {
+                // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
+                at.map = new T.CompressedArrayTexture(a, M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
+                at.map.name = "karte-albedo:atlas";
+                at.map.colorSpace = T.SRGBColorSpace;
+                at.nmap = new T.CompressedArrayTexture(n, M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
+                at.nmap.name = "karte-normal:atlas";
+                for (const t of [at.map, at.nmap]) t.generateMipmaps = false;
             }
         } else {
             const dA = new Uint8Array(M.w * M.h * 4 * cap),
                 dN = new Uint8Array(M.nw * M.nh * 2 * cap);
-            if (at.map) {
+            if (da) {
                 dA.set(at.map.image.data);
                 dN.set(at.nmap.image.data);
-            }
-            map = new T.DataArrayTexture(dA, M.w, M.h, cap);
-            map.name = "karte-albedo:atlas";
-            map.colorSpace = T.SRGBColorSpace;
-            nmap = new T.DataArrayTexture(dN, M.nw, M.nh, cap);
-            nmap.name = "karte-normal:atlas";
-            nmap.format = T.RGFormat;
-            for (const t of [map, nmap]) {
-                t.generateMipmaps = true;
-                t.minFilter = T.LinearMipmapLinearFilter;
+                at.map.image = { data: dA, width: M.w, height: M.h, depth: cap };
+                at.nmap.image = { data: dN, width: M.nw, height: M.nh, depth: cap };
+            } else {
+                at.map = new T.DataArrayTexture(dA, M.w, M.h, cap);
+                at.map.name = "karte-albedo:atlas";
+                at.map.colorSpace = T.SRGBColorSpace;
+                at.nmap = new T.DataArrayTexture(dN, M.nw, M.nh, cap);
+                at.nmap.name = "karte-normal:atlas";
+                at.nmap.format = T.RGFormat;
+                for (const t of [at.map, at.nmap]) t.generateMipmaps = true;
             }
         }
-        for (const t of [map, nmap]) {
+        for (const t of [at.map, at.nmap]) {
+            t.minFilter = T.LinearMipmapLinearFilter;
             t.magFilter = T.LinearFilter;
             t.wrapS = T.ClampToEdgeWrapping;
             t.wrapT = T.ClampToEdgeWrapping;
             t.anisotropy = 4;
-            if (at.map) t.needsUpdate = true; // gewachsen: die kopierten Schichten hochladen
+            if (da) t.needsUpdate = true; // gewachsen: die neue Form mit den kopierten Schichten hochladen
         }
-        const alt = [at.map, at.nmap];
-        at.map = map;
-        at.nmap = nmap;
         at.cap = cap;
-        if (at.mapNode) {
-            at.mapNode.value = map;
-            at.nmapNode.value = nmap;
-            // Ein Bundle trägt seine Bind-Gruppen: der Texturtausch zeichnet jedes Bundle neu.
-            if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
-        }
-        for (const t of alt) if (t) t.dispose();
         return at;
     }
 
@@ -1559,7 +1583,10 @@ class AnazhRealm_Z17a {
             vonPlatte: false,
             _bedarfD2: Infinity,
             _flat: null,
+            ende: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
+            _endeLoes: null,
         };
+        z.ende = new Promise((r) => (z._endeLoes = r));
         at.zellen.set(key, z);
         this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
@@ -1569,6 +1596,14 @@ class AnazhRealm_Z17a {
             this._impostorBakeQueue.push(key);
         }
         return z;
+    }
+    // DAS ENDE EINER KARTE (K38-N2): gebacken (`ok`) oder gescheitert — die EINE Stelle, die den Zustand der Zelle setzt
+    // und ihre Zusage `z.ende` löst. Wer auf die Karte wartet (die L2-Vorschau der Werkstatt), hängt sich per
+    // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
+    _karteEndet(z, ok) {
+        if (ok) z.gebacken = true;
+        else z.gescheitert = true;
+        if (z._endeLoes) z._endeLoes(!!ok);
     }
 
     // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
@@ -1709,64 +1744,81 @@ class AnazhRealm_Z17a {
         return null;
     }
 
-    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (EIN Bake in
-    // Flug; der Bäcker ist das STUDIO in seinem eigenen Faden, `_foundryBaecker`, Kanal "bake-impostor").
+    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (JE BÄCKER-BAHN EIN Bake im Flug, K60-2; der Bäcker
+    // ist das STUDIO in seinen eigenen Fäden, `_foundryBaecker`, Kanal "bake-impostor"). Der Flug ist EINE Karte je Schlüssel
+    // (`_impostorBakeFlug`: Schlüssel → { seit, tok }); jeder Tick füllt ihn bis zur Zahl der Bäcker-Fäden
+    // (`_foundryFaedenZahl`), die nächste Karte zuerst. Bis K60-2 flog EINE Karte: Radeon kalt 17 Karten in 11 s nacheinander.
     // Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
     _tickImpostorBake() {
-        const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
         const at = this._impostorAtlas();
         if (!at) return 0;
+        const flug = this._impostorBakeFlug || (this._impostorBakeFlug = new Map());
         // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
         // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (die Zelle zeichnet
         // erst gebacken, `_foundryBuildImpostorFlat`; seit 05.10. hat ein Karten-Ding keinen Satz). Bis 04.10. war das ein Kreis: die
         // Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die Bühne — gelöst erst vom
         // 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
-        // BAKE-WATCHDOG: ein hängender async Bake klemmte `_impostorBakePending` → die Queue verhungerte still. Nach
+        // BAKE-WATCHDOG: ein hängender async Bake klemmte seinen Flug-Platz → die Queue verhungerte still. Nach
         // der Bake-Uhr (+2 s) bekommt die Zelle einen neuen Versuch (3, dann gescheitert), das Token entwertet die
         // späte finally (sie darf den NÄCHSTEN Bake nicht löschen); ein später Erfolg darf die Schicht noch schreiben.
-        if (this._impostorBakePending) {
-            // Ein Bake-Auftrag, der beim Worker noch offen ist, wartet LEGITIM (die EINE Foundry-Frist zählt
-            // nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn kein
-            // Auftrag mehr offen ist und der Flug-Status trotzdem klemmt. Vorher verwarf er wartende Karten
-            // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+        // Ein Bake-Auftrag, der beim Worker noch offen ist oder in der Schlange wartet, wartet LEGITIM (die EINE
+        // Foundry-Frist zählt nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn
+        // kein Karten-Auftrag mehr offen ist und ein Flug trotzdem klemmt. Vorher verwarf er wartende Karten nach der Uhr
+        // ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+        if (flug.size) {
             const fb = this._foundry;
-            if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
-            if (fb && fb.warte && fb.warte.some((a) => a.praefix === "imp")) return 0; // wartet in der Schlange
-            const since = this._impostorBakePendingSince || 0;
-            if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
-                const hungKey = this._impostorBakePendingKey;
-                const hung = hungKey ? at.zellen.get(hungKey) : null;
-                // V18.464 (baum-D7-Heilung): bounded Retry (3 Versuche), erst dann gescheitert.
-                if (hung) {
-                    hung.versuche++;
-                    if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
-                    else hung.gescheitert = true;
+            let offen = !!(fb && fb.warte && fb.warte.some((a) => a.praefix === "imp"));
+            if (!offen && fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) offen = true;
+            if (!offen) {
+                const jetzt = performance.now();
+                for (const [hungKey, fl] of [...flug]) {
+                    if (jetzt - fl.seit <= AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) continue;
+                    const hung = at.zellen.get(hungKey);
+                    // V18.464 (baum-D7-Heilung): bounded Retry (3 Versuche), erst dann gescheitert.
+                    if (hung) {
+                        hung.versuche++;
+                        if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
+                        else this._karteEndet(hung, false);
+                    }
+                    this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
+                    flug.delete(hungKey);
+                    at.haengend++;
+                    this.log(
+                        `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
+                        "WARN"
+                    );
                 }
-                this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
-                this._impostorBakePending = false;
-                at.haengend++;
-                this.log(
-                    `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
-                    "WARN"
-                );
-            } else return 0; // ein Bake zur Zeit (async, mehrere Frames)
+            }
         }
+        let gesendet = 0;
+        while (this._impostorBakeQueue.length && flug.size < this._foundryFaedenZahl()) {
+            const n = this._impostorBakeSende(at, flug);
+            if (n < 0) break;
+            gesendet += n;
+        }
+        return gesendet;
+    }
+
+    // Sendet die nächste Karte der Schlange in den Flug: 1 gesendet, 0 verworfen (die Schlange lebt), −1 die Bäcker können
+    // noch nicht (kein Renderer, kein Studio, kein Format — sie wartet).
+    _impostorBakeSende(at, flug) {
+        const st = this.state;
         // Der Impostor bäckt EAGER, ohne `_frameOverBudget`-Gate: er ERSETZT schwere L2-Geometrie durch die
-        // billige Karte (netto last-senkend) — ein Budget-Gate wäre Henne-Ei. Gedeckelt: EIN Bake in Flug.
+        // billige Karte (netto last-senkend) — ein Budget-Gate wäre Henne-Ei. Gedeckelt: je Bäcker-Bahn EIN Bake im Flug.
         const rend = st.renderer;
-        if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
+        if (!rend || rend._isHeadlessNull || !st.rendererReady) return -1;
         // Ohne Foundry-Welt kein Bäcker → die Zelle fällt TERMINAL (Zensus „gescheitert", der Flatten serviert
         // Geometrie).
         if (!this._foundryEnabled()) {
             const z0 = at.zellen.get(this._impostorBakeQueue.shift());
-            if (z0 && !z0.gebacken) z0.gescheitert = true;
+            if (z0 && !z0.gebacken) this._karteEndet(z0, false);
             return 0;
         }
         const f = this._ensureAssetFoundry();
-        if (!f || !f.ready || !f.worker) return 0; // das Studio bootet noch — die Zellen warten in der Queue
+        if (!f || !f.ready || !f.worker) return -1; // das Studio bootet noch — die Zellen warten in der Queue
         // Das Schicht-Format steht mit den Texturen (das Buch trägt die Zell-Maße) — vorher wartet die Queue.
-        if (!this._impostorAtlasTexturen(at)) return 0;
+        if (!this._impostorAtlasTexturen(at)) return -1;
         // NAH ZUERST (Lehre 16): die Karte, die der nächste wartende Baum braucht (z._bedarfD2, gestempelt in
         // _foundryBuildImpostorFlat), statt Anfrage-Reihenfolge — Befund 30.09.: 105 von 112 Karten warteten
         // FIFO, der Baum vor der Kamera hinter fernen Arten. Ohne Bedarf-Stempel (Streu) gilt die Reihenfolge.
@@ -1788,13 +1840,11 @@ class AnazhRealm_Z17a {
         // Zeilen); Unbekanntes fällt studio-seitig fail-closed (payload null) → gescheitert nach 3 Versuchen.
         const bKind = f.recipes && f.recipes[z.preset] && f.recipes[z.preset].kind;
         if (bKind && !/^(tree|shrub|flower|grass|rock|gate|vehicle)$/.test(bKind)) {
-            z.gescheitert = true;
+            this._karteEndet(z, false);
             return 0;
         }
-        this._impostorBakePending = true;
-        this._impostorBakePendingSince = performance.now();
-        this._impostorBakePendingKey = key;
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
+        flug.set(key, { seit: performance.now(), tok: _tok });
         // Seed = die Gestalt der Zelle — dieselbe wie ihre Körper-Stufen. Keine Saison: die Karte ist Golden-Sommer,
         // das Jahr färbt der Karten-Stoff (uSeasonMul). BÄCKER-OV (V18.478): eine geprägte Zelle bäckt ihr UNIKAT. Der
         // Auftrag reist im Rang ihres nächsten Wartenden (z._bedarfD2) durch die EINE Worker-Schlange.
@@ -1808,13 +1858,14 @@ class AnazhRealm_Z17a {
                 z.versuche++;
                 if (z.versuche < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(key);
                 else {
-                    z.gescheitert = true;
+                    this._karteEndet(z, false);
                     this._stoffBruch(`die Karte ${key} scheiterte ${z.versuche}× — die Fernstufe bleibt Geometrie`, e);
                 }
             })
             .finally(() => {
-                // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Bake nicht löschen
-                if (this._impostorBakeTok === _tok) this._impostorBakePending = false;
+                // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Flug nicht löschen
+                const fl = flug.get(key);
+                if (fl && fl.tok === _tok) flug.delete(key);
             });
         return 1;
     }
@@ -1848,8 +1899,8 @@ class AnazhRealm_Z17a {
         // RAHMEN-EINHEIT: das Quad nimmt DENSELBEN Rahmen wie die Bake-Kamera (halfH = 1,02·maxY/2, halfW radial) —
         // keine Wurzel-Höhe mehr (bis V18.528 stand das Quad auf max(0,5, maxY − minY): vertikal verzerrt).
         if (!z.rahmenFest) z.frame = { halfH: fr.halfH, halfW: fr.halfW };
-        z.gebacken = true;
         z.vonPlatte = payload.vonPlatte === true;
+        this._karteEndet(z, true);
         // Die Karte ist gebacken → aufgeschobene Streu-Regionen neu streamen, wie bei jeder Asset-Ankunft: ein Baum-Platz,
         // dessen Nah-Stufe fehlt, wartet auf die gebackene Karte (`_foundryFlattenFor` Stufe 2 liefert vorher false). Ohne
         // diesen Anstoß blieb die Region aufgeschoben, wenn die letzte Lieferung VOR dem Bake kam — an der Mess-Wiese

@@ -368,9 +368,9 @@ class AnazhRealm_Z25a {
         const esVal = document.getElementById("slider-edgesharp-val");
         if (esS) {
             const e0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                    ? this.state.atmosphere.edgeSharp
-                    : 0.5;
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                    ? this.state.atmosphere.kantenSchaerfe
+                    : 0;
             esS.value = String(Math.round(e0 * 100));
             if (esVal) esVal.textContent = e0.toFixed(2);
             esS.addEventListener("input", () => {
@@ -1144,6 +1144,12 @@ class AnazhRealm_Z25a {
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
         this.state._traa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
+        // DIE TEXTUR-GRENZE DES GERÄTS: r184 fordert das Gerät mit den Grenzen des WebGPU-Standards (16 Texturen je Stufe), der
+        // Adapter trägt mehr (Radeon 890M 48). Der Boden-Stoff des Fern-Rings sampelt seit der EINEN Atmosphäre und dem Spiegel des
+        // Sees 17 — seine Pipeline wurde abgesagt, der Ring fehlte im Bild und die Beweis-Aufnahme brach an der Mess-Wiese ab
+        // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt — der EINE,
+        // den die Holz-Wahl gefragt hat (`_holzWahl`, wie r184 ihn fragt; unter dem forceWebGL-Hook keiner); die Grenzen je
+        // Stufe liest jeder Renderer der Seite aus `_rendererGeraet` (G1).
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -1158,13 +1164,18 @@ class AnazhRealm_Z25a {
                       // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
-                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
-                      forceWebGL: AnazhRealm._forceWebGL(),
+                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe) und die Geräte-Grenzen (G1).
+                      ...this._rendererGeraet(),
                   });
-        // ACES-Filmic-Tone-Mapping: die Lichter sind HDR (Sonne 2.4 + Hemi/Ambient) und klemmten ohne
-        // Tone-Mapping bei 1.0 (ausgewaschen). Reine Render-Output-Stufe.
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0; // Vorlage phytogenesis Z.1285 (exakt)
+        // DIE TONKURVE (F1, die Foto-Kette): Khronos PBR Neutral (r184 NeutralToneMapping) — bis zur Schulter (0,76) geht die
+        // Farbe des Stoffs unverändert ins Bild (nur der Schwarzpunkt 0,04), darüber rollt sie zu Weiß ohne Farbdrehung. Gemessen
+        // gegen ACES (Filmic, Sättigung und Kontrast in der Kurve) und AgX in EINER Welt (Radeon 890M, 15.10.): die Öffnung der
+        // Tore C*ab ACES 20,9 · AgX 16,8 · Neutral 23,1 (Soll ≥ 20), der Himmel weiß statt blau ACES 53 % · AgX 69 % · Neutral
+        // 40 %, die Wiese C*ab ganzes Bild 24,9 · 21,7 · 31,1 (Soll-Bild 01: 28,3). Die Eichung der Belichtung folgt ihr
+        // (BELICHTUNG, 26c: die Kurve und ihre Eichung sind EIN Eintrag). Reine Ausgabe-Stufe; die Belichtung setzt das Licht
+        // (`_dayNightApplyBelichtung`).
+        renderer.toneMapping = THREE[AnazhRealm.BELICHTUNG.kurve];
+        renderer.toneMappingExposure = 1.0;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format
@@ -1227,6 +1238,7 @@ class AnazhRealm_Z25a {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 this._renderObjektRegister(renderer);
+                this._texturAbschied(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.
@@ -1375,11 +1387,12 @@ class AnazhRealm_Z25a {
         // OrthographicCamera rechnet sie nur im Konstruktor; sonst ist light.shadow.matrix degeneriert
         // und es fällt nie ein Schatten.
         directionalLight.shadow.camera.updateProjectionMatrix();
-        // Schatten-Zwilling: der Schatten-Pass MUSS den Kronen-Zwilling auf SHADOW_TWIN_LAYER sehen, die
-        // Haupt-Kamera (nur Layer 0) NIE; der WebGPU-Schatten-Render testet
-        // `object.layers.test(shadow.camera.layers)`. VOR der CSM-Konstruktion setzen: `light.shadow.clone()`
-        // kopiert den Mask in jede Kaskaden-Kamera; der Fallback (eine Map) nutzt dieselbe shadow.camera.
-        directionalLight.shadow.camera.layers.enable(AnazhRealm.SHADOW_TWIN_LAYER);
+        // DIE WURF-EBENE (K72, `_wurfEbene`): die Schatten-Kamera sieht NUR SHADOW_TWIN_LAYER — die Ebene, die `castShadow`
+        // jedes Knotens trägt; die Haupt-Kamera (nur Layer 0) sieht sie nie. r184 behält eine Schatten-Maske mit einem Bit
+        // jenseits der 0 (`updateShadow`, gate:vendor-anker) und projiziert damit nur Werfer — vorher sah die Kaskade die
+        // Welt-Ebene und verwarf 39–72 Nicht-Werfer je Render erst nach Projektion und Sortierung. VOR der CSM-Konstruktion
+        // setzen: `light.shadow.clone()` kopiert die Maske in jede Kaskaden-Kamera; der Fallback nutzt dieselbe shadow.camera.
+        directionalLight.shadow.camera.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
         scene.add(directionalLight);
         // Light-Target in den Szenengraph hängen, damit sein matrixWorld pro Frame aktualisiert wird —
         // _applyDayNightToScene setzt es auf den Spieler, das Shadow-Frustum folgt ihm.
@@ -1408,6 +1421,16 @@ class AnazhRealm_Z25a {
                 });
                 csm.fade = true;
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
+                // DIE HORIZONT-KARTE (D3) jenseits der Kaskaden: dort gibt die CSM 1 zurück (ihre Kaskaden enden bei maxFar) —
+                // ihr EINER Knoten (einmal je Instanz gebaut, der Eingriff in 07.js) trägt die Sicht der Karte für jeden
+                // Empfänger (Boden, Ring, Baum, Haus); `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
+                const aufbauEin = csm.setup;
+                const welt = this;
+                let mitHorizont = null;
+                csm.setup = function (builder) {
+                    if (mitHorizont === null) mitHorizont = aufbauEin.call(this, builder).mul(welt._horizontSicht());
+                    return mitHorizont;
+                };
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
                 // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:
@@ -1914,6 +1937,18 @@ class AnazhRealm_Z25a {
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
             // Stack geloggt, die Welt läuft weiter (der Headless-Pump fängt selbst ab — sieht den Freeze nie).
             try {
+                // DIE PHASE DES TAKTS (B3, Lehre 13) — EINE Frage am Anfang: zeichnet dieser Takt (`bild`, die GPU-Leine und
+                // unter dem Ladeschirm das fällige Lade-Bild, `_ladeBildFaellig`)? Ein Takt, der zeichnet, trägt das ganze
+                // Spiel — auch das Lade-Bild: was das Bild zeigt (Licht, Bündel-Sicht, Haltung, Rauch, Membranen) und was
+                // zum ersten Mal Stoffe baut oder speichert, läuft vor ihm, unter dem Ladeschirm, nie im ersten gespielten
+                // Takt (Prüfung B3-1: Rauch im ersten Bild 0 statt 24 Teilchen, eine Aufgabe von 189–210 ms nach dem Bild).
+                // Ein Lade-Takt OHNE Bild (`ruht`) trägt nur, was das erste Weltbild füttert — Foundry und Einhängen, den
+                // Leib, Strom und Takt-Planer, den Genesis-Ort, Körper und Kamera, den Bau-Gang — und das Netz, das dem
+                // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224–256 Takte unter dem Ladeschirm jedes
+                // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
+                // jeder Takt.
+                const bild = this._gpuLeineFrei();
+                const ruht = !bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
                 this._schirmMessen();
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
@@ -1922,22 +1957,76 @@ class AnazhRealm_Z25a {
                 // prüft `_ensureAssetFoundry` selbst.
                 if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
 
-                // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
-                this._loopNexusUpdate();
+                if (!ruht) {
+                    // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
+                    this._loopNexusUpdate();
 
-                // ### Grok-Stimme (Ring 1) ###
-                this.grokTick(currentTime);
+                    // ### Grok-Stimme (Ring 1) ###
+                    this.grokTick(currentTime);
 
-                // ### Nexus-DSL Scheduler (Ring 2) ###
-                this.dslTick(currentTime);
+                    // ### Nexus-DSL Scheduler (Ring 2) ###
+                    this.dslTick(currentTime);
 
-                // ### Welt-Regeln ###
-                // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
-                // geplante Geste vor den Regeln läuft.
-                this._tickWorldRules(currentTime);
+                    // ### Welt-Regeln ###
+                    // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
+                    // geplante Geste vor den Regeln läuft.
+                    this._tickWorldRules(currentTime);
 
-                // ### Region-Übergangs-Detection ###
-                // 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
+                    // ### Player-Emotionen (Ring 3) ###
+                    this.updatePlayerEmotions(currentTime);
+
+                    // ### Player-Boosts (Welle 6.D Etappe 2) ###
+                    // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
+                    this.tickPlayerBoosts(currentTime);
+
+                    // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
+                    // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
+                    this.tickCreatureBoosts(currentTime);
+
+                    // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
+                    // HP-Regen während aktiver Wandlung + Ablauf-Detection.
+                    this.tickPlayerVitals(currentTime);
+
+                    // ### Stats-HUD (Welle 6.X.4 B3) ###
+                    // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
+                    this.tickStatsHud(currentTime);
+
+                    // ### Tag-Nacht-Zyklus ###
+                    // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
+                    this.tickDayNight(currentTime);
+
+                    // ### Wetter-Übergang (Welle 6.G3.b) ###
+                    // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
+                    this.tickWeatherTransition(currentTime);
+
+                    // ### Fauna-Lifecycle (Welle 6.G3.c) ###
+                    // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
+                    this.tickFaunaLifecycle(currentTime);
+
+                    // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
+                    // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
+                    // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
+                    this._tickBootPhase3(performance.now());
+
+                    // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
+                    // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
+                    this._tickBootFernDeko();
+
+                    // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
+                    this.symphonyTick();
+
+                    // ### Status-Panel (UI V1) ###
+                    this.updateStatusPanel(currentTime);
+
+                    // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                    this._loopGroundCheck(currentTime);
+                    this._loopFrustumCulling();
+                    this._loopAnimateUfos(currentTime);
+                }
+
+                // ### DAS NETZ ### — in JEDEM Takt, auch unter dem Ladeschirm: es gehört dem Mitspieler (K60, gate:mp-sync (d) —
+                // Ort, Eingabe-Strom und Ghost-Verbrauch nach der Wanduhr, die 10-s-Räumung stiller Peers).
+                // Region-Übergang: 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
                 // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
                 if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
                     this._regionTickLast = currentTime;
@@ -1946,62 +2035,9 @@ class AnazhRealm_Z25a {
                         this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
                     }
                 }
-
-                // ### Player-Emotionen (Ring 3) ###
-                this.updatePlayerEmotions(currentTime);
-
-                // ### Player-Boosts (Welle 6.D Etappe 2) ###
-                // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
-                this.tickPlayerBoosts(currentTime);
-
-                // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
-                // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
-                this.tickCreatureBoosts(currentTime);
-
-                // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
-                // HP-Regen während aktiver Wandlung + Ablauf-Detection.
-                this.tickPlayerVitals(currentTime);
-
-                // ### Stats-HUD (Welle 6.X.4 B3) ###
-                // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
-                this.tickStatsHud(currentTime);
-
-                // ### Tag-Nacht-Zyklus ###
-                // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
-                this.tickDayNight(currentTime);
-
-                // ### Wetter-Übergang (Welle 6.G3.b) ###
-                // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
-                this.tickWeatherTransition(currentTime);
-
-                // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-                // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-                this.tickFaunaLifecycle(currentTime);
-
-                // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
-                // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
-                // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
-                this._tickBootPhase3(performance.now());
-
-                // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
-                // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
-                this._tickBootFernDeko();
-
-                // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
-                this.symphonyTick();
-
-                // ### Status-Panel (UI V1) ###
-                this.updateStatusPanel(currentTime);
-
-                // ### Ring 11 V1 — Multi-User Position-Sync ###
-                // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+                // Ring 11 V1 — Multi-User Position-Sync: Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
                 // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
                 this.p2pTick(performance.now());
-
-                // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
-                this._loopGroundCheck(currentTime);
-                this._loopFrustumCulling();
-                this._loopAnimateUfos(currentTime);
 
                 // ### Physik-Simulation ###
                 // Der AKKUMULATOR dirigiert die Sim (Physik + Bewegung pro FIXED_DT-Häppchen, framerate-unabhängig)
@@ -2018,40 +2054,42 @@ class AnazhRealm_Z25a {
                 // Feld-Controller (`_stepCharacter`) erdet den Spieler direkt aus dem Dichtefeld,
                 // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
-                // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
-                // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
-                this._tickHarvest();
+                if (!ruht) {
+                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
+                    // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+                    this._tickHarvest();
 
-                // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
-                // sie, die fixe Sim läuft weiter) und fegt in der Strike-Phase die Klingen-Kapsel durch die
-                // Kreaturen (_kampfSweepTick).
-                this._tickKampfSchwung(currentTime);
+                    // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
+                    // sie, die fixe Sim läuft weiter) und fegt in der Strike-Phase die Klingen-Kapsel durch die
+                    // Kreaturen (_kampfSweepTick).
+                    this._tickKampfSchwung(currentTime);
 
-                // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
-                // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
-                this._tickPfeile(currentTime);
+                    // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
+                    // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
+                    this._tickPfeile(currentTime);
 
-                // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
-                // No-op ohne gespannten Bogen (byte-alt).
-                this._tickBogenZug(currentTime);
+                    // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
+                    // No-op ohne gespannten Bogen (byte-alt).
+                    this._tickBogenZug(currentTime);
 
-                // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
-                // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
-                // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
+                    // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
+                    // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
+                    // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
 
-                // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
-                this._loopSelfAnalysis(currentTime);
+                    // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
+                    this._loopSelfAnalysis(currentTime);
 
-                // ### Schicht 1 — IQ-Ticks ###
-                // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
-                // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
-                this.samplePathBuckets(currentTime);
-                this.samplePlayerActivity(currentTime);
-                this.pruneRecentKeywords(currentTime);
-                this.finalizePendingOutcomes(currentTime);
+                    // ### Schicht 1 — IQ-Ticks ###
+                    // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
+                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
+                    this.samplePathBuckets(currentTime);
+                    this.samplePlayerActivity(currentTime);
+                    this.pruneRecentKeywords(currentTime);
+                    this.finalizePendingOutcomes(currentTime);
 
-                // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                this._loopWeatherAndGrowth(delta);
+                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
+                    this._loopWeatherAndGrowth(delta);
+                }
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
@@ -2061,9 +2099,14 @@ class AnazhRealm_Z25a {
                 // ### Skybox-Zeit ### (V9.44-f → _loopSkyboxZeit)
                 this._loopSkyboxZeit(currentTime);
 
-                // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
-                this._tickPortalMembranes(currentTime);
+                if (!ruht) {
+                    // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
+                    this._tickPortalMembranes(currentTime);
+                }
 
+                // DAS BILD, DAS JE TAKT EINSCHWINGT, füttert das erste Weltbild wie der Boden: Rauch (RAUCH_GESETZ je Frame,
+                // nicht je Zeit) und Haus-Türen (der Flügel schließt je Takt weich aus der gebackenen Offen-Pose) laufen in
+                // JEDEM Takt — nur im Lade-Bild stand der Rauch im ersten Bild mit 3 statt 24 Teilchen (B3-n1, Radeon kalt).
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
                 this._tickHausTueren(currentTime);
 
@@ -2073,13 +2116,15 @@ class AnazhRealm_Z25a {
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
 
-                // ### Fähigkeiten ###
-                Object.keys(this.state.abilities).forEach((ability) => {
-                    if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
-                });
+                if (!ruht) {
+                    // ### Fähigkeiten ###
+                    Object.keys(this.state.abilities).forEach((ability) => {
+                        if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
+                    });
 
-                // ### Speichern ### (V9.44-f → _loopAutoSave)
-                this._loopAutoSave(currentTime);
+                    // ### Speichern ### (V9.44-f → _loopAutoSave)
+                    this._loopAutoSave(currentTime);
+                }
 
                 // ### Kamera ### (V9.44-f → _loopCamera)
                 // V18.355 — PHASE C: VOR der Kamera die Render-Interpolation anwenden (das Auge
@@ -2087,23 +2132,27 @@ class AnazhRealm_Z25a {
                 this._applyFixedInterpolation();
                 this._loopCamera(currentTime);
 
-                // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
-                // jeden Frame über sin/cos relativ zum aktuellen walkPhase
-                // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
-                this.animatePlayerSoul(currentTime);
+                if (!ruht) {
+                    // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
+                    // jeden Frame über sin/cos relativ zum aktuellen walkPhase
+                    // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+                    this.animatePlayerSoul(currentTime);
+                }
 
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
                 // Spieler-Distanz. Daten-Einträge bleiben immer.
                 _pt = performance.now();
                 this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
-                // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
-                this.tickBuildMode();
-                // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-                this.tickArchitectures(currentTime);
-                // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
-                // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
-                this.tickAffordances(delta);
+                if (!ruht) {
+                    // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+                    this.tickBuildMode();
+                    // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+                    this.tickArchitectures(currentTime);
+                    // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
+                    // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
+                    this.tickAffordances(delta);
+                }
 
                 // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
                 // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
@@ -2114,8 +2163,9 @@ class AnazhRealm_Z25a {
                 // verteilt und kompiliert asynchron (die Erst-Zeichnung, `_configureRenderer`) — kein Vorwärmen.
                 this._kernPflichtWand();
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
-                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
-                if (this._gpuLeineFrei()) {
+                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (`bild`, die Phase
+                // des Takts oben).
+                if (bild) {
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender(currentTime);
@@ -2147,12 +2197,11 @@ class AnazhRealm_Z25a {
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
             this._tickFoundryIngest(wandDelta);
 
-            // Deferierter Avatar-Bau: nach ein paar gerenderten Frames EINMAL bauen — der ~1.9-s-Skin-Bau hängt
-            // einen Frame, nicht den Boot. Eigenes try/catch (darf den Loop nicht reißen); headless setzt
-            // `_deferredAvatarSoul` nie (baut synchron).
+            // Deferierter Avatar-Bau: EINMAL bauen, sobald seine zwei Vorlagen aus dem Faden im Memo liegen (`_leibBereit`,
+            // K60-2 — bis dahin hielt der Guss im sechsten Frame den Haupt-Faden 2,4 s, und nach dem Buch goss er neu).
+            // Eigenes try/catch (darf den Loop nicht reißen); headless setzt `_deferredAvatarSoul` nie (baut synchron).
             if (this.state._deferredAvatarSoul) {
-                this.state._bootAvatarDelay = (this.state._bootAvatarDelay || 0) + 1;
-                if (this.state._bootAvatarDelay >= 6) {
+                if (this._leibBereit()) {
                     const soul = this.state._deferredAvatarSoul;
                     this.state._deferredAvatarSoul = null;
                     try {
@@ -2174,7 +2223,7 @@ class AnazhRealm_Z25a {
     // Regler voll) war ein Frame erst 600 ms nach dem CPU-Ende auf der GPU fertig (≈ 10 Frames in der Schlange) —
     // jede Eingabe sah der Spieler 0,6 s später. Die Leine hält höchstens GPU_FRAMES_IM_FLUG Frames unterwegs: ist
     // sie gespannt, rechnet der Takt (Simulation, Eingabe, Streaming), schickt aber nichts an die GPU. Der EINE
-    // Zähler lebt an diesem Chokepoint (Frei-Prüfung vor dem Render, Anmelden nach den Submits des Frames).
+    // Zähler lebt an diesem Chokepoint (Frei-Prüfung am Anfang des Takts — seine Phase, B3 —, Anmelden nach den Submits).
     // Headless (kein Device): immer frei, byte-alt.
     _gpuLeineQueue() {
         const r = this.state.renderer;
@@ -2189,8 +2238,26 @@ class AnazhRealm_Z25a {
             L.ausgesetzt++;
             return false;
         }
+        if (!this._ladeBildFaellig(L)) return false;
         L.versuch = true;
         return true;
+    }
+    // DAS BILD DES LADESCHIRMS (K60-2): unter dem Ladeschirm (`_ladeTakt`) zeigt kein Frame die Welt, und keine Lücke des ersten
+    // Weltbilds schließt erst im Bild (`_weltbildLuecken`: Boden, Horizont, Buch, Bauten, Pflanzung, Streu und Karten stehen im
+    // Takt und in den Fäden, das Panorama rechnet seine eigene GPU-Arbeit). Ein Lade-Takt schickt sein Bild darum nur, wenn es
+    // fällig ist: alle LADE_BILD_MS — die Erst-Zeichnung baut die Knoten der neuen Stoffe und stößt ihre Pipelines an, lange
+    // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
+    // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
+    // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    _ladeBildFaellig(L) {
+        if (!this._ladeTakt()) return true;
+        const jetzt = performance.now();
+        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+            L.ladeBild = jetzt;
+            return true;
+        }
+        L.ladeAus = (L.ladeAus || 0) + 1;
+        return false;
     }
     _gpuLeineAnlegen() {
         const L = this._gpuLeine;

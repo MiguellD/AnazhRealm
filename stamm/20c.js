@@ -305,6 +305,10 @@ class AnazhRealm_Z20c {
             if (!m || !Number.isFinite(m.schaftHub))
                 return AnazhRealm._kernPflichtBruch("phyto:__mass (" + preset + ")");
             hub = m.schaftHub;
+            // die Krone reist mit jedem gewachsenen Körper (D10, das Kronen-Buch): ohne sie ist die Brücke alt
+            const k = group._krone;
+            if (!k || !(k.teile instanceof Float32Array) || (k.teile.length && !Array.isArray(k.farbe)))
+                return AnazhRealm._kernPflichtBruch("phyto:__krone (" + preset + ")");
         }
         let minY = Infinity,
             maxY = -Infinity;
@@ -522,15 +526,13 @@ class AnazhRealm_Z20c {
                 for (const lod of _lods) {
                     const key = this._foundryKoerperKey(sp, sd, lod);
                     if (f.cache.has(key)) continue;
+                    // der EINE Zug je Körper-Schlüssel (`_foundryZug`): ein Leser, der den Körper im Flug des Vorrats braucht,
+                    // hängt sich an, statt ihn ein zweites Mal zu bestellen (bis 15.10. bestellte der Vorrat am Zug vorbei;
+                    // gate:v1-pfad V-D3 Vorrat); ein Ablauf cacht nie null, die Art bleibt auf Abruf nachfragbar.
                     jobs.push(
-                        this._foundryRequest(sp, sd, lod)
-                            .then((meshes) => {
-                                // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
-                                // cachen -> die Art bleibt on-demand nachfragbar.
-                                if (meshes)
-                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
-                            })
-                            .catch((e) => this._stoffBruch("die Bibliothek (Vorab-Bau " + key + ")", e))
+                        this._foundryZug(key, sp, sd, lod).catch((e) =>
+                            this._stoffBruch("die Bibliothek (Vorab-Bau " + key + ")", e)
+                        )
                     );
                 }
             }
@@ -736,7 +738,12 @@ class AnazhRealm_Z20c {
     // Gestalt synchron am Spawn, das Bild mit der Zahl des Buchs (für die Fels-Arten dieselbe; gate:kollision-bild misst es).
     _foundryVariantFor(seed, preset, Vk) {
         const V = Number.isInteger(Vk) && Vk >= 1 ? Vk : this._foundryGestalten(preset);
-        if (!V) return null;
+        if (!V) {
+            // Buch kalt: die streuende Region wartet auf es (ein offenes Buch ohne Gestalten-Zeile ist keine Zusage)
+            const f = this._foundry;
+            if (f && !(f.ready && f.recipes)) this._streuWartetAuf(f.buchDa);
+            return null;
+        }
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
     }
@@ -790,8 +797,16 @@ class AnazhRealm_Z20c {
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
             if (!(T > 0)) return false;
+            // die Wahrheit des Gesetzes und der Plan des Walds um den Ort (`_waldPlanSteht`, K69): fehlt eins, wartet sie
             if (!this._forestGesetzWahr()) {
                 wartet = true;
+                return false;
+            }
+            // fehlt der Plan, bestellt ihn die Frage in der EINEN Schlange des Walds (ihr Rechner ist der Wald-Faden, K60-3);
+            // wer warten kann (die Streu-Scheibe), wartet benannt auf ihre leere Schlange (`_waldPlanZusage`)
+            if (!this._waldPlanSteht(x, z)) {
+                wartet = true;
+                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage());
                 return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
@@ -872,6 +887,9 @@ class AnazhRealm_Z20c {
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
         if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);
+        // DAS KRONEN-BUCH (D10): die gezeichnete Krone eines Baum-Körpers (Beipack `__krone`) je Körper-Schlüssel — wie die
+        // Höhe deterministisch und klein (höchstens 288 Laub-Teile), nie geräumt; der Leser ist `_foundryBaumKrone`.
+        if (v && v._krone) (f.kronen || (f.kronen = new Map())).set(key, v._krone);
         f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
@@ -1010,28 +1028,20 @@ class AnazhRealm_Z20c {
         const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
+            this._foundryZug(key, preset, variant, lod, entryOv, entry.position, {
                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
-                // im selben Zug — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
+                // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
                 // Stufe wartete doppelt.
-                if (!entryOv) {
+                vor: () => {
+                    if (entryOv) return;
                     const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
                     if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
-                }
-                this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    } else {
-                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                        f.requested.delete(key);
-                    }
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
-                });
-            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, entry.position);
+                },
+                nach: (ok) => {
+                    if (ok) this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset → wartende Einträge bauen
+                },
+            });
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
@@ -1522,6 +1532,66 @@ class AnazhRealm_Z20c {
                         }
                 }
         }
+    }
+    // DER ABSCHIED EINER GEBUNDENEN TEXTUR (die Klasse „Destroyed texture … used in a submit": szene:tiefenabbild, spiegel:strahl,
+    // horizont-karte): r184 legt ein Ziel, das eine Bindegruppe schon hält, beim ersten Bild oder einem Größen-Wechsel neu an
+    // (`updateRenderTarget` → `updateTexture` → `destroyTexture`) — mitten im Frame, während ein offener Befehls-Puffer oder ein
+    // aufgenommenes Bündel die alte Textur bindet; der ganze Befehls-Puffer fiel aus. Die EINE Regel für jede solche Textur, an
+    // der KLASSE der Textur-Verwaltung (jeder Renderer der Seite): die alte GPU-Textur fällt erst nach den Submits dieser Aufgabe,
+    // und jedes Bündel der Welt nimmt neu auf (seine Aufnahme hält die alte Bindegruppe); die losen Leser frischt der Wächter der
+    // Diät auf (`_diaetVorTextur`). Die Wand: gate:fenster-wechsel (jeder Größen-Schritt, jede Meldung beim Namen).
+    // DIE GEWACHSENE TEXTUR (Karten-Atlas, Bogen- und Ziel-Atlas der Tore): ein Atlas wächst IN SEINER Textur (neues Bild,
+    // needsUpdate) und geht denselben Weg — r184 lädt eine gewöhnliche Textur in ihre alte GPU-Form, die neue Form legt diese
+    // Regel an (die Schichten-Updates fallen: die neue Form lädt ganz). Bis 16.10. baute jedes Wachsen eine NEUE Textur, tauschte
+    // den Knoten-Wert und entsorgte die alte — doch die Vorlage des Programms bindet die Textur seines Baus, und `Bindings._init`
+    // lädt sie für jedes neue Render-Objekt hoch, bevor `update()` den Knoten liest: die entsorgte stieg wieder auf und blieb
+    // (Mess-Wiese, Radeon: Karten-Atlas 16 neben 20 Schichten, +4,0 MB VRAM). Die Wand: gate:foundry-impostor C5.
+    _texturAbschied(renderer) {
+        const inst = renderer && renderer._textures;
+        const P = inst && Object.getPrototypeOf(inst);
+        if (!P || P.__anazhAbschied || typeof P.updateTexture !== "function") return;
+        P.__anazhAbschied = true;
+        const welt = this;
+        const roh = P.updateTexture;
+        P.updateTexture = function (t, o) {
+            const d = this.get(t);
+            const ziel = t.isRenderTargetTexture || t.isDepthTexture || t.isFramebufferTexture;
+            const anders = d.initialized === true && d.version !== t.version;
+            // die Form der GPU-Textur einer gewöhnlichen Textur (nie die geteilte Vorgabe-Textur: die fällt nie)
+            const formTraeger = !ziel && t.isStorageTexture !== true && t.isExternalTexture !== true;
+            const s = formTraeger && (anders || d.initialized !== true) ? this.getSize(t) : null;
+            const form = s ? s.width + "x" + s.height + "x" + s.depth : null;
+            const gewachsen =
+                anders && form !== null && d.isDefaultTexture === false && d.__form !== undefined && d.__form !== form;
+            const neu = (ziel && anders && d.bindGroups && d.bindGroups.size > 0) || gewachsen;
+            const g = neu ? this.backend.get(t) : null;
+            const alt = g ? [g.texture, g.msaaTexture].filter(Boolean) : [];
+            for (const x of alt) {
+                const weg = Object.getPrototypeOf(x).destroy;
+                x.destroy = () => Promise.resolve().then(() => weg.call(x));
+            }
+            // Der Sampler lebt in den Backend-Daten der Textur (`updateSampler`) und die Sampler-Bindung steht VOR der Textur-
+            // Bindung: er folgt der neuen Form, sonst fehlt er der nächsten Bindegruppe (die Post-Kette fiel am 16.10. so beim
+            // Wachsen des Karten-Atlas, „Required member is undefined").
+            const sampler = gewachsen ? { sampler: g.sampler, samplerKey: g.samplerKey } : null;
+            if (gewachsen) {
+                this.backend.destroyTexture(t);
+                d.isDefaultTexture = undefined;
+                if (t.layerUpdates && t.layerUpdates.size > 0) t.clearLayerUpdates();
+            }
+            const aus = roh.call(this, t, o);
+            if (form !== null && d.isDefaultTexture === false) d.__form = form;
+            if (gewachsen) {
+                const n = this.backend.get(t);
+                if (n.sampler === undefined && sampler.sampler !== undefined) Object.assign(n, sampler);
+                this.info.destroyTexture(t);
+                this.info.createTexture(t);
+            }
+            const B = welt.state._regionBundles;
+            if (alt.length && B && this.backend.get(t).texture !== alt[0])
+                for (const bg of B.values()) bg.needsUpdate = true;
+            return aus;
+        };
     }
     // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
     // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein

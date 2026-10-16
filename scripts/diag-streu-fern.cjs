@@ -43,6 +43,7 @@
 //
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
@@ -63,6 +64,7 @@ function check(name, ok, detail) {
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
@@ -99,9 +101,10 @@ function check(name, ok, detail) {
         const TOT = 8; // das Totband des LOD-Ticks (Mesh → Fernform erst 8 m hinter der Grenze)
         res.grenze = N;
 
-        // Die Mess-Wiese (−900/−850, dieselbe Stelle wie werkbank zaehlen).
+        // Die Mess-Wiese (der Messort des Haushalts, dieselbe Stelle wie werkbank umstellen --ort wiese).
         const pm = r.state.playerMesh.position;
-        pm.set(-900, r._voxelSurfaceY(-900, -850) + 1.8, -850);
+        const [MX, MZ] = window.__messWiese;
+        pm.set(MX, r._voxelSurfaceY(MX, MZ) + 1.8, MZ);
         const map = r._ensureScatterRegionMap();
         const zellen = () => {
             let n = 0;
@@ -299,15 +302,20 @@ function check(name, ok, detail) {
                         }
                     return o;
                 };
+                // zurück wartet die Probe auf den GANZEN Wechsel: die Scheibe um das Ziel UND jede Instanz jenseits des
+                // Totbands (an der Mess-Wiese −278/−1038 lag eine Mesh-Zelle 30–64 m vom Ziel, die Probe brach nach der
+                // Scheibe ab und zählte sie in B)
                 pm.set(heim.x, heim.y, heim.z);
                 const dlZ = performance.now() + 90000;
                 while (performance.now() < dlZ) {
                     r._tickScatterLod(pm, 64, 4000);
-                    if (umZiel().mesh === 0) break;
+                    if (umZiel().mesh === 0 && absenz().n === 0) break;
                     await sleep(100);
                 }
                 g.zurueck = umZiel();
-                g.bNachZurueck = absenz().n;
+                const bz = absenz();
+                g.bNachZurueck = bz.n;
+                g.bTreffer = bz.treffer;
             }
         }
         res.g = g;
@@ -583,7 +591,7 @@ function check(name, ok, detail) {
             gz.mesh === 0 &&
             gz.gesetz > 0 &&
             gg.bNachZurueck === 0,
-        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}`
+        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}${gg.bTreffer && gg.bTreffer.length ? " (" + gg.bTreffer.join(", ") + ")" : ""}`
     );
     const d = out.d || {};
     check(

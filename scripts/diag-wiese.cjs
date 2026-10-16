@@ -10,6 +10,7 @@
 // Die Wind-Uhr steht für jeden Schuss (S3 08.10.); `--stelle x,z` setzt die Stelle fest (Vorher/Nachher an derselben).
 //   node scripts/diag-wiese.cjs [--tag name] [--out DIR] [--stelle x,z]
 "use strict";
+const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
@@ -163,20 +164,20 @@ const RENDER_FN = async (kam, W, H, png) => {
             x,
             z
         );
-    const start = await umstellen(-900, -850);
+    const start = await umstellen(MESS.x, MESS.z);
     if (start.fatal) {
         console.log("FEHLER:", start.fatal);
         process.exit(1);
     }
     // Kandidaten: flach (Spanne ≤ 0,8 m über 6 m), trocken — auf Ringen 0…120 m.
-    const kand = await page.evaluate(() => {
+    const kand = await page.evaluate((M) => {
         const r = window.anazhRealm;
         const out = [];
         for (let d = 0; d <= 120; d += 15)
             for (let k = 0; k < (d ? 12 : 1); k++) {
                 const w = (k * Math.PI) / 6;
-                const x = -900 + Math.cos(w) * d,
-                    z = -850 + Math.sin(w) * d;
+                const x = M.x + Math.cos(w) * d,
+                    z = M.z + Math.sin(w) * d;
                 if (!r._landAt(x, z, 0.3)) continue;
                 let lo = Infinity,
                     hi = -Infinity;
@@ -194,7 +195,7 @@ const RENDER_FN = async (kam, W, H, png) => {
                 if (hi - lo <= 1.2) out.push({ x, z, y: r._voxelSurfaceY(x, z) });
             }
         return out;
-    });
+    }, MESS);
     // Die besonnte Stelle: je Kandidat ein Blick senkrecht nach unten (Mittag, Schatten frisch). `--stelle x,z` setzt sie
     // fest (Vorher/Nachher): die Wertung liest Pixel, eine geänderte Gestalt kann sonst eine andere Stelle wählen.
     let best = null;

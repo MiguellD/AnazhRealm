@@ -60,13 +60,13 @@ function check(name, ok, detail) {
     const hebel = (src.match(/AnazhRealm\.ARCH_LEAF_MAT_SHARED/g) || []).length;
     check(
         "Q: ARCH_LEAF_MAT_SHARED hat genau 2 Code-Vorkommen (Definition + der EINE Konsument _archLeafMaterial)",
-        hebel === 2 && src.includes("_archLeafMaterial(part) {"),
+        hebel === 2 && stammLib.kopf(src, "_archLeafMaterial") >= 0,
         `vorkommen=${hebel}`
     );
     const nahtCalls = (src.match(/this\._archSlotColor\(leaf, tintColor\)/g) || []).length;
     check(
         "Q: die EINE Slot-Farb-Naht — _archSlotColor definiert + in BEIDEN Slot-Schreibern konsumiert",
-        src.includes("_archSlotColor(leaf, entryTint) {") && nahtCalls === 2,
+        stammLib.kopf(src, "_archSlotColor") >= 0 && nahtCalls === 2,
         `konsumenten=${nahtCalls}`
     );
     // Kein dritter setColorAt-Pfad in den zwei Slot-Schreibern (die alte

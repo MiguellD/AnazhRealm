@@ -28,7 +28,14 @@
 
 const path = require("path");
 
-const BASIS = ["--no-sandbox", "--disable-setuid-sandbox", "--enable-unsafe-swiftshader"];
+// DER CPU-COMPOSITOR (15.10., K67): auf swiftshader rastert der GPU-Prozess auch jedes Compositor-Bild auf der CPU, und
+// eine endlose CSS-Animation hält den Compositor im Takt, auch wenn der Haupt-Thread steht. Das Glimmen des Ladeschirms
+// hielt die vier Raster-Fäden des Läufers (`Thread<NN>`, die Stall-Akte nennt sie) voll; jeder synchrone Programm-Bau der
+// Seite wartete dahinter — gate:webgl-probe 60–340 s, Risse bei 300 s. Diagnose 6 (38692263047, je Arm 32 Läufe): mit
+// Glimmen 5 über 120 s, Raster-CPU p90 771 s; ohne 0 über 120 s, p90 254 s. Die Linse wünscht weniger Bewegung, die Seite
+// hält dann jede Deko-Animation an (index.html, prefers-reduced-motion).
+const CPU_COMPOSITOR = ["--force-prefers-reduced-motion"];
+const BASIS = ["--no-sandbox", "--disable-setuid-sandbox", "--enable-unsafe-swiftshader", ...CPU_COMPOSITOR];
 // Linux: die Swapchain braucht die Vulkan-Ablage des GPU-Prozesses (swiftshader), ANGLE auf swiftshader, keine Oberfläche.
 const LINUX_SWAPCHAIN = ["--enable-features=Vulkan", "--use-vulkan=swiftshader", "--use-angle=swiftshader", "--disable-vulkan-surface"];
 
@@ -46,7 +53,7 @@ function echteWebGpuArgs() {
 
 // WebGL2 auf swiftshader (ANGLE) — die CI und jede Zeit-Linse der WebGL-Familie.
 function softwareWebglArgs() {
-    return ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"];
+    return ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox", ...CPU_COMPOSITOR];
 }
 
 // WebGL2 auf der Karte (ANGLE auf dem Treiber der Maschine); navigator.gpu fällt, damit die Welt wie auf swiftshader

@@ -18,16 +18,18 @@
 // der Vergleich mit `streu` im selben Bild, nicht die Zahl der Lappen-Welt.
 //
 //   Seite:     await window.__fernwaldLinse({ blicke: ["nord"], w: 1280, h: 720 })
-//   Werkbank:  node scripts/werkbank.cjs fernwald [--blicke nord,ost]   (nach `umstellen -900 -850`)
+//   Werkbank:  node scripts/werkbank.cjs fernwald [--blicke nord,ost]   (nach `umstellen --ort wiese`)
 "use strict";
 
-// Die fünf Blicke der Mess-Wiese: Name · Auge (x, Höhe über Boden, z) · Ziel (x, Höhe über Boden, z).
+// Die fünf Blicke der Mess-Wiese (der Messort des Haushalts, K55): Name · Auge (x, Höhe über Boden, z) · Ziel (x, Höhe über
+// Boden, z) — das Auge am Messort, das Ziel 200 m nach Norden (−z), Osten (+x) oder Westen (−x).
+const M = require("./welt-orte.cjs").messort("wiese");
 const BLICKE = [
-    ["nord", -900, 45, -850, -900, 0, -1050],
-    ["ost", -900, 45, -850, -700, 0, -850],
-    ["west", -900, 45, -850, -1100, 0, -850],
-    ["boden-nord", -900, 1.7, -850, -900, 4, -1050],
-    ["boden-west", -900, 1.7, -850, -1100, 6, -850],
+    ["nord", M.x, 45, M.z, M.x, 0, M.z - 200],
+    ["ost", M.x, 45, M.z, M.x + 200, 0, M.z],
+    ["west", M.x, 45, M.z, M.x - 200, 0, M.z],
+    ["boden-nord", M.x, 1.7, M.z, M.x, 4, M.z - 200],
+    ["boden-west", M.x, 1.7, M.z, M.x - 200, 6, M.z],
 ];
 
 function fernwaldLinse(opts) {

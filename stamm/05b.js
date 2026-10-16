@@ -233,7 +233,12 @@ class AnazhRealm_Z05b {
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const growMs = Math.max(1, throttleMs - AnazhRealm.PERF_HEADROOM_MS);
         let err; // skaleninvariant; 0 im Totband
-        if (sense.frameMs > throttleMs)
+        // DER LADESCHIRM MISST NICHTS (K60-3): unter dem Lade-Takt zeigt kein Frame die Welt — sein Abstand ist die Kadenz des
+        // Lade-Bilds (LADE_BILD_MS), seine Last die Erst-Zeichnung, nie die Last des Spiels. Das Integral hält, der Seed trägt das
+        // erste Weltbild; gemessen wird ab dem ersten Frame, der die Welt zeigt. Prüfung K60-3 Runde 2 (Radeon kalt): der PID
+        // trieb loadScale an 500-ms-Lade-Bildern auf 0 (gate:regler-sim S7: 0 statt Seed 0,7).
+        if (this._ladeTakt()) err = 0;
+        else if (sense.frameMs > throttleMs)
             err = (sense.frameMs - throttleMs) / throttleMs; // zu langsam → drosseln (loadScale ↓)
         else if (sense.frameMs < growMs)
             err = (sense.frameMs - growMs) / growMs; // Kopfraum → wachsen (loadScale ↑)
@@ -280,7 +285,9 @@ class AnazhRealm_Z05b {
         // Frame über Budget = gemessene Frame-ZEIT über dem Drossel-Sollwert (nie ein Draw-Call-Proxy,
         // der Welt-Größe mit Render-Druck verwechselt). Steuert NUR sichtbare Deko-Arbeit (Laub-Wachstum/
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
+        // Unter dem Ladeschirm zeigt kein Frame die Welt (`_ladeTakt`): kein Frame reißt ein Budget.
         st._frameOverBudget =
+            !this._ladeTakt() &&
             sense.frameMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
         // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle): das Ziel; der Radius selbst geht
         // durch dieselbe Grenzzyklus-Wand wie das Laub (unten).
@@ -343,13 +350,16 @@ class AnazhRealm_Z05b {
                       ? Math.max(ziel, cur - schritt * 2)
                       : cur;
             const TOT = AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND;
-            st.foliageRadius = wand(frCur, frTarget, step, TOT, true);
-            st.architectureCullingRadius = wand(
+            // DIE REICHWEITE DES ERSTEN WELTBILDS (K60-3): die Wand schützt den Takt, den der Spieler sieht — unter dem Lade-Takt
+            // sieht keiner den Radius atmen, und sie hielt das Weltbild klein. Laub- und Architektur-Radius stehen dort an ihrem
+            // Ziel (das Laub an der Kante des gebauten Rings), `_weltbildLuecken` urteilt an der ganzen Reichweite. Prüfung K60-3
+            // Runde 2 (Radeon kalt): das Bild stand mit 65 statt 129,6 m Laub, 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume —
+            // der Radius wuchs nur in ruhigen Takten, und unter dem Ladeschirm (ein Bild je LADE_BILD_MS) kam keiner.
+            const reichweite = (cur, ziel) => (this._ladeTakt() ? ziel : wand(cur, ziel, step, TOT, true));
+            st.foliageRadius = reichweite(frCur, frTarget);
+            st.architectureCullingRadius = reichweite(
                 Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : archZiel,
-                archZiel,
-                step,
-                TOT,
-                true
+                archZiel
             );
             // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle (die Last-Dichte der
             // Nah-Streu, `_nahStreuKachel`) → unter Last weniger Dreiecke. Kaltstart-Wand: das Laub ist ~90 % der GPU-Last,
@@ -506,11 +516,50 @@ class AnazhRealm_Z05b {
         return Math.max(0, per) * Math.max(0, n);
     }
 
+    // DIE GERÄTE-GRENZEN (G1): was JEDER WebGPURenderer der Seite vom Gerät verlangt (Welt · Feed-/Hof-/Ich-Bühne · Workshop-
+    // Preview) — der EINE forceWebGL-Hook und je Stufe die Grenzen des EINEN Adapters der Holz-Wahl (`GERAET_GRENZEN`). Ohne
+    // `requiredLimits` gibt WebGPU dem Gerät die Standard-Grenzen (16 Texturen · 16 Sampler · 8 Speicher-Puffer je Stufe), auch
+    // wenn der Adapter 48 Texturen trägt: der Boden-Stoff des Fern-Rings (17) sagte ab. Die Bühnen entstehen nach dem Boot und
+    // lesen den Adapter synchron; ein Renderer vor der Holz-Wahl bricht laut (jede Münzstelle meldet ihren Fehlschlag als ERROR).
+    _rendererGeraet() {
+        if (this._adapter === undefined)
+            throw new Error("GERÄTE-GRENZEN: ein Renderer vor der Adapter-Frage der Holz-Wahl (`_holzWahl` beim Boot)");
+        const a = this._adapter;
+        const requiredLimits = {};
+        if (a)
+            for (const k of AnazhRealm.GERAET_GRENZEN)
+                if (Number.isFinite(a.limits[k])) requiredLimits[k] = a.limits[k];
+        return { forceWebGL: AnazhRealm._forceWebGL(), requiredLimits };
+    }
+
     // Holz-Wahl: URL ?holz= schlägt localStorage schlägt AUTO (Adapter-Info: Software-Renderer →
     // kienspan). Läuft VOR dem Renderer-Bau (init) — der Adapter wird billig vorab befragt.
     // Gibt den Profil-Namen zurück, nie null.
     async _holzWahl() {
         const P = AnazhRealm.HOLZ_PROFILE;
+        // DIE EINE ADAPTER-FRAGE (F1): die Holz-Wahl und die Grenzen des Geräts (`_rendererGeraet`, G1) lesen DENSELBEN Adapter,
+        // gefragt, wie r184 ihn für das Gerät fragt (`featureLevel: "compatibility"`, WebGPUBackend.init) — eine andere Frage
+        // könnte einen Adapter mit anderen Grenzen liefern, und `requestDevice` scheiterte an der geforderten Grenze. Bis F1
+        // fragten Holz-Wahl, Renderer-Bau und r184 dreimal. Antwortet keiner binnen 4 s, ist er null — und das ist LAUT (G1): die
+        // Grenzen des Geräts (`_rendererGeraet`) fielen sonst still auf den Standard (16 Texturen je Stufe), der Fern-Ring fehlte.
+        this._adapter = null;
+        try {
+            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL()) {
+                const FRIST = Symbol("frist");
+                const a = await Promise.race([
+                    navigator.gpu.requestAdapter({ featureLevel: "compatibility" }),
+                    new Promise((res) => setTimeout(() => res(FRIST), 4000)),
+                ]);
+                if (a === FRIST)
+                    this._bruchMelden(
+                        "GERÄTE-GRENZEN: der Adapter antwortet nicht binnen 4 s — das Gerät fährt die Standard-Grenzen " +
+                            "(16 Texturen je Stufe), ein Stoff darüber sagt ab (PIPELINE-ABSAGE)"
+                    );
+                else this._adapter = a;
+            }
+        } catch (e) {
+            this._bruchMelden(`GERÄTE-GRENZEN: der Adapter ließ sich nicht befragen (${(e && e.message) || e})`);
+        }
         try {
             const url = typeof location !== "undefined" ? new URLSearchParams(location.search).get("holz") : null;
             if (url && P[url]) {
@@ -529,19 +578,34 @@ class AnazhRealm_Z05b {
         } catch (_e) {
             /* Privacy-Modus */
         }
+        // Gefragt wird das Gerät, das WIRKLICH zeichnet (K67): der WebGPU-Adapter, wenn die Welt ihn bekommt — sonst der
+        // WebGL2-Rückfall (r184 fällt ohne Adapter und unter dem forceWebGL-Hook auf GL), dessen Renderer-String. Vorher
+        // fragte die Wahl nur den Adapter: auf dem Rückfall antwortete keiner, und eine Software-GL (swiftshader) fuhr
+        // „voll" — der GPU-Prozess rasterte auf der CPU unter 200–400 % Last, und ein synchroner Programm-Bau wartete
+        // 60–170 s auf ihn (gate:webgl-probe riss in 14 von 192 Läufen, die Stall-Akte der Boot-Lib nannte es).
+        let sig = null;
         try {
-            if (typeof navigator !== "undefined" && navigator.gpu) {
-                const a = await Promise.race([
-                    navigator.gpu.requestAdapter(),
-                    new Promise((res) => setTimeout(() => res(null), 4000)),
-                ]);
-                const info = a && a.info ? a.info : {};
-                const sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`.toLowerCase();
-                if (/swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig)) return "kienspan";
+            const a = this._adapter;
+            if (a) {
+                const info = a.info || {};
+                sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`;
             }
-        } catch (_e) {
-            /* Adapter-Probe fail-soft → voll */
+            if (sig === null && typeof document !== "undefined") {
+                const gl = document.createElement("canvas").getContext("webgl2");
+                if (gl) {
+                    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+                    sig = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+                    const los = gl.getExtension("WEBGL_lose_context");
+                    if (los) los.loseContext();
+                }
+            }
+        } catch (e) {
+            this.log(
+                `HOLZ-WAHL: das zeichnende Gerät ließ sich nicht befragen (${(e && e.message) || e}) — „voll"`,
+                "WARN"
+            );
         }
+        if (sig !== null && /swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig.toLowerCase())) return "kienspan";
         return "voll";
     }
 
@@ -1959,10 +2023,10 @@ class AnazhRealm_Z05b {
 
     // ### Skybox ###
     createGalaxySkybox() {
-        // Skybox als MeshBasicNodeMaterial (TSL, WebGPU): Nebula-Noise + horizont-genordete Wolken.
+        // Skybox als MeshBasicNodeMaterial (TSL): die Himmels-Sicht der EINEN Atmosphäre + horizont-genordete Wolken.
         // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
-        // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): DSL skybox_color (nebulaColor),
-        // _dayNightApplySkybox (nebulaColor + cloudCover), _loopSkyboxZeit (time pro Frame).
+        // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): _dayNightApplySkybox (cloudCover; die Tönung über
+        // himmelTint, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
         const TSL = THREE.TSL;
         // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
         // stapeln (kein Doppel-Heap).
@@ -1985,45 +2049,29 @@ class AnazhRealm_Z05b {
             mix,
             smoothstep,
             clamp,
-            pow,
             max,
             Fn,
         } = TSL;
-        // Der Himmel nutzt DIESELBE Noise-Sprache wie Terrain + Vegetation: das vendored `mx_noise_float`
-        // (MaterialX-Simplex, präzisions-stabil). fract(sin(dot·43758))-Hash-Noise kippt bei großen
-        // Koordinaten in Float-Chaos (Flackern) — hash3 ist nur der Fallback ohne mx_noise.
-        const mxNoise = TSL.mx_noise_float;
-
-        // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
-        // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
+        // DER HIMMEL IST DIE ATMOSPHÄRE (D3): die Kuppel liest die Himmels-Sicht der EINEN Atmosphäre (`_atmoLutBau`,
+        // Hillaire) — Rayleigh-Blau, Mie-Hof um die Sonne, Dämmerung und Mondnacht aus dem Medium; bis D3 eine Nebel-Kuppel
+        // (Indigo-Noise × Tint-Farbe, Horizont-Dunst, drei Halo-Schichten), getunt statt gerechnet. Die Scheibe der Sonne
+        // trägt ihr Körper (`sunMesh`), den Hof die Mie-Phase der Tafel.
+        const A = this._atmoLutBau();
+        // Zwei Live-Uniforms (uniform-Knoten, .value-mutable): die Zeit (Drift der Wolken) und die Deckung des Wetters.
         const uTime = uniform(0.0);
-        const uNebulaColor = uniform(new THREE.Color(0x4b0082)); // Indigofarben
         const uCloudCover = uniform(0.3);
-        // V17.2 — Sonnen-Richtung für den Wolken-Glow (golden-hour-Rand zur
-        // Sonne hin). EINE Quelle: derselbe sunDir, der DirectionalLight + das
-        // Gras-Gegenlicht speist (`_dayNightApplyDirectionalLight`-Sync).
+        // V17.2 — Sonnen-Richtung für den Wolken-Glanz zur Sonne hin. EINE Quelle: derselbe sunDir, der DirectionalLight +
+        // das Gras-Gegenlicht speist (`_dayNightApplyDirectionalLight`-Sync).
         const uSunDir = uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize());
-        // W9 — die Sonnen-FARBE fürs Wolken-Gesetz (Rayleigh-Hue der EINEN
-        // _atmosphere-Quelle; Schreiber: _dayNightApplyDirectionalLight).
+        // W9 — der Farbton der Sonne fürs Wolken-Gesetz (der Durchlass der EINEN Atmosphäre, `_atmoSonne`; Schreiber:
+        // _dayNightApplyDirectionalLight).
         const uSunCol = uniform(new THREE.Color(1, 0.95, 0.85));
-
-        // 3D-Hash-Noise (Spiegel der alten GLSL `noise(vec3)`, Fallback ohne mx_noise): dieselben
-        // Magic-Konstanten, Smoothstep, 8-Corner-Trilinear-Mix. Nicht bit-identisch (TSL sin/fract sind
-        // auf WebGPU implementation-defined), das Smoothing absorbiert die <1e-4-Drift.
         // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
         const vDir = normalize(positionLocal);
 
-        // Nebula-Tint aus mx_noise ([-1,1] → [0,1]). Oktaven von Hand (mx_fractal nimmt nur eine
-        // Position, die Zeit-Drift soll je Oktave verschieden sein); 2 Oktaven (Fragment-Budget).
-        const _nebN = (p) => mxNoise(p).mul(0.5).add(0.5);
-        const n1 = _nebN(vDir.mul(1.0).add(uTime.mul(0.02)));
-        const n2 = _nebN(vDir.mul(2.0).add(uTime.mul(0.01)));
-        const nebulaTint = float(0.5).add(n1.add(n2).div(2.0).mul(0.5));
-        const nebula = uNebulaColor.mul(nebulaTint);
-
         // Das Wolken-Feld folgt HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein
         // GLSL): Himmelsebenen-Projektion sp=dir.xz/(dir.y+projY), zwei fbm-Abtastungen (h21/vn verbatim),
-        // Deckungs-smoothstep aus uCloudCover, Horizont-Ausklang, Beleuchtung uSunCol (_atmosphere).
+        // Deckungs-smoothstep aus uCloudCover, Horizont-Ausklang, Farbton uSunCol (_atmoSonne).
         // max(y,hor0) klemmt den Nenner unter dem Horizont (TSL brancht nicht wie das Studio) — sonst NaN.
         // Fail-closed: das Gesetz lebt NUR in foundry-core (__terrainCore); unlesbar → Bruch, der schreit.
         const HG =
@@ -2072,44 +2120,20 @@ class AnazhRealm_Z05b {
         );
         const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
         const cloudAmt = clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
-        // Sonnen-Halo: drei kaskadierte Glow-Layer + Disc-Highlight, damit die Sonne als Objekt
-        // erscheint; goldener Halo am Tag, kühler Mondhalo nachts.
-        const sunDot = clamp(dot(vDir, normalize(uSunDir)), float(0.0), float(1.0));
-        // Drei Schichten: bright Disc → enger Halo → weiter Halo → atmosphärischer Haze.
-        const sunGlowWide = pow(sunDot, float(4.0)); // Wolken-Wärme (golden hour)
-        const sunGlowMid = pow(sunDot, float(28.0)); // enger heller Halo
-        const sunGlowDisc = pow(sunDot, float(240.0)); // bright Sonnen-Disc (sichtbar als Kugel)
-        // Himmel-Helligkeit — das Gate der Sonnen-Halos (isDayMix unten).
-        const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
         // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
-        // Nachts trägt das lit-Grau die Wolken (uSunCol wird zur Mond-Farbe, EINE _atmosphere-Quelle).
         const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
-
-        // Vertikaler Himmel-Gradient (Vorlagen-Form `hh>0 ? mix(uHor,uTop,pow(hh,0.55)) :
-        // mix(uHor,uBot,pow(-hh,0.5))`): Zenit = `nebula`, der Horizont hellt zu entsättigtem Dunst auf
-        // (Aerial-Perspektive, schmilzt die Terrain-Silhouette), unter dem Horizont dunkelt er.
-        // Alles aus `nebula` abgeleitet → tag/nacht-sicher, keine neue Datenquelle.
-        const _lumN = nebula.x.mul(0.3).add(nebula.y.mul(0.59)).add(nebula.z.mul(0.11));
-        const _hazeCol = mix(nebula, vec3(_lumN.add(0.34), _lumN.add(0.36), _lumN.add(0.4)), float(0.55));
-        const _botCol = nebula.mul(float(0.42));
-        // W9 — die pow-Kurven des Vertikal-Gradienten lesen das Gesetz (Vorlage
-        // 0.55 oben / 0.5 unten — die Welt trug 0.5/0.5, eine stille Drift).
-        const _upC = pow(clamp(vDir.y, float(0.0), float(1.0)), float(HG.grad.up));
-        const _dnC = pow(clamp(vDir.y.negate(), float(0.0), float(1.0)), float(HG.grad.dn));
-        const _above = mix(_hazeCol, nebula, _upC);
-        const _below = mix(_hazeCol, _botCol, _dnC);
-        const _hemiBlend = smoothstep(float(-0.03), float(0.03), vDir.y);
-        const skyBase = mix(_below, _above, _hemiBlend);
-        const finalCloud = mix(skyBase, cloudColor, cloudAmt);
-        // Sonnen-Disc + Halo wirken auch am wolkenlosen Himmel (weiter warmer Halo + Disc-Highlight);
-        // isDayMix gated alles: nachts (skyLum klein) sind die Halos aus.
-        const isDayMix = clamp(skyLum.mul(3.5), float(0.0), float(1.0));
-        const haloWarm = vec3(1.0, 0.85, 0.55);
-        const discBright = vec3(1.2, 1.1, 0.9);
-        const finalColor = finalCloud
-            .add(haloWarm.mul(sunGlowWide.mul(0.18).mul(isDayMix))) // weiter goldener Halo
-            .add(haloWarm.mul(sunGlowMid.mul(0.6).mul(isDayMix))) // enger heller Halo
-            .add(discBright.mul(sunGlowDisc.mul(0.95).mul(isDayMix))); // Sonnen-Disc
+        // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (2 km über dem Auge)
+        // auf ihre Oberseite, dazu der Himmel von oben (der Zenit der Himmels-Sicht, E/π) — Lambert. So ist die Mittags-Wolke
+        // weiß über dem Blau und die Nacht-Wolke dunkler als die 18-%-Karte im Mondlicht.
+        const U = A.U;
+        const rW = U.hKm.add(A.RG + 2);
+        const lichtWolke = A.durchlass(rW, U.sonne.y)
+            .mul(max(U.sonne.y, 0))
+            .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
+            .mul(U.licht.div(Math.PI))
+            .add(A.himmelFarbe(vec3(0, 1, 0)));
+        const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
+        const finalColor = mix(A.himmelFarbe(vDir), cloudColor.mul(wolkeHell), cloudAmt);
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
         const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
@@ -2123,7 +2147,9 @@ class AnazhRealm_Z05b {
         // NodeMaterial nicht mehr; uniform-Knoten haben .value direkt).
         this.state.skyboxUniforms = {
             time: uTime,
-            nebulaColor: uNebulaColor,
+            // der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter, Feld, Gefühl und
+            // DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3)
+            himmelTint: { value: new THREE.Color(1, 1, 1) },
             cloudCover: uCloudCover,
             sunDir: uSunDir,
             sunCol: uSunCol,
@@ -2786,96 +2812,65 @@ class AnazhRealm_Z05b {
     }
 
     // ═══ DIE SKY-ENV-MAP ═══
-    // Ohne `scene.environment` rendern PBR-Metalle SCHWARZ (sie holen ihre Farbe aus der Reflexion).
-    // Darum eine prozedurale Sky-Env (kein HDRI): Gradient Zenit → Horizont → Boden aus der live
-    // `nebulaColor`, PMREM-gefiltert. Feature-detected + try/catch (Fehler → environment null);
-    // regeneriert nur bei Farb-Drift, nie pro Frame.
-    _ensureSkyEnvironment(force) {
+    // Ohne `scene.environment` rendern PBR-Metalle SCHWARZ (sie holen ihre Farbe aus der Reflexion). DIE UMGEBUNG IST DER
+    // HIMMEL DER EINEN ATMOSPHÄRE (D3): der Wandel-Pass legt die Himmels-Sicht (Azimut absolut, mit Boden) als Equirekt
+    // 128×64 ab, PMREM filtert sie — azimut-abhängig (zur Sonne heller als von ihr weg), in derselben E0 wie das Richtlicht.
+    // Bis D3 malte die CPU einen azimut-konstanten Verlauf aus Tint-Farben (128×64 sRGB): Licht-Verhältnis 4,2 statt 5,1.
+    // Grober Takt: neu nur, wenn die Sonne sich um mehr als ein halbes Grad drehte, Tönung oder E0 sich änderten, höchstens
+    // je `SKY_ENV_REGEN_MIN_MS` (der Sprung der Uhr geht an der Drossel vorbei); die Bestrahlung liest die CPU zurück
+    // (`_himmelUmgebungLesen` → `_himmelsIrradianz`).
+    _ensureSkyEnvironment(force, sprung) {
         const st = this.state;
         if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
         if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
-        // Nie PMREMGenerator.fromScene: greift in WebGL-Interna (`buffers`), unter WebGPURenderer (r184)
-        // inkompatibel. Stattdessen eine CPU-Equirekt-Gradient-Textur als scene.environment.
-        const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
-        const tief = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
-        // DER SICHTBARE HIMMEL ALS LICHT: der Horizont ist die In-Streu-Farbe der Luft — sie dunstet die Ferne
-        // in den Horizont, das IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente
-        // Horizont-Quelle); die Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus
-        // nebulaColor allein lag der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (Licht wie unter Blaufolie).
-        // Die Luft ÜBER dem Wasser (`himmelFarbe`), nie das Medium der Kamera: bis V18.531 malte ein Tauchgang die
-        // Unterwasser-Farbe in die Umgebung der ganzen Welt (191/218/237 → 81/132/170, blieb nach dem Auftauchen, W-L-b).
-        const fc = st.luft && st.luft.himmelFarbe;
-        const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
-        const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
-        const last = st._skyEnvLastColor;
-        // Idle-Freeze-Wand: die Tag-Nacht-Uhr driftet die Himmelsfarbe auch im Stehen; jede Regeneration
-        // mit NEUER Texture-Identität ließ WebGPU die Pipelines aller env-samplenden PBR-Materialien neu
-        // kompilieren (Multi-Sekunden-Stall). Darum (a) SKY_ENV_REGEN_MIN_MS deckelt die Rate, (b) das
-        // Render-Target wird wiederverwendet (unten) → stabile Texture-Identität.
+        const A = this._atmoLutBau();
+        const U = A.U;
+        const t = U.toenung.value;
+        const neu = {
+            sx: U.sonne.value.x,
+            sy: U.sonne.value.y,
+            sz: U.sonne.value.z,
+            my: U.mond.value.y,
+            t: t.x + t.y + t.z,
+            e: U.licht.value,
+            m: A.mediumBeta,
+            h: U.hKm.value,
+        };
+        const last = st._skyEnvLast;
         const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        const drift = last ? Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) : Infinity;
+        const gleich =
+            !!last &&
+            last.sx * neu.sx + last.sy * neu.sy + last.sz * neu.sz > Math.cos((0.5 * Math.PI) / 180) &&
+            Math.abs(last.my - neu.my) < 0.01 &&
+            Math.abs(last.t - neu.t) < 0.02 * Math.max(1, neu.t) &&
+            Math.abs(last.e - neu.e) < 0.02 * Math.max(1e-3, neu.e) &&
+            last.m === neu.m &&
+            Math.abs(last.h - neu.h) < 0.05;
         if (
             !force &&
             last &&
-            (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS)
-        ) {
-            return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
-        }
+            (gleich || (!sprung && nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS))
+        )
+            return true;
         try {
-            const tex = this._himmelUmgebungTex();
-            const W = tex.image.width,
-                H = tex.image.height;
-            const d = st._skyEnvData;
-            // Die Farben sind LINEAR (THREE.Color), die Textur ist sRGB: kodieren statt roh schreiben — roh
-            // geschrieben dekodierte die Textur sie ein zweites Mal (tiefer, gesättigter).
-            const sRGB = (c) => {
-                const x = Math.max(0, Math.min(1, c));
-                return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
-            };
-            // DIE ZEILEN-RICHTUNG: Zeile 0 liegt bei uv.v = 0, und three legt v = 0 nach UNTEN (equirectUV: v =
-            // asin(dir.y)/π + 0,5; eine DataTexture ohne flipY). Bis V18.530 stand der Zenit in Zeile 0 — der Himmel
-            // stand KOPF: eine weiße Karte nach oben las die Boden-Hälfte (0,43/0,59/0,62, grün), nach unten den
-            // Himmel (0,52/0,70/0,85), ein Spiegel nach oben spiegelte den Boden (Linse 05.10., echte GPU).
-            for (let y = 0; y < H; y++) {
-                const v = y / (H - 1); // v=0 unten (Boden/Nadir) … 1 oben (Zenit) — die Zeile, die three sampelt
-                // Himmel: Horizont = Nebel-Farbe, zum Zenit halb in die Skybox-Tönung (klarer Himmel: oben
-                // tiefer blau, gleich hell); Boden 0.35× (erd-dunkel) → Horizont 1.0×.
-                const t = v >= 0.5 ? 0.5 * ((v - 0.5) / 0.5) : 0;
-                const fac = v >= 0.5 ? 1.0 : 0.35 + 0.65 * (v / 0.5);
-                // Subtiler Grün-Boden-Bounce: die untere Halbkugel (v<0.5) bekommt einen Grün-Stich, stärker zum
-                // Nadir, aus am Horizont — der Himmel bleibt unberührt.
-                const bounce = v < 0.5 ? 0.12 * (1 - v / 0.5) : 0; // 0 am Horizont → 0.12 am Nadir
-                const rr = sRGB((hor.r + (tief.r - hor.r) * t) * fac * (1 - bounce * 0.5)),
-                    gg = sRGB((hor.g + (tief.g - hor.g) * t) * fac * (1 + bounce)),
-                    bb = sRGB((hor.b + (tief.b - hor.b) * t) * fac * (1 - bounce * 0.5));
-                for (let x = 0; x < W; x++) {
-                    const i = (y * W + x) * 4;
-                    d[i] = rr;
-                    d[i + 1] = gg;
-                    d[i + 2] = bb;
-                    d[i + 3] = 255;
-                }
-            }
-            st._skyEnvTex.needsUpdate = true;
-            // Null-Renderer (headless): kein PMREM (braucht GPU-Render-Targets) — die Equirekt-DataTexture ist
-            // schon eine gültige Env; die roughness-gefilterte IBL ist nur ein Look-Detail.
+            // Null-Renderer (headless): kein Pass, kein PMREM — die Equirekt-Tafel ist die Umgebung (ungezeichnet).
             if (st.renderer._isHeadlessNull) {
-                st.scene.environment = st._skyEnvTex;
-                st._skyEnvLastColor = sky;
+                st.scene.environment = A.rtEq.texture;
+                st._skyEnvLast = neu;
                 st._skyEnvLastRegenMs = nowMs;
                 return true;
             }
-            // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`): echte roughness-
-            // gefilterte IBL — Metalle spiegeln den Himmel, PBR-Schatten bekommen indirektes Himmels-Licht.
+            if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
+            this._atmoZeichne(A.qEq, A.rtEq);
+            // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
+            // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            // In das BESTEHENDE Target rendern (zweites Argument): fromEquirectangular gibt
-            // `rt || _allocateTarget()` zurück → stabile Texture-Identität; scene.environment wird nur beim
-            // Erst-Aufruf gesetzt, danach nur der Inhalt erneuert (kein Pipeline-Recompile-Cascade).
-            const rt = st._skyPmrem.fromEquirectangular(st._skyEnvTex, st._skyEnvRT || null);
+            const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
-            st._skyEnvLastColor = sky;
+            st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
+            this._himmelUmgebungLesen();
             return true;
         } catch (err) {
             this.log(
@@ -2887,23 +2882,72 @@ class AnazhRealm_Z05b {
         }
     }
 
-    // DIE HIMMELS-UMGEBUNG als Textur (128×64 Equirekt, sRGB): EIN Objekt, gemalt von `_ensureSkyEnvironment`, gelesen
-    // von PMREM (die IBL jedes PBR-Stoffs) UND vom Wasser (der Spiegel des Himmels, roh — es ist glatt). Dasselbe
-    // DataTexture-Objekt bleibt über jede Regeneration → kein Texture-Identitäts-Wechsel, 0 Recompiles.
-    _himmelUmgebungTex() {
+    // DIE UMGEBUNG ZURÜCK AUF DIE CPU (je Neuzeichnung, asynchron): die Equirekt-Tafel als lineare Leuchtdichte je Texel
+    // (`_skyEnvData`, Float32 rgba, Zeile 0 = Nadir wie three sie sampelt) — der Leser `_himmelsIrradianz` (Belichtung,
+    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere (wer auf die frühere wartet, wartet auf sie). DIE LESUNG DIESER MALUNG ist ein Versprechen
+    // (`state._skyEnvLesung`, true sobald sie liegt): wer nach einem Sprung der Uhr die Bestrahlung der neuen Stunde braucht,
+    // wartet auf sie — die CPU sieht den Himmel EINE Lesung nach der Malung, nie davor. Ein echter Renderer ohne Rücklesung
+    // bricht laut (bis zur Nachbesserung kehrte die Lesung still zurück, und jeder Leser sah keinen Himmel).
+    _himmelUmgebungLesen() {
         const st = this.state;
-        if (st._skyEnvTex) return st._skyEnvTex;
-        const W = 128,
-            H = 64;
-        st._skyEnvData = new Uint8Array(W * H * 4);
-        const tex = new THREE.DataTexture(st._skyEnvData, W, H);
-        tex.name = "himmel-umgebung";
-        tex.mapping = THREE.EquirectangularReflectionMapping;
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
-        tex.minFilter = THREE.LinearMipmapLinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        st._skyEnvTex = tex;
-        return tex;
+        const A = st.atmoLut;
+        const r = st.renderer;
+        if (typeof r.readRenderTargetPixelsAsync !== "function")
+            throw new Error(
+                "Die Umgebung: der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)"
+            );
+        const W = A.rtEq.width,
+            H = A.rtEq.height;
+        const nr = (st._skyEnvLeseNr = (st._skyEnvLeseNr || 0) + 1);
+        st._skyEnvLesung = r.readRenderTargetPixelsAsync(A.rtEq, 0, 0, W, H).then(
+            (px) => {
+                if (nr !== st._skyEnvLeseNr) return st._skyEnvLesung; // überholt: das Versprechen der neueren Lesung
+                const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
+                const schritt = Math.floor(px.length / H); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                const halb = px instanceof Uint16Array;
+                for (let y = 0; y < H; y++)
+                    for (let x = 0; x < W * 4; x++) {
+                        const v = px[y * schritt + x];
+                        d[y * W * 4 + x] = halb ? AnazhRealm._halbZuFloat(v) : v;
+                    }
+                st._skyEnvVersion = (st._skyEnvVersion || 0) + 1;
+                return true;
+            },
+            (e) => {
+                // nie still: die Bestrahlung trägt die vorige Lesung weiter, der Bruch steht beim EINEN Melder (D3-N2)
+                this._bruchMelden(
+                    `STOFF: die Umgebung kam nicht zurück — die Bestrahlung trägt die vorige Lesung (${e && e.message})`
+                );
+                return false;
+            }
+        );
+        return st._skyEnvLesung;
+    }
+
+    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Umgebung frisch aus den Quellen, die jetzt gelten, und ihre
+    // Lesung abgewartet — true, sobald `_himmelsIrradianz` sie trägt. Der Null-Renderer malt keinen Himmel (die Tafeln leben
+    // auf der GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
+    _himmelFrisch() {
+        const st = this.state;
+        if (!st.renderer || st.renderer._isHeadlessNull) return Promise.resolve(false);
+        if (!this._ensureSkyEnvironment(true) || !st._skyEnvLesung) return Promise.resolve(false);
+        return st._skyEnvLesung;
+    }
+
+    // Halb-Float (IEEE 754 binary16) → Zahl.
+    static _halbZuFloat(h) {
+        const s = h & 0x8000 ? -1 : 1;
+        const e = (h & 0x7c00) >> 10;
+        const f = h & 0x03ff;
+        if (e === 0) return s * Math.pow(2, -14) * (f / 1024);
+        if (e === 31) return f ? NaN : s * Infinity;
+        return s * Math.pow(2, e - 15) * (1 + f / 1024);
+    }
+
+    // DIE HIMMELS-UMGEBUNG als Textur: die Equirekt-Tafel der EINEN Atmosphäre (128×64, linear, Halb-Float) — EIN Objekt,
+    // gezeichnet von `_ensureSkyEnvironment`, gelesen von PMREM (die IBL jedes PBR-Stoffs) UND vom Wasser (der Spiegel des
+    // Himmels, roh — es ist glatt). Dasselbe Ziel bleibt über jede Neuzeichnung → kein Texture-Identitäts-Wechsel.
+    _himmelUmgebungTex() {
+        return this._atmoLutBau().rtEq.texture;
     }
 }

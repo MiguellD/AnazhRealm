@@ -384,7 +384,7 @@ function stufeOhneBildLinse(core, cfg, quelle) {
         body(/static _blendeBehaelt\(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt\)\s*/)
     );
     const AR = { _blendeBehaelt: behaelt, PASS_WAHL: { pflanzeRandM: 2 } };
-    const fenster = new Function("AnazhRealm", "g", "i", "L", body(/^ {4}_instanzFenster\(g, i, L\) \{/m));
+    const fenster = new Function("AnazhRealm", "g", "i", "L", body(/^ {4}_instanzFenster\([^)]*\) \{/m));
     const gesetz = core.lodCrossfadeMask;
     const K = kanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
     const perf = 1.21,
@@ -451,7 +451,7 @@ function massDerBlende(srcNC) {
     if (!/const _mitte = this\._instanzMitteNode\(_Tl\);/.test(srcNC) || /_cam\.x\.sub\(_pw\.x\)/.test(srcNC))
         v.push("die Grammatik-Blattmaske misst zum Vertex statt zur Instanz");
     if (!/impostor: true,\s*distNode: _dA,/.test(srcNC)) v.push("die Karte misst zum Fragment ihres Quads statt zu ihrem Anker");
-    const fen = fnBody(srcNC, /^ {4}_instanzFenster\(g, i, L\) \{/m) || "";
+    const fen = fnBody(srcNC, /^ {4}_instanzFenster\([^)]*\) \{/m) || "";
     if (!fen) v.push("_instanzFenster fehlt");
     else if (/weite|_instanzWeite|pflanzeRandM|ak\[i \* 4 \+ 1\]/.test(fen)) v.push("das Fenster der Instanz-Wahl misst die Weite der Gestalt");
     if (!/if \(assignBuffer && builder\) builder\.__anazhInstanzMatrix = n;/.test(srcNC))
@@ -485,8 +485,8 @@ function stilleBlende(srcNC) {
     const bruch = fnBody(srcNC, /_blendeBruch\(was\)\s*/) || "";
     // die Blende bricht über den EINEN Stoff-Bruch (K22): ERROR mit dem Glied beim Namen über den EINEN Melder
     // (`_bruchMelden`, Nachbesserung 3: eine neue Meldung sofort ERROR, dieselbe wieder mit Zähler), die Marke `blende` obendrauf
-    const stoffBruch = fnBody(srcNC, /\n {4}_stoffBruch\(was, ursache\) \{/) || "";
-    const melder = fnBody(srcNC, /\n {4}_bruchMelden\(text\) \{/) || "";
+    const stoffBruch = fnBody(srcNC, /\n {4}_stoffBruch\([^)]*\) \{/) || "";
+    const melder = fnBody(srcNC, /\n {4}_bruchMelden\([^)]*\) \{/) || "";
     if (
         !/this\._stoffBruch\(/.test(bruch) ||
         !/e\.blende = true/.test(bruch) ||
@@ -495,7 +495,7 @@ function stilleBlende(srcNC) {
         /"(INFO|WARN|WARNING)"/.test(melder)
     )
         v.push("_blendeBruch meldet nicht laut beim Namen");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     if (/if \(_keepX\)/.test(stoff)) v.push("der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))");
     if (!/else\s+throw this\._blendeBruch\(/.test(stoff) || /if \(kanal\)/.test(stoff)) v.push("der Baum-Stoff ohne Kanal verliert die Maske still");
@@ -545,6 +545,13 @@ async function runPartB() {
         if (!entry) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(entry);
         res.preset = preset;
+        // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
+        // pumpt die Schlange, bis sie steht: die Wärme-Frist unten zählt dann nur Bauten, nie den Plan (Lehre 26)
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(entry, preset) == null; i++) {
+            r._tickWaldPlan(Infinity);
+            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+        }
+        res.gestalt = r._foundryGestaltFor(entry, preset);
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
         const warm = { 0: false, 1: false, 2: false };
@@ -1376,7 +1383,7 @@ async function runPartB() {
     // (L1) — räumt die L0-Gruppe, fällt keine Geometrie der lebenden L1 (r184 zerstörte sonst die GPU-Puffer des Wurfs
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
-    const kehraus = await page.evaluate(() => {
+    const kehraus = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const ex = 15345,
@@ -1384,9 +1391,22 @@ async function runPartB() {
         const e = r.spawnArchitecture(key, { x: ex, y: r._voxelSurfaceY(ex, ez) || 1, z: ez }, { silent: true, seed: 1 });
         if (!e) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(e);
+        // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
+        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr; bis K69 plante die erste Frage am Stück)
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) {
+            r._tickWaldPlan(Infinity);
+            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+        }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves)) return { err: "Stufen nicht warm" };
+        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+            return {
+                err: "Stufen nicht warm",
+                gestalt: r._foundryGestaltFor(e, preset),
+                schlange: r._waldPlanSchlange ? r._waldPlanSchlange.size : null,
+                l0: !!fl0,
+                l1: !!fl1,
+            };
         const tw1 = fl1.leaves.filter((l) => l.shadowTwin),
             tw0 = fl0.leaves.filter((l) => l.shadowTwin);
         const eigen0 = fl0.leaves.find((l) => !l.shadowTwin);
@@ -1451,7 +1471,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     }
     if (!/const _cam = _lu\.uLodAuge;/.test(srcNC)) v.push("die Grammatik-Blattmaske misst nicht vom Auge");
     // der Frame-Spiegel liest das EINE Auge der Stufen (`_lodAuge`, K36), und das ist die Haupt-Kamera
-    const augeQuelle = fnBody(srcNC, /\n {4}_lodAuge\(\)\s*\{/) || "";
+    const augeQuelle = fnBody(srcNC, /\n {4}_lodAuge\([^)]*\)\s*\{/) || "";
     if (
         !/uLodAuge: _T\.uniform\(/.test(srcNC) ||
         !/_lu\.uLodAuge\.value\.copy\(this\._lodAuge\(\)\)/.test(srcNC) ||
@@ -1459,7 +1479,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         !/cam\.getWorldPosition\(/.test(augeQuelle)
     )
         v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     else {
         // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Schalen trägt ihn in colorNode.a, K28) — nur die
@@ -1502,10 +1522,10 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
     if (/lf\.wurf|__wurf/.test(flat + gestalt))
         v.push("der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz");
-    const stoffS = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoffS = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!/kind === "schatten"[\s\S]*?mat\.colorNode = TSL\.vec4\(TSL\.vec3\(0\.0\), atl \? TSL\.max\(deckt, atl\.a\) : deckt\);/.test(stoffS))
         v.push("der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus");
-    const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\(srcGeom, capacity\)\s*\{/) || "";
+    const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\([^)]*\)\s*\{/) || "";
     if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
         v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
     // der Texel der KASKADE (SCHATTEN_KASKADE.texelM[0]) — nie das erste texelM des Stamms (die Laub-Streu trägt eines)
@@ -1540,16 +1560,16 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
 // Maske und das Fenster der Instanz-Wahl lesen ihn. → Liste der Verstöße mit Namen.
 function geisterQuelle(srcNC) {
     const v = [];
-    const sched = fnBody(srcNC, /\n {4}_runFrameScheduler\(playerPos\)\s*\{/) || "";
+    const sched = fnBody(srcNC, /\n {4}_runFrameScheduler\([^)]*\)\s*\{/) || "";
     if (!/const auge = this\._lodAuge\(\);/.test(sched) || !/this\._tickArchitectureLOD\(5, auge\);/.test(sched))
         v.push("der Takt reicht der Architektur-Wahl nicht das Auge (_lodAuge)");
     if (!/this\._tickScatterLod\(auge, /.test(sched)) v.push("der Takt reicht der Streu-Wahl nicht das Auge (_lodAuge)");
     // das Auge reist mit dem Sprung des Spielers und steht vor der ersten Setzung im Kopf; das Rig setzt es je Bild (K36 N1)
-    const augeQ = fnBody(srcNC, /\n {4}_lodAuge\(\)\s*\{/) || "";
+    const augeQ = fnBody(srcNC, /\n {4}_lodAuge\([^)]*\)\s*\{/) || "";
     if (!/out\.add\(pm\)\.sub\(r\.pl\)/.test(augeQ)) v.push("_lodAuge trägt den Sprung des Spielers nicht (die Wahl vom alten Ort)");
     if (!/r\.stand === 1\) return pm \? out\.set\(pm\.x, pm\.y \+ AnazhRealm\.EGO_AUGE_M, pm\.z\)/.test(augeQ))
         v.push("_lodAuge steht vor der ersten Setzung nicht im Kopf des Spielers (die ungesetzte Kamera wählt)");
-    const rig = fnBody(srcNC, /\n {4}_loopCamera\(currentTime\)\s*\{/) || "";
+    const rig = fnBody(srcNC, /\n {4}_loopCamera\([^)]*\)\s*\{/) || "";
     if (!/this\._lodAugeGesetzt\(\);/.test(rig)) v.push("das Rig (_loopCamera) setzt das Auge der Stufen nicht");
     const pass = fnBody(srcNC, /\n {4}_scatterPass\([^)]*\)\s*\{/) || "";
     if (!/const auge = this\._lodAuge\(\)/.test(pass) || !/this\._chooseLODForDistance\(distAuge, undefined, visH\)/.test(pass))
@@ -1565,16 +1585,16 @@ function geisterQuelle(srcNC) {
         else if (/playerMesh/.test(b)) v.push(name + " misst vom Spieler statt vom Auge der Maske");
     }
     if (!/_lu\.uLodAuge\.value\.copy\(this\._lodAuge\(\)\)/.test(srcNC)) v.push("die Maske spiegelt nicht das EINE Auge (_lodAuge)");
-    const band = fnBody(srcNC, /\n {4}_updateFoundryLodBand\(entry, dist, presetOpt\)\s*\{/) || "";
+    const band = fnBody(srcNC, /\n {4}_updateFoundryLodBand\([^)]*\)\s*\{/) || "";
     if (!/this\._lodHaltSetzen\(entry, flat === null \? "wartet" : true\);/.test(band))
         v.push("die Band-Pflege urteilt keinen Halt, wo der Partner fehlt (_lodHaltSetzen)");
     const voll = fnBody(srcNC, /\n {4}_lodSlotVoll\([^)]*\)\s*\{/) || "";
     if (!/entry\._lodHalt === true/.test(voll)) v.push("_lodSlotVoll kennt den Halt der Primär-Stufe nicht");
-    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, voll, leaf\)\s*\{/) || "";
+    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\([^)]*\)\s*\{/) || "";
     if (!/_h0LTpl \* s \* \(voll \? -1 : 1\)/.test(stempel)) v.push("der Slot-Stempel trägt den Halt nicht im Vorzeichen von aH0L");
     const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
     if (!/_aH0L\.abs\(\)/.test(maske) || !/\.max\(_halt\)/.test(maske)) v.push("die Stufen-Maske liest den Halt nicht (|aH0L|, max(_halt))");
-    const fen = fnBody(srcNC, /^ {4}_instanzFenster\(g, i, L\) \{/m) || "";
+    const fen = fnBody(srcNC, /^ {4}_instanzFenster\([^)]*\) \{/m) || "";
     if (!/hL < 0\)/.test(fen)) v.push("das Fenster der Instanz-Wahl verwirft die haltende Stufe (aH0L < 0)");
     const streu = fnBody(srcNC, /\n {4}_tickScatterLod\([^)]*\)\s*\{/) || "";
     if (!/this\._streuBandWechsel\(/.test(streu)) v.push("die Streu pflegt ihr Band nicht (_streuBandWechsel)");
@@ -1601,10 +1621,11 @@ function perfWahrheit(srcNC) {
     // Zahl wie der aH0-Stempel der L1), nie die Rahmen-Höhe des Bakes.
     if (!/visHeightNode: _karte\.w\.abs\(\),/.test(srcNC))
         v.push("das Billboard misst mit eigener Höhe statt dem Sichthöhen-Stempel der L1 (|aKarte.w|)");
-    const flat = fnBody(srcNC, /\n {4}_foundryBuildImpostorFlat\(entry, preset\)\s*\{/) || "";
-    if (!/const hz = this\._foundryBaumHoehe\(preset, entry\);/.test(flat) || !/this\._impostorLeaf\(z, this\._foundryWorldScaleMatrix\(preset\), hz\)/.test(flat))
+    const flat = fnBody(srcNC, /\n {4}_foundryBuildImpostorFlat\([^)]*\)\s*\{/) || "";
+    // der Wartende (wer) ist Passagier des Wecks, kein Teil des Gesetzes: das Buch wird mit (preset, entry) befragt
+    if (!/const hz = this\._foundryBaumHoehe\(preset, entry(?:, [^)]*)?\);/.test(flat) || !/this\._impostorLeaf\(z, this\._foundryWorldScaleMatrix\(preset\), hz\)/.test(flat))
         v.push("die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe");
-    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, voll, leaf\)\s*\{/) || "";
+    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\([^)]*\)\s*\{/) || "";
     if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
     // Die einzige Nah-Stufe einer Art ohne L0 (bis Welle 6 der Strauch) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
     // Jede Stufe blendet nur zu einem Partner, den die Art trägt (06.10.): die L0 zur L1 (1), sonst nur zur Karte (3).
@@ -1615,19 +1636,19 @@ function perfWahrheit(srcNC) {
         v.push("die L0 einer Art ohne L1 blendet zu einer L1 aus, die es nicht gibt (Wagen und Tor)");
     if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
         v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
-    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
+    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\([^)]*\)\s*\{/) || "";
     if (!/_foundrySichtHoehe\(/.test(hoehe)) v.push("_lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)");
     // Ohne bekannte Höhe KEIN Stufen-Urteil (null), nie still 0 (roh, ohne Perf — der alte Geist); die Höhe lebt im
     // Höhen-Buch, nicht im LRU der Geometrie.
-    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\(preset, entry, scale\)\s*\{/) || "";
+    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\([^)]*\)\s*\{/) || "";
     if (!/if \(h0 == null\) return null;/.test(sicht)) v.push("_foundrySichtHoehe fällt ohne Höhe still auf 0 (roh) zurück");
-    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\(preset, entry\)\s*\{/) || "";
+    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\([^)]*\)\s*\{/) || "";
     if (!/f\.hoehen/.test(buch)) v.push("_foundryBaumHoehe liest nicht das Höhen-Buch");
-    const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\(key, v\)\s*\{/) || "";
+    const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\([^)]*\)\s*\{/) || "";
     if (!/f\.hoehen = new Map\(\)\)\)\.set\(key, v\._hoehe\)/.test(satz)) v.push("der Cache-Chokepoint schreibt das Höhen-Buch nicht");
     // Die Blatt-Kappe der CPU gilt der VORLAGE wie der Stempel (aH0L = min(Vorlage, Kappe) × s; Studio phytogenesis
     // bhL = min(H0, Kappe) · sc), nie der skalierten Höhe — und jeder Aufrufer reicht seine Instanz-Skala.
-    const partner = fnBody(srcNC, /\n {4}_lodBandPartnerFor\(dist, visH, cur, s\)\s*\{/) || "";
+    const partner = fnBody(srcNC, /\n {4}_lodBandPartnerFor\([^)]*\)\s*\{/) || "";
     if (!/Math\.min\(visH \/ sS, capL\) \* sS/.test(partner))
         v.push("die CPU-Blatt-Kappe kappt die skalierte Höhe (min(h·s, 24)) statt der Vorlage (min(h, 24)·s)");
     for (const m of srcNC.matchAll(/this\._lodBandPartnerFor\(([^)]*)\)/g))
@@ -1831,7 +1852,7 @@ async function main() {
                 ["Karte schluckt den Bruch", nc.replace('throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
                 ["Blatt-Karte springt still", nc.replace('throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
                 ["Stoff-Bruch ohne Melder", nc.replace("this._bruchMelden(text);", "")],
-                ["Melder meldet INFO", nc.replace(/(\n {4}_bruchMelden\(text\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
+                ["Melder meldet INFO", nc.replace(/(\n {4}_bruchMelden\([^)]*\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
             ]) {
                 const v = stilleBlende(src);
                 check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
@@ -1982,7 +2003,7 @@ async function main() {
         check(
             "FENSTER (W7): der Stamm liest die Kanten aus dem EINEN Gesetz (_blendeKanten(pc.lodCrossfadeMask, …) in _passWahlLage)",
             /_blendeKanten\(pc\.lodCrossfadeMask, d0, d1, fade, fade0\)/.test(
-                fnBody(stripComments(anazhSrc), /^ {4}_passWahlLage\(S, kamera, k\) \{/m) || ""
+                fnBody(stripComments(anazhSrc), /^ {4}_passWahlLage\([^)]*\) \{/m) || ""
             )
         );
     }

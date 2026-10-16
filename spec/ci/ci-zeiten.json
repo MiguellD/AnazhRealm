@@ -353,7 +353,7 @@
         "38629080926"
       ]
     },
-    "Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)": {
+    "Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)": {
       "s": 6,
       "n": 5,
       "lauf": "npm run gate:carve",
@@ -1966,6 +1966,14 @@
         "38631780033",
         "38629080926"
       ]
+    },
+    "Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)": {
+      "s": 21,
+      "n": 1,
+      "lauf": "npm run gate:welt-boot",
+      "laeufe": [
+        "38694864243"
+      ]
     }
   },
   "vorher": {
@@ -2100,7 +2108,7 @@
             5
           ],
           [
-            "Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)",
+            "Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)",
             3,
             5
           ],

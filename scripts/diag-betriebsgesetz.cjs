@@ -14,7 +14,7 @@
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 
@@ -72,8 +72,112 @@ function archivBefund(dateien) {
     ];
 }
 
+// 6) WACHSTUMS-WAND (V1 Prüf-Diät, 15.10.): ein Zweig lässt den Prüf-Apparat (scripts/ + spec/) nie um mehr wachsen als
+//    um die Hälfte SEINES Spiel-Code-Wachstums. Seit main 062ec357 (14.10.) wuchsen scripts/ + spec/ um +16 349 Zeilen, der
+//    Spiel-Code um +3 334 — jede echte Änderung brach 2–6 Text-Linsen. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen
+//    einen festen Grund (der summierte fremde Zweige und war je Zweig anhebbar; der Probe-Merge von V1 auf integ-probe
+//    9003e357 war daran rot, ohne dass ein Zweig der Täter war). Gezählt als Netto-Differenz `git diff --numstat
+//    --no-renames` (hinzu − weg, Binärdateien ohne Zeilen):
+//    die Zeilen-Zählung des Baums (`git grep -c ''`) hing an der git-Version (2.54 ließ die leere Schlusszeile einer Datei
+//    aus, 2.55 nicht — dieselbe Linse lokal grün, in der CI rot). `--grund <rev>` / `--kopf <rev>` messen zwischen zwei
+//    Ständen; ohne `--kopf` zählt der Arbeitsbaum. Kein Grund auflösbar (flacher Klon) = ROT, nie still grün.
+const PRUEF_PFADE = ["scripts", "spec"];
+const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
+function git(args) {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
+}
+function nettoZeilen(numstat) {
+    return numstat
+        .split("\n")
+        .filter(Boolean)
+        .reduce((s, z) => {
+            const [hinzu, weg] = z.split("\t");
+            return hinzu === "-" ? s : s + Number(hinzu) - Number(weg);
+        }, 0);
+}
+function wachstumZwischen(grund, kopf, pfade) {
+    return nettoZeilen(git(["diff", "--numstat", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]));
+}
+// Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
+// ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
+// sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
+// erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
+// Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
+// Vorlauf von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
+function wachstumsStaende(zweig, kopfRev) {
+    if (zweig === "main") return [];
+    if (zweig === "integ-probe") {
+        const vorher = process.env.WACHSTUM_VORHER;
+        const grund = vorher && !/^0+$/.test(vorher) ? vorher : "HEAD~1";
+        return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`]];
+    }
+    return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
+}
+function wachstumBefund(dP, dS, name = "Zweig") {
+    const erlaubt = Math.floor(Math.max(0, dS) / 2);
+    if (dP > erlaubt)
+        return [
+            `WACHSTUMS-WAND (${name}): der Prüf-Apparat (scripts/ + spec/) wuchs um ${dP} Zeilen, der Spiel-Code um ${dS} — ` +
+                `erlaubt ist die Hälfte des Spiel-Wachstums (${erlaubt}); eine neue Linse zahlt mit einer gestrichenen`,
+        ];
+    return [];
+}
+
+// 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.): ein Dokument nennt als Beweis nur ein Gate, das package.json trägt. Die Diät
+//    strich gate:tier-gang, gate:weltgrenze und gate:nervensystem-porta/-schmiede/-fachwerk, während docs/studio-vertrag.md
+//    und docs/taille-spec.md sie weiter als Linse und ε-Beweis nannten (GOLDENE DEFINITION: nie stale Gates als Beweis).
+//    Eine Zeile, die das Gate als gefallen benennt (fiel · gefallen), ist Chronik und bleibt legal.
+const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9])/g;
+const ZITAT_CHRONIK = /\b(fiel|gefallen|gefallene[nmrs]?)\b/i;
+function zitatBefund(dokumente, gates) {
+    const out = [];
+    for (const { pfad, text } of dokumente)
+        text.split("\n").forEach((zeile, i) => {
+            if (ZITAT_CHRONIK.test(zeile)) return;
+            for (const m of zeile.matchAll(ZITAT_GATE))
+                if (!gates.has(`gate:${m[1]}`))
+                    out.push(`ZITAT-WAND: ${pfad}:${i + 1} nennt gate:${m[1]} — package.json trägt es nicht`);
+        });
+    return out;
+}
+
 function main() {
     const errs = [];
+    const argRev = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
+    const kopfRev = argRev("--kopf");
+    const grundRev = argRev("--grund");
+    const gemessen = [];
+    try {
+        const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+        const staende = grundRev ? [[grundRev, kopfRev, "--grund"]] : wachstumsStaende(zweig, kopfRev);
+        for (const [grund, kopf, name] of staende) {
+            const dP = wachstumZwischen(grund, kopf, PRUEF_PFADE);
+            const dS = wachstumZwischen(grund, kopf, SPIEL_PFADE);
+            gemessen.push(`${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} Zeilen`);
+            errs.push(...wachstumBefund(dP, dS, name));
+        }
+        if (!staende.length)
+            gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
+    } catch (e) {
+        errs.push(
+            `WACHSTUMS-WAND: der Grund des Zweigs ist nicht auflösbar (${String(e.message).split("\n")[0]}) — ` +
+                `die Wand braucht die Geschichte (CI: fetch-depth 0)`
+        );
+    }
+
+    // 7) ZITAT-WAND
+    try {
+        const gates = new Set(
+            Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts)
+        );
+        const dokumente = git(["ls-files", "CLAUDE.md", "docs", ".claude/agents"])
+            .split("\n")
+            .filter((p) => p.endsWith(".md"))
+            .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+        errs.push(...zitatBefund(dokumente, gates));
+    } catch (e) {
+        errs.push(`ZITAT-WAND: Dokumente oder package.json nicht lesbar (${String(e.message).split("\n")[0]})`);
+    }
 
     // 2) FROZEN-LISTEN-WAND
     const listePfad = path.join(root, "docs", "PFLICHT-OFFEN.md");
@@ -114,8 +218,7 @@ function main() {
         errs.push(`CLAUDE.md Stand trägt ${sz} Zeilen (max 40) — Chronik gehört in git log, nicht in den Stand`);
     if (!claude.includes("## DAS BETRIEBSGESETZ"))
         errs.push("CLAUDE.md trägt kein BETRIEBSGESETZ mehr — stilles Streichen der Gesetze");
-    if (!claude.includes("PFLICHT-OFFEN.md"))
-        errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
+    if (!claude.includes("PFLICHT-OFFEN.md")) errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
     const champ = fs.readFileSync(path.join(root, ".claude", "agents", "champion.md"), "utf8");
     if (!champ.includes("BETRIEBSGESETZ"))
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
@@ -145,8 +248,28 @@ function main() {
         errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4})`);
     const l1 = logbuchBefund("> Stand-Stempel: 29.09. · V1.2.3\nA) x").length; // muss feuern
     const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
-    const l3 = logbuchBefund(Array(LISTE_MAX_ZEILEN + 5).fill("x").join("\n")).length; // muss feuern
+    const l3 = logbuchBefund(
+        Array(LISTE_MAX_ZEILEN + 5)
+            .fill("x")
+            .join("\n")
+    ).length; // muss feuern
     if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
+    const w1 = wachstumBefund(600, 1000).length; // +600 Prüf gegen +1000 Spiel: muss feuern
+    const w2 = wachstumBefund(400, 1000).length; // +400 gegen +1000: darf nicht
+    const w3 = wachstumBefund(10, -500).length; // die Welt schrumpft, der Apparat wächst: feuert
+    const w4 = wachstumBefund(-100, -300).length; // beide schrumpfen: darf nicht
+    // die Zählung ist die Netto-Differenz je Datei; eine Binärdatei trägt keine Zeilen (eine leere Schlusszeile zählt
+    // wie jede Zeile — kein Zählen, das an der git-Version hängt)
+    const w5 = nettoZeilen("512\t0\tscripts/lib/kronen-linse.cjs\n-\t-\tspec/bild.png\n3\t10\tspec/a.json\n");
+    if (!w1 || w2 || !w3 || w4 || w5 !== 505)
+        errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5})`);
+    const zG = new Set(["gate:tier-gang"]);
+    const z1 = zitatBefund([{ pfad: "v.md", text: "Linse: `gate:weltgrenze` (A–G)" }], zG).length; // muss feuern
+    const z2 = zitatBefund([{ pfad: "v.md", text: "der Gang ist `gate:tier-gang`" }], zG).length; // darf nicht
+    const z3 = zitatBefund([{ pfad: "v.md", text: "`gate:dritter-spiegel` fiel mit K16" }], zG).length; // Chronik
+    const z4 = zitatBefund([{ pfad: "v.md", text: "ε-Beweis, `gate:nervensystem-porta`)." }], zG)[0] || "";
+    if (!z1 || z2 || z3 || !z4.includes("v.md:1 nennt gate:nervensystem-porta"))
+        errs.push(`Selbsttest der Zitat-Wand versagt (z1=${z1} z2=${z2} z3=${z3} z4=${z4})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");
@@ -155,7 +278,8 @@ function main() {
     }
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
-            `Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand stehen · Selbsttest feuert`
+            `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + ` +
+            `Wachstums-Wand + Zitat-Wand stehen · Selbsttest feuert`
     );
 }
 

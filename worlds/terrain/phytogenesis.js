@@ -190,7 +190,7 @@ let framedOnce = false;
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
     if (!subject) return;
-    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat, schattenMat];
+    const shared = [barkMat, barkMatBirch, foliageMat, foliageMatKrone, grassMat, stemMat, schattenMat];
     subject.traverse((o) => {
         if (o.isMesh) {
             o.geometry.dispose();
@@ -1111,7 +1111,7 @@ function slopeAt(x, z) {
 
 /* arttypischer Kronenradius (m) bei Größenfaktor 1 — Waldwuchs (schmal, Konkurrenz) */
 /* FOREST_TOPOLOGY.lab = "disk" — plantForest sequential Poisson + ok(); Feel-Entscheid .116; no fake merge with Host cell */
-/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); fail-soft = PORTAL_RENDER_CONFIG */
+/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); pack/dartsPerM2 fail-soft = PORTAL_RENDER_CONFIG */
 /* FOREST_LAB = Lab-only path/saum/garantie + Verjüngung/Schatten numbers; Host planForestCell must-ignore */
 /* FOREST_SPECIES = Lab Kurzname ↔ Host baum_* table (.112); Lab keeps short names internally */
 const _FP =
@@ -1126,7 +1126,7 @@ const _FS =
     typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.FOREST_SPECIES
         ? window.__phytoCore.FOREST_SPECIES
         : null;
-const CROWN = (_FP && _FP.crown) || PORTAL_RENDER_CONFIG.density.crown; // echter Beaestungsradius (Lichtkrone)
+const CROWN = _FP.crown; // die EINE Kronen-Tafel (phyto-core): die gewachsene Krone je Art, fail-closed (T2)
 const PACK =
     _FP && typeof _FP.pack === "number" ? _FP.pack : PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj)
 
@@ -1641,19 +1641,8 @@ function trailDist(x, z, paths) {
     return best;
 }
 
-/* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht */
-function groundCover(L, m, rk, td) {
-    if (td < 3.0) return { grass: 0, flower: 0, shrub: 0, pebble: 0.2, bare: 1 }; // breiter gepflegter Pfad: nackte Erde, sichtbarer Weg
-    const edge = td < 3.4 ? 0.55 : 0.3;
-    const meadow = clamp(L * 1.08 - rk * 0.85 + m * 0.22, 0, 1); // hell+feucht+nicht steinig = Wiese
-    return {
-        grass: clamp(meadow * 1.12, 0, 1), // TEPPICH in Lichtungen
-        flower: sstep(0.4, 0.7, L) * (1 - rk) * edge, // Saum/Sonne
-        shrub: Math.exp(-((L - 0.4) * (L - 0.4)) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42, // Halbschatten
-        pebble: clamp(rk * 1.05 - L * 0.15, 0, 1) * 0.3, // FIX v27: steinige Flecken, aber sparsam (0.55->0.30) -> kein Konfetti-Rauschen
-        bare: 0,
-    };
-}
+/* GROUND-COVER-GESETZ: wohnt im Kern (foundry-core `groundCover`, __terrainCore.groundCover, W1) — die Nah-Wiese der Welt
+   liest dasselbe */
 /* Findet ein schönes Lichtungs-Zentrum nahe dem Hauptpfad (viel Licht, nicht zu steil) */
 function findClearing(trees, R, seedInt) {
     const L = canopyLight(trees);
@@ -1773,12 +1762,15 @@ function buildForest() {
     const tg = new THREE.PlaneGeometry(TS, TS, SEG, SEG),
         tp = tg.attributes.position,
         tcol = [];
-    const cLit = new THREE.Color(PORTAL_GROUND.lit),
-        cMead = new THREE.Color(PORTAL_GROUND.mead),
-        cDirt = new THREE.Color(PORTAL_GROUND.dirt),
-        cRock = new THREE.Color(PORTAL_GROUND.rock),
-        cWet = new THREE.Color(PORTAL_GROUND.wet),
-        cSand = new THREE.Color(PORTAL_GROUND.sand);
+    // DIE BODEN-PALETTE NACH DEM FARB-GESETZ (W5, K70): jedes Hex ist eine sRGB-Absicht, die Albedo sein linearer Wert —
+    // derselbe Dekoder wie jede Vertex-Farbe des Ofens (`vegFarbe`) und die Welt (`AnazhRealm.BODEN_FARBE`). Bis K70 las
+    // das r128-Labor die Hex ROH (Wiese 0,32 statt 0,11, Waldboden Labor/Welt 4,07, spec/farbe/albedo-tafel.json).
+    const cLit = vegFarbe(PORTAL_GROUND.lit),
+        cMead = vegFarbe(PORTAL_GROUND.mead),
+        cDirt = vegFarbe(PORTAL_GROUND.dirt),
+        cRock = vegFarbe(PORTAL_GROUND.rock),
+        cWet = vegFarbe(PORTAL_GROUND.wet),
+        cSand = vegFarbe(PORTAL_GROUND.sand);
     // DER FELS DES BODENS ist das Fels-Gesetz (gelaende-core `felsFarbe`, K17) — dasselbe, das der Welt-Boden und die
     // Fels-Gestalten lesen: Pakete, die Mittel der Bänke, Kanten und Klüfte, die Rinde an konvexen Kanten aus der Krümmung,
     // Flechte und Moos. Der Palette-Stein ist eine sRGB-Absicht (FARB-GESETZ), sein linearer Wert der Grundton; die Masche
@@ -1786,7 +1778,7 @@ function buildForest() {
     const GK = window.__gelaendeCore;
     if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function")
         throw new Error("phytogenesis: gelaende-core felsFarbe fehlt (Kern-Pflicht, worlds/terrain/index.html)");
-    const felsB = GK.felsBasis(cRock.clone().convertSRGBToLinear().toArray());
+    const felsB = GK.felsBasis(cRock.toArray());
     for (let i = 0; i < tp.count; i++) tp.setZ(i, forestGroundH(tp.getX(i), -tp.getY(i)));
     tg.computeVertexNormals();
     const tn = tg.attributes.normal;
@@ -2175,22 +2167,14 @@ function buildForest() {
                     const im = new THREE.InstancedMesh(geo, o.material, b.it.length);
                     const isGrassSub = o.material === grassMat,
                         tint = isGrassSub ? new Float32Array(b.it.length * 3) : null; // FIX v27: Gras-Tint pro Halm aus dem Standort
-                    const _jh = (x, z) => {
-                        let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-                        return n - Math.floor(n);
-                    };
                     for (let j = 0; j < b.it.length; j++) {
                         const p = b.it[j];
                         im.setMatrixAt(j, compose(p.x, p.y, p.z, p.rotY, p.s));
                         if (isGrassSub) {
-                            const lit = lightAt(p.x, p.z),
-                                wet = moistAt(p.x, p.z),
-                                jt = _jh(p.x, p.z) - 0.5;
-                            const val = (lit - 0.5) * 0.45 + jt * 0.18,
-                                warm = (clamp(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24; // hell+trocken -> waermeres Oliv; Schatten/nass -> tiefes kuehles Gruen; +Helligkeits-Jitter pro Halm
-                            tint[j * 3] = val + warm;
-                            tint[j * 3 + 1] = val + warm * 0.35;
-                            tint[j * 3 + 2] = val - warm * 0.8 + (wet - 0.5) * 0.12;
+                            // DER TINT ist das Kern-Gesetz der Wiese (W1, __terrainCore.wiesenTint — die Nah-Wiese der Welt
+                            // schreibt ihn als Instanz-Farbe); `aTintI` trägt ihn als Abweichung von 1
+                            __terrainCore.wiesenTint(p.x, p.z, lightAt(p.x, p.z), moistAt(p.x, p.z), tint, j * 3);
+                            for (let c = 0; c < 3; c++) tint[j * 3 + c] -= 1;
                         }
                     }
                     if (isGrassSub) geo.setAttribute("aTintI", new THREE.InstancedBufferAttribute(tint, 3));
@@ -2284,7 +2268,7 @@ function buildForest() {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
-                        const isFol = o.material === foliageMat || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
+                        const isFol = o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
                         windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL);
                         geo.setAttribute(
                             "aLodLevel",
@@ -2596,7 +2580,7 @@ function buildForest() {
         if (
             o.isMesh &&
             !o.userData.shadowProxy &&
-            (o.material === foliageMat || o.material === foliageMatTex || o.material === grassMat)
+            (o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex || o.material === grassMat)
         )
             o.layers.set(1);
     }); // Laub (Blaetter+Gras) -> Layer 1 (Halb-Aufloesungs-Pass); Schatten-Zwillinge bleiben auf Layer 2
@@ -3222,7 +3206,6 @@ let wxFog = 0.16,
     wxRainT = 0; // geglaettete Wetter-Faktoren
 const _skNight = new THREE.Color(0x0a1326),
     _skDay = new THREE.Color(0xa6d2ec); // perzeptuelle Himmel-Anker (Tag/Nacht); Daemmerung + Glut leitet das Atmosphaere-Gesetz ab
-const _moonCol = new THREE.Color(0x9fb8dc); // vom Atmosphaere-Gesetz genutzt (Mondlicht-Hue)
 const _wxOver = new THREE.Color(0xc4c9cf),
     _wxStorm = new THREE.Color(0x555d67);
 const _w1 = new THREE.Color(),
@@ -3250,30 +3233,24 @@ function wSS(a, b, x) {
     const t = clamp((x - a) / (b - a), 0, 1);
     return t * t * (3 - 2 * t);
 }
-// ===== ATMOSPHAERE-GESETZ: Sonnenhoehe -> Luftmasse -> spektrale Transmission (Rayleigh ~1/lambda^4) =====
-// EINE Quelle fuer Sonnenfarbe+Intensitaet, Hemi und Impostor-Tint. Sonnenuntergang/Nacht entstehen aus der Physik, nicht aus Lerps.
+// ===== ATMOSPHAERE-GESETZ (D3): DIESELBE Atmosphaere wie die Welt — foundry-core `ATMO_GESETZ` + `ATMO_RECHNUNG` =====
+// EINE Quelle fuer Sonnenfarbe+Intensitaet, Hemi und Impostor-Tint: der Durchlass des Hillaire-Mediums (Rayleigh-Tiefe,
+// die EINE Luft am klaren Tag, Ozon, Erdkruemmung) vom Auge zur Sonne; unter dem Horizont der Mond des Gesetzes.
 const _atmS = new THREE.Color();
-/* V18.491.254 — Lab Rayleigh zenith OD ← ATMOS_GESETZ fail-soft; Host none (ATMOS_VIS). PHYLO/FIB untouched. */
-const _ATMOS = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.ATMOS_GESETZ) || null;
-const _BETA_R = (_ATMOS && isFinite(_ATMOS.betaR)) ? _ATMOS.betaR : 0.044,
-    _BETA_G = (_ATMOS && isFinite(_ATMOS.betaG)) ? _ATMOS.betaG : 0.1,
-    _BETA_B = (_ATMOS && isFinite(_ATMOS.betaB)) ? _ATMOS.betaB : 0.23; // Rayleigh optische Tiefe Meereshoehe/Zenit (Bucholtz 1995): blau streut ~5x rot
-/* V18.491.258 — Lab air-mass/night ← LUFT_GESETZ fail-soft; Host none (LUFT_VIS). ≠ ATMOS betas. */
-const _LUFT = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.LUFT_GESETZ) || null;
-const _AIR_SOFT = (_LUFT && isFinite(_LUFT.airSoft)) ? _LUFT.airSoft : 0.06;
-const _NIGHT_SCALE = (_LUFT && isFinite(_LUFT.nightScale)) ? _LUFT.nightScale : 0.16;
-const _NIGHT_LUM = (_LUFT && isFinite(_LUFT.nightLum)) ? _LUFT.nightLum : 0.06;
+const _atmT = [0, 0, 0];
+const _ATMO_M = ATMO_RECHNUNG.medium(ATMO_GESETZ, ATMO_RECHNUNG.betaKlar(ATMO_GESETZ), null);
 function atmosphere(e) {
-    const m = 1.0 / (Math.max(e, 0.0) + _AIR_SOFT); // Luftmasse: ~1 im Zenit, gross am Horizont
-    const tr = Math.exp(-_BETA_R * m),
-        tg = Math.exp(-_BETA_G * m),
-        tb = Math.exp(-_BETA_B * m); // durchgelassenes Sonnenspektrum (Beer-Lambert)
-    const lum = 0.21 * tr + 0.72 * tg + 0.07 * tb; // Lichtmenge der direkten Sonne
-    const mx = Math.max(tr, tg, tb, 1e-4);
-    _atmS.setRGB(tr / mx, tg / mx, tb / mx); // Sonnenfarbe = Hue des Spektrums (Sonnenuntergang -> rot)
-    const night = clamp(-e / _NIGHT_SCALE, 0, 1);
-    _atmS.lerp(_moonCol, night); // unter Horizont -> Mond (Purkinje-Blauverschiebung)
-    return { col: _atmS, lum: lum * (1.0 - night) + _NIGHT_LUM * night, day: clamp(e, 0, 1) };
+    const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000); // das Auge ueber dem Bezug
+    const s = ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, e, ATMO_GESETZ.durchlassSchritte, _atmT);
+    _atmS.setRGB(s.col.r, s.col.g, s.col.b);
+    return { col: _atmS, lum: s.lum, day: s.day };
+}
+// Die Lichtmenge der Zenit-Sonne aus DEMSELBEN Medium und Auge: die Tages-Achse der Umgebung (`_dimEnvIBL`) ist der Durchlass
+// relativ zu ihr — bis zur D3-Nachbesserung teilte sie durch 0,92, die Zenit-Lichtmenge der gefallenen Luftmassen-Sonne.
+const _atmZ = [0, 0, 0];
+function _atmoLumZenit() {
+    const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000);
+    return ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, 1, ATMO_GESETZ.durchlassSchritte, _atmZ).lum;
 }
 /* V18.491.264 — Lab weather presets ← WX_GESETZ fail-soft; Host none (WX_VIS). ≠ ATMOS/LUFT; FIB untouched. */
 const WX_GESETZ_FALLBACK = {
@@ -3322,7 +3299,7 @@ function fmtHM(h) {
     return (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm;
 }
 function _dimEnvIBL(f) {
-    const list = _envMats.length ? _envMats : [foliageMat, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
+    const list = _envMats.length ? _envMats : [foliageMat, foliageMatKrone, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
     for (const m of list) {
         if (!m) continue;
         if (m.userData.bEnv === undefined) m.userData.bEnv = m.envMapIntensity !== undefined ? m.envMapIntensity : 1.0;
@@ -3385,7 +3362,7 @@ function updateWorld(dt) {
         day = clamp(e, 0, 1);
     _wSunPos.set(hx * cosE, lift, hz * cosE).normalize();
     const atm = atmosphere(e); // EIN atmosphaerischer Zustand speist alles Licht
-    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / 0.92, 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
+    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / _atmoLumZenit(), 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
     if (keyLight) {
         if (forestMode) {
             // Schatten-Kamera dem Spieler nachfuehren: Terrain (192) ist groesser als die Schattenbox -> Box IMMER um den Spieler.
@@ -4518,6 +4495,10 @@ init();
     const SEASONS = { fruehling: "spring", sommer: "summer", herbst: "autumn", winter: "winter" };
     const B = AnazhHuelle.bruecke({
         welt: "terrain",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         manifest: true,
         wort: (op) => {
             try {

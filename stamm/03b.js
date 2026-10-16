@@ -1369,17 +1369,17 @@ class AnazhRealm_Z03b {
     // Leser: die Siedlung (`_spawnSettlementSlot`, Grundriss aus dem Export) und die Wand jedes Werks (`_werkImWasser`).
     // Befund: nur die Siedlung fragte das ganze Fundament — „bau mir ein haus am wasser" stellte an 11 von 11 Uferorten ein
     // Haus, dessen Fundament 6–67 von 81 Raster-Punkten bis 0,92–3,68 m tief im Wasser stand (der Satz fragte die Mitte).
-    _fundamentLand(x, z, ry, fp, tuer, sockel = 0) {
-        if (!this._landAt(x, z, 0.2)) return false;
+    _fundamentLand(x, z, ry, fp, tuer, saum = 0) {
+        if (!this._landAt(x, z, AnazhRealm.WERK_LAND_M)) return false;
         if (!fp) return true;
         const c = Math.cos(ry || 0);
         const s = Math.sin(ry || 0);
-        // DAS FUNDAMENT SAMT SOCKEL (Integration V18.540): trägt das Werk ein Fundament, steht sein Podest `sockel`
-        // (FUNDAMENT_SOCKEL_M) über den Grundriss hinaus (`_archFundamentBox`) — das Land fragt dieselbe Fläche, die der
-        // Zell-Stempel und gate:werk-im-wasser Z messen; ein Werk ohne Fundament (der Satz, der Tempel) trägt keinen Sockel
-        const raster = sockel > 0 ? { ex: fp.ex + sockel, ez: fp.ez + sockel, ox: fp.ox, oz: fp.oz } : fp;
+        // DER GRUND SAMT SAUM (K10): ein Haus eines Orts steht auf der Platte seines Erdbaus — dem Grundriss samt dem Saum des
+        // Orts-Gesetzes (fachwerk `ORT_GESETZ.saumM`, `ortPlan`); das Land fragt dieselbe Fläche, die der Erdbau formt, im
+        // halben Meter (gate:werk-im-wasser Z misst ≤ 1 m). Ein Werk ohne Ort (der Satz, der Tempel) trägt keinen Saum.
+        const raster = saum > 0 ? { ex: fp.ex + saum, ez: fp.ez + saum, ox: fp.ox, oz: fp.oz } : fp;
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer, 0.5))
-            if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
+            if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, AnazhRealm.WERK_LAND_M)) return false;
         return true;
     }
 

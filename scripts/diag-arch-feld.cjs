@@ -34,6 +34,7 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
@@ -58,7 +59,7 @@ function kartenGesetz(buch, zelleF) {
 // S — die Ziegel-Schlange: im Mesh-Zonen-Zweig von tickArchitectureCulling ruft ein Bau ohne Slot den
 // Ziegel NIE direkt (Listen-Reihenfolge), er reiht sich in die Distanz-Schlange.
 function schlangenGesetz(src) {
-    const a = src.indexOf("\n    tickArchitectureCulling() {");
+    const a = stammLib.kopf(src, "tickArchitectureCulling"); // am Namen (gate:apparat Klinge 3)
     if (a < 0) return { ok: false, grund: "tickArchitectureCulling fehlt" };
     const b = src.indexOf("\n    }\n", a);
     const body = src.slice(a, b);
@@ -152,6 +153,7 @@ function schlangenGesetz(src) {
         const t = m.text();
         if (t.startsWith("[D]")) console.log("  " + t);
     });
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -185,8 +187,7 @@ function schlangenGesetz(src) {
                 await sleep(40);
             }
         };
-        const X = -900,
-            Z = -850;
+        const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         await tick(80);
         const pm = r.state.playerMesh.position;
@@ -233,15 +234,15 @@ function schlangenGesetz(src) {
         const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
-        let zuletzt = r._impostorBakePending ? r._impostorBakePendingKey : null;
+        const gesehen = new Set(r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []);
         const buche = (t) => {
             const at = r._kartenAtlas;
-            const k = r._impostorBakePending ? r._impostorBakePendingKey : null;
-            if (at && k && k !== zuletzt) {
+            for (const k of r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []) {
+                if (!at || gesehen.has(k)) continue;
+                gesehen.add(k);
                 const zF = at.zellen.get(zelleF);
                 if (!(zF && zF.gebacken)) backBuch.push({ key: k, d: rang(at.zellen.get(k)), dF: rang(zF), t });
             }
-            zuletzt = k;
         };
         let satzBF = false;
         let slotB = null,
@@ -459,7 +460,7 @@ function schlangenGesetz(src) {
                             fehlt:
                                 `der Feld-Pass steht nach ${n} Takten nicht (` +
                                 (fp
-                                    ? `gemalt ${fp.laeufe}× · Farb-Job ${fp.farbJob ? fp.farbJob.k + "/" + fp.farbJob.n : "keiner"} · ` +
+                                    ? `gemalt ${fp.laeufe}× · im Flug ${fp.flug ? "ja" : "nein"} · ` +
                                       `Panorama ${fp.panoLaeufe || 0}× · sichtbar ${!!(fp.mesh && fp.mesh.visible)}`
                                     : "kein Feld-Pass") +
                                 ")",

@@ -653,7 +653,7 @@ class AnazhRealm_Z22 {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
         } catch (err) {
             this.log(`Hof-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;
@@ -1301,7 +1301,7 @@ class AnazhRealm_Z22 {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
         } catch (err) {
             this.log(`Ich-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;

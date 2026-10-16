@@ -126,6 +126,11 @@ class AnazhRealm_Z17c {
     // Geometrie ohne Index ist ein lauter Bruch (`wer` nennt den Bereich).
     // `regler` (der Bau-Satz, `_satzRegler`): { regler: [Rauheit, Metall, Deckkraft], glut: [r, g, b] } — je Ecke dieselben
     // Zahlen (`aRegler`, `aGlut`); ein Satz-Attribut der Regler ohne sie ist ein Bruch.
+    // DER BLOCK IST FLÜCHTIG (K69): seine Arrays sind Views der EINEN Werkbank (`_satzWerkbank`), der Satz packt sie beim
+    // Eintritt und hält nie eine Referenz (`_chunkSatzEin`: `fluechtig`); `quelle` nennt, woraus er entstand (die Linse rechnet
+    // ihn daraus nach). Befund (Null-Gang ins Dorf, `_tickBauSatz` 137 ms): der Wechsel eines Hauses auf die Stufe 0 legte
+    // 142k Ecken frisch an (~10 MB je Wechsel, dazu die Kopie beim Austritt) — der Heap sprang, die volle Sammlung fiel
+    // mitten in den Takt (ein Teil mit 56k Ecken 89–92 ms, sein Nachbar mit 72k Ecken 15 ms).
     _satzBlock(geo, im, ic, cnt, attr, wer, regler) {
         const A = geo.attributes;
         const n = A.position.count;
@@ -138,8 +143,8 @@ class AnazhRealm_Z17c {
             if (name === "aRegler" || name === "aGlut") {
                 const w = regler ? (name === "aRegler" ? regler.regler : regler.glut) : null;
                 if (!w) throw new Error(`_satzBlock(${wer}): ${name} ohne die Regler des Stoffs`);
-                const out = new Float32Array(N * is);
-                for (let v = 0; v < N; v++) for (let c = 0; c < is; c++) out[v * is + c] = w[c];
+                const out = this._satzWerkbank(name, N * is, Float32Array);
+                AnazhRealm._satzKernFuell(out, N, is, w);
                 attributes[name] = { array: out, itemSize: is, count: N };
                 continue;
             }
@@ -147,63 +152,131 @@ class AnazhRealm_Z17c {
             const q = wiegeAttr ? A.position : A[name];
             if (!q || (!wiegeAttr && q.itemSize !== is))
                 throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
-            const out = new Float32Array(N * is);
+            const out = this._satzWerkbank(name, N * is, Float32Array);
             const src = q.array;
             const jeInstanz = q.isInstancedBufferAttribute === true;
+            // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
+            // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
+            // Hauses auf die Stufe 0 fiel in die unoptimierte Rechnung: im Null-Gang ins Dorf ein Teil mit 56k Ecken 34–92 ms
+            // beim ersten und zweiten Bau, beim dritten 7 ms (der Heap wuchs um 7–14 MB, jede Zahl ein Objekt).
             for (let i = 0; i < cnt; i++) {
                 const o0 = i * n * is;
-                if (name === "position" || name === "normal") {
-                    M.fromArray(im, i * 16);
-                    const e = name === "position" ? M.elements : NM.getNormalMatrix(M).elements;
-                    for (let v = 0, k = 0; v < n; v++, k += 3) {
-                        const x = src[k],
-                            y = src[k + 1],
-                            z = src[k + 2];
-                        if (name === "position") {
-                            out[o0 + k] = e[0] * x + e[4] * y + e[8] * z + e[12];
-                            out[o0 + k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-                            out[o0 + k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-                        } else {
-                            const nx = e[0] * x + e[3] * y + e[6] * z,
-                                ny = e[1] * x + e[4] * y + e[7] * z,
-                                nz = e[2] * x + e[5] * y + e[8] * z;
-                            const l = Math.hypot(nx, ny, nz) || 1;
-                            out[o0 + k] = nx / l;
-                            out[o0 + k + 1] = ny / l;
-                            out[o0 + k + 2] = nz / l;
-                        }
-                    }
-                } else if (wiegeAttr) {
+                if (name === "position") AnazhRealm._satzKernLage(out, o0, src, n, M.fromArray(im, i * 16).elements);
+                else if (name === "normal")
+                    AnazhRealm._satzKernNormale(out, o0, src, n, NM.getNormalMatrix(M.fromArray(im, i * 16)).elements);
+                else if (wiegeAttr) {
                     const e = M.fromArray(im, i * 16).elements;
-                    const skala = Math.hypot(e[0], e[1], e[2]);
-                    for (let v = 0; v < n; v++) out[o0 + v] = src[v * 3 + 1] * skala;
-                } else if (jeInstanz) {
-                    for (let v = 0; v < n; v++) for (let c = 0; c < is; c++) out[o0 + v * is + c] = src[i * is + c];
-                } else if (name === "color" && ic) {
-                    const r = ic[i * 3],
-                        gg = ic[i * 3 + 1],
-                        b = ic[i * 3 + 2];
-                    for (let k = 0; k < n * 3; k += 3) {
-                        out[o0 + k] = src[k] * r;
-                        out[o0 + k + 1] = src[k + 1] * gg;
-                        out[o0 + k + 2] = src[k + 2] * b;
-                    }
-                } else out.set(src.subarray(0, n * is), o0);
+                    AnazhRealm._satzKernWiege(out, o0, src, n, Math.hypot(e[0], e[1], e[2]));
+                } else if (jeInstanz) AnazhRealm._satzKernJe(out, o0, src, n, is, i * is);
+                else if (name === "color" && ic)
+                    AnazhRealm._satzKernFarbe(out, o0, src, n, ic[i * 3], ic[i * 3 + 1], ic[i * 3 + 2]);
+                else out.set(src.subarray(0, n * is), o0);
             }
             attributes[name] = { array: out, itemSize: is, count: N };
         }
         const li = geo.index.array;
         const iN = li.length;
-        const idx = new Uint32Array(iN * cnt);
-        // je Instanz eine Zelle (ihr Lauf im Index): jeder Pass wählt die Instanzen, deren Hülle sein Frustum schneidet
+        const idx = this._satzWerkbank("#index", iN * cnt, Uint32Array);
+        // je Instanz eine Zelle (ihr Lauf im Index): jeder Pass wählt die Instanzen, deren Hülle sein Frustum schneidet.
+        // Den Index der Vorlage (Uint16 ODER Uint32) kopiert `set`, die Schleife rechnet nur in Uint32 (K69): las sie beide
+        // Breiten, riss der erste große Uint16-Index die optimierte Rechnung (Null-Gang ins Dorf: ein Teil mit 56k Ecken
+        // 54–92 ms, sein Nachbar mit 72k Ecken und Uint32-Index 7–15 ms; der Heap wuchs dabei um 7–14 MB).
         const zellen = new Uint32Array(cnt + 1);
         for (let i = 0; i < cnt; i++) {
             const b = i * n,
                 o = i * iN;
-            for (let k = 0; k < iN; k++) idx[o + k] = li[k] + b;
+            idx.set(li, o);
+            if (b > 0) for (let k = o; k < o + iN; k++) idx[k] += b;
             zellen[i + 1] = o + iN;
         }
-        return { attributes, index: { array: idx }, zellen };
+        return {
+            attributes,
+            index: { array: idx },
+            zellen,
+            fluechtig: true,
+            quelle: [geo, im, ic, cnt, attr, wer, regler],
+        };
+    }
+
+    // DIE EINE WERKBANK der Satz-Blöcke (K69): je Attribut-Name ein Array, das mit dem größten Block wächst (×1,5) und nie
+    // schrumpft — ein Block ist ein View ihrer ersten `len` Werte, gültig bis zum nächsten `_satzBlock`.
+    _satzWerkbank(name, len, Typ) {
+        const W = this._satzWerk || (this._satzWerk = new Map());
+        let a = W.get(name);
+        if (!a || a.length < len) {
+            a = new Typ(Math.max(len, Math.ceil((a ? a.length : 0) * 1.5)));
+            W.set(name, a);
+        }
+        return a.subarray(0, len);
+    }
+
+    // DIE KERNE DES BLOCKS (K69, `_satzBlock`): `out` ab `o0`, `src` die Werte der Vorlage, `n` Ecken.
+    // Lage: Position × Instanz-Matrix `e` (16 Werte, spaltenweise).
+    static _satzKernLage(out, o0, src, n, e) {
+        const e0 = e[0],
+            e1 = e[1],
+            e2 = e[2],
+            e4 = e[4],
+            e5 = e[5],
+            e6 = e[6],
+            e8 = e[8],
+            e9 = e[9],
+            e10 = e[10],
+            e12 = e[12],
+            e13 = e[13],
+            e14 = e[14];
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            const x = src[k],
+                y = src[k + 1],
+                z = src[k + 2];
+            out[o0 + k] = e0 * x + e4 * y + e8 * z + e12;
+            out[o0 + k + 1] = e1 * x + e5 * y + e9 * z + e13;
+            out[o0 + k + 2] = e2 * x + e6 * y + e10 * z + e14;
+        }
+    }
+    // Normale × Normalen-Matrix `e` (9 Werte, spaltenweise), normiert.
+    static _satzKernNormale(out, o0, src, n, e) {
+        const e0 = e[0],
+            e1 = e[1],
+            e2 = e[2],
+            e3 = e[3],
+            e4 = e[4],
+            e5 = e[5],
+            e6 = e[6],
+            e7 = e[7],
+            e8 = e[8];
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            const x = src[k],
+                y = src[k + 1],
+                z = src[k + 2];
+            const nx = e0 * x + e3 * y + e6 * z,
+                ny = e1 * x + e4 * y + e7 * z,
+                nz = e2 * x + e5 * y + e8 * z;
+            const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            out[o0 + k] = nx / l;
+            out[o0 + k + 1] = ny / l;
+            out[o0 + k + 2] = nz / l;
+        }
+    }
+    // `aWiege`: die Höhe der Vorlage (Position y) × die Welt-Skala der Instanz.
+    static _satzKernWiege(out, o0, src, n, skala) {
+        for (let v = 0; v < n; v++) out[o0 + v] = src[v * 3 + 1] * skala;
+    }
+    // Ein Instanz-Attribut der Fassade (ab `q` in `src`, Breite `is`) je Ecke.
+    static _satzKernJe(out, o0, src, n, is, q) {
+        for (let v = 0; v < n; v++) for (let c = 0; c < is; c++) out[o0 + v * is + c] = src[q + c];
+    }
+    // Farbe × Instanz-Farbe.
+    static _satzKernFarbe(out, o0, src, n, r, g, b) {
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            out[o0 + k] = src[k] * r;
+            out[o0 + k + 1] = src[k + 1] * g;
+            out[o0 + k + 2] = src[k + 2] * b;
+        }
+    }
+    // Dieselben Zahlen `w` (Breite `is`) in jede der `N` Ecken.
+    static _satzKernFuell(out, N, is, w) {
+        for (let v = 0; v < N; v++) for (let c = 0; c < is; c++) out[v * is + c] = w[c];
     }
 
     // DIE WERFER-HÜLLE eines Region-Bundles (W7): die Welt-AABB seiner WERFENDEN Kinder (castShadow), aus dem Inhalt —
@@ -211,13 +284,25 @@ class AnazhRealm_Z17c {
     // Schatten-Takt (`_shadowFrame`, die Kaskaden-Box und jeder Schatten-Pass lesen dieselbe Hülle); je Kind hält ein
     // Zahlen-Schlüssel (Instanz-/Positions-Version · Zahl · Geometrie · Welt-Lage) seine Box, nur geänderte Kinder
     // rechnen neu. Ohne Bundle-Version: dieselbe Hülle trägt eine schlichte Gruppe. null = wirft nicht.
+    // DER STAND DER WERFER (K72): derselbe Gang stempelt, was die Werfer-Wahl je Pass liest — die Folge der sichtbaren
+    // Knoten mit Wurf und Kinderzahl und jede neu gerechnete Box; ändert sich etwas, steigt `u._werferStand`. Die Wahl
+    // eines Passes (`_werferWahlSteht`) gilt, solange Lage und Stand stehen — sie geht die Kinder nicht in jedem Render.
     _bundleWerferHuelle(bg) {
         const u = bg.userData;
         const takt = this._shadowFrame || 0;
         if (u._werferTakt === takt && u._werferHuelle !== undefined) return u._werferHuelle;
         const box = u._werferBox || (u._werferBox = new THREE.Box3());
         box.makeEmpty();
+        const spur = this._wfSpur || (this._wfSpur = { h: 0, neu: false });
+        spur.h = bg.children.length | 0;
+        spur.neu = false;
         for (const c of bg.children) this._werferBoxDazu(box, c);
+        if (spur.neu || u._werferSig !== spur.h || u._werferStand === undefined) {
+            u._werferSig = spur.h;
+            u._werferStand = (u._werferStand | 0) + 1;
+            // die gemerkten Wahlen dieses Bundles gelten nicht mehr — sie halten keinen gegangenen Werfer fest
+            if (u._werferJe) u._werferJe.clear();
+        }
         u._werferTakt = takt;
         u._werferHuelle = box.isEmpty() ? null : box.expandByScalar(AnazhRealm.SCHATTEN_KASKADE.randM);
         return u._werferHuelle;
@@ -226,6 +311,12 @@ class AnazhRealm_Z17c {
         // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
         if (!o || o.visible === false || o.isInstanzZeichner === true) return;
         const g = o.geometry;
+        const spur = this._wfSpur;
+        spur.h = Math.imul(
+            spur.h ^ (o.id * 4 + (o.castShadow === true ? 2 : 0) + (o.isMesh === true ? 1 : 0)),
+            0x9e3779b1
+        );
+        spur.h = Math.imul(spur.h ^ o.children.length, 0x85ebca6b);
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;
             const mw = o.matrixWorld.elements;
@@ -242,6 +333,7 @@ class AnazhRealm_Z17c {
             ) {
                 const b = ud._werferKind || (ud._werferKind = new THREE.Box3());
                 b.makeEmpty();
+                spur.neu = true;
                 if (im) {
                     if (!g.boundingSphere) g.computeBoundingSphere();
                     const bs = g.boundingSphere;
@@ -658,10 +750,9 @@ class AnazhRealm_Z17c {
         mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
-        // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
-        // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
-        // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
-        if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // V18.389 — der Schatten-Zwilling verlässt die Ebene 0 (unsichtbar für die Kamera); er wirft auf der Wurf-Ebene
+        // SHADOW_TWIN_LAYER, die sein `castShadow` trägt (K72, `_wurfEbene`). Kein FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
+        if (leaf.shadowTwin) mesh.layers.disable(0);
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         // Auch die REGIONALE InstancedMesh-Gruppe hängt in der Region-BundleGroup; jede Mutation (Alloc/Free/
         // Slot-Stempel/Matrix/Grow) läuft durch die Chokepoints mit _archMeshBundleTouch. Tür-Flügel
@@ -770,8 +861,8 @@ class AnazhRealm_Z17c {
         if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
-        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
-        if (g.shadowTwin) next.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt). Den Wurf trägt `castShadow` (oben, K72 `_wurfEbene`).
+        if (g.shadowTwin) next.layers.disable(0);
         // Die lebenden Instanzen liegen dicht in [0, liveCount) (`_archGroupFree` verdichtet) — nur sie reisen mit.
         const n = g.liveCount || 0;
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
@@ -869,6 +960,7 @@ class AnazhRealm_Z17c {
         const v = im.version,
             vk = ak ? ak.version : 0;
         AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._ordnung = (g._ordnung | 0) + 1; // die Ordnung der Slots (die Wahl eines Passes merkt sie, `_instanzWahlSteht`)
         g._tauschMat = (g._tauschMat | 0) + (im.version - v);
         if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
         const ra = g.slotRef[a],
@@ -961,105 +1053,6 @@ class AnazhRealm_Z17c {
         else c.setRGB(1, 1, 1);
         if (useTint && entryTint) c.multiply(entryTint);
         return c;
-    }
-
-    // (_archInstanceAdd, unten:) eine Instanz je Leaf; entry.instSlots merkt (key, slot). `opts.band`
-    // schreibt stattdessen in `entry.instSlotsBand` (+ `entry._lodBandLevel`) — die ZWEITE Stufe im
-    // Dither-Crossfade-Band. Add/Remove NUR durch diese zwei Chokepoints.
-    // ═══ DAS FUNDAMENT-PODEST ═══
-    // EIN InstancedMesh-Pool für ALLE Haus-Sockel (1 Draw-Call, Verdopplung; dicht wie jede Instanz-Senke: Freigeben
-    // zieht den letzten Sockel in die Lücke, `_instanzUmzug` — ein freier Slot zeichnet nie).
-    // Geometrie = die der Blocker (`_archFundamentBox`, Unterkante 0.6 m unter der tiefsten Footprint-
-    // Ecke); Lebenszyklus an den Instanz-Nähten, kein Snapshot-Feld.
-    _archFundamentEnsure(entry) {
-        if (!entry || !entry.fundament || !this.state.scene) return;
-        const st = this.state;
-        let P = st.archFundament;
-        if (P && P.byId.has(entry.id)) return; // idempotent (LOD-Wechsel etc.)
-        const box = this._archFundamentBox(entry);
-        if (!box) return; // ebenes Land → kein Podest
-        if (!P) {
-            const geo =
-                this._archFundGeo ||
-                (this._archFundGeo = (() => {
-                    const g = new THREE.BoxGeometry(1, 1, 1);
-                    g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
-                    return g;
-                })());
-            const mat =
-                this._archFundMat ||
-                (this._archFundMat = this._leuchtStoff(
-                    new THREE.MeshStandardNodeMaterial({
-                        color: 0x7a7168,
-                        roughness: 1,
-                        metalness: 0,
-                    }),
-                    null
-                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
-            const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
-            AnazhRealm._instanzZahl(mesh, 0);
-            mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
-            mesh.receiveShadow = true;
-            st.scene.add(mesh);
-            // byId: Eintrag → Slot; idAt: Slot → Eintrag (der Rückverweis des Umzugs).
-            P = st.archFundament = { mesh, cap: 128, byId: new Map(), idAt: [] };
-        }
-        const slot = P.mesh.count;
-        if (slot >= P.cap) {
-            // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
-            const bigger = AnazhRealm._poolKennung(
-                AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2),
-                "bau-fundament"
-            );
-            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            AnazhRealm._instanzZahl(bigger, P.mesh.count);
-            bigger.frustumCulled = false;
-            bigger.receiveShadow = true;
-            st.scene.add(bigger);
-            st.scene.remove(P.mesh);
-            this._instanzAbschied(P.mesh);
-            P.mesh = bigger;
-            P.cap *= 2;
-        }
-        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
-        const q = this._archFundTmpQ || (this._archFundTmpQ = new THREE.Quaternion());
-        const v = this._archFundTmpV || (this._archFundTmpV = new THREE.Vector3());
-        const sc = this._archFundTmpS || (this._archFundTmpS = new THREE.Vector3());
-        const ax = this._archFundAxisY || (this._archFundAxisY = new THREE.Vector3(0, 1, 0));
-        q.setFromAxisAngle(ax, box.ry);
-        m.compose(v.set(box.x, box.topY, box.z), q, sc.set(box.ex * 2, box.topY - box.botY, box.ez * 2));
-        P.mesh.setMatrixAt(slot, m);
-        AnazhRealm._instanzZahl(P.mesh, slot + 1);
-        P.mesh.instanceMatrix.needsUpdate = true;
-        P.mesh.boundingSphere = null;
-        P.byId.set(entry.id, slot);
-        P.idAt[slot] = entry.id;
-    }
-    _archFundamentFree(entry) {
-        const P = this.state.archFundament;
-        if (!P || !entry) return;
-        const slot = P.byId.get(entry.id);
-        if (slot === undefined) return;
-        P.byId.delete(entry.id);
-        const letzt = P.mesh.count - 1;
-        if (slot !== letzt) {
-            AnazhRealm._instanzUmzug(P.mesh, letzt, slot);
-            const zieht = P.idAt[letzt];
-            P.idAt[slot] = zieht;
-            P.byId.set(zieht, slot);
-        }
-        P.idAt.length = letzt;
-        AnazhRealm._instanzZahl(P.mesh, letzt);
-        P.mesh.boundingSphere = null;
-    }
-    _archFundamentDisposePool() {
-        const P = this.state.archFundament;
-        if (!P) return;
-        if (P.mesh) {
-            if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            this._instanzAbschied(P.mesh); // die Instanz-Puffer; Geo/Mat sind geteilt (this._archFund*)
-        }
-        this.state.archFundament = null;
     }
 
     // ═══ DIE WEGE-KARTE (V18.530): Siedlungs-Wege sind BODEN, kein Bauwerk ═══
@@ -1194,14 +1187,22 @@ class AnazhRealm_Z17c {
         return Math.floor(x / Z) + "," + Math.floor(z / Z);
     }
 
-    // Die Nah-Wiese liest dieselbe Karte (`_kronenStreuAt`): ihre Kacheln unter einer geänderten Krone fallen und wachsen
-    // neu (nur in Reichweite der Wiese — weiter weg steht keine Kachel).
+    // Nah-Wiese und Nah-Streu lesen das Licht derselben Kronen (`_bodenLichtFeld`): ihre Kacheln, so weit Streu ODER
+    // Schatten einer geänderten Krone reichen, fallen und wachsen neu — so weit der WEITERE der beiden Ringe um ihre EINE
+    // Mitte (die Kamera, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
+    // Reichweite der Wiese (27 m) um den Spieler: die Streu-Kacheln am Ringrand (bis 35 m) behielten das alte Licht.
     _kronenStreuWiese(x, z, radius) {
-        const pm = this.state.playerMesh;
-        if (!pm) return;
-        const a = radius * AnazhRealm.LAUB_STREU.rand;
-        const NW = AnazhRealm.NAH_WIESE;
-        if (Math.hypot(x - pm.position.x, z - pm.position.z) - a < NW.radius + NW.rand + NW.kachel * 1.5)
+        const mitte = this.state.camera
+            ? this.state.camera.position
+            : this.state.playerMesh && this.state.playerMesh.position;
+        if (!mitte) return;
+        const U = AnazhRealm.UNDERGROWTH;
+        const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+        const reich = (R) => R.radius + R.rand + R.kachel * 1.5;
+        if (
+            Math.hypot(x - mitte.x, z - mitte.z) - a <
+            Math.max(reich(AnazhRealm.NAH_WIESE), reich(AnazhRealm.NAH_STREU))
+        )
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
@@ -1370,6 +1371,46 @@ class AnazhRealm_Z17c {
         );
     }
 
+    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
+    // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
+    // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
+    // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
+    // ihn je Kachel; ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`, bis zur Reichweite des
+    // Lichts). Bis K70 lasen beide das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die
+    // Wiese zusätzlich die Kronen-Karte als Faktor — die Streu-Scheibe (voll bis r, Rand 1,7 r) ist breiter als der Schatten
+    // des Labors (an der Kronen-Kante 0,47): am Waldrand der Mess-Wiese dünnte das die offene Wiese auf 0,75 Licht.
+    _bodenLichtFeld(x0, z0, x1, z1) {
+        const U = AnazhRealm.UNDERGROWTH;
+        const wk = this.state.wegeKarte;
+        const reichJeR = U.kronenSigma * Math.sqrt(U.kronenQMax);
+        const kronen = [];
+        if (wk && wk.kronen.size) {
+            const R = (wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand) * reichJeR;
+            const Z = AnazhRealm.LAUB_STREU.zelleM;
+            for (let zz = Math.floor((z0 - R) / Z); zz <= Math.floor((z1 + R) / Z); zz++)
+                for (let zx = Math.floor((x0 - R) / Z); zx <= Math.floor((x1 + R) / Z); zx++) {
+                    const zelle = wk.kronenZellen.get(zx + "," + zz);
+                    if (!zelle) continue;
+                    for (const c of zelle.values()) {
+                        const reich = c[2] * reichJeR;
+                        if (c[0] + reich < x0 || c[0] - reich > x1 || c[1] + reich < z0 || c[1] - reich > z1) continue;
+                        const s = U.kronenSigma * c[2];
+                        kronen.push(c[0], c[1], 1 / (s * s));
+                    }
+                }
+        }
+        return (x, z) => {
+            let deckung = 0;
+            for (let i = 0; i < kronen.length; i += 3) {
+                const dx = x - kronen[i];
+                const dz = z - kronen[i + 1];
+                const q = (dx * dx + dz * dz) * kronen[i + 2];
+                if (q < U.kronenQMax) deckung += Math.exp(-q);
+            }
+            return Math.exp(-U.canopyK * deckung);
+        };
+    }
+
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
     // Diagonale — max(ex, ez) beschnitt die Ecken (ein um 45° gedrehtes Quadrat wurde zum Achteck).
     static _wegeFormRadius(f) {
@@ -1398,6 +1439,14 @@ class AnazhRealm_Z17c {
         let h = f._ll > 1e-6 ? ((px - f.ax) * dx + (pz - f.az) * dz) / f._ll : 0;
         h = h < 0 ? 0 : h > 1 ? 1 : h;
         return Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
+    }
+
+    // Das Gewicht EINER Form am Punkt (0 … 1): voll ab −rand innen, 0 ab +rand außen, dazwischen smoothstep — an der Kante 0,5.
+    // Leser: der Maler (`_wegeKarteMale`) und die Linse des Vorplatzes (gate:settlement Teil O) — DIESELBE Zahl.
+    static _wegeFormGewicht(f, px, pz, rand) {
+        const q = (rand - AnazhRealm._wegeFormAbstand(f, px, pz)) / (2 * rand);
+        if (q <= 0) return 0;
+        return q >= 1 ? 1 : q * q * (3 - 2 * q);
     }
 
     // Die Grenze der NAH-Stufe als Bruchteil ihres Fensters (relativ zur Mitte, je Achse): zwei Texel vor dem Rand,
@@ -1437,10 +1486,8 @@ class AnazhRealm_Z17c {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
                 const px = x0w + (i + 0.5) * t;
-                const d = AnazhRealm._wegeFormAbstand(f, px, pz);
-                let q = (rand - d) / (2 * rand);
-                if (q <= 0) continue;
-                q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                const q = AnazhRealm._wegeFormGewicht(f, px, pz, rand);
+                if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
                 const v = Math.round(q * 255);
                 if (v > daten[k]) daten[k] = v;
@@ -1777,7 +1824,7 @@ class AnazhRealm_Z17c {
     }
 
     // ═══ DER ZAUN-POOL ═══
-    // Das _archFundament-Muster: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
+    // Das Muster der Instanz-Pools: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
     // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
     // Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
     _stlZaunEnsurePool() {
@@ -1903,6 +1950,63 @@ class AnazhRealm_Z17c {
                     ...(anger ? { sperr: -1 } : {}),
                 });
         }
+        // DIE VORPLÄTZE (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): vor jedem Eingang liegt getretene Erde bis an den Weg —
+        // Grundriss gegen Natur gilt für Treppe und Vorplatz wie für den Weg. Die Fläche ist die Erdbau-Platte des Vorplatzes selbst (fachwerk
+        // `ortPlan`, Marke `vorplatz`, im Erdbau der Welt, `_erdbauRoh`) samt dem Saum der Gasse (`vorplatzBoden`) — Akt, Dorf-Zug und
+        // Wege-Rebuild aus dem Export lesen dieselbe Platte; bis K66 malte der Wirt eine eigene Fläche von 1,6 m Tiefe, die Platte reichte
+        // bis zur Gasse, dazwischen wuchs Wiese. Beim HOF-Haus dazu die Stufe vor der Haustür im Hof (fachwerk `eingangVon`). Die Wiese
+        // (`_pfadFeldAt`) und die Natur-Wand (`_aufWeg`) lesen dieselbe Form.
+        const FC = globalThis.__fachwerkCore;
+        const kasten = (vp) => {
+            if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            form({
+                typ: "kasten",
+                kanal: 0,
+                ax: vp.cx,
+                az: vp.cz,
+                bx: vp.cx,
+                bz: vp.cz,
+                ex: vp.ex,
+                ez: vp.ez,
+                phi: vp.phi || 0,
+                halb: 0,
+            });
+        };
+        let reich = 0; // so weit reicht der Plan um seinen Ursprung (dieselbe Hülle wie die Ort-Wahl, `_ortWahl`)
+        for (const s of plan.slots || []) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        // Der Maler malt weich (±`WEGE_KARTE.randM`, `_wegeFormGewicht`): zwei Formen, die sich nur berühren, tragen an ihrer Naht je
+        // die Hälfte — dort wuchs die Wiese mit 54 % ihrer Dichte zwischen Gasse und Stufe (K66, Prüfung 1: Bild tuer2, das Feld
+        // fiel auf 0,5; an der Schwelle, wo die Fläche an der Hauswand endet, auf 0,8). Der Boden des Vorplatzes greift darum um den
+        // Rand des Malers unter die Schwelle und um sein ganzes Band (2 · randM) über den Saum hinaus in die Gasse (mit einem randM
+        // blieben am Akt zwei Häuser bei 0,89 am Rand der Gasse). Ebenso quer: um ein randM über jede Flanke der Platte — sonst trug die
+        // Flanke der Stufe das Feld 0,5 und die Wiese stand dort mit der Hälfte ihrer Dichte auf der Platte (K66, Prüfung 3: Bild tuer2,
+        // Halme über der Stufe; gate:settlement Teil O misst die ganze Breite).
+        const RW = AnazhRealm.WEGE_KARTE.randM;
+        for (const p of this._erdbauRoh())
+            if (p.vorplatz != null && Math.hypot(p.cx - origin.x, p.cz - origin.z) <= reich) {
+                const b = FC.vorplatzBoden(p);
+                const sn = Math.sin(b.phi);
+                const cs = Math.cos(b.phi);
+                kasten({
+                    cx: b.cx - (sn * RW) / 2,
+                    cz: b.cz - (cs * RW) / 2,
+                    phi: b.phi,
+                    ex: b.ex + RW,
+                    ez: b.ez + 1.5 * RW,
+                });
+            }
+        for (const sl of plan.slots || []) {
+            if (!sl.tuer || !FC.eingangVon(sl).hof) continue;
+            const st = FC.vorplatzFlaeche(sl, undefined, true);
+            if (st)
+                kasten({
+                    cx: origin.x + st.cx,
+                    cz: origin.z + st.cz,
+                    phi: st.phi,
+                    ex: st.ex + RW,
+                    ez: st.ez + RW,
+                });
+        }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
@@ -2003,7 +2107,6 @@ class AnazhRealm_Z17c {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
-        this._laternen = null; // die Laternen der Pläne fallen mit ihren Marken (der Rebuild liest sie neu, `_laternenLesen`)
     }
 
     _archInstanceAdd(entry, flat, opts) {
@@ -2110,9 +2213,6 @@ class AnazhRealm_Z17c {
         // Clamp-Kurzschluss in _switchArchitectureLOD liest sie, damit eine Ein-Stufen-Art (fels [0]) beim
         // Schwellen-Übertritt nicht neu alloziert. Transient (nicht im Snapshot).
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
-        // DORF-IN-TERRAIN — der Sockel lebt mit dem PRIMÄREN Instanz-Leben des
-        // Eintrags (Band-Adds returnen oben früher); ensure ist idempotent.
-        if (entry.fundament) this._archFundamentEnsure(entry);
         // die Trittfläche der Ausstattung (einmal je Eintrag, idempotent) — der Studio-Platz hat das Buch
         if (entry.instFoundry) this._trittFlaecheSetzen(entry);
     }
@@ -2231,9 +2331,6 @@ class AnazhRealm_Z17c {
             entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
             entry._lodHalt = false; // der Halt lebt nur mit seiner Stufe (die Band-Pflege urteilt neu)
             entry._lodHaltWartet = false;
-            // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
-            // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
-            if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of geleerte) {
             // Vollständig leer = liveCount 0 (die EINE Leer-Quelle, count folgt ihr).
@@ -2266,9 +2363,6 @@ class AnazhRealm_Z17c {
             }
             this.state._regionBundles.clear();
         }
-        // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
-        // die Respawn-Schleife baut ihn lazy neu.
-        this._archFundamentDisposePool();
         // DORF-ERLEBNIS — Zaun-Pool + Wege-Karte fallen mit; der settlementCells-Rebuild
         // (`_tickAutoSettlement`) baut sie lazy + deterministisch neu.
         this._stlWegeDispose();
@@ -2684,6 +2778,9 @@ class AnazhRealm_Z17c {
         // (schöpfer-Modus ohne Material) erntet 0 (sonst Modus-Wäsche schöpfer→pfad = Material aus dem
         // Nichts). Worldgen/Nexus-Spawns tragen die Marke NICHT.
         if (opts.freeBorn === true) entry.freeBorn = true;
+        // DIE MARKE DES WURFS (K10-6): eine Art des Felds (`FELD_WURF`), die das Feld warf (`_enqueueVegetationSpawn`), weicht
+        // dem Bau (`_weichtDemBau`); dieselbe Art aus dem Satz, dem Bau-Modus oder der KI ist Bau. Sie reist durch den Save.
+        if (opts.feldWurf === true && AnazhRealm.FELD_WURF.includes(type)) entry.feldWurf = true;
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.
@@ -2734,11 +2831,16 @@ class AnazhRealm_Z17c {
             entry.chimney = tip; // Snapshot/Restore (tuer-Muster)
             entry.userData = entry.userData || {};
             entry.userData.rauchQuelle = tip;
-        }
+        } else if (opts.chimney === null) entry.chimney = null;
         // KAMIN-RAUCH (.108): Solo-Haus (nicht Settlement-Slot) — Spitze aus
         // __fachwerkCore.chimneyTipFromParams(studioOv). Fail-closed bei null
         // (modern/round/kuppel). Nicht-haus_* erfindet keinen Rauch.
-        if (!entry.chimney) {
+        // DAS NEIN DES EXPORTS GILT (K69): ein Haus, dessen Plan (der Slot des Exports, der Save) „kein Kamin" sagt
+        // (`chimney: null`), baut seinen Kern nicht nach — `chimneyTipFromParams` rechnet den GANZEN Bau (`massBau`), um die
+        // Spitze zu finden. Bis K69 fiel das Nein des Slots auf undefined (`slot.chimney || undefined`): jedes Haus ohne Kamin
+        // (Kuppel, Rundbau) baute beim Gang ins Dorf sein Haus im Takt nach, 52 ms je Slot (Null-Renderer), an der Radeon
+        // 167 ms (`spawnArchitecture › MK`, die Hänger-Linse) — und beim Laden noch einmal.
+        if (entry.chimney === undefined) {
             const hausPol = AnazhRealm.KIND_POLICY && AnazhRealm.KIND_POLICY.haus;
             const isHaus =
                 (hausPol && typeof hausPol.prefix === "string" && String(type).startsWith(hausPol.prefix)) ||
@@ -2759,7 +2861,7 @@ class AnazhRealm_Z17c {
                         entry.chimney = { x: +tip.x, y: +tip.y, z: +tip.z };
                         entry.userData = entry.userData || {};
                         entry.userData.rauchQuelle = entry.chimney;
-                    }
+                    } else entry.chimney = null; // das gerechnete Nein reist durch den Save (`saveState`)
                 }
             }
         }

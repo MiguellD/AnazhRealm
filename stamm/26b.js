@@ -49,9 +49,17 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
 // DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
-// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt). Die Laternen der
-// Pläne liegen in Zellen von `zelleM` Metern (die Wahl liest nur die Zellen um das Auge).
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5, zelleM: 32 });
+// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+// DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
+// Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`_ortTraegt`) urteilen gleich.
+AnazhRealm.WERK_LAND_M = 0.2;
+// DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
+// Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
+// jedes Haus trägt (`_ortTraegt`), gewinnt. `grobM`: das Raster des ersten Urteils (die Wand urteilt im halben Meter).
+// `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans unter einem Haus verschieben.
+// `taktMs`: so lange rechnet die Wahl je Takt-Scheibe (`_ortWahlScheibe`, Lehre 14), mindestens einen Schritt.
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, taktMs: 3 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
@@ -583,7 +591,7 @@ AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1
 // startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
 // drosselTakte das Tempo über dem Frame-Budget.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
-// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax · Klippen-Wand fundamentMaxDh) lebt EINMAL in
+// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nearM: 260,
@@ -694,10 +702,9 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
 // innersten Reihe (im Gebauten zeichnet der Ring nicht: die Masken-Karte, `_fernRingMaske`); `wasserDrop` = Wasser-Klemme;
 // `reanchorDist`/`anchorQuant` = Anker-Hysterese/
-// -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
+// -Quantisierung; `scheibe` = Punkte je Auftrag an den Fern-Faden (B2), `scheibenImFlug` = Aufträge zugleich.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
-// vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
-// Fern-Farb-Budget (`FERN_FARBE.msJeTakt`, nach den offenen Ring-Farben).
+// vom Fern-Faden (Höhe und Fern-Farbe je Texel, B2), gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
 AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
@@ -735,7 +742,8 @@ AnazhRealm.FERN_RING = Object.freeze({
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
-    refreshVertsProTick: 600,
+    scheibe: 512,
+    scheibenImFlug: 3,
 });
 // WEGE_KARTE (`_wegeKarteEnsure`): die welt-verankerte Clipmap der Siedlungs-Wege um den Spieler, je Stufe ein
 // Fenster (Kante `fensterM`, Texel `texelM`), Umzug ab `umzugM` Abstand zur Mitte — gesichert ist fensterM/2 −
@@ -765,27 +773,23 @@ AnazhRealm.LAUB_STREU = Object.freeze({
     uploadMs: 250,
     zelleM: 64,
 });
-// FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
+// FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
 // (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
 // trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
-// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
-// den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
-// (zwei Generationen tragen > 2 volle Ringe).
+// `memo` = eine Generation des Fern-Farb-Gedächtnisses im Fern-Faden (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
     saisonDrift: 0.05,
-    msJeTakt: 2,
-    msKnapp: 0.5,
-    mindestJeTakt: 64,
     memo: 12288,
 });
 
 // Lockstep-MP (nur Inputs übers Netz): `jitterReserve` = Frame-Reserve gegen Netz-Jitter (2 Frames
-// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `maxStepsPerTick` = Aufhol-Burst-Kappe je Frame,
+// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `aufholJeSchritt` = Aufhol-Burst-Kappe je Fix-Schritt WANDUHR (ein Takt
+// von dt Sekunden verbraucht höchstens aufholJeSchritt × dt/FIXED_DT, mindestens aufholJeSchritt — `_lockstepTickPeers`),
 // `driftMax` (m) = Ghost-vs-pos-Schwelle fürs Ent-Seeden (der 1-Hz-Anker heilt danach).
-AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
+AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, aufholJeSchritt: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // Band 0 ist 5×5 (maxRing 2): seine Kante (~108 m) teilt Kaskade 0 und 1 des Schattens. (Die Deko-Bänder fielen 04.10.
@@ -943,48 +947,6 @@ AnazhRealm._flussTiefe = function (p) {
     const q = p.quelle;
     if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
     return Math.min(HC.kanalTiefe, (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q);
-};
-// DER KASTEN QUER ZUM FLUSS (K16, `_flussAbdruck`): das Mittel eines Ufer-Bands b(|u|) über [d − F/2, d + F/2] (u der
-// Abstand quer zum Segment, d der des Punkts) aus der Stammfunktion des Bands C(s) = ∫₀ˢ b — exakt für ein gerades
-// Segment, stetig in d, für F → 0 der Punkt-Wert b(d). Die Stammfunktionen stehen neben ihren Bändern.
-AnazhRealm._kastenMittel = function (C, d, F, p, q, r, s) {
-    const a = d - F / 2;
-    const b = d + F / 2;
-    return (a >= 0 ? C(b, p, q, r, s) - C(a, p, q, r, s) : C(b, p, q, r, s) + C(-a, p, q, r, s)) / F;
-};
-// die Kronen-Blende (`_hydroRiverAt`): 1 bis zur Kanal-Kante `hw`, smoothstep auf 0 über `kappa` bis zur Krone
-AnazhRealm._stammUfer = function (s, hw, kappa) {
-    let w = (s - hw) / kappa;
-    w = w < 0 ? 0 : w > 1 ? 1 : w;
-    return Math.min(s, hw) + kappa * (w - w * w * w + (w * w * w * w) / 2);
-};
-// das Fluss-Band der Feuchte (`_feuchteAt`): 1 bis `inner`, smoothstep auf 0 über `reich`
-AnazhRealm._stammFeuchte = function (s, inner, reich) {
-    const q = s < inner ? inner : s > inner + reich ? inner + reich : s;
-    const v = (inner + reich - q) / reich;
-    return Math.min(s, inner) + reich * (0.5 - v * v * v + (v * v * v * v) / 2);
-};
-// die Bank (`_pathFieldAt`): (1 − (u − inner) / bank)² auf [inner, inner + bank]
-AnazhRealm._stammPfad = function (s, inner, bank) {
-    let q = (s - inner) / bank;
-    q = q < 0 ? 0 : q > 1 ? 1 : q;
-    return (bank * (1 - (1 - q) * (1 - q) * (1 - q))) / 3;
-};
-// die Bank × die Kronen-Blende (`_pathFieldAt` über dem Fluss-Spiegel): auf [inner, Ende] ein Polynom 5. Grades —
-// Gauß-Legendre mit drei Knoten ist exakt
-AnazhRealm._stammPfadUfer = function (s, inner, bank, hw, kappa) {
-    const e = Math.min(s, inner + bank, hw + kappa);
-    if (!(e > inner)) return 0;
-    const m = (inner + e) / 2;
-    const h = (e - inner) / 2;
-    const f = (u) => {
-        const b = 1 - (u - inner) / bank;
-        let w = (u - hw) / kappa;
-        w = w < 0 ? 0 : w > 1 ? 1 : w;
-        return b * b * (1 - w * w * (3 - 2 * w));
-    };
-    const k = h * Math.sqrt(0.6);
-    return h * ((5 / 9) * f(m - k) + (8 / 9) * f(m) + (5 / 9) * f(m + k));
 };
 
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
@@ -1807,6 +1769,25 @@ AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
     stein_block: Object.freeze({ prefix: "fels", n: 12 }),
     kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
 });
+// DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
+// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
+// Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
+// Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem
+// Satz, dem Bau-Modus oder der KI ist Bau. Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
+// bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
+// Lade-Stand der Würfe.
+AnazhRealm.FELD_WURF = Object.freeze([
+    "baum_eiche",
+    "baum_kiefer",
+    "baum_birke",
+    "baum_erle",
+    "baum_buche",
+    "baum_tanne",
+    "baum_karst",
+    "stein_block",
+    "kristall_geode",
+    "glutbrunnen",
+]);
 // DER BAUPLAN-UMZUG — gefallene Baupläne, deren Einträge in gespeicherten Welten stehen, und ihr Erbe: der Restore
 // (`_loadStateRestoreArchitectures`) liest ihn, bevor er spawnt. Die sechs Glut-Formationen (`glut_var0..5`, das
 // Glut-Genom bis 05.10.) leben als die EINE Feuerstelle weiter (`glutbrunnen`, Gestalt aus dem Gesetzbuch).
@@ -2255,8 +2236,9 @@ AnazhRealm.ERBGUT_PROTOKOLL = 2;
 // DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
-//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug,
-//                die Lichter: Laternen der Pläne, das wache Tor, der Licht-Pool, der ihre Plätze hält) —
+//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug, der
+//                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`),
+//                die Lichter: das wache Tor, der Licht-Pool, der die Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
     geburt: Object.freeze(["visibility", "creator"]),
@@ -2270,7 +2252,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementRejected",
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
-        "_laternen",
+        "_ortPlaene",
         "_portalLeuchte",
         "_leuchtPool",
     ]),
@@ -2810,12 +2792,15 @@ AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
     aufschluss: Object.freeze(["nadel", "stapel"]), // aufragender Grat-Aufschluss
 });
 
-// UNTERWUCHS: das Kronendach-Licht ist die EINE Quelle für „wie viel Licht den Boden erreicht" (dichter Wald =
-// dunkel, Lichtung = Wiese) — die Nah-Wiese und das Boden-Gesetz der Nah-Streu lesen es. Die Kronen-Deckung nutzt
-// dieselben Treiber wie die Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe, ohne Slope/Perf) →
-// konsistent mit dem echten Wald. `canopyK` = exp-Dämpfung des Bodenlichts.
+// UNTERWUCHS: `canopyK` ist die EINE Dämpfung des Bodenlichts unter Kronen, L = exp(−canopyK · Deckung) (das Labor-
+// Gesetz phytogenesis `canopyLight`). Das Licht der STEHENDEN Kronen (`_bodenLichtFeld`: je Krone des Registers
+// exp(−d² / (kronenSigma · r)²) bis q < kronenQMax, wie das Labor) lesen Nah-Wiese und Nah-Streu; das Platzierungs-Feld
+// (`_canopyLightAt`, Deckung aus den Treibern der Baum-Platzierung) liest der Strauch-Teppich, der mit dem Wald
+// gepflanzt wird.
 AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
+    kronenSigma: 1.15, // der Schatten einer Krone: Gauß-Breite in Kronen-Radien (Labor `cr = T · 1,15`)
+    kronenQMax: 6, // bis q = d² / (σ·r)² < 6 wirft eine Krone Schatten (Labor) — Reichweite 2,82 Kronen-Radien
 });
 
 // DIE PLATZIERUNG DES KERNS (Leben-Schau 2, 09.10.): die Welt-Skala je Preset (`placement.scale`, `treeScaleMul`) lebt

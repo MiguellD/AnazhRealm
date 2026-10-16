@@ -42,6 +42,12 @@ jobs:
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
+              # Die Wachstums-Wand (gate:betriebsgesetz in der Statik) misst je Zweig ab der Merge-Basis mit dem Mutter-Zweig:
+              # die ganze Geschichte ohne Blobs (Commits + Bäume ~7 MB), die Blobs der geänderten Dateien holt `git diff` in
+              # einem Zug nach. Ohne Geschichte ist die Wand ROT (Grund nicht auflösbar), nie still grün.
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
 
             # V7 — Node 22 (Node 20 ist EOL seit 30.04.2026; der breite `node --check`-Loop
             # brach unter 20 an den eingecheckten ESM-Vendor-Dateien = „lokal grün, CI rot").
@@ -118,7 +124,10 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
+              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
+              env:
+                  WACHSTUM_VORHER: ${{ github.event.before }}
               run: npm run check:statik
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
@@ -475,12 +484,11 @@ jobs:
               # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
-            - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
+            - name: Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)
               if: matrix.gruppe == 3
-              # Beweist headless die adaptive Sync/Async-Entscheidung des Edit-/Spieler-Chunk-Rebuilds:
-              # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
-              # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
-              # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
+              # Beweist headless: der Neubau eines Edit-/Spieler-Chunks geht bei gesundem UND bei ueberzogenem Frame
+              # ueber den Worker (K69-2: kein synchroner Chunk-Bau im Takt, die Flut-Saat reist mit dem Auftrag), nur
+              # ein explizites forceSync baut synchron. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
@@ -526,10 +534,12 @@ jobs:
             - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
               if: matrix.gruppe == 11
               # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
-              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
+              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (Tonkurve, sRGB, Post) - der Schuss
               # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
               # in 0,75 / 1,25 / 1,75 m um das Feuer traegt Luma >= 0,15 (K11 Abnahme). Der Selbsttest leert den Licht-Pool:
-              # der Kreis faellt unter die Schwelle und nennt den Pool.
+              # der Kreis faellt unter die Schwelle und nennt den Pool. Dazu der Himmel folgt dem Sprung (K10, seit D3 hier: der
+              # Himmel lebt auf der GPU): nach Mittag und Mitternacht ueber den Pfad des Spielers traegt die zurueckgelesene
+              # Umgebung die Bestrahlung des geltenden Himmels; der Selbsttest macht den Maler taub und nennt ihn.
               run: npm run gate:pruefbuehne-licht
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
@@ -1081,11 +1091,14 @@ jobs:
               # Die acht Klassen des Studio-Befunds (Rinde, Laub, Fels, Boden, Haus, Metall/Lack, Haut/Fell, Klinge) tragen je
               # Zeile Labor-Y, Welt-Y und das Verhaeltnis (spec/farbe/albedo-tafel.json, gemessen mit EINER Rechnung, geeicht an
               # der 18-%-Karte); |ln Verhaeltnis| ist die Ratsche, die nur fallen darf, solange W5 das FARB-GESETZ in jedem Kern
-              # offen haelt; das Soll (Toleranz) und die Studio-Karten (k mal L gegen 0,3147) stehen benannt daneben.
+              # offen haelt; das Soll (Toleranz) und die Studio-Karten (k mal L gegen die Eichung der Labor-Kurve) stehen benannt daneben.
               # --selftest zuerst: Verhaeltnis ueber der Ratsche, falsche Eichung, stumme Seite, fehlende Klasse werden rot, und
               # im echten r128 (swiftshader) liest die Labor-Linse die Karte 0,180 und ein roh gelesenes Hex (der alte Defekt
               # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
-              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
+              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor). Der Stand je Zeile ist der Code-Abdruck ihrer Quellen
+              # (K63-n8: Token ohne Kommentar und Leerraum): eine veraltete Zeile steht ROT "veraltet seit <Commit>" und bricht
+              # keinen Merge; auf der Karte (Job echt des Messplatzes) misst dieser Schritt sie selbst neu und urteilt die
+              # frischen Zahlen - auf swiftshader nicht (gemessen 15.10.: die Welt-Seite liest rinde x0,10, fell +15 %).
               run: npm run gate:albedo-tafel
 
             - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
@@ -1133,6 +1146,10 @@ jobs:
               # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
+              # Teil O (K10, Pflicht-OFFEN C): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
+              # den GT auf dem Dorfweg und DAS DORF-LICHT DER GASSE: nachts >= 4 brennende Quellen mit Leib (_leuchtQuellen)
+              # im Sichtkegel der Gasse, kein Grundriss dazwischen (gassenLicht), der Licht-Pool der Gasse traegt sie; der
+              # Schein mit dunklem Zeitplan muss 0 zaehlen (Selbst-Test 16 und O: Selbst-Schein).
               run: npm run gate:settlement
 
             - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)
@@ -1403,6 +1420,12 @@ jobs:
               # Render trägt Substanz.
               run: npm run gate:webgl-probe
 
+            - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
+              if: matrix.gruppe == 8
+              # K67: jede Seite der Boot-Lib trägt Puls und Stempel; steht der Puls ≥ 20 s oder reißt eine Frist, schreibt
+              # scripts/lib/welt-boot.cjs die Akte ins Log (Phase, Stempel, CPU je Prozess, Stapel, GPU-Spur, Stderr, Urteil).
+              run: npm run gate:welt-boot
+
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
               if: matrix.gruppe == 7
               run: npm run gate:fern-wasser
@@ -1460,6 +1483,9 @@ jobs:
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
               # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
               # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
+              # K60 (d): der Ghost bei B verbraucht erst je 20 angekommene Schritte (lange Takte in Schritten, nie in ms), und
+              # jeder Takt haelt das Gesetz von _lockstepTickPeers: Verbrauch bis zur Kappe der Wanduhr ceil(10 x dt/FIXED_DT)
+              # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
               run: npm run gate:mp-sync
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)

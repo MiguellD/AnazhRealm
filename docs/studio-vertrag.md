@@ -286,14 +286,16 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
       hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
       mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
-    - `wedel` ({ab, teile, breite, nadel, rand, winkel, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 10°, 0,15} · tree[1]
-      {0, 2, 2,03, 0,05 m, 0,3, 5°, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
-      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811),
+    - `wedel` ({ab, teile, breite, nadel, rand, winkel, spalte, holz}; tree[0] {0,35, 1, 1,65, 0,016 m, 0,5, 40°, 1,25, 0,15}
+      · tree[1] {0, 2, 2,03, 0,045 m, 0,3, 40°, 1,5, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
+      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2742: ein Fichten-Zweig aus Büscheln mit Gräten, L2-n1),
       mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
       breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
       `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
-      Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (waagrecht
-      und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 % weniger als V18.536); der
+      Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (L2: bei
+      ±10°/±5° stand jede Karte von unten auf der Kante und las als Strich); ein Stück, dessen Hülle breiter reicht als
+      `spalte` × seine Länge, trägt die Zelle in Spalten nebeneinander — nie quer gestreckt (die L0 trug Karten 2,3–6,5 × so
+      breit wie lang: die Zweiglein lasen als gerade Striche, Soll-Tafel laub-kante 0,33 → 0,21); der
       Leittrieb trägt seinen Wedel, wo er benadelt ist (die Spitze stand sonst kahl). `holz` ist der Anteil des Holzes
       (das Mittel der Rinden-Farben des Baums) an der Farbe des Wedels — die Nadel deckt in der Zelle ihr Holz zu 99,9 %,
       die Karte war ohne Holz um ΔE 2,4–5,2 heller und grüner; geeicht an der Kronenfarbe der Karten von V18.536. Was am
@@ -767,7 +769,7 @@ Split-Parität je Rezept × Stufe hash-bewiesen (buildInstance == die Shell-
 Komposition der Kern-Primitive), Andocken = reine Daten-Zeilen — der
 ε-Beweis, `gate:nervensystem-fachwerk`). Spiegel-Zensus 17.07. (V18.486+,
 rein additiv): **`SIEDLUNG`** = das Siedlungs-Existenz-Gesetz (`cellM rarity
-nHMin nHSpan slopeMax fundamentMaxDh` — WO/WIEVIEL/WIE STEIL Dörfer die Welt
+nHMin nHSpan slopeMax` — WO/WIEVIEL/WIE STEIL Dörfer die Welt
 trägt; Präzedenzfall Wald-Dichte in phyto-core). Es reist im Buch-Umschlag
 (`get-book`-Reply, Feld `siedlung`, M8-generisch: der erste Kern mit
 SIEDLUNG); der Wirt liest `AnazhRealm._siedlungGesetz()` (Ingest validiert
@@ -948,7 +950,12 @@ DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mi
 der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit
 `abdruckFeld`, `messStatistik`, `schichtSchritte`/`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`.
 DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`,
-die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
+die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DER ORT (K10): DER ERDBAU `ERDBAU` der Siedlungs-Pläne
+(Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY`, der
+Fläche `erdbauFlaeche` und seiner Wand `erdbauWand` (K66: Böschung und Kante zwischen zwei Flächen tragen im Fels-Stoff den
+Schutt), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
+Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
+DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
 Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder

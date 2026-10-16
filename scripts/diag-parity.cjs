@@ -2,7 +2,7 @@
 // bis man nicht mehr sagen kann, welches welches ist). Rendert BEIDE Welten sequenziell auf
 // swiftshader (nie zwei Seiten zugleich — Container-Wand) mit vergleichbarer Rahmung:
 //   1) STUDIO (worlds/terrain, WebGL r128): enterForest, UI aus, Wald-Blick → parity-studio.png
-//   2) ANAZHREALM (WebGPU, bare render — ACES-Tonemapping ist im Renderer, das Bild-Urteil gilt):
+//   2) ANAZHREALM (WebGPU, bare render — die Tonkurve ist im Renderer, das Bild-Urteil gilt):
 //      kleine dichte Welt, Kamera IN den Wald (hoher standDensity-Spot), Augenhöhe → parity-anazh.png
 //   3) ANALYSE (2D-Canvas, GPU-frei): Himmel-/Boden-Palette · Grün-Deckung · Vergleichs-Tabelle.
 // Die Bilder sind das GATE der Vollendungs-Welle; die Zahlen sind die Zwischen-Linse.
@@ -80,7 +80,7 @@ async function renderAnazh() {
         await page.setViewport({ width: W, height: H });
         page.on("pageerror", (e) => console.log("[anazh PE]", (e.stack || e.message).split("\n")[0]));
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // Laden: Render gestubbt, Worker sync, Post-FX aus (bare Render trägt ACES) — der Light-Pfad.
+        // Laden: Render gestubbt, Worker sync, Post-FX aus (bare Render trägt die Tonkurve) — der Light-Pfad.
         const loaded = await page.evaluate(async () => {
             let stubbed = false;
             const start = performance.now();
@@ -103,7 +103,7 @@ async function renderAnazh() {
                     // sie in einen No-op-Renderer = LEERE Atlanten = weiße Geister-Bäume (gemessen
                     // im ersten Paritäts-Bild). Vor dem Schuss wird der Block gelöst + real gebacken.
                     try {
-                        r._impostorBakePending = true;
+                        r._tickImpostorBake = () => 0;
                     } catch (_e) {}
                     try {
                         r.state.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX || 240;
@@ -314,7 +314,7 @@ async function renderAnazh() {
             const qLen0 = r._impostorBakeQueue ? r._impostorBakeQueue.length : 0;
             const recs0 = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
             r.state.renderer.render = window.__origRender;
-            r._impostorBakePending = false;
+            delete r._tickImpostorBake; // der Prototyp backt wieder
             const dl = performance.now() + 45000;
             let n0 = (window.__impostorRttBaked || 0) | 0;
             let _bi = 0;
@@ -340,7 +340,7 @@ async function renderAnazh() {
                 }
                 await new Promise((res) => setTimeout(res, 60));
                 const q = r._impostorBakeQueue;
-                if ((!q || q.length === 0) && !r._impostorBakePending) break;
+                if ((!q || q.length === 0) && !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0)) break;
             }
             r.state.renderer.render = function () {};
             return {

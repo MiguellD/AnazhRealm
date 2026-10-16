@@ -122,8 +122,9 @@ class AnazhRealm_Z25c {
     // die Varianz-Klemme spannt dieselben 3×3 Texel (im Stand ZEIT_GAMMA_RUHE σ: das gröbere Gitter streut weiter). Geschichte und Resolve bleiben rgba16float in der Ausgabe-Auflösung (W7:
     // 11/11/10 posterisierte die Geschichte). DIE VORTIEFE lebt im Kanal a der Geschichte (die Sicht-Tiefe des Vorbilds je
     // Ausgabe-Pixel, float16 relativ 2⁻¹¹ — 0,05 mm Tiefen-Stufe auf 1 m gegen die Disokklusions-Schwelle 0,0005): kein
-    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe startet die Geschichte
-    // neu (ein Frame ohne Geschichte); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
+    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe oder ein Kamera-Sprung
+    // (`_traaReprojektion`, ZEIT_SPRUNG_M) startet die Geschichte neu, danach läuft sie als Mittel an (K68: das Jetzt wiegt
+    // mindestens 1/(n+1)); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
     // TRAANode (vendor/TRAANode.js unverändert): Bau, Ziele, Halton-Folge, Kamera-Uniformen und `clearViewOffset` erbt der
     // Knoten, Resolve, Größen und Lauf sind seine. Das Quad nimmt die Klasse des Quads der Post-Kette (`pp._quadMesh`,
     // gate:vendor-anker); fehlt sie, bricht die Kette LAUT.
@@ -148,6 +149,8 @@ class AnazhRealm_Z25c {
                 this._historyRenderTarget.depthTexture = null;
                 this._zitter = uniform(new THREE.Vector2());
                 this._neustart = uniform(1);
+                // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
+                this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 this._quad = new Quad(this._resolveMaterial);
@@ -197,6 +200,8 @@ class AnazhRealm_Z25c {
                     r.initRenderTarget(this._resolveRenderTarget);
                 }
                 this._neustart.value = neu ? 1 : 0;
+                const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
+                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 r.setRenderTarget(this._resolveRenderTarget);
                 this._quad.render(r);
                 r.setRenderTarget(null);
@@ -282,7 +287,12 @@ class AnazhRealm_Z25c {
                     const pw = max(phase, phase.oneMinus());
                     const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
                     alpha.mulAssign(wNah);
-                    alpha.assign(gueltig.select(alpha.add(lauf).saturate(), float(1)));
+                    // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
+                    // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
+                    // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
+                    // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
+                    const anlauf = float(1).div(this._anlauf.add(1));
+                    alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
                     // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel
                     const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
                     const mittel = m1.div(9);
@@ -441,7 +451,7 @@ class AnazhRealm_Z25c {
                     : typeof THREE.PostProcessing === "function"
                       ? THREE.PostProcessing
                       : null;
-            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
+            const { pass, uniform, vec2, vec3, float, luminance, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
@@ -499,27 +509,14 @@ class AnazhRealm_Z25c {
                 bloomThreshold: uniform(0.86),
                 bloomStrength: uniform(0.38),
                 bloomRadius: uniform(2.2),
-                gradeSat: uniform(1.18),
-                gradeContrast: uniform(1.06),
-                // V17.3 — Entgrauen: desaturierte (graue) Pixel warm anheben.
-                // degrayStrength = wie stark, degrayRange = bis zu welcher
-                // Saettigung ein Pixel als "grau" zaehlt. Browser-justierbar.
-                degrayStrength: uniform(0.35),
-                degrayRange: uniform(0.16),
-                // V18.377 — 0=Tag → 1=Nacht (von _dayNightApplyDirectionalLight gesetzt). Die
-                // Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim entsättigte Nacht; sie
-                // fadet darum zur Nacht aus → der Mond gibt die Tiefe gerichtet, kein Lift-Filter.
+                // 0 = Tag → 1 = Nacht (`_dayNightApplyDirectionalLight`): das Auge der Nacht liest ihn (unten).
                 nightFactor: uniform(0),
-                // V17.13 — lokaler Kontrast (Unsharp-Mask): hebt Binnen-Kontraste
-                // + Kanten auf ALLEN Oberflaechen → Strukturen/Bauten wirken
-                // plastisch statt pappig (Schoepfer „kaum Kontraste, basic"). Wirkt
-                // global im Post-FX (kein Material angefasst → bricht keine
-                // dynamischen Farben). Browser-justierbar.
-                // J4-Regler „Kanten-Schärfe" — Default 0.5, persistiert via state.atmosphere.edgeSharp.
+                // Der lokale Kontrast (Unsharp-Mask) ist NUR der Spieler-Regler „Kanten-Schärfe" (`kantenSchaerfe`, Default 0 —
+                // die Foto-Kette F1: das Bild trägt die Kante, die der Stoff zeichnet; aus = der Zweig fällt mit seinen 4 Abtastungen).
                 localContrast: uniform(
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                        ? this.state.atmosphere.edgeSharp
-                        : 0.5
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                        ? this.state.atmosphere.kantenSchaerfe
+                        : 0
                 ),
                 // GODRAYS: additiver Screen-Space-Radial-March als NODE in DIESEM Pass (kein zweiter RenderPipeline,
                 // keine MRT-Depth). `godraySun` = Sonnen-Screen-UV (pro Frame projiziert), `godrayStrength` = Pegel
@@ -631,16 +628,15 @@ class AnazhRealm_Z25c {
             }
             const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
-            // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
+            // --- DIE FOTO-KETTE (F1): das Bild, wie die Kamera es sieht — kein Spiel-Filter dazwischen. Bis F1 trug die Kette vier:
+            // Sättigung 1,18, Kontrast 1,06 um 0,5, das Entgrauen (grauer Pixel warm angehoben, ein Pflaster gegen graue Albedo) und
+            // den lokalen Kontrast 0,46; dazu ACES. Die Farbe kommt aus Gesetz und Albedo-Tafel (Lehre 21): was danach grau oder satt
+            // wirkt, ist ein benannter Befund am Stoff, nie ein Regler der Kette.
             const base = mitte;
             const bloomed = base.add(bloom).add(godray);
-            // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
-            // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
-            // Umgebung verstaerkt → Binnen-Kontraste + Kanten treten hervor
-            // (Strukturen/Bauten plastisch statt pappig). Wirkt global pro Pixel,
-            // kein Material angefasst → dynamische Farben unberuehrt. Der Offset
-            // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
-            // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
+            // Der lokale Kontrast (Unsharp-Mask, der Spieler-Regler „Kanten-Schärfe", Default 0): die Umgebungs-Luminanz aus 4
+            // versetzten Abtastungen, die Differenz Pixel − Umgebung verstärkt. Stärke 0 → der Zweig fällt mit seinen 4
+            // Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
             const lumAt = (uv) => luminance(bild(uv));
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
@@ -651,27 +647,32 @@ class AnazhRealm_Z25c {
             const selfLum = luminance(bloomed);
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
-            const lum = luminance(combined);
-            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
-            const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
+            // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
+            // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
+            // Leuchtdichten des Stäbchen- und des Zapfen-Sehens (`NACHT_AUGE`, CIE 191:2010) trägt der Zapfen-Anteil die Farbe
+            // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
+            // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
+            // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
+            const NA = AnazhRealm.NACHT_AUGE;
+            const staebchenSicht = () => {
+                const lum = luminance(combined);
+                const zapfen = TSL.log(
+                    lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
+                )
+                    .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                    .clamp(0, 1);
+                return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
+            };
+            const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
+            const graded = gesehen.max(vec3(0, 0, 0));
 
-            // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
-            // (Himmel, Gras, Wasser) bleiben. Luminanz-erhaltend (nur Hue-Shift: R hoch, G gehalten, B runter);
-            // die Sättigung steuert die Maske. Render-only, justierbar (degrayStrength/degrayRange).
-            const gMax = max(max(contrasted.r, contrasted.g), contrasted.b);
-            const gMin = min(min(contrasted.r, contrasted.g), contrasted.b);
-            const gSat = gMax.sub(gMin);
-            const greyness = smoothstep(u.degrayRange, float(0.0), gSat);
-            const gLum = luminance(contrasted);
-            const warm = vec3(gLum.mul(float(1.14)), gLum.mul(float(1.0)), gLum.mul(float(0.82)));
-            // V18.377 — die Entgrauung fadet zur Nacht (×(1−nightFactor)) → die Nacht bleibt
-            // entsättigt/dunkel (echtes Mondlicht), kein warmer Wasch-Lift mehr ins Auge.
-            const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength).mul(float(1.0).sub(u.nightFactor)));
-            const graded = degrayed.max(vec3(0, 0, 0));
-
-            // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
+            // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
+            // Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim
+            // nächsten Uhr-Wechsel, das erste Bild nach dem Bau trug den Tag (die S0-Probe maß ihren ersten Nacht-Schuss ohne das Auge der Nacht)
+            this._applyDayNightToScene();
             // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
@@ -723,6 +724,15 @@ class AnazhRealm_Z25c {
         cam.updateMatrixWorld();
         z.vor.copy(z.jetzt);
         z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
+        // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
+        // das Bild noch eine halbe Sekunde lang.
+        if (!z.ort) z.ort = new THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
+        const ox = z.ort.x,
+            oy = z.ort.y,
+            oz = z.ort.z;
+        z.ort.setFromMatrixPosition(cam.matrixWorld);
+        z.sprung = z.neu || Math.hypot(z.ort.x - ox, z.ort.y - oy, z.ort.z - oz) > AnazhRealm.ZEIT_SPRUNG_M;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;
@@ -1273,6 +1283,49 @@ class AnazhRealm_Z25c {
         }
     }
 
+    // DIE WURF-EBENE (K72): der Wurf eines Knotens IST ein Bit seiner Ebenen — `castShadow` liest und schreibt das Bit
+    // SHADOW_TWIN_LAYER (ein Accessor am Prototyp von THREE.Object3D; r184 weist `castShadow` im Konstruktor NACH den Ebenen
+    // zu, `copy` beide, gate:vendor-anker), und die Schatten-Kamera sieht NUR diese Ebene (Licht-Setup). r184 testet die
+    // Ebene in `_projectObject` VOR Frustum, Liste und Sortierung: ein Nicht-Werfer kostet den Kaskaden-Render einen Ebenen-
+    // Test statt Projektion, Fassade, Listen-Platz, Sortier-Schritt und den Ruf der Schatten-Funktion, die ihn erst dort
+    // verwarf. Befund 15.10. (Radeon, Zerlegung je Kaskaden-Render, Third): Genesis k0 72 Nicht-Werfer neben 42 Werfern in
+    // der Liste, k1 47 neben 8; Wiese 39–48. Der Zwilling ist ein Werfer ohne Ebene 0 (nur die Kaskaden sehen ihn); wer die
+    // Ebenen des Auges schaltet, lässt das Wurf-Bit stehen. Ein eigenes Wurf-Feld neben der Ebene gibt es nicht: der
+    // Accessor steht, bevor die Welt ihren ersten Knoten baut (Konstruktor), gate:schatten-werfer W10 nennt jeden Knoten der
+    // Szene, der ein eigenes Feld trägt oder für die Kaskade gesehen ≠ wirft ist.
+    // JEDES LICHT liegt auf der Wurf-Ebene, sein `castShadow` ist sein eigenes Wort (`_wurfLicht`): r184 hält EINEN Lichter-
+    // Knoten je Szene (`Lighting.getNode(scene)`, gate:vendor-anker), und der Schatten-Pass läuft MITTEN im Hauptbild — sähe
+    // die Kaskade ein anderes Licht-Set als das Auge, setzte ihr Pass den geteilten Knoten um, und alles danach Gezeichnete
+    // verlöre die übrigen Lichter (gate:ego-schatten 15.10.: die Bühne ohne ihr Umgebungslicht, Boden 145 → 98).
+    static _wurfEbene() {
+        const P = THREE.Object3D.prototype;
+        const d = Object.getOwnPropertyDescriptor(P, "castShadow");
+        if (d && typeof d.get === "function") return;
+        const W = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        Object.defineProperty(P, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return (this.layers.mask & W) !== 0;
+            },
+            set(v) {
+                const l = this.layers;
+                l.mask = (v ? l.mask | W : l.mask & ~W) >>> 0;
+            },
+        });
+        Object.defineProperty(THREE.Light.prototype, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return this._wurfLicht === true;
+            },
+            set(v) {
+                this._wurfLicht = !!v;
+                this.layers.mask = (this.layers.mask | W) >>> 0;
+            },
+        });
+    }
+
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
     // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
@@ -1327,7 +1380,7 @@ class AnazhRealm_Z25c {
             }
             return;
         }
-        const n = this._werferWahlPass(map, L, S.ab);
+        const n = this._werferWahlPass(map, S);
         const z = this._werferZensus || (this._werferZensus = []);
         z[k] = { werfer: n, bundles: map.size, abgewaehlt: S.ab.length };
     }
@@ -1335,17 +1388,52 @@ class AnazhRealm_Z25c {
     // Die Werfer-Wahl eines Schatten-Passes: je Region-Bundle die Werfer-Hülle, darin je werfendes Blatt-Mesh (`_werferKind`,
     // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
     // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
-    _werferWahlPass(map, L, ab) {
+    // DIE WAHL STEHT (K72 — Welle C für den letzten Leser der Pass-Wahl): ein Bundle behält die Wahl dieses Passes (`L.key`),
+    // solange seine Lage (`L.gen`), sein Werfer-Stand (`_bundleWerferHuelle`) und die Instanz-Wahl dieses Passes stehen
+    // (`S.wahlNeu` — sie schaltet die Sicht der Wahl-Gruppen, die dieser Gang liest): kein Gang über die Kinder, keine
+    // Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
+    // Prüfungen in 22 Gängen, in jedem Render dieselbe Wahl.
+    _werferWahlPass(map, S) {
+        const L = S.lage,
+            ab = S.ab;
+        const instanzSteht = S.wahlNeu === 0;
         let n = 0;
         for (const bg of map.values()) {
             const h = this._bundleWerferHuelle(bg);
+            const u = bg.userData;
+            const je = u._werferJe || (u._werferJe = new Map());
+            let w = je.get(L.key);
+            if (instanzSteht && w && w.gen === L.gen && w.stand === u._werferStand) {
+                bg.visible = w.vis;
+                if (!w.vis) continue;
+                n++;
+                for (let i = 0; i < w.ab.length; i++) {
+                    const c = w.ab[i];
+                    c.visible = false;
+                    ab.push(c);
+                }
+                continue;
+            }
             const vis = h !== null && this._passTrifftBox(L, h, 0);
             bg.visible = vis;
-            if (!vis) continue;
-            n++;
-            this._werferWahl(bg, L, ab);
+            const a0 = ab.length;
+            if (vis) {
+                n++;
+                this._werferWahl(bg, L, ab);
+            }
+            if (!w) je.set(L.key, (w = { gen: 0, stand: 0, vis: false, ab: [] }));
+            this._werferWahlMerke(bg, w, L, vis, ab, a0);
         }
         return n;
+    }
+
+    // Merkt die Wahl eines Bundles für diesen Pass: Lage, Werfer-Stand, ob es wirft und welche Werfer darin ruhen.
+    _werferWahlMerke(bg, w, L, vis, ab, a0) {
+        w.gen = L.gen;
+        w.stand = bg.userData._werferStand;
+        w.vis = vis;
+        w.ab.length = 0;
+        for (let i = a0; i < ab.length; i++) w.ab.push(ab[i]);
     }
 
     _werferWahl(o, L, ab) {
@@ -1757,10 +1845,13 @@ class AnazhRealm_Z25c {
     // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
     // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
     // zeichnen Bündel-Kinder direkt.
+    // `S.wahlNeu` zählt die Gruppen, deren Wahl dieser Pass neu legte oder fallen ließ (0: die Wahl des Passes stand ganz —
+    // die Werfer-Wahl liest die Sicht der Wahl-Gruppen und hält ihre Wahl nur dann, `_werferWahlPass`).
     _instanzWahlPass(art, S) {
         const set = this._instanzWahlGruppen();
         const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        S.wahlNeu = 0;
         if (set.size === 0) return;
         const L = S.lage;
         for (const g of set) {
@@ -1772,7 +1863,7 @@ class AnazhRealm_Z25c {
                 // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
                 // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
                 // hielten Slot −1.
-                if (g._wahlJe && L) g._wahlJe.delete(L.key);
+                if (g._wahlJe && L && g._wahlJe.delete(L.key)) S.wahlNeu++;
                 continue;
             }
             // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
@@ -1781,6 +1872,7 @@ class AnazhRealm_Z25c {
                 liste.push(g);
                 continue;
             }
+            S.wahlNeu++;
             const fenster = L.an && this._instanzFensterGilt(g);
             let kk = 0,
                 tausch = 0;
@@ -1823,6 +1915,9 @@ class AnazhRealm_Z25c {
             w.live !== (g.liveCount | 0)
         )
             return false;
+        // DIE ORDNUNG STEHT (K72): tauschte seit der Wahl dieses Passes niemand einen Slot der Gruppe (`_archGroupTausch`
+        // zählt `g._ordnung`), liegen ihre gemerkten Instanzen noch vorn — kein Gang über die Marken
+        if (w.ordnung === (g._ordnung | 0)) return true;
         const refs = w.refs;
         let tausch = 0;
         for (let j = 0; j < refs.length; j++) {
@@ -1831,6 +1926,7 @@ class AnazhRealm_Z25c {
             this._archGroupTausch(g, i, j);
             tausch++;
         }
+        w.ordnung = g._ordnung | 0;
         if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
         return true;
     }
@@ -1841,7 +1937,18 @@ class AnazhRealm_Z25c {
         if (!w)
             je.set(
                 L.key,
-                (w = { gen: 0, geo: null, mat: null, live: 0, refs: null, belegt: 0, im: null, vMat: 0, vKarte: 0 })
+                (w = {
+                    gen: 0,
+                    geo: null,
+                    mat: null,
+                    live: 0,
+                    refs: null,
+                    belegt: 0,
+                    im: null,
+                    vMat: 0,
+                    vKarte: 0,
+                    ordnung: -1,
+                })
             );
         const m = g.mesh;
         w.gen = L.gen;
@@ -1849,6 +1956,7 @@ class AnazhRealm_Z25c {
         w.mat = g.mat;
         w.live = g.liveCount | 0;
         w.refs = g.slotRef.slice(0, kk);
+        w.ordnung = g._ordnung | 0;
         this._instanzSlotStand(g, w);
     }
 
@@ -2136,6 +2244,9 @@ class AnazhRealm_Z25c {
 
     _loopRender(currentTime) {
         // ### Rendering ###
+        // DER BLICK DES BILDS (K59): die Kamera dieses Bilds steht — wen sie sieht, der ruht nicht mehr (`_ruheImBild`
+        // weckt ihn und schreibt sein Feld, bevor er gezeichnet wird; Teleport, Portal, Schwenk, die Ausgabe-Aufnahme).
+        this._ruheImBild();
         // DER SATZ (Welle B): alle Chunk-Ein-/Austritte dieses Frames legen ihren Index JETZT, direkt vor dem
         // Zeichnen — ein frei gewordener und im selben Frame neu vergebener Bereich ist nie ungelegt sichtbar.
         this._tickChunkSatz();
@@ -2199,6 +2310,13 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            // die Kante des Laubs (K68, `_laubSchwelle`): unter der zeitlichen Auflösung dreht ihre Schwelle um 1/g (die
+            // Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht sie bei 0,5
+            if (_lu.uLaubKante) {
+                const _k = _lu.uLaubKante.value;
+                _k.y = this.state.traaNode ? 1 : 0;
+                if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
+            }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
@@ -2266,6 +2384,8 @@ class AnazhRealm_Z25c {
         const pp = this._ensurePostProcessing();
         // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
         this._leuchtTakt();
+        // das Spiegel-Feld des Wassers folgt dem Auge (D10, ein Worker-Auftrag zur Zeit)
+        this._spiegelFeldTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
@@ -2284,6 +2404,10 @@ class AnazhRealm_Z25c {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
+                // springt das Auge (K68, `_traaR.sprung`), zeigt der Spiegel des letzten Bilds einen anderen Ort: das Wasser
+                // liest in DIESEM Bild den Himmel allein, der Pass danach rechnet den neuen (D10)
+                const L = this.state.spiegelLeser;
+                if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
                 pp.render();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
@@ -2300,6 +2424,8 @@ class AnazhRealm_Z25c {
             this._leinwandWeg(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
+        // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
+        if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
         if (!this.state._weltbildDa) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
@@ -2361,12 +2487,17 @@ class AnazhRealm_Z25c {
     _ankunftsBild() {
         const st = this.state;
         if (st._weltbildDa) return true;
-        const fehlt = this._weltbildFehlt();
+        const luecken = this._weltbildLuecken();
+        const fehlt = luecken.map((l) => l.satz);
         if (fehlt.length) {
             const jetzt = performance.now();
             const sig = fehlt.join(" · ");
             if (st._weltbildErsteFrage == null) st._weltbildErsteFrage = jetzt;
-            if (st._weltbildLuecke !== sig) {
+            // DIE RUHE IST RUHE (K60): die Uhr läuft nur, solange für keine Lücke etwas unterwegs ist (`arbeitet`). Befund
+            // Prüfung K60-1 (m1-6B, Radeon kalt unter Fremdlast): Ring 1 von 4 s bis 19 s, das Buch kam nach 19,6 s — die
+            // Stand-Zeile blieb gleich, während beide Fäden arbeiteten, und der Ladeschirm wich nach 15 s „Ruhe" mit dem
+            // halben Bild (kein Baum, kein Horizont). Was nie kommt, fängt der Deckel.
+            if (st._weltbildLuecke !== sig || luecken.some((l) => l.arbeitet)) {
                 st._weltbildLuecke = sig;
                 st._weltbildLueckeSeit = jetzt;
             }
@@ -2416,22 +2547,58 @@ class AnazhRealm_Z25c {
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
     // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
     // Buch der Studios, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der
-    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen.
+    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen,
+    // kein Dorf der Ankunft im Werden (fällig, im Export oder mit Häusern der Mesh-Zone in der Schlange).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt() {
+        return this._weltbildLuecken().map((l) => l.satz);
+    }
+
+    // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
+    // seinem Satz. Die Ankunfts-Linse (gate:ankunft L2a) liest die Liste und stellt je Term einen Fall her — ein Term ohne
+    // Fall ist ROT beim Namen (die Pflanz-Schlange kam in K60 ohne Fall dazu: ihr Streichen wäre grün geblieben).
+    _weltbildLuecken() {
         const st = this.state;
-        const pm = st.playerMesh;
-        if (!pm) return ["die Welt entsteht"];
         const out = [];
+        // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht
+        const luecke = (term, satz, arbeitet) => out.push({ term, satz, arbeitet: !!arbeitet });
+        const pm = st.playerMesh;
+        if (!pm) {
+            luecke("welt", "die Welt entsteht");
+            return out;
+        }
         const ring = this._builtRingRadius();
         const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
         if (!(ring != null && ring >= ringSoll))
-            out.push(`der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+            luecke(
+                "boden",
+                `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`,
+                st.voxelWorkerPending && st.voxelWorkerPending.size > 0
+            );
+        // DER HORIZONT (K60): der Fern-Ring zeigt seine Schalen erst ganz (`fr.ready`), das Feld-Panorama die Ferne erst
+        // gemalt (`panoLaeufe`). Seit K60 zeichnet unter dem Ladeschirm die Scheibe den Ring allein (`_tickFernRing`) —
+        // ohne diesen Term stand das Bild ohne Horizont (Prüfung K60-1: in 1 von 4 Kalt-Läufen am Kopf).
+        if (this._fernRingGilt()) {
+            const fr = st.fernRing;
+            const fp = st.feldPass;
+            if (!fr || !fr.ready)
+                luecke(
+                    "horizont",
+                    `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
+                );
+            // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
+            // auch headless, dort malt nie ein Panorama)
+            else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
+                luecke("horizont", "der Horizont wird gemalt");
+        }
+        // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
+        // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
+        if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
-            out.push("das Buch der Studios öffnet sich");
+            luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }
         const p = pm.position;
@@ -2443,12 +2610,69 @@ class AnazhRealm_Z25c {
             const dz = e.position.z - p.z;
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
-        if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
+        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
+        // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
+        // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
+        // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das
+        // erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das Start-Dorf (Nicht-Baum-Einträge 107 statt 134).
+        if (this._dorfTaktLebt()) {
+            const q = this._autoSettlementQueue;
+            let haeuser = 0;
+            if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
+                for (let i = q.idx; i < q.plan.slots.length; i++) {
+                    const s = q.plan.slots[i];
+                    if (s && (q.origin.x + s.x - p.x) ** 2 + (q.origin.z + s.z - p.z) ** 2 <= R * R) haeuser++;
+                }
+            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`);
+            else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
+                luecke("dorf", "das Dorf wird gegründet");
+        }
+        // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
+        // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
+        let gesetzt = 0;
+        for (const t of st.pendingVegSpawns || []) {
+            const q = t && t.position;
+            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
+        }
+        // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
+        // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
+        // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
+        let saat = 0;
+        for (const key of st.pendingFoliageChunks || []) {
+            const ci = key.indexOf(",");
+            if (
+                st.voxelChunks &&
+                st.voxelChunks.has(key) &&
+                this._foliageChunkInRadius(Number(key.slice(0, ci)), Number(key.slice(ci + 1)))
+            )
+                saat++;
+        }
+        // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69 — die Stufe nach der Saat): sein Chunk
+        // trägt noch keinen Baum — ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
+        const PW = this._waldPflanzWarten;
+        if (PW && PW.size) {
+            const { span } = this._voxelChunkConfig();
+            for (const key of PW) {
+                const i = key.indexOf(",");
+                const mx = (Number(key.slice(0, i)) + 0.5) * span;
+                const mz = (Number(key.slice(i + 1)) + 0.5) * span;
+                if ((mx - p.x) ** 2 + (mz - p.z) ** 2 <= R * R) saat++;
+            }
+        }
+        if (gesetzt || saat)
+            luecke(
+                "pflanzung",
+                [gesetzt ? `${gesetzt} Bäume werden gepflanzt` : "", saat ? `${saat} Wald-Böden werden bepflanzt` : ""]
+                    .filter(Boolean)
+                    .join(", ")
+            );
         const warten = this._streuWartet(p);
-        if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
+        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
-            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
-        if (karten) out.push(`${karten} ferne Bäume werden gemalt`);
+            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) +
+            (this._impostorBakeFlug ? this._impostorBakeFlug.size : 0);
+        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }
 
@@ -2690,5 +2914,207 @@ class AnazhRealm_Z25c {
     findSurfaceAbove(x, _currentY, z) {
         const vy = this._voxelSurfaceY(x, z);
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
+    }
+
+    // DIE HORIZONT-KARTE (D3, `HORIZONT_KARTE`): der Schatten JENSEITS der Kaskaden. Die Kaskaden tragen bis zu ihrer Reichweite
+    // (an der Mess-Wiese 270 m); dahinter warf bis D3 nichts — kein Grat beschattete am Abend das Tal hinter ihm, der Boden der
+    // Chunks bis 540 m und der Fern-Ring bis 8 km lagen im vollen Licht. Das Licht sieht die drei Schalen des Rings (ihre
+    // Geometrien, ein eigener Stoff) orthografisch; je Texel bleibt die Fläche, die ihm am nächsten liegt (Max-Blende auf r16f,
+    // ohne Tiefen-Puffer). Die Karte ist EINE Größe: `U.karte` bildet die Welt auf (u, v, Licht-Tiefe) ab — der Zeichner schreibt
+    // mit ihr, jeder Empfänger liest mit ihr (`_horizontSicht`). Ohne Vendor-Symbol bricht sie laut.
+    _horizontKarte() {
+        const st = this.state;
+        if (st.horizontKarte) return st.horizontKarte;
+        const T = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!T || !THREE.RenderTarget || !THREE.MeshBasicNodeMaterial || !THREE.OrthographicCamera)
+            throw new Error("Die Horizont-Karte: THREE trägt TSL/RenderTarget/MeshBasicNodeMaterial nicht (Vendor)");
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const rt = new THREE.RenderTarget(H.texel, H.texel, {
+            type: THREE.HalfFloatType,
+            format: THREE.RedFormat,
+            depthBuffer: false,
+            generateMipmaps: false,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+        });
+        rt.name = "horizont-karte";
+        rt.texture.name = "horizont-karte";
+        const U = this._uniformHeimatTeilen({
+            karte: T.uniform(new THREE.Matrix4()),
+            aktiv: T.uniform(0),
+            ab: T.uniform(0),
+            bias: T.uniform(100),
+        });
+        const stoff = new THREE.MeshBasicNodeMaterial();
+        stoff.name = "horizont-karte";
+        stoff.colorNode = T.vec4(U.karte.mul(T.vec4(T.positionWorld, 1)).z, 0, 0, 1);
+        stoff.blending = THREE.CustomBlending;
+        stoff.blendEquation = THREE.MaxEquation;
+        stoff.blendSrc = THREE.OneFactor;
+        stoff.blendDst = THREE.OneFactor;
+        stoff.transparent = true;
+        stoff.depthTest = false;
+        stoff.depthWrite = false;
+        stoff.side = THREE.DoubleSide;
+        stoff.fog = false;
+        stoff.toneMapped = false;
+        const szene = new THREE.Scene();
+        szene.name = "horizont-karte";
+        const kamera = new THREE.OrthographicCamera(-H.randM, H.randM, H.randM, -H.randM, 0, 2 * H.hoeheM);
+        szene.userData.kamera = kamera;
+        st.horizontKarte = {
+            rt,
+            U,
+            stoff,
+            szene,
+            kamera,
+            meshes: [],
+            geos: null,
+            licht: new THREE.Vector3(),
+            anker: null,
+            malZahl: 0,
+        };
+        return st.horizontKarte;
+    }
+
+    // DIE SICHT DES LICHTS jenseits der Kaskaden (0 Schatten … 1 Licht) am Fragment: die Karte über ihm minus seine Licht-Tiefe
+    // gegen den Bias, weich über einen Bias; außerhalb der Karte und diesseits der Kaskaden-Reichweite 1 (über `blende` der
+    // Reichweite eingeblendet). Die Abtastung steht im Zweig (`level(0)`, ohne Ableitung) — der nahe Boden zahlt sie nicht.
+    _horizontSicht() {
+        const T = THREE.TSL;
+        const K = this._horizontKarte();
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const U = K.U;
+        return T.Fn(() => {
+            const sicht = T.float(1).toVar();
+            const tiefe = T.positionView.z.negate();
+            const fern = T.smoothstep(U.ab.mul(1 - H.blende), U.ab, tiefe).mul(U.aktiv);
+            T.If(fern.greaterThan(0), () => {
+                const q = U.karte.mul(T.vec4(T.positionWorld, 1));
+                const innen = T.step(0, q.x).mul(T.step(q.x, 1)).mul(T.step(0, q.y)).mul(T.step(q.y, 1));
+                const naeher = T.texture(K.rt.texture, q.xy).level(0).r.sub(q.z);
+                const licht = T.float(1).sub(T.smoothstep(U.bias, U.bias.mul(2), naeher));
+                sicht.assign(T.mix(T.float(1), licht, fern.mul(innen)));
+            });
+            return sicht;
+        })();
+    }
+
+    // DER TAKT DER HORIZONT-KARTE (aus `_atmoTakt`): die Reichweite der Kaskaden je Takt; neu gezeichnet, wenn der Ring voll ist
+    // und das Licht sich um einen Texel über die Karte gedreht hat oder der Anker wandert — Kosten an Änderung (Gebot 7), der
+    // Null-Renderer zeichnet nichts.
+    _horizontKarteTakt() {
+        const st = this.state;
+        const K = st.horizontKarte;
+        if (!K) return null;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const csm = st.csmNode;
+        const cam = st.camera;
+        K.U.ab.value = csm && cam ? Math.min(csm.maxFar, cam.far) : 0;
+        const fr = st.fernRing;
+        const dl = st.directionalLight;
+        const rend = st.renderer;
+        if (!fr || !fr.ready || fr.cursor < fr.totalVerts || !dl || !rend || rend._isHeadlessNull || !st.rendererReady)
+            return K;
+        const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
+        L.copy(dl.position);
+        if (dl.target) L.sub(dl.target.position);
+        if (!(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+            K.U.aktiv.value = 0;
+            return K;
+        }
+        const texelM = (2 * H.randM) / H.texel;
+        const gleich =
+            K.anker &&
+            K.anker[0] === fr.anchorX &&
+            K.anker[1] === fr.anchorZ &&
+            K.geos === fr.geos &&
+            K.licht.dot(L) >= Math.cos(texelM / H.randM);
+        if (gleich) {
+            K.U.aktiv.value = 1;
+            return K;
+        }
+        if (K.geos !== fr.geos) {
+            this._horizontKarteLeeren();
+            for (const geo of fr.geos) {
+                const m = new THREE.Mesh(geo, K.stoff);
+                m.matrixAutoUpdate = false;
+                m.frustumCulled = false;
+                K.szene.add(m);
+                K.meshes.push(m);
+            }
+            K.geos = fr.geos;
+        }
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const c = this._horizontMitte || (this._horizontMitte = new THREE.Vector3());
+        c.set(fr.anchorX, wl, fr.anchorZ);
+        const kam = K.kamera;
+        kam.position.copy(c).addScaledVector(L, H.hoeheM);
+        if (Math.abs(L.y) > 0.99) kam.up.set(0, 0, 1);
+        else kam.up.set(0, 1, 0);
+        kam.lookAt(c);
+        kam.updateMatrixWorld(true);
+        // DIE BREITE DER KARTE quer zum Licht: der Ring (Radius randM, Höhen bis hMax über dem Bezug) liegt im Bild des Lichts in
+        // ±randM waagrecht und ±(randM·sin h + hMax·cos h) senkrecht — die Karte nimmt genau das (am Abend 6,8 statt 32,8 m je
+        // Texel), sonst trüge ein Texel auf ebenem Boden texelM / tan h Licht-Tiefe und der Bias äße jeden Schatten unter 280 m.
+        let hMax = 0;
+        for (const geo of fr.geos) {
+            const a = geo.attributes.position.array;
+            for (let i = 1; i < a.length; i += 3) hMax = Math.max(hMax, Math.abs(a[i] - wl));
+        }
+        const sinH = L.y;
+        const cosH = Math.sqrt(Math.max(0, 1 - sinH * sinH));
+        const randV = Math.min(H.randM, H.randM * sinH + hMax * cosH);
+        kam.top = randV;
+        kam.bottom = -randV;
+        kam.updateProjectionMatrix();
+        // die Karte: u, v aus den Achsen der Kamera, die Licht-Tiefe längs L. Die Zeilen des Ziels liegen im WebGPU-Raum von oben
+        // (NDC +1 in Zeile 0, die Rücklesung 15.10.: 279 von 355 Ring-Ecken treffen ihre Tiefe nur mit 1 − v), und r184 dreht die
+        // Abtastung unter `level()` nicht — v dreht hier, im WebGL2-Raum nicht.
+        const e = kam.matrixWorld.elements;
+        const k = 1 / (2 * H.randM);
+        const kV = 1 / (2 * randV);
+        const dreh = rend.coordinateSystem === THREE.WebGPUCoordinateSystem ? -1 : 1;
+        const X = [e[0], e[1], e[2]];
+        const Y = [e[4] * dreh, e[5] * dreh, e[6] * dreh];
+        const pc = (a) => a[0] * c.x + a[1] * c.y + a[2] * c.z;
+        K.U.karte.value.set(
+            X[0] * k,
+            X[1] * k,
+            X[2] * k,
+            0.5 - k * pc(X),
+            Y[0] * kV,
+            Y[1] * kV,
+            Y[2] * kV,
+            0.5 - kV * pc(Y),
+            L.x,
+            L.y,
+            L.z,
+            H.versatzM - (L.x * c.x + L.y * c.y + L.z * c.z),
+            0,
+            0,
+            0,
+            1
+        );
+        // der Bias: ein Texel deckt auf ebenem Boden seine senkrechte Kante / tan h Licht-Tiefe, am Hang quer bis die halbe waagrechte
+        const texelV = (2 * randV) / H.texel;
+        K.U.bias.value = H.biasTexel * (texelV / Math.max(H.hoeheMin, sinH / Math.max(1e-3, cosH)) + 0.5 * texelM);
+        this._atmoZeichne(K.szene, K.rt, true);
+        K.licht.copy(L);
+        K.anker = [fr.anchorX, fr.anchorZ];
+        K.malZahl++;
+        K.U.aktiv.value = 1;
+        return K;
+    }
+
+    // Die Zeichen-Meshes der Karte fallen (Ring-Abschied, neue Geometrien); die Geometrien gehören dem Ring.
+    _horizontKarteLeeren() {
+        const K = this.state.horizontKarte;
+        if (!K) return;
+        for (const m of K.meshes) K.szene.remove(m);
+        K.meshes = [];
+        K.geos = null;
+        K.anker = null;
+        K.U.aktiv.value = 0;
     }
 }

@@ -599,7 +599,46 @@ function rufe(port, weg, nutzlast) {
     });
 }
 
-async function folge() {
+// DER NEULAUF (OMEN 15.10.): ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
+// eine Schlange), misst eine andere Szene als seine Geschwister und trägt kein Urteil (1510-k72-abab: an Genesis 7 von 16
+// Boots, −2 Baum-Befehle, +6 fps). Die Folge fährt ihn neu, höchstens NEULAUF_MAX-mal — ein Erst-Boot einer Serie mit
+// frischem Profil, sonst wäre der Neulauf ein Zweit-Boot; schwingt auch der letzte nicht ein, ist er ROT beim Namen
+// (`EINSCHWINGEN`). Jeder verworfene Lauf liegt neben dem JSON (`<datei>-verworfen-<n>.json`), das JSON nennt sie (`versuche`).
+const NEULAUF_MAX = 2;
+const neulaufNoetig = (r) => !!r && r.code !== 2 && !!r.einschwung && r.einschwung.eingeschwungen === false;
+const einschwingBefund = (e, versuch, letzter) =>
+    e && e.eingeschwungen === false && letzter
+        ? `EINSCHWINGEN: ${versuch} Läufe, keiner schwingt ein (${e.takte} Takte) — offen ${JSON.stringify(e.offen)}`
+        : null;
+const dorfBefund = (um) =>
+    um && um.dorfSchwebt
+        ? `DORF: vor dem Ort ging ein Dorf los (${um.dorfSchwebt}) — sein Plan schwebt, der Wald weicht ihm, die Szene ist nicht die des Orts`
+        : null;
+// der Start der Werkbank: der Ort schon hier (`start --ort`) — ein Ort ohne Dorf-Zug sperrt ihn ab dem ersten Skript
+const startArgs = (port, seite, ort, serie) => {
+    const a = [path.join(__dirname, "werkbank.cjs"), "start", "--echt", "--port", String(port), "--seite", seite, "--ort", ort];
+    if (serie) a.push("--serie", serie);
+    return a;
+};
+const serieProfil = (serie) =>
+    serie ? path.join(root, "artifacts", "werkbank", "profil-" + serie.replace(/[^a-z0-9_-]+/gi, "_")) : null;
+
+async function folgeMitNeulauf() {
+    const versuche = [];
+    for (let v = 1; ; v++) {
+        const r = await folge({ versuch: v, versuche: versuche.slice(), letzter: v > NEULAUF_MAX });
+        if (!neulaufNoetig(r) || v > NEULAUF_MAX) process.exit(r.code);
+        const weg = r.datei.replace(/\.json$/, "") + `-verworfen-${v}.json`;
+        fs.renameSync(r.datei, weg);
+        versuche.push({ versuch: v, datei: path.basename(weg), takte: r.einschwung.takte, offen: r.einschwung.offen });
+        console.log(
+            `[folge] Lauf ${v} NICHT eingeschwungen (offen ${JSON.stringify(r.einschwung.offen)}) — Neulauf ${v + 1} von höchstens ${NEULAUF_MAX + 1}`
+        );
+        if (r.profilFrisch) fs.rmSync(r.profilFrisch, { recursive: true, force: true });
+    }
+}
+
+async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     const PORT = Number(opt("--port", process.env.WERKBANK_PORT || 4490));
     const SEITE = String(opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312"));
     const SERIE = opt("--serie", "");
@@ -663,11 +702,15 @@ async function folge() {
         befunde: [],
         kurz: {},
         urteil: null,
+        versuch: neu.versuch,
+        versuche: neu.versuche,
+        einschwung: null,
     };
     const schreibe = () => fs.writeFileSync(datei, JSON.stringify(aus, null, 1));
     const log = [];
-    const args = [path.join(__dirname, "werkbank.cjs"), "start", "--echt", "--port", String(PORT), "--seite", SEITE];
-    if (SERIE) args.push("--serie", SERIE);
+    const profilSerie = serieProfil(SERIE);
+    const serieNeu = !!profilSerie && !fs.existsSync(profilSerie);
+    const args = startArgs(PORT, SEITE, ORT, SERIE);
     const kind = spawn(process.execPath, args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
     let bereit = null;
     const fertigP = new Promise((res) => (bereit = res));
@@ -722,7 +765,13 @@ async function folge() {
         // die Wache vor dem ersten Schritt mit Ort: der Stand nach dem Boot
         await schritt("dorf-aus", () => R("/eval", { code: "window.__anazhAutoSettlement = false; return true;" }));
         await schritt("fenster", () => R("/fenster", { w: FENSTER[0], h: FENSTER[1] }));
-        await schritt("umstellen", () => R("/umstellen", { ort: ORT, sicht: SICHT }));
+        const um = await schritt("umstellen", () => R("/umstellen", { ort: ORT, sicht: SICHT }));
+        const db = dorfBefund(um);
+        if (db) {
+            aus.schritte[aus.schritte.length - 1].befunde.push(db);
+            aus.befunde.push(db);
+            console.log(`  ROT ${db}`);
+        }
         await schritt("buehne", () => R("/eval", { code: "return window.__buehne();" }));
         // die Tiere des zuletzt gefahrenen Schritts (aus seiner Wache) — neben jede Kurzfassung
         const tiereZuletzt = () => {
@@ -841,6 +890,15 @@ async function folge() {
                 delete e.ergebnis.datei;
                 fs.rmSync(bandDatei, { force: true });
             }
+            // schwang die Welt ein? (der Neulauf entscheidet daran; der letzte Versuch, der nicht einschwingt, ist ROT)
+            const m = messung && messung.messung;
+            if (m) aus.einschwung = { eingeschwungen: m.eingeschwungen === true, takte: m.takte, offen: m.offen || null };
+            const eb = einschwingBefund(aus.einschwung, neu.versuch, neu.letzter);
+            if (eb) {
+                aus.schritte[aus.schritte.length - 1].befunde.push(eb);
+                aus.befunde.push(eb);
+                console.log(`  ROT ${eb}`);
+            }
             // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort, Gerät und Sicht und jede Rot-Zeile der Linse, die
             // die Basis-Seite A nicht trägt
             if (!abbruchVon(band)) {
@@ -925,7 +983,12 @@ async function folge() {
     if (aus.kurz.profil && aus.kurz.profil.frames != null)
         console.log(`  profil: ${aus.kurz.profil.frames} Frames · ${tierZeile(aus.kurz.profil.tiere)}`);
     console.log(`  Werkbank-Ende: ${aus.werkbankEnde}`);
-    process.exit(abbruch ? 2 : aus.befunde.length ? 1 : 0);
+    return {
+        code: abbruch ? 2 : aus.befunde.length ? 1 : 0,
+        einschwung: aus.einschwung,
+        profilFrisch: serieNeu ? profilSerie : null,
+        datei,
+    };
 }
 
 // DER SELBSTTEST (ohne Welt): die Folge-Regel und jede Wache fallen bei ihrem Täter rot und nennen ihn; der Tier-Zähler steht
@@ -1082,7 +1145,7 @@ async function selbsttest() {
         "Spieler gewandert",
         wachenUrteil(
             "profil",
-            wache({ ort: Object.assign({}, wache().ort, { spieler: [-860, -850] }) }),
+            wache({ ort: Object.assign({}, wache().ort, { spieler: [ort.spieler[0] + 40, ort.spieler[1]] }) }),
             wache(),
             ort,
             true
@@ -1425,6 +1488,37 @@ async function selbsttest() {
         /Block 6 ohne Grund-Block davor UND danach/
     );
     }
+    // DER NEULAUF und der Ort vor dem Boot (OMEN 15.10.): ein nicht eingeschwungener Lauf fährt neu, ein Abbruch nie; der letzte
+    // Versuch nennt sich ROT; ein schwebender Dorf-Plan ist ein Befund; die Werkbank startet mit dem Ort, und jeder Messort
+    // sagt, ob sein Dorf-Zug läuft (die Werkbank sperrt ihn danach vor dem ersten Skript).
+    const offen = { eingeschwungen: false, takte: 4213, offen: { dorfWaechst: "0/18" } };
+    const r1 = { code: 1, einschwung: offen };
+    pruefe(
+        "Neulauf",
+        [
+            !neulaufNoetig(r1) && "ein nicht eingeschwungener Lauf fährt nicht neu",
+            neulaufNoetig({ code: 2, einschwung: offen }) && "ein Abbruch fährt neu",
+            neulaufNoetig({ code: 0, einschwung: { eingeschwungen: true } }) && "ein eingeschwungener Lauf fährt neu",
+            neulaufNoetig({ code: 1, einschwung: null }) && "ein Lauf ohne Band fährt neu",
+        ].filter(Boolean),
+        null
+    );
+    pruefe("letzter Versuch nicht eingeschwungen", [einschwingBefund(offen, 3, true)].filter(Boolean), /EINSCHWINGEN: 3 Läufe.*dorfWaechst/);
+    pruefe("Zwischen-Versuch ohne Befund", [einschwingBefund(offen, 1, false)].filter(Boolean), null);
+    pruefe("Dorf-Plan schwebt", [dorfBefund({ dorfSchwebt: "Plan 0/18 (Zelle start)" })].filter(Boolean), /DORF: vor dem Ort.*0\/18/);
+    pruefe("Dorf ruht", [dorfBefund({ dorfSchwebt: null })].filter(Boolean), null);
+    const sa = startArgs(4490, "http://localhost:4312", "genesis", "s1");
+    pruefe(
+        "Start mit dem Ort",
+        [sa[sa.indexOf("--ort") + 1] !== "genesis" && `start ohne --ort genesis: ${sa.slice(1).join(" ")}`].filter(Boolean),
+        null
+    );
+    const orte = BAND.ladeSpec(ORT).haushalt.messorte || [];
+    pruefe(
+        "Dorf-Zug je Messort",
+        orte.filter((o) => typeof o.dorfZug !== "boolean").map((o) => `${o.id}: dorfZug ${o.dorfZug}`),
+        null
+    );
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Mess-Folge ist blind: " + fehler.join(" · "));
         process.exit(1);
@@ -1521,7 +1615,7 @@ if (require.main === module) {
     else if (argv.includes("--schalter")) schalterCli();
     else if (argv.includes("--urteil")) urteilCli();
     else
-        folge().catch((e) => {
+        folgeMitNeulauf().catch((e) => {
             console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
             process.exit(2);
         });

@@ -21,7 +21,7 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
 
@@ -246,20 +246,19 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         // das iframe — exakt der Input-Brücken-Fall.
         await pageA.bringToFront();
         await pageA.evaluate(() => document.body.focus());
-        await pageA.keyboard.down("KeyW");
-        await sleep(700);
-        await pageA.keyboard.up("KeyW");
-        await waitFor(
-            pageA,
-            (beforeZ) => {
+        // W hält bis zu seinem Ereignis, nie nach der Uhr (gate:apparat Klinge 5): die Gestalt wanderte und steht jenseits
+        // von y = −50 — dort lesen der Persistenz-Slot und die Rückkehr unten den BEWEGTEN Zustand (20 je 125-ms-Schritt)
+        const halt = await halteBis(pageA, {
+            taste: "KeyW",
+            ziel: (beforeZ) => {
                 const po = window.anazhRealm._portalOverlay;
-                return !!(po && po.localPose && po.localPose.z < beforeZ - 0.5);
+                return !!(po && po.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
             },
-            8000,
-            "A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)",
-            bridgeA.poseZ === null ? 0 : bridgeA.poseZ
-        );
-        check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true);
+            args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
+            frist: 30000,
+        });
+        if (!halt.erreicht) throw new Error("Timeout: A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)");
+        check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true, `${halt.ms} ms W`);
 
         // W18-D — der PERSISTENZ-SLOT: A's Welt exponiert ihren Zustand
         // ({type:"state"}, 2-s-Takt). Wir warten auf den BEWEGTEN Zustand

@@ -78,8 +78,8 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
 p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist nicht mein rechner"). Feature-Stopp bis dahin.
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** B Ankunft ≤ 5 s kalt (am Kopf Weltbild kalt 27,9–29,8 s) · C Ort auf dem Gelände
-(das Dorf als EIN Plan aus dem Fachwerk-Studio, mit Höhe, Wegen und Licht) · E Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third):
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A AAAA je Klasse (Soll-Tafel K5: 7 von 8 Klassen ROT, gesetzt 15.10. vom Schöpfer) · B Ankunft ≤ 5 s kalt (am Kopf Weltbild kalt 27,9–29,8 s) · E Profi-Band
+(Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third):
 an der GTX hält das Bündel Frame p95 16,7–16,8 ms · ≤ 191 Befehle · ≤ 587k Dreiecke · ≤ 104 MB VRAM und reißt den CPU-Takt p95 (6,0–7,8 > 5,8 ms);
 das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `koordination` 1ae7ef17) und `bericht/1410-1-instanz.md`.
 
@@ -90,7 +90,8 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 - TERRAIN = Funktion: Höhe, Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest), Chunks = Iso-CACHE
   mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term · WELT-MARCH EIN Pass · WASSER EINE Wahrheit
   (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten (`_ensureWaterCALevel`), sein Blick EIN Baustein (`_wasserBlick`) · Edits = EINE Karte je
-  Chunk (`_voxelEditKarte`) · ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur
+  Chunk (`_voxelEditKarte`) · ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur,
+  das Dorf EIN Plan des Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`)
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · jede Senke
   zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade, Matrizen im Storage-Puffer) · Baum = Studio-Karte
   bis 384 m, EINE Ableitung aus `treeParams`, der gefühlte Baum ihr Skelett (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je
@@ -188,6 +189,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
     neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` × `faceDirection`. CPU-Raster-Linsen
     fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick` rendert selbst, darum trägt jeder benannte
     Linsen-Aufruf höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`); Wände urteilen in Bau-Ereignissen, nie in Wanduhr-Sekunden.
+    castShadow IST die Wurf-Ebene (`_wurfEbene`, K72): die Kaskade sieht nur Werfer und Lichter, r184 projiziert keinen Nicht-Werfer.
 27. **Die GPU hält, was das Bild zeichnet:** r184 hält jedes Attribut (`info.memoryMap`) bis `_attributes.delete` — `InstancedMesh.dispose()` gibt
     nichts frei, `geometry.dispose()` nur das erste Render-Objekt, dessen Geometrie-Hörer fällt (`_renderObjektRegister`), jede Textur hält die
     Bindegruppen ihrer Leser; Senken fallen über `_instanzAbschied`, Ungezeichnetes nimmt `_gpuKehraus`, ein Attribut unter der Observer-Diät nie

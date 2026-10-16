@@ -877,7 +877,7 @@ class AnazhRealm_Z02a {
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             skybox_color: ([color]) => {
-                // Die Farbe überschreibt nebulaColor NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
+                // Die Farbe überschreibt himmelTint NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
                 // sie setzt eine TÖNUNG, die der Tag-Nacht-Himmel parallel blendet + smooth fadet.
                 if (typeof color !== "string") return;
                 try {
@@ -2116,10 +2116,18 @@ class AnazhRealm_Z02a {
                 const dx = p.x - w.x,
                     dz = p.z - w.z;
                 const L = Math.hypot(dx, dz) || 1;
+                // die 2 m landeinwärts enden vor dem Leib des Spielers: der Ort liegt zwischen ihm und dem Wasser, die Richtung
+                // Spieler → Ort zeigt zum Wasser, und die Klemme eines Werks (`_structureSpawnPos`) schiebt es dorthin. Vorher lief der
+                // Schritt über den Spieler hinaus (das Ufer 2 m vor ihm), und das Haus stand 9,25 m landein, 13 m vom Wasser
+                // (gate:werk-im-wasser S am Fluss −99/−836).
+                const vorSpieler = L - AnazhRealm.PLAYER_WALL_RADIUS;
                 for (let s = 1; s <= Math.ceil(L); s++) {
                     const x = w.x + (dx / L) * s,
                         z = w.z + (dz / L) * s;
-                    if (this._landAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
+                    if (this._landAt(x, z, 0.4)) {
+                        const weiter = Math.min(2, Math.max(0, vorSpieler - s));
+                        return { x: x + (dx / L) * weiter, y: p.y, z: z + (dz / L) * weiter };
+                    }
                 }
                 throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
             },

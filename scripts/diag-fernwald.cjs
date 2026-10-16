@@ -33,6 +33,7 @@
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
@@ -54,7 +55,11 @@ function check(name, ok, detail) {
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
+    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt (K67),
+    // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
+    // Renderer baut kein Programm: „voll" kostet hier nichts.
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
@@ -104,10 +109,26 @@ function check(name, ok, detail) {
             const FS = globalThis.__phytoCore.FREISTAND;
             const CELL = AR.FOREST.cell;
             const kr = AR.FOREST.crown.baum_eiche;
-            const frischAlle = (proben) => {
+            // DIE FRAGE IN BAU-EREIGNISSEN (K69: die Schlange des Walds plant im Takt): wartet die Gestalt einer Eiche auf den Plan
+            // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht — dieselben Zellen, die bis K69 die
+            // erste Frage am Stück plante; jede plant ihre Wahrheit zuerst (`_ensureHydroTilesAround`). Ihr Rechner ist der
+            // Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
+            const frag = async (e) => {
+                let g = r._foundryGestaltFor(e, "eiche");
+                for (let i = 0; g == null && i < 4000; i++) {
+                    r._forestDartStand(r._forestSeedInt());
+                    r._tickWaldPlan(Infinity);
+                    await new Promise((res) => setTimeout(res, 0));
+                    g = r._foundryGestaltFor(e, "eiche");
+                }
+                return g;
+            };
+            const frischAlle = async (proben) => {
                 r._forestDartMemo = null; // alle Gedächtnisse des Walds fort: die Antwort aus dem Nichts
                 r._ortSame = null; // das EINE Gedächtnis der Gestalt des Orts (`_ortGestaltSame`)
-                return proben.map((e) => r._foundryGestaltFor(e, "eiche"));
+                const g = [];
+                for (const e of proben) g.push(await frag(e));
+                return g;
             };
             // der Eintrag einer Eiche am Ort (x, z) mit Same s im Gedächtnis — es liegt in Eimern (`ORT_SAME_EIMER`, K51-5)
             const ortEintrag = (x, z, s) => {
@@ -119,12 +140,12 @@ function check(name, ok, detail) {
                 return null;
             };
             // die Probe von F an einer Kachel: eine Eiche im Bestand mit genau EINEM stehenden Nachbarn (Abstand > 4 m)
-            const wahlF = (proben) => {
-                frischAlle(proben);
+            const wahlF = async (proben) => {
+                await frischAlle(proben);
                 const seedInt = r._forestSeedInt();
                 const darts = (gx, gz) => r._forestCellDarts(gx, gz, seedInt);
                 for (const e of proben) {
-                    if (r._foundryGestaltFor(e, "eiche") === V) continue;
+                    if ((await frag(e)) === V) continue;
                     const gx = Math.floor(e.position.x / CELL);
                     const gz = Math.floor(e.position.z / CELL);
                     const nah = [];
@@ -158,17 +179,18 @@ function check(name, ok, detail) {
                         scale: 1,
                     });
                 }
-                for (const e of proben) r._foundryGestaltFor(e, "eiche");
+                for (const e of proben) await frag(e);
                 r._ensureHydroTilesAround(KX, KZ, 400); // der Spieler kommt: die Kachel steht
-                const alt = proben.map((e) => r._foundryGestaltFor(e, "eiche"));
-                const frisch = frischAlle(proben);
+                const alt = [];
+                for (const e of proben) alt.push(await frag(e));
+                const frisch = await frischAlle(proben);
                 proben.forEach((e, i) => {
                     if (alt[i] !== frisch[i])
                         taeter.push(`Eiche (${e.position.x}, ${e.position.z}): Gestalt ${alt[i]} statt ${frisch[i]}`);
                 });
                 const frei = frisch.filter((g) => g === V).length;
                 if (!(frei >= 1 && frei < proben.length)) continue;
-                wahl = wahlF(proben);
+                wahl = await wahlF(proben);
                 if (!wahl) continue;
                 gewaehlt = { KX, KZ, proben, frei };
                 break;
@@ -193,7 +215,7 @@ function check(name, ok, detail) {
                 }
                 // Selbsttest: ein Gedächtnis am gültigen Stand mit gekippter Gestalt muss beim Namen feuern
                 const p0 = proben[0];
-                const g0 = r._foundryGestaltFor(p0, "eiche");
+                const g0 = await frag(p0);
                 const k0 = ortEintrag(p0.position.x, p0.position.z, p0.seed);
                 if (k0)
                     k0.eimer.set(
@@ -201,7 +223,7 @@ function check(name, ok, detail) {
                         r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V)
                     );
                 const sAlt = r._foundryGestaltFor(p0, "eiche");
-                const sFrisch = frischAlle(proben)[0];
+                const sFrisch = (await frischAlle(proben))[0];
                 Object.assign(res.E, {
                     n: proben.length,
                     frei: gewaehlt.frei,
@@ -218,16 +240,16 @@ function check(name, ok, detail) {
             if (wahl && gewaehlt) {
                 const { proben } = gewaehlt;
                 const { e, o } = wahl;
-                frischAlle(proben);
-                const vorher = r._foundryGestaltFor(e, "eiche");
+                await frischAlle(proben);
+                const vorher = await frag(e);
                 let grund = null;
                 const haus = r.spawnArchitecture(
                     "haus_alemannisch",
                     { x: o.x, y: o.surfaceY, z: o.z },
                     { fundament: { ex: 1.5, ez: 1.5 }, silent: true, absage: (g) => (grund = g) }
                 );
-                const gemerkt = r._foundryGestaltFor(e, "eiche");
-                const frischF = frischAlle(proben)[proben.indexOf(e)];
+                const gemerkt = await frag(e);
+                const frischF = (await frischAlle(proben))[proben.indexOf(e)];
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
                 // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
@@ -243,7 +265,7 @@ function check(name, ok, detail) {
                     ohne.blockerAABBs = null;
                     r._grundrissFaellt();
                 }
-                res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
+                res.E.F.selbst = !!ohne && (await frag(e)) !== V;
                 if (ohne) r.removeArchitecture(ohne);
                 Object.assign(res.E.F, {
                     ort: `Eiche (${e.position.x}, ${e.position.z}), Nachbar ${o.sp} (${o.x.toFixed(1)}, ${o.z.toFixed(1)})`,
@@ -269,6 +291,7 @@ function check(name, ok, detail) {
         };
         const pm = st.playerMesh.position;
         const stelle = (x, z) => pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        const [MX, MZ] = window.__messWiese;
         const H = AR.SCATTER.outerM;
         const TOT = AR.KARTEN_HORIZONT_TOTBAND_M;
         res.horizont = H;
@@ -340,7 +363,7 @@ function check(name, ok, detail) {
             return z;
         };
         // ── Die Mess-Wiese: der Wald wächst, die Karten stehen ──
-        stelle(-900, -850);
+        stelle(MX, MZ);
         await tick(60);
         res.A = await einschwingen(240000);
 
@@ -506,12 +529,12 @@ function check(name, ok, detail) {
             delete r._foundryLodBandPartner;
             await tick(60);
             res.S3.zurueck = rieseZustand(e);
-            stelle(-900, -850);
+            stelle(MX, MZ);
             await tick(10);
         }
 
         // ── C: der Horizont — der Spieler zieht weiter, die Ferne räumt, die Karten-Zone trägt ──
-        stelle(-900 + 320, -850);
+        stelle(MX + 320, MZ);
         const zC = await einschwingen(240000);
         const jenseits = [];
         let nJ = 0,
@@ -531,7 +554,7 @@ function check(name, ok, detail) {
         res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
         // ── SELBSTTEST (1): der alte Weg — kein Karten-Ding: jenseits der Mesh-Zone geräumt ──
-        stelle(-900, -850);
+        stelle(MX, MZ);
         await einschwingen(120000);
         const D1 = r.constructor.prototype._archKartenPreset;
         const kandS1 = await uebergang(); // der Kandidat unter dem echten Weg (der Baum steht am Rand)

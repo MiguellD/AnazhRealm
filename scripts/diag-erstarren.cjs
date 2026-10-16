@@ -187,6 +187,13 @@ function check(name, ok, detail) {
             const entry = r.spawnArchitecture("welt_portal", { x: p.x + 10, y: p.y, z: p.z }, { precise: true });
             res.torSpawned = !!entry;
             if (entry) {
+                // D8: das Fenster wartet auf sein Ziel — der erste Frager setzt den Auftrag in Gang (Platte oder die Welt selbst)
+                r._torZielZeile(entry);
+                const zw = r._torZielWelt(entry);
+                const zr = r._torZielAtlas && zw ? r._torZielAtlas.welten.get(zw.world) : null;
+                res.ziel = zr
+                    ? { zeile: await zr.kommt, quelle: zr.quelle, fehler: zr.fehler }
+                    : { fehler: "kein Auftrag" };
                 // Bau-Tick (Scan-Fenster 1 Hz — zwei Ticks mit > 1 s Abstand)
                 r._tickPortalMembranes(9001.0);
                 r._tickPortalMembranes(9002.5);
@@ -238,9 +245,23 @@ function check(name, ok, detail) {
         `  Lauf: ${L.n} Ticks · Q1-Mittel ${L.q1} ms · Q4-Mittel ${L.q4} ms · max ${L.max} ms · >250 ms: ${L.ueber250} (${(L.anteil * 100).toFixed(1)} %)`
     );
     for (const st of L.stalls) console.log(`    Stall @${st.i}: ${st.ms} ms — ${st.top.join(" · ")}`);
-    check("(a) kein Todes-Spiral (Q4 < 3×Q1 + 5-ms-Boden)", L.q4 < Math.max(L.q1 * 3, L.q1 + 5), `Q1 ${L.q1} → Q4 ${L.q4}`);
-    check("(b) kein hartes Erstarren (kein Tick > 2 s, < 5 % > 250 ms)", L.max < 2000 && L.anteil < 0.05, `max ${L.max} ms · ${(L.anteil * 100).toFixed(1)} %`);
+    check(
+        "(a) kein Todes-Spiral (Q4 < 3×Q1 + 5-ms-Boden)",
+        L.q4 < Math.max(L.q1 * 3, L.q1 + 5),
+        `Q1 ${L.q1} → Q4 ${L.q4}`
+    );
+    check(
+        "(b) kein hartes Erstarren (kein Tick > 2 s, < 5 % > 250 ms)",
+        L.max < 2000 && L.anteil < 0.05,
+        `max ${L.max} ms · ${(L.anteil * 100).toFixed(1)} %`
+    );
     const M = out.membran || {};
+    const Zi = out.ziel || {};
+    check(
+        "(c) das Ziel des Tors steht (Zeile im Atlas der Ziele)",
+        Number.isInteger(Zi.zeile),
+        `${Zi.quelle || "—"} ${Zi.fehler || ""}`
+    );
     check("(c) Membran gebaut (Tor vor dem Spieler)", out.torSpawned && M.gebaut === true);
     check(
         "(c) RECOMPILE-WAND: Sichtring verlassen+zurück = KEIN Neu-Bau, Eintrag überlebt, Fern-Schlaf + Rück-Wachen",
@@ -252,7 +273,10 @@ function check(name, ok, detail) {
         M.ausGraph === true && M.imGraph === true,
         `schlafend außerhalb=${M.ausGraph} · wach im Graphen=${M.imGraph}`
     );
-    check("SELBST-TEST: der injizierte 300-ms-Block wurde als Stall gesehen (die Uhr misst)", L.selbstTestGesehen === true);
+    check(
+        "SELBST-TEST: der injizierte 300-ms-Block wurde als Stall gesehen (die Uhr misst)",
+        L.selbstTestGesehen === true
+    );
     check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {

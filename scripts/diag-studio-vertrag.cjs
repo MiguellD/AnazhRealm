@@ -23,6 +23,7 @@ const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { umschlagImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -362,10 +363,11 @@ function validateManifest(m) {
                         !(w.nadel > 0 && isFinite(w.nadel)) ||
                         !(w.rand >= 0 && isFinite(w.rand)) ||
                         !(w.winkel > 0 && w.winkel < 45) ||
+                        !(w.spalte > 0 && isFinite(w.spalte)) ||
                         !(w.holz >= 0 && w.holz < 1)
                     )
                         v.push(
-                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45) und holz in [0, 1) tragen`
+                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45), spalte (> 0) und holz in [0, 1) tragen`
                         );
                 }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
@@ -501,26 +503,32 @@ function validateManifest(m) {
         // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
         // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
         // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        // K64 (die Stufe 2): die Kette L0 → L1 → L2 → Fernform, die Grenze der Stufe 2 jenseits der Stufe 1, tris streng fallend.
         if (ks.gate) {
             const G = B.gate || {};
             const st = ks.gate;
             const kette =
-                st.length === 3 &&
+                st.length === 4 &&
                 st[0] === 0 &&
                 st[1] === 1 &&
-                st[2] === 3 &&
+                st[2] === 2 &&
+                st[3] === 3 &&
                 G[0] &&
                 G[1] &&
+                G[2] &&
                 G[3] &&
                 G[3].nurWurf === true &&
                 G.fernform === "huelle" &&
                 typeof G[1].ab === "number" &&
+                typeof G[2].ab === "number" &&
+                G[2].ab > G[1].ab &&
                 typeof G.hyst === "number" &&
                 G[0].tris > G[1].tris &&
-                G[1].tris > G[3].tris;
+                G[1].tris > G[2].tris &&
+                G[2].tris > G[3].tris;
             if (!kette)
                 v.push(
-                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43: kindStages [0, 1, 3], Zeilen 0 · 1 mit ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > Fern)"
+                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43/K64: kindStages [0, 1, 2, 3], Zeilen 0 · 1 und 2 mit steigendem ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > L2 > Fern)"
                 );
         }
         // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
@@ -903,7 +911,7 @@ function validateManifest(m) {
         .text(root)
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
-    const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
+    const reg = realm.match(/_foundryAutoRegisterSpecies\([^)]*\)\s*\{[\s\S]{0,2500}/);
     check(
         // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
         // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
@@ -923,6 +931,51 @@ function validateManifest(m) {
         ohneGestalten.length === 0,
         ohneGestalten.join(", ")
     );
+
+    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und Budget
+    // jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
+    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Befund K64-n1: porta-core trug gate[2].tris 12 500, eingefroren
+    // 15 000 — rot erst in der vollen Batterie (gate:asset-contract, Gruppe 5 Schritt 37, „divergiert" ohne Namen), jeder
+    // spätere Schritt der Gruppe übersprungen. Hier antwortet DERSELBE Kanal der Brücke im Node-vm (umschlagImVm, dieselben
+    // Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract bleibt der Beweis im Browser.
+    const umschlagBefunde = (quellen) => {
+        const u = umschlagImVm(quellen);
+        const out = [];
+        for (const [feld, key] of DATEN_KANAELE) {
+            const gold = fs.readFileSync(
+                path.join(root, "spec", "asset-contract", "v1", "golden", key + ".json"),
+                "utf8"
+            );
+            if (JSON.stringify(u[feld]) === gold.trim()) continue;
+            const a = ersteAbweichung(u[feld], JSON.parse(gold));
+            out.push(`${key} ${a ? `${a.pfad}: Kern ${a.ist} ≠ eingefroren ${a.soll}` : "weicht ab"}`);
+        }
+        return out;
+    };
+    const umschlag = umschlagBefunde();
+    check(
+        "U: der Umschlag der Kerne (recipes · world-params · render-config) trifft die eingefrorenen JSONs byte-genau",
+        umschlag.length === 0,
+        umschlag.length
+            ? umschlag.join(" · ") + " — Vertrags-Akt: MINT_NUR_DATEN=1 node scripts/mint-asset-goldens.cjs"
+            : `${DATEN_KANAELE.length}/${DATEN_KANAELE.length} byte-gleich`
+    );
+    // Selbsttest: eine Budget-Zeile eines Zweit-Kerns und ein Rezept-Regler des Haupt-Kerns, nach dem Laden verschoben —
+    // die Wand nennt beide Schlüssel.
+    {
+        const lese = (f) => fs.readFileSync(path.join(root, f), "utf8");
+        const st = umschlagBefunde({
+            "porta-core.js":
+                lese("porta-core.js") + "\n;__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate[2].tris += 1;",
+            "foundry-core.js": lese("foundry-core.js") + "\n;PRESETS.eiche.s[Object.keys(PRESETS.eiche.s)[0]] += 0.5;",
+        });
+        check(
+            "SELBST-TEST U: ein verschobenes Tor-Budget und ein verschobener Eichen-Regler fallen beim Schlüssel",
+            st.some((z) => z.startsWith("render-config lod.zusatzBudget.porta.gate.2.tris:")) &&
+                st.some((z) => /^recipes eiche\.s\.\w+:/.test(z)),
+            st.join(" · ")
+        );
+    }
 
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
@@ -976,7 +1029,7 @@ function validateManifest(m) {
         .replace(/\/\/[^\n]*/g, "");
     const leserUrteil = (realmSrc, phytoSrc) => {
         const f = [];
-        const reply = phytoSrc.match(/function __replyBuildAsset\(msg\) \{[\s\S]*?\n {4}\}\n/);
+        const reply = phytoSrc.match(/function __replyBuildAsset\([^)]*\) \{[\s\S]*?\n {4}\}\n/);
         if (
             !reply ||
             !/if \(isZweitKern\) \{[\s\S]*?budgetZeile\(zweit\.kern\.PORTAL_RENDER_CONFIG[\s\S]*?budgetErzwingen\(meshes/.test(
@@ -984,7 +1037,7 @@ function validateManifest(m) {
             )
         )
             f.push("Brücke: __replyBuildAsset faltet die Zweit-Kern-Gestalt nicht (budgetErzwingen)");
-        const ofen = realmSrc.match(/\n {4}_ofenBudget\(core, kind, lod, eintraege, name\) \{[\s\S]*?\n {4}\}/);
+        const ofen = realmSrc.match(/\n {4}_ofenBudget\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen[0])) f.push("Wirt: _ofenBudget faltet nicht");
         const ofenRufe = (
             realmSrc.match(/this\._ofenAssembleAsset\(this\._ofenBudget\(core, "(kreatur|koerper)"/g) || []
@@ -998,21 +1051,21 @@ function validateManifest(m) {
         const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern(?:, basisInv)?\) \{[\s\S]*?\n {4}\}\n/);
         if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
             f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
-        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\(mesh\) \{[\s\S]*?\n {4}\}/);
+        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe[0]))
             f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
         // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
         // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
         // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m, baum\) \{[\s\S]*?\n {4}\}/);
+        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
             f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
         if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))
             f.push("Wirt: der Flatten trägt die Sippe nicht aufs Leaf");
-        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\(group, leaves\) \{[\s\S]*?\n {4}\}/);
+        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv[0]) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv[0]))
             f.push("Wirt: _foundryFlatVerschmelzen gruppiert nicht nach der Sippe des Gesetzes");
-        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\(root\) \{[\s\S]*?\n {4}\}/);
+        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (
             !sb ||
             !/n\.userData \? n\.userData\.__sippe/.test(sb[0]) ||
@@ -1235,7 +1288,7 @@ function validateManifest(m) {
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
             // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle — seit der Leben-Schau 2 je Gestalt (fx.huellen).
             const pbaM =
-                src && src.match(/_populateBlockerAABBs\(entry\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
+                src && src.match(/_populateBlockerAABBs\([^)]*\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
             check(
                 "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad",
                 !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huellen: \[\n\s+\[-?\d/.test(fc)

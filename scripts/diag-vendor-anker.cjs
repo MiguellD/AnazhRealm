@@ -77,6 +77,20 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer)" },
     { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
+    // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
+    // Urteil `_equal`, Id je Objekt `geometryId`) samt drawRange — die Diät stellt diese Daten als geprüft; der Ausschnitt ist ein
+    // Draw-Parameter (jeder Draw liest `geometry.drawRange`).
+    { file: "vendor/three.webgpu.min.js", sub: "if(a.geometryId!==n.id)return a.geometryId=n.id,!1;const u=this.getGeometryData(e.geometry);if(u._renderId!==r){u._renderId=r;", organ: "AnazhRealm._diaetRefresh (7: equals prüft die Geometrie je Geometrie und Render)" },
+    { file: "vendor/three.webgpu.min.js", sub: "u.drawRange.start!==n.drawRange.start||u.drawRange.count!==n.drawRange.count)return u.drawRange.start=n.drawRange.start,u.drawRange.count=n.drawRange.count,u._equal=!1,!1;u._equal=!0}else if(!1===u._equal)return!1;", organ: "AnazhRealm._diaetRefresh (7: der Vendor-Vergleich frischt auf einen anderen Ausschnitt auf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getGeometryData(e){let t=Ps.get(e);return void 0===t&&(t={_renderId:-1,_equal:!1,", organ: "AnazhRealm._diaetRefresh (7: obs.getGeometryData je Geometrie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,", organ: "AnazhRealm._diaetRefresh (7: der Ausschnitt ist ein Draw-Parameter)" },
+    // (8) GETRAGEN (K71): r184 lädt ein Attribut EINMAL je Version für alle Render-Objekte — die Daten je Attribut-Objekt am
+    // Renderer (`_attributes`, eine DataMap mit `has`), `version` die hochgeladene; die Diät liest sie, bevor ein Render-Objekt
+    // auf eine neue Version hin voll auffrischt.
+    { file: "vendor/three.webgpu.min.js", sub: "this._attributes=new By(r,this.info)", organ: "AnazhRealm._diaetGetragen (8: rend._attributes)" },
+    { file: "vendor/three.webgpu.min.js", sub: "update(e,t){const r=this.get(e);if(void 0===r.version)", organ: "AnazhRealm._diaetGetragen (8: die Daten je Attribut-Objekt, version undefined = nie hochgeladen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "(r.version<t.version||t.usage===x)&&(this.backend.updateAttribute(e),r.version=t.version)", organ: "AnazhRealm._diaetGetragen (8: EIN Upload je Version, version = die hochgeladene)" },
+    { file: "vendor/three.webgpu.min.js", sub: "has(e){return this.data.has(e)}", organ: "AnazhRealm._diaetGetragen (8: DataMap.has legt nichts an)" },
     { file: "vendor/three.webgpu.min.js", sub: "getLights(e,t){if(", organ: "AnazhRealm._diaetRefresh (obs.getLights)" },
     { file: "vendor/three.webgpu.min.js", sub: 'needsVelocity(e){const t=e.getMRT();return null!==t&&t.has("velocity")}', organ: "AnazhRealm._diaetRefresh (obs.needsVelocity)" },
     { file: "vendor/three.webgpu.min.js", sub: "firstInitialization(e){return!1===this.renderObjects.has(e)&&(this.getRenderObjectData(e),!0)}", organ: "AnazhRealm._diaetRefresh (obs.renderObjects = Erst-Init)" },
@@ -96,12 +110,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang) · _stoffWert (der Wert je Stoff liest den Stoff des zeichnenden Objekts, in jedem Pass)" },
-    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph` · `_nebelGraph`): r184 schlüsselt ein Programm
+    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph`): r184 schlüsselt ein Programm
     // nach der IDENTITÄT seiner Knoten — der Knoten-Schlüssel endet in `customCacheKey` = Knoten-id; frisch gebaute Knoten
     // hießen ein Programm je Stoff. Und je InstancedMesh hängt r184 die Objekt-uuid an den Schlüssel (der InstanceNode bindet
     // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
     // fällt dieser Term, teilen sie ihr Programm ohne Umbau.
-    { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph · _nebelGraph: Programm-Schlüssel = Knoten-Identität)" },
+    { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph: Programm-Schlüssel = Knoten-Identität)" },
     { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`)" },
     // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner` · `_senkenKnoten` · der setupPosition-Haken in
     // `_configureRenderer`): ein LOD ohne Takt zeichnet nicht, seine Kinder schon; die Zahl eines Draws ist instanceCount der
@@ -411,6 +425,14 @@ const ANKER = [
     // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
     { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
     { file: "vendor/three.webgpu.min.js", sub: "const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (die Kinder ohne Ebenen-Test: das Gerät unter Ebene-2-Knochen zeichnet)" },
+    // DIE WURF-EBENE (K72): `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
+    // ersten Zuweisung an, `copy` trägt beide; die Schatten-Kamera behält eine Maske mit einem Bit jenseits der 0 (sonst nähme
+    // r184 die Maske der Haupt-Kamera und die Kaskade sähe keinen Werfer); die Schatten-Funktion liest `castShadow`.
+    { file: "vendor/three.core.min.js", sub: "this.layers=new lr,this.visible=!0,this.castShadow=!1", organ: "_wurfEbene (die Ebenen stehen vor der ersten Zuweisung des Wurfs)" },
+    { file: "vendor/three.core.min.js", sub: "this.layers.mask=t.layers.mask,this.visible=t.visible,this.castShadow=t.castShadow", organ: "_wurfEbene (copy trägt Ebenen und Wurf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "4294967294&s.camera.layers.mask||(s.camera.layers.mask=a.layers.mask)", organ: "_wurfEbene (die Schatten-Kamera behält ihre Wurf-Maske)" },
+    { file: "vendor/three.webgpu.min.js", sub: "(!0===i.castShadow||i.receiveShadow&&r===pt)", organ: "_wurfEbene (die Schatten-Funktion liest den Wurf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);", organ: "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)" },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten
@@ -464,6 +486,10 @@ function diaetLaden(manipuliert) {
         return null;
     if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
         return null;
+    // (8) GETRAGEN (K71): "ohneGetragen" — jede neue Version ist ein Grund für jedes Render-Objekt (der Stand vor K71);
+    // "getragenImmer" — die Diät hält jede Version für getragen (ein Attribut, das nur ein Pass liest, lüde nie hoch).
+    if (manipuliert === "ohneGetragen" && !ersetze("if (!A || !A.has(a)) return false;", "return false;")) return null;
+    if (manipuliert === "getragenImmer" && !ersetze("if (!A || !A.has(a)) return false;", "return true;")) return null;
     const AnazhRealm = {};
     new Function("AnazhRealm", src)(AnazhRealm);
     const echt = AnazhRealm._diaetRefresh;
@@ -690,10 +716,91 @@ function diaetLauf(fn) {
     const r6 = render();
     return { r1, r2, r3, r4, r5, r6 };
 }
+// (8) GETRAGEN (K71): EIN Objekt in zwei Pässen — der Schatten (zuerst) liest Instanz-Matrix und Lage, das Hauptbild dazu
+// die Normale; jeder Pass hat seinen Beobachter. Der Schein-Renderer lädt wie r184 je Attribut-Objekt EINMAL je Version
+// (`_attributes`: `version` die hochgeladene), und nur die Attribute, die der Pass liest. Gemessen je Render: wie viele
+// Pässe voll auffrischen. Soll: eine neue Version der Matrix oder der Lage frischt EINEN Pass auf (der zweite liest, was der
+// erste hochlud), eine neue Normale frischt das Hauptbild auf (nur es lädt sie).
+function getragenLauf(fn) {
+    let n = 0;
+    const attr = (k) => ({ id: 900 + n++, version: 0, k });
+    const im = attr("im"),
+        lage = attr("lage"),
+        normale = attr("normale");
+    const daten = new Map();
+    const A = { has: (a) => daten.has(a), get: (a) => daten.get(a) || (daten.set(a, {}), daten.get(a)) };
+    const rend = { info: { calls: 0 }, _attributes: A, _nodes: { getNodeFrameForRender: () => ({}) }, _bindings: { _update() {} } };
+    const obj = { isInstancedMesh: true, instanceMatrix: im, instanceColor: null, welt: 0 };
+    const geo = { id: 77, index: null, attributes: { position: lage, normal: normale } };
+    const pass = (liest) => {
+        const nbs = { updateNodes: [], updateBeforeNodes: [], updateAfterNodes: [] };
+        const obs = {
+            renderObjects: new Map(),
+            renderId: -1,
+            hasAnimation: false,
+            getRenderObjectData(ro) {
+                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, {});
+                return this.renderObjects.get(ro);
+            },
+            getGeometryData: () => ({}),
+            needsVelocity: () => false,
+            getLights: () => [],
+            equals: () => true,
+        };
+        const ro = { object: obj, geometry: geo, getBindings: () => [], getNodeBuilderState: () => nbs };
+        return { obs, ro, liest };
+    };
+    const paesse = [pass([im, lage]), pass([im, lage, normale])];
+    const altNR = function (ro) {
+        if (!this.renderObjects.has(ro)) {
+            this.getRenderObjectData(ro);
+            return true;
+        }
+        return false;
+    };
+    const render = (vorher) => {
+        if (vorher) vorher();
+        const frame = { renderer: rend, renderId: ++rend.info.calls };
+        const voll = [];
+        for (const p of paesse)
+            if (fn(p.obs, p.ro, frame, altNR)) {
+                voll.push(p === paesse[0] ? "schatten" : "haupt");
+                // der Voll-Refresh lädt, was dieser Pass liest (r184 `Attributes.update`)
+                for (const a of p.liest) {
+                    const d = A.get(a);
+                    if (d.version === undefined || d.version < a.version) d.version = a.version;
+                }
+            }
+        return voll;
+    };
+    return {
+        erst: render(),
+        stand: render(),
+        matrix: render(() => im.version++),
+        lage: render(() => lage.version++),
+        normale: render(() => normale.version++),
+        danach: render(),
+    };
+}
+function getragenPruefe(g) {
+    const f = [];
+    if (g.erst.length !== 2) f.push(`GETRAGEN: der Erst-Render initialisiert ${g.erst.length} von 2 Pässen`);
+    for (const k of ["matrix", "lage"])
+        if (g[k].length !== 1)
+            f.push(
+                `GETRAGEN: eine neue Version der ${k === "matrix" ? "Instanz-Matrix" : "Lage"} frischt ${g[k].length} Pässe voll auf (${g[k].join(" + ")}; Soll 1 — der zweite lädt nichts, die GPU trägt sie schon)`
+            );
+    if (!g.normale.includes("haupt"))
+        f.push("GETRAGEN UPLOAD: eine neue Normale (nur das Hauptbild liest sie) frischt das Hauptbild nicht auf — sie lädt nie hoch");
+    if (g.stand.length || g.danach.length) f.push(`GETRAGEN: im Stand ${g.stand.length}/${g.danach.length} Voll-Refreshs (Soll 0)`);
+    return f;
+}
 function diaetProbe(selftest) {
     const fehler = [];
     const fn = diaetLaden(null);
     if (!fn) return { fehler: ["AnazhRealm._diaetRefresh nicht im Stamm gefunden"], selbstFeuert: false };
+    const getragen = getragenLauf(fn);
+    fehler.push(...getragenPruefe(getragen));
     const pruefe = (z) => {
         const f = [];
         if (z.r1.voll.size !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.voll.size})`);
@@ -756,7 +863,14 @@ function diaetProbe(selftest) {
         const verlassenFn = diaetLaden("stempelOhneVerlassen");
         if (!verlassenFn) fehler.push("Selbsttest: der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`");
         const ohneVerlassen = verlassenFn ? pruefe(diaetLauf(verlassenFn)) : [];
+        const ohneGFn = diaetLaden("ohneGetragen");
+        const immerFn = diaetLaden("getragenImmer");
+        if (!ohneGFn || !immerFn) fehler.push("Selbsttest: die Diät fragt `_diaetGetragen` nicht (`if (!A || !A.has(a)) return false;`)");
+        const ohneG = ohneGFn ? getragenPruefe(getragenLauf(ohneGFn)) : [];
+        const immer = immerFn ? getragenPruefe(getragenLauf(immerFn)) : [];
         selbstFeuert =
+            ohneG.some((e) => e.startsWith("GETRAGEN: eine neue Version")) &&
+            immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
             abk.some((e) => e.startsWith("Kamera-Treue")) &&
             ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")) &&
             wieder.length === 2 &&
@@ -764,7 +878,7 @@ function diaetProbe(selftest) {
             frameAlt.some((e) => e.startsWith("Node-Frame")) &&
             ohneVerlassen.some((e) => e.startsWith("Verschachtelt"));
     }
-    return { fehler, selbstFeuert, stand };
+    return { fehler, selbstFeuert, stand, getragen };
 }
 
 // DIE SCHATTEN-STOFF-PROBE: den Block aus _configureRenderer schneiden und an einem Schein-Renderer fahren, dessen
@@ -941,7 +1055,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         const stoffFeuert = schattenStoffProbe(true).fehler.length > 0;
@@ -967,7 +1081,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
     );
 }
 main();

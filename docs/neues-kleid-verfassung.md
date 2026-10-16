@@ -21,7 +21,7 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 | **P4** | Die Foundry ist die EINE aktive Baum-Quelle | der Chokepoint `_buildVariantLODs` (null bei lebender Foundry) + der Scatter-Gate + `gate:foundry-deadlock` |
 | **P5** | Der Impostor backt im STUDIO-Bäcker (Bäcker-Vereinigung: Worker-Kanal `bake-impostor`, kein Welt-Nachbau) | `_tickImpostorBake` → `_foundryBakeImpostorRequest` → `_applyStudioImpostorPayload` + `gate:foundry-impostor` (kein iframe, kein RTT-Nachbau) |
 | **P6** | EIN Wuchs (der Studio-Generator liest den geteilten Kern) | `growTreeNodes` delegiert an `__phytoCore.growSkeleton`, Inline-Wuchs geschnitten + `gate:asset-contract` (output-neutral) |
-| **P7** | Der Asset-Vertrag v2 (die erste Kreatur dockt an) | `spec/asset-contract/v2/` + `gate:creature-contract` (bake-core Skin byte-exakt in Node) |
+| **P7** | Der Körper-Vertrag (die Kreatur dockt an; die Metaball-Haut v2 fiel mit KONVERGENZ III, 876babf8) | `spec/asset-contract/ofen/` + `gate:ofen-contract` (der Guss des Ofens byte-exakt je Stoff-Klasse × Gelenk) |
 | **P8** | Die Verfassung: Struktur ersetzt Ermahnung | `gate:constitution` (diese Gesetze als statische Linse im `check`) |
 
 ## Die fünf Gesetze (was `gate:constitution` prüft)
@@ -76,16 +76,16 @@ Blick-Sonde auf echter GPU.
 ### Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht
 
 Zwei Verträge frieren die Asset-Nähte byte-genau ein: **v1** (`spec/asset-contract/v1/`) = die
-Pflanzen (Studio-Generator, `gate:asset-contract`, 52 sha256-Goldens über einen Worker); **v2**
-(`spec/asset-contract/v2/`) = die Kreatur-Haut (bake-core Skin-Isosurface, `gate:creature-contract`,
-byte-exakt DIREKT in Node, weil die Skin-Mathematik THREE-frei ist). Die Goldens sind EINGEFROREN
+Pflanzen (Studio-Generator, `gate:asset-contract`, 52 sha256-Goldens über einen Worker); der **Ofen**
+(`spec/asset-contract/ofen/`) = die Körper aus dem Tier- und Mensch-Guss (`gate:ofen-contract`, ein Byte-Golden je
+Stoff-Klasse × Gelenk; die Metaball-Haut v2 fiel mit KONVERGENZ III, 876babf8). Die Goldens sind EINGEFROREN
 (Taille-Disziplin) — ein bewusster Re-Mint ist `MINT_FORCE=1` mit Begründung.
 
 ### Gesetz 5 — jede Regel hat ihre Linse
 
 Jede Pipeline-Regel trägt ihr eigenes Gate: `gate:foundry-warm` (Worker bäckt) · `gate:foundry-deadlock`
 (die Nähe konvergiert unter Last) · `gate:portal-boot` (die Shell liest foundry-core) ·
-`gate:foundry-impostor` (kein iframe) · `gate:asset-contract` / `gate:creature-contract` (die Verträge)
+`gate:foundry-impostor` (kein iframe) · `gate:asset-contract` / `gate:ofen-contract` (die Verträge)
 · `gate:constitution` (diese Verfassung). Der `check`-Gate fährt die statischen (kein Browser); die
 foundry-ON-Gates laufen im per-push-CI.
 

@@ -87,7 +87,7 @@ class AnazhRealm_Z25b {
     // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
     // den vier Achsen (die zwei der Box, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den
     // Wagen heraus (pos mutiert, der Schub reist in h.schub für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle
-    // und das Podest, `_hausObb`/`_archFundamentBox`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
+    // `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
     // der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand 12 × 0,8 m: der Wagen
     // hielt 2,36 m vor der Wand).
     _resolveHuelleVsAABB(box, pos, h) {
@@ -1526,6 +1526,7 @@ class AnazhRealm_Z25b {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
+        if (this._ladeTakt()) return AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1539,7 +1540,29 @@ class AnazhRealm_Z25b {
     // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
     // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
     _dekoWartet() {
+        if (this._ladeTakt()) return false;
         return !!this.state._frameChunksBuilt && (this._schedFrameNo || 0) % 4 !== 0;
+    }
+
+    // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
+    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
+    // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
+    // Drossel-Takt, Gras 1 Chunk je Frame) schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
+    // Welt fest: Radeon kalt rissen ALLE Frames das Budget, der Takt-Planer gab der Welt 2 ms je Frame, und jeder Leser
+    // des ersten Weltbilds lief mit der Frame-Rate des Boots (4–8 Frames je Sekunde) statt mit der Arbeit. Jetzt trägt
+    // jeder Lade-Frame LADE_TAKT_MS Arbeit, und keine Drossel des Spiels greift.
+    _ladeTakt() {
+        const r = this.state.renderer;
+        return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
+    }
+
+    // DIE FRIST DES LADE-FRAMES (K60-2): jeder Leser des ersten Weltbilds mit eigener Kappe je Takt (Stück oder ms je Frame)
+    // arbeitet im Lade-Takt bis zu dieser Frist — mindestens seine Kappe, nie weniger. Die Kappen schützen den Takt, den der
+    // Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und jede Kappe wurde zur Uhr des Bilds:
+    // Radeon kalt malte der Horizont (600 Punkte und 2 ms Farbe je Frame) bis 16 s, als jeder andere Term seit 11 s stand.
+    // Außerhalb des Lade-Takts −∞ (die Kappe allein gilt). Leser: die Pflanz-Schlange, der Horizont (Höhen, Farben).
+    _ladeFrist() {
+        return this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
@@ -1575,6 +1598,15 @@ class AnazhRealm_Z25b {
                 },
             },
             {
+                name: "waldPlan",
+                prio: 1, // Welt-Substanz: die Gestalt jedes Baums in frischem Wald wartet auf ihre Zellen (K69)
+                run: (ms) => {
+                    const _wp = performance.now();
+                    this._tickWaldPlan(ms);
+                    this._perfSenseLap("waldPlan", _wp);
+                },
+            },
+            {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
@@ -1583,13 +1615,16 @@ class AnazhRealm_Z25b {
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
-                    const msDeko = st._frameChunksBuilt ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                    // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
+                    const lade = this._ladeTakt();
+                    const msDeko =
+                        st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
                     const _dl = Number.isFinite(msDeko)
-                        ? performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS)
+                        ? performance.now() + (lade ? msDeko : Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS))
                         : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
-                    this._tickPendingGrass(1);
+                    this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(performance.now());
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
@@ -1657,6 +1692,7 @@ class AnazhRealm_Z25b {
             i++;
         };
         setze(this._weltRegung | 0);
+        setze(this._waldPlanRegung | 0); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
         setze(st.lodRef);
         setze(st.chunkRingRadius);
@@ -1791,6 +1827,7 @@ class AnazhRealm_Z25b {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
@@ -1814,7 +1851,7 @@ class AnazhRealm_Z25b {
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt
         // es am Frame-Ende weiter aus frameMs — die volle Vereinheitlichung kommt mit dem Default-an).
-        if (B.remainingMs() <= 0) st._frameOverBudget = true;
+        if (B.remainingMs() <= 0 && !this._ladeTakt()) st._frameOverBudget = true;
     }
 
     _loopVoxelStreaming() {
@@ -1853,8 +1890,9 @@ class AnazhRealm_Z25b {
     // 3rd sieht das Auge den Leib, 1st nicht — die Kamera sitzt im Leib). Aufrufer: Avatar-Guss (applyPlayerSoul),
     // Modus-Schalter (setCameraMode) und _loopCamera (idempotenter Halter, je Frame vor dem Render) — lebte die Regel nur
     // im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
-    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf
-    // SHADOW_TWIN_LAYER — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie. Bis 0910-5 schaltete die
+    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera; was wirft, liegt weiter
+    // auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72) — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie.
+    // Bis 0910-5 schaltete die
     // Regel `visible` und nahm mit der Haut den Wurf: in der Ego-Sicht, dem Standard-Blick, warf der Spieler keinen Schatten
     // (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz). `visible` bleibt unberührt — die Stufen-Regel
     // (`_gelenkStufe`) behält ihr Wort. Ebenen erbt kein Kind: die Regel geht jeden Knoten, verschiebt nur, was auf
@@ -1868,19 +1906,22 @@ class AnazhRealm_Z25b {
         const player = this.state.playerMesh;
         if (!player) return;
         const third = this.state.cameraMode === "third";
-        const zwilling = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        // K72: der Wurf IST die Wurf-Ebene (`castShadow`, `_wurfEbene`) — der Schalter nimmt nur das Auge (Ebene 0); wer
+        // wirft, wirft weiter, wer nicht wirft, liegt im 1st auf keiner Ebene. 3rd gibt die Ebenen des Auges zurück, der Wurf
+        // bleibt, wie `castShadow` ihn inzwischen schrieb.
+        const wurf = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
         const leib = (o) => {
             const u = o.userData;
             if (u._gehalten) return;
             const m = o.layers.mask;
             if (third) {
                 if (u._maskeVorEgo !== undefined) {
-                    o.layers.mask = u._maskeVorEgo;
+                    o.layers.mask = ((u._maskeVorEgo & ~wurf) | (m & wurf)) >>> 0;
                     u._maskeVorEgo = undefined;
                 }
             } else if (m & 1) {
                 u._maskeVorEgo = m;
-                o.layers.mask = (m & ~1) | zwilling;
+                o.layers.mask = (m & ~1) >>> 0;
             }
             for (const k of o.children) leib(k);
         };

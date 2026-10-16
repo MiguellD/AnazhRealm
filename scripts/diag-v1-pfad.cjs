@@ -10,6 +10,15 @@
 //     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
+//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
+//     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
+//     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
+//     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
+//     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
+//     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
+//     Dazu die Wand W7: der Foundry-Pfad pollt nicht — EIN Zeit-Graph über jedes Glied, das die Familie erreicht (Kreise
+//     mit Zeit-Kante, Schleifen mit Schlaf, setInterval, Warten auf ein pollendes Glied); frei nur die Frist-Kette.
+//
 //   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
 //     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
 //     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
@@ -73,25 +82,56 @@ function check(name, ok, detail) {
 function ohneKommentare(src) {
     return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
 }
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index + m[0].length - 1);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
-}
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
+// W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
+// die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
+const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
+// V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
+function zugVerdict(m) {
+    if (!m || m.gestartet !== true) return ["zug start"];
+    const out = [];
+    for (const [wer, z] of [
+        ["vorschau", m.vorschau],
+        ["hand", m.hand],
+    ]) {
+        if (!z) out.push(`zug ${wer}: keine Probe (vakuös)`);
+        else if (!z.fremd) out.push(`zug ${wer}: kein fremder Zug im Flug (vakuös)`);
+        else if (!(Number.isFinite(z.ms) && z.ms <= SOLL.zugMs)) // null ist nie 0 (Lehre 17)
+            out.push(
+                z.imCache
+                    ? `zug ${wer} schläft: ${z.key} liegt im Cache, ${wer === "hand" ? "die Hand" : "die Vorschau"} wartet weiter`
+                    : `zug ${wer}: ${z.key} nach ${SOLL.zugMs} ms nicht angekommen (der fremde Zug im Rang der Ferne)`
+            );
+    }
+    // V-D3 STUFEN (K38-N2): jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
+    // die Karte wartet auf ihre Höhen-Stufe (Rahmen und Sichthöhe) bzw. auf ihren Bake, nie auf eine Uhr.
+    const st = m.stufen || [];
+    if (st.length !== 3) out.push(`zug stufen: ${st.length} von 3 Stufen gemessen (vakuös)`);
+    for (const s of st)
+        if (!(Number.isFinite(s.ms) && s.ms <= SOLL.zugMs))
+            out.push(
+                s.da
+                    ? `zug stufe L${s.lod} schläft: ${s.wart} ist da, die Vorschau wartet weiter`
+                    : `zug stufe L${s.lod}: ${s.wart} nach ${SOLL.zugMs} ms nicht da`
+            );
+        // die Karte steht in ihrer Größe: die Box der Vorschau misst die Höhe ihrer Höhen-Stufe (der Rahmen rahmt die Karte,
+        // nie den Stamm des Einheits-Quads)
+        else if (s.lod === 2 && !(s.hoch / s.soll >= SOLL.karteMin && s.hoch / s.soll <= SOLL.karteMax))
+            out.push(
+                `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
+            );
+    // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
+    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    const vr = m.vorrat;
+    if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
+    else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
+    else if (vr.auftraege !== 1)
+        out.push(`zug vorrat: ${vr.key} ${vr.auftraege}× bestellt — Täter _foundryPrefetchLibrary bestellt an _foundryZug vorbei`);
+    return out;
+}
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
 // Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
 function rahmenVerdict(m) {
@@ -311,62 +351,531 @@ function sucheVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
+// ── DIE STATISCHE WAND (Node, am AST). Liefert [name, ok, detail]. ──
+const FN_ART = /^(?:FunctionExpression|ArrowFunctionExpression|FunctionDeclaration)$/;
+const SCHLEIFE_ART = /^(?:WhileStatement|DoWhileStatement|ForStatement|ForInStatement|ForOfStatement)$/;
+const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame|requestIdleCallback)$/;
+const RENDER = /^render(?:Async)?$/;
+// der Name eines Zugriffs: `a.b`, `a["b"]`, a[`b`]
+const eigenName = (m) =>
+    !m.computed
+        ? m.property.name
+        : m.property.type === "Literal"
+          ? String(m.property.value)
+          : m.property.type === "TemplateLiteral" && !m.property.expressions.length
+            ? m.property.quasis[0].value.cooked
+            : null;
+const gerufenName = (c) => (c.type === "Identifier" ? c.name : c.type === "MemberExpression" ? eigenName(c) : null);
+const umfasst = (a, i) => a.start <= i && i < a.end;
+// ein Bezug, der einen Namen nur DEKLARIERT oder als Schlüssel trägt (kein Lesen des Werts)
+const nurName = (n, p) =>
+    p &&
+    ((p.type === "MemberExpression" && p.property === n && !p.computed) ||
+        (p.type === "Property" && p.key === n && !p.computed) ||
+        ((p.type === "MethodDefinition" || p.type === "PropertyDefinition") && p.key === n) ||
+        (p.type === "VariableDeclarator" && p.id === n) ||
+        (p.type === "AssignmentExpression" && p.left === n) ||
+        (FN_ART.test(p.type) && (p.id === n || p.params.includes(n))) ||
+        (p.type === "AssignmentPattern" && p.left === n));
+
+// W2 — DER RENDER-FLUSS: wo die Render-Funktion eines Renderers GERUFEN wird. Gefolgt wird dem WERT `x.render` /
+// `x.renderAsync` (auch `x["render"]`, ein Destrukturieren `{ render }`) durch `||`, `?:`, Klammern und `?.`, durch `.bind`
+// (gebundene Argumente zählen mit), in einen Bezeichner, ein Feld (`this.z = …`, `{ z: … }`), einen Parameter eines Glieds
+// (`this.g(x.render)`), die Rückgabe eines Glieds oder einer Closure — bis zum Ruf: direkt mit ≥ 2 Argumenten (Szene,
+// Kamera), `.call` mit ≥ 3, `.apply`, `Reflect.apply`, ein Zeitgeber mit Szene und Kamera hinter der Frist. Ein Feld der
+// Info (`info.render.calls`) und ein Wert im Test (`ri && ri.render`) sind kein Ruf. Bis Runde 4 las W2 die Ruf-FORMEN
+// `render(…)` · `.call` · `.apply` — `const z = r.render.bind(r); z(s, c)` blieb still grün (Prüfer K38-N2 Runde 4, mut-bind).
+function renderFluss(src) {
+    const baum = stammLib.ast(src);
+    const gl = stammLib.glieder(src);
+    const gliedVon = (i) => {
+        const g = stammLib.gliedAn(gl, i);
+        return g ? g.name : null;
+    };
+    const treffer = new Map(); // Start des Rufs → { glied, wie, i, text }
+    const lokal = new Map(); // "glied|bezeichner" → [gebundene Argumente, Weg]
+    const feld = new Map(); // feldname → [gebundene Argumente, Weg]
+    const rueck = new Map(); // "glied" oder "glied|closure" → [gebundene Argumente, Weg] (die Rückgabe trägt die Funktion)
+    let neu = false;
+    const merke = (karte, k, gebunden, weg) => {
+        if (!karte.has(k)) karte.set(k, [gebunden, weg]), (neu = true);
+    };
+    const trifft = (ruf, wie) => {
+        if (!treffer.has(ruf.start))
+            treffer.set(ruf.start, { glied: gliedVon(ruf.start), wie, i: ruf.start, text: src.slice(ruf.start, Math.min(ruf.end, ruf.start + 90)).replace(/\s+/g, " ") });
+    };
+    const fliesse = (kette, n, gebunden, weg) => {
+        const triff = (ruf, wie) => trifft(ruf, `${weg}${wie}`);
+        let cur = n;
+        for (let k = kette.length - 1; k >= 0; k--) {
+            const p = kette[k];
+            const t = p.type;
+            if (
+                t === "ChainExpression" ||
+                t === "ParenthesizedExpression" ||
+                t === "LogicalExpression" ||
+                (t === "ConditionalExpression" && p.test !== cur) ||
+                (t === "SequenceExpression" && p.expressions[p.expressions.length - 1] === cur)
+            ) {
+                cur = p;
+                continue;
+            }
+            if (t === "MemberExpression" && p.object === cur) {
+                const was = eigenName(p);
+                const pp = kette[k - 1];
+                if (!pp || pp.type !== "CallExpression" || pp.callee !== p) return; // ein Feld des Werts (info.render.calls)
+                if (was === "bind") {
+                    gebunden += Math.max(0, pp.arguments.length - 1);
+                    weg += ".bind → ";
+                    cur = pp;
+                    k--;
+                    continue;
+                }
+                if (was === "call" && gebunden + pp.arguments.length - 1 >= 2) triff(pp, ".call");
+                if (was === "apply") triff(pp, ".apply");
+                return;
+            }
+            if (t === "CallExpression" && p.callee === cur) {
+                if (gebunden + p.arguments.length >= 2) triff(p, "Ruf");
+                return;
+            }
+            if (t === "CallExpression") {
+                const idx = p.arguments.indexOf(cur);
+                const nm = gerufenName(p.callee);
+                if (idx === 0 && nm === "apply" && p.callee.type === "MemberExpression" && gerufenName(p.callee.object) === "Reflect") triff(p, "Reflect.apply");
+                else if (idx === 0 && ZEITGEBER.test(nm || "") && gebunden + p.arguments.length - 2 >= 2) triff(p, nm);
+                else if (idx >= 0 && p.callee.type === "MemberExpression") {
+                    // ein Parameter eines Glieds trägt die Funktion weiter
+                    const g = gl.find((x) => x.name === nm);
+                    const fn = g && (g.knoten.value || null);
+                    const par = fn && FN_ART.test(fn.type) ? fn.params[idx] : null;
+                    const id = par && (par.type === "AssignmentPattern" ? par.left : par);
+                    if (id && id.type === "Identifier") merke(lokal, `${nm}|${id.name}`, gebunden, `${weg}Parameter ${nm}(${id.name}) → `);
+                }
+                return;
+            }
+            if (t === "VariableDeclarator" && p.init === cur) {
+                if (p.id.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.id.name}`, gebunden, `${weg}${p.id.name} → `);
+                return;
+            }
+            if (t === "AssignmentExpression" && p.right === cur) {
+                if (p.left.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.left.name}`, gebunden, `${weg}${p.left.name} → `);
+                else if (p.left.type === "MemberExpression" && eigenName(p.left)) merke(feld, eigenName(p.left), gebunden, `${weg}Feld .${eigenName(p.left)} → `);
+                return;
+            }
+            if (t === "Property" && p.value === cur) {
+                const nm = !p.computed && p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? String(p.key.value) : null;
+                if (nm) merke(feld, nm, gebunden, `${weg}Feld .${nm} → `);
+                return;
+            }
+            if (t === "ReturnStatement" || (t === "ArrowFunctionExpression" && p.body === cur)) {
+                // die Funktion, die zurückgibt: das Glied selbst oder eine benannte Closure
+                let j = t === "ReturnStatement" ? k - 1 : k;
+                while (j >= 0 && !FN_ART.test(kette[j].type)) j--;
+                const f = kette[j];
+                const fp = kette[j - 1];
+                const glied = gliedVon(p.start);
+                if (f && fp && (fp.type === "MethodDefinition" || fp.type === "PropertyDefinition")) merke(rueck, glied, gebunden, `${weg}Rückgabe ${glied}() → `);
+                else if (f && fp && fp.type === "VariableDeclarator" && fp.id.type === "Identifier") merke(rueck, `${glied}|${fp.id.name}`, gebunden, `${weg}Rückgabe ${fp.id.name}() → `);
+                else if (f && f.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
+                return;
+            }
+            return;
+        }
+    };
+    for (let runde = 0; runde === 0 || neu; runde++) {
+        neu = false;
+        stammLib.wandere(baum, (n, ahnen) => {
+            const p = ahnen[ahnen.length - 1];
+            if (n.type === "MemberExpression") {
+                const nm = eigenName(n);
+                if (!nm || (p && p.type === "AssignmentExpression" && p.left === n)) return true;
+                if (RENDER.test(nm)) fliesse(ahnen, n, 0, "");
+                else if (feld.has(nm)) fliesse(ahnen, n, ...feld.get(nm));
+            } else if (n.type === "Property" && p && p.type === "ObjectPattern") {
+                const nm = !n.computed && n.key.type === "Identifier" ? n.key.name : n.key.type === "Literal" ? String(n.key.value) : null;
+                const v = n.value.type === "AssignmentPattern" ? n.value.left : n.value;
+                if (nm && RENDER.test(nm) && v.type === "Identifier") merke(lokal, `${gliedVon(n.start)}|${v.name}`, 0, `{ ${nm} } → ${v.name} → `);
+            } else if (n.type === "Identifier" && lokal.size && !nurName(n, p)) {
+                const k = `${gliedVon(n.start)}|${n.name}`;
+                if (lokal.has(k)) fliesse(ahnen, n, ...lokal.get(k));
+            } else if (n.type === "CallExpression" && rueck.size) {
+                const c = n.callee;
+                const k = c.type === "Identifier" ? `${gliedVon(n.start)}|${c.name}` : c.type === "MemberExpression" ? eigenName(c) : null;
+                if (k && rueck.has(k)) fliesse(ahnen, n, ...rueck.get(k));
+            }
+            return true;
+        });
+        if (runde > 12) throw new Error("renderFluss: kein Fixpunkt nach 12 Runden");
+    }
+    return [...treffer.values()];
+}
+
+// W7 — DER ZEIT-GRAPH: Knoten sind die Glieder der Klasse und jede benannte Closure darin (const/let/Zuweisung = Funktion,
+// function-Deklaration, benannter Funktions-Ausdruck); eine Kante führt zu jedem Knoten, den ein Knoten beim Namen nennt
+// (`this.g`, ein Alias von this, ein Glied der Familie über jedes Objekt; die Closure beim Bezeichner). Eine Kante ist ZEIT,
+// wenn die Nennung erst nach Zeit läuft: im Rückruf eines Zeitgebers (setTimeout · setInterval · requestAnimationFrame ·
+// requestIdleCallback, auch `window.` und `["…"]`) oder eines Zeitgeber-Glieds (es ruft einen Parameter im Zeitgeber), im
+// Rückruf von then/catch/finally auf einem zeitigen Versprechen, in einer Funktion, die auf Zeit wartet (`await` auf einen
+// Zeitgeber oder auf einen Schlaf — ein Knoten, dessen Rückgabe ein Zeitgeber einlöst). Ein POLL ist ein Kreis mit einer
+// Zeit-Kante (über beliebig viele Glieder und Closures), eine Schleife, die in ihrem Rumpf auf Zeit wartet, ein setInterval —
+// oder ein Wartender der Familie, der auf ein pollendes Glied wartet (await · then · return · ein Rückruf als Argument).
+// Gelesen werden die Glieder, die die Familie erreicht. Bis Runde 4 las W7 je Glied einen eigenen Graphen ohne Schleifen:
+// `while (!f.buchDa) await new Promise((r) => setTimeout(r, 50))` (mut-schlaf) und `_foundryHorch` ⇄ `_foundryHorchNochmal`
+// (mut-kreuz) blieben still grün (Prüfer K38-N2 Runde 4).
+// Die EINE Kette mit Zeit-Kanten, die kein Poll ist — die Frist am Ereignis je Auftrag: `_foundryUhren` stellt je Auftrag,
+// der vorn in seinem Faden steht, EINE Uhr auf `_foundryAblauf`; dessen Geist-Fall stellt EINMAL die Uhr, die den Geist
+// fallen lässt und Pumpe und Uhr des nächsten Auftrags anstößt. Jede Uhr feuert je Auftrag höchstens einmal. Frei sind
+// genau diese Zeit-Kanten; steht eine nicht mehr, ist die Ausnahme veraltet und W7 rot.
+const FRIST_KETTE = [
+    ["_foundryUhren", "_foundryAblauf"],
+    ["_foundryAblauf", "_foundryPumpe"],
+    ["_foundryAblauf", "_foundryUhren"],
+];
+const FOUNDRY_FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
+function zeitGraph(src) {
+    const gl = stammLib.glieder(src);
+    const gliedNamen = new Set(gl.map((g) => g.name));
+    const wurzel = (g) => g.knoten.value || g.knoten;
+    const istSelbst = (a, o) => o.type === "ThisExpression" || (o.type === "Identifier" && a.selbst.has(o.name));
+    // ein Bezug auf ein Glied: this.g und ein Alias von this für jedes Glied, jedes Objekt für ein Glied der Familie
+    const gliedZiel = (a, n) => {
+        const nm = eigenName(n);
+        return nm && gliedNamen.has(nm) && (istSelbst(a, n.object) || FOUNDRY_FAMILIE.test(nm)) ? nm : null;
+    };
+    // 1) je Glied die Glied-Bezüge → die Glieder, die die Familie erreicht
+    const akte = new Map();
+    for (const g of gl) {
+        const a = { g, selbst: new Set(), zugriffe: [] };
+        stammLib.wandere(wurzel(g), (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && n.init.type === "ThisExpression") a.selbst.add(n.id.name);
+            else if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && n.right.type === "ThisExpression") a.selbst.add(n.left.name);
+            else if (n.type === "MemberExpression") a.zugriffe.push(n);
+            return true;
+        });
+        a.glieder = new Set(a.zugriffe.map((n) => gliedZiel(a, n)).filter(Boolean));
+        a.zugriffe = null;
+        if (!akte.has(g.name)) akte.set(g.name, []);
+        akte.get(g.name).push(a);
+    }
+    const erreicht = new Set(gl.filter((g) => FOUNDRY_FAMILIE.test(g.name)).map((g) => g.name));
+    const familie = new Set(erreicht);
+    for (const offen = [...erreicht]; offen.length; )
+        for (const a of akte.get(offen.pop()) || []) for (const y of a.glieder) if (!erreicht.has(y)) erreicht.add(y), offen.push(y);
+    // 2) die erreichten Glieder voll: Funktionen, Closures, Rufe, awaits, Schleifen, Bezüge
+    const akten = [];
+    for (const name of erreicht)
+        for (const a of akte.get(name) || []) {
+            Object.assign(a, { fns: [], closures: [], rufe: [], awaits: [], schleifen: [], bezuege: [] });
+            stammLib.wandere(wurzel(a.g), (n, ahnen) => {
+                const p = ahnen[ahnen.length - 1];
+                if (FN_ART.test(n.type)) {
+                    a.fns.push(n);
+                    if (n.id && n.type !== "ArrowFunctionExpression") a.closures.push({ name: n.id.name, fn: n, id: n.id });
+                }
+                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && FN_ART.test(n.init.type)) a.closures.push({ name: n.id.name, fn: n.init, id: n.id });
+                if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && FN_ART.test(n.right.type)) a.closures.push({ name: n.left.name, fn: n.right, id: n.left });
+                if (n.type === "CallExpression") a.rufe.push({ n, p, nm: gerufenName(n.callee) });
+                if (n.type === "AwaitExpression") a.awaits.push(n);
+                if (SCHLEIFE_ART.test(n.type)) a.schleifen.push(n);
+                if (n.type === "MemberExpression" || n.type === "Identifier") a.bezuege.push({ n, p });
+                return true;
+            });
+            a.closureNamen = new Set(a.closures.map((c) => c.name));
+            akten.push(a);
+        }
+    const ziel = (a, n, p) => {
+        if (n.type === "MemberExpression") return gliedZiel(a, n);
+        if (n.type !== "Identifier" || !a.closureNamen.has(n.name) || nurName(n, p)) return null;
+        return `${a.g.name}/${n.name}`;
+    };
+    const knotenAn = (a, i) => {
+        let k = null;
+        for (const c of a.closures) if (umfasst(c.fn, i) && (!k || c.fn.start >= k.fn.start)) k = c;
+        return k ? `${a.g.name}/${k.name}` : a.g.name;
+    };
+    const fnAn = (a, i) => {
+        let f = null;
+        for (const x of a.fns) if (umfasst(x, i) && (!f || x.start >= f.start)) f = x;
+        return f;
+    };
+    // Schlaf (die Rückgabe löst ein Zeitgeber ein) und Zeitgeber-Glied (ein Parameter wird im Zeitgeber gerufen): Fixpunkt
+    const schlaf = new Set();
+    const geber = new Set();
+    const rufZiel = (a, c) => ziel(a, c.callee, c);
+    const zeitig = (a, e) => {
+        let z = false;
+        stammLib.wandere(e, (n) => {
+            if (z) return false;
+            if (n.type === "CallExpression" && (ZEITGEBER.test(gerufenName(n.callee) || "") || schlaf.has(rufZiel(a, n) || ""))) z = true;
+            return true;
+        });
+        return z;
+    };
+    const istZeitRuf = (a, r) => ZEITGEBER.test(r.nm || "") || geber.has(rufZiel(a, r.n) || "");
+    const rueckrufe = (r) =>
+        ZEITGEBER.test(r.nm || "")
+            ? r.n.arguments.slice(0, 1)
+            : r.n.arguments.filter((x) => FN_ART.test(x.type) || x.type === "ObjectExpression" || x.type === "Identifier" || x.type === "MemberExpression");
+    for (let neu = true; neu; ) {
+        neu = false;
+        for (const a of akten)
+            for (const k of [{ name: a.g.name, fn: wurzel(a.g) }, ...a.closures.map((c) => ({ name: `${a.g.name}/${c.name}`, fn: c.fn }))]) {
+                if (!FN_ART.test(k.fn.type)) continue;
+                if (!schlaf.has(k.name)) {
+                    let z = k.fn.type === "ArrowFunctionExpression" && k.fn.expression && zeitig(a, k.fn.body);
+                    if (!z)
+                        stammLib.wandere(k.fn.body, (n) => {
+                            if (z || (n !== k.fn.body && FN_ART.test(n.type))) return false;
+                            if (n.type === "ReturnStatement" && n.argument && zeitig(a, n.argument)) z = true;
+                            return true;
+                        });
+                    if (z) schlaf.add(k.name), (neu = true);
+                }
+                if (!geber.has(k.name)) {
+                    const params = new Set(
+                        k.fn.params
+                            .map((x) => (x.type === "AssignmentPattern" ? x.left : x))
+                            .filter((x) => x.type === "Identifier")
+                            .map((x) => x.name)
+                    );
+                    const istParam = (x) => x && x.type === "Identifier" && params.has(x.name);
+                    let z = false;
+                    for (const r of a.rufe) {
+                        if (z || !params.size || !umfasst(k.fn, r.n.start) || !istZeitRuf(a, r)) continue;
+                        for (const arg of rueckrufe(r))
+                            if (istParam(arg)) z = true;
+                            else
+                                stammLib.wandere(arg, (n) => {
+                                    if (n.type === "CallExpression" && (istParam(n.callee) || (n.callee.type === "MemberExpression" && istParam(n.callee.object)))) z = true;
+                                    return !z;
+                                });
+                    }
+                    if (z) geber.add(k.name), (neu = true);
+                }
+            }
+    }
+    // die Kanten
+    const kanten = new Map(); // von → Map(zu → { zeit, i })
+    const schleifen = [];
+    const intervalle = [];
+    for (const a of akten) {
+        const bereiche = [];
+        for (const r of a.rufe) {
+            if (r.nm === "setInterval") intervalle.push({ knoten: knotenAn(a, r.n.start), i: r.n.start });
+            if (istZeitRuf(a, r)) bereiche.push(...rueckrufe(r));
+            else if (/^(?:then|catch|finally)$/.test(r.nm || "") && r.n.callee.type === "MemberExpression" && zeitig(a, r.n.callee.object)) bereiche.push(...r.n.arguments);
+        }
+        const zeitAwaits = a.awaits.filter((w) => zeitig(a, w.argument));
+        const wartet = new Set(zeitAwaits.map((w) => fnAn(a, w.start)));
+        for (const { n, p } of a.bezuege) {
+            const zu = ziel(a, n, p);
+            if (!zu) continue;
+            const von = knotenAn(a, n.start);
+            const zeit = bereiche.some((x) => umfasst(x, n.start)) || wartet.has(fnAn(a, n.start));
+            if (!kanten.has(von)) kanten.set(von, new Map());
+            const alt = kanten.get(von).get(zu);
+            if (!alt || (zeit && !alt.zeit)) kanten.get(von).set(zu, { zeit, i: n.start });
+        }
+        // die innerste Schleife um ein zeitiges await derselben Funktion
+        for (const w of zeitAwaits) {
+            const f = fnAn(a, w.start);
+            let s = null;
+            for (const x of a.schleifen) if (umfasst(x, w.start) && fnAn(a, x.start) === f && (!s || x.start >= s.start)) s = x;
+            if (s && !schleifen.some((y) => y.i === s.start)) schleifen.push({ knoten: knotenAn(a, s.start), i: s.start });
+        }
+    }
+    // die starken Komponenten (Tarjan, iterativ)
+    const komp = new Map();
+    {
+        const index = new Map();
+        const low = new Map();
+        const auf = new Set();
+        const stapel = [];
+        let zaehler = 0;
+        let nr = 0;
+        const nach = (v) => [...(kanten.get(v) || new Map()).keys()][Symbol.iterator]();
+        const knoten = new Set();
+        for (const [v, m] of kanten) {
+            knoten.add(v);
+            for (const w of m.keys()) knoten.add(w);
+        }
+        const betrete = (v) => {
+            index.set(v, zaehler), low.set(v, zaehler++), stapel.push(v), auf.add(v);
+        };
+        for (const v0 of knoten) {
+            if (index.has(v0)) continue;
+            betrete(v0);
+            const rahmen = [[v0, nach(v0)]];
+            while (rahmen.length) {
+                const [v, it] = rahmen[rahmen.length - 1];
+                const nx = it.next();
+                if (!nx.done) {
+                    const w = nx.value;
+                    if (!index.has(w)) betrete(w), rahmen.push([w, nach(w)]);
+                    else if (auf.has(w)) low.set(v, Math.min(low.get(v), index.get(w)));
+                    continue;
+                }
+                rahmen.pop();
+                if (rahmen.length) {
+                    const u = rahmen[rahmen.length - 1][0];
+                    low.set(u, Math.min(low.get(u), low.get(v)));
+                }
+                if (low.get(v) === index.get(v)) {
+                    let w;
+                    do {
+                        w = stapel.pop();
+                        auf.delete(w);
+                        komp.set(w, nr);
+                    } while (w !== v);
+                    nr++;
+                }
+            }
+        }
+    }
+    const gliedVonKnoten = (k) => k.split("/")[0];
+    const frei = (von, zu) => FRIST_KETTE.some(([x, y]) => gliedVonKnoten(von) === x && gliedVonKnoten(zu) === y);
+    const mitglieder = new Map();
+    for (const [k, c] of komp) {
+        if (!mitglieder.has(c)) mitglieder.set(c, []);
+        mitglieder.get(c).push(k);
+    }
+    const kreise = []; // { von, zu, i, familie }
+    const genutzt = new Set();
+    for (const [von, m] of kanten)
+        for (const [zu, e] of m) {
+            if (!e.zeit || komp.get(von) !== komp.get(zu)) continue;
+            if (frei(von, zu)) {
+                genutzt.add(`${gliedVonKnoten(von)}→${gliedVonKnoten(zu)}`);
+                continue;
+            }
+            kreise.push({ von, zu, i: e.i, familie: mitglieder.get(komp.get(von)).some((k) => familie.has(gliedVonKnoten(k))) });
+        }
+    // ein pollendes Glied: in einem Zeit-Kreis, mit einer wartenden Schleife oder einem setInterval
+    const pollend = new Set([...kreise.flatMap((k) => mitglieder.get(komp.get(k.von))), ...schleifen.map((s) => s.knoten), ...intervalle.map((s) => s.knoten)].map(gliedVonKnoten));
+    const ueber = [];
+    for (const a of akten) {
+        if (!familie.has(a.g.name)) continue;
+        for (const r of a.rufe) {
+            const P = r.n.callee.type === "MemberExpression" ? gliedZiel(a, r.n.callee) : null;
+            if (!P || familie.has(P) || !pollend.has(P)) continue;
+            const p = r.p;
+            const wartet =
+                (p && (p.type === "AwaitExpression" || p.type === "ReturnStatement" || (p.type === "ArrowFunctionExpression" && p.body === r.n))) ||
+                (p && p.type === "MemberExpression" && p.object === r.n && /^(?:then|catch|finally)$/.test(eigenName(p) || "")) ||
+                r.n.arguments.some((x) => FN_ART.test(x.type) || (x.type === "Identifier" && a.closureNamen.has(x.name)));
+            if (wartet) ueber.push({ knoten: knotenAn(a, r.n.start), P, i: r.n.start });
+        }
+    }
+    const ort = (i) => stammLib.ort(root, stammLib.zeileVon(src, i));
+    const polls = [
+        ...kreise.filter((k) => k.familie).map((k) => `${k.von} → ${k.zu} Zeit-Kreis ${ort(k.i)}`),
+        ...schleifen.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} wartet in einer Schleife auf Zeit ${ort(s.i)}`),
+        ...intervalle.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} setInterval ${ort(s.i)}`),
+        ...ueber.map((u) => `${u.knoten} wartet über das pollende ${u.P} ${ort(u.i)}`),
+    ];
+    const veraltet = FRIST_KETTE.filter(([x, y]) => !genutzt.has(`${x}→${y}`)).map(([x, y]) => `${x} → ${y}`);
+    return { familie, polls, veraltet };
+}
+
 function wand(src) {
     const nc = ohneKommentare(src);
-    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera, wer\) \{/) || "";
+    // Die Rümpfe am AST beim Namen (kommentarfrei); ein fehlendes Glied macht seine Prüfung ROT, nie still leer.
+    const gl = stammLib.glieder(src);
+    const fehlt = [];
+    const rumpf = (name) => {
+        const gs = gl.filter((g) => g.name === name);
+        if (!gs.length) {
+            fehlt.push(name);
+            return null;
+        }
+        return gs.map((g) => ohneKommentare(src.slice(g.start, g.ende))).join("\n");
+    };
+    const da = (...rs) => rs.every((r) => r !== null);
+    const ohne = (...namen) => (namen.some((n) => fehlt.includes(n)) ? ` · Glied fehlt: ${namen.filter((n) => fehlt.includes(n)).join(", ")}` : "");
+    const buehne = rumpf("_buehneRender");
     // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
-    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
-    const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
-    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera, "[^"]+"\)/g) || []).length;
-    const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
-    const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
-    const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
+    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers. Zeichnen darf nur die Bühne und der
+    // Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im Render-Fluss (oben).
+    const renderRufe = renderFluss(src);
+    const renderOrte = renderRufe.map((r) => r.glied || "(außerhalb jeder Methode)");
+    const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
+    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
+    const direkt = direktOrte.length;
+    const buehnen = stammLib
+        .rufe(src)
+        .filter((r) => r.ziel === "this._buehneRender")
+        .map((r) => {
+            const wer = r.args[r.args.length - 1];
+            return wer && wer.type === "Literal" ? String(wer.value) : wer ? src.slice(wer.start, wer.end) : "?";
+        });
+    const evalPos = rumpf("dslEvalPos");
+    const effekte = rumpf("dslEffects");
+    const wachen = ((effekte || "").match(/if \(!pos\)/g) || []).length;
     // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
     const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
-    const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\(\) \{/) || "");
+    const plattform = rumpf("_genesisPlattform");
+    const plattQuelle = /\.type === "start_plattform"/.test(plattform || "");
     // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
     // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
     // Ort an der Engstelle.
-    const positionen = fnBody(nc, /\n {4}get dslPositions\(\) \{/) || "";
-    const regelPos = fnBody(nc, /\n {4}_dslRulePos\(posNode, ctx\) \{/) || "";
+    const positionen = rumpf("dslPositions");
+    const regelPos = rumpf("_dslRulePos");
     const ersatz = [
-        (positionen.match(/_defaultSpawnPos\(\)/g) || []).length,
-        (positionen.match(/dslClamp\(/g) || []).length,
-        (positionen.match(/\bNumber\(/g) || []).length,
-        (effekte.match(/const c[xyz] = Number\(/g) || []).length,
-        (effekte.match(/playerMesh\.position : \{ x: 0/g) || []).length,
+        ((positionen || "").match(/_defaultSpawnPos\(\)/g) || []).length,
+        ((positionen || "").match(/dslClamp\(/g) || []).length,
+        ((positionen || "").match(/\bNumber\(/g) || []).length,
+        ((effekte || "").match(/const c[xyz] = Number\(/g) || []).length,
+        ((effekte || "").match(/playerMesh\.position : \{ x: 0/g) || []).length,
     ];
+    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
+    // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
+    // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
+    const zg = zeitGraph(src);
+    const polls = zg.polls;
+    const foundryNamen = zg.familie;
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
-            /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
+            da(buehne) && /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
+            ohne("_buehneRender").slice(3),
         ],
         [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (0 direkte p/s.renderer.render, 4 über `_buehneRender`)",
-            direkt === 0 && ueber === 4,
-            `${direkt} direkt · ${ueber} über die Bühne`,
+            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`, die Werkstatt-Vorschau ruft die Bühne beim Namen)",
+            direkt === 0 && renderOrte.includes("_buehneRender") && buehnen.includes("Werkstatt-Vorschau"),
+            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""} · über die Bühne: ${buehnen.join(", ") || "keiner"}`,
         ],
         [
             "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null; den Default-Spawn nur ohne Knoten, `node == null`)",
-            /throw fehler;/.test(evalPos) &&
+            da(evalPos) &&
+                /throw fehler;/.test(evalPos) &&
                 /this\._dslKeinOrt\(/.test(evalPos) &&
                 !/return null/.test(evalPos) &&
                 (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
                 // der Default-Spawn nur für `node == null` — seit 10.10. läuft auch er durch die Feld-Wand der Engstelle
                 // (das Feld hat keinen Ort, wo die Wildnis nicht trägt), darum wird er gesetzt statt sofort zurückgegeben
                 /if \(node == null\) pos = this\._defaultSpawnPos\(\);\n\s+else if \(!Array\.isArray\(node\)\)/.test(evalPos),
+            ohne("dslEvalPos").slice(3),
         ],
-        ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
+        [
+            "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
+            da(effekte) && wachen === 0,
+            `${wachen} Wache(n)${ohne("dslEffects")}`,
+        ],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            plattQuelle && plattSuchen === 1,
-            `${plattSuchen} Suche(n) nach start_plattform`,
+            da(plattform) && plattQuelle && plattSuchen === 1,
+            `${plattSuchen} Suche(n) nach start_plattform${ohne("_genesisPlattform")}`,
         ],
         [
             "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` setzt at_player nur für `== null`)",
-            ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
-            `Ersatz-Stellen ${ersatz.join("/")}`,
+            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
+            `Ersatz-Stellen ${ersatz.join("/")}${ohne("dslPositions", "dslEffects", "_dslRulePos")}`,
+        ],
+        [
+            "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
+            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0 && zg.veraltet.length === 0,
+            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}${zg.veraltet.length ? " · Ausnahme ohne Zeit-Kante: " + zg.veraltet.join(", ") : ""}`,
         ],
     ];
 }
@@ -376,6 +885,7 @@ const server = statikServer();
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(arg) {
     const kiPort = arg && arg.kiPort;
+    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     const dl0 = performance.now() + 90000;
@@ -423,15 +933,13 @@ async function probe(arg) {
             }
             if (stabil >= 15 && n > 0 && performance.now() - t0 > 8000) break;
         }
-        const F = r.constructor.FOREST;
         let kronen = 0,
             naechster = Infinity,
             art = null;
         const bs = baeume();
         for (const a of bs) {
             const d = Math.hypot(a.position.x - P.x, a.position.z - P.z);
-            const k = r._foundryWorldScaleMatrix(r._foundryPresetFor(a.type)).elements[0] || 1;
-            const krone = (F.crown[a.type] || 4) * (a.scale || 1) * k;
+            const krone = r._naturKrone(a.type, a);
             if (d < platR + krone) kronen++;
             if (d < naechster) {
                 naechster = d;
@@ -946,7 +1454,16 @@ async function probe(arg) {
             await tick(1, 80);
         }
         const p = ws.preview;
-        if (!p || !p.currentMesh) throw new Error("keine Vorschau-Gestalt");
+        if (!p || !p.currentMesh) {
+            // Der Zustand beim Namen: liegt der Körper im Cache, schläft die Vorschau; sonst wartet sie auf den Zug.
+            const bpE = st.blueprints.baum_eiche;
+            const pr = r._foundryPresetForEntry({ type: "baum_eiche" });
+            const lodE = bpE && Number.isFinite(bpE._recipeLod) ? bpE._recipeLod | 0 : 0;
+            const k = pr ? r._foundryKoerperKey(pr, r._foundryVariantFor(r._werkSame(bpE, "baum_eiche"), pr), lodE) : null;
+            throw new Error(
+                `keine Vorschau-Gestalt — ${k}: im Cache ${!!(k && f.cache.has(k))} · angefragt ${!!(k && f.requested && f.requested.has(k))} · Vorschau pending ${!!r._wsStudioPending} · Schlange ${(f.warte || []).length} · im Flug ${f.pending ? f.pending.size : 0}`
+            );
+        }
         p.rendererReady = true;
         m.maskeWelt = lu.uLodMaskOn.value;
         r._workshopRender();
@@ -998,6 +1515,146 @@ async function probe(arg) {
         }
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-D3 FREMDER ZUG (K38): der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
+    // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
+    // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
+    // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
+    try {
+        const m = { gestartet: false };
+        out.zug = m;
+        const ws = r._ensureWorkshopState();
+        const p = ws.preview;
+        const f = r._foundry;
+        if (!p || !f || !f.ready || !f.recipes) throw new Error("keine Vorschau oder kein Buch");
+        const teile = Object.keys(st.blueprints).find((n) => {
+            const b = st.blueprints[n];
+            return b && Array.isArray(b.parts) && b.parts.length && !r._foundryPresetForEntry({ type: n });
+        });
+        const zuTeilen = () => {
+            if (teile) r.selectBlueprintForEdit(teile);
+        };
+        const schluessel = (bpName) => {
+            const preset = r._foundryPresetForEntry({ type: bpName });
+            const variant = r._foundryVariantFor(r._werkSame(st.blueprints[bpName], bpName), preset);
+            return { preset, variant, key: r._foundryKoerperKey(preset, variant, 0) };
+        };
+        const imFlug = (k) => !!(f.requested && f.requested.has(k)) && !f.cache.has(k);
+        // (a) die Vorschau hinter dem Zug der Welt
+        zuTeilen();
+        const a = schluessel("baum_eiche");
+        r._foundryCacheEvict(a.key);
+        let same = 1;
+        while (same < 100000 && r._foundryVariantFor(same, a.preset) !== a.variant) same++;
+        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        // ohne Ort: die Gestalt kommt aus dem Samen (mit Ort wählt der Platz sie, `_foundryGestaltFor`), der Rang ist der
+        // der Ferne (`_foundryAuftragD2` ohne Ort = ∞)
+        r._foundryFlattenFor({ type: "baum_eiche", seed: same }, a.preset, 0);
+        m.vorschau = { key: a.key, fremd: imFlug(a.key) };
+        const t0 = performance.now();
+        r.selectBlueprintForEdit("baum_eiche");
+        const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
+        while (performance.now() < t0 + zugFrist && !steht()) await tick(1, 80);
+        m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
+        m.vorschau.imCache = f.cache.has(a.key);
+        // (b) die Hand hinter dem Zug der Vorschau: geweckt zählt nur NACH der Ankunft
+        const klinge = Object.keys(st.blueprints)
+            .sort()
+            .find((n) => /^klinge_/.test(n) && r._foundryPresetForEntry({ type: n }));
+        if (klinge) {
+            zuTeilen();
+            const b = schluessel(klinge);
+            r._foundryCacheEvict(b.key);
+            r.selectBlueprintForEdit(klinge);
+            m.hand = { key: b.key, fremd: imFlug(b.key), geweckt: 0, vorAnkunft: 0 };
+            const echt = r._refreshHeldMesh;
+            r._refreshHeldMesh = function () {
+                if (f.cache.has(b.key)) m.hand.geweckt++;
+                else m.hand.vorAnkunft++;
+            };
+            try {
+                const t1 = performance.now();
+                const erst = r._heldFoundryGroup(klinge);
+                m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
+                while (performance.now() < t1 + zugFrist && !m.hand.geweckt) await tick(1, 80);
+                m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
+                m.hand.imCache = f.cache.has(b.key);
+            } finally {
+                r._refreshHeldMesh = echt;
+            }
+        }
+        // (c) JEDE STUFE der Vorschau (K38-N2): die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
+        // Körper der Stufe, die L2-Karte ihre Höhen-Stufe (Rahmen + Sichthöhe), ihre Höhe und ihre Zelle im Atlas.
+        m.stufen = [];
+        const bpE = st.blueprints.baum_eiche;
+        const lodAlt = bpE._recipeLod;
+        try {
+            for (const s of [0, 1, 2]) {
+                zuTeilen();
+                bpE._recipeLod = s;
+                const preset = r._foundryPresetForEntry({ type: "baum_eiche" });
+                const variant = r._foundryVariantFor(r._werkSame(bpE, "baum_eiche"), preset);
+                const kKey = r._foundryKoerperKey(preset, variant, s === 2 ? r._foundryHoehenStufe(preset) : s);
+                r._foundryCacheEvict(kKey);
+                const at = s === 2 ? r._impostorAtlas() : null;
+                const zKey = "fimp:" + r._foundryKartenKey(preset, variant, null);
+                if (at) {
+                    if (f.hoehen) f.hoehen.delete(kKey);
+                    at.zellen.delete(zKey);
+                }
+                const t2 = performance.now();
+                r.selectBlueprintForEdit("baum_eiche");
+                while (performance.now() < t2 + zugFrist && !steht()) await tick(1, 80);
+                const z = at ? at.zellen.get(zKey) : null;
+                const box = steht() ? new THREE.Box3().setFromObject(p.currentMesh) : null;
+                m.stufen.push({
+                    hoch: box ? Math.round((box.max.y - box.min.y) * 100) / 100 : null,
+                    soll: f.hoehen && f.hoehen.get(kKey) > 0 ? Math.round(f.hoehen.get(kKey) * 100) / 100 : null,
+                    lod: s,
+                    wart: at ? `die Karte ${zKey} (Höhen-Stufe ${kKey})` : `der Körper ${kKey}`,
+                    ms: steht() ? Math.round(performance.now() - t2) : null,
+                    da: at ? !!(z && (z.gebacken || (z.frame && f.hoehen && f.hoehen.get(kKey) > 0))) : f.cache.has(kKey),
+                });
+            }
+        } finally {
+            bpE._recipeLod = lodAlt;
+        }
+        // (d) DER VORRAT (K38-N2): eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
+        // an; sobald ihr Körper im Flug ist, fragt ein Leser denselben Schlüssel — gezählt wird jeder Auftrag an den Worker.
+        const bodenArt = (r._foundryLibrarySpec().species || []).find(
+            (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
+        );
+        const tV = performance.now();
+        while (f._vorrat && performance.now() < tV + zugFrist) await tick(1, 80); // der Boot-Vorrat läuft aus
+        if (bodenArt && !f._vorrat) {
+            const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
+            const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
+            r._foundryCacheEvict(vKey);
+            m.vorrat = { key: vKey, imFlug: false, auftraege: 0 };
+            let sd = 1;
+            while (sd < 100000 && r._foundryVariantFor(sd, bodenArt) !== 1) sd++;
+            const echtReq = r._foundryRequest;
+            // der Leser fragt im Flug: nach dem Auftrag des Vorrats (als Mikro-Aufgabe, vor jeder Worker-Antwort)
+            r._foundryRequest = function (preset, variant, lod, ...rest) {
+                const zusage = echtReq.call(this, preset, variant, lod, ...rest);
+                if (r._foundryKoerperKey(preset, variant, lod) === vKey && ++m.vorrat.auftraege === 1)
+                    queueMicrotask(() => {
+                        m.vorrat.imCache = f.cache.has(vKey);
+                        m.vorrat.phase = String(f._vorrat);
+                        m.vorrat.imFlug = !m.vorrat.imCache;
+                        r._foundryFlattenFor({ type: bodenArt, seed: sd }, bodenArt, lodV);
+                    });
+                return zusage;
+            };
+            try {
+                await r._foundryPrefetchLibrary();
+            } finally {
+                r._foundryRequest = echtReq;
+            }
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.zug = Object.assign(out.zug || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-D3 RAHMEN (K05, WS-01): jedes Rezept und jeder Bauplan füllt die Vorschau ──
     // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
@@ -1092,6 +1749,39 @@ async function probe(arg) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        const zugGesund = {
+            gestartet: true,
+            vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
+            hand: { key: "klinge|1|0", fremd: true, ms: 900, imCache: true },
+            stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true, hoch: 21.4, soll: 21 })),
+            vorrat: { key: "gras|1|1", imFlug: true, auftraege: 1 },
+        };
+        check("Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter", zugVerdict(zugGesund).length === 0, zugVerdict(zugGesund).join(" · "));
+        const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
+        for (const [name, bruch, soll] of [
+            ["die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)", zugMit("vorschau", { ms: null, imCache: true }), "zug vorschau schläft"],
+            ["der fremde Zug im Rang der Ferne", zugMit("vorschau", { ms: null, imCache: false }), "zug vorschau: eiche|2|0 nach"],
+            ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null, imCache: true }), "zug hand schläft"],
+            ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
+            ["keine Klinge im Buch (vakuös)", Object.assign({}, zugGesund, { hand: null }), "zug hand: keine Probe"],
+            [
+                "die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)",
+                Object.assign({}, zugGesund, { stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: null, da: true }] }),
+                "zug stufe L2 schläft",
+            ],
+            ["keine Stufen gemessen (vakuös)", Object.assign({}, zugGesund, { stufen: [] }), "zug stufen: 0 von 3"],
+            ["der Leser bestellt im Flug des Vorrats neu (bis 15.10.)", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
+            ["der Vorrat zieht nicht (vakuös)", zugMit("vorrat", { imFlug: false }), "zug vorrat: gras|1|1 nicht im Flug"],
+            ["keine Vorrats-Probe (vakuös)", Object.assign({}, zugGesund, { vorrat: null }), "zug vorrat: keine Probe"],
+            [
+                "die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)",
+                Object.assign({}, zugGesund, { stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: 900, da: true, hoch: 1.1, soll: 21 }] }),
+                "zug stufe L2 rahmen",
+            ],
+        ]) {
+            const v = zugVerdict(bruch);
+            check(`Selbst-Test V-D3 Fremder Zug: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
         const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
         const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
         check("Selbst-Test V-D3 Rahmen: gesunde Vorschau == 0 Täter", rahmenVerdict(gesundR).length === 0, rahmenVerdict(gesundR).join(" · "));
@@ -1160,7 +1850,7 @@ async function probe(arg) {
             }
         }
         const gruen = wand(quelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
         const vorStand = quelle
             .replace('this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);")
             .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
@@ -1181,11 +1871,237 @@ async function probe(arg) {
             .replace(
                 "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'
+            )
+            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
+            .replace(
+                'this._foundryWecker(f.buchDa, "hand", () => {',
+                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"
             );
+        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
+        const weniger = wand(quelle.replace('this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
+        check(
+            "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
+            quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
+            weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
+        );
+        // DIE TÄTER DER RUNDEN 3 UND 4 (Prüfer K38-N2: mut-w2b, mut-bind, mut-schlaf, mut-kreuz) und ihre Klassen in EINEM
+        // Text. W2: jeder Weg der Render-Funktion zu ihrem Ruf — zusammengesetzte Argumente (||, ?:, ein Aufruf im Argument),
+        // renderAsync, .call, .apply über Reflect, .bind (auch mit vorgebundener Szene), Alias, Destrukturieren, Feld,
+        // Parameter, Rückgabe, Zeitgeber; ein Feld der Info und ein UI-Raum schweigen. W7: jede Form des Polls — die Closure,
+        // die sich neu stellt (Block-Rumpf, zwei Closures), das Glied per Zeitgeber, die Schleife mit Schlaf (inline und über
+        // eine Schlaf-Closure), der Kreis über zwei Glieder, die async-Rekursion nach dem Schlaf, then auf einem Schlaf, das
+        // Zeitgeber-Glied, ein Alias von this, setInterval über `window["…"]`, das Warten auf ein pollendes Glied; die
+        // einmalige Frist und ein Render-Takt, den die Familie nur startet, schweigen.
+        const bue = stammLib.glieder(quelle).find((g) => g.name === "_buehneRender");
+        const ichRuf = 'this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");';
+        const klasse = (quelle.slice(0, bue.ende) +
+            [
+                "",
+                "    _fremdeBuehne(s, k = f(1)) {",
+                "        s.renderer.render(s.scene, s.cam ? s.cam : s.camera);",
+                "    }",
+                "    _bauBuehne(s) {",
+                "        s.renderer.render(this._szeneVon(s, 1), s.camera);",
+                "        s.renderer.renderAsync(s.scene, s.camera);",
+                "        s.renderer.render.call(s.renderer, s.scene, s.camera);",
+                "    }",
+                "    _bindBuehne(s) {",
+                "        const zeichne = s.renderer.render.bind(s.renderer);",
+                "        zeichne(s.scene, s.camera);",
+                "    }",
+                "    _vorgebunden(s) {",
+                "        s.renderer.render.bind(s.renderer, s.scene)(s.camera);",
+                "    }",
+                "    _zerlegt(s) {",
+                "        const { render: male } = s.renderer;",
+                "        male.call(s.renderer, s.scene, s.camera);",
+                "    }",
+                "    _reflektiert(s) {",
+                '        Reflect.apply(s.renderer["render"], s.renderer, [s.scene, s.camera]);',
+                "    }",
+                "    _merkeZeichner(s) {",
+                "        this._zeichner = s.renderer.renderAsync.bind(s.renderer);",
+                "    }",
+                "    _nutzeZeichner(s) {",
+                "        this._zeichner(s.scene, s.camera);",
+                "    }",
+                "    _reiche(s) {",
+                "        this._zeichneMit(s.renderer.render.bind(s.renderer), s);",
+                "    }",
+                "    _zeichneMit(f, s) {",
+                "        f(s.scene, s.camera);",
+                "    }",
+                "    _gibZeichner(s) {",
+                "        return s.renderer.render.bind(s.renderer);",
+                "    }",
+                "    _holeZeichner(s) {",
+                "        this._gibZeichner(s)(s.scene, s.camera);",
+                "    }",
+                "    _spaeter(s) {",
+                "        setTimeout(s.renderer.render.bind(s.renderer), 0, s.scene, s.camera);",
+                "    }",
+                "    _zaehle(s, room) {",
+                "        room.render();",
+                "        return s.renderer.info.render.calls + (s.perf.render || 0);",
+                "    }",
+                "    _foundryLauscher(k, o = f(1)) {",
+                "        const warte = () => {",
+                "            if (!this._foundry) {",
+                "                window.setTimeout(() => {",
+                "                    warte();",
+                "                }, 150);",
+                "            }",
+                "        };",
+                "        warte();",
+                "    }",
+                "    async _foundryNachfrage(k) {",
+                "        if (!this._foundry) setTimeout(() => this._foundryNachfrage(k), 150);",
+                "    }",
+                "    _foundryPingPong() {",
+                "        const ping = () => pong();",
+                "        function pong() {",
+                "            requestAnimationFrame(ping);",
+                "        }",
+                "        ping();",
+                "    }",
+                "    async _foundryWarteBuch() {",
+                "        while (!this._foundry.buchDa) await new Promise((r) => setTimeout(r, 50));",
+                "    }",
+                "    async _foundryDoeset() {",
+                "        const schlafe = (ms) => new Promise((r) => setTimeout(r, ms));",
+                "        for (;;) {",
+                "            if (this._foundry) break;",
+                "            await schlafe(30);",
+                "        }",
+                "    }",
+                "    _foundryHorch() {",
+                "        if (!this._foundry) setTimeout(() => this._foundryHorchNochmal(), 150);",
+                "    }",
+                "    _foundryHorchNochmal() {",
+                "        this._foundryHorch();",
+                "    }",
+                "    async _foundryErneut(k) {",
+                "        await new Promise((r) => setTimeout(r, 100));",
+                "        if (!this._foundry) return this._foundryErneut(k);",
+                "    }",
+                "    _foundryKette() {",
+                "        this._schlummer(80).then(() => this._foundryKette());",
+                "    }",
+                "    _schlummer(ms) {",
+                "        return new Promise((r) => setTimeout(r, ms));",
+                "    }",
+                "    _naechsterTakt(cb) {",
+                "        requestAnimationFrame(() => cb());",
+                "    }",
+                "    _foundryTakt() {",
+                "        if (!this._foundry) this._naechsterTakt(() => this._foundryTakt());",
+                "    }",
+                "    _warteBis(pruef) {",
+                "        return new Promise((ok) => {",
+                "            const sieh = () => (pruef() ? ok() : setTimeout(sieh, 40));",
+                "            sieh();",
+                "        });",
+                "    }",
+                "    async _foundryWarteBis() {",
+                "        await this._warteBis(() => this._foundry);",
+                "    }",
+                "    _foundryIntervall() {",
+                '        window["setInterval"](() => this._foundryEinmal(1), 500);',
+                "    }",
+                "    _foundryAlias() {",
+                "        const selbst = this;",
+                "        setTimeout(() => selbst._foundryAlias(), 99);",
+                "    }",
+                "    _foundryEinmal(k) {",
+                "        const ab = () => this._foundryAblauf(k);",
+                "        setTimeout(ab, 5000);",
+                "    }",
+                "    _vorschauTakt() {",
+                "        const tick = () => requestAnimationFrame(tick);",
+                "        tick();",
+                "    }",
+                "    _foundryStarteTakt() {",
+                "        this._vorschauTakt();",
+                "    }",
+            ].join("\n") +
+            quelle.slice(bue.ende)).replace(ichRuf, "s.renderer.render(s.scene, s.cam || s.camera);");
+        const wk = wand(klasse);
+        const w2 = wk.find((w) => w[0].startsWith("W2"));
+        const w7 = wk.find((w) => w[0].startsWith("W7"));
+        // je Stelle EIN Eintrag — die Zahl der genannten Orte ist die Zahl der Einträge, keine feste Zahl
+        const w2Soll = [
+            "_ichStartRAF: s.renderer.render(s.scene, s.cam || s.camera)",
+            "_fremdeBuehne:",
+            "_bauBuehne: s.renderer.render(this",
+            "_bauBuehne: s.renderer.renderAsync(",
+            "[.call]",
+            "_bindBuehne: zeichne(s.scene, s.camera) [.bind → zeichne → Ruf]",
+            "_vorgebunden: s.renderer.render.bind(s.renderer, s.scene)(s.camera) [.bind → Ruf]",
+            "_zerlegt: male.call(s.renderer, s.scene, s.camera) [{ render } → male → .call]",
+            "_reflektiert: Reflect.apply(",
+            "_nutzeZeichner: this._zeichner(s.scene, s.camera) [.bind → Feld ._zeichner → Ruf]",
+            "_zeichneMit: f(s.scene, s.camera) [.bind → Parameter _zeichneMit(f) → Ruf]",
+            "_holeZeichner: this._gibZeichner(s)(s.scene, s.camera) [.bind → Rückgabe _gibZeichner() → Ruf]",
+            "_spaeter: setTimeout(",
+        ];
+        const w2Still = ["_zaehle", "_merkeZeichner", "_reiche:", "_gibZeichner:"];
+        const w7Soll = [
+            "_foundryLauscher/warte → _foundryLauscher/warte",
+            "_foundryNachfrage → _foundryNachfrage",
+            "_foundryPingPong/pong → _foundryPingPong/ping",
+            "_foundryWarteBuch wartet in einer Schleife",
+            "_foundryDoeset wartet in einer Schleife",
+            "_foundryHorch → _foundryHorchNochmal",
+            "_foundryErneut → _foundryErneut",
+            "_foundryKette → _foundryKette",
+            "_foundryTakt → _foundryTakt",
+            "_foundryWarteBis wartet über das pollende _warteBis",
+            "_foundryIntervall setInterval",
+            "_foundryAlias → _foundryAlias",
+        ];
+        const w7Still = ["_foundryEinmal", "_foundryStarteTakt", "_vorschauTakt", "_foundryUhren", "_foundryAblauf", "_foundryPumpe"];
+        check(
+            "Selbst-Test W: die Täter der Runden 3 und 4 (s.cam || s.camera, .bind) und ihre Klasse (?:, Aufruf im Argument, renderAsync, .call, Reflect.apply, vorgebunden, Alias, Destrukturieren, Feld, Parameter, Rückgabe, Zeitgeber) → W2 nennt jeden, Info und UI-Raum schweigen",
+            quelle.includes(ichRuf) &&
+                !w2[1] &&
+                w2Soll.every((n) => w2[2].includes(n)) &&
+                !w2Still.some((n) => w2[2].includes(n)) &&
+                (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w2Soll.length,
+            `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
+        );
+        check(
+            "Selbst-Test W: die Täter der Runde 4 (Schleife mit Schlaf, Kreis über zwei Glieder) und jede Form des Polls → W7 nennt jeden, die einmalige Frist, der gestartete Render-Takt und die Frist-Kette schweigen",
+            !w7[1] &&
+                w7Soll.every((n) => w7[2].includes(n)) &&
+                !w7Still.some((n) => w7[2].includes(n)) &&
+                (w7[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w7Soll.length,
+            `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
+        );
+        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim
+        // Namen, und eine Kante der Ausnahme, die nicht mehr steht, macht sie veraltet.
+        const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
+        const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
+        const inDerKette = w7Von(quelle.replace(uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
+        check(
+            "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
+            quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
+            inDerKette[2]
+        );
+        const ohneUhr = w7Von(quelle.replace(uhrRuf, "if (!vorMir) this._foundryAblauf(f, reqId);"));
+        check(
+            "Selbst-Test W: die Uhr ohne Zeitgeber → die Ausnahme der Frist-Kette ist veraltet (W7 nennt _foundryUhren → _foundryAblauf)",
+            !ohneUhr[1] && ohneUhr[2].includes("Ausnahme ohne Zeit-Kante: _foundryUhren → _foundryAblauf"),
+            ohneUhr[2]
+        );
+        // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
+        const effekteGlied = stammLib.glieder(quelle).find((g) => g.name === "dslEffects");
+        const umbenannt = quelle.slice(0, effekteGlied.start) + quelle.slice(effekteGlied.start).replace("dslEffects", "dslWirkungen");
+        const w4 = wand(umbenannt).find((w) => w[0].startsWith("W4"));
+        check("Selbst-Test W: dslEffects umbenannt → W4 nennt das fehlende Glied", !w4[1] && w4[2].includes("Glied fehlt: dslEffects"), w4[2]);
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort) → W1–W6 feuern",
-            rot.filter((w) => !w[1]).length === 6,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W1–W7 feuern",
+            rot.filter((w) => !w[1]).length === 7,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
@@ -1292,7 +2208,7 @@ async function probe(arg) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
 
@@ -1393,6 +2309,15 @@ async function probe(arg) {
         "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
         vV.length === 0,
         `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
+    );
+    const zm = out.zug || {};
+    if (zm.err) check("V-D3 Fremder Zug Probe ohne Ausnahme", false, zm.err.split("\n")[0]);
+    const vZ = zugVerdict(zm);
+    const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
+    check(
+        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
+        vZ.length === 0,
+        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );
     const rm = out.rahmen || {};
     if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);

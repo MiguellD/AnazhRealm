@@ -123,10 +123,10 @@ class AnazhRealm_Z12 {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
                         ? this.state.atmosphere.cavityAO
                         : 1.0,
-                edgeSharp:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                        ? this.state.atmosphere.edgeSharp
-                        : 0.5,
+                kantenSchaerfe:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                        ? this.state.atmosphere.kantenSchaerfe
+                        : 0,
                 triplanar:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
                         ? this.state.atmosphere.triplanar
@@ -233,6 +233,8 @@ class AnazhRealm_Z12 {
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
+                ...(a.feldWurf === true ? { feldWurf: true } : {}),
                 // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                 // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                 ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
@@ -250,7 +252,12 @@ class AnazhRealm_Z12 {
                 // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
                 ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
                 // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
-                ...(a.chimney && Number.isFinite(a.chimney.x) ? { chimney: a.chimney } : {}),
+                // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
+                ...(a.chimney && Number.isFinite(a.chimney.x)
+                    ? { chimney: a.chimney }
+                    : a.chimney === null
+                      ? { chimney: null }
+                      : {}),
                 // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
                 // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
                 ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),

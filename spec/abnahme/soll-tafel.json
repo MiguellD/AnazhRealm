@@ -1,0 +1,1117 @@
+{
+    "version": 2,
+    "zweck": "DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle“): je sichtbarer Klasse (a) das Soll als messbare Eigenschaft einer benannten AAA-Referenz — ein eigenes Band mit Quelle, ein GERECHNETES (`rechnung`: die Linse rechnet es, die Tafel trägt nie das Ergebnis) oder ein GELESENES (`verweis`: KOPF_SOLL im Kern, die Toleranz der Albedo-Tafel — die Linse liest es, nie eine Kopie); (b) das Budget je LOD-Stufe aus dem Haushalt des Profi-Bands (`budget.haushalt` = die Klassen-Zeile von spec/profiband/haushalt.json als L0, L1 ≤ 35 %, L2 ≤ 10 %, Nordstern M4; der VRAM-Anteil der Welt nach dem Dreiecks-Anteil); (c) EIN Maß, dessen Ist die Linse aus seiner Rohdatei rechnet: der Messung, die das Werkzeug selbst in diese Tafel schreibt (`mass.messung`: `werkbank bild --klasse … --ist <id>` — die Teilung des Ausgabe-Bilds unter EINER Uhr, ihr Rauschen, die Maße je Teil-Klasse, die Boden-Abstände; `werkbank licht --ist <id>`), oder der Zeile der Albedo-Tafel (`mass.rohdatei`). Von Hand steht hier keine Zahl eines Ists, Täters oder Bildanteils (außer dem Licht: jedes Pixel). Urteil, Täter und die Reihenfolge nach sichtbarer Wirkung (Bildanteil × Abstand zum Band = die Reihenfolge der folgenden AAAA-Karten) rechnet scripts/lib/abnahme-urteil.cjs `sollTafelUrteil`; die Wand: diag-kamera-laub --selftest (K5, npm run check).",
+    "klassen": [
+        {
+            "id": "boden-nah",
+            "titel": "Gras und Boden nah (die Nah-Wiese über dem Boden-Satz)",
+            "wirkung": {
+                "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“",
+                "geheilt": {
+                    "befund": "Gras als einzelne Büschel auf glattem Grün",
+                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)",
+                    "warum": "laiWirk (Nilson-Lücke im Ring der Nah-Wiese, Radeon 890M --echt, Mess-Wiese −278/−1038, Waldrand-Blick der Tafel) 0,671 → 1,917 (2–5 m 0,85 → 2,11 · 5–10 m 0,44 → 1,59 · 10–14 m 0,35 → 1,77; nach dem Merge mit K68 an 9fdc7a18 1,855: 2–5 m 2,05 · 5–10 m 1,54 · 10–14 m 1,66; offener Blick 0,676 → 2,009): der Halm wurzelt im Boden (Fuß 13–15 % der Büschelhöhe → 0, gate:pflanzen-nah T), die Fernstufe L2 trägt 2,4-mal so viele gerade Halme, und die Narbe liest das Licht der stehenden Kronen nach dem Labor-Gesetz (_bodenLichtFeld, Wurf 0,776 → 0,931)",
+                    "bildPaar": ["artifacts/soll-tafel/boden-nah-vorher.png", "artifacts/soll-tafel/boden-nah.png"]
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Ghost of Tsushima (Sucker Punch, 2020)",
+                    "technik": "prozedurales Gras je Kachel im Compute-Pass, Halme bis an den Horizont-Saum, Wind als Feld (GDC 2021, „Procedural Grass in Ghost of Tsushima“)"
+                },
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Vegetation als Platzierungs-Funktion über Dichte-Karten, der Boden unter der Wiese ist aus Augenhöhe nie frei (GDC 2018, „Between Tech and Art: The Vegetation of Horizon Zero Dawn“)"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "laiWirk",
+                        "band": [1.7, null],
+                        "einheit": "wirksamer Blatt-Flächen-Index der Wiese, aus ihrer Lücke im Bild (Nilson 1971: P(θ) = exp(−G·LAI/cos θ))",
+                        "quelle": "Grasland-LAI im Mittel 1,71 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191, Tab. 2): eine Wiese aus Augenhöhe zeigt ihren Grund erst unter dem Fuß"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "nahWiese"
+            },
+            "mass": {
+                "name": "laiWirk",
+                "rechnung": {
+                    "G": 0.5,
+                    "halm": "^(nahWiese:.*|streuSatz)$",
+                    "grund": "^bodenSatz$",
+                    "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt im Ring der Nah-Wiese (`abstand.ring` = AnazhRealm.NAH_WIESE.radius der gemessenen Welt) — jenseits zeichnet der Boden-Satz das Gras"
+                },
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T21:58:59.117Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "f72239f8cacb5797526662df3ea0319150c91d1d"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-278, 29.28, -1038],
+                    "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 126408,
+                    "klassen": {
+                        "bodenSatz": {"objekte":1,"spiegelTreue":-0.045,"sp":[1382,0,0,1201356.61,1201356.61,-54094.48],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":29.6,"pixel":209163,"deckung":0.1009,"deckungUnten":0.1111,"luma":100.76,"kontrast":0.4095,"detail":0.0536,"nyquist":0.0123,"ek":12520.4,"eg":1001883.8,"silhouette":85.7321,"kante":0.4268,"kr":6981},
+                        "nahWiese:L1": {"objekte":2,"spiegelTreue":0.0809,"sp":[4663,0,0,3872953.32,3872953.32,313322.73],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":40.06,"pixel":525883,"deckung":0.2536,"deckungUnten":0.736,"luma":68.78,"kontrast":0.2096,"detail":0.0472,"nyquist":0.0253,"ek":35637.9,"eg":1375466.7,"silhouette":83.6664,"kante":0.2557,"kr":21978},
+                        "nahWiese:L2": {"objekte":2,"spiegelTreue":0.1848,"sp":[2617,0,0,2646558.19,2646558.19,489125.3],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":41.12,"pixel":273047,"deckung":0.1317,"deckungUnten":0.07,"luma":74.77,"kontrast":0.2594,"detail":0.0604,"nyquist":0.034,"ek":39091.7,"eg":1110831.3,"silhouette":57.5842,"kante":0.2832,"kr":7061},
+                        "streuSatz": {"objekte":4,"spiegelTreue":0.016,"sp":[41,0,0,2133.72,2133.72,34.21],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":28.37,"pixel":32594,"deckung":0.0157,"deckungUnten":0.0453,"luma":56.54,"kontrast":0.3899,"detail":0.0611,"nyquist":0.027,"ek":1822.3,"eg":65769.1,"silhouette":57.8271,"kante":0.2575,"kr":2788}
+                    },
+                    "abstand": {
+                        "baender": [0, 2, 5, 10, 14, 30, 80, 200],
+                        "ring": 14,
+                        "augeUeberBoden": 1.71,
+                        "cos": [null, 0.4705, 0.2597, 0.1557, 0.0883, 0.0467, 0.0446],
+                        "klassen": {
+                            "bodenSatz": [0, 62619, 20389, 314, 82300, 33844, 1117],
+                            "nahWiese:L2": [0, 491, 136073, 86998, 49485, 0, 0],
+                            "streuSatz": [0, 29400, 2229, 682, 283, 0, 0],
+                            "nahWiese:L1": [0, 418910, 106862, 111, 0, 0, 0]
+                        }
+                    },
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/boden-nah.png",
+                    "quellen": {
+                        "gelaende-core.js": "c:671ad7ea812567a8",
+                        "phyto-core.js": "c:4452d5a022460dbb",
+                        "foundry-core.js": "c:577492bfc91b4367",
+                        "stamm/07.js": "c:0012a2d3b8c793b7",
+                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/19.js": "c:5f36c5687cb8f126",
+                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/25c.js": "c:fb8c3e2986247bac",
+                        "stamm/11c.js": "c:54772b3f94d1cf21",
+                        "stamm/17b.js": "c:7a76ea527559ad60",
+                        "stamm/17c.js": "c:78d572870c3e2c9e",
+                        "stamm/20a.js": "c:edf068cfa4a10fa4",
+                        "stamm/26b.js": "c:dfab70e9d26443a4"
+                    }
+                }
+            },
+            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/11c.js", "stamm/17b.js", "stamm/17c.js", "stamm/20a.js", "stamm/26b.js"]
+        },
+        {
+            "id": "himmel-licht",
+            "titel": "Himmel und Licht (Sonne gegen Himmel am Mittag)",
+            "wirkung": {
+                "anteil": 1,
+                "quelle": "jedes Pixel im Tageslicht",
+                "grund": "zu helle Schatten machen das ganze Bild flach"
+            },
+            "referenz": [
+                {
+                    "titel": "Frostbite (EA DICE), Moving Frostbite to PBR",
+                    "technik": "physikalische Licht-Einheiten: Sonne ~100 000 lx, klarer Himmel 10 000–20 000 lx, Belichtung in EV (Lagarde & de Rousiers, SIGGRAPH 2014)"
+                },
+                {
+                    "titel": "Unreal Engine 5 SkyAtmosphere",
+                    "technik": "Rayleigh/Mie/Ozon in LUTs, die Sonne als gerichtetes Licht in lx, der Himmel als Umgebung aus derselben Atmosphäre (Hillaire 2020, Comput. Graph. Forum 39(4))"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "lichtVerhaeltnis",
+                        "rechnung": {
+                            "art": "einsDurch",
+                            "von": [0.08, 0.2]
+                        },
+                        "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
+                    },
+                    {
+                        "groesse": "schattenAnteil",
+                        "band": [0.08, 0.2],
+                        "einheit": "E(Himmel) / E(Sonne + Himmel) an der waagrechten 18-%-Karte, Mittag klar (der Schatten gegen die besonnte Fläche)",
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1)"
+                    },
+                    {
+                        "groesse": "umgebungAzimut",
+                        "band": [1.2, null],
+                        "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
+                        "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "einzelstuecke"
+            },
+            "mass": {
+                "name": "lichtVerhaeltnis",
+                "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
+                "messung": {
+                    "werkzeug": "licht",
+                    "datum": "2026-10-15T21:59:02.527Z",
+                    "stand": {
+                        "sha": "f72239f8cacb5797526662df3ea0319150c91d1d",
+                        "version": "18.546.2"
+                    },
+                    "geraet": {
+                        "adapter": "amd rdna-3"
+                    },
+                    "E_alle": 7.94,
+                    "E_umgebung": 1.54,
+                    "E_umgebung_zurSonne": 1.17,
+                    "E_umgebung_vonSonne": 0.92,
+                    "sonnenRichtung": [0, 0.962, 0.272],
+                    "quellen": {
+                        "foundry-core.js": "c:577492bfc91b4367",
+                        "stamm/05b.js": "c:a4d007e1764d7fe5",
+                        "stamm/07.js": "c:0012a2d3b8c793b7",
+                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/11d.js": "c:a01f2fa414615b94",
+                        "stamm/19.js": "c:5f36c5687cb8f126",
+                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/25c.js": "c:fb8c3e2986247bac"
+                    }
+                }
+            },
+            "quellen": ["foundry-core.js", "stamm/05b.js", "stamm/07.js", "stamm/10.js", "stamm/11d.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js"]
+        },
+        {
+            "id": "laub",
+            "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
+            "wirkung": {
+                "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
+                "mangel": {
+                    "befund": "Laub-Karten mit Dither-Muster",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Kronen aus vielen kleinen Blatt-Karten mit Alpha-Test und zeitlicher Auflösung, kein sichtbares Raster im Blätterdach (GDC 2018, Vegetation of Horizon Zero Dawn)"
+                },
+                {
+                    "titel": "The Witcher 4 Tech-Demo / Unreal Engine 5.6 (2025)",
+                    "technik": "Nanite-Laub: Geometrie statt Karten bis in die Ferne, LOD-Wechsel ohne Dither-Blende"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "zweiton",
+                        "rechnung": {
+                            "art": "zweiton1f",
+                            "beta": [0, 2.4]
+                        },
+                        "einheit": "Anteil der Kronen-Pixel im Dither-Raster (klassenMasse zweiton: Fenster 8×8 aus zwei Tönen im Pixel-Takt, ≤ 20 % Zwischentöne, Wechsel in beiden Achsen)",
+                        "quelle": "Horizon Zero Dawn: kein sichtbares Raster im Blätterdach (zeitlich aufgelöstes Alpha); Bilder ohne Muster (Leistungsspektrum 1/f^β, β 0–2,4, weißes Rauschen eingeschlossen) zeigen kein Raster-Fenster — Unschärfe fügt nur Zwischentöne hinzu, das Band gilt für jede Kamera [gerechnet]"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "baum"
+            },
+            "mass": {
+                "name": "zweiton",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T06:41:15.537Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "c95beb12b403c3fd9cc047a93e6fe60007b83fec"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-284, 29.34, -1042],
+                    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 89667,
+                    "klassen": {
+                        "f:fichte:L1": {"objekte":9,"zweiton":0,"zt":0,"weiss":0.0048,"wt":1645,"pixel":345498,"deckung":0.1666,"deckungUnten":0.0067,"luma":78.05,"kontrast":0.5148,"detail":0.0931,"nyquist":0.1299,"ek":731282.2,"eg":4897913.1,"silhouette":86.3862,"kante":0.2763,"kr":27891},
+                        "f:tanne:L0": {"objekte":4,"zweiton":0.0039,"zt":338,"weiss":0.0525,"wt":4557,"pixel":86768,"deckung":0.0418,"deckungUnten":0.0004,"luma":84.47,"kontrast":0.4863,"detail":0.0885,"nyquist":0.1909,"ek":364841.8,"eg":1546781.2,"silhouette":73.6512,"kante":0.4293,"kr":9842},
+                        "f:tanne:L1": {"objekte":9,"zweiton":0,"zt":0,"weiss":0.0061,"wt":2075,"pixel":339732,"deckung":0.1638,"deckungUnten":0.0069,"luma":69.51,"kontrast":0.5479,"detail":0.0751,"nyquist":0.1496,"ek":519439.2,"eg":2953793.8,"silhouette":83.6248,"kante":0.2619,"kr":20223},
+                        "fimp:atlas:L2": {"objekte":1,"zweiton":0,"zt":0,"weiss":0.0011,"wt":380,"pixel":335828,"deckung":0.162,"deckungUnten":0.137,"luma":80.72,"kontrast":0.5506,"detail":0.0826,"nyquist":0.0912,"ek":523480.5,"eg":5218782.1,"silhouette":48.0529,"kante":0.3596,"kr":10157}
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/laub.png",
+                    "quellen": {
+                        "phyto-core.js": "c:71fcf1b4be4e4597",
+                        "foundry-core.js": "c:2ccacf2543c36e25",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:1b961fac64032e22",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:61e641a0f44d5466",
+                        "stamm/17a.js": "c:1cf91f73137a3952",
+                        "stamm/20b.js": "c:99f1a421be17e6e3",
+                        "stamm/20c.js": "c:da14ccf91cefc490",
+                        "stamm/20d.js": "c:f4f05390e67cc1d5"
+                    }
+                }
+            },
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
+            "vorlage": [
+                {
+                    "karte": "K58",
+                    "datei": "phyto-core.js",
+                    "symbol": "BLATT_ATLAS_WEDEL",
+                    "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (Klingen-Index Mip 3 0,834 → 0,680, Soll ≤ 0,70; gate:asset-contract malt den Atlas gegen die Füllung) — die Kante der Karte; die Tafel misst ihr Raster im Bild"
+                }
+            ]
+        },
+        {
+            "id": "laub-kante",
+            "titel": "Laub-Silhouette (der Umriss der Kronen gegen Himmel, Boden und Holz: Karten L0/L1 und Karte L2)",
+            "wirkung": {
+                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig (geteilt aus laub, K68-n2)",
+                "geheilt": {
+                    "befund": "Nadelbaum-Karten groß und kantig",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
+                    "warum": "kante 0,333 → 0,210 (Radeon 890M, Tafel-Pose, umstellen · fenster 1920 × 1080 · bild --w/--h, je zwei Schüsse, Basis a9e21f17 und Kopf a501cbd1 in derselben Folge; Fichte L1 0,262 → 0,186 · Tanne L0 0,581 → 0,190 · Tanne L1 0,300 → 0,172 · Karte L2 0,364 → 0,338): die Wedel-Zelle ist ein Fichten-Zweig aus Fischgräten (9 Unter-Zweiglein, Nadel 9 px) mit Himmel dazwischen bis Mip 2, die Karte wird nie quer gestreckt (Spalten ab wedel.spalte 1,25/1,5 × Stück-Länge; vorher L0 2,3–6,5 × so breit wie lang) und das Kreuz öffnet auf ±40° (vorher ±10°/±5°: von unten standen die Karten auf der Kante)",
+                    "bildPaar": ["artifacts/soll-tafel/laub-kante-vorher.png", "artifacts/soll-tafel/laub-kante.png"]
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Kronen aus vielen kleinen Blatt-Karten an Ast-Clustern: der Umriss zerfällt in Blätter und Lücken, keine Karten-Kante gegen den Himmel (GDC 2018, Vegetation of Horizon Zero Dawn)"
+                },
+                {
+                    "titel": "The Witcher 4 Tech-Demo / Unreal Engine 5.6 (2025)",
+                    "technik": "Nanite-Laub: Blätter und Zweige als Geometrie bis in die Ferne — der Umriss ist der der Pflanze, nie der einer Karte"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "kante",
+                        "band": [null, 0.22],
+                        "einheit": "Kohärenz des Struktur-Tensors am Umriss gegen das Außen (klassenMasse kante: Maske Gauß σ 2 px, Fenster 17 × 17 px, Mittel über die Rand-Pixel): gerade Kante 1, zerfranster Umriss klein",
+                        "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (Nordstern §4.5; Himmel = Luma > 150 und Buntheit < 45 oder Blau B > R + 40, B > G + 15, B > 140; Außen der Himmel): REF real-mischwald.jpg (Mischwald in Südtirol, CC BY 4.0 Bartleby08, sha256 97117a27…, oberes 60 %) 0,160 · REF real-felsen.jpg (Mischwald am Hang der Rudka, Fichten am Kamm, CC BY-SA 4.0 Jacek Halicki, sha256 577851ed…, oberes 20 %) 0,218 — die Grenze ist die geradeste der beiden"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "baum"
+            },
+            "mass": {
+                "name": "kante",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T23:28:05.677Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "a501cbd1a0bd0d489bbc8749154fbe73a8e8ab45"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-284, 29.34, -1042],
+                    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 227821,
+                    "klassen": {
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.5931,"sp":[784,0,0,999370.04,999370.04,592706.2],"zweiton":0,"zt":0,"weiss":0.0048,"wt":1378,"wtZiel":null,"bunt":19.33,"pixel":288676,"deckung":0.1392,"deckungUnten":0.003,"luma":86.91,"kontrast":0.4954,"detail":0.0775,"nyquist":0.0294,"ek":62701.5,"eg":2068986.3,"silhouette":86.9016,"kante":0.1858,"kr":13254},
+                        "f:tanne:L0": {"objekte":4,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.0237,"wt":2125,"wtZiel":null,"bunt":12.28,"pixel":89770,"deckung":0.0433,"deckungUnten":0,"luma":101,"kontrast":0.4421,"detail":0.0957,"nyquist":0.0333,"ek":39827.8,"eg":1156427.5,"silhouette":50.3544,"kante":0.1903,"kr":8854},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.0196,"sp":[752,0,0,453267.02,453267.02,8903.29],"zweiton":0,"zt":0,"weiss":0.0039,"wt":1238,"wtZiel":null,"bunt":19.96,"pixel":315006,"deckung":0.1519,"deckungUnten":0.0045,"luma":79.54,"kontrast":0.4918,"detail":0.0866,"nyquist":0.0309,"ek":77187.7,"eg":2420167.7,"silhouette":75.6128,"kante":0.1723,"kr":18803},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":0.0077,"sp":[3513,0,0,4281422.16,4281422.16,33044.65],"zweiton":0,"zt":0,"weiss":0.0023,"wt":1222,"wtZiel":null,"bunt":34.96,"pixel":520333,"deckung":0.2509,"deckungUnten":0.1635,"luma":77.69,"kontrast":0.5611,"detail":0.0707,"nyquist":0.0206,"ek":78781.9,"eg":3752258.5,"silhouette":51.2074,"kante":0.3375,"kr":9240}
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/laub-kante.png",
+                    "quellen": {
+                        "phyto-core.js": "c:3f23e6662a56359d",
+                        "foundry-core.js": "c:1196859e3b932ea9",
+                        "stamm/07.js": "c:0012a2d3b8c793b7",
+                        "stamm/10.js": "c:1b961fac64032e22",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:5cadba33d1361342",
+                        "stamm/25c.js": "c:5f5329b00ce6eef5",
+                        "stamm/17a.js": "c:27a9a8caa83f5cd9",
+                        "stamm/20b.js": "c:603616360ff6a40f",
+                        "stamm/20c.js": "c:f1d6017c32baa210",
+                        "stamm/20d.js": "c:adcf0bd756b173cc"
+                    }
+                }
+            },
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
+            "vorlage": [
+                {
+                    "karte": "K58",
+                    "datei": "phyto-core.js",
+                    "symbol": "BLATT_ATLAS_WEDEL",
+                    "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (K58) — sein Umriss in der Krone; die Tafel misst, wie gerade er im Bild läuft"
+                }
+            ]
+        },
+        {
+            "id": "haus",
+            "titel": "Haus (Fachwerk, die Bau-Stoffe Putz · Holz · Dach)",
+            "wirkung": {
+                "grund": "Nordstern M0: das Labor zeigt die Bau-Stoffe anders als die Welt",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T03:28:42.987Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-816.35, 86.74, -813.24],
+                    "ausdruck": "^(bauSatz|f:(alemannisch|griechisch|roemisch):L[0-3]|bau:haus_[a-z_]+)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 522,
+                    "klassen": {
+                        "f:griechisch:L1": {"objekte":8,"zweiton":0.0009,"zt":111,"weiss":0.3215,"wt":41903,"pixel":130345,"deckung":0.0629,"deckungUnten":0.0007,"luma":171.77,"kontrast":0.2627,"detail":0.0406,"nyquist":0.139,"ek":582532.1,"eg":3606891.5,"silhouette":17.4942},
+                        "f:griechisch:L2": {"objekte":45,"zweiton":0,"zt":0,"weiss":0.3888,"wt":8364,"pixel":21511,"deckung":0.0104,"deckungUnten":0,"luma":185.19,"kontrast":0.1964,"detail":0.0417,"nyquist":0.115,"ek":83724.6,"eg":644279.3,"silhouette":7.0568}
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/haus-wirkung.png",
+                    "quellen": {
+                        "fachwerk-core.js": "c:e5726dc98963a032",
+                        "foundry-core.js": "c:048acefc0b19a374"
+                    }
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Assassin's Creed Unity (Ubisoft, 2014)",
+                    "technik": "Fassaden aus kalibrierten Stoffen (physikalisch basierte Albedo je Material, Putz · Holz · Ziegel im selben Licht wie die Welt)"
+                },
+                {
+                    "titel": "Esri CityEngine / CGA",
+                    "technik": "die Epoche als Regel-Grammatik, das Haus aus Parzelle → Masse → Fassade (Müller et al. 2006, ACM TOG 25(3):614)"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "albedoVerhaeltnis",
+                        "verweis": {
+                            "datei": "spec/farbe/albedo-tafel.json",
+                            "feld": "toleranz",
+                            "art": "toleranz"
+                        },
+                        "einheit": "Albedo Labor / Welt der Bau-Stoffe (dieselbe Rechnung `albedoAuswerten`)",
+                        "quelle": "Nordstern M0 Substrat-Treue: Albedo Labor = Welt im Rand der Albedo-Tafel"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "albedoVerhaeltnis",
+                "rohdatei": {
+                    "datei": "spec/farbe/albedo-tafel.json",
+                    "zeile": "haus"
+                },
+                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: am Messort dorf zeichnet kein Haus binnen 60 m (das Dorf wächst um den Spieler) — werkbank umstellen -787 -865 (der Dorfrand, das römische Haus 30 m), dann je Haus des Dorfs das Auge 22 m außerhalb auf der Linie Dorfmitte → Haus (kein Nachbar davor), das Ziel die Haus-Mitte 3 m über dem Grund (das Ziel nimmt sein Haus aus der Verdeckung, auch als Bereich im Bau-Satz: kamera-nah `ohneSatz`): werkbank bild <Pose> --wahl 42 --ziel haus --klasse '^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$' --ist haus:wirkung"
+            },
+            "quellen": ["fachwerk-core.js", "foundry-core.js"]
+        },
+        {
+            "id": "wasser",
+            "titel": "Wasser (Wasser-Satz, Fern-Wasser)",
+            "wirkung": {
+                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern); gemessen am See 1816/−6168"
+            },
+            "referenz": [
+                {
+                    "titel": "Sea of Thieves (Rare, 2018)",
+                    "technik": "Fresnel-Spiegel mit Bildschirm-Raum-Reflexion und Planar-Fallback, die Wasser-Farbe aus Streuung im Volumen"
+                },
+                {
+                    "titel": "Red Dead Redemption 2 (Rockstar, 2018)",
+                    "technik": "Flüsse mit Spiegel von Ufer, Wolke und Mond; Strömung aus dem Gelände"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "spiegelTreue",
+                        "band": [0.6, null],
+                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
+                        "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,922 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "boden"
+            },
+            "mass": {
+                "name": "spiegelTreue",
+                "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T21:59:59.996Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "f72239f8cacb5797526662df3ea0319150c91d1d"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [1855, 2.6, -6168],
+                    "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 0,
+                    "klassen": {
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.1531,"sp":[14482,0,0,35827023.65,35827023.65,5486461.67],"zweiton":0,"zt":0,"weiss":0,"wt":46,"wtZiel":null,"bunt":20.76,"pixel":942301,"deckung":0.4544,"deckungUnten":1,"luma":70.75,"kontrast":0.4278,"detail":0.0111,"nyquist":0.0227,"ek":9164.1,"eg":395391.7,"silhouette":7.7015,"kante":0.6888,"kr":4649}
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/wasser.png",
+                    "quellen": {
+                        "gelaende-core.js": "c:671ad7ea812567a8",
+                        "stamm/07.js": "c:0012a2d3b8c793b7",
+                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/19.js": "c:5f36c5687cb8f126",
+                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/25c.js": "c:fb8c3e2986247bac",
+                        "stamm/08.js": "c:54eed4bbb81c7ac7",
+                        "stamm/11a.js": "c:64859e2b185ed62a",
+                        "stamm/11b.js": "c:30d9c5f48ce31fe3",
+                        "stamm/17b.js": "c:7a76ea527559ad60"
+                    }
+                }
+            },
+            "quellen": ["gelaende-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/08.js", "stamm/11a.js", "stamm/11b.js", "stamm/17b.js"]
+        },
+        {
+            "id": "tor-fern",
+            "titel": "Tore (die Studio-Tore des Genesis-Rings: Membran und Portal-Nebel in der Apertur, je Stufe des Tors)",
+            "wirkung": {
+                "grund": "die Studio-Tore des Genesis-Rings mit dem Spieler am Ring (die Ankunft: Membran und Nebel wachen am Spieler, nicht am Auge), aus 30 m (die Tore in Stufe 1) und jenseits der Mesh-Zone (Stufe 3, die Fernform im Welt-March) — der Bildanteil ist die Apertur im Schuss mit der größten",
+                "geheilt": {
+                    "befund": "aus 30 m weiße Tafeln (Stufe 1/3): der Portal-Nebel als weißer Kasten und die Membran milchig-weiß, mit dem Spieler am Ring",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 3, Bild auge/1410/genesis-aussen.png (V18.546.0); die Ursache Prüfer K63 R3 (K63-n3/tor-weiss.out)",
+                    "warum": "milchweiss — das Weiß, das die Schicht der Öffnung dem hinzufügt, was ohne sie dort stünde (gegen das Bild ohne Film; eine Membran ohne Ziel im Graphen wird für dieses Bild ausgeblendet, D8-n1) — 0,0369 über die Stufen (L1 0,040 · L2 0,030 · L3 0,029; Radeon 890M, Genesis-Ring, Kopf a2de3d38); vorher nach DERSELBEN Regel 0,183 an L1 (das Basis-Spiel 2031b3e4 mit der Linse des Kopfs, 782 von 4 278 Pixeln weiß, Nebel-Kasten und milchige Membran): der Nebel-Kasten fiel, die Öffnung zeigt das Panorama der Ziel-Welt (EIN Export je SHA, vom Studio gebacken, gate:studio-huelle H5), der Film tönt mit Dispersion (welle) und Buntheit (farbe 2,6) bei glanz 0,8",
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Portal (Valve, 2007)",
+                    "technik": "die Öffnung zeigt die Zielwelt aus einer zweiten, durch das Portal transformierten Kamera (schräge Nah-Clip-Ebene nach Lengyel 2005, Stencil auf die Apertur) — kein Weiß, sondern das Ziel"
+                },
+                {
+                    "titel": "Ratchet & Clank: Rift Apart (Insomniac, 2021)",
+                    "technik": "der Riss trägt Farbe und Tiefe der Zielwelt; der Übergang ist eine farbige, atmende Hülle, nie eine ausgebrannte Fläche"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "milchweiss",
+                        "band": [null, 0.05],
+                        "einheit": "Anteil der Apertur-Pixel (Membran) über alle Stufen-Schüsse, die als Weiß lesen statt als Farbe — Y > 240 (Ausbrand) oder unbunt-hell (C*ab < 5, zwei eben merkliche Unterschiede ΔE*ab 2,3 vom Grau, Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte) —, während dasselbe Pixel im Bild ohne Film (dieselbe Pose und Uhr, die Membran zeigt nur ihr Ziel) nicht weiß liest: Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel (D8)",
+                        "quelle": "Nordstern §4.8 Portale „Membran zeigt das Ziel“: Y > 240 im Apertur-Fenster ≤ 5 %, Farbe in Dünnfilm-Bändern (Soap Film 1, Simon Raffy CC BY 4.0: Farbe aus der Filmdicke, nichts brennt aus)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "milchweiss",
+                "rechnung": {
+                    "apertur": "^portal-membran$",
+                    "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+                    "stufen": {
+                        "datei": "porta-core.js",
+                        "symbol": "PORTAL_RENDER_CONFIG",
+                        "feld": "lod.kindStages.gate",
+                        "budget": "lod.budget.gate",
+                        "ab": 1
+                    }
+                },
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>",
+                "messung": {
+                    "L1": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-15T21:59:42.348Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "f72239f8cacb5797526662df3ea0319150c91d1d"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [1920, 1080],
+                        "kamera": [-11.6, 90.24, 36.48],
+                        "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 5641,
+                        "klassen": {
+                            "f:drachentor:L1": {"objekte":5,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0105,"zt":54,"weiss":0.0353,"wt":181,"wtZiel":null,"bunt":28.28,"pixel":5130,"deckung":0.0025,"deckungUnten":0,"luma":163.52,"kontrast":0.2637,"detail":0.1155,"nyquist":0.1856,"ek":50635.7,"eg":222255.4,"silhouette":22.8694,"kante":0.7732,"kr":1421},
+                            "f:drachentor:L2": {"objekte":5,"spiegelTreue":-0.2077,"sp":[170,0,0,295856.44,295856.44,-61464.17],"zweiton":0,"zt":0,"weiss":0.0133,"wt":420,"wtZiel":null,"bunt":39.21,"pixel":31655,"deckung":0.0153,"deckungUnten":0,"luma":143.34,"kontrast":0.2579,"detail":0.0998,"nyquist":0.0932,"ek":126675.8,"eg":1233122.4,"silhouette":29.6147,"kante":0.6202,"kr":3689},
+                            "f:kathedrale:L1": {"objekte":3,"spiegelTreue":-0.1432,"sp":[226,0,0,241780.93,241780.93,-34617.26],"zweiton":0,"zt":0,"weiss":0.0018,"wt":42,"wtZiel":null,"bunt":20.15,"pixel":23130,"deckung":0.0112,"deckungUnten":0,"luma":121.96,"kontrast":0.3188,"detail":0.0964,"nyquist":0.0418,"ek":47714.2,"eg":1093115.8,"silhouette":17.3718,"kante":0.4947,"kr":2053},
+                            "f:maschine:L1": {"objekte":6,"spiegelTreue":-0.2572,"sp":[136,0,0,144584.94,144584.94,-37192.49],"zweiton":0,"zt":0,"weiss":0.0082,"wt":115,"wtZiel":null,"bunt":31.7,"pixel":13969,"deckung":0.0067,"deckungUnten":0,"luma":159.18,"kontrast":0.2299,"detail":0.0673,"nyquist":0.0936,"ek":45370.2,"eg":439297.1,"silhouette":13.7321,"kante":0.63,"kr":945},
+                            "f:maurentor:L1": {"objekte":5,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.0007,"wt":2,"wtZiel":null,"bunt":29.5,"pixel":2933,"deckung":0.0014,"deckungUnten":0,"luma":125.38,"kontrast":0.183,"detail":0.0915,"nyquist":0.0833,"ek":5398.5,"eg":59411.6,"silhouette":18.1878,"kante":0.3882,"kr":140},
+                            "f:ruine:L1": {"objekte":3,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":21.84,"pixel":120,"deckung":0.0001,"deckungUnten":0,"luma":137.97,"kontrast":0.0274,"detail":0.0039,"nyquist":null,"ek":0,"eg":0,"silhouette":10.8632,"kante":0.7975,"kr":2},
+                            "f:verkalkt:L1": {"objekte":5,"spiegelTreue":-0.151,"sp":[157,0,0,134092.91,134092.91,-20254.68],"zweiton":0,"zt":0,"weiss":0.0053,"wt":84,"wtZiel":null,"bunt":23.43,"pixel":15950,"deckung":0.0077,"deckungUnten":0,"luma":140.89,"kontrast":0.1932,"detail":0.0492,"nyquist":0.1021,"ek":24269.4,"eg":213522.8,"silhouette":13.0569,"kante":0.5025,"kr":915},
+                            "portal-membran": {"objekte":8,"spiegelTreue":0.2425,"sp":[410,0,0,699603.11,699603.11,169627.26],"zweiton":0,"zt":0,"weiss":0.0107,"wt":418,"wtZiel":241,"bunt":24.61,"pixel":38994,"deckung":0.0188,"deckungUnten":0,"luma":86.17,"kontrast":0.5696,"detail":0.0914,"nyquist":0.0809,"ek":52791.1,"eg":599919.4,"silhouette":15.8962,"kante":0.4536,"kr":721,"ziel":{"r":0.616,"pixel":38968,"grund":null}}
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "artifacts/soll-tafel/tor-fern-L1.png",
+                        "quellen": {
+                            "porta-core.js": "c:43576786f20c3d32",
+                            "foundry-core.js": "c:577492bfc91b4367",
+                            "stamm/07.js": "c:0012a2d3b8c793b7",
+                            "stamm/10.js": "c:bb6631653fcc0994",
+                            "stamm/19.js": "c:5f36c5687cb8f126",
+                            "stamm/24.js": "c:16ec71722c0bac2a",
+                            "stamm/25c.js": "c:fb8c3e2986247bac",
+                            "stamm/14.js": "c:e837457d25549b04",
+                            "stamm/17a.js": "c:27a9a8caa83f5cd9",
+                            "stamm/17c.js": "c:78d572870c3e2c9e",
+                            "stamm/20b.js": "c:603616360ff6a40f"
+                        }
+                    },
+                    "L3": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-15T16:35:10.259Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "a2de3d388c05a1332f7b15a0fc87736a7256546b"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [640, 360],
+                        "kamera": [69.5, 95.95, -120.7],
+                        "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 0,
+                        "klassen": {
+                            "portal-membran": {"objekte":8,"zweiton":0,"zt":0,"weiss":0.0291,"wt":3,"wtZiel":0,"bunt":21.43,"pixel":103,"deckung":0.0004,"deckungUnten":0,"luma":93.42,"kontrast":0.5162,"detail":0.3631,"nyquist":0.0865,"ek":961.6,"eg":10160.8,"silhouette":5.0252,"kante":0.1523,"kr":51,"ziel":{"r":0.694,"pixel":85,"grund":null}}
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "artifacts/soll-tafel/tor-fern-L3.png",
+                        "quellen": {
+                            "porta-core.js": "c:43576786f20c3d32",
+                            "foundry-core.js": "c:cab2ad3ee4313e43",
+                            "stamm/07.js": "c:158f10e6ed0cd9c0",
+                            "stamm/10.js": "c:1b961fac64032e22",
+                            "stamm/19.js": "c:b1a053cba1f64cd1",
+                            "stamm/24.js": "c:5cadba33d1361342",
+                            "stamm/25c.js": "c:908225cfcf68c04e",
+                            "stamm/14.js": "c:df561984b7ac6b74",
+                            "stamm/17a.js": "c:1cf91f73137a3952",
+                            "stamm/17c.js": "c:0c690893cd7e902f",
+                            "stamm/20b.js": "c:2b24a39bbcacefdd"
+                        }
+                    },
+                    "L2": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-15T16:35:20.303Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "a2de3d388c05a1332f7b15a0fc87736a7256546b"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [640, 360],
+                        "kamera": [-14.6, 89.63, 48.3],
+                        "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 972,
+                        "klassen": {
+                            "f:drachentor:L2": {"objekte":5,"zweiton":0,"zt":0,"weiss":0.0652,"wt":99,"wtZiel":null,"bunt":23.1,"pixel":1519,"deckung":0.0066,"deckungUnten":0,"luma":154.13,"kontrast":0.2387,"detail":0.1095,"nyquist":0.1928,"ek":17230,"eg":72157.8,"silhouette":14.8559,"kante":0.4556,"kr":388},
+                            "f:kathedrale:L2": {"objekte":3,"zweiton":0,"zt":0,"weiss":0.2485,"wt":297,"wtZiel":null,"bunt":9.85,"pixel":1195,"deckung":0.0052,"deckungUnten":0,"luma":138.71,"kontrast":0.2865,"detail":0.1209,"nyquist":0.0922,"ek":8306.8,"eg":81826.9,"silhouette":8.9387,"kante":0.4129,"kr":178},
+                            "f:maschine:L2": {"objekte":6,"zweiton":0,"zt":0,"weiss":0.0151,"wt":14,"wtZiel":null,"bunt":26.61,"pixel":929,"deckung":0.004,"deckungUnten":0,"luma":161.61,"kontrast":0.2467,"detail":0.118,"nyquist":0.1094,"ek":7677.4,"eg":62467.8,"silhouette":7.0211,"kante":0.4833,"kr":121},
+                            "f:maurentor:L2": {"objekte":5,"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":25.22,"pixel":29,"deckung":0.0001,"deckungUnten":0,"luma":158.55,"kontrast":0.0862,"detail":0.0706,"nyquist":0.2809,"ek":43.1,"eg":110.2,"silhouette":4.8281,"kante":0.2034,"kr":6},
+                            "f:ruine:L2": {"objekte":3,"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":12.42,"pixel":3,"deckung":0,"deckungUnten":0,"luma":151.73,"kontrast":0.0094,"detail":null,"nyquist":null,"ek":0,"eg":0,"silhouette":1.7321,"kante":null,"kr":0},
+                            "f:verkalkt:L2": {"objekte":5,"zweiton":0,"zt":0,"weiss":0.024,"wt":29,"wtZiel":null,"bunt":13.07,"pixel":1206,"deckung":0.0052,"deckungUnten":0,"luma":149.37,"kontrast":0.2065,"detail":0.0941,"nyquist":0.0933,"ek":5165.3,"eg":50180.3,"silhouette":7.7748,"kante":0.4415,"kr":140},
+                            "portal-membran": {"objekte":8,"zweiton":0,"zt":0,"weiss":0.0303,"wt":63,"wtZiel":39,"bunt":23.21,"pixel":2080,"deckung":0.009,"deckungUnten":0,"luma":104.06,"kontrast":0.6629,"detail":0.1218,"nyquist":0.0986,"ek":6587.3,"eg":60240.2,"silhouette":11.5333,"kante":0.3168,"kr":133,"ziel":{"r":0.792,"pixel":2054,"grund":null}}
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "artifacts/soll-tafel/tor-fern-L2.png",
+                        "quellen": {
+                            "porta-core.js": "c:43576786f20c3d32",
+                            "foundry-core.js": "c:cab2ad3ee4313e43",
+                            "stamm/07.js": "c:158f10e6ed0cd9c0",
+                            "stamm/10.js": "c:1b961fac64032e22",
+                            "stamm/19.js": "c:b1a053cba1f64cd1",
+                            "stamm/24.js": "c:5cadba33d1361342",
+                            "stamm/25c.js": "c:908225cfcf68c04e",
+                            "stamm/14.js": "c:df561984b7ac6b74",
+                            "stamm/17a.js": "c:1cf91f73137a3952",
+                            "stamm/17c.js": "c:0c690893cd7e902f",
+                            "stamm/20b.js": "c:2b24a39bbcacefdd"
+                        }
+                    }
+                }
+            },
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+        },
+        {
+            "id": "tor-bunt",
+            "titel": "Tor-Öffnung bunt (die Membran der Studio-Tore trägt Farbe, je Stufe des Tors)",
+            "wirkung": {
+                "grund": "die Studio-Tore des Genesis-Rings mit dem Spieler am Ring (die Ankunft: Membran und Nebel wachen am Spieler, nicht am Auge), aus 30 m (die Tore in Stufe 1) und jenseits der Mesh-Zone (Stufe 3, die Fernform im Welt-March) — der Bildanteil ist die Apertur im Schuss mit der größten",
+                "geheilt": {
+                    "befund": "die Öffnung der Tore liest unbunt: Milch und Nebel-Kasten (V18.546) bzw. die Wellen-Bänder ohne Ziel",
+                    "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster; Spike spike-d8a-membran bfb79739: milchweiss 0,245)",
+                    "warum": "oeffnungBunt 26,2 über die Stufen (L1 27,7 · L2 23,2 · L3 21,4; Radeon 890M, Genesis-Ring, Kopf a2de3d38), vorher C*ab 4,9 an L1 (das Basis-Spiel 2031b3e4, dieselbe Linse): die Öffnung zeigt das Panorama der Ziel-Welt, die Bänder des Films laufen je Farbe mit ihrer Wellenlänge (welle λ_R/λ, die Newton-Folge) und tragen ihre Buntheit um die Helligkeit (farbe 2,6)",
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Portal (Valve, 2007)",
+                    "technik": "die Öffnung zeigt die Zielwelt aus einer zweiten, durch das Portal transformierten Kamera (schräge Nah-Clip-Ebene nach Lengyel 2005, Stencil auf die Apertur) — kein Weiß, sondern das Ziel"
+                },
+                {
+                    "titel": "Ratchet & Clank: Rift Apart (Insomniac, 2021)",
+                    "technik": "der Riss trägt Farbe und Tiefe der Zielwelt; der Übergang ist eine farbige, atmende Hülle, nie eine ausgebrannte Fläche"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "oeffnungBunt",
+                        "band": [20, null],
+                        "einheit": "das Mittel der Buntheit C*ab (CIELAB D65 aus den linearisierten sRGB-Pixeln) über alle Apertur-Pixel der Stufen-Schüsse",
+                        "quelle": "Nordstern §4.8 Portale „Farbe in Dünnfilm-Bändern“ (Soap Film 1, Simon Raffy CC BY 4.0); C*ab 20 = eine deutlich bunte Fläche (Fairchild, Color Appearance Models, 3. Aufl. 2013, Kap. 10: Buntheit unter 10 liest als nahezu unbunt)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "oeffnungBunt",
+                "rechnung": {
+                    "apertur": "^portal-membran$",
+                    "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+                    "stufen": {
+                        "datei": "porta-core.js",
+                        "symbol": "PORTAL_RENDER_CONFIG",
+                        "feld": "lod.kindStages.gate",
+                        "budget": "lod.budget.gate",
+                        "ab": 1
+                    }
+                },
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-bunt)",
+                "messung": {
+                    "L1": "tor-fern:L1",
+                    "L3": "tor-fern:L3",
+                    "L2": "tor-fern:L2"
+                }
+            },
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+        },
+        {
+            "id": "tor-ziel",
+            "titel": "Tor-Öffnung zeigt ihr Ziel (die Membran liest das Panorama des Ziel-Studios, je Stufe des Tors)",
+            "wirkung": {
+                "grund": "die Studio-Tore des Genesis-Rings mit dem Spieler am Ring (die Ankunft: Membran und Nebel wachen am Spieler, nicht am Auge), aus 30 m (die Tore in Stufe 1) und jenseits der Mesh-Zone (Stufe 3, die Fernform im Welt-March) — der Bildanteil ist die Apertur im Schuss mit der größten",
+                "geheilt": {
+                    "befund": "die Öffnung zeigt kein Ziel: am Kopf ein Wellen-March ohne Ziel, im Spike ein Host-Panorama der eigenen Welt (`_torPanorama`)",
+                    "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster): Ziel aus dem EINEN Studio-Export je SHA",
+                    "warum": "zielTreue 0,685 über die Stufen (L1 0,64 · L2 0,79 · L3 0,69; Radeon 890M, Genesis-Ring, Kopf a2de3d38), vorher r 0 an L1 (das Basis-Spiel 2031b3e4: kein Ziel hinter dem Nebel-Kasten): die Öffnung liest das Panorama der Ziel-Welt (EIN Export je SHA, die Datei des Studios, Atlas rgba16float) über die Stellvertreter-Kugel, das Auge liest der Graph je Render",
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Portal (Valve, 2007)",
+                    "technik": "die Öffnung zeigt die Zielwelt aus einer zweiten, durch das Portal transformierten Kamera (schräge Nah-Clip-Ebene nach Lengyel 2005, Stencil auf die Apertur) — kein Weiß, sondern das Ziel"
+                },
+                {
+                    "titel": "Ratchet & Clank: Rift Apart (Insomniac, 2021)",
+                    "technik": "der Riss trägt Farbe und Tiefe der Zielwelt; der Übergang ist eine farbige, atmende Hülle, nie eine ausgebrannte Fläche"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "zielTreue",
+                        "band": [0.5, null],
+                        "einheit": "Rang-Korrelation (Spearman) je Apertur-Pixel zwischen dem Bild der Öffnung und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft, gewichtet über die Stufen-Schüsse",
+                        "quelle": "Nordstern §4.8 Portale „Membran zeigt das Ziel“ (Portal, Valve 2007; Lengyel 2005); r ≥ 0,5 = starke Korrelation (Cohen 1988)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "zielTreue",
+                "rechnung": {
+                    "apertur": "^portal-membran$",
+                    "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+                    "stufen": {
+                        "datei": "porta-core.js",
+                        "symbol": "PORTAL_RENDER_CONFIG",
+                        "feld": "lod.kindStages.gate",
+                        "budget": "lod.budget.gate",
+                        "ab": 1
+                    }
+                },
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-ziel)",
+                "messung": {
+                    "L1": "tor-fern:L1",
+                    "L3": "tor-fern:L3",
+                    "L2": "tor-fern:L2"
+                }
+            },
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+        },
+        {
+            "id": "fels",
+            "titel": "Fels (Formationen-Satz)",
+            "wirkung": {
+                "grund": "Fels im Blick der Messorte"
+            },
+            "referenz": [
+                {
+                    "titel": "Quixel Megascans in The Mandalorian / UE5 Valley of the Ancient (2021)",
+                    "technik": "photogrammetrischer Fels mit kalibrierter Albedo (Fels dunkel, 0,1–0,3) und Nanite-Geometrie"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "albedo",
+                        "band": [0.1, 0.3],
+                        "einheit": "Albedo (linear, Rec.-709-Luma) des Fels-Stoffs in der Welt",
+                        "quelle": "Fels ≤ 0,30 (PSU EARTH 103, Albedo-Tabelle; Nordstern §4.1); photogrammetrischer Fels 0,1–0,3"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "formationen"
+            },
+            "mass": {
+                "name": "albedo",
+                "rohdatei": {
+                    "datei": "spec/farbe/albedo-tafel.json",
+                    "zeile": "fels"
+                },
+                "werkzeug": "werkbank albedo --tafel (Zeile fels) + --nachziehen"
+            },
+            "quellen": ["gelaende-core.js"]
+        },
+        {
+            "id": "mensch-kopf",
+            "titel": "Mensch-Kopf (der Kopf des Spielers im Bild: Iris, Lippe, Höhle, Haar)",
+            "wirkung": {
+                "grund": "der Spieler im Third-Blick; Plan Nr. 1: heute die schwächste sichtbare Stelle",
+                "mangel": {
+                    "befund": "Augen, Mund, Haar-Fleck",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 1"
+                },
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-14T23:30:07.151Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-900.6, 109.87, -856],
+                    "ausdruck": "^spieler$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 0,
+                    "klassen": {
+                        "spieler": {"objekte":14,"zweiton":0,"zt":0,"pixel":9293,"deckung":0.0045,"deckungUnten":0,"luma":21.97,"kontrast":2.1408,"detail":0.1504,"nyquist":0.1317,"ek":22826.3,"eg":150436.7,"silhouette":8.9108}
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/mensch-kopf-wirkung.png",
+                    "quellen": {
+                        "koerper-core.js": "c:2d740b48e4f78546",
+                        "foundry-core.js": "c:048acefc0b19a374"
+                    }
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "MetaHuman (Epic Games, Unreal Engine 5)",
+                    "technik": "Kopf aus Scan-Statistik: Proportion nach Anthropometrie, Augen in der Höhle mit Lidern, Lippe und Höhle als Töne der Haut, Haar als Volumen"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "gesicht",
+                        "verweis": {
+                            "datei": "koerper-core.js",
+                            "symbol": "KOPF_SOLL",
+                            "felder": ["augeFrei", "lippeL", "lippeA", "hoehleL", "hoehleA", "haarDeckung"]
+                        },
+                        "einheit": "Anteil der Züge des Gesichts, die das BILD in ihrem KOPF_SOLL-Band zeigt (gesichtMasse: Iris frei, Lippe und Höhle gegen die Wange in CIELAB, Haar über der Haarlinie)",
+                        "quelle": "K57 KOPF_SOLL (Farkas-Normen, CIELAB der Lippe und Höhle gegen die Wange, Haar als Volumen) — gelesen, nie kopiert; MetaHuman: jeder Zug im Band"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "einzelstuecke"
+            },
+            "mass": {
+                "name": "gesicht",
+                "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T21:59:22.114Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "f72239f8cacb5797526662df3ea0319150c91d1d"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-278, 29.21, -1038.68],
+                    "ausdruck": "^spieler:kopf/",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0.00001,
+                        "pixel": 20,
+                        "max": 65
+                    },
+                    "misch": 762,
+                    "klassen": {
+                        "spieler:kopf/auge": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":13.56,"pixel":462,"deckung":0.0002,"deckungUnten":0,"luma":64.38,"kontrast":0.5784,"detail":0.1825,"nyquist":0.1327,"ek":1422.9,"eg":9297,"silhouette":5.1177,"kante":0.0994,"kr":1},
+                        "spieler:kopf/hair": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.57,"pixel":527,"deckung":0.0003,"deckungUnten":0,"luma":58.28,"kontrast":0.2786,"detail":0.1429,"nyquist":0.178,"ek":372,"eg":1717.8,"silhouette":19.8637,"kante":0.3406,"kr":192},
+                        "spieler:kopf/haut": {"objekte":2,"spiegelTreue":-0.0255,"sp":[369,0,0,533361.55,533361.55,-13581.33],"zweiton":0,"zt":0,"weiss":0.0538,"wt":1617,"wtZiel":null,"bunt":16.38,"pixel":30062,"deckung":0.0145,"deckungUnten":0,"luma":53.36,"kontrast":0.6088,"detail":0.0454,"nyquist":0.0759,"ek":5557,"eg":67647.8,"silhouette":7.4632,"kante":0.6529,"kr":727},
+                        "spieler:kopf/skin": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":19.69,"pixel":442,"deckung":0.0002,"deckungUnten":0,"luma":35.34,"kontrast":0.2834,"detail":0.0983,"nyquist":0.2701,"ek":297.8,"eg":804.5,"silhouette":13.0329,"kante":0.3131,"kr":148}
+                    },
+                    "abstand": null,
+                    "gesicht": {
+                        "augeFrei": 0.483,
+                        "lippeL": -3.58,
+                        "lippeA": 0.8,
+                        "hoehleL": -1.06,
+                        "hoehleA": -2,
+                        "haarDeckung": 1,
+                        "proben": {
+                            "iris": 180,
+                            "irisSicht": 87,
+                            "lippe": 175,
+                            "wange": 669,
+                            "kalotte": 136,
+                            "haarPixel": 527
+                        },
+                        "zeilen": {
+                            "auge": 540.4,
+                            "mund": 619.7
+                        },
+                        "toene": {
+                            "haut": "6a4230",
+                            "lippe": "5e271a",
+                            "hoehle": "5d3322",
+                            "kappe": "cecbc5"
+                        }
+                    },
+                    "bild": "artifacts/soll-tafel/mensch-kopf.png",
+                    "quellen": {
+                        "koerper-core.js": "c:2d740b48e4f78546",
+                        "foundry-core.js": "c:577492bfc91b4367",
+                        "stamm/07.js": "c:0012a2d3b8c793b7",
+                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/19.js": "c:5f36c5687cb8f126",
+                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/25c.js": "c:fb8c3e2986247bac",
+                        "stamm/15a.js": "c:386117a9b5c4f686",
+                        "stamm/15c.js": "c:632b0d73bab306bc",
+                        "stamm/25b.js": "c:fd9270736768dec2"
+                    }
+                }
+            },
+            "quellen": ["koerper-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/15a.js", "stamm/15c.js", "stamm/25b.js"]
+        },
+        {
+            "id": "boden-nah-farbe",
+            "titel": "Gras und Boden nah: die Farbe der Wiese aus 2–5 m (Halm-Strom und Büschel-Tint über dem Boden-Satz)",
+            "wirkung": {
+                "mangel": {
+                    "befund": "die Wiese nah zu einförmig im Farbton: die Halme streuen (Oliv, Stroh, gelbgrün), die Fläche nicht — die einfarbigste 2-m-Kachel 6,5°",
+                    "quelle": "Spike W1 789af722 (16.10., Mess-Wiese 2–5 m, Radeon: 6,34° → 9,01°) und W1 (dieselbe Geometrie wie das Soll-Bild: 9,20° gegen 10,73°)"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Ghost of Tsushima (Sucker Punch, 2020)",
+                    "technik": "die Halm-Farbe je Büschel aus Klumpen-Daten und Feldern über der Welt — Wurzel- und Spitzen-Ton, trockene Halme, kein Halm wie der andere (GDC 2021, „Procedural Grass in Ghost of Tsushima“)"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "farbtonStreuung",
+                        "band": [10.7, null],
+                        "einheit": "Grad: zirkuläre Streuung des Farbtons h = atan2(b*, a*) (CIELAB D65, Buntheit C* > 5) je 2-m-Kachel des Bodens in 2–5 m, Mittel nach Proben",
+                        "quelle": "das Soll-Bild der Grasnarbe nah (Grok-Paket 15.10., artifacts/grok/paket-1510/soll-bilder/02-grasnarbe-nah.png: Halme stark wechselnder Grüntöne, gelbbraune trockene Spitzen, Klee, Wegerich) mit derselben Rechnung: 10,73° (Spike W1); Bilder nur im selben Belichtungs-Zustand"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "nahWiese"
+            },
+            "mass": {
+                "name": "farbtonStreuung",
+                "rechnung": {
+                    "kachel": 2,
+                    "band": [2, 5],
+                    "leinwand": [1920, 1080],
+                    "minProben": 400,
+                    "quelle": "eine Probe = ein 2 × 2-Block der Leinwand 1920 × 1080 (die Leinwand 960 × 540 des Spikes); eine Kachel zählt ab 400 Proben"
+                },
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -278 +0 -1044.82 --fov 46.7 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55, die Geometrie des Soll-Bilds: Auge 1,7 m, 13,9° abwärts, hfov 75°; Leinwand 1920 × 1080 — headless nach `werkbank fenster 1920 1080`)",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T20:53:28.076Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "a33ce7c0deb5a8d32c750bcbf18c5226721c2a0b+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [1920, 1080],
+                    "kamera": [-278, 29.28, -1038],
+                    "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 221051,
+                    "klassen": {
+                        "bodenSatz": {"objekte":1,"zweiton":0,"zt":0,"weiss":0.0045,"wt":1379,"wtZiel":null,"bunt":38.02,"pixel":308853,"deckung":0.1489,"deckungUnten":0.1475,"luma":113.8,"kontrast":0.4228,"detail":0.0515,"nyquist":0.0181,"ek":31481.5,"eg":1706620.2,"silhouette":105.8182,"kante":0.4473,"kr":8483},
+                        "nahWiese:L1": {"objekte":2,"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":46.35,"pixel":787474,"deckung":0.3798,"deckungUnten":0.8424,"luma":84.94,"kontrast":0.2529,"detail":0.0576,"nyquist":0.0193,"ek":64967.2,"eg":3297627.2,"silhouette":82.8682,"kante":0.3132,"kr":12058},
+                        "nahWiese:L2": {"objekte":2,"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":47.16,"pixel":398307,"deckung":0.1921,"deckungUnten":0.001,"luma":91.28,"kontrast":0.2543,"detail":0.0596,"nyquist":0.0257,"ek":47103.1,"eg":1789125.5,"silhouette":70.2961,"kante":0.2669,"kr":4345},
+                        "streuSatz": {"objekte":4,"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":24.05,"pixel":14785,"deckung":0.0071,"deckungUnten":0.0013,"luma":96.1,"kontrast":0.2596,"detail":0.0457,"nyquist":0.0278,"ek":1137.7,"eg":39856.9,"silhouette":34.6647,"kante":0.2894,"kr":75}
+                    },
+                    "abstand": {
+                        "baender": [0, 2, 5, 10, 14, 30, 80, 200],
+                        "ring": 14,
+                        "augeUeberBoden": 1.71,
+                        "cos": [null, 0.4501, 0.2489, 0.1549, 0.1055, 0.0592, 0.0328],
+                        "klassen": {
+                            "bodenSatz": [0, 106546, 18867, 569, 88709, 83740, 10145],
+                            "streuSatz": [0, 844, 7662, 4958, 1321, 0, 0],
+                            "nahWiese:L2": [0, 774, 225423, 105114, 66879, 117, 0],
+                            "nahWiese:L1": [0, 646023, 140943, 508, 0, 0, 0]
+                        },
+                        "farbton": {
+                            "kachel": 2,
+                            "band": [2, 5],
+                            "belichtung": 0.6158,
+                            "kacheln": [
+                                ["-140,   -522", 11049, -6732.01, 8672.715, 11049],
+                                ["-139,   -522", 10887, -6092.371, 8906.739, 10887],
+                                ["-141,   -522", 2330, -1383.688, 1848.026, 2330],
+                                ["-138,   -522", 2238, -1104.667, 1719.993, 2237],
+                                ["-141,   -521", 15289, -8830.219, 12271.93, 15289],
+                                ["-140,   -521", 67630, -39910.358, 53549.355, 67630],
+                                ["-139,   -521", 65059, -36625.913, 52772.726, 65059],
+                                ["-138,   -521", 15085, -8679.567, 11952.388, 15085]
+                            ]
+                        }
+                    },
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/boden-nah-farbe.png",
+                    "quellen": {
+                        "gelaende-core.js": "c:671ad7ea812567a8",
+                        "phyto-core.js": "c:611dfb4c0b65042c",
+                        "foundry-core.js": "c:e87f480936552e79",
+                        "stamm/07.js": "c:16239021faa968ce",
+                        "stamm/10.js": "c:1b961fac64032e22",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:5cadba33d1361342",
+                        "stamm/25c.js": "c:6d182a1387ec05d7",
+                        "stamm/11c.js": "c:c0bb0585a740f344",
+                        "stamm/17b.js": "c:7a76ea527559ad60",
+                        "stamm/17c.js": "c:78d572870c3e2c9e",
+                        "stamm/20a.js": "c:edf068cfa4a10fa4",
+                        "stamm/26b.js": "c:dfab70e9d26443a4"
+                    }
+                }
+            },
+            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/11c.js", "stamm/17b.js", "stamm/17c.js", "stamm/20a.js", "stamm/26b.js"]
+        }
+    ]
+}

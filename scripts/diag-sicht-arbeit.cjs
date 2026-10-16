@@ -11,14 +11,15 @@
 //   (R) RUHE — Kamera, Kaskaden und Welt stehen (nachdem jede Mündung im Bild ihre Horizont-Sperre trägt): ab dem
 //       zweiten Frame 0 Prüfungen (`_passTrifft` der Sätze · der Höhlen · der Instanz-Wahl · der Nah-Wiese, `_hoehlenRect`,
 //       `_hoehlenLichtLage`, `_instanzBehalten`), 0 Aufrufe von `_hoehlenSicht` / `_hoehlenSichtLicht` /
-//       `_chunkSatzAbschnitt`, 0 Index-Bytes — und die Pässe treffen ihren Cache;
+//       `_chunkSatzAbschnitt`, 0 Index-Bytes, kein Abschnitt neu gelegt — und die Pässe treffen ihren Cache;
 //   (B) BEWEGUNG — Drehen (36 × 1°) und Gehen (20 × 1 m): jede neue Lage rechnet neu (eine gehaltene Wahl wäre ein Loch);
 //   (T) TREUE — die gehaltene Wahl ist die frisch gerechnete: nach der Ruhe vergisst die Kette jede Lage, ein Frame
 //       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Gruppe der Wahl dieselbe Zahl;
 //   (S) SCHARF — ein eingeschmuggelter Cache-Bruch (die Lage-Erinnerung fällt je Pass) arbeitet in Ruhe und fällt rot;
-//       ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
-//       schuldet) zählt als Bytes OHNE Änderung und steht als `dicht:ohne` beim Namen (K, 07.10.: die Linse trennt die Bytes
-//       einer Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von den Bytes ohne Grund);
+//       ein eingeschmuggelter Lege-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
+//       schuldet) zählt als Neulegen OHNE Änderung und steht als `dicht:ohne` beim Namen (K, 07.10.: die Linse trennt die
+//       Arbeit einer Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von der ohne Grund;
+//       K71: seit der vergleichende Schreiber nur Geändertes lädt, legt der Bruch 0 Bytes — die Linse zählt den Gang);
 //       ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle
 //       ändert sich — der Cache-Schlüssel churnt) zählt als Arbeit OHNE Änderung und steht als `stand:ohne` beim Namen
 //       (Gegenprüfung 07.10.: die Linse hielt `s.stand` selbst für „Inhalt geändert" und stand bei 15 072 Prüfungen je
@@ -50,7 +51,7 @@ function urteil(b) {
     // die Wand friert die Welt ein: in KEINEM Ruhe-Frame Arbeit oder ein Byte
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
-    if (!b.byteBruch) v.push("LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht");
+    if (!b.legeBruch) v.push("LEER: kein Lege-Bruch gemessen — (S) prüfte das Neulegen ohne Änderung nicht");
     if (!b.standBruch) v.push("LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht");
     // (A) das atmende Auge (die Phase urteilt `sichtUrteil`) und die Blende-Treue an der Kante eines Fensters
     if (!b.augeAn) v.push("LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht");
@@ -131,6 +132,9 @@ function selbsttest() {
         bytes: { mittel: bytes, median: bytes, max: bytes },
         bytesOhne: { mittel: bytes, median: bytes, max: bytes },
         bytesOhneJe: bytes > 0 ? { "boden wahl:lage": bytes * 10 } : {},
+        legeOhne: { mittel: 0, median: 0, max: 0 },
+        legeOhneFrames: 0,
+        legeOhneJe: {},
         treffer: { mittel: treffer, median: treffer, max: treffer },
         hoehlenSicht: { mittel: 0, median: 0, max: 0 },
         hoehlenSichtLicht: { mittel: 0, median: 0, max: 0 },
@@ -155,7 +159,11 @@ function selbsttest() {
         drehen: phase(4000, 0, 0),
         gehen: phase(5000, 0, 0),
         bruch: phase(4000, 0, 0),
-        byteBruch: Object.assign(phase(0, 960, 9), { bytesOhneJe: { "boden dicht:ohne haupt": 9600 } }),
+        legeBruch: Object.assign(phase(0, 0, 9), {
+            legeOhne: { mittel: 2400, median: 2400, max: 2400 },
+            legeOhneFrames: 10,
+            legeOhneJe: { "boden dicht:ohne haupt": 24000 },
+        }),
         standBruch: Object.assign(phase(15072, 0, 0), {
             inhaltOhneFrames: 10,
             inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
@@ -340,6 +348,16 @@ function selbsttest() {
     }
     if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
         fehler.push("ungesehene Bytes stehen nicht beim Namen");
+    // das Neulegen (K71) klassiert dieselbe Regel über `legeGrund` — ohne Schuld ist es der Täter, mit Schuld die Folge, und
+    // die Bytes des Frames zählen dort nie als ungesehen
+    {
+        const lk = (g) => SICHT.sichtBytesKlasse({ bytes: 100, legeGrund: { [g]: 480 }, inhalt: {} }, "legeGrund");
+        const lo = lk("bauSatz dicht:ohne k0"),
+            lf = lk("bauSatz dicht k0");
+        const ok = lo.ohne === 480 && lo.ohneJe["bauSatz dicht:ohne k0"] === 480 && lf.folge === 480 && lf.ohne === 0;
+        if (!ok) fehler.push(`Neulegen-Klasse: ${JSON.stringify(lo)} · ${JSON.stringify(lf)}`);
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
+    }
     // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
     // Linse jeden Ruhe-Frame — Radeon 07.10.: 299 von 299), ein Schritt über den Halt und eine Drehung über den halben
     // Dreh-Rand sind es
@@ -352,14 +370,15 @@ function selbsttest() {
     const HALT = 0.02,
         DREH = (2 * Math.PI) / 180;
     const proj = (fern) => [1.3, 0, 0, 0, 0, 2.3, 0, 0, 0, 0, -1, -1, 0, 0, -0.2 * fern, 0];
+    const M = require("./lib/welt-orte.cjs").messort("wiese"); // die Kamera am Messort (Weltkoordinaten der Mess-Wiese)
     for (const [name, b, soll] of [
-        ["Atmen ±4 mm", mat(0, -900, 64.004, -850).concat(proj(1)), false],
-        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, -900.015, 64, -850).concat(proj(1)), true],
-        ["Drehung 0,5°", mat(0.5, -900, 64, -850).concat(proj(1)), false],
-        ["Drehung 1,5°", mat(1.5, -900, 64, -850).concat(proj(1)), true],
-        ["Projektion (Fern-Ebene)", mat(0, -900, 64, -850).concat(proj(1.01)), true],
+        ["Atmen ±4 mm", mat(0, M.x, 64.004, M.z).concat(proj(1)), false],
+        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, M.x - 0.015, 64, M.z).concat(proj(1)), true],
+        ["Drehung 0,5°", mat(0.5, M.x, 64, M.z).concat(proj(1)), false],
+        ["Drehung 1,5°", mat(1.5, M.x, 64, M.z).concat(proj(1)), true],
+        ["Projektion (Fern-Ebene)", mat(0, M.x, 64, M.z).concat(proj(1.01)), true],
     ]) {
-        const k = SICHT.sichtKameraBewegt(mat(0, -900, 64, -850).concat(proj(1)), b, HALT, DREH);
+        const k = SICHT.sichtKameraBewegt(mat(0, M.x, 64, M.z).concat(proj(1)), b, HALT, DREH);
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
@@ -370,14 +389,14 @@ function selbsttest() {
     else {
         const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
         for (const [name, b, soll] of [
-            ["Atmen ±1 mm quer", bl(-900.001, -850), false],
-            ["Atmen 9 mm (unter dem halben Halt)", bl(-900.009, -850), false],
-            ["Schritt 1,5 cm", bl(-900.015, -850), true],
-            ["Perf-Streck neu", bl(-900, -850, [1, 1.1, 14, 20, 60, 6, 4]), true],
-            ["Kante des Blend-Gesetzes neu", bl(-900, -850, [1, 1, 14, 22, 60, 6, 4]), true],
-            ["Maske aus", bl(-900, -850, [0, 1, 14, 20, 60, 6, 4]), true],
+            ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
+            ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
+            ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
+            ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
+            ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
+            ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
         ]) {
-            const k = SICHT.sichtBlendeBewegt(bl(-900, -850), b, 0.02);
+            const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, 0.02);
             if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
             console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
         }
@@ -395,7 +414,7 @@ function selbsttest() {
             57,
         ],
         [
-            "die Werfer der Region-Bündel einer ruhenden Kaskade zählen nicht (wie `arbeit`)",
+            "je Pass zählt die Arbeit der Ruhe-Leser, nicht jede Prüfung (wie `arbeit`)",
             {
                 arbeit: 7,
                 jePass: {
@@ -694,6 +713,16 @@ function selbsttest() {
                 }),
             /RUHE: 96 Index-Bytes je Frame ohne Änderung .*bauSatz dicht\? 960 B/,
         ],
+        [
+            "Neulegen in Ruhe (K71: 0 Bytes, der Gang über die Zellen)",
+            (b) =>
+                Object.assign(b.ruhe, {
+                    legeOhne: { mittel: 48, median: 0, max: 480 },
+                    legeOhneFrames: 1,
+                    legeOhneJe: { "bauSatz dicht:ohne k0": 480 },
+                }),
+            /RUHE: 48 Indizes je Frame neu gelegt ohne Änderung .*bauSatz dicht:ohne k0 480/,
+        ],
         ["kein Treffer", (b) => (b.ruhe.treffer = { mittel: 0, median: 0, max: 0 }), /LINSE BLIND: kein Pass traf/],
         ["starres Drehen", (b) => (b.drehen.arbeit = { mittel: 0, median: 0, max: 0 }), /STARR: beim Drehen/],
         ["starres Gehen", (b) => (b.gehen.arbeit = { mittel: 1, median: 0, max: 3 }), /STARR: beim Gehen/],
@@ -705,20 +734,21 @@ function selbsttest() {
         ["Treue ohne Vergleich", (b) => (b.treue.geprueft = 0), /LEER: Treue ohne Vergleich/],
         ["stumpfe Linse", (b) => (b.bruch = phase(0, 0, 9)), /LINSE STUMPF/],
         [
-            "stumpfe Byte-Linse (der Byte-Bruch schreibt nichts)",
-            (b) => (b.byteBruch = phase(0, 0, 9)),
-            /LINSE STUMPF: ein eingeschmuggelter Byte-Bruch/,
+            "stumpfe Lege-Linse (der Lege-Bruch legt nichts — K71: er lädt 0 Bytes)",
+            (b) => (b.legeBruch = phase(0, 0, 9)),
+            /LINSE STUMPF: ein eingeschmuggelter Lege-Bruch/,
         ],
         [
-            "stumpfe Byte-Linse (der Byte-Bruch heißt Folge)",
+            "stumpfe Lege-Linse (der Lege-Bruch steht unter fremdem Grund)",
             (b) =>
-                (b.byteBruch = Object.assign(phase(0, 0, 9), {
-                    bytes: { mittel: 960, median: 960, max: 960 },
-                    schreibFrames: 10,
+                (b.legeBruch = Object.assign(phase(0, 0, 9), {
+                    legeOhne: { mittel: 2400, median: 2400, max: 2400 },
+                    legeOhneFrames: 10,
+                    legeOhneJe: { "boden umlegen:ohne haupt": 24000 },
                 })),
-            /LINSE STUMPF: ein eingeschmuggelter Byte-Bruch/,
+            /LINSE STUMPF: ein eingeschmuggelter Lege-Bruch/,
         ],
-        ["kein Byte-Bruch", (b) => delete b.byteBruch, /LEER: kein Byte-Bruch gemessen/],
+        ["kein Lege-Bruch", (b) => delete b.legeBruch, /LEER: kein Lege-Bruch gemessen/],
         [
             "das Licht dreht je Frame (die Basis)",
             (b) => (b.sonne = sonne(120, 120, null)),
@@ -803,7 +833,6 @@ if (process.argv.includes("--selftest")) {
     selbsttest();
     process.exit(0);
 }
-
 
 const PORT = Number(process.env.SICHT_ARBEIT_PORT) || 4506;
 const { messort } = require("./lib/welt-orte.cjs");
@@ -890,13 +919,15 @@ const server = statikServer();
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`
-            // (Matrix, Frustum, das Gesetz der Lage; die Instanz-Wahl der Schatten-Gruppen und der EINE Satz-Chokepoint).
+            // (Matrix, Frustum, das Gesetz der Lage; die Instanz-Wahl der Schatten-Gruppen, der EINE Satz-Chokepoint und die
+            // Werfer der Region-Bündel — K72: auch ihre Wahl rechnet nur bei Änderung, die Linse zählt sie wie jeden Leser).
             const frame = () => {
                 r._tickChunkSatz();
                 r._passSicht(cam, false);
                 const wahl = [];
                 for (const g of r._instanzWahlGruppen())
                     if (g.wahl === "haupt" && g.mesh) wahl.push(["haupt", g, g.mesh.count]);
+                const bunde = st._regionBundles;
                 kaskaden.forEach((c, i) => {
                     S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
                     S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
@@ -905,7 +936,15 @@ const server = statikServer();
                     for (const g of r._instanzWahlGruppen())
                         if (g.wahl === "schatten" && g.mesh) wahl.push(["k" + i, g, g.mesh.count]);
                     r._chunkSatzPass(c, false, i, S);
+                    if (bunde && bunde.size) {
+                        r._werferWahlPass(bunde, S);
+                        // die Wahl der Werfer: die ruhenden Werfer und die werfenden Bündel (die Treue vergleicht sie)
+                        const ruhen = S.ab.map((o) => o.id).sort((x, y) => x - y);
+                        const werfen = [...bunde.values()].filter((bg) => bg.visible).map((bg) => bg.id);
+                        wahl.push(["k" + i, "werfer", ruhen.join(",") + "|" + werfen.join(",")]);
+                    }
                     r._chunkSatzPass(c, true, -1, S);
+                    r._passSichtZurueck(S);
                     r._instanzWahlZurueck(S.wahlSchatten);
                 });
                 r._passSicht(cam, true);
@@ -943,7 +982,8 @@ const server = statikServer();
                 const m = new Map();
                 for (const satz of st.chunkSaetze.values())
                     for (const [k, a] of satz.abschnitte) m.set(satz.art + "|" + k, a.liste.slice());
-                for (const [art, g, n] of wahl) m.set("gruppe:" + (g.mesh.name || g.mesh.id) + "|" + art, n);
+                for (const [art, g, n] of wahl)
+                    m.set("gruppe:" + (typeof g === "string" ? g : g.mesh.name || g.mesh.id) + "|" + art, n);
                 return m;
             };
             const halt = stand(frame());
@@ -1223,9 +1263,10 @@ const server = statikServer();
             } finally {
                 delete r._passWahlLage;
             }
-            // (S) SCHARF FÜR DIE BYTES: der eingeschmuggelte Byte-Bruch — jeder ruhende Abschnitt verliert je Pass seine
-            // Dicht-Marke und legt sich neu, ohne dass eine Wahl es schuldet; die Linse zählt die Bytes OHNE Änderung und
-            // nennt `dicht:ohne` (die Hülle der Linse am Prototyp bleibt der Weg)
+            // (S) SCHARF FÜR DAS NEULEGEN: der eingeschmuggelte Lege-Bruch — jeder ruhende Abschnitt verliert je Pass seine
+            // Dicht-Marke und legt sich neu, ohne dass eine Wahl es schuldet; die Linse zählt das Neulegen OHNE Änderung und
+            // nennt `dicht:ohne` (die Hülle der Linse am Prototyp bleibt der Weg). Bytes legt er seit K71 keine: der
+            // vergleichende Schreiber (`_satzSetze`) findet dieselben Indizes am selben Platz.
             stelle(0, 0);
             reif();
             const dichtNach = r.constructor.CHUNK_SATZ_ABSCHNITT.dichtNach;
@@ -1235,7 +1276,7 @@ const server = statikServer();
                 return P._chunkSatzRuht.call(this, s, ab, key);
             };
             try {
-                aus.byteBruch = window.__sichtPhase(phase(6), 1);
+                aus.legeBruch = window.__sichtPhase(phase(6), 1);
             } finally {
                 delete r._chunkSatzRuht;
             }
@@ -1448,7 +1489,8 @@ const server = statikServer();
         `  ${n.padEnd(7)} ${x.frames} Frames · Pässe ${x.paesse.mittel} · Arbeit Ø ${x.arbeit.mittel} (Median ${x.arbeit.median}, ` +
         `max ${x.arbeit.max}) · Höhlen-Sicht ${x.hoehlenSicht.mittel} + Licht ${x.hoehlenSichtLicht.mittel} · Abschnitte ` +
         `${x.abschnitt.mittel} · Ecken ${x.ecken.mittel} (Schirm ${x.rect.mittel}, Licht ${x.lichtLage.mittel} Boxen) · _passTrifft ${x.passTrifft.mittel} (Werfer ${x.werferTrifft.mittel}) · ` +
-        `Instanzen ${x.instanzBehalten.mittel} · Bytes ${x.bytes.mittel} · Treffer ${x.treffer.mittel}` +
+        `Instanzen ${x.instanzBehalten.mittel} · Bytes ${x.bytes.mittel} · neu gelegt ohne Änderung ` +
+        `${x.legeOhne ? x.legeOhne.mittel : "?"} · Treffer ${x.treffer.mittel}` +
         (x.taeter && x.taeter.length
             ? `
           neu: ${x.taeter.join(", ")}`
@@ -1462,7 +1504,7 @@ const server = statikServer();
         console.log(
             `  kalt    der erste Ruhe-Frame: Arbeit ${k.arbeit} · Ecken ${k.ecken} · Bytes ${k.bytes} · Treffer ${k.trefferSumme}`
         );
-    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch", "standBruch", "auge"])
+    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "legeBruch", "standBruch", "auge"])
         if (befund[n]) console.log(zeile(n, befund[n]));
     if (befund.auge)
         console.log(

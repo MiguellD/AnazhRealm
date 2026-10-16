@@ -82,10 +82,10 @@ function rumpf(code, kopfRe) {
 // H4 — DIE TÄTER-KLASSE DES STAMMS, aus dem Quelltext (kein Zwilling hier): `klasse(obj, state)` und `instanz(key)`.
 function stammKlasse(src) {
     const code = PK.stripComments(src);
-    const kl = rumpf(code, /\n {4}_taeterKlasse\(obj\)\s*\{/);
-    const nm = rumpf(code, /\n {4}static _taeterName\(x\)\s*\{/);
-    const ik = rumpf(code, /\n {4}static _instanzKlasse\(key\)\s*\{/);
-    const tg = rumpf(code, /\n {4}_taeterGruppe\(key\)\s*\{/);
+    const kl = rumpf(code, /\n {4}_taeterKlasse\([^)]*\)\s*\{/);
+    const nm = rumpf(code, /\n {4}static _taeterName\([^)]*\)\s*\{/);
+    const ik = rumpf(code, /\n {4}static _instanzKlasse\([^)]*\)\s*\{/);
+    const tg = rumpf(code, /\n {4}_taeterGruppe\([^)]*\)\s*\{/);
     if (!kl || !nm || !ik || !tg) return null;
     const AR = { _taeterName: new Function("x", nm), _instanzKlasse: new Function("key", ik) };
     const fn = new Function("AnazhRealm", "obj", kl);
@@ -131,9 +131,9 @@ function taeterWand(src) {
 function buendelReiheWand(src) {
     const errs = [];
     const code = PK.stripComments(src);
-    const rang = rumpf(code, /\n {4}static _buendelRang\(key\)\s*\{/);
-    const reihe = rumpf(code, /\n {4}_buendelReihe\(scene\)\s*\{/);
-    const fuer = rumpf(code, /\n {4}_archRegionBundleFor\(regionKey\)\s*\{/);
+    const rang = rumpf(code, /\n {4}static _buendelRang\([^)]*\)\s*\{/);
+    const reihe = rumpf(code, /\n {4}_buendelReihe\([^)]*\)\s*\{/);
+    const fuer = rumpf(code, /\n {4}_archRegionBundleFor\([^)]*\)\s*\{/);
     if (!rang || !reihe)
         return { errs: ["_buendelRang / _buendelReihe fehlen im Stamm — die Reihe der Bündel hängt an der Ankunft beim Boot"], n: 0 };
     if (!fuer || !/scene\.add\(bg\);[\s\S]*?this\._buendelReihe\(scene\);/.test(fuer))
@@ -149,8 +149,8 @@ function buendelReiheWand(src) {
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
     // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
     const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle(?:, auge)?\)\s*\{/);
-    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\(name, leafIdx, leaf, regionKey\)\s*\{/);
-    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\(g\)\s*\{/);
+    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\([^)]*\)\s*\{/);
+    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\([^)]*\)\s*\{/);
     if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
     if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe))
         errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
@@ -166,7 +166,7 @@ function buendelReiheWand(src) {
     if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
-    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\(pos\)\s*\{/);
+    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\([^)]*\)\s*\{/);
     // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
     const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
     if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
@@ -281,6 +281,24 @@ function ortTaktLebt(haushalt, src) {
 // Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
 // tree[1] 10 000 rechnete nie gegen ihn (Band V18.536: baum 417k, die Projektion 421k). Pflicht ab dem Vertrags-Akt (die
 // eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
+// H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
+// vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
+// (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
+// Welt. Bis K55 stand die Mess-Wiese als Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
+let _wirt = null;
+function wieseAmGesetz(haushalt) {
+    const WO = require("./lib/welt-orte.cjs");
+    if (!_wirt) _wirt = WO.wirtAmGesetz(root);
+    const aus = { befunde: [], messungen: [] };
+    for (const o of haushalt.messorte || []) {
+        if (!o.wiese) continue;
+        const m = WO.wieseMessen(_wirt, o.spieler[0], o.spieler[1], o.blick, o.wiese);
+        aus.messungen.push(Object.assign({ ort: o.id }, m));
+        for (const x of WO.wieseUrteil(m, o.wiese)) aus.befunde.push(`${o.id}: ${x}`);
+    }
+    return aus;
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 function goldenDreiecke(arten) {
@@ -574,12 +592,13 @@ function selbsttest() {
     const n10 = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest", eingeschwungen: true });
     const n10b = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest" });
     t(
-        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen",
+        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), die Gesamt-Zeile höchstens die Summe ihrer Zeilen " +
+            "(gemessen 12, die Zeilen 7 + 3 → 10; H2b), Schema hält nur eingeschwungen",
         n10.ratsche.klassen.boden.haupt.befehle === 7 &&
             n10.ratsche.klassen.boden.haupt.dreiecke === 7000 &&
             n10.ratsche.klassen.bau.haupt.befehle === 3 &&
             n10.ratsche.klassen.bau.haupt.dreiecke === 900 &&
-            n10.ratsche.gesamt.befehle === 12 &&
+            n10.ratsche.gesamt.befehle === 10 &&
             n10.ratsche.gemessen.datum === "selbsttest" &&
             !BAND.ratschePruefen(n10.ratsche, haushalt).length &&
             BAND.ratschePruefen(n10b.ratsche, haushalt).some((f) => /eingeschwungen/.test(f))
@@ -723,7 +742,7 @@ function selbsttest() {
     // S16 — H5: ein Muster mit einem Namen, den der Stamm nicht mehr vergibt, wird rot; der echte Haushalt nicht, ein Name
     // mit Namens-Schwanz (`"voxelChunk:" + key`) lebt.
     const h16 = JSON.parse(JSON.stringify(haushalt));
-    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(bau-fundament|siedlung-wege)$" });
+    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(siedlung-zaun|siedlung-wege)$" });
     const n16 = namenLeben(h16, stamm);
     t(
         "H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt",
@@ -917,7 +936,7 @@ function selbsttest() {
             unbekannt
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
-    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis −x = −π/2).
+    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (ein Blick nach −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
@@ -925,12 +944,12 @@ function selbsttest() {
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
     t(
-        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2",
+        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese π, genesis −π/2",
         hatRot(u21, "ratsche") &&
             u21.ort === "genesis" &&
             !hatRot(u21b, "ratsche") &&
             u21b.ort === "wiese" &&
-            BAND.ortGier(BAND.ortOf(haushalt, "wiese")) === 0 &&
+            Math.abs(Math.abs(BAND.ortGier({ spieler: [-278, -1038], blick: [-278, -1048] })) - Math.PI) < 1e-12 &&
             Math.abs(BAND.ortGier(gen.ort) + Math.PI / 2) < 1e-12 &&
             !BAND.ratschePruefen(gen.ratsche, haushalt).length
     );
@@ -948,6 +967,29 @@ function selbsttest() {
     t(
         "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
         s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
+    );
+    // S20b — DIE WIESE (K55): das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
+    // am Gesetz ist der gefallene Messort ein Hang (Hang, Horizont, Blick rot), der Ort des Haushalts eine Wiese.
+    const w20 = (f) => {
+        const h = JSON.parse(JSON.stringify(haushalt));
+        f(h.messorte.find((o) => o.id === "wiese"));
+        return h;
+    };
+    const wGefallen = wieseAmGesetz(
+        w20((o) => {
+            // BÜHNE: der gefallene Messort (bis K55, K16 hob den Boden dort um 83 m) — die Linse muss ihn ROT nennen
+            o.spieler = [-900, -850];
+            o.blick = [o.spieler[0], o.spieler[1] + 10];
+        })
+    ).befunde;
+    t(
+        "Wiese: ohne Gesetz, ohne hangMax, Kranz im Ring → rot; am Gesetz der gefallene Ort rot (Hang, Horizont), der Haushalt grün",
+        BAND.messortePruefen(w20((o) => delete o.wiese)).some((x) => /Wiesen-Gesetz \(wiese\) fehlt/.test(x)) &&
+            BAND.messortePruefen(w20((o) => delete o.wiese.hangMax)).some((x) => /wiese ohne Zahl hangMax/.test(x)) &&
+            BAND.messortePruefen(w20((o) => (o.wiese.rand = [10, 90]))).some((x) => /beginnt im Ring/.test(x)) &&
+            wGefallen.some((x) => /Hang [\d.]+° über/.test(x)) &&
+            wGefallen.some((x) => /kein Fernblick/.test(x)) &&
+            !wieseAmGesetz(haushalt).befunde.length
     );
     // S23 — H6: ein Ort-Takt oder ein Anker mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht. Ein Anker
     // ohne Methoden-Namen bricht das Schema.
@@ -976,7 +1018,7 @@ function selbsttest() {
     // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht (K26) und ein Lauf ohne Aufzeichnung werden je einzeln
     // beim Namen genannt.
     const wiese = BAND.ortOf(haushalt, "wiese");
-    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0, sicht: "ego" };
+    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: BAND.ortGier(wiese), sicht: "ego" };
     const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
     t(
         "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
@@ -1123,9 +1165,10 @@ function selbsttest() {
         );
     const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
     t(
-        "Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht",
+        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, die ruhige Welt nicht",
         o28.dorfWaechst === "1/3" &&
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
+            BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
             /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
     );
@@ -1189,7 +1232,7 @@ function selbsttest() {
             'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
             'return key === "@wahl" ? 0 : key === "@global" ? 2 : 1;'
         );
-        const ohneReihe = st.replace("_buendelReihe(scene) {", "_buendelReiheAlt(scene) {");
+        const ohneReihe = st.replace(/(\n {4}_buendelReihe)\(/, "$1Alt(");
         const getroffen = ohneRuf !== st && wahlVorn !== st && ohneReihe !== st;
         t(
             "Bündel-Reihe: der Stamm stellt @global · Regionen · @wahl; ohne den Aufruf, mit @wahl vorn und ohne die Reihe rot",
@@ -1205,7 +1248,7 @@ function selbsttest() {
             "bundle.add(mesh);"
         );
         const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
-        const ohneKinder = st.replace("static _buendelKinderReihe(bundle, auge) {", "static _buendelKinderReiheAlt(bundle, auge) {");
+        const ohneKinder = st.replace(/(\n {4}static _buendelKinderReihe)\(/, "$1Alt(");
         t(
             "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
             ohneKinderRuf !== st &&
@@ -1302,6 +1345,24 @@ function selbsttest() {
                 ohne31.linse === "SAUBER" &&
                 u31.rot.every((x) => typeof x.schluessel === "string")
         );
+        // Die Gesamt-Zeile des Mints ist höchstens die Summe ihrer Zeilen: zwei Läufe, je Erzeuger ein anderes Minimum (6,0 + 4,0
+        // und 5,9 + 4,1, beide 10,0 MB) — die Hülle der Erzeuger ist 5,9 + 4,0 = 9,9, die Gesamt-Zeile zieht mit (14.10.).
+        const v32 = (a, b) => ({
+            klassen: [],
+            summe: { gebunden: { befehle: 1, dreiecke: 1 } },
+            vram: { gebunden: 10, mb: 10, erzeuger: [{ erzeuger: "buf:szene", mb: a }, { erzeuger: "tex:output", mb: b }] },
+        });
+        const n32a = BAND.ratscheNachziehen(BAND.ratscheNeu(rt), v32(6, 4), { datum: "x" });
+        const n32 = BAND.ratscheNachziehen(n32a.ratsche, v32(5.9, 4.1), { datum: "x" });
+        t(
+            "Re-Mint: die Gesamt-Zeile vramMB ist höchstens die Summe der Erzeuger (zwei Läufe 6,0 + 4,0 und 5,9 + 4,1 → " +
+                "Erzeuger 5,9 + 4,0, Gesamt 10,0 → 9,9, beim Namen)",
+            n32a.ratsche.gesamt.vramMB === 10 &&
+                n32.ratsche.vramMB["buf:szene"] === 5.9 &&
+                n32.ratsche.vramMB["tex:output"] === 4 &&
+                n32.ratsche.gesamt.vramMB === 9.9 &&
+                n32.aenderungen.some((x) => /gesamt\.vramMB: 10 → 9\.9 \(die Summe ihrer Zeilen/.test(x))
+        );
         // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
         // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
         const hAlt = JSON.parse(JSON.stringify(haushalt));
@@ -1337,6 +1398,8 @@ function main() {
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
+    const wiese = wieseAmGesetz(haushalt);
+    for (const f of wiese.befunde) errs.push("H1 " + f);
     // H2 je Ort × Gerät × Sicht: jede Ratsche trägt das Schema (ein Toggle-Ort mit `bank` trägt keine — H1 prüft sein Schema).
     const ratschen = BAND.ratschenAlle(haushalt);
     for (const e of ratschen.filter((x) => x.ratsche))
@@ -1437,7 +1500,7 @@ function main() {
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
             `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
     );
 }
 

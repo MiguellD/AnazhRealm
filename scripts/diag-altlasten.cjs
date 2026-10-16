@@ -433,6 +433,32 @@ const FORBIDDEN = [
     // DIE LUFT (V18.530) — der Nebel war eine lineare Wand an der Wald-Kante und verdeckte die gebaute Fernform;
     // die EINE Luftperspektive (`_luftEnsure` → scene.fogNode) ist Physik. Die Nebel-Kulisse ist ganz fort.
     { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
+    // DIE EINE ATMOSPHÄRE (D3, Hillaire) — vier getunte Näherungen fielen in EINER Welle: die Luftmassen-Sonne, die
+    // Nebel-Kuppel aus Rausch-Wolken, der Koschmieder-Mie-Kegel der Horizont-Farbe, die CPU-gemalte Umgebung 128×64.
+    { token: "_atmosphere(", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_fATM", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_nebN", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln (_atmoLutBau), keine Nebel-Kuppel" },
+    { token: "_hazeCol", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln, kein Grau-Schleier" },
+    { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
+    { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "nebulaColor", fiel: "D3 — der Träger der Tönung heißt himmelTint (die Nebel-Kuppel fiel)" },
+    { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
+    // ... und im Labor in DERSELBEN Welle: die Luftmassen-Sonne von phytogenesis und ihre Zwillings-Zahlen in phyto-core
+    // (die Rayleigh-Tiefe, die Luftmassen-Glättung, der Mond-Hue) — Welt und Labor rufen foundry-core ATMO_RECHNUNG.
+    { token: "RAYLEIGH_BETA", fiel: "D3 — die Rayleigh-Tiefe wohnt im Gesetz (ATMO_GESETZ.rayleighTiefe)" },
+    {
+        token: "ATMOS_GESETZ",
+        fiel: "D3 — das Labor liest ATMO_GESETZ (foundry-core)",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    {
+        token: "LUFT_GESETZ",
+        fiel: "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    { token: "_AIR_SOFT", fiel: "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", auch: ["worlds/terrain/phytogenesis.js"] },
+    { token: "_moonCol", fiel: "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", auch: ["worlds/terrain/phytogenesis.js"] },
     { token: "_dayNightApplyHemiAndFog", fiel: "V18.530 — _dayNightApplyHemiUndLuft" },
     { token: "_smoothFogEdge", fiel: "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes" },
     { token: "_fogEdgeSmooth", fiel: "V18.530" },
@@ -477,6 +503,14 @@ const FORBIDDEN = [
         fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul",
     },
     { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
+    // B2 — DER HORIZONT IM FADEN: Höhe, Nässe und Fern-Farbe der Ferne (Ring, Feld-Pass, Fern-Krone) rechnet nur der Fern-Faden
+    // (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel.
+    ...[
+        "_fernFarbeTeile(", "_fernFarbeMasche(", "_fernFarbeAt(", "_fernRingTeile(",
+        "_fernRingFaerben(", "_fernFarbTakt(", "_fernRingGpuMal(", "_feldZeichnerHoehen(",
+        "_voxelWorkerHoehen(", "_feldPassFaerben(", "_flussAbdruck(", "_fernSchuttAt(",
+        "_fernRingDeckMisch(", "_fernFlussDeckung(",
+    ].map((token) => ({ token, fiel: "B2 — der Horizont rechnet im Fern-Faden, der Haupt-Faden-Weg fiel" })),
     // V18.331 fiel Ammo.js (die Physik ist feld-nativ); V18.530 fiel mit ihr der CI-Schritt „Ammo-Memory-Leak-Indikator",
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
@@ -811,6 +845,11 @@ const FORBIDDEN = [
         token: "1 - this._canopyLightAt(px, pz, fussY)",
         fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt",
     },
+    // Nah-Wiese und Nah-Streu lesen das Licht der STEHENDEN Kronen (`_bodenLichtFeld`, das Labor-Gesetz über dem Kronen-
+    // Register) — nie das Platzierungs-Feld und nie die Streu-Karte als Faktor (K70, Soll-Tafel boden-nah).
+    { token: "this._canopyLightAt(x, z, y, m)", fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld" },
+    { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtFeld)" },
+    { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtFeld" },
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
     // ohne Fußabdruck hauchte bis 06.10. auch fern jedes Ufers (der Stein-Abbau war nie stumm).
     { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },
@@ -923,6 +962,35 @@ const FORBIDDEN = [
         fiel: "Welle G — feldMarch (EIN Satz je Stellvertreter) und feldPanorama (früher Tiefentest)",
     },
     { token: "_weltSeitenOrdnen", fiel: "Welle G — die Stellvertreter brauchen keine räumliche Ordnung" },
+    // D8 (15.10., das Tor als Fenster): der Bodennebel-Kasten am Tor-Fuß (ein Volumen-March je Tor, aus 30 m eine weiße Tafel),
+    // sein Gesetz und sein Regler fallen laut beim Namen — die Öffnung zeigt das Ziel-Panorama unter dem Seifenfilm
+    { token: "_nebelMaterialFor", fiel: "D8 — der Portal-Nebel-Kasten (die Öffnung ist Ziel + Film)" },
+    { token: "_nebelGraph", fiel: "D8 — der Volumen-March des Portal-Nebels" },
+    { token: "rec.nebel", fiel: "D8 — die Membran trägt keinen Nebel-Kasten mehr" },
+    { token: "portal-nebel", fiel: "D8 — die Klasse des Nebel-Kastens", auch: ["spec/profiband/haushalt.json"] },
+    {
+        token: "NEBEL_GESETZ",
+        fiel: "D8 — das Nebel-Gesetz (fogDefault · actBase · actOpen)",
+        auch: ["porta-core.js", "worlds/portale/porta.js"],
+    },
+    { token: "nebelAct", fiel: "D8 — der Atem des Nebels", auch: ["porta-core.js", "worlds/portale/porta.js"] },
+    { token: "NEBEL_VIS", fiel: "D8 — das duale Nebel-Gefühl (glsl-box/tsl-box)", auch: ["porta-core.js"] },
+    { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
+    { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
+    { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
+    // D8: das Spike-Instrument — die Heimat malte ein Panorama ihrer EIGENEN Welt (Würfel-Kamera 80 m westlich der Genesis-Mitte);
+    // die Öffnung liest das Ziel aus dem EINEN Export der Ziel-Welt (`_torZielZeile`, die Hülle `AnazhHuelle.panorama`)
+    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
+    { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
+    { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
+    // D8-n1: der verborgene Ziel-Rahmen bootete jede Ziel-Welt im Haupt-Faden des Spiels (Prüfer: 3 882 ms lange Aufgabe je
+    // fachwerk, 10 135 ms für sieben Ziele nach dem ersten Weltbild, in der CPU-Gruppe der CI ein WebGL-Bruch je Studio) — das
+    // Studio backt sein Panorama in seiner Welt (gate:studio-huelle H5), die Heimat liest die Datei (`_torZielBuendel`)
+    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
+    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
+    { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
+    { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
+    { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },
@@ -1265,6 +1333,7 @@ const FORBIDDEN = [
             "scripts/mint-asset-packs.cjs",
         ],
     },
+    { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1590,6 +1659,28 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
+    // W1 (16.10., Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
+    ...["L * 1.08 - rk * 0.85 + m * 0.22", "lit * 0.5 + (1 - wet) * 0.5"].map((fingerprint) => ({
+        fingerprint,
+        gesetzbuch: "foundry-core.js",
+        verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
+        fiel: "W1 — die Bodenschicht (groundCover) und der Wiesen-Tint (wiesenTint, bis W1 FIX v27 im Labor) wohnen im Kern",
+    })),
+    // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
+    // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
+    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, stamm/24.js) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    {
+        muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (ATMO_RECHNUNG.sonne), keine Luftmasse als Kehrwert der Höhe",
+    },
+    {
+        muster: /\bEquirectangularReflectionMapping\b/,
+        gesetzbuch: "stamm/24.js",
+        verboten: gelaendeLeser().filter((d) => !/(?:^|[\\/])stamm[\\/]24\.js$/.test(d)),
+        fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
@@ -1722,7 +1813,8 @@ function scanInstanzWand(srcRoh) {
         errs.push(
             `Instanz-Wand: eine InstancedMesh entsteht ${treffer.length}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh) — Zeilen ${treffer.join(", ")}`
         );
-    const kopf = code.indexOf("static _instanzMesh(geom, mat, cap) {");
+    const k0 = stammLib.kopf(code, "_instanzMesh"); // am Namen (gate:apparat Klinge 3), gezählt ab `static`
+    const kopf = k0 < 0 ? -1 : k0 + 5;
     if (kopf < 0 || code.indexOf("new THREE.InstancedMesh(", kopf) - kopf > 200)
         errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
     if (!/StorageInstancedBufferAttribute\(m\.instanceMatrix\.array, 16\)/.test(code))
@@ -1924,32 +2016,70 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
 // getContext/putImageData (bis V18.528: je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
 // kommt kodiert aus dem Worker und wird kopiert (`_impostorAtlasSchreibe`).
 const KARTEN_METHODEN = [
-    "_impostorAtlas() {",
-    "_impostorAtlasTexturen(at, bedarf) {",
-    "_impostorAtlasSchreibe(at, idx, payload) {",
-    "_impostorZelleNeu(at, key, preset, variant, ov) {",
-    "_impostorQuad(at) {",
-    "_impostorAtlasMaterial() {",
-    "_impostorLeaf(z, localMatrix, sicht) {",
-    "_tickImpostorBake() {",
-    "_applyStudioImpostorPayload(z, payload) {",
-    "_buildImpostorLeaf(bp, skel) {",
-    "_foundryEnsureImpostorRecord(preset, variant, ov) {",
-    "_foundryBuildImpostorFlat(entry, preset) {",
+    "_impostorAtlas",
+    "_impostorAtlasTexturen",
+    "_impostorAtlasSchreibe",
+    "_impostorZelleNeu",
+    "_impostorQuad",
+    "_impostorAtlasMaterial",
+    "_impostorLeaf",
+    "_tickImpostorBake",
+    "_applyStudioImpostorPayload",
+    "_buildImpostorLeaf",
+    "_foundryEnsureImpostorRecord",
+    "_foundryBuildImpostorFlat",
 ];
 function scanKartenWand(srcRoh) {
     const code = stripComments(srcRoh);
     const errs = [];
-    for (const kopf of KARTEN_METHODEN) {
-        const a = code.indexOf("\n    " + kopf);
+    for (const name of KARTEN_METHODEN) {
+        const a = stammLib.kopf(code, name);
         const b = a < 0 ? -1 : code.indexOf("\n    }\n", a);
         if (a < 0 || b < 0) {
-            errs.push(`Karten-Wand: die Methode \`${kopf.split("(")[0]}\` fehlt (der Atlas braucht den Anker)`);
+            errs.push(`Karten-Wand: die Methode \`${name}\` fehlt (der Atlas braucht den Anker)`);
             continue;
         }
         const rumpf = code.slice(a, b);
         for (const t of ["CanvasTexture", 'createElement("canvas")', "getContext(", "putImageData", "drawImage("])
-            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${kopf.split("(")[0]}\` malt wieder (${t})`);
+            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
+    }
+    return errs;
+}
+
+// DIE ABSENZ-ERBSCHAFT (V1 Prüf-Diät N1, 15.10.): die Diät strich im Playtest 297 Präsenz-Textproben (Lehre 6); 20 davon
+// trugen neben dem Präsenz-Muster ein Absenz-Glied über den Rumpf EINER Methode — das Absenz-Urteil bleibt, hier je Methode.
+const METHODEN_OHNE = [
+    ["_tickCreatureDrink", ["PING_FREQ"]], // die Stimme des Tiers, kein Sinus-Ping
+    ["_grassInstanceMat", ["gust"]], // die Böe lebt im EINEN Wind-Versatz
+    ["_applyVegetationResponse", ["uWindTime"]], // EIN Wind-Term
+    ["_foundryTreeMaterial", ['attribute("instanceColor"']], // der Stoff liest die Instanz-Tönung nativ
+    ["_bodenFarbeAt", ["SNOW_PROM", "_cont0"]], // der Schnee liest die Prominenz des Gelände-Kerns
+    ["_vegetationSampleSpawn", ["Math.random"]], // Γ5: Substanz aus Seed-Streams
+    ["_nahStreuKachel", ["Math.random"]],
+    ["_hydroRiverAt", ["_terrainMacroSurfaceY"]], // der Fluss liest das Gesetz, nie die Makro-Fläche
+    ["_applySubstanceResponse", ["_T.max(_rgb"]], // das Füll-Licht ohne Helligkeits-Klemme
+    ["handleJump", ["playerBody"]], // der Sprung schreibt die Geschwindigkeit, kein Physik-Körper
+    ["createGalaxySkybox", ["cloudShade", "mx_noise_float"]], // EIN Himmel (D3: die Nebel-Kuppel fiel mit der EINEN Atmosphäre)
+    ["_buildPbrNodeMaterial", ["__structAerialError"]], // die Luft aus EINER Quelle
+    ["_ensureHydroSurfaceMaterial", ["gerstnerWave", "uSkyCol", "d.x).mul(cos(phase))"]], // die Dünung, der EINE Himmel
+    ["_wasserBlick", ["uSkyCol"]],
+    ["_dayNightApplyHemiUndLuft", ["playerEyesUnderwater"]],
+    ["_workshopInstallShapeDragDrop", ["cards.forEach"]], // EIN delegierter Zieh-Hörer
+    ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
+    ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
+];
+function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    for (const [name, verboten] of liste) {
+        const a = stammLib.kopf(code, name);
+        const b = a < 0 ? -1 : code.indexOf("\n    }\n", a);
+        if (a < 0 || b < 0) {
+            errs.push(`Absenz-Erbe: \`${name}\` fehlt — ihr Absenz-Urteil (${verboten.join(" · ")}) zieht mit um`);
+            continue;
+        }
+        const rumpf = code.slice(a, b);
+        for (const t of verboten) if (rumpf.includes(t)) errs.push(`Absenz-Erbe: \`${name}\` trägt wieder "${t}"`);
     }
     return errs;
 }
@@ -1973,15 +2103,28 @@ function scanNormalWand(srcRoh) {
     // NORMAL-Fassung (die Geometrie-Normale mit Flächen-Vorzeichen: am Boden nach unten, der Boden lag im eigenen
     // Schatten). Die Geometrie-Normale heißt im Graphen `normalWorldGeometry` (× `faceDirection`). Geprüft wird der
     // Rechte-Hand-Ausdruck jeder normalNode-Zuweisung und transitiv jede lokale Größe (`_name`), die er in seiner Methode liest.
+    // Die Methode der Zuweisung am AST (stammLib.glieder, K38-N2): bis dahin suchte ein Kopf-Muster den letzten Kopf davor —
+    // ein umbrochener Kopf oder `)` im Default-Parameter gab der Spur die Methode davor (die lokale Größe blieb ungelesen).
     const zuweisung = /([\w$.]+)\.normalNode\s*=\s*([^;]+);/g;
-    const kopfRe = /\n {4}[_a-zA-Z$][\w$]*\([^)\n]*\)\s*\{\n/g;
     const quelleRe = /\.normalWorld\b(?!Geometry)/;
+    // Der Strip hält jede Zeile (er kennt keine Regex-Literale, sein Text ist kein JS mehr): das Glied liest der AST am
+    // Rohtext, die Zuweisung trifft es über ihre Zeile.
+    const gl = stammLib.glieder(srcRoh);
+    const codeAb = [0];
+    for (let i = code.indexOf("\n"); i !== -1; i = code.indexOf("\n", i + 1)) codeAb.push(i + 1);
     while ((m = zuweisung.exec(code))) {
-        let anfang = 0,
-            k;
-        kopfRe.lastIndex = 0;
-        while ((k = kopfRe.exec(code)) && k.index < m.index) anfang = k.index;
-        const rumpf = code.slice(anfang, m.index);
+        let lo = 0,
+            hi = codeAb.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            if (codeAb[mid] <= m.index) lo = mid;
+            else hi = mid - 1;
+        }
+        const zeile = lo + 1;
+        const g = gl.find((x) => x.zeile <= zeile && zeile <= x.bisZeile);
+        // außerhalb jeder Methode (eine Anweisung hinter der Klasse): ab der Zeile nach dem Glied davor
+        const davor = g ? null : gl.filter((x) => x.bisZeile < zeile).pop();
+        const rumpf = code.slice(g ? codeAb[g.zeile - 1] : davor ? codeAb[davor.bisZeile] : 0, m.index);
         const offen = [m[2]];
         const gesehen = new Set();
         let treffer = null;
@@ -3319,7 +3462,7 @@ function scanHuellenFormWand(dateien) {
 // Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
 // DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
 // Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
-// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -640, z: -410 }`, `o.mess || [-640, -410]`) und wird erst Zeilen
 // später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
 // `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
 // Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
@@ -3379,14 +3522,37 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
+// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das Dorf) steht
+// NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und ein gefallener Platz
+// nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne Kommentare), sind eine Abschrift,
+// gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`, `const X = x, Z = z`, die Blick-Tabelle einer
+// Linse. Bis K55 trugen 14 Proben die Mess-Wiese −900/−850 als Zahlen; K16 hob den Boden dort in einen Nadelwald-Hang.
+const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
+function messortPaare() {
+    const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
+    return h.messorte
+        .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
+        .map((o) => o.spieler)
+        .concat(MESSORT_GEFALLEN);
+}
+const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {
     const errs = [];
+    const abschrift = messortPaare().map((p) => ({ p, re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g") }));
     for (const [name, src] of dateien) {
         if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
         const code = stripComments(src);
         const roh = src.split("\n");
         const zeilen = code.split("\n");
         const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const { p, re } of abschrift)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} Abschrift des Messorts ${p.join("/")} (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus spec/profiband/haushalt.json (scripts/lib/welt-orte.cjs messort), oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
         for (const re of ORTS_MUSTER)
             for (const m of code.matchAll(re)) {
                 const zeile = code.slice(0, m.index).split("\n").length;
@@ -3545,7 +3711,8 @@ function main() {
         //   D Zwischen-Variable · E reine Stoff-Schleife material.forEach · F for…of über die Stoff-Liste · G der Regel-
         //   Besitzer entsorgt einen Stoff (Stoffe nie) · H eine tote Zeile der Besitzer-Liste
         const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
-        const iIch = stamm.indexOf("    _ichStageShow(soul) {");
+        const kIch = stammLib.kopf(stamm, "_ichStageShow");
+        const iIch = kIch < 0 ? -1 : kIch + 1;
         const jIch = iIch < 0 ? -1 : stamm.indexOf(ichNeu, iIch);
         const formA =
             jIch < 0
@@ -3637,12 +3804,21 @@ function main() {
             scanKartenWand(stamm).length === 0 &&
             scanKartenWand(
                 stamm.replace(
-                    "    _impostorAtlasSchreibe(at, idx, payload) {",
-                    '    _impostorAtlasSchreibe(at, idx, payload) {\n        const cv = document.createElement("canvas");'
+                    /(\n {4}_impostorAtlasSchreibe\([^)]*\) \{)/,
+                    '$1\n        const cv = document.createElement("canvas");'
                 )
             ).length === 1;
         if (!kartenFeuert) {
             console.log("❌ SELBST-TEST: die Karten-Wand feuert nicht (oder steht heute rot)");
+            process.exit(1);
+        }
+        // Das Absenz-Erbe muss feuern: der Sprung greift wieder zum Physik-Körper.
+        const erbeFeuert =
+            scanAbsenzErbe(stamm).length === 0 &&
+            scanAbsenzErbe(stamm.replace(/(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
+                .length === 1;
+        if (!erbeFeuert) {
+            console.log("❌ SELBST-TEST: das Absenz-Erbe feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
@@ -3758,16 +3934,36 @@ function main() {
             ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
             ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
             ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
-            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
-            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -640, z: -410 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-640, -410];\n" + SETZT],
         ]);
         const ortsStill = scanOrtsWand([
             ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
             ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
             ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
             ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
-            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+            ["scripts/w.cjs", "const MESS = { x: -640, z: -410 };\n"],
         ]);
+        // DIE ABSCHRIFT DES MESSORTS (K55): der Platz der Mess-Wiese aus dem Haushalt und der gefallene Platz, je als Aufruf und
+        // als Konstanten-Paar über zwei Zeilen — rot, auch ohne Setzen; derselbe Platz um 1 m versetzt und hinter BÜHNE still.
+        const MW = messortPaare()[0];
+        const MG = MESSORT_GEFALLEN[0];
+        const abschriftRot = scanOrtsWand([
+            ["scripts/a.cjs", `umstellen(${MW[0]}, ${MW[1]});\n`],
+            ["scripts/g.cjs", `const X = ${MG[0]},\n    Z = ${MG[1]};\n`],
+        ]);
+        const abschriftStill = scanOrtsWand([
+            ["scripts/e.cjs", `umstellen(${MW[0] + 1}, ${MW[1]});\n`],
+            ["scripts/f.cjs", `// BÜHNE: der gefallene Ort als Probe\nstelle(${MG[0]}, ${MG[1]});\n`],
+        ]);
+        if (
+            abschriftRot.length !== 2 ||
+            !abschriftRot.every((x) => /Abschrift des Messorts/.test(x)) ||
+            abschriftStill.length !== 0
+        ) {
+            console.log("❌ SELBST-TEST: die Abschrift des Messorts feuert nicht", abschriftRot, abschriftStill);
+            process.exit(1);
+        }
         const ortsHeute = scanOrtsWand(gateDateien(root));
         const ortsFeuert =
             ortsRot.length === 6 &&
@@ -3886,8 +4082,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "const mxNoise = TSL.mx_noise_float;",
-                    'const _hatMx = "mx_noise_float" in TSL; const mxNoise = TSL.mx_noise_float;',
+                    "const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));",
+                    'const _hatMx = "mx_noise_float" in TSL; const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
@@ -3898,14 +4094,14 @@ function main() {
                 ],
                 [
                     "?.",
-                    "mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);",
-                    "mat.normalNode = _Ta.modelViewMatrix?.transformDirection(_Ta.normalLocal);",
+                    "        const ny = T.normalFlat.transformDirection(T.cameraViewMatrix).y;",
+                    "        const ny = T.normalFlat?.transformDirection(T.cameraViewMatrix).y;",
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
                     "Glied aus TSL",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL; if (!pass) return null;",
+                    "} = TSL;\n            const pp = new PPCtor(",
+                    "} = TSL; if (!pass) return null;\n            const pp = new PPCtor(",
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
@@ -4124,11 +4320,13 @@ function main() {
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
             feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
+            feuert("worlds/terrain/phytogenesis.js", "const t = lit * 0.5 + (1 - wet) * 0.5;", "Wiesen-Tint") &&
+            feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
@@ -4170,6 +4368,7 @@ function main() {
         .concat(scanInstanzWand(stammLib.text(root)))
         .concat(scanEntsorgungsWand(stammLib.text(root)))
         .concat(scanKartenWand(stammLib.text(root)))
+        .concat(scanAbsenzErbe(stammLib.text(root)))
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))

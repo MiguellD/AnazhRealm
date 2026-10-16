@@ -5,12 +5,21 @@ class AnazhRealm_Z20d {
     // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
     // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Einziger Leser ist der Pflanz-Gang
     // (`_forestPlantChunk`) — die Spawn-Wahl liest den Wald nicht, die Genesis-Lichtung hält ihn von der Plattform fern.
+    // DAS URTEIL GEHÖRT DEM DART (K60): es ist eine reine Funktion des Darts und seiner Nachbar-Zellen am Stand des Walds
+    // (`_forestDartStand`) — gemerkt je Dart-Objekt (die Objekte leben im Dart-Gedächtnis dieses Stands, ein neuer Stand legt
+    // neue an), nur über der Wahrheit des Gesetzes (`_forestGesetzWahr`; vorläufige Darts merken nichts). Bis K60 fragte jede
+    // Gestalt des Orts (`_forestStehtFrei`) jeden Nachbarn neu, und jede neue Fläche eines Grundrisses warf das Gedächtnis der
+    // Gestalt (`_ortGestaltSame`): Radeon kalt bis zum ersten Bild 3 220 Freistand-Fragen an 251 Orten, das Urteil 1,5 s.
     _forestDartSteht(d, gx, gz, cellDarts) {
+        const memo = this._forestGesetzWahr() ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap()) : null;
+        const hat = memo ? memo.get(d) : undefined;
+        if (hat !== undefined) return hat;
         const F = AnazhRealm.FOREST;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
         const prioWins = core && core.forestPrioWins;
-        for (let ax = -2; ax <= 2; ax++) {
+        let steht = true;
+        nachbarn: for (let ax = -2; ax <= 2; ax++) {
             for (let az = -2; az <= 2; az++) {
                 const nb = cellDarts(gx + ax, gz + az);
                 for (let k = 0; k < nb.length; k++) {
@@ -30,11 +39,15 @@ class AnazhRealm_Z20d {
                     const better = prioWins
                         ? prioWins(o, d)
                         : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                    if (better) return false;
+                    if (better) {
+                        steht = false;
+                        break nachbarn;
+                    }
                 }
             }
         }
-        return true;
+        if (memo) memo.set(d, steht);
+        return steht;
     }
 
     // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
@@ -45,28 +58,51 @@ class AnazhRealm_Z20d {
     // (`_ortWand` fragt nur den Grundriss; den Wagen fragt sie nicht, er fährt, und das Wasser des Gesetzes trägt schon
     // der Dart) — der Wurf im Haus stand nie (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn
     // blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der Grundrisse (`_grundrissStand`).
+    // ZWEI STÄNDE, ZWEI GEDÄCHTNISSE (K60): die stehenden Nachbarn im Freistand-Kreis sind eine Funktion des Orts am Stand des
+    // Walds — gemerkt am Dart-Gedächtnis dieses Stands (`_forestDartMemo`, nur über der Wahrheit des Gesetzes); Wildnis und
+    // Wand fragt jede Antwort neu (wenige Nachbarn, je eine Gitter-Frage). Eine neue Fläche eines Grundrisses (je Haus des
+    // Dorfs) fragt so nur die Wand, nie wieder 81 Zellen.
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
         if (!FS || !(FS.abstand > 0)) return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.abstand");
-        const CELL = AnazhRealm.FOREST.cell;
-        const gx = Math.floor(x / CELL);
-        const gz = Math.floor(z / CELL);
-        for (let ax = -4; ax <= 4; ax++) {
-            for (let az = -4; az <= 4; az++) {
-                const nb = cellDarts(gx + ax, gz + az);
-                for (let k = 0; k < nb.length; k++) {
-                    const o = nb[k];
-                    const r = FS.abstand * (T + o.T);
-                    const dx = o.x - x;
-                    const dz = o.z - z;
-                    const d2 = dx * dx + dz * dz;
-                    if (d2 < 1e-6 || d2 >= r * r) continue;
-                    if (!this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) continue;
-                    if (!this._wildnisTraegt(o.x, o.z)) continue;
-                    if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
+        let memo = null;
+        if (this._forestGesetzWahr()) {
+            if (this._freistandMemoVon !== this._forestDartMemo || !this._freistandMemo) {
+                this._freistandMemo = new Map();
+                this._freistandMemoVon = this._forestDartMemo;
+            }
+            memo = this._freistandMemo;
+        }
+        const key = x + "," + z + "," + T;
+        let nah = memo ? memo.get(key) : undefined;
+        if (!nah) {
+            nah = [];
+            const CELL = AnazhRealm.FOREST.cell;
+            const gx = Math.floor(x / CELL);
+            const gz = Math.floor(z / CELL);
+            for (let ax = -4; ax <= 4; ax++) {
+                for (let az = -4; az <= 4; az++) {
+                    const nb = cellDarts(gx + ax, gz + az);
+                    for (let k = 0; k < nb.length; k++) {
+                        const o = nb[k];
+                        const r = FS.abstand * (T + o.T);
+                        const dx = o.x - x;
+                        const dz = o.z - z;
+                        const d2 = dx * dx + dz * dz;
+                        if (d2 < 1e-6 || d2 >= r * r) continue;
+                        if (this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) nah.push(o);
+                    }
                 }
             }
+            if (memo) {
+                if (memo.size >= 16384) memo.clear(); // bounded — die Front ist lokal
+                memo.set(key, nah);
+            }
+        }
+        for (const o of nah) {
+            if (!this._wildnisTraegt(o.x, o.z)) continue;
+            if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
         }
         return true;
     }
@@ -86,6 +122,20 @@ class AnazhRealm_Z20d {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
+        // DER WALD PLANT IM TAKT (K69): der Gang liest die Zellen des Chunks samt ±2 (`_waldPflanzKasten`); fehlt eine, bestellt
+        // er sie in der Schlange des Walds und wartet (`_waldPflanzWarten`) — sie pflanzt den Chunk, sobald sein Plan steht
+        // (`_tickWaldPlan`). Bis K69 plante der Gang frische Zellen am Stück im Chunk-Bau (gehend ins Dorf 41 Zellen in EINEM
+        // Takt, Null-Renderer). Vor der Wahrheit des Gesetzes (vorläufige Darts) und im synchronen Test-/Worldgen-Pfad
+        // (`_vegSpawnImmediate`) plant er selbst.
+        const ck = cx + "," + cz;
+        if (this._forestGesetzWahr() && !this._vegSpawnImmediate) {
+            this._forestDartStand(seedInt);
+            if (!this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) {
+                (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
+                return 0;
+            }
+        }
+        if (this._waldPflanzWarten) this._waldPflanzWarten.delete(ck);
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();
@@ -327,19 +377,9 @@ class AnazhRealm_Z20d {
         // der Baum scheitert (sonst verschöbe ihre Tag-Drift die Baum-Verteilung). baum_totholz fiel W1 aus den
         // Kandidaten: ein Baum-Sieg setzt hier keinen Baum (Wald-Marker, Bäume pflanzt `_forestPlantChunk`), gezeichnet
         // hat Totholz nur die Streu-Schicht litter — als belaubte Alias-Eiche (das Studio hat keinen Totholz-Körper).
-        // Grammatik, Baum-Parameter und Tag-Variation der Art fielen 05.10. mit (gate:altlasten).
-        const candidates = [
-            "baum_eiche",
-            "baum_kiefer",
-            "baum_birke",
-            "baum_erle",
-            "baum_buche",
-            "baum_tanne",
-            "baum_karst",
-            "stein_block",
-            "kristall_geode",
-            "glutbrunnen",
-        ];
+        // Grammatik, Baum-Parameter und Tag-Variation der Art fielen 05.10. mit (gate:altlasten). Die Liste ist die EINE
+        // der Würfe des Felds (`FELD_WURF`): was sie trägt, weicht dem Bau (`_weichtDemBau`).
+        const candidates = AnazhRealm.FELD_WURF;
         // Nie Math.random im Worldgen: worldFieldAt() initialisiert state.worldField (inkl. rngNoise, seed-
         // gebunden) lazy — sonst würfelt jeder Peer anders (P2P-Drift).
         // Das Welt-Feld dieser Stelle EINMAL (es initialisiert auch den Rausch-Satz samt rngNoise): jede Affinität und
@@ -622,6 +662,9 @@ class AnazhRealm_Z20d {
     _enqueueVegetationSpawn(name, position, opts) {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
         if (!this._wildnisTraegt(position.x, position.z)) return;
+        // DIE MARKE DES WURFS: was das Feld wirft, trägt sie (`feldWurf`, am Eintrag und im Save) — `_weichtDemBau` liest die
+        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau)
+        opts = Object.assign({}, opts, { feldWurf: true });
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -721,7 +764,7 @@ class AnazhRealm_Z20d {
         const g = this._werkGrundriss(type, opts, seed);
         if (!g) return false;
         const ry = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
-        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.sockel);
+        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.saum);
     }
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
@@ -877,8 +920,9 @@ class AnazhRealm_Z20d {
     // und die Lichtung eines Baus, dessen Bauplan sie trägt (der Genesis-Platz: Scheibe und Ring der Tore plus die Reichweite
     // des Wurfs, `max(rand, krone)` — über ihm steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je
     // Zelle) hält die Bauten, die Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei
-    // jedem Spawn/Abriss eines Baus mit Grundriss. Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
-    _imGrundriss(x, z, rand = 0.8, krone = 0) {
+    // jedem Spawn/Abriss eines Baus mit Grundriss. `ohne`: ein Eintrag, dessen eigener Grund nicht zählt (der Wurf, den die
+    // Räumung fragt — `_naturRaeumen`). Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
+    _imGrundriss(x, z, rand = 0.8, krone = 0, ohne = null) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const schluessel = AnazhRealm._grundrissSchluessel;
         const gitter = this._grundrissStand();
@@ -887,6 +931,7 @@ class AnazhRealm_Z20d {
         const l = gitter.zellen.size ? gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G))) : null;
         if (l)
             for (const e of l) {
+                if (e === ohne) continue;
                 const fp = this._grundrissVon(e);
                 if (!fp) continue;
                 // die Hülle eines Baus liegt achsparallel in der Welt (`welt`), das Haus gedreht um seine Gier
@@ -901,7 +946,7 @@ class AnazhRealm_Z20d {
                 )
                     return fp.welt ? "bau" : "haus";
             }
-        return this._aufWeg(x, z, rand) ? "weg" : false;
+        return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;
     }
 
     // Liegt (x, z) auf einer Fläche, die ein Dorf dem Boden gibt (K52) — Straße, Feldweg, Platz, Anger, Acker, die
@@ -911,13 +956,15 @@ class AnazhRealm_Z20d {
     // derselben Regel neben Weg, Platz und Acker (fachwerk-core). Vorher urteilte nur die Wiese über den Weg: im Dorf der
     // Zelle −4,−4 standen 3 Tannen und 1 Birke auf seinen Wegen. Die Flächen stehen im Gitter der Grundrisse (`wege`, jede
     // Fläche mit 1 m Rand — der Stamm-Rand ist 0,8 m): die Frage kostet die Flächen ihrer Zelle, nie alle besuchten Dörfer.
-    _aufWeg(x, z, rand) {
+    // `ohneFlaeche`: eine Fläche, die nicht zählt (die Trittfläche des Wurfs, den die Räumung fragt).
+    _aufWeg(x, z, rand, ohneFlaeche = null) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const l = this._grundrissStand().wege.get(
             AnazhRealm._grundrissSchluessel(Math.floor(x / G), Math.floor(z / G))
         );
         if (!l) return false;
         for (const b of l) {
+            if (b === ohneFlaeche) continue;
             if (x < b.x0 - rand || x > b.x1 + rand || z < b.z0 - rand || z > b.z1 + rand) continue;
             for (const f of b.formen)
                 if (AnazhRealm._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : rand)) return true;
@@ -971,16 +1018,22 @@ class AnazhRealm_Z20d {
     // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
     _grundrissFaellt(x0, z0, x1, z1) {
         this._grundrissGitter = null;
-        const M = this._ortSame;
-        if (!M) return;
+        if (!this._ortSame) return;
         if (![x0, z0, x1, z1].every(Number.isFinite)) {
             this._ortSame = null;
             return;
         }
-        const B = AnazhRealm.ORT_SAME_EIMER;
         const R = AnazhRealm.ORT_SAME_REICH;
-        for (let bx = Math.floor((x0 - R) / B); bx <= Math.floor((x1 + R) / B); bx++)
-            for (let bz = Math.floor((z0 - R) / B); bz <= Math.floor((z1 + R) / B); bz++) {
+        this._ortSameFaellt(x0 - R, z0 - R, x1 + R, z1 + R);
+    }
+    // Die Gestalt des Orts fällt in den Eimern, die der Kasten x0…x1 · z0…z1 (m) berührt — der EINE Räumer ihres Gedächtnisses
+    // für jeden, der ihre Eingaben am Ort ändert: den Grundriss (`_grundrissFaellt`) und den Wald (`_forestDartsFallen`).
+    _ortSameFaellt(x0, z0, x1, z1) {
+        const M = this._ortSame;
+        if (!M) return;
+        const B = AnazhRealm.ORT_SAME_EIMER;
+        for (let bx = Math.floor(x0 / B); bx <= Math.floor(x1 / B); bx++)
+            for (let bz = Math.floor(z0 / B); bz <= Math.floor(z1 / B); bz++) {
                 const ek = bx + "," + bz;
                 const eimer = M.get(ek);
                 if (!eimer) continue;
@@ -1001,6 +1054,17 @@ class AnazhRealm_Z20d {
             AnazhRealm.Gesetz("terrain:PHYTO_PRESETS", null) || AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
         const pr = this._foundryPresetForEntry(e);
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
+    }
+
+    // Weicht der Eintrag dem Bau? Die Natur (`_istNatur`) und jeder Wurf des Felds (die Marke `feldWurf`, die nur der Wurf
+    // trägt: `_enqueueVegetationSpawn` → `spawnArchitecture`, eine Art aus `FELD_WURF`; die Feuerstelle des Glut-Felds ist Bau
+    // ihrer Gestalt nach — Kollision, Grundriss, Trittfläche —, aber ein Wurf). Was weicht, sperrt keinem Ort den Grund
+    // (`_bauFrei`) und fällt im Grundriss eines Baus und auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur,
+    // wenn er NACH dem Bau kam: eine Feuerstelle im Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m. Es
+    // entscheidet die HERKUNFT, nie die Art: bis K10-6 Nachbesserung 2 wich auch die Feuerstelle des Satzes und des Bau-Modus
+    // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art").
+    _weichtDemBau(e) {
+        return this._istNatur(e) || (!!e && e.feldWurf === true);
     }
 
     // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
@@ -1115,7 +1179,7 @@ class AnazhRealm_Z20d {
             return {
                 fp: { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 },
                 tuer: o.tuer || null,
-                sockel: AnazhRealm.FUNDAMENT_SOCKEL_M, // das Fundament trägt sein Podest (`_archFundamentBox`)
+                saum: globalThis.__fachwerkCore.ORT_GESETZ.saumM, // der Grund des Orts: Grundriss samt Saum (der Erdbau)
             };
         const t = o.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
@@ -1217,9 +1281,10 @@ class AnazhRealm_Z20d {
         for (const e of this.state.architectures || []) {
             if (e === ausser || !e.position) continue;
             if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
-            if (!this._istNatur(e)) continue;
+            if (!this._weichtDemBau(e)) continue;
             const k = mitKrone ? this._naturKrone(e.type, e) : 0;
-            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k)) continue;
+            // ein Wurf mit eigenem Grund (die Feuerstelle: ihr Grundriss, ihre Trittfläche) liegt nie in sich selbst
+            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e)) continue;
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
@@ -1306,11 +1371,14 @@ class AnazhRealm_Z20d {
 
     // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt
     // 200-500-ms-Burst; ein 9-Chunk-Ring verteilt sich über ~10-25 Frames.
+    // Im Lade-Takt (`_ladeTakt`) setzt sie, solange LADE_TAKT_MS offen ist (mindestens `maxPerFrame`): die gepflanzten Bäume
+    // um den Spieler gehören ins erste Weltbild (`_weltbildFehlt`), nicht in die Frames danach.
     _tickPendingVegSpawns(maxPerFrame = 4) {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
         let spawned = 0;
-        for (let i = 0; i < maxPerFrame && queue.length > 0; i++) {
+        const frist = this._ladeFrist();
+        for (let i = 0; (i < maxPerFrame || performance.now() < frist) && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;
             this._naturSetzen(task.name, task.position, task.opts);
@@ -1856,7 +1924,7 @@ class AnazhRealm_Z20d {
         const barrier = new Float64Array(w * h);
         const init = new Float64Array(w * h).fill(Infinity);
         let anySource = false;
-        let teil = 0; // Spalten, deren Boden das Makro trägt (Chunk noch nicht geladen)
+        const fehlend = new Set(); // die Chunks, deren Boden das Makro trägt (noch nicht geladen)
         for (let kz = 0; kz < h; kz++) {
             for (let ix = 0; ix < w; ix++) {
                 const gx = gx0 + ix;
@@ -1881,7 +1949,7 @@ class AnazhRealm_Z20d {
                 } else {
                     const m = this._terrainMacroSurfaceY(x, z);
                     bY = Number.isFinite(m) ? m : oy;
-                    teil++;
+                    fehlend.add(`${ccx},${ccz}`);
                 }
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
@@ -1899,28 +1967,25 @@ class AnazhRealm_Z20d {
             // DAS FELD AUS HALBER WAHRHEIT IST VORLÄUFIG (K37): las es Rand-Spalten aus dem Makro, baut es neu, sobald ein
             // Chunk seines Fensters seine Zellen bringt (`_stauFeldVorlaeufig`, gerufen vom Zell-Stempel jedes Chunks). Nach dem
             // Reload baute der Damm im Tal 26/−120 sein Feld im ersten Takt mit 894 Makro-Spalten, das gecachte wich vom
-            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte.
-            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), teil: teil > 0 };
+            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte. Es merkt sich, WELCHE
+            // Chunks fehlten (`fehlend`): ein Chunk, dessen Zellen es schon las, bringt bei einem Neubau nichts Neues (K10: der
+            // Erdbau eines Dorfs am Seerand baute 13 Chunks neu, jedes weckte den Automaten, ohne Wasser zu verdrängen).
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), fehlend: fehlend.size ? fehlend : null };
         }
         this.state.waterStauFields.set(cluster.key, field);
         return field;
     }
 
-    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld (`teil`, aus Makro-Rand gebaut), dessen
-    // Fenster ihn schneidet, fällt samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
+    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld, das ihn aus dem Makro las (`fehlend`), fällt
+    // samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
     _stauFeldVorlaeufig(ox, oz) {
         const felder = this.state.waterStauFields;
         if (!felder || felder.size === 0) return;
         const cfg = this._voxelChunkConfig(0);
-        const gxA = Math.round(ox / cfg.step);
-        const gzA = Math.round(oz / cfg.step);
+        const schluessel = `${Math.round(ox / cfg.span)},${Math.round(oz / cfg.span)}`;
         let fallen = null;
-        for (const f of felder.values()) {
-            if (!f || !f.teil) continue;
-            if (f.gx0 > gxA + cfg.dim - 1 || f.gx0 + f.w - 1 < gxA) continue;
-            if (f.gz0 > gzA + cfg.dim - 1 || f.gz0 + f.h - 1 < gzA) continue;
-            (fallen || (fallen = [])).push(f);
-        }
+        for (const f of felder.values())
+            if (f && f.fehlend && f.fehlend.has(schluessel)) (fallen || (fallen = [])).push(f);
         if (!fallen) return;
         for (const f of fallen)
             this._invalidateWaterCapsAround(

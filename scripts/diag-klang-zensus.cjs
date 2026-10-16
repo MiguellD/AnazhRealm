@@ -64,6 +64,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
 const root = path.resolve(__dirname, "..");
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
@@ -160,6 +161,18 @@ function werkzeug() {
             if (takte >= 40 && stabil >= 15) break;
             await sleep(20);
         }
+        // Einschwingen, bis der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
+        // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26). Auch die Suche der Orte liest danach: die Kronen-Karte
+        // trägt nur gepflanzte Kronen — vor dem Stand des Walds fand sie Deckung 0,6 statt 1 (kz-B6.log).
+        // Die Decke zählt Takte (Bau-Gelegenheiten), nie Sekunden; steht der Wald nach ihr nicht, ist der Ort ROT (`urteile`).
+        let waldTakte = 0;
+        while (!W.waldSteht() && waldTakte < 3000) {
+            W.takt();
+            takte++;
+            waldTakte++;
+            await sleep(0);
+        }
+        const wald = W.waldSteht();
         // Die Kamera blickt nach Norden (−z), 3 m hinter und 1,6 m über dem Spieler: das Panorama ist definiert.
         const cam = st.camera;
         if (cam) {
@@ -168,8 +181,15 @@ function werkzeug() {
             cam.lookAt(p.x, p.y + 1.2, p.z - 10);
             cam.updateMatrixWorld(true);
         }
-        return { takte, chunks: last };
+        return { takte, chunks: last, wald, waldTakte };
     };
+    // DER WALD STEHT: die Schlange des Walds leer, kein Pflanz-Gang und keine Streu-Region wartet, kein gepflanzter Baum
+    // steht in der Pflanz-Schlange.
+    W.waldSteht = () =>
+        !(r._waldPlanSchlange && r._waldPlanSchlange.size) &&
+        !(r._waldPflanzWarten && r._waldPflanzWarten.size) &&
+        !(st.pendingVegSpawns && st.pendingVegSpawns.length) &&
+        r._streuWartet(st.playerMesh.position) === 0;
     // Die Nässe des Klangs ist SEINE (`_nassAt`: der Boden unter der EINEN Wasser-Wahrheit am Körper) — die Linse rechnet
     // sie nie nach (bis Welle L ein Zwilling über das 3×3-gedehnte `_waterLevelAt`).
     W.nass = (x, z) => r._nassAt(x, z);
@@ -222,16 +242,36 @@ function werkzeug() {
             const r0 = Math.max(1e-3, seeZelle.d);
             const ux = (wx - seeZelle.x) / r0;
             const uz = (wz - seeZelle.z) / r0;
+            // Der Leser ist der Hör-Ring des Ohrs (UMWELT.ohr: radien × richtungen, feste Welt-Achsen): das Ufer steht, wo
+            // das Ohr trocken steht und sein ERSTER Ring Wasser trifft — der Punkt hinter dem ersten trockenen Punkt mit den
+            // meisten nassen Ring-Punkten. Ein fester Abstand (3 m) traf an der Wiese von K55 (See 2381/−5191) mit keiner
+            // der festen Richtungen das Wasser: das Ohr hörte es erst auf dem Ring 10 m (−32,1 dB, Wind −33,0).
+            const O = window.__klangCore.UMWELT.ohr;
+            const ringNass = (x, z) => {
+                let erst = 0,
+                    alle = 0;
+                for (const rad of O.radien)
+                    for (let k = 0; k < O.richtungen; k++) {
+                        const a = (k / O.richtungen) * Math.PI * 2;
+                        if (!W.nass(x + Math.sin(a) * rad, z + Math.cos(a) * rad)) continue;
+                        alle++;
+                        if (rad === O.radien[0]) erst++;
+                    }
+                return { erst, alle };
+            };
             for (let s = 1; s < r0; s++) {
                 const qx = seeZelle.x + ux * s;
                 const qz = seeZelle.z + uz * s;
                 if (!W.nass(qx, qz)) {
-                    // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
-                    // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
-                    // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
-                    const fx = qx + ux * 3;
-                    const fz = qz + uz * 3;
-                    if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x: qx - ux, z: qz - uz } };
+                    let wahl = null;
+                    for (let t = 0; t <= O.radien[0]; t += 0.5) {
+                        const fx = qx + ux * t;
+                        const fz = qz + uz * t;
+                        if (W.nass(fx, fz)) continue;
+                        const n = ringNass(fx, fz);
+                        if (n.erst > 0 && (!wahl || n.alle > wahl.n.alle)) wahl = { x: fx, z: fz, n };
+                    }
+                    if (wahl) best = { x: wahl.x, z: wahl.z, wasser: { x: qx - ux, z: qz - uz }, ring: wahl.n };
                     break;
                 }
             }
@@ -282,6 +322,55 @@ function werkzeug() {
             orte.dorf = { x: ex + ((wx - ex) / d) * 4, z: ez + ((wz - ez) / d) * 4, glut: { x: ex, z: ez, typ: glut.e.type } };
             // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
             orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: { x: ex, z: ez, typ: glut.e.type } };
+        }
+        // DIE WIESE liegt jenseits der Hörweite jeder Glut (klang-core UMWELT.stimmen.glut.hoerweiteM): seit K55 steht
+        // an der Mess-Wiese ein Dorf des Gesetzes, sein Glutbrunnen 9,9 m neben dem Messort (glut −35,1 dB über Wind
+        // −36,4). Das Dorf wächst erst ganz (die Bau-Schlange leer, höchstens 30 s), dann gilt der nächste trockene, ebene
+        // Punkt um den Messort, an dem jede Glut außer Hörweite liegt und kein Wasser im Hör-Ring.
+        const dlDorf = performance.now() + 30000;
+        while (r._autoSettlementQueue && r._autoSettlementQueue.plan && performance.now() < dlDorf) {
+            W.takt();
+            await sleep(30);
+        }
+        const hoerweite = window.__klangCore.UMWELT.stimmen.glut.hoerweiteM;
+        const gluten = (st.architectures || []).filter((e) => e && e.position && W.glutFlaeche(e) > 0);
+        const O2 = window.__klangCore.UMWELT.ohr;
+        // offen wie der Messort: keine dichtere Krone, kein größerer Bestand im 15-m-Kreis (der erste Fund 42 m vor dem
+        // Messort stand am Waldrand: 17 Bäume, Wind −48,3 dB unter dem Soll −46)
+        const deckMess = r._kronenStreuAt(wx, wz);
+        const bestandMess = W.bestand(wx, wz, 15);
+        const wieseHaelt = (x, z) => {
+            for (const e of gluten) if (Math.hypot(e.position.x - x, e.position.z - z) < hoerweite + 4) return false;
+            if (r._kronenStreuAt(x, z) > deckMess || W.bestand(x, z, 15) > bestandMess) return false;
+            let lo = Infinity,
+                hi = -Infinity;
+            for (let k = 0; k <= O2.richtungen; k++) {
+                const a = (k / O2.richtungen) * Math.PI * 2;
+                for (const rad of k === O2.richtungen ? [0] : O2.radien) {
+                    const px = x + Math.sin(a) * rad,
+                        pz = z + Math.cos(a) * rad;
+                    if (W.nass(px, pz)) return false;
+                    if (rad > 6) continue;
+                    const y = r._voxelSurfaceY(px, pz);
+                    if (y === null) return false;
+                    lo = Math.min(lo, y);
+                    hi = Math.max(hi, y);
+                }
+            }
+            return hi - lo <= 1.5;
+        };
+        if (!wieseHaelt(wx, wz)) {
+            let neu = null;
+            for (let rr = 6; rr <= 240 && !neu; rr += 6) {
+                const n = Math.round((2 * Math.PI * rr) / 6);
+                for (let q = 0; q < n && !neu; q++) {
+                    const a = (q / n) * Math.PI * 2;
+                    const x = wx + Math.cos(a) * rr,
+                        z = wz + Math.sin(a) * rr;
+                    if (wieseHaelt(x, z)) neu = { x, z, vomMessort: rr, glutHoerweite: hoerweite };
+                }
+            }
+            orte.wiese = neu || { x: wx, z: wz, ohneOrt: "kein Punkt jenseits der Glut-Hörweite binnen 240 m" };
         }
         // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–24 m neben seinem Fuß (der
         // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
@@ -512,7 +601,7 @@ const WIRT_LESER = {
 // (G) DIE STAMM-KLASSE, statisch: jede Stelle im Stamm, die eine Quelle baut (createOscillator · createBufferSource ·
 // createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
 // beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht. Die Methode einer Zeile ist
-// der letzte Klassen-Kopf darüber (4 Leerzeichen eingerückt).
+// das Glied der Klasse, in dem sie steht (am AST, stammLib.glieder — ein Kopf-Muster gab umbrochene Köpfe der Methode davor).
 // Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
 const STAMM_WURZEL =
     UEBER &&
@@ -522,12 +611,12 @@ const STAMM_WURZEL =
 function stammQuellen(src) {
     const rot = [];
     let stellen = 0;
-    let methode = null;
     const zeilen = src.split("\n");
-    for (let i = 0; i < zeilen.length; i++) {
+    const gl = stammLib.glieder(src);
+    for (let i = 0, o = 0; i < zeilen.length; o += zeilen[i].length + 1, i++) {
         const z = zeilen[i];
-        const kopf = /^    (?:static |async |get |set )*([A-Za-z_$][\w$]*)\s*\(/.exec(z);
-        if (kopf) methode = kopf[1];
+        const g = stammLib.gliedAn(gl, o + z.search(/\S|$/));
+        const methode = g ? g.name : null;
         const t = z.trimStart();
         if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue;
         const m = /\.create(Oscillator|BufferSource|ConstantSource)\(/.exec(z);
@@ -612,8 +701,9 @@ async function messeOrt(page, name, ort, stubs) {
             }
             const syn0 = W.synthese();
             try {
+                // umstellen schwingt ein, bis der Wald steht (`W.waldSteht`); dann läuft der Ring voll, die Stimmen werden
+                // bestellt, geliefert und rampen ein.
                 const um = await W.umstellen(ort.x, ort.z);
-                // Einschwingen: der Ring läuft voll, die Stimmen werden bestellt, geliefert und rampen ein.
                 const dl = performance.now() + 2500;
                 while (performance.now() < dl) {
                     W.takt();
@@ -1158,6 +1248,9 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
                         .join(" ← ")} trägt kein Gesetz`
                 );
         }
+        // (O) der Ort steht: die Stimmen des Walds hört nur, wer ihn gepflanzt findet (`W.waldSteht`)
+        if (d.um && d.um.wald === false)
+            rot.push(`O ${name}: der Wald steht nach ${d.um.waldTakte} Takten nicht (Schlange, Pflanz-Gang oder Streu wartet)`);
         // (W) die Welt rechnet in der Werkstatt
         werkstatt(name, d.hauptSynthese);
         if (d.zensus && !(d.zensus.werkstatt && d.zensus.werkstatt.laeuft)) rot.push(`W ${name}: keine Klang-Werkstatt`);
@@ -1327,8 +1420,8 @@ function drucke(zeilen, offline, kostenErg, lab) {
         const phasen = {};
         // Die Orte.
         let s0 = await syn();
-        await page.evaluate(() => window.__klangW.umstellen(-900, -850));
-        const orte = await page.evaluate(() => window.__klangW.orte(-900, -850));
+        await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
+        const orte = await page.evaluate((m) => window.__klangW.orte(m.x, m.z), MESS);
         phasen.anreise = phase(s0, await syn());
         console.log("Orte:", JSON.stringify(orte));
         const daten = {};
@@ -1351,7 +1444,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             }
         }
         s0 = await syn();
-        await page.evaluate(() => window.__klangW.umstellen(-900, -850));
+        await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
         const kostenErg = await kosten(page);
         phasen.kosten = phase(s0, await syn());
         const ereig = await page.evaluate(() => window.__klangW.ereignisse());
@@ -1464,7 +1557,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 if (ok3) fehl.push("S3: das Seeufer ohne Wasser hält das SOLL (die Linse ist blind)");
             } else fehl.push("S3: kein Seeufer gefunden");
             // S4: ein Glut-Umlauf über alle Bauten.
-            await page.evaluate(() => window.__klangW.umstellen(-900, -850));
+            await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
             const k4 = await kosten(page, { alleBauten: true });
             if (!k4.wachsen.some((t) => /^bauten/.test(t))) fehl.push("S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
             // S5: ein Ereignis-Zwilling (Glocke aus dem Stamm, direkt an den Ausgang).
@@ -1519,9 +1612,12 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
             // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
             // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
+            const s9Text = stammLib.text(STAMM_WURZEL);
+            const s9Nach = stammLib.glieder(s9Text)[0].ende; // hinter das erste Glied der Klasse (die Methode am AST)
             const s9 = stammQuellen(
-                stammLib.text(STAMM_WURZEL) +
-                    "\n    zwillingPing(tags) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }\n"
+                s9Text.slice(0, s9Nach) +
+                    "\n    zwillingPing(\n        tags\n    ) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }" +
+                    s9Text.slice(s9Nach)
             );
             if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))
                 fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");

@@ -650,7 +650,12 @@ class AnazhRealm_Z21 {
                 id: entry.id,
             });
         }
-        if (typeof this.saveState === "function") this.saveState();
+        // DER ABBAU SPEICHERT GEBÜNDELT (K69): der Eintrag ist sofort aus `state.architectures` (kein Verlust im Spiel), die
+        // schwere Persistenz (Snapshot mit der Höhe über Grund JEDES Baus, JSON, Platte) bündelt der EINE Edit-Save. Bis K69
+        // speicherte jeder Abbau die ganze Welt synchron: räumt ein Dorf beim Nähern seinen Grund (`_naturRaeumen`, die Flächen
+        // seiner Wege und Häuser), lagen 82 volle Saves in wenigen Frames (Null-Renderer, Dorfweg gehend); je Save 40 ms
+        // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return true;
     }
 
@@ -970,7 +975,7 @@ class AnazhRealm_Z21 {
         const c =
             ziel && ziel.isObject3D ? ziel : ziel && ziel.creature && ziel.creature.isObject3D ? ziel.creature : null;
         if (!c) return null;
-        c.updateMatrixWorld(true);
+        this._leibMatrix(c);
         const pt =
             ziel.point && Number.isFinite(ziel.point.x)
                 ? new THREE.Vector3(ziel.point.x, ziel.point.y, ziel.point.z)
@@ -991,7 +996,7 @@ class AnazhRealm_Z21 {
         const zielPunkt = () => {
             const z = sw.ziel;
             if (z && z.c) {
-                z.c.updateMatrixWorld(true);
+                this._leibMatrix(z.c);
                 return z.c.localToWorld(P.copy(z.lokal));
             }
             const F = this._fadenkreuzStrahl();
@@ -1194,7 +1199,7 @@ class AnazhRealm_Z21 {
         const K = AnazhRealm._arenaGesetz().schwung;
         const z = sw.ziel;
         if (!z || z.c !== c) return this._kreaturGliedTreffer(c, B.x, B.y, B.z, T.x, T.y, T.z, K.bladeRadiusM);
-        c.updateMatrixWorld(true);
+        this._leibMatrix(c);
         const P = c.localToWorld((this._kontaktP || (this._kontaktP = new THREE.Vector3())).copy(z.lokal));
         const ex = T.x - B.x,
             ey = T.y - B.y,
@@ -1222,7 +1227,7 @@ class AnazhRealm_Z21 {
         out.lo = out.hi = kontakt;
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return out;
-        cr.updateMatrixWorld(true);
+        this._leibMatrix(cr);
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         const pts = this._trefferWegPts || (this._trefferWegPts = []);
         const n = AnazhRealm.TREFFER_WEG_PROBEN;
@@ -2573,7 +2578,7 @@ class AnazhRealm_Z21 {
             if (auftrag && auftrag.name !== "wander") continue;
             const gl = this._kreaturTrefferGlieder(c);
             if (!gl) continue;
-            c.updateMatrixWorld(true);
+            this._leibMatrix(c);
             for (const g of gl) {
                 for (let k = 0; k <= 2; k++) {
                     P.copy(g.a)

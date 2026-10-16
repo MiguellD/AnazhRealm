@@ -33,7 +33,9 @@ const law = (name, present, cond, detail) => {
     }
 };
 
-const anazhNC = stripComments(require("./lib/stamm.cjs").text(ROOT));
+const stammLib = require("./lib/stamm.cjs");
+const anazhRoh = stammLib.text(ROOT);
+const anazhNC = stripComments(anazhRoh);
 const foundryNC = stripComments(read("foundry-core.js"));
 const pkg = read("package.json");
 
@@ -199,10 +201,8 @@ law(
     "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
     true,
     /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
-        /_foundryServierStufe\(preset, lod\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
-        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(
-            anazhNC
-        )
+        /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
+        /_foundryFlattenFor\([^)]*\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(anazhNC)
 );
 // W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
 // ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
@@ -212,7 +212,7 @@ console.log("\nGesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-
 law(
     "der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)",
     true,
-    /_effectiveFoliageDensity\(\)\s*\{/.test(anazhNC)
+    /_effectiveFoliageDensity\([^)]*\)\s*\{/.test(anazhNC)
 );
 {
     const _fnBody = (name) => {
@@ -252,7 +252,7 @@ law(
 {
     const nakedCalls = (anazhNC.match(/render\.calls/g) || []).length;
     const fallbackCalls = (anazhNC.match(/drawCalls[^;]{0,160}render\.calls/g) || []).length;
-    const kehrausZaehler = (anazhNC.match(/_gpuKehrausMarke\(\) \{[^}]{0,160}render\.calls/g) || []).length;
+    const kehrausZaehler = (anazhNC.match(/_gpuKehrausMarke\([^)]*\) \{[^}]{0,160}render\.calls/g) || []).length;
     law(
         "kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback und als der EINE Kehraus-Zähler)",
         true,
@@ -265,7 +265,7 @@ law(
 // Ein Refactor, der einen `if (rec.kind === ...)`-Zweig zurueckbringt, wird hier rot.
 {
     const _autoBody = (() => {
-        const m = anazhNC.match(/_foundryAutoRegisterSpecies\(book\) \{/);
+        const m = anazhNC.match(/_foundryAutoRegisterSpecies\([^)]*\) \{/);
         if (!m) return "";
         let i = anazhNC.indexOf(m[0]) + m[0].length,
             depth = 1,
@@ -329,7 +329,7 @@ law(
 // N4 (Nervensystem-Plan Phase γ, „Instance-Straße") — DIE EINE MESH→GROUP-NAHT + DAS REPLY-
 // MATERIAL FÜHRT + DIE TUFT-WAND + IMPOSTOR-POLITIK ALS DATEN. Vier Gesetze, jedes als Struktur:
 // N4.1 der Worker-Reply wird EXAKT EINMAL zu THREE-Geometrie (in `_foundryBuildGroup`) — jeder
-//      `_foundryRequest(...).then((meshes)`-Leser routet durch diese eine Naht (kein zweiter
+//      `this._foundryRequest(...)`-Aufruf ist ein `.then`-Leser und routet durch diese eine Naht (kein zweiter
 //      Bau-Pfad kann still entstehen; die IDB-Persistenz in `_foundryRequest` selbst speichert
 //      den Reply UNVERÄNDERT, sie baut nicht → zählt nicht als Leser).
 // N4.2 wo `m.mat` reist, FÜHRT es — die kind-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7/0.18)
@@ -360,24 +360,100 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     // N4.1a — die Roh-Reply→Geometrie-Konversion existiert genau EINMAL (die eine Naht):
     const rawConv = (anazhNC.match(/new T\.BufferAttribute\(m\.position\.array/g) || []).length;
     law("N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)", true, rawConv === 1);
-    // N4.1b — jeder `_foundryRequest`-Aufrufer mit meshes-Handler routet durch die Naht:
-    {
-        let sites = 0,
-            routed = 0;
-        let idx = -1;
-        while ((idx = anazhNC.indexOf("this._foundryRequest(", idx + 1)) !== -1) {
-            const win = anazhNC.slice(idx, idx + 700);
-            if (!/\.then\(\(meshes\)/.test(win)) continue; // kein Reply-Leser (gibt es heute nicht)
-            sites++;
-            // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor —
-            // _ofenAssembleAsset routet durch DIESELBE Mesh-Konversion
-            // (_foundryBuildMesh; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
-            if (/_foundryBuildGroup\(meshes|_ofenAssembleAsset\(meshes/.test(win)) routed++;
+    // N4.1b — JEDER `this._foundryRequest(`-Aufruf ist ein Reply-Leser, der durch die Naht routet. Bis K38-N2 übersprang
+    // die Zählung jeden Aufruf ohne `.then((meshes)` still und bewachte ihre Leere mit der Mindestzahl ≥ 5 — die fiel, als
+    // der Vorrat in den EINEN Zug zog (5 → 4 Leser, Zweig-CI 38661623802): die Linse strafte den Schnitt, den sie bewacht.
+    // Jetzt zählt sie ALLE Aufrufe (ein Aufruf ohne Leser ist ein Leck aus der Naht), liest den Handler-Parameter am
+    // Namen und belegt ihre Nicht-Leere am Namen des EINEN Zugs (`_foundryZug`) plus einem Selbsttest am Täter.
+    // Gelesen am AST (stammLib.rufe, Prüfer K38-N2 Runde 3): bis dahin ordnete ein Kopf-Muster jeden Aufruf seiner Methode
+    // zu und benannte ihn an `)` in einem Default-Parameter falsch (der Aufruf fiel der Methode davor zu); der Handler und
+    // sein Parameter sind Knoten, der Ruf in die Naht ein Aufruf mit diesem Parameter als erstem Argument.
+    // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor — `_ofenAssembleAsset` routet durch DIESELBE
+    // Mesh-Konversion (`_foundryBuildMesh`; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
+    const NAHT_RX = /^(?:_foundryBuildGroup|_ofenAssembleAsset)$/;
+    const vonThis = (r) => r.knoten.callee.type === "MemberExpression" && r.knoten.callee.object.type === "ThisExpression";
+    const leserZensus = (src) => {
+        const rufe = stammLib.rufe(src);
+        const thenAn = new Map(); // der Anfrage-Knoten → sein `.then(...)`
+        for (const r of rufe) {
+            const c = r.knoten.callee;
+            if (r.name === "then" && c.type === "MemberExpression" && c.object.type === "CallExpression") thenAn.set(c.object, r);
         }
+        return rufe
+            .filter((r) => r.name === "_foundryRequest" && vonThis(r))
+            .map((a) => {
+                const then = thenAn.get(a.knoten);
+                const h = then && then.args[0];
+                const p =
+                    h && /FunctionExpression$/.test(h.type) && h.params[0] && h.params[0].type === "Identifier" ? h.params[0].name : null;
+                const routed =
+                    !!p &&
+                    rufe.some(
+                        (r) =>
+                            r.start >= h.start &&
+                            r.ende <= h.end &&
+                            NAHT_RX.test(r.name || "") &&
+                            vonThis(r) &&
+                            r.args[0] &&
+                            r.args[0].type === "Identifier" &&
+                            r.args[0].name === p
+                    );
+                return { methode: a.glied || "?", routed, leser: !!then };
+            });
+    };
+    {
+        // Selbsttest am Täter: ein Leser am Bau vorbei, ein Aufruf ohne Leser, ein Leser mit fremdem Parameter-Namen und
+        // ein Leser hinter einem Kopf mit Default-Parameter (`_versteckt(a, o = f(1))`, das Kopf-Muster gab ihn `_ohneLeser`)
+        // fallen beim Namen; der Leser durch die Naht hält, auch über Zeilen umbrochen und mit Block-Rumpf.
+        const probe = leserZensus(
+            [
+                "class P {",
+                "    _gut(a) {",
+                "        this._foundryRequest(a, 0, 1).then((m) => { this._foundryCacheSet(a, this._foundryBuildGroup(m, {})); });",
+                "    }",
+                "    _vorbei(a) {",
+                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
+                "    }",
+                "    _ohneLeser(a) {",
+                "        return this._foundryRequest(a, 0, 1);",
+                "    }",
+                "    _versteckt(a, o = f(1)) {",
+                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
+                "    }",
+                "    _fremd(a) {",
+                "        this._foundryRequest(a, 0, f(1)).then((r) => this._foundryBuildGroup(meshes));",
+                "    }",
+                "    _umbrochen(",
+                "        a,",
+                "        b",
+                "    ) {",
+                "        this._foundryRequest(a, b, g(1, 2))",
+                "            .then(function (teile) {",
+                "                return this._foundryBuildGroup(teile, {});",
+                "            });",
+                "    }",
+                "}",
+            ].join("\n")
+        );
+        const sieht =
+            probe.map((s) => `${s.methode}:${s.routed ? 1 : 0}`).join(",") ===
+            "_gut:1,_vorbei:0,_ohneLeser:0,_versteckt:0,_fremd:0,_umbrochen:1";
         law(
-            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed}/${sites} Sites, erwartet ≥5)`,
+            "N4.1: die Leser-Zählung sieht den Täter (Selbsttest: vorbei · ohne Leser · Default-Parameter im Kopf · fremder Parameter fallen beim Namen)",
             true,
-            sites >= 5 && routed === sites
+            sieht,
+            JSON.stringify(probe)
+        );
+        const sites = leserZensus(anazhRoh);
+        const routed = sites.filter((s) => s.routed);
+        const lecks = sites.filter((s) => !s.routed).map((s) => `${s.methode}${s.leser ? "" : " (ohne Leser)"}`);
+        law(
+            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed.length}/${sites.length} Sites: ${sites
+                .map((s) => s.methode)
+                .join(" · ")})`,
+            true,
+            routed.length === sites.length && routed.some((s) => s.methode === "_foundryZug"),
+            lecks.length ? "am Bau vorbei: " + lecks.join(", ") : "der EINE Zug `_foundryZug` liest nicht durch die Naht"
         );
     }
     // N4.2 — die Naht reicht das Reply-Material herein + mp FÜHRT (kind-Defaults nur Fallback):
@@ -397,9 +473,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     law(
         "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
         true,
-        /_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
-            anazhNC
-        ) &&
+        /_foundryTreeMaterial\([^)]*\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(anazhNC) &&
             /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&
             !/typeof mp\.(roughness|metalness|envMapIntensity)\b/.test(anazhNC) &&
             /r: mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(reglerKoerper) &&
@@ -447,7 +521,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
         /vehicle:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
     );
     {
-        const treeBody = _fnBodyN4(/_foundryPresetIsTree\(preset\) \{/);
+        const treeBody = _fnBodyN4(/_foundryPresetIsTree\([^)]*\) \{/);
         law(
             "N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body",
             true,
@@ -479,7 +553,7 @@ console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Choke
         }
         return out;
     };
-    const extrasBody = _fnBodyN5(/_forestExtraSpecies\(\) \{/);
+    const extrasBody = _fnBodyN5(/_forestExtraSpecies\([^)]*\) \{/);
     law(
         "N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)",
         true,
@@ -491,7 +565,7 @@ console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Choke
         /placeExtra/.test(extrasBody),
         "die Nischen-Quelle greift wieder direkt auf placeExtra"
     );
-    const policyBody = _fnBodyN5(/_placePolicyFor\(rec, kindPolicy\) \{/);
+    const policyBody = _fnBodyN5(/_placePolicyFor\([^)]*\) \{/);
     law(
         "N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)",
         true,

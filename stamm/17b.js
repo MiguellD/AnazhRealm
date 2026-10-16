@@ -687,7 +687,7 @@ class AnazhRealm_Z17b {
         mesh.renderOrder = spec.renderOrder;
         mesh.visible = s.grundAlt = this._chunkSatzGrund(s);
         Object.assign(mesh.userData, spec.userData);
-        if (spec.nurWurf) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER); // der Wurf-Satz: nur die Kaskaden
+        if (spec.nurWurf) mesh.layers.disable(0); // der Wurf-Satz: nur die Kaskaden (sein Wurf ist die Wurf-Ebene, K72)
         s.mesh = mesh;
         return mesh;
     }
@@ -752,6 +752,28 @@ class AnazhRealm_Z17b {
             }
     }
 
+    // DER VERGLEICHENDE SCHREIBER der Sätze (K71): legt `quelle` (ein Array derselben Art, oder EIN Wert für `n` Plätze) ab
+    // `ab` in `ziel` und schreibt nur den Lauf, der sich dort ändert — `lauf` trägt ihn danach als [von, bis) relativ zu `ab`;
+    // Rückgabe false, wenn jedes Element schon so lag. Ein Satz-Schreiber hebt die Version seines Puffers nur über diesen
+    // Lauf: eine gehobene Version ohne neue Bytes frischte jedes Render-Objekt des Satzes in jedem Pass voll auf (Genesis
+    // Third in Ruhe: ein Bau-Bereich, dessen letzte Instanz der Cull nahm, trat mit denselben Bytes am selben Ort neu ein).
+    static _satzSetze(ziel, ab, quelle, n, lauf) {
+        const wert = typeof quelle === "number";
+        if (!wert) n = quelle.length;
+        let von = 0;
+        if (wert) while (von < n && ziel[ab + von] === quelle) von++;
+        else while (von < n && ziel[ab + von] === quelle[von]) von++;
+        if (von === n) return false;
+        let bis = n;
+        if (wert) while (ziel[ab + bis - 1] === quelle) bis--;
+        else while (ziel[ab + bis - 1] === quelle[bis - 1]) bis--;
+        if (wert) ziel.fill(quelle, ab + von, ab + bis);
+        else ziel.set(von === 0 && bis === n ? quelle : quelle.subarray(von, bis), ab + von);
+        lauf[0] = von;
+        lauf[1] = bis;
+        return true;
+    }
+
     // DIE FREILISTE des Satzes — EINE Mechanik für seine Vertex-Bereiche und die Zellen-Plätze seiner Abschnitte: Läufe
     // [start, länge], nach Start sortiert, Nachbarn verschmolzen. `_satzFreiNimm` nimmt First-Fit den ersten Lauf, der
     // reicht (−1: keiner); `_satzFreiGib` legt einen Lauf zurück und gibt das neue Hochwasser zurück (ein Lauf, der das
@@ -811,7 +833,8 @@ class AnazhRealm_Z17b {
     // mit seiner Breite vorliegen, ein Index muss da sein — ein fehlender Wert ist ein lauter Bruch.
     _chunkSatzEin(art, key, geom, chunkKey) {
         const s = this._chunkSatz(art);
-        if (s.bloecke.has(key)) this._chunkSatzAus(art, key);
+        const alt = s.bloecke.get(key);
+        if (alt) this._chunkSatzAus(art, key);
         const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
         for (const [name, is, , w] of s.spec.attr)
             for (const [nm, b] of w
@@ -829,20 +852,32 @@ class AnazhRealm_Z17b {
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
         const vStart = this._chunkSatzVAlloc(s, n);
         const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
+        // Jedes Attribut lädt nur den Lauf, der sich ändert (K71, `_satzSetze`): ein Bereich, der am selben Ort neu eintritt
+        // (der Cull nahm die letzte Instanz einer Bau-Gruppe), trägt dort meist dieselben Bytes. Ein gepacktes Attribut packt
+        // dann erst in einen Vorrat und vergleicht; an einem fremden Ort packt es direkt.
+        const L = this._satzLauf || (this._satzLauf = [0, 0]);
+        const amOrt = !!alt && alt.vStart === vStart;
         for (const { name, is, form, gis, w } of s.attr) {
             const ga = g.attributes[name];
-            if (form)
-                AnazhRealm._satzPacke(
-                    form,
-                    geom.attributes[name].array,
-                    is,
-                    ga.array,
-                    vStart,
-                    n,
-                    w && geom.attributes[w].array
-                );
-            else ga.array.set(geom.attributes[name].array, vStart * is);
-            ga.addUpdateRange(vStart * gis, n * gis);
+            let quelle = geom.attributes[name].array;
+            if (form && amOrt) {
+                const V = this._satzVorrat || (this._satzVorrat = new Map());
+                let vr = V.get(ga.array.constructor);
+                if (!vr || vr.length < n * gis)
+                    V.set(ga.array.constructor, (vr = new ga.array.constructor(n * gis * 2)));
+                AnazhRealm._satzPacke(form, quelle, is, vr, 0, n, w && geom.attributes[w].array);
+                quelle = vr.subarray(0, n * gis);
+            } else if (form) {
+                AnazhRealm._satzPacke(form, quelle, is, ga.array, vStart, n, w && geom.attributes[w].array);
+                ga.addUpdateRange(vStart * gis, n * gis);
+                ga.needsUpdate = true;
+                continue;
+            }
+            if (!AnazhRealm._satzSetze(ga.array, vStart * gis, quelle, 0, L)) continue;
+            // in ganzen Vertices: ein gepacktes Element trägt 1 oder 2 Bytes, `writeBuffer` verlangt Vielfache von 4
+            const v0 = Math.floor(L[0] / gis),
+                v1 = Math.ceil(L[1] / gis);
+            ga.addUpdateRange((vStart + v0) * gis, (v1 - v0) * gis);
             ga.needsUpdate = true;
         }
         const li = geom.index.array;
@@ -869,6 +904,13 @@ class AnazhRealm_Z17b {
         this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
         this._chunkSatzHuelle(s, b);
         if (b.hoehle) this._hoehlenVerknuepfe(s, b);
+        // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
+        // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
+        if (geom.fluechtig) {
+            for (const { name, form } of s.attr) if (form) geom.attributes[name].array = null;
+            geom.index = null;
+            geom.zellen = null;
+        }
         s.iSumme += b.iAnzahl;
         s.schmutzig = true;
         return b;
@@ -1027,10 +1069,12 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) return false;
-        for (const { name, form } of s.attr) {
-            const a = b.geom.attributes[name];
-            if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
-        }
+        // ein flüchtiger Block (`_satzBlock`) hat keinen Eigner, der seine Daten behielte — keine Kopie
+        if (!b.geom.fluechtig)
+            for (const { name, form } of s.attr) {
+                const a = b.geom.attributes[name];
+                if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
+            }
         if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
@@ -1045,6 +1089,10 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
+        if (b.geom.fluechtig)
+            throw new Error(
+                `_chunkSatzMarke(${art}, ${key}): ein flüchtiger Block trägt keinen CPU-Schreiber (_satzBlock)`
+            );
         // je geschriebenem Namen das Satz-Attribut, das ihn trägt — selbst oder in seiner vierten Komponente (`w`)
         for (const fa of s.attr) {
             if (!namen.includes(fa.name) && !(fa.w && namen.includes(fa.w))) continue;
@@ -1309,25 +1357,28 @@ class AnazhRealm_Z17b {
     // Satz-Ordnung) schreibt erst ab der ersten Zelle, die sich unterscheidet.
     _chunkSatzDicht(s, a, liste, n, wer, abUnterschied) {
         const index = s.geom.index.array;
-        let p = 0,
-            off = 0;
+        let p = 0;
         if (abUnterschied && a.dicht) {
             const alt = a.liste;
-            while (p < alt.length && p < liste.length && alt[p] === liste[p]) {
-                off += liste[p].idx.length;
-                p++;
-            }
+            while (p < alt.length && p < liste.length && alt[p] === liste[p]) p++;
         }
         a.platz.clear();
         a.frei.length = 0;
-        let o = 0;
+        const L = this._satzLauf || (this._satzLauf = [0, 0]);
+        let o = 0,
+            von = -1,
+            bis = -1;
         for (let i = 0; i < liste.length; i++) {
             const z = liste[i];
             a.platz.set(z, o);
-            if (i >= p) index.set(z.idx, a.start + o);
+            // eine Zelle, die mit denselben Indizes am selben Platz liegt (ein Bereich, der neu eintrat), lädt nichts
+            if (i >= p && AnazhRealm._satzSetze(index, a.start + o, z.idx, 0, L)) {
+                if (von < 0) von = o + L[0];
+                bis = o + L[1];
+            }
             o += z.idx.length;
         }
-        if (o > off) this._chunkSatzSchreib(s, wer, a.key, a.start + off, o - off);
+        if (von >= 0) this._chunkSatzSchreib(s, wer, a.key, a.start + von, bis - von);
         a.ende = o;
         a.n = n;
         a.liste = liste;
@@ -1342,6 +1393,7 @@ class AnazhRealm_Z17b {
     // vorher schrieb der Pass jeden frei gewordenen Platz zweimal, entartet und neu belegt).
     _chunkSatzTausch(s, a, liste, n, wer) {
         const index = s.geom.index.array;
+        const L = this._satzLauf || (this._satzLauf = [0, 0]);
         const neu = new Set(liste);
         const offen = []; // die frei gewordenen Plätze: Anfang, Länge, der Index ihrer Entartung
         for (const [z, off] of a.platz)
@@ -1361,8 +1413,8 @@ class AnazhRealm_Z17b {
                     off = a.ende;
                     a.ende += len;
                 }
-                index.set(z.idx, a.start + off);
-                this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
+                if (AnazhRealm._satzSetze(index, a.start + off, z.idx, 0, L))
+                    this._chunkSatzSchreib(s, wer, a.key, a.start + off + L[0], L[1] - L[0]);
                 a.platz.set(z, off);
                 belegt.push([off, off + len]);
             }
@@ -1381,16 +1433,12 @@ class AnazhRealm_Z17b {
             }
             let cur = o;
             for (let i = lo; i < belegt.length && belegt[i][0] < e && cur < e; i++) {
-                if (belegt[i][0] > cur) {
-                    index.fill(w, a.start + cur, a.start + belegt[i][0]);
-                    this._chunkSatzSchreib(s, wer, a.key, a.start + cur, belegt[i][0] - cur);
-                }
+                if (belegt[i][0] > cur && AnazhRealm._satzSetze(index, a.start + cur, w, belegt[i][0] - cur, L))
+                    this._chunkSatzSchreib(s, wer, a.key, a.start + cur + L[0], L[1] - L[0]);
                 if (belegt[i][1] > cur) cur = belegt[i][1];
             }
-            if (cur < e) {
-                index.fill(w, a.start + cur, a.start + e);
-                this._chunkSatzSchreib(s, wer, a.key, a.start + cur, e - cur);
-            }
+            if (cur < e && AnazhRealm._satzSetze(index, a.start + cur, w, e - cur, L))
+                this._chunkSatzSchreib(s, wer, a.key, a.start + cur + L[0], L[1] - L[0]);
         }
         a.n = n;
         a.liste = liste;
@@ -1426,14 +1474,13 @@ class AnazhRealm_Z17b {
                 break;
             }
             if (neu < 0) continue;
-            index.set(z.idx, a.start + neu);
-            this._chunkSatzSchreib(s, wer, a.key, a.start + neu, len);
+            const L = this._satzLauf || (this._satzLauf = [0, 0]);
+            if (AnazhRealm._satzSetze(index, a.start + neu, z.idx, 0, L))
+                this._chunkSatzSchreib(s, wer, a.key, a.start + neu + L[0], L[1] - L[0]);
             a.platz.set(z, neu);
             a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
-            if (off < a.ende) {
-                index.fill(z.idx[0], a.start + off, a.start + off + len);
-                this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
-            }
+            if (off < a.ende && AnazhRealm._satzSetze(index, a.start + off, z.idx[0], len, L))
+                this._chunkSatzSchreib(s, wer, a.key, a.start + off + L[0], L[1] - L[0]);
         }
         if (a.ende - n > a.ende * V) this._chunkSatzDicht(s, a, liste, n, wer, false);
     }
@@ -1478,7 +1525,7 @@ class AnazhRealm_Z17b {
         s.iEnde = pos;
     }
 
-    // Der EINE Index-Schreiber (Teil-Upload ab `ab`, `n` Indizes); die Neuschreib-Linse bucht die Bytes auf
+    // Der EINE Index-Schreiber (Teil-Upload ab `ab`, `n` Indizes — der Lauf, den `_satzSetze` änderte); die Neuschreib-Linse bucht die Bytes auf
     // „Verursacher>Abschnitt" — `wer` ≠ `wen` heißt: ein Pass schrieb den Abschnitt eines anderen.
     _chunkSatzSchreib(s, wer, wen, ab, n) {
         const index = s.geom.index;

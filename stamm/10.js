@@ -172,7 +172,11 @@ class AnazhRealm_Z10 {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
+            // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
+            // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
+            lichtGlut: Object.fromEntries(
+                Object.keys(globalThis.__fachwerkCore.LICHT_GESETZ).map((k) => [k, TSL.uniform(new THREE.Color())])
+            ),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -308,8 +312,10 @@ class AnazhRealm_Z10 {
             if (_p("mond") > 0 && _au.terrainMoonRim) {
                 const _mvd = _T.cameraPosition.sub(_wp).normalize();
                 const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                const _moonCol = _T.vec3(0.55, 0.66, 1.0);
-                _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
+                // der Farbton ist der EINE Mond-Hue des Gesetzes (MOONLIGHT ← ATMO_GESETZ.nacht.mond, D3)
+                const _M = AnazhRealm.MOONLIGHT;
+                const _mondHue = _T.vec3(_M.r, _M.g, _M.b);
+                _rgb = _rgb.add(_mondHue.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
             }
             mat.outputNode = _T.vec4(_rgb, _o.w);
         } catch (_e) {
@@ -752,22 +758,22 @@ class AnazhRealm_Z10 {
                             // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
                             // catch ist gefallen (05.10.: kein Stoff ohne seinen Atlas, wie der Laub-Stoff der Welt);
                             // headless (kein document) zeichnet kein Stoff.
-                            const _atl = this._blattAtlasProbe(_Ta);
+                            const _atl = this._blattAtlasProbe(_Ta, 0.5);
                             if (_atl) {
                                 _alpha = _atl.a;
                                 albedoNode = albedoNode.mul(_atl.rgb);
+                                // die Kante von EINEM Pixel (K68, `_laubKante`): Bild-Pass am Rauschen, Schatten an 0,5
+                                mat.alphaTestNode = _atl.schwelle;
                             }
                             mat.alphaTest = 0.5;
                         }
-                        // Kuppel-Normale, flip-frei: Laub trägt die analytische Kuppel-Richtung als gebackene Normale
-                        // (_stampFoliageDomeNormals); der Renderer negiert Attribut-Normalen back-facender DoubleSide-
-                        // Fragmente → die Innenseite läse die Kuppel invertiert (fast schwarz). normalNode umgeht den Flip;
-                        // normalLocal trägt die Batch-/Instanz-Rotation, modelViewMatrix hebt in View — wie der Impostor
-                        // (transformDirection, NIE transformNormalToView). Lokal → Sicht ist MATRIX.transformDirection(n)
-                        // (MV·n); n.transformDirection(MATRIX) rechnete MVᵀ·n und drehte das Sonnen-Licht der Krone mit
-                        // der Blick-Richtung (Normal-Sonde 06.10.: 19–35 Grauwerte neben three's eigener Normale).
+                        // DIE NORMALE DER KRONE, flip-frei, und die gesehene Blatt-Seite (K68-N1): das Grammatik-Laub trägt
+                        // die Normale der Krone (`_kronenNormalenAuf`, das Kern-Gesetz) und liest sie wie die Studio-Krone
+                        // (`_laubStoffNormale`: die Geometrie-Normale des Renderers ohne die Seite), die Unterseite aus der
+                        // gesehenen Fläche (`_laubUnterseite`) — EIN Laub-Look für Werkstatt und Welt.
                         if (opts.foliageLeaf === true && !opts.impostorAtlas) {
-                            mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);
+                            this._laubStoffNormale(_Ta, mat);
+                            albedoNode = this._laubUnterseite(_Ta, albedoNode);
                         }
                         // Rinden-Maserung prozedural aus dem holz-Tag (keine Bitmap): Längs-Faser (hohe Frequenz quer x/z,
                         // niedrige längs y) + Risse aus härte (ridged-Noise); moduliert die per-Vertex-Rinden-Albedo.
@@ -992,8 +998,8 @@ class AnazhRealm_Z10 {
     // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
     // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
     // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
-    // Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
-    // (`atmoUniforms.fensterGlut`); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // Gesetzbuch ein Datum mit Zeitplan stempelt (`mp.licht`: "fenster" am fachwerk `glas`, "laterne" am `laternenglas`),
+    // glüht in der Glut SEINES Datums (`atmoUniforms.lichtGlut[licht]`, Farbe aus `kelvin` × Zeitplan); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
     // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
@@ -1010,6 +1016,8 @@ class AnazhRealm_Z10 {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
+        // EIN KNOTEN JE GRAPH UND DATUM: das Leuchten haengt an der Basis, der Himmels-Sicht und dem Licht-Datum des Stoffs
+        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool
         const ohne = this._leuchtOhne || (this._leuchtOhne = {});
         const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
         const basis = mat.emissiveNode || ohne;
@@ -1017,13 +1025,17 @@ class AnazhRealm_Z10 {
         const jeHimmel = jeBasis.get(basis);
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
-        const plan = mp && mp.licht === "fenster" ? "fenster" : "offen";
-        if (!knoten[plan]) {
+        const licht = mp && mp.licht ? String(mp.licht) : "";
+        if (!knoten[licht]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-            if (plan === "fenster") em = em.add(atmo.fensterGlut);
-            knoten[plan] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            if (licht) {
+                const glut = atmo.lichtGlut[licht];
+                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
+                em = em.add(glut);
+            }
+            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
-        mat.emissiveNode = knoten[plan];
+        mat.emissiveNode = knoten[licht];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -1621,6 +1633,9 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
+            // DIE KANTE DES LAUBS (K68, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
+            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
+            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
             uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
             uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
             uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),

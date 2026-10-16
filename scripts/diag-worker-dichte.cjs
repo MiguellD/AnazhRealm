@@ -31,6 +31,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 const crypto = require("crypto");
 
 const argv = process.argv.slice(2);
@@ -88,7 +89,7 @@ async function boote(page) {
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck) {
     return page.evaluate(
-        async (welt, mitAbdruck, punkte) => {
+        async (welt, mitAbdruck, punkte, messorte) => {
             const r = window.anazhRealm;
             const s = r.state;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
@@ -120,7 +121,7 @@ async function probe(page, welt, mitAbdruck) {
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
-                orte.push({ id: "wiese", x: -900, z: -850 }, { id: "genesis", x: 36, z: 0 });
+                orte.push(...messorte);
                 const h = s.hydrosphere;
                 const fl =
                     h && Array.isArray(h.rivers) ? h.rivers.find((f) => f && f.points && f.points.length > 4) : null;
@@ -193,6 +194,96 @@ async function probe(page, welt, mitAbdruck) {
                 const zeilen = [];
                 for (let lod = 0; lod <= 3; lod++) zeilen.push(await vergleiche(ort, lod, "rein"));
                 out.orte.push({ id: ort.id, x: ort.x, z: ort.z, zeilen });
+            }
+            // (1b) DIE FLUT-SAAT (K69-2): der Neubau eines Chunks mit einem Schnitt im 3×3 geht über den Worker, die Flut über
+            // die Naht reist als Saat mit dem Auftrag (`_flutSaat`). Am Chunk des ersten Orts, unter einem Wassertisch 20 m über
+            // seinem höchsten Grund (jede Spalte ist Grundwasser-Quelle, `_aquiferTrocken`), dieselbe Saat (jede Rand-Spalte
+            // nass) im Sync-Bau des Mains (`_buildVoxelChunkWaterCells`) und im Worker (`chunk-mesh`, samt dem Stempel der Werke,
+            // den der Main danach setzt): die Wasser-Zellen Wort für Wort gleich, und die Saat ändert sie in beiden (ohne Wirkung
+            // wäre die Probe stumpf). Bis K69-2 kannte der Worker keine Saat: der Carve-Neubau lief im Haupt-Faden.
+            // der erste Ort, dessen Grund im Wasser-Band liegt (zuerst der Fluss-Chunk; am Hang liegt das Band unter dem Fels)
+            for (const o of orte.slice().reverse()) {
+                const cfg = r._voxelChunkConfig(0);
+                const cx = Math.floor(o.x / cfg.span);
+                const cz = Math.floor(o.z / cfg.span);
+                const ox = cx * cfg.span;
+                const oz = cz * cfg.span;
+                const oy = base - cfg.floorDrop;
+                let hoch = -Infinity;
+                for (let a = 0; a <= 4; a++)
+                    for (let b = 0; b <= 4; b++)
+                        hoch = Math.max(
+                            hoch,
+                            r._terrainMacroSurfaceY(ox + (a * cfg.span) / 4, oz + (b * cfg.span) / 4)
+                        );
+                const tischAlt = s.waterLevel;
+                s.waterLevel = hoch + 20;
+                await r._voxelWorkerSyncState({ op: "state-set" });
+                const saat = new Uint8Array(4 * cfg.dim).fill(1);
+                const key = `linse-saat|${cx},${cz}`;
+                const dichte = r._voxelEditedDensityGrid(
+                    key,
+                    ox - cfg.step,
+                    oy,
+                    oz - cfg.step,
+                    cfg.dim + 3,
+                    cfg.dimY,
+                    cfg.dim + 3,
+                    cfg.step
+                );
+                s.voxelBaseDensityCache.delete(key);
+                const mainZellen = (sa) => {
+                    r._flutSaat = () => sa;
+                    try {
+                        return r._buildVoxelChunkWaterCells(ox, oy, oz, cfg.step, dichte, 0);
+                    } finally {
+                        delete r._flutSaat;
+                    }
+                };
+                const workerZellen = async (sa) => {
+                    const m = await warteAck({ type: "chunk-mesh", cx, cz, lod: 0, saat: sa });
+                    const wc = m && m.waterCells ? new Uint8Array(m.waterCells) : new Uint8Array(0);
+                    if (wc.length) r._stampArchitectureSolidCellsInto(wc, ox, oy, oz, 0);
+                    return wc;
+                };
+                const diff = (a, b) => {
+                    if (a.length !== b.length) return Math.max(a.length, b.length);
+                    let n = 0;
+                    for (let q = 0; q < a.length; q++) if (a[q] !== b[q]) n++;
+                    return n;
+                };
+                try {
+                    const main = mainZellen(saat);
+                    const mit = await workerZellen(saat);
+                    out.flutSaat = {
+                        cx,
+                        cz,
+                        zellen: main.length,
+                        abweichend: diff(main, mit),
+                        mainWirkt: diff(main, mainZellen(null)),
+                        saatWirkt: diff(mit, await workerZellen(null)),
+                    };
+                } finally {
+                    s.waterLevel = tischAlt;
+                    await r._voxelWorkerSyncState({ op: "state-set" });
+                }
+                if (out.flutSaat.mainWirkt) break;
+            }
+            {
+                const F = out.flutSaat;
+                if (!F.zellen || !F.mainWirkt)
+                    out.befunde.push(
+                        `die Flut-Saat: am Chunk ${F.cx},${F.cz} ändert die Saat den Sync-Bau nicht (${F.zellen} Zellen) — die Probe ist stumpf`
+                    );
+                else if (F.abweichend)
+                    out.befunde.push(
+                        `die Flut-Saat: ${F.abweichend} von ${F.zellen} Wasser-Zellen des Chunks ${F.cx},${F.cz} weichen Main ` +
+                            `(Sync-Bau) ↔ Worker (Auftrag mit Saat) ab`
+                    );
+                else if (!F.saatWirkt)
+                    out.befunde.push(
+                        `die Flut-Saat: der Worker baut den Chunk ${F.cx},${F.cz} mit und ohne Saat gleich — er sieht sie nicht`
+                    );
             }
             // (2) mit Edits am ersten Ort: Schnitz-Kugel im Band, Füll-Kugel ÜBER dem Band (Band-Oberkante LOD 0 =
             // Makro + 12 + 4 · 1,8 = +19,2 m; die Kugel liegt von +25 bis +35 m)
@@ -272,13 +363,16 @@ async function probe(page, welt, mitAbdruck) {
                         const dy = y - ed.y;
                         const dz = z - ed.z;
                         const d2 = dx * dx + dy * dy + dz * dz;
-                        if (d2 < ed.r * ed.r) d += (ed.mode === "fill" ? 1 : -1) * (1 - Math.sqrt(d2) / ed.r) * (ed.strength || 48);
+                        if (d2 < ed.r * ed.r)
+                            d += (ed.mode === "fill" ? 1 : -1) * (1 - Math.sqrt(d2) / ed.r) * (ed.strength || 48);
                     }
                     if (Object.is(d, r._voxelEditDeltaAt(x, y, z)) || d === r._voxelEditDeltaAt(x, y, z)) punkte++;
                 }
                 out.editWahrheit.karteGleich = `${gleich}/${nachbarn.length} Gitter · ${punkte}/4000 Punkte`;
                 if (gleich !== nachbarn.length || punkte !== 4000)
-                    out.befunde.push(`EDIT-KARTE ≠ LISTE: ${out.editWahrheit.karteGleich} — Täter _voxelEditKarte (ein Edit fehlt seinem Chunk)`);
+                    out.befunde.push(
+                        `EDIT-KARTE ≠ LISTE: ${out.editWahrheit.karteGleich} — Täter _voxelEditKarte (ein Edit fehlt seinem Chunk)`
+                    );
             }
             if (out.editWahrheit.imMain !== N_EDITS)
                 out.befunde.push(
@@ -370,11 +464,96 @@ async function probe(page, welt, mitAbdruck) {
                 out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
                 out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
             }
+            // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
+            // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
+            // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).
+            if (typeof r._fernAuftrag === "function" && r._getVoxelWorker()) {
+                const N = 48;
+                const pts = new Float32Array(N * N * 2);
+                const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
+                for (let i = 0; i < N; i++)
+                    for (let j = 0; j < N; j++) {
+                        pts[(i * N + j) * 2] = pm.x + (i - N / 2) * 173.3;
+                        pts[(i * N + j) * 2 + 1] = pm.z + (j - N / 2) * 167.9;
+                    }
+                const lauf = async (imMain, detail) => {
+                    const w = new Float32Array(N * N);
+                    const sch = new Float32Array(N * N);
+                    if (imMain) {
+                        const aus = { hang: 0, schutt: 0, wand: 0 };
+                        for (let k = 0; k < N * N; k++) {
+                            w[k] = r._terrainMacroSurfaceY(pts[k * 2], pts[k * 2 + 1], detail, aus);
+                            sch[k] = Math.max(
+                                aus.schutt > 0 ? aus.schutt : 0,
+                                aus.wand > 0 ? 1 / r.constructor.TERRAIN_GEOLOGY.schutt : 0
+                            );
+                        }
+                    } else {
+                        const a = await r._fernAuftrag("teile", {
+                            punkte: Float64Array.from(pts),
+                            detail,
+                            nurHoehe: true,
+                        });
+                        w.set(a.law);
+                        sch.set(a.schutt);
+                    }
+                    return { w: new Uint32Array(w.buffer), sch: new Uint32Array(sch.buffer) };
+                };
+                const fe = (out.ferne = { n: 0, abweichend: 0, erste: null });
+                for (const detail of [false, true]) {
+                    const a = await lauf(true, detail);
+                    const b = await lauf(false, detail);
+                    for (let k = 0; k < N * N; k++) {
+                        fe.n++;
+                        if (a.w[k] !== b.w[k] || a.sch[k] !== b.sch[k]) {
+                            fe.abweichend++;
+                            if (!fe.erste) fe.erste = { detail, x: pts[k * 2], z: pts[k * 2 + 1] };
+                        }
+                    }
+                }
+            }
+            // TEIL W — DER STOFF DES WALDS (K60-3): die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
+            // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
+            // `_waldDartsEntpacken`, wie die Schlange des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
+            // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
+            if (typeof r._voxelWorkerWaldDarts === "function" && r._getVoxelWorker() && r._forestGesetzWahr()) {
+                const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
+                const seedInt = r._forestSeedInt();
+                const C = r.constructor.FOREST.cell;
+                for (const ort of orte) {
+                    const zellen = [];
+                    for (let i = -4; i <= 4; i++)
+                        for (let j = -4; j <= 4; j++) zellen.push(Math.floor(ort.x / C) + i, Math.floor(ort.z / C) + j);
+                    r._forestDartMemo = null; // frisches Gedächtnis: der Main rechnet jede Zelle selbst
+                    const main = [];
+                    for (let k = 0; k < zellen.length; k += 2)
+                        main.push(r._forestCellDarts(zellen[k], zellen[k + 1], seedInt));
+                    const res = await r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies());
+                    const faden = r._waldDartsEntpacken(res, zellen.length / 2);
+                    for (let k = 0; k < zellen.length; k += 2) {
+                        const m = main[k / 2];
+                        const w = faden[k / 2];
+                        wa.zellen++;
+                        wa.darts += m.length;
+                        if (JSON.stringify(m) === JSON.stringify(w)) continue;
+                        wa.abweichend++;
+                        if (!wa.erste)
+                            wa.erste = {
+                                ort: ort.id,
+                                gx: zellen[k],
+                                gz: zellen[k + 1],
+                                main: m[0] || null,
+                                faden: (w && w[0]) || null,
+                            };
+                    }
+                }
+            }
             return out;
         },
         welt,
         mitAbdruck,
-        mitAbdruck ? abdruckPunkte() : []
+        mitAbdruck ? abdruckPunkte() : [],
+        ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id)))
     );
 }
 
@@ -440,6 +619,12 @@ function zeige(rep) {
     console.log(
         `    ${rep.gitter} Gitter · ${rep.worte} Ecken · abweichend ${rep.abweichend} · maxDiff ${rep.maxDiff}`
     );
+    const fs0 = rep.flutSaat;
+    if (fs0)
+        console.log(
+            `    Flut-Saat am Chunk ${fs0.cx},${fs0.cz} (Wassertisch über dem Grund): ${fs0.zellen} Zellen, ` +
+                `die Saat ändert ${fs0.mainWirkt} im Main und ${fs0.saatWirkt} im Worker · Main ↔ Worker abweichend ${fs0.abweichend}`
+        );
 }
 
 // ── DIE GELÄNDE-LINSE (K16, `--realismus`): die Wand der Natur-Zahlen am Gelände-Gesetzbuch — ohne Browser, das Gesetz
@@ -569,7 +754,8 @@ function presetsAnSaaten(K, Z) {
             const L = G.planLage(plan, K.SimplexNoise);
             const H = new Float64Array(R.n * R.n);
             for (let j = 0; j < R.n; j++)
-                for (let i = 0; i < R.n; i++) H[i + j * R.n] = G.hoehe(L, R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
+                for (let i = 0; i < R.n; i++)
+                    H[i + j * R.n] = G.hoehe(L, R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
             const st = Z.messStatistik(H, L, G);
             const sm = Z.schichtMessung(L, G);
             const ort = sm.ort;
@@ -728,7 +914,12 @@ function realismus() {
         fs.writeFileSync(
             JSON_ZIEL,
             JSON.stringify(
-                { zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten, presets: presets && presets.je },
+                {
+                    zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)",
+                    wurzel: root,
+                    welten,
+                    presets: presets && presets.je,
+                },
                 null,
                 1
             )
@@ -795,11 +986,15 @@ function presetBefunde(liste) {
 function startBefunde(z, soll) {
     const b = [];
     if (z.zeigt !== "A")
-        b.push(`der Start zeigt ${z.zeigt} (den Entwurf, die Projektion der Welt auf einen Plan) statt A, der gebauten Welt`);
+        b.push(
+            `der Start zeigt ${z.zeigt} (den Entwurf, die Projektion der Welt auf einen Plan) statt A, der gebauten Welt`
+        );
     const ab = Array.isArray(z.abweichung) ? z.abweichung.join(" · ") : "";
     for (const w of soll)
         if (!ab.includes(w))
-            b.push(`der Entwurf verschweigt, was die Welt trägt und kein Plan: „${w}" fehlt in der Abweichung (${ab || "keine"})`);
+            b.push(
+                `der Entwurf verschweigt, was die Welt trägt und kein Plan: „${w}" fehlt in der Abweichung (${ab || "keine"})`
+            );
     if (soll.length && !z.sichtbar) b.push("die Abweichung steht nicht sichtbar im Panel (.abweichung)");
     return b;
 }
@@ -1100,31 +1295,31 @@ async function studioProbe() {
         // die Karte malt Schnee (≥ 0,6), die Welt nicht — oder die Welt trägt Schnee (Luminanz ≥ 0,6 des Paletten-Schnees),
         // die Karte nicht (< 0,4). Die Karte malt in der Farbe der Palette (`terrain:PORTAL_GROUND`.schnee).
         const schneeVergleich = (n, schritt, x0, karte) => {
-                const r = window.anazhRealm;
-                const L = r._gelaende();
-                const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
-                const lS = lum(r.constructor.BODEN_FARBE.schnee);
-                const PG = r.constructor.Gesetz("terrain:PORTAL_GROUND", null);
-                const out = [0, 0, 0];
-                let welt = 0;
-                let karteOhneWelt = 0;
-                let weltOhneKarte = 0;
-                for (let j = 0; j < n; j++)
-                    for (let i = 0; i < n; i++) {
-                        const k = i + j * n;
-                        const x = x0 + i * schritt;
-                        const z = x0 + j * schritt;
-                        const h = r._terrainMacroSurfaceY(x, z, true);
-                        if (!(h > L.waterLevel)) continue;
-                        r._bodenFarbeAt(x, h, z, out);
-                        const w = lum(out) >= 0.6 * lS;
-                        const kk = karte ? karte[k] / 255 : 0;
-                        if (w) welt++;
-                        if (kk >= 0.6 && !w) karteOhneWelt++;
-                        if (kk < 0.4 && w) weltOhneKarte++;
-                    }
-                return { welt, karteOhneWelt, weltOhneKarte, palette: PG && PG.schnee };
-            };
+            const r = window.anazhRealm;
+            const L = r._gelaende();
+            const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+            const lS = lum(r.constructor.BODEN_FARBE.schnee);
+            const PG = r.constructor.Gesetz("terrain:PORTAL_GROUND", null);
+            const out = [0, 0, 0];
+            let welt = 0;
+            let karteOhneWelt = 0;
+            let weltOhneKarte = 0;
+            for (let j = 0; j < n; j++)
+                for (let i = 0; i < n; i++) {
+                    const k = i + j * n;
+                    const x = x0 + i * schritt;
+                    const z = x0 + j * schritt;
+                    const h = r._terrainMacroSurfaceY(x, z, true);
+                    if (!(h > L.waterLevel)) continue;
+                    r._bodenFarbeAt(x, h, z, out);
+                    const w = lum(out) >= 0.6 * lS;
+                    const kk = karte ? karte[k] / 255 : 0;
+                    if (w) welt++;
+                    if (kk >= 0.6 && !w) karteOhneWelt++;
+                    if (kk < 0.4 && w) weltOhneKarte++;
+                }
+            return { welt, karteOhneWelt, weltOhneKarte, palette: PG && PG.schnee };
+        };
         const R0 = studio.zustand.raster;
         const sch = await page.evaluate(schneeVergleich, R0.n, R0.schritt, R0.x0, studio.zustand.schneeKarte);
         const hexZahl = (v) => (typeof v === "number" ? v : parseInt(String(v).replace(/^#|^0x/i, ""), 16));
@@ -1135,13 +1330,18 @@ async function studioProbe() {
         console.log(
             `  Schnee: Welt ${sch.welt} Zellen · Karte ohne Welt ${sch.karteOhneWelt} · Welt ohne Karte ${sch.weltOhneKarte} · Farbe der Karte ${kf ? kf.join(",") : "—"} ${sch.farbeGleich ? "=" : "≠"} Palette ${sch.palette}`
         );
-        if (!studio.zustand.schneeKarte) befunde.push("die Karte nennt ihren Schnee nicht (schneeKarte) — die Schnee-Wand bliebe blind");
-        else if (sch.welt < 30) befunde.push(`die Welt des Plans trägt zu wenig Schnee (${sch.welt} Zellen) — die Schnee-Wand bliebe ungeprüft`);
+        if (!studio.zustand.schneeKarte)
+            befunde.push("die Karte nennt ihren Schnee nicht (schneeKarte) — die Schnee-Wand bliebe blind");
+        else if (sch.welt < 30)
+            befunde.push(
+                `die Welt des Plans trägt zu wenig Schnee (${sch.welt} Zellen) — die Schnee-Wand bliebe ungeprüft`
+            );
         if (sch.karteOhneWelt + sch.weltOhneKarte > 0.01 * Math.max(1, sch.welt))
             befunde.push(
                 `die Karte zeigt anderen Schnee als die Welt: ${sch.karteOhneWelt} Zellen Schnee ohne Welt, ${sch.weltOhneKarte} Zellen Welt-Schnee ohne Karte (von ${sch.welt}) — makro-worker faerbe ≠ schnee des Kerns`
             );
-        if (!sch.farbeGleich) befunde.push(`die Karte malt Schnee in ${kf} statt der Palette der Welt (${sch.palette})`);
+        if (!sch.farbeGleich)
+            befunde.push(`die Karte malt Schnee in ${kf} statt der Palette der Welt (${sch.palette})`);
         if (SELBSTTEST) {
             // die Schnee-Wand mit einem Täter: eine Karte, die keinen Schnee malt, MUSS jeden Welt-Schnee als Widerspruch nennen
             const leer = new Array(R0.n * R0.n).fill(0);
@@ -1171,7 +1371,10 @@ async function studioProbe() {
             console.log(
                 `  SELBSTTEST: die Start-Wand ${startSieht ? "nennt den Täter (Start auf B, Rampe und Basis verschwiegen, nichts sichtbar)" : "BLIEB BLIND"}`
             );
-            if (!startSieht) befunde.push("SELBSTTEST: die Start-Wand sieht den Start auf B oder die verschwiegene Abweichung nicht");
+            if (!startSieht)
+                befunde.push(
+                    "SELBSTTEST: die Start-Wand sieht den Start auf B oder die verschwiegene Abweichung nicht"
+                );
             // die Preset-Wand mit Tätern: ein Ziel außerhalb des Korridors, und keine Landschaft mit Schicht-Gesetz
             const nennt = presetBefunde([
                 {
@@ -1506,10 +1709,36 @@ async function gebaut(page, fehler) {
             if (rep.befunde.length) rot = true;
         }
         berichte.push(rep);
+        const fe = rep.ferne;
+        console.log(
+            fe
+                ? `    Höhen der Ferne (Main-Scheiben = Voxel-Faden): ${fe.n} Punkte · abweichend ${fe.abweichend}` +
+                      (fe.erste
+                          ? ` — erste bei (${Math.round(fe.erste.x)}|${Math.round(fe.erste.z)}) Detail ${fe.erste.detail}`
+                          : "")
+                : "    Höhen der Ferne: kein Voxel-Faden — keine Probe"
+        );
+        if (!fe || fe.abweichend > 0) rot = true;
+        const wa = rep.wald;
+        console.log(
+            wa
+                ? `    Stoff des Walds (Main = Voxel-Faden, Teil W): ${wa.zellen} Zellen · ${wa.darts} Darts · abweichend ${wa.abweichend}` +
+                      (wa.erste
+                          ? ` — erste Zelle ${wa.erste.gx},${wa.erste.gz} am Ort ${wa.erste.ort}: Main ${JSON.stringify(wa.erste.main)} · Faden ${JSON.stringify(wa.erste.faden)}`
+                          : "")
+                : "    Stoff des Walds: kein Voxel-Faden oder keine Wahrheit — keine Probe"
+        );
+        if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0)) rot = true;
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page);
-            selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter };
+            selbst = {
+                abweichend: v.abweichend,
+                maxDiff: v.maxDiff,
+                gitter: v.gitter,
+                ferne: v.ferne ? v.ferne.abweichend : 0,
+                wald: v.wald ? v.wald.abweichend : 0,
+            };
             console.log(
                 `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
@@ -1550,7 +1779,10 @@ async function gebaut(page, fehler) {
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.abweichend > 0;
+        // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
+        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0 && selbst.wald > 0;
+        console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
+        console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`
         );

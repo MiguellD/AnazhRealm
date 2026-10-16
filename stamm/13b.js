@@ -855,11 +855,12 @@ class AnazhRealm_Z13b {
             // (waterfallSteep-Restore V18.111 gefallen — A4)
             const df = Number(state.atmosphere.waterDepthFoam);
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
-            // J4-Regler (cavityAO · edgeSharp · triplanar · colorVar; Default = unverändert) geclampt über die
+            // J4-Regler (cavityAO · kantenSchaerfe · triplanar · colorVar; Default = unverändert) geclampt über die
             // Setter; existieren die Uniforms noch nicht, liest `_ensure*` sie beim Bau.
             const ao = Number(state.atmosphere.cavityAO);
             if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(2, ao)));
-            const es = Number(state.atmosphere.edgeSharp);
+            // die Kanten-Schärfe liest nur den Schlüssel der Foto-Kette (F1): das alte `edgeSharp` trug den Default 0,46 jedes Spielstands
+            const es = Number(state.atmosphere.kantenSchaerfe);
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
             const tri = Number(state.atmosphere.triplanar);
             if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(4, tri)));
@@ -1098,6 +1099,19 @@ class AnazhRealm_Z13b {
         const hoehen = new Map();
         const dh = [];
         const liste = Array.isArray(state.architectures) ? state.architectures : [];
+        // DIE ALTEN ORTE ZUERST (K10): der Erdbau des alten Bodens fällt (seine Höhen standen auf einem Gelände, das es nicht
+        // mehr gibt), die Häuser jedes Orts legen ihre Platten auf den neuen Boden in ihrer Höhe über Grund — erst danach fallen
+        // die Höhen aller Bauten, auf dem geerdeten Grund (vorher stand der Baum am Rand eines Orts bis 2,28 m neben seinem Boden).
+        const wmU = this.state.worldMeta;
+        if (wmU && wmU.erdbau) {
+            delete wmU.erdbau;
+            this._erdbauStand = (this._erdbauStand || 0) + 1;
+        }
+        const geerdet = this._erdbauAltOrte(liste, (a) => {
+            const p = a.position;
+            const g = Number.isFinite(p.x) && Number.isFinite(p.z) ? this._voxelSurfaceY(p.x, p.z) : NaN;
+            return g + (Number.isFinite(a.ueberGrund) ? a.ueberGrund : fuss);
+        });
         for (let i = 0; i < liste.length; i++) {
             const a = liste[i];
             const p = a && a.position;
@@ -1126,6 +1140,7 @@ class AnazhRealm_Z13b {
             nach: gen,
             bauten: dh.length,
             bewegt: dh.filter((d) => d > 0.05).length,
+            geerdet,
             dhP50: q(0.5),
             dhMax: q(1),
             spieler,
@@ -1181,6 +1196,8 @@ class AnazhRealm_Z13b {
                 precise: true,
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
+                // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
+                feldWurf: a.feldWurf === true,
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,
@@ -1199,6 +1216,9 @@ class AnazhRealm_Z13b {
                 entry.portalMeta = a.portalMeta;
             }
         }
+        // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
+        const geerdet = this._erdbauAltOrte(this.state.architectures, (e) => e.position.y);
+        if (geerdet) this.log(`Erdbau: ${geerdet} Häuser eines älteren Stands auf ihren Grund geerdet.`, "INFO");
         // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
         // wuchs (der Wurf kam vor dem Haus), und Bäume über der Genesis-Scheibe — jeder Bau mit Grundriss (Haus, Lichtung)
         // räumt nach dem Laden, wie beim Gründen.

@@ -746,8 +746,9 @@ class AnazhRealm_Z06a {
             g.istFern = fern;
             g.nah.visible = !fern;
             g.fern.visible = fern || g.zwilling;
-            const ebene = fern ? 0 : AnazhRealm.SHADOW_TWIN_LAYER;
-            for (const m of g.meshes) m.layers.set(ebene);
+            // das Auge (Ebene 0) schaltet; den Wurf trägt die Wurf-Ebene, die `castShadow` schreibt (K72, `_wurfEbene`)
+            const W = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+            for (const m of g.meshes) m.layers.mask = ((fern ? 1 : 0) | (m.layers.mask & W)) >>> 0;
             // wer läuft, behält seinen Schritt (Welle LF, der ferne Gang: die Raten-Leiter wertet ihn jenseits weiter aus); eine
             // Gestalt, die ihre Haltung hält (`haltungFest`, gesetzt vom Fall `_kreaturFaellt`: die Tod-Lage rechnete mit ihr),
             // bleibt in ihr (Tod-Zensus „haltung": der stehend gefallene Hirsch drehte jenseits der Grenze legFL um 1,66 rad)
@@ -2012,12 +2013,20 @@ class AnazhRealm_Z06a {
             }
         });
     }
-    // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
-    // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
-    _ofenPrefetchKreaturen() {
-        const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+    // DER LEIB DES SPIELERS AUS DEM FADEN (K60-2): die zwei Spieler-Vorlagen (Mensch lod 0 und 1, gelenkige Grobstufe) gießt
+    // das Werk der Foundry, sobald das Buch steht — die Gestalt des Leibs steht im Buch (`_koerperStudioDials`, die Farben
+    // `_menschGussFarben`), derselbe Dial-Merge und derselbe Key-Münzer wie der Rig-Guss (`_buildHumanoidRig`): der Bau des
+    // Spielers trifft danach das Memo (Klon ~1 ms). Bis K60-2 goss der Haupt-Faden den Leib im sechsten Frame (Radeon kalt
+    // 2,36 s bis zum ersten Weltbild, K602/p2.cpuprofile) und nach dem Buch ein zweites Mal mit den Dials des Studios. Der
+    // Auftrag geht NAH zuerst (am Ort des Spielers); der Vorrat (`_ofenPrefetchKreaturen`) wartet auf denselben Zug.
+    // `{ steht, da }`: steht = beide Vorlagen liegen im Memo — oder ihr Guss fiel LAUT (`OFEN-PREFETCH LEER`), dann gießt
+    // der Bau sie hier wie ohne Faden.
+    _ofenSpielerVorlagen() {
+        if (this._spielerVorlagen) return this._spielerVorlagen;
+        const z = { steht: false, da: null };
+        this._spielerVorlagen = z;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
-        const gesehen = new Set();
+        const auftraege = [];
         // Prefetch münzt aus den LEBENDEN Quellen — derselbe Dial-Merge (START_PARAMS + _koerperStudioDials)
         // und Farb-Münzer (_menschGussFarben) wie der Rig-Guss, durch den EINEN Key-Münzer → warmes Memo.
         const kc = typeof window !== "undefined" && window.__koerperCore;
@@ -2025,6 +2034,7 @@ class AnazhRealm_Z06a {
             const bmD = this._koerperStudioDials();
             const dM = Object.assign({}, kc.START_PARAMS, bmD || {});
             const fM = this._menschGussFarben(bmD);
+            const pm = this.state.playerMesh;
             // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
             // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gelenkige
             // Grobstufe (`_gelenkGestalt`). Warm = Spawn ~1 ms.
@@ -2036,11 +2046,13 @@ class AnazhRealm_Z06a {
                     this._ofenVorlage(keyM, false, () => null, true);
                     continue;
                 }
-                this._foundryRequest("mensch", 0, lodM, {
-                    dials: dM,
-                    skinColor: fM.skin,
-                    hairColor: fM.hair,
-                }).then((meshes) => {
+                const auftrag = this._foundryRequest(
+                    "mensch",
+                    0,
+                    lodM,
+                    { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
+                    pm ? pm.position : undefined
+                ).then((meshes) => {
                     // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                     // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
                     if (!meshes || !meshes.length) {
@@ -2050,8 +2062,43 @@ class AnazhRealm_Z06a {
                     }
                     this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                 });
+                auftraege.push(auftrag);
             }
         }
+        const steht = () => {
+            z.steht = true;
+        };
+        z.da = Promise.all(auftraege).then(steht, (e) => {
+            steht();
+            this._stoffBruch("die Spieler-Vorlagen (Mensch-Ofen im Faden)", e);
+        });
+        return z;
+    }
+    // Ist der Leib des Spielers gießbar, ohne den Haupt-Faden zu halten? Ohne Studio-Faden (`_foundryEnabled`: kein Worker,
+    // die Grammatik-Bänder) gießt ihn der Bau hier; sonst wartet er auf das Buch und seine zwei Vorlagen im Memo.
+    _leibBereit() {
+        if (!this._foundryEnabled()) return true;
+        const f = this._foundry;
+        if (!f || !f.ready || !f.recipes) return false;
+        return this._ofenSpielerVorlagen().steht;
+    }
+    // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
+    // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
+    // DER OFEN-VORRAT NACH DEM ERSTEN BILD (K60, die Regel des Vorrats aus K30): kein Leser des ersten Bildes liest ihn —
+    // den Leib des Spielers gießt sein eigener Bau (`_deferredAvatarSoul`), die Kreaturen kommen nach dem Bild
+    // (`_tickBootPhase3`). Bis K60 stellte er sich beim Worker-Start vor das Buch-Werk: acht Güsse (Mensch, Reh, Wolf,
+    // Fuchs je zwei Stufen) hielten den Faden kalt 7 s, und jeder nahe Baum wartete hinter ihnen (Radeon, Kalt-Zeile
+    // 24,9 s: die erste Baum-Antwort bei 13,8 s). Er wartet auf das EREIGNIS des Bildes (`_weltbildKommt`), nie auf die
+    // Uhr; `_ofenVorratSteht` sagt Boot-Phase 3, dass jede Gattung im Memo liegt (oder laut fehlt).
+    async _ofenPrefetchKreaturen() {
+        await this._weltbildKommt();
+        const auftraege = [];
+        const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        const gesehen = new Set();
+        // die Spieler-Vorlagen (Mensch, beide Stufen) bestellt der Leib des Spielers selbst, sobald das Buch steht
+        // (`_ofenSpielerVorlagen`, K60-2) — der Vorrat wartet auf denselben Zug und hält sie fest
+        auftraege.push(this._ofenSpielerVorlagen().da);
         for (const soulKey of Object.keys(map)) {
             const recId = map[soulKey];
             if (!recId || gesehen.has(recId)) continue;
@@ -2064,7 +2111,7 @@ class AnazhRealm_Z06a {
                     this._ofenVorlage(key, false, () => null, true);
                     continue;
                 }
-                this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
+                const auftrag = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length) {
                         if (!memo.has(key))
                             this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
@@ -2072,8 +2119,11 @@ class AnazhRealm_Z06a {
                     }
                     this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
                 });
+                auftraege.push(auftrag);
             }
         }
+        await Promise.all(auftraege);
+        this._ofenVorratSteht = true;
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
     // (alle Gelenke 0) in der Sagittal-Ebene (y, z) des Rumpfs vermessen — a = Bein-Gelenk → Unterglied-Gelenk (Kette[2]),

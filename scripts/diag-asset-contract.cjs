@@ -11,7 +11,7 @@
 //   npm run gate:asset-contract
 const fs = require("fs");
 const path = require("path");
-const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 const {
     bildDeckung,
@@ -38,7 +38,7 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // Koniferen-L1 verlor 22–34 % ihrer Seitenansicht, die Karte 16–27 %, ihre Farbe sprang um ΔE 2,6–5,8, ohne dass eine
 // Wand anschlug.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
-const TAFEL_STAND = "K20"; // der Stand, aus dem die Tafel gemünzt ist (zuerst V18.536)
+const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 const KARTE_DE = 2;
@@ -517,17 +517,18 @@ function bildUrteil(mess, tafel) {
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
         // bleiben die BYTE-Wahrheit der Payloads (nur der Umschlag wechselte).
+        // K64-n2: die Abweichung nennt ihren Schlüssel (Ist ≠ eingefroren) und den Vertrags-Akt, der sie heilt.
         const bookReply = await getData("get-book");
-        for (const [key, field] of [
-            ["recipes", "book"],
-            ["world-params", "worldParams"],
-            ["render-config", "renderConfig"],
-        ]) {
+        for (const [field, key] of DATEN_KANAELE) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
             const gold = fs.readFileSync(goldPath, "utf8").trim();
             const live = JSON.stringify(bookReply[field]);
-            if (live !== gold) fails.push(`${key}: divergiert vom eingefrorenen JSON`);
+            if (live === gold) continue;
+            const a = live === undefined ? null : ersteAbweichung(bookReply[field], JSON.parse(gold));
+            fails.push(
+                `${key}: divergiert vom eingefrorenen JSON${a ? ` — ${a.pfad}: ${a.ist} ≠ eingefroren ${a.soll}` : " (fehlt im Umschlag)"} (Vertrags-Akt: MINT_NUR_DATEN=1 node scripts/mint-asset-goldens.cjs)`
+            );
         }
         const buch = bookReply.book || {};
         // DER UMSCHLAG WIE DER WIRT IHN LIEST (W8): die Zweit-Kern-Blöcke (Stufen · Budget · Gestalten) fallen über

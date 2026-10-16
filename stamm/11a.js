@@ -121,13 +121,6 @@ class AnazhRealm_Z11a {
         return { mesh, kind: "filled", waterCells, lod, surfMap: karte && karte.hoehe, gruenMap: karte && karte.gruen };
     }
 
-    // true, wenn der Spieler in diesem Chunk steht (`state.lastPlayerVoxelChunk`, je Streaming-Tick).
-    // Ein Edit hier MUSS sync rebuilden — der Spieler sieht Carve/Fill am Standort sofort.
-    _voxelChunkIsPlayerChunk(cx, cz) {
-        const lpc = this.state.lastPlayerVoxelChunk;
-        return !!lpc && lpc.cx === cx && lpc.cz === cz;
-    }
-
     // DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild: 1 Worker-Mesh-Cache (Main nur
     // BufferGeometry + Architektur-Stempel + BVH) · 2 Worker-Density-Cache · 3 Sync-CPU (base-gecacht).
     // Rückgabe: "pending" · null (Fail/degeneriert) · {mesh, kind, waterCells, lod, hasBVH?}.
@@ -190,6 +183,14 @@ class AnazhRealm_Z11a {
             this.state.voxelChunks.set(key, { empty: true });
             this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
             return null;
+        }
+        // DER EINBAU DES FRAMES (K69-2): die nächste Ring-Distanz, in der dieser Frame einen Chunk einbaut — der Neubau-Takt
+        // (`_tickDirtyVoxelChunks`) baut danach nur Näheres ein (Lehre 25: NAH zuerst); der Frame-Planer setzt sie zurück.
+        {
+            const lpc = this.state.lastPlayerVoxelChunk;
+            const d = lpc ? Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz)) : 0;
+            const b = this.state._bodenEinbau;
+            if (b == null || d < b) this.state._bodenEinbau = d;
         }
         // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
         // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
@@ -768,10 +769,12 @@ class AnazhRealm_Z11a {
         // die Stufe, die der alte Chunk zeichnete — seine feineren Nachbarn lösen ihre Naht zu ihm (`_finalizeVoxelChunkBuild`)
         const altLod =
             oldEntry && !oldEntry.empty && oldEntry.mesh ? (Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0) : null;
-        // Implizite Sync-Pflicht (Spieler-Chunk / Carve-Region) nur, solange der Frame Zeit hat
-        // (`!_frameOverBudget`) — sonst ASYNC (alter Mesh bleibt, Kollision ist feld-nativ sofort aktuell),
-        // kein Dauer-Stall aus ~126-ms-Sync-Rebuilds beim Graben. Explizites `opts.forceSync`
-        // (`_syncRebuildEditFootprint`, `_drainDirtyVoxelChunks`) baut IMMER sync.
+        // DER CHUNK-STOFF ENTSTEHT IM WORKER (Lehre 14, K69-2): jeder Neubau geht über den Worker-Pfad — der alte Mesh
+        // bleibt sichtbar bis zum atomaren Swap, die Kollision liest das Dichtefeld (sofort aktuell), die Flut über die
+        // Naht reist als Saat mit dem Auftrag (`_flutSaat`). Synchron baut nur, wer es ausdrücklich verlangt
+        // (`opts.forceSync`: `_syncRebuildEditFootprint`, der Wasser-Fußabdruck eines Baus, `_drainDirtyVoxelChunks`).
+        // Bis K69-2 baute der Neubau den Spieler-Chunk und jeden Chunk mit einem Schnitt im 3×3 synchron, solange der
+        // Frame Zeit hatte — am Erdbau eines Dorfs um den Spieler 154–409 ms in EINEM Takt (gate:stand-takt ORT).
         // DER STUFEN-WECHSEL (K51-5): der Streaming-Takt tauscht nur die Stufe eines stehenden Chunks — keine Form-Änderung
         // wartet (kein Carve/Fill am Gras, kein Edit im Dirty-Satz). Er regt nur die Boden-Karte (`_weltRegt(true, true)`),
         // und sein offener Bau gehört dem Streaming-Takt (er bleibt wach, bis der Bau kommt) — nie dem Dirty-Takt, der
@@ -780,8 +783,7 @@ class AnazhRealm_Z11a {
             (this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key)) ||
             (this.state.dirtyVoxelChunks && this.state.dirtyVoxelChunks.has(key));
         const stufe = altLod !== null && lod !== null && lod !== altLod && !formWartet;
-        const editPressure = this._voxelChunkIsPlayerChunk(cx, cz) || this._chunkRegionHasCarve(cx, cz);
-        const forceSync = opts.forceSync === true || (editPressure && !this.state._frameOverBudget);
+        const forceSync = opts.forceSync === true;
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
         // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
         // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
@@ -907,14 +909,16 @@ class AnazhRealm_Z11a {
         // der Band-Skip in `_voxelSampleDensityGrid`). Die Schleife läuft übers selbe y-Gitter (bit-exakt),
         // nur die Dichte-Probe entfällt in der Garantie-Luft (~300 → ~25 Proben/Spalte). Fill-Edits können
         // höher bauen → `_voxelEditsFillTop()` hebt die Grenze; Macro nicht endlich → Voll-Scan.
-        const macroSurf = this._terrainMacroSurfaceY(x, z);
+        // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
+        // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
+        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta). Die Makro-Höhe der Garantie
+        // ist die des Kontexts (`surf`, dieselbe `hoehe` derselben Spalte) — bis K60-2 rechnete die Spalte sie zweimal
+        // (Radeon kalt 0,7 s bis zum ersten Weltbild, jeder Wald-Dart fragt fünf Spalten).
+        const colCtx = this._terrainColumnContext(x, z);
+        const macroSurf = colCtx.surf;
         const skipAbove = Number.isFinite(macroSurf)
             ? Math.max(macroSurf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2)
             : Infinity;
-        // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
-        // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
-        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta).
-        const colCtx = this._terrainColumnContext(x, z);
         let prevAir = true;
         let prevD = null; // Dichte der Luft-Probe 1.2 m darüber (null = Garantie-Luft, nicht gemessen)
         for (let y = top; y >= bottom; y -= 1.2) {
@@ -1014,17 +1018,24 @@ class AnazhRealm_Z11a {
     // Start-y, EIN Spalten-Kontext + Bisektion. Start in Luft → abwärts zur ersten Luft→Solid-Grenze;
     // Start im Soliden → AUFWÄRTS zur Solid→Luft-Grenze (sonst clippt der steckende Spieler auf eine
     // Höhlen-Schicht). null ohne Grenze in Reichweite.
+    // DAS RASTER DER WELT (K70-N1): die Proben liegen auf y = k · 0,5 m, nie im Abstand von der Start-Höhe — so trägt jeder
+    // Ort EINEN Grund, gleich von wo gesucht wird. Bis dahin hing er um bis zu 7,8 mm an der Höhe des Suchenden: ein Werk,
+    // das ab seiner eigenen Höhe sucht (`_werkBoden`), fand im Stand je Bild einen anderen Grund (der GT an der Gasse zitterte
+    // 0,39 mm je Bild, nie in Ruhe) — zwei Läufe mit verschiedener Vorgeschichte trafen nie denselben Stand (gate:fahr-leben
+    // L8: 1,2 mm nach 200 Schritten, CI 38712496194). Nur wenn das Raster-Fach über dem Start Fels trägt (eine Decke) oder
+    // unter dem Start Luft (eine dünne Schicht), grenzt die Start-Höhe die Bisektion wie zuvor.
     _fieldSurfaceBelow(x, y, z, maxDist) {
         const ctx = this._terrainColumnContext(x, z);
         const step = 0.5;
         if (this._fieldSolid(x, y, z, ctx)) {
             // Start IM Soliden → aufwärts die Oberkante suchen (Penetrations-Heilung).
             const top = y + maxDist;
-            for (let yy = y; yy <= top; yy += step) {
+            for (let yy = Math.ceil(y / step) * step; yy <= top; yy += step) {
                 if (!this._fieldSolid(x, yy, z, ctx)) {
                     // Grenze zwischen yy−step (solid) und yy (Luft) → Bisektion auf die Oberkante.
-                    let lo = Math.max(y, yy - step),
+                    let lo = yy - step,
                         hi = yy;
+                    if (lo < y && !this._fieldSolid(x, lo, z, ctx)) lo = y;
                     for (let b = 0; b < 6; b++) {
                         const mid = (lo + hi) / 2;
                         if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
@@ -1036,11 +1047,12 @@ class AnazhRealm_Z11a {
             return null;
         }
         const end = y - maxDist;
-        for (let yy = y; yy >= end; yy -= step) {
+        for (let yy = Math.floor(y / step) * step; yy >= end; yy -= step) {
             if (this._fieldSolid(x, yy, z, ctx)) {
                 // Grenze zwischen yy (solid) und yy+step (Luft) → Bisektion verfeinern.
                 let lo = yy,
-                    hi = Math.min(y, yy + step);
+                    hi = yy + step;
+                if (hi > y && this._fieldSolid(x, hi, z, ctx)) hi = y;
                 for (let b = 0; b < 6; b++) {
                     const mid = (lo + hi) / 2;
                     if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
@@ -1730,18 +1742,28 @@ class AnazhRealm_Z11a {
     // der Leib über eine Stufe, muss über seinem alten Stand Luft bis über den neuen Grund sein, sonst liegt Fels dazwischen
     // (die Decke der Höhle, ein Überhang) und der Schritt geht in die Wand. Vorher trug jeder Schritt im Fels die Oberkante
     // der Säule: ein in der Höhle an die Wand gestoßener Wolf stand auf ihrem Dach (11,88 m über dem Grund), ein in sie
-    // laufender ebenso (11,73 m). Leser: `_creatureGroundY`, `_kreaturStossSchritt`.
-    _koerperSchritt(vx, vz, vg, x, z) {
-        const y0 = vg + AnazhRealm.PLAYER_STEP_UP;
+    // laufender ebenso (11,73 m). Und nie UNTER EIN DACH (K55-2): über dem neuen Grund steht Luft bis über den Leib — seine
+    // Höhe `hoehe` (`_kreaturLeib`, ohne sie eine Stufe) und die Spanne, um die der gezeichnete Boden über dem Gesetz liegt
+    // (`KOERPER_SICHT_SPANNE`, Lehre 22: Surface-Nets auf 1,8 m trägt ±0,2 m), sonst ist der Spalt niedriger als der Leib und der
+    // Schritt geht in die Wand. In der Höhle 2,6/72,0 fällt der Grund unter einen Überhang (der Keil: 1,1 m Luft, dann 0,8,
+    // dann 0,4), ein an die Wand gestoßener Wolf glitt hinein und lag 0,6 m über seinem Fuß im Fels (gate:fall-waechter O3, die
+    // Höhle aus der Welt). Leser: `_creatureGroundY`, `_kreaturStossSchritt`, der Blick voraus, der Gang bis zur Wand.
+    _koerperSchritt(vx, vz, vg, x, z, hoehe) {
+        const stufe = AnazhRealm.PLAYER_STEP_UP;
+        const y0 = vg + stufe;
+        let g;
         if (!this._fieldSolid(x, y0, z)) {
-            const g = this._fieldSurfaceBelow(x, y0, z, 40);
-            return g !== null ? g : this._koerperBodenUnter(x, NaN, z);
+            g = this._fieldSurfaceBelow(x, y0, z, 40);
+            if (g === null) return this._koerperBodenUnter(x, NaN, z);
+        } else {
+            g = this._koerperBodenUnter(x, vg, z);
+            const oben = g + 0.2;
+            if (this._fieldSolid(vx, oben, vz)) return null;
+            const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
+            if (fels !== null && fels > y0) return null;
         }
-        const g = this._koerperBodenUnter(x, vg, z);
-        const oben = g + 0.2;
-        if (this._fieldSolid(vx, oben, vz)) return null;
-        const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
-        return fels !== null && fels > y0 ? null : g;
+        const kopf = (hoehe > 0 ? hoehe : stufe) + AnazhRealm.KOERPER_SICHT_SPANNE;
+        return this._fieldSolid(x, g + kopf, z) ? null : g;
     }
 
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
@@ -1835,7 +1857,14 @@ class AnazhRealm_Z11a {
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
             let gY = schritt
-                ? this._koerperSchritt(ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY, cx, cz)
+                ? this._koerperSchritt(
+                      ud.cachedGroundX,
+                      ud.cachedGroundZ,
+                      ud.cachedGroundY,
+                      cx,
+                      cz,
+                      this._kreaturLeib(creature, 0, this._kreaturSchrittLeib || (this._kreaturSchrittLeib = {})).hoehe
+                  )
                 : this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
             const hl = this._kreaturHalbLaenge(creature);
             if (schritt) {

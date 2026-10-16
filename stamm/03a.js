@@ -2993,11 +2993,23 @@ class AnazhRealm_Z03a {
     }
 
     // GHOST-TICK: Anker anwenden (seed/re-seed), anschlussfähige Frames verbrauchen (2-Frame-Reserve
-    // gegen Jitter, max 10/Render-Frame), Drift-Wächter gegen pos. Schreibt in dieselben Entry-Felder,
+    // gegen Jitter, Aufhol-Kappe nach der WANDUHR), Drift-Wächter gegen pos. Schreibt in dieselben Entry-Felder,
     // die _p2pUpdatePeer rendert (kein zweiter Render-Pfad).
+    // DIE KAPPE LIEST DIE WANDUHR (K60, Lehre 13 — Bewegung nie am Render-Signal): bis K60 verbrauchte jeder Takt höchstens
+    // 10 Schritte, gleich wie lang er war. Ein Takt über 167 ms (der Lade-Takt eines Mitspielers unter seinem Ladeschirm,
+    // ein langsames Gerät) verbrauchte weniger, als der Sender in derselben Zeit schickt — der Ghost fiel ohne Grenze
+    // zurück (CI 38639169868: B sah A nach dessen Lauf 1,924 m daneben, ohne eine einzige Regung). Jetzt trägt ein Takt
+    // von dt Sekunden bis zu `aufholJeSchritt` × dt/FIXED_DT Schritte: bei 60 Hz zehn wie bisher, bei 2 Hz dreihundert.
     _lockstepTickPeers(nowMs) {
         const p2p = this.state.p2p;
-        if (!p2p || p2p.lockstep === false || !p2p.peers || p2p.peers.size === 0) return;
+        if (!p2p) return;
+        const vorMs = p2p._lockstepTickMs;
+        p2p._lockstepTickMs = nowMs;
+        if (p2p.lockstep === false || !p2p.peers || p2p.peers.size === 0) return;
+        const fixMs = AnazhRealm.FIXED_DT * 1000;
+        const kappe = Math.ceil(
+            AnazhRealm.LOCKSTEP.aufholJeSchritt * (Number.isFinite(vorMs) ? Math.max(1, (nowMs - vorMs) / fixMs) : 1)
+        );
         for (const [, entry] of p2p.peers) {
             const ls = entry.lockstep;
             if (!ls) continue;
@@ -3061,11 +3073,11 @@ class AnazhRealm_Z03a {
             }
             if (!ls.seeded) continue;
             // Verbrauch: anschlussfähig (bufStart == doneSeq+1 per Konstruktion nach dem Anker),
-            // mit 2-Frame-Reserve (Netz-Jitter) und Frame-Kappe (Aufhol-Burst gedeckelt).
+            // mit 2-Frame-Reserve (Netz-Jitter) und der Wanduhr-Kappe (Aufhol-Burst gedeckelt, `kappe` oben).
             let n = 0;
             const px = ls.x,
                 pz = ls.z;
-            while (ls.buf.length > AnazhRealm.LOCKSTEP.jitterReserve && n < AnazhRealm.LOCKSTEP.maxStepsPerTick) {
+            while (ls.buf.length > AnazhRealm.LOCKSTEP.jitterReserve && n < kappe) {
                 if (ls.bufStart !== ls.doneSeq + 1) break; // nicht anschlussfähig → Anker abwarten
                 const f = ls.buf.shift();
                 ls.bufStart++;
