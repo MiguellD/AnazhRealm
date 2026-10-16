@@ -187,7 +187,7 @@ async function blickProbe(opts) {
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
 // DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
-// die Wanduhr des letzten Takts (milchweiß 3,2–5,5 % in 5 Läufen); jetzt FEST aus dem Gesetz, `fest` hält TRAA und Dither.
+// die Wanduhr des letzten Takts (milchweiß 3,2–5,5 % in 5 Läufen); seit A8 hält die Bühne jede Uhr des Bilds auf T.
 async function hellProbe() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -202,11 +202,8 @@ async function hellProbe() {
     cam.position.set(g.x, r._voxelSurfaceY(g.x, g.z) + 1.7, g.z);
     cam.lookAt(g.x - 10, r._voxelSurfaceY(g.x - 10, g.z) + 1.7, g.z + 1e-4);
     cam.updateMatrixWorld(true);
-    window.__buehne();
+    window.__buehne(); // die Uhr steht (`__uhrHalten`): Atem, Puls, Welle und Wolken gleich in jedem Bild und Lauf
     const echtNow = performance.now.bind(performance);
-    const FEST = 4.2e6; // die Uhr steht: Atem, Puls, Welle und Wolken gleich in jedem Bild und jedem Lauf
-    performance.now = () => FEST;
-    for (const f of [r._loopSkyboxZeit, r._tickPortalMembranes]) f.call(r, FEST / 1000);
     const recs = [...r._portalMembranes.values()].filter((rec) => rec.mesh);
     const vor = recs.map((rec) => rec.mesh.material.colorNode);
     const sicht = recs.map((rec) => rec.mesh.visible);
@@ -251,7 +248,7 @@ async function hellProbe() {
     };
     const E = r._erstZeichnung;
     const offenStart = E ? E.offen.size : null;
-    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { nurGezeichnete: true, fest: FEST })).u8;
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { nurGezeichnete: true, fest: 0 })).u8;
     const zeit = {};
     // je Bild die Wanduhr und die KALTEN PROGRAMME (HM): Vertex- und Fragment-Programme, die der Renderer in diesem Bild neu
     // übersetzt (r184 hält sie je Quelltext in `_pipelines.programs`) — auf swiftshader kostet ein kaltes Programm bis Minuten
@@ -349,7 +346,6 @@ async function hellProbe() {
         st.scene.traverse((o) => {
             if (o.isBundleGroup) o.needsUpdate = true;
         });
-        performance.now = echtNow;
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,

@@ -1190,8 +1190,7 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            // DIE EINE UHR der Klassen-Messung (K63-n1): das Bild und jeder Schuss der Teilung rendern zu derselben Zeit
-            const fest = k.klasse ? performance.now() : null;
+            const fest = k.klasse ? 0 : null; // K63-n1: TRAA und Dither je Schuss von vorn, die Uhren hält die Bühne
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);

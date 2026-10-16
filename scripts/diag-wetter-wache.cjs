@@ -36,6 +36,8 @@
 //       `_uhrSetzen` (genau einmal), `_setWeather` liest den Halt; der Zwilling `time_of_day` ist fort; kein NEUER Wurf des
 //       Nexus (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op — was er aus seiner Geschichte erbt (die Uhr-Sätze
 //       des Spielers, `dslSelectByFitness` → `dslMutate`), wirft die Uhr weiter und steht in (G)/(B) als verweigert beim Namen;
+//   (U) UHR (A8): unter der Bühne steht jede Uhr des Bilds (`__bildUhren`: Himmel, Wasser, Wind, Böe, Membran, Fell),
+//       der Loop läuft drei Takte weiter — jeder seiner Züge ist verweigert, jede laufende Uhr steht beim Namen;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
@@ -46,8 +48,6 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -65,13 +65,15 @@ const WESEN_SEK = 60;
 // Die Szene, wenn das Spiel keine nennt (der alte Stand): die längste Szene der Leben-Schau 2 außer C-8 (A-5 11 min, A-7 9 min,
 // C-9 12,3 min — aus den Zeitstempeln der Bilder).
 const SZENE_SCHAU_MIN = 15;
-const root = path.resolve(__dirname, "..");
 
 if (process.argv.includes("--selftest")) {
     console.log("=== WETTER-WACHE — Selbsttest der Urteile (ohne Browser) ===");
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x));
+    const U = (b, n) => ({ vor: { a: 1, b: 2, c: 3, d: 4 }, nach: { a: 1, b, c: 3, d: 4 }, verweigert: n });
+    if (uhrRot(U(2, 3)).length || uhrRot(U(2.5, 3)).length !== 1 || uhrRot(U(2, 0)).length !== 1)
+        v.push("uhr: die stehende Uhr ist nicht grün, die laufende oder der stumme Loop nicht rot");
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
@@ -153,18 +155,7 @@ function probe() {
     aus.frei.autoZug = fenster(() => r._loopWeatherAndGrowth(0, t()));
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
-    // (Q) der Halt in der Engstelle — direkt oder über den EINEN Leser des Halts (`_messHalt`, 0710-7: ihn liest auch die
-    // Engstelle der Welt-Akte)
-    const proto = Object.getPrototypeOf(r);
-    const sw = window.__codeOf(proto._setWeather);
-    const mh = typeof proto._messHalt === "function" ? window.__codeOf(proto._messHalt) : "";
-    aus.engstelleLiest =
-        /this\.state\.weatherEffectTime\s*<\s*0/.test(sw) ||
-        (/this\._messHalt\(\)/.test(sw) && /this\.state\.weatherEffectTime\s*<\s*0/.test(mh));
-    // (Q) der EINE Uhr-Schreiber schreibt die Uhr, der Zwilling `time_of_day` ist fort
-    aus.uhrSchreiber =
-        typeof proto._uhrSetzen === "function" &&
-        /this\.state\.timeOfDay\s*=(?!=)/.test(window.__codeOf(proto._uhrSetzen));
+    // (Q) der Zwilling `time_of_day` ist fort
     aus.zwilling = typeof r.dslEffects.time_of_day === "function";
     // (Q) die Würfel des Nexus: kein Atom, kein Gesetz, keine Mutation trägt einen Uhr-Op
     const uhrOps = new Set(["time_of_day", "set_time_of_day"]);
@@ -178,7 +169,25 @@ function probe() {
         if (r._dslContainsAnyOp(m, uhrOps)) wuerfe.mutationen++;
     }
     aus.wuerfe = wuerfe;
+    // (U) die Uhren des Bilds unter der Bühne (ein Takt vorher weckt das Wasser), der Loop läuft drei Takte weiter
+    r._gameLoopTick(performance.now());
+    window.__buehne();
+    const uhren = () => Object.fromEntries(window.__bildUhren(0).map(([n, o, k]) => [n, o[k]]));
+    const vor = uhren();
+    const z0 = window.__buehneUhr ? window.__buehneUhr.verweigert : 0;
+    for (let k = 1; k <= 3; k++) r._gameLoopTick(performance.now() + 700 * k);
+    aus.uhren = { vor, nach: uhren(), verweigert: (window.__buehneUhr ? window.__buehneUhr.verweigert : 0) - z0 };
     return aus;
+}
+
+// (U) das Urteil der Uhr-Wache (rein): jede Uhr steht, der Loop schrieb (verweigert), die Liste trägt.
+function uhrRot(U) {
+    const rot = [];
+    for (const [n, a] of Object.entries(U.vor))
+        if (!Object.is(U.nach[n], a)) rot.push(`(U) UHR ${n} läuft unter der Bühne: ${a} → ${U.nach[n]}`);
+    if (Object.keys(U.vor).length < 4) rot.push(`(U) UHR: nur ${Object.keys(U.vor).length} Uhren des Bilds`);
+    if (!(U.verweigert > 0)) rot.push("(U) UHR: der Loop schrieb keine Uhr — die Wache sah keinen Zug");
+    return rot;
 }
 
 // Die Himmels-Probe im Seiten-Kontext (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick`, Spiel-Zeit in Schritten
@@ -342,7 +351,7 @@ function taeterGezaehlt(liste) {
     return [...g.values()];
 }
 
-function urteil(S, H, quelle, pageErrors) {
+function urteil(S, H, pageErrors) {
     const rot = [];
     const SOLL_QUELLE = {
         emotion: "emotion:sorrow",
@@ -376,16 +385,6 @@ function urteil(S, H, quelle, pageErrors) {
         rot.push(`(F) FREI: nach „frei" zieht der Auto-Zug nach 120 s nicht weiter (${S.frei.autoZug.nachher})`);
     if (S.ende.wetter !== "sunny" || !(S.ende.uhr < 0))
         rot.push(`(F) die Bühne stellt den Halt nicht wieder her (${JSON.stringify(S.ende)})`);
-    if (!S.engstelleLiest)
-        rot.push("(Q) QUELLE: `_setWeather` liest den Halt nicht (`this.state.weatherEffectTime < 0`)");
-    if (quelle.wetter.n !== 2)
-        rot.push(
-            `(Q) QUELLE: \`this.state.weather =\` steht ${quelle.wetter.n}× im Stamm (soll 2: _setWeather und das Laden) — ein Schreiber am EINEN Schreiber vorbei: ${quelle.wetter.orte.join(", ")}`
-        );
-    if (quelle.uhr.n !== 1 || !S.uhrSchreiber)
-        rot.push(
-            `(Q) QUELLE: \`this.state.timeOfDay =\` steht ${quelle.uhr.n}× im Stamm (soll 1: der EINE Uhr-Schreiber \`_uhrSetzen\`${S.uhrSchreiber ? "" : " — es gibt ihn nicht"}): ${quelle.uhr.orte.join(", ")}`
-        );
     if (S.zwilling) rot.push("(Q) QUELLE: der Zwilling `time_of_day` schreibt die Uhr neben `set_time_of_day`");
     const w = S.wuerfe;
     if (w.atome || w.gesetze || w.mutationen)
@@ -420,6 +419,7 @@ function urteil(S, H, quelle, pageErrors) {
         rot.push(
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
+    rot.push(...uhrRot(S.uhren));
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
@@ -448,17 +448,6 @@ async function boot(browser, pageErrors) {
 }
 
 (async () => {
-    // (Q) der Stamm: wer schreibt `this.state.weather` und `this.state.timeOfDay` (Kommentare zählen nicht)
-    const stamm = stammLib.ohneKommentare(stammLib.text(root)).split("\n");
-    const quelle = { wetter: { n: 0, orte: [] }, uhr: { n: 0, orte: [] } };
-    stamm.forEach((z, i) => {
-        const code = z;
-        if (/this\.state\.weather\s*=(?!=)/.test(code)) quelle.wetter.orte.push(`Zeile ${i + 1}`);
-        if (/this\.state\.timeOfDay\s*=(?!=)/.test(code)) quelle.uhr.orte.push(`Zeile ${i + 1}`);
-    });
-    quelle.wetter.n = quelle.wetter.orte.length;
-    quelle.uhr.n = quelle.uhr.orte.length;
-
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const pageErrors = [];
@@ -491,10 +480,6 @@ async function boot(browser, pageErrors) {
     console.log(`  Frei · Wort hält  ${S.frei.wortHaelt.vorher} → ${S.frei.wortHaelt.nachher} (Auto-Zug nach 120 s)`);
     console.log(`  Frei · Auto-Zug   ${S.frei.autoZug.vorher} → ${S.frei.autoZug.nachher} (nach „frei")`);
     console.log(
-        `  Quelle: \`this.state.weather =\` ${quelle.wetter.n}× (${quelle.wetter.orte.join(", ")}), \`this.state.timeOfDay =\` ` +
-            `${quelle.uhr.n}× (${quelle.uhr.orte.join(", ")}); _setWeather liest den Halt: ${S.engstelleLiest}; _uhrSetzen: ${S.uhrSchreiber}; Zwilling time_of_day: ${S.zwilling}`
-    );
-    console.log(
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );
     console.log(
@@ -519,7 +504,9 @@ async function boot(browser, pageErrors) {
         for (const [n, x] of taeterGezaehlt(u.taeter)) console.log(`           Täter ${n}×: ${x}`);
     }
     console.log(`  Regler: ${H.regler.text} (${H.regler.wert}) bei Welt ${H.regler.label}`);
-    const rot = urteil(S, H, quelle, pageErrors);
+    const uz = Object.entries(S.uhren.nach).map(([n, x]) => `${n} ${+(+x).toFixed(4)}`);
+    console.log(`  Uhr: ${uz.join(" · ")}; verweigert ${S.uhren.verweigert}`);
+    const rot = urteil(S, H, pageErrors);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);
         for (const e of rot.slice(0, 60)) console.error("  • " + e);

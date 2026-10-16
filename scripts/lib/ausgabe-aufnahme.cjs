@@ -13,16 +13,11 @@
 // Gebrauch: einmal `await page.evaluate(AUSGABE_INSTALL)` nach dem Laden, im Seiten-Kontext
 // `window.__buehne()` vor jedem Schuss und `const { u8, info, ms } = await window.__ausgabeAufnahme(W, H)`.
 
-// DIE BÜHNE der Beweisbilder: Mittag · Sonne · Sommer, fest — „vorher↔nachher unter gleichen
-// Bedingungen". Zwei Uhren des Spiels liefen in den Sonden frei:
-// - das WETTER zieht alle 120 s weiter (Auto-Zug in `_loopWeatherAndGrowth`). Gemessen 01.10. an
-//   derselben Wiese, derselben Kamera: sonnig 90,2 · Regen 40,3 · Sturm 16,8 Boden-Helligkeit; der
-//   dunkle Lauf `wiese-ausgabe2` (29,0) war Schlechtwetter, kein Licht- oder Boden-Befund.
-// - die JAHRESZEIT driftet (Jahr = 2400 s): ab Sommer 0,375 ist nach ~5 min Herbst, der Saison-Flip
-//   baut jedes Foundry-Asset neu (Laub-Farbe) — mitten in einer Sonde, die Stufen und Ungebaute zählt.
-// Die Saison hält `saisonFest` an, sobald die Welt existiert (der Drift beginnt erst, wenn die Bühne
-// steht); die Bühne setzt Zeit und Wetter über den EINEN Wetter-Schreiber und schneidet den
-// 45-s-Cross-Fade ab (das Bild zeigt den Endzustand), der Regen fällt im selben Zug weg.
+// DIE BÜHNE der Beweisbilder: Mittag · Sonne · Sommer, fest — „vorher↔nachher unter gleichen Bedingungen“. Drei Uhren
+// liefen in den Sonden frei: das WETTER (Auto-Zug alle 120 s; an derselben Wiese sonnig 90,2 · Regen 40,3 Helligkeit),
+// die JAHRESZEIT (Jahr 2400 s, der Saison-Flip baut jedes Foundry-Asset neu), jede SHADER-ZEIT des Bilds (A8: wasser
+// 0,17–0,69 am selben Code). Die Saison hält `saisonFest`, sobald die Welt existiert; die Bühne setzt Zeit und Wetter
+// über den EINEN Wetter-Schreiber (ohne 45-s-Cross-Fade, der Regen fällt im selben Zug), jede Uhr des Bilds auf T.
 const { KAMERA_NAH_INSTALL } = require("./kamera-nah.cjs");
 const { ABNAHME_INSTALL } = require("./abnahme-urteil.cjs");
 
@@ -46,9 +41,7 @@ function saisonFest() {
 // (`weatherEffectTime`, Zug bei 120 s) steht eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die
 // Bühne ruft sie, und jede Schleife, die Takte am Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt. Die
 // eingefrorene Uhr IST der Halt: der EINE Wetter-Schreiber des Spiels (`_setWeather`) verweigert jeden Zug, solange sie
-// unter 0 steht — Emotions-Effekt, Nexus, Gesetz, Mitspieler, Auto-Zug; im Spiel zählt die Uhr von 0 aufwärts. Bis 07.10.
-// hielt die Wache nur die Uhr (OMEN, V18.534, ein B-Boot: die Uhr eingefroren, das Wetter trotzdem sunny → rainy), davor
-// taute die Bühne selbst die Uhr (jede Bühne, 120 s freier Takte später zog Regen ins Bild).
+// unter 0 steht — Emotions-Effekt, Nexus, Gesetz, Mitspieler, Auto-Zug; im Spiel zählt die Uhr von 0 aufwärts.
 function wetterHalten() {
     const st = window.anazhRealm.state;
     window.__wetterSpion();
@@ -243,17 +236,6 @@ function uhrSpion() {
     return S;
 }
 
-// Das Buch des Uhr-Spions seit `seit` (seq), der Gang der Uhr (Summe seit dem Einbau) und die Uhr jetzt.
-function uhrBuch(seit) {
-    const S = window.__uhrSpion();
-    return {
-        seq: S.seq,
-        uhr: window.anazhRealm.state.timeOfDay,
-        gang: Object.assign({}, S.gang),
-        buch: S.buch.filter((e) => e.seq > (seit || 0)),
-    };
-}
-
 // DER WELT-AKT-SPION (die Linse der Welt-Wache, 0710-7): jeder Welt-Akt der DSL beim Namen. Unter dem Halt einer Messung (die
 // Uhr des Wetter-Zugs unter 0, `__wetterHalten`) verweigert die EINE Engstelle des Spiels (`dslEval`) jeden Welt-Akt
 // (`AnazhRealm.DSL_WELTAKTE`) und bucht ihn (`_weltaktGehalten`) — der Spion hört dort mit: „verweigert" mit Op und Quelle.
@@ -310,6 +292,51 @@ function weltaktBuch(seit) {
     };
 }
 
+// DIE UHREN DES BILDS (A8), [Name, Halter, Schlüssel, Wert bei T]: Himmel (`_loopSkyboxZeit`), Wasser, Wind, Richtung
+// (`_loopRender`, `_windDirAt`; `_windZeit`: das Flackern der Leuchtquellen), Böe (`_loopWeatherAndGrowth`, Mitte 1),
+// TSL `time` (NodeFrame: der Atem des Fells), Tor mit Puls und Glut (`_tickPortalMembranes` setzt sie zu T).
+function bildUhren(T) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const wu = st.windUniforms || {};
+    const d = r._windDirAt(T);
+    const v2 = wu.uWindDir && wu.uWindDir.value;
+    const u = [
+        ["himmel", st.skyboxUniforms && st.skyboxUniforms.time, "value", T],
+        ["wasser", st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.time, "value", T],
+        ["wind", wu.uWindTime, "value", T],
+        ["wind-x", v2, "x", d.x],
+        ["wind-z", v2, "y", d.z],
+        ["böe", r, "_weatherWob", 1],
+        ["fell", st.renderer && st.renderer._nodes && st.renderer._nodes.nodeFrame, "time", T],
+    ];
+    for (const [n, m] of r._portalMembranes || [])
+        if (m.u)
+            u.push([`tor ${n}`, m.u.time, "value", T], [`puls ${n}`, m.u.pulse, "value"], [`glut ${n}`, m, "puls"]);
+    return u.filter((x) => x[1]);
+}
+
+// DIE UHR DER BÜHNE: T = 12,5 s (unter jeder Boot-Dauer, der 1-Hz-Scan der Membranen läuft weiter); die Bühne schreibt
+// jede Uhr über ihren Schreiber und hält sie wie das Wetter: nur sie schreibt (`durch`), jeden Zug sonst verweigert sie
+function uhrHalten() {
+    const r = window.anazhRealm;
+    const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, durch: false, verweigert: 0 });
+    S.durch = true;
+    try {
+        r._tickPortalMembranes(S.T);
+        for (const [, o, k, w] of window.__bildUhren(S.T)) {
+            if (w !== undefined) o[k] = w;
+            if ((Object.getOwnPropertyDescriptor(o, k) || {}).get?.__buehne) continue;
+            let v = o[k];
+            const get = Object.assign(() => v, { __buehne: true });
+            const set = (x) => (S.durch ? (v = x) : S.verweigert++);
+            Object.defineProperty(o, k, { configurable: true, enumerable: true, get, set });
+        }
+    } finally {
+        S.durch = false;
+    }
+}
+
 function buehne() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -320,6 +347,7 @@ function buehne() {
     st.timeOfDay = 0.5;
     // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
     window.__wetterSetzen("sunny");
+    window.__uhrHalten();
     if (typeof r._tickRain === "function") r._tickRain(performance.now());
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
@@ -675,14 +703,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
-            // DIE EINE UHR der Mess-Schüsse (`opt.fest`, eine Zeit in ms; K63-n1, die Klassen-Teilung der Soll-Tafel): jeder Frame
-            // rendert zu DIESER Zeit (Wind, Wasser, Glut stehen), und vor den Warm-Frames beginnen TRAA-Folge, ihre Geschichte und
-            // die Dither-Phase von vorn — zwei Schüsse derselben Szene sind dann dasselbe Bild, ein Schuss ohne eine Klasse
-            // unterscheidet sich nur, wo sie sichtbar ist (gemessen je Aufruf: `bildRauschen` zweier gleicher Schüsse).
-            const zeit = () => (opt && opt.fest != null ? opt.fest : performance.now());
+            // Der Frame trägt die Loop-Zeit in SEKUNDEN (bis A8 ms); `opt.fest` (K63-n1): vor den Warm-Frames beginnen
+            // TRAA-Folge, Geschichte und Dither-Phase von vorn — zwei Schüsse derselben Szene sind dasselbe Bild.
             const frame = () => {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(zeit());
+                r._loopRender(performance.now() / 1000);
             };
             // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
@@ -1282,7 +1307,8 @@ module.exports = {
         `window.__wetterSetzen = ${wetterSetzen.toString()};` +
         `window.__wetterHalten = ${wetterHalten.toString()};` +
         `window.__uhrSpion = ${uhrSpion.toString()};` +
-        `window.__uhrBuch = ${uhrBuch.toString()};` +
+        `window.__bildUhren = ${bildUhren.toString()};` +
+        `window.__uhrHalten = ${uhrHalten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
         `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
