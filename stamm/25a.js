@@ -1943,8 +1943,9 @@ class AnazhRealm_Z25a {
                 // Takt (Prüfung B3-1: Rauch im ersten Bild 0 statt 24 Teilchen, eine Aufgabe von 189–210 ms nach dem Bild).
                 // Ein Lade-Takt OHNE Bild (`ruht`) trägt nur, was das erste Weltbild füttert — Foundry und Einhängen, den
                 // Leib, Strom und Takt-Planer, den Genesis-Ort, Körper und Kamera, den Bau-Gang — und das Netz, das dem
-                // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224 Takte unter dem Ladeschirm jedes
-                // Spiel-Glied (1 007 ms im Loop außerhalb der Fütterer).
+                // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224–256 Takte unter dem Ladeschirm jedes
+                // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
+                // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
