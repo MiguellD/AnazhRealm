@@ -1,0 +1,8 @@
+f:gt:L1                  Objekte  10  an 11.98  aus 11.98  Preis 0.00 ms
+bauSatz                  Objekte  10  an 11.96  aus 10.60  Preis 1.36 ms
+bau:start_plattform      Objekte   2  an 11.97  aus 12.23  Preis -0.26 ms
+bau:welt_koerperstudio   Objekte   5  an 11.96  aus 11.96  Preis 0.00 ms
+bau:welt_klang           Objekte   3  an 11.95  aus 11.95  Preis 0.00 ms
+bau:welt_tetrapoda       Objekte   2  an 11.96  aus 11.96  Preis -0.01 ms
+bau:esse                 Objekte   4  an 11.96  aus 11.93  Preis 0.03 ms
+bauWurf                  Objekte   1  an 11.96  aus 11.93  Preis 0.04 ms

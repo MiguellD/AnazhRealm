@@ -103,3 +103,46 @@
 
 - **Kein Code-Commit.**
 - **Die OMEN misst jetzt T2** (f6fa9f63 gegen 27ae78bf, stehend 2+2). Danach die Bau-Zerlegung an f6fa9f63.
+
+## Nachtrag 16.10. ~09:50 — DER HEBEL: die Zeichen-Reihe des Bau-Satzes
+
+**Ergebnis:**
+
+1. **Teil-Klassen an f6fa9f63** (`p3/k1610bau/split.cjs`, eine langsame Welt): Den Preis trägt allein der **Bau-Satz**,
+   1,36 ms (an 11,96, aus 10,60 ms).
+   - Der Bau-Satz besteht aus 10 Meshes, ohne Bündel: 7 opak mit alphaTest 0,5 (9k bis 45k Dreiecke), 3 durchsichtig.
+   - Die übrigen Teil-Klassen kosten nichts: Tore `f:gt:L1` 0,00 · Studios 0,00 · Esse 0,03 · bauWurf 0,04 ·
+     Start-Plattform −0,26.
+2. **Mit T2 ist der langsame Gipfel an Genesis Ego der Regelfall:** f6fa9f63 8 von 8 Boots, 27ae78bf 2 langsam und 1
+   Zwischenwert von 3.
+3. **Die Zeichen-Reihe** (`split2.cjs`, je Kopf eine langsame Welt; renderOrder des Bau-Satzes, je Stellung 4–6 Bänke):
+
+   | Kopf | R0 (wie gebaut) | R+ (+10, zuletzt) | R− (−10, zuerst) | Δ R− gegen R0 |
+   |---|---|---|---|---|
+   | f6fa9f63 (b1, 76,5 fps) | 11,89 | 11,84 | **10,34** | **−1,55 ms** |
+   | 27ae78bf (b3) | 11,27 | 11,16 | **9,84** | **−1,43 ms** |
+
+   - **Zeichnet der Bau-Satz zuerst**, schreibt er die Tiefe, und was hinter den Häusern steht (Bäume, Boden), verwirft
+     seine Fragmente früh. Zeichnet er spät (der Zustand der langsamen Boots), zahlt die GPU erst den Hintergrund und
+     dann die Häuser darüber.
+   - Der Gewinn ist so groß wie der ganze Unterschied der Gipfel (+0,93 bis +1,1 ms) und mehr.
+   - Je einzelnes Mesh kostet aus/an ≈ 0 (−0,03 bis +0,11 ms): die Meshes decken einander. Erst alle zusammen (1,36 ms)
+     oder die Reihe (1,4–1,55 ms) bewegen die Bank.
+4. **Warum je Boot:**
+   - Die Szenen-Plätze unterscheiden sich je Boot: f6fa9f63 Bündel bei 34/35, Bau-Satz bei 27–33 und 42–45; 27ae78bf
+     Bündel bei 28/29, Bau-Satz bei 30–46.
+   - Wahrscheinlicher Mechanismus, nicht gemessen: Bau-Satz und Bündel-Kinder liegen in Welt-Koordinaten am
+     Ursprung, ihre Sortier-Tiefe ist gleich. Dann entscheidet die Objekt-id, also die Entstehungs-Reihe beim Boot.
+
+**Folge (Schnitt-Vorschlag, nicht von mir geschnitten):**
+
+- Die opaken Bau-Satz-Meshes bekommen eine feste frühe Zeichen-Stellung (renderOrder < 0 oder eine Gruppe vor den
+  Bündeln). Die 3 durchsichtigen Meshes behalten ihre Reihe unter den Durchsichtigen, sonst ändert sich ihre Schichtung.
+- **Erwartung:** Genesis Ego −1,4 bis −1,55 ms GPU, und kein zweiter Gipfel mehr.
+- **Zu prüfen beim Schnitt:**
+  - Die Wiese (dort zeichnet der Bau-Satz kaum: bau 4–5 Befehle).
+  - Das Dorf (viele Häuser; derselbe Hebel, vermutlich größer).
+- **Rohdaten:** `bericht/1610-zweigipfel/bau-satz-reihe/`.
+  - Darin: `s2-{f6f,27a}-b*-{lauf,ein,langsam}.txt`, `s2-*-langsam.json` (Lage in der Szene, Bänke je Stellung, Preis je
+    Mesh), `split2.cjs/.sh`, `fortschritt2.log`.
+  - Dazu `split-f6fa/` (Teil-Klassen mit Inventar).

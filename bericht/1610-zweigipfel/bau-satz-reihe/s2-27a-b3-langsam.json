@@ -1,0 +1,427 @@
+{
+ "start": "2026-10-16T07:44:41.323Z",
+ "lage": {
+  "kinder": 70,
+  "buendel": [
+   [
+    28,
+    "@global"
+   ],
+   [
+    29,
+    "@wahl"
+   ]
+  ],
+  "satz": [
+   {
+    "i": 0,
+    "szene": 30,
+    "id": 6840,
+    "stoffId": 118,
+    "tri": 9216,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 1,
+    "szene": 31,
+    "id": 6841,
+    "stoffId": 119,
+    "tri": 44800,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 2,
+    "szene": 32,
+    "id": 6842,
+    "stoffId": 120,
+    "tri": 43008,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 3,
+    "szene": 34,
+    "id": 6844,
+    "stoffId": 118,
+    "tri": 17408,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": true
+   },
+   {
+    "i": 4,
+    "szene": 35,
+    "id": 6845,
+    "stoffId": 119,
+    "tri": 3200,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": true
+   },
+   {
+    "i": 5,
+    "szene": 36,
+    "id": 6846,
+    "stoffId": 121,
+    "tri": 1280,
+    "alphaTest": 0.00392156862745098,
+    "durchsichtig": true,
+    "seiten": 2,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 6,
+    "szene": 42,
+    "id": 7156,
+    "stoffId": 171,
+    "tri": 22528,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 2,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 7,
+    "szene": 43,
+    "id": 7157,
+    "stoffId": 172,
+    "tri": 1280,
+    "alphaTest": 0.00392156862745098,
+    "durchsichtig": true,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 8,
+    "szene": 44,
+    "id": 7158,
+    "stoffId": 173,
+    "tri": 1280,
+    "alphaTest": 0.00392156862745098,
+    "durchsichtig": true,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   },
+   {
+    "i": 9,
+    "szene": 46,
+    "id": 9366,
+    "stoffId": 174,
+    "tri": 2560,
+    "alphaTest": 0.5,
+    "durchsichtig": false,
+    "seiten": 0,
+    "ordnung": 0,
+    "wirft": false
+   }
+  ]
+ },
+ "meshes": {
+  "0": {
+   "i": 0,
+   "szene": 30,
+   "id": 6840,
+   "stoffId": 118,
+   "tri": 9216,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    11.15,
+    12,
+    11.99,
+    11.86
+   ],
+   "aus": [
+    11.99,
+    12.02,
+    11.85,
+    11.71
+   ],
+   "preisMs": 0.005
+  },
+  "1": {
+   "i": 1,
+   "szene": 31,
+   "id": 6841,
+   "stoffId": 119,
+   "tri": 44800,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    11.82,
+    11.48,
+    11.47,
+    11.44
+   ],
+   "aus": [
+    11.43,
+    11.47,
+    11.39,
+    11.51
+   ],
+   "preisMs": 0.025
+  },
+  "2": {
+   "i": 2,
+   "szene": 32,
+   "id": 6842,
+   "stoffId": 120,
+   "tri": 43008,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    11.26,
+    10.2,
+    10.06,
+    10.17
+   ],
+   "aus": [
+    10.06,
+    10.22,
+    10.16,
+    10.14
+   ],
+   "preisMs": 0.035
+  },
+  "3": {
+   "i": 3,
+   "szene": 34,
+   "id": 6844,
+   "stoffId": 118,
+   "tri": 17408,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": true,
+   "an": [
+    10.13,
+    10.13,
+    10.13,
+    9.95
+   ],
+   "aus": [
+    10.14,
+    10.18,
+    10.14,
+    10.07
+   ],
+   "preisMs": -0.01
+  },
+  "4": {
+   "i": 4,
+   "szene": 35,
+   "id": 6845,
+   "stoffId": 119,
+   "tri": 3200,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": true,
+   "an": [
+    10.13,
+    10.14,
+    10.12,
+    10.14
+   ],
+   "aus": [
+    10.18,
+    10.06,
+    10.13,
+    10.1
+   ],
+   "preisMs": 0.02
+  },
+  "5": {
+   "i": 5,
+   "szene": 36,
+   "id": 6846,
+   "stoffId": 121,
+   "tri": 1280,
+   "alphaTest": 0.00392156862745098,
+   "durchsichtig": true,
+   "seiten": 2,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    10.12,
+    10.14,
+    10.03,
+    10.14
+   ],
+   "aus": [
+    10.08,
+    10.16,
+    9.96,
+    10.17
+   ],
+   "preisMs": 0.01
+  },
+  "6": {
+   "i": 6,
+   "szene": 42,
+   "id": 7156,
+   "stoffId": 171,
+   "tri": 22528,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 2,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    10.07,
+    10.18,
+    10.13,
+    10.14
+   ],
+   "aus": [
+    10.06,
+    10.28,
+    10.14,
+    10.15
+   ],
+   "preisMs": -0.01
+  },
+  "7": {
+   "i": 7,
+   "szene": 43,
+   "id": 7157,
+   "stoffId": 172,
+   "tri": 1280,
+   "alphaTest": 0.00392156862745098,
+   "durchsichtig": true,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    10.14,
+    10.04,
+    10.14,
+    10.08
+   ],
+   "aus": [
+    10.2,
+    10.08,
+    10.17,
+    10.05
+   ],
+   "preisMs": -0.015
+  },
+  "8": {
+   "i": 8,
+   "szene": 44,
+   "id": 7158,
+   "stoffId": 173,
+   "tri": 1280,
+   "alphaTest": 0.00392156862745098,
+   "durchsichtig": true,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    10.16,
+    10.12,
+    10.14,
+    10.17
+   ],
+   "aus": [
+    10.13,
+    10.16,
+    10.12,
+    10.15
+   ],
+   "preisMs": 0.01
+  },
+  "9": {
+   "i": 9,
+   "szene": 46,
+   "id": 9366,
+   "stoffId": 174,
+   "tri": 2560,
+   "alphaTest": 0.5,
+   "durchsichtig": false,
+   "seiten": 0,
+   "ordnung": 0,
+   "wirft": false,
+   "an": [
+    10.05,
+    10.16,
+    10.01,
+    10.11
+   ],
+   "aus": [
+    9.99,
+    10.19,
+    10.08,
+    10.13
+   ],
+   "preisMs": -0.025
+  }
+ },
+ "reihe": {
+  "R0": {
+   "banks": [
+    11.16,
+    11.28,
+    11.29,
+    11.26,
+    11.1,
+    11.28
+   ],
+   "median": 11.27
+  },
+  "R+": {
+   "banks": [
+    11.27,
+    11.07,
+    11.07,
+    11.25
+   ],
+   "median": 11.16
+  },
+  "R-": {
+   "banks": [
+    9.82,
+    9.87,
+    9.88,
+    9.69
+   ],
+   "median": 9.845
+  }
+ },
+ "gesamtAn": [
+  11.25,
+  11.26,
+  11.22
+ ],
+ "ende": "2026-10-16T07:48:17.460Z"
+}

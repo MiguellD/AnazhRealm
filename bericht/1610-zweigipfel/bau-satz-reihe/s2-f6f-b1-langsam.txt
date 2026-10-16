@@ -1,0 +1,14 @@
+Bau-Satz: 10 Meshes · gesamt an 11.93 ms
+Reihe R0  11.89 ms
+Reihe R+  11.84 ms
+Reihe R-  10.34 ms
+Mesh 0 tri   9216 alphaTest 0.5 durchs. false Seiten 0 Szene 27  Preis 0.06 ms
+Mesh 1 tri  44800 alphaTest 0.5 durchs. false Seiten 0 Szene 28  Preis 0.11 ms
+Mesh 2 tri  43008 alphaTest 0.5 durchs. false Seiten 0 Szene 29  Preis 0.03 ms
+Mesh 3 tri  17408 alphaTest 0.5 durchs. false Seiten 0 Szene 31  Preis -0.01 ms
+Mesh 4 tri   5461 alphaTest 0.5 durchs. false Seiten 0 Szene 32  Preis -0.02 ms
+Mesh 5 tri   1280 alphaTest 0.00392156862745098 durchs. true Seiten 2 Szene 33  Preis 0.03 ms
+Mesh 6 tri  23552 alphaTest 0.5 durchs. false Seiten 2 Szene 42  Preis 0.00 ms
+Mesh 7 tri   2560 alphaTest 0.5 durchs. false Seiten 0 Szene 43  Preis 0.02 ms
+Mesh 8 tri   1280 alphaTest 0.00392156862745098 durchs. true Seiten 0 Szene 44  Preis 0.00 ms
+Mesh 9 tri   1280 alphaTest 0.00392156862745098 durchs. true Seiten 0 Szene 45  Preis -0.00 ms
