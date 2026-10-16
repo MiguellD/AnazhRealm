@@ -846,16 +846,18 @@
             "titel": "Mensch-Kopf (der Kopf des Spielers im Bild: Iris, Lippe, Höhle, Haar)",
             "wirkung": {
                 "grund": "der Spieler im Third-Blick; Plan Nr. 1: heute die schwächste sichtbare Stelle",
-                "mangel": {
+                "geheilt": {
                     "befund": "Augen, Mund, Haar-Fleck",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 1"
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 1",
+                    "warum": "gesicht 0,5 → 1 (Radeon 890M --echt, Mess-Wiese, Gesicht auf 0,7 m): augeFrei 0,483 → 1 (die Lid-Ränder stehen im Augen-Raum an ±0,085 statt 0,048/−0,055 — die Lidspalte trägt die Iris samt einer Pixel-Kante), lippeA 1,1 → 4,68 und lippeL −3,58 → −5,59 (die Nasen-Basis saß auf der Oberlippe: gesicht.mundTiefer legt sn–sto an 0,31 von sn–gn, Farkas; die Lippe −11/+13; der licht-unabhängige SSS-Saum 0,15 → 0,05), hoehleA −1,93 → 0,34 (die Höhle ist Ton der Haut, ihre Kugel lag unter ihr); Haut-Kontrast im Bild 0,61 → 0,65 (spieler:kopf/haut kontrast 0,6136 → 0,646), Kopf-Dreiecke L0 11 880 → 11 354",
+                    "bildPaar": ["artifacts/soll-tafel/mensch-kopf-vorher.png", "artifacts/soll-tafel/mensch-kopf.png"]
                 },
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T10:44:01.961Z",
+                    "datum": "2026-10-16T15:54:43.483Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "826717edb292b5462a836075e6eba9581cb93659"
+                        "version": "18.546.4",
+                        "sha": "574f00337f0a68c2eb6382c3de26d4b4e191facd"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -872,18 +874,18 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "spieler": {"objekte":14,"spiegelTreue":-0.116,"sp":[71,0,0,44292.33,44292.33,-5137.99],"zweiton":0,"zt":0,"weiss":0.0121,"wt":94,"wtZiel":null,"bunt":10.84,"pixel":7751,"deckung":0.0037,"deckungUnten":0,"luma":26.95,"kontrast":1.0344,"detail":0.1124,"nyquist":0.0957,"ek":6656.2,"eg":62910.1,"silhouette":8.7688,"kante":0.6467,"kr":772}
+                        "spieler": {"objekte":14,"spiegelTreue":-0.3342,"sp":[77,0,0,52800.33,52800.33,-17646.68],"zweiton":0,"zt":0,"weiss":0.0089,"wt":70,"wtZiel":null,"bunt":10.53,"pixel":7840,"deckung":0.0038,"deckungUnten":0,"luma":25.93,"kontrast":1.0274,"detail":0.1134,"nyquist":0.1182,"ek":6080.1,"eg":45375.6,"silhouette":8.8318,"kante":0.6415,"kr":782}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/mensch-kopf-wirkung.png",
                     "quellen": {
-                        "koerper-core.js": "c:2d740b48e4f78546",
-                        "foundry-core.js": "c:5ed08308e6e4d144",
-                        "stamm/07.js": "c:7a66986764b31bdd",
+                        "koerper-core.js": "c:0af385b108a5727a",
+                        "foundry-core.js": "c:f1c57dc7a9b3cd59",
+                        "stamm/07.js": "c:9b994e6d432e4d22",
                         "stamm/10.js": "c:bb6631653fcc0994",
                         "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/24.js": "c:dde90a4ac3fcf2da",
                         "stamm/25c.js": "c:fb8c3e2986247bac",
                         "stamm/15a.js": "c:386117a9b5c4f686",
                         "stamm/15c.js": "c:632b0d73bab306bc",
@@ -919,70 +921,70 @@
                 "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T10:43:34.269Z",
+                    "datum": "2026-10-16T18:23:20.230Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "826717edb292b5462a836075e6eba9581cb93659"
+                        "version": "18.546.5",
+                        "sha": "cd64528d429024e042ddf1cf51b3c1d8881f397b"
                     },
                     "geraet": {
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
                     "leinwand": [1920, 1080],
-                    "kamera": [-281.01, 29.24, -1045.92],
+                    "kamera": [-281.01, 29.24, -1045.89],
                     "ausdruck": "^spieler:kopf/",
                     "schwelle": 18,
                     "rauschen": {
-                        "anteil": 0.000001,
-                        "pixel": 2,
-                        "max": 24
+                        "anteil": 0.000008,
+                        "pixel": 16,
+                        "max": 76
                     },
-                    "misch": 790,
+                    "misch": 754,
                     "klassen": {
-                        "spieler:kopf/auge": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":13.01,"pixel":471,"deckung":0.0002,"deckungUnten":0,"luma":67.09,"kontrast":0.5818,"detail":0.1912,"nyquist":0.1005,"ek":1519.7,"eg":13605.1,"silhouette":5.1607,"kante":0.0988,"kr":3},
-                        "spieler:kopf/hair": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.3,"pixel":445,"deckung":0.0002,"deckungUnten":0,"luma":64,"kontrast":0.3837,"detail":0.2561,"nyquist":0.1575,"ek":1266.8,"eg":6776.9,"silhouette":18.2508,"kante":0.2607,"kr":140},
-                        "spieler:kopf/haut": {"objekte":2,"spiegelTreue":0.0994,"sp":[382,0,0,165132.72,165132.72,16417.51],"zweiton":0,"zt":0,"weiss":0.092,"wt":2761,"wtZiel":null,"bunt":16.79,"pixel":29999,"deckung":0.0145,"deckungUnten":0,"luma":55.04,"kontrast":0.6136,"detail":0.0461,"nyquist":0.1036,"ek":8870.3,"eg":76711.5,"silhouette":7.1188,"kante":0.6968,"kr":699},
-                        "spieler:kopf/skin": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.42,"pixel":426,"deckung":0.0002,"deckungUnten":0,"luma":36.26,"kontrast":0.2526,"detail":0.0823,"nyquist":0.1148,"ek":81.3,"eg":626.5,"silhouette":12.6939,"kante":0.3467,"kr":133}
+                        "spieler:kopf/auge": {"objekte":2,"spiegelTreue":null,"sp":[4,0,0,4.49,4.49,-4.49],"zweiton":0,"zt":0,"weiss":0.0478,"wt":31,"wtZiel":null,"bunt":13.03,"pixel":648,"deckung":0.0003,"deckungUnten":0,"luma":77.78,"kontrast":0.4958,"detail":0.1827,"nyquist":0.0953,"ek":2489.7,"eg":23621.7,"silhouette":4.7533,"kante":0.2397,"kr":3},
+                        "spieler:kopf/hair": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.52,"pixel":488,"deckung":0.0002,"deckungUnten":0,"luma":64.44,"kontrast":0.3768,"detail":0.3257,"nyquist":0.2583,"ek":2667.1,"eg":7657.9,"silhouette":18.8767,"kante":0.337,"kr":157},
+                        "spieler:kopf/haut": {"objekte":2,"spiegelTreue":0.1043,"sp":[369,0,0,196068.83,196068.83,20446.52],"zweiton":0,"zt":0,"weiss":0.0833,"wt":2457,"wtZiel":null,"bunt":15.78,"pixel":29513,"deckung":0.0142,"deckungUnten":0,"luma":52.07,"kontrast":0.6486,"detail":0.0408,"nyquist":0.0978,"ek":7889.2,"eg":72759.7,"silhouette":7.7826,"kante":0.6598,"kr":779},
+                        "spieler:kopf/skin": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.34,"pixel":247,"deckung":0.0001,"deckungUnten":0,"luma":36.84,"kontrast":0.1617,"detail":0.1384,"nyquist":0.0615,"ek":18.8,"eg":287,"silhouette":13.8074,"kante":0.4422,"kr":134}
                     },
                     "abstand": null,
                     "gesicht": {
-                        "augeFrei": 0.483,
-                        "lippeL": -3.58,
-                        "lippeA": 1.1,
-                        "hoehleL": -1.09,
-                        "hoehleA": -1.93,
+                        "augeFrei": 1,
+                        "lippeL": -5.41,
+                        "lippeA": 4.72,
+                        "hoehleL": -1.18,
+                        "hoehleA": 0.42,
                         "haarDeckung": 1,
                         "proben": {
-                            "iris": 180,
-                            "irisSicht": 87,
-                            "lippe": 175,
-                            "wange": 646,
-                            "kalotte": 125,
-                            "haarPixel": 445
+                            "iris": 179,
+                            "irisSicht": 179,
+                            "lippe": 186,
+                            "wange": 690,
+                            "kalotte": 132,
+                            "haarPixel": 488
                         },
                         "zeilen": {
-                            "auge": 539.9,
-                            "mund": 618.5
+                            "auge": 539.7,
+                            "mund": 625.7
                         },
                         "toene": {
                             "haut": "6a4230",
-                            "lippe": "5e271a",
+                            "lippe": "5d1e17",
                             "hoehle": "5d3322",
                             "kappe": "cecbc5"
                         }
                     },
                     "bild": "artifacts/soll-tafel/mensch-kopf.png",
                     "quellen": {
-                        "koerper-core.js": "c:2d740b48e4f78546",
-                        "foundry-core.js": "c:5ed08308e6e4d144",
-                        "stamm/07.js": "c:7a66986764b31bdd",
-                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "koerper-core.js": "c:876df0482c417a50",
+                        "foundry-core.js": "c:3b21a4161089ec4f",
+                        "stamm/07.js": "c:14b92cd1f4b487a0",
+                        "stamm/10.js": "c:7e9cd9212be9e788",
                         "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/24.js": "c:dde90a4ac3fcf2da",
                         "stamm/25c.js": "c:fb8c3e2986247bac",
                         "stamm/15a.js": "c:386117a9b5c4f686",
                         "stamm/15c.js": "c:632b0d73bab306bc",
-                        "stamm/25b.js": "c:fd9270736768dec2"
+                        "stamm/25b.js": "c:a7f82b3875e6652b"
                     }
                 }
             },

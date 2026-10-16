@@ -1652,7 +1652,7 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
 // DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): die geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
 // nie die Fern-Gestalt daneben. Offene Teile und der Schalen-Stapel des Fells (`fellSchale`: N Kopien der Haut) tragen
 // keine Masse. Je Geometrie gemerkt (jede Kreatur teilt die Geometrien ihrer Vorlage). Gemessen bei Größe 1: Fuchs 0,015 ·
-// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,100 m³.
+// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,117 m³ (Spieler).
 AnazhRealm._leibVolumen = function (teil, rahmen) {
     if (!teil || typeof THREE === "undefined") return 0;
     const memo = AnazhRealm._leibVolumenMemo || (AnazhRealm._leibVolumenMemo = new WeakMap());
@@ -1661,18 +1661,14 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
     const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
     const m = new THREE.Matrix4();
     // DAS GEMESSENE VOLUMEN DES OFENS (1310-15): der Mensch-Guss schneidet die Haut unter dem Stoff (danach ist sie offen) und
-    // misst die geschlossene Haut vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und gilt
-    // allein, nie zusätzlich zu einer Messung der Netze darunter.
-    let dekl = 0;
-    let hatDekl = false;
+    // misst sie vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und zählt NEBEN jeder
+    // geschlossenen Haut: Kopf und Hände sind eigene Häute (A4: die Zahl galt allein — der Spieler wog 111,5 statt 115,5 kg).
+    let v = 0;
     teil.traverse((o) => {
         if (!(o.userData && o.userData.__leibV > 0)) return;
         m.multiplyMatrices(inv, o.matrixWorld);
-        dekl += o.userData.__leibV * Math.abs(m.determinant());
-        hatDekl = true;
+        v += o.userData.__leibV * Math.abs(m.determinant());
     });
-    if (hatDekl) return dekl;
-    let v = 0;
     teil.traverse((o) => {
         if (!o.isMesh || !o.geometry) return;
         const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;
