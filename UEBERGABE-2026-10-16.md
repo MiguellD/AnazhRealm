@@ -146,3 +146,8 @@ Neu: WL Wackel-Linsen (Playtest Worldgen-Bäume n=0, fell-Ratsche), CW2 (Waage a
   D(2) D2 in 2. Nachbesserung; D(3) EIN Stripper gemergt, offen playtest.cjs nach Modulen + __consumes.
 - **Offen benannt (keine Karte):** Labor backt Kronenlicht in den Boden (phytogenesis.js:1806); Sturm-Belichtung frisst die Abdunklung;
   W7 hält alte Satz-Generation je ruhendem RO (17b.js:627); Genesis-Platz ohne Tafel-Klasse (Start-Plattform = Stein-Zylinder 16.js:131).
+
+**21:52 (date):** integ = 3caca1cd (V18.546.6: + WL · A4 Kopf GRÜN · S5). OMEN: K2-Bisektion ohne Täter (W2+KI2 +0,00, K2 +0,05, A6 −0,02;
+gepoolt +0,14 bei 2σ 0,22), Originalpaar d9d1db4e/c03ea075 wird direkt nachgemessen → dann main. **BERICHTIGUNG zum W2-Merge aba1da28:**
+der WebGL2-Rückfall linkt nach W2 auf der Radeon (61/61 Programme, max 14 Sampler) — das „> 16“ kam vom 17-Karten-Selbsttest der Linse
+(W3, gl-einheiten 0243e350); W3 wird gerade mit S5 vereint (Konflikt W6 linkt/linkt nicht, Nachbesserung wf_e5c3ef38-912).
