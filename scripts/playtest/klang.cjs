@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/klang.cjs — der Richter von Klang (spec/stamm/modul-karte.json): Lofi-Symphonie · Umwelt-Klang · Resonanz-Pings.
-// 1 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 2 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -413,6 +413,260 @@ async function checkBandW4LofiPad(ctx) {
     }
 }
 
+// Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
+// Gesetze am ECHTEN Chokepoint (animatePlayerSoul → `_schrittKlangTick`), Audio stumm, die EREIGNIS-Logik pur: (A) je Halbzyklus
+// der weg-getriebenen Gang-Phase EIN Schritt · (B) Stand, Schleichen, Luft und Schwimmen nie · (C) das Material wählt das Timbre
+// aus der EINEN Tabelle (Wasser am Fuß „wasser", Fallback, gainDeckel) · (D) die Landung GENAU EINMAL, stärker und tiefer, unter
+// LAND_DIP_MIN_SPEED keine · (E) die Stimme-aus-Wand; Selbsttests S1 (ω ≡ 0 ⇒ 0 Schritte) und S2 (die Nass-Wand vor dem Boden).
+async function checkBandSchrittKlang(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, () => {
+        const r = window.anazhRealm,
+            s = r.state,
+            A = r.constructor;
+        const o = { checks: {} };
+        for (const fn of [
+            "_schrittKlangTick",
+            "_schrittKlangEreignis",
+            "_schrittMaterialAt",
+            "_schrittKlangParams",
+            "_playSchrittOneShot",
+            "_gaitGesetz",
+            "_terrainMaterialAt",
+            "_koerperWasser",
+            "animatePlayerSoul",
+        ]) {
+            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
+        }
+        if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
+        const T = A.SCHRITT_KLANG;
+        const codeOf = window.__codeOf;
+    
+        // ── KONSUM-/Source-Proben (Lehre 6): die EINE Quelle ist verdrahtet ──
+        o.checks.konsumTick = /_schrittKlangTick\(/.test(codeOf(r.animatePlayerSoul));
+        const tickSrc = codeOf(r._schrittKlangTick);
+        o.checks.keineEigeneUhr =
+            /walkPhase/.test(tickSrc) && !/performance\.now/.test(tickSrc) && !/Date\.now/.test(tickSrc);
+        o.checks.eineSchwelle = /LAND_DIP_MIN_SPEED/.test(tickSrc); // kein Schwellen-Zwilling
+        const matSrc = codeOf(r._schrittMaterialAt);
+        o.checks.materialQuellen = /_terrainMaterialAt/.test(matSrc) && /_koerperWasser/.test(matSrc);
+        const shotSrc = codeOf(r._playSchrittOneShot);
+        o.checks.klangEineMaschine =
+            /masterGain/.test(shotSrc) && /enabled/.test(shotSrc) && !/new\s+AudioContext/.test(shotSrc);
+        o.checks.simUnberuehrt =
+            !/_schrittKlang/.test(codeOf(r._stepFixedSim)) &&
+            !/_schrittKlang/.test(codeOf(r._loopFixedStep)) &&
+            !/_schrittKlang/.test(codeOf(r._stepCharacter));
+        // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
+        o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !s.symphony.enabled;
+    
+        // ── Bühne: human-Rig + gestubbte Velocity (das koerper-Linsen-Muster) ──
+        const p = s.player;
+        if (!p || !s.playerMesh) return { error: "kein Spieler" };
+        const savedSoul = p.soul;
+        if (!s.playerMesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        const pmesh = s.playerMesh;
+        if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
+        const saved = {
+            vel: s.playerVel,
+            uw: s.playerUnderwater,
+            mounted: p.mountedArch,
+            walkPhase: p.walkPhase,
+            gaitW: p._gaitW,
+            lastTick: p.animationLastTick,
+            isInAir: s.isInAir,
+            fieldVy: s._fieldVy,
+            schritt: s._schrittKlang,
+            hitStop: p._hitStopUntil,
+        };
+        s.playerUnderwater = false;
+        p.mountedArch = null;
+        p._hitStopUntil = 0;
+        s.isInAir = false;
+        s._fieldVy = 0;
+        let vStub = 0;
+        s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
+        const z = () => s._schrittKlang || { schritte: 0, landungen: 0, letzter: null };
+        const frisch = () => {
+            s._schrittKlang = null;
+        };
+        // fährt sek Sekunden bei Tempo v; liefert Phase-Start (NACH dem
+        // Anker-Tick bei t0) und Phase-Ende — die Soll-Schritte sind die
+        // π-Grenz-Überquerungen dazwischen.
+        const fahre = (v, sek, t0) => {
+            vStub = v;
+            p.animationLastTick = -Infinity;
+            r.animatePlayerSoul(t0); // dt=0 — ankert ohne Ereignis
+            const ph0 = p.walkPhase;
+            const n = Math.round(sek * 60);
+            for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
+            return { ph0, ph1: p.walkPhase };
+        };
+        const halbe = (lauf) => Math.floor(lauf.ph1 / Math.PI) - Math.floor(lauf.ph0 / Math.PI);
+    
+        // ── (A) SCHRITT-TAKT: N Halbzyklen ⇒ N Ereignisse (±1), zwei Tempi ──
+        frisch();
+        const lauf6 = fahre(6, 2.0, 100);
+        const n6 = z().schritte;
+        const soll6 = halbe(lauf6);
+        frisch();
+        const lauf3 = fahre(3, 2.0, 200);
+        const n3 = z().schritte;
+        const soll3 = halbe(lauf3);
+        o.takt = { n6, soll6, n3, soll3 };
+        o.checks.aTakt6 = soll6 >= 3 && Math.abs(n6 - soll6) <= 1;
+        o.checks.aTakt3 = soll3 >= 1 && Math.abs(n3 - soll3) <= 1;
+    
+        // ── (B) STAND/SCHLEICHEN/LUFT/SCHWIMMEN: 0 Ereignisse ──
+        frisch();
+        fahre(0, 1.0, 300);
+        o.checks.bStandNull = z().schritte === 0 && z().landungen === 0;
+        frisch();
+        const laufSchleich = fahre(0.5, 1.0, 400); // Phase rückt, Tempo unter der Schwelle
+        o.schleichPhase = laufSchleich.ph1 - laufSchleich.ph0;
+        o.checks.bSchleichNull = z().schritte === 0 && o.schleichPhase > 0;
+        frisch();
+        s.isInAir = true; // Luft: Phase rückt weiter, aber kein Boden-Kontakt
+        const laufLuft = fahre(6, 1.0, 500);
+        s.isInAir = false;
+        o.luftPhase = laufLuft.ph1 - laufLuft.ph0;
+        o.checks.bLuftNull = z().schritte === 0 && o.luftPhase > Math.PI;
+        frisch();
+        s.playerUnderwater = true; // Schwimmen: die Schwimm-Phase rückt, kein Schritt
+        fahre(6, 1.0, 600);
+        s.playerUnderwater = false;
+        o.checks.bSchwimmNull = z().schritte === 0;
+    
+        // ── (C) MATERIAL WÄHLT TIMBRE — zwei Böden durch die ECHTE Pipe ──
+        const savedTerr = r._terrainMaterialAt;
+        const savedWl = r._koerperWasser;
+        r._koerperWasser = () => -Infinity; // trocken (der Boden entscheidet)
+        r._terrainMaterialAt = () => "erde";
+        frisch();
+        fahre(6, 1.5, 700);
+        const pErde = z().letzter;
+        r._terrainMaterialAt = () => "stein";
+        frisch();
+        fahre(6, 1.5, 800);
+        const pStein = z().letzter;
+        o.timbre = { erde: pErde, stein: pStein };
+        o.checks.cZweiBoeden =
+            !!pErde &&
+            !!pStein &&
+            pErde.material === "erde" &&
+            pStein.material === "stein" &&
+            (pErde.freq !== pStein.freq || pErde.filter !== pStein.filter);
+        // (S2) SELBST-TEST: Nass schlägt fest — Wasser über dem Fuß gewinnt
+        r._koerperWasser = () => pmesh.position.y + 5;
+        frisch();
+        fahre(6, 1.0, 900);
+        const pNass = z().letzter;
+        r._terrainMaterialAt = savedTerr; // restaurieren (Gate-Hook-Lehre)
+        r._koerperWasser = savedWl;
+        o.checks.s2NassSchlaegtFest = !!pNass && pNass.material === "wasser";
+        // Tabelle pur: Fallback + Deckel
+        o.checks.cFallback = r._schrittKlangParams("nebelkuchen", false, 0).material === T.fallback;
+        o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
+    
+        // ── (D) LANDUNG: genau 1×, stärker + tiefer; unter der Schwelle nie ──
+        const falle = (t0, fallTempo, frames) => {
+            vStub = 0;
+            p.animationLastTick = -Infinity;
+            r.animatePlayerSoul(t0); // geerdet ankern
+            s.isInAir = true;
+            for (let k = 0; k < frames; k++) {
+                s._fieldVy = -(fallTempo * (k + 1)) / frames; // wachsendes Fall-Tempo
+                r.animatePlayerSoul(t0 + 0.1 + k / 60);
+            }
+            s.isInAir = false;
+            s._fieldVy = 0;
+            r.animatePlayerSoul(t0 + 0.2 + frames / 60); // das Aufsetzen
+        };
+        frisch();
+        falle(1000, 9, 30); // harter Fall (9 m/s ≫ LAND_DIP_MIN_SPEED)
+        const landA = { landungen: z().landungen, letzter: z().letzter };
+        for (let k = 1; k <= 30; k++) r.animatePlayerSoul(1002 + k / 60); // weitere Boden-Ticks
+        o.land = landA;
+        o.checks.dGenauEinmal = landA.landungen === 1 && z().landungen === 1 && z().schritte === 0;
+        const schrittRef = landA.letzter ? r._schrittKlangParams(landA.letzter.material, false, 0) : null;
+        o.checks.dStaerkerTiefer =
+            !!landA.letzter &&
+            landA.letzter.landung === true &&
+            !!schrittRef &&
+            landA.letzter.gain > schrittRef.gain &&
+            landA.letzter.freq < schrittRef.freq;
+        frisch();
+        falle(1100, 1.0, 10); // Hopser (1 m/s < LAND_DIP_MIN_SPEED)
+        o.checks.dSchwelleHaelt = z().landungen === 0;
+    
+        // ── (E) STIMME-AUS-WAND: Ereignis zählt, der Klang-Aufruf unterbleibt ──
+        let calls = 0;
+        const savedPlay = r._playSchrittOneShot;
+        r._playSchrittOneShot = () => {
+            calls++;
+            return true;
+        };
+        const sym = s.symphony;
+        const savedSym = { enabled: sym.enabled, ctx: sym.ctx, masterGain: sym.masterGain };
+        sym.enabled = false;
+        frisch();
+        fahre(6, 1.0, 1200);
+        o.stummSchritte = z().schritte;
+        o.checks.eStummZaehlt = o.stummSchritte >= 1 && calls === 0;
+        sym.enabled = true; // Stimme an (Fake-Naht — der Spy fängt VOR WebAudio)
+        if (!sym.ctx) sym.ctx = { __fake: true };
+        if (!sym.masterGain) sym.masterGain = { __fake: true };
+        calls = 0;
+        frisch();
+        fahre(6, 1.0, 1300);
+        o.anSchritte = z().schritte;
+        o.anCalls = calls;
+        o.checks.eAnRuft = o.anSchritte >= 1 && calls === o.anSchritte;
+        r._playSchrittOneShot = savedPlay; // restaurieren (Gate-Hook-Lehre)
+        sym.enabled = savedSym.enabled;
+        sym.ctx = savedSym.ctx;
+        sym.masterGain = savedSym.masterGain;
+    
+        // ── (S1) SELBST-TEST: Gang-Gesetz mit ω ≡ 0 ⇒ trotz Tempo + Boden 0 Schritte ──
+        const savedRate = r._gaitGesetz;
+        r._gaitGesetz = () => ({ omega: 0, S: 0, schritt: 0, tast: 0.5, hub: 0 });
+        frisch();
+        const laufStub = fahre(6, 1.0, 1400);
+        r._gaitGesetz = savedRate; // restaurieren (Gate-Hook-Lehre)
+        o.s1Phase = laufStub.ph1 - laufStub.ph0;
+        o.checks.s1LinseFeuert = o.s1Phase === 0 && z().schritte === 0;
+    
+        // ── Bühne restaurieren ──
+        s.playerVel = saved.vel;
+        s.playerUnderwater = saved.uw;
+        p.mountedArch = saved.mounted;
+        p.walkPhase = saved.walkPhase;
+        p._gaitW = saved.gaitW;
+        p.animationLastTick = saved.lastTick;
+        s.isInAir = saved.isInAir;
+        s._fieldVy = saved.fieldVy;
+        s._schrittKlang = saved.schritt;
+        p._hitStopUntil = saved.hitStop;
+        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+    
+        return o;
+    });
+    if (!out || out.error) return check("Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)", false, out ? out.error : "keine Antwort der Seite");
+    const c = out.checks || {};
+    const alle = (...k) => k.filter((x) => c[x] !== true);
+    const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
+    const konsum = alle("konsumTick", "keineEigeneUhr", "eineSchwelle", "materialQuellen", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
+    check("Schritt-Klang KONSUM: der EINE Tick liest walkPhase, LAND_DIP_MIN_SPEED, _terrainMaterialAt + _koerperWasser, die EINE Stimme; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
+    const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
+    check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
+    const timbre = alle("cZweiBoeden", "s2NassSchlaegtFest", "cFallback", "cDeckel");
+    check("Schritt-Klang (C): zwei Böden ⇒ zwei Timbres aus der EINEN Tabelle, Wasser am Fuß ⇒ „wasser“ (S2), Fallback, gainDeckel", !timbre.length, zeig(timbre));
+    const land = alle("dGenauEinmal", "dStaerkerTiefer", "dSchwelleHaelt");
+    check(`Schritt-Klang (D): die Landung feuert GENAU EINMAL (${out.land.landungen}×), STÄRKER + TIEFER als der Schritt, der Hopser bleibt stumm`, !land.length, zeig(land));
+    const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");
+    check(`Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`, !stimme.length, zeig(stimme));
+}
+
 module.exports = {
-    checkBandW4LofiPad,
+    checkBandW4LofiPad, checkBandSchrittKlang,
 };

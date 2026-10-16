@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/dirigent.cjs — der Richter von Dirigent (spec/stamm/modul-karte.json): Konstruktor · state-Baum · Spiel-Modi · Kamera-Modus · Leucht-Takt · Perf-Sinn · der EINE Regler · Holz-Profile · Geräte-Profil · Flug-Schreiber · die Spielschleife · Frame-Planer · Fixed-Step · Replay · init · das erste Weltbild · Ladeschirm · der Boot.
-// 18 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 19 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -1653,10 +1653,282 @@ async function checkBandSzeneSkala(ctx) {
     check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen, kein Laub-Faktor), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && g.laubFaktorLebt === false && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Laub-Faktor ${g.laubFaktorLebt} · Snapshot ${g.snapshotSkala}`);
 }
 
+// Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim (D3b): die ECHTE Kette `_perfSenseFoldFrame`
+// → `_nexusPerfRegulate` → `_nexusPerfActuate` über tausende synthetische Frames, der headless-Zweig gelüftet, die zwei
+// GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
+// Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
+// Konsum, headless byte-alt) · S6 der Grenzzyklus-Schnitt (Laub- und Architektur-Radius) · S7 der Ladeschirm misst nichts.
+async function checkBandReglerSim(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm,
+            st = r.state;
+        const A = window.AnazhRealm || r.constructor;
+        const o = {};
+        const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        // ── SIM-RAHMEN: den headless-Zweig lüften (die ECHTEN Regel-Pfade laufen),
+        // die zwei GPU-Anwender stubben (die Stellgrößen-FELDER bleiben die Wahrheit),
+        // alles SICHERN+WIEDERHERSTELLEN (die Gate-Hook-Lehre).
+        const _origHeadless = st.renderer._isHeadlessNull;
+        const _origApplyRS = r._applyRenderScale;
+        const _origApplySR = r._applyEffectiveShadowRange;
+        let rsApplied = 0,
+            srApplied = 0;
+        const feed = (frameMs, frame) => {
+            st._perfFrame = frame;
+            st._perfMarks = {};
+            r._perfSenseFoldFrame(frameMs, 0.0167);
+        };
+        const HONEST = {
+            renderCalls: 1100,
+            renderTris: 3.1e6,
+            render: 2,
+            archCulling: 0.6,
+            streaming: 1.2,
+            waterIso: 0.4,
+            creatures: 0.8,
+            physics: 0.9,
+        };
+        const levers = () => ({
+            loadScale: st.perfSense.loadScale,
+            density: st._foliageDensityScale,
+            shadowIv: st._shadowMinInterval,
+            foliageR: st.foliageRadius,
+            godray: st._godrayScale,
+            streamBudget: st._voxelStreamBudgetMs,
+        });
+        try {
+            st.renderer._isHeadlessNull = false; // die echten Regel-Zweige
+            r._applyRenderScale = () => rsApplied++;
+            r._applyEffectiveShadowRange = () => srApplied++;
+            // ── S1: SCHWACHE GPU, steady (30 ms Frames, ehrliche Szene) ──
+            for (let i = 0; i < 900; i++) feed(30, Object.assign({}, HONEST));
+            const s1a = levers();
+            for (let i = 0; i < 400; i++) feed(30, Object.assign({}, HONEST));
+            const s1b = levers();
+            o.s1Throttled = s1a.density < 0.9 && s1a.loadScale < 0.5;
+            o.s1Converged =
+                Math.abs(s1b.density - s1a.density) < 0.02 && Math.abs(s1b.loadScale - s1a.loadScale) < 0.02;
+            o.s1 = { a: s1a, b: s1b };
+            // Studio-Regime: trotz gefallener Dichte KEIN Dispose+Rebuild (die tote Schleife).
+            // AUSLÖSCHUNGS-WELLE (Beifang, V9.56-i nachgezogen): `_tickGrassThin` fiel in
+            // V18.436 mit dem Tuft-Paket (die Wiese dünnt NIE — Studio-Gesetz); der Streu-
+            // Thin ist der EINE verbliebene Hebel — die Probe liest nur noch ihn.
+            st._frameOverBudget = false;
+            let thinFired = 0;
+            for (let i = 0; i < 25; i++) thinFired += r._tickFoliageThin(pos);
+            o.s1NoRebuildLoop = thinFired === 0;
+            o.s1EffectiveDensityOne = r._effectiveFoliageDensity() === 1;
+            // ── S2: STREAMING-BURST (Rückstau) → Stream-Budget MAX (heilig) ──
+            // `voxelMeshPending` ist lazy-init (Set) — nach einem Sync-Warmup existiert
+            // es ggf. nicht: für die Probe anlegen (wie die Produktion es täte).
+            const hadPendSet = !!st.voxelMeshPending;
+            if (!st.voxelMeshPending) st.voxelMeshPending = new Set();
+            const pend = st.voxelMeshPending;
+            const hadPending = pend.size > 0;
+            if (!hadPending) pend.add("__sim");
+            for (let i = 0; i < 60; i++) feed(30, Object.assign({}, HONEST, { streaming: 20 }));
+            const L = A.PERF_LEVERS;
+            o.s2StreamSacred = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
+            if (!hadPending) pend.delete("__sim");
+            if (!hadPendSet && pend.size === 0) delete st.voxelMeshPending;
+            // ── S3: STARKE GPU (7 ms) → alles wächst zurück ──
+            for (let i = 0; i < 2200; i++) feed(7, Object.assign({}, HONEST));
+            const s3 = levers();
+            o.s3Recovered = s3.loadScale > 0.95 && s3.density > 0.95;
+            o.s3 = s3;
+            // ── S4: SESSION-ZEIT-INVARIANZ im Totband (err=0 → Stellgrößen eingefroren;
+            // eine vergiftete/wachsende Metrik drückte sie über die Session weiter) ──
+            const tMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : A.PERF_TARGET_MS;
+            const gMs = Math.max(1, tMs - A.PERF_HEADROOM_MS);
+            const dead = (tMs + gMs) / 2;
+            for (let i = 0; i < 300; i++) feed(dead, Object.assign({}, HONEST));
+            const s4a = levers();
+            for (let i = 0; i < 2400; i++) feed(dead, Object.assign({}, HONEST)); // „9 Minuten später"
+            const s4b = levers();
+            let s4MaxDrift = 0;
+            for (const k of Object.keys(s4a)) {
+                const d = Math.abs((s4b[k] || 0) - (s4a[k] || 0));
+                if (d > s4MaxDrift) s4MaxDrift = d;
+            }
+            o.s4MaxDrift = +s4MaxDrift.toFixed(6);
+            o.s4Invariant = s4MaxDrift < 0.001;
+            o.s4 = { a: s4a, b: s4b };
+            o.gpuAppliersDrove = rsApplied > 0; // die Sim fuhr die echten Zweige (nicht vakuös)
+            // ── S5: DER GERÄTE-SEED (18.07., „das Geräte-Profil ist Telemetrie,
+            // kein Regler-Seed" fiel) — die EINE Profil-Quelle urteilt Klassen,
+            // der Sense-Init KONSUMIERT den Seed, headless bleibt byte-alt. ──
+            {
+                const defO = (obj, k, v) => Object.defineProperty(obj, k, { get: () => v, configurable: true });
+                const undefO = (obj, k) => delete obj[k];
+                const fakeAdapter = (info) => {
+                    st.renderer.backend = { adapter: { info } };
+                };
+                const prevBackend = st.renderer.backend;
+                const prof = (info, cores, mem, dpr, w, h) => {
+                    r._geraeteProfilMemo = null;
+                    fakeAdapter(info);
+                    defO(navigator, "hardwareConcurrency", cores);
+                    defO(navigator, "deviceMemory", mem);
+                    defO(window, "devicePixelRatio", dpr);
+                    defO(window, "innerWidth", w);
+                    defO(window, "innerHeight", h);
+                    return r._geraeteProfil();
+                };
+                const pStark = prof({ vendor: "nvidia", architecture: "ampere" }, 24, 32, 1, 1920, 1080);
+                const pSchwach = prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
+                const pMittel = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 1440, 765);
+                // DER SCHIRM IST KEIN SEED (06.10., gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
+                // 4 MPix 0,1–0,2 ab — ein größerer Schirm startete mit weniger Welt. Dasselbe Gerät auf 4K: derselbe Seed.
+                const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
+                o.s5 = { pStark, pSchwach, pMittel, pMittelGross };
+                o.s5Klassen =
+                    pStark.klasse === "stark" &&
+                    pStark.seed === 1 &&
+                    pSchwach.klasse === "schwach" &&
+                    Math.abs(pSchwach.seed - 0.45) < 1e-9 &&
+                    pMittel.klasse === "mittel" &&
+                    Math.abs(pMittel.seed - 0.7) < 1e-9 &&
+                    pMittelGross.seed === pMittel.seed;
+                // KONSUM: ein frischer Sense-Init (non-headless, Mittel-Profil aktiv)
+                // startet loadScale AM SEED — nicht bei optimistischer 1.
+                r._geraeteProfilMemo = null;
+                st.perfSense = null;
+                feed(17, Object.assign({}, HONEST));
+                o.s5SeedStart = st.perfSense ? st.perfSense.seedStart : null;
+                o.s5SeedKonsumiert =
+                    st.perfSense &&
+                    Math.abs(st.perfSense.seedStart - 0.7) < 1e-9 &&
+                    Math.abs(st.perfSense.loadScale - 0.7) < 0.06;
+                // HEADLESS BYTE-ALT: derselbe Init unter Null-Renderer ⇒ Seed 1.
+                st.renderer._isHeadlessNull = true;
+                r._geraeteProfilMemo = null;
+                st.perfSense = null;
+                feed(17, Object.assign({}, HONEST));
+                o.s5HeadlessAlt = st.perfSense && st.perfSense.seedStart === 1;
+                st.renderer._isHeadlessNull = false;
+                // Stubs zurücknehmen (die Gate-Hook-Lehre: sichern + wiederherstellen).
+                undefO(navigator, "hardwareConcurrency");
+                undefO(navigator, "deviceMemory");
+                undefO(window, "devicePixelRatio");
+                undefO(window, "innerWidth");
+                undefO(window, "innerHeight");
+                st.renderer.backend = prevBackend;
+                r._geraeteProfilMemo = null;
+                st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
+            }
+            // ── S6: DER GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace: Radius
+            // atmete 58↔130 m und baute dieselben Rand-Zellen im Kreis) — GEPULSTER
+            // Kopfraum (kurze Ruhe-Fenster zwischen Über-Budget-Wellen) bewegt den
+            // Radius NICHT mehr; ANHALTENDER Kopfraum wächst weiter (S3 bleibt). ──
+            {
+                st.perfSense = null;
+                for (let i = 0; i < 600; i++) feed(30, Object.assign({}, HONEST)); // auf den Boden
+                const s6Start = st.foliageRadius;
+                const s6ArchStart = st.architectureCullingRadius;
+                for (let w = 0; w < 6; w++) {
+                    for (let i = 0; i < 80; i++) feed(7, Object.assign({}, HONEST)); // kurzes Ruhe-Fenster
+                    for (let i = 0; i < 20; i++) feed(30, Object.assign({}, HONEST)); // die Welle bricht
+                }
+                const s6NachPuls = st.foliageRadius;
+                o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
+                o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
+                // DIESELBE Wand trägt den Architektur-Radius (04.10.: er folgte dem PID Frame für Frame, 100↔150 m,
+                // Rand-Bauten im Cull/Rewarm-Kreis — die großen Bundles nahmen je Frame neu auf).
+                const s6ArchNachPuls = st.architectureCullingRadius;
+                o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
+                o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;
+                for (let i = 0; i < 1200; i++) feed(7, Object.assign({}, HONEST)); // anhaltende Ruhe
+                o.s6RuheWaechst = st.foliageRadius > s6NachPuls + 1;
+                o.s6ArchRuheWaechst = st.architectureCullingRadius > s6ArchNachPuls + 1;
+                o.s6Arch = { start: s6ArchStart, nachPuls: s6ArchNachPuls, nachRuhe: st.architectureCullingRadius };
+                o.s6 = { start: s6Start, nachPuls: s6NachPuls, nachRuhe: st.foliageRadius };
+            }
+            // ── S7: DER LADESCHIRM MISST NICHTS (K60-3, Prüfung Runde 2: Radeon kalt stand das erste Weltbild am Kopf mit dem
+            // Laub-Radius 65 statt 129,6 m — 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume). Unter dem Lade-Takt zeigt kein
+            // Frame die Welt: sein Abstand ist die Kadenz des Lade-Bilds (LADE_BILD_MS), seine Last die Erst-Zeichnung. Der
+            // PID misst ihn nie (loadScale hält den Seed), und die Reichweite des Weltbilds — Laub- und Architektur-Radius —
+            // steht nach zwei Lade-Bildern an ihrem Ziel (das Laub an der Kante des gebauten Rings), nie an der Wand des
+            // sichtbaren Takts (Ruhe + Schritt, S6). ──
+            {
+                const merk = {
+                    lade: r._ladeTakt,
+                    ring: st._activeRingRadius,
+                    ruhe: r._folRuheSec,
+                };
+                try {
+                    st.perfSense = null;
+                    r._folRuheSec = 0; // der Boot: noch keine Ruhe gesammelt
+                    r._ladeTakt = () => true;
+                    st._activeRingRadius = 2;
+                    st.foliageRadius = A.PERF_FOLIAGE_RADIUS_MIN - 5; // der Boot-Stand am Kopf (65 m)
+                    st.architectureCullingRadius = A.ARCH_QUALITY_RADIUS_MIN;
+                    const LADE = Object.assign({}, HONEST, { render: 300, streaming: 1, waterIso: 0 });
+                    feed(A.LADE_BILD_MS, Object.assign({}, LADE));
+                    feed(A.LADE_BILD_MS, Object.assign({}, LADE));
+                    const seed = st.perfSense.seedStart;
+                    const { span } = r._voxelChunkConfig();
+                    const kante = (st._activeRingRadius + 1) * span;
+                    const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+                    const laubZiel = Math.min(
+                        lerp(A.PERF_FOLIAGE_RADIUS_MIN, A.PERF_FOLIAGE_RADIUS_MAX, seed),
+                        kante
+                    );
+                    const archZiel = lerp(A.ARCH_QUALITY_RADIUS_MIN, A.ARCH_QUALITY_RADIUS_MAX, seed);
+                    o.s7 = {
+                        seed,
+                        loadScale: +st.perfSense.loadScale.toFixed(4),
+                        laub: +st.foliageRadius.toFixed(2),
+                        laubZiel: +laubZiel.toFixed(2),
+                        arch: +st.architectureCullingRadius.toFixed(2),
+                        archZiel: +archZiel.toFixed(2),
+                    };
+                    o.s7LoadHaelt = Math.abs(st.perfSense.loadScale - seed) < 1e-9;
+                    o.s7LaubAmZiel = Math.abs(st.foliageRadius - laubZiel) < 1e-6;
+                    o.s7ArchAmZiel = Math.abs(st.architectureCullingRadius - archZiel) < 1e-6;
+                } finally {
+                    r._ladeTakt = merk.lade;
+                    st._activeRingRadius = merk.ring;
+                    r._folRuheSec = merk.ruhe;
+                    st.perfSense = null;
+                }
+            }
+        } finally {
+            st.renderer._isHeadlessNull = _origHeadless;
+            r._applyRenderScale = _origApplyRS;
+            r._applyEffectiveShadowRange = _origApplySR;
+            // headless-ehrlichen Zustand wiederherstellen (ein Fold im echten Modus)
+            st._perfFrame = {};
+            st._perfMarks = {};
+            r._perfSenseFoldFrame(8, 0.0167);
+        }
+        o.restored = st.renderer._isHeadlessNull === _origHeadless && st._foliageDensityScale === 1;
+        return o;
+    });
+    const o = out || {};
+    const f2 = (v) => (typeof v === "number" ? +v.toFixed(3) : v);
+    const s1 = o.s1 || { a: {}, b: {} };
+    check(`Regler-Sim S1 schwache GPU: der Regler DROSSELT und KONVERGIERT, das Studio-Regime baut nie neu (loadScale ${f2(s1.a.loadScale)}, Dichte ${f2(s1.a.density)})`, o.s1Throttled && o.s1Converged && o.s1NoRebuildLoop && o.s1EffectiveDensityOne, JSON.stringify(s1).slice(0, 160));
+    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
+    check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
+    check(
+        "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
+        o.s5Klassen === true && o.s5SeedKonsumiert === true && o.s5HeadlessAlt === true,
+        `Seed-Start ${o.s5SeedStart} · headless ${o.s5HeadlessAlt}`
+    );
+    check(
+        "Regler-Sim S6 Grenzzyklus-Schnitt: gepulster Kopfraum bewegt Laub- und Architektur-Radius NICHT, anhaltende Ruhe wächst",
+        o.s6PulsStill === true && o.s6RuheWaechst === true && o.s6ArchPulsStill === true && o.s6ArchRuheWaechst === true,
+        `Laub Δ ${o.s6PulsDelta} ${o.s6 ? o.s6.nachPuls + "→" + o.s6.nachRuhe : ""} · Bauten Δ ${o.s6ArchPulsDelta}`
+    );
+    check("Regler-Sim S7 der Ladeschirm misst nichts: der PID hält den Seed, Laub und Bauten stehen nach zwei Lade-Bildern am Ziel", o.s7LoadHaelt === true && o.s7LaubAmZiel === true && o.s7ArchAmZiel === true, JSON.stringify(o.s7));
+    check("Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her", o.gpuAppliersDrove === true && o.restored === true);
+}
+
 module.exports = {
     checkInitialState, checkRing1Grok, checkBandV1778LadderCut, checkBandV18278LoopErrorBoundary,
     checkBandWellePerfENexusGovernor, checkBandWaldbodenKaskade, checkBandTailleOmega5, checkBandV18149Statusbar,
     checkBandV18163DetailTiefe, checkBandV18165KonsoleHeil, checkBandV18177AAA, checkBandV18210Verdrahtung,
     checkBandRauschGesetz, checkBandV18331ReplayDeterminism, checkBandPerfPanel, checkBandExistenzBoden,
-    checkBandGodray, checkBandSzeneSkala,
+    checkBandGodray, checkBandSzeneSkala, checkBandReglerSim,
 };

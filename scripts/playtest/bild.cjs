@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 12 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -2509,8 +2509,247 @@ async function checkBandLookPhysik(ctx) {
     );
 }
 
+// Himmelskörper-Tag (V18.530) — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
+// Planet aus Math.random, MeshBasic, Tag wie Nacht voll sichtbar). Jetzt sind die Wandelsterne die hellsten PUNKTE des Sternfelds,
+// die Dämmerung setzt die Grenzgröße (`_himmelGrenzgroesse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
+// `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
+// blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
+// Unendlich-Knoten (K16). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+async function checkBandHimmelTag(ctx) {
+    const { page, check } = ctx;
+    const probe = (stoerung) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const T = window.THREE;
+        const sauber = { grenze: r._himmelGrenzgroesse };
+        let kugel = null;
+        if (stoerung === "kugel") {
+            kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
+            kugel.userData.skyOffset = new T.Vector3(200, 300, 100);
+            st.scene.add(kugel);
+        }
+        if (stoerung === "grenze") r._himmelGrenzgroesse = () => -3;
+        if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
+        const sonneVN = st.sunMesh.material.vertexNode;
+        if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
+        const zeit = (t) => {
+            st.timeOfDay = t;
+            if (st.world) st.world.timeOfDay = t;
+            r._setWeather("sunny", "human");
+            st.weatherTransition = null;
+            r._applyDayNightToScene();
+        };
+        const sf = st.starField;
+        const mags = sf ? sf.geometry.getAttribute("aMag") : null;
+        const U = st.starFieldUniforms;
+        const sichtbar = () => {
+            let n = 0;
+            let venus = false;
+            const g = U.grenze.value;
+            for (let i = 0; i < mags.count; i++) {
+                const v = Math.max(0, Math.min(1, g - mags.getX(i) + 0.5));
+                if (v > 0.001) n++;
+                if (i === mags.count - r.constructor.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
+            }
+            return { n, venus, grenze: +g.toFixed(2) };
+        };
+        const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
+        st.scene.traverse((o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++);
+        out.planetenFort = st.planets === undefined && r._buildSkyPlanets === undefined;
+        const zeitWar = st.timeOfDay;
+        zeit(0.5);
+        out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
+        out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
+        zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
+        out.daemmerung = sichtbar();
+        zeit(0);
+        out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
+        out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
+        out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
+        // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
+        const unendlich = r.constructor._unendlichKnoten;
+        out.vorn = [];
+        for (const [name, o] of [["himmel", st.skybox], ["himmel-sterne", sf], ["himmel-sonne", st.sunMesh], ["himmel-mond", st.moonMesh]]) {
+            if (!o) out.vorn.push(`${name} fehlt`);
+            else if (!(unendlich && o.material.vertexNode === unendlich && o.material.depthTest !== false)) out.vorn.push(name);
+        }
+        if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
+        if (kugel) st.scene.remove(kugel);
+        if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
+        r._himmelGrenzgroesse = sauber.grenze;
+        zeit(zeitWar);
+        return out;
+    };
+    const urteil = (S) => {
+        const rot = [];
+        if (!S) return ["keine Antwort der Seite"];
+        if (S.fremdeKoerper > 0 || !S.planetenFort) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz (planetenFort=${S.planetenFort})`);
+        if (!(S.punkte > 1000)) rot.push(`Sternfeld fehlt (${S.punkte} Punkte)`);
+        if (S.mittag.n !== 0) rot.push(`2 MITTAG: ${S.mittag.n} Punkte sichtbar (Grenze ${S.mittag.grenze})`);
+        if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05)) rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
+        if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte`);
+        if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
+        if (S.mittag.n === 0 && S.mittag.zeichnet) rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
+        if (S.nacht.n > 0 && !S.nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
+        if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen");
+        if (S.vorn.length) rot.push(`7 UNENDLICH: ${S.vorn.join(" · ")} ohne den Unendlich-Knoten`);
+        return rot;
+    };
+    const rot = urteil(await safeEvaluate(page, probe, null));
+    check("Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond blass/deckend, jeder Himmelskörper im Unendlichen", rot.length === 0, rot.join(" · "));
+    const s = {};
+    for (const k of ["kugel", "grenze", "doppel", "vorne", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
+    const selbst = [
+        s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
+        s.grenze.some((e) => e.startsWith("2 MITTAG")) || "Mittags-Grenze −3 blieb grün",
+        s.doppel.some((e) => e.startsWith("6 ZEICHNEN")) || "zwei Durchgänge blieben grün",
+        s.vorne.some((e) => e.startsWith("7 UNENDLICH") && e.includes("himmel-sonne")) || "Sonne vor der Welt blieb grün",
+        s.null.length === 0 || "nach der Heilung nicht grün",
+    ].filter((x) => x !== true);
+    check("Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten werden rot", selbst.length === 0, selbst.join(" · "));
+}
+
+// Die Schatten-Wand — eingefaltet aus gate:schatten-takt (D3b): Befund 04.10. beide CSM-Kaskaden renderten JEDEN Frame
+// (updateShadow ~9,5 ms CPU) — r184 liest `shadow.needsUpdate || shadow.autoUpdate` je Licht (`ShadowNode.updateBefore`), nie
+// `renderer.shadowMap.needsUpdate`. `_loopShadowUpdate` fährt je Kaskade den echten Leser; JE FRAME HÖCHSTENS EINE KASKADE
+// (1410-3), nur die bewegte Kamera lässt die nahe jeden Frame folgen. Der ECHTE `_loopShadowUpdate` gegen Schein-Kaskaden:
+// T1 autoUpdate aus · T2/T3 der Takt je Regler-Intervall · T4 Sonnen-Sprung · T5 ohne CSM · T6 `_schattenAlleNeu` · T7 Gang;
+// S1/S2 der alte Schreiber und das Gesetz vor 1410-3 fallen.
+async function checkBandSchattenTakt(ctx) {
+    const { page, check } = ctx;
+    const a = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const T = r.constructor.SCHATTEN_TAKT;
+        const echt = { csm: st.csmNode, dl: st.directionalLight, iv: st._shadowMinInterval, eigen: Object.prototype.hasOwnProperty.call(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null };
+        const kaskade = () => ({ shadow: { autoUpdate: true, needsUpdate: false } });
+        const sonne = { position: { x: 10, y: 200, z: 10 } };
+        const lauf = (lichter, n) => {
+            const z = lichter.map(() => 0);
+            z.doppelt = 0;
+            for (let i = 0; i < n; i++) {
+                lichter.forEach((l) => (l.shadow.needsUpdate = false));
+                r._loopShadowUpdate();
+                lichter.forEach((l, k) => l.shadow.needsUpdate && z[k]++);
+                if (lichter.filter((l) => l.shadow.needsUpdate).length > 1) z.doppelt++;
+            }
+            return z;
+        };
+        const aus = { T };
+        try {
+            const k = [kaskade(), kaskade()];
+            st.csmNode = { lights: k };
+            st.directionalLight = sonne;
+            st._shadowMinInterval = 1;
+            r._shadowLast = null;
+            r._shadowFrame = 0;
+            lauf(k, 1); // Sonnen-Erstlauf
+            aus.t2 = lauf(k, 30);
+            aus.t2doppelt = aus.t2.doppelt;
+            aus.t1 = k.every((l) => l.shadow.autoUpdate === false);
+            st._shadowMinInterval = 4;
+            aus.t3 = lauf(k, 60);
+            aus.t3doppelt = aus.t3.doppelt;
+            lauf(k, 3);
+            sonne.position.x += 100;
+            k.forEach((l) => (l.shadow.needsUpdate = false));
+            r._loopShadowUpdate();
+            aus.t4 = k.map((l) => l.shadow.needsUpdate);
+            st.csmNode = null;
+            const dl = Object.assign(kaskade(), { position: sonne.position });
+            st.directionalLight = dl;
+            st._shadowMinInterval = 1;
+            r._shadowLast = null;
+            aus.t5 = lauf([dl], 20)[0];
+            aus.t5aus = dl.shadow.autoUpdate === false;
+            // T7 — die Kamera bewegt sich: je Takt ein Schritt der Kamera-Matrix
+            st.csmNode = { lights: k };
+            st.directionalLight = sonne;
+            st._shadowMinInterval = 1;
+            r._shadowLast = null;
+            const kam = st.camera;
+            const kamAlt = kam ? kam.position.x : 0;
+            const roh = r._loopShadowUpdate;
+            let schritt = 0;
+            r._loopShadowUpdate = function () {
+                if (kam) {
+                    kam.position.x = kamAlt + 0.05 * ++schritt;
+                    kam.updateMatrixWorld(true);
+                }
+                return roh.call(this);
+            };
+            try {
+                lauf(k, 1);
+                aus.t7 = lauf(k, 30);
+                aus.t7doppelt = aus.t7.doppelt;
+            } finally {
+                delete r._loopShadowUpdate;
+                if (kam) {
+                    kam.position.x = kamAlt;
+                    kam.updateMatrixWorld(true);
+                }
+            }
+            aus.t7kamera = !!kam;
+            const k6 = [kaskade(), kaskade()];
+            k6.forEach((l) => (l.shadow.needsUpdate = false));
+            st.csmNode = { lights: k6 };
+            r._schattenAlleNeu();
+            aus.t6 = k6.every((l) => l.shadow.needsUpdate === true);
+            aus.quelle = String(r._loopShadowUpdate);
+            // S1 — der alte Schreiber (V18.264: nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
+            const k7 = [kaskade(), kaskade()];
+            st.csmNode = { lights: k7 };
+            r._loopShadowUpdate = function () {};
+            try {
+                aus.s1 = { z: lauf(k7, 30), auto: k7.every((l) => l.shadow.autoUpdate === true) };
+            } finally {
+                delete r._loopShadowUpdate;
+            }
+            // S2 — das Gesetz vor 1410-3 (nah jeden Frame, fern jeden fernFaktor-ten im selben Frame) trägt Doppel-Frames
+            const k8 = [kaskade(), kaskade()];
+            st.csmNode = { lights: k8 };
+            let f8 = 0;
+            r._loopShadowUpdate = function () {
+                f8++;
+                k8[0].shadow.autoUpdate = k8[1].shadow.autoUpdate = false;
+                k8[0].shadow.needsUpdate = true;
+                if (f8 % T.fernFaktor === 0) k8[1].shadow.needsUpdate = true;
+            };
+            try {
+                aus.s2 = lauf(k8, 30).doppelt;
+            } finally {
+                delete r._loopShadowUpdate;
+            }
+        } finally {
+            st.csmNode = echt.csm;
+            st.directionalLight = echt.dl;
+            st._shadowMinInterval = echt.iv;
+            r._shadowLast = null;
+            if (echt.eigen) r._loopShadowUpdate = echt.eigen;
+        }
+        return aus;
+    });
+    if (!a) return check("Schatten-Takt: die Probe antwortet", false, "keine Antwort der Seite");
+    const T = a.T;
+    const fern2 = 30 / (T.nahMax * T.fernFaktor);
+    check(
+        "Schatten-Takt T1/T2: autoUpdate aus, Intervall 1 nah jeden nahMax-ten Frame, fern dazwischen, kein Frame mit zwei Kaskaden",
+        a.t1 && a.t2[0] === 30 / T.nahMax && a.t2[1] >= Math.floor(fern2) - 1 && a.t2[1] <= Math.ceil(fern2) && a.t2doppelt === 0,
+        `30 Frames → ${a.t2.join(" / ")}, doppelt ${a.t2doppelt}`
+    );
+    check("Schatten-Takt T3: Intervall 4 nah höchstens jeden nahMax-ten, fern im 4×fernFaktor-Takt", a.t3[0] === 60 / Math.min(T.nahMax, 4) && a.t3[1] === 60 / (4 * T.fernFaktor) && a.t3doppelt === 0, `60 Frames → ${a.t3.join(" / ")}`);
+    check("Schatten-Takt T4–T6: der Sonnen-Sprung erzwingt beide, ohne CSM das Haupt-Licht im Nah-Takt, `_schattenAlleNeu` markiert jede", a.t4[0] === true && a.t4[1] === true && a.t5 === 20 / T.nahMax && a.t5aus && a.t6, `T5 20 Frames → ${a.t5}`);
+    check("Schatten-Takt T7: die Kamera bewegt sich — nah jeden Frame, fern jeden fernFaktor-ten, beide dürfen in einen Frame", a.t7kamera && a.t7[0] === 30 && a.t7[1] === 30 / T.fernFaktor && a.t7doppelt > 0, `30 Frames → ${a.t7 ? a.t7.join(" / ") : "–"}`);
+    check(
+        "Schatten-Takt SELBSTTEST: der alte Schreiber markiert keine Kaskade, das Gesetz vor 1410-3 trägt Doppel-Frames, der Takt schreibt nie shadowMap.needsUpdate",
+        a.s1.z[0] === 0 && a.s1.z[1] === 0 && a.s1.auto && a.s2 > 0 && !/shadowMap\.needsUpdate\s*=/.test(a.quelle),
+        `S1 ${a.s1.z.join(" / ")} · S2 doppelt ${a.s2}`
+    );
+}
+
 module.exports = {
     checkBandV1731EmotionDrivesWorld, checkBandOmegaOpsisSkyEnv, checkBandWelle6G3Lebendigkeit,
     checkBandWelle6G4Atmosphere, checkBandV8LatePolishAnd6XContinued, checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch, checkBandV18264ShadowCache, checkBandWetterVektor, checkBandLookPhysik,
+    checkBandHimmelTag, checkBandSchattenTakt,
 };

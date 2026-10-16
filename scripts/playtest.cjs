@@ -923,6 +923,13 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandGodray, ctx);
             await timed(BAND.checkBandLookPhysik, ctx);
             await timed(BAND.checkBandSzeneSkala, ctx);
+            await timed(BAND.checkBandHimmelTag, ctx);
+            await timed(BAND.checkBandSchattenTakt, ctx);
+            await timed(BAND.checkBandReglerSim, ctx);
+            await timed(BAND.checkBandRezeptKatalog, ctx);
+            await timed(BAND.checkBandSchrittKlang, ctx);
+            await timed(BAND.checkBandScatterScheibe, ctx);
+            await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

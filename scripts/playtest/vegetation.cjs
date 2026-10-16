@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/vegetation.cjs — der Richter von Vegetation (spec/stamm/modul-karte.json): Nah-Wiese · Nah-Streu · Affinität · Boden-Material · Baum-Geometrie · Laub-Atlas · Wald-Pflanzung · Fels-Varianten · Natur-Plätze · Gebackene Regionen · Streu-Zellen · Streu-Streaming.
-// 16 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { spawn } = require("child_process");
@@ -2535,10 +2535,273 @@ async function checkBandWahrerAnblickLaub(ctx) {
     check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice (D3b): `_scatterRegion` baut mit Deadline in ZEIT-
+// SCHEIBEN (Fortsetzung `region._cont`: Bake-Phase → Zellen-Phase). Dieselbe Region One-Shot vs in N Scheiben: `region.cells`
+// byte-gleich bei echten Scheiben, die HISM-Slot-Bilanz identisch (ein Doppel-Add wäre im cells-Vergleich unsichtbar), der
+// Kalt-Bake gescheibt + Float32-byte-gleich ohne halben Bake in der Map, das Dispose-Storno, der Wecker der aufgeschobenen
+// Region, und der Stoff des Walds (unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den Voxel-Faden).
+async function checkBandScatterScheibe(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm,
+            st = r.state;
+        const A = window.AnazhRealm || r.constructor;
+        const SC = A.SCATTER;
+        const o = {};
+        const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const rx = Math.floor(pos.x / SC.regionM),
+            rz = Math.floor(pos.z / SC.regionM);
+        const key = `${rx},${rz}`;
+        const bcfg = r._bakeRegionConfig();
+        const bKey = `${Math.floor((rx * SC.regionM) / bcfg.sizeM)},${Math.floor((rz * SC.regionM) / bcfg.sizeM)}`;
+        const snapshot = (reg) =>
+            JSON.stringify(
+                (reg && reg.cells ? reg.cells : []).map((c) => [
+                    c.cellX,
+                    c.cellZ,
+                    c.layer,
+                    c.species,
+                    c.variantIndex,
+                    c.lod,
+                    c.bpName,
+                ])
+            );
+        const groupBalance = () => {
+            const b = {};
+            if (st.archInstanceGroups)
+                for (const [k, g] of st.archInstanceGroups)
+                    b[k] = { live: g.liveCount || 0, count: g.mesh ? g.mesh.count : 0 };
+            return JSON.stringify(b);
+        };
+        const clean = () => {
+            if (st.scatterRegions && st.scatterRegions.has(key)) r._disposeScatterRegion(key);
+        };
+        const cleanBake = () => {
+            if (st.bakedRegionFields) st.bakedRegionFields.delete(bKey);
+        };
+        // ── (1)+(3) ONE-SHOT-Referenz (kalt: auch der Bake läuft im One-Shot) ──
+        clean();
+        cleanBake();
+        const oneShot = r._scatterRegion(rx, rz, pos);
+        o.oneShotCells = oneShot ? oneShot.cells.length : -1;
+        const snapOne = snapshot(oneShot);
+        const bakeOne = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
+        const bakeOneCopy = bakeOne && bakeOne.data ? Array.from(bakeOne.data) : null;
+        const balanceOne = groupBalance();
+        // ── SCHEIBEN-Bau (kalt: Bake-Phase + Zellen-Phase, enge Deadlines) ──
+        clean();
+        cleanBake();
+        let slices = 0,
+            halfBakeSeen = false,
+            contSeenPhases = new Set();
+        let reg = null;
+        for (let i = 0; i < 800; i++) {
+            reg = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
+            slices++;
+            if (reg && reg._cont) {
+                contSeenPhases.add(reg._cont.phase);
+                // die _sampleBakedField-Wand: ein HALBER Bake darf NIE in der Map stehen
+                const e = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
+                if (e && e.dirty !== false && reg._cont.phase === "bake") halfBakeSeen = true;
+            } else break;
+            // KEINE Ereignis-Runde zwischen den Scheiben: beide Bauten lesen dieselbe Welt (Kopf-Kommentar (2))
+        }
+        o.slices = slices;
+        o.contPhases = Array.from(contSeenPhases);
+        o.halfBakeInMap = halfBakeSeen;
+        o.sliceDone = !!(reg && !reg._cont);
+        const snapSliced = snapshot(reg);
+        const bakeSliced = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
+        o.bakeByteEqual =
+            !!bakeOneCopy && !!bakeSliced && bakeSliced.data.length === bakeOneCopy.length
+                ? bakeSliced.data.every((v, i) => v === bakeOneCopy[i])
+                : false;
+        o.cellsByteEqual = snapOne === snapSliced;
+        o.balanceEqual = groupBalance() === balanceOne;
+        o.slicedCells = reg ? reg.cells.length : -1;
+        // ── (4) DISPOSE-STORNO: mitten in der Fortsetzung disposen ──
+        clean();
+        cleanBake();
+        let storno = { threw: false, contDead: false, rebuildOk: false };
+        try {
+            let reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
+            let guard = 0;
+            while (reg2 && reg2._cont && reg2._cont.phase === "bake" && guard++ < 300)
+                reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
+            // jetzt in der Zellen-Phase (oder fertig) → mitten drin disposen
+            if (reg2 && reg2._cont) {
+                r._disposeScatterRegion(key);
+                storno.contDead = !st.scatterRegions.has(key) && reg2._cont === null;
+                const fresh = r._scatterRegion(rx, rz, pos);
+                storno.rebuildOk = !!fresh && !fresh._cont && snapshot(fresh) === snapOne;
+                r._disposeScatterRegion(key);
+            } else {
+                // Region wurde zu schnell fertig (winzige Region) — Storno an leerer Stelle prüfen
+                r._disposeScatterRegion(key);
+                storno.contDead = !st.scatterRegions.has(key);
+                const fresh = r._scatterRegion(rx, rz, pos);
+                storno.rebuildOk = !!fresh && snapshot(fresh) === snapOne;
+                r._disposeScatterRegion(key);
+            }
+        } catch (e) {
+            storno.threw = String((e && e.message) || e);
+        }
+        o.storno = storno;
+        // ── (5) DER WECKER: zwei offene Zusagen, eine fremde Lieferung, dann die eigenen ──
+        const wecker = { fremd: null, eine: null, beide: null, threw: false };
+        try {
+            clean();
+            const loes = [];
+            const zus = [0, 1].map(() => new Promise((res) => loes.push(res)));
+            const altPass = r._scatterPass;
+            r._scatterPass = function (region, ...a) {
+                region._deferredFoundry = true; // jede Zelle wartet (wie bei kaltem Asset)
+                if (typeof this._streuWartetAuf === "function") for (const z of zus) this._streuWartetAuf(z);
+                return altPass.call(this, region, ...a);
+            };
+            // die Zusagen der Region beim Namen: ihre zwei, die Schlange des Walds und jede fremde (Karte, Zug, Buch)
+            const altWartet = r._streuWartetAuf;
+            const fremde = new Set();
+            r._streuWartetAuf = function (z) {
+                if (this._streuSammler && z && !zus.includes(z))
+                    fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                return altWartet.call(this, z);
+            };
+            wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
+            let reg5;
+            try {
+                reg5 = r._scatterRegion(rx, rz, pos);
+            } finally {
+                r._scatterPass = altPass;
+                r._streuWartetAuf = altWartet;
+            }
+            wecker.fremde = [...fremde];
+            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die leere Schlange
+            // (`_waldPlanZusage`, K60-4): die Linse leert sie zuerst (der Takt schickt sie an den Faden) — danach steht
+            // die Region NUR noch auf ihren zwei Zusagen
+            for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
+                r._tickWaldPlan(Infinity);
+                await new Promise((res) => setTimeout(res, 10));
+            }
+            wecker.schlangeNach = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
+            const steht = () => st.scatterRegions.get(key) === reg5;
+            const tick = async () => {
+                await new Promise((res) => setTimeout(res, 0));
+                r._tickScatterStreaming(pos);
+            };
+            r._scatterRefillPending = true; // eine FREMDE Lieferung
+            await tick();
+            wecker.fremd = steht();
+            loes[0]();
+            r._scatterRefillPending = true;
+            await tick();
+            wecker.eine = steht();
+            loes[1]();
+            await tick();
+            wecker.beide = steht();
+            clean();
+        } catch (e) {
+            wecker.threw = String((e && e.message) || e);
+        }
+        o.wecker = wecker;
+        // ── (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu wartet auf die Darts des Fadens ──
+        const stoff = {
+            buch: false,
+            wahr: false,
+            faden: false,
+            haupt: -1,
+            nachher: -1,
+            gewartet: false,
+            gleich: null,
+            zellen: 0,
+            threw: false,
+        };
+        try {
+            clean();
+            const t0 = performance.now();
+            const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
+            while (!bereit() && performance.now() - t0 < 90000) await new Promise((res) => setTimeout(res, 200));
+            stoff.buch = !!(r._foundry && r._foundry.recipes);
+            stoff.wahr = r._forestGesetzWahr();
+            stoff.faden = !!st.voxelWorker;
+            // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_streuSammler`)?
+            r._forestDartMemo = null;
+            let zaehler = 0;
+            const altCD = r._forestCellDarts;
+            r._forestCellDarts = function (cx, cz, seedInt) {
+                if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz)))
+                    zaehler++;
+                return altCD.call(this, cx, cz, seedInt);
+            };
+            const vw = st.voxelWorker;
+            try {
+                const reg6 = r._scatterRegion(rx, rz, pos);
+                stoff.haupt = zaehler;
+                const t1 = performance.now();
+                // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
+                while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000) {
+                    r._tickWaldPlan(Infinity);
+                    await new Promise((res) => setTimeout(res, 50));
+                }
+                stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
+                // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
+                // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten
+                clean();
+                zaehler = 0;
+                const neu = r._scatterRegion(rx, rz, pos);
+                stoff.nachher = zaehler;
+                stoff.zellen = neu && neu.cells ? neu.cells.length : 0;
+                const neuSnap = snapshot(neu);
+                clean();
+                st.voxelWorker = null;
+                r._forestDartMemo = null;
+                // ohne Faden plant der Takt die Schlange im Haupt-Faden: die Referenz pumpt sie leer (ohne Warten — kein
+                // Asset kommt dazwischen) und baut die Region dann neu
+                r._scatterRegion(rx, rz, pos);
+                for (let i = 0; i < 20000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+                    r._tickWaldPlan(Infinity);
+                clean();
+                stoff.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === neuSnap;
+            } finally {
+                st.voxelWorker = vw;
+                r._forestCellDarts = altCD;
+            }
+            clean();
+        } catch (e) {
+            stoff.threw = String((e && e.message) || e);
+        }
+        o.stoff = stoff;
+        return o;
+    });
+    if (!out || out.__err || out.err) return check("Scatter-Scheibe: die Probe antwortet", false, out ? out.__err || out.err : "keine Antwort der Seite");
+    check(
+        `Scatter-Scheibe: ECHTE Scheiben (${out.slices} Aufrufe), region.cells BYTE-EXAKT (One-Shot ${out.oneShotCells} == Scheiben ${out.slicedCells}), HISM-Slot-Bilanz identisch`,
+        out.slices >= 3 && out.sliceDone === true && (out.contPhases || []).includes("cells") && out.cellsByteEqual === true && out.oneShotCells === out.slicedCells && out.oneShotCells > 5 && out.balanceEqual === true,
+        `Phasen [${out.contPhases}] · Bilanz ${out.balanceEqual}`
+    );
+    check(
+        "Scatter-Scheibe: der Kalt-Bake gescheibt + Float32-byte-gleich, kein halber Bake in der Map; Dispose mitten in der Fortsetzung storniert ohne Throw",
+        out.bakeByteEqual === true && out.halfBakeInMap === false && (out.contPhases || []).includes("bake") && out.storno.threw === false && out.storno.contDead === true && out.storno.rebuildOk === true,
+        JSON.stringify(out.storno)
+    );
+    const w = out.wecker;
+    check(
+        "Scatter-Scheibe DER WECKER: die aufgeschobene Region überlebt eine fremde Lieferung und die erste ihrer zwei Zusagen, nach der zweiten baut der Refill sie neu",
+        !!w && w.threw === false && w.fremd === true && w.eine === true && w.beide === false,
+        JSON.stringify(w) + (w && w.fremd === false ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg" : "")
+    );
+    const s = out.stoff;
+    check(
+        "Scatter-Scheibe DER STOFF DES WALDS: unter der Streu-Scheibe kein Dart im Haupt-Faden, die Region wartet auf den Voxel-Faden und steht danach byte-gleich",
+        !!s && s.threw === false && s.buch === true && s.wahr === true && s.faden === true && s.haupt === 0 && s.gewartet === true && s.nachher === 0 && s.gleich === true && s.zellen > 5,
+        JSON.stringify(s) + (s && s.haupt > 0 ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${s.haupt} Darts im Haupt-Faden)` : "")
+    );
+}
+
 module.exports = {
     checkBandV18275FoliageGrowth, checkBandNahStreu, checkBandV18133Forage, checkBandV18197GammaMStrata,
     checkBandV18200GammaMIronBands, checkBandV18205Gamma7Grammatik, checkBandV18211SkeletonGrammar,
     checkBandV18212GigantRestsubschritte, checkBandV18215AtemberaubenderWald, checkBandV18216KarstUndUnderstory,
     checkBandV18217VariantenPool, checkBandV18218LODStufen, checkBandV18219bisVollendung,
-    checkBandV18224ScatterPromotion, checkBandWahrerAnblickFels, checkBandWahrerAnblickLaub,
+    checkBandV18224ScatterPromotion, checkBandWahrerAnblickFels, checkBandWahrerAnblickLaub, checkBandScatterScheibe,
 };

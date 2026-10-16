@@ -196,13 +196,6 @@
       "lauf": "npm run gate:feld-stellvertreter",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 1",
-      "lauf": "npm run gate:schatten-takt",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)": {
       "s": 15,
       "n": 7,
@@ -294,13 +287,6 @@
       "lauf": "npm run gate:render-tap",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)": {
-      "s": 10,
-      "n": 7,
-      "gruppe": "voll 3",
-      "lauf": "npm run gate:regler-sim",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)": {
       "s": 28,
       "n": 7,
@@ -327,13 +313,6 @@
       "n": 7,
       "gruppe": "voll 3",
       "lauf": "npm run gate:scatter-ab",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)": {
-      "s": 13,
-      "n": 7,
-      "gruppe": "voll 6",
-      "lauf": "npm run gate:scatter-slice",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)": {
@@ -497,13 +476,6 @@
       "lauf": "npm run gate:luft-sicht",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Himmel-Tag (am Mittag steht kein Punkt am Himmel)": {
-      "s": 7,
-      "n": 7,
-      "gruppe": "voll 18",
-      "lauf": "npm run gate:himmel-tag",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {
       "s": 9,
       "n": 7,
@@ -523,13 +495,6 @@
       "n": 7,
       "gruppe": "voll 10",
       "lauf": "npm run gate:foundry-impostor",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik": {
-      "s": 19,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:no-second-treebuilder",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {
@@ -763,13 +728,6 @@
       "lauf": "npm run gate:klang-zensus",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)": {
-      "s": 10,
-      "n": 7,
-      "gruppe": "voll 16",
-      "lauf": "npm run gate:rezept-katalog",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)": {
       "s": 10,
       "n": 7,
@@ -810,13 +768,6 @@
       "n": 7,
       "gruppe": "voll 5",
       "lauf": "npm run gate:koerper-bewegung",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)": {
-      "s": 13,
-      "n": 7,
-      "gruppe": "voll 6",
-      "lauf": "npm run gate:schritt-klang",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)": {

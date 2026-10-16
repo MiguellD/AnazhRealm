@@ -435,13 +435,6 @@ jobs:
               # Fragment-Tiefe, das Panorama hat weder Schleife noch Fragment-Tiefe (früher Tiefentest); die Selbsttests feuern.
               run: npm run gate:feld-stellvertreter
 
-            - name: Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)
-              if: matrix.gruppe == 7
-              # Fährt den ECHTEN _loopShadowUpdate gegen Schein-Kaskaden (GPU-frei): autoUpdate aus, nah jeden Frame
-              # (Intervall 1) bzw. höchstens jeden nahMax-ten, fern im fernFaktor-Takt, ein Sonnen-Sprung erzwingt
-              # beide; der Selbsttest zeigt, dass der alte Schreiber (renderer.shadowMap.needsUpdate) keine erreicht.
-              run: npm run gate:schatten-takt
-
             - name: Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)
               if: matrix.gruppe == 5
               # Faehrt die ECHTEN Methoden an einer echten CSM-Instanz (GPU-frei): die Box deckt jeden Boden-Punkt im
@@ -564,14 +557,6 @@ jobs:
               # kein Render-Linsen-Skript liest `.calls` nackt, der Flugschreiber trägt das version-Feld.
               run: npm run gate:render-tap
 
-            - name: Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)
-              if: matrix.gruppe == 1
-              # Die ECHTE Regler-Kette über tausende synthetische Frames: schwache GPU → Konvergenz ohne
-              # Pendeln + 0 Thin-Rebuilds im Studio-Regime; Streaming-Rückstau → Budget MAX (heilig);
-              # starke GPU → Erholung; Session-Zeit-Invarianz (identischer Input früh/spät ⇒ identische
-              # Stellgrößen). Fing beim Erstlauf die NaN-EWMA-Vergiftung (argloser _gameLoopTick).
-              run: npm run gate:regler-sim
-
             - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
               if: matrix.gruppe == 13
               # Faehrt die echte Welt (swiftshader, kienspan) ohne Loop und ohne Wanduhr: der Aktuator steht auf festen Stufen
@@ -610,14 +595,6 @@ jobs:
               # region.cells byte-identisch. Plus Mess-Bound |field.height−exakt| + Null-Zensus der
               # einzigen konstruktiven Rest-Klasse; Selbst-Test: falsches Wasser-Verdikt → Diff feuert.
               run: npm run gate:scatter-ab
-
-            - name: Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)
-              if: matrix.gruppe == 2
-              # Dieselbe Region One-Shot vs in N Deadline-Scheiben (Bake-Phase j-Zeilen + Zellen-Phase
-              # cz/cx/emitted-Fortsetzung): region.cells byte-exakt + HISM-Slot-Bilanz identisch (das
-              # Doppel-Add wäre im cells-Vergleich unsichtbar) + kein halber Bake je in der Map +
-              # Dispose-Storno mitten in der Fortsetzung crasht nie. Headless=One-Shot (gate-treu).
-              run: npm run gate:scatter-slice
 
             - name: Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)
               if: matrix.gruppe == 16
@@ -834,14 +811,6 @@ jobs:
               # Nebel-Kulisse fort; der Selbsttest macht eine injizierte 80-m-Wand und einen THREE.Fog rot.
               run: npm run gate:luft-sicht
 
-            - name: Himmel-Tag (am Mittag steht kein Punkt am Himmel)
-              if: matrix.gruppe == 17
-              # V18.530: drei Math.random-Planeten-Kugeln (3-8 Grad, Zufallsfarbe, unbeleuchtet) standen am
-              # Mittagshimmel. Die Wandelsterne sind Punkte des Sternfelds, die Daemmerung setzt die Grenzgroesse:
-              # Mittag 0 Punkte, Abendstern in der Daemmerung, nachts alle; der Mond am Tag blass. Der Selbsttest
-              # macht eine injizierte Himmelskugel und eine zu tiefe Mittags-Grenze rot.
-              run: npm run gate:himmel-tag
-
             - name: Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)
               if: matrix.gruppe == 16
               # V18.530: Strassen, Feldwege, Platz und Aecker lagen als 0,14-m-Box-Streifen auf der Gesetz-Hoehe -
@@ -864,14 +833,6 @@ jobs:
               # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
               # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
               run: npm run gate:foundry-impostor
-
-            - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
-              if: matrix.gruppe == 13
-              # V3: die P4-Invariante als Linse. Null-Renderer + Foundry-ON (der Worker bäckt GPU-frei):
-              # tickt die Welt, enumeriert die Instanz-Gruppen, klassifiziert nach Foundry-Leaf (f:/fimp:)
-              # vs Grammatik. 0 Grammatik-Baum-Gruppen = kein Nachbau. Der Scatter trägt Bäume UND Fels/
-              # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
-              run: npm run gate:no-second-treebuilder
 
             - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
               if: matrix.gruppe == 18
@@ -1231,15 +1192,6 @@ jobs:
               # Wald ohne Bestand).
               run: npm run gate:klang-zensus
 
-            - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
-              if: matrix.gruppe == 12
-              # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
-              # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie
-              # (kein Welt-Cache-Gift), die Werkstatt zeigt die Studio-Rezepte (gras) + Slider
-              # aus den Daten, die Donoren (fahrzeug_wagen/tor_basis) treten in keinem Picker
-              # auf, das Interim ist ehrlich (pending statt Donor-Part-Gestalt).
-              run: npm run gate:rezept-katalog
-
             - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
               if: matrix.gruppe == 13
               # DAS BAUM-MUSTER AUF PORTALE: 5 studioGestalt-Daten-Zeilen + der EINE generische
@@ -1302,10 +1254,6 @@ jobs:
             - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
               if: matrix.gruppe == 6
               run: npm run gate:koerper-bewegung
-
-            - name: Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)
-              if: matrix.gruppe == 3
-              run: npm run gate:schritt-klang
 
             - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
               if: matrix.gruppe == 16

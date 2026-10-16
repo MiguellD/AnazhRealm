@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/studio.cjs — der Richter von Studio (spec/stamm/modul-karte.json): Foundry-Brücke · Bücher · Aufträge · Uhren · Vorrat · Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft.
-// 5 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -410,7 +410,74 @@ async function checkBandKristallKleid(ctx) {
     check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 
+// V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder (D3b): die P4-Invariante — bei lebender Foundry rendert
+// KEIN Baum die Grammatik-Geometrie (der „83 batched-174k-Bäume"-Nachbau ist weg); der Scatter trägt Bäume UND Fels/Kiesel als
+// Studio-Asset (fscatter:*, die Karten in der EINEN Atlas-Gruppe), die Grammatik erscheint nur für wirklich ungemappte Arten.
+async function checkBandKeinZweiterBaumbaecker(ctx) {
+    const { page, check } = ctx;
+    const out = (await safeEvaluate(page, async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const s0 = performance.now();
+        while (performance.now() - s0 < 60000) {
+            const r = window.anazhRealm;
+            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0; if (sz >= 25) break; }
+            await sleep(6);
+        }
+        const r = window.anazhRealm;
+        const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : "nomethod" };
+        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+        o.foundryReady = !!(f && f.ready);
+        // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
+        for (let it = 0; it < 350; it++) {
+            r.state._frameOverBudget = false;
+            try {
+                r._gameLoopTick && r._gameLoopTick(performance.now());
+                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp);
+            } catch (_e) {}
+            await sleep(10);
+        }
+        // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
+        const groups = [];
+        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
+        eat(r.state.archInstanceGroups);
+        // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
+        // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
+        // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
+        // Baum-Namen UND einen nicht-foundry Leaf (numerischer Index / `grown_…`-Grammatik-Bauplan).
+        // Welle B: ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
+        const leafOf = (k) => { const i = k.indexOf("#"); if (i >= 0) return k.slice(i + 1); return /^(f:|fimp:)/.test(k) ? k : ""; };
+        const isFoundry = (k) => k.startsWith("fscatter:") || /^(f:|fimp:)/.test(leafOf(k));
+        const isTreeName = (k) => /(^|[#@:_])baum_[a-z]+/.test(k) || /grown_baum_/.test(k);
+        o.foundryScatterKeys = groups.filter((x) => x.key.startsWith("fscatter:") && x.count > 0).map((x) => x.key.split("#")[0]);
+        o.grammarTreeGroups = groups.filter((x) => !isFoundry(x.key) && isTreeName(x.key) && x.count > 0).map((x) => ({ key: x.key, count: x.count }));
+        o.totalGroups = groups.length;
+        o.instancedGroups = groups.filter((x) => x.count > 0).length;
+        // Foundry-Scatter-Presets (Art-Sicht): eiche/fichte… (Baum) + findling/basalt/geroell… (Fels) + kristalle.
+        const presets = new Set();
+        for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
+        // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
+        const ag = r.state.archInstanceGroups && r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+        const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
+        if (ak && r._kartenAtlas) {
+            const artVon = new Map();
+            for (const z of r._kartenAtlas.zellen.values()) artVon.set(z.idx, z.preset);
+            // Die Gruppe ist dicht (`_archGroupFree` verdichtet): jeder Slot in [0, count) lebt.
+            for (let s = 0; s < ag.mesh.count; s++) if (artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
+        }
+        o.foundryPresets = Array.from(presets).sort();
+        return o;
+    })) || { grammarTreeGroups: [], foundryPresets: [] };
+    const baeume = out.foundryPresets.filter((p) => ["eiche", "fichte", "tanne", "birke", "weide", "mammut"].includes(p));
+    check(
+        "V3 kein zweiter Baum-Bäcker: bei lebender Foundry 0 Grammatik-Baum-Gruppen, der Scatter trägt das Studio-Kleid (mindestens ein Studio-Baum)",
+        out.foundryReady === true && out.grammarTreeGroups.length === 0 && baeume.length > 0,
+        `ready ${out.foundryReady} · Grammatik ${out.grammarTreeGroups.map((g) => `${g.key} (${g.count})`).join(", ") || "0"} · Presets ${out.foundryPresets.join("/")}`
+    );
+}
+
 module.exports = {
     checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio, checkBandFoundrySpeicherFlach,
-    checkBandKristallKleid,
+    checkBandKristallKleid, checkBandKeinZweiterBaumbaecker,
 };

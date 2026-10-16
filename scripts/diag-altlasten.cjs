@@ -957,7 +957,6 @@ const FORBIDDEN = [
             "scripts/diag-praegung-welt.cjs",
             "scripts/diag-regler-wirkt.cjs",
             "scripts/diag-reload-treue.cjs",
-            "scripts/diag-rezept-katalog.cjs",
             "scripts/diag-studio-uebergabe.cjs",
             "scripts/lib/pack-kanon.cjs",
             "scripts/mint-asset-packs.cjs",
