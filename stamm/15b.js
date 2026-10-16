@@ -187,11 +187,12 @@ class AnazhRealm_Z15b {
             // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
             // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
             // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-            // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen
+            // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
+            // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
             const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
             let newLOD = grenzen
                 ? AnazhRealm._stufeNachGrenzen(
-                      dist,
+                      dist * this._ankunftsFerne(),
                       entry._lodLevel,
                       grenzen,
                       Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
@@ -2137,9 +2138,10 @@ class AnazhRealm_Z15b {
         const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
         const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
         const mulMax = cfg.perfDistMulMax;
-        if (!(fd < 1 && fdMin < 1)) return 1;
+        const ankunft = this._ankunftsFerne(); // bis zum ersten Weltbild steht jede Karten-Art als Karte (B2)
+        if (!(fd < 1 && fdMin < 1)) return ankunft;
         const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
-        return 1 + (mulMax - 1) * frac;
+        return (1 + (mulMax - 1) * frac) * ankunft;
     }
 
     // Sichthöhe eines Baum-Eintrags = y-Ausdehnung des LOD0-Bauplans × entry.scale. Gecacht je

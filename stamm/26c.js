@@ -1023,6 +1023,11 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
+// DIE ANKUNFT AUS DER FERNE (B2, `_ankunftsFerne`): bis das erste Weltbild steht, misst jede Stufen-Wahl so, als stünde der
+// Spieler ANKUNFT_FERNE-mal weiter weg — jedes Ding trägt seine billigste GANZE Stufe (der Baum seine Karte, der Bau seine
+// Grobstufe); danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1.
+AnazhRealm.ANKUNFT_FERNE = 128;
+AnazhRealm.ANKUNFT_GLEIT_BILDER = 90;
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

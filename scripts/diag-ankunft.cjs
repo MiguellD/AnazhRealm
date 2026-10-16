@@ -158,6 +158,15 @@ function ladeschirmVerdict(m) {
         else if (th.omnibox) out.push("hinter dem Ladeschirm öffnet Strg+K die Omnibox");
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
+    // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding seine billigste ganze Stufe, nie eine feinere
+    const A = m.ankunft;
+    if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
+    else {
+        if (A.fein.length) out.push(`das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: ${A.fein.slice(0, 4).join(", ")}`);
+        if (A.nahKarte !== 2) out.push(`ein naher Baum wünscht vor dem ersten Weltbild L${A.nahKarte} statt seiner Karte`);
+        if (A.nahDanach === 2) out.push("nach dem ersten Weltbild verfeinert die Gestalt nie (der nahe Baum bleibt Karte)");
+        if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
+    }
     // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während der Vorrat läuft (`_foundryPrefetchLibrary`), wartet das
     // erste Weltbild auf nichts, was er bestellt — weder das Tor (`_weltbildFehlt`) noch eine neue Streu-Region (sie wartet
     // nur auf IHR Asset), und er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst).
@@ -640,6 +649,26 @@ async function probe(arg) {
                     : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
+            // (5b) DIE ANKUNFT AUS DER FERNE (B2): bis das erste Weltbild steht, wünscht jedes Ding der Mesh-Zone seine billigste
+            // ganze Stufe (der Baum die Karte, der Bau seine Grobstufe), der Kalt-Schätzer wählt wie der Takt; danach verfeinert
+            const A = (m.ankunft = { n: 0, fein: [], zwilling: [] });
+            const merkDa = st._weltbildDa;
+            const R = st.architectureCullingRadius || 150;
+            const auge = r._lodAuge();
+            for (const da of [0, merkDa]) {
+                st._weltbildDa = da;
+                for (const e of st.architectures || []) {
+                    const pre = e && e.position && r._foundryPresetForEntry(e);
+                    const d = pre ? Math.hypot(e.position.x - auge.x, e.position.z - auge.z) : Infinity;
+                    if (d > R) continue;
+                    const w = r._foundryLodForEntry(e);
+                    const G = !e._lodSpecies && r._archStufenGrenzen(e);
+                    if (!da && ++A.n && r._foundryServierStufe(pre, w) !== r._foundryServierStufe(pre, 2)) A.fein.push(`${pre} ${Math.round(d)} m L${w}`);
+                    else if (da && G && w !== r.constructor._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
+                }
+                A[da ? "nahDanach" : "nahKarte"] = r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m
+            }
+            st._weltbildDa = merkDa;
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             if (baum)
                 fall("lueckeRuht", baumWeg, baumHer, () => {
@@ -1641,6 +1670,7 @@ async function probe(arg) {
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
                     terme: l2aTerme,
+                    ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
@@ -1693,6 +1723,11 @@ async function probe(arg) {
                         "der Fall pflanzung nennt den Term „saat“",
                     ],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
+                    ["das Tor wartet auf seine L0 (B2 vorher, Radeon kalt an Genesis: 7 Tor-L0)", { ankunft: { n: 40, fein: ["geisttor 9 m L0"], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: geisttor 9 m L0"],
+                    ["der nahe Baum vor dem Bild ohne Karte", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "ein naher Baum wünscht vor dem ersten Weltbild L0"],
+                    ["die Gestalt verfeinert nie", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 2 } }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
+                    ["der Kalt-Schätzer als Zwilling (B2 vorher: Baum-Distanzen 12/26 m am Tor)", { ankunft: { n: 40, fein: [], zwilling: ["geisttor 11 m L0"], nahKarte: 2, nahDanach: 0 } }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
+                    ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
                     [
                         "das erste Weltbild ohne Dorf (Prüfung K60-3: 4 von 5 Kalt-Läufen, Nicht-Baum-Einträge 107 statt 134)",
                         { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) },
