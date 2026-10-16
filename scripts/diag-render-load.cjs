@@ -322,7 +322,6 @@ const server = statikServer();
                 architectures: s.architectures ? s.architectures.length : 0,
                 archInstanceGroups: s.archInstanceGroups ? s.archInstanceGroups.size : 0,
                 creatures: s.creatures ? s.creatures.length : 0,
-                gpuScatter: s.atmosphere ? s.atmosphere.gpuScatter : undefined,
             },
         };
     });

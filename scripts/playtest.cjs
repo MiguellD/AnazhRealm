@@ -20745,9 +20745,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const STATE = r.constructor.CELL_STATE;
         // Test-Isolation: das Band misst den Damm-STEMPEL-Revert (spawn → SOLID → remove → exakter
         // Revert). Der Scatter streut Bäume in den Spieler-Ring; landet einer im Damm-Footprint, stempelt
-        // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → gpuScatter ruhigstellen.
-        const _savedScatter = r.state.atmosphere ? r.state.atmosphere.gpuScatter : undefined;
-        if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
+        // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → sein Takt ruht (die Streu trägt keinen
+        // Schalter, G1: der Takt der Instanz steht still, der des Prototyps bleibt).
+        r._tickScatterStreaming = () => 0;
         // 1) Stempel-Methode existiert
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
         // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. waterCells
@@ -21057,8 +21057,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
         out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
 
-        // V18.224 — Scatter-Flag wiederherstellen (Test-Isolation aufräumen)
-        if (r.state.atmosphere) r.state.atmosphere.gpuScatter = _savedScatter;
+        // V18.224 — der Streu-Takt kehrt zurück (Test-Isolation aufräumen)
+        delete r._tickScatterStreaming;
         return out;
     });
     if (res.error) {
@@ -35961,7 +35961,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
         out.scatterRegionExists = typeof r._scatterRegion === "function";
         out.promoteExists = typeof r._promoteScatterCell === "function";
         out.tickExists = typeof r._tickScatterStreaming === "function";
-        out.flagDefault = r.state.atmosphere && r.state.atmosphere.gpuScatter === true;
         // Loop-Verdrahtung (alle _loopXY-Phasen scannen)
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
@@ -36141,7 +36140,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (A3) _scatterRegion Generator Helper", res.scatterRegionExists === true);
     check("V18.224 (A4) _promoteScatterCell Helper", res.promoteExists === true);
     check("V18.224 (A5) _tickScatterStreaming Helper", res.tickExists === true);
-    check("V18.224 (A6) atmosphere.gpuScatter Default true (der Gigant erwacht)", res.flagDefault === true);
     check("V18.224 (A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
 
     // (B) Determinismus
