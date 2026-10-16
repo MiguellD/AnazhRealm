@@ -536,7 +536,7 @@ class AnazhRealm_Z17a {
         if (typeof document !== "undefined" && document.body && !document.getElementById("kern-pflicht-banner")) {
             const b = document.createElement("div");
             b.id = "kern-pflicht-banner";
-            b.textContent = "⚠ " + text + " — die Welt läuft auf Fallback-Gesetzen!";
+            b.textContent = "⚠ " + text + " — jeder Gesetz-Leser bricht laut (KERN-PFLICHT), es gibt keine Ersatz-Welt";
             b.style.cssText =
                 "position:fixed;top:0;left:0;right:0;z-index:99999;background:#7a1010;color:#fff;" +
                 "font:14px monospace;padding:8px 12px;text-align:center";
@@ -736,7 +736,7 @@ class AnazhRealm_Z17a {
         const vc = g.attributes.position.count;
         if (!(vc > 0)) return g;
         const cfg = AnazhRealm.LOD_DISTANCES;
-        const cap = cfg && Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 24;
+        const cap = cfg.leafVisCap;
         const h0 = Number.isFinite(totalH) && totalH > 0 ? totalH : 10;
         const h0l = Math.min(h0, cap);
         const aH0 = new Float32Array(vc);

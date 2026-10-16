@@ -303,11 +303,7 @@ class AnazhRealm_Z17b {
             // wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
             const m = /^(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
             if (m) {
-                const S = m[1]
-                    ? Number.isFinite(AnazhRealm.SCATTER_FERN_SUPERREGION) && AnazhRealm.SCATTER_FERN_SUPERREGION > 1
-                        ? AnazhRealm.SCATTER_FERN_SUPERREGION
-                        : 4
-                    : 1;
+                const S = m[1] ? AnazhRealm.SCATTER_FERN_SUPERREGION : 1;
                 const R = AnazhRealm.ARCH_REGION_M * S;
                 const cy = (Number.isFinite(this.state.terrainBaseHeight) ? this.state.terrainBaseHeight : 0) + 40;
                 bg.userData.cullSphere = new THREE.Sphere(

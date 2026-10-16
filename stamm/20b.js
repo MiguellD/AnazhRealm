@@ -636,7 +636,7 @@ class AnazhRealm_Z20b {
         // (4) Ein Studio-Name, dessen Kopf (der letzte Teil des Kompositums) ein Art-Wort ist, ist ein Werk dieser Art:
         // „Fachwerkhaus" ist ein Haus. „Anatomie", „Porta", „Phytogenesis" benennen keine Art und bleiben stumm.
         const studioPaare = [];
-        for (const wdef of Object.values(AnazhRealm.WORLD_REGISTRY || {}))
+        for (const wdef of Object.values(AnazhRealm.WORLD_REGISTRY))
             for (const w of kopf(wdef && wdef.label))
                 for (const [art, ziel] of stufen[2])
                     if (w.length > art.length && w.endsWith(art)) studioPaare.push([w, ziel]);
@@ -2225,27 +2225,11 @@ class AnazhRealm_Z20b {
             }
         } else if (mp && mp.webe) {
             // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
-            // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
-            const wf =
-                mp.webe === "knit"
-                    ? 90.0
-                    : mp.webe === "wool"
-                      ? 70.0
-                      : mp.webe === "denim"
-                        ? 160.0
-                        : mp.webe === "cotton"
-                          ? 140.0
-                          : 24.0;
-            const wa =
-                mp.webe === "knit"
-                    ? 0.1
-                    : mp.webe === "wool"
-                      ? 0.08
-                      : mp.webe === "leather"
-                        ? 0.05
-                        : mp.webe === "rubber"
-                          ? 0.03
-                          : 0.06;
+            // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt. Frequenz und
+            // Tiefe sind die EINE Webungs-Tafel des Kerns (koerper-core WEBE, das Labor liest dieselbe), fail-closed (K2).
+            const webe = AnazhRealm.Gesetz("koerper:WEBE." + mp.webe);
+            if (!Array.isArray(webe)) throw this._stoffBruch("die Webung " + mp.webe + " fehlt in koerper:WEBE");
+            const [wf, wa] = webe;
             const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
             mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
         } else {
