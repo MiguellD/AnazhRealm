@@ -380,8 +380,29 @@ class AnazhRealm_Z17b {
                 }
         return true;
     }
-    static _buendelRang(key) {
-        return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;
+    // DIE ZEICHEN-REIHE DER WELT (T3): EIN Gesetz für alles Opake, die Bündel und jedes lose Objekt — wer vorn steht, zeichnet
+    // zuerst und schreibt die Tiefe, hinter der die Übrigen ihre Fragmente verwerfen. Die Schichten vorn → hinten: die Bündel
+    // (r184 und die BUNDLE-REIHENFOLGE führen jedes vor jedem losen Draw aus) @global · die Regionen · @wahl, dann lose, was
+    // auf dem Boden steht (Bau-Satz, jede lose Senke, Tor, Membran, Leib — ohne Marke), der Boden, der Fern-Ring, der Himmel
+    // (im Unendlichen zahlt er zuletzt nur seine eigenen Pixel). Ein Erzeuger nennt seine Schicht als Laufzeit-Marke
+    // (`userData.zeichenSchicht`). Bis T3 sortierte r184 die losen Opaken nach renderOrder · Tiefe · Objekt-id, die Satz-Hülle
+    // liegt am Ursprung (gleiche Tiefe): die Boot-Ankunft entschied, der Himmel (id 20) zeichnete vor Boden und Bau.
+    static _zeichenRang(o) {
+        const u = (o && o.userData) || {};
+        if (o && o.isBundleGroup === true) return u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1;
+        const s = u.zeichenSchicht;
+        return s === "boden" ? 4 : s === "fern" ? 5 : s === "himmel" ? 6 : 3;
+    }
+    // Die Folge der losen Opaken in JEDEM Render (`setOpaqueSort`, `_configureRenderer`): r184s Schlüssel (Gruppe · renderOrder,
+    // die erklärte Folge wie der Feld-Pass zuletzt) und darin die Schicht vor Tiefe und id.
+    static _zeichenFolge(a, b) {
+        return (
+            a.groupOrder - b.groupOrder ||
+            a.renderOrder - b.renderOrder ||
+            AnazhRealm._zeichenRang(a.object) - AnazhRealm._zeichenRang(b.object) ||
+            a.z - b.z ||
+            a.id - b.id
+        );
     }
     _buendelReihe(scene) {
         const kinder = scene.children;
@@ -394,7 +415,7 @@ class AnazhRealm_Z17b {
                 buendel.push(c);
             }
         }
-        const rang = (b) => AnazhRealm._buendelRang(b.userData.regionKey);
+        const rang = AnazhRealm._zeichenRang;
         const reihe = buendel.map((b, k) => ({ b, k })).sort((x, y) => rang(x.b) - rang(y.b) || x.k - y.k);
         for (let k = 0; k < plaetze.length; k++) kinder[plaetze[k]] = reihe[k].b;
     }
@@ -462,7 +483,7 @@ class AnazhRealm_Z17b {
                 empfang: true,
                 renderOrder: 0,
                 richtung: 1, // nah → fern
-                userData: { chunkSatz: "boden", inventar: "boden-satz" },
+                userData: { chunkSatz: "boden", inventar: "boden-satz", zeichenSchicht: "boden" },
             };
         if (art === "wasser")
             return {
