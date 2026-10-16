@@ -104,10 +104,7 @@ const server = statikServer();
             }
             if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
             const T = A.SCHRITT_KLANG;
-            const codeOf = (fn) =>
-                String(fn)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const codeOf = window.__codeOf;
 
             // ── KONSUM-/Source-Proben (Lehre 6): die EINE Quelle ist verdrahtet ──
             o.checks.konsumTick = /_schrittKlangTick\(/.test(codeOf(r.animatePlayerSoul));

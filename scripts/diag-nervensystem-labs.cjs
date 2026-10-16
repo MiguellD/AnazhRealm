@@ -30,9 +30,7 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 
 // ===== TEIL S: die statischen Gesetze =====
 function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
@@ -430,7 +428,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
                     if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
                         return "err:kern fehlt";
                     const tisch = typeof BAKERS_BY_KIND !== "undefined" && typeof BAKERS_BY_KIND.koerper === "function";
-                    const src = String(r._buildHumanoidRig).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "");
+                    const src = window.__codeOf(r._buildHumanoidRig);
                     return tisch && /_ofenMenschTemplate/.test(src) && !/humanSkeleton/.test(src);
                 } catch (_e2) {
                     return "err:" + _e2.message;

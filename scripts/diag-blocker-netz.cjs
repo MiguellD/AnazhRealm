@@ -891,16 +891,16 @@ function urteil(S, stamm, pageErrors) {
 // (Q) der Stamm: jeder Schreiber des Bestands — push/splice/pop/shift/unshift auf `this.state.architectures` oder einem Alias,
 // eine Zuweisung des Arrays — steht an einer gestempelten Stelle (Zuweisung: das neue Array baut das Netz neu)
 function stammSchreiber() {
-    const z = stammLib.text(root).split("\n");
+    const z = stammLib.ohneKommentare(stammLib.text(root)).split("\n");
     const fremd = [];
     const alias = new Map();
     z.forEach((l, i) => {
-        const code = l.replace(/\/\/.*$/, "");
+        const code = l;
         const m = /(?:const|let)\s+(\w+)\s*=\s*this\.state\.architectures\b/.exec(code);
         if (m) alias.set(m[1], (alias.get(m[1]) || []).concat(i));
     });
     z.forEach((l, i) => {
-        const code = l.replace(/\/\/.*$/, "");
+        const code = l;
         const namen = [
             "this\\.state\\.architectures",
             ...[...alias.keys()].filter((a) => alias.get(a).some((j) => j <= i && i - j < 80)),
@@ -927,10 +927,6 @@ function stammSchreiber() {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));

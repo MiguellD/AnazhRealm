@@ -19,7 +19,7 @@ const SERVER_URL = `http://127.0.0.1:${PLAYTEST_PORT}/index.html`;
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 // Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
 // (swiftshader unter Last). PLAYTEST_REAL_RENDERER=1 = echter WebGPU-Renderer + End-Screenshot
-// (der LOOK lebt in diag-settled-view).
+// (den LOOK messen die Bild-Sonden aus dem Ausgabe-Pfad, scripts/lib/ausgabe-aufnahme.cjs).
 const REAL_RENDERER = process.env.PLAYTEST_REAL_RENDERER === "1";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
@@ -30226,8 +30226,6 @@ async function checkBandV18177AAA(ctx) {
     check(`V18.177 AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`, Math.abs(res.aoCap - 0.18) < 1e-9);
 }
 
-// Das End-to-End (schilf wächst am echten Ufer, 51 GEMESSEN) lebt im
-// stehenden Werkzeug scripts/diag-genese.cjs.
 async function checkBandGammaGenese(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37066,7 +37064,7 @@ async function checkBandV18266RockDetail(ctx) {
 // Auflöser · Op · Satz-Parser · near_water · Prompt · KI-Pfad END-ZU-END (gestubbte Antwort →
 // maybeAnswerWithLlm → dslRun → spawnArchitecture).
 // (checkBandV18331ReplayDeterminism unten: gleicher Start + gleiche Input-Folge ⇒ bit-identisch;
-// sonst Math.random/Zeit/Float-Drift im Schritt-Pfad; Linse: scripts/diag-replay-determinism.cjs.)
+// sonst Math.random/Zeit/Float-Drift im Schritt-Pfad.)
 async function checkBandV18493CoSchoepferStudio(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -38321,7 +38319,7 @@ async function checkBandTailleOmega3(ctx) {
 
 // Ω5 Perpetuum-Verbot als lebende Invariante: Modus-Wäsche (schöpfer baut gratis → pfad erntet
 // Ertrag aus dem Nichts) ist durch freeBorn geschlossen — die Herkunft entscheidet den Ertrag; die
-// Marke überlebt den Snapshot (sonst wüsche der Reload sie ab). Linse: scripts/diag-ledger-cycles.cjs.
+// Marke überlebt den Snapshot (sonst wüsche der Reload sie ab).
 async function checkBandTailleOmega5(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -53887,17 +53885,9 @@ async function checkBandRing6Workshop(ctx) {
         // Foundry-ON wie in Produktion: der Warmup wartet unten gedeckelt, bis die Studio-Bibliothek WARM ist.
         // Bänder der lebenden Grammatik-MECHANIK (`_growTreeBlueprintRich`, `_buildVariantLODs`, Scatter, …)
         // setzen `__anazhGateNoFoundry` nur LOKAL via `__withNoFoundry` (sichern + wiederherstellen, nie
-        // löschen). Null-Renderer: kein Band liest ein Pixel; den LOOK misst diag-settled-view.
+        // löschen). Null-Renderer: kein Band liest ein Pixel; den LOOK messen die Bild-Sonden (ausgabe-aufnahme).
+        // `__codeOf` (Code ohne Kommentare, der EINE Stripper) und `__dokuOf` (ungestrippt) trägt der Welt-Boot in jede Seite.
         if (!realRenderer) window.__anazhHeadlessNullRenderer = true;
-        // EINE Quelle für „den CODE einer Funktion, ohne Kommentare“: jeder Absenz-Grep liest darüber,
-        // sonst trifft er Kommentare, die entfernten Code zitieren. Nimmt Funktion ODER Quell-String.
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
-        // DIE DOKU-LINSE (bewusst UNGESTRIPPT) für Marker, die per Definition im KOMMENTAR wohnen — nie
-        // rohes .toString() (Apparat-Ratchet), nie __codeOf; CODE-Behauptungen gehören in __codeOf/__consumes.
-        window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
         // DER SETZ-ORT (K16): ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
         // `name` auf den Boden der nächsten Stelle um den Spieler, die die Natur-Wand freigibt (`_naturWand`: die Lichtung
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
@@ -54690,13 +54680,13 @@ async function checkBandRing6Workshop(ctx) {
         const bodenFehltCount = logs.filter((l) => /Boden fehlt/.test(l.text)).length;
         check("Keine Welt-Regen-Death-Spiral", bodenFehltCount <= 2, `'Boden fehlt'-Logs=${bodenFehltCount}`);
 
-        // Screenshot als Beweis-Artefakt NUR im Real-Renderer-Modus (Null-Renderer = blankes Bild; der LOOK
-        // lebt in diag-settled-view). Force-revealt die Dialog-Box, falls ihr 8-s-Fade-Out durch ist.
+        // Screenshot als Beweis-Artefakt NUR im Real-Renderer-Modus (Null-Renderer = blankes Bild; den LOOK
+        // messen die Bild-Sonden). Force-revealt die Dialog-Box, falls ihr 8-s-Fade-Out durch ist.
         if (!REAL_RENDERER) {
             console.log(
                 "\nScreenshot übersprungen (GPU-frei / Null-Renderer). Für ein BILD: " +
-                    "PLAYTEST_REAL_RENDERER=1 npm run playtest — oder das echte Augen-Tool " +
-                    "node scripts/diag-settled-view.cjs (settled, Augenhöhe, WebGPU)."
+                    "PLAYTEST_REAL_RENDERER=1 npm run playtest — oder die Werkbank " +
+                    "(node scripts/werkbank.cjs: EINE Welt offen, Bild aus dem Ausgabe-Pfad)."
             );
         } else {
             try {
