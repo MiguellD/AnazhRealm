@@ -2107,9 +2107,10 @@ class AnazhRealm_Z06c {
         if (safeCount !== count) {
             this.log(`Kreaturen-Anzahl auf ${safeCount} begrenzt (max=${this.state.maxCreatures})`, "WARNING");
         }
-        // je Wurf eine Gruppe (`_kreaturWurf`), bis die Zahl steht; höchstens so viele Würfe wie Tiere (ein Wurf ohne Ort fehlt)
+        // je Wurf eine Gruppe (`_kreaturWurf`), bis die Zahl steht; höchstens doppelt so viele Würfe wie Tiere (ein Wurf ohne
+        // Ort fehlt, eine Gruppe, die der Rest nicht hält, fällt — der nächste Wurf würfelt die Seele neu)
         let n = 0;
-        for (let i = 0; i < safeCount && n < safeCount; i++)
+        for (let i = 0; i < 2 * safeCount && n < safeCount; i++)
             n += this._spawnOneInitialCreature(soulName, 50, safeCount - n);
         this.log(`Kreaturen gespawnt: ${n} Kreaturen`);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();

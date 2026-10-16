@@ -2257,6 +2257,9 @@ class AnazhRealm_Z24 {
         const zeile = W[AnazhRealm.TETRAPODA_SOUL_MAP[soul]];
         const kopf = zeile ? zeile[0] + Math.floor(rng() * (zeile[1] - zeile[0] + 1)) : 1;
         const n = Math.min(kopf, platz);
+        // hält der Platz die kleinste Gruppe der Gattung nicht, fällt der Wurf (kein Rudel aus einem Wolf: der Deckel
+        // schneidet nie die Gruppe, er lässt einem Einzelgänger den Platz — Werkbank 16.10.: „wolf 1" am Ende des Boot-Wurfs)
+        if (zeile && n < zeile[0]) return geboren;
         const dreh = rng() * Math.PI * 2;
         const pm = this.state.playerMesh;
         const p = pm ? pm.position : { x: 0, y: 0, z: 0 };
