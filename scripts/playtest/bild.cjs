@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -2403,8 +2403,62 @@ async function checkBandV18264ShadowCache(ctx) {
     );
 }
 
+// V6 Wetter-5-Kanal-Feld — eingefaltet aus gate:weather-vector (D3b, die Welt des Läufers statt eines eigenen Boots): V6-GATE (Look-Finale) — DAS WETTER-5-KANAL-FELD (Null-Renderer, GPU-frei): beweist, dass
+async function checkBandWetterVektor(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const t0 = performance.now();
+        while (performance.now() - t0 < 60000) {
+            const r = window.anazhRealm;
+            if (r && r.state && typeof r._weatherFieldFor === "function") break;
+            await sleep(30);
+        }
+        const r = window.anazhRealm;
+        if (!r || typeof r._weatherFieldFor !== "function") return { err: "keine Instanz / _weatherFieldFor fehlt" };
+        // Keine laufende Transition — die Wort-Vorgabe führt.
+        r.state.weatherTransition = null;
+        const sunny = r._weatherFieldFor("sunny");
+        const rainy = r._weatherFieldFor("rainy");
+        const stormy = r._weatherFieldFor("stormy");
+        // Transition-Monotonie: fog steigt von sunny (.15) → stormy (.70) mit progress.
+        const fogRamp = [];
+        for (const p of [0, 0.25, 0.5, 0.75, 1.0]) {
+            r.state.weatherTransition = { from: "sunny", to: "stormy", progress: p };
+            fogRamp.push(r._weatherFieldFor("sunny").fog);
+        }
+        r.state.weatherTransition = null;
+        return { sunny, rainy, stormy, fogRamp };
+    });
+    const fails = [];
+    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
+    else {
+        const CH = ["fog", "sun", "grey", "wind", "rain"];
+        for (const w of ["sunny", "rainy", "stormy"]) {
+            for (const c of CH) {
+                if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c])) fails.push(`${w}.${c} ist kein finiter Kanal`);
+            }
+        }
+        // grey — entsättigt das Licht (stormy stark, sunny gar nicht).
+        if (!(out.stormy.grey >= 0.8)) fails.push(`stormy.grey ${out.stormy.grey} < 0.8 (kein deutliches Entsättigen)`);
+        if (out.sunny.grey !== 0) fails.push(`sunny.grey ${out.sunny.grey} != 0 (sunny darf das Licht NICHT entsättigen)`);
+        // wind — dramatisiert (stormy ≥ 5× sunny).
+        if (!(out.stormy.wind >= 5 * out.sunny.wind)) fails.push(`stormy.wind ${out.stormy.wind} < 5× sunny.wind ${out.sunny.wind}`);
+        // rain — kontinuierlich (sunny 0 · rainy ~0.6 · stormy 1.0).
+        if (out.sunny.rain !== 0) fails.push(`sunny.rain ${out.sunny.rain} != 0`);
+        if (Math.abs(out.rainy.rain - 0.6) > 0.05) fails.push(`rainy.rain ${out.rainy.rain} ≉ 0.6`);
+        if (Math.abs(out.stormy.rain - 1.0) > 0.01) fails.push(`stormy.rain ${out.stormy.rain} ≉ 1.0`);
+        // Transition-Monotonie (fog steigt streng mit dem Sturm-Anteil).
+        for (let i = 1; i < out.fogRamp.length; i++) {
+            if (!(out.fogRamp[i] >= out.fogRamp[i - 1])) fails.push(`fog-Ramp nicht monoton bei p-Schritt ${i} (${out.fogRamp[i - 1]} → ${out.fogRamp[i]})`);
+        }
+        if (!(out.fogRamp[out.fogRamp.length - 1] > out.fogRamp[0])) fails.push(`fog-Ramp steigt gar nicht (${out.fogRamp[0]} → ${out.fogRamp[out.fogRamp.length - 1]})`);
+    }
+    check("V6 Wetter-5-Kanal-Feld: _weatherFieldFor liefert fog·sun·grey·wind·rain finit, grey entsättigt, wind dramatisiert, rain stetig, fog monoton über die Transition", fails.length === 0, fails.join(" · "));
+}
+
 module.exports = {
     checkBandV1731EmotionDrivesWorld, checkBandOmegaOpsisSkyEnv, checkBandWelle6G3Lebendigkeit,
     checkBandWelle6G4Atmosphere, checkBandV8LatePolishAnd6XContinued, checkBandV18164WarumLicht,
-    checkBandWahrerAnblickAtmoBusch, checkBandV18264ShadowCache,
+    checkBandWahrerAnblickAtmoBusch, checkBandV18264ShadowCache, checkBandWetterVektor,
 };

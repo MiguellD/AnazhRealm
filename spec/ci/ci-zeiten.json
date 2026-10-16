@@ -175,13 +175,6 @@
       "lauf": "node scripts/diag-hitch-telemetrie.cjs --teil=2",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)": {
-      "s": 10,
-      "n": 7,
-      "gruppe": "voll 1",
-      "lauf": "npm run gate:page-error",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {
       "s": 345,
       "n": 7,
@@ -581,25 +574,11 @@
       "lauf": "npm run gate:freie-slots",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht": {
-      "s": 3,
-      "n": 7,
-      "gruppe": "voll 17",
-      "lauf": "npm run gate:weather-vector",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau": {
       "s": 1,
       "n": 7,
       "gruppe": "voll 7",
       "lauf": "npm run gate:season-meadow",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck": {
-      "s": 18,
-      "n": 7,
-      "gruppe": "voll 15",
-      "lauf": "npm run gate:foundry-memory",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)": {

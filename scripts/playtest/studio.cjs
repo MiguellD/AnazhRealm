@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/studio.cjs — der Richter von Studio (spec/stamm/modul-karte.json): Foundry-Brücke · Bücher · Aufträge · Uhren · Vorrat · Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft.
-// 3 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 4 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -297,6 +297,71 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
     check("V18.493 Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
 }
 
+// V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32) — eingefaltet aus gate:foundry-memory (D3b, die Welt des Läufers statt eines eigenen Boots): V4(B)-GATE — DER FOUNDRY-GEOMETRIE-SPEICHER IST FLACH (Null-Renderer, foundry-ON, JS-Bilanz-Zähler):
+async function checkBandFoundrySpeicherFlach(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const s0 = performance.now();
+        while (performance.now() - s0 < 60000) {
+            const r = window.anazhRealm;
+            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0; if (sz >= 25) break; }
+            await sleep(6);
+        }
+        const r = window.anazhRealm;
+        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
+        // dichten Wald streamen.
+        for (let it = 0; it < 300; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); const pp = r.state.playerMesh && r.state.playerMesh.position; if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp); } catch (_e) {} await sleep(6); }
+        // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
+        let maxRefsAtDispose = 0, disposeCalls = 0, hasMethod = typeof r._disposeFoundryGroupGeom === "function";
+        if (hasMethod) {
+            const orig = r._disposeFoundryGroupGeom.bind(r);
+            r._disposeFoundryGroupGeom = function (g) { disposeCalls++; const refs = (g && g._liveRefs) || 0; if (refs > maxRefsAtDispose) maxRefsAtDispose = refs; return orig(g); };
+        }
+        const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
+        // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
+        // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.
+        const CAP0 = r.constructor.FOUNDRY_CACHE_CAP;
+        r.constructor.FOUNDRY_CACHE_CAP = 32;
+        // Der Anstoß: der Vorrat hat alle Gestalten schon warm (kein Neubau, keine Räumung) — EINE Räumung über die EINE
+        // Naht, dann baut die erste Ankunft neu und der Deckel räumt die LRU auf 32 (der Churn läuft ab Zyklus 1).
+        r._foundryCacheEvict(r._foundryKoerperKey("findling", 1, 0));
+        const arten = ["findling", "basalt", "sediment", "zacken", "kristalle", "blume"];
+        const cycles = [];
+        for (let c = 0; c < 4; c++) {
+            for (const sp of arten) {
+                const V = r._foundryGestalten(sp);
+                const getroffen = new Set();
+                for (let s = 0; getroffen.size < V && s < 4000; s++) {
+                    const g = r._foundryVariantFor(s, sp);
+                    if (getroffen.has(g)) continue;
+                    getroffen.add(g);
+                    r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
+                }
+            }
+            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_e) {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            cycles.push(snap());
+        }
+        r.constructor.FOUNDRY_CACHE_CAP = CAP0;
+        return { hasMethod, maxRefsAtDispose, disposeCalls, cycles, capacity: 32 };
+    });
+    const fails = [];
+    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
+    else {
+        if (!out.hasMethod) fails.push("_disposeFoundryGroupGeom fehlt");
+        const live = out.cycles.map((c) => c.built - c.disposed);
+        const growth = live[3] - live[1]; // Zyklus 4 vs Zyklus 2
+        if (out.cycles[3].disposed <= 0) fails.push("kein Dispose gefeuert (der LRU räumt nicht / Cap nicht überschritten — die Geom wird nie frei)");
+        if (out.maxRefsAtDispose > 0) fails.push(`Dispose mit _liveRefs=${out.maxRefsAtDispose} > 0 (USE-AFTER-FREE-Risiko: eine noch gehaltene Geometrie wurde freigegeben)`);
+        // "flach": das live-Wachstum Zyklus2->4 muss deutlich unter dem built-Zuwachs bleiben (sub-linear).
+        const builtGrowth = out.cycles[3].built - out.cycles[1].built;
+        if (builtGrowth > 0 && growth > builtGrowth * 0.5) fails.push(`live wuchs ${growth} bei ${builtGrowth} neuen Bakes (>50% = quasi-linear = das Leck lebt)`);
+        if (growth > out.capacity * 8) fails.push(`live-Wachstum ${growth} > ${out.capacity * 8} (unbounded)`);
+    }
+    check("V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear", fails.length === 0, fails.join(" · "));
+}
+
 module.exports = {
-    checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio,
+    checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio, checkBandFoundrySpeicherFlach,
 };

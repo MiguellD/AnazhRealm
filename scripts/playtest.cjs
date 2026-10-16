@@ -913,6 +913,8 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandV18266RockDetail, ctx);
             await timed(BAND.checkBandV18331ReplayDeterminism, ctx);
             await timed(BAND.checkBandV18493CoSchoepferStudio, ctx);
+            await timed(BAND.checkBandWetterVektor, ctx);
+            await timed(BAND.checkBandFoundrySpeicherFlach, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

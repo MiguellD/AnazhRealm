@@ -411,14 +411,6 @@ jobs:
               if: matrix.gruppe == 17
               run: node scripts/diag-hitch-telemetrie.cjs --teil=2
 
-            - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
-              if: matrix.gruppe == 2
-              # Bootet die Seite GPU-frei + sammelt jeden Runtime-Throw / echten Console-Error und
-              # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
-              # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
-              # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
-              run: npm run gate:page-error
-
             - name: Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
               if: matrix.gruppe == 9
               # Faehrt den ECHTEN Frame (swiftshader, kienspan mit der Pixel-Kappe des Holzes nah, das Fern-Wasser als ruhender
@@ -935,13 +927,6 @@ jobs:
               # Free-Liste, kein Shader-Riegel. Selbsttest: ein freier Slot, eine sichtbare leere Hülle, eine count-Zeile → rot.
               run: npm run gate:freie-slots
 
-            - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
-              if: matrix.gruppe == 12
-              # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
-              # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
-              # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
-              run: npm run gate:weather-vector
-
             - name: Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau
               if: matrix.gruppe == 7
               # Jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken; das Jahr trägt die EINE Uniform
@@ -949,14 +934,6 @@ jobs:
               # (64 Phasen, Sommer exakt x1); die Stützstellen leben NUR im SAISON_GESETZ (foundry-core); Nah-Wiese,
               # Foundry-Laub/-Gras und Karten-Stoff lesen die Uniform. --selftest zuerst: fünf Brüche → rot.
               run: npm run gate:season-meadow
-
-            - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck
-              if: matrix.gruppe == 11
-              # V4(B): die geteilte Foundry-Geometrie wird freigegeben (LRU-Räumung → dispose, sobald kein
-              # InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-Zähler über
-              # 4 Churn-Zyklen (Deckel 32, 96 Gestalten): dispose feuert, der Speicher bleibt flach (kein lineares Leck),
-              # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
-              run: npm run gate:foundry-memory
 
             - name: S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)
               if: matrix.gruppe == 17
