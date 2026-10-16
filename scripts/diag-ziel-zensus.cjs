@@ -100,7 +100,8 @@ function urteil(z) {
                 `RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um ${rd.verbrauch} Stufen (Soll ≥ ${VERBRAUCH_MIN}) ` +
                     "— die Post-Kette liest ihn nicht"
             );
-        if (!(Math.abs(rd.zurueck) < 1)) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
+        if (!rd.ruhig) v.push(`RUNDUNG: die Welt baute in jeder von ${rd.versuche} Proben zwischen den Schüssen (der Rückweg ist blind)`);
+        else if (!(Math.abs(rd.zurueck) < 1)) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
     }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
     for (const f of z.seitenFehler || []) v.push("SEITE: " + f);
@@ -128,6 +129,8 @@ function selbsttest() {
             rundung: "gegen null",
             faktor: AUSGLEICH_NULL.slice(),
             gleich: true,
+            ruhig: true,
+            versuche: 1,
             verbrauch: 24,
             zurueck: 0,
         },
@@ -158,6 +161,8 @@ function selbsttest() {
         },
         { name: "anderer Vektor", z: mit((z) => (z.rundung.gleich = false)), muss: /liest einen anderen Vektor/ },
         { name: "Ausgleich nicht verbraucht", z: mit((z) => (z.rundung.verbrauch = 0)), muss: /die Post-Kette liest ihn nicht/ },
+        { name: "Rückweg verschoben", z: mit((z) => (z.rundung.zurueck = -1.77)), muss: /um -1.77 Stufen verschoben/ },
+        { name: "Welt baut in jeder Probe", z: mit((z) => Object.assign(z.rundung, { ruhig: false, versuche: 4 })), muss: /in jeder von 4 Proben/ },
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
         { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
@@ -318,23 +323,31 @@ function rundungProbe() {
             faktor: A ? A.toArray() : null,
             gleich: !!(A && U && U.value === A),
         };
-        if (!A) return Object.assign(aus, { gelaufen: true, verbrauch: 0, zurueck: 0 });
+        if (!A) return Object.assign(aus, { gelaufen: true, ruhig: true, verbrauch: 0, zurueck: 0 });
+        // DIE EINE UHR der Mess-Schüsse (`fest`, K63-n1): drei Schüsse derselben Szene sind dasselbe Bild. Baut die Welt zwischen
+        // dem ersten und dem dritten (die Szene des Frames, Befehle|Dreiecke, wechselt), misst der Rückweg die Welt statt des
+        // Ausgleichs (CI 38967779045: −1,77 Stufen nach einer Lade-Welle, sonst |≤ 0,23|) — die Probe läuft dann neu, bis 4-mal.
+        const fest = performance.now();
         const mittel = async () => {
-            const u8 = (await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" })).u8;
+            const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung", fest });
             let s = 0;
-            for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-            return s / (u8.length / 4);
+            for (let i = 0; i < auf.u8.length; i += 4) s += 0.2126 * auf.u8[i] + 0.7152 * auf.u8[i + 1] + 0.0722 * auf.u8[i + 2];
+            return { m: s / (auf.u8.length / 4), szene: `${auf.info.drawCalls}|${auf.info.triangles}` };
         };
         const alt = A.clone();
         try {
-            const m0 = await mittel();
-            A.set(2, 2, 2);
-            const m1 = await mittel();
-            A.copy(alt);
-            const m2 = await mittel();
-            aus.mittel = +m0.toFixed(1);
-            aus.verbrauch = +(m1 - m0).toFixed(2);
-            aus.zurueck = +(m2 - m0).toFixed(2);
+            for (aus.versuche = 1; ; aus.versuche++) {
+                const m0 = await mittel();
+                A.set(2, 2, 2);
+                const m1 = await mittel();
+                A.copy(alt);
+                const m2 = await mittel();
+                aus.mittel = +m0.m.toFixed(1);
+                aus.verbrauch = +(m1.m - m0.m).toFixed(2);
+                aus.zurueck = +(m2.m - m0.m).toFixed(2);
+                aus.ruhig = m0.szene === m2.szene;
+                if (aus.ruhig || aus.versuche >= 4) break;
+            }
         } finally {
             A.copy(alt);
         }
