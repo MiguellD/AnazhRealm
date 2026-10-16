@@ -532,13 +532,15 @@ class AnazhRealm_Z08 {
         });
     }
     // EINE Scheibe der Ort-Wahl: der Generator läuft, bis er fertig ist oder `ms` verstrichen sind (mindestens ein Schritt).
+    // Unter dem Ladeschirm rechnet sie bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2): das Dorf der Ankunft ist ein Leser
+    // des ersten Weltbilds (Term „dorf").
     // Die Kosten der laufenden Wahl stehen in `_ortWahlMass` (Kandidaten, Scheiben, Summe, die längste Scheibe, der Abstand
     // des Orts zum Wunsch) — gate:settlement Teil O liest sie.
     _ortWahlScheibe(job, ms) {
         const t0 = performance.now();
         let s;
         do s = job.next();
-        while (!s.done && performance.now() - t0 < ms);
+        while (!s.done && this._kappeOffen(performance.now() - t0, ms));
         const d = performance.now() - t0;
         const m = this._ortWahlMass;
         if (m) {

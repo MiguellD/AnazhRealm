@@ -1371,14 +1371,13 @@ class AnazhRealm_Z20d {
 
     // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt
     // 200-500-ms-Burst; ein 9-Chunk-Ring verteilt sich über ~10-25 Frames.
-    // Im Lade-Takt (`_ladeTakt`) setzt sie, solange LADE_TAKT_MS offen ist (mindestens `maxPerFrame`): die gepflanzten Bäume
+    // Im Lade-Takt setzt sie bis zur Frist des Lade-Frames (`_kappeOffen`, mindestens `maxPerFrame`): die gepflanzten Bäume
     // um den Spieler gehören ins erste Weltbild (`_weltbildFehlt`), nicht in die Frames danach.
     _tickPendingVegSpawns(maxPerFrame = 4) {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
         let spawned = 0;
-        const frist = this._ladeFrist();
-        for (let i = 0; (i < maxPerFrame || performance.now() < frist) && queue.length > 0; i++) {
+        for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;
             this._naturSetzen(task.name, task.position, task.opts);
@@ -2867,14 +2866,20 @@ class AnazhRealm_Z20d {
             // (die Klumpen der Blick-Tour).
             // Ist das Bau-Budget erschöpft, endet nur das BAUEN (`bauZu`), nie der Gang: der erste nahe Eintrag, dessen
             // Asset noch lädt oder dessen Grammatik baut, brach vorher die Schleife — alle gedockten dahinter warteten.
-            const platzBis = jetztN + AnazhRealm.ARCH_PLATZ_MS;
+            // Platz-Uhr, Versuche und Bau-Budget sind Kappen je Takt (`_kappeOffen`): unter dem Ladeschirm gelten sie bis zur
+            // Frist des Lade-Frames — Radeon kalt (G2, nachher-k2) war „Bäume und Bauten wachsen" der Schwanz der Ankunft
+            // (226 Einträge 12,5 s → 8 bei 15,4 s), 3 Bauten je Lade-Frame.
             const fAn = this._foundryEnabled();
             let versuche = 0,
                 bauZu = false,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
             for (const entry of nahOffen) {
                 const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
-                if (fPre && uhr() < platzBis && this._foundryPlatzBereit(entry, fPre)) {
+                if (
+                    fPre &&
+                    this._kappeOffen(uhr() - jetztN, AnazhRealm.ARCH_PLATZ_MS) &&
+                    this._foundryPlatzBereit(entry, fPre)
+                ) {
                     this._rebuildArchitectureMesh(entry);
                     if (this._archIsRendered(entry)) {
                         entry._nahWartet = null;
@@ -2886,11 +2891,11 @@ class AnazhRealm_Z20d {
                 if (bauZu) continue;
                 const w = entry._nahWartet;
                 if (w && w.a === fA && jetztN - w.t < 1000) continue;
-                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {
+                if (!this._kappeOffen(versuche++, AnazhRealm.ARCH_NAH_VERSUCHE)) {
                     bauZu = true;
                     continue;
                 }
-                if (built >= budget) {
+                if (!this._kappeOffen(built, budget)) {
                     if (hand === null) hand = this._handBauErlaubt(budget);
                     if (!hand) {
                         bauZu = true;
