@@ -211,7 +211,7 @@
                 "geheilt": {
                     "befund": "Laub-Karten mit Dither-Muster",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
-                    "warum": "zweiton 0,0003 → 0 (Radeon 890M --echt, Tafel-Pose, Kopf c89507f0 = V18.546.5 + A3; vorher Täter f:tanne:L0 mit 0,2 % ihrer Pixel im Raster, nachher kein Raster-Fenster in der Klasse; laub-kante 0,204 → 0,208): die Schwelle der Laub-Kante ist ein Hash je Zelle der Karte (1,5–3 Eingangs-Pixel in der UV, je Frame um 1/g gedreht) statt Interleaved Gradient je Eingangs-Pixel — unter dem Versatz der Hochskalierung sieht jedes Ausgabe-Pixel dieselbe Zelle, die Varianz-Klemme hält die Geschichte; in derselben Welt über vier Phasen 0/78/0/52 Raster-Pixel (je ein bis zwei Fenster aus Nadel-Struktur gegen den Himmel, kein Dither), die Schwelle je Frame 60/0 px mit Klötzen von 3–4 Pixeln; die Kante wieder ein Pixel, die Deckung auf der Stufe des Schirms",
+                    "warum": "zweiton 0,0003 → 0 (Radeon 890M --echt, Tafel-Pose, Kopf 9845cb0b = V18.546.6 + A3; vorher Täter f:tanne:L0 mit 0,2 % ihrer Pixel im Raster, nachher ein Fenster aus 44 px — ein Nadel-Büschel der Tanne L0 gegen den Himmel, 0,00004 unter der Auflösung der Tafel; laub-kante 0,204 → 0,2125): die Schwelle der Laub-Kante ist ein Hash je Zelle der Karte (1,5–3 Eingangs-Pixel in der UV, je Frame um 1/g gedreht) statt Interleaved Gradient je Eingangs-Pixel — unter dem Versatz der Hochskalierung sieht jedes Ausgabe-Pixel dieselbe Zelle, die Varianz-Klemme hält die Geschichte; in derselben Welt über vier Phasen 0/78/0/52 Raster-Pixel (je ein bis zwei Fenster aus Nadel-Struktur gegen den Himmel, kein Dither), die Schwelle je Frame 60/0 px mit Klötzen von 3–4 Pixeln; die Kante wieder ein Pixel, die Deckung auf der Stufe des Schirms",
                     "bildPaar": ["artifacts/soll-tafel/laub-vorher.png", "artifacts/soll-tafel/laub.png"]
                 }
             },
@@ -246,10 +246,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T18:59:29.452Z",
+                    "datum": "2026-10-16T19:47:35.682Z",
                     "stand": {
-                        "version": "18.546.5",
-                        "sha": "c89507f0dc5623b4bf9210dcf0465f76b9594232+geaendert"
+                        "version": "18.546.6",
+                        "sha": "9845cb0b826a86ba499457db0177a43190771f4e"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -262,21 +262,21 @@
                     "rauschen": {
                         "anteil": 0,
                         "pixel": 0,
-                        "max": 2
+                        "max": 0
                     },
-                    "misch": 162442,
+                    "misch": 188697,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4668,"sp":[413,0,0,759193.89,759193.89,354361.02],"zweiton":0,"zt":0,"weiss":0.0101,"wt":2557,"wtZiel":null,"bunt":24.93,"pixel":254201,"deckung":0.1226,"deckungUnten":0.0042,"luma":71.45,"kontrast":0.5728,"detail":0.1064,"nyquist":0.1398,"ek":759592.6,"eg":4672516.9,"silhouette":129.2803,"kante":0.1864,"kr":26151},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.096,"wt":6105,"wtZiel":null,"bunt":14.78,"pixel":63619,"deckung":0.0307,"deckungUnten":0,"luma":89.04,"kontrast":0.6412,"detail":0.1379,"nyquist":0.1681,"ek":567186.2,"eg":2806958.6,"silhouette":66.5509,"kante":0.1385,"kr":10379},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.4086,"sp":[566,0,0,922216.21,922216.21,376861.93],"zweiton":0,"zt":0,"weiss":0.0203,"wt":5720,"wtZiel":null,"bunt":24.92,"pixel":281761,"deckung":0.1359,"deckungUnten":0.0046,"luma":72.53,"kontrast":0.5911,"detail":0.1135,"nyquist":0.1457,"ek":1083951.8,"eg":6357017.3,"silhouette":95.1279,"kante":0.157,"kr":29163},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0629,"sp":[3531,0,0,7243955.61,7243955.61,-455939.41],"zweiton":0,"zt":0,"weiss":0.0052,"wt":2546,"wtZiel":null,"bunt":29.52,"pixel":492717,"deckung":0.2376,"deckungUnten":0.1115,"luma":65.65,"kontrast":0.5442,"detail":0.0843,"nyquist":0.1057,"ek":684532.5,"eg":5793189.4,"silhouette":75.0992,"kante":0.365,"kr":17506}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.312,"sp":[522,0,0,643414.63,643414.63,200727.45],"zweiton":0,"zt":0,"weiss":0.0085,"wt":2333,"wtZiel":null,"bunt":24.79,"pixel":275008,"deckung":0.1326,"deckungUnten":0.0049,"luma":71.46,"kontrast":0.5647,"detail":0.1039,"nyquist":0.1366,"ek":770155.9,"eg":4866089.1,"silhouette":120.6856,"kante":0.1914,"kr":22096},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0007,"zt":44,"weiss":0.106,"wt":6804,"wtZiel":null,"bunt":14.93,"pixel":64199,"deckung":0.031,"deckungUnten":0,"luma":88.23,"kontrast":0.6422,"detail":0.1478,"nyquist":0.1642,"ek":614684.3,"eg":3129427.8,"silhouette":65.4089,"kante":0.1421,"kr":10304},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.3047,"sp":[616,0,0,1036880.27,1036880.27,315956.97],"zweiton":0,"zt":0,"weiss":0.0139,"wt":4018,"wtZiel":null,"bunt":25.17,"pixel":290037,"deckung":0.1399,"deckungUnten":0.0047,"luma":71.43,"kontrast":0.5727,"detail":0.1171,"nyquist":0.1446,"ek":1192968,"eg":7054581.3,"silhouette":95.549,"kante":0.1606,"kr":27527},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0622,"sp":[3762,0,0,4162627.92,4162627.92,-258893.99],"zweiton":0,"zt":0,"weiss":0.002,"wt":955,"wtZiel":null,"bunt":29.9,"pixel":472533,"deckung":0.2279,"deckungUnten":0.1105,"luma":65.06,"kontrast":0.5155,"detail":0.0854,"nyquist":0.1028,"ek":610723.3,"eg":5332395.7,"silhouette":78.7608,"kante":0.3703,"kr":16588}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
                         "phyto-core.js": "c:6cf8df94e3dac37e",
-                        "foundry-core.js": "c:4629625d1e1ecd09",
+                        "foundry-core.js": "c:3b21a4161089ec4f",
                         "stamm/07.js": "c:14b92cd1f4b487a0",
                         "stamm/10.js": "c:6dc4c3f65afca0ce",
                         "stamm/19.js": "c:5f36c5687cb8f126",
