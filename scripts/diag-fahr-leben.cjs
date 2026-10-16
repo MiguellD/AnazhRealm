@@ -1,7 +1,8 @@
 // diag-fahr-leben.cjs — DIE FAHR-LINSE DES LEBENS (Welle L, Familie fahren): sie fährt den Ritt durch den ECHTEN
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Befund 06.10.
-// (artifacts/profiband/leben/befund-fahren-gelaende.md + karte-fahren-gelaende.md, sichtbar gespielt auf der Radeon):
+// (artifacts/profiband/leben/befund-fahren-gelaende.md +
+// artifacts/profiband/leben/karte-fahren-gelaende.md, sichtbar gespielt auf der Radeon):
 // `gate:vehicle-drive` B-e integrierte den Ritt ohne Akkumulator und ohne Interpolation (Q0 F-L6) — die Defekte des
 // echten Loops sah sie nie; Vertikale, Querhang und Reibkreis sah kein Gate.
 //

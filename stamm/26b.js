@@ -2566,7 +2566,7 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "resoniert",
     "lebendig",
 ]);
-// V17.90 (resonanz-system.md §2) — die Aktivierungs-Decke: computeCompoundTags gibt MAX(aktivierung[0..3] ·
+// V17.90 (resonanz-system §2) — die Aktivierungs-Decke: computeCompoundTags gibt MAX(aktivierung[0..3] ·
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;

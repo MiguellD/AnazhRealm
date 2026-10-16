@@ -187,7 +187,7 @@ class AnazhRealm_Z13a {
     }
 
     // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
-    // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
+    // ("authorPubKey": "ed25519:...", Norm: docs/taille-spec.md).
     vibePassId() {
         const vp = this.state.vibePass;
         return vp && vp.ready && vp.publicKeyHex ? "ed25519:" + vp.publicKeyHex : null;
@@ -2043,7 +2043,7 @@ class AnazhRealm_Z13a {
 
     // ### Fremde Welten empfangen ###
     // Ein Spieler exportiert das signierte Manifest einer Welt, ein anderer importiert es; die Signatur
-    // reist mit (world-portal.md §3.3). Das ist die Metadaten-/Provenienz-Schicht der Bibliothek.
+    // reist mit (docs/taille-spec.md). Das ist die Metadaten-/Provenienz-Schicht der Bibliothek.
 
     // Built-in-Registry + importierte Welten als EINE Lookup-Quelle.
     _worldEntry(id) {

@@ -80,7 +80,7 @@ const MeshToonNodeMaterial = requireWebGPU("MeshToonNodeMaterial");
 const MeshStandardNodeMaterial = requireWebGPU("MeshStandardNodeMaterial");
 // V12.0-vendor.1 — r184 hat den `WebGPU`-Capability-Wrapper entfernt
 // (war r160's `WebGPU.isAvailable()`). Direkt-Lookup via `navigator.gpu`
-// in der Renderer-Auswahl-Logik (anazhRealm.js init()).
+// in der Renderer-Auswahl-Logik (Stamm `_holzWahl`).
 
 // `import * as X` liefert einen read-only Module-Namespace. Damit wir
 // `THREE.WebGPURenderer` + die TSL-Helpers + die NodeMaterial-Klassen

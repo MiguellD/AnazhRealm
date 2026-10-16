@@ -26,7 +26,7 @@
 //                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
 //                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
 //                                                           den Spieler-Leib im Bild
-//   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
+//   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
 //                                                           Chunk-Material neu und hängt es an alle Chunks

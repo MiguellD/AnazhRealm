@@ -29,7 +29,7 @@ ist der Versionslog mit der heiligen Lektion.
 
 - **06.03.2025** die Vision in Testamenten · **07.–15.03.2025** das 19-Modul-System · **März 2025** der Kollaps unter eigener
   Komplexität („Loch stopfen, anderes entsteht") · **28.03.2025** die Reduktion auf eine Datei, „der Samen der Unendlichkeit" ·
-  **13.10.2026** der Stamm in 48 Zonen-Dateien (`stamm/`) — EINE Klasse, EIN Prototyp.
+  **14.10.2026** der Stamm in 48 Zonen-Dateien (`stamm/`) — EINE Klasse, EIN Prototyp.
 
 > „Wir haben auf Sand gebaut, nicht auf Fels. Komplexität ohne Fundament: das Ultiversum ist ein komplexes System, alle
 > miteinander verwoben. Jede Änderung führte zu neuen Fehlern, weil die Grundlagen nicht stabil waren." (Versionslog)
@@ -40,7 +40,7 @@ die Studios auf der EINEN Hülle). Die 48 Zonen des Stamms sind Ordnung zum Lese
 
 ---
 
-## 3. Die Ziellinie v1.0 — was steht, was fehlt
+## 3. Die Ziellinie v1.0 — was steht
 
 **v1.0 ist EIN gespielter Pfad** (`docs/roadmap.md` §0.v1): ankommen · laufen und sehen · in der Werkstatt bauen · mit der KI
 erschaffen · benutzen und teilen — bei Frame p95 ≤ 33 ms auf jedem Standardgerät (Richter: das Profi-Band). Feature-Stopp bis dahin.
@@ -52,10 +52,7 @@ wird über `spawn_studio` zum Foundry-Asset in der Welt, auch ohne Schlüssel. A
 16,7–16,8 ms an Wiese und Genesis in Ego und Third-Person, ≤ 191 Befehle, ≤ 587k Dreiecke, ≤ 104 MB VRAM (das letzte ABAB,
 Zweig `koordination` 1ae7ef17).
 
-**Was fehlt** (`docs/PFLICHT-OFFEN.md`): B die Ankunft ≤ 5 s kalt (am 14.10. ≈ 28–30 s) · C der Ort auf dem Gelände (das Dorf
-als EIN Plan aus dem Fachwerk-Studio, mit Höhe, Wegen und Licht) · E das Profi-Band auf beiden Messplätzen (an der GTX reißt
-nur der CPU-Takt p95 mit 6,0–7,8 > 5,8 ms, das Radeon-ABAB am Kopf steht aus) · und der KI-Lauf mit echtem Schlüssel
-(Drehbuch-Schritt 18). Ehrlich bleibt: „~119 FPS" galt nie für die gefüllte Welt (V18.492).
+**Was fehlt**, trägt allein `docs/PFLICHT-OFFEN.md`. Ehrlich bleibt: „~119 FPS" galt nie für die gefüllte Welt (V18.492).
 
 ---
 

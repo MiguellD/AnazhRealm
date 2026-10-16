@@ -3271,7 +3271,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
 function scanStoffWand(srcRoh, zweige = STOFF_ZWEIGE) {
     const { funde, tot } = stoffFaenge(srcRoh, zweige);
     return funde
-        .map((f) => `Stoff-Wand: ${f.art} — anazhRealm.js:${f.zeile} \`${f.methode}\` ${f.was}`)
+        .map((f) => `Stoff-Wand: ${f.art} — Stamm-Zeile ${f.zeile} \`${f.methode}\` ${f.was}`)
         .concat(
             tot.map(
                 (z) =>

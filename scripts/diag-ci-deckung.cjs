@@ -32,7 +32,7 @@
 //                scripts/ci-zeiten.cjs, die CI fragt die API nie): Puls ≤ 2 min, Voll-Gruppe ≤ 7 min, wer drüber liegt, steht mit
 //                Minuten und größtem Schritt beim Namen; ohne Zeit UNGEMESSEN (ROT: messen oder „geschaetzt" mit Quelle).
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
-// integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
+// integ-probe, Merge-Regel der Entscheidung 1110 §2.8, Zweig koordination) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
 // DIE WANDUHR DER VOLLEN BATTERIE (K61, 14.10.; Befund: 22 Jobs auf 20 Plätzen, derselbe Kopf mehrfach gerichtet, die Caches
 // am Lockfile-Hash luden den Chrome je Versions-Stufe neu):
@@ -146,12 +146,6 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
-    "gate:weltbild-frost:echt": {
-        klasse: KLASSEN.ROT,
-        grund:
-            "rot auf der Karte (OMEN 16.10., integ-probe aa74c324): ankunft und dritte Person — das Bild folgt der Kamera nicht, " +
-            "WebGPU: Index-Bereich 7704 × Uint32 in einem 15408-Byte-Index-Puffer (16-bit gebaut); die Wand fährt der Job echt erst geheilt",
-    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
@@ -160,18 +154,6 @@ const AUSNAHMEN = {
             "die Karte der fernen Eiche —, und die Erst-Zeichnung des D-Blicks reißt zweimal die 600-s-Wand (lokal 369 s); " +
             "B nannte dort 1 ausgebrannten von 342 Foundry-Bauten (offen benannt). Lokal GRÜN in 549 s, D seit 3ec8844b " +
             "an der Wurzel geheilt (Feld gegen Mesh 0,99 aus der EINEN Aufnahme)",
-    },
-    "gate:perf-parity": {
-        klasse: KLASSEN.ROT,
-        grund:
-            "rot seit 07.10. (Nacht-Lauf 37607543521 an 2f237817; grün am 06.10. an 53d94719 mit VIS 59 %), allein am " +
-            "H4-Band „VIS-Ratio ≥ 50 %“ (main 7dd944e6: 39–40 %). Täter 87c59800 (Merge welle7-vereint, 06.10.): der " +
-            "Zensus zählt Emitter, deren Ursprung ≤ 120 m vom Spieler liegt — das EINE Gesetz der Pass-Wahl verdichtete " +
-            "nah die Bündel (regionBundle 93 → 67 Emitter), und headless bleiben die 21 Nah-Wiese-Senken ohne Sicht-Satz " +
-            "leer und zeichnen nie: VIS 52 → 42 % bei unverändert 131 fernen Emittern, davon 59 unter unsichtbaren Ahnen " +
-            "(Wolf-Hüllen des wrap↔fern-Schalters — der Zensus geht mit traverse statt traverseVisible). Das Band " +
-            "bestraft das Verdichten; sein Maß gehört zum Profi-Band (Pflicht-OFFEN E). Bis 10.10. lief die Wand nur " +
-            "nächtlich (blockte keinen Merge) und war dort jede Nacht rot — der Schritt fiel aus playtest-full.yml",
     },
 };
 

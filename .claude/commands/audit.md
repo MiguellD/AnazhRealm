@@ -6,7 +6,7 @@ Führe eine umfassende Prüfung des Projekts durch. Arbeite die folgenden Schrit
 
 ## 1. Repo-Hygiene
 - `git status` und `git log -5 --oneline`
-- Branch: sind wir auf `claude/check-github-files-1MqpQ` oder einem Feature-Branch?
+- Zweig: welcher, und ist er vom Kopf von `integ-probe` abgezweigt (CLAUDE.md, Lehre 12)?
 - Ungestagte Änderungen vorhanden?
 
 ## 2. Syntax & Statik
@@ -39,10 +39,6 @@ grep -nE "(eval\(|new Function\()" stamm/*.js
 # XSS-Vektoren
 grep -nE "innerHTML\s*\+?=" stamm/*.js
 
-# Ammo-Memory-Leak-Indikator: btVector3 vs destroy-Verhältnis
-echo "btVector3-Allokationen: $(cat stamm/*.js | grep -c 'new Ammo.btVector3')"
-echo "Ammo.destroy-Aufrufe: $(cat stamm/*.js | grep -c 'Ammo.destroy')"
-
 # TODO/FIXME/XXX/HACK
 grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js
 
@@ -50,13 +46,13 @@ grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js
 awk '/^        [a-zA-Z]/ {eight++} /^    [a-zA-Z]/ {four++} END {print "4-Space-Methoden:", four, "/ 8-Space-Methoden:", eight}' stamm/*.js
 ```
 
-## 4. State-Datei (`anazhRealmState.json`)
-- Größe und Top-Level-Keys via `python3 -c "import json; d=json.load(open('anazhRealmState.json')); print({k: (len(v) if hasattr(v,'__len__') else v) for k,v in d.items()})"`
+## 4. State-Datei (`anazhRealmState.json`, schreibt der save-server zur Laufzeit)
+- Größe und Top-Level-Keys via `node -e "const d=require('./anazhRealmState.json'); for (const [k, v] of Object.entries(d)) console.log(k, v && typeof v === 'object' ? Object.keys(v).length : v)"`
 - Sind `selfAwareness.weaknesses` oder `learningData` ungewöhnlich gewachsen (Ringpuffer-Verletzung)?
 
-## 5. Roadmap-Abgleich (CLAUDE.md)
-- Welche `[ ]`-Einträge aus der Roadmap in `CLAUDE.md` sind seit dem letzten Audit erledigbar geworden?
-- Gibt es neue Probleme, die in die Roadmap aufgenommen werden sollten?
+## 5. Offen-Abgleich (`docs/PFLICHT-OFFEN.md`)
+- Welcher Eintrag bewegte sich seit dem letzten Audit (Zahl gegen sein Kriterium)?
+- Neue Probleme nennt der Bericht beim Namen; Einträge setzt nur der Schöpfer (BETRIEBSGESETZ 2).
 
 ## 6. Diff zu `main`
 - `git diff main...HEAD --stat`
@@ -79,7 +75,7 @@ Liefere am Ende **einen** Block:
 
 ### Status
 - Syntax: ✅/❌
-- Roadmap-Fortschritt: X von Y Quick-Wins erledigt
+- Pflicht-OFFEN Rest: …
 - Branch: …
 ```
 

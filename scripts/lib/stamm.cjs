@@ -3,7 +3,7 @@
 // scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung, plan 13.10. §3).
 //
 // Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
-// Dateien unter stamm/ (ein Stand vor der Zerlegung: die eine Datei anazhRealm.js). Die Layout-Weiche ist laut: liegen
+// Dateien unter stamm/ (ein Stand vor der Zerlegung 14.10.: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
 // beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht
 // als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
 //

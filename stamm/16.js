@@ -1759,7 +1759,7 @@ class AnazhRealm_Z16 {
         return cfg.min + (cfg.max - cfg.min) * norm;
     }
 
-    // U3 (resonanz-system.md §5) — das ROLLEN-SPEKTRUM: die normierte Resonanz (0–1) des Bauplans gegen ALLE
+    // U3 (resonanz-system §5) — das ROLLEN-SPEKTRUM: die normierte Resonanz (0–1) des Bauplans gegen ALLE
     // Rollen des Registers, sortiert. Der Spieler SIEHT, was sein Werk IST (Waffe 0.9 · Bauwerk 0.4 · …) über
     // die GANZE Resonanz — kein Rezept, ein Kompass. Die Freiheit: er baut einen Punkt, das Spektrum liest ihn.
     _blueprintRoleSpectrum(bp) {
@@ -3152,7 +3152,7 @@ class AnazhRealm_Z16 {
         return Number.isFinite(min) ? min : 0;
     }
 
-    // U1 (resonanz-system.md §2.2) — die Standflächen-Spreizung als 0–1-Achse (Trag-Basis vs Säule): die
+    // U1 (resonanz-system §2.2) — die Standflächen-Spreizung als 0–1-Achse (Trag-Basis vs Säule): die
     // _isMoveable-Logik extrahiert — wie weit die unteren (Stütz-)Parts in der x-z-Ebene spreizen, relativ
     // zur Compound-Breite. Eine Säule (Stamm-Stapel) ~0; eine Trag-Basis (Räder/Beine/Fundament) spreizt.
     _compoundSpread(bp) {
