@@ -2157,24 +2157,18 @@ class AnazhRealm_Z11b {
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, Fn, If } = TSL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
             float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
         );
-        // DER SPIEGEL IST DER HIMMEL: die Himmels-Sicht der Kuppel (`_himmelSicht`: die EINE Atmosphäre und ihre Wolken)
-        // in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten, nie unter den Horizont (Kräusel-Normalen).
-        // Bis A1 die Umgebung von 128 × 64 (`_himmelUmgebungTex`, die Quelle der IBL): ein Verlauf ohne Wolke, wo das Bild
-        // den Himmel nicht trug (die Ecke des Sees, A0). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
-        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
-        const _R = reflect(o.viewDir.negate(), o.n);
-        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel0 = this._himmelSicht(_Rh);
-        // DER SPIEGEL DER WELT (D10, A1): wo der gespiegelte Strahl Ufer, Hang, Krone, Haus oder Wolke trifft (`_spiegelPass`,
-        // 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes), steht ihre Strahlung
-        // statt der Umgebung — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete, die Kräusel-Normale
-        // versetzt den Abgriff; ohne Pass (`an` 0) der Himmel allein.
+        // DER SPIEGEL DER WELT (D10, A1): was der gespiegelte Strahl trifft — Ufer, Hang, Krone, Haus, Wolke, sonst der Himmel
+        // (`_spiegelPass`, 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes,
+        // dahinter die Himmels-Sicht der Kuppel) — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete,
+        // die Kräusel-Normale versetzt den Abgriff. Der Pass deckt jedes Wasser-Pixel ganz (vorab multipliziert, Deckung `w`).
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
@@ -2187,7 +2181,23 @@ class AnazhRealm_Z11b {
             .mul(step(0.0, suv.y))
             .mul(step(suv.y, 1.0))
             .mul(step(0.0, clip.w));
-        const himmel = mix(himmel0, sp.rgb, clamp(sp.a, 0.0, 1.0).mul(drin).mul(S.an));
+        const deckt = drin.mul(S.an);
+        const w = clamp(sp.a, 0.0, 1.0).mul(deckt);
+        // DER HIMMEL, WO DER PASS NICHT DECKT (jenseits des Felds, das ferne Wasser, vor seinem ersten Lauf, am Ufer-Saum): die
+        // Himmels-Sicht der Kuppel (`_himmelSicht`, EINE Quelle mit Kuppel und Pass) in Richtung des gespiegelten Strahls,
+        // nie unter den Horizont, an dem die Wolken enden (`hor[0]`, Kräusel-Normalen). Nur diese Pixel rechnen sie (A1-n1:
+        // vorher jedes Wasser-Pixel in jedem Bild). Bis A1 die Umgebung von 128 × 64 (`_himmelUmgebungTex`, die Quelle der
+        // IBL): ein Verlauf ohne Wolke (die Ecke des Sees, A0). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die
+        // SONNEN-Stärke (uLight 7,4): der Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07).
+        const himmel = Fn(() => {
+            const h = sp.rgb.mul(deckt).toVar();
+            If(w.lessThan(0.999), () => {
+                const _R = reflect(o.viewDir.negate(), o.n);
+                const _Rh = normalize(vec3(_R.x, max(_R.y, float(HG.hor[0])), _R.z));
+                h.addAssign(this._himmelSicht(_Rh).mul(float(1).sub(w)));
+            });
+            return h;
+        })();
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
@@ -2641,6 +2651,8 @@ class AnazhRealm_Z11b {
             T;
         const { normalize, dot, clamp, ivec2, select, floor, mod, step, min, exp, Continue } = T;
         const K = AnazhRealm.SPIEGEL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
         this._ensureHydroSurfaceMaterial();
@@ -2758,21 +2770,21 @@ class AnazhRealm_Z11b {
                         const wz = linear(dz);
                         const dicke = max(abs(ws.sub(wVor)).mul(2.0), ws.mul(K.bildDicke[0]).add(K.bildDicke[1]));
                         // was der Strahl trifft, steht ÜBER dem Wasser (`bildUfer` m): die Fläche des Sees selbst ist nie sein
-                        // Bild — streifend liegt ihre Tiefe je Schirm-Zeile Meter weit auseinander (bis A1 die Streifen am Ufer)
-                        const h4 = U.invVP.mul(
-                            vec4(
-                                uc.x.mul(2).sub(1),
-                                float(1).sub(uc.y).mul(2).sub(1),
-                                webgpuRaum ? dz : dz.mul(2).sub(1),
-                                1
-                            )
-                        );
-                        const traf = dz
-                            .lessThan(0.99999)
-                            .and(ws.greaterThan(wz))
-                            .and(ws.sub(wz).lessThan(dicke))
-                            .and(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)));
-                        If(traf, () => {
+                        // Bild — streifend liegt ihre Tiefe je Schirm-Zeile Meter weit auseinander (bis A1 die Streifen am Ufer).
+                        // Die Höhe des Texels rechnet nur ein Kandidat (hinter der Fläche, innerhalb ihrer Dicke), nie jeder Schritt
+                        const kandidat = float(0).toVar();
+                        If(dz.lessThan(0.99999).and(ws.greaterThan(wz)).and(ws.sub(wz).lessThan(dicke)), () => {
+                            const h4 = U.invVP.mul(
+                                vec4(
+                                    uc.x.mul(2).sub(1),
+                                    float(1).sub(uc.y).mul(2).sub(1),
+                                    webgpuRaum ? dz : dz.mul(2).sub(1),
+                                    1
+                                )
+                            );
+                            kandidat.assign(select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0)));
+                        });
+                        If(kandidat.greaterThan(0.5), () => {
                             const sa = sVor.toVar(),
                                 sb = s.toVar();
                             for (let k = 0; k < K.bildHalb; k++) {
@@ -2920,7 +2932,7 @@ class AnazhRealm_Z11b {
                     });
                     // DER HIMMEL DES BILDS: bleibt die Strecke im Schirm ohne Treffer, steht in Richtung R der gezeichnete Himmel
                     // (Kuppel mit Wolken, Sonne, Mond — Tiefe 1,0) an der Stelle, an der R im Unendlichen liegt: er IST der
-                    // Spiegel. Deckt dort ein Ding den Himmel, das der Strahl nicht traf, liest das Wasser die EINE Umgebung.
+                    // Spiegel. Deckt dort ein Ding den Himmel, das der Strahl nicht traf, rechnet der Pass die Himmels-Sicht (unten).
                     If(raus.not().and(bildW.lessThan(1.0)), () => {
                         const cI = U.vp.mul(vec4(R, 0.0));
                         const iwI = float(1).div(max(cI.w, 1e-6));
@@ -2933,11 +2945,17 @@ class AnazhRealm_Z11b {
                             aus.assign(vec4(texture(farbe, uvI).level(float(0)).rgb, 1.0));
                         });
                     });
-                    // Bild über Rest: mix(Umgebung, aus, aus.a) unter mix(…, bild, bildW) — das Wasser mischt mit EINEM Gewicht
-                    const a = float(1).sub(float(1).sub(aus.a).mul(float(1).sub(bildW)));
-                    aus.assign(
-                        vec4(aus.rgb.mul(aus.a).mul(float(1).sub(bildW)).add(bild.mul(bildW)).div(max(a, 1e-4)), a)
-                    );
+                    // DER HIMMEL DES RESTS (A1-n1): wo weder Bild noch Feld den Strahl ganz deckt, die Himmels-Sicht der Kuppel in
+                    // Richtung R (`_himmelSicht`, die EINE Atmosphäre mit ihren Wolken) — im Pass, in 1/teil, nur bei Änderung;
+                    // bis A1-n1 rechnete das Wasser sie je eigenem Pixel in jedem Bild (Wasser 5,36 → 6,47 ms, Radeon). Der Pass
+                    // deckt jedes Wasser-Pixel ganz (Bild über Feld über Himmel, Deckung 1), sonst schreibt er Null: die
+                    // Ausgabe ist vorab multipliziert, die bilineare Abtastung des Wassers mischt am Ufer richtig.
+                    const rest = aus.rgb.toVar();
+                    If(aus.a.lessThan(1.0).and(bildW.lessThan(1.0)), () => {
+                        const Rh = normalize(vec3(R.x, max(R.y, float(HG.hor[0])), R.z));
+                        rest.assign(mix(this._himmelSicht(Rh), aus.rgb, aus.a));
+                    });
+                    aus.assign(vec4(mix(rest, bild, bildW), 1.0));
                 });
             });
             return aus;
@@ -3000,6 +3018,7 @@ class AnazhRealm_Z11b {
                 alt: new Float64Array(32),
                 da: false,
                 zeit: 0,
+                bilder: 0,
                 k: 0,
                 proj: [0, 5, 8, 9, 10, 14],
                 licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
@@ -3040,14 +3059,17 @@ class AnazhRealm_Z11b {
             wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : i < licht ? d !== 0 : d > K.ruheLicht;
         }
         // DAS BILD LEBT (A1): der Spiegel liest das gezeichnete Bild — Wind im Laub, ziehende Wolken, ein Tier am Ufer —, im
-        // Stand neu je `bildRuheMs` (nie jedes Bild: 0,2 ms CPU je Lauf, Radeon; seltener als jedes 20. Bild trägt kein p95)
+        // Stand neu je `bildRuheMs` UND frühestens nach `bildRuheBilder` Bildern (A1-n1: die Uhr allein trug bei 30 fps jedes
+        // 15. Bild, über dem 5-%-Rand des p95; gezählt in Bildern trägt der Lauf im Stand nie das p95, bei jeder Bildrate)
         const jetzt = performance.now();
-        if (!wach && jetzt - sig.zeit > K.bildRuheMs) wach = true;
+        sig.bilder++;
+        if (!wach && jetzt - sig.zeit > K.bildRuheMs && sig.bilder >= K.bildRuheBilder) wach = true;
         if (wach) {
             a.set(v);
             sig.k = k;
             sig.da = true;
             sig.zeit = jetzt;
+            sig.bilder = 0;
         }
         return wach;
     }

@@ -2024,12 +2024,14 @@ class AnazhRealm_Z05b {
     // DIE LIVE-UNIFORMS DES HIMMELS (einmal je Welt): die Zeit (Drift der Wolken), die Deckung des Wetters, die Sonne und ihr
     // Farbton — DSL, Tag-Nacht und Loop schreiben hier hinein (`.value`), die Kuppel und der Spiegel des Wassers lesen dieselben
     // (`_himmelSicht`). `himmelTint` ist der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter,
-    // Feld, Gefühl und DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3).
+    // Feld, Gefühl und DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3). Sie reisen in
+    // der GETEILTEN renderGroup (`_uniformHeimatTeilen`): der Wasser-Satz trägt die Diät, als Objekt-Uniform fror sein Spiegel
+    // die Wolken des ersten Bilds ein (A1-n1: die Wolken-Uhr im Puffer des Wassers 74,8 gegen 228,0 am Knoten).
     _himmelUniformen() {
         const st = this.state;
         if (st.skyboxUniforms) return st.skyboxUniforms;
         const { uniform } = THREE.TSL;
-        st.skyboxUniforms = {
+        st.skyboxUniforms = this._uniformHeimatTeilen({
             time: uniform(0.0),
             himmelTint: { value: new THREE.Color(1, 1, 1) },
             cloudCover: uniform(0.3),
@@ -2037,7 +2039,7 @@ class AnazhRealm_Z05b {
             // speist (`_dayNightApplyDirectionalLight`); W9 — ihr Farbton, der Durchlass der EINEN Atmosphäre (`_atmoSonne`)
             sunDir: uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize()),
             sunCol: uniform(new THREE.Color(1, 0.95, 0.85)),
-        };
+        });
         return st.skyboxUniforms;
     }
 
@@ -2086,38 +2088,46 @@ class AnazhRealm_Z05b {
             }
             return s;
         });
-        const sp = vDir.xz.div(max(vDir.y, float(HG.hor[0])).add(HG.projY));
-        const dr = vec2(uTime.mul(HG.drift[0]), uTime.mul(HG.drift[1]));
-        const nA = fbm2(sp.mul(HG.s1).add(dr));
-        const nB = fbm2(sp.mul(HG.s2).sub(dr.mul(HG.drift2)));
-        const cov = uCloudCover;
-        const dens = smoothstep(
-            float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
-            float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
-            nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
-        ).mul(smoothstep(float(HG.hor[0]), float(HG.hor[1]), vDir.y));
-        const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
-        const litW = mix(
-            vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
-            uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
-            saW.mul(HG.litSa)
-        );
-        const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
-        const cloudAmt = clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
-        // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
-        const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
-        // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (2 km über dem Auge)
-        // auf ihre Oberseite, dazu der Himmel von oben (der Zenit der Himmels-Sicht, E/π) — Lambert. So ist die Mittags-Wolke
-        // weiß über dem Blau und die Nacht-Wolke dunkler als die 18-%-Karte im Mondlicht.
-        const U = A.U;
-        const rW = U.hKm.add(A.RG + 2);
-        const lichtWolke = A.durchlass(rW, U.sonne.y)
-            .mul(max(U.sonne.y, 0))
-            .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
-            .mul(U.licht.div(Math.PI))
-            .add(A.himmelFarbe(vec3(0, 1, 0)));
-        const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
-        return mix(A.himmelFarbe(vDir), cloudColor.mul(wolkeHell), cloudAmt);
+        // DIE WOLKE NUR, WO SIE IST (A1-n1, Gebot 7): unter `hor[0]` klingt sie auf null aus — dort rechnet die Sicht die
+        // Atmosphäre allein (exakt dasselbe Bild); der Spiegel des fernen Wassers liegt ganz darunter (2,6 m Auge, 170 m weit).
+        return Fn(() => {
+            const sicht = A.himmelFarbe(vDir).toVar();
+            TSL.If(vDir.y.greaterThan(HG.hor[0]), () => {
+                const sp = vDir.xz.div(max(vDir.y, float(HG.hor[0])).add(HG.projY));
+                const dr = vec2(uTime.mul(HG.drift[0]), uTime.mul(HG.drift[1]));
+                const nA = fbm2(sp.mul(HG.s1).add(dr));
+                const nB = fbm2(sp.mul(HG.s2).sub(dr.mul(HG.drift2)));
+                const cov = uCloudCover;
+                const dens = smoothstep(
+                    float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
+                    float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
+                    nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
+                ).mul(smoothstep(float(HG.hor[0]), float(HG.hor[1]), vDir.y));
+                const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
+                const litW = mix(
+                    vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
+                    uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
+                    saW.mul(HG.litSa)
+                );
+                const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
+                const cloudAmt = clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
+                // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
+                const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
+                // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (2 km über dem
+                // Auge) auf ihre Oberseite, dazu der Himmel von oben (der Zenit der Himmels-Sicht, E/π) — Lambert. So ist die
+                // Mittags-Wolke weiß über dem Blau und die Nacht-Wolke dunkler als die 18-%-Karte im Mondlicht.
+                const U = A.U;
+                const rW = U.hKm.add(A.RG + 2);
+                const lichtWolke = A.durchlass(rW, U.sonne.y)
+                    .mul(max(U.sonne.y, 0))
+                    .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
+                    .mul(U.licht.div(Math.PI))
+                    .add(A.himmelFarbe(vec3(0, 1, 0)));
+                const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
+                sicht.assign(mix(sicht, cloudColor.mul(wolkeHell), cloudAmt));
+            });
+            return sicht;
+        })();
     }
 
     // ### Skybox ###
@@ -2938,8 +2948,9 @@ class AnazhRealm_Z05b {
     }
 
     // DIE HIMMELS-UMGEBUNG als Textur: die Equirekt-Tafel der EINEN Atmosphäre (128×64, linear, Halb-Float) — EIN Objekt,
-    // gezeichnet von `_ensureSkyEnvironment`, gelesen von PMREM (die IBL jedes PBR-Stoffs) UND vom Wasser (der Spiegel des
-    // Himmels, roh — es ist glatt). Dasselbe Ziel bleibt über jede Neuzeichnung → kein Texture-Identitäts-Wechsel.
+    // gezeichnet von `_ensureSkyEnvironment`, gelesen von PMREM (die IBL jedes PBR-Stoffs) und vom Film des Tors (roh); der
+    // Spiegel des Wassers liest seit A1 die Himmels-Sicht mit Wolken (`_himmelSicht`). Dasselbe Ziel bleibt über jede
+    // Neuzeichnung → kein Texture-Identitäts-Wechsel.
     _himmelUmgebungTex() {
         return this._atmoLutBau().rtEq.texture;
     }

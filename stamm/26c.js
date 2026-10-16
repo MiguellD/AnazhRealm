@@ -1278,11 +1278,13 @@ AnazhRealm.ZEIT_SPRUNG_M = 6;
 // (bis `bildWeit` m) in `bildSchritte` Schritten gegen die Tiefe des Szenen-Passes, Treffer hinter der Fläche um
 // weniger als ihre Dicke (`bildDicke`: Anteil des Abstands + m) über dem Wasser (höher als `bildUfer` m), `bildHalb` Halbierungen,
 // am Schirm-Rand (`bildRand`) blendet er in das Feld — das trägt nur den Strahl jenseits des Schirms; die Schritte liegen nach
-// q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu.
+// q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu,
+// frühestens nach `bildRuheBilder` Bildern (seltener als jedes 20. Bild: der Lauf im Stand trägt nie das p95).
 AnazhRealm.SPIEGEL = Object.freeze({
     bildSchritte: 48,
     bildDichte: 2,
     bildRuheMs: 500,
+    bildRuheBilder: 24,
     bildUfer: 0.12,
     teil: 2,
     bildWeit: 3000,
@@ -1745,7 +1747,61 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
+    // (9) die FREIEN Uniforms der eigenen Gruppen (nicht geteilt): kein Objekt-Knoten stellt sie (die Bau-Uniforms wie
+    // `modelWorldMatrix` stellt der Vendor je Objekt, die Material-Verweise prüft equals()) — ein Schreiber setzt `.value`
+    const gespeist = new Set();
+    for (const n of nbs.updateNodes)
+        if (n.getUpdateType() === "object" && n.node && n.node.isUniformNode === true) gespeist.add(n.node);
+    const frei = [];
+    for (const g of ro.getBindings()) {
+        const b0 = g.bindings && g.bindings[0];
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+        for (const b of g.bindings) {
+            if (b.isUniformBuffer !== true || !b.uniforms) continue;
+            for (const u of b.uniforms) {
+                const n = u.nodeUniform && u.nodeUniform.node;
+                if (n && n.isUniformNode === true && n.getUpdateType() !== "object" && !gespeist.has(n)) frei.push(u);
+            }
+        }
+    }
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei };
+};
+// (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
+// Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
+// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt folgt
+// jedem Wechsel EIN Refresh, und der EINE Melder nennt den Stoff und die Uniform ohne Heimat beim Namen (das Pflicht-Paar
+// `_uniformHeimatTeilen` spart den Refresh). Liefert die gewechselte Uniform, `true` beim ersten Blick, sonst null.
+AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
+    if (k.frei.length === 0) return null;
+    const d = obs.getRenderObjectData(ro);
+    const erst = !d._anazhFreiW;
+    const w = d._anazhFreiW || (d._anazhFreiW = []);
+    let anders = erst ? true : null,
+        i = 0;
+    // je Zahl vergleichen und merken — keine Kopie des Werts (die Prüfung läuft je Render-Objekt und Render)
+    const zahl = (x, u) => {
+        if (w[i] !== x) {
+            w[i] = x;
+            if (anders === null) anders = u;
+        }
+        i++;
+    };
+    for (const u of k.frei) {
+        const v = u.getValue();
+        if (typeof v === "number" || typeof v === "boolean") zahl(+v, u);
+        else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e, u);
+        else if (v && v.isColor === true) {
+            zahl(v.r, u);
+            zahl(v.g, u);
+            zahl(v.b, u);
+        } else if (v && typeof v.x === "number") {
+            zahl(v.x, u);
+            zahl(v.y, u);
+            zahl(v.z === undefined ? 0 : v.z, u);
+            zahl(v.w === undefined ? 0 : v.w, u);
+        }
+    }
+    return anders;
 };
 // (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
@@ -1908,6 +1964,20 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
+    // (9) NACH dem Gang (er stellt die Render- und Frame-Knoten): eine freie Uniform der eigenen Gruppen wechselte
+    const nbs = ro.getNodeBuilderState();
+    const frei = AnazhRealm._diaetFreiAnders(obs, ro, nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs)));
+    if (frei) {
+        if (frei !== true && obs._anazhWelt) {
+            const n = frei.nodeUniform.node;
+            obs._anazhWelt._bruchMelden(
+                `DIÄT: ${(obj && obj.name) || (ro.material && ro.material.type)} — die Objekt-Uniform ${
+                    n.name || frei.name
+                } wechselte ohne geteilte Heimat (Pflicht-Paar _uniformHeimatTeilen): der Uniform-Wächter frischt je Wechsel voll auf`
+            );
+        }
+        return true;
+    }
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr

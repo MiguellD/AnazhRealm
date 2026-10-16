@@ -402,7 +402,7 @@ class AnazhRealm_Z24 {
     // WebGL keinen Himmel). Transmittance 256×64 (Bruneton-Parametrisierung) und Mehrfachstreuung Ψ_ms 32×32 (Hillaire Gl.
     // 5–9) je Medium, die Himmels-Sicht 192×108 (Azimut absolut, Breite quadratisch um den Horizont) je Stufe der Sonne,
     // die Umgebung 128×64 (Equirekt, die Vorlage von PMREM) im groben Takt der Umgebung. Die Leser: die Kuppel und die Luft
-    // (`himmelFarbe`), die Umgebung, das Wasser (`_himmelUmgebungTex`). Die Uniforms leben in der renderGroup
+    // (`himmelFarbe`), der Spiegel des Wassers (`_himmelSicht`), die Umgebung (`_himmelUmgebungTex`: PMREM, der Film des Tors). Die Uniforms leben in der renderGroup
     // (`_uniformHeimatTeilen`): Kuppel und Luft sind Stoffe der Szene.
     _atmoLutBau() {
         const st = this.state;
