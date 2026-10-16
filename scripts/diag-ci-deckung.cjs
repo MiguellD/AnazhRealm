@@ -7,13 +7,11 @@
 //   (V) VORBEREITUNG  die ersten Schritte sind checkout · setup-node · System-Libs · npm ci, ohne Gruppe (jede Gruppe
 //                braucht sie); fail-fast aus (jede Gruppe meldet ganz); der Deckel je Gruppe höchstens 45 min
 //   (D) DOPPELT  kein Gate-Schritt (sein run-Befehl) und kein Schritt-Name steht zweimal in der CI (alle Jobs)
-//   (Z) VERGLEICH  `--gegen <git-ref>`: die Gate-Schritte (run-Befehle) der Datei an <ref> gegen die jetzige — kein
-//                Schritt verloren, keiner doppelt (die Probe der Teilung: vorher ein Job, nachher die Gruppen)
+//   (Z) VERGLEICH  `--gegen <git-ref>`: die Gate-Schritte (run-Befehle) an <ref> gegen die jetzigen — keiner verloren, keiner doppelt
 //
 // DIE GEGENRICHTUNG (09.10.; Befund: 50 von 152 `gate:*` liefen nirgends automatisch) — die Wand liest beide Richtungen:
-//   (W) WAND     jedes `gate:*` aus package.json und jeder Teil von `npm run check` läuft in einem Workflow
-//                (.github/workflows/*.yml; `npm run` wird bis auf die Befehle aufgelöst, eine Wand läuft, wenn ein
-//                Schritt sie ruft ODER jeder ihrer Befehle in einem Schritt steht) — oder sie steht in AUSNAHMEN
+//   (W) WAND     jedes `gate:*` aus package.json und jeder Teil von `npm run check` läuft in einem Workflow (`npm run` bis auf die
+//                Befehle aufgelöst: ein Schritt ruft die Wand ODER jeder ihrer Befehle steht in einem) — oder steht in AUSNAHMEN
 //   (A) AUSNAHME  je Eintrag eine Klasse aus KLASSEN und ein Grund; die Liste ist selbst geprüft: ein Eintrag, dessen
 //                Wand es nicht mehr gibt oder die schon in der CI läuft, ist ROT (keine stale Allow-Liste)
 //   (R) REDUNDANT  kein Schritt eines Workflows fährt nur Befehle, die ein anderer Schritt derselben Datei schon fährt
@@ -21,20 +19,18 @@
 // DER ABGESCHALTETE SCHRITT (10.10.; Befund: `|| true`, continue-on-error und der nächtliche Job zählten als Deckung) —
 // gedeckt ist eine Wand nur, wenn ihr Rot den MERGE hält:
 //   (S) STUMM    jeder Befehl trägt den Grund, warum sein Rot verpufft — ein Workflow ohne push/pull_request (ein nächtlicher
-//                Lauf blockt nichts), continue-on-error an Job oder Schritt, eine Bedingung, die im Merge nicht feuert (nur
-//                die Gruppen-Bedingung der eigenen Matrix und success()/always() zählen), `|| …` (außer `|| exit 1` /
-//                `|| false`), der Befehl vor einer Pipe ohne pipefail (Lehre 9), `!`, `set +e`, ein &&-Glied mitten im
-//                Schritt (bash -e prüft nur das letzte Glied einer Kette, die nicht die letzte Zeile ist), eine Shell, die
-//                die Linse nicht liest; npm fährt seine Skripte als `sh -c` ohne errexit (ein `;` in einem Skript macht
-//                den Teil davor stumm — STUMM IN SICH). Wer nur stumm läuft, steht beim Namen mit Schritt und Schalter.
+//                Lauf blockt nichts), continue-on-error an Job oder Schritt, eine Bedingung, die im Merge nicht feuert (nur die
+//                Gruppen-Bedingung der eigenen Matrix und success()/always() zählen), `|| …` (außer `|| exit 1` / `|| false`), der
+//                Befehl vor einer Pipe ohne pipefail (Lehre 9), `!`, `set +e`, ein &&-Glied mitten im Schritt (bash -e prüft nur
+//                das letzte Glied einer Kette, die nicht die letzte Zeile ist), eine Shell, die die Linse nicht liest; npm fährt
+//                seine Skripte als `sh -c` ohne errexit (ein `;` macht den Teil davor stumm — STUMM IN SICH). Beim Namen genannt.
 //
 // DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
 // GENAU zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
 // steht an GENAU einer Stelle (G)/(D), ein weiterer Job ist ROT (außer der Echt-Gruppe (E), er stünde außerhalb der Waage):
-//   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte aus spec/ci/ci-zeiten.json (gemessen von
-//                scripts/ci-zeiten.cjs über die GitHub-API; die CI fragt die API nie): ein Job je Push ≤ 2 min, eine
-//                Voll-Gruppe ≤ 7 min — wer drüber liegt, steht mit Minuten und seinem größten Schritt beim Namen; ein Schritt
-//                ohne Zeit ist UNGEMESSEN (ROT: erst messen oder mit „geschaetzt" und Quelle eintragen).
+//   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte (spec/ci/ci-zeiten.json, gemessen von
+//                scripts/ci-zeiten.cjs, die CI fragt die API nie): Puls ≤ 2 min, Voll-Gruppe ≤ 7 min, wer drüber liegt, steht mit
+//                Minuten und größtem Schritt beim Namen; ohne Zeit UNGEMESSEN (ROT: messen oder „geschaetzt" mit Quelle).
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
@@ -45,15 +41,13 @@
 //   (V) KOPF      vor der Batterie richtet der Job `kopf` (unter VOLL_WENN, ohne Matrix, EIN Schritt scripts/ci-kopf.cjs, nie
 //                stumm): trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie, läuft sie nicht noch einmal;
 //                `voll` wartet auf ihn (`needs: kopf`, `if: VOLL_NACH_KOPF`) — so hält ihr Rot den Merge wie zuvor
-//   (V) SCHLÜSSEL kein Cache hasht package.json/package-lock.json (die Projektversion), jeder trägt restore-keys, setup-node
-//                trägt keinen eigenen Cache (dessen Schlüssel IST der Lockfile-Hash); die Schlüssel kommen aus
-//                scripts/ci-schluessel.cjs (Inhalt allein), der Schritt steht vor den Caches, die Caches vor npm ci
+//   (V) SCHLÜSSEL kein Cache hasht package.json/-lock (die Projektversion), jeder trägt restore-keys, setup-node keinen eigenen;
+//                die Schlüssel aus scripts/ci-schluessel.cjs (Inhalt allein), der Schritt vor den Caches, die Caches vor npm ci
 //
 // DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10.; Befund: K15 fiel erst am Merge im vollen Playtest, (W) sah ihn nie):
-//   (P) PLAYTEST  der volle Playtest (`npm run playtest`) läuft in GENAU einem Schritt aller Workflows, in einer EIGENEN
-//                Gruppe der vollen Batterie, sein Rot hält den Merge, und das Verdikt ist die Bedingung: der letzte Befehl
-//                des Schritts greift „Alle Invarianten OK" aus dem Log, das `tee` aus dem Playtest schrieb (ein grüner
-//                Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet der Playtest mit 0 trotz verletzter Invarianten).
+//   (P) PLAYTEST  `npm run playtest` läuft in GENAU einem Schritt aller Workflows, in einer EIGENEN Gruppe der vollen Batterie,
+//                sein Rot hält den Merge, das Verdikt ist die Bedingung: der letzte Befehl greift „Alle Invarianten OK" aus dem
+//                `tee`-Log (ein grüner Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet er mit 0 trotz verletzter Invarianten).
 //
 //   node scripts/diag-ci-deckung.cjs [--selftest] [--gegen <git-ref>]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
@@ -152,6 +146,12 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
+    "gate:weltbild-frost:echt": {
+        klasse: KLASSEN.ROT,
+        grund:
+            "rot auf der Karte (OMEN 16.10., integ-probe aa74c324): ankunft und dritte Person — das Bild folgt der Kamera nicht, " +
+            "WebGPU: Index-Bereich 7704 × Uint32 in einem 15408-Byte-Index-Puffer (16-bit gebaut); die Wand fährt der Job echt erst geheilt",
+    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
