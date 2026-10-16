@@ -101,53 +101,7 @@ const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 // Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst — die diag-altlasten-Methode).
-function ohneKommentare(src) {
-    let out = "";
-    let mode = "code";
-    for (let i = 0; i < src.length; i++) {
-        const c = src[i],
-            c2 = src[i + 1];
-        if (mode === "code") {
-            if (c === "/" && c2 === "/") {
-                mode = "line";
-                i++;
-                continue;
-            }
-            if (c === "/" && c2 === "*") {
-                mode = "block";
-                i++;
-                continue;
-            }
-            if (c === "'") mode = "sq";
-            else if (c === '"') mode = "dq";
-            else if (c === "`") mode = "tpl";
-            out += c;
-            continue;
-        }
-        if (mode === "line") {
-            if (c === "\n") {
-                mode = "code";
-                out += c;
-            }
-            continue;
-        }
-        if (mode === "block") {
-            if (c === "*" && c2 === "/") {
-                mode = "code";
-                i++;
-            }
-            continue;
-        }
-        if (c === "\\") {
-            out += c + (c2 || "");
-            i++;
-            continue;
-        }
-        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`")) mode = "code";
-        out += c;
-    }
-    return out;
-}
+const ohneKommentare = stammLib.ohneKommentare;
 
 // Z2 — die Bildziele je Leser, gezählt im kommentar-bereinigten Stamm.
 function bildZiele(src) {
@@ -1515,10 +1469,6 @@ function probe(selbsttest) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.message || String(e)).split("\n")[0]));

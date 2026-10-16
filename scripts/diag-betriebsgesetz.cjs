@@ -9,7 +9,8 @@
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
-//   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes.
+//   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
+//   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 const fs = require("fs");
 const path = require("path");
@@ -253,6 +254,28 @@ function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
     return { gates, pfade, namen, kennung, karte, code, ignoriert, monolith };
 }
 
+// 8) STRIPPER-WAND (PFLICHT-OFFEN D3, Karte D3a 16.10.): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
+//    scripts/lib/stamm.cjs) und EIN `__codeOf` (scripts/lib/welt-boot.cjs trägt es in jede Seite). Bis D3a lebten 171
+//    Stripper-Stellen in 65 Dateien mit verschiedener Semantik — dieselbe Quelle wurde je Linse anders bereinigt. Ein
+//    Kommentar-Regex in einem replace, ein Zeichen-Automat auf Schrägstrich-Paare oder ein eigener __codeOf-Einbau
+//    außerhalb seines Heims ist ROT beim Namen; die Tafel des EINEN (echte Stamm-Zeilen, der Stamm gegen acorn) fährt mit.
+const STRIPPER_MUSTER = [
+    ["Block-Kommentar-Regex", /\\\/\\\*\[(?:\\s\\S|\^)\]\*\??\\\*\\\//, "scripts/lib/stamm.cjs"],
+    ["Zeilen-Kommentar-Regex", /\.replace\(\s*\/(?:\((?:\?:)?\^\|\[\^[^\]]*\]\))?\\\/\\\/(?:\.\*|\[\^\\n\]\*)/, "scripts/lib/stamm.cjs"],
+    ["Zeichen-Automat", /===\s*(["'])\/\1\s*&&\s*[\w$.[\]+ ]+?\s*===\s*(["'])[/*]\2/, "scripts/lib/stamm.cjs"],
+    ["__codeOf-Einbau", /window\.__codeOf\s*=(?!=)/, "scripts/lib/welt-boot.cjs"],
+];
+function stripperBefund(dateien) {
+    const out = [];
+    for (const { pfad, text } of dateien)
+        text.split("\n").forEach((z, i) => {
+            for (const [art, rx, heim] of STRIPPER_MUSTER)
+                if (pfad !== heim && rx.test(z))
+                    out.push(`STRIPPER-WAND: ${pfad}:${i + 1} trägt einen eigenen ${art} — der EINE lebt in ${heim}`);
+        });
+    return out;
+}
+
 function main() {
     const errs = [];
     const argRev = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
@@ -316,6 +339,20 @@ function main() {
         dokuZeile = `Karte ${genannt}/${dokumente.length} .md, ${befund.length} tote Aussagen`;
     } catch (e) {
         errs.push(`ZITAT-WAND: Dokumente oder package.json nicht lesbar (${String(e.message).split("\n")[0]})`);
+    }
+
+    // 8) STRIPPER-WAND über jede Skript-Datei + die Tafel des EINEN
+    let stripperDateien = 0;
+    try {
+        const dateien = git(["ls-files", "scripts"])
+            .split("\n")
+            .filter((p) => /\.(c|m)?js$/.test(p))
+            .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+        stripperDateien = dateien.length;
+        errs.push(...stripperBefund(dateien));
+        errs.push(...require("./lib/stamm.cjs").stripperTafel(root).map((b) => `STRIPPER-WAND (Tafel): ${b}`));
+    } catch (e) {
+        errs.push(`STRIPPER-WAND: scripts/ oder die Tafel nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
 
     // 2) FROZEN-LISTEN-WAND
@@ -452,6 +489,18 @@ function main() {
     ];
     if (zIst.length !== zSoll.length || zSoll.some((s) => !zIst.some((z) => z.includes(s))))
         errs.push(`Selbsttest der Zitat-Wand versagt (${zIst.length} statt ${zSoll.length}: ${zIst.join(" | ")})`);
+    // die Fälle der Stripper-Wand, aus Stücken gebaut (die Wand liest auch diese Datei): ein Rückstrich S
+    const S = "\\";
+    const sF = (pfad, text) => stripperBefund([{ pfad, text }]).length;
+    const zeileRx = "q.replace(/" + S + "/" + S + '/.*$/gm, "");';
+    const s1 = sF("scripts/x.cjs", "q.replace(/" + S + "/" + S + "*[" + S + "s" + S + "S]*?" + S + "*" + S + '//g, "");'); // feuert
+    const s2 = sF("scripts/x.cjs", zeileRx); // feuert
+    const s3 = sF("scripts/x.cjs", "if (c === " + '"/"' + " && d === " + '"*"' + ") {"); // feuert
+    const s4 = sF("scripts/x.cjs", "window." + "__codeOf = (f) => String(f);"); // feuert
+    const s5 = sF("scripts/lib/stamm.cjs", zeileRx) + sF("scripts/lib/welt-boot.cjs", "window." + "__codeOf = oK;"); // im Heim frei
+    const s6 = sF("scripts/x.cjs", "u.replace(/^https?:" + S + "/" + S + '//, ""); const { ohneKommentare } = L;'); // frei
+    if (s1 !== 1 || s2 !== 1 || s3 !== 1 || s4 !== 1 || s5 || s6)
+        errs.push(`Selbsttest der Stripper-Wand versagt (s1=${s1} s2=${s2} s3=${s3} s4=${s4} s5=${s5} s6=${s6})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");
@@ -461,7 +510,7 @@ function main() {
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
             `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + ` +
-            `Wachstums-Wand + Zitat-Wand stehen (Doku: ${dokuZeile}) · Selbsttest feuert`
+            `Wachstums-Wand + Zitat-Wand + Stripper-Wand (${stripperDateien} Skripte, EIN Stripper, Tafel) stehen (Doku: ${dokuZeile}) · Selbsttest feuert`
     );
 }
 

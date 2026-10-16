@@ -160,10 +160,7 @@ function check(name, ok, detail) {
             // Kommentar-gestrippt (die __codeOf-Disziplin, lokal definiert — der Kommentar
             // dürfte das Wort tragen, der CODE muss es): der Haupt-Renderer-Bau lebt in
             // `init()` und muss trackTimestamp:true an den WebGPURenderer geben.
-            const codeOf = (fn) =>
-                String(fn)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const codeOf = window.__codeOf;
             const bauSrc = codeOf(r.init);
             res.bauFordertTrackTimestamp =
                 /new THREE\.WebGPURenderer\(/.test(bauSrc) && /trackTimestamp:\s*true/.test(bauSrc);

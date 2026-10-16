@@ -12,14 +12,14 @@
  *   - eine Absenz-Probe (`!/X/.test(__codeOf(r._foo))`) passt VAKUÖS (`__codeOf`
  *     liefert "" für ein totes Symbol) — sie wird grün, obwohl sie nichts mehr misst.
  * Das ist die c1c1271-Klasse: das Gate-vom-Tod-befreit deckte 31 verdeckte Fehler
- * aus Refactors auf, deren Tests nicht nachzogen. Der VOLLE Playtest (der einzige
- * Fänger) läuft NICHT in der CI (lokal-only, V18.347) → ein Refactor kann eine
- * stale Probe durch die CI schmuggeln.
+ * aus Refactors auf, deren Tests nicht nachzogen. Der volle Playtest läuft in der CI
+ * (check.yml voll, Gruppe 1: integ-probe, main, nachts, Zweige mit `[ci voll]`), aber eine
+ * vakuöse Absenz-Probe besteht ihn GRÜN — er kann sie nicht fangen.
  *
- * DIESE LINSE schliesst die Lücke STRUKTURELL: rein STATISCH (kein Browser), im
- * `check`-CI-Job VOR dem Playtest. Sie extrahiert jedes geprobte `r.<symbol>` aus
- * den Gate-Dateien und prüft, dass das Symbol real im Stamm (+ Worker/Bake-
- * Mirrors) existiert. Ein geprobtes Symbol, das im Code NICHT mehr vorkommt, ist
+ * DIESE LINSE schliesst die Lücke STRUKTURELL: rein STATISCH (kein Browser), in
+ * `npm run check`. Sie extrahiert jedes geprobte `r.<symbol>` aus den Gate-Dateien
+ * und prüft, dass das Symbol real im Stamm (+ Worker-Spiegel) existiert. Ein
+ * geprobtes Symbol, das im Code NICHT mehr vorkommt, ist
  * eine stale Probe → laut + Exit≠0.
  *
  * Disziplin (die V18.267-Falle): Kommentare werden ZUERST gestrippt — der Code darf
@@ -55,140 +55,9 @@ const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs'];
 // fälschlich „fehlt".
 const CODE_FILES = [...stammLib.dateien(path.join(__dirname, '..')), 'voxel-worker.js'];
 
-/**
- * Strippt JS-Kommentare (Block + Zeile) UND String-/Template-Literale, ohne über
- * `://` (URLs) oder `//` in Strings zu stolpern. Wir brauchen nur die CODE-Tokens
- * für die Proben-Extraktion bzw. die Symbol-Existenz — Strings/Kommentare nicht.
- * Regex-Literale sind ein eigener Zustand: ein Anführungszeichen IM Regex (`/"exit"/`,
- * `/["']x["']/`) öffnete vorher einen String, und die Parität kippte für den Rest der
- * Datei — ein Schnitt an einer Regex-Probe blendete 15 r.<symbol>-Proben weiter unten aus
- * (204 → 189). `keepStrings` behält die Literale (für die Nebenwelt-Quell-Wand).
- */
-const REGEX_DAVOR = '(,=:[!&|?{};+-*%<>~^';
-const REGEX_WORT = /(?:^|[^\w$])(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await)\s*$/;
-function stripCommentsAndStrings(src, keepStrings) {
-  const k = !!keepStrings;
-  let out = '';
-  let i = 0;
-  const n = src.length;
-  let state = 'code'; // code | line | block | sq | dq | tpl | re
-  let prev = ''; // das letzte bedeutsame Code-Zeichen ('"' = ein Literal endete, ein Operand)
-  let reKlasse = false;
-  while (i < n) {
-    const c = src[i];
-    const c2 = i + 1 < n ? src[i + 1] : '';
-    if (state === 'code') {
-      if (
-        c === '/' &&
-        c2 !== '/' &&
-        c2 !== '*' &&
-        (prev === '' || REGEX_DAVOR.includes(prev) || (/[A-Za-z_$]/.test(prev) && REGEX_WORT.test(out.slice(-24))))
-      ) {
-        state = 're';
-        reKlasse = false;
-        out += k ? c : ' ';
-        i++;
-      } else if (c === '/' && c2 === '/') {
-        state = 'line';
-        i += 2;
-      } else if (c === '/' && c2 === '*') {
-        state = 'block';
-        i += 2;
-      } else if (c === "'") {
-        state = 'sq';
-        out += k ? c : ' ';
-        i++;
-      } else if (c === '"') {
-        state = 'dq';
-        out += k ? c : ' ';
-        i++;
-      } else if (c === '`') {
-        state = 'tpl';
-        out += k ? c : ' ';
-        i++;
-      } else {
-        out += c;
-        if (!/\s/.test(c)) prev = c;
-        i++;
-      }
-    } else if (state === 're') {
-      if (c === '\\') {
-        if (k) out += c + c2;
-        i += 2;
-      } else if (c === '\n') {
-        // ein Regex endet nie über die Zeile — war es keiner, fängt der Zustand sich hier
-        state = 'code';
-        out += c;
-        i++;
-      } else {
-        if (c === '[') reKlasse = true;
-        else if (c === ']') reKlasse = false;
-        else if (c === '/' && !reKlasse) {
-          state = 'code';
-          prev = '"';
-        }
-        if (k) out += c;
-        i++;
-      }
-    } else if (state === 'line') {
-      if (c === '\n') {
-        state = 'code';
-        out += '\n';
-      }
-      i++;
-    } else if (state === 'block') {
-      if (c === '*' && c2 === '/') {
-        state = 'code';
-        i += 2;
-      } else {
-        if (c === '\n') out += '\n';
-        i++;
-      }
-    } else if (state === 'sq') {
-      if (c === '\\') {
-        if (k) out += c + c2;
-        i += 2;
-      } else if (c === "'") {
-        state = 'code';
-        prev = '"';
-        if (k) out += c;
-        i++;
-      } else {
-        if (k) out += c;
-        i++;
-      }
-    } else if (state === 'dq') {
-      if (c === '\\') {
-        if (k) out += c + c2;
-        i += 2;
-      } else if (c === '"') {
-        state = 'code';
-        prev = '"';
-        if (k) out += c;
-        i++;
-      } else {
-        if (k) out += c;
-        i++;
-      }
-    } else if (state === 'tpl') {
-      // Template-Literale könnten ${...}-Code tragen; konservativ als String behandeln
-      // (Source-Proben stehen nie in einem Template — sie sind echter JS-Aufruf-Code).
-      if (c === '\\') {
-        if (k) out += c + c2;
-        i += 2;
-      } else if (c === '`') {
-        state = 'code';
-        prev = '"';
-        if (k) out += c;
-        i++;
-      } else {
-        if (c === '\n' || k) out += c;
-        i++;
-      }
-    }
-  }
-  return out;
-}
+// Kommentare UND Literale fallen (der EINE Stripper, scripts/lib/stamm.cjs): die Proben-Extraktion braucht nur die
+// CODE-Tokens; `keepStrings` behält die Literale (für die Nebenwelt-Quell-Wand).
+const stripCommentsAndStrings = (src, keepStrings) => stammLib.ohneKommentare(src, !keepStrings);
 
 /**
  * DIE NEBENWELT-QUELL-WAND: jeder Lese-Aufruf (readFileSync · readFile · fetch · require)
