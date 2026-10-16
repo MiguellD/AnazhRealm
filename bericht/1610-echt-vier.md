@@ -102,6 +102,13 @@
   - Der Substanz-Schuss kam vor den Programmen; die Karte kompiliert parallel (`KHR_parallel_shader_compile`), swiftshader synchron.
   - Gemessen ohne Haken: sofort 1 Farbe / 0 Pixel, nach `compileAsync` 37 Farben / 684 Pixel.
   - **Geschnitten:** `compileAsync` vor dem Schuss (`scripts/diag-webgl-probe.cjs`, dieselbe Zeile).
+  - **BERICHTIGUNG 16.10. ~14:45:** Die Endform (`compileAsync` + EIN Schuss) war nicht gemessen; gemessen war `compileAsync` + 20
+    Bilder.
+    - In der Zweig-CI 38899294161 (swiftshader-GL) blieb W5 damit schwarz, vorher war es dort grün. Der Schnitt war unvollständig;
+      das ist kein Beleg für W2.
+    - Der Koordinator merged echt-vier ohne diese 2 Zeilen.
+    - Nach dem ABAB messe ich auf Karte und swiftshader, wie viele Bilder nach `compileAsync` die Substanz tragen; W5 kommt mit der
+      Karte W2.
   - Am Schnitt: Endstand-Lauf folgt nach dem ABAB (`p3/k1610v/ende.sh`).
 
 ## 6. Albedo-Tafel — SPIEL
