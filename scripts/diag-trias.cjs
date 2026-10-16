@@ -64,32 +64,15 @@ const KIND_SUBSTANCE_MINT = {
 // Jetzt: klammer-bewusste Extraktion (quote-sicher) + vm-Eval des Literals; die MUENZEN
 // bleiben UNANGETASTET — JSON.stringify(vm-Objekt) reproduziert byte-genau die gemintete
 // Kanonik (Key-Reihenfolge = Quelle, Zahlen exakt), sonst waere es ECHTE Drift.
+// Geschnitten vom EINEN Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher; die Lage der Zeile im Stamm-Text.
 function kindSubstanceRowSpan(src, name) {
-    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
-    if (start < 0) return null;
-    const end = src.indexOf("\n});", start);
-    const key = "\n    " + name + ": ";
-    const k = src.indexOf(key, start);
-    if (k < 0 || k > end) return null;
-    let i = src.indexOf("{", k);
-    if (i < 0 || i > end) return null;
-    let depth = 0;
-    let inStr = null;
-    for (let j = i; j <= end; j++) {
-        const c = src[j];
-        if (inStr) {
-            if (c === "\\") j++;
-            else if (c === inStr) inStr = null;
-            continue;
-        }
-        if (c === '"' || c === "'") inStr = c;
-        else if (c === "{") depth++;
-        else if (c === "}") {
-            depth--;
-            if (depth === 0) return { rowStart: k + 1, objStart: i, objEnd: j + 1 };
-        }
-    }
-    return null;
+    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
+    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
+    const obj = tafel && stammLib.rumpf(tafel, zeile, { zitate: true });
+    if (!obj) return null;
+    const k = src.indexOf(tafel) + tafel.search(zeile);
+    const objStart = src.indexOf(obj, k);
+    return { rowStart: k + 1, objStart, objEnd: objStart + obj.length };
 }
 function kindSubstanceRows(src) {
     if (src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({") < 0) return null;
@@ -116,12 +99,7 @@ function kindSubstanceHash(row) {
 // ── Teil S: die Struktur-Gesetze (Definitions-Form, kommentar-gestrippt) ──
 function triasStaticLaws(anazhSrc) {
     const nc = stripComments(anazhSrc);
-    const fnBody = (name) => {
-        const i = nc.indexOf(`    ${name}(`);
-        if (i < 0) return "";
-        const j = nc.indexOf("\n    }", i);
-        return j > i ? nc.slice(i, j) : "";
-    };
+    const fnBody = (name) => stammLib.rumpf(nc, name) || ""; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
     const tick = fnBody("_tickArchitectureLOD");
     const sw = fnBody("_switchArchitectureLOD");
     const clone = fnBody("cloneBlueprint");

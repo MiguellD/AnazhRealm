@@ -425,14 +425,8 @@ function statischeMethode(src, name) {
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
     const p = src.indexOf("(", i);
     const args = src.slice(p + 1, src.indexOf(")", p));
-    const j = src.indexOf("{", p + args.length + 1);
-    let tiefe = 0,
-        k = j;
-    for (; k < src.length; k++) {
-        if (src[k] === "{") tiefe++;
-        else if (src[k] === "}" && --tiefe === 0) break;
-    }
-    return { rumpf: src.slice(j + 1, k), fn: new Function(args, src.slice(j + 1, k)) };
+    const rumpf = stammLib.rumpf(src, name).slice(1, -1); // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
+    return { rumpf, fn: new Function(args, rumpf) };
 }
 function stammRegel(src) {
     const s = src || stammLib.text(ROOT);

@@ -119,21 +119,9 @@ function urteil(m) {
 function ohneKommentare(src) {
     return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
 }
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index + m[0].length - 1);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 function wand(quelle, studio) {
     const nc = ohneKommentare(quelle);

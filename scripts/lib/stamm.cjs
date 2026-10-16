@@ -466,12 +466,59 @@ function dateiVon(root, methode) {
 // Der Kopf einer Klassen-Methode am NAMEN: der Index des Zeilenumbruchs vor `    [static ][async ][get |set ]name(`, ab
 // `ab`; -1 ohne Treffer. Eine Linse findet eine Methode an ihrem Namen, nie an ihrer Parameter-Liste — ein neuer Parameter
 // bricht keine Linse, die ihn nicht prüft (gate:apparat, Klinge 3).
+const kopfRx = (methode) =>
+    new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${methode.replace(/[$]/g, "\\$")}\\(`, "g");
 function kopf(t, methode, ab = 0) {
-    const name = methode.replace(/[$]/g, "\\$");
-    const rx = new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${name}\\(`, "g");
+    const rx = kopfRx(methode);
     rx.lastIndex = ab;
     const m = rx.exec(t);
     return m ? m.index : -1;
+}
+
+// DER RUMPF AM KOPF (D2-N1) — der EINE Rumpf-Schneider jeder Linse: `rumpf(t, kopf)` gibt den Block `{…}`, der DIREKT an
+// einem Kopf hängt (ein Name sucht das Klassen-Glied wie `kopf`, ein Regex jeden Kopf): nach dem Treffer höchstens die
+// Parameter-Liste, ein `=>` und Leerraum, dann `{`. Ein Aufruf (`this._x(a);`, `if (this._x(a)) {`) trägt keinen eigenen
+// Block und zählt nie — der erste TEXT-Treffer hing an der Datei-Reihenfolge: gate:vehicle-drive A5 schnitt nach dem Umzug
+// am Aufruf in siedlung-ort.js statt an der Definition in koerper-fahrt.js (Zweig-CI 38894453753, voll 11/18). null ohne
+// Definition; der Zähler liest Klammern blind wie jeder Schneider vor ihm (Linsen lesen kommentar-gestrippten Text), mit
+// `{ zitate: true }` überspringt er "…" und '…' (die Zeilen eines Daten-Literals tragen Klammern in Zeichenketten).
+function blockAm(t, a, e) {
+    if (t[e - 1] === "{") return e - 1;
+    let tiefe = 0,
+        i = e;
+    for (let j = a; j < e; j++) tiefe += t[j] === "(" ? 1 : t[j] === ")" ? -1 : 0;
+    const leer = () => {
+        while (i < t.length && /\s/.test(t[i])) i++;
+    };
+    if (tiefe < 0) return -1;
+    if (tiefe === 0) leer();
+    if (tiefe === 0 && t[i] === "(") (tiefe = 1), i++;
+    for (; tiefe > 0 && i < t.length; i++) tiefe += t[i] === "(" ? 1 : t[i] === ")" ? -1 : 0;
+    leer();
+    if (t.startsWith("=>", i)) (i += 2), leer();
+    return t[i] === "{" ? i : -1;
+}
+function rumpf(t, k, { zitate = false } = {}) {
+    const rx = typeof k === "string" ? kopfRx(k) : new RegExp(k.source, k.flags.replace("g", "") + "g");
+    for (let m; (m = rx.exec(t)); ) {
+        if (!m[0]) {
+            rx.lastIndex++;
+            continue;
+        }
+        const b = blockAm(t, m.index, m.index + m[0].length);
+        if (b < 0) continue;
+        for (let i = b, tiefe = 0, zitat = null; i < t.length; i++) {
+            const c = t[i];
+            if (zitat) {
+                if (c === "\\") i++;
+                else if (c === zitat) zitat = null;
+            } else if (zitate && (c === '"' || c === "'")) zitat = c;
+            else if (c === "{") tiefe++;
+            else if (c === "}" && --tiefe === 0) return t.slice(b, i + 1);
+        }
+        return null;
+    }
+    return null;
 }
 
 // DIE GLIEDER AM AST (K38-N2, Prüfer Runde 3) — eine Linse, die Code einer Methode zuordnet, liest die Glieder der Klassen
@@ -746,6 +793,7 @@ module.exports = {
     ort,
     dateiVon,
     kopf,
+    rumpf,
     ast,
     zeileVon,
     wandere,
@@ -787,6 +835,13 @@ if (require.main === module && process.argv.includes("--selftest")) {
         return d;
     };
     try {
+        // R) der Rumpf an der Definition: steht der Aufruf VOR der Definition (die Lage nach dem Umzug, gate:vehicle-drive A5),
+        // schneidet er die Definition — am Regex wie am Namen; ein Default-Parameter `{}` ist kein Block; zitate überspringt "{".
+        const R = 'class B {\n    _a() {\n        if (this._p(e)) return this._p(e);\n    }\n}\nclass C {\n    _p(e, o = {}) {\n        return { x: "}" };\n    }\n}\n';
+        const soll = '{\n        return { x: "}" };\n    }';
+        pruef("rumpf: die Definition, nie der Aufruf davor", rumpf(R, /_p\(/, { zitate: true }) === soll, JSON.stringify(rumpf(R, /_p\(/, { zitate: true })));
+        pruef("rumpf: am Namen die Definition, quote-sicher", rumpf(R, "_p", { zitate: true }) === soll);
+        pruef("rumpf: nur Aufrufe → null, nie der Block danach", rumpf(R, /_p\(e\)\s*/) === null && rumpf(R, /_q\(/) === null);
         // 0) die Glieder am AST: ein Kopf mit Default-Parameter, ein umbrochener, ein Getter und ein async-Kopf behalten
         // ihren Aufruf; ein zusammengesetztes Argument ist EIN Argument (die Täter der Kopf- und Argument-Muster, K38-N2).
         const G = [

@@ -36,6 +36,8 @@ const law = (name, present, cond, detail) => {
 const stammLib = require("./lib/stamm.cjs");
 const anazhRoh = stammLib.text(ROOT);
 const anazhNC = stripComments(anazhRoh);
+// Das Innere einer Methode am Kopf: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), "" ohne Definition.
+const innen = (kopf) => (stammLib.rumpf(anazhNC, kopf) || "{}").slice(1, -1);
 const foundryNC = stripComments(read("foundry-core.js"));
 const pkg = read("package.json");
 
@@ -215,20 +217,7 @@ law(
     /_effectiveFoliageDensity\([^)]*\)\s*\{/.test(anazhNC)
 );
 {
-    const _fnBody = (name) => {
-        const m = anazhNC.match(new RegExp(name + "\\([^)]*\\) \\{"));
-        if (!m) return "";
-        let i = anazhNC.indexOf(m[0]) + m[0].length,
-            depth = 1,
-            out = "";
-        while (i < anazhNC.length && depth > 0) {
-            const ch = anazhNC[i++];
-            if (ch === "{") depth++;
-            else if (ch === "}") depth--;
-            if (depth > 0) out += ch;
-        }
-        return out;
-    };
+    const _fnBody = innen;
     const passBody = _fnBody("_scatterPass");
     const thinBody = _fnBody("_tickFoliageThin");
     law(
@@ -264,20 +253,7 @@ law(
 // KIND_POLICY-Tabelle: eine neue Domaene ist eine Policy-Zeile, KEIN kind-if-Zweig im Stamm.
 // Ein Refactor, der einen `if (rec.kind === ...)`-Zweig zurueckbringt, wird hier rot.
 {
-    const _autoBody = (() => {
-        const m = anazhNC.match(/_foundryAutoRegisterSpecies\([^)]*\) \{/);
-        if (!m) return "";
-        let i = anazhNC.indexOf(m[0]) + m[0].length,
-            depth = 1,
-            out = "";
-        while (i < anazhNC.length && depth > 0) {
-            const ch = anazhNC[i++];
-            if (ch === "{") depth++;
-            else if (ch === "}") depth--;
-            if (depth > 0) out += ch;
-        }
-        return out;
-    })();
+    const _autoBody = innen(/_foundryAutoRegisterSpecies\([^)]*\) \{/);
     law(
         "N1/M8: KIND_POLICY existiert (tree + vehicle als Tabellen-Zeilen)",
         true,
@@ -343,20 +319,7 @@ law(
 //      `_foundryPresetIsTree`; rock/flower/grass impostorn fail-closed nicht.
 console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");
 {
-    const _fnBodyN4 = (re) => {
-        const m = anazhNC.match(re);
-        if (!m) return "";
-        let i = anazhNC.indexOf(m[0]) + m[0].length,
-            depth = 1,
-            out = "";
-        while (i < anazhNC.length && depth > 0) {
-            const ch = anazhNC[i++];
-            if (ch === "{") depth++;
-            else if (ch === "}") depth--;
-            if (depth > 0) out += ch;
-        }
-        return out;
-    };
+    const _fnBodyN4 = innen;
     // N4.1a — die Roh-Reply→Geometrie-Konversion existiert genau EINMAL (die eine Naht):
     const rawConv = (anazhNC.match(/new T\.BufferAttribute\(m\.position\.array/g) || []).length;
     law("N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)", true, rawConv === 1);
@@ -539,20 +502,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
 // modes fallen über die PLACE_MODES-Tabelle auf "none".
 console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Chokepoint · kein placeExtra-Griff):");
 {
-    const _fnBodyN5 = (re) => {
-        const m = anazhNC.match(re);
-        if (!m) return "";
-        let i = anazhNC.indexOf(m[0]) + m[0].length,
-            depth = 1,
-            out = "";
-        while (i < anazhNC.length && depth > 0) {
-            const ch = anazhNC[i++];
-            if (ch === "{") depth++;
-            else if (ch === "}") depth--;
-            if (depth > 0) out += ch;
-        }
-        return out;
-    };
+    const _fnBodyN5 = innen;
     const extrasBody = _fnBodyN5(/_forestExtraSpecies\([^)]*\) \{/);
     law(
         "N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)",

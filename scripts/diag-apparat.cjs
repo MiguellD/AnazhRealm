@@ -16,14 +16,16 @@
 // Dritte Aufgabe (Klinge 3, K38-N2): jede Linse findet eine Methode am NAMEN, nie an ihrer Parameter-Liste.
 // Vierte Aufgabe (Klinge 4, K38-N2 Runde 3): jede Linse ordnet Code seiner Methode am AST zu, nie an einem Kopf-Muster.
 // Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis.
+// Sechste Aufgabe (Klinge 6, D2-N1): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf).
 //
-// Selbst-Test: --selftest beweist alle fünf Klingen (kein vakuöses Grün):
+// Selbst-Test: --selftest beweist alle sechs Klingen (kein vakuöses Grün):
 // (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
 //     ein bloßer Kommentar hebt ihn NICHT; (2) ein erfundenes Katalog-Symbol
 // feuert die Katalog-Prüfung; (3) ein Regex- und ein Text-Anker mit Parameter-Liste
 // werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
 // (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen;
-// (5) der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) fällt mit Datei:Zeile, das Halten bis zum Ereignis schweigt.
+// (5) der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) fällt mit Datei:Zeile, das Halten bis zum Ereignis schweigt;
+// (6) ein eigener Klammer-Zähler fällt mit Datei:Zeile, der EINE Schneider, JSON-Text und Kommentar schweigen.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -323,9 +325,30 @@ function tasteNachWanduhr(name, src) {
     }
     return errs;
 }
+// KLINGE 6 (D2-N1, 16.10.) — DER EINE RUMPF-SCHNEIDER: eine Linse schneidet einen Block über `stammLib.rumpf` (den Block an
+// seiner DEFINITION), nie mit eigenem Klammer-Zähler. Zweiundzwanzig Schneider in zwanzig Linsen setzten am ERSTEN Text-
+// Treffer an; nach dem Umzug nach Domäne schnitt gate:vehicle-drive A5 den Aufruf in siedlung-ort.js statt der Definition
+// (Zweig-CI 38894453753, voll 11/18). Ein Klammer-Zähler ist ein Vergleich mit "{" (Token: `=== "{"`, `"{" ===`,
+// `case "{"`); frei sind der EINE Schneider und der WGSL-Leser, Kommentare zählen nicht.
+const SCHNEIDER_FREI = new Set(["scripts/lib/stamm.cjs", "scripts/lib/shader-kosten.cjs"]);
+function eigenerSchneider(name, src) {
+    if (SCHNEIDER_FREI.has(name)) return [];
+    let toks;
+    try {
+        const opt = { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true };
+        toks = [...require("acorn").tokenizer(src, opt)];
+    } catch {
+        return []; // nicht lesbar: das nennt Klinge 3 beim Namen
+    }
+    const vergleich = (t) => t && (t.type.label === "==/!=/===/!==" || t.type.keyword === "case");
+    const klammer = "{";
+    return toks
+        .filter((t, i) => t.type.label === "string" && t.value === klammer && (vergleich(toks[i - 1]) || vergleich(toks[i + 1])))
+        .map((t) => `${name}:${t.loc.start.line} zählt Klammern selbst — der Block an seiner Definition: stammLib.rumpf(text, kopf) (Klinge 6)`);
+}
 function scanTasten(dateien) {
     const errs = [];
-    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src));
+    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src), ...eigenerSchneider(d.name, d.src));
     return { n: dateien.length, errs };
 }
 
@@ -422,12 +445,28 @@ function selftest() {
     ];
     for (const q of tasteStill)
         if (tasteNachWanduhr("probe.cjs", q).length) fails.push(`Klinge 5 feuert ohne Lauf nach der Uhr: ${q}`);
+    // Klinge 6: der Schneider von gate:vehicle-drive bis D2-N1 und ein `case "{"` fallen mit Datei:Zeile; der EINE Schneider,
+    // ein JSON-Text, ein Kommentar und dieselbe Probe im freien Schneider schweigen.
+    const schneiderRot = [
+        [5, 'function fnBody(src, re) {\n    const m = re.exec(src);\n    let d = 0;\n    for (let i = src.indexOf("{", m.index); ; i++)\n        if (src[i] === "{") d++;\n}\n'],
+        [2, 'for (const c of s) switch (c) {\n    case "{": t++;\n}\n'],
+    ];
+    for (const [zeile, q] of schneiderRot) {
+        const e = eigenerSchneider("probe.cjs", q);
+        if (e.length !== 1 || !e[0].startsWith(`probe.cjs:${zeile} zählt Klammern selbst`))
+            fails.push(`Klinge 6 nennt den Schneider nicht: ${q}`);
+    }
+    for (const [datei, q] of [
+        ["probe.cjs", 'const b = stammLib.rumpf(src, "_x");\nconst ok = r.data === \'{"x":7}\';\n// if (c === "{") d++;\n'],
+        ["scripts/lib/stamm.cjs", schneiderRot[0][1]],
+    ])
+        if (eigenerSchneider(datei, q).length) fails.push(`Klinge 6 feuert ohne eigenen Schneider: ${datei} ${q}`);
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: alle fünf Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr), Kommentare zählen nicht"
+        "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -461,7 +500,7 @@ function main() {
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
             `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster), ` +
-            `keine hält eine Taste nach der Wanduhr (0 von ${tasten.n}).`
+            `keine hält eine Taste nach der Wanduhr und keine zählt Klammern selbst (0 von ${tasten.n}).`
     );
 }
 

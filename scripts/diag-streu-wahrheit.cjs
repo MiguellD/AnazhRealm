@@ -130,17 +130,9 @@ function ohneKommentare(src) {
 }
 
 // Den Rumpf ab dem ersten `{` nach dem Kopf (Klammer-Zählung).
-function rumpf(src, kopfRe) {
-    const m = kopfRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index + m[0].length - 1);
-    let tiefe = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") tiefe++;
-        else if (src[i] === "}" && --tiefe === 0) return src.slice(start, i + 1);
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function rumpf(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 
 // Ein absorbierender Proxy: frisst jeden THREE-Aufruf der Top-Level-Ausführung des Kerns — nur die Daten zählen

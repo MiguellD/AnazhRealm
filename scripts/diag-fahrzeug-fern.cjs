@@ -43,33 +43,16 @@ const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: echte Pixel, keine Clear-Karte al
 const FERN_MESHES = 1;
 const FERN_TRIS = 2;
 
-// ── Quell-Chirurgie: einen Block ab Marker mit Klammer-Balance ausschneiden ─────────────
-function schneide(quelle, marker) {
-    const i = quelle.indexOf(marker);
-    if (i < 0) return null;
-    const start = quelle.indexOf("{", i);
-    if (start < 0) return null;
-    let tiefe = 0;
-    for (let j = start; j < quelle.length; j++) {
-        const c = quelle[j];
-        if (c === "{") tiefe++;
-        else if (c === "}") {
-            tiefe--;
-            if (tiefe === 0) return quelle.slice(i, j + 1);
-        }
-    }
-    return null;
-}
+// ── Quell-Chirurgie: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) — der Block an seinem Kopf ─────────────
 
 // KIND_POLICY aus der Quelle EXTRAHIEREN + AUSFÜHREN (verhaltensecht, kein Grep):
 // dieselbe Tabelle, die der Stamm liest — ein Schöpfer-Edit fließt automatisch hierher.
 function ladeKindPolicy(quelle) {
-    const block = schneide(quelle, "AnazhRealm.KIND_POLICY = Object.freeze(");
+    const block = stammLib.rumpf(quelle, /AnazhRealm\.KIND_POLICY = Object\.freeze\(\{/);
     if (!block) return null;
     try {
         const AnazhRealm = {};
-        // schneide endet am äußeren `}` — die Freeze-Klammer schließt hier.
-        new Function("AnazhRealm", block + ");")(AnazhRealm);
+        new Function("AnazhRealm", "AnazhRealm.KIND_POLICY = Object.freeze(" + block + ");")(AnazhRealm);
         return AnazhRealm.KIND_POLICY || null;
     } catch (_e) {
         return null;
@@ -79,9 +62,8 @@ function ladeKindPolicy(quelle) {
 // Eine Klassen-Methode als ECHTE Funktion instanzieren (Body unverändert — die
 // Linse führt EXAKT den Stamm-Code aus, mit gestubbtem this/AnazhRealm).
 function ladeMethode(quelle, name, argNamen) {
-    const block = schneide(quelle, name + "(" + argNamen + ") {");
-    if (!block) return null;
-    const body = block.slice(block.indexOf("{"));
+    const body = stammLib.rumpf(quelle, name);
+    if (!body) return null;
     try {
         return new Function("AnazhRealm", "return function(" + argNamen + ") " + body + ";");
     } catch (_e) {
@@ -91,11 +73,11 @@ function ladeMethode(quelle, name, argNamen) {
 
 // LOD_DISTANCES aus der Quelle (die EINE Distanz-Tabelle, `_foundryLodForEntry` liest sie).
 function ladeLodDistances(quelle) {
-    const block = schneide(quelle, "AnazhRealm.LOD_DISTANCES = ");
+    const block = stammLib.rumpf(quelle, /AnazhRealm\.LOD_DISTANCES = \{/);
     if (!block) return null;
     try {
         const AnazhRealm = {};
-        new Function("AnazhRealm", block + ";")(AnazhRealm);
+        new Function("AnazhRealm", "AnazhRealm.LOD_DISTANCES = " + block + ";")(AnazhRealm);
         return AnazhRealm.LOD_DISTANCES || null;
     } catch (_e) {
         return null;

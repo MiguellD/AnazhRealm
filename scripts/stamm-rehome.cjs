@@ -288,12 +288,15 @@ function gitMerge(root, a, b) {
 function lebendeZweige(root, ziel, tage) {
     const seit = Date.now() - tage * 864e5;
     const out = [];
-    const refs = git(root, ["for-each-ref", "--format=%(refname:short) %(committerdate:unix)", "refs/remotes/origin"])
+    // Der volle Name: `refname:short` kürzt den Fern-Kopf refs/remotes/origin/HEAD zu „origin“, den kein Zweig-Filter
+    // fängt; ein symbolischer Verweis (`symref`) ist nie ein Zweig.
+    const refs = git(root, ["for-each-ref", "--format=%(refname) %(committerdate:unix) %(symref)", "refs/remotes/origin"])
         .split("\n")
         .filter(Boolean);
     for (const z of refs) {
-        const [ref, t] = z.split(" ");
-        if (/\/(HEAD|main|integ-probe|stamm-domaene|koordination)$/.test(ref) || Number(t) * 1000 < seit) continue;
+        const [voll, t, symref] = z.split(" ");
+        const ref = voll.replace(/^refs\/remotes\//, "");
+        if (symref || /\/(HEAD|main|integ-probe|stamm-domaene|koordination)$/.test(ref) || Number(t) * 1000 < seit) continue;
         if (git(root, ["rev-list", "--count", `${ziel}..${ref}`]).trim() === "0") continue;
         const mb = gitOk(root, ["merge-base", ziel, ref]);
         if (!mb.ok || formAn(root, mb.out.trim()) === "datei") continue;

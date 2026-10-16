@@ -140,8 +140,8 @@ async function main() {
     const anazh = stammLib.text(PK.ROOT);
     // V18.511: die Platte lebt in der Transport-Schale IM Worker — der Boot reicht ihr den Manifest-TEXT und die
     // core.scripts-URLs, die Schale hasht sie (SHA-256) und hängt das Transport-Format an (`|f<n>`).
-    const boot = PK.methodSource(anazh, "_ensureAssetFoundry", ["_foundryIngestBook("]);
-    const schale = PK.methodSource(anazh, "static _foundrySchale", ["_foundryRequestSettlement("]);
+    const boot = stammLib.rumpf(anazh, "_ensureAssetFoundry");
+    const schale = stammLib.rumpf(anazh, "_foundrySchale");
     check(!!boot && !!schale, "_ensureAssetFoundry + _foundrySchale im Stamm gefunden");
     if (boot && schale) {
         const b = PK.stripComments(boot);
@@ -173,7 +173,7 @@ async function main() {
             "Ship-Hook in der Schale: nurPlatte antwortet VOR dem Studio-Bau"
         );
     }
-    const req = PK.methodSource(anazh, "_foundryRequest", ["_foundryIngestTakt("]);
+    const req = stammLib.rumpf(anazh, "_foundryRequest");
     check(!!req, "_foundryRequest im Stamm gefunden");
     if (req) {
         const code = PK.stripComments(req);

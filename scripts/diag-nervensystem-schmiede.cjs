@@ -71,21 +71,9 @@ function stripComments(src) {
     return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
 }
 // Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 
 // ===== TEIL S: die statischen Gesetze =====
@@ -710,30 +698,9 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     process.exit(2);
 });
 
-// ERFINDER-WELLE — die klammer-bewusste KIND_SUBSTANCE-Row-Extraktion (quote-sicher;
-// dieselbe Heilung wie gate:trias kindSubstanceRowSpan).
+// ERFINDER-WELLE — die Zeile der KIND_SUBSTANCE: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher.
 function ksRow(src, name) {
-    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
-    if (start < 0) return "";
-    const end = src.indexOf("\n});", start);
-    const k = src.indexOf("\n    " + name + ": ", start);
-    if (k < 0 || k > end) return "";
-    const i = src.indexOf("{", k);
-    let depth = 0;
-    let inStr = null;
-    for (let j = i; j <= end; j++) {
-        const c = src[j];
-        if (inStr) {
-            if (c === "\\") j++;
-            else if (c === inStr) inStr = null;
-            continue;
-        }
-        if (c === '"' || c === "'") inStr = c;
-        else if (c === "{") depth++;
-        else if (c === "}") {
-            depth--;
-            if (!depth) return src.slice(i, j + 1);
-        }
-    }
-    return "";
+    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
+    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
+    return (tafel && stammLib.rumpf(tafel, zeile, { zitate: true })) || "";
 }

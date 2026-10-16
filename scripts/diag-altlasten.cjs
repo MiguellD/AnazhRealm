@@ -1440,19 +1440,8 @@ function scan(files) {
 function checkSoulKeys() {
     // Die Schlüssel-Menge aus dem lebenden Literal ziehen (klammer-bewusst).
     const src = stammLib.text(path.join(__dirname, ".."));
-    const start = src.indexOf("AnazhRealm.CREATURE_SOULS = Object.freeze({");
-    if (start < 0) return ["CREATURE_SOULS-Literal nicht gefunden"];
-    let depth = 0;
-    let i = src.indexOf("{", start);
-    const from = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) break;
-        }
-    }
-    const block = src.slice(from, i + 1);
+    const block = stammLib.rumpf(src, /AnazhRealm\.CREATURE_SOULS = Object\.freeze\(\{/); // der EINE Rumpf-Schneider
+    if (!block) return ["CREATURE_SOULS-Literal nicht gefunden"];
     const keys = [];
     // Top-Level-Schlüssel: "    <name>: Object.freeze({" auf Tiefe 1
     const re = /\n    (\w+): Object\.freeze\(\{/g;

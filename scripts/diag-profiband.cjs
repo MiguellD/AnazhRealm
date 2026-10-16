@@ -65,18 +65,10 @@ const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
-// Den Rumpf einer Stamm-Methode ab dem ersten `{` nach dem Kopf (Klammer-Zählung auf dem kommentar-freien Code).
+// Das Innere einer Stamm-Methode: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) ohne die äußeren Klammern.
 function rumpf(code, kopfRe) {
-    const m = kopfRe.exec(code);
-    if (!m) return null;
-    let i = code.indexOf("{", m.index + m[0].length - 1);
-    let tiefe = 0;
-    const start = i;
-    for (; i < code.length; i++) {
-        if (code[i] === "{") tiefe++;
-        else if (code[i] === "}" && --tiefe === 0) return code.slice(start + 1, i);
-    }
-    return null;
+    const r = stammLib.rumpf(code, kopfRe);
+    return r && r.slice(1, -1);
 }
 
 // H4 — DIE TÄTER-KLASSE DES STAMMS, aus dem Quelltext (kein Zwilling hier): `klasse(obj, state)` und `instanz(key)`.
