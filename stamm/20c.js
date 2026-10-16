@@ -1393,15 +1393,14 @@ class AnazhRealm_Z20c {
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
                 f.setDrawRange(g.drawRange.start, g.drawRange.count);
-                // nimmt die Arena ihres Stoffs die Senke (G1, `_arenaNimmt`), verlässt er den Graphen — im Zug, in dem sie es tut,
-                // zeichnet er noch (die Arena steht erst ab der nächsten Aufnahme im Bild: keine Lücke von einem Frame)
+                // nimmt die Arena ihres Stoffs die Senke (G1, im Takt: `_arenaKommt`), verlässt er den Graphen vor dem ersten Pass
                 f.instanceCount = s.count;
                 return f;
             }
-            // Zöge der Zeichner, ohne dass seine Senke im Takt eintrat (`_arenaKommt`: eine Bühne, eine spät gehängte Senke),
-            // übernimmt hier die Arena seines Stoffs die Senke (G1) — er verlässt den Graphen.
-            onBeforeRender(renderer) {
-                AnazhRealm._arenaNimmt(this.__instanzQuelle, renderer);
+            // Zieht der Zeichner, meldet er seine Senke zum Eintritt im nächsten Takt (`_arenaKommt`: eine spät gehängte Senke,
+            // eine Rückkehr nach `__arenaOhne`) — nie nimmt ihn eine Arena mitten im Render.
+            onBeforeRender() {
+                AnazhRealm._arenaMelden(this.__instanzQuelle);
             }
             computeBoundingSphere() {
                 this.__instanzQuelle.computeBoundingSphere();
@@ -1505,11 +1504,15 @@ class AnazhRealm_Z20c {
     // meldet sich einmal laut ab (`__arenaOhne`, gate:webgl-probe W3). Ein Wurf in ihrem Takt ist ein BRUCH (`_bruchMelden`):
     // sie gibt jedes Glied seinem Zeichner zurück und nimmt keines mehr (`__arenaBruch`) — r184 bliebe nach einem Wurf
     // mitten im Render stehen.
+    // DIE ARENA LEBT IN DER WELT-SZENE: ihr Takt (`_arenaTakt`) ordnet Lager und Glieder; eine Szene ohne ihn (eine Bühne, die
+    // Prüfbühne einer Linse) zeichnet über die Zeichner. Befund 16.10. (gate:kamera-treue SENKE 0,9562 seit 328ae617): in der
+    // Bühne der Linse nahm die Arena die Senken, ihr Lager baute nie — die Senken fehlten im Bild.
     static _arenaNimmt(m, renderer) {
         if (m.__arena || !m.__zeichner || !AnazhRealm._arenaKann(renderer)) return;
         let w = m;
         while (w.parent) w = w.parent;
-        if (!w.isScene) return;
+        const welt = globalThis.anazhRealm;
+        if (!welt || w !== welt.state.scene) return;
         const schl = AnazhRealm._arenaSchluessel(m);
         if (schl === null) return;
         // ein Bündel nimmt nur auf, wenn es sich ändert: einmal je Szene nimmt jedes neu auf — so kommt jede Senke an
@@ -1551,20 +1554,23 @@ class AnazhRealm_Z20c {
         AnazhRealm.__arenaJetzt = performance.now();
         try {
             this._arenaKommt();
-            // Trat ein Glied im Zug seines Zeichners ein (`_arenaNimmt` — eine Bühne, eine spät gehängte Senke), hat er seine
-            // Matrizen hochgeladen: sie verlassen jetzt die GPU, und der Zeichner, dessen Render-Objekte sie banden, mit ihnen
-            // (`_zeichnerFrisch`) — nach dem Submit des Frames, in dem er zuletzt zog.
+            const reg = AnazhRealm.__arenen;
+            if (reg && reg.size) {
+                for (const a of [...reg.values()]) a._takt(false); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
+                const neu = this._arenaKommt();
+                if (neu) for (const a of neu) a._takt(false);
+            }
+            // Zog der Zeichner eines Glieds, bevor es eintrat (eine spät gehängte Senke, eine Rückkehr), liegen seine Matrizen
+            // auf der GPU: sie verlassen sie jetzt — vor dem ersten Pass dieses Renders (`scene.onBeforeRender` vor
+            // `beginRender`), jeder frühere Pass ist abgeschickt — und der Zeichner, dessen Render-Objekte sie banden, mit ihnen
+            // (`_zeichnerFrisch`).
             const quelle = AnazhRealm.__quelleWeg;
             if (quelle && quelle.size) {
-                for (const m of quelle) if (m.__arena && this._gpuAbschied(m.instanceMatrix)) AnazhRealm._zeichnerFrisch(m);
+                for (const m of quelle)
+                    if (m.__arena && this._gpuAbschied(m.instanceMatrix)) AnazhRealm._zeichnerFrisch(m);
                 quelle.clear();
             }
-            const reg = AnazhRealm.__arenen;
-            if (!reg || reg.size === 0) return;
-            for (const a of [...reg.values()]) a._takt(false); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
-            const neu = this._arenaKommt();
-            if (neu) for (const a of neu) a._takt(false);
-            for (const a of [...reg.values()]) a._takt(true);
+            if (reg && reg.size) for (const a of [...reg.values()]) a._takt(true);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -1572,10 +1578,13 @@ class AnazhRealm_Z20c {
     // DER EINTRITT IM TAKT (G1): jede neue oder zurückgekehrte Senke (`_arenaMelden`) tritt vor dem ersten Pass des Frames in
     // die Arena ihres Stoffs — ihr Zeichner zieht nie, ihre Matrizen betreten die GPU nie. Bis 16.10. trat sie im Zug ihres
     // Zeichners ein (`onBeforeRender`): er hatte sie eben hochgeladen, ihr Abschied traf Bindegruppen, die noch zogen
-    // (G1-n2/diag8: „used in submit while destroyed", 4 je Boot). Wer in keiner Szene hängt, wartet 120 Takte (danach im Zug); wer
-    // verborgen ist, wartet, bis er zeichnen würde; wer in einer fremden Szene hängt (eine Bühne, ihr Renderer), tritt dort
-    // im Zug ein. Die Arenen, die Glieder nahmen, gehen zurück (ihr Takt ordnet sie).
+    // (G1-n2/diag8: „used in submit while destroyed", 4 je Boot). Das ist der EINE Eintritt: ein Zeichner, der zieht, meldet
+    // seine Senke nur (`onBeforeRender`). Auch eine verborgene tritt ein (die Sicht urteilt die Arena je Pass, `_sichtbar`) —
+    // sonst zöge ihr Zeichner, sobald ihre Region in den Blick kommt. Wer in keiner Szene hängt, wartet 120 Takte (zieht er
+    // danach, meldet er sich neu); wer in einer fremden hängt (eine Bühne), bleibt beim Zeichner. Die Arenen, die Glieder
+    // nahmen, gehen zurück (ihr Takt ordnet sie).
     static _arenaMelden(m) {
+        if (m.__arena || AnazhRealm.__arenaOhne || AnazhRealm.__arenaBruch) return;
         (AnazhRealm.__arenaKommt || (AnazhRealm.__arenaKommt = new Map())).set(m, 0);
     }
     _arenaKommt() {
@@ -1590,18 +1599,13 @@ class AnazhRealm_Z20c {
                 k.delete(m);
                 continue;
             }
-            let w = m,
-                sicht = m.visible;
-            while (w.parent) {
-                w = w.parent;
-                if (w.visible === false) sicht = false;
-            }
+            let w = m;
+            while (w.parent) w = w.parent;
             if (w !== szene) {
                 if (w.isScene || t >= 120) k.delete(m);
                 else k.set(m, t + 1);
                 continue;
             }
-            if (!sicht) continue;
             k.delete(m);
             AnazhRealm._arenaNimmt(m, rend);
             if (m.__arena) (neu || (neu = new Set())).add(m.__arena);
@@ -1789,9 +1793,8 @@ class AnazhRealm_Z20c {
         };
         // der Block eines Glieds: seine Zahl und ein Viertel darüber (eine Senke wächst Instanz um Instanz)
         const platz = (n) => (n > 0 ? vier(n + (n >> 2) + 4) : 0);
-        // DIE QUELLE VERLÄSST DIE GPU: zog der Zeichner eines Glieds, bevor es eintrat (`_arenaNimmt` in seinem Zug), fallen seine
-        // Matrizen im nächsten Takt (`_arenaTakt`) mit ihm (`_zeichnerFrisch`): dann nimmt jedes Bündel, das ihn im Frame des
-        // Eintritts noch aufnahm, neu auf (`_arenaBuendel`), kein Replay liest den Puffer mehr.
+        // DIE QUELLE VERLÄSST DIE GPU: zog der Zeichner eines Glieds, bevor es eintrat, fallen seine Matrizen im Takt des
+        // Eintritts (`_arenaTakt`) mit ihm (`_zeichnerFrisch`); jedes Bündel, das ihn trug, nimmt neu auf (`_arenaBuendel`).
         const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
         // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
