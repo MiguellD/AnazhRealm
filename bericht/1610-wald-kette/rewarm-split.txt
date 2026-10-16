@@ -1,0 +1,12 @@
+W5 Fenster 11.0–18.67 s: 7671 ms gesampelt · Rewarm 549 ms (Dock-Peek 364 · Platzieren 100 · Rest 85)
+     424 ms  ← nach 20c.js:1040
+     125 ms  ← tickArchitectureCulling 20d.js:2742
+W6 Fenster 11.0–18.70 s: 7705 ms gesampelt · Rewarm 796 ms (Dock-Peek 509 · Platzieren 166 · Rest 121)
+     646 ms  ← nach 20c.js:1040
+     150 ms  ← tickArchitectureCulling 20d.js:2742
+W7 Fenster 11.0–19.78 s: 8783 ms gesampelt · Rewarm 671 ms (Dock-Peek 479 · Platzieren 135 · Rest 58)
+     502 ms  ← nach 20c.js:1040
+     169 ms  ← tickArchitectureCulling 20d.js:2742
+W8 Fenster 11.0–19.24 s: 8235 ms gesampelt · Rewarm 609 ms (Dock-Peek 415 · Platzieren 115 · Rest 79)
+     397 ms  ← nach 20c.js:1040
+     212 ms  ← tickArchitectureCulling 20d.js:2742

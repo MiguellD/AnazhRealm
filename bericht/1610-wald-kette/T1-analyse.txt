@@ -1,0 +1,469 @@
+== T1: t(Weltbild)  19.39 s · Fenster ab  11.00 s
+
+-- Zeitachse (s · Streu wartend [Grund] · Bauten offen · Karten Schlange/Flug · Foundry warte/Werk/Bäcker · Ingest)
+    9.31  Streu  4 {wartet auf ihr Asset:4} · Bauten 208 {kristall_var6:31,felsturm:11,welt_portal:1,welt_strom:1,wel · Karten 12,3 · F 34/36/3 · I 0
+    9.62  Streu  4 {wartet auf ihr Asset:4} · Bauten 244 {kristall_var6:31,felsturm:12,welt_portal:1,welt_strom:1,wel · Karten 12,3 · F 41/36/3 · I 0
+   10.46  Streu  4 {wartet auf ihr Asset:4} · Bauten 317 {kristall_var6:31,felsturm:13,welt_portal:1,welt_strom:1,wel · Karten 13,2 · F 39/36/2 · I 0
+   11.90  Streu  4 {wartet auf ihr Asset:4} · Bauten 391 {kristall_var6:28,felsturm:14,welt_portal:1,welt_terrain:1,w · Karten 12,3 · F 46/36/3 · I 23
+   13.37  Streu  4 {wartet auf ihr Asset:4} · Bauten 414 {felsturm:14,kristall_var6:21,welt_fachwerk:1,baum_tanne:107 · Karten 12,3 · F 14/36/3 · I 39
+   14.03  Streu  4 {wartet auf ihr Asset:4} · Bauten 316 {baum_tanne:56,baum_eiche:39,baum_birke:41,baum_kiefer:82,gl · Karten 10,1 · F 4/36/1 · I 41
+   14.69  Streu  4 {wartet auf ihr Asset:4} · Bauten 219 {baum_eiche:39,baum_birke:41,baum_kiefer:72,glutbrunnen:6,fe · Karten 7,3 · F 4/36/3 · I 25
+   15.33  Streu  4 {wartet auf ihr Asset:4} · Bauten 138 {baum_eiche:39,baum_birke:41,baum_kiefer:34,kristall_var6:1, · Karten 6,2 · F 0/33/2 · I 8
+   15.86  Streu  4 {wartet auf ihr Asset:4} · Bauten 110 {baum_birke:41,baum_kiefer:34,baum_eiche:19,baum_mammut:2,br · Karten 5,1 · F 0/29/1 · I 4
+   16.40  Streu  4 {wartet auf ihr Asset:4} · Bauten 53 {baum_birke:39,baum_mammut:2,baum_eiche:1,brunnen_dorf:1,mar · Karten 2,3 · F 0/26/3 · I 0
+   16.91  Streu  4 {fehlt:1,wartet auf ihr Asset:3} · Bauten 11 {baum_eiche:1,brunnen_dorf:1,marktstand_dorf:2,haus_gotisch: · Karten 0,2 · F 0/23/2 · I 1
+   17.41  Streu  4 {wartet auf ihr Asset:4} · Bauten 12 {baum_eiche:2,brunnen_dorf:1,marktstand_dorf:2,haus_gotisch: · Karten 0,3 · F 0/21/3 · I 0
+   17.97  Streu  4 {wartet auf ihr Asset:4} · Bauten 5 {brunnen_dorf:1,haus_gotisch:1,haus_schwarzwald:1,haus_alpen · Karten 0,1 · F 0/18/1 · I 1
+   18.47  Streu  0 {} · Bauten 3 {haus_schwarzwald:1,haus_alpenchalet:1,haus_skandinavisch:1} · Karten 0,0 · F 0/9/0 · I 0
+   18.96  Streu  0 {} · Bauten 2 {haus_schwarzwald:1,haus_alpenchalet:1} · Karten 0,0 · F 0/2/0 · I 0
+   19.26  Streu  0 {} · Bauten 1 {haus_schwarzwald:1} · Karten 0,0 · F 0/1/0 · I 1
+   19.51  Streu  0 {} · Bauten 0  · Karten 0,0 · F 23/36/0 · I 0
+
+-- Aufträge je Art (bis Weltbild beantwortet · Median Schlange / Werk ms · max Werk ms)
+  körper  185 gestellt · 126 beantwortet · Schlange 492 · Werk 3287 · max Werk 5821
+  karte   19 gestellt · 19 beantwortet · Schlange 0 · Werk 903 · max Werk 6415
+
+-- die im Fenster beantworteten Aufträge (Antwort ≥ Fenster, ≤ Weltbild + 0,2 s), nach Antwort
+  Antwort  11.86 · gestellt   7.18 · gesendet   7.18 · Schlange     0 · Werk  4673 · null m · build-asset:gras|2|2
+  Antwort  11.86 · gestellt   7.19 · gesendet   7.19 · Schlange     1 · Werk  4664 ·   11 m · build-asset:kathedrale|1|3
+  Antwort  11.86 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4669 ·   11 m · build-asset:ruine|1|2
+  Antwort  11.87 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4674 ·   11 m · build-asset:verkalkt|1|3
+  Antwort  11.87 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4666 ·   37 m · build-asset:kristalle|2|0
+  Antwort  11.87 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4665 ·   46 m · build-asset:kristalle|13|0
+  Antwort  11.87 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4665 ·   53 m · build-asset:kristalle|10|0
+  Antwort  11.88 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4686 ·   11 m · build-asset:verkalkt|1|2
+  Antwort  11.88 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4688 ·   11 m · build-asset:geisttor|1|2
+  Antwort  11.88 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4689 ·   11 m · build-asset:maschine|1|3
+  Antwort  11.88 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4690 ·   11 m · build-asset:maurentor|1|3
+  Antwort  11.89 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4694 ·   11 m · build-asset:maurentor|1|2
+  Antwort  11.89 · gestellt   7.21 · gesendet   7.62 · Schlange   411 · Werk  4266 ·   19 m · build-asset:alemannisch|1|3
+  Antwort  11.89 · gestellt   7.21 · gesendet  10.46 · Schlange  3252 · Werk  1425 ·   26 m · build-asset:kristalle|6|0
+  Antwort  11.89 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4699 ·   11 m · build-asset:kathedrale|1|2
+  Antwort  11.89 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4698 ·   25 m · build-asset:kristalle|3|0
+  Antwort  11.89 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4694 ·   42 m · build-asset:kristalle|1|0
+  Antwort  11.90 · gestellt   7.19 · gesendet   7.19 · Schlange     0 · Werk  4702 ·   11 m · build-asset:ruine|1|3
+  Antwort  11.90 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4694 ·   47 m · build-asset:kristalle|15|0
+  Antwort  11.90 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4699 ·   32 m · build-asset:strauch|1|1
+  Antwort  11.90 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4696 ·   44 m · build-asset:zacken|1|0
+  Antwort  11.90 · gestellt   7.20 · gesendet   7.20 · Schlange     0 · Werk  4696 ·   52 m · build-asset:kristalle|11|0
+  Antwort  11.90 · gestellt   7.21 · gesendet   7.62 · Schlange   407 · Werk  4281 ·   16 m · build-asset:zacken|3|0
+  Antwort  11.90 · gestellt   8.10 · gesendet   9.98 · Schlange  1885 · Werk  1920 ·   21 m · build-asset:tanne|3|1
+  Antwort  11.90 · gestellt   8.21 · gesendet   9.98 · Schlange  1768 · Werk  1919 ·   25 m · build-asset:fichte|3|1
+  Antwort  11.90 · gestellt   7.20 · gesendet  10.47 · Schlange  3269 · Werk  1431 ·   56 m · build-asset:kristalle|5|0
+  Antwort  11.90 · gestellt   8.50 · gesendet  10.47 · Schlange  1971 · Werk  1431 ·   56 m · build-asset:eiche|1|1
+  Antwort  11.90 · gestellt   8.33 · gesendet  10.47 · Schlange  2139 · Werk  1432 ·   33 m · build-asset:fichte|2|1
+  Antwort  11.91 · gestellt   8.26 · gesendet  10.47 · Schlange  2212 · Werk  1439 ·   27 m · build-asset:birke|3|1
+  Antwort  11.91 · gestellt   7.21 · gesendet  10.48 · Schlange  3274 · Werk  1426 ·   65 m · build-asset:zacken|2|0
+  Antwort  11.91 · gestellt  10.71 · gesendet  10.71 · Schlange     0 · Werk  1195 ·   21 m · bake-impostor:tanne|3|
+  Antwort  12.77 · gestellt   7.21 · gesendet  11.85 · Schlange  4643 · Werk   915 ·   46 m · build-asset:zacken|8|0
+  Antwort  12.77 · gestellt   7.21 · gesendet  11.88 · Schlange  4672 · Werk   893 ·   57 m · build-asset:kristalle|9|0
+  Antwort  12.77 · gestellt   8.24 · gesendet  10.46 · Schlange  2224 · Werk  2306 ·   26 m · build-asset:eiche|2|1
+  Antwort  12.77 · gestellt   7.21 · gesendet  11.88 · Schlange  4676 · Werk   892 ·   59 m · build-asset:kristalle|16|0
+  Antwort  12.78 · gestellt   9.46 · gesendet  11.89 · Schlange  2429 · Werk   888 ·   63 m · build-asset:feuerstelle|2|3
+  Antwort  12.78 · gestellt   7.20 · gesendet  10.48 · Schlange  3276 · Werk  2298 ·   53 m · build-asset:kristalle|7|0
+  Antwort  12.78 · gestellt   8.31 · gesendet  10.47 · Schlange  2168 · Werk  2303 ·   31 m · build-asset:birke|2|1
+  Antwort  12.78 · gestellt  11.14 · gesendet  11.86 · Schlange   712 · Werk   922 ·  116 m · build-asset:laterne|1|3
+  Antwort  12.78 · gestellt  11.14 · gesendet  11.86 · Schlange   717 · Werk   918 ·  116 m · build-asset:laterne|1|1
+  Antwort  12.78 · gestellt   7.61 · gesendet  11.87 · Schlange  4259 · Werk   916 ·   52 m · build-asset:feuerstelle|1|1
+  Antwort  12.78 · gestellt   7.20 · gesendet  11.87 · Schlange  4663 · Werk   917 ·   55 m · build-asset:kristalle|8|0
+  Antwort  12.79 · gestellt   7.21 · gesendet  10.48 · Schlange  3269 · Werk  2309 ·   69 m · build-asset:kristalle|4|0
+  Antwort  12.79 · gestellt   8.29 · gesendet  10.47 · Schlange  2182 · Werk  2313 ·   27 m · build-asset:fichte|1|1
+  Antwort  12.79 · gestellt   7.21 · gesendet  10.48 · Schlange  3265 · Werk  2310 ·   43 m · build-asset:zacken|10|0
+  Antwort  12.79 · gestellt   7.21 · gesendet  11.87 · Schlange  4655 · Werk   920 ·   52 m · build-asset:feuerstelle|1|3
+  Antwort  12.79 · gestellt   7.21 · gesendet  11.88 · Schlange  4675 · Werk   907 ·   58 m · build-asset:zacken|4|0
+  Antwort  12.79 · gestellt   9.46 · gesendet  11.88 · Schlange  2424 · Werk   904 ·   59 m · build-asset:zacken|5|0
+  Antwort  12.79 · gestellt   8.90 · gesendet  11.90 · Schlange  3000 · Werk   892 ·   83 m · build-asset:buche|1|1
+  Antwort  12.79 · gestellt   9.54 · gesendet  11.90 · Schlange  2355 · Werk   892 ·   71 m · build-asset:zacken|11|0
+  Antwort  12.79 · gestellt   9.45 · gesendet  11.90 · Schlange  2445 · Werk   892 ·   72 m · build-asset:zacken|6|0
+  Antwort  12.79 · gestellt   9.45 · gesendet  11.90 · Schlange  2447 · Werk   892 ·   74 m · build-asset:zacken|14|0
+  Antwort  12.79 · gestellt   9.45 · gesendet  11.90 · Schlange  2445 · Werk   892 ·   73 m · build-asset:zacken|12|0
+  Antwort  12.79 · gestellt   7.21 · gesendet  11.90 · Schlange  4694 · Werk   890 ·   74 m · build-asset:kristalle|14|0
+  Antwort  12.79 · gestellt   8.51 · gesendet  11.87 · Schlange  3354 · Werk   925 ·   58 m · build-asset:birke|1|1
+  Antwort  12.79 · gestellt   9.46 · gesendet  11.89 · Schlange  2430 · Werk   906 ·   63 m · build-asset:feuerstelle|2|1
+  Antwort  13.38 · gestellt  11.35 · gesendet  12.78 · Schlange  1427 · Werk   596 ·   83 m · build-asset:schwarzwald|13|2
+  Antwort  13.38 · gestellt  12.08 · gesendet  12.08 · Schlange     0 · Werk  1294 ·   23 m · bake-impostor:tanne|2|
+  Antwort  13.38 · gestellt   7.60 · gesendet   7.60 · Schlange     0 · Werk  5780 ·   36 m · bake-impostor:strauch|1|
+  Antwort  13.38 · gestellt  11.61 · gesendet  11.91 · Schlange   296 · Werk  1476 ·   83 m · build-asset:schwarzwald|13|3
+  Antwort  14.01 · gestellt  11.61 · gesendet  11.89 · Schlange   282 · Werk  2121 ·   65 m · build-asset:skandinavisch|6|3
+  Antwort  14.02 · gestellt   7.60 · gesendet   7.60 · Schlange     0 · Werk  6415 ·   48 m · bake-impostor:weide|1|
+  Antwort  14.02 · gestellt   8.44 · gesendet  12.77 · Schlange  4328 · Werk  1251 ·   88 m · build-asset:mammut|1|1
+  Antwort  14.03 · gestellt   9.15 · gesendet  12.77 · Schlange  3615 · Werk  1257 ·   88 m · build-asset:zacken|15|0
+  Antwort  14.03 · gestellt  11.61 · gesendet  12.77 · Schlange  1162 · Werk  1252 ·   89 m · build-asset:schwarzwald|11|3
+  Antwort  14.03 · gestellt  11.40 · gesendet  11.89 · Schlange   492 · Werk  2140 ·   65 m · build-asset:skandinavisch|6|2
+  Antwort  14.03 · gestellt  11.33 · gesendet  11.90 · Schlange   575 · Werk  2126 ·  111 m · build-asset:wandlaterne|1|3
+  Antwort  14.03 · gestellt  11.33 · gesendet  11.90 · Schlange   576 · Werk  2125 ·  111 m · build-asset:wandlaterne|1|1
+  Antwort  14.03 · gestellt   7.21 · gesendet  11.90 · Schlange  4696 · Werk  2126 ·   82 m · build-asset:kristalle|12|0
+  Antwort  14.03 · gestellt  13.39 · gesendet  13.39 · Schlange     0 · Werk   639 ·   25 m · bake-impostor:tanne|1|
+  Antwort  14.45 · gestellt  13.39 · gesendet  13.39 · Schlange     0 · Werk  1055 ·   25 m · bake-impostor:fichte|3|
+  Antwort  14.69 · gestellt  11.36 · gesendet  12.78 · Schlange  1414 · Werk  1919 ·   90 m · build-asset:schwarzwald|15|2
+  Antwort  14.70 · gestellt   8.89 · gesendet  11.89 · Schlange  2999 · Werk  2805 ·   73 m · build-asset:buche|2|1
+  Antwort  14.70 · gestellt   7.21 · gesendet  11.89 · Schlange  4684 · Werk  2806 ·   92 m · build-asset:zacken|9|0
+  Antwort  14.70 · gestellt   9.15 · gesendet  11.90 · Schlange  2743 · Werk  2804 ·   95 m · build-asset:zacken|16|0
+  Antwort  15.02 · gestellt  11.61 · gesendet  12.78 · Schlange  1166 · Werk  2242 ·   90 m · build-asset:schwarzwald|15|3
+  Antwort  15.02 · gestellt  11.61 · gesendet  12.79 · Schlange  1176 · Werk  2232 ·  116 m · build-asset:schwarzwald|11|3
+  Antwort  15.02 · gestellt  14.46 · gesendet  14.46 · Schlange     0 · Werk   562 ·   27 m · bake-impostor:fichte|1|
+  Antwort  15.33 · gestellt   8.93 · gesendet  11.90 · Schlange  2969 · Werk  3429 ·   74 m · build-asset:eiche|3|1
+  Antwort  15.33 · gestellt  14.04 · gesendet  14.04 · Schlange     0 · Werk  1288 ·   26 m · bake-impostor:eiche|2|
+  Antwort  15.85 · gestellt  11.33 · gesendet  12.79 · Schlange  1458 · Werk  3061 ·  116 m · build-asset:alpenchalet|12|2
+  Antwort  15.85 · gestellt  14.04 · gesendet  14.04 · Schlange     0 · Werk  1804 ·   27 m · bake-impostor:birke|3|
+  Antwort  15.86 · gestellt  11.37 · gesendet  12.77 · Schlange  1405 · Werk  3087 ·   89 m · build-asset:schwarzwald|11|2
+  Antwort  15.86 · gestellt  11.38 · gesendet  12.78 · Schlange  1399 · Werk  3079 ·   97 m · build-asset:schwarzwald|3|2
+  Antwort  15.86 · gestellt  11.61 · gesendet  12.79 · Schlange  1178 · Werk  3068 ·  116 m · build-asset:alpenchalet|12|3
+  Antwort  15.86 · gestellt  15.36 · gesendet  15.36 · Schlange     0 · Werk   497 ·   31 m · bake-impostor:fichte|2|
+  Antwort  15.86 · gestellt  15.05 · gesendet  15.05 · Schlange     0 · Werk   810 ·   28 m · bake-impostor:eiche|1|
+  Antwort  16.26 · gestellt  11.61 · gesendet  12.78 · Schlange  1167 · Werk  3478 ·   97 m · build-asset:schwarzwald|3|3
+  Antwort  16.26 · gestellt  11.61 · gesendet  12.79 · Schlange  1173 · Werk  3472 ·  106 m · build-asset:gotisch|12|3
+  Antwort  16.26 · gestellt  11.34 · gesendet  12.79 · Schlange  1447 · Werk  3468 ·  126 m · build-asset:schwarzwald|6|2
+  Antwort  16.60 · gestellt  15.95 · gesendet  15.95 · Schlange     0 · Werk   648 ·   88 m · bake-impostor:mammut|1|
+  Antwort  16.66 · gestellt  15.95 · gesendet  15.95 · Schlange     0 · Werk   707 ·   57 m · bake-impostor:birke|1|
+  Antwort  16.79 · gestellt  11.61 · gesendet  12.79 · Schlange  1178 · Werk  4002 ·  126 m · build-asset:schwarzwald|6|3
+  Antwort  16.85 · gestellt  11.38 · gesendet  12.79 · Schlange  1416 · Werk  4061 ·  127 m · build-asset:alpenchalet|9|2
+  Antwort  16.85 · gestellt  15.95 · gesendet  15.95 · Schlange     0 · Werk   902 ·   31 m · bake-impostor:birke|2|
+  Antwort  16.90 · gestellt  11.16 · gesendet  13.38 · Schlange  2213 · Werk  3528 ·  129 m · build-asset:brunnen|1|1
+  Antwort  17.06 · gestellt  11.37 · gesendet  12.79 · Schlange  1421 · Werk  4274 ·  112 m · build-asset:alpenchalet|12|2
+  Antwort  17.13 · gestellt  11.33 · gesendet  11.91 · Schlange   572 · Werk  5228 ·   98 m · build-asset:schwarzwald|13|2
+  Antwort  17.32 · gestellt  11.34 · gesendet  13.38 · Schlange  2042 · Werk  3938 ·  129 m · build-asset:schwarzwald|4|2
+  Antwort  17.35 · gestellt  11.61 · gesendet  12.79 · Schlange  1174 · Werk  4560 ·  112 m · build-asset:alpenchalet|12|3
+  Antwort  17.38 · gestellt  11.16 · gesendet  12.79 · Schlange  1622 · Werk  4589 ·  115 m · build-asset:marktstand|1|3
+  Antwort  17.38 · gestellt  16.67 · gesendet  16.67 · Schlange     0 · Werk   708 ·  214 m · bake-impostor:karst|1|
+  Antwort  17.45 · gestellt  11.16 · gesendet  12.79 · Schlange  1623 · Werk  4659 ·  115 m · build-asset:marktstand|1|1
+  Antwort  17.51 · gestellt  16.61 · gesendet  16.61 · Schlange     0 · Werk   903 ·  129 m · bake-impostor:eiche|3|
+  Antwort  17.75 · gestellt  11.61 · gesendet  12.78 · Schlange  1169 · Werk  4972 ·   98 m · build-asset:schwarzwald|13|3
+  Antwort  17.89 · gestellt  11.61 · gesendet  14.02 · Schlange  2407 · Werk  3865 ·  129 m · build-asset:schwarzwald|4|3
+  Antwort  17.89 · gestellt  11.39 · gesendet  12.79 · Schlange  1400 · Werk  5099 ·  116 m · build-asset:schwarzwald|11|2
+  Antwort  17.93 · gestellt   7.83 · gesendet  14.03 · Schlange  6193 · Werk  3900 · null m · build-asset:blume|1|0
+  Antwort  17.93 · gestellt  17.00 · gesendet  17.00 · Schlange     0 · Werk   926 ·  253 m · bake-impostor:buche|2|
+  Antwort  17.97 · gestellt   7.83 · gesendet  14.01 · Schlange  6180 · Werk  3955 · null m · build-asset:blume|2|0
+  Antwort  18.08 · gestellt  17.39 · gesendet  17.39 · Schlange     0 · Werk   690 ·  254 m · bake-impostor:buche|1|
+  Antwort  18.08 · gestellt   8.37 · gesendet  14.70 · Schlange  6331 · Werk  3385 · null m · build-asset:geroell|1|0
+  Antwort  18.23 · gestellt  11.39 · gesendet  14.03 · Schlange  2636 · Werk  4205 ·  132 m · build-asset:skandinavisch|14|2
+  Antwort  18.34 · gestellt  11.32 · gesendet  12.78 · Schlange  1461 · Werk  5559 ·  106 m · build-asset:gotisch|12|2
+  Antwort  18.39 · gestellt  11.16 · gesendet  12.79 · Schlange  1631 · Werk  5597 ·  129 m · build-asset:brunnen|1|3
+  Antwort  18.39 · gestellt  11.61 · gesendet  12.79 · Schlange  1180 · Werk  5598 ·  127 m · build-asset:alpenchalet|9|3
+  Antwort  18.39 · gestellt  11.61 · gesendet  14.69 · Schlange  3081 · Werk  3697 ·  140 m · build-asset:alpenchalet|16|3
+  Antwort  18.39 · gestellt  17.07 · gesendet  17.07 · Schlange     0 · Werk  1321 ·   16 m · build-asset:blume|1|2
+  Antwort  18.39 · gestellt  17.14 · gesendet  17.14 · Schlange     0 · Werk  1252 ·   16 m · build-asset:blume|2|2
+  Antwort  18.39 · gestellt  17.78 · gesendet  17.78 · Schlange     0 · Werk   611 ·   23 m · build-asset:totstamm|1|1
+  Antwort  18.50 · gestellt  11.61 · gesendet  14.03 · Schlange  2415 · Werk  4477 ·  132 m · build-asset:skandinavisch|14|3
+  Antwort  18.55 · gestellt  11.38 · gesendet  14.70 · Schlange  3316 · Werk  3853 ·  145 m · build-asset:schwarzwald|9|2
+  Antwort  18.82 · gestellt  11.35 · gesendet  14.03 · Schlange  2680 · Werk  4797 ·  137 m · build-asset:schwarzwald|8|2
+  Antwort  18.92 · gestellt  11.61 · gesendet  14.70 · Schlange  3087 · Werk  4218 ·  145 m · build-asset:schwarzwald|9|3
+  Antwort  18.94 · gestellt  17.38 · gesendet  17.38 · Schlange     0 · Werk  1558 ·   20 m · build-asset:gestruepp|1|1
+  Antwort  18.94 · gestellt  17.78 · gesendet  17.78 · Schlange     0 · Werk  1158 ·   24 m · build-asset:farn|2|1
+  Antwort  18.95 · gestellt  17.78 · gesendet  17.78 · Schlange     0 · Werk  1168 ·   25 m · build-asset:farn|1|1
+  Antwort  19.26 · gestellt  11.61 · gesendet  14.03 · Schlange  2416 · Werk  5233 ·  137 m · build-asset:schwarzwald|8|3
+
+-- bis Weltbild NICHT beantwortet (gestellt ≤ Weltbild)
+  gestellt  11.37 · gesendet  14.03 ·  140 m · build-asset:alpenchalet|16|2
+
+-- Aufträge ohne Ort (d = null), Körper und Karten, nicht Vorrat: gestellt · Schlange · Werk · Antwort
+    7.18 · Schlange     0 · Werk  3292 · Antwort  10.47 · build-asset:gras|2|1
+    7.18 · Schlange     1 · Werk  3295 · Antwort  10.48 · build-asset:gras|1|1
+    7.18 · Schlange     0 · Werk  4673 · Antwort  11.86 · build-asset:gras|2|2
+    7.18 · Schlange     0 · Werk  3291 · Antwort  10.47 · build-asset:gras|1|2
+    7.83 · Schlange  6180 · Werk  3955 · Antwort  17.97 · build-asset:blume|2|0
+    7.83 · Schlange  6193 · Werk  3900 · Antwort  17.93 · build-asset:blume|1|0
+    8.37 · Schlange  6331 · Werk  3385 · Antwort  18.08 · build-asset:geroell|1|0
+   19.39 · Schlange     1 · Werk  null · Antwort   –   · build-asset:deer|0|0
+   19.39 · Schlange     0 · Werk   532 · Antwort  19.93 · build-asset:deer|0|1
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:wolf|0|0
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:wolf|0|1
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:fox|0|0
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:fox|0|1
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:bear|0|0
+   19.39 · Schlange     0 · Werk  null · Antwort   –   · build-asset:bear|0|1
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|1|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|2|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|3|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|4|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|5|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|6|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|7|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|8|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|9|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|10|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|11|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|12|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|13|0
+   19.40 · Schlange     1 · Werk  null · Antwort   –   · build-asset:findling|14|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|15|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:findling|16|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|1|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|2|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|3|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|4|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|5|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|6|0
+   19.40 · Schlange     1 · Werk  null · Antwort   –   · build-asset:basalt|7|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|8|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|9|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|10|0
+   19.40 · Schlange     0 · Werk  null · Antwort   –   · build-asset:basalt|11|0
+   19.40 · Schlange   452 · Werk  null · Antwort   –   · build-asset:basalt|12|0
+   19.40 · Schlange   527 · Werk  null · Antwort   –   · build-asset:basalt|13|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:basalt|14|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:basalt|15|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:basalt|16|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:zacken|7|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:zacken|13|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|1|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|2|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|3|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|4|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|5|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|6|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|7|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|8|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|9|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|10|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|11|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|12|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|13|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|14|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|15|0
+   19.40 · Schlange  null · Werk  null · Antwort   –   · build-asset:sediment|16|0
+
+-- Werk-Last je Gruppe bis Weltbild (Aufträge · Summe Werk-s — Summe über parallele Aufträge)
+  kristalle|*|0           16 · 46.0 s
+  schwarzwald|*|2         10 · 35.1 s
+  schwarzwald|*|3         10 · 33.0 s
+  karte                   19 · 30.1 s
+  zacken|*|0              14 · 25.9 s
+  alpenchalet|*|3          4 · 16.9 s
+  alpenchalet|*|2          3 · 11.4 s
+  tanne|*|1                3 · 8.6 s
+  gras|*|2                 2 · 8.0 s
+  blume|*|0                2 · 7.9 s
+  eiche|*|1                3 · 7.2 s
+  skandinavisch|*|3        2 · 6.6 s
+  gras|*|1                 2 · 6.6 s
+  skandinavisch|*|2        2 · 6.3 s
+
+-- echte Bauzeit (FIFO je Bahn) · Bahnen: werk 12.3 s · werk1 11.8 s · werk2 12.2 s · bäcker 10.0 s · bäcker1 10.3 s · bäcker2 9.8 s (bis Weltbild)
+  karte                   19 Aufträge · Bauzeit bis Weltbild 30.10 s · je Auftrag 1.58 s
+  schwarzwald|*|2         10 Aufträge · Bauzeit bis Weltbild 5.54 s · je Auftrag 0.55 s
+  schwarzwald|*|3         10 Aufträge · Bauzeit bis Weltbild 4.24 s · je Auftrag 0.42 s
+  mensch|*|0               1 Aufträge · Bauzeit bis Weltbild 3.38 s · je Auftrag 3.38 s
+  drachentor|*|3           1 Aufträge · Bauzeit bis Weltbild 2.85 s · je Auftrag 2.85 s
+  drachentor|*|2           1 Aufträge · Bauzeit bis Weltbild 2.84 s · je Auftrag 2.84 s
+  alpenchalet|*|2          4 Aufträge · Bauzeit bis Weltbild 1.69 s · je Auftrag 0.57 s
+  skandinavisch|*|2        2 Aufträge · Bauzeit bis Weltbild 1.54 s · je Auftrag 0.77 s
+  eiche|*|1                3 Aufträge · Bauzeit bis Weltbild 1.51 s · je Auftrag 0.51 s
+  verkalkt|*|3             1 Aufträge · Bauzeit bis Weltbild 1.39 s · je Auftrag 1.39 s
+  kathedrale|*|3           1 Aufträge · Bauzeit bis Weltbild 1.38 s · je Auftrag 1.38 s
+  gras|*|2                 2 Aufträge · Bauzeit bis Weltbild 1.37 s · je Auftrag 0.69 s
+  skandinavisch|*|3        2 Aufträge · Bauzeit bis Weltbild 1.34 s · je Auftrag 0.67 s
+  mensch|*|1               1 Aufträge · Bauzeit bis Weltbild 1.02 s · je Auftrag 1.02 s
+  birke|*|1                3 Aufträge · Bauzeit bis Weltbild 0.89 s · je Auftrag 0.30 s
+  zacken|*|0              14 Aufträge · Bauzeit bis Weltbild 0.88 s · je Auftrag 0.06 s
+
+-- Körper-Züge, die im Fenster in den Cache kamen (tZ → tF)
+    7.19 →  11.00  (3.81 s)  geisttor|1|3
+    7.15 →  11.82  (4.67 s)  tanne|1|1
+    7.18 →  11.83  (4.65 s)  gras|1|1
+    7.19 →  11.84  (4.65 s)  maschine|1|2
+    7.15 →  11.85  (4.70 s)  karst|1|1
+    7.18 →  12.71  (5.53 s)  gras|2|2
+    7.19 →  12.72  (5.53 s)  kathedrale|1|3
+    7.19 →  12.73  (5.53 s)  ruine|1|2
+    7.19 →  12.73  (5.54 s)  verkalkt|1|3
+    7.20 →  12.74  (5.54 s)  kristalle|2|0
+    7.20 →  12.75  (5.55 s)  kristalle|13|0
+    7.20 →  12.76  (5.55 s)  kristalle|10|0
+    7.19 →  12.76  (5.57 s)  verkalkt|1|2
+    7.19 →  13.31  (6.12 s)  geisttor|1|2
+    7.19 →  13.32  (6.13 s)  maschine|1|3
+    7.19 →  13.33  (6.13 s)  maurentor|1|3
+    7.19 →  13.34  (6.14 s)  maurentor|1|2
+    7.21 →  13.34  (6.13 s)  alemannisch|1|3|ov:170117b9.261
+    7.21 →  13.35  (6.14 s)  kristalle|6|0
+    7.19 →  13.36  (6.17 s)  kathedrale|1|2
+    7.20 →  13.37  (6.17 s)  kristalle|3|0
+    7.20 →  13.92  (6.71 s)  kristalle|1|0
+    7.19 →  13.94  (6.75 s)  ruine|1|3
+    7.20 →  13.95  (6.74 s)  kristalle|15|0
+    7.20 →  13.96  (6.76 s)  strauch|1|1
+    7.20 →  13.96  (6.76 s)  zacken|1|0
+    7.20 →  13.97  (6.76 s)  kristalle|11|0
+    7.21 →  13.97  (6.76 s)  zacken|3|0
+    8.10 →  13.98  (5.88 s)  tanne|3|1
+    8.21 →  14.39  (6.17 s)  fichte|3|1
+    8.50 →  14.39  (5.89 s)  eiche|1|1
+    7.20 →  14.40  (7.19 s)  kristalle|5|0
+    8.33 →  14.41  (6.07 s)  fichte|2|1
+    8.26 →  14.41  (6.16 s)  birke|3|1
+    7.21 →  14.42  (7.21 s)  zacken|2|0
+    7.21 →  14.43  (7.22 s)  zacken|8|0
+    7.21 →  14.43  (7.23 s)  kristalle|9|0
+    8.24 →  14.64  (6.40 s)  eiche|2|1
+    7.21 →  14.66  (7.45 s)  kristalle|16|0
+    9.46 →  14.67  (5.21 s)  feuerstelle|2|3
+    8.31 →  14.67  (6.36 s)  birke|2|1
+    7.20 →  14.68  (7.47 s)  kristalle|7|0
+   11.14 →  14.68  (3.53 s)  laterne|1|3
+   11.14 →  14.68  (3.54 s)  laterne|1|1
+    7.61 →  14.69  (7.08 s)  feuerstelle|1|1
+    7.20 →  14.97  (7.77 s)  kristalle|8|0
+    8.29 →  14.98  (6.69 s)  fichte|1|1
+    7.21 →  14.99  (7.78 s)  kristalle|4|0
+    7.21 →  14.99  (7.78 s)  zacken|10|0
+    7.21 →  15.00  (7.79 s)  feuerstelle|1|3
+    7.21 →  15.00  (7.80 s)  zacken|4|0
+    9.46 →  15.01  (5.55 s)  zacken|5|0
+    8.90 →  15.01  (6.11 s)  buche|1|1
+    9.54 →  15.15  (5.61 s)  zacken|11|0
+    9.45 →  15.16  (5.71 s)  zacken|6|0
+    9.45 →  15.16  (5.71 s)  zacken|12|0
+    9.45 →  15.16  (5.71 s)  zacken|14|0
+    7.21 →  15.17  (7.96 s)  kristalle|14|0
+    8.51 →  15.17  (6.66 s)  birke|1|1
+    9.46 →  15.17  (5.71 s)  feuerstelle|2|1
+   11.35 →  15.18  (3.82 s)  schwarzwald|13|2|ov:63183697.473
+   11.61 →  15.30  (3.69 s)  schwarzwald|13|3|ov:63183697.473
+   11.61 →  15.31  (3.70 s)  skandinavisch|6|3|ov:64a4c7f0.475
+    8.44 →  15.31  (6.87 s)  mammut|1|1
+    9.15 →  15.32  (6.16 s)  zacken|15|0
+   11.61 →  15.32  (3.71 s)  schwarzwald|11|3|ov:3e3ed698.463
+   11.40 →  15.32  (3.93 s)  skandinavisch|6|2|ov:64a4c7f0.475
+   11.33 →  15.33  (4.00 s)  wandlaterne|1|3
+   11.33 →  15.33  (4.00 s)  wandlaterne|1|1
+    7.21 →  15.83  (8.62 s)  kristalle|12|0
+   11.36 →  15.83  (4.47 s)  schwarzwald|15|2|ov:223f7a54.472
+    8.89 →  15.83  (6.94 s)  buche|2|1
+    7.21 →  15.84  (8.63 s)  zacken|9|0
+    9.15 →  15.84  (6.68 s)  zacken|16|0
+   11.61 →  15.84  (4.23 s)  schwarzwald|11|3|ov:cb5eca29.473
+   11.61 →  15.84  (4.23 s)  schwarzwald|15|3|ov:223f7a54.472
+    8.93 →  15.84  (6.91 s)  eiche|3|1
+   11.33 →  16.24  (4.92 s)  alpenchalet|12|2|ov:e18295c.473
+   11.37 →  16.25  (4.88 s)  schwarzwald|11|2|ov:3e3ed698.463
+   11.38 →  16.25  (4.87 s)  schwarzwald|3|2|ov:41948277.473
+   11.61 →  16.25  (4.64 s)  alpenchalet|12|3|ov:e18295c.473
+   11.61 →  16.35  (4.74 s)  gotisch|12|3|ov:edcc8866.479
+   11.61 →  16.35  (4.74 s)  schwarzwald|3|3|ov:41948277.473
+   11.34 →  16.35  (5.01 s)  schwarzwald|6|2|ov:9077280.470
+   11.61 →  16.85  (5.24 s)  schwarzwald|6|3|ov:9077280.470
+   11.38 →  16.90  (5.53 s)  alpenchalet|9|2|ov:7323c079.472
+   11.16 →  17.06  (5.90 s)  brunnen|1|1
+   11.37 →  17.13  (5.76 s)  alpenchalet|12|2|ov:1093e85c.473
+   11.33 →  17.21  (5.87 s)  schwarzwald|13|2|ov:8198aa54.471
+   11.34 →  17.35  (6.01 s)  schwarzwald|4|2|ov:9935b486.473
+   11.61 →  17.37  (5.76 s)  alpenchalet|12|3|ov:1093e85c.473
+   11.16 →  17.41  (6.25 s)  marktstand|1|3
+   11.16 →  17.48  (6.31 s)  marktstand|1|1
+   11.61 →  17.78  (6.16 s)  schwarzwald|13|3|ov:8198aa54.471
+   11.61 →  17.93  (6.31 s)  schwarzwald|4|3|ov:9935b486.473
+   11.39 →  17.93  (6.54 s)  schwarzwald|11|2|ov:cb5eca29.473
+    7.83 →  17.97  (10.13 s)  blume|1|0
+    7.83 →  18.00  (10.17 s)  blume|2|0
+    8.37 →  18.22  (9.86 s)  geroell|1|0
+   11.39 →  18.26  (6.87 s)  skandinavisch|14|2|ov:519be5c6.477
+   11.32 →  18.39  (7.07 s)  gotisch|12|2|ov:edcc8866.479
+   11.61 →  18.42  (6.81 s)  alpenchalet|16|3|ov:fd3882cb.472
+   17.07 →  18.42  (1.35 s)  blume|1|2
+   11.16 →  18.42  (7.26 s)  brunnen|1|3
+   11.61 →  18.42  (6.81 s)  alpenchalet|9|3|ov:7323c079.472
+   17.14 →  18.42  (1.28 s)  blume|2|2
+   17.78 →  18.42  (0.64 s)  totstamm|1|1
+   11.61 →  18.52  (6.91 s)  skandinavisch|14|3|ov:519be5c6.477
+   11.38 →  18.57  (7.18 s)  schwarzwald|9|2|ov:c5e87e4.474
+   11.35 →  18.86  (7.52 s)  schwarzwald|8|2|ov:49901c4e.473
+   11.61 →  18.93  (7.31 s)  schwarzwald|9|3|ov:c5e87e4.474
+   17.38 →  18.95  (1.57 s)  gestruepp|1|1
+   17.78 →  18.95  (1.17 s)  farn|2|1
+   17.78 →  18.96  (1.18 s)  farn|1|1
+   11.61 →  19.28  (7.67 s)  schwarzwald|8|3|ov:49901c4e.473
+
+-- Karten (send → ende)
+    7.19 →  10.46  3.27 s  fimp:gt|6
+   10.71 →  11.91  1.20 s  fimp:tanne|3
+   12.08 →  13.38  1.29 s  fimp:tanne|2
+    7.60 →  13.38  5.78 s  fimp:strauch|1
+    7.60 →  14.02  6.42 s  fimp:weide|1
+   13.39 →  14.03  0.64 s  fimp:tanne|1
+   13.39 →  14.45  1.05 s  fimp:fichte|3
+   14.46 →  15.02  0.56 s  fimp:fichte|1
+   14.04 →  15.33  1.29 s  fimp:eiche|2
+   14.05 →  15.85  1.80 s  fimp:birke|3
+   15.36 →  15.86  0.50 s  fimp:fichte|2
+   15.05 →  15.86  0.81 s  fimp:eiche|1
+   15.95 →  16.60  0.65 s  fimp:mammut|1
+   15.95 →  16.66  0.71 s  fimp:birke|1
+   15.95 →  16.85  0.90 s  fimp:birke|2
+   16.67 →  17.38  0.71 s  fimp:karst|1
+   16.61 →  17.51  0.90 s  fimp:eiche|3
+   17.00 →  17.93  0.93 s  fimp:buche|2
+   17.39 →  18.08  0.69 s  fimp:buche|1
+
+-- Streu-Regionen (_scatterRegion: t · ms · Zustand danach)
+  -1,-1    7.08/100.6ms/wartet auf ihr Asset ·   7.39/207.1ms/wartet auf ihr Asset ·   7.63/9.8ms/wartet auf ihr Asset ·  16.91/83.5ms/wartet auf ihr Asset ·  18.23/13.5ms/steht
+  0,-1     7.74/91.8ms/wartet auf ihr Asset ·   7.86/118.7ms/wartet auf ihr Asset ·   8.37/7.5ms/wartet auf ihr Asset ·  18.26/50.9ms/steht
+  -1,0     8.55/100.2ms/wartet auf ihr Asset ·   8.70/57.3ms/wartet auf ihr Asset ·  18.09/65.9ms/steht
+  0,0      8.85/100.3ms/wartet auf ihr Asset ·   9.09/60.8ms/wartet auf ihr Asset ·  10.57/17.3ms/wartet auf ihr Asset ·  11.21/100.2ms/wartet auf ihr Asset ·  11.91/52.5ms/wartet auf ihr Asset ·  18.00/59.8ms/wartet auf ihr Asset ·  18.34/20.7ms/steht
+
+-- Ingest im Fenster: 114 freigegeben, Wartezeit Median 1254 ms, max 2463 ms
+-- Gruppen-Bau im Fenster: 114 Bauten, Summe 292 ms, größte: ruine/2 157.8ms · kathedrale/2 17.1ms · verkalkt/2 13.6ms · maurentor/2 11.7ms · maschine/2 11.1ms
+
+-- CPU-Profil: 14827 Proben, Marken 13 / Sync 19, Treffer des Versatzes 13
+   Fenster  11.00– 19.39 s: 8393 ms gesampelt
+     4.1 %     348 ms  build three.webgpu.min.js:6
+     3.4 %     289 ms  _ortGestaltSame 20c.js:783
+     2.5 %     213 ms  _waldPlanKasten 20a.js:470
+     1.9 %     158 ms  _foundryBuildGroup 20c.js:327
+     1.9 %     156 ms  (program) :0
+     1.7 %     147 ms  (garbage collector) :0
+     1.6 %     137 ms  _closestPtTri 11a.js:650
+     1.6 %     135 ms  _foundryEnabled 20a.js:696
+     1.6 %     133 ms  (idle) :0
+     1.5 %     129 ms  getDataFromNode three.webgpu.min.js:6
+     1.5 %     122 ms  _applyCrossLodGeomorph 11a.js:316
+     1.3 %     107 ms  createAttribute three.webgpu.min.js:6
+     1.2 %     103 ms  _tickScatterLod 15b.js:1536
+     1.2 %     103 ms  _forestDartSteht 20d.js:13
+     1.1 %      95 ms  _hasStack three.webgpu.min.js:6
+     1.1 %      92 ms  computeCompoundTags 16.js:2325
+     1.0 %      88 ms  _bodenKarteAusMesh 08.js:1419
+     1.0 %      87 ms  computePartTags 16.js:2303
+     1.0 %      86 ms  _foundryBaumHoehe 15b.js:2205
+     0.9 %      76 ms  getX three.core.min.js:6
+     0.9 %      76 ms  tickArchitectureCulling 20d.js:2742
+     0.8 %      68 ms  _getChildren three.webgpu.min.js:6
+     0.8 %      66 ms  _forestStehtFrei 20d.js:65
+     0.7 %      63 ms  erdbauY gelaende-core.js:1384
+     0.7 %      61 ms  _forestCellDarts 20a.js:365
+     0.7 %      59 ms  getData three.webgpu.min.js:6
+     0.7 %      58 ms  generate three.webgpu.min.js:6
+     0.7 %      58 ms  _satzPacke 17b.js:749
+     0.7 %      57 ms  quadratAbstand 11a.js:345
+     0.7 %      55 ms  _bakeRegionFields 15b.js:494
+   inklusive (Top 30):
+    78.9 %    6618 ms  e three.webgpu.min.js:6
+    78.8 %    6612 ms  loop 25a.js:1914
+    39.1 %    3279 ms  _loopVoxelStreaming 25b.js:1874
+    39.0 %    3278 ms  _runFrameScheduler 25b.js:1840
+    27.8 %    2332 ms  _loopRender 25c.js:2245
+    25.6 %    2146 ms  render three.webgpu.min.js:6
+    25.6 %    2145 ms  _renderScene three.webgpu.min.js:6
+    25.6 %    2145 ms  renderer._renderScene 07.js:1179
+    25.4 %    2131 ms  renderer._renderObjectDirect 07.js:1451
+    25.4 %    2131 ms  renderObject three.webgpu.min.js:6
+    25.4 %    2131 ms  renderer.renderObject 07.js:1352
+    25.4 %    2131 ms  _renderObjects three.webgpu.min.js:6
+    25.3 %    2127 ms  zeichne 07.js:1416
+    25.1 %    2107 ms  updateBefore three.webgpu.min.js:6
+    25.1 %    2107 ms  updateBeforeNode three.webgpu.min.js:6
+    25.1 %    2106 ms  updateBefore 25c.js:174
+    19.9 %    1669 ms  getForRender three.webgpu.min.js:6
+    19.2 %    1613 ms  needsRefresh three.webgpu.min.js:6
+    19.0 %    1592 ms  build three.webgpu.min.js:6
+    19.0 %    1592 ms  getNodeBuilderState three.webgpu.min.js:6
+    19.0 %    1592 ms  getMonitor three.webgpu.min.js:6
+    18.9 %    1587 ms  i three.webgpu.min.js:6
+    14.1 %    1186 ms  P.<computed> :30
+    11.3 %     952 ms  _ortGestaltSame 20c.js:783
+    10.8 %     905 ms  _lodTreeVisHeight 15b.js:2178
+    10.3 %     863 ms  _foundrySichtHoehe 15b.js:2194
+    10.1 %     849 ms  _foundryBaumHoehe 15b.js:2205
+     9.5 %     795 ms  _foundryRewarmColdTrees 20c.js:648
+     9.4 %     792 ms  _foundryEntryReady 20c.js:597
+     9.2 %     774 ms  _dispatchFrameJobs 25b.js:1496

@@ -1,0 +1,23 @@
+W1   Weltbild 18.49 · Streu 18.45 · Bauten 17.17 · Karten 18.34 · Schwanz Streu
+W2   Weltbild 19.96 · Streu 19.85 · Bauten 19.47 · Karten 18.36 · Schwanz Streu
+W3   Weltbild 22.36 · Streu 22.30 · Bauten 21.06 · Karten 22.14 · Schwanz Streu
+W4   Weltbild 19.87 · Streu 19.67 · Bauten 19.56 · Karten 19.56 · Schwanz Streu
+W5   Weltbild 18.67 · Streu 17.39 · Bauten 18.45 · Karten 17.24 · Schwanz Bauten
+W6   Weltbild 18.70 · Streu 18.61 · Bauten 17.80 · Karten 18.37 · Schwanz Streu
+W7   Weltbild 19.78 · Streu 19.44 · Bauten 19.33 · Karten 17.94 · Schwanz Streu
+W8   Weltbild 19.24 · Streu 17.76 · Bauten 19.16 · Karten 17.44 · Schwanz Bauten
+S1   Weltbild 20.89 · Streu 20.76 · Bauten 18.86 · Karten 20.76 · Schwanz Streu
+S2   Weltbild 19.11 · Streu 18.96 · Bauten 18.34 · Karten 18.63 · Schwanz Streu
+S3   Weltbild 19.57 · Streu 19.35 · Bauten 19.35 · Karten 18.66 · Schwanz Streu
+S4   Weltbild 20.14 · Streu 19.06 · Bauten 19.84 · Karten 18.94 · Schwanz Bauten
+W9   Weltbild 21.03 · Streu 20.94 · Bauten 19.67 · Karten 20.84 · Schwanz Streu
+W10  Weltbild 21.16 · Streu 21.03 · Bauten 19.96 · Karten 21.03 · Schwanz Streu
+W11  Weltbild 20.36 · Streu 18.96 · Bauten 20.17 · Karten 18.81 · Schwanz Bauten
+W12  Weltbild 20.49 · Streu 20.36 · Bauten 20.07 · Karten 19.07 · Schwanz Streu
+T1   Weltbild 19.39 · Streu 18.26 · Bauten 19.26 · Karten 17.97 · Schwanz Bauten
+T2   Weltbild 19.11 · Streu 18.16 · Bauten 18.87 · Karten 18.16 · Schwanz Bauten
+T3   Weltbild 20.79 · Streu 18.97 · Bauten 20.65 · Karten 18.77 · Schwanz Bauten
+T4   Weltbild 20.73 · Streu 20.17 · Bauten 20.56 · Karten 18.92 · Schwanz Bauten
+W1–W12: Weltbild 20.01 · Streu 19.56 · Bauten 19.32
+W5–W8: Weltbild 19.10 · Streu 18.30 · Bauten 18.69 | S1: Weltbild 19.93 · Streu 19.53 · Bauten 19.10
+W9–W12: Weltbild 20.76 · Streu 20.32 · Bauten 19.97 | S1b: Weltbild 20.01 · Streu 18.89 · Bauten 19.84

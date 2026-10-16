@@ -1,0 +1,7668 @@
+{
+ "proben": [
+  {
+   "t": 237
+  },
+  {
+   "t": 1248,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "da": 0
+  },
+  {
+   "t": 2256,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 4379,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    11
+   ],
+   "da": 0
+  },
+  {
+   "t": 4470,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 4634,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 5027,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5345,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5438,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 6113,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 6382,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 6434,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    1030,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 7620,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "242 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "6 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "3 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "23 wartend · 36 im Werk · 1 im Bäcker",
+   "erst": [
+    21,
+    1127,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 7917,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "261 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "8 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "3 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "17 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1127,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8817,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "269 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "13 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "19 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1127,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9771,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "276 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "11 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "19 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    26,
+    1308,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 9834,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "276 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "11 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 31 im Werk · 3 im Bäcker",
+   "erst": [
+    26,
+    1308,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 10886,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "275 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "111 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 31 im Werk · 3 im Bäcker",
+   "erst": [
+    30,
+    1461,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 11251,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "299 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "79 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 24 im Werk · 3 im Bäcker",
+   "erst": [
+    30,
+    1461,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 12023,
+   "fehlt": [
+    "der Horizont wächst (31 %)",
+    "der Spieler erhält seinen Leib",
+    "362 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "5 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 25 im Werk · 3 im Bäcker",
+   "erst": [
+    30,
+    1461,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 12341,
+   "fehlt": [
+    "der Horizont wächst (39 %)",
+    "366 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 25 im Werk · 3 im Bäcker",
+   "erst": [
+    33,
+    1614,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 12574,
+   "fehlt": [
+    "der Horizont wächst (50 %)",
+    "366 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 3 im Bäcker",
+   "erst": [
+    33,
+    1614,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 12731,
+   "fehlt": [
+    "der Horizont wächst (50 %)",
+    "367 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 3 im Bäcker",
+   "erst": [
+    33,
+    1614,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 12968,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "367 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 3 im Bäcker",
+   "erst": [
+    33,
+    1614,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 13515,
+   "fehlt": [
+    "der Horizont wächst (66 %)",
+    "367 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 24 im Werk · 3 im Bäcker",
+   "erst": [
+    38,
+    1679,
+    6
+   ],
+   "da": 0
+  },
+  {
+   "t": 13890,
+   "fehlt": [
+    "der Horizont wächst (74 %)",
+    "363 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 20 im Werk · 3 im Bäcker",
+   "erst": [
+    38,
+    1679,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 14434,
+   "fehlt": [
+    "der Horizont wächst (86 %)",
+    "363 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "14 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    38,
+    1679,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 14808,
+   "fehlt": [
+    "278 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    38,
+    1679,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 15029,
+   "fehlt": [
+    "245 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    38,
+    1679,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 15575,
+   "fehlt": [
+    "205 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "8 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 31 im Werk · 1 im Bäcker",
+   "erst": [
+    39,
+    1858,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 16100,
+   "fehlt": [
+    "172 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 2 im Bäcker",
+   "erst": [
+    41,
+    2133,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 16473,
+   "fehlt": [
+    "108 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "6 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 25 im Werk · 3 im Bäcker",
+   "erst": [
+    43,
+    2278,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 16742,
+   "fehlt": [
+    "91 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 23 im Werk · 3 im Bäcker",
+   "erst": [
+    43,
+    2278,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 17066,
+   "fehlt": [
+    "57 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "6 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 23 im Werk · 3 im Bäcker",
+   "erst": [
+    44,
+    2356,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 17242,
+   "fehlt": [
+    "57 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 22 im Werk · 3 im Bäcker",
+   "erst": [
+    44,
+    2356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 17460,
+   "fehlt": [
+    "56 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 21 im Werk · 1 im Bäcker",
+   "erst": [
+    44,
+    2356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 17807,
+   "fehlt": [
+    "31 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 20 im Werk · 3 im Bäcker",
+   "erst": [
+    44,
+    2356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 18060,
+   "fehlt": [
+    "13 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "4 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 3 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 18255,
+   "fehlt": [
+    "13 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "4 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 3 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 18437,
+   "fehlt": [
+    "11 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 2 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 18642,
+   "fehlt": [
+    "9 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 16 im Werk · 2 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 18909,
+   "fehlt": [
+    "8 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 2 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 19062,
+   "fehlt": [
+    "7 Bäume und Bauten wachsen",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 15 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 19239,
+   "fehlt": [
+    "7 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 14 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 19444,
+   "fehlt": [
+    "4 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 11 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 19648,
+   "fehlt": [
+    "3 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 10 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 19838,
+   "fehlt": [
+    "2 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2443,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20034,
+   "fehlt": [],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    47,
+    2527,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 20533,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "20 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2606,
+    3
+   ],
+   "da": 20141
+  },
+  {
+   "t": 20680,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "20 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2606,
+    3
+   ],
+   "da": 20141
+  }
+ ],
+ "lang": [
+  [
+   268,
+   234
+  ],
+  [
+   565,
+   50
+  ],
+  [
+   616,
+   92
+  ],
+  [
+   714,
+   513
+  ],
+  [
+   1815,
+   72
+  ],
+  [
+   2318,
+   1290
+  ],
+  [
+   3618,
+   760
+  ],
+  [
+   4388,
+   59
+  ],
+  [
+   4682,
+   339
+  ],
+  [
+   5027,
+   119
+  ],
+  [
+   5216,
+   127
+  ],
+  [
+   5451,
+   105
+  ],
+  [
+   5558,
+   227
+  ],
+  [
+   5790,
+   322
+  ],
+  [
+   6116,
+   220
+  ],
+  [
+   6443,
+   75
+  ],
+  [
+   6520,
+   217
+  ],
+  [
+   6741,
+   505
+  ],
+  [
+   7246,
+   369
+  ],
+  [
+   7632,
+   274
+  ],
+  [
+   7918,
+   381
+  ],
+  [
+   8315,
+   501
+  ],
+  [
+   8839,
+   930
+  ],
+  [
+   9844,
+   572
+  ],
+  [
+   10422,
+   462
+  ],
+  [
+   10897,
+   347
+  ],
+  [
+   11251,
+   403
+  ],
+  [
+   11661,
+   361
+  ],
+  [
+   12028,
+   310
+  ],
+  [
+   12371,
+   198
+  ],
+  [
+   12574,
+   151
+  ],
+  [
+   12731,
+   82
+  ],
+  [
+   12815,
+   149
+  ],
+  [
+   12969,
+   156
+  ],
+  [
+   13127,
+   131
+  ],
+  [
+   13258,
+   254
+  ],
+  [
+   13524,
+   152
+  ],
+  [
+   13676,
+   104
+  ],
+  [
+   13781,
+   104
+  ],
+  [
+   13892,
+   105
+  ],
+  [
+   13998,
+   132
+  ],
+  [
+   14130,
+   293
+  ],
+  [
+   14438,
+   226
+  ],
+  [
+   14671,
+   137
+  ],
+  [
+   14813,
+   211
+  ],
+  [
+   15030,
+   524
+  ],
+  [
+   15576,
+   496
+  ],
+  [
+   16114,
+   355
+  ],
+  [
+   16480,
+   126
+  ],
+  [
+   16610,
+   130
+  ],
+  [
+   16743,
+   168
+  ],
+  [
+   16913,
+   153
+  ],
+  [
+   17068,
+   171
+  ],
+  [
+   17280,
+   76
+  ],
+  [
+   17405,
+   53
+  ],
+  [
+   17462,
+   70
+  ],
+  [
+   17533,
+   142
+  ],
+  [
+   17678,
+   128
+  ],
+  [
+   17809,
+   179
+  ],
+  [
+   17989,
+   70
+  ],
+  [
+   18092,
+   64
+  ],
+  [
+   18330,
+   52
+  ],
+  [
+   18832,
+   65
+  ],
+  [
+   19349,
+   60
+  ],
+  [
+   19861,
+   126
+  ],
+  [
+   20035,
+   118
+  ],
+  [
+   20464,
+   59
+  ],
+  [
+   20535,
+   61
+  ]
+ ],
+ "ev": [
+  [
+   7356,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   13128,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "kosten": {
+  "Bauten": {
+   "2": 5.399999998509884,
+   "3": 22.19999999552965,
+   "4": 2.9000000208616257,
+   "5": 8.799999952316284,
+   "6": 7.300000034272671,
+   "7": 30.099999956786633,
+   "8": 71.39999998360872,
+   "9": 81.29999999701977,
+   "10": 26.199999950826168,
+   "11": 16.40000008046627,
+   "12": 25.199999950826168,
+   "13": 68.80000005662441,
+   "14": 62.29999993741512,
+   "15": 22.30000003427267,
+   "16": 34.200000025331974,
+   "17": 25.300000049173832,
+   "18": 42.40000006556511,
+   "19": 30.69999999552965
+  },
+  "Boden": {
+   "2": 442.1000000014901,
+   "3": 343.20000000298023,
+   "5": 27.599999994039536,
+   "6": 5.699999995529652,
+   "7": 18.5,
+   "14": 15.600000001490116,
+   "15": 14.399999998509884,
+   "16": 4.199999995529652,
+   "17": 12.200000002980232,
+   "18": 15.299999997019768
+  },
+  "Buch": {
+   "6": 53.100000001490116
+  },
+  "Streu": {
+   "7": 45.29999999701977,
+   "8": 317.5,
+   "9": 12.300000004470348,
+   "10": 117.30000000447035,
+   "11": 231.29999999701977,
+   "12": 433.5000000074506,
+   "13": 95.90000000596046,
+   "16": 86,
+   "17": 267.9999999925494,
+   "19": 77.50000000745058
+  },
+  "Gruppen-Bau": {
+   "8": 58.099999994039536,
+   "9": 24.599999994039536,
+   "10": 13.100000001490116,
+   "11": 14.299999997019768,
+   "12": 2.399999998509884,
+   "13": 35.400000005960464,
+   "14": 27.5,
+   "15": 4.5,
+   "16": 10.599999994039536,
+   "17": 1.4000000059604645,
+   "18": 3.1999999806284904,
+   "19": 3.8000000193715096
+  },
+  "Ort-Wahl": {
+   "13": 256.4999999925494
+  },
+  "Dorf": {
+   "14": 82.90000000596046
+  }
+ },
+ "buchDa": 6796,
+ "weltbildDa": 20141,
+ "holz": "voll",
+ "version": "18.546.7",
+ "adapter": "nvidia pascal",
+ "ohne": [],
+ "wald": {
+  "auftrag": [
+   {
+    "id": "build-asset:mensch|0|0",
+    "praefix": "r",
+    "tQ": 6758,
+    "d": 0,
+    "tS": 6759,
+    "tA": 10894,
+    "ok": 1,
+    "req": "r1"
+   },
+   {
+    "id": "build-asset:mensch|0|1",
+    "praefix": "r",
+    "tQ": 6759,
+    "d": 0,
+    "tS": 6759,
+    "tA": 7908,
+    "ok": 1,
+    "req": "rw1_2"
+   },
+   {
+    "id": "build-asset:alemannisch|1|1",
+    "praefix": "r",
+    "tQ": 7215,
+    "d": 19,
+    "tS": 7215,
+    "tA": 7911,
+    "ok": 1,
+    "req": "rw2_3"
+   },
+   {
+    "id": "build-asset:gt|6|1",
+    "praefix": "r",
+    "tQ": 7231,
+    "d": 19,
+    "tS": 7231,
+    "tA": 13519,
+    "ok": 1,
+    "req": "r4"
+   },
+   {
+    "id": "build-asset:drachentor|1|3",
+    "praefix": "r",
+    "tQ": 7245,
+    "d": 19,
+    "tS": 7245,
+    "tA": 7915,
+    "ok": 1,
+    "req": "rw1_5"
+   },
+   {
+    "id": "build-asset:drachentor|1|2",
+    "praefix": "r",
+    "tQ": 7246,
+    "d": 19,
+    "tS": 7246,
+    "tA": 7915,
+    "ok": 1,
+    "req": "rw2_6"
+   },
+   {
+    "id": "export-settlement:||",
+    "praefix": "stl-",
+    "tQ": 7356,
+    "d": 0,
+    "tS": null,
+    "tA": 13128,
+    "ok": 1
+   },
+   {
+    "id": "build-asset:gras|2|1",
+    "praefix": "r",
+    "tQ": 7356,
+    "d": null,
+    "tS": 7356,
+    "tA": 7916,
+    "ok": 1,
+    "req": "rw1_8"
+   },
+   {
+    "id": "build-asset:gras|1|1",
+    "praefix": "r",
+    "tQ": 7357,
+    "d": null,
+    "tS": 7357,
+    "tA": 7916,
+    "ok": 1,
+    "req": "rw2_9"
+   },
+   {
+    "id": "build-asset:gras|2|2",
+    "praefix": "r",
+    "tQ": 7357,
+    "d": null,
+    "tS": 7357,
+    "tA": 13520,
+    "ok": 1,
+    "req": "r10"
+   },
+   {
+    "id": "build-asset:gras|1|2",
+    "praefix": "r",
+    "tQ": 7357,
+    "d": null,
+    "tS": 7357,
+    "tA": 7917,
+    "ok": 1,
+    "req": "rw1_11"
+   },
+   {
+    "id": "bake-impostor:gt|6|",
+    "praefix": "imp",
+    "tQ": 7377,
+    "d": 19,
+    "tS": 7377,
+    "tA": 11660,
+    "ok": 1,
+    "req": "imp12"
+   },
+   {
+    "id": "build-asset:verkalkt|1|3",
+    "praefix": "r",
+    "tQ": 7435,
+    "d": 11,
+    "tS": 7435,
+    "tA": 8310,
+    "ok": 1,
+    "req": "rw2_13"
+   },
+   {
+    "id": "build-asset:verkalkt|1|2",
+    "praefix": "r",
+    "tQ": 7436,
+    "d": 11,
+    "tS": 7436,
+    "tA": 13523,
+    "ok": 1,
+    "req": "r14"
+   },
+   {
+    "id": "build-asset:geisttor|1|3",
+    "praefix": "r",
+    "tQ": 7436,
+    "d": 11,
+    "tS": 7436,
+    "tA": 8301,
+    "ok": 1,
+    "req": "rw1_15"
+   },
+   {
+    "id": "build-asset:geisttor|1|2",
+    "praefix": "r",
+    "tQ": 7436,
+    "d": 11,
+    "tS": 7436,
+    "tA": 8313,
+    "ok": 1,
+    "req": "rw2_16"
+   },
+   {
+    "id": "build-asset:maschine|1|3",
+    "praefix": "r",
+    "tQ": 7437,
+    "d": 11,
+    "tS": 7437,
+    "tA": 13891,
+    "ok": 1,
+    "req": "r17"
+   },
+   {
+    "id": "build-asset:maschine|1|2",
+    "praefix": "r",
+    "tQ": 7437,
+    "d": 11,
+    "tS": 7437,
+    "tA": 8307,
+    "ok": 1,
+    "req": "rw1_18"
+   },
+   {
+    "id": "build-asset:maurentor|1|3",
+    "praefix": "r",
+    "tQ": 7437,
+    "d": 11,
+    "tS": 7437,
+    "tA": 8828,
+    "ok": 1,
+    "req": "rw2_19"
+   },
+   {
+    "id": "build-asset:maurentor|1|2",
+    "praefix": "r",
+    "tQ": 7437,
+    "d": 11,
+    "tS": 7437,
+    "tA": 14427,
+    "ok": 1,
+    "req": "r20"
+   },
+   {
+    "id": "build-asset:kathedrale|1|3",
+    "praefix": "r",
+    "tQ": 7437,
+    "d": 11,
+    "tS": 7437,
+    "tA": 8315,
+    "ok": 1,
+    "req": "rw1_21"
+   },
+   {
+    "id": "build-asset:kathedrale|1|2",
+    "praefix": "r",
+    "tQ": 7438,
+    "d": 11,
+    "tS": 7438,
+    "tA": 8836,
+    "ok": 1,
+    "req": "rw2_22"
+   },
+   {
+    "id": "build-asset:ruine|1|3",
+    "praefix": "r",
+    "tQ": 7438,
+    "d": 11,
+    "tS": 7438,
+    "tA": 14429,
+    "ok": 1,
+    "req": "r23"
+   },
+   {
+    "id": "build-asset:ruine|1|2",
+    "praefix": "r",
+    "tQ": 7438,
+    "d": 11,
+    "tS": 7438,
+    "tA": 8824,
+    "ok": 1,
+    "req": "rw1_24"
+   },
+   {
+    "id": "build-asset:zacken|3|0",
+    "praefix": "r",
+    "tQ": 7439,
+    "d": 16,
+    "tS": 7439,
+    "tA": 8837,
+    "ok": 1,
+    "req": "rw2_25"
+   },
+   {
+    "id": "build-asset:kristalle|3|0",
+    "praefix": "r",
+    "tQ": 7439,
+    "d": 16,
+    "tS": 7439,
+    "tA": 14430,
+    "ok": 1,
+    "req": "r26"
+   },
+   {
+    "id": "build-asset:kristalle|6|0",
+    "praefix": "r",
+    "tQ": 7440,
+    "d": 26,
+    "tS": 7441,
+    "tA": 8824,
+    "ok": 1,
+    "req": "rw1_27"
+   },
+   {
+    "id": "build-asset:kristalle|5|0",
+    "praefix": "r",
+    "tQ": 7441,
+    "d": 29,
+    "tS": 7441,
+    "tA": 8837,
+    "ok": 1,
+    "req": "rw2_28"
+   },
+   {
+    "id": "build-asset:strauch|1|1",
+    "praefix": "r",
+    "tQ": 7442,
+    "d": 32,
+    "tS": 7442,
+    "tA": 14432,
+    "ok": 1,
+    "req": "r29"
+   },
+   {
+    "id": "build-asset:kristalle|2|0",
+    "praefix": "r",
+    "tQ": 7442,
+    "d": 32,
+    "tS": 7443,
+    "tA": 8825,
+    "ok": 1,
+    "req": "rw1_30"
+   },
+   {
+    "id": "build-asset:kristalle|13|0",
+    "praefix": "r",
+    "tQ": 7444,
+    "d": 37,
+    "tS": 7444,
+    "tA": 8838,
+    "ok": 1,
+    "req": "rw2_31"
+   },
+   {
+    "id": "build-asset:kristalle|4|0",
+    "praefix": "r",
+    "tQ": 7445,
+    "d": 37,
+    "tS": 7445,
+    "tA": 14432,
+    "ok": 1,
+    "req": "r32"
+   },
+   {
+    "id": "build-asset:zacken|1|0",
+    "praefix": "r",
+    "tQ": 7445,
+    "d": 38,
+    "tS": 7446,
+    "tA": 8829,
+    "ok": 1,
+    "req": "rw1_33"
+   },
+   {
+    "id": "build-asset:kristalle|10|0",
+    "praefix": "r",
+    "tQ": 7447,
+    "d": 40,
+    "tS": 7447,
+    "tA": 8839,
+    "ok": 1,
+    "req": "rw2_34"
+   },
+   {
+    "id": "build-asset:kristalle|1|0",
+    "praefix": "r",
+    "tQ": 7448,
+    "d": 42,
+    "tS": 7448,
+    "tA": 14433,
+    "ok": 1,
+    "req": "r35"
+   },
+   {
+    "id": "build-asset:zacken|10|0",
+    "praefix": "r",
+    "tQ": 7448,
+    "d": 43,
+    "tS": 7448,
+    "tA": 8830,
+    "ok": 1,
+    "req": "rw1_36"
+   },
+   {
+    "id": "build-asset:weide|1|1",
+    "praefix": "r",
+    "tQ": 7448,
+    "d": 43,
+    "tS": 7448,
+    "tA": 9775,
+    "ok": 1,
+    "req": "rw2_37"
+   },
+   {
+    "id": "build-asset:kristalle|7|0",
+    "praefix": "r",
+    "tQ": 7449,
+    "d": 44,
+    "tS": 7911,
+    "tA": 9776,
+    "ok": 1,
+    "req": "rw2_41"
+   },
+   {
+    "id": "build-asset:zacken|2|0",
+    "praefix": "r",
+    "tQ": 7449,
+    "d": 46,
+    "tS": 7915,
+    "tA": 9779,
+    "ok": 1,
+    "req": "rw2_42"
+   },
+   {
+    "id": "build-asset:zacken|8|0",
+    "praefix": "r",
+    "tQ": 7450,
+    "d": 46,
+    "tS": 7915,
+    "tA": 9773,
+    "ok": 1,
+    "req": "rw1_43"
+   },
+   {
+    "id": "build-asset:kristalle|11|0",
+    "praefix": "r",
+    "tQ": 7450,
+    "d": 47,
+    "tS": 7916,
+    "tA": 9780,
+    "ok": 1,
+    "req": "rw2_44"
+   },
+   {
+    "id": "build-asset:kristalle|15|0",
+    "praefix": "r",
+    "tQ": 7451,
+    "d": 47,
+    "tS": 7916,
+    "tA": 9774,
+    "ok": 1,
+    "req": "rw1_45"
+   },
+   {
+    "id": "build-asset:feuerstelle|1|3",
+    "praefix": "r",
+    "tQ": 7452,
+    "d": 52,
+    "tS": 7917,
+    "tA": 9774,
+    "ok": 1,
+    "req": "rw1_46"
+   },
+   {
+    "id": "build-asset:feuerstelle|1|1",
+    "praefix": "r",
+    "tQ": 7452,
+    "d": 52,
+    "tS": 8300,
+    "tA": 9777,
+    "ok": 1,
+    "req": "rw1_47"
+   },
+   {
+    "id": "build-asset:kristalle|8|0",
+    "praefix": "r",
+    "tQ": 7453,
+    "d": 55,
+    "tS": 8307,
+    "tA": 9780,
+    "ok": 1,
+    "req": "rw1_48"
+   },
+   {
+    "id": "build-asset:kristalle|9|0",
+    "praefix": "r",
+    "tQ": 7454,
+    "d": 57,
+    "tS": 8309,
+    "tA": 9782,
+    "ok": 1,
+    "req": "rw2_49"
+   },
+   {
+    "id": "build-asset:zacken|4|0",
+    "praefix": "r",
+    "tQ": 7455,
+    "d": 58,
+    "tS": 8313,
+    "tA": 9782,
+    "ok": 1,
+    "req": "rw2_50"
+   },
+   {
+    "id": "build-asset:kristalle|16|0",
+    "praefix": "r",
+    "tQ": 7455,
+    "d": 59,
+    "tS": 8315,
+    "tA": 9781,
+    "ok": 1,
+    "req": "rw1_51"
+   },
+   {
+    "id": "build-asset:zacken|9|0",
+    "praefix": "r",
+    "tQ": 7458,
+    "d": 67,
+    "tS": 8836,
+    "tA": 9787,
+    "ok": 1,
+    "req": "rw2_59"
+   },
+   {
+    "id": "build-asset:zacken|16|0",
+    "praefix": "r",
+    "tQ": 7459,
+    "d": 71,
+    "tS": 8837,
+    "tA": 9787,
+    "ok": 1,
+    "req": "rw2_60"
+   },
+   {
+    "id": "build-asset:zacken|11|0",
+    "praefix": "r",
+    "tQ": 7460,
+    "d": 71,
+    "tS": 8837,
+    "tA": 9788,
+    "ok": 1,
+    "req": "rw2_61"
+   },
+   {
+    "id": "build-asset:zacken|6|0",
+    "praefix": "r",
+    "tQ": 7460,
+    "d": 72,
+    "tS": 8838,
+    "tA": 9789,
+    "ok": 1,
+    "req": "rw2_62"
+   },
+   {
+    "id": "build-asset:zacken|12|0",
+    "praefix": "r",
+    "tQ": 7460,
+    "d": 73,
+    "tS": 9779,
+    "tA": 10892,
+    "ok": 1,
+    "req": "rw2_70"
+   },
+   {
+    "id": "build-asset:feuerstelle|2|3",
+    "praefix": "r",
+    "tQ": 7461,
+    "d": 73,
+    "tS": 8829,
+    "tA": 9791,
+    "ok": 1,
+    "req": "rw1_57"
+   },
+   {
+    "id": "build-asset:feuerstelle|2|1",
+    "praefix": "r",
+    "tQ": 7461,
+    "d": 73,
+    "tS": 8836,
+    "tA": 9786,
+    "ok": 1,
+    "req": "rw2_58"
+   },
+   {
+    "id": "build-asset:zacken|14|0",
+    "praefix": "r",
+    "tQ": 7462,
+    "d": 74,
+    "tS": 9779,
+    "tA": 14669,
+    "ok": 1,
+    "req": "rw1_71"
+   },
+   {
+    "id": "build-asset:kristalle|14|0",
+    "praefix": "r",
+    "tQ": 7462,
+    "d": 74,
+    "tS": 9780,
+    "tA": 10892,
+    "ok": 1,
+    "req": "rw2_72"
+   },
+   {
+    "id": "build-asset:kristalle|12|0",
+    "praefix": "r",
+    "tQ": 7465,
+    "d": 82,
+    "tS": 9781,
+    "tA": 14669,
+    "ok": 1,
+    "req": "rw1_73"
+   },
+   {
+    "id": "build-asset:alemannisch|1|3",
+    "praefix": "r",
+    "tQ": 7467,
+    "d": 19,
+    "tS": 7908,
+    "tA": 9772,
+    "ok": 1,
+    "req": "rw1_40"
+   },
+   {
+    "id": "build-asset:zacken|5|0",
+    "praefix": "r",
+    "tQ": 7468,
+    "d": 59,
+    "tS": 8829,
+    "tA": 9790,
+    "ok": 1,
+    "req": "rw1_56"
+   },
+   {
+    "id": "build-asset:zacken|15|0",
+    "praefix": "r",
+    "tQ": 7798,
+    "d": 88,
+    "tS": 9782,
+    "tA": 10893,
+    "ok": 1,
+    "req": "rw2_74"
+   },
+   {
+    "id": "bake-impostor:strauch|1|",
+    "praefix": "imp",
+    "tQ": 7840,
+    "d": 32,
+    "tS": 7840,
+    "tA": 11660,
+    "ok": 1,
+    "req": "impb1_38"
+   },
+   {
+    "id": "bake-impostor:weide|1|",
+    "praefix": "imp",
+    "tQ": 7840,
+    "d": 43,
+    "tS": 7840,
+    "tA": 11659,
+    "ok": 1,
+    "req": "impb2_39"
+   },
+   {
+    "id": "build-asset:zacken|13|0",
+    "praefix": "r",
+    "tQ": 8029,
+    "d": 130,
+    "tS": 9785,
+    "tA": 13514,
+    "ok": 1,
+    "req": "rw2_76"
+   },
+   {
+    "id": "build-asset:zacken|7|0",
+    "praefix": "r",
+    "tQ": 8031,
+    "d": 99,
+    "tS": 9782,
+    "tA": 10895,
+    "ok": 1,
+    "req": "rw2_75"
+   },
+   {
+    "id": "build-asset:karst|1|1",
+    "praefix": "r",
+    "tQ": 8356,
+    "d": null,
+    "tS": 9785,
+    "tA": 13890,
+    "ok": 1,
+    "req": "rw2_77"
+   },
+   {
+    "id": "build-asset:tanne|2|1",
+    "praefix": "r",
+    "tQ": 8356,
+    "d": null,
+    "tS": 8824,
+    "tA": 9790,
+    "ok": 1,
+    "req": "rw1_53"
+   },
+   {
+    "id": "build-asset:tanne|1|1",
+    "praefix": "r",
+    "tQ": 8358,
+    "d": null,
+    "tS": 8825,
+    "tA": 9790,
+    "ok": 1,
+    "req": "rw1_54"
+   },
+   {
+    "id": "build-asset:tanne|3|1",
+    "praefix": "r",
+    "tQ": 8564,
+    "d": 21,
+    "tS": 8823,
+    "tA": 9789,
+    "ok": 1,
+    "req": "rw1_52"
+   },
+   {
+    "id": "build-asset:fichte|3|1",
+    "praefix": "r",
+    "tQ": 8745,
+    "d": 25,
+    "tS": 8828,
+    "tA": 9785,
+    "ok": 1,
+    "req": "rw2_55"
+   },
+   {
+    "id": "build-asset:birke|2|1",
+    "praefix": "r",
+    "tQ": 8912,
+    "d": null,
+    "tS": 9775,
+    "tA": 10892,
+    "ok": 1,
+    "req": "rw2_68"
+   },
+   {
+    "id": "build-asset:buche|2|1",
+    "praefix": "r",
+    "tQ": 8915,
+    "d": null,
+    "tS": 9786,
+    "tA": 14438,
+    "ok": 1,
+    "req": "rw2_78"
+   },
+   {
+    "id": "build-asset:buche|1|1",
+    "praefix": "r",
+    "tQ": 8915,
+    "d": null,
+    "tS": 9787,
+    "tA": 14670,
+    "ok": 1,
+    "req": "rw2_79"
+   },
+   {
+    "id": "build-asset:eiche|1|1",
+    "praefix": "r",
+    "tQ": 8917,
+    "d": null,
+    "tS": 9774,
+    "tA": 14437,
+    "ok": 1,
+    "req": "rw1_66"
+   },
+   {
+    "id": "build-asset:eiche|2|1",
+    "praefix": "r",
+    "tQ": 8918,
+    "d": null,
+    "tS": 9772,
+    "tA": 10895,
+    "ok": 1,
+    "req": "rw1_63"
+   },
+   {
+    "id": "build-asset:birke|1|1",
+    "praefix": "r",
+    "tQ": 8928,
+    "d": null,
+    "tS": 9776,
+    "tA": 14667,
+    "ok": 1,
+    "req": "rw1_69"
+   },
+   {
+    "id": "build-asset:blume|2|0",
+    "praefix": "r",
+    "tQ": 9092,
+    "d": null,
+    "tS": 9788,
+    "tA": 14810,
+    "ok": 1,
+    "req": "rw2_80"
+   },
+   {
+    "id": "build-asset:blume|1|0",
+    "praefix": "r",
+    "tQ": 9092,
+    "d": null,
+    "tS": 9788,
+    "tA": 14809,
+    "ok": 1,
+    "req": "rw1_81"
+   },
+   {
+    "id": "build-asset:birke|3|1",
+    "praefix": "r",
+    "tQ": 9256,
+    "d": 27,
+    "tS": 9773,
+    "tA": 13888,
+    "ok": 1,
+    "req": "rw1_64"
+   },
+   {
+    "id": "build-asset:fichte|1|1",
+    "praefix": "r",
+    "tQ": 9293,
+    "d": 27,
+    "tS": 9773,
+    "tA": 13892,
+    "ok": 1,
+    "req": "rw1_65"
+   },
+   {
+    "id": "build-asset:fichte|2|1",
+    "praefix": "r",
+    "tQ": 9348,
+    "d": 31,
+    "tS": 9775,
+    "tA": 10421,
+    "ok": 1,
+    "req": "rw2_67"
+   },
+   {
+    "id": "build-asset:mammut|1|1",
+    "praefix": "r",
+    "tQ": 10609,
+    "d": 88,
+    "tS": 10609,
+    "tA": 15025,
+    "ok": 1,
+    "req": "rw1_82"
+   },
+   {
+    "id": "bake-impostor:tanne|3|",
+    "praefix": "imp",
+    "tQ": 11899,
+    "d": 21,
+    "tS": 11900,
+    "tA": 14437,
+    "ok": 1,
+    "req": "imp83"
+   },
+   {
+    "id": "bake-impostor:tanne|2|",
+    "praefix": "imp",
+    "tQ": 11900,
+    "d": 23,
+    "tS": 11900,
+    "tA": 14436,
+    "ok": 1,
+    "req": "impb1_84"
+   },
+   {
+    "id": "bake-impostor:tanne|1|",
+    "praefix": "imp",
+    "tQ": 11900,
+    "d": 25,
+    "tS": 11900,
+    "tA": 14431,
+    "ok": 1,
+    "req": "impb2_85"
+   },
+   {
+    "id": "build-asset:eiche|3|1",
+    "praefix": "r",
+    "tQ": 11967,
+    "d": 129,
+    "tS": 11967,
+    "tA": 15555,
+    "ok": 1,
+    "req": "rw2_86"
+   },
+   {
+    "id": "build-asset:geroell|1|0",
+    "praefix": "r",
+    "tQ": 12482,
+    "d": null,
+    "tS": 12482,
+    "tA": 15559,
+    "ok": 1,
+    "req": "rw2_87"
+   },
+   {
+    "id": "build-asset:laterne|1|3",
+    "praefix": "r",
+    "tQ": 14049,
+    "d": 116,
+    "tS": 14049,
+    "tA": 15559,
+    "ok": 1,
+    "req": "rw2_88"
+   },
+   {
+    "id": "build-asset:laterne|1|1",
+    "praefix": "r",
+    "tQ": 14049,
+    "d": 116,
+    "tS": 14049,
+    "tA": 14433,
+    "ok": 1,
+    "req": "r89"
+   },
+   {
+    "id": "build-asset:brunnen|1|3",
+    "praefix": "r",
+    "tQ": 14077,
+    "d": 129,
+    "tS": 14077,
+    "tA": 15025,
+    "ok": 1,
+    "req": "rw1_90"
+   },
+   {
+    "id": "build-asset:brunnen|1|1",
+    "praefix": "r",
+    "tQ": 14077,
+    "d": 129,
+    "tS": 14077,
+    "tA": 15560,
+    "ok": 1,
+    "req": "rw2_91"
+   },
+   {
+    "id": "build-asset:marktstand|1|3",
+    "praefix": "r",
+    "tQ": 14079,
+    "d": 115,
+    "tS": 14079,
+    "tA": 14434,
+    "ok": 1,
+    "req": "r92"
+   },
+   {
+    "id": "build-asset:marktstand|1|1",
+    "praefix": "r",
+    "tQ": 14079,
+    "d": 115,
+    "tS": 14079,
+    "tA": 15026,
+    "ok": 1,
+    "req": "rw1_93"
+   },
+   {
+    "id": "build-asset:gotisch|12|2",
+    "praefix": "r",
+    "tQ": 14139,
+    "d": 106,
+    "tS": 14139,
+    "tA": 16076,
+    "ok": 1,
+    "req": "rw2_94"
+   },
+   {
+    "id": "build-asset:alpenchalet|12|2",
+    "praefix": "r",
+    "tQ": 14145,
+    "d": 116,
+    "tS": 14145,
+    "tA": 14671,
+    "ok": 1,
+    "req": "r95"
+   },
+   {
+    "id": "build-asset:wandlaterne|1|3",
+    "praefix": "r",
+    "tQ": 14146,
+    "d": 111,
+    "tS": 14146,
+    "tA": 15026,
+    "ok": 1,
+    "req": "rw1_96"
+   },
+   {
+    "id": "build-asset:wandlaterne|1|1",
+    "praefix": "r",
+    "tQ": 14147,
+    "d": 111,
+    "tS": 14147,
+    "tA": 16076,
+    "ok": 1,
+    "req": "rw2_97"
+   },
+   {
+    "id": "build-asset:schwarzwald|13|2",
+    "praefix": "r",
+    "tQ": 14152,
+    "d": 98,
+    "tS": 14152,
+    "tA": 15561,
+    "ok": 1,
+    "req": "r98"
+   },
+   {
+    "id": "build-asset:schwarzwald|4|2",
+    "praefix": "r",
+    "tQ": 14156,
+    "d": 129,
+    "tS": 14157,
+    "tA": 15573,
+    "ok": 1,
+    "req": "rw1_99"
+   },
+   {
+    "id": "build-asset:schwarzwald|6|2",
+    "praefix": "r",
+    "tQ": 14161,
+    "d": 126,
+    "tS": 14162,
+    "tA": 16607,
+    "ok": 1,
+    "req": "rw2_100"
+   },
+   {
+    "id": "build-asset:schwarzwald|8|2",
+    "praefix": "r",
+    "tQ": 14166,
+    "d": 137,
+    "tS": 14166,
+    "tA": 16075,
+    "ok": 1,
+    "req": "r101"
+   },
+   {
+    "id": "build-asset:schwarzwald|13|2",
+    "praefix": "r",
+    "tQ": 14172,
+    "d": 83,
+    "tS": 14172,
+    "tA": 16078,
+    "ok": 1,
+    "req": "rw1_102"
+   },
+   {
+    "id": "build-asset:schwarzwald|15|2",
+    "praefix": "r",
+    "tQ": 14178,
+    "d": 90,
+    "tS": 14178,
+    "tA": 17808,
+    "ok": 1,
+    "req": "rw2_103"
+   },
+   {
+    "id": "build-asset:schwarzwald|11|2",
+    "praefix": "r",
+    "tQ": 14182,
+    "d": 89,
+    "tS": 14182,
+    "tA": 16077,
+    "ok": 1,
+    "req": "r104"
+   },
+   {
+    "id": "build-asset:alpenchalet|12|2",
+    "praefix": "r",
+    "tQ": 14186,
+    "d": 112,
+    "tS": 14186,
+    "tA": 16608,
+    "ok": 1,
+    "req": "rw1_105"
+   },
+   {
+    "id": "build-asset:alpenchalet|16|2",
+    "praefix": "r",
+    "tQ": 14189,
+    "d": 140,
+    "tS": 14190,
+    "tA": 18179,
+    "ok": 1,
+    "req": "rw2_106"
+   },
+   {
+    "id": "build-asset:alpenchalet|9|2",
+    "praefix": "r",
+    "tQ": 14192,
+    "d": 127,
+    "tS": 14671,
+    "tA": 19837,
+    "ok": 1,
+    "req": "r124"
+   },
+   {
+    "id": "build-asset:schwarzwald|3|2",
+    "praefix": "r",
+    "tQ": 14197,
+    "d": 97,
+    "tS": 14432,
+    "tA": 19060,
+    "ok": 1,
+    "req": "r112"
+   },
+   {
+    "id": "build-asset:schwarzwald|11|2",
+    "praefix": "r",
+    "tQ": 14206,
+    "d": 116,
+    "tS": 14667,
+    "tA": 17989,
+    "ok": 1,
+    "req": "rw1_120"
+   },
+   {
+    "id": "build-asset:skandinavisch|14|2",
+    "praefix": "r",
+    "tQ": 14209,
+    "d": 132,
+    "tS": 15024,
+    "tA": 19159,
+    "ok": 1,
+    "req": "rw1_127"
+   },
+   {
+    "id": "build-asset:skandinavisch|6|2",
+    "praefix": "r",
+    "tQ": 14215,
+    "d": 65,
+    "tS": 14426,
+    "tA": 16472,
+    "ok": 1,
+    "req": "r107"
+   },
+   {
+    "id": "build-asset:skandinavisch|6|3",
+    "praefix": "r",
+    "tQ": 14404,
+    "d": 65,
+    "tS": 14429,
+    "tA": 17241,
+    "ok": 1,
+    "req": "r108"
+   },
+   {
+    "id": "build-asset:schwarzwald|13|3",
+    "praefix": "r",
+    "tQ": 14404,
+    "d": 83,
+    "tS": 14430,
+    "tA": 17676,
+    "ok": 1,
+    "req": "r109"
+   },
+   {
+    "id": "build-asset:schwarzwald|11|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 89,
+    "tS": 14431,
+    "tA": 17988,
+    "ok": 1,
+    "req": "r110"
+   },
+   {
+    "id": "build-asset:schwarzwald|15|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 90,
+    "tS": 14432,
+    "tA": 18468,
+    "ok": 1,
+    "req": "r111"
+   },
+   {
+    "id": "build-asset:schwarzwald|3|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 97,
+    "tS": 14433,
+    "tA": 19332,
+    "ok": 1,
+    "req": "r113"
+   },
+   {
+    "id": "build-asset:schwarzwald|13|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 98,
+    "tS": 14433,
+    "tA": 19770,
+    "ok": 1,
+    "req": "r114"
+   },
+   {
+    "id": "build-asset:gotisch|12|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 106,
+    "tS": 14437,
+    "tA": 17384,
+    "ok": 1,
+    "req": "rw1_115"
+   },
+   {
+    "id": "build-asset:alpenchalet|12|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 112,
+    "tS": 14438,
+    "tA": 18530,
+    "ok": 1,
+    "req": "rw2_116"
+   },
+   {
+    "id": "build-asset:schwarzwald|11|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 116,
+    "tS": 14669,
+    "tA": 18385,
+    "ok": 1,
+    "req": "rw1_121"
+   },
+   {
+    "id": "build-asset:alpenchalet|12|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 116,
+    "tS": 14669,
+    "tA": 18777,
+    "ok": 1,
+    "req": "rw1_122"
+   },
+   {
+    "id": "build-asset:schwarzwald|6|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 126,
+    "tS": 14670,
+    "tA": 18974,
+    "ok": 1,
+    "req": "rw2_123"
+   },
+   {
+    "id": "build-asset:alpenchalet|9|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 127,
+    "tS": 14809,
+    "tA": 18940,
+    "ok": 1,
+    "req": "rw1_125"
+   },
+   {
+    "id": "build-asset:schwarzwald|4|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 129,
+    "tS": 14810,
+    "tA": 19286,
+    "ok": 1,
+    "req": "rw2_126"
+   },
+   {
+    "id": "build-asset:skandinavisch|14|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 132,
+    "tS": 15025,
+    "tA": 19285,
+    "ok": 1,
+    "req": "rw1_128"
+   },
+   {
+    "id": "build-asset:schwarzwald|8|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 137,
+    "tS": 15025,
+    "tA": 19616,
+    "ok": 1,
+    "req": "rw1_129"
+   },
+   {
+    "id": "build-asset:alpenchalet|16|3",
+    "praefix": "r",
+    "tQ": 14405,
+    "d": 140,
+    "tS": 15026,
+    "tA": 19988,
+    "ok": 1,
+    "req": "rw1_130"
+   },
+   {
+    "id": "build-asset:schwarzwald|9|3",
+    "praefix": "r",
+    "tQ": 14406,
+    "d": 145,
+    "tS": 15555,
+    "tA": 19701,
+    "ok": 1,
+    "req": "rw2_131"
+   },
+   {
+    "id": "bake-impostor:fichte|3|",
+    "praefix": "imp",
+    "tQ": 14446,
+    "d": 25,
+    "tS": 14446,
+    "tA": 15557,
+    "ok": 1,
+    "req": "imp117"
+   },
+   {
+    "id": "bake-impostor:eiche|2|",
+    "praefix": "imp",
+    "tQ": 14446,
+    "d": 26,
+    "tS": 14446,
+    "tA": 16076,
+    "ok": 1,
+    "req": "impb1_118"
+   },
+   {
+    "id": "bake-impostor:birke|3|",
+    "praefix": "imp",
+    "tQ": 14446,
+    "d": 27,
+    "tS": 14446,
+    "tA": 15573,
+    "ok": 1,
+    "req": "impb2_119"
+   },
+   {
+    "id": "bake-impostor:fichte|1|",
+    "praefix": "imp",
+    "tQ": 15608,
+    "d": 27,
+    "tS": 15608,
+    "tA": 16103,
+    "ok": 1,
+    "req": "imp132"
+   },
+   {
+    "id": "bake-impostor:eiche|1|",
+    "praefix": "imp",
+    "tQ": 15609,
+    "d": 28,
+    "tS": 15609,
+    "tA": 16609,
+    "ok": 1,
+    "req": "impb2_133"
+   },
+   {
+    "id": "bake-impostor:fichte|2|",
+    "praefix": "imp",
+    "tQ": 16134,
+    "d": 31,
+    "tS": 16134,
+    "tA": 16913,
+    "ok": 1,
+    "req": "imp134"
+   },
+   {
+    "id": "bake-impostor:birke|2|",
+    "praefix": "imp",
+    "tQ": 16134,
+    "d": 31,
+    "tS": 16135,
+    "tA": 17460,
+    "ok": 1,
+    "req": "impb1_135"
+   },
+   {
+    "id": "bake-impostor:birke|1|",
+    "praefix": "imp",
+    "tQ": 16656,
+    "d": 57,
+    "tS": 16656,
+    "tA": 17988,
+    "ok": 1,
+    "req": "impb2_136"
+   },
+   {
+    "id": "bake-impostor:mammut|1|",
+    "praefix": "imp",
+    "tQ": 17017,
+    "d": 88,
+    "tS": 17017,
+    "tA": 17460,
+    "ok": 1,
+    "req": "imp137"
+   },
+   {
+    "id": "bake-impostor:eiche|3|",
+    "praefix": "imp",
+    "tQ": 17480,
+    "d": 105,
+    "tS": 17480,
+    "tA": 18279,
+    "ok": 1,
+    "req": "imp138"
+   },
+   {
+    "id": "bake-impostor:buche|1|",
+    "praefix": "imp",
+    "tQ": 17480,
+    "d": 118,
+    "tS": 17480,
+    "tA": 18386,
+    "ok": 1,
+    "req": "impb1_139"
+   },
+   {
+    "id": "bake-impostor:buche|2|",
+    "praefix": "imp",
+    "tQ": 18002,
+    "d": 66,
+    "tS": 18002,
+    "tA": 18988,
+    "ok": 1,
+    "req": "impb2_140"
+   },
+   {
+    "id": "build-asset:blume|1|2",
+    "praefix": "r",
+    "tQ": 18182,
+    "d": 16,
+    "tS": 18182,
+    "tA": 19724,
+    "ok": 1,
+    "req": "rw2_141"
+   },
+   {
+    "id": "build-asset:blume|2|2",
+    "praefix": "r",
+    "tQ": 18220,
+    "d": 16,
+    "tS": 18220,
+    "tA": 19847,
+    "ok": 1,
+    "req": "r142"
+   },
+   {
+    "id": "bake-impostor:karst|1|",
+    "praefix": "imp",
+    "tQ": 18289,
+    "d": 244,
+    "tS": 18289,
+    "tA": 18974,
+    "ok": 1,
+    "req": "imp143"
+   },
+   {
+    "id": "build-asset:gestruepp|1|1",
+    "praefix": "r",
+    "tQ": 18335,
+    "d": 20,
+    "tS": 18335,
+    "tA": 19735,
+    "ok": 1,
+    "req": "rw2_144"
+   },
+   {
+    "id": "build-asset:farn|2|1",
+    "praefix": "r",
+    "tQ": 18645,
+    "d": 24,
+    "tS": 18645,
+    "tA": 19847,
+    "ok": 1,
+    "req": "r145"
+   },
+   {
+    "id": "build-asset:totstamm|1|1",
+    "praefix": "r",
+    "tQ": 18655,
+    "d": 23,
+    "tS": 18655,
+    "tA": 19735,
+    "ok": 1,
+    "req": "rw2_146"
+   },
+   {
+    "id": "build-asset:farn|1|1",
+    "praefix": "r",
+    "tQ": 18655,
+    "d": 25,
+    "tS": 18655,
+    "tA": 19847,
+    "ok": 1,
+    "req": "r147"
+   },
+   {
+    "id": "build-asset:deer|0|0",
+    "praefix": "r",
+    "tQ": 20144,
+    "d": null,
+    "tS": 20144,
+    "tA": null,
+    "ok": null,
+    "req": "r148"
+   },
+   {
+    "id": "build-asset:deer|0|1",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": 20714,
+    "ok": 1,
+    "req": "rw1_149"
+   },
+   {
+    "id": "build-asset:wolf|0|0",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_150"
+   },
+   {
+    "id": "build-asset:wolf|0|1",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "r151"
+   },
+   {
+    "id": "build-asset:fox|0|0",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_152"
+   },
+   {
+    "id": "build-asset:fox|0|1",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_153"
+   },
+   {
+    "id": "build-asset:bear|0|0",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "r154"
+   },
+   {
+    "id": "build-asset:bear|0|1",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_155"
+   },
+   {
+    "id": "build-asset:findling|1|0",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20145,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_156"
+   },
+   {
+    "id": "build-asset:findling|2|0",
+    "praefix": "r",
+    "tQ": 20145,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "r157"
+   },
+   {
+    "id": "build-asset:findling|3|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_158"
+   },
+   {
+    "id": "build-asset:findling|4|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_159"
+   },
+   {
+    "id": "build-asset:findling|5|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "r160"
+   },
+   {
+    "id": "build-asset:findling|6|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_161"
+   },
+   {
+    "id": "build-asset:findling|7|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_162"
+   },
+   {
+    "id": "build-asset:findling|8|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "r163"
+   },
+   {
+    "id": "build-asset:findling|9|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_164"
+   },
+   {
+    "id": "build-asset:findling|10|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_165"
+   },
+   {
+    "id": "build-asset:findling|11|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20146,
+    "tA": null,
+    "ok": null,
+    "req": "r166"
+   },
+   {
+    "id": "build-asset:findling|12|0",
+    "praefix": "r",
+    "tQ": 20146,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_167"
+   },
+   {
+    "id": "build-asset:findling|13|0",
+    "praefix": "r",
+    "tQ": 20147,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_168"
+   },
+   {
+    "id": "build-asset:findling|14|0",
+    "praefix": "r",
+    "tQ": 20147,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "r169"
+   },
+   {
+    "id": "build-asset:findling|15|0",
+    "praefix": "r",
+    "tQ": 20147,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_170"
+   },
+   {
+    "id": "build-asset:findling|16|0",
+    "praefix": "r",
+    "tQ": 20147,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_171"
+   },
+   {
+    "id": "build-asset:basalt|1|0",
+    "praefix": "r",
+    "tQ": 20147,
+    "d": null,
+    "tS": 20147,
+    "tA": null,
+    "ok": null,
+    "req": "r172"
+   },
+   {
+    "id": "build-asset:basalt|2|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_173"
+   },
+   {
+    "id": "build-asset:basalt|3|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_174"
+   },
+   {
+    "id": "build-asset:basalt|4|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "r175"
+   },
+   {
+    "id": "build-asset:basalt|5|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_176"
+   },
+   {
+    "id": "build-asset:basalt|6|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_177"
+   },
+   {
+    "id": "build-asset:basalt|7|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "r178"
+   },
+   {
+    "id": "build-asset:basalt|8|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_179"
+   },
+   {
+    "id": "build-asset:basalt|9|0",
+    "praefix": "r",
+    "tQ": 20148,
+    "d": null,
+    "tS": 20148,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_180"
+   },
+   {
+    "id": "build-asset:basalt|10|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": 20149,
+    "tA": null,
+    "ok": null,
+    "req": "r181"
+   },
+   {
+    "id": "build-asset:basalt|11|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": 20149,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_182"
+   },
+   {
+    "id": "build-asset:basalt|12|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": 20149,
+    "tA": null,
+    "ok": null,
+    "req": "rw2_183"
+   },
+   {
+    "id": "build-asset:basalt|13|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": 20714,
+    "tA": null,
+    "ok": null,
+    "req": "rw1_184"
+   },
+   {
+    "id": "build-asset:basalt|14|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:basalt|15|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:basalt|16|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|1|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|2|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|3|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|4|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|5|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|6|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|7|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|8|0",
+    "praefix": "r",
+    "tQ": 20149,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|9|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|10|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|11|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|12|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|13|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|14|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|15|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   },
+   {
+    "id": "build-asset:sediment|16|0",
+    "praefix": "r",
+    "tQ": 20150,
+    "d": null,
+    "tS": null,
+    "tA": null,
+    "ok": null
+   }
+  ],
+  "zug": [
+   {
+    "key": "alemannisch|1|1|ov:170117b9.261",
+    "tZ": 7215,
+    "tF": 8266,
+    "ok": 1
+   },
+   {
+    "key": "gt|6|1",
+    "tZ": 7231,
+    "tF": 13657,
+    "ok": 1
+   },
+   {
+    "key": "drachentor|1|3",
+    "tZ": 7246,
+    "tF": 8279,
+    "ok": 1
+   },
+   {
+    "key": "drachentor|1|2",
+    "tZ": 7246,
+    "tF": 8274,
+    "ok": 1
+   },
+   {
+    "key": "gras|2|1",
+    "tZ": 7356,
+    "tF": 8290,
+    "ok": 1
+   },
+   {
+    "key": "gras|1|1",
+    "tZ": 7357,
+    "tF": 8284,
+    "ok": 1
+   },
+   {
+    "key": "gras|2|2",
+    "tZ": 7357,
+    "tF": 13666,
+    "ok": 1
+   },
+   {
+    "key": "gras|1|2",
+    "tZ": 7357,
+    "tF": 8295,
+    "ok": 1
+   },
+   {
+    "key": "verkalkt|1|3",
+    "tZ": 7436,
+    "tF": 8806,
+    "ok": 1
+   },
+   {
+    "key": "verkalkt|1|2",
+    "tZ": 7436,
+    "tF": 13675,
+    "ok": 1
+   },
+   {
+    "key": "geisttor|1|3",
+    "tZ": 7436,
+    "tF": 8794,
+    "ok": 1
+   },
+   {
+    "key": "geisttor|1|2",
+    "tZ": 7437,
+    "tF": 8811,
+    "ok": 1
+   },
+   {
+    "key": "maschine|1|3",
+    "tZ": 7437,
+    "tF": 13989,
+    "ok": 1
+   },
+   {
+    "key": "maschine|1|2",
+    "tZ": 7437,
+    "tF": 8800,
+    "ok": 1
+   },
+   {
+    "key": "maurentor|1|3",
+    "tZ": 7437,
+    "tF": 9741,
+    "ok": 1
+   },
+   {
+    "key": "maurentor|1|2",
+    "tZ": 7437,
+    "tF": 14612,
+    "ok": 1
+   },
+   {
+    "key": "kathedrale|1|3",
+    "tZ": 7438,
+    "tF": 8816,
+    "ok": 1
+   },
+   {
+    "key": "kathedrale|1|2",
+    "tZ": 7438,
+    "tF": 9760,
+    "ok": 1
+   },
+   {
+    "key": "ruine|1|3",
+    "tZ": 7438,
+    "tF": 14620,
+    "ok": 1
+   },
+   {
+    "key": "ruine|1|2",
+    "tZ": 7438,
+    "tF": 9720,
+    "ok": 1
+   },
+   {
+    "key": "zacken|3|0",
+    "tZ": 7439,
+    "tF": 9766,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|3|0",
+    "tZ": 7439,
+    "tF": 14626,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|6|0",
+    "tZ": 7441,
+    "tF": 9726,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|5|0",
+    "tZ": 7441,
+    "tF": 10361,
+    "ok": 1
+   },
+   {
+    "key": "strauch|1|1",
+    "tZ": 7442,
+    "tF": 14633,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|2|0",
+    "tZ": 7443,
+    "tF": 9733,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|13|0",
+    "tZ": 7444,
+    "tF": 10371,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|4|0",
+    "tZ": 7445,
+    "tF": 14641,
+    "ok": 1
+   },
+   {
+    "key": "zacken|1|0",
+    "tZ": 7446,
+    "tF": 9747,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|10|0",
+    "tZ": 7447,
+    "tF": 10379,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|1|0",
+    "tZ": 7448,
+    "tF": 14649,
+    "ok": 1
+   },
+   {
+    "key": "zacken|10|0",
+    "tZ": 7448,
+    "tF": 9754,
+    "ok": 1
+   },
+   {
+    "key": "weide|1|1",
+    "tZ": 7449,
+    "tF": 10413,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|7|0",
+    "tZ": 7449,
+    "tF": 10829,
+    "ok": 1
+   },
+   {
+    "key": "zacken|2|0",
+    "tZ": 7449,
+    "tF": 10848,
+    "ok": 1
+   },
+   {
+    "key": "zacken|8|0",
+    "tZ": 7450,
+    "tF": 10393,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|11|0",
+    "tZ": 7450,
+    "tF": 10862,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|15|0",
+    "tZ": 7451,
+    "tF": 10399,
+    "ok": 1
+   },
+   {
+    "key": "feuerstelle|1|3",
+    "tZ": 7452,
+    "tF": 10406,
+    "ok": 1
+   },
+   {
+    "key": "feuerstelle|1|1",
+    "tZ": 7453,
+    "tF": 10842,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|8|0",
+    "tZ": 7453,
+    "tF": 10855,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|9|0",
+    "tZ": 7454,
+    "tF": 10874,
+    "ok": 1
+   },
+   {
+    "key": "zacken|4|0",
+    "tZ": 7455,
+    "tF": 10880,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|16|0",
+    "tZ": 7455,
+    "tF": 10867,
+    "ok": 1
+   },
+   {
+    "key": "zacken|9|0",
+    "tZ": 7458,
+    "tF": 11208,
+    "ok": 1
+   },
+   {
+    "key": "zacken|16|0",
+    "tZ": 7459,
+    "tF": 11215,
+    "ok": 1
+   },
+   {
+    "key": "zacken|11|0",
+    "tZ": 7460,
+    "tF": 11221,
+    "ok": 1
+   },
+   {
+    "key": "zacken|6|0",
+    "tZ": 7460,
+    "tF": 11237,
+    "ok": 1
+   },
+   {
+    "key": "zacken|12|0",
+    "tZ": 7461,
+    "tF": 11643,
+    "ok": 1
+   },
+   {
+    "key": "feuerstelle|2|3",
+    "tZ": 7461,
+    "tF": 11632,
+    "ok": 1
+   },
+   {
+    "key": "feuerstelle|2|1",
+    "tZ": 7461,
+    "tF": 11201,
+    "ok": 1
+   },
+   {
+    "key": "zacken|14|0",
+    "tZ": 7462,
+    "tF": 14791,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|14|0",
+    "tZ": 7462,
+    "tF": 11649,
+    "ok": 1
+   },
+   {
+    "key": "kristalle|12|0",
+    "tZ": 7465,
+    "tF": 14797,
+    "ok": 1
+   },
+   {
+    "key": "alemannisch|1|3|ov:170117b9.261",
+    "tZ": 7467,
+    "tF": 10386,
+    "ok": 1
+   },
+   {
+    "key": "zacken|5|0",
+    "tZ": 7468,
+    "tF": 11629,
+    "ok": 1
+   },
+   {
+    "key": "zacken|15|0",
+    "tZ": 7798,
+    "tF": 11653,
+    "ok": 1
+   },
+   {
+    "key": "zacken|13|0",
+    "tZ": 8029,
+    "tF": 13647,
+    "ok": 1
+   },
+   {
+    "key": "zacken|7|0",
+    "tZ": 8031,
+    "tF": 12016,
+    "ok": 1
+   },
+   {
+    "key": "karst|1|1",
+    "tZ": 8356,
+    "tF": 13980,
+    "ok": 1
+   },
+   {
+    "key": "tanne|2|1",
+    "tZ": 8356,
+    "tF": 11245,
+    "ok": 1
+   },
+   {
+    "key": "tanne|1|1",
+    "tZ": 8358,
+    "tF": 11623,
+    "ok": 1
+   },
+   {
+    "key": "tanne|3|1",
+    "tZ": 8564,
+    "tF": 11230,
+    "ok": 1
+   },
+   {
+    "key": "fichte|3|1",
+    "tZ": 8745,
+    "tF": 11194,
+    "ok": 1
+   },
+   {
+    "key": "birke|2|1",
+    "tZ": 8912,
+    "tF": 11639,
+    "ok": 1
+   },
+   {
+    "key": "buche|2|1",
+    "tZ": 8915,
+    "tF": 14779,
+    "ok": 1
+   },
+   {
+    "key": "buche|1|1",
+    "tZ": 8915,
+    "tF": 14803,
+    "ok": 1
+   },
+   {
+    "key": "eiche|1|1",
+    "tZ": 8917,
+    "tF": 14773,
+    "ok": 1
+   },
+   {
+    "key": "eiche|2|1",
+    "tZ": 8918,
+    "tF": 12022,
+    "ok": 1
+   },
+   {
+    "key": "birke|1|1",
+    "tZ": 8928,
+    "tF": 14783,
+    "ok": 1
+   },
+   {
+    "key": "blume|2|0",
+    "tZ": 9092,
+    "tF": 15024,
+    "ok": 1
+   },
+   {
+    "key": "blume|1|0",
+    "tZ": 9092,
+    "tF": 15019,
+    "ok": 1
+   },
+   {
+    "key": "birke|3|1",
+    "tZ": 9256,
+    "tF": 13967,
+    "ok": 1
+   },
+   {
+    "key": "fichte|1|1",
+    "tZ": 9293,
+    "tF": 13997,
+    "ok": 1
+   },
+   {
+    "key": "fichte|2|1",
+    "tZ": 9348,
+    "tF": 11636,
+    "ok": 1
+   },
+   {
+    "key": "mammut|1|1",
+    "tZ": 10609,
+    "tF": 15533,
+    "ok": 1
+   },
+   {
+    "key": "eiche|3|1",
+    "tZ": 11967,
+    "tF": 16041,
+    "ok": 1
+   },
+   {
+    "key": "geroell|1|0",
+    "tZ": 12483,
+    "tF": 16054,
+    "ok": 1
+   },
+   {
+    "key": "laterne|1|3",
+    "tZ": 14049,
+    "tF": 16058,
+    "ok": 1
+   },
+   {
+    "key": "laterne|1|1",
+    "tZ": 14049,
+    "tF": 14656,
+    "ok": 1
+   },
+   {
+    "key": "brunnen|1|3",
+    "tZ": 14077,
+    "tF": 15545,
+    "ok": 1
+   },
+   {
+    "key": "brunnen|1|1",
+    "tZ": 14077,
+    "tF": 16061,
+    "ok": 1
+   },
+   {
+    "key": "marktstand|1|3",
+    "tZ": 14079,
+    "tF": 14661,
+    "ok": 1
+   },
+   {
+    "key": "marktstand|1|1",
+    "tZ": 14079,
+    "tF": 15548,
+    "ok": 1
+   },
+   {
+    "key": "gotisch|12|2|ov:edcc8866.479",
+    "tZ": 14139,
+    "tF": 16459,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|12|2|ov:e18295c.473",
+    "tZ": 14146,
+    "tF": 14808,
+    "ok": 1
+   },
+   {
+    "key": "wandlaterne|1|3",
+    "tZ": 14147,
+    "tF": 15551,
+    "ok": 1
+   },
+   {
+    "key": "wandlaterne|1|1",
+    "tZ": 14147,
+    "tF": 16462,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|13|2|ov:8198aa54.471",
+    "tZ": 14152,
+    "tF": 16064,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|4|2|ov:9935b486.473",
+    "tZ": 14157,
+    "tF": 16067,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|6|2|ov:9077280.470",
+    "tZ": 14162,
+    "tF": 16739,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|8|2|ov:49901c4e.473",
+    "tZ": 14166,
+    "tF": 16450,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|13|2|ov:63183697.473",
+    "tZ": 14172,
+    "tF": 16466,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|15|2|ov:223f7a54.472",
+    "tZ": 14179,
+    "tF": 17983,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|11|2|ov:3e3ed698.463",
+    "tZ": 14182,
+    "tF": 16464,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|12|2|ov:1093e85c.473",
+    "tZ": 14186,
+    "tF": 16740,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|16|2|ov:fd3882cb.472",
+    "tZ": 14190,
+    "tF": 18216,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|9|2|ov:7323c079.472",
+    "tZ": 14192,
+    "tF": 19846,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|3|2|ov:41948277.473",
+    "tZ": 14197,
+    "tF": 19088,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|11|2|ov:cb5eca29.473",
+    "tZ": 14206,
+    "tF": 18060,
+    "ok": 1
+   },
+   {
+    "key": "skandinavisch|14|2|ov:519be5c6.477",
+    "tZ": 14210,
+    "tF": 19165,
+    "ok": 1
+   },
+   {
+    "key": "skandinavisch|6|2|ov:64a4c7f0.475",
+    "tZ": 14215,
+    "tF": 16606,
+    "ok": 1
+   },
+   {
+    "key": "skandinavisch|6|3|ov:64a4c7f0.475",
+    "tZ": 14404,
+    "tF": 17278,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|13|3|ov:63183697.473",
+    "tZ": 14405,
+    "tF": 17807,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|11|3|ov:3e3ed698.463",
+    "tZ": 14405,
+    "tF": 18059,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|15|3|ov:223f7a54.472",
+    "tZ": 14405,
+    "tF": 18492,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|3|3|ov:41948277.473",
+    "tZ": 14405,
+    "tF": 19349,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|13|3|ov:8198aa54.471",
+    "tZ": 14405,
+    "tF": 19780,
+    "ok": 1
+   },
+   {
+    "key": "gotisch|12|3|ov:edcc8866.479",
+    "tZ": 14405,
+    "tF": 17404,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|12|3|ov:1093e85c.473",
+    "tZ": 14405,
+    "tF": 18560,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|11|3|ov:cb5eca29.473",
+    "tZ": 14405,
+    "tF": 18405,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|12|3|ov:e18295c.473",
+    "tZ": 14405,
+    "tF": 18789,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|6|3|ov:9077280.470",
+    "tZ": 14405,
+    "tF": 18988,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|9|3|ov:7323c079.472",
+    "tZ": 14405,
+    "tF": 18948,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|4|3|ov:9935b486.473",
+    "tZ": 14405,
+    "tF": 19304,
+    "ok": 1
+   },
+   {
+    "key": "skandinavisch|14|3|ov:519be5c6.477",
+    "tZ": 14405,
+    "tF": 19304,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|8|3|ov:49901c4e.473",
+    "tZ": 14405,
+    "tF": 19629,
+    "ok": 1
+   },
+   {
+    "key": "alpenchalet|16|3|ov:fd3882cb.472",
+    "tZ": 14405,
+    "tF": 20000,
+    "ok": 1
+   },
+   {
+    "key": "schwarzwald|9|3|ov:c5e87e4.474",
+    "tZ": 14406,
+    "tF": 19708,
+    "ok": 1
+   },
+   {
+    "key": "blume|1|2",
+    "tZ": 18182,
+    "tF": 19733,
+    "ok": 1
+   },
+   {
+    "key": "blume|2|2",
+    "tZ": 18220,
+    "tF": 19860,
+    "ok": 1
+   },
+   {
+    "key": "gestruepp|1|1",
+    "tZ": 18335,
+    "tF": 19752,
+    "ok": 1
+   },
+   {
+    "key": "farn|2|1",
+    "tZ": 18645,
+    "tF": 19985,
+    "ok": 1
+   },
+   {
+    "key": "totstamm|1|1",
+    "tZ": 18655,
+    "tF": 19752,
+    "ok": 1
+   },
+   {
+    "key": "farn|1|1",
+    "tZ": 18656,
+    "tF": 19985,
+    "ok": 1
+   },
+   {
+    "key": "findling|1|0",
+    "tZ": 20145,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|2|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|3|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|4|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|5|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|6|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|7|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|8|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|9|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|10|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|11|0",
+    "tZ": 20146,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|12|0",
+    "tZ": 20147,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|13|0",
+    "tZ": 20147,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|14|0",
+    "tZ": 20147,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|15|0",
+    "tZ": 20147,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "findling|16|0",
+    "tZ": 20147,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|1|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|2|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|3|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|4|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|5|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|6|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|7|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|8|0",
+    "tZ": 20148,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|9|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|10|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|11|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|12|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|13|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|14|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|15|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "basalt|16|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|1|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|2|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|3|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|4|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|5|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|6|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|7|0",
+    "tZ": 20149,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|8|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|9|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|10|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|11|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|12|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|13|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|14|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|15|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   },
+   {
+    "key": "sediment|16|0",
+    "tZ": 20150,
+    "tF": null,
+    "ok": null
+   }
+  ],
+  "frei": [
+   [
+    7909,
+    8128
+   ],
+   [
+    7911,
+    8128
+   ],
+   [
+    7915,
+    8128
+   ],
+   [
+    7915,
+    8128
+   ],
+   [
+    7916,
+    8128
+   ],
+   [
+    7916,
+    8128
+   ],
+   [
+    7917,
+    8128
+   ],
+   [
+    8301,
+    8758
+   ],
+   [
+    8307,
+    8758
+   ],
+   [
+    8310,
+    8758
+   ],
+   [
+    8313,
+    8758
+   ],
+   [
+    8315,
+    8758
+   ],
+   [
+    8824,
+    9683
+   ],
+   [
+    8824,
+    9683
+   ],
+   [
+    8825,
+    9683
+   ],
+   [
+    8828,
+    9683
+   ],
+   [
+    8829,
+    9683
+   ],
+   [
+    8830,
+    9683
+   ],
+   [
+    8836,
+    9683
+   ],
+   [
+    8837,
+    9683
+   ],
+   [
+    8837,
+    10320
+   ],
+   [
+    8838,
+    10320
+   ],
+   [
+    8839,
+    10320
+   ],
+   [
+    9772,
+    10320
+   ],
+   [
+    9773,
+    10320
+   ],
+   [
+    9774,
+    10320
+   ],
+   [
+    9774,
+    10320
+   ],
+   [
+    9775,
+    10320
+   ],
+   [
+    9776,
+    10799
+   ],
+   [
+    9777,
+    10799
+   ],
+   [
+    9779,
+    10799
+   ],
+   [
+    9780,
+    10799
+   ],
+   [
+    9780,
+    10799
+   ],
+   [
+    9781,
+    10799
+   ],
+   [
+    9782,
+    10799
+   ],
+   [
+    9782,
+    10799
+   ],
+   [
+    9785,
+    11176
+   ],
+   [
+    9786,
+    11176
+   ],
+   [
+    9787,
+    11176
+   ],
+   [
+    9787,
+    11176
+   ],
+   [
+    9788,
+    11176
+   ],
+   [
+    9789,
+    11176
+   ],
+   [
+    9789,
+    11176
+   ],
+   [
+    9790,
+    11176
+   ],
+   [
+    9790,
+    11607
+   ],
+   [
+    9790,
+    11607
+   ],
+   [
+    9791,
+    11607
+   ],
+   [
+    10421,
+    11607
+   ],
+   [
+    10892,
+    11607
+   ],
+   [
+    10892,
+    11607
+   ],
+   [
+    10892,
+    11607
+   ],
+   [
+    10893,
+    11607
+   ],
+   [
+    10894,
+    11968
+   ],
+   [
+    10895,
+    11968
+   ],
+   [
+    10895,
+    11968
+   ],
+   [
+    13514,
+    13595
+   ],
+   [
+    13519,
+    13595
+   ],
+   [
+    13520,
+    13595
+   ],
+   [
+    13523,
+    13595
+   ],
+   [
+    13888,
+    13947
+   ],
+   [
+    13890,
+    13947
+   ],
+   [
+    13891,
+    13947
+   ],
+   [
+    13892,
+    13947
+   ],
+   [
+    14427,
+    14573
+   ],
+   [
+    14429,
+    14573
+   ],
+   [
+    14430,
+    14573
+   ],
+   [
+    14432,
+    14573
+   ],
+   [
+    14432,
+    14573
+   ],
+   [
+    14433,
+    14573
+   ],
+   [
+    14433,
+    14573
+   ],
+   [
+    14434,
+    14573
+   ],
+   [
+    14437,
+    14756
+   ],
+   [
+    14438,
+    14756
+   ],
+   [
+    14667,
+    14756
+   ],
+   [
+    14669,
+    14756
+   ],
+   [
+    14669,
+    14756
+   ],
+   [
+    14670,
+    14756
+   ],
+   [
+    14671,
+    14756
+   ],
+   [
+    14809,
+    15013
+   ],
+   [
+    14810,
+    15013
+   ],
+   [
+    15025,
+    15522
+   ],
+   [
+    15025,
+    15522
+   ],
+   [
+    15026,
+    15522
+   ],
+   [
+    15026,
+    15522
+   ],
+   [
+    15555,
+    16011
+   ],
+   [
+    15559,
+    16011
+   ],
+   [
+    15559,
+    16011
+   ],
+   [
+    15560,
+    16011
+   ],
+   [
+    15561,
+    16011
+   ],
+   [
+    15573,
+    16011
+   ],
+   [
+    16075,
+    16436
+   ],
+   [
+    16076,
+    16436
+   ],
+   [
+    16076,
+    16436
+   ],
+   [
+    16077,
+    16436
+   ],
+   [
+    16078,
+    16436
+   ],
+   [
+    16472,
+    16603
+   ],
+   [
+    16607,
+    16735
+   ],
+   [
+    16608,
+    16735
+   ],
+   [
+    17241,
+    17268
+   ],
+   [
+    17384,
+    17399
+   ],
+   [
+    17676,
+    17801
+   ],
+   [
+    17808,
+    17981
+   ],
+   [
+    17988,
+    18055
+   ],
+   [
+    17989,
+    18055
+   ],
+   [
+    18179,
+    18215
+   ],
+   [
+    18385,
+    18401
+   ],
+   [
+    18468,
+    18487
+   ],
+   [
+    18530,
+    18557
+   ],
+   [
+    18777,
+    18785
+   ],
+   [
+    18940,
+    18948
+   ],
+   [
+    18974,
+    18984
+   ],
+   [
+    19060,
+    19088
+   ],
+   [
+    19159,
+    19165
+   ],
+   [
+    19285,
+    19297
+   ],
+   [
+    19286,
+    19297
+   ],
+   [
+    19332,
+    19344
+   ],
+   [
+    19616,
+    19625
+   ],
+   [
+    19701,
+    19708
+   ],
+   [
+    19724,
+    19733
+   ],
+   [
+    19735,
+    19751
+   ],
+   [
+    19735,
+    19751
+   ],
+   [
+    19770,
+    19777
+   ],
+   [
+    19837,
+    19845
+   ],
+   [
+    19847,
+    19860
+   ],
+   [
+    19847,
+    19984
+   ],
+   [
+    19847,
+    19984
+   ],
+   [
+    19988,
+    19998
+   ],
+   [
+    20714,
+    20733
+   ]
+  ],
+  "bg": [
+   [
+    8203,
+    10.6,
+    "alemannisch",
+    1
+   ],
+   [
+    8214,
+    14.9,
+    "drachentor",
+    2
+   ],
+   [
+    8230,
+    3.8,
+    "drachentor",
+    3
+   ],
+   [
+    8234,
+    2.2,
+    "gras",
+    1
+   ],
+   [
+    8236,
+    0.3,
+    "gras",
+    1
+   ],
+   [
+    8236,
+    0.1,
+    "gras",
+    2
+   ],
+   [
+    8758,
+    1,
+    "geisttor",
+    3
+   ],
+   [
+    8759,
+    11.5,
+    "maschine",
+    2
+   ],
+   [
+    8771,
+    2.2,
+    "verkalkt",
+    3
+   ],
+   [
+    8773,
+    10.6,
+    "geisttor",
+    2
+   ],
+   [
+    8784,
+    0.6,
+    "kathedrale",
+    3
+   ],
+   [
+    9683,
+    10.8,
+    "ruine",
+    2
+   ],
+   [
+    9694,
+    0.7,
+    "kristalle",
+    0
+   ],
+   [
+    9695,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    9695,
+    0.5,
+    "maurentor",
+    3
+   ],
+   [
+    9696,
+    0.5,
+    "zacken",
+    0
+   ],
+   [
+    9697,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    9697,
+    11.7,
+    "kathedrale",
+    2
+   ],
+   [
+    9709,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    10320,
+    0.3,
+    "kristalle",
+    0
+   ],
+   [
+    10320,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    10321,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    10321,
+    0.1,
+    "alemannisch",
+    3
+   ],
+   [
+    10321,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    10321,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    10321,
+    0.1,
+    "feuerstelle",
+    3
+   ],
+   [
+    10321,
+    7.9,
+    "weide",
+    1
+   ],
+   [
+    10799,
+    0.4,
+    "kristalle",
+    0
+   ],
+   [
+    10800,
+    2.6,
+    "feuerstelle",
+    1
+   ],
+   [
+    10802,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    10803,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    10803,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    10803,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    10803,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    10803,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11176,
+    3.3,
+    "fichte",
+    1
+   ],
+   [
+    11180,
+    0.2,
+    "feuerstelle",
+    1
+   ],
+   [
+    11180,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11180,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11180,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11180,
+    2.1,
+    "tanne",
+    1
+   ],
+   [
+    11183,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    11183,
+    2.4,
+    "tanne",
+    1
+   ],
+   [
+    11607,
+    1.8,
+    "tanne",
+    1
+   ],
+   [
+    11609,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11609,
+    0.1,
+    "feuerstelle",
+    3
+   ],
+   [
+    11609,
+    2.1,
+    "fichte",
+    1
+   ],
+   [
+    11611,
+    1.3,
+    "birke",
+    1
+   ],
+   [
+    11613,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    11613,
+    0,
+    "kristalle",
+    0
+   ],
+   [
+    11613,
+    0,
+    "zacken",
+    0
+   ],
+   [
+    12003,
+    0.3,
+    "zacken",
+    0
+   ],
+   [
+    12004,
+    2.1,
+    "eiche",
+    1
+   ],
+   [
+    13595,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    13595,
+    9.6,
+    "gt",
+    1
+   ],
+   [
+    13605,
+    0.2,
+    "gras",
+    2
+   ],
+   [
+    13605,
+    18.1,
+    "verkalkt",
+    2
+   ],
+   [
+    13947,
+    2.2,
+    "birke",
+    1
+   ],
+   [
+    13949,
+    2.4,
+    "karst",
+    1
+   ],
+   [
+    13952,
+    0.2,
+    "maschine",
+    3
+   ],
+   [
+    13952,
+    2.5,
+    "fichte",
+    1
+   ],
+   [
+    14573,
+    14.6,
+    "maurentor",
+    2
+   ],
+   [
+    14589,
+    0.2,
+    "ruine",
+    3
+   ],
+   [
+    14589,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    14589,
+    1.3,
+    "strauch",
+    1
+   ],
+   [
+    14591,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    14591,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    14591,
+    1.2,
+    "laterne",
+    1
+   ],
+   [
+    14592,
+    0.1,
+    "marktstand",
+    3
+   ],
+   [
+    14756,
+    2,
+    "eiche",
+    1
+   ],
+   [
+    14758,
+    2.1,
+    "buche",
+    1
+   ],
+   [
+    14760,
+    2.4,
+    "birke",
+    1
+   ],
+   [
+    14763,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    14763,
+    0,
+    "kristalle",
+    0
+   ],
+   [
+    14763,
+    1.8,
+    "buche",
+    1
+   ],
+   [
+    14765,
+    1.3,
+    "alpenchalet",
+    2
+   ],
+   [
+    15013,
+    1.2,
+    "blume",
+    0
+   ],
+   [
+    15014,
+    0.2,
+    "blume",
+    0
+   ],
+   [
+    15522,
+    2.5,
+    "mammut",
+    1
+   ],
+   [
+    15525,
+    0.1,
+    "brunnen",
+    3
+   ],
+   [
+    15525,
+    0.5,
+    "marktstand",
+    1
+   ],
+   [
+    15525,
+    0,
+    "wandlaterne",
+    3
+   ],
+   [
+    16011,
+    1.8,
+    "eiche",
+    1
+   ],
+   [
+    16013,
+    1.2,
+    "geroell",
+    0
+   ],
+   [
+    16014,
+    0.1,
+    "laterne",
+    3
+   ],
+   [
+    16014,
+    0.2,
+    "brunnen",
+    1
+   ],
+   [
+    16014,
+    0.4,
+    "schwarzwald",
+    2
+   ],
+   [
+    16015,
+    0.3,
+    "schwarzwald",
+    2
+   ],
+   [
+    16436,
+    1.7,
+    "schwarzwald",
+    2
+   ],
+   [
+    16438,
+    0.9,
+    "gotisch",
+    2
+   ],
+   [
+    16439,
+    0.2,
+    "wandlaterne",
+    1
+   ],
+   [
+    16439,
+    0.3,
+    "schwarzwald",
+    2
+   ],
+   [
+    16439,
+    0.5,
+    "schwarzwald",
+    2
+   ],
+   [
+    16603,
+    1.3,
+    "skandinavisch",
+    2
+   ],
+   [
+    16735,
+    1.1,
+    "schwarzwald",
+    2
+   ],
+   [
+    16736,
+    0.5,
+    "alpenchalet",
+    2
+   ],
+   [
+    17269,
+    0.2,
+    "skandinavisch",
+    3
+   ],
+   [
+    17399,
+    0.2,
+    "gotisch",
+    3
+   ],
+   [
+    17801,
+    0.3,
+    "schwarzwald",
+    3
+   ],
+   [
+    17981,
+    0.6,
+    "schwarzwald",
+    2
+   ],
+   [
+    18055,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    18056,
+    0.4,
+    "schwarzwald",
+    2
+   ],
+   [
+    18215,
+    0.6,
+    "alpenchalet",
+    2
+   ],
+   [
+    18401,
+    0.4,
+    "schwarzwald",
+    3
+   ],
+   [
+    18487,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    18557,
+    0.1,
+    "alpenchalet",
+    3
+   ],
+   [
+    18785,
+    0.8,
+    "alpenchalet",
+    3
+   ],
+   [
+    18948,
+    0.1,
+    "alpenchalet",
+    3
+   ],
+   [
+    18984,
+    0.3,
+    "schwarzwald",
+    3
+   ],
+   [
+    19088,
+    0.5,
+    "schwarzwald",
+    2
+   ],
+   [
+    19165,
+    0.3,
+    "skandinavisch",
+    2
+   ],
+   [
+    19297,
+    0.2,
+    "skandinavisch",
+    3
+   ],
+   [
+    19297,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    19344,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    19625,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    19708,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    19733,
+    0.1,
+    "blume",
+    2
+   ],
+   [
+    19751,
+    0.3,
+    "gestruepp",
+    1
+   ],
+   [
+    19751,
+    0.4,
+    "totstamm",
+    1
+   ],
+   [
+    19777,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    19845,
+    0.2,
+    "alpenchalet",
+    2
+   ],
+   [
+    19860,
+    0.4,
+    "blume",
+    2
+   ],
+   [
+    19984,
+    0.4,
+    "farn",
+    1
+   ],
+   [
+    19985,
+    0,
+    "farn",
+    1
+   ],
+   [
+    19998,
+    0.1,
+    "alpenchalet",
+    3
+   ]
+  ],
+  "region": [
+   [
+    7350,
+    4.8,
+    "-1,-1",
+    "Scheibe offen"
+   ],
+   [
+    7984,
+    40.4,
+    "-1,-1",
+    "Scheibe offen"
+   ],
+   [
+    8319,
+    101.3,
+    "-1,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    8877,
+    216.1,
+    "-1,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    9939,
+    12.3,
+    "-1,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    10516,
+    16.3,
+    "0,-1",
+    "Scheibe offen"
+   ],
+   [
+    10899,
+    101,
+    "0,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    11256,
+    104.8,
+    "0,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    11662,
+    126.4,
+    "0,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12031,
+    8.3,
+    "0,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12373,
+    101.3,
+    "-1,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12577,
+    101.6,
+    "-1,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12733,
+    16,
+    "-1,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12816,
+    102.2,
+    "0,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    12970,
+    104.1,
+    "0,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    13262,
+    95.9,
+    "0,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    16914,
+    86,
+    "-1,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    17070,
+    87.4,
+    "-1,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    17535,
+    90.2,
+    "0,-1",
+    "wartet auf ihr Asset"
+   ],
+   [
+    17680,
+    90.4,
+    "0,0",
+    "wartet auf ihr Asset"
+   ],
+   [
+    19017,
+    25.2,
+    "-1,-1",
+    null
+   ],
+   [
+    19063,
+    15.9,
+    "0,-1",
+    null
+   ],
+   [
+    19090,
+    18.4,
+    "-1,0",
+    null
+   ],
+   [
+    19120,
+    18,
+    "0,0",
+    null
+   ]
+  ],
+  "karte": [
+   [
+    "send",
+    7377,
+    "fimp:gt|6",
+    null
+   ],
+   [
+    "send",
+    7840,
+    "fimp:strauch|1",
+    null
+   ],
+   [
+    "send",
+    7840,
+    "fimp:weide|1",
+    null
+   ],
+   [
+    "ende",
+    11659,
+    "fimp:weide|1",
+    1
+   ],
+   [
+    "ende",
+    11660,
+    "fimp:gt|6",
+    1
+   ],
+   [
+    "ende",
+    11660,
+    "fimp:strauch|1",
+    1
+   ],
+   [
+    "send",
+    11900,
+    "fimp:tanne|3",
+    null
+   ],
+   [
+    "send",
+    11900,
+    "fimp:tanne|2",
+    null
+   ],
+   [
+    "send",
+    11900,
+    "fimp:tanne|1",
+    null
+   ],
+   [
+    "ende",
+    14431,
+    "fimp:tanne|1",
+    1
+   ],
+   [
+    "ende",
+    14436,
+    "fimp:tanne|2",
+    1
+   ],
+   [
+    "ende",
+    14438,
+    "fimp:tanne|3",
+    1
+   ],
+   [
+    "send",
+    14446,
+    "fimp:fichte|3",
+    null
+   ],
+   [
+    "send",
+    14446,
+    "fimp:eiche|2",
+    null
+   ],
+   [
+    "send",
+    14447,
+    "fimp:birke|3",
+    null
+   ],
+   [
+    "ende",
+    15558,
+    "fimp:fichte|3",
+    1
+   ],
+   [
+    "ende",
+    15573,
+    "fimp:birke|3",
+    1
+   ],
+   [
+    "send",
+    15609,
+    "fimp:fichte|1",
+    null
+   ],
+   [
+    "send",
+    15609,
+    "fimp:eiche|1",
+    null
+   ],
+   [
+    "ende",
+    16076,
+    "fimp:eiche|2",
+    1
+   ],
+   [
+    "ende",
+    16103,
+    "fimp:fichte|1",
+    1
+   ],
+   [
+    "send",
+    16134,
+    "fimp:fichte|2",
+    null
+   ],
+   [
+    "send",
+    16135,
+    "fimp:birke|2",
+    null
+   ],
+   [
+    "ende",
+    16609,
+    "fimp:eiche|1",
+    1
+   ],
+   [
+    "send",
+    16656,
+    "fimp:birke|1",
+    null
+   ],
+   [
+    "ende",
+    16913,
+    "fimp:fichte|2",
+    1
+   ],
+   [
+    "send",
+    17017,
+    "fimp:mammut|1",
+    null
+   ],
+   [
+    "ende",
+    17460,
+    "fimp:birke|2",
+    1
+   ],
+   [
+    "ende",
+    17460,
+    "fimp:mammut|1",
+    1
+   ],
+   [
+    "send",
+    17480,
+    "fimp:eiche|3",
+    null
+   ],
+   [
+    "send",
+    17480,
+    "fimp:buche|1",
+    null
+   ],
+   [
+    "ende",
+    17988,
+    "fimp:birke|1",
+    1
+   ],
+   [
+    "send",
+    18002,
+    "fimp:buche|2",
+    null
+   ],
+   [
+    "ende",
+    18279,
+    "fimp:eiche|3",
+    1
+   ],
+   [
+    "send",
+    18289,
+    "fimp:karst|1",
+    null
+   ],
+   [
+    "ende",
+    18386,
+    "fimp:buche|1",
+    1
+   ],
+   [
+    "ende",
+    18974,
+    "fimp:karst|1",
+    1
+   ],
+   [
+    "ende",
+    18988,
+    "fimp:buche|2",
+    1
+   ]
+  ],
+  "proben": [
+   {
+    "t": 1248,
+    "karten": [
+     0,
+     0
+    ],
+    "frei": 0
+   },
+   {
+    "t": 2256,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {},
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 4378,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 4470,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 4535,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 4635,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 5027,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 4,
+     "baum_eiche": 1,
+     "baum_birke": 3,
+     "baum_kiefer": 6,
+     "grown_busch_hazel_v1": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 5157,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 4,
+     "baum_eiche": 1,
+     "baum_birke": 3,
+     "baum_kiefer": 6,
+     "grown_busch_hazel_v1": 1,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 4
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 5345,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 9,
+     "baum_eiche": 1,
+     "baum_birke": 3,
+     "baum_kiefer": 9,
+     "grown_busch_hazel_v1": 1,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 4,
+     "baum_erle": 1,
+     "grown_busch_hazel_v0": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 5438,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 9,
+     "baum_eiche": 1,
+     "baum_birke": 3,
+     "baum_kiefer": 9,
+     "grown_busch_hazel_v1": 1,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 4,
+     "baum_erle": 1,
+     "grown_busch_hazel_v0": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 5558,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 8,
+     "felsturm": 1,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 14,
+     "baum_eiche": 2,
+     "baum_birke": 3,
+     "baum_kiefer": 12,
+     "grown_busch_hazel_v1": 1,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 4,
+     "baum_erle": 2,
+     "grown_busch_hazel_v0": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 6113,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 13,
+     "felsturm": 4,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 33,
+     "baum_eiche": 8,
+     "baum_birke": 8,
+     "baum_kiefer": 31,
+     "grown_busch_hazel_v1": 2,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 13,
+     "baum_erle": 2,
+     "grown_busch_hazel_v0": 5,
+     "grown_busch_hazel_v2": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 6382,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 31,
+     "felsturm": 9,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 34,
+     "baum_eiche": 10,
+     "baum_birke": 11,
+     "baum_kiefer": 33,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 13,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 7,
+     "grown_busch_hazel_v2": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 6441,
+    "streu": [
+     "-1,-1 fehlt",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 31,
+     "felsturm": 9,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 34,
+     "baum_eiche": 10,
+     "baum_birke": 11,
+     "baum_kiefer": 33,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 1,
+     "felsbogen": 2,
+     "kristall_var5": 13,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 7,
+     "grown_busch_hazel_v2": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 7620,
+    "streu": [
+     "-1,-1 Scheibe offen",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 46,
+     "felsturm": 10,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 51,
+     "baum_eiche": 15,
+     "baum_birke": 13,
+     "baum_kiefer": 42,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 6,
+     "felsbogen": 10,
+     "kristall_var5": 19,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 10,
+     "grown_busch_hazel_v2": 1,
+     "haus_alemannisch": 1,
+     "fahrzeug_gt": 1,
+     "tor_drachentor": 1
+    },
+    "karten": [
+     2,
+     1
+    ],
+    "warte": 23,
+    "werk": 36,
+    "baecker": 1,
+    "frei": 0
+   },
+   {
+    "t": 7917,
+    "streu": [
+     "-1,-1 Scheibe offen",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 46,
+     "felsturm": 14,
+     "welt_portal": 1,
+     "welt_strom": 1,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 57,
+     "baum_eiche": 16,
+     "baum_birke": 14,
+     "baum_kiefer": 46,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 6,
+     "felsbogen": 12,
+     "kristall_var5": 20,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 10,
+     "grown_busch_hazel_v2": 1,
+     "haus_alemannisch": 1,
+     "fahrzeug_gt": 1,
+     "tor_drachentor": 1
+    },
+    "karten": [
+     0,
+     3
+    ],
+    "warte": 17,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 7
+   },
+   {
+    "t": 8816,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 46,
+     "felsturm": 18,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_portale": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 57,
+     "baum_eiche": 16,
+     "baum_birke": 14,
+     "baum_kiefer": 46,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 6,
+     "felsbogen": 19,
+     "kristall_var5": 20,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 10,
+     "grown_busch_hazel_v2": 1,
+     "haus_alemannisch": 1,
+     "fahrzeug_gt": 1
+    },
+    "karten": [
+     4,
+     3
+    ],
+    "warte": 19,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 9771,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 42,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 64,
+     "baum_eiche": 20,
+     "baum_birke": 19,
+     "baum_kiefer": 54,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 6,
+     "felsbogen": 14,
+     "kristall_var5": 17,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 12,
+     "grown_busch_hazel_v2": 1,
+     "felsturm": 12,
+     "haus_alemannisch": 1,
+     "fahrzeug_gt": 1
+    },
+    "karten": [
+     8,
+     3
+    ],
+    "warte": 19,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 3
+   },
+   {
+    "t": 9835,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 42,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 64,
+     "baum_eiche": 20,
+     "baum_birke": 19,
+     "baum_kiefer": 54,
+     "grown_busch_hazel_v1": 6,
+     "glutbrunnen": 6,
+     "felsbogen": 14,
+     "kristall_var5": 17,
+     "baum_erle": 3,
+     "grown_busch_hazel_v0": 12,
+     "grown_busch_hazel_v2": 1,
+     "felsturm": 12,
+     "haus_alemannisch": 1,
+     "fahrzeug_gt": 1
+    },
+    "karten": [
+     8,
+     3
+    ],
+    "warte": 0,
+    "werk": 31,
+    "baecker": 3,
+    "frei": 27
+   },
+   {
+    "t": 10886,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 Scheibe offen",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 16,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 84,
+     "baum_eiche": 25,
+     "baum_birke": 30,
+     "baum_kiefer": 66,
+     "grown_busch_hazel_v1": 7,
+     "kristall_var5": 3,
+     "baum_erle": 5,
+     "grown_busch_hazel_v0": 14,
+     "grown_busch_hazel_v2": 1,
+     "felsturm": 8,
+     "felsbogen": 8,
+     "glutbrunnen": 2,
+     "fahrzeug_gt": 1,
+     "baum_mammut": 1
+    },
+    "karten": [
+     11,
+     3
+    ],
+    "warte": 0,
+    "werk": 31,
+    "baecker": 3,
+    "frei": 12
+   },
+   {
+    "t": 11250,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 16,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 93,
+     "baum_eiche": 27,
+     "baum_birke": 34,
+     "baum_kiefer": 74,
+     "grown_busch_hazel_v1": 7,
+     "kristall_var5": 3,
+     "baum_erle": 5,
+     "grown_busch_hazel_v0": 14,
+     "grown_busch_hazel_v2": 10,
+     "felsbogen": 5,
+     "glutbrunnen": 2,
+     "fahrzeug_gt": 1,
+     "felsturm": 3,
+     "baum_mammut": 1
+    },
+    "karten": [
+     12,
+     3
+    ],
+    "warte": 0,
+    "werk": 24,
+    "baecker": 3,
+    "frei": 11
+   },
+   {
+    "t": 12023,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 121,
+     "baum_eiche": 38,
+     "baum_birke": 42,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 9,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "fahrzeug_gt": 1,
+     "felsturm": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     9,
+     3
+    ],
+    "warte": 0,
+    "werk": 25,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 12342,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 120,
+     "baum_eiche": 38,
+     "baum_birke": 43,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 13,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "fahrzeug_gt": 1,
+     "felsturm": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 0,
+    "werk": 25,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 12726,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 121,
+     "baum_eiche": 38,
+     "baum_birke": 43,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 13,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "fahrzeug_gt": 1,
+     "felsturm": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 0,
+    "werk": 26,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 12964,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 121,
+     "baum_eiche": 38,
+     "baum_birke": 43,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 13,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "fahrzeug_gt": 1,
+     "felsturm": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 0,
+    "werk": 26,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 13515,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_terrain": 1,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 121,
+     "baum_eiche": 38,
+     "baum_birke": 43,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 13,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "fahrzeug_gt": 1,
+     "felsturm": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 0,
+    "werk": 24,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 13889,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_garage": 1,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 120,
+     "baum_eiche": 38,
+     "baum_birke": 43,
+     "baum_kiefer": 100,
+     "grown_busch_hazel_v1": 13,
+     "kristall_var5": 3,
+     "grown_busch_hazel_v0": 15,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "baum_mammut": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 0,
+    "werk": 20,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 14428,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "kristall_var6": 14,
+     "welt_schmiede": 1,
+     "welt_fachwerk": 1,
+     "baum_tanne": 105,
+     "baum_eiche": 39,
+     "baum_birke": 41,
+     "baum_kiefer": 83,
+     "grown_busch_hazel_v1": 10,
+     "kristall_var5": 2,
+     "grown_busch_hazel_v0": 11,
+     "grown_busch_hazel_v2": 11,
+     "felsbogen": 1,
+     "baum_mammut": 2,
+     "laterne_dorf": 13,
+     "brunnen_dorf": 1,
+     "marktstand_dorf": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 4,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     10,
+     3
+    ],
+    "warte": 21,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 14664,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_tanne": 91,
+     "baum_eiche": 39,
+     "baum_birke": 41,
+     "baum_kiefer": 83,
+     "kristall_var6": 2,
+     "felsbogen": 1,
+     "baum_mammut": 2,
+     "laterne_dorf": 13,
+     "brunnen_dorf": 1,
+     "marktstand_dorf": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 4,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     7,
+     3
+    ],
+    "warte": 12,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 2
+   },
+   {
+    "t": 14812,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_tanne": 71,
+     "baum_eiche": 39,
+     "baum_birke": 41,
+     "baum_kiefer": 83,
+     "baum_mammut": 2,
+     "laterne_dorf": 13,
+     "brunnen_dorf": 1,
+     "marktstand_dorf": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 4,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     7,
+     3
+    ],
+    "warte": 5,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 2
+   },
+   {
+    "t": 15030,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 39,
+     "baum_birke": 41,
+     "baum_kiefer": 83,
+     "baum_tanne": 38,
+     "baum_mammut": 2,
+     "laterne_dorf": 13,
+     "brunnen_dorf": 1,
+     "marktstand_dorf": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 4,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     7,
+     3
+    ],
+    "warte": 1,
+    "werk": 36,
+    "baecker": 3,
+    "frei": 4
+   },
+   {
+    "t": 15575,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 39,
+     "baum_birke": 41,
+     "baum_kiefer": 81,
+     "baum_mammut": 2,
+     "baum_tanne": 3,
+     "laterne_dorf": 13,
+     "brunnen_dorf": 1,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     7,
+     1
+    ],
+    "warte": 0,
+    "werk": 31,
+    "baecker": 1,
+    "frei": 6
+   },
+   {
+    "t": 16101,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 37,
+     "baum_birke": 39,
+     "baum_kiefer": 70,
+     "baum_mammut": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "wandlaterne_dorf": 10,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     5,
+     2
+    ],
+    "warte": 0,
+    "werk": 26,
+    "baecker": 2,
+    "frei": 5
+   },
+   {
+    "t": 16472,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_kiefer": 34,
+     "baum_eiche": 19,
+     "baum_mammut": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     3,
+     3
+    ],
+    "warte": 0,
+    "werk": 25,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 16609,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_kiefer": 34,
+     "baum_eiche": 19,
+     "baum_mammut": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     3,
+     2
+    ],
+    "warte": 0,
+    "werk": 23,
+    "baecker": 2,
+    "frei": 2
+   },
+   {
+    "t": 16742,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_kiefer": 34,
+     "baum_mammut": 2,
+     "baum_eiche": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     2,
+     3
+    ],
+    "warte": 0,
+    "werk": 23,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 17067,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 fehlt",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_mammut": 2,
+     "baum_eiche": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     3,
+     3
+    ],
+    "warte": 0,
+    "werk": 23,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 17241,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_mammut": 2,
+     "baum_eiche": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 2
+    },
+    "karten": [
+     4,
+     3
+    ],
+    "warte": 0,
+    "werk": 22,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 17382,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_mammut": 2,
+     "baum_eiche": 2,
+     "haus_gotisch": 1,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     4,
+     3
+    ],
+    "warte": 0,
+    "werk": 22,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 17462,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 39,
+     "baum_mammut": 2,
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     4,
+     1
+    ],
+    "warte": 0,
+    "werk": 21,
+    "baecker": 1,
+    "frei": 0
+   },
+   {
+    "t": 17677,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "baum_birke": 17,
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 9,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     2,
+     3
+    ],
+    "warte": 0,
+    "werk": 20,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 17808,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_birke": 17,
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 8,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     2,
+     3
+    ],
+    "warte": 0,
+    "werk": 19,
+    "baecker": 3,
+    "frei": 1
+   },
+   {
+    "t": 18060,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 7,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     1,
+     3
+    ],
+    "warte": 0,
+    "werk": 17,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 18156,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 7,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     1,
+     3
+    ],
+    "warte": 0,
+    "werk": 17,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 18255,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "baum_eiche": 2,
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 7,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     1,
+     3
+    ],
+    "warte": 0,
+    "werk": 18,
+    "baecker": 3,
+    "frei": 0
+   },
+   {
+    "t": 18406,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_alpenchalet": 4,
+     "haus_schwarzwald": 6,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 18,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18437,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_alpenchalet": 4,
+     "haus_schwarzwald": 6,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 18,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18561,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 5,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 16,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18642,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 5,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 16,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18735,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_alpenchalet": 3,
+     "haus_schwarzwald": 5,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 19,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18909,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_schwarzwald": 5,
+     "haus_alpenchalet": 2,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 18,
+    "baecker": 2,
+    "frei": 0
+   },
+   {
+    "t": 18940,
+    "streu": [
+     "-1,-1 wartet auf ihr Asset",
+     "0,-1 wartet auf ihr Asset",
+     "-1,0 wartet auf ihr Asset",
+     "0,0 wartet auf ihr Asset"
+    ],
+    "bauten": {
+     "haus_schwarzwald": 5,
+     "haus_alpenchalet": 2,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     2
+    ],
+    "warte": 0,
+    "werk": 17,
+    "baecker": 2,
+    "frei": 1
+   },
+   {
+    "t": 19062,
+    "streu": [
+     "0,-1 fehlt",
+     "-1,0 fehlt",
+     "0,0 fehlt"
+    ],
+    "bauten": {
+     "haus_schwarzwald": 4,
+     "haus_alpenchalet": 2,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 15,
+    "baecker": 0,
+    "frei": 1
+   },
+   {
+    "t": 19148,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 4,
+     "haus_alpenchalet": 2,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 15,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19239,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 4,
+     "haus_alpenchalet": 2,
+     "haus_skandinavisch": 1
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 14,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19410,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 2,
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 11,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19445,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 2,
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 11,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19541,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 2,
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 11,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19648,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 1,
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 10,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19753,
+    "streu": [],
+    "bauten": {
+     "haus_schwarzwald": 1,
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 6,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 19838,
+    "streu": [],
+    "bauten": {
+     "haus_alpenchalet": 2
+    },
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 4,
+    "baecker": 0,
+    "frei": 1
+   },
+   {
+    "t": 20000,
+    "streu": [],
+    "bauten": {},
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 20034,
+    "streu": [],
+    "bauten": {},
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 0,
+    "werk": 0,
+    "baecker": 0,
+    "frei": 0
+   },
+   {
+    "t": 20155,
+    "streu": [],
+    "bauten": {},
+    "karten": [
+     0,
+     0
+    ],
+    "warte": 20,
+    "werk": 36,
+    "baecker": 0,
+    "frei": 0
+   }
+  ],
+  "sync": [
+   1900,
+   2257,
+   4379,
+   5157,
+   6115,
+   7626,
+   8818,
+   9795,
+   10887,
+   11655,
+   12343,
+   13516,
+   14435,
+   15574,
+   16102,
+   17067,
+   18061,
+   19089,
+   20034
+  ],
+  "send": [],
+  "zuEnde": true
+ },
+ "zweit": false
+}

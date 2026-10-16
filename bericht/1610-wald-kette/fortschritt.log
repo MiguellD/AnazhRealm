@@ -1,0 +1,22 @@
+23:26:56 W2 exit=1 985a923b  t(Weltbild) = t(Kontrolle) 19.96 s ab Navigation
+23:27:52 W3 exit=1 985a923b  t(Weltbild) = t(Kontrolle) 22.36 s ab Navigation
+23:28:46 W4 exit=1 985a923b  t(Weltbild) = t(Kontrolle) 19.87 s ab Navigation
+23:29:17 BASIS FERTIG 
+23:29:45 S1 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 20.89 s ab Navigation
+23:30:38 W5 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 18.67 s ab Navigation
+23:31:31 W6 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 18.70 s ab Navigation
+23:32:24 S2 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 19.11 s ab Navigation
+23:33:18 S3 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 19.57 s ab Navigation
+23:34:12 W7 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 19.78 s ab Navigation
+23:35:05 W8 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 19.24 s ab Navigation
+23:35:59 S4 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 20.14 s ab Navigation
+23:36:30 S1-SERIE FERTIG
+23:37:53 T1 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 19.39 s ab Navigation
+23:38:48 W9 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 21.03 s ab Navigation
+23:39:43 W10 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 21.16 s ab Navigation
+23:40:36 T2 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 19.11 s ab Navigation
+23:41:31 T3 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 20.79 s ab Navigation
+23:42:24 W11 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 20.36 s ab Navigation
+23:43:19 W12 exit=1 abab-bbb  t(Weltbild) = t(Kontrolle) 20.49 s ab Navigation
+23:44:13 T4 exit=1 abab-wk1  t(Weltbild) = t(Kontrolle) 20.73 s ab Navigation
+23:44:43 S1B-SERIE FERTIG

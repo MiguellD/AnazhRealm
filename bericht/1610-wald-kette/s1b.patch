@@ -1,0 +1,75 @@
+diff --git a/stamm/15b.js b/stamm/15b.js
+index caee5230..e3b49d35 100644
+--- a/stamm/15b.js
++++ b/stamm/15b.js
+@@ -1276,7 +1276,7 @@ class AnazhRealm_Z15b {
+         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+         if (preset && this._foundryPresetIsTree(preset)) {
+             const seed = this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf);
+-            return seed === null ? null : this._foundrySichtHoehe(preset, { seed }, tf.scale);
++            return seed === null ? null : this._foundrySichtHoehe(preset, { seed, wo: tf }, tf.scale);
+         }
+         return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
+     }
+@@ -1370,7 +1370,7 @@ class AnazhRealm_Z15b {
+                     yaw: tf.yaw,
+                 };
+             }
+-            let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
++            let ff = this._foundryFlattenFor({ seed: fseed, wo: tf }, preset, lod);
+             if (
+                 !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
+                 this._foundryPresetIsTree(preset)
+@@ -1379,7 +1379,7 @@ class AnazhRealm_Z15b {
+                 // Billboard-Fallback für einen NAH-Wunsch (lod<2) nicht an — sonst friert die Zelle als
+                 // Nah-Billboard ein, das der vLodD-Dither nah ausmaskiert (Loch statt Baum).
+                 if (ctxNoDefer && lod < 2) return null;
+-                const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
++                const imp = this._foundryFlattenFor({ seed: fseed, wo: tf }, preset, 2);
+                 if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
+             }
+             if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
+@@ -1461,7 +1461,7 @@ class AnazhRealm_Z15b {
+             const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
+             if (_partner != null && _partner !== _curLod) {
+                 bandWunsch = _partner;
+-                const pf0 = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
++                const pf0 = this._foundryFlattenFor({ seed: fseed, wo: tf }, foundryPreset, _partner);
+                 const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
+                 bandHalt = !(pf && pf.instanceable) ? (pf0 === null ? "wartet" : true) : false;
+                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
+@@ -1712,7 +1712,7 @@ class AnazhRealm_Z15b {
+         // derselbe Same wie ihr Bau (die Gestalt des Orts, `_scatterFoundrySeed`) — bis K69-2 fragte er ohne Art und Ort den
+         // rohen Samen, also den Partner einer anderen Gestalt
+         const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex, cell.species, tf);
+-        const pf = preset && seed !== null ? this._foundryFlattenFor({ seed }, preset, wunsch) : null;
++        const pf = preset && seed !== null ? this._foundryFlattenFor({ seed, wo: tf }, preset, wunsch) : null;
+         return !!(pf && pf.instanceable);
+     }
+ 
+diff --git a/stamm/20b.js b/stamm/20b.js
+index 8a4e3c20..336dab5b 100644
+--- a/stamm/20b.js
++++ b/stamm/20b.js
+@@ -1018,7 +1018,7 @@ class AnazhRealm_Z20b {
+         // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
+         // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
+         if (!z.gebacken) {
+-            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && entry.position);
++            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && (entry.position || entry.wo));
+             if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
+         }
+         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
+diff --git a/stamm/20c.js b/stamm/20c.js
+index 12d8b6ca..0a59e3d9 100644
+--- a/stamm/20c.js
++++ b/stamm/20c.js
+@@ -1028,7 +1028,7 @@ class AnazhRealm_Z20c {
+         const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
+         const group = this._foundryCacheGet(key);
+         if (group === undefined) {
+-            this._foundryZug(key, preset, variant, lod, entryOv, entry.position, {
++            this._foundryZug(key, preset, variant, lod, entryOv, entry.position || entry.wo, {
+                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
+                 // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
+                 // Stufe wartete doppelt.
