@@ -380,7 +380,11 @@ function zielLesen(k) {
                 { buffer: buf, bytesPerRow: bpr, rowsPerImage: h },
                 { width: w, height: h, depthOrArrayLayers: L }
             );
+            dev.pushErrorScope("validation");
             dev.queue.submit([enc.finish()]);
+            // ein Ziel, das das Spiel im Fenster neu anlegte (r184 beim ersten Bild, `_texturAbschied`), ist zerstört: nicht lesbar
+            const weg = await dev.popErrorScope();
+            if (weg) { buf.destroy(); aus.push({ id, gelesen: false, grund: "zerstört: " + String(weg.message).slice(0, 120) }); continue; }
             await buf.mapAsync(GPUMapMode.READ);
             const roh = buf.getMappedRange();
             const min = new Array(ch).fill(Infinity),

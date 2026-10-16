@@ -218,7 +218,8 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest: selbstMarke } = require("./lib/welt-boot.cjs");
+const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.VERDECKUNG_PORT) || 4613;
@@ -605,9 +606,11 @@ async function verdeckungPhase(opts) {
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
-    // die Nachläufer der Phase (das Auflösen ist asynchron) noch in ihr buchen
-    await render(1);
-    await warte(200);
+    // die Nachläufer der Phase (das Auflösen ist asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung, das r184s
+    // Fehler-Bereich bis zum Ende eines offenen Pipeline-Baus hält (GTX 16.10.: später als 200 ms) — höchstens 30 s
+    const tWort = performance.now();
+    do await render(1), await warte(200);
+    while (opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && performance.now() - tWort < 30000);
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
@@ -624,7 +627,7 @@ async function verdeckungPhase(opts) {
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 1200000, erwartet: /Invalid value used in weak set/ });
+    const browser = await starteBrowser({ art: "linse", frist: 1200000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
@@ -638,7 +641,7 @@ async function verdeckungPhase(opts) {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        const bereit = await page.evaluate(async () => {
+        const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
             while (performance.now() - t0 < 300000) {
                 const r = window.anazhRealm;
@@ -654,7 +657,8 @@ async function verdeckungPhase(opts) {
                     st.camera &&
                     st.playerMesh &&
                     st.hydrosphere &&
-                    st.hydrosphere.ready
+                    st.hydrosphere.ready &&
+                    (st._weltbildDa || !karte) // die Karte taktet schneller als LADE_BILD_MS: unter dem Ladeschirm zeichnen 8 von 29 Takten
                 )
                     return {
                         ok: true,
@@ -664,7 +668,7 @@ async function verdeckungPhase(opts) {
                 await new Promise((res) => setTimeout(res, 100));
             }
             return { ok: false };
-        });
+        }, linsenGpu() === "hardware");
         if (!bereit.ok) throw new Error("Renderer und Welt (Hydrosphäre) standen nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Linse liest WebGPU-Validierung, sie wäre blind");
         log(`Renderer und Welt bereit nach ${Math.round(bereit.ms / 1000)} s`);
@@ -699,6 +703,7 @@ async function verdeckungPhase(opts) {
         }
         // S: der Selbsttest am echten Frame — die Vendor-Methoden (Hüllen ab), zuletzt (ihre Fehler vergiften Pipelines)
         out.selbst = {};
+        selbstMarke("S (die Vendor-Methoden ohne Hülle)");
         for (const phase of ["bruch", "gift", "letzter"]) {
             const p = await page.evaluate(verdeckungPhase, { phase, messort, roh: true });
             out.selbst[phase] = p;
