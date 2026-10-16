@@ -163,3 +163,9 @@ Grenze; G1 trägt den Rückweg. **integ = 985a923b (V18.546.7)** = + B2 · G2 ·
 Laufend: D2M (Umzug am Kopf neu, wf_8f858320-e9d), W3+S5-Vereinigung (wf_e5c3ef38-912), A1 wasser, A3 laub (Prüfer), G1. Danach die
 Richter-Diät D(3): playtest.cjs nach Domänen + Text-Linsen → __consumes (Wort des Schöpfers 16.10. abends: der Richter wurde zu groß,
 der Macher muss frei sein).
+
+## 23:40 (date) — Lage
+- integ LOKAL (ungepusht) = 985a923b + W3 (b30d2e31) + A1 Wasser-Spiegel (4dbdea90, voller Playtest OK) + Wald-Baeume-Urteil (dc7ffc6c: die Weltbild-Luecke wartet nur, sie urteilt nie — sperrte G1 und D2M). Naechst: G1 (CI-Neulauf laeuft, d95f6bf7) hinein, dann D2M am Kopf neu fahren (Umzug-Commit fallen lassen, Rest mergen, `stamm-umzug --nach-karte`), EIN Push als V18.546.8.
+- Laufend: D2M fix1 (wf_8f858320-e9d), A3 fix1 (wf_82343bad-891), A7 Karten-Krone (wf_fdd821d3-e30), A8 Buehne haelt jede Uhr (wf_15553161-99c; Tafel streut am selben Code 0,17–0,69), Richter-Zensus (wf_8efe48bc-ad3: 140 playtest- + 108 Skript-Stellen, je Stelle absenz/praesenz → fehlt/konsum/verhalten/faellt, mit Gegenpruefung; Worktree AnazhRealm-zensus).
+- OMEN: Wald-Kette — Taeter Streu ohne Ort in der Foundry-Schlange (stamm 15b 1373/1382/1464/1715 → Vorrats-Rang), misst Schnitt S1 4+4, legt ihn als Zweig streu-rang ab.
+- D3b (playtest nach Domaene, Modus --richter von stamm-umzug) startet nach D2M; Auftrag im Scratch d3b-auftrag.txt. Skripte ohne Leser: 0 von 230 — die Decke zahlt durch Einfalten.
