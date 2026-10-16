@@ -146,12 +146,6 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
-    "gate:weltbild-frost:echt": {
-        klasse: KLASSEN.ROT,
-        grund:
-            "rot auf der Karte (OMEN 16.10., integ-probe aa74c324): ankunft und dritte Person — das Bild folgt der Kamera nicht, " +
-            "WebGPU: Index-Bereich 7704 × Uint32 in einem 15408-Byte-Index-Puffer (16-bit gebaut); die Wand fährt der Job echt erst geheilt",
-    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
