@@ -307,7 +307,6 @@ module.exports = {
     computeStamp,
     readManifest,
     coreIdFor,
-    packFileName,
     packFromReply,
     comparePackToReply,
     writePack,
