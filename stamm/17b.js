@@ -386,7 +386,8 @@ class AnazhRealm_Z17b {
     // auf dem Boden steht (Bau-Satz, jede lose Senke, Tor, Membran, Leib — ohne Marke), der Boden, der Fern-Ring, der Himmel
     // (im Unendlichen zahlt er zuletzt nur seine eigenen Pixel). Ein Erzeuger nennt seine Schicht als Laufzeit-Marke
     // (`userData.zeichenSchicht`). Bis T3 sortierte r184 die losen Opaken nach renderOrder · Tiefe · Objekt-id, die Satz-Hülle
-    // liegt am Ursprung (gleiche Tiefe): die Boot-Ankunft entschied, der Himmel (id 20) zeichnete vor Boden und Bau.
+    // liegt am Ursprung (gleiche Tiefe): die Boot-Ankunft entschied, der Himmel (id 20) zeichnete vor Boden und Bau. Gemessen
+    // (Radeon 890M, EINE Welt, gpu-bank-Median): Genesis Ego 28,25 → 23,38 ms, Dorf Ego 27,27 → 22,05 ms, Wiese 22,02 → 21,78.
     static _zeichenRang(o) {
         const u = (o && o.userData) || {};
         if (o && o.isBundleGroup === true) return u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1;
@@ -607,8 +608,8 @@ class AnazhRealm_Z17b {
         g.setIndex(new THREE.BufferAttribute(idx, 1));
         if (alt) g.setDrawRange(alt.drawRange.start, alt.drawRange.count);
         else g.setDrawRange(0, 0);
-        // frustumCulled=false: die Hülle wird nie gelesen — eine ehrliche „überall"-Kugel statt eines Laufs über
-        // die ganze Kapazität
+        // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
+        // r184 nur als Sortier-Tiefe — die Reihe trägt `_zeichenRang` (T3; die Inhalts-Mitte gemessen: Genesis Ego +4,4 ms)
         g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
         s.geom = g;
         s.vKap = vKap;
