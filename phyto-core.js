@@ -1814,7 +1814,10 @@
     // Punkt der Krone (Ast-Ansatz oder hängendes Blatt, yk) steht danach bei ansatz × Höhe, (yk + dh) / (h0 + dh) = ansatz.
     // Mit `krone` (der Bestand, BESTAND.krone) hebt der Hub Stamm UND Krone: der Ast-Ansatz yb steht danach bei (1 − krone) ×
     // ziel, der Stamm streckt sich bis dorthin, und die Krone [yb, h0] streckt sich lotrecht über [(1 − krone) · ziel, ziel] —
-    // ein Bestandsbaum trägt seine Krone über den oberen Teil seiner Höhe, nie als Ballen auf dem Stiel (Spike T1).
+    // ein Bestandsbaum trägt seine Krone über den oberen Teil seiner Höhe, nie als Ballen auf dem Stiel (Spike T1). Dann
+    // ist der Hub DES SCHAFTS nur, was der Stamm unter der Krone wuchs (kb − yb): die gestreckte Krone ist Krone, und die
+    // Sichthöhe (Höhe ohne Hub, der Wirt `_foundryGruppenHoehe`) misst sie mit — sonst las die Stufenwahl die Bestands-
+    // Buche mit 8–9 statt 16–18 m und die Eiche unter der Referenz-Höhe (T2-Nachbesserung, gate:foundry-crossfade).
     function schaftHub(segs, leaves, runMeta, ziel, ansatz, krone) {
         let h0 = 0,
             yb = Infinity;
@@ -1878,7 +1881,7 @@
                 a = b;
             }
         });
-        return dh;
+        return kb > 0 ? Math.max(0, kb - yb) : dh;
     }
 
     function treePhenotype(api, slim, trop, delta, leaf) {

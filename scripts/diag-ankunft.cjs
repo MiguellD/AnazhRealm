@@ -1368,13 +1368,30 @@ async function probe(arg) {
                     for (const b of baeume.slice(0, 12))
                         for (let k = 0; k < 8; k++) {
                             const g = (k / 8) * Math.PI * 2;
-                            const x = b.position.x + Math.sin(g) * 2.5;
-                            const zz = b.position.z + Math.cos(g) * 2.5;
+                            const fx = Math.sin(g);
+                            const fz = Math.cos(g);
+                            // die Stellung legt den SICHT-STRAHL durch die Stamm-Mitte (die Box am Fuß), nie die Achse des
+                            // Spielers: das Ziel der 3rd-Kamera steht seitlich neben der Brust (die Schulter), der Strahl lief
+                            // 0,6 m neben der Achse — ihn trafen nur Stämme über 0,6 m halber Breite oder tief hängende Äste
+                            // (am Kopf der Laubkrone T2 kein einziger: die Bestands-Stämme stehen frei, 0 von 96 Stellungen)
+                            const fuss = b.blockerAABBs[0];
+                            let x = (fuss.minX + fuss.maxX) / 2 + fx * 2.5;
+                            let zz = (fuss.minZ + fuss.maxZ) / 2 + fz * 2.5;
+                            const stelle = () => {
+                                st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                                st.yaw = g;
+                                st.pitch = 0;
+                                ruhig();
+                            };
                             if (!Number.isFinite(hh(x, zz))) continue;
-                            st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
-                            st.yaw = g;
-                            st.pitch = 0;
-                            ruhig();
+                            stelle();
+                            const z0 = ziel();
+                            if (!z0) continue;
+                            const seite = (z0.x - x) * fz - (z0.z - zz) * fx; // der Anteil des Ziels quer zum Blick
+                            x -= seite * fz;
+                            zz += seite * fx;
+                            if (!Number.isFinite(hh(x, zz))) continue;
+                            stelle();
                             const c = st.camera.position;
                             const z = ziel();
                             const innen = [];
