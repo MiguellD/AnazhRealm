@@ -25,6 +25,13 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
+const { ohneKommentare } = require("./stamm.cjs");
+
+// DAS EINE __codeOf (PFLICHT-OFFEN D3): jede Seite jedes Welt-Boots trägt vor ihrem ersten Skript `window.__codeOf` (der
+// Code einer Funktion oder eines Quelltexts ohne Kommentare: der EINE Stripper aus stamm.cjs, als Text übertragen) und
+// `window.__dokuOf` (ungestrippt, für Marker, die per Definition im Kommentar wohnen — nie rohes .toString(), gate:apparat).
+// Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
+const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f);`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -258,7 +265,7 @@ function pulsSeite() {
 
 // Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
-    if (!page.__akteBereit) page.__akteBereit = akteAnlegen(page, b);
+    if (!page.__akteBereit) page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), akteAnlegen(page, b)]);
     return page.__akteBereit;
 }
 async function akteAnlegen(page, b) {
@@ -649,6 +656,7 @@ module.exports = {
     REZEPTE,
     GPU_REZEPTE,
     HARMLOS,
+    CODE_OF_SEITE,
     statikServer,
     browserOptionen,
     starteBrowser,

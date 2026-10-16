@@ -47,9 +47,7 @@ const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Nachlese-Welle — die STATISCHEN Auto-Dorf-Gesetze (kommentar-gestrippt, die
 // V18.267-Falle): Reservierung + Γ5-Stream + die EINE Slot-Quelle + Headless-Ruhe.
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 function autoStaticLaws(anazhSrc) {
     const nc = stripComments(anazhSrc);
     return [
@@ -1582,11 +1580,11 @@ const FIXTURES = [
         // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         const src = window.__codeOf ? window.__codeOf(r.spawnSettlement) : r.spawnSettlement.toString();
-        const srcSame = window.__codeOf ? window.__codeOf(r._bauSame) : String(r._bauSame);
+        const srcSame = window.__codeOf(r._bauSame);
         // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
         const srcHier = baueHier
-            ? (window.__codeOf ? window.__codeOf(baueHier.build) : String(baueHier.build)).replace(/\/\/[^\n]*/g, "")
+            ? window.__codeOf(baueHier.build)
             : "";
         res.gammaHier = /_bauSame\(/.test(srcHier) && !/Math\.random/.test(srcHier);
         res.gammaStream =

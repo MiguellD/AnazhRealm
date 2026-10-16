@@ -79,9 +79,7 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 
-function ohneKommentare(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
-}
+const ohneKommentare = stammLib.ohneKommentare;
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };

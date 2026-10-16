@@ -32,9 +32,7 @@ const server = statikServer();
 
 // Kommentar-Strip (die V18.267-Falle: ein erklärender Kommentar zitiert das geschnittene
 // Symbol → ein naiver Absenz-Grep stolpert). Dieselbe Disziplin wie gate:constitution.
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
-}
+const stripComments = stammLib.ohneKommentare;
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
@@ -83,10 +81,7 @@ function stripComments(src) {
             o.grassInstances = instances;
             o.lodMapSize = st.voxelChunkGrassLod ? st.voxelChunkGrassLod.size : 0;
             // (b) QUELLE — der Schnitt steht (kommentar-bereinigt, sonst V18.267-Falle).
-            const strip = (src) =>
-                String(src)
-                    .replace(/\/\*[\s\S]*?\*\//g, "")
-                    .replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+            const strip = window.__codeOf;
             o.tuftMethodGone = typeof r._grassBladeTuftGeometry === "undefined";
             o.thinMethodGone = typeof r._tickGrassThin === "undefined";
             o.densityMapGone = st.voxelChunkGrassDensity === undefined;

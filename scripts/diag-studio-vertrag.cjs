@@ -907,10 +907,7 @@ function validateManifest(m) {
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
     // gestrippt (die V18.267-Falle).
-    const realm = stammLib
-        .text(root)
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/\/\/[^\n]*/g, "");
+    const realm = stammLib.ohneKommentare(stammLib.text(root));
     const reg = realm.match(/_foundryAutoRegisterSpecies\([^)]*\)\s*\{[\s\S]{0,2500}/);
     check(
         // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
@@ -1023,10 +1020,8 @@ function validateManifest(m) {
     // Gestalt am Ausgang (`__replyBuildAsset` → phyto-core budgetErzwingen auf der Zeile des EIGENEN Kerns), der
     // Sync-Guss des Wirts-Ofens (Tier UND Mensch) verlässt das Studio an derselben Stelle (`_ofenBudget`), und der
     // Material-Cache des Wirts keyt mit DERSELBEN Stoff-Identität (budgetStoff), mit der das Gesetz zählt.
-    const phytoNC = fs
-        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8") // die Brücke (K42) trägt __replyBuildAsset
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/\/\/[^\n]*/g, "");
+    // die Brücke (K42) trägt __replyBuildAsset
+    const phytoNC = stammLib.ohneKommentare(fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"));
     const leserUrteil = (realmSrc, phytoSrc) => {
         const f = [];
         const reply = phytoSrc.match(/function __replyBuildAsset\([^)]*\) \{[\s\S]*?\n {4}\}\n/);

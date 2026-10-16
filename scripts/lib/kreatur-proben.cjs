@@ -3128,12 +3128,4 @@ const TAETER = {
     gestalt: [["gestalt", /hängt am ersten Tier/]],
 };
 
-// Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare
-// zitieren gefallenen Code; eine Absenz-Probe liest nie ein Zitat).
-const CODE_OF_SRC = String((fnOrSrc) =>
-    String(fnOrSrc)
-        .replace(/\/\/.*$/gm, "")
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-);
-
-module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, CODE_OF_SRC, urteil };
+module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };

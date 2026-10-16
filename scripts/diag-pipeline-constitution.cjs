@@ -17,7 +17,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 // Bereinigung reicht: die geprüften Muster tragen kein String-Literal, das eine Regel vortäuschen könnte,
 // und die Anti-Muster (Inline-Wuchs, iframe.src, geschnittene Methoden) leben NUR noch in Kommentaren,
 // wenn überhaupt (die entfernt der Strip). Ein echter Code-Verstoß bleibt sichtbar.
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+const stripComments = require("./lib/stamm.cjs").ohneKommentare;
 
 let pass = 0,
     fail = 0;

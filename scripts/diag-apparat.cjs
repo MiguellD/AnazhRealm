@@ -38,62 +38,7 @@ const FROZEN_TOSTRING = 1;
 
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
-function stripComments(src) {
-    let out = "";
-    let i = 0;
-    const n = src.length;
-    let mode = "code"; // code | line | block | sq | dq | tpl
-    while (i < n) {
-        const c = src[i];
-        const c2 = src[i + 1];
-        if (mode === "code") {
-            if (c === "/" && c2 === "/") {
-                mode = "line";
-                i += 2;
-                continue;
-            }
-            if (c === "/" && c2 === "*") {
-                mode = "block";
-                i += 2;
-                continue;
-            }
-            if (c === "'") mode = "sq";
-            else if (c === '"') mode = "dq";
-            else if (c === "`") mode = "tpl";
-            out += c;
-            i++;
-            continue;
-        }
-        if (mode === "line") {
-            if (c === "\n") {
-                mode = "code";
-                out += c;
-            }
-            i++;
-            continue;
-        }
-        if (mode === "block") {
-            if (c === "*" && c2 === "/") {
-                mode = "code";
-                i += 2;
-                continue;
-            }
-            i++;
-            continue;
-        }
-        // String-Modi: Escapes überspringen, Ende erkennen.
-        if (c === "\\") {
-            out += c + (src[i + 1] || "");
-            i += 2;
-            continue;
-        }
-        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`"))
-            mode = "code";
-        out += c;
-        i++;
-    }
-    return out;
-}
+const stripComments = stammLib.ohneKommentare;
 
 function countToString(src) {
     return (stripComments(src).match(/\.toString\(\)/g) || []).length;

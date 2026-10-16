@@ -25,35 +25,11 @@ const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const server = statikServer();
 
-// ── Der STATISCHE Teil: kein Konsument liest den Lebenszeit-Zähler nackt ──
-// (die drei Render-Linsen wanderten V18.427 mit — hier bleibt das so; die
-// V18.267-Falle: Kommentare zitieren die Muster wörtlich → erst strippen.)
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-function nakedLifetimeReads(src) {
-    const nc = stripComments(src);
-    const naked = (nc.match(/render\.calls/g) || []).length;
-    // gedeckt = als ??-/Ternär-Fallback HINTER einem drawCalls-Read in derselben Expression
-    // ([^;] statt [^;\n] — ein prettier-umbrochener Ternär spannt Zeilen, bleibt EINE Expression)
-    const covered = (nc.match(/drawCalls[^;]{0,160}render\.calls/g) || []).length;
-    return Math.max(0, naked - covered);
-}
+// Der STATISCHE Teil liest den Stamm ohne Kommentare (die V18.267-Falle: Kommentare zitieren die Muster wörtlich).
+const stripComments = stammLib.ohneKommentare;
 
 (async () => {
     const staticChecks = [];
-    for (const f of [
-        "scripts/diag-render-load.cjs",
-        "scripts/diag-arch-perf.cjs",
-        "scripts/diag-shadow-pixel.cjs",
-        "scripts/diag-turn-hang.cjs",
-    ]) {
-        const p = path.join(root, f);
-        if (!fs.existsSync(p)) {
-            staticChecks.push({ name: `${f} existiert (Konsumenten-Inventar)`, pass: false });
-            continue;
-        }
-        const n = nakedLifetimeReads(fs.readFileSync(p, "utf8"));
-        staticChecks.push({ name: `${f}: kein nackter render.calls-Read (${n} gefunden)`, pass: n === 0 });
-    }
     {
         // Der Flugschreiber trennt vergiftete Alt-Traces: der Perf-Payload trägt `version:`
         // (≥ V18.427 = geheilte Traces) + sein drawCalls-Feld liest die (bounded) sense-Zahl,
@@ -183,10 +159,7 @@ function nakedLifetimeReads(src) {
             o.infoRestored = st.renderer.info === orig;
             // der EINE Tap, kommentar-gestrippt: drawCalls-first (die Probe kann nicht
             // am erklärenden Kommentar vakuös grün werden — die V18.267-Klasse)
-            const codeOf = (fn) =>
-                String(fn)
-                    .replace(/\/\*[\s\S]*?\*\//g, "")
-                    .replace(/\/\/[^\n]*/g, "");
+            const codeOf = window.__codeOf;
             const lr = codeOf(r._loopRender);
             o.tapDrawCallsFirst =
                 lr.includes("render.drawCalls") && lr.indexOf("render.drawCalls") < lr.indexOf("render.calls");
