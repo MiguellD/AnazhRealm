@@ -1221,17 +1221,11 @@ function sichtLauf(k) {
 }
 
 module.exports = {
-    SICHT_KETTE,
-    SICHT_PRUEFUNG,
-    SICHT_TREFFER,
-    SICHT_NEU,
-    RUHE_LESER,
     sichtKameraBewegt,
     sichtBlendeBewegt,
     sichtSatzInhalt,
     sichtBytesKlasse,
     sichtArbeitOhne,
-    sichtAenderung,
     sichtPhase,
     sichtUrteil,
     SICHT_INSTALL:

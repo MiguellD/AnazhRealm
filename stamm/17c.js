@@ -1074,8 +1074,26 @@ class AnazhRealm_Z17c {
         if (typeof THREE === "undefined") return null;
         const W = AnazhRealm.WEGE_KARTE;
         const TSL = THREE.TSL;
-        const karte = (N, daten, format, name) => {
-            const tex = new THREE.DataTexture(daten, N, N, format, THREE.UnsignedByteType);
+        // DIE SCHICHTEN EINER KARTE (Karte W2, 16.10.): Wege, Kronen-Streu und Flüsse tragen je Art EINE Array-Textur, die
+        // Schicht ist die Stufe (nah 0, fern 1) — jede Stufe trägt dasselbe Raster (nah 512 m / 0,5 m = fern 2048 m / 2 m).
+        // Bis 16.10. band jede Stufe eigene Texturen: der Naht-Stoff des Fern-Rings zählte 17 Sampler und linkte auf WebGL2
+        // (16 Einheiten) nie, der Rückfall zeichnete keinen Boden (gate:webgl-probe W6). `daten` jeder Stufe ist die Sicht
+        // auf ihre Schicht (dieselben Bytes für GPU und CPU-Leser); ein Upload trägt nur die Schicht (`_wegeSchichtHoch`).
+        const raster = (texelM) => {
+            const n = W.stufen.map((S, si) => Math.round(S.fensterM / texelM[si]));
+            if (n.some((x) => x !== n[0]))
+                throw new Error(`Wege-Karte: die Stufen tragen verschiedene Raster (${n.join(" ≠ ")}) — EINE Array-Textur trägt eines`); // prettier-ignore
+            return n[0];
+        };
+        const karte = (n, kanaele, format, name) => {
+            const tex = new THREE.DataArrayTexture(
+                new Uint8Array(n * n * kanaele * W.stufen.length),
+                n,
+                n,
+                W.stufen.length
+            );
+            tex.format = format;
+            tex.type = THREE.UnsignedByteType;
             tex.name = name;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
@@ -1083,22 +1101,24 @@ class AnazhRealm_Z17c {
             tex.wrapT = THREE.ClampToEdgeWrapping;
             tex.generateMipmaps = false;
             tex.needsUpdate = true;
-            return tex;
+            return { tex, schicht: (si) => tex.image.data.subarray(si * n * n * kanaele, (si + 1) * n * n * kanaele) };
         };
+        const N = raster(W.stufen.map((S) => S.texelM));
+        const kN = raster(AnazhRealm.LAUB_STREU.texelM);
+        const wege = karte(N, 2, THREE.RGFormat, "wege-karte");
+        const streu = karte(kN, 1, THREE.RedFormat, "kronen-streu");
+        const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
         const stufen = W.stufen.map((S, si) => {
-            const N = Math.round(S.fensterM / S.texelM);
-            const daten = new Uint8Array(N * N * 2);
-            const tex = karte(N, daten, THREE.RGFormat, "wege-karte:" + S.name);
+            const daten = wege.schicht(si);
+            const tex = wege.tex;
             // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
-            const kN = Math.round(S.fensterM / AnazhRealm.LAUB_STREU.texelM[si]);
-            const kDaten = new Uint8Array(kN * kN);
             // `summe` ist die Wahrheit (die ungekappte Summe aller Kronen-Beiträge je Texel — eine Krone fällt exakt
             // heraus), `daten` ihr gekapptes Abbild für die Karte, nachgezogen im Schmutz-Rechteck beim Upload.
             const kronen = {
                 N: kN,
                 summe: new Uint16Array(kN * kN),
-                daten: kDaten,
-                tex: karte(kN, kDaten, THREE.RedFormat, "kronen-streu:" + S.name),
+                daten: streu.schicht(si),
+                tex: streu.tex,
                 schmutz: null,
                 upload: 0,
             };
@@ -1110,13 +1130,8 @@ class AnazhRealm_Z17c {
             // der Anteil, den das Wasser eines Flusses deckt (`_flussKarteMalen`, dieselben Segmente und Breiten wie
             // `_fernFlussDeckung`). Der Fern-Ring liest sie je Fragment (`_flussKarteNode`): ein 4–17 m breiter Fluss
             // trägt seine Kante im Bild statt im Kasten-Mittel seiner Masche (6–24 m).
-            const fDaten = new Uint8Array(N * N);
-            const fluss = {
-                daten: fDaten,
-                tex: karte(N, fDaten, THREE.RedFormat, "fluss-karte:" + S.name),
-                hydroN: -1,
-            };
-            return { S, N, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            const fluss = { daten: fluesse.schicht(si), tex: fluesse.tex, hydroN: -1 };
+            return { S, N, schicht: si, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
@@ -1130,6 +1145,13 @@ class AnazhRealm_Z17c {
             kronenRandMax: 0,
         };
         return st.wegeKarte;
+    }
+
+    // Der EINE Upload einer Schicht der Wege-Karten: r184 lädt bei `layerUpdates` nur die genannten Schichten hoch, sonst
+    // alle — darum nennt JEDER Schreiber seine, sonst trüge ein fremder Upload im selben Bild nur die fremde Schicht.
+    _wegeSchichtHoch(tex, schicht) {
+        tex.addLayerUpdate(schicht);
+        tex.needsUpdate = true;
     }
 
     // ═══ DIE KRONEN-STREU (Welle 5 Boden): der Waldboden liegt unter den ECHTEN Kronen ═══
@@ -1528,7 +1550,7 @@ class AnazhRealm_Z17c {
                         const v = kr.summe[k];
                         kr.daten[k] = v > 255 ? 255 : v;
                     }
-                kr.tex.needsUpdate = true;
+                this._wegeSchichtHoch(kr.tex, stufe.schicht);
                 kr.schmutz = null;
                 kr.upload = jetzt;
             }
@@ -1594,7 +1616,7 @@ class AnazhRealm_Z17c {
                 }
             }
         }
-        fl.tex.needsUpdate = true;
+        this._wegeSchichtHoch(fl.tex, stufe.schicht);
     }
 
     // Der Wasser-Anteil der Fluss-Karte je Fragment (dieselbe Stufen-Wahl und dasselbe UV wie `_wegeBodenFarbe`):
@@ -1610,8 +1632,8 @@ class AnazhRealm_Z17c {
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
         const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5 - 1 / fern.N));
         const wert = _T.mix(
-            _T.texture(fern.fluss.tex, relFern.add(0.5)).r,
-            _T.texture(nah.fluss.tex, relNah.add(0.5)).r,
+            _T.texture(fern.fluss.tex, relFern.add(0.5)).depth(_T.int(fern.schicht)).r,
+            _T.texture(nah.fluss.tex, relNah.add(0.5)).depth(_T.int(nah.schicht)).r,
             innen
         );
         return { wert, imFenster };
@@ -1632,7 +1654,7 @@ class AnazhRealm_Z17c {
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
             for (const f of sd.formen) this._wegeKarteMale(stufe, f);
         }
-        if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
+        if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
     }
 
     // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die
@@ -1676,9 +1698,9 @@ class AnazhRealm_Z17c {
         const [nah, fern] = wk.stufen;
         const xz = _T.positionWorld.xz;
         const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
-        const wNah = _T.texture(nah.tex, relNah.add(0.5));
+        const wNah = _T.texture(nah.tex, relNah.add(0.5)).depth(_T.int(nah.schicht));
         const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
-        const wFern = _T.texture(fern.tex, relFern.add(0.5));
+        const wFern = _T.texture(fern.tex, relFern.add(0.5)).depth(_T.int(fern.schicht));
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
         // Jenseits des Fern-Fensters liegt weder Weg noch Streu (K16: der Fern-Ring trägt denselben Stoff bis 8 km — die Karte
         // klemmte ihren Rand-Texel sonst radial über die Ferne). Im Fenster, wo jeder Chunk steht, dieselbe Zahl.
@@ -1687,8 +1709,8 @@ class AnazhRealm_Z17c {
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
         // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
-        const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
-        const kFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).r;
+        const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).depth(_T.int(nah.schicht)).r;
+        const kFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).depth(_T.int(fern.schicht)).r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
         const _laubRausch = this._rauschAtlas()
             .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
@@ -1766,7 +1788,7 @@ class AnazhRealm_Z17c {
         for (const stufe of wk.stufen)
             if (stufe.zentriert) {
                 this._wegeKarteMale(stufe, form);
-                stufe.tex.needsUpdate = true;
+                this._wegeSchichtHoch(stufe.tex, stufe.schicht);
             }
         const pm = this.state.playerMesh;
         if (pm && wk.stufen.some((st) => !st.zentriert)) this._tickWegeKarte(pm.position);
@@ -2033,7 +2055,7 @@ class AnazhRealm_Z17c {
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
             this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
         }
-        for (const stufe of wk.stufen) if (stufe.zentriert) stufe.tex.needsUpdate = true;
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
         // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu
         // (`_nahWieseNeuIn` → `_tickNahWiese` vor `_tickWegeKarte`) und läse vor dem Zentrieren 0 — Halme im Weg.
         const pm = this.state.playerMesh;
@@ -2099,11 +2121,11 @@ class AnazhRealm_Z17c {
             for (const stufe of wk.stufen) {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
-                stufe.tex.needsUpdate = true;
+                this._wegeSchichtHoch(stufe.tex, stufe.schicht);
                 stufe.kronen.summe.fill(0);
                 stufe.kronen.daten.fill(0);
                 stufe.kronen.schmutz = null;
-                stufe.kronen.tex.needsUpdate = true;
+                this._wegeSchichtHoch(stufe.kronen.tex, stufe.schicht);
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)

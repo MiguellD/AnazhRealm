@@ -37139,9 +37139,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
             out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
-            const prompt = r.llmBuildSystemPrompt();
-            out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
-            out.promptWoerter = /Bäume: /.test(prompt);
+            out.promptWoerter = /Bäume: /.test(r.llmBuildSystemPrompt()); // jedes Verb mit Form: gate:weltakt-wache (K)
             out.ruleVerbot = r.constructor.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
             // Die Anthropic-Anfrage folgt der aktuellen Generation: 5er-Modelle mit effort +
             // fallbacks + Beta-Header, Haiku 4.5 schlicht (es kennt beides nicht).
@@ -37226,8 +37224,8 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         JSON.stringify(R.nearWaterBefund)
     );
     check(
-        "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
-        R.promptOp === true && R.promptWoerter === true && R.ruleVerbot === true
+        "V18.493 Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
+        R.promptWoerter === true && R.ruleVerbot === true
     );
     check(
         "V18.493 Co-Schöpfer: KI-Pfad END-ZU-END — Antwort → maybeAnswerWithLlm → 4 Birken aus dem Studio in der Welt",
