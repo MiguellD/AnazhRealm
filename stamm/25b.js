@@ -1556,13 +1556,24 @@ class AnazhRealm_Z25b {
         return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
     }
 
-    // DIE FRIST DES LADE-FRAMES (K60-2): jeder Leser des ersten Weltbilds mit eigener Kappe je Takt (Stück oder ms je Frame)
-    // arbeitet im Lade-Takt bis zu dieser Frist — mindestens seine Kappe, nie weniger. Die Kappen schützen den Takt, den der
-    // Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und jede Kappe wurde zur Uhr des Bilds:
-    // Radeon kalt malte der Horizont (600 Punkte und 2 ms Farbe je Frame) bis 16 s, als jeder andere Term seit 11 s stand.
-    // Außerhalb des Lade-Takts −∞ (die Kappe allein gilt). Leser: die Pflanz-Schlange, der Horizont (Höhen, Farben).
+    // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Frame (der Zeitstempel des Loops `_loopT`), gestellt beim ersten Leser —
+    // LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms", fünf Leser streckten den
+    // Lade-Frame auf 500 ms, und die Worker-Antworten warteten so lange). Außerhalb des Lade-Takts −∞.
     _ladeFrist() {
-        return this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
+        if (!this._ladeTakt()) return -Infinity;
+        const F = this._ladeFristFrame || (this._ladeFristFrame = { t: NaN, bis: 0 });
+        if (!Object.is(F.t, this._loopT)) [F.t, F.bis] = [this._loopT, performance.now() + AnazhRealm.LADE_TAKT_MS];
+        return F.bis;
+    }
+
+    // DIE KAPPE JE TAKT (K60-2, die EINE Stelle der Klasse): ein Leser des ersten Weltbilds mit eigener Kappe je Takt (`n`
+    // Stück oder ms von `kappe`) darf weiter, solange er unter ihr ist — im Lade-Takt darüber bis zur Frist des Lade-Frames.
+    // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
+    // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
+    // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
+    // Budget), Nachwuchs des Laubs — gate:takt T9 fährt jeden.
+    _kappeOffen(n, kappe) {
+        return n < kappe || performance.now() < this._ladeFrist();
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt

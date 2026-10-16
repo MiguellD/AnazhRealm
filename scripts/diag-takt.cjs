@@ -29,9 +29,8 @@
 //       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
 //       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
 //   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm backen die Karten in so vielen Bäcker-Bahnen wie Werk-Fäden
-//       (zwei Karten in zwei Bäcker, `b<k>_`) und die Leser des ersten Bilds mit eigener Kappe je Takt arbeiten bis zur Frist
-//       des Lade-Frames (`_ladeFrist`): Pflanz-Schlange, Ort-Wahl und Dorf-Zug. Befund G2 (Radeon kalt): die Ort-Wahl rechnete
-//       305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-Zug hob 15 Häuser zu je 2 über 6 s — das Dorf war der Schwanz der Ankunft.
+//       (zwei Karten in zwei Bäcker, `b<k>_`), und jeder Leser des ersten Bilds mit Kappe je Takt fragt die EINE Kappe
+//       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`).
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt des Werks, seine Helfer kommen mit
 //       ihm — vor seinem „ready". Befund Radeon kalt (K602c/q2): der Buch-Faden ruhte 0,8 s, bis der volle Haupt-Faden sein
 //       „ready" las; die Helfer begannen ihren Start 2,4 s nach ihm. Der Selbsttest fährt den alten Weg.
@@ -356,9 +355,8 @@ const SELBST = process.argv.includes("--selftest");
                 }
             })();
             // T9 — die Kappen des Lade-Takts: zwei Karten an zwei bereite Bäcker (der erste und sein Helfer, `_foundryBaecker`)
-            // gehen je in eine Bahn; im Lade-Takt arbeiten die Leser des ersten Bilds bis zur EINEN Frist: Pflanz-Schlange (Kappe 4),
-            // Ort-Wahl des Dorfs (Scheibe 3 ms) und Dorf-Zug (2 Slots je Takt). Der Selbsttest fährt die Ein-Bäcker-Pumpe (der Helfer
-            // unsichtbar) und die Kappe allein (`_ladeFrist` −∞).
+            // gehen je in eine Bahn; im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest fährt die
+            // Ein-Bäcker-Pumpe (der Helfer unsichtbar) und die Kappe allein (`_ladeFrist` −∞).
             const t9 = (() => {
                 const ofen0 = [],
                     ofen1 = [];
@@ -396,18 +394,34 @@ const SELBST = process.argv.includes("--selftest");
                         r._foundryAuftrag(f, "imp", { type: "bake-impostor", presetId: "birke", seed }, 25, 45000, "-");
                     aus9.ofen = [ofen0.length, ofen1.length];
                     aus9.nummern = [...ofen0, ...ofen1];
-                    for (const k of ["_ladeTakt", "_naturSetzen", "_spawnSettlementSlot", "_dorfTaktLebt"]) setze(k, () => true);
-                    const [qV, qD, ueber] = [st.pendingVegSpawns, r._autoSettlementQueue, st._frameOverBudget];
-                    st._frameOverBudget = false;
-                    st.pendingVegSpawns = Array.from({ length: 12 }, () => ({ name: "-", position: {} }));
-                    aus9.pflanz = r._tickPendingVegSpawns(4);
-                    const t0 = performance.now();
-                    r._ortWahlScheibe((function* () { for (const t = performance.now(); ; ) yield t; })(), 3); // prettier-ignore
-                    aus9.ortMs = Math.round(performance.now() - t0);
-                    r._autoSettlementQueue = { plan: { slots: Array(12).fill({}) }, origin: { x: 0, z: 0 }, idx: 0, cellKey: "-" };
-                    r._tickAutoSettlement({ x: 0, y: 0, z: 0 });
-                    aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
-                    [st.pendingVegSpawns, r._autoSettlementQueue, st._frameOverBudget] = [qV, qD, ueber];
+                    // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser ein Frame (`_loopT`)
+                    const stub = { _archIsRendered: (e) => !!e.t9, _rebuildArchitectureMesh: (e) => (e.t9 = true), _populateVoxelChunkVegetation: () => aus9.laub++ }; // prettier-ignore
+                    for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius".split(" ")) stub[k] = () => true; // prettier-ignore
+                    for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
+                    for (const k in stub) setze(k, stub[k]);
+                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0 }; // prettier-ignore
+                    const [stAlt, qD, zwoelf] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()]];
+                    const bild = (k) => ((r._loopT = "t9-" + k), k);
+                    let uhr = 0;
+                    performance.now = () => ++uhr;
+                    try {
+                        Object.assign(st, S, { pendingFoliageChunks: new Set(zwoelf.map((i) => i + ",0")), voxelChunks: new Map(zwoelf.map((i) => [i + ",0", {}])) }); // prettier-ignore
+                        const pflanz = () => (st.pendingVegSpawns = zwoelf.map(() => ({ name: "-", position: {} })));
+                        aus9.pflanz = bild(1) && pflanz() && r._tickPendingVegSpawns(4);
+                        aus9.ort = aus9.laub = 0;
+                        r._ortWahlScheibe((function* () { for (bild(2); ; aus9.ort++) yield 0; })(), 3); // prettier-ignore
+                        aus9.gleicherFrame = pflanz() && r._tickPendingVegSpawns(4); // dieselbe Frist: die Ort-Wahl trug sie aus
+                        r._autoSettlementQueue = { plan: { slots: Array(12).fill({}) }, origin: { x: 0, z: 0 }, idx: 0, cellKey: "-" }; // prettier-ignore
+                        r._tickAutoSettlement(bild({ x: 0, y: 0, z: 0 }));
+                        aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
+                        st.architectures = zwoelf.map(() => ({ position: { x: 0, z: 0 }, _ziegelGebacken: true }));
+                        aus9.bau = bild(4) && (r.tickArchitectureCulling(), st.architectures.filter((e) => e.t9).length);
+                        bild(5) && r._tickFoliageGrowth();
+                    } finally {
+                        delete performance.now;
+                        Object.keys(S).forEach((k, i) => (st[k] = stAlt[i]));
+                        r._autoSettlementQueue = qD;
+                    }
                     return aus9;
                 } finally {
                     r._foundry = fEcht;
@@ -509,8 +523,8 @@ const SELBST = process.argv.includes("--selftest");
         t8.helferZweiter === "offen" &&
         t8.helferGeist === true;
     const t9 = aus.t9;
-    const LADE = 100; // AnazhRealm.LADE_TAKT_MS (stamm/26c.js)
-    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ortMs >= 0.6 * LADE, _tickAutoSettlement: t9.dorf === 12 };
+    // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Ort-Wahl ein Vielfaches ihrer 3 Uhr-Fragen; die Frist gilt je Frame
+    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _ladeFrist: t9.gleicherFrame === 4 }; // prettier-ignore
     const T9 = t9.ofen[0] === 1 && t9.ofen[1] === 1 && t9.nummern.some((k) => /^impb1_\d+$/.test(k)) && !Object.values(frist).includes(false);
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.vorBereit.includes("get-book") && t10.helfer === t10.helferSoll;
@@ -525,7 +539,7 @@ const SELBST = process.argv.includes("--selftest");
                 `die Ein-Faden-Pumpe legt die Karte ins Werk (Bäcker ${t7.ofen.length}, Karten im Werk ${t7.werkKarten}, ` +
                 `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Pflanz ${t9.pflanz}, Ort ${t9.ortMs} ms, Dorf ${t9.dorf}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
                 `der alte Weg fragt das Buch erst auf „ready" (vor ihm: ${t10.vorBereit.join("·") || "nichts"}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
@@ -561,12 +575,12 @@ const SELBST = process.argv.includes("--selftest");
     );
     console.log(
         `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: zwei Karten in die Bäcker ${t9.ofen.join(" / ")} (${t9.nummern.join(" · ")}) · ` +
-            `Pflanz-Schlange ${t9.pflanz}/12 · Ort-Wahl-Scheibe ${t9.ortMs} ms (Frist ${LADE}) · Dorf-Zug ${t9.dorf}/12 Slots` +
+            `Pflanz ${t9.pflanz}/12 · Ort-Wahl ${t9.ort} Schritte (Kappe 3) · Dorf ${t9.dorf}/12 · Cull-Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · im selben Frame ${t9.gleicherFrame}/4` +
             (T9
                 ? ""
                 : t9.ofen[1] === 0
                   ? " — Täter _foundryPumpe: eine Bäcker-Bahn, die Karten backen nacheinander"
-                  : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die Frist (_ladeFrist)`)
+                  : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (_kappeOffen)`)
     );
     console.log(
         `  ${T10 ? "✅" : "❌"} T10 der Faden wartet nie auf den Haupt-Faden: vor dem „ready" des Werks liegt ${t10.vorBereit.join(" · ") || "nichts"} bei ihm, ` +

@@ -55,40 +55,27 @@ function KALT_PROBE() {
         _ortWahlScheibe: "Ort-Wahl",
         _spawnSettlementSlot: "Dorf",
     };
-    const wickleKosten = (P) => {
-        for (const name of Object.keys(KOSTEN)) {
+    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
+    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
+    const wickle = (P) => {
+        for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
+            const k = KOSTEN[name];
             P[name] = function (...a) {
                 const t0 = performance.now();
+                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
+                if (!k) A.ev.push([Math.round(t0), name + " ab", id]);
                 try {
-                    return alt.apply(this, a);
+                    const x = alt.apply(this, a);
+                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
+                    return x;
                 } finally {
                     const t1 = performance.now();
-                    const k = KOSTEN[name];
-                    const s = Math.floor(t0 / 1000);
-                    const z = A.kosten[k] || (A.kosten[k] = {});
-                    z[s] = (z[s] || 0) + (t1 - t0);
+                    const z = k ? A.kosten[k] || (A.kosten[k] = {}) : null;
+                    if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
                     if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                 }
-            };
-        }
-    };
-    const wickle = (r) => {
-        const P = Object.getPrototypeOf(r);
-        wickleKosten(P);
-        // die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
-        // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
-        for (const name of ["_foundryVorrat", "_foundryRequestSettlement"]) {
-            const alt = P[name];
-            if (typeof alt !== "function") continue;
-            P[name] = function (...a) {
-                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
-                A.ev.push([Math.round(performance.now()), name + " ab", id]);
-                const x = alt.apply(this, a);
-                if (x && typeof x.then === "function")
-                    x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
-                return x;
             };
         }
     };
@@ -98,7 +85,7 @@ function KALT_PROBE() {
         if (r && r.state) {
             if (!gewickelt) {
                 gewickelt = true;
-                wickle(r);
+                wickle(Object.getPrototypeOf(r));
             }
             try {
                 o.fehlt = r._weltbildFehlt();
