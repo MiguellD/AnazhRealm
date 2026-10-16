@@ -1947,9 +1947,8 @@ const FIXTURES = [
                             r._autoSettlementSpawnCell(cx + dx, cz + dz, zi);
                             res.zweit = r._autoSettlementPendingKey === zi.key ? zi.key : "abgewiesen";
                         }
-                        // das Fenster endet am Ereignis DER Zelle (reserviert, ihre Schlange gewachsen), nie an der Ruhe aller Dörfer;
-                        // baut der Zug sie nie, ruht er ohne sie: nichts unterwegs über mehr als drosselTakte Takte (die Uhr wacht
-                        // nur gegen ein Hängen, sie urteilt nie)
+                        // das Fenster endet am Ereignis DER Zelle (reserviert, ihre Schlange gewachsen), nie an der Ruhe aller Dörfer; baut
+                        // der Zug sie nie, ruht er ohne sie (nichts unterwegs über drosselTakte Takte) — die Uhr wacht nur gegen ein Hängen
                         const leer = () => !r._autoSettlementQueue && !r._autoSettlementPendingKey && !r._stlWegePending;
                         const hook0 = window.__anazhAutoSettlement;
                         window.__anazhAutoSettlement = true;
@@ -1991,12 +1990,12 @@ const FIXTURES = [
                     // oder alle Bauten seit vorher (die Ankunfts-Reihenfolge mischte ein zweites Dorf im Fenster ein)
                     const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
                     const neuKeys = Object.keys(sc).filter((k) => !zellenVor.has(k));
-                    const zc = sc[res.zelle || neuKeys.find((k) => sc[k].seed === dp.seed)];
+                    const zc = sc[res.zelle || neuKeys.find((k) => sc[k]?.seed === dp.seed)];
                     const anker = zc ? { x: zc.x, z: zc.z } : null;
                     const amOrt = (e, l) =>
                         !!anker && Math.abs(e.position.x - anker.x - l.x) + Math.abs(e.position.z - anker.z - l.z) < 0.01;
                     const v2 = [...((anker && r._ortPlaene) || new Map()).values()].find(
-                        (p) => p.seed >>> 0 === zc.seed >>> 0 && amOrt({ position: p.ort }, { x: 0, z: 0 })
+                        (p) => p.seed >>> 0 === zc.seed >>> 0 && p.ort.x === anker.x && p.ort.z === anker.z
                     );
                     const P = v2 || plan;
                     res.anker = anker;
@@ -2115,10 +2114,7 @@ const FIXTURES = [
                     // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
                     const F = r.constructor.FOREST;
                     const seedInt = r._forestSeedInt();
-                    let x0 = Infinity;
-                    let x1 = -Infinity;
-                    let z0 = Infinity;
-                    let z1 = -Infinity;
+                    let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
                     const dachW = [];
                     for (const sl of slots) {
                         if (!sl.obb) continue;
@@ -2297,7 +2293,6 @@ const FIXTURES = [
                         let halm = 0;
                         let ferne = 0;
                         const fernFehl = [];
-                        let chunks = 0;
                         const fehl = [];
                         for (let a = Math.floor((P.ort.x - 60) / span); a <= Math.floor((P.ort.x + 60) / span); a++)
                             for (
@@ -2307,7 +2302,6 @@ const FIXTURES = [
                             ) {
                                 const w = await r._voxelWorkerComputeChunkMesh(a, b, 0);
                                 if (!w || w.empty) continue;
-                                chunks++;
                                 const pos = w.positions;
                                 const nor = w.normals;
                                 for (let i = 0; i < pos.length / 3; i++) {
@@ -2353,7 +2347,6 @@ const FIXTURES = [
                                     }
                                 }
                             }
-                        res.terrasseChunks = chunks;
                         res.terrasseWand = wand;
                         res.terrasseWiese = wiese;
                         res.terrasseHalm = halm;
@@ -2428,13 +2421,6 @@ const FIXTURES = [
                         res.planHashGleich = JSON.stringify(studio) === res.v2Json;
                     }
                     res.planJson = JSON.stringify({ roads: P.roads || [] });
-                    res.lage = {
-                        seed: L.seed,
-                        baseHeight: L.baseHeight,
-                        waterLevel: L.waterLevel,
-                        erbgut: L.erbgut,
-                        regionSize: L.regionSize,
-                    };
                 } catch (e) {
                     res.err = (e && e.stack) || String(e);
                 }
