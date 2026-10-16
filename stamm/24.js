@@ -2110,16 +2110,14 @@ class AnazhRealm_Z24 {
         const pz = z !== undefined ? z : pm.position.z;
         const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
         if (!field) return this._pickCreatureSoulName(null, rng);
-        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
+        // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags — auch der Wolf (G4a: das Rudel kommt ambient in die Wildnis;
+        // bis dahin hielt ein predator-Filter jedes Raubtier aus der Welt, der Spieler sah ein Rudel nur, wenn er es rief)
         const souls = AnazhRealm.CREATURE_SOULS;
         if (!souls) return this._pickCreatureSoulName(null, rng);
-        // PHASE E — Raubtiere kommen nicht ambient (predator-Filter, sparsam).
-        const candidates = Object.keys(souls)
-            .filter((name) => !souls[name].predator)
-            .map((name) => ({
-                name,
-                tags: this._creatureSoulTags(name),
-            }));
+        const candidates = Object.keys(souls).map((name) => ({
+            name,
+            tags: this._creatureSoulTags(name),
+        }));
         const { pick } = this._affinityPickFromCandidates(candidates, field, 0.15, rng);
         return (pick && pick.name) || this._pickCreatureSoulName(null, rng);
     }
@@ -2197,43 +2195,105 @@ class AnazhRealm_Z24 {
     }
 
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
-    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler) und außerhalb des Blicks; das Wesen taucht aus der Distanz
-    // auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen
-    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die
-    // Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern und außerhalb des Blicks liegt.
+    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler), außerhalb des Blicks und auf freiem Grund
+    // (`_kreaturGrundFrei`); das Wesen taucht aus der Distanz auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung
+    // (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen freien Ort
+    // außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern,
+    // außerhalb des Blicks und frei liegt.
     _kreaturGeburtsOrt(rng, spanne = 80, wunsch = null) {
         const pm = this.state.playerMesh;
         const cx = pm ? pm.position.x : 0;
         const cz = pm ? pm.position.z : 0;
-        const fr = this._frustumCache;
-        const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
         if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
-            v.set(wunsch.x, this.getTerrainHeightAt(wunsch.x, wunsch.z) + 1, wunsch.z);
-            if (!fr || !fr.containsPoint(v))
-                return this._wildnisTraegt(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
+            if (!this._kreaturImBlick(wunsch.x, wunsch.z))
+                return this._kreaturGrundFrei(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
         }
-        let x = cx;
-        let z = cz;
+        // Die Geburt ist ein Wurf des Feldes: trägt kein Wurf freien Grund, gibt es keinen Ort (null — kein Boot-, Natur-
+        // oder Nexus-Tier; der Akt eines Menschen ruft Leben weiter überall).
+        let ort = null;
         for (let k = 0; k < 8; k++) {
             const ang = rng() * Math.PI * 2;
             const d = AnazhRealm.CREATURE_SPAWN_FAR_MIN + rng() * spanne;
-            x = cx + Math.cos(ang) * d;
-            z = cz + Math.sin(ang) * d;
-            if (!fr) break;
-            v.set(x, this.getTerrainHeightAt(x, z) + 1, z);
-            if (!fr.containsPoint(v)) break;
+            const x = cx + Math.cos(ang) * d;
+            const z = cz + Math.sin(ang) * d;
+            if (!this._kreaturGrundFrei(x, z)) continue;
+            ort = { x, z };
+            if (!this._kreaturImBlick(x, z)) break;
         }
-        // Die Geburt ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, gibt es keinen (null — kein Boot-, Natur-
-        // oder Nexus-Tier; der Akt eines Menschen ruft Leben weiter überall).
-        return this._wildnisTraegt(x, z) ? { x, z } : null;
+        return ort;
+    }
+
+    // Steht (x, z) im Blick des Spielers (das Frustum des Vor-Takts, einen Meter über dem Grund)? Ohne Frustum nie.
+    _kreaturImBlick(x, z) {
+        const fr = this._frustumCache;
+        if (!fr) return false;
+        const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        return fr.containsPoint(v.set(x, this.getTerrainHeightAt(x, z) + 1, z));
+    }
+
+    // TRÄGT DER GRUND EIN GEBORENES TIER? Die Geburt ist ein Wurf des Felds (`_wildnisTraegt`) und weicht dem Bau wie jeder
+    // Wurf (`_weichtDemBau`): nie im Grundriss eines Baus und nie auf der Lichtung des Genesis-Platzes (`_imGrundriss`),
+    // nie in der Hülle eines Dorfs (`wegeKarte.siedlungen`: Wege, Plätze, Äcker und die Häuser zwischen ihnen). Bis G4a
+    // fragte die Geburt nur die Wildnis — ein Rudel hätte im Start-Dorf (110–170 m vom Genesis-Ort) geboren werden können.
+    _kreaturGrundFrei(x, z) {
+        if (!this._wildnisTraegt(x, z) || this._imGrundriss(x, z)) return false;
+        const wk = this.state.wegeKarte;
+        if (wk) for (const b of wk.siedlungen) if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return false;
+        return true;
+    }
+
+    // DER WURF (G4a): die Geburt wirft eine GRUPPE nach dem Gesetz des Kerns (tetrapoda VERHALTEN.herde.wurf): die Kopfzahl
+    // [min, max] der Gattung — das Rudel, die Herde, der Einzelgänger — und den Abstand der Geworfenen in Paar-Räumen. Der
+    // erste steht am Ort, jeder weitere auf der Sonnenblumen-Spirale um ihn (Abstand × √k im Goldwinkel: keiner im Raum des
+    // anderen, jeder im Fenster der Herde) — jeder nach dem Gesetz des Geburts-Orts: fern, außerhalb des Blicks, auf freiem
+    // Grund; wo es nicht trägt, fehlt er. Alle teilen den Anker der Leine (den Wurf-Ort): die Gruppe bleibt beisammen.
+    // `platz` deckelt die Kopfzahl (FAUNA_MAX und maxCreatures gelten für die Summe). Vorher warf jede Geburt EIN Tier an
+    // einem Einzelort — Herden bildeten sich kaum, ein Rudel sah der Spieler nie (Fäden 16.10.: 25 %). Liefert die Geborenen.
+    _kreaturWurf(ort, seele, emotion, rng, platz) {
+        const soul = this._pickCreatureSoulName(seele, rng);
+        const geboren = [];
+        if (!soul) return geboren;
+        const W = AnazhRealm._verhaltenGesetz().herde.wurf;
+        const zeile = W[AnazhRealm.TETRAPODA_SOUL_MAP[soul]];
+        const kopf = zeile ? zeile[0] + Math.floor(rng() * (zeile[1] - zeile[0] + 1)) : 1;
+        const n = Math.min(kopf, platz);
+        // hält der Platz die kleinste Gruppe der Gattung nicht, fällt der Wurf (kein Rudel aus einem Wolf: der Deckel
+        // schneidet nie die Gruppe, er lässt einem Einzelgänger den Platz — Werkbank 16.10.: „wolf 1" am Ende des Boot-Wurfs)
+        if (zeile && n < zeile[0]) return geboren;
+        const dreh = rng() * Math.PI * 2;
+        const pm = this.state.playerMesh;
+        const p = pm ? pm.position : { x: 0, y: 0, z: 0 };
+        const symphonie = this.state.symphony && this.state.symphony.enabled;
+        if (symphonie) this.state.symphony.enabled = false; // still: kein Ping-Schwall
+        // der Abstand der Spirale: abstandRaum × der Paar-Raum der Gattung (der Raum des ersten bei Größe 1 — die Größe
+        // jedes Tiers ist seine Identität, `_creatureBodySize`); ein Platz, der nicht trägt, gibt sein Tier dem nächsten
+        let abstand = 0;
+        for (let k = 0; geboren.length < n && k < 2 * n; k++) {
+            const a = dreh + k * 2.39996;
+            const x = ort.x + Math.cos(a) * abstand * Math.sqrt(k);
+            const z = ort.z + Math.sin(a) * abstand * Math.sqrt(k);
+            if (k > 0) {
+                const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
+                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z)) continue;
+            }
+            const gY = this.getTerrainHeightAt(x, z);
+            const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
+            if (!c) break; // die Obergrenze oder die Gestalt: der Rest des Wurfs fällt mit
+            c.userData.wanderAnchor = { x: ort.x, z: ort.z };
+            if (k === 0) abstand = (W.abstandRaum * 2 * this._kreaturRaum(c)) / c.userData.bodySize;
+            geboren.push(c);
+        }
+        if (symphonie) this.state.symphony.enabled = true;
+        return geboren;
     }
 
     // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste
-    // Soul; der Kandidat mit höchstem Affinity-Score gewinnt (bei Gleichstand der frühere Wurf). Stiller Spawn.
+    // Soul; der Kandidat mit höchstem Affinity-Score gewinnt (bei Gleichstand der frühere Wurf). Die Geburt wirft die GRUPPE
+    // der Gattung (`_kreaturWurf`), still; ihr Platz ist, was FAUNA_MAX der Summe lässt. Liefert die Zahl der Geborenen.
     _creatureNaturalBirth() {
-        if (typeof this.spawnCreatureAt !== "function") return false;
+        if (typeof this.spawnCreatureAt !== "function") return 0;
         const pm = this.state.playerMesh;
-        if (!pm) return false;
+        if (!pm) return 0;
         const rng = this._faunaRng();
         // 6 Kandidaten-Orte + jeweilige Affinity-beste-Soul
         const candidates = [];
@@ -2253,29 +2313,27 @@ class AnazhRealm_Z24 {
             candidates.push({ x: ort.x, z: ort.z, soul, score });
         }
         // Welt entscheidet: höchster Resonanz-Score gewinnt; der Strom streut schon die Orte.
-        if (!candidates.length) return false;
+        if (!candidates.length) return 0;
         let best = candidates[0];
         for (const c of candidates) if (c.score > best.score) best = c;
-        const gY = this.getTerrainHeightAt(best.x, best.z);
-        const y = (Number.isFinite(gY) ? gY : pm.position.y) + 1;
-        // Spawn (silent damit kein Ping-Schwall)
-        const prevSymphony = this.state.symphony && this.state.symphony.enabled;
-        if (prevSymphony) this.state.symphony.enabled = false;
-        const c = this.spawnCreatureAt(best.x, y, best.z, "happy", best.soul);
-        if (prevSymphony) this.state.symphony.enabled = true;
-        if (!c) return false;
+        const platz = Math.max(1, this._currentFaunaMax() - this.state.creatures.length);
+        const geboren = this._kreaturWurf(best, best.soul, "happy", rng, platz);
+        if (!geboren.length) return 0;
         // Journal-Eintrag — Geburt ist Welt-Atem, leise Notiz mit Affinität
         if (typeof this.journalAppend === "function") {
-            const name = (c.userData && c.userData.name) || "(Wesen)";
-            this.journalAppend("growth", `${name} (${best.soul}) tritt in die Welt ein.`, {
+            const name = (geboren[0].userData && geboren[0].userData.name) || "(Wesen)";
+            const n = geboren.length;
+            const text = n > 1 ? `${name} und ${n - 1} weitere treten` : `${name} tritt`;
+            this.journalAppend("growth", `${text} in die Welt ein (${best.soul}).`, {
                 creature: name,
                 soul: best.soul,
+                gruppe: n,
                 affinityScore: best.score.toFixed(3),
                 cause: "fauna_lifecycle",
             });
         }
         this.state.faunaLifecycle.lastBirthAt = Date.now();
-        return true;
+        return geboren.length;
     }
 
     // [ATMOSPHERE] Fauna-Ziel-Population skaliert mit worldFieldAt(player).lebendig: üppiger Wald trägt

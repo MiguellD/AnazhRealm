@@ -592,7 +592,7 @@ const server = statikServer();
         for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip"]) {
             const a = stamm.indexOf(`\n    ${m}(`);
             const e = a < 0 ? -1 : stamm.indexOf("\n    }\n", a);
-            const body = a < 0 || e < 0 ? "" : stamm.slice(a, e).replace(/\/\/.*$/gm, "");
+            const body = a < 0 || e < 0 ? "" : stammLib.ohneKommentare(stamm.slice(a, e));
             const pools = (body.match(/_instanzMesh\(/g) || []).length;
             const kennung = (body.match(/_poolKennung\(/g) || []).length;
             console.log(`  Kennung an der Quelle: ${m} — ${pools} Pool-Erzeugung(en), ${kennung} mit _poolKennung`);

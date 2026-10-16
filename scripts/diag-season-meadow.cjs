@@ -20,7 +20,7 @@ const STAMM = require("./lib/stamm.cjs").text(root);
 const KERN = lies("foundry-core.js");
 const SHELL = lies("worlds/terrain/phytogenesis.js");
 
-const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
+const strip = require("./lib/stamm.cjs").ohneKommentare;
 // am NAMEN, nie an der Parameter-Liste (gate:apparat Klinge 3)
 function methode(src, name) {
     const a = require("./lib/stamm.cjs").kopf(src, name);
