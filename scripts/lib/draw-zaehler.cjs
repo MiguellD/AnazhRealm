@@ -84,7 +84,6 @@ function drawZensus(opts) {
         // des Playtests buchen unter denselben Namen.
         const klasse = (obj) => r._taeterKlasse(obj);
         const zaehl = {};
-        const ro = {}; // die Render-Objekte je Pass (CPU) — die Befehle (GPU) zählt `zaehl`
         const nah = {};
         const unbenannt = new Map();
         const cam = st.camera.position;
@@ -129,7 +128,6 @@ function drawZensus(opts) {
             }
             // je Draw EIN Befehl; eine Senke zeichnet über ihren Zeichner (1410-1) — Instanzen, Matrizen, Einträge trägt sie. DIE
             // ARENA (G1): EIN Render-Objekt, je Glied ein indirekter Zug (`_stapel`: Aufträge des Passes, 5 uint je Zug).
-            ro[pass] = (ro[pass] || 0) + 1;
             const arena = object.isGeometrieArena === true ? object._stapel[object._stapel.length - 1] : null;
             for (let j = 0; j < (arena ? arena.zuege.length : 1); j++) {
                 const senke = arena ? arena.zuege[j] : object.__instanzQuelle || object;
@@ -143,7 +141,7 @@ function drawZensus(opts) {
                     if (senke.isInstancedMesh) tris *= senke.count;
                 }
                 const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
-                e.obj += arena ? 0 : 1;
+                e.obj += j === 0 ? 1 : 0; // die Render-Objekte (CPU) — eine Arena bucht das ihre beim ersten Glied
                 e.cmd++;
                 e.tris += tris;
                 // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
@@ -233,8 +231,9 @@ function drawZensus(opts) {
             const t = k.lastIndexOf("|");
             const kl = k.slice(0, t),
                 p = k.slice(t + 1);
-            const e = passe[p] || (passe[p] = { cmd: 0, tris: 0 });
+            const e = passe[p] || (passe[p] = { cmd: 0, tris: 0, ro: 0 });
             e.cmd += v.cmd;
+            e.ro += v.obj;
             e.tris += Math.round(v.tris);
             const kk = klassen[kl] || (klassen[kl] = { cmd: 0, tris: 0, je: {}, jeTris: {} });
             kk.cmd += v.cmd;
@@ -260,7 +259,6 @@ function drawZensus(opts) {
                     .sort((x, y) => y.tris - x.tris);
             }
         }
-        for (const p in passe) passe[p].ro = ro[p] || 0;
         const gesamt = Object.values(passe).reduce((a, e) => ({ cmd: a.cmd + e.cmd, tris: a.tris + e.tris }), {
             cmd: 0,
             tris: 0,

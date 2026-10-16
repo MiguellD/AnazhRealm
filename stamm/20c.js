@@ -1378,8 +1378,9 @@ class AnazhRealm_Z20c {
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
                 f.setDrawRange(g.drawRange.start, g.drawRange.count);
-                // zeichnet die Arena ihres Stoffs die Senke (G1, `_arenaNimmt`), zeichnet der Zeichner nichts
-                f.instanceCount = s.__arena ? 0 : s.count;
+                // nimmt die Arena ihres Stoffs die Senke (G1, `_arenaNimmt`), verlässt er den Graphen — im Zug, in dem sie es tut,
+                // zeichnet er noch (die Arena steht erst ab der nächsten Aufnahme im Bild: keine Lücke von einem Frame)
+                f.instanceCount = s.count;
                 return f;
             }
             // Wo der Zeichner gezeichnet würde, übernimmt die Arena seines Stoffs die Senke (G1) — er verlässt den Graphen.
