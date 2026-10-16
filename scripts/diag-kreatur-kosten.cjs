@@ -89,11 +89,6 @@ const server = statikServer();
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // GPU-frei, Produktions-Boot
-        // der Kommentar-Stripper der Absenz-Proben (Kommentare zitieren die gefallenen Namen)
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     let out = null;
     try {

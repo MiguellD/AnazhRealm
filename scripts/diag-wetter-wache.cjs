@@ -428,10 +428,6 @@ async function boot(browser, pageErrors) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -453,10 +449,10 @@ async function boot(browser, pageErrors) {
 
 (async () => {
     // (Q) der Stamm: wer schreibt `this.state.weather` und `this.state.timeOfDay` (Kommentare zählen nicht)
-    const stamm = stammLib.text(root).split("\n");
+    const stamm = stammLib.ohneKommentare(stammLib.text(root)).split("\n");
     const quelle = { wetter: { n: 0, orte: [] }, uhr: { n: 0, orte: [] } };
     stamm.forEach((z, i) => {
-        const code = z.replace(/\/\/.*$/, "");
+        const code = z;
         if (/this\.state\.weather\s*=(?!=)/.test(code)) quelle.wetter.orte.push(`Zeile ${i + 1}`);
         if (/this\.state\.timeOfDay\s*=(?!=)/.test(code)) quelle.uhr.orte.push(`Zeile ${i + 1}`);
     });

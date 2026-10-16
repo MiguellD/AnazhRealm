@@ -31,62 +31,7 @@ function sha256Hex(buf) {
 // der CODE darf es nicht — jeder Source-Grep läuft über den gestrippten Body).
 // Strings/Templates bleiben ERHALTEN (die Stempel-Probe sucht "cores.manifest.json",
 // das als String-Literal im Code lebt).
-function stripComments(src) {
-    let out = "";
-    let i = 0;
-    const n = src.length;
-    let state = "code"; // code | line | block | sq | dq | tpl
-    while (i < n) {
-        const c = src[i];
-        const d = i + 1 < n ? src[i + 1] : "";
-        if (state === "code") {
-            if (c === "/" && d === "/") {
-                state = "line";
-                i += 2;
-                continue;
-            }
-            if (c === "/" && d === "*") {
-                state = "block";
-                i += 2;
-                continue;
-            }
-            if (c === "'") state = "sq";
-            else if (c === '"') state = "dq";
-            else if (c === "`") state = "tpl";
-            out += c;
-            i++;
-            continue;
-        }
-        if (state === "line") {
-            if (c === "\n") {
-                state = "code";
-                out += c;
-            }
-            i++;
-            continue;
-        }
-        if (state === "block") {
-            if (c === "*" && d === "/") {
-                state = "code";
-                i += 2;
-                continue;
-            }
-            i++;
-            continue;
-        }
-        // Strings/Templates: byte-treu übernehmen, Escapes respektieren.
-        if (c === "\\") {
-            out += c + d;
-            i += 2;
-            continue;
-        }
-        if ((state === "sq" && c === "'") || (state === "dq" && c === '"') || (state === "tpl" && c === "`"))
-            state = "code";
-        out += c;
-        i++;
-    }
-    return out;
-}
+const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // Den Quelltext einer Klassen-Methode grob herausschneiden: vom Methoden-Kopf bis zum
 // FRÜHESTEN der genannten Nachfolger-Anker (Source-Proben-Zweck, kein AST nötig).

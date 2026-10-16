@@ -854,10 +854,11 @@ function pruefRaum(echt) {
         }
         const h = await cdp.send("Runtime.getHeapUsage");
         // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
-        return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(
-            1
-        );
+        return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(1);
     };
+    // die Basis erst in Ruhe (zwei Proben ≤ 0,5 MB, höchstens 20): der Nachlauf der Einrichtung füllte auf der GTX in 8 s ohne einen Zug
+    // +10,6 MB Puffer (CI 38892745904: S5 +10,9 gegen +10), die 18 Züge danach +0,9
+    const heapRuhe = async () => { let a = await heapMB(), b = await heapMB(); for (let i = 0; i < 20 && Math.abs(b - a) > 0.5; i++) [a, b] = [b, await heapMB()]; return b; };
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
     // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers (ihre
@@ -910,7 +911,7 @@ function pruefRaum(echt) {
     });
     let ofen = ofenStart;
     if (!ofen.fehlt) {
-        const heapVor = await heapMB();
+        const heapVor = await heapRuhe();
         const nach = await page.evaluate(async () => {
             const O = window.__frostOfen;
             for (let i = 3; i <= 20; i++) await O.zug(i);
@@ -957,7 +958,7 @@ function pruefRaum(echt) {
         memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
         ruhend: AnazhRealm.OFEN_MEMO_RUHEND || 0,
     }));
-    const heapPeersVor = await heapMB();
+    const heapPeersVor = await heapRuhe();
     const peers = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
