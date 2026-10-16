@@ -123,22 +123,120 @@ function wachstumBefund(dP, dS, name = "Zweig") {
     return [];
 }
 
-// 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.): ein Dokument nennt als Beweis nur ein Gate, das package.json trägt. Die Diät
-//    strich gate:tier-gang, gate:weltgrenze und gate:nervensystem-porta/-schmiede/-fachwerk, während docs/studio-vertrag.md
-//    und docs/taille-spec.md sie weiter als Linse und ε-Beweis nannten (GOLDENE DEFINITION: nie stale Gates als Beweis).
-//    Eine Zeile, die das Gate als gefallen benennt (fiel · gefallen), ist Chronik und bleibt legal.
+// 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.; K1 Doku-Wahrheit 16.10.): ein Dokument nennt nur, was der Baum trägt, und die
+//    EINE Karte docs/README.md nennt jedes Dokument. Die Diät strich gate:tier-gang und gate:weltgrenze, während
+//    docs/studio-vertrag.md sie weiter als Beweis nannte; die Wurzel-README schickte nach dem Stamm-Schnitt (14.10.) zur
+//    toten Monolith-Datei. ROT je Fund beim Namen: a) ein gate:<name>, das package.json nicht trägt · b) ein Pfad, den kein
+//    verfolgter Pfad trägt (ab Wurzel oder Ordner des Dokuments; ein nackter Datei-Name über irgendeinen Ordner; eine von
+//    .gitignore gedeckte Laufzeit-Datei zählt) · c) ein `_name`, den kein Code trägt · d) eine .md, die die Karte nicht
+//    nennt · e) ein Code-Kommentar, der auf eine .md zeigt, die es nicht gibt, oder den Monolithen außerhalb seiner Wache
+//    nennt (das Literal als Lese-Ziel wacht gate:altlasten, Stamm-Leser-Wand). Ein SATZ, der das Genannte als gefallen
+//    benennt (fiel · gefallen · tot), ist Chronik und bleibt legal — im Code die Zeile.
 const ZITAT_GATE = /gate:([a-z0-9][a-z0-9-]*[a-z0-9])/g;
-const ZITAT_CHRONIK = /\b(fiel|gefallen|gefallene[nmrs]?)\b/i;
-function zitatBefund(dokumente, gates) {
+const ZITAT_CHRONIK = /\b(fiel|fielen|gefallen|gefallene[nmrs]?|tot|tote[nmrs]?)\b/i;
+const ZITAT_PFAD = /(?<![\w.:/@-])((?:\.github|\.claude|[a-z][\w-]*)\/[\w./-]*)/g;
+const ZITAT_DATEI = /(?<![\w.:/@-])([A-Za-z][\w.-]*\.(?:js|cjs|mjs|md|html))(?![\w/-])/g;
+const ZITAT_NAME = /(?<![\w$])(_{1,2}[A-Za-z][\w$]{2,})/g;
+const ZITAT_DIAG = /(?<![\w./-])(diag-[a-z0-9][a-z0-9-]*[a-z0-9])(?![\w.-])/g;
+const ZITAT_PLATZHALTER = /^[[<*{…$]/;
+const ZITAT_FREMD = new Set(["Three.js", "Node.js"]);
+const ZITAT_BLOCK = /^\s*(?:$|#|\||[-*+] |\d+\. |```)/;
+const ZITAT_SATZ = /[.;!?](?=\s)|\s·\s/g;
+const ZITAT_MD_IM_CODE = /(?<![\w.-])((?:docs|spec)\/[\w./-]+\.md)/g;
+// Die Wache des Monolithen-Namens: die EINE Lese-Schnittstelle (`ALT`), die Absenz-Wand und diese Linse.
+const MONOLITH_WACHE = ["scripts/lib/stamm.cjs", "scripts/diag-altlasten.cjs", "scripts/diag-betriebsgesetz.cjs"];
+// Ein Dokument in Blöcke (Absatz, Listen- und Tabellen-Zeile, Überschrift): je Block der Text, die Zeilen-Anfänge und die
+// Satz-Grenzen — der Fund fragt seinen Satz, nicht seine Zeile (ein Absatz bricht den Satz über Zeilen).
+function zitatBloecke(text) {
+    const zeilen = text.split("\n");
+    const bloecke = [];
+    zeilen.forEach((zeile, i) => {
+        const neu = !bloecke.length || ZITAT_BLOCK.test(zeile) || /^\s*(?:$|#|\||```)/.test(zeilen[i - 1]);
+        if (neu) bloecke.push({ text: zeile, anfang: [0], erste: i });
+        else {
+            const b = bloecke[bloecke.length - 1];
+            b.anfang.push(b.text.length + 1);
+            b.text += "\n" + zeile;
+        }
+    });
+    for (const b of bloecke)
+        b.grenzen = [0, ...[...b.text.matchAll(ZITAT_SATZ)].map((m) => m.index + 1), b.text.length];
+    return bloecke;
+}
+function zitatBefund(dokumente, welt) {
     const out = [];
-    for (const { pfad, text } of dokumente)
+    const da = (p) => welt.pfade.has(p.replace(/\/+$/, ""));
+    for (const { pfad, text } of dokumente) {
+        const ordner = path.posix.dirname(pfad);
+        if (welt.karte != null && !welt.karte.includes("`" + pfad + "`"))
+            out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
+        for (const b of zitatBloecke(text)) {
+            const ort = (i) => `${pfad}:${b.erste + b.anfang.filter((a) => a <= i).length}`;
+            const chronik = (i) => {
+                const k = b.grenzen.findIndex((g) => g > i);
+                return ZITAT_CHRONIK.test(b.text.slice(b.grenzen[k - 1], b.grenzen[k]));
+            };
+            const danach = (m) => b.text.slice(m.index + m[0].length);
+            for (const m of b.text.matchAll(ZITAT_GATE))
+                if (!welt.gates.has(`gate:${m[1]}`) && !chronik(m.index))
+                    out.push(`ZITAT-WAND: ${ort(m.index)} nennt gate:${m[1]} — package.json trägt es nicht`);
+            for (const m of b.text.matchAll(ZITAT_PFAD)) {
+                const p = m[1].replace(/[.]+$/, "");
+                const kopf = p.split("/")[0];
+                const wurzel = welt.pfade.has(kopf);
+                const nah = welt.pfade.has(path.posix.join(ordner, kopf));
+                if ((!wurzel && !nah) || ZITAT_PLATZHALTER.test(danach(m))) continue; // Einheit km/h, Platzhalter
+                if ((wurzel && da(p)) || (nah && da(path.posix.join(ordner, p))) || welt.ignoriert(p)) continue;
+                if (!chronik(m.index))
+                    out.push(`ZITAT-WAND: ${ort(m.index)} nennt den Pfad ${p} — der Baum trägt ihn nicht`);
+            }
+            for (const m of b.text.matchAll(ZITAT_DATEI)) {
+                const d = m[1];
+                if (welt.namen.has(d) || ZITAT_FREMD.has(d) || ZITAT_PLATZHALTER.test(danach(m)) || welt.ignoriert(d))
+                    continue;
+                if (!chronik(m.index))
+                    out.push(`ZITAT-WAND: ${ort(m.index)} nennt die Datei ${d} — keine verfolgte Datei heißt so`);
+            }
+            for (const m of b.text.matchAll(ZITAT_DIAG))
+                if (!welt.namen.has(m[1] + ".cjs") && !chronik(m.index))
+                    out.push(`ZITAT-WAND: ${ort(m.index)} nennt ${m[1]} — scripts/ trägt kein ${m[1]}.cjs`);
+            for (const m of b.text.matchAll(ZITAT_NAME))
+                if (!welt.kennung.has(m[1]) && !ZITAT_PLATZHALTER.test(danach(m)) && !chronik(m.index))
+                    out.push(`ZITAT-WAND: ${ort(m.index)} nennt \`${m[1]}\` — kein Code trägt den Namen`);
+        }
+    }
+    for (const { pfad, text } of welt.code || [])
         text.split("\n").forEach((zeile, i) => {
-            if (ZITAT_CHRONIK.test(zeile)) return;
-            for (const m of zeile.matchAll(ZITAT_GATE))
-                if (!gates.has(`gate:${m[1]}`))
-                    out.push(`ZITAT-WAND: ${pfad}:${i + 1} nennt gate:${m[1]} — package.json trägt es nicht`);
+            // nur der Kommentar spricht über die Doku; ein Literal ist ein Lese-Ziel (Absenz-Proben fragen Gefallene)
+            const k = zeile.trimStart().startsWith("*") ? 0 : zeile.search(/\/[/*]/);
+            if (k < 0 || ZITAT_CHRONIK.test(zeile)) return;
+            const kommentar = zeile.slice(k);
+            for (const m of kommentar.matchAll(ZITAT_MD_IM_CODE))
+                if (!da(m[1])) out.push(`ZITAT-WAND: ${pfad}:${i + 1} verweist auf ${m[1]} — die Doku gibt es nicht`);
+            if (welt.monolith && kommentar.includes(welt.monolith) && !MONOLITH_WACHE.includes(pfad))
+                out.push(`ZITAT-WAND: ${pfad}:${i + 1} nennt ${welt.monolith} — der Stamm lebt in stamm/ (Lehre 12)`);
         });
     return out;
+}
+// Die Welt der Linse aus dem Index: verfolgte Pfade samt Ordnern, Dateinamen, Code-Kennungen, Karte, Code-Texte.
+function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
+    const pfade = new Set();
+    const namen = new Set();
+    for (const f of dateien) {
+        namen.add(path.posix.basename(f));
+        for (let p = f; p && p !== "."; p = path.posix.dirname(p)) pfade.add(p);
+    }
+    const kennung = new Set();
+    const code = [];
+    for (const f of dateien) {
+        if (!/\.(?:c?js|mjs|html|json|yml|sh|bat|css)$/.test(f) || /(?:^|\/)lib\/three|\.min\.js$/.test(f)) continue;
+        const text = lies(f);
+        if (f !== "scripts/diag-betriebsgesetz.cjs") code.push({ pfad: f, text }); // sie trägt ihre Täter als Selbsttest
+        if (f === "scripts/diag-altlasten.cjs" || f === "scripts/diag-betriebsgesetz.cjs") continue; // Absenz-Listen
+        for (const m of text.matchAll(/[A-Za-z_$][\w$]*/g)) kennung.add(m[0]);
+    }
+    const karte = dateien.includes("docs/README.md") ? lies("docs/README.md") : "";
+    return { gates, pfade, namen, kennung, karte, code, ignoriert, monolith };
 }
 
 function main() {
@@ -166,15 +264,32 @@ function main() {
     }
 
     // 7) ZITAT-WAND
+    let dokuZeile = "nicht gelesen";
     try {
         const gates = new Set(
             Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts)
         );
-        const dokumente = git(["ls-files", "CLAUDE.md", "docs", ".claude/agents"])
+        const dateien = git(["ls-files", "--cached", "--others", "--exclude-standard"])
             .split("\n")
-            .filter((p) => p.endsWith(".md"))
-            .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
-        errs.push(...zitatBefund(dokumente, gates));
+            .filter((p) => p && fs.existsSync(path.join(root, p)));
+        const lies = (p) => fs.readFileSync(path.join(root, p), "utf8");
+        const gemerkt = new Map();
+        const ignoriert = (p) => {
+            if (!gemerkt.has(p))
+                try {
+                    git(["check-ignore", "-q", "--no-index", p]);
+                    gemerkt.set(p, true);
+                } catch {
+                    gemerkt.set(p, false);
+                }
+            return gemerkt.get(p);
+        };
+        const welt = zitatWelt(dateien, lies, gates, ignoriert, require("./lib/stamm.cjs").ALT);
+        welt.code = welt.code.filter((d) => !d.pfad.startsWith("vendor/")); // fremd und gepinnt: nie editiert
+        const dokumente = dateien.filter((p) => p.endsWith(".md")).map((p) => ({ pfad: p, text: lies(p) }));
+        const befund = zitatBefund(dokumente, welt);
+        errs.push(...befund);
+        dokuZeile = `${dokumente.length} .md in der Karte, ${befund.length} tote Aussagen`;
     } catch (e) {
         errs.push(`ZITAT-WAND: Dokumente oder package.json nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
@@ -263,13 +378,47 @@ function main() {
     const w5 = nettoZeilen("512\t0\tscripts/lib/kronen-linse.cjs\n-\t-\tspec/bild.png\n3\t10\tspec/a.json\n");
     if (!w1 || w2 || !w3 || w4 || w5 !== 505)
         errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5})`);
-    const zG = new Set(["gate:tier-gang"]);
-    const z1 = zitatBefund([{ pfad: "v.md", text: "Linse: `gate:weltgrenze` (A–G)" }], zG).length; // muss feuern
-    const z2 = zitatBefund([{ pfad: "v.md", text: "der Gang ist `gate:tier-gang`" }], zG).length; // darf nicht
-    const z3 = zitatBefund([{ pfad: "v.md", text: "`gate:dritter-spiegel` fiel mit K16" }], zG).length; // Chronik
-    const z4 = zitatBefund([{ pfad: "v.md", text: "ε-Beweis, `gate:nervensystem-porta`)." }], zG)[0] || "";
-    if (!z1 || z2 || z3 || !z4.includes("v.md:1 nennt gate:nervensystem-porta"))
-        errs.push(`Selbsttest der Zitat-Wand versagt (z1=${z1} z2=${z2} z3=${z3} z4=${z4})`);
+    // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
+    const zTexte = {
+        "docs/README.md": "| `docs/README.md` | `docs/a.md` |",
+        "stamm/01.js": "this._lebt(); // Norm: docs/weg.md",
+        "scripts/x.cjs": "// Spiegel aus anazhRealm.js",
+    };
+    const zWelt = zitatWelt(
+        Object.keys(zTexte),
+        (p) => zTexte[p],
+        new Set(["gate:tier-gang"]),
+        () => false,
+        "anazhRealm.js"
+    );
+    const zDoku = [
+        "- Linse: `gate:weltgrenze` (A–G)",
+        "- der Gang ist `gate:tier-gang`, Ort `stamm/01.js`, Leser `_lebt`",
+        "- `gate:dritter-spiegel` fiel mit K16, mit ihm `_weg` und",
+        "  `docs/weg.md`. Die Karte: `docs/weg.md`",
+        "- der Stamm (`anazhRealm.js`, eine Klasse)",
+        "- ruft `_tot()` und diag-genom",
+        "- `stamm/NN[x].js` bei 30 km/h",
+    ].join("\n");
+    const zIst = zitatBefund(
+        [
+            { pfad: "docs/a.md", text: zDoku },
+            { pfad: "docs/b.md", text: "x" },
+        ],
+        zWelt
+    );
+    const zSoll = [
+        "docs/a.md:1 nennt gate:weltgrenze",
+        "docs/a.md:4 nennt den Pfad docs/weg.md",
+        "docs/a.md:5 nennt die Datei anazhRealm.js",
+        "docs/a.md:6 nennt `_tot`",
+        "docs/a.md:6 nennt diag-genom",
+        "docs/b.md fehlt in der EINEN Karte",
+        "stamm/01.js:1 verweist auf docs/weg.md",
+        "scripts/x.cjs:1 nennt anazhRealm.js",
+    ];
+    if (zIst.length !== zSoll.length || zSoll.some((s) => !zIst.some((z) => z.includes(s))))
+        errs.push(`Selbsttest der Zitat-Wand versagt (${zIst.length} statt ${zSoll.length}: ${zIst.join(" | ")})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");
@@ -279,7 +428,7 @@ function main() {
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
             `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + ` +
-            `Wachstums-Wand + Zitat-Wand stehen · Selbsttest feuert`
+            `Wachstums-Wand + Zitat-Wand stehen (Doku: ${dokuZeile}) · Selbsttest feuert`
     );
 }
 
