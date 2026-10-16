@@ -56,17 +56,17 @@ function softwareWebglArgs() {
     return ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox", ...CPU_COMPOSITOR];
 }
 
-// WebGL2 auf der Karte (ANGLE auf dem Treiber der Maschine); navigator.gpu fällt, damit die Welt wie auf swiftshader
-// ihren WebGL2-Rückfall wählt und das Holz dasselbe bleibt (ohne Adapter-Antwort fährt sie „voll").
+// WebGL2 auf der Karte (ANGLE am Treiber); navigator.gpu fällt, damit die Welt wie auf swiftshader ihren WebGL2-Rückfall wählt.
 function hardwareWebglArgs() {
     return ["--no-sandbox", "--disable-setuid-sandbox", "--ignore-gpu-blocklist", "--disable-blink-features=WebGPU"];
 }
 
-// DIE EINE WEICHE: "software" (swiftshader) oder "hardware" (der Adapter der Maschine). `zeit`: die Linse urteilt über
-// eine Zeit (ms, fps) — sie fährt swiftshader wie die CI, außer LINSE_GPU sagt es ausdrücklich.
+// DIE EINE WEICHE: "software" (swiftshader) oder "hardware" (der Adapter der Maschine). `zeit`: die Linse urteilt über eine
+// Zeit (ms, fps) — sie fährt swiftshader wie die CI, außer LINSE_GPU sagt es; `karte` (der Job `echt`, K65): die Karte ohne Zeit.
 function linsenGpu(env = process.env, plattform = process.platform, { zeit = false } = {}) {
     if (env.LINSE_GPU === "software" || env.LINSE_GPU === "hardware") return env.LINSE_GPU;
-    if (env.LINSE_GPU) throw new Error(`LINSE_GPU=${env.LINSE_GPU} — erlaubt sind software und hardware`);
+    if (env.LINSE_GPU === "karte") return zeit || plattform !== "win32" ? "software" : "hardware";
+    if (env.LINSE_GPU) throw new Error(`LINSE_GPU=${env.LINSE_GPU} — erlaubt sind software, hardware und karte`);
     if (env.CI === "true" || zeit) return "software";
     return plattform === "win32" ? "hardware" : "software";
 }

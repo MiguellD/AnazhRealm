@@ -1664,3 +1664,91 @@ jobs:
               # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
               # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
               run: npm run look-golden
+
+    echt:
+        # DIE ECHT-GRUPPE (K65, Entscheid 16.10.): BESTEHENDE Wände der GPU-Klasse ZUSÄTZLICH auf dem eigenen Läufer mit der echten
+        # Karte (dem Messplatz, GTX 1060, Label omen-gpu) — swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17).
+        # Die Liste unten ist der Fahrplan: die Auswahl nach Wert (Präzision fern · Schatten · Stufen-Wechsel · Bild-Urteil) aus
+        # den Schritten von `voll`, je Schritt derselbe Befehl, auf der GTX zusammen 516 s (Takt-Lauf OMEN 16.10., alle 89 GPU-
+        # Schritte). Vier GPU-Schritte und die Wand der Karte gate:weltbild-frost:echt sind dort ROT (Albedo-Tafel, Ego-Schatten,
+        # Verdeckungs-Abfrage, WebGL2-Rückfall; Frost: AUSNAHMEN) — sie kommen in die Liste, wenn sie auf der Karte geheilt sind.
+        # Nur bei push auf integ-probe und main und nachts, hinter dem Kopf-Richter; nie pull_request (das Repo ist öffentlich;
+        # der Hook des Läufers lässt nur push von MiguellD durch und wartet auf das GPU-Schloss des Messplatzes, timeout-minutes
+        # trägt das Warten). gate:ci-deckung (E) hält die Form.
+        name: echt (GPU-Wände auf der Karte)
+        needs: kopf
+        if: (github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main'))) && needs.kopf.outputs.voll == 'ja'
+        runs-on: [self-hosted, omen-gpu]
+        timeout-minutes: 150
+        permissions:
+            contents: read
+        env:
+            CI_KLASSE: gpu
+            LINSE_GPU: karte
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Dependencies installieren (Echt-Läufer, der puppeteer-Chrome bleibt auf der Platte des Läufers)
+              shell: bash
+              run: npm ci --no-audit --no-fund
+
+            - name: Fern-Ring auf der Karte (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz)
+              run: npm run gate:fern-ring
+
+            - name: Fernwald auf der Karte (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Pop)
+              run: npm run gate:fernwald
+
+            - name: Streu-Fernform auf der Karte (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)
+              run: npm run gate:streu-fern
+
+            - name: Luft-Sicht auf der Karte (die Luftperspektive ist Physik, keine Nebel-Wand)
+              run: npm run gate:luft-sicht
+
+            - name: Chunk-Naht auf der Karte (kein ungedeckter Spalt)
+              run: npm run gate:seam
+
+            - name: Schatten-Bias auf der Karte (das Gesetz der Kaskade)
+              run: npm run gate:schatten-bias
+
+            - name: Ziel-Zensus auf der Karte (jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
+              run: npm run gate:ziel-zensus
+
+            - name: Scatter-LOD auf der Karte (die Streu-Stufen folgen der Live-Distanz)
+              run: npm run gate:scatter-lod
+
+            - name: Nah-Linse auf der Karte (kein Analog-Satz diesseits der Nah-Grenze 64 m)
+              run: npm run gate:analog-nah
+
+            - name: Studio-Dither-Blende auf der Karte (Masken-Quelle + CPU-Doppel-Mitgliedschaft)
+              run: npm run gate:foundry-crossfade
+
+            - name: S4 Impostor und Werkstatt-L2-Billboard auf der Karte
+              run: npm run gate:s4-impostor-workshop
+
+            - name: Foundry-Impostor auf der Karte (auf dem EINEN Haupt-Renderer)
+              run: npm run gate:foundry-impostor
+
+            - name: Slot-Linse auf der Karte (ein freier Slot und eine leere Hülle zeichnen nie)
+              run: npm run gate:freie-slots
+
+            - name: Pruefbuehne S0 auf der Karte (der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
+              run: npm run gate:pruefbuehne-licht
+
+            - name: Wasser-Bild auf der Karte (das Wasser-Material und der Regen)
+              run: npm run gate:wasser-leben:bild
+
+            - name: Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)
+              run: npm run gate:post-kette
+
+            - name: Himmel-Tag auf der Karte (am Mittag steht kein Punkt am Himmel)
+              run: npm run gate:himmel-tag
+
+            - name: Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)
+              run: npm run gate:portal-membran
+
+            - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
+              run: npm run gate:gpu-fehler
