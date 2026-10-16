@@ -17284,8 +17284,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
-        // der Leser des Ladeschirms). Die Wanduhr der Bänder davor zählte unter Last n=0 (integ FZ 16.10., Neulauf n=53); der
-        // Takt-Deckel fängt nur einen Hänger und nennt die offene Lücke. (state.vegetation füllt seit V9.43-c kein Pfad.)
+        // der Leser des Ladeschirms). Die Lücke ist nur das WARTEN, nie das Urteil: „bauten" zählt jedes Bauwerk, ein Haus im Werk
+        // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
             r._weltbildLuecken().filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
@@ -17568,7 +17568,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
         check(
             "Welle 6.G P1.5: Worldgen-Bäume sind in state.architectures",
-            wave6gResults.worldgenTreesInArchitectures > 0 && !wave6gResults.waldLueckeRest,
+            wave6gResults.worldgenTreesInArchitectures > 0,
             `n=${wave6gResults.worldgenTreesInArchitectures} nach ${wave6gResults.waldTakte} Takten (erster Blick n=${wave6gResults.waldErsterBlick}${wave6gResults.waldLueckeErst ? ", " + wave6gResults.waldLueckeErst : ""})${wave6gResults.waldLueckeRest ? ", offen nach dem Deckel: " + wave6gResults.waldLueckeRest : ""}`
         );
         check(
