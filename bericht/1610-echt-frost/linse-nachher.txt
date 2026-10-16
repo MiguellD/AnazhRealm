@@ -1,0 +1,80 @@
+12:38:57 linse-nachher frost-echt linse Kopf 826717ed  M scripts/diag-weltbild-frost.cjs  M scripts/lib/welt-boot.cjs 
+
+> anazhrealm@18.546.2 gate:weltbild-frost
+> node scripts/diag-weltbild-frost.cjs
+
+[linse-gpu] google/swiftshader
+=== DIE FROST-WAND (swiftshader, kienspan) — Boot +63 s {"bereit":true,"webgpu":true,"chunks":25,"weltbild":"63.1 s"} ===
+  Prüf-Raum: {"weg":"probe-buehne","tier":null}
+
+[probe-buehne] +71 s · Bild 42.4 % der Blöcke bewegt · 16 Index-Puffer (5 Mensch) · Devices 1
+  ✅ probe-buehne: B das Bild folgt der Kamera — 42.36 % der Blöcke (Soll ≥ 5 %)
+  ✅ probe-buehne: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ probe-buehne: G kein WebGPU-Validierungsfehler
+  ✅ probe-buehne: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+  ✅ die Welt-GPU zeichnet einen Menschen (Mensch-Indizes auf der Welt-GPU) — 5 Mensch-Index-Puffer
+
+[werkstatt-eiche] +75 s · {"wahl":"baum_eiche","bühne":"werkstatt","gezeichnet":4,"meshes":26} · 16 Index-Puffer (5 Mensch) · Devices 2
+  ✅ werkstatt-eiche: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ werkstatt-eiche: G kein WebGPU-Validierungsfehler
+  ✅ werkstatt-eiche: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[tab-ich-buehne] +79 s · {"bühne":"ich","gezeichnet":4,"meshes":14} · 16 Index-Puffer (5 Mensch) · Devices 3
+  ✅ tab-ich-buehne: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ tab-ich-buehne: G kein WebGPU-Validierungsfehler
+  ✅ tab-ich-buehne: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[hof-buehne] +79 s · {"bühne":"hof","gezeichnet":18,"meshes":0} · Bild 41.0 % der Blöcke bewegt · 16 Index-Puffer (5 Mensch) · Devices 4
+  ✅ hof-buehne: B das Bild folgt der Kamera — 40.97 % der Blöcke (Soll ≥ 5 %)
+  ✅ hof-buehne: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ hof-buehne: G kein WebGPU-Validierungsfehler
+  ✅ hof-buehne: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[seelenwechsel] +103 s · {"alle":432,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"tausch":20,"vorgelegt":266,"ms":{"buehne":19836,"leib":2385},"neubau":{"welt":{"module":0,"pipelines":0},"ich":{"module":0,"pipelines":0},"hof":{"module":0,"pipelines":0}},"neu":[]}
+  ✅ S1 Seelenwechsel (Ich und Welt-Leib wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 432 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Durchgang, mit Geometrie) — 20 Wechsel, 266 Geometrien vorgelegt
+  ✅ S2 die Welt-GPU kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt) — +0 Module / +0 Pipelines gegen die geschlossene Bühne (Soll ≤ 2)
+  ✅ S2 die Ich-Bühne kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt) — +0 Module / +0 Pipelines gegen die geschlossene Bühne (Soll ≤ 2)
+  ✅ S2 die Hof-Bühne kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt) — +0 Module / +0 Pipelines gegen die geschlossene Bühne (Soll ≤ 2)
+
+[feed-vorschau] +115 s · {"alle":278,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"tausch":9,"vorgelegt":184,"karten":5}
+  ✅ S3 Feed-Vorschau (4 Wesen + Rezept, zwei Durchgänge): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 278 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S3 die Probe wechselt wirklich (Feed, mit Geometrie) — 9 Wechsel, 184 Geometrien vorgelegt
+
+[mitspieler] +116 s · {"alle":0,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"zweiter":true,"vorgelegt":14}
+  ✅ S4 Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel human↔wolf, Abschied): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 0 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S4 die Probe gießt den Peer wirklich zweimal (mit Geometrie) — zweiter Guss: true, 14 Geometrien vorgelegt
+
+[werkstatt-ofen] +142 s · {"alle":441,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"id":"wolf","dial":"size","vor":{"memo":6,"geometrien":11,"MB":2.36,"stoffe":8,"hoerer":8},"nach":{"memo":6,"geometrien":11,"MB":2.37,"stoffe":8,"hoerer":8},"heapVor":298.1,"heapNach":298.2}
+  ✅ S5 Werkstatt-Ofen (Regler-Zug wolf.size, 20 Werte): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 441 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S5 das Ofen-Memo hält kein Regler-Einzelstück — Memo 6 → 6 über 18 Werte
+  ✅ S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt — Geometrien 11 → 11, Geometrie-Speicher 2.36 → 2.37 MB über 18 Werte
+  ✅ S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich) — 8 Stoffe, dispose-Hörer 8 → 8 über 18 Werte
+  ✅ S5 der JS-Speicher bleibt beschränkt — 298.1 → 298.2 MB über 18 Werte (Soll ≤ +10 MB)
+
+[mitspieler-erscheinungen] +159 s · {"alle":139,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"leiber":10,"spitze":24,"memo":6,"memoVor":6,"heapPeersVor":298,"heapPeersNach":301.3}
+  ✅ S6 Mitspieler-Erscheinungen (10 Peers human, Abschied): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 139 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen) — 10 Leiber, Memo-Spitze 24 (vor 6)
+  ✅ S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib — Memo 6 → Spitze 24 → 6 (Grenze +2)
+  ✅ S6 der JS-Speicher fällt mit dem Abschied zurück — 298 → 301.3 MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)
+  ✅ Nachlauf: kein verspätetes Wort einer Validierung
+
+=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===
+  [Spiel] [AnazhRealm V18.546.2] [ERROR] INDEX-WACHE (bereich, world-canvas): Scene/frost-taeter-bereich · Geometrie 45755 — Index 3 ≥ 3 Vertices im gezeichneten Bereich
+  ✅ T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen — ["Scene/frost-taeter-bereich: Index 3 ≥ 3 Vertices im gezeichneten Bereich"]
+  [Spiel] [AnazhRealm V18.546.2] [ERROR] INDEX-WACHE (format, world-canvas): Group/Group/Group/mensch/torso/head/Mesh · Geometrie 6700 — 7704 × Uint32Array = 30816 B gebunden, der Puffer trägt 15408 B
+  [Spiel] [AnazhRealm V18.546.2] [ERROR] GPU-VALIDIERUNG (world-canvas, #1): Index range (first: 0, count: 7704, format: IndexFormat::Uint32) does not fit in index buffer size (15408).
+ - While encoding [RenderPassEncoder (unlabeled)].DrawIndexed(7704, 1, 0, 0, 0).
+ - W
+  [Spiel] [AnazhRealm V18.546.2] [ERROR] GPU-VALIDIERUNG (world-canvas, #2): [Invalid CommandBuffer from CommandEncoder "renderContext_5"] is invalid due to a previous error.
+ - While calling [Queue].Submit([[Invalid CommandBuffer from CommandEncoder "renderContext_5"]]
+  T2 das Wort der Validierung nach 2 ms (offene Pipeline-Bauten 0, offene Fehler-Bereiche 0, verlorene Devices [])
+  ✅ T2 die Index-Wache nennt den geweiteten Index beim Pfad — Group/Group/Group/mensch/torso/head/Mesh: 7704 × Uint32Array = 30816 B gebunden, der Puffer trägt 15408 B
+  ✅ T2 die GPU-Wache des Spiels zählt die Validierung — {"n":4}
+  ✅ T2 der eigene Hörer hört die Validierung (Device oder r184-Fehler-Bereich) — 8 Meldungen: device 0: Index range (first: 0, count: 7704, format: IndexFormat::Uint32) does not fit in index buffer size (15408). | device 0: [Invalid CommandBuffer from CommandEncoder "renderContext_5"] is invalid due to a previous error.
+  ✅ T2 die Bild-Probe erkennt das stehende Bild — 0.00 % der Blöcke bewegt
+
+  Dauer +163 s
+
+✅ DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, und das stehende Bild wird erkannt.
+EXIT=0 DAUER=165 s

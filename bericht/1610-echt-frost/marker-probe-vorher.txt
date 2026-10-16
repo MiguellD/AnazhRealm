@@ -1,0 +1,10 @@
+[welt-boot] FEHLER console.error: PROBE vor dem Selbsttest: eine echte Meldung der Welt
+welt-boot kennt selbsttest() NICHT
+[welt-boot] FEHLER console.error: PROBE nach dem Selbsttest: der Täter der Linse
+[welt-boot] FEHLER pageerror: Error: Uncaught Error: PROBE Wurf nach dem Selbsttest |     at <anonymous> (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cecht-karte%5Cscripts%5Clib%5Cwelt-boot.cjs%3A275%3A22):1:33)
+Sammlung vor dem Marker: 1 · danach: 3 — ["console.error: PROBE vor dem Selbsttest: eine echte Meldung der Welt","console.error: PROBE nach dem Selbsttest: der Täter der Linse","pageerror: Error: Uncaught Error: PROBE Wurf nach dem Selbsttest |     at <anonymous> (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cecht-karte%5Cscripts%5Clib%5Cwelt-boot.cjs%3A275%3A22):1:33)"]
+BELEG ROT
+[welt-boot] ROT — 3 Fehler der Welt:
+  · console.error: PROBE vor dem Selbsttest: eine echte Meldung der Welt
+  · console.error: PROBE nach dem Selbsttest: der Täter der Linse
+  · pageerror: Error: Uncaught Error: PROBE Wurf nach dem Selbsttest |     at <anonymous> (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cecht-karte%5Cscripts%5Clib%5Cwelt-boot.cjs%3A275%3A22):1:33)
