@@ -19,12 +19,13 @@
 //      Position, ein echter Render in ein RenderTarget liefert SUBSTANZ
 //      (distinkte Farben, nicht schwarz) ohne einen einzigen page-error —
 //      „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
-//   W6 (Karte W2, 16.10., ?holz=voll mit Schatten): jeder Stoff zählt je Stufe ≤ min(16, Gerät) Sampler im GLSL — darüber
-//      linkt WebGL2 nie (GTX: der Fern-Ring-Boden mit 17 fehlte); Selbsttest: ein Stoff mit 17 Karten zählt 17
+//   W6 (Karte W3, 16.10., ?holz=voll mit Schatten): jedes GELINKTE GL-Programm eines Stoffs trägt je Stufe ≤ min(16, Gerät)
+//      aktive Sampler-Einheiten (getActiveUniform, nie Textur-Objekte) und linkt — sonst ROT beim Namen mit Info-Log;
+//      Selbsttest: ein Stoff mit 17 Karten zählt 17 (am Gerät mit 16 linkt er nicht: sein Shader-Fehler ist der Selbsttest)
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
@@ -106,27 +107,34 @@ const server = statikServer();
             let px = null;
             if (typeof rend.readRenderTargetPixelsAsync === "function")
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
-            // W6 (Kopf): auch der verborgene Stoff zählt — der Fern-Ring zeigt sich erst nach seinem Refresh
-            o.grenze = [0, be.gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, be.gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? be.gl.getParameter(p) : 0)); // prettier-ignore
-            const zensus = async (wurzel, m = new Map(), verborgen = []) => {
+            // W6 (Karte W3): die Sampler-EINHEITEN des GELINKTEN GL-Programms je Stoff und Stufe — was GL zählt (aktive
+            // Sampler-Uniforms × Feldgröße, je Stufe, in der sie deklariert sind), nie die Textur-Objekte des Stoffs; ein Programm,
+            // das nicht linkt, steht mit seinem Info-Log beim Namen. Auch der verborgene Stoff zählt (der Fern-Ring nach Refresh).
+            const gl = be.gl;
+            o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
+            const SAMPLER = [0x8b5e, 0x8b5f, 0x8b60, 0x8b62, 0x8dc1, 0x8dc4, 0x8dc5, 0x8dca, 0x8dcb, 0x8dcc, 0x8dcf, 0x8dd2, 0x8dd3, 0x8dd4, 0x8dd7]; // prettier-ignore
+            window.__w6Zensus = async (wurzel, m = new Map(), verborgen = []) => {
                 wurzel.traverse((ob) => ob.visible || verborgen.push(ob));
                 verborgen.forEach((ob) => (ob.visible = true));
                 await rend.compileAsync(wurzel, cam);
                 verborgen.forEach((ob) => (ob.visible = false));
                 wurzel.traverse((ob) => (ob.__renderObjekte || []).forEach((ro) => {
-                    const namen = ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => (x.texture && x.texture.name) || x.name)); // prettier-ignore
-                    for (const [s, q] of [[1, ro.getNodeBuilderState().vertexShader], [2, ro.getNodeBuilderState().fragmentShader]]) {
-                        const n = (String(q).match(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+\w+/gm) || []).length;
+                    const p = ro.pipeline && be.get(ro.pipeline).pipeline; // gesetzt, wenn r184 den Link abgeschlossen hat
+                    if (!p) return;
+                    const linkt = gl.getProgramParameter(p, gl.LINK_STATUS) === true;
+                    const aktiv = linkt ? Array.from({ length: gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS) }, (_, i) => gl.getActiveUniform(p, i)).filter((u) => SAMPLER.includes(u.type)) : []; // prettier-ignore
+                    const karten = Object.fromEntries(ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => [x.name, (x.texture && x.texture.name) || x.name]))); // prettier-ignore
+                    for (const [s, q] of [[1, ro.pipeline.vertexProgram.code], [2, ro.pipeline.fragmentProgram.code]]) {
+                        const hier = [...String(q).matchAll(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+(\w+)/gm)].map((x) => x[1]);
+                        const n = linkt ? aktiv.filter((u) => hier.includes(u.name.replace(/\[\d+\]$/, ""))).reduce((a, u) => a + u.size, 0) : hier.length; // prettier-ignore
                         const k = `${ro.material.name || ro.material.type + "#" + ro.material.id} ${s === 1 ? "vertex" : "fragment"}`; // prettier-ignore
-                        if (!(m.has(k) && m.get(k)[1] >= n)) m.set(k, [k, n, s, `${ob.name || ob.userData.inventar || ob.type}: ${namen.join(", ")}`]); // prettier-ignore
+                        const wo = `${ob.name || ob.userData.inventar || ob.type}: ${linkt ? hier.map((h) => karten[h] || h).join(", ") : "LINKT NICHT — " + String(gl.getProgramInfoLog(p)).trim()}`; // prettier-ignore
+                        if (!(m.has(k) && m.get(k)[1] >= n && m.get(k)[4])) m.set(k, [k, n, s, wo, linkt]);
                     }
                 })); // prettier-ignore
                 return [...m.values()].sort((a, c) => c[1] - a[1]);
             };
-            o.zensus = await zensus(st.scene);
-            const sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
-            sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
-            o.selbst = (await zensus(new T.Scene().add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false })))).find((z) => z[0] === "selbsttest:17-karten fragment"); // prettier-ignore
+            o.zensus = await window.__w6Zensus(st.scene);
             rend.setRenderTarget(prev);
             if (rt.dispose) rt.dispose();
             if (px && px.length) {
@@ -148,6 +156,13 @@ const server = statikServer();
         }
         return o;
     });
+    // W6-Selbsttest: ein Stoff mit 17 Karten — am Gerät mit 16 Einheiten linkt er nicht (sein Shader-Fehler ist der Selbsttest)
+    selbsttest("W6: der Stoff mit 17 Karten");
+    out.selbst = await page.evaluate(async () => {
+        const T = THREE, sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
+        sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
+        return (await window.__w6Zensus(new T.Scene().add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false })))).find((z) => z[0] === "selbsttest:17-karten fragment"); // prettier-ignore
+    }).catch(() => null);
     await browser.close();
     server.close();
 
@@ -185,8 +200,9 @@ const server = statikServer();
     if (!out.spielerEndlich) errs.push("W5: die Spieler-Position ist nicht endlich");
     if (!(out.farben >= 4 && out.nonzero > 200))
         errs.push(`W5: der Render hat keine SUBSTANZ (farben=${out.farben}, nonzero=${out.nonzero}) — schwarze Welt?`);
-    for (const [k, n, s, wo] of z) if (n > out.grenze[s]) errs.push(`W6: ${k} bindet ${n} Texturen > ${out.grenze[s]} — ${wo}`); // prettier-ignore
-    if (!(z.length > 4 && out.selbst && out.selbst[1] === 17)) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten zählt ${out.selbst && out.selbst[1]} (${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
+    for (const [k, n, s, wo, linkt] of z) if (n > out.grenze[s] || !linkt) errs.push(`W6: ${k} ${linkt ? "linkt" : "LINKT NICHT"} mit ${n} Sampler-Einheiten (Gerät ${out.grenze[s]}) — ${wo}`); // prettier-ignore
+    if (!(z.length > 4 && out.selbst && out.selbst[1] === 17)) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten zählt ${out.selbst && out.selbst[1]} Einheiten (${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
+    else console.log(`  W6-Selbsttest: der Stoff mit 17 Karten ${out.selbst[4] ? "linkt" : "LINKT NICHT"} mit ${out.selbst[1]} Einheiten — die Linse nennt ihn`); // prettier-ignore
     if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler auf dem WebGL-Pfad`);
 
     if (errs.length) {
