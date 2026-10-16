@@ -46,7 +46,7 @@ class AnazhRealm_Z23a {
             // Rollen-Farbe → ein Blick sagt, was jeder Bauplan IST.
             {
                 const rRole = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-                const rColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[rRole];
+                const rColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[rRole];
                 if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
             }
             const nameSpan = document.createElement("span");
@@ -77,7 +77,7 @@ class AnazhRealm_Z23a {
         const f = this._foundry;
         if (!f || !f.recipes) return [];
         const bps = this.state.blueprints || {};
-        const KP = AnazhRealm.KIND_POLICY || {};
+        const KP = AnazhRealm.KIND_POLICY;
         const out = [];
         for (const id in f.recipes) {
             if (!Object.prototype.hasOwnProperty.call(f.recipes, id)) continue;
@@ -487,7 +487,7 @@ class AnazhRealm_Z23a {
                     restZ = p._restRotZ || 0;
                 if (vd && vd.lean > 0.01 && !p.probe) {
                     const t = performance.now() / 1000;
-                    const amp = vd.lean * (AnazhRealm.WORKSHOP_LEAN_AMP || 0.16); // bis ~9° bei voll instabil
+                    const amp = vd.lean * AnazhRealm.WORKSHOP_LEAN_AMP; // bis ~9° bei voll instabil
                     const osc = Math.sin(t * 2.6) * amp; // langsames Teetern
                     p.currentMesh.rotation.z = restZ - osc * (vd.leanDir.x || 0);
                     p.currentMesh.rotation.x = restX + osc * (vd.leanDir.z || 0);
@@ -811,7 +811,7 @@ class AnazhRealm_Z23a {
         if (kind === "kreatur") {
             // Rezept → Seele: exakter Schluessel-Match zuerst (wolf-Rezept → wolf-Seele,
             // exakter Schlüssel zuerst), sonst die erste gemappte Seele (deer→wesen).
-            const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+            const SM = AnazhRealm.TETRAPODA_SOUL_MAP;
             let soulKey = SM[preset] === preset && AnazhRealm.CREATURE_SOULS[preset] ? preset : null;
             if (!soulKey) {
                 for (const k in SM) {

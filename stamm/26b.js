@@ -885,13 +885,15 @@ AnazhRealm.WERTUNG = Object.freeze({
 });
 
 // ═══ DER EINE GESETZ-STROM ═══
-// `AnazhRealm.Gesetz(pfad, fallback)`: EIN Chokepoint, durch den jeder Export jedes Kerns
+// `AnazhRealm.Gesetz(pfad)`: EIN Chokepoint, durch den jeder Export jedes Kerns
 // (GESETZ_KERNE) erreichbar ist — ein neues Studio-Gesetz braucht nur einen Konsumenten mit Pfad.
 // Pfad "<kern>:<Weg>": Großbuchstaben-Wurzel = Namensraum-Block ("schmiede:ARENA.bogen"), sonst die
 // fx-Heimat des Primär-Presets ("koerper:bewegung.schwimmen" ≙ PRESETS.mensch.fx.bewegung.schwimmen).
-// Kalter Kern / fehlender Ast / nicht-finite Zahl → fallback; Memo NUR im Erfolgs-Fall (ein spät
-// ladender Kern friert nie den Fallback ein). Die Domänen-Leser unten greifen alle durch diesen Strom
-// und halten ihre Gültigkeits-Wände; gate:konsum-bilanz misst, was noch niemand trinkt.
+// Ein unlesbares Gesetz — unbekannter oder ungeladener Kern, ein fehlender Ast VOR dem Blatt, eine nicht-endliche Zahl, ein
+// Wurf beim Lesen — meldet laut über den EINEN Melder (`_gesetzBruch` → `_bruchMelden`) und bricht fail-closed
+// (`_kernPflichtBruch`); kein Ersatzwert (K2, gate:studio-vertrag EIN WERT, EINE STELLE). Ein fehlendes BLATT unter einem
+// lesbaren Ast ist eine Antwort der Tafel (sie kennt den Schlüssel nicht): null. Memo NUR im Erfolgs-Fall. Die Domänen-Leser
+// unten greifen alle durch diesen Strom und halten ihre Gültigkeits-Wände; gate:konsum-bilanz misst, was noch niemand trinkt.
 AnazhRealm.GESETZ_KERNE = Object.freeze({
     koerper: "__koerperCore",
     tetrapoda: "__tetrapodaCore",
@@ -907,33 +909,40 @@ AnazhRealm.GESETZ_KERNE = Object.freeze({
     // K09a — das Gelände-Gesetzbuch (gelaende-core.js): die EINE 2D-Höhe für Stamm, voxel-worker und Studio.
     gelaende: "__gelaendeCore",
 });
-AnazhRealm.Gesetz = function (pfad, fallback) {
+AnazhRealm._gesetzBruch = function (pfad, grund) {
+    const text = "GESETZ: " + pfad + " ist unlesbar — " + grund;
+    const welt = typeof globalThis !== "undefined" ? globalThis.anazhRealm : null;
+    if (welt && typeof welt._bruchMelden === "function") welt._bruchMelden(text);
+    else console.error(text);
+    return AnazhRealm._kernPflichtBruch(pfad + " (" + grund + ")");
+};
+AnazhRealm.Gesetz = function (pfad) {
     const memo = AnazhRealm._gesetzStromMemo || (AnazhRealm._gesetzStromMemo = new Map());
     if (memo.has(pfad)) return memo.get(pfad);
+    let v = null;
+    let grund = null;
     try {
         const d = pfad.indexOf(":");
         const nsName = d > 0 ? AnazhRealm.GESETZ_KERNE[pfad.slice(0, d)] : null;
-        const ns = nsName && typeof globalThis !== "undefined" ? globalThis[nsName] : null;
-        if (ns) {
-            const teile = pfad.slice(d + 1).split(".");
-            let v;
-            if (teile[0] in ns) {
-                v = ns; // Namensraum-Block (ARENA/VERHALTEN/FAHR/SIEDLUNG/…)
-            } else if (ns.PRESETS) {
-                const erst = Object.keys(ns.PRESETS)[0]; // fx-Heimat des Primär-Presets
-                v = ns.PRESETS[erst] && ns.PRESETS[erst].fx;
-            }
-            for (const t of teile) {
-                if (v == null) break;
-                v = v[t];
-            }
-            if (v !== undefined && v !== null && (typeof v !== "number" || Number.isFinite(v))) {
-                memo.set(pfad, v);
-                return v;
-            }
+        const ns = nsName ? globalThis[nsName] : null;
+        const teile = pfad.slice(d + 1).split(".");
+        if (!nsName) grund = "kein Kern dieses Namens in GESETZ_KERNE";
+        else if (!ns) grund = nsName + " ist nicht geladen";
+        else if (teile[0] in ns)
+            v = ns; // Namensraum-Block (ARENA/VERHALTEN/FAHR/SIEDLUNG/…)
+        else if (ns.PRESETS) v = (ns.PRESETS[Object.keys(ns.PRESETS)[0]] || {}).fx; // fx-Heimat des Primär-Presets
+        for (let i = 0; !grund && i < teile.length; i++) {
+            if (v == null) grund = (teile.slice(0, i).join(".") || teile[0]) + " fehlt im Kern";
+            else v = v[teile[i]];
         }
-    } catch (_e) {}
-    return fallback;
+        if (!grund && typeof v === "number" && !Number.isFinite(v)) grund = "die Zahl ist nicht endlich (" + v + ")";
+    } catch (e) {
+        grund = "der Kern warf beim Lesen — " + ((e && e.message) || e);
+    }
+    if (grund) return AnazhRealm._gesetzBruch(pfad, grund);
+    if (v == null) return null;
+    memo.set(pfad, v);
+    return v;
 };
 
 // Die Kerne sind PFLICHT (index.html lädt alle Gesetzbücher, _kernPflichtWand meldet den Ausfall):
@@ -1339,12 +1348,6 @@ AnazhRealm._verhaltenGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
-};
-// Die Schwere des Hüpfers: das g des Gang-Gesetzes (tetrapoda GANG_GESETZ.g) — der Abflug ist v0 = √(2·g·h), der Flug
-// die Parabel (updateCreatures integriert sie auf dem Takt). Fail-closed wie jedes Kern-Gesetz.
-AnazhRealm._hopSchwere = function () {
-    const g = AnazhRealm.Gesetz("tetrapoda:GANG_GESETZ.g", null);
-    return Number.isFinite(g) && g > 0 ? g : AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ.g");
 };
 // DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo · herdeZug, Welle L): der EINE
 // Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form; dazu das Temperament
@@ -1821,19 +1824,27 @@ AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 // über der Stufe der Deckung — 2 = kein Farb-Detail unter vier Pixeln (Eiche 25 m, nur L1: Δ-Luma 3,41 → 2,62).
 AnazhRealm.BLATT_FARBE_OKTAVE = 2;
 
-AnazhRealm.LOD_DISTANCES = {
-    thresh01: 12, // Studio LOD_D0 — dist > 12 m → LOD1 (Default == Post-Ingest, headless == live)
-    thresh12: 26, // Studio LOD_D1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
-    hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
-    lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
-    perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
-    visStretchMax: Infinity, // AUSLÖSCHUNGS-WELLE (Feld B) — VORLAGE-TREU UNGEDECKELT: das Studio deckelt die SSE-Sichthöhe NICHT (foundry-core.js Z.196 `min(uLodRef/(aH0*_isy),1)` — der grosse Baum behält Detail proportional länger). Der V18.413-S2-Deckel (1.25) demotete Riesen ~2× zu früh = der „L1/L2 nicht wie in der Vorlage"-Befund; die LAST atmet weiter über den EINEN Regler (perfMul/foliageRadius/Dichte), nicht über eine Metrik-Lüge. Nur der CPU-LOD-Chooser, NICHT die Shader-aH0-Stempel.
-    // Die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0), über die das Dither-Crossfade die Laub-Karten
-    // weich ausblendet, BEVOR die nächste LOD-Stufe greift.
-    fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [18,26]
-    fade0: 4, // Studio LOD_FADE0 — L0→L1-Band: Crossfade in [thresh01 − fade0, thresh01] = [8,12]
-    leafVisCap: 24, // AUSLÖSCHUNGS-WELLE (Feld B) — die ECHTE Studio-Blatt-Kappe: phytogenesis.js Z.2392/2407 `Math.min(H0arr[vi], 24/(SCALE[sp]*TREE_SCALE_MUL))` = 24 m Welt-Sichthöhe (NICHT uLodRef=12 — die alte Kopplung halbierte die Laub-Sichthöhe, das Laub demotete bei halber Studio-Distanz)
-};
+// Die Stufen-Grenzen, Bänder, Hysterese, Referenz-Höhe und Blatt-Kappe SIND das Gesetz des Kerns (foundry-core
+// PORTAL_RENDER_CONFIG.lod: d0 · d1 · fade · fade0 · hyst · ref · blattKappe, die Blatt-Kappe ist die Welt-Sichthöhe des
+// Laubs, die das Labor in Template-Einheiten rechnet) — gelesen beim Laden, fail-closed, kein Zahlen-Zwilling (K2);
+// `_foundryIngestRenderConfig` zieht einen Live-Edit des Buchs nach. Welt-eigen: perfDistMulMax (der Perf-Hebel) und
+// visStretchMax (vorlage-treu ungedeckelt: das Studio deckelt die SSE-Sichthöhe nicht, nur der CPU-LOD-Chooser liest ihn).
+AnazhRealm.LOD_DISTANCES = (() => {
+    const L = AnazhRealm.Gesetz("terrain:PORTAL_RENDER_CONFIG.lod");
+    if (!L || ![L.d0, L.d1, L.fade, L.fade0, L.hyst, L.ref, L.blattKappe].every(Number.isFinite))
+        return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod");
+    return {
+        thresh01: L.d0,
+        thresh12: L.d1,
+        hysteresis: L.hyst,
+        lodRef: L.ref,
+        perfDistMulMax: 1.3,
+        visStretchMax: Infinity,
+        fade: L.fade,
+        fade0: L.fade0,
+        leafVisCap: L.blattKappe,
+    };
+})();
 
 // Kronen-Dichte-Gitter (Occlusion-Demotion): die Sichtlinie Kamera→ferner Baum marschiert durchs
 // Gitter; übersteigt die kumulierte Dichte die Schwelle, fällt der Baum auf LOD2 (`grown_*_lod2`) —
@@ -1875,20 +1886,16 @@ AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
 // die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und die Sichthöhe, negativ = verdeckt).
 AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4 };
 {
-    const _streuEco =
-        (typeof globalThis !== "undefined" && globalThis.__phytoCore && globalThis.__phytoCore.SCATTER_STRATUM) || {};
-    const _eco = (n, fb) => {
-        const s = _streuEco[n];
-        return {
-            floor: s && Number.isFinite(s.floor) ? s.floor : fb.floor,
-            scaleBase: s && Number.isFinite(s.scaleBase) ? s.scaleBase : fb.scaleBase,
-            scaleVar: s && Number.isFinite(s.scaleVar) ? s.scaleVar : fb.scaleVar,
-            slopeMax: s && Number.isFinite(s.slopeMax) ? s.slopeMax : fb.slopeMax,
-        };
+    // Die Ökologie der Streu ist das Gesetz des Kerns (phyto-core SCATTER_STRATUM), fail-closed — kein Zahlen-Zwilling hier.
+    const _eco = (n) => {
+        const s = globalThis.__phytoCore.SCATTER_STRATUM[n];
+        if (!s || ![s.floor, s.scaleBase, s.scaleVar, s.slopeMax].every(Number.isFinite))
+            throw new Error("phyto-core fehlt: SCATTER_STRATUM." + n + " (die Ökologie der Streu)");
+        return s;
     };
-    const _ecoTree = _eco("tree", { floor: 0.1, scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 });
-    const _ecoUnder = _eco("under", { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 });
-    const _ecoRock = _eco("rock", { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 });
+    const _ecoTree = _eco("tree");
+    const _ecoUnder = _eco("under");
+    const _ecoRock = _eco("rock");
     // V18.491.118 — ecology from `__phytoCore.SCATTER_STRATUM`; caps stay Host.
     AnazhRealm.SCATTER = Object.freeze({
         cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)

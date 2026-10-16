@@ -131,7 +131,6 @@ module.exports = {
     linsenGpu,
     linsenWebGpuArgs,
     linsenWebglArgs,
-    istHardwareAdapter,
     zeitZeile,
     adapterZeile,
     LINUX_SWAPCHAIN,
