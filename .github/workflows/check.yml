@@ -1672,12 +1672,13 @@ jobs:
         # den Schritten von `voll`, je Schritt derselbe Befehl, auf der GTX zusammen 516 s (Takt-Lauf OMEN 16.10., alle 89 GPU-
         # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s, seit frost-echt grün). Vier GPU-Schritte sind dort
         # ROT (Albedo-Tafel, Ego-Schatten, Verdeckungs-Abfrage, WebGL2-Rückfall) — sie kommen in die Liste, wenn sie geheilt sind.
-        # Nur bei push auf integ-probe und main und nachts, hinter dem Kopf-Richter; nie pull_request (das Repo ist öffentlich;
-        # der Hook des Läufers lässt nur push von MiguellD durch und wartet auf das GPU-Schloss des Messplatzes, timeout-minutes
-        # trägt das Warten). gate:ci-deckung (E) hält die Form.
+        # Bei JEDEM push auf integ-probe und nachts, hinter dem Kopf-Richter, aber nie hinter seiner Doppel-Sperre (die gilt der
+        # swiftshader-Batterie; ein Zweig fährt echt nie, sonst sperrte ein schon grüner Zweig-Kopf nach dem Fast-Forward die Karte);
+        # main trägt denselben SHA vorgespult; nie pull_request (das Repo ist öffentlich; der Hook des Läufers lässt nur push von
+        # MiguellD durch und wartet auf das GPU-Schloss des Messplatzes, timeout-minutes trägt das Warten). gate:ci-deckung (E).
         name: echt (GPU-Wände auf der Karte)
         needs: kopf
-        if: (github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main'))) && needs.kopf.outputs.voll == 'ja'
+        if: (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && needs.kopf.result == 'success'
         runs-on: [self-hosted, omen-gpu]
         timeout-minutes: 150
         permissions:
