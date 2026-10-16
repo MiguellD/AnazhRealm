@@ -114,3 +114,16 @@
   - Die Reihe: Bild-Probe Uhr 0,72 mit `--gpu-fehler`, dann Kalt 3+3, gehend Wiese s1–s4, dann stehend Wiese Ego und
     Genesis Third je 2+2.
   - Danach die Zweigipfel-Probe Genesis Ego (`p3/k1510zg`).
+
+## Nachtrag 16.10. ~03:40 (aus dem Nachmessen)
+
+- **Der Vorbehalt ist an der Wiese gemessen.** d5deed14 zeichnet dort im Haupt-Pass deutlich weniger (Renderer-Zählung
+  `dreiecke.jePass.haupt` in lauf-voll):
+
+  | Stelle | main 015a3f74 | d5deed14 | Haupt-Pass-Stempel main → d5deed14 |
+  |---|---|---|---|
+  | Wiese Ego | 286k | 207k | 0,38 → 0,06 ms |
+  | Wiese Third | 324k | 289k | – |
+
+- Die Klassen-Tafel des Bands zählt aus der Szene und zeigt das nicht.
+- **„Wiese Ego gpu-bank 9,31 → 8,79“ ist damit der fehlende Boden, kein Gewinn.** Siehe `1610-nachmessen-210fe8a7.md`.

@@ -1,0 +1,10 @@
+{
+ "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 31.41 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 40.16 m · Luma 88.3 σ 40.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.2 · Bühne summer sunny 0.72 · Gerät WebGPU nvidia pascal · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-p210%5Cscripts%5Cwerkbank.cjs%3A928%3A20):1390:32)",
+  "at abnahme (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\abab-p210\\scripts\\werkbank.cjs:928:20), <anonymous>:1389:31)",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\abab-p210\\scripts\\werkbank.cjs:928:20), <anonymous>:1503:44)",
+  "at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\welle-m-nexus\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ],
+ "ms": 4588
+}
