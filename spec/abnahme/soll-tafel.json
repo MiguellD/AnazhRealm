@@ -91,20 +91,54 @@
                         "gelaende-core.js": "c:671ad7ea812567a8",
                         "phyto-core.js": "c:4452d5a022460dbb",
                         "foundry-core.js": "c:577492bfc91b4367",
-                        "stamm/07.js": "c:0012a2d3b8c793b7",
-                        "stamm/10.js": "c:bb6631653fcc0994",
-                        "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
-                        "stamm/25c.js": "c:fb8c3e2986247bac",
-                        "stamm/11c.js": "c:54772b3f94d1cf21",
-                        "stamm/17b.js": "c:7a76ea527559ad60",
-                        "stamm/17c.js": "c:78d572870c3e2c9e",
-                        "stamm/20a.js": "c:edf068cfa4a10fa4",
-                        "stamm/26b.js": "c:dfab70e9d26443a4"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/gelaende-fern.js": "c:0000000000000000",
+                        "stamm/wasser-hydro.js": "c:0000000000000000",
+                        "stamm/wasser-zellen.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/stoff-instanz.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/bau-vorlagen.js": "c:0000000000000000",
+                        "stamm/bau-buch.js": "c:0000000000000000",
+                        "stamm/bau-teile.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/siedlung-bauten.js": "c:0000000000000000",
+                        "stamm/siedlung-satz.js": "c:0000000000000000",
+                        "stamm/vegetation-wiese.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/vegetation-streu.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-sicht.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/klang.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000",
+                        "stamm/koerper-seele.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/koerper-fahrt.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/kreatur-verhalten.js": "c:0000000000000000",
+                        "stamm/kampf.js": "c:0000000000000000",
+                        "stamm/netz-p2p.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/feld-dsl.js": "c:0000000000000000",
+                        "stamm/feld-nexus.js": "c:0000000000000000",
+                        "stamm/feld-sprache.js": "c:0000000000000000",
+                        "stamm/speicher-welten.js": "c:0000000000000000",
+                        "stamm/speicher-laden.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/werkstatt-vorschau.js": "c:0000000000000000",
+                        "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                        "stamm/werkstatt-sozial.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/11c.js", "stamm/17b.js", "stamm/17c.js", "stamm/20a.js", "stamm/26b.js"]
+            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/gelaende-fern.js", "stamm/wasser-hydro.js", "stamm/wasser-zellen.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/studio-gestalt.js", "stamm/bau-vorlagen.js", "stamm/bau-buch.js", "stamm/bau-teile.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "stamm/vegetation-wiese.js", "stamm/vegetation-baum.js", "stamm/vegetation-streu.js", "stamm/bild-kosten.js", "stamm/bild-sicht.js", "stamm/bild-himmel.js", "stamm/klang.js", "stamm/koerper-leib.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/koerper-fahrt.js", "stamm/kreatur-leben.js", "stamm/kreatur-verhalten.js", "stamm/kampf.js", "stamm/netz-p2p.js", "stamm/feld-leben.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-sprache.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-vorschau.js", "stamm/werkstatt-bauen.js", "stamm/werkstatt-sozial.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "himmel-licht",
@@ -172,17 +206,27 @@
                     "sonnenRichtung": [0, 0.962, 0.272],
                     "quellen": {
                         "foundry-core.js": "c:577492bfc91b4367",
-                        "stamm/05b.js": "c:a4d007e1764d7fe5",
-                        "stamm/07.js": "c:0012a2d3b8c793b7",
-                        "stamm/10.js": "c:bb6631653fcc0994",
-                        "stamm/11d.js": "c:a01f2fa414615b94",
-                        "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
-                        "stamm/25c.js": "c:fb8c3e2986247bac"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-sicht.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/speicher-welten.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/dirigent-regler.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["foundry-core.js", "stamm/05b.js", "stamm/07.js", "stamm/10.js", "stamm/11d.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js"]
+            "quellen": ["foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/stoff-material.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-sicht.js", "stamm/bild-himmel.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/speicher-welten.js", "stamm/werkstatt-hud.js", "stamm/dirigent-regler.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "laub",
@@ -256,19 +300,31 @@
                     "quellen": {
                         "phyto-core.js": "c:71fcf1b4be4e4597",
                         "foundry-core.js": "c:2ccacf2543c36e25",
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:1b961fac64032e22",
-                        "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:61e641a0f44d5466",
-                        "stamm/17a.js": "c:1cf91f73137a3952",
-                        "stamm/20b.js": "c:99f1a421be17e6e3",
-                        "stamm/20c.js": "c:da14ccf91cefc490",
-                        "stamm/20d.js": "c:f4f05390e67cc1d5"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/wasser-zellen.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/stoff-instanz.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/siedlung-bauten.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/wasser-zellen.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/studio-gestalt.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-bauen.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"],
             "vorlage": [
                 {
                     "karte": "K58",
@@ -349,19 +405,31 @@
                     "quellen": {
                         "phyto-core.js": "c:3f23e6662a56359d",
                         "foundry-core.js": "c:1196859e3b932ea9",
-                        "stamm/07.js": "c:0012a2d3b8c793b7",
-                        "stamm/10.js": "c:1b961fac64032e22",
-                        "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:5cadba33d1361342",
-                        "stamm/25c.js": "c:5f5329b00ce6eef5",
-                        "stamm/17a.js": "c:27a9a8caa83f5cd9",
-                        "stamm/20b.js": "c:603616360ff6a40f",
-                        "stamm/20c.js": "c:f1d6017c32baa210",
-                        "stamm/20d.js": "c:adcf0bd756b173cc"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/wasser-zellen.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/stoff-instanz.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/siedlung-bauten.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/wasser-zellen.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/studio-gestalt.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-bauen.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"],
             "vorlage": [
                 {
                     "karte": "K58",
@@ -508,19 +576,31 @@
                     "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
-                        "stamm/07.js": "c:0012a2d3b8c793b7",
-                        "stamm/10.js": "c:bb6631653fcc0994",
-                        "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
-                        "stamm/25c.js": "c:fb8c3e2986247bac",
-                        "stamm/08.js": "c:54eed4bbb81c7ac7",
-                        "stamm/11a.js": "c:64859e2b185ed62a",
-                        "stamm/11b.js": "c:30d9c5f48ce31fe3",
-                        "stamm/17b.js": "c:7a76ea527559ad60"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/gelaende-kollision.js": "c:0000000000000000",
+                        "stamm/wasser-hydro.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/siedlung-bauten.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-sicht.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/netz-p2p.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["gelaende-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/08.js", "stamm/11a.js", "stamm/11b.js", "stamm/17b.js"]
+            "quellen": ["gelaende-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/gelaende-kollision.js", "stamm/wasser-hydro.js", "stamm/stoff-material.js", "stamm/studio-gestalt.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-sicht.js", "stamm/bild-himmel.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/netz-p2p.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "tor-fern",
@@ -609,15 +689,28 @@
                         "quellen": {
                             "porta-core.js": "c:43576786f20c3d32",
                             "foundry-core.js": "c:577492bfc91b4367",
-                            "stamm/07.js": "c:0012a2d3b8c793b7",
-                            "stamm/10.js": "c:bb6631653fcc0994",
-                            "stamm/19.js": "c:5f36c5687cb8f126",
-                            "stamm/24.js": "c:16ec71722c0bac2a",
-                            "stamm/25c.js": "c:fb8c3e2986247bac",
-                            "stamm/14.js": "c:e837457d25549b04",
-                            "stamm/17a.js": "c:27a9a8caa83f5cd9",
-                            "stamm/17c.js": "c:78d572870c3e2c9e",
-                            "stamm/20b.js": "c:603616360ff6a40f"
+                            "stamm/dirigent-kern.js": "c:0000000000000000",
+                            "stamm/dienst.js": "c:0000000000000000",
+                            "stamm/gelaende-boden.js": "c:0000000000000000",
+                            "stamm/gelaende-chunks.js": "c:0000000000000000",
+                            "stamm/stoff-material.js": "c:0000000000000000",
+                            "stamm/stoff-instanz.js": "c:0000000000000000",
+                            "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/siedlung-ort.js": "c:0000000000000000",
+                            "stamm/siedlung-bauten.js": "c:0000000000000000",
+                            "stamm/siedlung-satz.js": "c:0000000000000000",
+                            "stamm/vegetation-baum.js": "c:0000000000000000",
+                            "stamm/bild-kosten.js": "c:0000000000000000",
+                            "stamm/bild-himmel.js": "c:0000000000000000",
+                            "stamm/koerper-seele.js": "c:0000000000000000",
+                            "stamm/koerper-bewegung.js": "c:0000000000000000",
+                            "stamm/kreatur-leben.js": "c:0000000000000000",
+                            "stamm/netz-portal.js": "c:0000000000000000",
+                            "stamm/feld-leben.js": "c:0000000000000000",
+                            "stamm/werkstatt-hud.js": "c:0000000000000000",
+                            "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                            "stamm/dirigent-takt.js": "c:0000000000000000",
+                            "stamm/dirigent-ankunft.js": "c:0000000000000000"
                         }
                     },
                     "L3": {
@@ -650,15 +743,28 @@
                         "quellen": {
                             "porta-core.js": "c:43576786f20c3d32",
                             "foundry-core.js": "c:cab2ad3ee4313e43",
-                            "stamm/07.js": "c:158f10e6ed0cd9c0",
-                            "stamm/10.js": "c:1b961fac64032e22",
-                            "stamm/19.js": "c:b1a053cba1f64cd1",
-                            "stamm/24.js": "c:5cadba33d1361342",
-                            "stamm/25c.js": "c:908225cfcf68c04e",
-                            "stamm/14.js": "c:df561984b7ac6b74",
-                            "stamm/17a.js": "c:1cf91f73137a3952",
-                            "stamm/17c.js": "c:0c690893cd7e902f",
-                            "stamm/20b.js": "c:2b24a39bbcacefdd"
+                            "stamm/dirigent-kern.js": "c:0000000000000000",
+                            "stamm/dienst.js": "c:0000000000000000",
+                            "stamm/gelaende-boden.js": "c:0000000000000000",
+                            "stamm/gelaende-chunks.js": "c:0000000000000000",
+                            "stamm/stoff-material.js": "c:0000000000000000",
+                            "stamm/stoff-instanz.js": "c:0000000000000000",
+                            "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/siedlung-ort.js": "c:0000000000000000",
+                            "stamm/siedlung-bauten.js": "c:0000000000000000",
+                            "stamm/siedlung-satz.js": "c:0000000000000000",
+                            "stamm/vegetation-baum.js": "c:0000000000000000",
+                            "stamm/bild-kosten.js": "c:0000000000000000",
+                            "stamm/bild-himmel.js": "c:0000000000000000",
+                            "stamm/koerper-seele.js": "c:0000000000000000",
+                            "stamm/koerper-bewegung.js": "c:0000000000000000",
+                            "stamm/kreatur-leben.js": "c:0000000000000000",
+                            "stamm/netz-portal.js": "c:0000000000000000",
+                            "stamm/feld-leben.js": "c:0000000000000000",
+                            "stamm/werkstatt-hud.js": "c:0000000000000000",
+                            "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                            "stamm/dirigent-takt.js": "c:0000000000000000",
+                            "stamm/dirigent-ankunft.js": "c:0000000000000000"
                         }
                     },
                     "L2": {
@@ -697,20 +803,33 @@
                         "quellen": {
                             "porta-core.js": "c:43576786f20c3d32",
                             "foundry-core.js": "c:cab2ad3ee4313e43",
-                            "stamm/07.js": "c:158f10e6ed0cd9c0",
-                            "stamm/10.js": "c:1b961fac64032e22",
-                            "stamm/19.js": "c:b1a053cba1f64cd1",
-                            "stamm/24.js": "c:5cadba33d1361342",
-                            "stamm/25c.js": "c:908225cfcf68c04e",
-                            "stamm/14.js": "c:df561984b7ac6b74",
-                            "stamm/17a.js": "c:1cf91f73137a3952",
-                            "stamm/17c.js": "c:0c690893cd7e902f",
-                            "stamm/20b.js": "c:2b24a39bbcacefdd"
+                            "stamm/dirigent-kern.js": "c:0000000000000000",
+                            "stamm/dienst.js": "c:0000000000000000",
+                            "stamm/gelaende-boden.js": "c:0000000000000000",
+                            "stamm/gelaende-chunks.js": "c:0000000000000000",
+                            "stamm/stoff-material.js": "c:0000000000000000",
+                            "stamm/stoff-instanz.js": "c:0000000000000000",
+                            "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/siedlung-ort.js": "c:0000000000000000",
+                            "stamm/siedlung-bauten.js": "c:0000000000000000",
+                            "stamm/siedlung-satz.js": "c:0000000000000000",
+                            "stamm/vegetation-baum.js": "c:0000000000000000",
+                            "stamm/bild-kosten.js": "c:0000000000000000",
+                            "stamm/bild-himmel.js": "c:0000000000000000",
+                            "stamm/koerper-seele.js": "c:0000000000000000",
+                            "stamm/koerper-bewegung.js": "c:0000000000000000",
+                            "stamm/kreatur-leben.js": "c:0000000000000000",
+                            "stamm/netz-portal.js": "c:0000000000000000",
+                            "stamm/feld-leben.js": "c:0000000000000000",
+                            "stamm/werkstatt-hud.js": "c:0000000000000000",
+                            "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                            "stamm/dirigent-takt.js": "c:0000000000000000",
+                            "stamm/dirigent-ankunft.js": "c:0000000000000000"
                         }
                     }
                 }
             },
-            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/netz-portal.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-bauen.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "tor-bunt",
@@ -767,7 +886,7 @@
                     "L2": "tor-fern:L2"
                 }
             },
-            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/netz-portal.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-bauen.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "tor-ziel",
@@ -824,7 +943,7 @@
                     "L2": "tor-fern:L2"
                 }
             },
-            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "stamm/netz-portal.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-bauen.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "fels",
@@ -987,18 +1106,29 @@
                     "quellen": {
                         "koerper-core.js": "c:2d740b48e4f78546",
                         "foundry-core.js": "c:577492bfc91b4367",
-                        "stamm/07.js": "c:0012a2d3b8c793b7",
-                        "stamm/10.js": "c:bb6631653fcc0994",
-                        "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
-                        "stamm/25c.js": "c:fb8c3e2986247bac",
-                        "stamm/15a.js": "c:386117a9b5c4f686",
-                        "stamm/15c.js": "c:632b0d73bab306bc",
-                        "stamm/25b.js": "c:fd9270736768dec2"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/wasser-hydro.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/bau-teile.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/koerper-seele.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/koerper-fahrt.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["koerper-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/15a.js", "stamm/15c.js", "stamm/25b.js"]
+            "quellen": ["koerper-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/wasser-hydro.js", "stamm/stoff-material.js", "stamm/bau-teile.js", "stamm/siedlung-ort.js", "stamm/vegetation-baum.js", "stamm/bild-kosten.js", "stamm/bild-himmel.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/koerper-fahrt.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         },
         {
             "id": "boden-nah-farbe",
@@ -1098,20 +1228,54 @@
                         "gelaende-core.js": "c:671ad7ea812567a8",
                         "phyto-core.js": "c:611dfb4c0b65042c",
                         "foundry-core.js": "c:e87f480936552e79",
-                        "stamm/07.js": "c:16239021faa968ce",
-                        "stamm/10.js": "c:1b961fac64032e22",
-                        "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:5cadba33d1361342",
-                        "stamm/25c.js": "c:6d182a1387ec05d7",
-                        "stamm/11c.js": "c:c0bb0585a740f344",
-                        "stamm/17b.js": "c:7a76ea527559ad60",
-                        "stamm/17c.js": "c:78d572870c3e2c9e",
-                        "stamm/20a.js": "c:edf068cfa4a10fa4",
-                        "stamm/26b.js": "c:dfab70e9d26443a4"
+                        "stamm/dirigent-kern.js": "c:0000000000000000",
+                        "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/gelaende-boden.js": "c:0000000000000000",
+                        "stamm/gelaende-chunks.js": "c:0000000000000000",
+                        "stamm/gelaende-fern.js": "c:0000000000000000",
+                        "stamm/wasser-hydro.js": "c:0000000000000000",
+                        "stamm/wasser-zellen.js": "c:0000000000000000",
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/stoff-instanz.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/bau-vorlagen.js": "c:0000000000000000",
+                        "stamm/bau-buch.js": "c:0000000000000000",
+                        "stamm/bau-teile.js": "c:0000000000000000",
+                        "stamm/siedlung-ort.js": "c:0000000000000000",
+                        "stamm/siedlung-bauten.js": "c:0000000000000000",
+                        "stamm/siedlung-satz.js": "c:0000000000000000",
+                        "stamm/vegetation-wiese.js": "c:0000000000000000",
+                        "stamm/vegetation-baum.js": "c:0000000000000000",
+                        "stamm/vegetation-streu.js": "c:0000000000000000",
+                        "stamm/bild-kosten.js": "c:0000000000000000",
+                        "stamm/bild-sicht.js": "c:0000000000000000",
+                        "stamm/bild-himmel.js": "c:0000000000000000",
+                        "stamm/klang.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000",
+                        "stamm/koerper-seele.js": "c:0000000000000000",
+                        "stamm/koerper-bewegung.js": "c:0000000000000000",
+                        "stamm/koerper-fahrt.js": "c:0000000000000000",
+                        "stamm/kreatur-leben.js": "c:0000000000000000",
+                        "stamm/kreatur-verhalten.js": "c:0000000000000000",
+                        "stamm/kampf.js": "c:0000000000000000",
+                        "stamm/netz-p2p.js": "c:0000000000000000",
+                        "stamm/feld-leben.js": "c:0000000000000000",
+                        "stamm/feld-dsl.js": "c:0000000000000000",
+                        "stamm/feld-nexus.js": "c:0000000000000000",
+                        "stamm/feld-sprache.js": "c:0000000000000000",
+                        "stamm/speicher-welten.js": "c:0000000000000000",
+                        "stamm/speicher-laden.js": "c:0000000000000000",
+                        "stamm/werkstatt-hud.js": "c:0000000000000000",
+                        "stamm/werkstatt-vorschau.js": "c:0000000000000000",
+                        "stamm/werkstatt-bauen.js": "c:0000000000000000",
+                        "stamm/werkstatt-sozial.js": "c:0000000000000000",
+                        "stamm/dirigent-takt.js": "c:0000000000000000",
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
                     }
                 }
             },
-            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/11c.js", "stamm/17b.js", "stamm/17c.js", "stamm/20a.js", "stamm/26b.js"]
+            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/dirigent-kern.js", "stamm/dienst.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/gelaende-fern.js", "stamm/wasser-hydro.js", "stamm/wasser-zellen.js", "stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/studio-bruecke.js", "stamm/studio-gestalt.js", "stamm/bau-vorlagen.js", "stamm/bau-buch.js", "stamm/bau-teile.js", "stamm/siedlung-ort.js", "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "stamm/vegetation-wiese.js", "stamm/vegetation-baum.js", "stamm/vegetation-streu.js", "stamm/bild-kosten.js", "stamm/bild-sicht.js", "stamm/bild-himmel.js", "stamm/klang.js", "stamm/koerper-leib.js", "stamm/koerper-seele.js", "stamm/koerper-bewegung.js", "stamm/koerper-fahrt.js", "stamm/kreatur-leben.js", "stamm/kreatur-verhalten.js", "stamm/kampf.js", "stamm/netz-p2p.js", "stamm/feld-leben.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-sprache.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/werkstatt-hud.js", "stamm/werkstatt-vorschau.js", "stamm/werkstatt-bauen.js", "stamm/werkstatt-sozial.js", "stamm/dirigent-takt.js", "stamm/dirigent-ankunft.js"]
         }
     ]
 }
