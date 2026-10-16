@@ -1942,7 +1942,9 @@ class AnazhRealm_Z25a {
                 // das Lade-Bild (die Erst-Zeichnung, `_ladeBildFaellig`), das Licht, Bündel-Sicht und Haltung des Leibs vor
                 // seinem Zeichnen holt. Was nur das Spiel oder ein gezeichnetes Bild braucht (`!ankunft`), ruht bis zum
                 // ersten Weltbild: Nexus, Stimme, DSL, Gesetze, Lebenswerte, HUD, Klang, Netz, Kampf, Kreaturen, Animation
-                // der Bauten, Rauch, Speichern (Radeon kalt am Kopf 210fe8a7: 437 Takte, im Spiel-Teil ~1,0 s).
+                // der Bauten, Rauch, Speichern (Radeon kalt, je ein Boot am Kopf 210fe8a7: 224 Takte unter dem Ladeschirm, jeder
+                // rief jedes Spiel-Glied, 1 007 ms im Loop außerhalb der Fütterer; mit der Phase 0 Rufe und 276 ms, das Licht
+                // nur in den 24 Lade-Bildern).
                 const ankunft = this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
                 this._schirmMessen();
