@@ -309,6 +309,7 @@ function karteOhneFarbe() {
 function rundungProbe() {
     return (async () => {
         const st = window.anazhRealm.state;
+        window.__buehne(); // drei Schüsse derselben Szene: jede Uhr des Bilds auf T (A8-n1: zurück −2,62 Stufen im CI)
         const A = st._ausgabeAusgleich;
         const U = st.postProcessingUniforms && st.postProcessingUniforms.ausgabeAusgleich;
         const aus = {

@@ -37,7 +37,8 @@
 //       Nexus (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op — was er aus seiner Geschichte erbt (die Uhr-Sätze
 //       des Spielers, `dslSelectByFitness` → `dslMutate`), wirft die Uhr weiter und steht in (G)/(B) als verweigert beim Namen;
 //   (U) UHR (A8): unter der Bühne steht jede Uhr des Bilds (`__bildUhren`: Himmel, Wasser, Wind, Böe, Membran, Fell),
-//       der Loop läuft drei Takte weiter — jeder seiner Züge ist verweigert, jede laufende Uhr steht beim Namen;
+//       der Loop läuft drei Frames weiter — jede laufende Uhr steht beim Namen; die Uhren jeder Welt (Himmel, Wind, Böe —
+//       auch im Null-Renderer) stehen in der Liste, und der Loop schrieb jede von ihnen (verweigert je Uhr);
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
@@ -71,9 +72,13 @@ if (process.argv.includes("--selftest")) {
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x));
-    const U = (b, n) => ({ vor: { a: 1, b: 2, c: 3, d: 4 }, nach: { a: 1, b, c: 3, d: 4 }, verweigert: n });
-    if (uhrRot(U(2, 3)).length || uhrRot(U(2.5, 3)).length !== 1 || uhrRot(U(2, 0)).length !== 1)
-        v.push("uhr: die stehende Uhr ist nicht grün, die laufende oder der stumme Loop nicht rot");
+    const U = (b, n, ohne) => {
+        const vor = { himmel: 1, wind: 2, böe: 1, wasser: 3 };
+        delete vor[ohne];
+        return { vor, nach: Object.assign({}, vor, { wind: b }), verweigert: { himmel: 3, wind: 3, böe: n, wasser: 3 } };
+    };
+    if (uhrRot(U(2, 3)).length || uhrRot(U(2.5, 3)).length !== 1 || uhrRot(U(2, 0)).length !== 1 || !uhrRot(U(2, 3, "himmel")).length)
+        v.push("uhr: die stehende Uhr ist nicht grün, die laufende, der stumme Schreiber oder die fehlende Uhr nicht rot");
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
@@ -169,24 +174,33 @@ function probe() {
         if (r._dslContainsAnyOp(m, uhrOps)) wuerfe.mutationen++;
     }
     aus.wuerfe = wuerfe;
-    // (U) die Uhren des Bilds unter der Bühne (ein Takt vorher weckt das Wasser), der Loop läuft drei Takte weiter
+    // (U) die Uhren des Bilds unter der Bühne (ein Takt vorher weckt das Wasser), der Loop läuft drei Frames weiter — je Frame
+    // wie die Animations-Schleife des Vendors: die Knoten-Uhr, dann der Takt
     r._gameLoopTick(performance.now());
     window.__buehne();
     const uhren = () => Object.fromEntries(window.__bildUhren(0).map(([n, o, k]) => [n, o[k]]));
     const vor = uhren();
-    const z0 = window.__buehneUhr ? window.__buehneUhr.verweigert : 0;
-    for (let k = 1; k <= 3; k++) r._gameLoopTick(performance.now() + 700 * k);
-    aus.uhren = { vor, nach: uhren(), verweigert: (window.__buehneUhr ? window.__buehneUhr.verweigert : 0) - z0 };
+    const V = window.__buehneUhr.verweigert;
+    const z0 = Object.assign({}, V);
+    const nf = st.renderer && st.renderer._nodes && st.renderer._nodes.nodeFrame;
+    for (let k = 1; k <= 3; k++) {
+        if (nf) nf.update();
+        r._gameLoopTick(performance.now() + 700 * k);
+    }
+    const verweigert = Object.fromEntries(Object.keys(vor).map((n) => [n, (V[n] || 0) - (z0[n] || 0)]));
+    aus.uhren = { vor, nach: uhren(), verweigert };
     return aus;
 }
 
-// (U) das Urteil der Uhr-Wache (rein): jede Uhr steht, der Loop schrieb (verweigert), die Liste trägt.
+// (U) das Urteil der Uhr-Wache (rein): jede Uhr steht; die Uhren jeder Welt (A8-n1: bis dahin „mindestens 4 Uhren" — der
+// Null-Renderer der CI trägt kein Wasser und keine Knoten-Uhr) stehen in der Liste, und der Loop schrieb jede (verweigert).
 function uhrRot(U) {
     const rot = [];
     for (const [n, a] of Object.entries(U.vor))
         if (!Object.is(U.nach[n], a)) rot.push(`(U) UHR ${n} läuft unter der Bühne: ${a} → ${U.nach[n]}`);
-    if (Object.keys(U.vor).length < 4) rot.push(`(U) UHR: nur ${Object.keys(U.vor).length} Uhren des Bilds`);
-    if (!(U.verweigert > 0)) rot.push("(U) UHR: der Loop schrieb keine Uhr — die Wache sah keinen Zug");
+    for (const n of ["himmel", "wind", "böe"])
+        if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
+        else if (!(U.verweigert[n] > 0)) rot.push(`(U) UHR ${n}: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
     return rot;
 }
 
@@ -505,7 +519,7 @@ async function boot(browser, pageErrors) {
     }
     console.log(`  Regler: ${H.regler.text} (${H.regler.wert}) bei Welt ${H.regler.label}`);
     const uz = Object.entries(S.uhren.nach).map(([n, x]) => `${n} ${+(+x).toFixed(4)}`);
-    console.log(`  Uhr: ${uz.join(" · ")}; verweigert ${S.uhren.verweigert}`);
+    console.log(`  Uhr: ${uz.join(" · ")}; verweigert ${JSON.stringify(S.uhren.verweigert)}`);
     const rot = urteil(S, H, pageErrors);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);

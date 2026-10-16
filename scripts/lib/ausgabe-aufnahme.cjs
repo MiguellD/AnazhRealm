@@ -317,19 +317,22 @@ function bildUhren(T) {
 }
 
 // DIE UHR DER BÜHNE: T = 12,5 s (unter jeder Boot-Dauer, der 1-Hz-Scan der Membranen läuft weiter); die Bühne schreibt
-// jede Uhr über ihren Schreiber und hält sie wie das Wetter: nur sie schreibt (`durch`), jeden Zug sonst verweigert sie
+// jede Uhr über ihren Schreiber und hält sie wie das Wetter: nur sie schreibt (`durch`), jeden Zug sonst verweigert sie und
+// bucht ihn je Uhr. Ein Halter, der NACH der Bühne entsteht (`_tiefenKnotenTausch` baut das Wasser frisch, eine Membran kommt
+// in Sicht), hält ab dem nächsten Frame der Aufnahme: sie ruft `__uhrHalten` je Frame (A8-n1: Wasser nach dem Tausch 114,3
+// statt 113,1, Saum 30 von 35 Kanten).
 function uhrHalten() {
     const r = window.anazhRealm;
-    const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, durch: false, verweigert: 0 });
+    const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, durch: false, verweigert: {} });
+    const frei = () => window.__bildUhren(S.T).filter((u) => !(Object.getOwnPropertyDescriptor(u[1], u[2]) || {}).get?.__buehne);
+    if (!frei().length) return;
     S.durch = true;
     try {
         r._tickPortalMembranes(S.T);
-        for (const [, o, k, w] of window.__bildUhren(S.T)) {
-            if (w !== undefined) o[k] = w;
-            if ((Object.getOwnPropertyDescriptor(o, k) || {}).get?.__buehne) continue;
-            let v = o[k];
+        for (const [n, o, k, w] of frei()) {
+            let v = w !== undefined ? w : o[k];
             const get = Object.assign(() => v, { __buehne: true });
-            const set = (x) => (S.durch ? (v = x) : S.verweigert++);
+            const set = (x) => (S.durch ? (v = x) : (S.verweigert[n] = (S.verweigert[n] || 0) + 1));
             Object.defineProperty(o, k, { configurable: true, enumerable: true, get, set });
         }
     } finally {
@@ -580,6 +583,7 @@ function abnahmeMessen(opt) {
             saison: st.season || null,
             wetter: st.weather || null,
             uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
+            bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Shader-Zeit des Bilds (A8), ohne Bühne frei
             tiereGehalten: !!Object.getPrototypeOf(r).__tiereGehalten,
         },
         geraet: {
@@ -703,9 +707,10 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
-            // Der Frame trägt die Loop-Zeit in SEKUNDEN (bis A8 ms); `opt.fest` (K63-n1): vor den Warm-Frames beginnen
-            // TRAA-Folge, Geschichte und Dither-Phase von vorn — zwei Schüsse derselben Szene sind dasselbe Bild.
+            // Der Frame trägt die Loop-Zeit in SEKUNDEN (bis A8 ms); unter der Bühne hält er jede Uhr des Bilds auf T, auch
+            // die eines Halters, der nach ihr entstand (`__uhrHalten`).
             const frame = () => {
+                if (window.__buehneUhr) window.__uhrHalten();
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 r._loopRender(performance.now() / 1000);
             };
@@ -727,8 +732,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
             // Nach dem Sprung läuft die Geschichte als MITTEL an (K68, `_zeitAufloesung` `_anlauf`): jeder der 32 Frames
-            // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames.
-            if (opt && opt.fest != null) {
+            // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames. JEDER Schuss
+            // beginnt Folge, Geschichte und Dither-Phase von vorn (A8-n1; bis dahin nur mit `opt.fest`, K63-n1): die Geschichte
+            // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
+            // sind dasselbe Bild.
+            {
                 const tn = r.state.traaNode;
                 if (tn) {
                     tn._jitterIndex = 0;

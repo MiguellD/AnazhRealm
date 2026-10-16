@@ -1190,14 +1190,13 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            const fest = k.klasse ? 0 : null; // K63-n1: TRAA und Dither je Schuss von vorn, die Uhren hält die Bühne
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0, fest: i === 1 ? fest : null });
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
@@ -1211,7 +1210,7 @@ async function starte() {
                 W = k.w,
                 H = k.h;
             // DIE KLASSEN IM BILD (K63-n1, scripts/lib/abnahme-urteil.cjs `klassenTeilung` · `bildRauschen` · `klassenMasse`): an
-            // derselben Pose unter der EINEN Uhr des Bilds (`fest`) G — die Szene, jede gemessene Klasse ohne Schattenwurf —, G2
+            // derselben Pose unter der EINEN Uhr des Bilds (die Bühne) G — die Szene, jede gemessene Klasse ohne Schattenwurf —, G2
             // derselbe Schuss (das Rauschen der Messung) und je Teil-Klasse (`_taeterKlasse`, jeder Name unter dem Ausdruck
             // `k.klasse` für sich) O ohne sie. Die Teilung gibt jedes Pixel höchstens EINER Klasse; die Maße liest das Bild selbst
             // (mit Schatten). `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
@@ -1298,7 +1297,7 @@ async function starte() {
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
-                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", fest })).u8;
+                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
                         r._tickBauSatz();

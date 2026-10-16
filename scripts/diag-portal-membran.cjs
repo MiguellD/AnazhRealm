@@ -248,7 +248,7 @@ async function hellProbe() {
     };
     const E = r._erstZeichnung;
     const offenStart = E ? E.offen.size : null;
-    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { nurGezeichnete: true, fest: 0 })).u8;
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { nurGezeichnete: true })).u8;
     const zeit = {};
     // je Bild die Wanduhr und die KALTEN PROGRAMME (HM): Vertex- und Fragment-Programme, die der Renderer in diesem Bild neu
     // übersetzt (r184 hält sie je Quelltext in `_pipelines.programs`) — auf swiftshader kostet ein kaltes Programm bis Minuten

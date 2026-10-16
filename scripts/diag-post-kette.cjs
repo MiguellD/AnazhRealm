@@ -532,9 +532,6 @@ function saumProbe() {
             gruppe.add(m);
         }
         st.scene.add(gruppe);
-        const P = Object.getPrototypeOf(r);
-        const nf = rend._nodes.nodeFrame;
-        const nfRoh = nf.update;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const W = Math.round(db.x),
             H = Math.round(db.y);
@@ -542,19 +539,11 @@ function saumProbe() {
             for (let i = 0; i < 3; i++) {
                 setzeKamera();
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(1000);
+                r._loopRender(performance.now() / 1000);
             }
             setzeKamera();
             const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
             return u8;
-        };
-        r._loopRender = function () {
-            return P._loopRender.call(this, 1000);
-        };
-        nf.update = function () {
-            this.frameId++;
-            this.deltaTime = 0;
-            this.time = 1000;
         };
         const aus = { leinwand: [W, H], gpuFehler };
         try {
@@ -601,8 +590,6 @@ function saumProbe() {
                 .slice(0, 4)
                 .join(" ← ");
         } finally {
-            delete r._loopRender;
-            nf.update = nfRoh;
             dev.removeEventListener("uncapturederror", gpuHoer);
             st.scene.remove(gruppe);
         }
@@ -805,13 +792,10 @@ function buehne(nFrames, nachtLicht) {
             aus.drift = { hoererWeg: fort.length, fehler: driftFehler };
             st.postProcessingFailed = false;
             // (e) DAS WASSER LIEST DAS ABBILD WIE r184s TIEFE: die unteren sieben Zeilen des Bildes (32×24) sind Wasser über
-            // dem Grund. Bei festen Uhren (Wasser, Schaum, Knoten-Zeit) einmal mit dem Abbild, einmal mit r184s
+            // dem Grund. Bei festen Uhren (die Bühne hält jede je Frame der Aufnahme) einmal mit dem Abbild, einmal mit r184s
             // Viewport-Tiefe (der volle Klon im Pass-Bruch), wieder mit dem Abbild (der Rausch-Boden) und ohne Grund (die
             // Probe ist nicht blind: die Farbe hängt an der Tiefe). Die Leser hängt `_tiefenKnotenTausch` um, der Weg
             // des Resize.
-            const P = Object.getPrototypeOf(r);
-            const nf = rend._nodes.nodeFrame;
-            const nfRoh = nf.update;
             const wasserFarbe = async () => {
                 for (let i = 0; i < 3; i++) {
                     setzeKamera();
@@ -825,38 +809,25 @@ function buehne(nFrames, nachtLicht) {
                     for (let x = 0; x < 32; x++, n++) for (let c = 0; c < 3; c++) s[c] += u8[(y * 32 + x) * 4 + c];
                 return s.map((v) => +(v / n).toFixed(1));
             };
-            r._loopRender = function () {
-                return P._loopRender.call(this, 1000);
-            };
-            nf.update = function () {
-                this.frameId++;
-                this.deltaTime = 0;
-                this.time = 1000;
-            };
+            const w = { umgehaengt: [] };
+            w.abbild = await wasserFarbe();
+            const knoten = r._szeneTiefeKnoten,
+                wert = r._szeneTiefeWert;
+            r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
+            r._szeneTiefeWert = r._szeneTiefeKnoten;
             try {
-                const w = { umgehaengt: [] };
-                w.abbild = await wasserFarbe();
-                const knoten = r._szeneTiefeKnoten,
-                    wert = r._szeneTiefeWert;
-                r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
-                r._szeneTiefeWert = r._szeneTiefeKnoten;
-                try {
-                    w.umgehaengt.push(r._tiefenKnotenTausch());
-                    w.r184 = await wasserFarbe();
-                } finally {
-                    r._szeneTiefeKnoten = knoten;
-                    r._szeneTiefeWert = wert;
-                    w.umgehaengt.push(r._tiefenKnotenTausch());
-                }
-                w.zurueck = await wasserFarbe();
-                grund.visible = false;
-                w.ohneGrund = await wasserFarbe();
-                grund.visible = true;
-                aus.wasser = w;
+                w.umgehaengt.push(r._tiefenKnotenTausch());
+                w.r184 = await wasserFarbe();
             } finally {
-                delete r._loopRender;
-                nf.update = nfRoh;
+                r._szeneTiefeKnoten = knoten;
+                r._szeneTiefeWert = wert;
+                w.umgehaengt.push(r._tiefenKnotenTausch());
             }
+            w.zurueck = await wasserFarbe();
+            grund.visible = false;
+            w.ohneGrund = await wasserFarbe();
+            grund.visible = true;
+            aus.wasser = w;
             // (d) die Godrays mit der Sonne im Bild: tiefe Sonne, Blick in die Sonne; mit und ohne Godrays (der Regler).
             gruppe.visible = false;
             st.timeOfDay = 0.3;

@@ -496,7 +496,7 @@ function abnahmeSelbsttest(fixtureDir) {
 // ═══ DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle"; spec/abnahme/soll-tafel.json) ═══
 //
 // DIE KLASSEN-TEILUNG (rein, in der Seite als `__klassenTeilung`): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, aus
-// Schüssen derselben Pose unter EINER Uhr (`__ausgabeAufnahme` mit `fest`: dieselbe Zeit, dieselbe TRAA-Folge, dieselbe
+// Schüssen derselben Pose unter EINER Uhr (`__ausgabeAufnahme` unter der Bühne: dieselbe Zeit, dieselbe TRAA-Folge, dieselbe
 // Dither-Phase je Schuss; `werkbank bild --klasse`): G die Szene, die gemessenen Klassen ohne Schattenwurf; O_k dieselbe ohne
 // die Klasse k. Ein Pixel gehört der Klasse, deren Fehlen es am stärksten ändert (Summe der Kanal-Beträge 0–765), über der
 // Schwelle: das Pixel ZEIGT sie — ihr Schatten fehlt in G wie in O_k, eine Wurzel unter dem Boden zeigt in keinem der beiden.
