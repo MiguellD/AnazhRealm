@@ -37,7 +37,7 @@ Golden)` — rot, bis der Akt sie prägt.
 | `<art>-L<lod>\|beipack` | der übrige Beipack: `root · art · base · skinJoints · tailSegs · masse · handMitte` |
 
 Stand der Prägung: 136 Stoff-Klassen × Gelenk Tier + 53 Mensch = 189 (= der Handbeweis), 284 Gelenke,
-10 Beipacks. Seit K45-2 (14.10.): Mensch 31 — 461 Klassen.
+10 Beipacks. Seit K45-2 (14.10.): Mensch 31 — 461 Klassen; seit A4 (16.10.): Mensch 30 — 460 Klassen.
 
 Vertrags-Akt S3 kreatur (08.10.2026, Lehre 19 — die Grobstufe ist gelenkig): Stufe 1 bindet ihre Haut an die
 Gelenke wie Stufe 0 (Gewichte aus derselben Vorauswahl, das Fell-Muster über die Bone-Gewichte), jedes starre Teil
@@ -68,6 +68,14 @@ ihre Zeile (L0 39 995 → 39 996, L1 13 994 → 13 997); was unter dem Stoff fie
 4 926, Hände 3 264/3 222 → 3 816/3 768 Dreiecke). Alle übrigen 448 Klassen byte-gleich (jedes Tier, jedes Gelenk). Zahl
 (`artifacts/profiband/welle-95/labor-welt-mensch/naht-{vorher,nachher}.json`, sieben ROM-Posen des Labors, L0): Haut-Ecken, die
 aus ihrem Stoff treten, 1 749 → 26.
+
+Vertrags-Akt A4 (16.10.2026, KOPF_SOLL — der Kopf hält sein Gesetz, Soll-Tafel mensch-kopf gesicht 0,5 → 1): (1) DIE HÖHLE IST
+HAUT: die Höhlen-Kugeln (Klasse socket) werden nicht mehr gegossen, ihr Ton liegt als Vertex-Farbe auf der Kopf-Haut (koerper
+`kopfHaut.hoehleSaum`) — es fällt `mensch-L0|socket|head` (672 Dreiecke), die Stufe L0 verteilt sie im Budget neu (39 994 →
+39 994: Kopf-Haut 6 960 → 7 106, Hände 4 632/4 574 → 4 718/4 660, Haut 2 494 → 2 540, Stoffe 7 884/7 052/1 478 → 8 032/7 184/1 506).
+(2) Die Lider an den Limbus (koerper `auge.lid`): je Stufe die vier Lid-Gelenke. (3) Der Mund an der Farkas-Lage (`gesicht.mundTiefer`)
+und der Haut-Saum (`HAUT_LOOK.sssAmt`): `mensch-L1|{skin,shadow,lips}|mensch` (Dreiecke gleich). Neu geprägt NUR diese 18 Schlüssel,
+461 → 460 Klassen; alle übrigen 442 byte-gleich (jedes Tier, beide Mensch-Beipacks mit `leibV`), Ratsche `ofen` 461 → 460 Fälle.
 
 ## Invarianten des Gates
 
