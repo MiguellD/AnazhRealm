@@ -1342,10 +1342,9 @@ class AnazhRealm_bild_sicht {
             lakeRipple: uLakeRipple,
             wind: uWind,
         };
-        // UNIFORM-HEIMAT + OBSERVER-DIÄT (Pflicht-Paar): alle Takt-Uniforms des
-        // Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
+        // UNIFORM-HEIMAT (Pflicht-Paar der Diät, die jeder Welt-Stoff bei seiner Erst-Zeichnung trägt): alle Takt-Uniforms
+        // des Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
         this._uniformHeimatTeilen(this.state.hydroSurfaceUniforms);
-        this._materialObserverDiaet(mat);
         this.state.hydroSurfaceMaterial = mat;
         return mat;
     }
@@ -1444,6 +1443,10 @@ class AnazhRealm_bild_sicht {
             envMitte: TSL.uniform(new THREE.Vector3()),
             envOben: TSL.uniform(new THREE.Vector3()),
         };
+        // DIE HEIMAT DES TAKTS (Pflicht-Paar der Diät, E1): jeder Wert des Satzes wechselt je Takt (Kamera, Licht) und gilt
+        // dem EINEN Pass — als geteilte renderGroup lädt er EINMAL je Render statt einer Objekt-Gruppe, die je Wechsel voll
+        // auffrischt (der Uniform-Wächter nannte `camPos` · `invVP` · `l0d` 17.10. je Bild).
+        this._uniformHeimatTeilen(U);
         // Das kompakte Teil der Gesetz-Streu (ein Stein, ein Blütenkopf) als rauer Ellipsoid: Noise-Term im GRÖSSEN-
         // normierten Raum ((p−c)/hn) — Amplitude UND Frequenz skalieren mit dem Teil, der Gradient ist größen-invariant
         // (sonst ∝ hn: Streifen, Lipschitz-Bruch). (Der Kegel-Stumpf der Baum-Sätze fiel 05.10. mit ihnen.)

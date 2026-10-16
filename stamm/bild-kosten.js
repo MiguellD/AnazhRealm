@@ -495,6 +495,15 @@ class AnazhRealm_bild_kosten {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
+                // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
+                // JEDEM Render voll auf (hasNode) — die Diät war ein Opt-in an fünf Bau-Stellen, jeder andere Stoff der Welt zahlte
+                // je Pass und Bild den vollen Gang über Knoten, Gruppen und Geometrie, auch ohne jede Änderung. Gemessen 17.10.
+                // (Radeon, Genesis Third, Regler voll): 2,9 ms je Bild Voll-Refresh — Fern-Ring, Inseln, Arena, Plattform, Himmel,
+                // Membranen, Kopf. Jetzt schreibt die Erst-Zeichnung jeden Stoff der Welt-Szene ein, bevor er baut (der Schatten-
+                // Stoff trägt die Diät seines Originals); der Leib mit Knochen fährt weiter die Vendor-Bahn (`hasAnimation`).
+                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
+                if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
+                    welt._materialObserverDiaet(urStoff);
                 const ungebaut =
                     ro._nodeBuilderState === null &&
                     N.get(ro).nodeBuilderState === undefined &&
@@ -3385,7 +3394,54 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             }
         }
     }
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei };
+    // (10) DIE OBJEKT-VERWEISE (E1): ein Verweis je Zeichen-Objekt (`reference`, Takt object — der Stoff-Wert `_stoffWert`,
+    // `material.userData.…`) liest seinen Wert erst im Refresh; equals() sieht userData nie. Ein fester Stoff-Wert (die Art-
+    // Größe des Winds) wechselt nie, ein atmender (die Membran des Tors: Zeit · Aktiv · Puls · Tiefe) je Bild.
+    const verweise = nbs.updateNodes.filter(
+        (n) =>
+            n.getUpdateType() === "object" &&
+            typeof n.getValueFromReference === "function" &&
+            n.isMaterialReferenceNode !== true &&
+            n.object === null &&
+            n.count === null
+    );
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise };
+};
+// (10) Wechselte ein Objekt-Verweis des Programms seit dem letzten Blick dieses Render-Objekts? Ein Wechsel ist der Wert
+// eines Stoffs, kein Bruch: EIN Refresh, kein Melder. Der erste Blick merkt (die Erst-Anlage lud eben hoch).
+AnazhRealm._diaetVerweisAnders = function (obs, ro, k) {
+    if (k.verweise.length === 0 || !ro.object) return false;
+    const d = obs.getRenderObjectData(ro);
+    const erst = !d._anazhVerweisW;
+    const w = d._anazhVerweisW || (d._anazhVerweisW = []);
+    let anders = false,
+        i = 0;
+    const zahl = (x) => {
+        if (w[i] !== x) {
+            w[i] = x;
+            anders = true;
+        }
+        i++;
+    };
+    for (const n of k.verweise) {
+        const v = n.getValueFromReference(ro.object);
+        if (typeof v === "number" || typeof v === "boolean") zahl(+v);
+        else if (v && v.isTexture === true) {
+            zahl(v.id);
+            zahl(v.version);
+        } else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e);
+        else if (v && v.isColor === true) {
+            zahl(v.r);
+            zahl(v.g);
+            zahl(v.b);
+        } else if (v && typeof v.x === "number") {
+            zahl(v.x);
+            zahl(v.y);
+            zahl(v.z === undefined ? 0 : v.z);
+            zahl(v.w === undefined ? 0 : v.w);
+        } else zahl(v);
+    }
+    return anders && !erst;
 };
 // (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
 // Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
@@ -3586,13 +3642,12 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
-    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
     const nbs = ro.getNodeBuilderState();
-    const frei = AnazhRealm._diaetFreiAnders(
-        obs,
-        ro,
-        nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs))
-    );
+    const gang = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    // (10) ein Objekt-Verweis wechselte seinen Wert (der Stoff-Wert eines atmenden Stoffs)
+    if (AnazhRealm._diaetVerweisAnders(obs, ro, gang)) return true;
+    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
+    const frei = AnazhRealm._diaetFreiAnders(obs, ro, gang);
     if (frei) {
         if (obs._anazhWelt) {
             const n = frei.nodeUniform.node;
