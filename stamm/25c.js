@@ -2311,6 +2311,8 @@ class AnazhRealm_Z25c {
         // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
         // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
         // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
+        // die Ankunft aus der Ferne gleitet je gezeichnetem Bild (`_ankunftsFerne`, B2) — vor dem Spiegel nach `uLodPerf`
+        if (this.state._ankunftGleit < AnazhRealm.ANKUNFT_GLEIT_BILDER) this.state._ankunftGleit++;
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
@@ -2542,10 +2544,30 @@ class AnazhRealm_Z25c {
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
+        // die Ankunft aus der Ferne gleitet ab jetzt über die gezeichneten Bilder (`_ankunftsFerne`); der Null-Renderer
+        // zeichnet keins — dort gilt die Distanz-Stufe ab dem Bild
+        if (st.renderer && !st.renderer._isHeadlessNull) st._ankunftGleit = 0;
         const w = st._weltbildWarten;
         st._weltbildWarten = null;
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
+    }
+
+    // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl
+    // jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die Höhen-Stufe L1 und
+    // der Bake, nie die L0), der Bau seine Grobstufe (die L2 und ihr Wurf): das erste Bild wartet auf keine feinere Stufe
+    // als die billigste ganze. Danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1
+    // (`_ankunftGleit`, gezählt im Zeichen-Takt neben `uLodPerf`): jede Baum-Gestalt verfeinert durch ihr bestehendes Band
+    // (Lehre 26), der Bau nach seinen Grenzen mit Hysterese (K43/K64: das Ring-Tor in 11 m hält seine L2). Zwei Leser, EINE
+    // Zahl: `_lodPerfMul` (die Wahrnehmungs-Distanz der Karten-Arten, CPU-Wahl UND Shader-Maske) und die Grenzen der Bauten
+    // (`_tickArchitectureLOD`, `_foundryLodForEntry`). Ohne Studio-Welt trägt keine Karte: 1.
+    _ankunftsFerne() {
+        const st = this.state;
+        if (!this._foundryEnabled()) return 1;
+        if (!st._weltbildDa) return AnazhRealm.ANKUNFT_FERNE;
+        const g = st._ankunftGleit;
+        const N = AnazhRealm.ANKUNFT_GLEIT_BILDER;
+        return g >= 0 && g < N ? Math.pow(AnazhRealm.ANKUNFT_FERNE, 1 - g / N) : 1;
     }
 
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,

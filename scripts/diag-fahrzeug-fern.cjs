@@ -194,6 +194,7 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
             _lodAuge: () => pm,
             _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
             _lodTreeVisHeight: () => 0,
+            _ankunftsFerne: () => 1, _archStufenGrenzen: () => null, // die Ankunft ist vorbei (B2), keine Grenzen (K43)
         };
         // Fahr-Invariante: das gerittene Entry SITZT auf der Spieler-Position → Stufe 0.
         const geritten = fn.call(stub, { position: { x: pm.x, y: pm.y, z: pm.z } });
