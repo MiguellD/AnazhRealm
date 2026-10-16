@@ -13,25 +13,25 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-16T13:59:25.475Z",
+            "datum": "2026-10-16T15:43:14.631Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-            "echt": false,
-            "version": "18.546.2",
-            "sha": "ff343763914e13a191a154ade923fdaee81e8f51",
+            "echt": true,
+            "version": "18.546.4",
+            "sha": "2488b12c24c04f44e6427de9c624862727d24e8a",
             "quellen": {
                 "phyto-core.js": "c:1a281005f65ef585",
-                "foundry-core.js": "c:5ed08308e6e4d144",
+                "foundry-core.js": "c:99f3a002dd5b33b7",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
                 "porta-core.js": "c:43576786f20c3d32",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
-                "fachwerk-core.js": "c:cfeff9669bfceaec",
+                "fachwerk-core.js": "c:20c90a30fd7550b9",
                 "klang-core.js": "c:8e668691b9eb131c",
                 "koerper-core.js": "c:2d740b48e4f78546",
                 "tetrapoda-core.js": "c:26b6005f5594dbd5",
                 "gelaende-core.js": "c:671ad7ea812567a8",
                 "stamm/01.js": "c:b38acaec2a7f84ef",
                 "stamm/02a.js": "c:29fc983e6a290b3a",
-                "stamm/02b.js": "c:07c20016205e5e86",
+                "stamm/02b.js": "c:b588139984690b45",
                 "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
@@ -74,13 +74,13 @@
                 "stamm/25a.js": "c:520646ba12601586",
                 "stamm/25b.js": "c:fd9270736768dec2",
                 "stamm/25c.js": "c:fb8c3e2986247bac",
-                "stamm/26a.js": "c:e45314b7ac61774c",
+                "stamm/26a.js": "c:eefdb82c9a438e8b",
                 "stamm/26b.js": "c:00ef1ee82ce03f2e",
                 "stamm/26c.js": "c:08f6c866bdafdc8f"
             }
         },
         "welt": {
-            "datum": "2026-10-16T13:58:19.597Z",
+            "datum": "2026-10-16T15:49:59.360Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -88,22 +88,22 @@
                 0
             ],
             "echt": false,
-            "version": "18.546.2",
-            "sha": "ff343763914e13a191a154ade923fdaee81e8f51",
+            "version": "18.546.4",
+            "sha": "2488b12c24c04f44e6427de9c624862727d24e8a",
             "quellen": {
                 "phyto-core.js": "c:1a281005f65ef585",
-                "foundry-core.js": "c:5ed08308e6e4d144",
+                "foundry-core.js": "c:99f3a002dd5b33b7",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
                 "porta-core.js": "c:43576786f20c3d32",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
-                "fachwerk-core.js": "c:cfeff9669bfceaec",
+                "fachwerk-core.js": "c:20c90a30fd7550b9",
                 "klang-core.js": "c:8e668691b9eb131c",
                 "koerper-core.js": "c:2d740b48e4f78546",
                 "tetrapoda-core.js": "c:26b6005f5594dbd5",
                 "gelaende-core.js": "c:671ad7ea812567a8",
                 "stamm/01.js": "c:b38acaec2a7f84ef",
                 "stamm/02a.js": "c:29fc983e6a290b3a",
-                "stamm/02b.js": "c:07c20016205e5e86",
+                "stamm/02b.js": "c:b588139984690b45",
                 "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
@@ -146,7 +146,7 @@
                 "stamm/25a.js": "c:520646ba12601586",
                 "stamm/25b.js": "c:fd9270736768dec2",
                 "stamm/25c.js": "c:fb8c3e2986247bac",
-                "stamm/26a.js": "c:e45314b7ac61774c",
+                "stamm/26a.js": "c:eefdb82c9a438e8b",
                 "stamm/26b.js": "c:00ef1ee82ce03f2e",
                 "stamm/26c.js": "c:08f6c866bdafdc8f"
             }
@@ -196,12 +196,12 @@
                 "labor": {
                     "Y": 0.0893,
                     "rgb": "0.1066/0.087/0.0618",
-                    "pixel": 17720
+                    "pixel": 17731
                 },
                 "welt": {
                     "Y": 0.0868,
-                    "rgb": "0.104/0.0844/0.06",
-                    "pixel": 7459,
+                    "rgb": "0.1039/0.0844/0.0599",
+                    "pixel": 7441,
                     "stufen": [
                         0,
                         1
@@ -255,12 +255,12 @@
                 "labor": {
                     "Y": 0.1784,
                     "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 122019
+                    "pixel": 121919
                 },
                 "welt": {
                     "Y": 0.1675,
-                    "rgb": "0.0904/0.2029/0.0446",
-                    "pixel": 54959,
+                    "rgb": "0.0904/0.2028/0.0446",
+                    "pixel": 54925,
                     "stufen": [
                         0,
                         1
@@ -422,21 +422,21 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0841,
-                    "rgb": "0.1433/0.0705/0.0441",
+                    "Y": 0.1491,
+                    "rgb": "0.2826/0.1169/0.0754",
                     "pixel": 407007
                 },
                 "welt": {
                     "Y": 0.1591,
-                    "rgb": "0.2775/0.1312/0.0869",
-                    "pixel": 168334,
+                    "rgb": "0.2775/0.1312/0.0868",
+                    "pixel": 168336,
                     "stufen": [
                         1
                     ]
                 },
-                "verhaeltnis": 0.5286
+                "verhaeltnis": 0.9371
             },
-            "ratsche": 0.637
+            "ratsche": 0.065
         },
         {
             "id": "lack",
@@ -583,17 +583,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0608,
-                    "rgb": "0.1218/0.0463/0.025",
-                    "pixel": 74576
+                    "Y": 0.0609,
+                    "rgb": "0.122/0.0464/0.0251",
+                    "pixel": 74510
                 },
                 "welt": {
                     "Y": 0.0709,
                     "rgb": "0.1425/0.0538/0.0292",
-                    "pixel": 33108,
+                    "pixel": 33154,
                     "stufen": []
                 },
-                "verhaeltnis": 0.8575
+                "verhaeltnis": 0.859
             },
             "ratsche": 0.152
         },
@@ -632,19 +632,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1689,
-                    "rgb": "0.206/0.1636/0.1123",
-                    "pixel": 152820
+                    "Y": 0.1691,
+                    "rgb": "0.2063/0.1638/0.1125",
+                    "pixel": 152685
                 },
                 "welt": {
-                    "Y": 0.1826,
-                    "rgb": "0.2243/0.1765/0.1194",
-                    "pixel": 51333,
+                    "Y": 0.1852,
+                    "rgb": "0.2272/0.1791/0.1215",
+                    "pixel": 44925,
                     "stufen": []
                 },
-                "verhaeltnis": 0.925
+                "verhaeltnis": 0.9131
             },
-            "ratsche": 0.0479
+            "ratsche": 0.0909
         },
         {
             "id": "klinge",
@@ -700,9 +700,9 @@
             "ist": {
                 "kL": 0.676,
                 "ausgabe": [
-                    171,
-                    176,
-                    169
+                    168,
+                    173,
+                    166
                 ]
             },
             "ratsche": 0.7612
@@ -720,11 +720,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8022,
+                "kL": 0.8021,
                 "ausgabe": [
-                    197,
-                    208,
-                    203
+                    199,
+                    210,
+                    205
                 ]
             },
             "ratsche": 0.9292
@@ -733,9 +733,9 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    174,
-                    162,
-                    150
+                    172,
+                    160,
+                    148
                 ]
             },
             "ratsche": 0.7106
@@ -766,9 +766,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    254,
-                    254,
-                    254
+                    255,
+                    255,
+                    255
                 ]
             },
             "ratsche": 1.0251

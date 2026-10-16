@@ -165,7 +165,7 @@ class AnazhRealm_Z12 {
                 r5StructureBoost:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
                         ? this.state.atmosphere.r5StructureBoost
-                        : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3,
+                        : AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.

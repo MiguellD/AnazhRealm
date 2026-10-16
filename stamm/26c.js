@@ -3,9 +3,17 @@
 // Kronen-Schüchternheit + Arten-Nische. `crown` = Radius der gewachsenen Krone (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.
 // Gelesen NUR von `_forestCellDarts`/`_forestPlantChunk`.
+// Zell-Raster `cell` (Kronen-Schüchternheit liest ±2 Zellen) und Packung `pack` (echte Lichtkonkurrenz, kein
+// Ineinanderwachsen) sind das Pflanz-Gesetz des Kerns (phyto-core FOREST_PACK) — EINE Quelle für Labor-Wald und Welt-Wald.
+AnazhRealm._waldPack = function (k) {
+    const FP = globalThis.__phytoCore && globalThis.__phytoCore.FOREST_PACK;
+    if (!FP || !Number.isFinite(FP[k]))
+        throw new Error("phyto-core fehlt: FOREST_PACK." + k + " (das Pflanz-Gesetz des Walds)");
+    return FP[k];
+};
 AnazhRealm.FOREST = Object.freeze({
-    cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
-    pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)
+    cell: AnazhRealm._waldPack("cell"),
+    pack: AnazhRealm._waldPack("pack"),
     // 36 Darts/Zelle (0.25/m²) sättigen den dichten Kern (~15 Born-Kandidaten/Zelle = die
     // Sättigungs-Schwelle); der Überschuss stirbt an der Kronen-Schüchternheit. 48 kostete +30 %
     // Plant-Zeit für +1 % Bäume. Die Dart-Generierung (Terrain-Gates) dominiert — getragen vom
@@ -1582,16 +1590,20 @@ AnazhRealm.PASS_WAHL = Object.freeze({
 // Wind-Zeile des Gesetzes (w0 + w1 · Wind). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
 // (4,42 m im Sturm; ohne den Wind rechnete er 2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt ihn (vorher nur der
 // Saum 2 m: am Bildrand fehlte ein gehobenes Viertel), das Wasser des Fern-Rings liegt darunter (`_fernRingWasserTiefe`).
-AnazhRealm.WASSER_WELLE = Object.freeze({
-    duenung: Object.freeze([1.4, 0.7, 0.34]),
-    oktave: 0.4,
-    mitte: 0.7,
-    kraeusel: 2.2,
-    kraeuselDecke: 1,
-    // Die Fluss-Phase (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
-    // = 4,8 m, eine halbe Kräusel-Welle), dann kehrt sie hinter der Blende der zweiten Lage zurück.
-    phase: 4,
-});
+// Die Fluss-Phase `phase` (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
+// = 4,8 m, eine halbe Kräusel-Welle), dann kehrt sie hinter der Blende der zweiten Lage zurück. Die Zahlen SIND das
+// Wasser-Gesetz des Kerns (foundry-core WASSER_GESETZ.welle), fail-closed — kein Zahlen-Zwilling (K2).
+AnazhRealm.WASSER_WELLE = (() => {
+    const W = AnazhRealm.Gesetz("terrain:WASSER_GESETZ.welle");
+    if (
+        !W ||
+        !Array.isArray(W.duenung) ||
+        W.duenung.length !== 3 ||
+        ![...W.duenung, W.oktave, W.mitte, W.kraeusel, W.kraeuselDecke, W.phase].every(Number.isFinite)
+    )
+        return AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ.welle");
+    return W;
+})();
 AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
     const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
@@ -2251,11 +2263,11 @@ AnazhRealm.MOTION_RIG_MAP = Object.freeze([
 // Dial↔Genom-Zuordnung (axis = base + mul·dial): height→kh · mass→build · tone→muscle · gender→sex.
 // Der Körper baut direkt aus koerper-core.bauMensch(dials); die Tabelle dient nur der
 // Genom→Dial-Brücke (`_dialsAusGenom`, Peers/NPCs, invertiert je Zeile) und den Stat-Konsumenten
-// (`_koerperDials`). Die EINE Quelle ist koerper-core.DIAL_MAP.
+// (`_koerperDials`). Die EINE Quelle ist koerper-core.DIAL_MAP, gelesen durch den Gesetz-Strom fail-closed (K2: kein
+// leerer Ersatz, der still ohne Dials baut).
 Object.defineProperty(AnazhRealm, "KOERPER_DIAL_MAP", {
     get() {
-        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
-        return (core && core.DIAL_MAP) || [];
+        return AnazhRealm.Gesetz("koerper:DIAL_MAP") || AnazhRealm._kernPflichtBruch("koerper:DIAL_MAP");
     },
 });
 // Welche CREATURE_SOULS-Gestalt welches tetrapoda-Rezept liest: wesen = Hirsch (deer), die
@@ -2272,11 +2284,10 @@ AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich): neck→neckFrac · leg→legFrac
 // (Einheiten-Brücke) · build→torsoW · diet→eyeFront (Carnivor frontal, Herbivor lateral).
 // Bewusst unmapped: size (die Welt-Größe trägt `_creatureBodySize`, g.size ist stats-tragend).
-// Die EINE Quelle ist tetrapoda-core.DIAL_MAP.
+// Die EINE Quelle ist tetrapoda-core.DIAL_MAP (Gesetz-Strom, fail-closed wie KOERPER_DIAL_MAP).
 Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
     get() {
-        const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
-        return (core && core.DIAL_MAP) || [];
+        return AnazhRealm.Gesetz("tetrapoda:DIAL_MAP") || AnazhRealm._kernPflichtBruch("tetrapoda:DIAL_MAP");
     },
 });
 // DIE EINE SCHWIMM-LEHNE: jede Compound-Seele (Built-ins, Custom, Peers) legt sich unter Wasser über

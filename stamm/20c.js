@@ -382,7 +382,7 @@ class AnazhRealm_Z20c {
                 const _aLodVal = !_isTree ? 0 : _lodS === 0 ? (_hat(1) ? 1 : 3) : _lodS === 1 ? (_hat(0) ? 2 : 3) : 0;
                 const _h0 = this._foundryGruppenHoehe(group, stage && stage.preset);
                 const _D = AnazhRealm.LOD_DISTANCES;
-                const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 24;
+                const _capL = _D.leafVisCap;
                 for (const ch of group.children) {
                     const _n = ch.geometry.attributes.position.count;
                     const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
@@ -440,7 +440,7 @@ class AnazhRealm_Z20c {
     // das Buch — ohne Auto-Register gibt es keinen Blueprint → Spawn wäre tot/still.
     _foundryNeedsBookForType(type) {
         if (typeof type !== "string" || !type) return false;
-        const KP = AnazhRealm.KIND_POLICY || {};
+        const KP = AnazhRealm.KIND_POLICY;
         for (const k in KP) {
             if (!Object.prototype.hasOwnProperty.call(KP, k)) continue;
             const pol = KP[k];
@@ -668,11 +668,11 @@ class AnazhRealm_Z20c {
         // Eine harte overBudget-Wand verhungert die Aktivierung auf schwacher HW — progressiv konvergiert
         // die Welt immer zum Foundry-Wald, unter Last nur langsamer.
         const overBudget = this.state._frameOverBudget;
-        let placeBudget = overBudget ? 1 : AnazhRealm.FOUNDRY_PLACE_PER_TICK || 48;
+        let placeBudget = overBudget ? 1 : AnazhRealm.FOUNDRY_PLACE_PER_TICK;
         // Backen auch über Budget (2/Tick): der Bake läuft OFF-THREAD im Worker, die Anfrage ist ein billiger
         // postMessage; nur das Platzieren bleibt placeBudget-begrenzt. Ein 0-Throttle ließe die nahen
         // LOD0/1-Bäume unter Last nie backen (kahle Nähe).
-        let bakeBudget = overBudget ? 2 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK || 3;
+        let bakeBudget = overBudget ? 2 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK;
         // NAH ZUERST (Lehre 16): die Budgets gehen an die nächsten Kandidaten, nie in Listen-Reihenfolge an ferne
         // Altbauten (Befund 30.09.: die Mesh-Zone konvergierte vom Listenanfang her, der Baum vor der Kamera wartete).
         const kand = this._rewarmKand || (this._rewarmKand = []);

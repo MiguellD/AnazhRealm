@@ -59,6 +59,7 @@ const server = statikServer();
             o.rendererReady = st.rendererReady === true;
             o.backendWebGL = !!(be && be.isWebGPUBackend !== true && be.isWebGLBackend === true);
             o.rendererType = r._flightRecorderDevice().rendererType;
+            if (st.renderer) st.renderer.setAnimationLoop(null); // der Loop ruht, die Probe pumpt (Lehre 17): kein Frame linkt dazwischen
             // W3 — die Wände:
             o.feldPassRuht = !st.feldPass;
             o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
@@ -109,10 +110,13 @@ const server = statikServer();
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
             // W6 (Kopf): auch der verborgene Stoff zählt — der Fern-Ring zeigt sich erst nach seinem Refresh
             o.grenze = [0, be.gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, be.gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? be.gl.getParameter(p) : 0)); // prettier-ignore
+            // W6 zählt den TEXT, nie das Linken: compileAsync baut je Stoff das GLSL, seine Pipeline (eigene Versprechen-Liste, nie E.neu der Welt) baut erst der echte Draw — swiftshader linkt je Programm 20–48 s synchron, der Zensus der ganzen Szene riss die 300-s-Frist (CI 38947879876 · 38946214534)
+            const P = rend._pipelines, link = P.getForRender.bind(P), weltNeu = r._erstZeichnungStand().neu, ohneLink = []; // prettier-ignore
             const zensus = async (wurzel, m = new Map(), verborgen = []) => {
                 wurzel.traverse((ob) => ob.visible || verborgen.push(ob));
                 verborgen.forEach((ob) => (ob.visible = true));
-                await rend.compileAsync(wurzel, cam);
+                P.getForRender = (ro, v) => (Array.isArray(v) && v !== weltNeu ? void ohneLink.push(ro) : link(ro, v));
+                await rend.compileAsync(wurzel, cam).finally(() => delete P.getForRender);
                 verborgen.forEach((ob) => (ob.visible = false));
                 wurzel.traverse((ob) => (ob.__renderObjekte || []).forEach((ro) => {
                     const namen = ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => (x.texture && x.texture.name) || x.name)); // prettier-ignore
@@ -128,6 +132,7 @@ const server = statikServer();
             const sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
             sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
             o.selbst = (await zensus(new T.Scene().add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false })))).find((z) => z[0] === "selbsttest:17-karten fragment"); // prettier-ignore
+            o.ohneLink = ohneLink.length;
             rend.setRenderTarget(prev);
             if (rt.dispose) rt.dispose();
             if (px && px.length) {
@@ -164,7 +169,7 @@ const server = statikServer();
         `  W5 Welt lebt: tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
     );
     const z = out.zensus || [];
-    console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen:`); // prettier-ignore
+    console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen, ${out.ohneLink} Zensus-Pipelines ohne Link:`); // prettier-ignore
     for (const [k, n, , wo] of z.slice(0, 6)) console.log(`     ${String(n).padStart(2)} ${k} — ${wo}`);
     if (out.err) console.log(`  Probe-Fehler: ${out.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 5));
@@ -189,6 +194,7 @@ const server = statikServer();
         errs.push(`W5: der Render hat keine SUBSTANZ (farben=${out.farben}, nonzero=${out.nonzero}) — schwarze Welt?`);
     for (const [k, n, s, wo] of z) if (n > out.grenze[s]) errs.push(`W6: ${k} bindet ${n} Texturen > ${out.grenze[s]} — ${wo}`); // prettier-ignore
     if (!(z.length > 4 && out.selbst && out.selbst[1] === 17)) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten zählt ${out.selbst && out.selbst[1]} (${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
+    if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
     if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler auf dem WebGL-Pfad`);
 
     if (errs.length) {

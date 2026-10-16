@@ -545,9 +545,9 @@ class AnazhRealm_Z06a {
     // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit.
     _dialsAusGenom(g) {
         const core = typeof window !== "undefined" && window.__koerperCore;
-        const start = core && core.START_PARAMS ? core.START_PARAMS : {};
+        const start = core.START_PARAMS;
         const d = Object.assign({}, start);
-        const MAP = AnazhRealm.KOERPER_DIAL_MAP || [];
+        const MAP = AnazhRealm.KOERPER_DIAL_MAP;
         for (const row of MAP) {
             if (!row || !Number.isFinite(row.base) || !Number.isFinite(row.mul) || row.mul === 0) continue;
             if (row.axis === "khMul") {
@@ -579,7 +579,7 @@ class AnazhRealm_Z06a {
             );
             return null;
         }
-        const dials = Object.assign({}, core.START_PARAMS || {}, g.bmDials || this._dialsAusGenom(g));
+        const dials = Object.assign({}, core.START_PARAMS, g.bmDials || this._dialsAusGenom(g));
         // BOOT-LITERAL-ABSCHIED (18.07.): ohne explizite Guss-Farbe greift die
         // Anker-Palette des Gesetzbuchs (fail-closed — der Kern ist oben schon
         // als warm bewiesen, die Tabellen sind Vertragsfläche).
@@ -2089,7 +2089,7 @@ class AnazhRealm_Z06a {
     async _ofenPrefetchKreaturen() {
         await this._weltbildKommt();
         const auftraege = [];
-        const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+        const map = AnazhRealm.TETRAPODA_SOUL_MAP;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
         // die Spieler-Vorlagen (Mensch, beide Stufen) bestellt der Leib des Spielers selbst, sobald das Buch steht

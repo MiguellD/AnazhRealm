@@ -94,8 +94,8 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 461,
-            "probe": "jede Klasse des Ofen-Goldens (167 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
+            "faelle": 460,
+            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut)",
             "kippt": {
                 "cos": 253,
                 "sin": 202
