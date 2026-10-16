@@ -1530,13 +1530,33 @@ class AnazhRealm_Z20c {
             for (const b of auf) b.needsUpdate = true;
             auf.clear();
         }
+        // die Matrizen der Glieder, die seit dem letzten Takt eintraten, verlassen die GPU — und die Senke trägt ein frisches
+        // Attribut-Objekt über demselben Feld: liest ihr Zeichner sie wieder (sie kehrt zurück), baut r184 seine Bindegruppe
+        // neu (unten); die alte hielte den gefallenen Puffer.
         const quelle = AnazhRealm.__quelleWeg;
         if (quelle && quelle.size) {
-            for (const m of quelle)
-                if (m.__arena) {
-                    if (m.__zeichner) AnazhRealm._renderObjekteLoesen(m.__zeichner);
-                    this._gpuAbschied(m.instanceMatrix);
+            for (const m of quelle) {
+                const alt = m.instanceMatrix;
+                if (!m.__arena || !this._gpuAbschied(alt)) continue;
+                const neu = new THREE.StorageInstancedBufferAttribute(alt.array, alt.itemSize);
+                neu.setUsage(alt.usage);
+                m.instanceMatrix = neu;
+                m.__arenaZ.im = neu;
+                // r184 vergleicht eine Speicher-Bindung nur, wenn ihre Gruppe eine neue Version trägt (`updateGroup`): die
+                // eigenen Bindegruppen jedes Render-Objekts des Zeichners fallen (das Register bleibt), das nächste Auffrischen
+                // — das neue Attribut-Objekt erzwingt es (Observer-Diät) — legt sie mit dem Puffer von dann an. Befund 16.10.
+                // (G1-n2/diag6): ein zurückgekehrter Zeichner band den gefallenen Puffer weiter, 759 Meldungen.
+                for (const ro of (m.__zeichner && m.__zeichner.__renderObjekte) || []) {
+                    const R = ro.renderer;
+                    if (!R || !R._bindings || !ro._bindings) continue;
+                    for (const bg of ro._bindings) {
+                        const b0 = bg.bindings && bg.bindings[0];
+                        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+                        R.backend.deleteBindGroupData(bg);
+                        R._bindings.delete(bg);
+                    }
                 }
+            }
             quelle.clear();
         }
         const reg = AnazhRealm.__arenen;
@@ -1732,10 +1752,9 @@ class AnazhRealm_Z20c {
         // der Block eines Glieds: seine Zahl und ein Viertel darüber (eine Senke wächst Instanz um Instanz)
         const platz = (n) => (n > 0 ? vier(n + (n >> 2) + 4) : 0);
         // DIE QUELLE VERLÄSST DIE GPU: die Instanzen eines Glieds zeichnet die Arena — der Speicher-Puffer seiner Matrizen
-        // (den der Kehraus nie nimmt: die Bindegruppe seines Zeichners hält ihn) fällt im nächsten Takt (`_arenaTakt`) mit
-        // den Bindegruppen des Zeichners: dann nimmt jedes Bündel, das ihn im Frame des Eintritts noch aufnahm, neu auf
-        // (`_arenaBuendel`), kein Replay liest den Puffer mehr. Kehrt das Glied zu ihm zurück, lädt r184 ihn neu
-        // (`_gpuAbschied` hebt die Version, die Bindegruppe baut sich neu).
+        // (den der Kehraus nie nimmt: die Bindegruppe seines Zeichners hält ihn) fällt im nächsten Takt (`_arenaTakt`): dann
+        // nimmt jedes Bündel, das den Zeichner im Frame des Eintritts noch aufnahm, neu auf (`_arenaBuendel`), kein Replay
+        // liest den Puffer mehr. Kehrt das Glied zu ihm zurück, lädt r184 ein frisches Attribut-Objekt über demselben Feld.
         const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
         // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
@@ -2446,25 +2465,29 @@ class AnazhRealm_Z20c {
                 if (this.glieder.length === 0) return false;
                 if (takt) {
                     // vor dem ersten Pass liegt jede Gestalt, die das Hauptbild zieht (im Bündel jedes sichtbare Glied mit
-                    // Instanzen, lose dazu im Blick der Kamera, wie `_auftraege`), und jede eines Schatten-Glieds mit Instanzen;
-                    // was nur eine Kaskade zieht, legt sich in ihrem Zug in eine freie Strecke
+                    // Instanzen, lose dazu im Blick der Kamera, wie `_auftraege`); was nur eine Kaskade zieht, legt sich in
+                    // ihrem Zug in eine freie Strecke (reicht keine, wirft es einen Frame später). Befund 16.10. (G1-n2/diag1,
+                    // Genesis Third): mit jedem Schatten-Glied mit Instanzen lagen 0,27 MB Zwillinge, die keine Kaskade zog.
                     const L = this._lager,
                         jetzt = AnazhRealm.__arenaJetzt || 0,
                         cam = globalThis.anazhRealm && globalThis.anazhRealm.state.camera,
-                        blick = !this._fest && (this.layers.mask & 1) !== 0 && !!cam;
+                        haupt = (this.layers.mask & 1) !== 0,
+                        blick = !this._fest && haupt && !!cam;
                     if (blick) {
                         pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
                         fr.setFromProjectionMatrix(pm, cam.coordinateSystem, cam.reversedDepth);
                     }
                     L.takt(renderer, jetzt);
-                    for (const m of this.glieder) {
-                        if ((m.count | 0) <= 0 || !this._sichtbar(m, renderer)) continue;
-                        if (blick && m.frustumCulled !== false) {
-                            if (m.boundingSphere === null) m.computeBoundingSphere();
-                            if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) continue;
+                    if (haupt)
+                        for (const m of this.glieder) {
+                            if ((m.count | 0) <= 0 || !this._sichtbar(m, renderer)) continue;
+                            if (blick && m.frustumCulled !== false) {
+                                if (m.boundingSphere === null) m.computeBoundingSphere();
+                                if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld)))
+                                    continue;
+                            }
+                            L.halten(L.gestalten.get(m.__arenaZ.gestalt), jetzt);
                         }
-                        L.halten(L.gestalten.get(m.__arenaZ.gestalt), jetzt);
-                    }
                     L.ordnen(jetzt);
                 }
                 if (this.geometry.index !== this._lager.index) this._geoNeu();
