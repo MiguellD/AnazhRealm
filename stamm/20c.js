@@ -1513,7 +1513,7 @@ class AnazhRealm_Z20c {
         let a = reg.get(k);
         if (!a) {
             const K = AnazhRealm._arenaKlasse();
-            a = new K(k, schl, m, K.lager(w, m.geometry), Math.max(64, m.instanceMatrix.count * 2));
+            a = new K(k, schl, m, K.lager(w, m.geometry), Math.max(64, Math.ceil(m.instanceMatrix.count * K.RESERVE)));
             a._imBuendel(wirt.isBundleGroup === true ? wirt : null);
             a._rend = renderer;
             reg.set(k, a);
@@ -1677,6 +1677,9 @@ class AnazhRealm_Z20c {
             }
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
+        // DIE RESERVE jedes Wachsens (Lager und Instanz-Seite): ein Viertel. Befund 16.10. (Radeon, EINE Welt, Mess-Wiese Ego):
+        // mit ×1,5 (Lager) und ×2 (Instanz-Seite) hielt die Arena 5,44 MB für 2,24 MB Quelle, die der Kehraus freigab.
+        const RESERVE = 1.25;
         // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
@@ -1706,7 +1709,7 @@ class AnazhRealm_Z20c {
             return v(g.attributes.position) * 65536 + v(g.index);
         };
         // DAS LAGER einer Vertex-Form in einer Szene: die Gestalten aller Arenen dieser Form in EINEM Vertex- und Index-Puffer
-        // — angehängt, bis der Platz nicht reicht oder die Hälfte brach liegt; dann baut es neu (×1,5), und jede Arena zeigt
+        // — angehängt, bis der Platz nicht reicht oder ein Viertel brach liegt; dann baut es neu (`RESERVE`), und jede Arena zeigt
         // ihre Geometrie im selben Zug darauf (`_geoNeu`, ihr Bündel nimmt neu auf), bevor die alten Puffer fallen.
         class Lager {
             constructor(key) {
@@ -1747,7 +1750,7 @@ class AnazhRealm_Z20c {
                 if (!b || --b.nutzer > 0) return;
                 this.gestalten.delete(key);
                 this.tot += b.nv;
-                if (this.tot > this.v / 2) this.neu = true; // verdichten
+                if (this.tot > this.v / 4) this.neu = true; // verdichten
             }
             ordnen(rend) {
                 this.rend = rend;
@@ -1776,8 +1779,8 @@ class AnazhRealm_Z20c {
                     ni += b.ni;
                     v0 = v0 || b.geo;
                 }
-                this.vCap = vier(Math.max(nv * 1.5, 1024));
-                this.iCap = vier(Math.max(ni * 1.5, 3072));
+                this.vCap = vier(Math.max(nv * RESERVE, 1024));
+                this.iCap = vier(Math.max(ni * RESERVE, 3072));
                 this.attr = {};
                 for (const k in v0.attributes) {
                     const a = v0.attributes[k];
@@ -1878,7 +1881,7 @@ class AnazhRealm_Z20c {
                 const cap = m.instanceMatrix.count;
                 if (this._nEnde + cap > this._nCap) {
                     // vor dem ersten Zug wächst die Instanz-Seite noch frei; danach folgt eine Arena mit Platz für den Bedarf
-                    if (!this.__instanzQuelle.instanceMatrix) this._nCap = vier((this._nEnde + cap) * 2);
+                    if (!this.__instanzQuelle.instanceMatrix) this._nCap = vier((this._nEnde + cap) * RESERVE);
                     else {
                         this._wartend.add(m);
                         return void this._folgen();
@@ -2069,7 +2072,7 @@ class AnazhRealm_Z20c {
                         this.__schl,
                         this.glieder[0],
                         this._lager,
-                        Math.max(n * 2, 64)
+                        Math.max(Math.ceil(n * RESERVE), 64)
                     );
                     a._imBuendel(this.__buendel);
                     a._rend = this._rend;
@@ -2341,6 +2344,7 @@ class AnazhRealm_Z20c {
             }
             raycast() {}
         }
+        GeometrieArena.RESERVE = RESERVE;
         AnazhRealm.__arenaK = GeometrieArena;
         return GeometrieArena;
     }
