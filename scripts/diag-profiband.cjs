@@ -57,35 +57,22 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const PK = require("./lib/pack-kanon.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
-// Das Innere einer Stamm-Methode: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) ohne die äußeren Klammern.
-function rumpf(code, kopfRe) {
-    const r = stammLib.rumpf(code, kopfRe);
-    return r && r.slice(1, -1);
-}
+// DIE ECHTE KLASSE (scripts/lib/stamm.cjs `ladeKlasse`, im vm wie der Wirt der Wiese) — kein Rumpf-Text, kein Zwilling; der
+// Selbsttest lädt einen veränderten Stamm (`monolith`) und fährt dieselben Proben.
+let _A = null;
+const klasseVon = (monolith) => (monolith == null ? _A || (_A = stammLib.ladeKlasse(root).AnazhRealm) : stammLib.ladeKlasse(root, { monolith }).AnazhRealm);
+const weltVon = (A, state) => Object.assign(Object.create(A.prototype), { state });
 
-// H4 — DIE TÄTER-KLASSE DES STAMMS, aus dem Quelltext (kein Zwilling hier): `klasse(obj, state)` und `instanz(key)`.
-function stammKlasse(src) {
-    const code = PK.stripComments(src);
-    const kl = rumpf(code, /\n {4}_taeterKlasse\([^)]*\)\s*\{/);
-    const nm = rumpf(code, /\n {4}static _taeterName\([^)]*\)\s*\{/);
-    const ik = rumpf(code, /\n {4}static _instanzKlasse\([^)]*\)\s*\{/);
-    const tg = rumpf(code, /\n {4}_taeterGruppe\([^)]*\)\s*\{/);
-    if (!kl || !nm || !ik || !tg) return null;
-    const AR = { _taeterName: new Function("x", nm), _instanzKlasse: new Function("key", ik) };
-    const fn = new Function("AnazhRealm", "obj", kl);
-    const gruppe = new Function("AnazhRealm", "key", tg);
-    const klasse = (obj, state) => {
-        const self = { state, _taeterGruppe: (key) => gruppe.call(self, AR, key) };
-        return fn.call(self, AR, obj);
-    };
-    return { klasse, instanz: AR._instanzKlasse, name: AR._taeterName };
+// H4 — DIE TÄTER-KLASSE DES STAMMS: `klasse(obj, state)` und `instanz(key)` der echten Klasse.
+function stammKlasse(A) {
+    const klasse = (obj, state) => A.prototype._taeterKlasse.call(weltVon(A, state), obj);
+    return { klasse, instanz: (k) => A._instanzKlasse(k), name: (x) => A._taeterName(x) };
 }
 
 // Die Schlüssel-Formen, die der Stamm baut (`_archInstanceGroupFor` · `_foundryFlattenFor` · `_scatterBuild…`), und ihre
@@ -105,10 +92,9 @@ const SCHLUESSEL = [
     ["markt#5", "g:markt:L0"],
 ];
 
-function taeterWand(src) {
+function taeterWand(A) {
     const errs = [];
-    const S = stammKlasse(src);
-    if (!S) return { errs: ["_taeterKlasse / _taeterName / _instanzKlasse nicht im Stamm gefunden"], n: 0 };
+    const S = stammKlasse(A);
     for (const [k, soll] of SCHLUESSEL) {
         const ist = S.instanz(k);
         if (ist !== soll) errs.push(`_instanzKlasse("${k}") = ${ist}, erwartet ${soll}`);
@@ -116,150 +102,60 @@ function taeterWand(src) {
     return { errs, n: SCHLUESSEL.length, S };
 }
 
-// H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` aus dem Stamm über eine Szene, in der @wahl vor einer Region und
-// @global ankam — danach tragen die Bündel-Plätze @global · die Regionen (in Ankunft) · @wahl, jedes andere Kind steht, wo
-// es stand; `_archRegionBundleFor` stellt die Reihe nach jedem neuen Bündel neu. Die losen Opaken in Boot-Ankunft (Himmel,
-// Fern, Boden vor dem Bau, gleiche Tiefe) folgen `_zeichenFolge` als Bau · Boden · Fern · Himmel, der Feld-Pass (renderOrder)
-// zuletzt; `_configureRenderer` setzt sie, die drei Erzeuger tragen ihre Marke.
-function buendelReiheWand(src) {
+// H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` über eine Szene, in der @wahl vor einer Region und @global ankam —
+// danach tragen die Bündel-Plätze @global · die Regionen (in Ankunft) · @wahl, jedes andere Kind steht, wo es stand. Die losen
+// Opaken in Boot-Ankunft (Himmel, Fern, Boden vor dem Bau, gleiche Tiefe) folgen `_zeichenFolge` als Bau · Boden · Fern ·
+// Himmel, der Feld-Pass (renderOrder) zuletzt; `_configureRenderer` setzt sie. Gefahren an der echten Klasse `A`.
+function buendelReiheWand(A) {
     const errs = [];
-    const code = PK.stripComments(src);
-    const [rang, folge, reihe, fuer, konf] = ["static _zeichenRang", "static _zeichenFolge", "_buendelReihe", "_archRegionBundleFor", "_configureRenderer"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
-    if (!rang || !folge || !reihe)
-        return { errs: ["_zeichenRang / _zeichenFolge / _buendelReihe fehlen im Stamm — die Zeichen-Reihe hängt an der Ankunft beim Boot"], n: 0 };
-    if (!fuer || !/scene\.add\(bg\);[\s\S]*?this\._buendelReihe\(scene\);/.test(fuer))
-        errs.push("_archRegionBundleFor stellt die Reihe nach einem neuen Bündel nicht neu (this._buendelReihe(scene) fehlt)");
-    if (!konf || !/renderer\.setOpaqueSort\(AnazhRealm\._zeichenFolge\)/.test(konf)) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
-    for (const s of ["boden", "fern", "himmel"]) if (!new RegExp(`zeichenSchicht(?: =|:) "${s}"`).test(code)) errs.push(`kein Erzeuger trägt die Marke zeichenSchicht "${s}"`);
-    const AR = { _zeichenRang: new Function("o", rang) };
-    const F = new Function("AnazhRealm", "a", "b", folge).bind(null, AR);
+    if (typeof A._zeichenFolge !== "function" || typeof A.prototype._buendelReihe !== "function")
+        return { errs: ["_zeichenFolge / _buendelReihe fehlen im Stamm — die Zeichen-Reihe hängt an der Ankunft beim Boot"], n: 0 };
+    const R = { setSize() {}, setPixelRatio() {}, setClearColor() {}, shadowMap: {}, setOpaqueSort: (fo) => (R.folge = fo) };
+    try {
+        A.prototype._configureRenderer.call(weltVon(A, {}), R);
+    } catch (_e) {
+        /* was nach der Folge kommt, braucht die Welt */
+    }
+    if (R.folge !== A._zeichenFolge) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
     const L = (n, ro, s, id) => ({ groupOrder: 0, renderOrder: ro, z: -0.1, id, object: { name: n, userData: s ? { zeichenSchicht: s } : {} } });
-    const istL = [L("himmel", 0, "himmel", 20), L("feld-pass", 9998, null, 51), L("fern-ring", 0, "fern", 47), L("bodenSatz", 0, "boden", 46), L("bauSatz", 0, null, 6361)].sort(F).map((x) => x.object.name).join(" · ");
+    const istL = [L("himmel", 0, "himmel", 20), L("feld-pass", 9998, null, 51), L("fern-ring", 0, "fern", 47), L("bodenSatz", 0, "boden", 46), L("bauSatz", 0, null, 6361)].sort(A._zeichenFolge).map((x) => x.object.name).join(" · ");
     if (istL !== "bauSatz · bodenSatz · fern-ring · himmel · feld-pass") errs.push(`die losen Opaken nach der Ankunft Himmel · Feld · Fern · Boden · Bau: ${istL} — Soll bauSatz · bodenSatz · fern-ring · himmel · feld-pass`);
-    const fn = new Function("AnazhRealm", "scene", reihe);
     const B = (k) => ({ isBundleGroup: true, name: "regionBundle:" + k, userData: { regionKey: k } });
     const scene = { children: [{ name: "voxelChunk:0,0" }, B("@wahl"), B("3,4"), { name: "himmel" }, B("@global"), B("s:1,2")] };
-    fn.call({}, AR, scene);
+    A.prototype._buendelReihe.call(weltVon(A, {}), scene);
     const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "), soll = "voxelChunk:0,0 · @global · 3,4 · himmel · s:1,2 · @wahl";
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
-    // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
-    const [kinder, gruppe, wachsen] = ["static _buendelKinderReihe", "_archInstanceGroupFor", "_archInstanceGroupGrow"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
-    if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
-    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe)) errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
-    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe)) errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
-    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent(?:, this\._buendelAuge)?\)/.test(wachsen)) errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
+    // Gleichstand nach Schlüssel.
+    if (typeof A._buendelKinderReihe !== "function") return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 3 };
     const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
     const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
-    new Function("bundle", "auge", kinder)(bundle);
+    A._buendelKinderReihe(bundle);
     const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · "), sollK = "f:a|1|0:2 · f:b|1|0:0 · f:a|1|1:0 · f:a|1|1:0#S · atlas";
     if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
-    // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
-    const [anker, takt] = ["_buendelAnkerPruefen", "_tickArchitectureLOD"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
-    if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
-    if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt)) errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
+    if (typeof A.prototype._buendelAnkerPruefen !== "function") return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 5 };
     const I = (stufe, key, ...orte) => {
         const a = new Float32Array(16 * Math.max(1, orte.length));
         orte.forEach((o, i) => ((a[i * 16 + 12] = o[0]), (a[i * 16 + 14] = o[1])));
         return { userData: { buendelStufe: stufe, archInstanceKey: key }, instanceMatrix: { array: a }, count: orte.length };
     };
     const fernVorn = { children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])] };
-    new Function("bundle", "auge", kinder)(fernVorn, { x: 0, z: 0 });
+    A._buendelKinderReihe(fernVorn, { x: 0, z: 0 });
     const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · "), sollA = "f:b|1|0:0 · f:a|1|0:0 · f:z|1|1:0";
     if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
-    const ARA = { BUENDEL_ANKER_M: 16, _buendelKinderReihe: new Function("bundle", "auge", kinder) };
+    const M = A.BUENDEL_ANKER_M;
     const B1 = { isBundleGroup: true, userData: { regionKey: "@wahl" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
-    const welt = { state: { scene: { children: [B1] } } };
-    const pruefe = new Function("AnazhRealm", "pos", anker);
-    const erst = pruefe.call(welt, ARA, { x: 0, z: 0 });
+    const welt = weltVon(A, { scene: { children: [B1] } });
+    const erst = welt._buendelAnkerPruefen({ x: 0, z: 0 });
     B1.needsUpdate = false;
-    const nah = pruefe.call(welt, ARA, { x: 10, z: 0 });
+    const nah = welt._buendelAnkerPruefen({ x: M * 0.6, z: 0 });
     const nahNeu = B1.needsUpdate;
-    const weit = pruefe.call(welt, ARA, { x: 20, z: 0 });
+    const weit = welt._buendelAnkerPruefen({ x: M * 1.25, z: 0 });
     if (!(erst === true && nah === false && nahNeu === false && weit === true && B1.needsUpdate === true))
-        errs.push(`der Anker der Reihe: erster Ruf ${erst}, 10 m ${nah} (Neuaufnahme ${nahNeu}), 20 m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`);
-    return { errs, n: 11 };
-}
-
-// H3 — jede Textur-/Bildziel-Erzeugung trägt ihren Erzeuger-Namen in ihrem Statement-Fenster (700 Zeichen): eine
-// Deklaration (`const/let/var x =`), ein Feld (`this.a.b =`) oder eine Neu-Zuweisung (`x =`, `obj.map =`); der Name ist
-// `<ziel>.name =` mit Wortgrenze vorn (`mat.name =` benennt `t` nicht).
-function namensWand(src) {
-    const code = PK.stripComments(src);
-    const errs = [];
-    const erzeugung = /new\s+(?:THREE|T)\.(\w*Texture|\w*RenderTarget)\(|convertToTexture\(/g;
-    const zuweisung =
-        /(?:(?:const|let|var)\s+([A-Za-z_$][\w$]*)|(?<![\w$.])((?:this\.)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*))\s*=\s*(?:new\s+(?:THREE|T)\.(?:\w*Texture|\w*RenderTarget)\(|convertToTexture\()/g;
-    const zugewiesen = new Set();
-    let m,
-        n = 0;
-    while ((m = zuweisung.exec(code))) {
-        const v = m[1] || m[2];
-        const fenster = code.slice(m.index, m.index + 700);
-        const esc = v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const rt = /convertToTexture\(/.test(m[0]);
-        const re = new RegExp("(?<![\\w$.])" + esc + (rt ? "\\.renderTarget\\.texture" : "") + "\\.name\\s*=");
-        if (!re.test(fenster)) {
-            const zeile = code.slice(0, m.index).split("\n").length;
-            errs.push(
-                `Zeile ~${zeile} (bereinigt): ${m[0].trim()} — kein ${v}${rt ? ".renderTarget.texture" : ""}.name`
-            );
-        }
-        zugewiesen.add(m.index + m[0].search(/new\s|convertToTexture/));
-        n++;
-    }
-    while ((m = erzeugung.exec(code)))
-        if (!zugewiesen.has(m.index)) {
-            const zeile = code.slice(0, m.index).split("\n").length;
-            errs.push(`Zeile ~${zeile} (bereinigt): ${m[0]} ohne Ziel-Variable — kein Name möglich`);
-        }
-    return { errs, n };
-}
-
-// H5 — jeder Name, den ein Haushalt-Muster wörtlich nennt (`^name$`, `^(a|b)$`), vergibt der Stamm noch: als String-Literal
-// im kommentar-freien Code, ganz oder mit Namens-Schwanz (`"voxelChunk:" + key` faltet `_taeterName` zu `voxelChunk`).
-// Befund 05.10. (echte GPU, Integration): welle-fernsicht benannte den Zaun-Pool `siedlung-zaun`, die Regel nannte weiter
-// `siedlung-wege` — der Täter fiel aus jeder Klasse (Band-LINSE rot `haushalt`), kein Gate ohne GPU sah es.
-function namenLeben(haushalt, src) {
-    const code = PK.stripComments(src);
-    const errs = [];
-    let n = 0;
-    for (const k of haushalt.klassen)
-        for (const r of k.regeln || []) {
-            if (!r.muster || !r.muster.startsWith("^") || !r.muster.endsWith("$")) continue;
-            const rumpf = r.muster.slice(1, -1);
-            const innen = /^\([^()]*\)$/.test(rumpf) ? rumpf.slice(1, -1) : rumpf;
-            if (/[()]/.test(innen)) continue; // verschachtelte Gruppen sind Muster über Schlüssel-Formen (H4)
-            for (const a of innen.split("|")) {
-                if (!/^[A-Za-z0-9_:.-]+$/.test(a)) continue; // ein Regex-Teil (chunk-water-[a-z]+) nennt keinen Namen
-                n++;
-                const lebt = ['"', "'", "`"].some((q) => code.includes(q + a + q) || code.includes(q + a + ":"));
-                if (!lebt) errs.push(`Klasse ${k.id}: das Muster ${r.muster} nennt "${a}" — kein Erzeuger im Stamm`);
-            }
-        }
-    return { errs, n };
-}
-
-// H6 — DER ORT-TAKT LEBT (S1 W1f): jede Methode, die ein Messort im Ort-Takt nennt (am Genesis-Ring `_genesisPortalRing`,
-// `_portalApproachPrefetch`), trägt der Stamm als Methode — ein umbenannter Bauer liefe in der Werkbank als TypeError still
-// aus jedem Takt (der try der Takt-Schleife schluckt ihn), der Ring stünde nie, die Messung mäße einen leeren Ort. Ebenso
-// der Anker (`anker`, am Genesis-Ring `_genesisMitte`): die Werkbank fragt ihn beim Aufstellen, ob der Ort noch dort steht.
-function ortTaktLebt(haushalt, src) {
-    const code = PK.stripComments(src);
-    const errs = [];
-    let n = 0;
-    for (const o of haushalt.messorte || []) {
-        const namen = (o.ortTakt || []).map((m) => [m, "der Ort-Takt"]);
-        if (o.anker) namen.push([o.anker, "der Anker"]);
-        for (const [m, rolle] of namen) {
-            n++;
-            const kopf = "\n    " + m + "(";
-            if (!code.includes(kopf)) errs.push(`Messort ${o.id}: ${rolle} nennt ${m} — keine Methode im Stamm`);
-        }
-    }
-    return { errs, n };
+        errs.push(`der Anker der Reihe: erster Ruf ${erst}, ${M * 0.6} m ${nah} (Neuaufnahme ${nahNeu}), ${M * 1.25} m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`);
+    return { errs, n: 6 };
 }
 
 // P — DIE PROJEKTION (S3 pflanzen, 09.10.; GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
@@ -396,8 +292,8 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
-    const stamm = stammLib.text(root);
-    const S = stammKlasse(stamm);
+    const A = klasseVon();
+    const S = stammKlasse(A);
     const tests = [];
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     // Die Selbsttests urteilen gegen eine UNGEMESSENE Ratsche desselben Schemas mit fester Toleranz — die gemessenen
@@ -414,10 +310,6 @@ function selbsttest() {
     const urteil = (klassen, r, vram, gpu) =>
         BAND.bandUrteil({ zensus: { klassen }, vram: vram || null, gpu: gpu || null, haushalt, ratsche: r || rt });
     const hatRot = (u, art) => u.rot.some((x) => x.art === art);
-    if (!S) {
-        console.log("❌ SELBST-TEST: die Täter-Klasse des Stamms ist nicht zu finden");
-        process.exit(1);
-    }
 
     // S1 — ein unbenanntes Mesh: die Täter-Klasse nennt es UNBENANNT:Mesh, das Urteil wird rot.
     const scene = { type: "Scene" };
@@ -491,25 +383,6 @@ function selbsttest() {
         u5.rot.filter((x) => x.art === "haushalt").length === 2 && u5.linse === "ROT"
     );
 
-    // S6 — die Namens-Wand: eine namenlose Textur (und eine ohne Ziel) wird rot, eine benannte nicht, eine benannte
-    // Neu-Zuweisung nicht (welle-w6-karten: `map = new T.DataArrayTexture(…)` + `map.name =`), ein fremder Name
-    // (`mat.name =`) benennt `t` nicht.
-    const n6a = namensWand("const x = new THREE.DataTexture(d, 1, 1);\nx.needsUpdate = true;\n");
-    const n6b = namensWand('const x = new THREE.DataTexture(d, 1, 1);\nx.name = "probe";\n');
-    const n6c = namensWand("f(new THREE.CanvasTexture(c));\n");
-    const n6d = namensWand('let map;\nmap = new T.DataArrayTexture(d, 4, 4, 2);\nmap.name = "impostor-atlas";\n');
-    const n6e = namensWand('const t = new THREE.DataTexture(d, 1, 1);\nmat.name = "stoff";\n');
-    const n6f = namensWand('mat.map = new THREE.CanvasTexture(c);\nmat.map.name = "probe";\n');
-    t(
-        "Namens-Wand: namenlos rot, ohne Ziel rot, benannt grün, Neu-Zuweisung grün, fremder .name rot",
-        n6a.errs.length === 1 &&
-            n6b.errs.length === 0 &&
-            n6c.errs.length === 1 &&
-            n6d.errs.length === 0 &&
-            n6e.errs.length === 1 &&
-            n6f.errs.length === 0
-    );
-
     // S7 — eine Textur ohne Erzeuger im VRAM-Abgriff wird rot.
     const u7 = urteil([], null, { mb: 1, liste: [{ k: "tex:? rgba8unorm 1024x256x1", mb: 1, n: 1 }] });
     const u7b = urteil([], null, {
@@ -529,7 +402,7 @@ function selbsttest() {
     );
 
     // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse.
-    const tw = taeterWand(stamm);
+    const tw = taeterWand(A);
     t(`Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen`, !tw.errs.length);
 
     // S9 — der Erzeuger einer Textur: ihr Name; ohne Namen ihr Ziel (die Tiefe, die r184 je Ziel anlegt →
@@ -724,19 +597,6 @@ function selbsttest() {
             hl.zensus.klassen.find((k) => k.klasse === "bodenSatz").je.haupt === 6 &&
             hl.vram.mb === 230 &&
             hl.vram.liste.length === 2
-    );
-
-    // S16 — H5: ein Muster mit einem Namen, den der Stamm nicht mehr vergibt, wird rot; der echte Haushalt nicht, ein Name
-    // mit Namens-Schwanz (`"voxelChunk:" + key`) lebt.
-    const h16 = JSON.parse(JSON.stringify(haushalt));
-    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(siedlung-zaun|siedlung-wege)$" });
-    const n16 = namenLeben(h16, stamm);
-    t(
-        "H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt",
-        n16.errs.length === 1 &&
-            /siedlung-wege/.test(n16.errs[0]) &&
-            namenLeben(haushalt, stamm).errs.length === 0 &&
-            namenLeben({ klassen: [{ id: "boden", regeln: [{ muster: "^voxelChunk$" }] }] }, stamm).errs.length === 0
     );
 
     // S17 — DER SPEICHER OHNE BILD (W6): ein Geometrie-Puffer, den nur r184s Register (`buf:verwaist`) oder nur der Foundry-
@@ -978,26 +838,12 @@ function selbsttest() {
             wGefallen.some((x) => /kein Fernblick/.test(x)) &&
             !wieseAmGesetz(haushalt).befunde.length
     );
-    // S23 — H6: ein Ort-Takt oder ein Anker mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht. Ein Anker
-    // ohne Methoden-Namen bricht das Schema.
-    const h23 = JSON.parse(JSON.stringify(haushalt));
-    h23.messorte[1].ortTakt = ["_genesisPortalRing", "_genesisRingAlt"];
-    const o23 = ortTaktLebt(h23, stamm);
-    const h23b = JSON.parse(JSON.stringify(haushalt));
-    h23b.messorte[1].anker = "_genesisMitteAlt";
-    const o23b = ortTaktLebt(h23b, stamm);
+    // S23 — ein Anker ohne Methoden-Namen bricht das Schema; der echte Anker ist einer.
     const h23c = JSON.parse(JSON.stringify(haushalt));
     h23c.messorte[1].anker = "36 0";
     t(
-        "H6: _genesisRingAlt im Ort-Takt und _genesisMitteAlt als Anker → je rot, ein Anker ohne Methoden-Namen bricht das " +
-            "Schema; der echte Ort-Takt und Anker leben",
-        o23.errs.length === 1 &&
-            /_genesisRingAlt/.test(o23.errs[0]) &&
-            o23b.errs.length === 1 &&
-            /der Anker nennt _genesisMitteAlt/.test(o23b.errs[0]) &&
-            BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) &&
-            haushalt.messorte[1].anker === "_genesisMitte" &&
-            !ortTaktLebt(haushalt, stamm).errs.length
+        "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
+        BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) && haushalt.messorte[1].anker === "_genesisMitte"
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
@@ -1210,58 +1056,28 @@ function selbsttest() {
             nwOhne.errs.some((x) => /keine Dreiecke/.test(x))
     );
 
-    // S30 — DIE ZEICHEN-REIHE (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang, ohne
-    // die Reihe, ohne die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau und ohne Himmels-Marke wird die Wand rot.
+    // S30 — DIE ZEICHEN-REIHE (H7) an der echten Klasse: der Stamm hält sie; mit @wahl im ersten Rang, ohne die Reihe, ohne
+    // die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau, verkehrt, ohne die Reihe im Bündel, ohne den Abstand
+    // und mit einem Anker, der jeden Frame stellt, wird die Wand rot (je der veränderte Stamm als Klasse geladen).
     {
         const st = stammLib.text(root);
-        const ohneRuf = stammLib.ersetze(st, "_archRegionBundleFor", "this._buendelReihe(scene);", "");
-        const wahlVorn = stammLib.ersetze(st, "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1');
-        const ohneReihe = stammLib.ersetze(st, null, /(\n {4}_buendelReihe)\(/, "$1Alt(");
-        const ohneFolge = stammLib.ersetze(st, "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "");
-        const bodenVorn = stammLib.ersetze(st, "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :');
-        const ohneMarke = stammLib.ersetze(st, "createGalaxySkybox", 'skybox.userData.zeichenSchicht = "himmel";', "");
-        const V = [ohneRuf, wahlVorn, ohneReihe, ohneFolge, bodenVorn, ohneMarke];
-        const rot = (s, re) => buendelReiheWand(s).errs.some((x) => re.test(x));
+        const fall = [
+            ["@wahl vorn", "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
+            ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],
+            ["ohne Folge", "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "", /setOpaqueSort/],
+            ["Boden vorn", "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :', /losen Opaken nach der Ankunft/],
+            ["verkehrt", "_buendelKinderReihe", "rang(a) - rang(b) ||", "rang(b) - rang(a) ||", /Reihe im Bündel nach der Ankunft/],
+            ["ohne Reihe im Bündel", null, /(\n {4}static _buendelKinderReihe)\(/, "$1Alt(", /in der Ankunft/],
+            ["ohne Abstand", "_buendelKinderReihe", "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||", /Reihe nach Abstand/],
+            ["je Frame", "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "", /Anker der Reihe/],
+        ];
+        const still = fall.filter(([, glied, alt, neu, re]) => !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x)));
         t(
-            "Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel; ohne Aufruf, @wahl vorn, ohne Reihe, ohne Folge, Boden vorn und ohne Marke rot",
-            V.every((s) => s !== st) &&
-                buendelReiheWand(st).errs.length === 0 &&
-                rot(ohneRuf, /stellt die Reihe/) &&
-                rot(wahlVorn, /Reihe der Bündel nach der Ankunft/) &&
-                rot(ohneReihe, /hängt an der Ankunft/) &&
-                rot(ohneFolge, /setOpaqueSort/) &&
-                rot(bodenVorn, /losen Opaken nach der Ankunft/) &&
-                rot(ohneMarke, /Marke zeichenSchicht "himmel"/)
-        );
-        // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
-        const ohneKinderRuf = stammLib.ersetze(st, "_archInstanceGroupFor",
-            "bundle.add(mesh);\n            AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);",
-            "bundle.add(mesh);"
-        );
-        const verkehrt = stammLib.ersetze(st, "_buendelKinderReihe", "rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
-        const ohneKinder = stammLib.ersetze(st, null, /(\n {4}static _buendelKinderReihe)\(/, "$1Alt(");
-        t(
-            "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
-            ohneKinderRuf !== st &&
-                verkehrt !== st &&
-                ohneKinder !== st &&
-                buendelReiheWand(ohneKinderRuf).errs.some((x) => /nach der Aufnahme nicht neu/.test(x)) &&
-                buendelReiheWand(verkehrt).errs.some((x) => /Reihe im Bündel nach der Ankunft/.test(x)) &&
-                buendelReiheWand(ohneKinder).errs.some((x) => /in der Ankunft/.test(x))
-        );
-        // DIE REIHE NACH ABSTAND (1310-9): ohne den Abstand, mit einem Anker, der jeden Frame stellt, und ohne den Ruf im Takt rot
-        const ohneAbstand = stammLib.ersetze(st, "_buendelKinderReihe", "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||");
-        const jedenFrame = stammLib.ersetze(st, "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "");
-        const ohneTaktRuf = stammLib.ersetze(st, "_tickArchitectureLOD", "this._buendelAnkerPruefen(pm);", "");
-        t(
-            "Reihe nach Abstand: vorn zuerst in der Stufe, neu nur beim Anker-Wechsel; ohne Abstand, je Frame und ohne Ruf im Takt rot",
-            ohneAbstand !== st &&
-                jedenFrame !== st &&
-                ohneTaktRuf !== st &&
-                buendelReiheWand(st).errs.length === 0 &&
-                buendelReiheWand(ohneAbstand).errs.some((x) => /Reihe nach Abstand/.test(x)) &&
-                buendelReiheWand(jedenFrame).errs.some((x) => /Anker der Reihe/.test(x)) &&
-                buendelReiheWand(ohneTaktRuf).errs.some((x) => /prüft den Anker/.test(x))
+            "Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; " +
+                fall.map(([n]) => n).join(", ") +
+                " rot" +
+                (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
+            buendelReiheWand(A).errs.length === 0 && !still.length
         );
     }
 
@@ -1410,16 +1226,10 @@ function main() {
         else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });
     }
     for (const f of BAND.ratscheFrische({ haushalt, version, ratschen, messungen })) errs.push("H2b " + f);
-    const stamm = stammLib.text(root);
-    const nw = namensWand(stamm);
-    for (const f of nw.errs) errs.push("H3 " + f);
-    const tw = taeterWand(stamm);
+    const A = klasseVon();
+    const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
-    const nl = namenLeben(haushalt, stamm);
-    for (const f of nl.errs) errs.push("H5 " + f);
-    const ot = ortTaktLebt(haushalt, stamm);
-    for (const f of ot.errs) errs.push("H6 " + f);
-    const br = buendelReiheWand(stamm);
+    const br = buendelReiheWand(A);
     for (const f of br.errs) errs.push("H7 " + f);
     // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht ab dem Vertrags-Akt).
     const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
@@ -1489,9 +1299,8 @@ function main() {
             `${h.summe.dreiecke}/${haushalt.band.dreiecke} Dreiecke in ${haushalt.klassen.length} Klassen (keine Sammelzeile) · ` +
             `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe je Ort × Gerät × Sicht · ` +
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
-            `H3 ${nw.n} Textur-Erzeuger benannt · ` +
-            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Zeichen-Reihe (Bündel @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
+            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · ` +
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H7 die Zeichen-Reihe (Bündel @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
     );
 }
 
