@@ -156,3 +156,10 @@ der WebGL2-Rückfall linkt nach W2 auf der Radeon (61/61 Programme, max 14 Sampl
 + CI-Zeiten neu verteilt (6c011637), Push nach dem OMEN-Profil. **main bleibt d9d1db4e:** Originalpaar zeigt +0,15–0,2 ms CPU-Takt
 Genesis Ego (5,58 → 5,73, E hält), kein Bisekt-Schritt trägt es allein → OMEN CPU-Profil-Diff d9d1db4e/c03ea075, dann B2-Kaltserie.
 A3 laub GRÜN gebaut (Hash je Karten-Zelle), Prüfer läuft; A4 Kopf GRÜN gemergt; A1 wasser Nachbesserung 2; W3 Merge-Nachbesserung mit S5.
+
+**22:45 (date): main = 3caca1cd (V18.546.6)** — + FZ · W2 · KI2 · K2 · A6 haus GRÜN · CW2 · WL · A4 Gesicht GRÜN · S5. Offen benannt: CPU-Takt
+p95 Genesis Ego +0,15 ms über Serien (d9d1db4e 5,58 → 5,73), Profil-Diff ohne Ort (viele Kleinstbeiträge Kreaturen/Traversal), E an der
+Grenze; G1 trägt den Rückweg. **integ = 985a923b (V18.546.7)** = + B2 · G2 · SO · CI-Gruppen. OMEN: B-Kaltserie A 3caca1cd / B 985a923b.
+Laufend: D2M (Umzug am Kopf neu, wf_8f858320-e9d), W3+S5-Vereinigung (wf_e5c3ef38-912), A1 wasser, A3 laub (Prüfer), G1. Danach die
+Richter-Diät D(3): playtest.cjs nach Domänen + Text-Linsen → __consumes (Wort des Schöpfers 16.10. abends: der Richter wurde zu groß,
+der Macher muss frei sein).
