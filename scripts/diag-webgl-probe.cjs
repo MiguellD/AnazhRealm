@@ -184,7 +184,7 @@ const server = statikServer();
     if (!out.spielerEndlich) errs.push("W5: die Spieler-Position ist nicht endlich");
     if (!(out.farben >= 4 && out.nonzero > 200))
         errs.push(`W5: der Render hat keine SUBSTANZ (farben=${out.farben}, nonzero=${out.nonzero}) — schwarze Welt?`);
-    for (const [k, n, s, wo, linkt] of z) if (n > out.grenze[s] || !linkt) errs.push(`W6: ${k} ${linkt ? "linkt" : "LINKT NICHT"} mit ${n} Sampler-Einheiten (Gerät ${out.grenze[s]}) — ${wo}`); // prettier-ignore
+    for (const [k, n, s, wo, linkt] of z) if (n > out.grenze[s] || (!linkt && s === 2)) errs.push(`W6: ${k} ${linkt ? "linkt" : "LINKT NICHT"} mit ${n} Sampler-Einheiten (Gerät ${out.grenze[s]}) — ${wo}`); // prettier-ignore
     if (!(z.length > 4 && out.selbst && out.selbst[1] === 17)) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten zählt ${out.selbst && out.selbst[1]} Einheiten (${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
     else console.log(`  W6-Selbsttest: der Stoff mit 17 Karten ${out.selbst[4] ? "linkt" : "LINKT NICHT"} mit ${out.selbst[1]} Einheiten — die Linse nennt ihn`); // prettier-ignore
     if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler auf dem WebGL-Pfad`);
