@@ -100,3 +100,10 @@ hängt an ganzen Quell-Dateien: jeder Merge auf 07.js/05b.js macht alle Zeilen �
 Bündel-Kopf NACH D2; beim D2-Merge die Tafel-„quellen“ auf die neuen Dateinamen prüfen (Lehre 12, die Tafel ist ein Leser).
 GTX-ABAB Bündel 1 (A aa74c324, B 1185091c) läuft am OMEN seit 14:13; echt-vier d349594c (Linsen-Wackler Verdeckung, Ziel-Zensus,
 Frost-S5, W5) wartet auf Zweig-CI.
+
+**15:13 (date):** integ-probe = cee33f91 — gebündelt A0 · echt-vier (ohne W5-Schuss) · D3a EIN Stripper (scripts/ −2 292 Z.) · G4a Gruppen-
+Geburt (DSL-Budget in Schritten statt Wanduhr). Lokal je Merge voll grün. OMEN: Bündel-ABAB jetzt in EINER Welt (Tempo-Regel im
+Gedächtnis gpu-mess-lehren), danach G4a-Takt 2+2. Neu: CW ci-waage (volles Urteil 13,5–19,9 min, langsamste Gruppe 12,8 > Deckel 7) und
+die Analyse ki-native-anatomie (Wohin gehen Zeit und Kontext der Arbeiter, Entwurf der Tag-Struktur, Gegenprüfung) auf Frage des Schöpfers.
+Auge-Runde 14:40 (integ b7aa7359): Bilder artifacts/profiband/auge/1610/ — Ankunft zeigt vorn den Stein-Zylinder start_plattform (16.js:131)
+und den Bau-Satz als glatte Röhre; keine Tafel-Klasse deckt den Genesis-Platz (Wort des Schöpfers nötig).
