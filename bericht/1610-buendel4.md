@@ -48,3 +48,53 @@ DataArrayTexture), A6 (nur Labor) sind Spiel; Wiese Ego und Genesis Ego je 2+2 B
   - je Boot `.json` und `-smi.csv`, die Tafeln `auswertung-w-ego.md` und `auswertung-g-ego.md`, `stehen.sh`, `auswertung.cjs`.
   - Auf dem OMEN: `p3/k1610b4/`.
 - Offen: der Täter des Genesis-CPU-Plus, nur auf Zuruf.
+
+## Nachtrag 16.10. ~23:00 — Bisekt, direkte Nachmessung, CPU-Profil: kein Ort
+
+**Kein einzelner Commit und keine einzelne Funktion trägt das Plus.**
+- Über die Serien ist es stabil: +0,10 bis +0,20 ms CPU-Takt p95 an Genesis Ego.
+- Das CPU-Profil zeigt im gleichen fps-Modus keinen Unterschied.
+- Was bleibt, sind viele Kleinstbeiträge im Kreaturen- und Szenen-Traversal.
+- Der Koordinator hat main auf 3caca1cd gespult und das Plus offen benannt (~+0,15 ms, ungeortet).
+
+| Serie (Genesis Ego, EIN Instrument je Serie) | Seiten | CPU-Takt p95 voll je Seite (Mittel) | Paar-Δ (2σ) |
+|---|---|---|---|
+| Bisekt 1 (D A B B A D …) | D d9d1db4e · A a2986b30 (W2+KI2) · B ede774f1 (+K2) | 5,57 · 5,57 · 5,63 | W2+KI2 +0,00 (0,10) · K2 +0,05 (0,22) |
+| Bisekt 2 (A B B A …) | ede774f1 · c03ea075 (+A6, Version) | 5,67 · 5,65 | −0,02 (0,25) |
+| Direkt (A B B A …) | d9d1db4e · c03ea075 | sauber 5,3 / 5,8 / 5,9 · 5,8 / 5,7 / 5,8 / 5,7 / 5,8 / 5,8 | ≈ +0,10 |
+| Bündel 5 | c03ea075 · 3caca1cd | 5,95 · 5,95 | 0 |
+
+- **Verschmutzt (verworfen):** direkt A2 und A3 (p95 7,5 / 7,1, p50 4,8 / 4,6). A2 startete 6 s nach dem Ende des Echt-Laufs an
+  3caca1cd; der Runner räumte noch auf.
+  - Gegenmittel: `p3/gpu-schloss.sh` wartet jetzt mit dem Schloss 180 s nach jedem CI-„ende“ (`ci_ruhe`).
+  - Das Ersatzpaar lief bis A5 / B5 / B6, A6 entfiel auf Zuruf.
+- **Der Zweigipfel:** Genesis-Boots laufen in zwei Modi, ~83 fps oder ~79,5 fps. Das Plus liegt in beiden: über alle sauberen
+  Boots c03ea075 langsam 5,74 (n 9) / schnell 5,80 (n 5) gegen d9d1db4e langsam 5,57 (n 7) / schnell 5,60 (n 3).
+- **Die Bisekt-Kette verortet es nicht:** Ein Seiten-Mittel streut ~±0,05–0,07 bei p95-Quantelung 0,1. Drei Schritte zu je +0,0–0,1
+  sind von „ein Schritt +0,2“ nicht zu trennen.
+
+**CPU-Profil-Diff d9d1db4e gegen c03ea075** (`werkbank profil 20 --regler voll`, 200 µs, Folge A B A B, je Boot ~1600 Frames;
+`nachtrag/profil/diff.txt`):
+- **Gesamt je Frame:** `loop` 25a.js:1914 5,55 → 5,68 ms (+0,13).
+  - Davon Render-Pfad +0,11: `zeichne` 07.js:1415 → `_renderObjectDirect` 07.js:1450 → `updateBefore` 25c.js:174.
+  - `renderShadow` +0,03, `_renderBundle` +0,03.
+- **Top-10 Selbstzeit, B − A in ms je Frame:**
+  1. `updateMatrixWorld` (three.core) +0,026
+  2. `updateCreatures` 06c.js:2816 +0,016
+  3. `get` (three.webgpu) +0,011
+  4. `_fieldRaycast` 11a.js:1077 +0,010
+  5. `_projectObject` +0,009
+  6. GC +0,009
+  7. `leib` 25b.js:1913 +0,008
+  8. `flaeche` gelaende-core.js:952 +0,008
+  9. `_kreaturRuht` 06c.js:2701 +0,007
+  10. `_diaetVorTextur` 26c.js:1751 +0,006
+- **Kein Gesetz- oder Konstanten-Leser aus K2 erscheint.**
+- **Im gleichen Modus gleich:** A2 (79,4 fps) gegen B2 (79,5 fps) ergibt `loop` 5,78 gegen 5,74 und `zeichne` 3,30 gegen 3,33. Die
+  +0,13 im Mittel trägt A1 (leichter Boot, 83,3 fps, `loop` 5,31).
+
+**Rohdaten:** `bericht/1610-buendel4/nachtrag/`.
+- `schritt1/`, `schritt2/`, `direkt/`: je Boot `.json` und `auswertung.md`.
+- `profil/<A1|A2|B1|B2>/profil.txt` und `diff.txt`.
+- Skripte `profil-d9c0.sh`, `profil-diff.cjs`, `auswertung.cjs`.
+- Auf dem OMEN: `p3/k1610k2/`.

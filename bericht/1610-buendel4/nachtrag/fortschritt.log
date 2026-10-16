@@ -1,0 +1,10 @@
+22:21:57 PROFIL START A=d9d1db4e B=c03ea075 Instrument=c03ea075
+22:22:13 A1 start
+22:25:41 A1 ende cpu {"p50":3.7,"p95":4.9,"p99":6.4,"max":16.1} profil "gesampeltMs": 22602 "frames": 1665 
+22:26:42 B1 start
+22:30:14 B1 ende cpu {"p50":4,"p95":5.2,"p99":6.2,"max":25.4} profil "gesampeltMs": 22548 "frames": 1641 
+22:31:19 A2 start
+22:34:49 A2 ende cpu {"p50":4,"p95":5.4,"p99":6.5,"max":25.1} profil "gesampeltMs": 23035 "frames": 1588 
+22:35:54 B2 start
+22:39:23 B2 ende cpu {"p50":4,"p95":5.4,"p99":6.5,"max":23.2} profil "gesampeltMs": 22689 "frames": 1590 
+22:40:13 PROFIL FERTIG

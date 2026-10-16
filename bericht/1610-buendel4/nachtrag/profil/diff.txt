@@ -1,0 +1,74 @@
+A: A1 1665 Frames · 22602 ms gesampelt · 83.3 fps | A2 1588 Frames · 23035 ms gesampelt · 79.4 fps
+B: B1 1641 Frames · 22548 ms gesampelt · 82.1 fps | B2 1590 Frames · 22689 ms gesampelt · 79.5 fps
+
+## selbst — ms je Frame, größte Zuwächse B − A
+  +0.026  A 0.197 → B 0.223  updateMatrixWorld three.core.min.js  [A three.core.min.js:6 · B three.core.min.js:6]
+  +0.016  A 0.103 → B 0.119  updateCreatures 06c.js  [A 06c.js:2821 · B 06c.js:2816]
+  +0.011  A 0.120 → B 0.132  get three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.010  A 0.018 → B 0.028  _fieldRaycast 11a.js  [A 11a.js:1077 · B 11a.js:1077]
+  +0.009  A 0.155 → B 0.164  _projectObject three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.009  A 0.023 → B 0.032  (garbage collector)   [A :0 · B :0]
+  +0.008  A 0.025 → B 0.033  leib 25b.js  [A 25b.js:1913 · B 25b.js:1913]
+  +0.008  A 0.041 → B 0.048  flaeche gelaende-core.js  [A gelaende-core.js:952 · B gelaende-core.js:952]
+  +0.007  A 0.010 → B 0.017  _kreaturRuht 06c.js  [A 06c.js:2706 · B 06c.js:2701]
+  +0.006  A 0.037 → B 0.043  AnazhRealm._diaetVorTextur 26c.js  [A 26c.js:1739 · B 26c.js:1751]
+  +0.006  A 0.055 → B 0.061  beginRenderPass   [A :0 · B :0]
+  +0.006  A 0.038 → B 0.043  setBindGroup   [A :0 · B :0]
+  +0.005  A 0.014 → B 0.019  _instanzWahlZurueck 25c.js  [A 25c.js:1978 · B 25c.js:1978]
+  +0.005  A 0.044 → B 0.049  getForRender three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.005  A 0.000 → B 0.005  updateVector3 three.webgpu.min.js  [A  · B three.webgpu.min.js:6]
+  +0.005  A 0.007 → B 0.012  _leuchtTakt 24.js  [A 24.js:1189 · B 24.js:1189]
+  +0.005  A 0.022 → B 0.027  _bodenSichtAt 06a.js  [A 06a.js:933 · B 06a.js:933]
+  +0.005  A 0.015 → B 0.020  updateBinding three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.005  A 0.184 → B 0.189  update three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.005  A 0.042 → B 0.047  draw three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.005  A 0.015 → B 0.020  updateWorldMatrix three.core.min.js  [A three.core.min.js:6 · B three.core.min.js:6]
+  +0.005  A 0.078 → B 0.083  setVertexBuffer   [A :0 · B :0]
+  +0.004  A 0.003 → B 0.007  _tiefenAbbild 11b.js  [A 11b.js:2006 · B 11b.js:2006]
+  +0.004  A 0.011 → B 0.015  _perfSenseLap 05b.js  [A 05b.js:37 · B 05b.js:37]
+  +0.004  A 0.024 → B 0.028  _weltFeldMatrix 11d.js  [A 11d.js:710 · B 11d.js:710]
+## selbst — größte Abnahmen
+  -0.095  A 6.229 → B 6.133  (idle) 
+  -0.083  A 2.043 → B 1.960  (program) 
+  -0.016  A 0.193 → B 0.177  loop 25a.js
+  -0.011  A 0.111 → B 0.100  _update three.webgpu.min.js
+  -0.008  A 0.075 → B 0.067  _blockerUmPlatz 11b.js
+  -0.008  A 0.144 → B 0.136  updateByType three.webgpu.min.js
+  -0.008  A 0.020 → B 0.012  requestAnimationFrame 
+  -0.007  A 0.019 → B 0.012  _kaskadeHaelt 25c.js
+
+## gesamt — ms je Frame, größte Zuwächse B − A
+  +0.130  A 5.546 → B 5.675  loop 25a.js  [A 25a.js:1914 · B 25a.js:1914]
+  +0.127  A 5.663 → B 5.790  (anonym) pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42)  [A pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):30,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):2,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):143,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):65,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):206 · B pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):30,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):2,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):65,pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A2940%3A42):206]
+  +0.120  A 5.683 → B 5.804  e three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.116  A 3.153 → B 3.269  zeichne 07.js  [A 07.js:1415 · B 07.js:1415]
+  +0.116  A 3.191 → B 3.307  renderObject three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.115  A 3.193 → B 3.309  _renderObjects three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.115  A 3.190 → B 3.305  renderer._renderObjectDirect 07.js  [A 07.js:1450 · B 07.js:1450]
+  +0.114  A 3.194 → B 3.308  renderer.renderObject 07.js  [A 07.js:1351 · B 07.js:1351]
+  +0.107  A 3.103 → B 3.210  updateBefore three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.107  A 3.101 → B 3.208  updateBefore 25c.js  [A 25c.js:174 · B 25c.js:174]
+  +0.105  A 3.364 → B 3.469  render three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.105  A 3.348 → B 3.453  renderer._renderScene 07.js  [A 07.js:1178 · B 07.js:1178]
+  +0.104  A 3.362 → B 3.466  (anonym) pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A951%3A20)  [A pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A951%3A20):29,pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A951%3A20):67 · B pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A951%3A20):29,pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pc03%5Cscripts%5Cwerkbank.cjs%3A951%3A20):67]
+  +0.104  A 3.342 → B 3.446  _renderScene three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.102  A 3.455 → B 3.557  _loopRender 25c.js  [A 25c.js:2245 · B 25c.js:2245]
+  +0.031  A 0.891 → B 0.922  _renderBundle three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.030  A 0.603 → B 0.633  renderShadow three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.030  A 0.610 → B 0.640  updateShadow three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.030  A 0.912 → B 0.941  renderer._renderBundles 07.js  [A 07.js:1219 · B 07.js:1219]
+  +0.029  A 0.906 → B 0.935  _renderBundles three.webgpu.min.js  [A three.webgpu.min.js:6 · B three.webgpu.min.js:6]
+  +0.028  A 0.222 → B 0.250  updateMatrixWorld three.core.min.js  [A three.core.min.js:6 · B three.core.min.js:6]
+  +0.027  A 0.903 → B 0.931  renderer._renderBundle 07.js  [A 07.js:1135 · B 07.js:1135]
+  +0.026  A 1.110 → B 1.136  AnazhRealm._diaetRefresh 26c.js  [A 26c.js:1803 · B 26c.js:1815]
+  +0.024  A 1.128 → B 1.152  o.needsRefresh 10.js  [A 10.js:69 · B 10.js:69]
+  +0.023  A 0.419 → B 0.442  _loopWeatherAndGrowth 25b.js  [A 25b.js:1419 · B 25b.js:1419]
+## gesamt — größte Abnahmen
+  -0.095  A 6.229 → B 6.133  (idle) 
+  -0.083  A 2.043 → B 1.960  (program) 
+  -0.035  A 14.040 → B 14.005  (root) 
+  -0.015  A 0.175 → B 0.160  _kaskadenPassen 25c.js
+  -0.012  A 0.029 → B 0.016  _koerperWasser 11b.js
+  -0.011  A 0.281 → B 0.269  scene.onBeforeRender 25a.js
+  -0.009  A 0.100 → B 0.090  _tickRadiatingAffordances 15a.js
+  -0.008  A 0.190 → B 0.182  updateByType three.webgpu.min.js
