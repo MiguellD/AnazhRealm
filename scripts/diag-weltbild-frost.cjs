@@ -45,7 +45,7 @@
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -262,13 +262,14 @@ function pruefRaum(echt) {
         timeout: 120000,
     });
     const boot = await page.evaluate(
-        async (minChunks) => {
+        async ({ minChunks, echt }) => {
             const dl = performance.now() + 360000;
             while (performance.now() < dl) {
                 const r = window.anazhRealm;
                 const st = r && r.state;
-                if (st && st.rendererReady && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= minChunks)
-                    break;
+                // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm (GTX 16.10.); headless
+                // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
+                if (st && st.rendererReady && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= minChunks && (st._weltbildDa || !echt)) break;
                 await new Promise((res) => setTimeout(res, 300));
             }
             const r = window.anazhRealm;
@@ -277,15 +278,16 @@ function pruefRaum(echt) {
                 bereit: !!(r && r.state.rendererReady),
                 webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
                 chunks: r && r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+                weltbild: r && r.state._weltbildDa ? `${(r.state._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
             };
         },
-        ECHT ? 25 : 9
+        { minChunks: ECHT ? 25 : 9, echt: ECHT }
     );
     console.log(
         `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
-    if (!boot.bereit || !boot.webgpu) {
-        check("die Welt steht auf einem WebGPU-Backend", false, JSON.stringify(boot));
+    if (!boot.bereit || !boot.webgpu || (ECHT && boot.weltbild === "fehlt")) {
+        check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, JSON.stringify(boot));
         await browser.close();
         server.close();
         process.exit(1);
@@ -1053,6 +1055,7 @@ function pruefRaum(echt) {
         !!t1 && t1.some((s) => /frost-taeter-bereich/.test(s)),
         JSON.stringify(t1)
     );
+    selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     const t2 = await page.evaluate(() => {
         const r = window.anazhRealm;
         const be = r.state.renderer.backend;

@@ -8,7 +8,7 @@
 //        spec/stamm/modul-karte.json im Fenster ±30 % um den Gleichteil-Punkt, sonst die nächste Glied-Grenze, §26 an
 //        Anweisungs-Grenzen; dazu VERSION allein in §26a). --setzen schreibt die Marker in den Stamm (C1).
 //   --schnitt --ziel <wurzel> [--quelle <datei|wurzel>] [--im-repo]
-//        S: Marker → stamm/NN[x].js, die Naht, die index.html-Tags; anazhRealm.js fällt im Ziel. Ohne --im-repo nie im Repo.
+//        S: Marker → stamm/NN[x].js, die Naht, die index.html-Tags; die alte Datei (`stamm.ALT`) fällt im Ziel. Ohne --im-repo nie im Repo.
 //   --pruef [--rev HEAD~1]
 //        Zonen-Baum: S(Stamm an rev) = Baum Byte für Byte, Tags = S, text() sha = rev. Datei-Layout: S∘S⁻¹ = id, und mit
 //        --rev die Token-Folge ohne Kommentare gleich (der Beweis des Marker-Commits C1).
@@ -301,7 +301,7 @@ const beweisZeile = (r) =>
     `${r.dateien} Dateien · vm-Laden ${r.msAlt.toFixed(0)} ↔ ${r.msNeu.toFixed(0)} ms`;
 
 // ── --leser: der Codemod ──────────────────────────────────────────────────────────────────────────────────────────
-// Kanonisch: (fs|require("fs")) .readFileSync( path.(join|resolve)( <wurzel>, "anazhRealm.js" ), "utf8" ) mit <wurzel> = ein
+// Kanonisch: (fs|require("fs")) .readFileSync( path.(join|resolve)( <wurzel>, <stamm.ALT> ), "utf8" ) mit <wurzel> = ein
 // Bezeichner (root, ROOT, PK.ROOT …) oder `__dirname, ".."` → stammLib.text(<wurzel>). Der Import heißt `stammLib` (29
 // Skripte tragen schon eine Variable `stamm` — den gelesenen Text). Idempotent: ein zweiter Lauf findet keine kanonische
 // Stelle mehr und ändert nichts. Was er nicht kennt, nennt die Absenz-Linse (diag-altlasten, Stamm-Leser-Wand).

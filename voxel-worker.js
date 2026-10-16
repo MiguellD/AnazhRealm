@@ -2,12 +2,12 @@
 // voxel-worker.js — AnazhRealm Worker für Voxel-Density-Sampling
 //
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): mirror der Density-Pipeline
-// aus `anazhRealm.js` für den Web-Worker-Kontext. Der Worker bekommt einen
+// aus dem Stamm (`stamm/`) für den Web-Worker-Kontext. Der Worker bekommt einen
 // State-Snapshot per `init`-Message (Seed, Atlas, voxelEdits,
 // baseHeight, waterLevel), Delta-Updates bei Welt-Mutationen, und beantwortet
 // `density-grid`-Requests mit einem Float32Array via Transferable (zero-copy).
 //
-// Heilige Lektion gewahrt (`anazhRealm.js` bleibt der EINE Stamm): dies ist eine
+// Heilige Lektion gewahrt (der Stamm bleibt EINE Klasse): dies ist eine
 // BAUSTELLE (separate Ausführungs-Umgebung), kein Domäne-Modul-Split. Die
 // Funktions-Namen + Logik spiegeln 1:1 die Main-Thread-Implementierung — wer
 // einen Algorithmus dort ändert, MUSS hier mit-wandern (Determinismus-Test im
@@ -452,7 +452,7 @@ function applyStateDelta(delta) {
     applyStateSnapshot(delta);
 }
 
-// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` in anazhRealm.js, K23): je Chunk die Edits, deren Kugel ihn samt einem
+// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Kugel ihn samt einem
 // Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
 // Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
 // nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
@@ -517,7 +517,7 @@ function editsImKasten(x0, x1, z0, z1) {
 // =============================================================================
 
 function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
-    // Identische Indizierung wie `_voxelSampleDensityGrid` in anazhRealm.js:
+    // Identische Indizierung wie `_voxelSampleDensityGrid` im Stamm:
     // Nx=dimX+1, Ny=dimY+1, Nz=dimZ+1 — wir samplen Vertices (Cell-Ecken).
     const Nx = dimX + 1;
     const Ny = dimY + 1;
@@ -559,7 +559,7 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     return density;
 }
 
-// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (anazhRealm.js) — dieselben Kästen, dieselbe Reihenfolge,
+// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (Stamm) — dieselben Kästen, dieselbe Reihenfolge,
 // dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
 function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
     const edits = editsImKasten(gox, gox + (Nx - 1) * step, goz, goz + (Nz - 1) * step);
@@ -601,7 +601,7 @@ function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
 }
 
 // =============================================================================
-// Mirror von `_terrainDensityAt` + Subroutinen aus anazhRealm.js
+// Mirror von `_terrainDensityAt` + Subroutinen aus dem Stamm
 // Bei jeder Anpassung dort: hier mit-wandern (Determinismus-Test fängt Drift).
 // =============================================================================
 
@@ -711,7 +711,7 @@ function terrainDensityAt(x, y, z) {
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
 }
 
-// A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` in anazhRealm.js): Heimat-Region wenn (x,z) in ihr, sonst die
+// A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` im Stamm): Heimat-Region wenn (x,z) in ihr, sonst die
 // Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad). Der Kachel-Schlüssel ist der des Gelände-
 // Gesetzbuchs (`G.kachelSchluessel`); der Kachel-Container ist hier ein plain Object (postMessage-Form).
 function hydroFor(x, z) {
@@ -1003,7 +1003,7 @@ function zuHalb(v) {
 
 // =============================================================================
 // V9.91 (Welle Perf-3.c Phase 3 — voller Chunk-Mesh im Worker)
-// Mirror der Meshing-Pipeline aus anazhRealm.js:
+// Mirror der Meshing-Pipeline aus dem Stamm:
 //   _voxelChunkConfig, _voxelExtractSurfaceVertices, _voxelEmitQuadIndices,
 //   _voxelLaplacianSmoothPositions, _voxelCropPad, _voxelGradientNormals,
 //   _buildVoxelChunkWaterCells (OHNE Architektur-Stempel — Main-only),
@@ -1026,7 +1026,7 @@ function voxelChunkConfig(lod) {
 }
 
 // Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).
-// Gleiche Konstruktion wie `worldFieldAt` in anazhRealm.js — Determinismus
+// Gleiche Konstruktion wie `worldFieldAt` im Stamm — Determinismus
 // ist seed-abhängig, alle 5 leben vom worldMeta.seed.
 let worldField = null;
 function ensureWorldField() {
@@ -1435,7 +1435,7 @@ function caColumnScan(cells, level, colBase, dimSq, dimY) {
 }
 
 // B1 (V18.345) — DER WASSER-SHEET-WORKER-MIRROR: bit-identischer Spiegel von Main
-// `_computeWaterSheetData` (anazhRealm.js). Die EINE pure-typed-array-Mathematik des
+// `_computeWaterSheetData` (Stamm). Die EINE pure-typed-array-Mathematik des
 // Zell-Oberkanten-Sheets — `ctx.getCells(ncx,ncz)` liest den gesendeten 3×3-Zell-Block,
 // `ctx.getDach` ist im Streaming-Pfad immer undefined (dachlos → nur Flood). Liefert
 // plain Arrays {positions, indices, aFlow, aWave, aDepth, aSlope} oder null. MUSS Zeile
@@ -2481,7 +2481,7 @@ function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
         const d1 = d01 * (1 - ty) + d11 * ty;
         return d0 * (1 - tz) + d1 * tz;
     };
-    // G1 (Goldstandard-Mesh, V18.372) — Worker-Mirror der konformen Rand-Normale (s. anazhRealm.js
+    // G1 (Goldstandard-Mesh, V18.372) — Worker-Mirror der konformen Rand-Normale (s. Stamm
     // `_voxelGradientNormals`): in der Rand-Schale (≤3 Zellen vom Grid-Rand) den Gradienten via
     // terrainDensityAt (reine Funktion der Welt-Position) → beide Nachbarn rechnen identische
     // Normale → keine Lichtungs-Naht. Innen: schneller Trilinear. Determinismus-Byte-Test: identisch.
@@ -2902,7 +2902,7 @@ function aquiferTrocken(cy, makroY, tischY, unterFels) {
 }
 
 // V13.14 — Worker-Mirror von `_skyOpenWaterFilter` (bit-identisch). Siehe den
-// ausführlichen Kommentar in anazhRealm.js. Zwei Floods: (A) Sky-Air vom Dach,
+// ausführlichen Kommentar im Stamm. Zwei Floods: (A) Sky-Air vom Dach,
 // (B) Keep = WATER an Sky-Air oder durch Wasser damit verbunden; Rest -> AIR.
 function skyOpenWaterFilter(cells, dimC, dimYC, jMaxC) {
     const AIR = CELL_STATE.AIR;

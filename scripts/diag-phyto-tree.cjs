@@ -1,4 +1,4 @@
-// DAS NEUE KLEID K0/K1-BEWEIS (`docs/neues-kleid-plan.md`) — die Phyto-Wuchs-Linse.
+// DAS NEUE KLEID K0/K1-BEWEIS (`docs/neues-kleid-verfassung.md`) — die Phyto-Wuchs-Linse.
 // Der Kern `growSkeleton` (phyto-core.js, DIE EINE geteilte Quelle seit Welle 0) ist REIN +
 // THREE-frei → headless in node beweisbar, OHNE Browser: (1) Determinismus (gleicher Seed ⇒
 // byte-identisch), (2) McMahon (Stammradius aus H/slim nachgerechnet), (3) da Vinci

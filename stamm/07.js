@@ -990,6 +990,11 @@ class AnazhRealm_Z07 {
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
         // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
+        // DIE ZEICHEN-REIHE DER WELT (T3): die losen Opaken jedes Renders nach dem EINEN Gesetz (`_zeichenFolge`), nie nach der
+        // Boot-Ankunft (Objekt-id).
+        if (typeof renderer.setOpaqueSort !== "function")
+            this.log("ZEICHEN-REIHE: r184-Renderer.setOpaqueSort nicht gefunden (Vendor-Drift)", "ERROR");
+        else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);
         // Native Shadow-Pipeline (MeshToonNodeMaterial konsumiert die Shadow-Map). Der Takt der Schatten-Renders lebt
         // JE LICHT (`shadow.autoUpdate`/`needsUpdate`, `_loopShadowUpdate`) — `renderer.shadowMap.autoUpdate/
         // needsUpdate` liest r184 nicht.
@@ -2168,8 +2173,8 @@ class AnazhRealm_Z07 {
 
     restoreAbility(name) {
         // Migration für alte Saves (vor Phase 4): die drei historischen
-        // Nexus-Namen mappen auf ihre DSL-Äquivalente — siehe
-        // docs/nexus-dsl.md §14. Unbekannte Namen werden geloggt.
+        // Nexus-Namen mappen auf ihre DSL-Äquivalente (die Tafel
+        // hier). Unbekannte Namen werden geloggt.
         const legacyToDsl = {
             gravityShift: ["gravity", -9.81],
             creatureDance: ["repeat", 10, ["spawn_creature", ["near_player", 5], 1, "happy"]],

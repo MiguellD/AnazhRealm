@@ -98,15 +98,15 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
   Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF, das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`)
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`) · LICHT EIN
   Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze
-  EIN Pool je Stoff, EIN Programm je Signatur · Bündel in EINER Reihe (`_buendelReihe`), ihre Kinder nach Stufe und Abstand (`_buendelKinderReihe`)
+  EIN Pool je Stoff, EIN Programm je Signatur · alles Opake in EINER Reihe (`_zeichenRang`: Bau · Boden · Fern · Himmel), Kinder `_buendelKinderReihe`
 - KOSTEN die EINE Skala (TAAU: `SZENE_SKALA` 0,75, Spieler-Wahl `state.szeneSkala`, `_zeitAufloesung` auf volle Ausgabe) · `_passTrifft` + `_wahlHaelt`
   · `_schirm` · `TAKT_DECKEL_S` · Takt-Nähe `_blockerUmPlatz` · Boden-Satz `_satzPacke` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` ·
   `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des ersten Weltbilds (`_weltbildSteht`)
 - STUDIOS auf der EINEN Hülle `worlds/huelle` (Regler · Sitzung · Kosten-Leiste · Portal-Brücke), Labor = Welt · LEBEN EIN Leib-Löser, Gang EIN Gesetz ·
   Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort ·
   SPEICHER atomar (tmp + Rename + .bak)
-- PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −900/−850 (seit K16 ein Nadelwald-Hang; K55 `mess-wiese` setzt sie
-  nach −278/−1038, ungemergt — das letzte ABAB maß dort per Patch), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
+- PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort
+  −900/−850 ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
   Ort × Gerät × Sicht · Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
   (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie in 18 Gruppen (1–8 CPU, 9–18 GPU; Playtest = Gruppe 1, Wand-Zeit ≤ 8 min) auf integ-probe, main und nachts
 
@@ -177,8 +177,9 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
     Programm), der Bundle-Replay bucht nichts ins Info (`werkbank zaehlen`). Ein Bundle trägt nur, was sein Replay refresht: `_renderScene` stapelt
     `_currentRenderBundle`, nimmt unter overrideMaterial nie auf; die Diät geht jeden Knoten EINMAL je Render-Abschnitt, Stempel = (Render-Id,
     `info.calls`), gewechselt beim Betreten UND Verlassen jedes Renders (`gate:kamera-treue`); BundleGroups zeichnen in Szenen-Reihenfolge vor losen
-    Objekten — ihre Reihe ist ein Gesetz (`_buendelReihe`), nie die Ankunft beim Boot. Die GPU-Zeit trägt die Pixel-Arbeit, nicht die Befehls-Zahl:
-    die Szene rendert in der EINEN Skala (TAAU, `SZENE_SKALA` 0,75, kein zweiter Auflösungs-Regler; gpu-bank Genesis 33,9 → 18,3 ms, 8a00348e).
+    Objekten — die Reihe ALLES Opaken ist EIN Gesetz (`_zeichenRang` über setOpaqueSort, auch in den Kaskaden; T3: Genesis Ego −17 %), nie
+    die Ankunft beim Boot. Die GPU-Zeit trägt die Pixel-Arbeit, nicht die Befehls-Zahl: die Szene rendert in der EINEN Skala (TAAU,
+    `SZENE_SKALA` 0,75, kein zweiter Auflösungs-Regler; gpu-bank Genesis 33,9 → 18,3 ms, 8a00348e).
 24. **Der Haupt-Thread trägt keine Bytes:** Worker-Antworten per Transfer (ein Klon kostet den Empfänger je MB), die Platte im Worker (ein IDB-Put
     serialisiert synchron im Aufrufer), über den Kanal nur `FOUNDRY_LESEN` (`_foundrySchale`, `werkbank fluss`).
 25. **Der Takt kostet, was ihn betrifft:** billige Filter zuerst, teure Rechnung nur für Betroffene; geteilte Budgets NAH zuerst über ALLE
@@ -197,7 +198,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 
 ## Workflows und Karte
 
-`playtest:fast` (~20 s) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
+`playtest:fast` (12–17 s Lauf, 16.10.) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
 constitution · studio-vertrag · altlasten · apparat · betriebsgesetz) · `lint` / `format:check` · `npm run atlas` (+ `--find`). Lokal der Puls der
 berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je Version; gemergt bei grüner
 Zweig-CI. GPU-Zeit nur `gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots je Seite;
