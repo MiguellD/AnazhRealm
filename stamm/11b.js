@@ -2669,7 +2669,6 @@ class AnazhRealm_Z11b {
         const laubZeile = texture(S.laubTex);
         const hoechste = texture(S.hTex);
         const blockM = K.block * S.texel;
-        const zelleVon = (xz) => ivec2(mod(floor(xz.div(S.texel)), float(S.n)));
         // DER ABSTAND ZUR WELT längs der Senkrechten an p (Höhe y über dem Bezug, die gefilterten Höhen s): negativ im Boden
         // (unter der unteren Fläche) oder in der Krone (zwischen Basis und Dach), sonst der Abstand zur nächsten Fläche
         const abstand = (y, s) => min(y.sub(s.r), max(s.g.sub(y), y.sub(s.b)));
@@ -2691,12 +2690,21 @@ class AnazhRealm_Z11b {
                 const w4 = U.invVP.mul(ndc);
                 const P = w4.xyz.div(w4.w).toVar();
                 const r0 = P.xz.sub(U.mitte).div(kante);
-                // der Wasser-Punkt: die Zelle ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem (0,6 m tiefer
-                // gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie
-                const w0 = stoffZelle.load(zelleVon(P.xz)).a.mul(255);
-                const wasser = abs(w0.sub(1.0))
-                    .lessThan(0.5)
-                    .and(abs(P.y.sub(U.bezug).sub(feld(P.xz).r.add(0.6))).lessThan(1.5))
+                // der Wasser-Punkt: eine der vier Zellen um ihn ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem
+                // (0,6 m tiefer gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie. Bis A1
+                // fragte nur die Zelle unter dem Punkt: am Ufer liegt das gezeichnete Wasser bis in die Land-Zellen, dort las der
+                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie)
+                const zw = floor(P.xz.div(S.texel).sub(0.5));
+                const istWasser = (di, dj) => {
+                    const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
+                    return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
+                        .lessThan(0.5)
+                        .and(abs(P.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                };
+                const wasser = istWasser(0, 0)
+                    .or(istWasser(1, 0))
+                    .or(istWasser(0, 1))
+                    .or(istWasser(1, 1))
                     .and(max(abs(r0.x), abs(r0.y)).lessThan(0.48));
                 If(wasser, () => {
                     const v = normalize(P.sub(U.auge));
@@ -2740,17 +2748,27 @@ class AnazhRealm_Z11b {
                         const s = T.pow(q0, float(K.bildDichte)).mul(sMax);
                         const ws = float(1).div(mix(iwP, iwE, s));
                         const uv = mix(uvP, uvE, s);
-                        const dz = tiefe.load(ivec2(uv.mul(tiefeGr))).r;
+                        const tx = floor(uv.mul(tiefeGr));
+                        const dz = tiefe.load(ivec2(tx)).r;
+                        // die Mitte des Texels, dessen Tiefe gilt: streifend trägt ein halber Texel 0,07 m Höhe auf 100 m
+                        const uc = tx.add(0.5).div(tiefeGr);
                         const wz = linear(dz);
                         const dicke = max(abs(ws.sub(wVor)).mul(2.0), ws.mul(K.bildDicke[0]).add(K.bildDicke[1]));
-                        // der Strahl hat das Wasser verlassen (`bildStart` m längs R): an seinem Fuß liegt die Tiefe des Wassers
-                        // selbst, ein Schritt dort wäre sein eigenes Bild
-                        const weg = tMax.mul(s.mul(iwE)).div(mix(iwP, iwE, s));
+                        // was der Strahl trifft, steht ÜBER dem Wasser (`bildUfer` m): die Fläche des Sees selbst ist nie sein
+                        // Bild — streifend liegt ihre Tiefe je Schirm-Zeile Meter weit auseinander (bis A1 die Streifen am Ufer)
+                        const h4 = U.invVP.mul(
+                            vec4(
+                                uc.x.mul(2).sub(1),
+                                float(1).sub(uc.y).mul(2).sub(1),
+                                webgpuRaum ? dz : dz.mul(2).sub(1),
+                                1
+                            )
+                        );
                         const traf = dz
                             .lessThan(0.99999)
                             .and(ws.greaterThan(wz))
                             .and(ws.sub(wz).lessThan(dicke))
-                            .and(weg.greaterThan(K.bildStart));
+                            .and(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)));
                         If(traf, () => {
                             const sa = sVor.toVar(),
                                 sb = s.toVar();
