@@ -606,11 +606,8 @@ async function verdeckungPhase(opts) {
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
-    // die Nachläufer der Phase (das Auflösen ist asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung, das r184s
-    // Fehler-Bereich bis zum Ende eines offenen Pipeline-Baus hält (GTX 16.10.: später als 200 ms) — höchstens 30 s
-    const tWort = performance.now();
-    do await render(1), await warte(200);
-    while (opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && performance.now() - tWort < 30000);
+    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (≤ 30 s: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
+    for (const t0 = performance.now(); await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && performance.now() - t0 < 30000; );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
