@@ -120,11 +120,13 @@ function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, p
 // V18.359 als harmlos kennt (Netz/Favicon/save-server im headless-Kontext) und was die Linse als `erwartet` nennt.
 const HARMLOS = /favicon|net::ERR|Failed to load resource|save-server|localhost:|127\.0\.0\.1:\d+\/api/i;
 const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
-const sammlung = { fehler: [], erwartet: null, wache: false };
+const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
 
 function melde(art, text) {
     const t = String(text || "").split("\n").slice(0, 3).join(" | ").slice(0, 400);
     if (sammlung.erwartet && sammlung.erwartet.test(t)) return;
+    // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite dann meldet, steht laut als SELBSTTEST, kein Fehler der Welt
+    if (sammlung.selbsttest && (art === "console.error" || art === "pageerror")) return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
     sammlung.fehler.push(`${art}: ${t}`);
     console.log(`[welt-boot] FEHLER ${art}: ${t}`);
 }
@@ -658,6 +660,7 @@ module.exports = {
     halteBis,
     buehne,
     uferStellen,
+    selbsttest: (name) => (sammlung.selbsttest = name),
     gesammelteFehler: () => sammlung.fehler.slice(),
     gesammelteAkten: () => akten.slice(),
 };
