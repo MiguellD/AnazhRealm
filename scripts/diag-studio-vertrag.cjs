@@ -107,6 +107,8 @@ function einWertTaeter(dateien, kerne) {
         if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && istAR(n.left.object))
             KONST.add(n.left.property.name);
         if ((n.type === "PropertyDefinition" || n.kind === "get") && n.static && n.key) KONST.add(n.key.name);
+        const dp = n.type === "CallExpression" && n.callee.property && n.callee.property.name === "defineProperty" && n.arguments;
+        if (dp && istAR(dp[0]) && dp[1].type === "Literal") KONST.add(dp[1].value); // auch eine Getter-Konstante ist definiert
         kinder(n, sammle);
     };
     asts.forEach((a) => sammle(a.ast));
@@ -125,7 +127,7 @@ function einWertTaeter(dateien, kerne) {
         if (n.type === "UnaryExpression" && n.operator === "+") return quelle(n.argument, al);
         if (n.type === "Identifier") return al.get(n.name) || (/^__\w+Core$/.test(n.name) ? n.name : null);
         if (n.type === "LogicalExpression")
-            return n.operator === "&&" ? quelle(n.right, al) : literal(n.right) ? quelle(n.left, al) : null;
+            return n.operator === "&&" ? quelle(n.right, al) : literal(n.right) || n.right.raw === "null" ? quelle(n.left, al) : null;
         if (n.type === "CallExpression") return istGesetz(n.callee) ? "Gesetz" : null;
         if (n.type !== "MemberExpression" || n.computed) return null;
         const [o, p] = [n.object, n.property.name];
@@ -158,8 +160,9 @@ function einWertTaeter(dateien, kerne) {
             if (/^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(n.type)) al = new Map(al);
             if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && quelle(n.init, al))
                 al.set(n.id.name, quelle(n.init, al));
-            if (n.type === "LogicalExpression" && n.operator !== "&&" && literal(n.right) && quelle(n.left, al))
-                melde(n, "ersatz", quelle(n.left, al));
+            const kette = (k) => quelle(k, al) || (k.type === "LogicalExpression" && k.operator !== "&&" ? kette(k.right) : null);
+            const qe = n.type === "LogicalExpression" && n.operator !== "&&" && literal(n.right) && kette(n.left);
+            if (qe) melde(n, "ersatz", qe); // auch am Ende einer Kette (a || K || "")
             const qk = n.type === "ConditionalExpression" && literal(n.alternate) && quelle(n.consequent, al);
             if (qk && nennt(n.test, qk, al)) melde(n, "ersatz", qk);
             const fb = n.type === "CallExpression" && quelle(n, al) === "Gesetz" && n.arguments[1];
@@ -1251,11 +1254,12 @@ function validateManifest(m) {
         );
         const probe =
             "AnazhRealm.EINS = 1; AnazhRealm.T = { x: 2 }; AnazhRealm.W = { cell: 12, pack: 1.16 }; AnazhRealm.Gesetz = function (p) { try { return p; } catch (_e) {} };\n" +
-            "class Z { f() { const D = AnazhRealm.T; return [AnazhRealm.EINS || 3, Number.isFinite(D.x) ? D.x : 4, (AnazhRealm.T || {}).x, AnazhRealm.Gesetz('t:X', 7), globalThis.HIMMEL_GESETZ || { projY: 0.16 }]; } }";
+            "Object.defineProperty(AnazhRealm, 'DP', { get() { const k = globalThis.__koerperCore || null; return (k && k.DIAL_MAP) || []; } });\n" +
+            "class Z { f() { const D = AnazhRealm.T; return [AnazhRealm.EINS || 3, Number.isFinite(D.x) ? D.x : 4, (AnazhRealm.T || {}).x, AnazhRealm.Gesetz('t:X', 7), globalThis.HIMMEL_GESETZ || { projY: 0.16 }, this.u || AnazhRealm.DP || '']; } }";
         const arten = einWertTaeter([{ name: "probe.js", src: probe }], KERNE).map((t) => t.split(" ").slice(1, 3).join(" "));
         check(
-            "SELBST-TEST: sieben Formen (||, isFinite, (K || {}), Gesetz-Ersatz, stiller catch, globalThis, Zahlen-Zwilling) feuern beim Namen",
-            "ersatz AnazhRealm.EINS|ersatz AnazhRealm.T|ersatz AnazhRealm.T.x|ersatz HIMMEL_GESETZ|gesetz-ersatz Gesetz|stiller-catch AnazhRealm.Gesetz|zwilling __phytoCore.FOREST_PACK"
+            "SELBST-TEST: neun Formen (||, Kette, Getter-Konstante, isFinite, (K || {}), Gesetz-Ersatz, stiller catch, globalThis, Zahlen-Zwilling) feuern beim Namen",
+            "ersatz AnazhRealm.EINS|ersatz AnazhRealm.DP|ersatz __koerperCore.DIAL_MAP|ersatz AnazhRealm.T|ersatz AnazhRealm.T.x|ersatz HIMMEL_GESETZ|gesetz-ersatz Gesetz|stiller-catch AnazhRealm.Gesetz|zwilling __phytoCore.FOREST_PACK"
                 .split("|")
                 .every((s) => arten.includes(s)),
             arten.join(" · ")

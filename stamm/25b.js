@@ -769,7 +769,7 @@ class AnazhRealm_Z25b {
                             // Keine Brems-Kurve auf Steilhang → der Rutsch beschleunigt physikalisch.
                             const hangMaxSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
                             if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < hangMaxSlopeY) {
-                                const gMag = -(s.gravity || -9.81);
+                                const gMag = -s.gravity;
                                 vx += gN.x * gN.y * gMag * dt;
                                 vz += gN.z * gN.y * gMag * dt;
                             }

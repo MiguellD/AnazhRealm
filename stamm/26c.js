@@ -2263,11 +2263,11 @@ AnazhRealm.MOTION_RIG_MAP = Object.freeze([
 // Dial↔Genom-Zuordnung (axis = base + mul·dial): height→kh · mass→build · tone→muscle · gender→sex.
 // Der Körper baut direkt aus koerper-core.bauMensch(dials); die Tabelle dient nur der
 // Genom→Dial-Brücke (`_dialsAusGenom`, Peers/NPCs, invertiert je Zeile) und den Stat-Konsumenten
-// (`_koerperDials`). Die EINE Quelle ist koerper-core.DIAL_MAP.
+// (`_koerperDials`). Die EINE Quelle ist koerper-core.DIAL_MAP, gelesen durch den Gesetz-Strom fail-closed (K2: kein
+// leerer Ersatz, der still ohne Dials baut).
 Object.defineProperty(AnazhRealm, "KOERPER_DIAL_MAP", {
     get() {
-        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
-        return (core && core.DIAL_MAP) || [];
+        return AnazhRealm.Gesetz("koerper:DIAL_MAP") || AnazhRealm._kernPflichtBruch("koerper:DIAL_MAP");
     },
 });
 // Welche CREATURE_SOULS-Gestalt welches tetrapoda-Rezept liest: wesen = Hirsch (deer), die
@@ -2284,11 +2284,10 @@ AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich): neck→neckFrac · leg→legFrac
 // (Einheiten-Brücke) · build→torsoW · diet→eyeFront (Carnivor frontal, Herbivor lateral).
 // Bewusst unmapped: size (die Welt-Größe trägt `_creatureBodySize`, g.size ist stats-tragend).
-// Die EINE Quelle ist tetrapoda-core.DIAL_MAP.
+// Die EINE Quelle ist tetrapoda-core.DIAL_MAP (Gesetz-Strom, fail-closed wie KOERPER_DIAL_MAP).
 Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
     get() {
-        const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
-        return (core && core.DIAL_MAP) || [];
+        return AnazhRealm.Gesetz("tetrapoda:DIAL_MAP") || AnazhRealm._kernPflichtBruch("tetrapoda:DIAL_MAP");
     },
 });
 // DIE EINE SCHWIMM-LEHNE: jede Compound-Seele (Built-ins, Custom, Peers) legt sich unter Wasser über

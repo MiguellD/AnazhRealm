@@ -529,6 +529,8 @@ async function runPartB() {
         const st = r.state;
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
+        const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (der Stamm liest das Kern-Gesetz)
+        res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const f = r._ensureAssetFoundry();
         const dl1 = performance.now() + 50000;
         while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
@@ -719,7 +721,7 @@ async function runPartB() {
                 for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, st.playerMesh.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
                 const dn = r._lodPerceptionDistance(raw, visH);
                 const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
-                const inB01 = dnL > cfg.thresh01 - (cfg.fade0 || 4) - M && dn < cfg.thresh01 + M;
+                const inB01 = dnL > cfg.thresh01 - cfg.fade0 - M && dn < cfg.thresh01 + M;
                 const inB12 = dn > cfg.thresh12 - (cfg.fade || 8) - M && dn < cfg.thresh12 + M;
                 res.samples.push({
                     target,
@@ -1286,8 +1288,7 @@ async function runPartB() {
         {
             const lrLive = Number.isFinite(st.lodRef) && st.lodRef > 0 ? st.lodRef : cfg.lodRef;
             const dnLZ = 20 * Math.min(1, lrLive / Math.min(36, cfg.leafVisCap));
-            const kanteZ =
-                cfg.thresh01 - (cfg.fade0 || 4) - (Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0);
+            const kanteZ = cfg.thresh01 - cfg.fade0 - cfg.hysteresis;
             res.leafCapErwartet = dnLZ > kanteZ ? 1 : null;
             res.leafCapDnL = +dnLZ.toFixed(2);
             res.leafCapKante = +kanteZ.toFixed(2);
@@ -1878,22 +1879,6 @@ async function main() {
         P.cfg ? `d0=${P.cfg.d0} d1=${P.cfg.d1} fade=${P.cfg.fade} fade0=${P.cfg.fade0}` : ""
     );
     check("GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)", P.finRamp && P.finBranch);
-    // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen (W5, Lehre 19: die Welt liest
-    // die Studio-Distanzen, kein Host-Umweg rechnet d0/d1 um — die Defaults gleichen dem Post-Ingest-Wert,
-    // headless == live; gate:altlasten haelt den gefallenen Umweg fern).
-    const mLD =
-        /AnazhRealm\.LOD_DISTANCES = \{[\s\S]*?thresh01:\s*([\d.]+),[\s\S]*?thresh12:\s*([\d.]+),[\s\S]*?fade:\s*([\d.]+),[\s\S]*?fade0:\s*([\d.]+),/.exec(
-            anazhSrc
-        );
-    check(
-        "LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
-        !!mLD &&
-            +mLD[1] === P.cfg.d0 &&
-            +mLD[2] === P.cfg.d1 &&
-            +mLD[3] === P.cfg.fade &&
-            +mLD[4] === P.cfg.fade0,
-        mLD ? `${mLD[1]}/${mLD[2]}/${mLD[3]}/${mLD[4]}` : "LOD_DISTANCES nicht geparst"
-    );
     // phyto-core trägt DIESELBEN IGN-Koeffizienten im CODE (kommentar-gestrippte Quelle):
     const coreNC = stripComments(coreSrcRaw);
     const ignBody = fnBody(coreNC, /function lodDitherIGN\(/) || "";
@@ -2068,6 +2053,14 @@ async function main() {
     if (out.err) check("Teil (b) lief", false, out.err);
     else {
         check("W5.4: foundryCrossfade ist DEFAULT AN", out.flagDefault === true);
+        // Die Config-Heimat (W5, Lehre 19, K2): die Welt LIEST die Studio-lod-Zahlen (Gesetz terrain:PORTAL_RENDER_CONFIG.lod),
+        // keine Zahl im Stamm — live gemessen statt am Rumpf-Text (thresh01 = d0 · thresh12 = d1 · fade · fade0).
+        const lodKern = [P.cfg.d0, P.cfg.d1, P.cfg.fade, P.cfg.fade0];
+        check(
+            "LOD_DISTANCES live == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
+            JSON.stringify(out.lodLive) === JSON.stringify(lodKern),
+            `live ${JSON.stringify(out.lodLive)} · Kern ${JSON.stringify(lodKern)}`
+        );
         check("Foundry ready + Preset aufgelöst", out.foundryReady === true && out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",

@@ -3284,7 +3284,7 @@
     var PHYLO_GESETZ = { golden: Math.PI * (3 - Math.sqrt(5)) };
     var PHYLO_VIS = { lab: "golden-137.5", host: "none" };
 
-    // V18.491.264 Lab weather preset table; Host none (WX_VIS).
+    // V18.491.264 Lab weather preset table; der Host liest klar · regen · sturm als WEATHER_FIELD (K2, WX_VIS).
     // klar.wind 0.06 is WX (die Atmosphaere ist foundry-core ATMO_GESETZ, D3).
     var WX_GESETZ = {
         klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
@@ -3294,7 +3294,7 @@
         // K2 (rein additiv): der Regen der Welt — die Welt liest klar · regen · sturm aus DIESER Tafel (WEATHER_FIELD)
         regen: { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 },
     };
-    var WX_VIS = { lab: "wx-4", host: "none" };
+    var WX_VIS = { lab: "wx-4", host: "WEATHER_FIELD" };
     // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
     // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
     var WX_LICHT = { sockel: 0.35, sonne: 0.65 };

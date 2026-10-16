@@ -547,7 +547,7 @@ class AnazhRealm_Z06a {
         const core = typeof window !== "undefined" && window.__koerperCore;
         const start = core.START_PARAMS;
         const d = Object.assign({}, start);
-        const MAP = AnazhRealm.KOERPER_DIAL_MAP || [];
+        const MAP = AnazhRealm.KOERPER_DIAL_MAP;
         for (const row of MAP) {
             if (!row || !Number.isFinite(row.base) || !Number.isFinite(row.mul) || row.mul === 0) continue;
             if (row.axis === "khMul") {
