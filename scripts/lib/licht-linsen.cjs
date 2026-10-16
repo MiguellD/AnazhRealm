@@ -1718,7 +1718,6 @@ function kartenEichung(kurve) {
 }
 
 module.exports = {
-    TONKURVE_GRAU,
     kartenEichung,
     laubLichtUrteil,
     kronenObenUrteil,

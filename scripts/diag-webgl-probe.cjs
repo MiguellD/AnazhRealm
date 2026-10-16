@@ -19,6 +19,8 @@
 //      Position, ein echter Render in ein RenderTarget liefert SUBSTANZ
 //      (distinkte Farben, nicht schwarz) ohne einen einzigen page-error —
 //      „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
+//   W6 (Karte W2, 16.10., ?holz=voll mit Schatten): jeder Stoff zählt je Stufe ≤ min(16, Gerät) Sampler im GLSL — darüber
+//      linkt WebGL2 nie (GTX: der Fern-Ring-Boden mit 17 fehlte); Selbsttest: ein Stoff mit 17 Karten zählt 17
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -104,39 +106,27 @@ const server = statikServer();
             let px = null;
             if (typeof rend.readRenderTargetPixelsAsync === "function")
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
-            // W6 DIE SAMPLER-GRENZE (Karte W2, 16.10.): jeder gezeichnete Stoff bindet je Stufe ≤ min(16, Gerät) Texturen —
-            // WebGL2 linkt darüber nie (GTX: der Boden-Stoff mit 17 fehlte), WebGPU ohne Adapter-Grenze sagt ab. Gezählt an
-            // den Sampler-Uniformen der GLSL-Programme jedes Render-Objekts (`__renderObjekte`), die Namen aus seinen Bindungen;
-            // der Selbsttest zeichnet einen Stoff mit 17 Karten.
-            const gl = be.gl;
-            o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
-            const zensus = (wurzel, m = new Map()) => {
-                wurzel.traverse((ob) => {
-                    for (const ro of ob.__renderObjekte || []) {
-                        const nb = ro.getNodeBuilderState();
-                        const namen = ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => (x.texture && x.texture.name) || x.name)); // prettier-ignore
-                        for (const [s, q] of [[1, nb.vertexShader], [2, nb.fragmentShader]]) {
-                            const n = (String(q).match(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+\w+/gm) || []).length;
-                            const k = `${ro.material.name || ro.material.type + "#" + ro.material.id} ${s === 1 ? "vertex" : "fragment"}`; // prettier-ignore
-                            if (!(m.has(k) && m.get(k)[1] >= n)) m.set(k, [k, n, s, `${ob.name || ob.userData.inventar || ob.type}: ${namen.join(", ")}`]); // prettier-ignore
-                        }
+            // W6 (Kopf): auch der verborgene Stoff zählt — der Fern-Ring zeigt sich erst nach seinem Refresh
+            o.grenze = [0, be.gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, be.gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? be.gl.getParameter(p) : 0)); // prettier-ignore
+            const zensus = async (wurzel, m = new Map(), verborgen = []) => {
+                wurzel.traverse((ob) => ob.visible || verborgen.push(ob));
+                verborgen.forEach((ob) => (ob.visible = true));
+                await rend.compileAsync(wurzel, cam);
+                verborgen.forEach((ob) => (ob.visible = false));
+                wurzel.traverse((ob) => (ob.__renderObjekte || []).forEach((ro) => {
+                    const namen = ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => (x.texture && x.texture.name) || x.name)); // prettier-ignore
+                    for (const [s, q] of [[1, ro.getNodeBuilderState().vertexShader], [2, ro.getNodeBuilderState().fragmentShader]]) {
+                        const n = (String(q).match(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+\w+/gm) || []).length;
+                        const k = `${ro.material.name || ro.material.type + "#" + ro.material.id} ${s === 1 ? "vertex" : "fragment"}`; // prettier-ignore
+                        if (!(m.has(k) && m.get(k)[1] >= n)) m.set(k, [k, n, s, `${ob.name || ob.userData.inventar || ob.type}: ${namen.join(", ")}`]); // prettier-ignore
                     }
-                });
+                })); // prettier-ignore
                 return [...m.values()].sort((a, c) => c[1] - a[1]);
             };
-            // jeder Stoff der Szene, auch der noch verborgene (der Fern-Ring zeigt sich erst nach seinem ersten Höhen-Refresh)
-            const verborgen = [];
-            st.scene.traverse((ob) => ob.visible || verborgen.push(ob));
-            for (const ob of verborgen) ob.visible = true;
-            await rend.compileAsync(st.scene, cam);
-            for (const ob of verborgen) ob.visible = false;
-            o.zensus = zensus(st.scene);
-            const selbst = new T.Scene();
+            o.zensus = await zensus(st.scene);
             const sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
             sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
-            selbst.add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false }));
-            await rend.renderAsync(selbst, cam);
-            o.selbst = zensus(selbst).find((z) => z[0] === "selbsttest:17-karten fragment");
+            o.selbst = (await zensus(new T.Scene().add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false })))).find((z) => z[0] === "selbsttest:17-karten fragment"); // prettier-ignore
             rend.setRenderTarget(prev);
             if (rt.dispose) rt.dispose();
             if (px && px.length) {

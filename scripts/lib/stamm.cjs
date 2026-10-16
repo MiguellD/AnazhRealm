@@ -548,10 +548,7 @@ function fingerabdruck(A) {
 module.exports = {
     ALT,
     DIR,
-    MIN_BYTES,
     MARKER_RX,
-    NAHT_FN,
-    nahtRuf,
     sha,
     marker,
     schneide,
