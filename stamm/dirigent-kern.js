@@ -68,6 +68,9 @@ class AnazhRealm {
             // State-Linse (audit:strict) jeden Lese-Pfad gegen eine Init-Wahrheit prüft und Tippfehler beim Namen nennt.
             scenePass: null, // der Szene-Pass der Post-Kette (_ensurePostProcessing)
             weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
+            // DIE SPIEL-ZEIT (s): die Summe der Spiel-Takte (`delta`, K21) — der EINE Schreiber ist der Loop, die Uhr des lebendigen
+            // Felds (Zerfall von Leben und Gefühl); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
+            spielZeit: 0,
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)

@@ -112,8 +112,9 @@ async function checkBandV1727WritableField(ctx) {
         const frozen = r.worldFieldAt(X, Z).lebendig;
         // (1) backward-compatible: leerer Overlay → auraAt == worldFieldAt
         out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
-        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1))
-        r._depositLife(X, Z);
+        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1)) — im selben Takt exakt, auch wenn die Wanduhr 3 ms läuft (GC, Last):
+        r._depositLife(X, Z); // die Feld-Uhr ist `state.spielZeit` (CI 39002548016: die Wanduhr trieb 5e-6 ab, ROT ohne Code-Änderung)
+        for (const t0 = performance.now(); performance.now() - t0 < 3; ); // die Wanduhr läuft, der Takt steht
         const afterDeposit = r.auraAt(X, Z).lebendig;
         out.depositRaises = afterDeposit > frozen;
         out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
@@ -180,9 +181,7 @@ async function checkBandV1729CreatureTrickle(ctx) {
         r._tickCreatureLifeTrickle(tending, 1000);
         const after = r._lifeOverlayAt(X, Z);
         out.tendingDeposits = after > before;
-        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit. Die
-        // GESPEICHERTE Menge `a` prüfen (nicht den decayten Lese-Wert — der driftet
-        // real-time pro Lesung; nur ein Deposit ändert `a`).
+        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit (die GESPEICHERTE Menge `a`).
         const aStored = r.state.lifeField.get(key).a;
         r._tickCreatureLifeTrickle(tending, 1000);
         out.rateLimited = r.state.lifeField.get(key).a === aStored;
