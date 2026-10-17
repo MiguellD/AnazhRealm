@@ -636,7 +636,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
             const K = AG.schwung;
             const G = AG.gefuehl;
-            const codeOf = window.__codeOf;
 
             // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
             // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
@@ -657,18 +656,14 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 return n > 0;
             };
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
-            const atkSrc = codeOf(r._playerAttackCreature);
-            const absenzKlick = !/attackSpeed/.test(atkSrc) && !/damageCreature/.test(atkSrc);
-            const absenzDauer = !/attackSpeed/.test(codeOf(r._beginPlayerSwing));
-            o.checks.simLiestNieHitStop =
-                !/_hitStopFactor/.test(codeOf(r._stepFixedSim)) && !/_hitStopFactor/.test(codeOf(r._loopFixedStep));
+            const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
+            const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
+            o.checks.simLiestNieHitStop = window.__fehlt([r._stepFixedSim, r._loopFixedStep], /_hitStopFactor/);
             // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
             // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
-            const absenzKlang = !/new\s+AudioContext/.test(codeOf(r._substanzKlang));
+            const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
-            const absenzTod =
-                !/removeCreature\(/.test(codeOf(r._creatureCombatDeath)) &&
-                !/removeCreature\(/.test(codeOf(r._kreaturFaellt));
+            const absenzTod = window.__fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 

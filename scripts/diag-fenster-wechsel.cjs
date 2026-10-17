@@ -26,14 +26,12 @@
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);
 const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl)"\]/;
 const LESER_NEUBAU = /_tiefenKnotenTausch|_tiefenLeserNeuBinden|_ensureHydroSurfaceMaterial|_feldPassDispose|hydroSurfaceMaterial\s*=/;
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 let ok = true;
@@ -42,13 +40,8 @@ const check = (name, cond, detail) => {
     if (!cond) ok = false;
 };
 
-// K: der Körper des resize-Handlers (kommentarfrei) — kein Leser der Szenen-Tiefe wird dort neu gebaut
-function resizeKoerper(src) {
-    const i = (stammLib.treffer(src, "init", 'window.addEventListener("resize"') || { index: -1 }).index;
-    if (i < 0) return null;
-    const ende = src.indexOf("});", i);
-    return stammLib.ohneKommentare(src.slice(i, ende));
-}
+// K: der Körper des resize-Handlers (der EINE Absenz-Helfer; ohne Handler wirft er) — kein Leser der Szenen-Tiefe wird dort neu gebaut
+const RESIZE_KOPF = /window\.addEventListener\("resize", \(\) => \{/;
 
 // vor jedem Seiten-Skript — die Device-Meldungen je Schritt (`__fensterEcht.schritt` setzt die Wand)
 function fensterSammler() {
@@ -118,11 +111,9 @@ async function fensterSchritt(o) {
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     console.log("=== K — kein Zwilling im resize-Handler (Quelle) ===");
-    const koerper = resizeKoerper(stammLib.text(root));
     check(
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
-        koerper !== null && !LESER_NEUBAU.test(koerper),
-        koerper === null ? "resize-Handler nicht gefunden" : ""
+        stammLib.fehlt(RESIZE_KOPF, LESER_NEUBAU)
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

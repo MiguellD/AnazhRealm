@@ -2899,12 +2899,7 @@ async function checkBandKreaturKosten(ctx) {
         o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
         // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
         // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
-        const codeW = window.__codeOf;
-        const LIT = /castShadow\s*=\s*false/g;
-        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].reduce(
-            (n, k) => n + ((typeof r[k] === "function" ? codeW(r[k]) : "").match(LIT) || []).length,
-            0
-        );
+        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)).length;
         o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
         o.checks.wAbsenz = o.wLiterale === 0 && o.wDistKonst.length === 0;
     

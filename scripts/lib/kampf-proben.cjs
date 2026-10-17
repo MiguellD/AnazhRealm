@@ -2379,7 +2379,6 @@ async function WELLE_L() {
             tod.unterWesen = s.creatures.indexOf(hT) !== -1;
             tod.aeltester = r._findOldestCreature() === hT;
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
-            const ohneKommentar = window.__codeOf;
             const FRAGT_ERLAUBT = new Set([
                 "damageCreature",
                 "_creatureCombatDeath",
@@ -2394,7 +2393,7 @@ async function WELLE_L() {
                     !FRAGT_ERLAUBT.has(n) &&
                     d &&
                     typeof d.value === "function" &&
-                    /\.dying\b/.test(ohneKommentar(d.value))
+                    !window.__fehlt(d.value, /\.dying\b/)
                 );
             });
             if (tod.liegt10s) {

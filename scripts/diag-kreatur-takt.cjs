@@ -176,7 +176,7 @@ async function imFenster(laeufe) {
     const aus = [];
     for (const l of laeufe) {
         const o = await rufeWerkbank(
-            `if (!window.__codeOf) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
+            `if (!window.__fehlt) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
         );
         if (o.fehler) throw new Error(o.fehler);
         aus.push(o.ergebnis);
