@@ -43,9 +43,7 @@ const VERBRAUCH_MIN = 3;
 // (r) DIE QUELL-WAND DER RUNDUNG (rein, Node, Absenz): keine zweite Abtastung des Szenen-Bilds umgeht den Ausgleich. Dass
 // `bild` ihn trägt, das Uniform den Vektor der Sonde liest und die Sonde lief, misst die Rundungs-Probe am Bild.
 function rundungQuelle(src) {
-    const i = src.indexOf("\n    _ensurePostProcessing("),
-        j = src.indexOf("\n    }\n", i);
-    const n = i < 0 || j < 0 ? 0 : (src.slice(i, j).match(/sceneColor\.sample\(/g) || []).length;
+    const n = ((stammLib.rumpf(src, "_ensurePostProcessing") || "").match(/sceneColor\.sample\(/g) || []).length;
     return n > 1 ? [`das Szenen-Bild wird ${n}× abgetastet — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`] : [];
 }
 
