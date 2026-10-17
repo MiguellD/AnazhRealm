@@ -3346,6 +3346,8 @@ async function starte() {
                 // die Karte gegen ihre Gestalt (A7): vor dem Schnitt 1,24 × so hell (Fichte, Genesis) — ROT beim Namen
                 [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.24, dL: 3.7, dC: 1.4 } } } }).befunde.join(), /KARTE fichte: Karte\/Gestalt \(f:fichte:L1\) Luma 1\.24/],
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
+                // die Karte in der Nacht (F6): an der Basis 25f53923 4,74 × so hell wie ihre Gestalt (Fichte, Mess-Wiese, Radeon) — ROT beim Namen der Stunde
+                [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 4.737, dL: 16.6, dC: 2.73 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 4\.737/],
                 [LL.laubLichtUrteil({ welt: { eiche: { karte: { verhaeltnis: 1.02, dL: 0.3, dC: 4.2 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
                 // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
@@ -3373,8 +3375,12 @@ async function starte() {
         const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
         // DAS SPIEL-AUGE (S2b): `--wechsel f` das Auge im f-fachen Abstand, ab dem das Spiel die Karte zeigt, `--auge h` die
         // Augenhöhe (Ego 1,6 · Third 3,5), `--hang g` ein Exemplar am Hang (Gefälle ≥ g), das Auge talwärts
-        const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}`;
-        for (const art of String(arten).split(",")) {
+        // DIE STUNDEN (F6): `--uhr 0.5,0.25,0` misst jede Art je Stunde (Mittag · Dämmerung · Nacht) — die Karte antwortet dem
+        // Licht der Uhr wie ihre Gestalt; die Zeile heißt `<art>@<uhr>`
+        const uhren = opt("--uhr") === undefined ? [null] : String(opt("--uhr")).split(",").map(Number);
+        for (const art of String(arten).split(",")) for (const uhr of uhren) {
+            const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}`;
+            const zeile = uhr == null ? art : `${art}@${uhr}`;
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
             await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
@@ -3387,7 +3393,7 @@ async function starte() {
                     code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
                 })).ergebnis;
             if (!plan || plan.fehler) {
-                welt[art] = plan || { fehler: "kein Plan" };
+                welt[zeile] = plan || { fehler: "kein Plan" };
                 continue;
             }
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
@@ -3413,7 +3419,7 @@ async function starte() {
                 : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
             if (argv.includes("--karte")) await stufen(null);
             if (w && w.karte && opt("--ordner"))
-                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${art}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
+                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
             if (w && w.karte) delete w.karte.png;
             const ordner = opt("--ordner");
             if (w && w.oben && w.oben.png) {
@@ -3433,7 +3439,7 @@ async function starte() {
                         );
                     delete w[k].png;
                 }
-            welt[art] = w;
+            welt[zeile] = w;
         }
         if (oben) {
             const u = LL.kronenObenUrteil({ welt });

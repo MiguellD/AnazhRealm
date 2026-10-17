@@ -1331,6 +1331,8 @@ function laubGegenlicht(opts) {
             rend = st.renderer;
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
+        // DIE STUNDE (F6, `uhr` 0..1, 0,5 Mittag): die Bühne zu dieser Stunde, der Pfad des Spielers (sein Satz „nacht")
+        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
         let abstand = opts.abstand || 8;
         let verdeckt = null;
