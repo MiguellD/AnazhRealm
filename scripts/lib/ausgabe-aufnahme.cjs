@@ -327,8 +327,10 @@ function uhrHalten() {
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie, in Takten, nie in Wanduhr — läuft der Loop,
-// zählt er; ruht er, schaltet sie ihn und stellt Kamera und Stunde des Schusses zurück. Steht sie nach `max` Takten nicht,
-// bricht der Schuss LAUT beim Namen dessen, was baut (A8: boden-nah zwischen Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
+// zählt er; ruht er, schaltet sie ihn und stellt Kamera und Stunde des Schusses zurück. Der Deckel `max` zählt nur Takte, in
+// denen nichts baut (`_weltOffen` leer): solange die Welt baut, wartet die Bühne auf den Bau — dessen Fristen brechen selbst
+// laut (CI 39000123563: 100 Foundry-Aufträge beim Schuss, auf 2 Kernen stand die Welt nach 1 973 Takten). Steht sie nicht,
+// bricht der Schuss LAUT beim Namen dessen, was sie zuletzt regte (A8: boden-nah zwischen Sitzungen 1,84 ↔ 2,68).
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -336,9 +338,10 @@ async function weltStehtWarten(max) {
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
     const takte = () => (r._weltStand ? r._weltStand.takte : 0);
     const t0 = takte();
-    for (let k = 0, vor; !r._weltSteht() && k < (max || 1800); k++) {
+    for (let k = 0, vor, o; !r._weltSteht() && k < (max || 1800); k += o.foundry + o.chunks + o.wald ? 0 : 1) {
         vor = takte();
         await new Promise((ok) => requestAnimationFrame(ok));
+        o = r._weltOffen();
         if (takte() !== vor) continue;
         r._gameLoopTick(performance.now());
         cam.position.copy(p);
@@ -353,11 +356,11 @@ async function weltStehtWarten(max) {
     r._applyDayNightToScene();
     await r._himmelFrisch();
     r._applyDayNightToScene();
-    const o = r._weltOffen();
+    const W = r._weltStand || {};
     if (!r._weltSteht())
         throw new Error(
-            `DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${r._weltStand ? r._weltStand.ruhe : 0}/` +
-                `${r.constructor.WELT_STEHT_TAKTE}, Foundry offen ${o.foundry}, Chunks offen ${o.chunks}`
+            `DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${W.ruhe | 0}/${r.constructor.WELT_STEHT_TAKTE}, ` +
+                `zuletzt brach sie: ${W.grund}`
         );
     return takte() - t0;
 }

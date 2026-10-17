@@ -320,40 +320,66 @@ class AnazhRealm_dirigent_takt {
     // Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh, als die Stempel schon 30 Takte standen — boden-nah 2,418 statt
     // 1,830). Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
     // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
+    // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen, das Offene) — wer auf das Wort wartet
+    // und es nicht bekommt, bricht beim Namen des Täters.
     _weltStandTakt() {
         const W =
-            this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, ruhe: 0, takte: 0 });
+            this._weltStand ||
+            (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, je: new Map(), ruhe: 0, takte: 0 });
         W.takte++;
         const welt = this._weltRegung | 0,
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
-        let arbeit = 0;
-        if (this._standWache) for (const t of this._standWache.takte.values()) arbeit += t.arbeit;
+        let arbeit = 0,
+            geht = null;
+        if (this._standWache)
+            for (const [n, t] of this._standWache.takte) {
+                arbeit += t.arbeit;
+                if (W.je.get(n) !== t.arbeit) {
+                    W.je.set(n, t.arbeit);
+                    geht = geht ? `${geht}, ${n}` : n;
+                }
+            }
         const o = this._weltOffen();
-        if (
-            welt !== W.welt ||
-            bau !== W.bau ||
-            karte !== W.karte ||
-            arbeit !== W.arbeit ||
-            o.foundry + o.chunks + o.wald > 0
-        ) {
+        const grund =
+            welt !== W.welt
+                ? "Welt-Regung"
+                : bau !== W.bau
+                  ? "Bau-Regung"
+                  : karte !== W.karte
+                    ? "Karten-Regung"
+                    : arbeit !== W.arbeit
+                      ? `Fege-Takt ${geht}`
+                      : o.foundry
+                        ? `Foundry offen ${o.foundry}`
+                        : o.chunks
+                          ? `Chunks offen ${o.chunks}`
+                          : o.wald
+                            ? `Wald offen ${o.wald}`
+                            : null;
+        if (grund) {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
             W.arbeit = arbeit;
+            W.grund = grund;
             W.ruhe = 0;
         } else W.ruhe++;
     }
-    // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe), Chunks (schmutzig, im Bau) und
-    // der Wald (die Plan-Schlange, die Pflanz-Gänge, die wartenden Pflanzungen, K69) — jede Linse liest SIE, nie die Marken.
+    // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
+    // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
+    // Pflanz-Gänge, die wartenden Pflanzungen, K69) — jede Linse liest SIE, nie die Marken.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
         const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0 }); // je Takt, ohne Müll
-        o.foundry =
-            (f && f.pending ? f.pending.size : 0) +
-            (f && f.warte ? f.warte.length : 0) +
-            (this._foundryIngestQueue ? this._foundryIngestQueue.length : 0);
+        o.foundry = f
+            ? (f.pending ? f.pending.size : 0) +
+              (f.warte ? f.warte.length : 0) +
+              (f.nachAtlas ? f.nachAtlas.length : 0) +
+              (f.buch ? 1 : 0)
+            : 0;
+        o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
         o.wald =
