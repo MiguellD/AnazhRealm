@@ -2243,17 +2243,20 @@ class AnazhRealm_siedlung_satz {
     // (instanziert, entry.mesh = null). Flat-Quelle wie `_rebuildArchitectureMesh`: instFoundry →
     // `_foundryFlattenFor` auf der SERVIERTEN Stufe (Cache-Treffer: die Slots stammen aus exakt diesem
     // Flat), sonst der Bauplan-Flat. STEER_VIS.instance = "entry-yaw": nur ew * leaf.localMatrix — die
-    // geteilte localMatrix nie mutieren.
+    // geteilte localMatrix nie mutieren. JEDE ZEICHNENDE STUFE ZIEHT MIT: die Primär-Stufe (`instSlots`) und ihr Partner im
+    // Stufen-Band (`instSlotsBand`, die Stufe `_lodBandLevel`). Befund Spielgang 17.10. (Radeon, GT nach 20 m in Third): nur die
+    // Primär-Stufe fuhr, der L1-Partner des Bands stand mit 19 Slots am Ort des Aufstiegs — dort zeichnete der Aufbau, am
+    // Wagen blendete die L0 im Band aus: in Third verschwand das Fahrzeug.
     _archInstanceUpdate(entry) {
         if (!entry.instanced || !entry.instSlots) return;
         const fPreset = entry.instFoundry && this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
-        const flat = fPreset
-            ? this._foundryFlattenFor(
-                  entry,
-                  fPreset,
-                  Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel
-              )
-            : this._archFlattenBlueprint(entry.type);
+        const lod = Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel;
+        this._archInstanzSlotsSetzen(entry, entry.instSlots, fPreset, lod);
+        if (entry.instSlotsBand && fPreset && Number.isFinite(entry._lodBandLevel))
+            this._archInstanzSlotsSetzen(entry, entry.instSlotsBand, fPreset, entry._lodBandLevel);
+    }
+    _archInstanzSlotsSetzen(entry, slots, fPreset, lod) {
+        const flat = fPreset ? this._foundryFlattenFor(entry, fPreset, lod) : this._archFlattenBlueprint(entry.type);
         if (!flat || !flat.instanceable) return;
         const ew = this._archEntryWorldMatrix(
             entry,
@@ -2261,8 +2264,8 @@ class AnazhRealm_siedlung_satz {
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
         let ewU = null; // die ungefederte Lage der Räder (erst beim ersten Rad-Leaf)
-        for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
-            const { key, slot } = entry.instSlots[i];
+        for (let i = 0; i < slots.length && i < flat.leaves.length; i++) {
+            const { key, slot } = slots[i];
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (!g) continue;
             const lf = flat.leaves[i];
