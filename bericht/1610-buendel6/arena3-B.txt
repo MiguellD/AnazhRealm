@@ -1,0 +1,11 @@
+{
+ "ergebnis": {
+  "version": "18.546.8",
+  "weltbild": 19005.70000000298,
+  "arenaOhne": null,
+  "arenaBruch": null,
+  "lager": 18,
+  "glieder": 65
+ },
+ "ms": 2
+}

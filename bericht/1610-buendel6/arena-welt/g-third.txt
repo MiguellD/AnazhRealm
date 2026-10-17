@@ -1,0 +1,19 @@
+02:18:08 umstellen genesis/third: {"ort":"genesis","sicht":"third","pose":null,"welt":null,"spieler":[0,0],"wiese":null,"takte":44,"chunks":25,"gier":-1.5708,"dorfZug":false,"ortTakt":["_genesisPortalRing","_portalApproachPrefetch"],"
+02:18:38 1 A glieder=0 lager=0 ohne=omen-aus bündel=3 fps 80.4 Frame p95 16.7 CPU p95 6.6 GPU 4.95/4.97 MHz 1822/1822
+02:19:05 2 G glieder=38 lager=16 ohne=null bündel=4 fps 108.5 Frame p95 16.7 CPU p95 10.2 GPU 5.80/5.72 MHz 1822/1822
+02:19:32 3 G glieder=48 lager=26 ohne=null bündel=10 fps 109.1 Frame p95 16.7 CPU p95 9.8 GPU 5.33/4.86 MHz 1822/1822
+02:19:58 4 A glieder=0 lager=0 ohne=omen-aus bündel=10 fps 106.5 Frame p95 16.7 CPU p95 10.1 GPU 5.42/5.58 MHz 1822/1822
+02:20:25 5 A glieder=0 lager=0 ohne=omen-aus bündel=10 fps 108.4 Frame p95 16.7 CPU p95 10.1 GPU 8.59/5.55 MHz 1822/1822
+02:20:51 6 G glieder=30 lager=13 ohne=null bündel=10 fps 108.6 Frame p95 16.7 CPU p95 10 GPU 5.27/5.25 MHz 1822/1822
+02:21:18 7 G glieder=30 lager=13 ohne=null bündel=10 fps 109.1 Frame p95 16.7 CPU p95 10 GPU 4.91/4.67 MHz 1822/1822
+02:21:44 8 A glieder=0 lager=0 ohne=omen-aus bündel=10 fps 106.6 Frame p95 16.7 CPU p95 10.3 GPU 5.41/5.61 MHz 1809/1809
+
+genesis third — A (Arena aus) gegen G (Arena an), Folge AGGAAGGA
+  GPU ms (gpu-bank)          A 5.76 · G 5.23 · Δ -0.53 · 2σ 1.41   [A 4.96 5.50 7.07 5.51 | G 5.76 5.10 5.26 4.79]
+  Frame p95 ms (lauf voll)   A 16.70 · G 16.70 · Δ +0.00 · 2σ 0.00   [A 16.70 16.70 16.70 16.70 | G 16.70 16.70 16.70 16.70]
+  Frame p50 ms               A 8.38 · G 8.30 · Δ -0.07 · 2σ 0.21   [A 8.60 8.30 8.30 8.30 | G 8.30 8.30 8.30 8.30]
+  CPU-Takt p95 ms            A 9.27 · G 10.00 · Δ +0.73 · 2σ 2.54   [A 6.60 10.10 10.10 10.30 | G 10.20 9.80 10.00 10.00]
+  fps                        A 100.47 · G 108.82 · Δ +8.35 · 2σ 18.97   [A 80.40 106.50 108.40 106.60 | G 108.50 109.10 108.60 109.10]
+  Befehle (lauf)             A 133.00 · G 140.00 · Δ +7.00 · 2σ 19.80   [A 112.00 140.00 140.00 140.00 | G 140.00 140.00 140.00 140.00]
+  Dreiecke (lauf)            A 1186006.00 · G 1454087.25 · Δ +268081.25 · 2σ 759104.62   [A 380854.00 1454491.00 1454477.00 1454202.00 | G 1454054.00 1454051.00 1454191.00 1454053.00]
+  Takt MHz (Bank)            A 1818.75 · G 1822.00 · Δ +3.25 · 2σ 9.19   [A 1822.00 1822.00 1822.00 1809.00 | G 1822.00 1822.00 1822.00 1822.00]

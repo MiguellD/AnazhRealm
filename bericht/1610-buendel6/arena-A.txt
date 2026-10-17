@@ -1,0 +1,9 @@
+{
+ "ergebnis": {
+  "version": "18.546.6",
+  "arenaOhne": null,
+  "arenaBruch": null,
+  "weltbild": 0
+ },
+ "ms": 3
+}
