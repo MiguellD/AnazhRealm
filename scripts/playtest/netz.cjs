@@ -1644,13 +1644,12 @@ async function checkBandPhiArchipel(ctx) {
         // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
         // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
-        // Die neuen Akte sind GAR KEINE Ops (nicht in dslComposeAtomic / NON_BROADCASTABLE_OPS) — Source-
-        // Probe: setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer fehlen in dslRun.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noKickOp = !/op\s*===\s*["']kick_peer["']/.test(dslRunSrc);
-        out.noBanOp = !/op\s*===\s*["']ban_peer["']/.test(dslRunSrc);
-        out.noSetVisibilityOp = !/op\s*===\s*["']set_visibility["']/.test(dslRunSrc);
-        out.noSetPortalAddressOp = !/op\s*===\s*["']set_portal_address["']/.test(dslRunSrc);
+        // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
+        const keinOp = (op) => !r.dslEffects[op];
+        out.noKickOp = keinOp("kick_peer");
+        out.noBanOp = keinOp("ban_peer");
+        out.noSetVisibilityOp = keinOp("set_visibility");
+        out.noSetPortalAddressOp = keinOp("set_portal_address");
 
         // (P4) Die EINE Signatur-Schicht: _canonicalWorldAddress ist deterministisch
         // (gleiche Substanz → gleicher String); die FROZEN-Felder + v:1 sind drin.
@@ -1734,7 +1733,7 @@ async function checkBandPhiArchipel(ctx) {
         out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
         delete r.state.blueprints["phi_test_portal"];
 
-        // (P8) Visibility-Setter wirkt + die Lobby-BRIDGE existiert (Source-Probe). Den echten Round-Trip
+        // (P8) Visibility-Setter wirkt + gelistet ruft die Lobby-BRIDGE (am Ruf). Den echten Round-Trip
         // deckt smoke-multiuser; headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
         const visBefore = r.state.worldMeta.visibility;
         r.setWorldVisibility("gelistet");
@@ -1983,11 +1982,9 @@ async function checkBandPhiArchipelV2(ctx) {
         // Aufräumen: localStorage-Snapshot lassen wir liegen (kein Müll, nur
         // ein orphan; ein erneuter pinCurrentWorld überschreibt).
 
-        // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops
-        // (R2 strukturell durch Pool-Disjunktheit).
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noPinOp = !/op\s*===\s*["']pin_world["']/.test(dslRunSrc);
-        out.noRegionOp = !/op\s*===\s*["']set_regions_active["']/.test(dslRunSrc);
+        // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noPinOp = !r.dslEffects.pin_world;
+        out.noRegionOp = !r.dslEffects.set_regions_active;
 
 
         return out;
@@ -2221,10 +2218,9 @@ async function checkBandPhi7PortalHalls(ctx) {
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
 
 
-        // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noCreateHallOp = !/op\s*===\s*["']create_portal_hall["']/.test(dslRunSrc);
-        out.noMatHallOp = !/op\s*===\s*["']materialize_portal_hall["']/.test(dslRunSrc);
+        // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noCreateHallOp = !r.dslEffects.create_portal_hall;
+        out.noMatHallOp = !r.dslEffects.materialize_portal_hall;
 
         // Aufräumen: spawned-Portale + Halle aus dem Test.
         for (const e of spawned) {
@@ -2414,10 +2410,9 @@ async function checkBandPhi6ComputeSpende(ctx) {
         out.snapHasContribs = Array.isArray(snap.computeContributions) && snap.computeContributions.length >= 1;
         out.snapHasRuns = Array.isArray(snap.playtestContributions) && snap.playtestContributions.length >= 1;
 
-        // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noPinComputeOp = !/op\s*===\s*["']pin_compute["']/.test(dslRunSrc);
-        out.noSignPlaytestOp = !/op\s*===\s*["']sign_playtest["']/.test(dslRunSrc);
+        // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noPinComputeOp = !r.dslEffects.pin_compute;
+        out.noSignPlaytestOp = !r.dslEffects.sign_playtest;
 
         // Aufräumen: die Test-Einträge.
         r.state.computeContributions.delete(h1);
