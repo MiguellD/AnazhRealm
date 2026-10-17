@@ -326,11 +326,9 @@ function uhrHalten() {
     r._tickRain();
 }
 
-// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie, in Takten, nie in Wanduhr — läuft der Loop,
-// zählt er; ruht er, schaltet sie ihn und stellt Kamera und Stunde des Schusses zurück. Der Deckel `max` zählt nur Takte, in
-// denen nichts baut (`_weltOffen` leer): solange die Welt baut, wartet die Bühne auf den Bau — dessen Fristen brechen selbst
-// laut (CI 39000123563: 100 Foundry-Aufträge beim Schuss, auf 2 Kernen stand die Welt nach 1 973 Takten). Steht sie nicht,
-// bricht der Schuss LAUT beim Namen dessen, was sie zuletzt regte (A8: boden-nah zwischen Sitzungen 1,84 ↔ 2,68).
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie in Takten, nie in Wanduhr (ruht der Loop, schaltet
+// sie ihn und stellt Kamera und Stunde zurück); der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht
+// seine Frist (CI 39000123563: 100 Foundry-Aufträge beim Schuss, 2 Kerne: 1 973 Takte). Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -358,10 +356,7 @@ async function weltStehtWarten(max) {
     r._applyDayNightToScene();
     const W = r._weltStand || {};
     if (!r._weltSteht())
-        throw new Error(
-            `DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${W.ruhe | 0}/${r.constructor.WELT_STEHT_TAKTE}, ` +
-                `zuletzt brach sie: ${W.grund}`
-        );
+        throw new Error(`DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${W.ruhe | 0}, zuletzt brach sie: ${W.grund}`);
     return takte() - t0;
 }
 
