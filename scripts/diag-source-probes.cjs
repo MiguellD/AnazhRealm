@@ -47,7 +47,7 @@ const stammLib = require('./lib/stamm.cjs');
 const ROOT = path.resolve(__dirname, '..');
 
 // Die Gate-Dateien, deren Proben in der CI/lokal laufen.
-const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs'];
+const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs', ...fs.readdirSync(path.join(ROOT, 'scripts/playtest')).map((f) => 'scripts/playtest/' + f)];
 
 // Der Code, in dem ein geprobtes Symbol real existieren MUSS.
 // Proben sind `r.<x>` (die Realm-Instanz) → der Stamm. Die Worker-/Bake-Mirrors
