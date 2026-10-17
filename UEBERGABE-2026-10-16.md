@@ -189,3 +189,11 @@ der Macher muss frei sein).
 - Laufend: S2 Karte der Welt (R3, Compute-BC, alte Baecker gefallen, Linsen nachziehen), B3c Faden frei (Pruefer 2), B3d Weltbild = Blick (Entscheidung: Blick-Kegel + Rand ganz, Rundblick-Probe nach N Frames), B3e Wurf-L3 aus dem Plan, A3b laub-zeit (Fadenkreuz-Bruch nachbessern), A9 Bild-Uhr, A12 See-Spiegel, D3c-bild/-leben (wf_c983fdef-595). Danach D3d (EIN Absenz-Helfer + Wand), D3c-crossfade (101 Stellen, nach S2).
 - Ankunfts-Menge (OMEN bericht/1610-ankunft-menge.md): 147 Auftraege, Werk 89-99 %, im Blick 37,4 / ausser Blick 33,4 Bahn-s, Wurf-L3 = L2-Kosten.
 - Woche 79 % um 05:10.
+
+## 17.10. 07:07 (date) — Lage (Kontext 90 %, Woche 86 %)
+- main = 93539122 (V18.546.11, OMEN: E1 nicht langsamer, Genesis Third CPU p95 6,3 -> 6,0 haelt 5,8 noch nicht). integ-probe = 7b14d215 (V18.546.12): + B3c (kein Hausbau im Haupt-Faden), A3b (Laub-Zeit, Fadenkreuz trifft Leib 384/384), A9 (EINE Bild-Uhr, Welt steht), Seltenheit vom ersten Takt (Kristalle: B3a beendete ein Rennen, Wirt traegt PORTAL_RENDER_CONFIG aus __terrainCore, if(_rar) faellt), D3c-leben, D3c-bild, Brennglas-Wand kennt _hausHuelleSetzen. CI an 7b14d215 laeuft.
+- A (frisch): GRUEN boden-nah, himmel-licht, haus, fels, tor-*, mensch-kopf, boden-nah-farbe (A11), laub zweiton (A3b); wasser wird GRUEN mit A12+A13 (Ego 0,83 / Third 0,79); ROT nur laub-kante 0,2263 (Karte L2 -> S2b).
+- Laufend: S2b karte-welt (wf_8e936d95-083; Entscheidung: Linse an Spiel-Distanzen, unterer Ring nur bei Riss), A12 see-spiegel (Pruefer fand aufWasser-Regression, Nachbesserung), A13 spiegel-mass (CI), B3d weltbild-blick (CI rot Takt-Wand, Nachbesserung), B3e wurf-aus-plan (L3 155,6 -> 66,3 ms, Goldens byte-exakt; CI-Nachbesserung V17.27).
+- D: D3c fertig ausser crossfade (101 Stellen, nach S2); D3d offen: EIN Absenz-Helfer (__fehlt / stammLib) + Wand „__codeOf/Stamm-Text nur in Absenzen“, dann faellt D(3).
+- B: Radeon kalt Weltbild ~13 s (vorher 18,5); Haupt-Faden 7–16 s zu 87–99 % belegt (Knoten-Bau 1,9–2,9 s, Streu, Boden, Fern-Ring, Kull); naechste B-Karte: Budget des Haupt-Fadens vor dem ersten Bild.
+- E: Genesis Third CPU p95 6,0 (Soll 5,8) — naechster Posten per Profil.
