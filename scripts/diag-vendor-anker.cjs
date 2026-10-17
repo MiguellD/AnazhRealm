@@ -510,7 +510,7 @@ function diaetLauf(fn) {
         getRenderObjectData(ro) {
             let d = this.renderObjects.get(ro);
             if (!d) {
-                d = { welt: ro.object.welt };
+                d = { worldMatrix: { w: ro.object.welt, equals: (m) => m.w === d.worldMatrix.w, copy: (m) => (d.worldMatrix.w = m.w) } };
                 this.renderObjects.set(ro, d);
             }
             return d;
@@ -523,8 +523,8 @@ function diaetLauf(fn) {
         },
         equals(ro) {
             const d = this.getRenderObjectData(ro);
-            if (d.welt !== ro.object.welt) {
-                d.welt = ro.object.welt;
+            if (d.worldMatrix.w !== ro.object.welt) {
+                d.worldMatrix.w = ro.object.welt;
                 return false;
             }
             return true;
@@ -625,7 +625,7 @@ function diaetLauf(fn) {
         prog: steinProg,
         ro: {
             progId: 20,
-            object: { material: { _anazhDiaet: true }, welt: 0 },
+            object: { material: { _anazhDiaet: true }, welt: 0, get matrixWorld() { return { w: this.welt }; } },
             material: { _anazhDiaet: true },
             lightsNode: {},
             getBindings: () => [steinProg.geteilt],
@@ -658,7 +658,7 @@ function diaetLauf(fn) {
             instanceMatrix: { version: 0 },
             instanceColor: null,
             material: { _anazhDiaet: true },
-            welt: 0,
+            welt: 0, get matrixWorld() { return { w: this.welt }; },
         };
         const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
         objekte.push({
@@ -739,7 +739,7 @@ function getragenLauf(fn) {
             renderId: -1,
             hasAnimation: false,
             getRenderObjectData(ro) {
-                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, {});
+                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, { worldMatrix: { equals: () => true } });
                 return this.renderObjects.get(ro);
             },
             getGeometryData: () => ({}),
@@ -809,7 +809,7 @@ function diaetProbe(selftest) {
                 f.push(
                     `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
                 );
-            if (r.objektDurchDiaet) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (nur die geteilte ist ihre)`);
+            if (r.objektDurchDiaet !== (k === "r4" ? 1 : 0)) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (Soll: nur die des bewegten Objekts, sein Objekt-Gang)`);
             if (r.wiederholt)
                 f.push(
                     `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
@@ -827,7 +827,7 @@ function diaetProbe(selftest) {
                     `Zeichen-Objekt ${k}: ${r.zeichenFehlt} von 2 Programmen mit einem Verweis ohne festes Objekt gingen keinen eigenen Gang — er arbeitete nie für ihr Objekt`
                 );
         }
-        if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
+        if (z.r4.voll.has(7)) f.push("Objekt-Gang: ein bewegtes Objekt frischt voll auf, statt nur seine eigenen Werte zu stellen");
         if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
         return f;
     };
