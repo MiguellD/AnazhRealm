@@ -1561,47 +1561,32 @@ async function checkBandWHWald(ctx) {
         out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
         // (2) die Bäume treten im Affinitäts-Wettstreit (candidates) NUR als kanonische Art an — keine
         // statische _jung/_alt/_breit-Variante im Pool; die Gestalt entsteht NACH dem Sieg.
-        const src = window.__codeOf(r._vegetationSampleSpawn);
         // (die Liste der Würfe des Felds, `FELD_WURF` — K10-6: gelesen an der Liste, nie am Rumpf-Text)
         const feldWurf = window.anazhRealm.constructor.FELD_WURF || [];
         out.notInCandidates =
             feldWurf.includes("baum_eiche") &&
             feldWurf.includes("baum_kiefer") &&
             !feldWurf.some((n) => /^baum_eiche_(breit|jung|alt)$|^baum_kiefer_schlank$/.test(n));
-        // Der Baum-Zweig delegiert aus `_vegetationSampleSpawn` an `_forestPlantChunk` (EINE Baum-Quelle) →
-        // die Beweise lesen den Wald-Generator: die kanonische Art tritt an, die Variante entsteht NACH der
-        // Nischen-Entscheidung — keine statische _jung/_alt-Variante im Pool NOCH im Generator.
-        const forestSrc = window.__codeOf(r._forestPlantChunk);
-        // „Drähte statt Kopien" (08.07.): die Dart-PFLANZ-LOGIK (Größen-Formel) lebt jetzt in
-        // phyto-core.planForestCell (byte-identisch umgezogen, Dart-Parität bewiesen) — die
-        // Probe wandert mit dem Code (V9.56-i); der Monolith trägt nur noch den ctx-Draht.
-        const cellDartsSrc =
-            window.__phytoCore && typeof window.__phytoCore.planForestCell === "function"
-                ? window.__codeOf(window.__phytoCore.planForestCell)
-                : window.__codeOf(r._forestCellDarts);
-        // Der Wald spawnt die KANONISCHE Art (`d.sp`) + den Varianten-Index als METADATEN (`_lodVariantIndex`
-        // über `_treeVariantIndexFor(d.sp,…)` NACH dem Nischen-Sieg); keine eager gewachsene Geometrie im
-        // Spawn — der RENDER wählt die Quelle (Studio-Asset [Foundry], sonst lazy gewachsen).
-        out.variantPickAfterWin =
-            /_treeVariantIndexFor\(\s*d\.sp/.test(forestSrc) &&
-            /_enqueueVegetationSpawn\(\s*d\.sp\b/.test(forestSrc) &&
-            /_lodVariantIndex:\s*variantIndex/.test(forestSrc) &&
-            !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
-        // (4) GRÖSSEN-SPAN: seed-deterministische reverse-J-Größe `0.55 + 1.45·ue^1.45` (Selbstausdünnung +
-        // seltene Überhälter) als EIN geteiltes Gesetz `phyto-core.forestTreeSize` (Lab + Welt; planForestCell
-        // ruft es); sie reist als `scale: d.s` in die HISM-Instanz-Matrix.
-        const _pc = window.__phytoCore;
-        const sizeSrc =
-            _pc && typeof _pc.forestTreeSize === "function" ? window.__codeOf(_pc.forestTreeSize) : cellDartsSrc;
-        out.sizeSpan =
-            /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(sizeSrc) &&
-            (sizeSrc === cellDartsSrc || /forestTreeSize\(/.test(cellDartsSrc)) &&
-            /scale: d\.s\b/.test(forestSrc);
-        // (5) DER KLON-KILLER — Pro-Instanz-Rotation: _archEntryWorldMatrix wirkt entry.rotationY (sonst
-        // zeigt ein ganzer Wald nach Norden) UND der Spawn setzt sie seed-deterministisch; behavioral:
-        // verschiedene rotationY → verschiedene Welt-Matrizen.
-        out.rotInMatrix = /entry\.rotationY/.test(window.__codeOf(r._archEntryWorldMatrix));
-        out.rotInSpawn = /spawnYaw/.test(src) && /rotationY: spawnYaw/.test(src);
+        // (3) DER WALD AM RUF (EINE Baum-Quelle `_forestPlantChunk`, Rekorder statt Bau): jeder Baum ist die kanonische Art mit
+        // dem Varianten-Index als Metadatum (die Gestalt wählt der Render), Größe (reverse-J 0,55–1,95) und Gier aus seinem Dart —
+        // und sie streuen: der Klon-Killer, ein Wald zeigt nicht nach Norden und steht nicht in einer Größe.
+        const calls = [];
+        const imm = r._vegSpawnImmediate;
+        Object.assign(r, { _enqueueVegetationSpawn: (n, p, o) => calls.push({ n, o }), _scatterRegisterCell() {}, _scatterIncrementCounter() {}, _vegSpawnImmediate: true });
+        try {
+            const span = r._voxelChunkConfig().span;
+            const pm = r.state.playerMesh.position;
+            for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) r._forestPlantChunk(Math.floor(pm.x / span) + i, Math.floor(pm.z / span) + j);
+        } finally {
+            for (const k of ["_enqueueVegetationSpawn", "_scatterRegisterCell", "_scatterIncrementCounter", "_vegSpawnImmediate"]) delete r[k];
+            if (imm !== undefined) r._vegSpawnImmediate = imm;
+        }
+        const baeume = calls.filter((c) => c.o && c.o._lodSpecies);
+        out.wald = { baeume: baeume.length, groessen: new Set(baeume.map((c) => c.o.scale)).size, gieren: new Set(baeume.map((c) => c.o.rotationY)).size };
+        out.variantPickAfterWin = baeume.length >= 3 && baeume.every((c) => c.n === c.o._lodSpecies && !/_(jung|alt|breit|schlank)$/.test(c.n) && Number.isInteger(c.o._lodVariantIndex));
+        out.sizeSpan = out.wald.groessen >= 3 && baeume.every((c) => c.o.scale >= 0.55 && c.o.scale <= 1.95);
+        out.rotInSpawn = out.wald.gieren >= 3;
+        // (5) Pro-Instanz-Rotation in der Matrix: verschiedene rotationY → verschiedene Welt-Matrizen.
         const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
         const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
         out.rotChangesMatrix = m0.elements[0] !== m1.elements[0] || m0.elements[2] !== m1.elements[2];
@@ -1616,12 +1601,12 @@ async function checkBandWHWald(ctx) {
         res.notInCandidates && res.variantPickAfterWin
     );
     check(
-        "W-H Wald: der GRÖSSEN-SPAN ±~40 % reist seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix)",
+        `W-H Wald: der GRÖSSEN-SPAN reist seed-deterministisch in den Spawn (scale 0,55–1,95 über die HISM-Instanz-Matrix; ${JSON.stringify(res.wald)})`,
         res.sizeSpan
     );
     check(
-        "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (_archEntryWorldMatrix liest entry.rotationY · der Spawn setzt sie seed-deterministisch · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",
-        res.rotInMatrix && res.rotInSpawn && res.rotChangesMatrix
+        "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (der Wald setzt sie je Dart · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",
+        res.rotInSpawn && res.rotChangesMatrix
     );
 }
 

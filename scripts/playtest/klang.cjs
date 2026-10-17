@@ -442,17 +442,10 @@ async function checkBandSchrittKlang(ctx) {
         const T = A.SCHRITT_KLANG;
         const codeOf = window.__codeOf;
     
-        // ── KONSUM-/Source-Proben (Lehre 6): die EINE Quelle ist verdrahtet ──
-        o.checks.konsumTick = /_schrittKlangTick\(/.test(codeOf(r.animatePlayerSoul));
-        const tickSrc = codeOf(r._schrittKlangTick);
-        o.checks.keineEigeneUhr =
-            /walkPhase/.test(tickSrc) && !/performance\.now/.test(tickSrc) && !/Date\.now/.test(tickSrc);
-        o.checks.eineSchwelle = /LAND_DIP_MIN_SPEED/.test(tickSrc); // kein Schwellen-Zwilling
-        const matSrc = codeOf(r._schrittMaterialAt);
-        o.checks.materialQuellen = /_terrainMaterialAt/.test(matSrc) && /_koerperWasser/.test(matSrc);
-        const shotSrc = codeOf(r._playSchrittOneShot);
-        o.checks.klangEineMaschine =
-            /masterGain/.test(shotSrc) && /enabled/.test(shotSrc) && !/new\s+AudioContext/.test(shotSrc);
+        // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
+        // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0, (C) und S2 tragen Boden und Wasser am Fuß) ──
+        o.checks.keineEigeneUhr = window.__fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
+        o.checks.klangEineMaschine = window.__fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
         o.checks.simUnberuehrt =
             !/_schrittKlang/.test(codeOf(r._stepFixedSim)) &&
             !/_schrittKlang/.test(codeOf(r._loopFixedStep)) &&
@@ -655,8 +648,8 @@ async function checkBandSchrittKlang(ctx) {
     const c = out.checks || {};
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
-    const konsum = alle("konsumTick", "keineEigeneUhr", "eineSchwelle", "materialQuellen", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
-    check("Schritt-Klang KONSUM: der EINE Tick liest walkPhase, LAND_DIP_MIN_SPEED, _terrainMaterialAt + _koerperWasser, die EINE Stimme; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
+    const konsum = alle("keineEigeneUhr", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
+    check("Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
     const timbre = alle("cZweiBoeden", "s2NassSchlaegtFest", "cFallback", "cDeckel");
