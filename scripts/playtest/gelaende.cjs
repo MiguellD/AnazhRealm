@@ -2372,29 +2372,13 @@ async function checkBandPhaseAFundament(ctx) {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
             const L = r.constructor.LUFT;
-            const W = r.constructor.WEATHER_FIELD;
-            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(W.sunny);
-            // die Extinktion der Szene folgt dem Wetter (am Bild-Pfad: klar → Sturm, über dem Wasser gemessen)
-            const U = r._luftEnsure().U;
-            const sw = { w: r.state.weather, wt: r.state.weatherTransition };
-            const beta = (w) => ((r.state.weather = w), r._applyDayNightToScene(), U.beta.value);
-            let bKlar, bSturm;
-            try {
-                r._koerperWasser = () => -Infinity;
-                r.state.weatherTransition = null;
-                bKlar = beta("sunny");
-                bSturm = beta("stormy");
-            } finally {
-                delete r._koerperWasser;
-                Object.assign(r.state, { weather: sw.w, weatherTransition: sw.wt });
-                r._applyDayNightToScene();
-            }
+            // (dass die Extinktion der Szene dem Wetter folgt, misst gate:luft-sicht am Uniform der Szene: Sonne · Regen · Sturm)
+            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(r.constructor.WEATHER_FIELD.sunny);
             out.a5 = {
                 sichtKlar,
                 ringEdge,
                 knoten: !!r.state.scene.fogNode && !r.state.scene.fog,
                 kanteKlar: Math.exp((-ringEdge * -Math.log(L.kontrast)) / sichtKlar) >= 0.9,
-                src: Math.abs(bKlar - r._luftBeta(W.sunny)) < 1e-12 && Math.abs(bSturm - r._luftBeta(W.stormy)) < 1e-12 && bSturm > bKlar,
             };
         }
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
@@ -2456,10 +2440,6 @@ async function checkBandPhaseAFundament(ctx) {
         "A5: die Luft trägt — scene.fogNode statt Nebel, klarer Tag ≥ 5 km Sicht, die Ring-Kante liegt klar",
         res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
         res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
-    );
-    check(
-        "A5: die Extinktion der Szene folgt dem Wetter (_luftBeta: der Sturm trübt die Luft gegen den klaren Tag)",
-        res.a5 && res.a5.src === true
     );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
