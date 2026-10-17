@@ -187,7 +187,7 @@ async function driveImpostor(page) {
             // DIE STRICH-WAND am Graphen (Integration W6, Echt-GPU 05.10.): steht die Peilung auf einer Ansichts-Grenze, springt
             // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
             // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
-            // (Albedo und Normale je Ansicht A und B) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
+            // (die Albedo je Ansicht A und B, die Normale der nächsten, S2b) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
             // der den Atlas ohne beides liest, fällt beim Namen.
             const atS = r._impostorAtlas();
             const strich = (m) => {
@@ -856,9 +856,9 @@ async function windProbe(page) {
     if (A.vereinigung) {
         const s = A.strich || {};
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        if (!(s.gradMap === 2 && s.gradNmap === 2 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
+        if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
             errs.push(
-                `A: Strich-Wand — Albedo und Normale je Ansicht mit Gradienten der stetigen Koordinate (2/2), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
+                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten mit Gradienten der stetigen Koordinate (2/1), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");

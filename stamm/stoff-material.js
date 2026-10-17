@@ -1023,9 +1023,14 @@ class AnazhRealm_stoff_material {
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
-                                    // Leer-Normale an der Silhouette; BC5 trägt die gemittelte (leer = (0, 0, 1), `_karteRechenPlan`)
+                                    // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der
+                                    // Nachbarn, `_karteRechenPlan`)
                                     const _vm = _at.fmt === "rgba8";
-                                    const _nP = _Ta.mix(_probeA(_at.nmapNode, _uvA), _probeA(_at.nmapNode, _uvB), _fb);
+                                    // DIE NORMALE DER NÄCHSTEN ANSICHT (S2b): die Albedo mischt die beiden Ansichten, die Normale
+                                    // nie — dieselbe Stelle des Quads trifft in zwei Ansichten 45° auseinander verschiedene Blätter,
+                                    // ihr Mittel kippte die lichte Krone zum Auge (Radeon, Genesis Ego, Birke: Zenit-Sonne 54 %,
+                                    // Seiten-Sonne 63–70 %, Front 111 % ihrer L1 — Karte/Gestalt 0,64 → 1,04)
+                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA, _uvB));
                                     const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
