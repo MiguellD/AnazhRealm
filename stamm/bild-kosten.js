@@ -3569,10 +3569,13 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     // (9) die FREIEN Uniforms der eigenen Gruppen (nicht geteilt): kein Knoten des Programms stellt sie (die Bau-Uniforms
     // wie `modelWorldMatrix` hält ein Objekt-Knoten in `uniformNode`, die Material-Verweise in `node` — der Vendor stellt sie,
     // equals() prüft ihr Objekt) — ein Schreiber setzt `.value`
+    // NUR DIE EIGENEN FELDER (B4): TSL hängt jede Ketten-Methode aufzählbar an den Prototyp des Knotens (`addMethodChaining`:
+    // `Node.prototype[name]` und `[name + "Assign"]`) — ein `for … in` ging je Knoten ~2 350 geerbte Namen durch, keiner davon
+    // eine Uniform (Radeon kalt am Kopf 130ba565: `_diaetGang` 585–708 ms Selbstzeit vor dem ersten Weltbild, 96 % in dieser Zeile).
     const gespeist = new Set();
     for (const liste of [nbs.updateNodes, nbs.updateBeforeNodes, nbs.updateAfterNodes])
         for (const n of liste || [])
-            for (const k in n) {
+            for (const k of Object.keys(n)) {
                 const v = n[k];
                 if (v && v.isUniformNode === true) gespeist.add(v);
             }

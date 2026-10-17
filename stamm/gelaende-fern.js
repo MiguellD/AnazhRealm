@@ -1151,7 +1151,11 @@ class AnazhRealm_gelaende_fern {
         }
         const F = AnazhRealm.FERN_RING;
         if (!this._nebenFaden("fern")) return done; // der Fern-Faden steht noch nicht (der Voxel-Faden kommt) — der Ring wartet
-        while (fr.flug < F.scheibenImFlug && fr.auftrag < fr.totalVerts) {
+        // IM LADE-TAKT DER GANZE RING IM FLUG (B4): der Faden rechnet die Scheiben in Index-Folge ohne Pause — mit drei im Flug
+        // bestellte erst der nächste Lade-Frame nach (~0,6–1 s), und der Faden ruhte dazwischen (Radeon kalt am Kopf 130ba565:
+        // der Horizont 11 % von 4,2 bis 7,4 s, ganz bei 10,1–10,3 s). Im Spiel bleiben es `scheibenImFlug` je Takt.
+        const imFlug = this._ladeTakt() ? Infinity : F.scheibenImFlug;
+        while (fr.flug < imFlug && fr.auftrag < fr.totalVerts) {
             const von = fr.auftrag;
             const n = Math.min(fr.totalVerts, von + F.scheibe) - von;
             fr.auftrag = von + n;
