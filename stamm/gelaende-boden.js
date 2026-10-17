@@ -156,13 +156,15 @@ class AnazhRealm_gelaende_boden {
     }
     // DIE KARTEN DES BODEN-LESERS über einem Rechteck (Welt-XZ): jeder Chunk, dessen Karte `_bodenSichtAt` dort liest — der
     // Eigner und, in den ersten zwei Zellen-Schritten des Chunks (so weit reicht der Saum einer Karte herüber), seine unteren
-    // Nachbarn. Map Schlüssel → Karte (ein leerer Chunk mit undefined: baut er später Boden, ist das ein Neubau); null,
-    // solange einer davon noch keine Karte hat — die Kachel wartet auf ihren GANZEN Boden, nie nach Streaming-Reihenfolge.
+    // Nachbarn. Map Schlüssel → Karte (ein leerer Chunk mit undefined: baut er später Boden, ist das ein Neubau), dazu ihr
+    // `rechteck`; null, solange einer davon noch keine Karte hat — die Kachel wartet auf ihren GANZEN Boden, nie nach
+    // Streaming-Reihenfolge.
     _bodenSichtChunks(x0, z0, x1, z1) {
         const vc = this.state.voxelChunks;
         if (!vc) return null;
         const cfg = this._voxelChunkConfig(0);
         const out = new Map();
+        out.rechteck = [x0, z0, x1, z1];
         for (let cz = Math.floor((z0 - 2 * cfg.step) / cfg.span); cz <= Math.floor(z1 / cfg.span); cz++) {
             for (let cx = Math.floor((x0 - 2 * cfg.step) / cfg.span); cx <= Math.floor(x1 / cfg.span); cx++) {
                 const k = `${cx},${cz}`;
@@ -172,6 +174,38 @@ class AnazhRealm_gelaende_boden {
             }
         }
         return out;
+    }
+
+    // DIE KACHEL LIEST IHREN BODEN (F3): tragen die Karten, die eine Kachel der Nah-Wiese/Nah-Streu las (`_bodenSichtChunks`),
+    // über ihrem Rechteck noch denselben Boden? Ein neu gebauter Chunk fällt die Kachel nur, wenn sich seine Karte dort ändert
+    // (die Zellen, die `_bodenSichtAt` im Rechteck liest); sonst liest sie ab jetzt die neue. Bis F3 fiel jede Kachel über
+    // einem neu gebauten Chunk — ein Graben baut bis 3 × 3 Chunks neu, die Wiese daneben wuchs Kachel um Kachel neu, eine
+    // je Takt (am Graben der Mess-Wiese 25 Fälle jenseits von 8 m: das Flackern).
+    _bodenKartenStehen(karten) {
+        const vc = this.state.voxelChunks;
+        const [x0, z0, x1, z1] = karten.rechteck || [0, 0, -1, -1];
+        for (const [ck, karte] of karten) {
+            const e = vc && vc.get(ck);
+            if (!e) return false;
+            if (e.surfMap === karte) continue;
+            if (!e.surfMap || !karte || e.surfMap.length !== karte.length) return false;
+            const cfg = this._voxelChunkConfig(e.lod || 0);
+            const h = cfg.step / AnazhRealm.BODEN_KARTE_TEILUNG;
+            const M = Math.round(Math.sqrt(karte.length));
+            const c = ck.indexOf(",");
+            const ox = Number(ck.slice(0, c)) * cfg.span - cfg.step;
+            const oz = Number(ck.slice(c + 1)) * cfg.span - cfg.step;
+            const i1 = Math.min(M - 1, Math.floor((x1 - ox) / h) + 1);
+            const k1 = Math.min(M - 1, Math.floor((z1 - oz) / h) + 1);
+            for (let k = Math.max(0, Math.floor((z0 - oz) / h)); k <= k1; k++)
+                for (let i = Math.max(0, Math.floor((x0 - ox) / h)); i <= i1; i++) {
+                    const a = karte[i + k * M];
+                    const b = e.surfMap[i + k * M];
+                    if (a !== b && !(a !== a && b !== b)) return false; // NaN = kein Boden, beide gleich
+                }
+            karten.set(ck, e.surfMap);
+        }
+        return true;
     }
 
     // Täler und Seen trägt das Flussnetz des Gelände-Gesetzbuchs (K16): ein See ist eine Senke des Netzes (Ebene 0),
