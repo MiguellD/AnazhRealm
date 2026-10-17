@@ -3402,7 +3402,8 @@ async function starte() {
             };
             if (argv.includes("--karte")) {
                 if (opt("--wechsel")) await stufen(plan.l1);
-                await k(1);
+                // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
+                for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
                 await stufen(0.6);
             }
             const w = argv.includes("--karte")

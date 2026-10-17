@@ -1381,6 +1381,8 @@ function laubGegenlicht(opts) {
         }
         if (vorher) ziel = vorher.ziel;
         if (!ziel) return { fehler: "kein Exemplar der Art" };
+        // der Schuss der Gestalt nur am Exemplar des Plans in seiner Gestalt (sonst stünde ein fremder Baum im Vergleich)
+        if (opts.karte === 1 && opts.ziel && ziel.d > 1.5) return (window.__karteGestalt = null), { fehler: "das Exemplar zeigt keine Gestalt", d: +ziel.d.toFixed(1) };
         const mitte = ziel.box.getCenter(new T.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
         const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
@@ -1431,9 +1433,10 @@ function laubGegenlicht(opts) {
             ? new T.Vector3(opts.auge ? opts.auge[0] : pp.x, 0, opts.auge ? opts.auge[1] : pp.z)
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
         auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
-        // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 zeigt (der Schuss der Gestalt)
+        // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
+        // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet)
         const D = r.constructor.LOD_DISTANCES;
-        const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + D.hysteresis + 1).toFixed(1);
+        const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
         if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
@@ -1559,10 +1562,12 @@ function laubGegenlicht(opts) {
                 cam.lookAt(mitte);
                 cam.fov = Math.min(fovAlt, (360 / Math.PI) * Math.atan((1.1 * rad) / auge.distanceTo(mitte)));
                 // DIE TIEFEN-SCHEIBE (S2b): im Spiel-Abstand stehen Kronen vor und hinter dem Exemplar im Rechteck (Wald, Gebüsch,
-                // die Kronen hinter ihm in fremder Stufe) — die Kamera zeichnet nur die Kugel des Exemplars (near/far um seine Mitte)
-                const nfAlt = [cam.near, cam.far];
-                cam.near = Math.max(0.1, auge.distanceTo(mitte) - rad);
-                cam.far = auge.distanceTo(mitte) + rad;
+                // die Kronen hinter ihm in fremder Stufe) — die Kamera zeichnet nur den Zylinder des Exemplars (near/far um seine
+                // Mitte, so tief wie die Krone breit: die Kugel der Box trug beim hohen Baum die halbe Höhe als Tiefe)
+                const nfAlt = [cam.near, cam.far],
+                    rxz = Math.max(ziel.box.max.x - ziel.box.min.x, ziel.box.max.z - ziel.box.min.z) / 2;
+                cam.near = Math.max(0.1, auge.distanceTo(mitte) - rxz);
+                cam.far = auge.distanceTo(mitte) + rxz;
                 cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
                 const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
@@ -1585,8 +1590,22 @@ function laubGegenlicht(opts) {
                 };
                 const sg = [0, 0, 0], sk = [0, 0, 0];
                 let n = 0;
+                // DAS EXEMPLAR ALLEIN (S2b): gezählt wird die Insel um die Mitte der Krone, die beide Schüsse zeichnen (Lücken
+                // bis 3 px gehören zur Krone) — Nachbarn in derselben Tiefe stehen als eigene Inseln daneben
+                const im = (i) => g && g.Yp[i] >= 0 && b.Yp[i] >= 0 && Math.abs(((i % W) + 0.5) / W * 2 - 1) <= rand[0] && Math.abs((((i / W) | 0) + 0.5) / H * 2 - 1) <= rand[1];
+                const insel = new Uint8Array(W * H), stapel = [];
+                for (let i = 0, best = Infinity; i < W * H; i++) {
+                    const dd = ((i % W) - W / 2) ** 2 + (((i / W) | 0) - H / 2) ** 2;
+                    if (im(i) && dd < best) (best = dd), (stapel[0] = i);
+                }
+                if (stapel.length) insel[stapel[0]] = 1;
+                while (stapel.length) {
+                    const i = stapel.pop(), x = i % W, y = (i / W) | 0;
+                    for (let v = Math.max(0, y - 3); v <= Math.min(H - 1, y + 3); v++)
+                        for (let u = Math.max(0, x - 3); u <= Math.min(W - 1, x + 3); u++) if (!insel[v * W + u] && im(v * W + u)) (insel[v * W + u] = 1), stapel.push(v * W + u);
+                }
                 for (let i = 0; g && i < W * H; i++)
-                    if (g.Yp[i] >= 0 && b.Yp[i] >= 0 && Math.abs(((i % W) + 0.5) / W * 2 - 1) <= rand[0] && Math.abs((((i / W) | 0) + 0.5) / H * 2 - 1) <= rand[1]) {
+                    if (insel[i]) {
                         for (let c = 0; c < 3; c++) (sg[c] += g.Cp[i * 3 + c]), (sk[c] += b.Cp[i * 3 + c]);
                         n++;
                     }
