@@ -290,10 +290,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T01:53:04.413Z",
+                    "datum": "2026-10-17T03:47:11.982Z",
                     "stand": {
-                        "version": "18.546.9",
-                        "sha": "ad298011e28e0d249b6782e128ae84b699e39bce"
+                        "version": "18.546.10",
+                        "sha": "b2a16ef454dda5d22ce94fa26b6df352ad3b4da4"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -308,32 +308,32 @@
                         "pixel": 0,
                         "max": 1
                     },
-                    "misch": 191309,
+                    "misch": 191392,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4821,"sp":[426,0,0,703321.87,703321.87,339064.69],"zweiton":0,"zt":0,"weiss":0.0142,"wt":3545,"wtZiel":null,"bunt":24.79,"pixel":250493,"deckung":0.1208,"deckungUnten":0.0042,"luma":74.49,"kontrast":0.5632,"detail":0.1093,"nyquist":0.1288,"ek":551228.4,"eg":3729845.3,"silhouette":126.4194,"kante":0.1983,"kr":22753},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1582,"wt":11265,"wtZiel":null,"bunt":13.6,"pixel":71228,"deckung":0.0343,"deckungUnten":0,"luma":91.6,"kontrast":0.5995,"detail":0.1691,"nyquist":0.1264,"ek":413723.1,"eg":2860657.8,"silhouette":55.8629,"kante":0.1761,"kr":8490},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1041,"sp":[658,0,0,914179.87,914179.87,95153.38],"zweiton":0,"zt":0,"weiss":0.0182,"wt":5363,"wtZiel":null,"bunt":23.72,"pixel":294113,"deckung":0.1418,"deckungUnten":0.0045,"luma":73.66,"kontrast":0.5735,"detail":0.1298,"nyquist":0.132,"ek":887252.5,"eg":5836028.1,"silhouette":88.4807,"kante":0.1655,"kr":23439},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0061,"sp":[3613,0,0,4196900.01,4196900.01,-25681.41],"zweiton":0,"zt":0,"weiss":0.0021,"wt":1100,"wtZiel":null,"bunt":29.56,"pixel":512314,"deckung":0.2471,"deckungUnten":0.1156,"luma":66.19,"kontrast":0.5143,"detail":0.0834,"nyquist":0.0977,"ek":477872.4,"eg":4414176.3,"silhouette":75.8745,"kante":0.3788,"kr":16378}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4826,"sp":[425,0,0,703156.27,703156.27,339313.3],"zweiton":0,"zt":0,"weiss":0.0141,"wt":3542,"wtZiel":null,"bunt":24.79,"pixel":250493,"deckung":0.1208,"deckungUnten":0.0042,"luma":74.5,"kontrast":0.5632,"detail":0.1093,"nyquist":0.1288,"ek":551287.1,"eg":3730445.7,"silhouette":126.3874,"kante":0.1982,"kr":22750},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1579,"wt":11249,"wtZiel":null,"bunt":13.6,"pixel":71237,"deckung":0.0344,"deckungUnten":0,"luma":91.63,"kontrast":0.5994,"detail":0.1692,"nyquist":0.1264,"ek":414230.2,"eg":2863087.5,"silhouette":55.7507,"kante":0.1764,"kr":8462},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1054,"sp":[657,0,0,913868.75,913868.75,96301.06],"zweiton":0,"zt":0,"weiss":0.0183,"wt":5375,"wtZiel":null,"bunt":23.72,"pixel":294098,"deckung":0.1418,"deckungUnten":0.0045,"luma":73.68,"kontrast":0.5734,"detail":0.1298,"nyquist":0.132,"ek":887490.8,"eg":5835610.3,"silhouette":88.5198,"kante":0.1654,"kr":23453},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0046,"sp":[3612,0,0,4210549.9,4210549.9,-19253.16],"zweiton":0,"zt":0,"weiss":0.0021,"wt":1096,"wtZiel":null,"bunt":29.56,"pixel":512311,"deckung":0.2471,"deckungUnten":0.1156,"luma":66.2,"kontrast":0.5143,"detail":0.0834,"nyquist":0.0977,"ek":477996.4,"eg":4414864.7,"silhouette":75.8901,"kante":0.3789,"kr":16387}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
                         "phyto-core.js": "c:6cf8df94e3dac37e",
-                        "foundry-core.js": "c:3b21a4161089ec4f",
-                        "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
+                        "foundry-core.js": "c:6e8cf71a446dd765",
+                        "stamm/dirigent-kern.js": "c:3606a2b106691a12",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
-                        "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                        "stamm/stoff-material.js": "c:34e30b2ba56af6c2",
+                        "stamm/wasser-zellen.js": "c:56c61979ee32c817",
+                        "stamm/stoff-material.js": "c:ad842b85101e6672",
                         "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                        "stamm/studio-bruecke.js": "c:842e9df2b4947b62",
+                        "stamm/studio-bruecke.js": "c:1f19ebde32f1e855",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
-                        "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                        "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
+                        "stamm/siedlung-ort.js": "c:01a8c9f5f4ca0e5d",
+                        "stamm/siedlung-bauten.js": "c:ce252bcd0a4e5154",
                         "stamm/vegetation-baum.js": "c:337b8bcd8e5fcc2e",
-                        "stamm/bild-kosten.js": "c:7b2fe3d00deee19e",
+                        "stamm/bild-kosten.js": "c:ad2b729bb30c87b4",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
                         "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
@@ -341,7 +341,7 @@
                         "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
                         "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
                         "stamm/dirigent-takt.js": "c:5f44e427c1ac002d",
-                        "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                        "stamm/dirigent-ankunft.js": "c:8582924a3a670618"
                     }
                 }
             },
