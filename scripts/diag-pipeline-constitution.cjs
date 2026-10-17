@@ -284,16 +284,7 @@ law(
             mf.every((c) => c && typeof c.id === "string" && Array.isArray(c.scripts) && c.scripts.length >= 1);
     } catch (_e) {}
     law("N2: cores.manifest.json existiert + ist ein gueltiger Kern-Satz", true, manifestOk);
-    law(
-        "N2: der Worker-Boot liest das Manifest (cores.manifest.json in _ensureAssetFoundry)",
-        true,
-        /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) && /self\.__anazhCores=/.test(anazhNC)
-    );
-    law(
-        "N2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + core.scripts → _foundrySchale)",
-        true,
-        /stempelUrls\.push\(/.test(anazhNC) && /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC)
-    );
+    // (Worker-Boot und Platten-Stempel aus dem Manifest beweist der LAUF des Boots, gate:pack-contract `bootLauf`, B3a.)
     law(
         "N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)",
         false,

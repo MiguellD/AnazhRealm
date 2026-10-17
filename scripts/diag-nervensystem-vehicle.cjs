@@ -61,24 +61,12 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
-    // A1 (N2-migriert): die rel-Liste ist keine Hardcode-Zeile mehr — das MANIFEST traegt die
-    // Kerne (vehicle-core + foundry-core als scripts-Eintraege), und der Worker-Boot in
-    // _ensureAssetFoundry liest cores.manifest.json (?v=-Buster) + baut rel aus core.scripts.
+    // A1 (N2-migriert): das MANIFEST traegt die Kerne (vehicle-core + foundry-core als scripts-Eintraege). Dass der
+    // Worker-Boot allein aus ihm laedt und der Platten-Stempel Manifest-Text + alle Kern-Skripte hasht (die alte A2),
+    // beweist der LAUF des Boots (gate:pack-contract `bootLauf`, B3a) — nie der Text des Rumpfs.
     out.push([
-        "A1: der Worker-Boot ist manifest-getrieben (Manifest traegt vehicle-core, _ensureAssetFoundry liest cores.manifest.json)",
-        /"vehicle-core\.js"/.test(manifestSrc) &&
-            /"foundry-core\.js"/.test(manifestSrc) &&
-            /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) &&
-            /core\.scripts/.test(anazhNC),
-    ]);
-    // A2 (N2-migriert, V18.511 in der Transport-Schale): der Platten-Stempel hasht MANIFEST-getrieben —
-    // den Manifest-TEXT selbst (Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem
-    // Manifest (deckt vehicle-core weiter, ohne harte Zeile — die Drift-Wand bleibt).
-    out.push([
-        "A2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + alle Kern-Skripte)",
-        /\.then\(\(res\) => res\.text\(\)\)/.test(anazhNC) &&
-            /stempelUrls\.push\(/.test(anazhNC) &&
-            /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC),
+        "A1: das Manifest traegt vehicle-core und foundry-core (der Worker-Boot laedt allein aus ihm)",
+        /"vehicle-core\.js"/.test(manifestSrc) && /"foundry-core\.js"/.test(manifestSrc),
     ]);
     // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): die Zweit-Kern-Blöcke (zusatzKindStages · zusatzBudget mit den
     // Gestalten je Rezept) mergt NUR phyto-core `kerneVereinen`, gerufen EINMAL im Stamm — in
