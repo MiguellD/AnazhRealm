@@ -1591,12 +1591,13 @@ class AnazhRealm_netz_identitaet {
         if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
         this.state.worldMeta.visibility = canonical;
         // Lobby-Bridge: nur "gelistet" → publiziert. Andere Stufen un-publishen
-        // einen evtl. noch publizierten Raum, damit die Wand nicht-leck ist.
-        if (canonical === "gelistet" && typeof this.publishToLobby === "function") {
+        // einen evtl. noch publizierten Raum, damit die Wand nicht-leck ist. Kein typeof-Schutz: er verbarg den
+        // falschen Namen `unpublishLobby` — eine private Welt blieb in der Lobby (D3c-pt1, 17.10.).
+        if (canonical === "gelistet") {
             const label = this.state.worldMeta.slug || String(this.state.worldMeta.worldId).slice(0, 16);
             this.publishToLobby(label);
-        } else if (canonical !== "gelistet" && typeof this.unpublishLobby === "function") {
-            this.unpublishLobby();
+        } else {
+            this.unpublishFromLobby();
         }
         this.saveState();
         return { ok: true, visibility: canonical };

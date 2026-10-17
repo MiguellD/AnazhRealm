@@ -500,6 +500,15 @@ class AnazhRealm_bild_kosten {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
+                // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
+                // JEDEM Render voll auf (hasNode) — die Diät war ein Opt-in an fünf Bau-Stellen, jeder andere Stoff der Welt zahlte
+                // je Pass und Bild den vollen Gang über Knoten, Gruppen und Geometrie, auch ohne jede Änderung. Gemessen 17.10.
+                // (Radeon, Genesis Third, Regler voll): 2,9 ms je Bild Voll-Refresh — Fern-Ring, Inseln, Arena, Plattform, Himmel,
+                // Membranen, Kopf. Jetzt schreibt die Erst-Zeichnung jeden Stoff der Welt-Szene ein, bevor er baut (der Schatten-
+                // Stoff trägt die Diät seines Originals); was sich bewegt, atmet oder Knochen trägt, stellt nur seine eigenen Werte (der Objekt-Gang, `_diaetObjektGang`).
+                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
+                if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
+                    welt._materialObserverDiaet(urStoff);
                 const ungebaut =
                     ro._nodeBuilderState === null &&
                     N.get(ro).nodeBuilderState === undefined &&
@@ -3310,7 +3319,7 @@ AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 
 //      die render-/frame-Knoten, der Upload genau dieser Gruppen) und fragt dann equals() (Welt-Matrix · Material ·
 //      Geometrie · Lichter): voll nur, was sich änderte. Diät-Stoffe tragen nur geteilte renderGroup-Uniforms
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
-//      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
+//      Erst-Init, Velocity und Programme mit updateAfter fahren die Vendor-Bahn (Knochen: der Objekt-Gang (11)). gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
 //  (4) EIN GANG JE KNOTEN UND GRUPPE UND RENDER (Welle K, 07.10.): seit der EINE Knoten je Quelle die Render-Gruppen
 //      über Programme teilt (_configureRenderer), tragen die Programme DIESELBEN Vorher-Knoten, render-/frame-Knoten und
@@ -3336,7 +3345,7 @@ AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 
 //      resize-Handler (ein Zwilling, gefallen), jeden anderen Wechsel nicht: `setPixelRatio` (die DPR-Kappe
 //      `_applyRenderScale` nach einem DPR-Wechsel, Frames NACH dem resize-Ereignis) — nachgestellt am OMEN (GTX 1060,
 //      Mess-Wiese, laufender Loop): vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser
-//      Texturen; nach dem Gang (der den Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich,
+//      Texturen; nach dem Gang (der den Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel den Objekt-Gang (11) nach sich,
 //      die Bindung folgt der Textur — für JEDEN Größenwechsel, den des Fensters eingeschlossen.
 //      JEDE TEXTUR DES PROGRAMMS (Integration V18.542, die weiße Masse): r184 lädt eine Textur nur im Binde-Gang eines
 //      Render-Objekts hoch (`Bindings._update`: SampledTexture.update → updateTexture), und den fährt nur ein Refresh. Der
@@ -3391,14 +3400,82 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             }
         }
     }
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei };
+    // (10) DIE OBJEKT-VERWEISE (E1): ein Verweis je Zeichen-Objekt (`reference`, Takt object — der Stoff-Wert `_stoffWert`,
+    // `material.userData.…`) liest seinen Wert erst im Refresh; equals() sieht userData nie. Ein fester Stoff-Wert (die Art-
+    // Größe des Winds) wechselt nie, ein atmender (die Membran des Tors: Zeit · Aktiv · Puls · Tiefe) je Bild.
+    const verweise = nbs.updateNodes.filter(
+        (n) =>
+            n.getUpdateType() === "object" &&
+            typeof n.getValueFromReference === "function" &&
+            n.isMaterialReferenceNode !== true &&
+            n.object === null &&
+            n.count === null
+    );
+    // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object (Welt-Matrix, Knochen, Stoff-Verweise) und die Stellen der eigenen
+    // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
+    const objekt = nbs.updateNodes.filter((n) => n.getUpdateType() === "object");
+    const eigen = [];
+    ro.getBindings().forEach((g, i) => {
+        const b0 = g.bindings && g.bindings[0];
+        if (!(b0 && b0.groupNode && b0.groupNode.shared === true)) eigen.push(i);
+    });
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, eigen };
+};
+// (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
+// trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
+// es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
+// mit Knochen in Bild und Kaskade, Kopf, Plattform und Sonne. Jetzt stellt es seine Objekt-Knoten und lädt seine eigenen Gruppen.
+AnazhRealm._diaetObjektGang = function (rend, ro, k) {
+    const nf = rend._nodes.getNodeFrameForRender(ro);
+    for (const n of k.eigenVor) nf.updateBeforeNode(n);
+    for (const n of k.objekt) nf.updateNode(n);
+    for (const n of k.eigenKnoten) nf.updateNode(n);
+    const alle = ro.getBindings();
+    for (const i of k.eigen) rend._bindings._update(alle[i], alle);
+};
+// (10) Wechselte ein Objekt-Verweis des Programms seit dem letzten Blick dieses Render-Objekts? Ein Wechsel ist der Wert
+// eines Stoffs, kein Bruch: EIN Refresh, kein Melder. Der erste Blick merkt (die Erst-Anlage lud eben hoch).
+AnazhRealm._diaetVerweisAnders = function (obs, ro, k) {
+    if (k.verweise.length === 0 || !ro.object) return false;
+    const d = obs.getRenderObjectData(ro);
+    const erst = !d._anazhVerweisW;
+    const w = d._anazhVerweisW || (d._anazhVerweisW = []);
+    let anders = false,
+        i = 0;
+    const zahl = (x) => {
+        if (w[i] !== x) {
+            w[i] = x;
+            anders = true;
+        }
+        i++;
+    };
+    for (const n of k.verweise) {
+        const v = n.getValueFromReference(ro.object);
+        if (typeof v === "number" || typeof v === "boolean") zahl(+v);
+        else if (v && v.isTexture === true) {
+            zahl(v.id);
+            zahl(v.version);
+        } else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e);
+        else if (v && v.isColor === true) {
+            zahl(v.r);
+            zahl(v.g);
+            zahl(v.b);
+        } else if (v && typeof v.x === "number") {
+            zahl(v.x);
+            zahl(v.y);
+            zahl(v.z === undefined ? 0 : v.z);
+            zahl(v.w === undefined ? 0 : v.w);
+        } else zahl(v);
+    }
+    return anders && !erst;
 };
 // (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
 // Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
-// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt folgt
-// jedem Wechsel EIN Refresh, und der EINE Melder nennt den Stoff und die Uniform ohne Heimat beim Namen (das Pflicht-Paar
-// `_uniformHeimatTeilen` spart den Refresh). Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben
-// hoch); liefert die gewechselte Uniform, sonst null.
+// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt lädt
+// jeder Wechsel die eigene Gruppe im Objekt-Gang (11) — seit jeder Welt-Stoff die Diät trägt (E1), ist die Objekt-Uniform
+// ein Wert des Stoffs, kein Bruch (der Melder nannte bis E1-n1 die Insel der Welt-Sprache); `_uniformHeimatTeilen` lädt sie EINMAL
+// je Render statt je Objekt. Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben hoch); liefert
+// die gewechselte Uniform, sonst null.
 AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
     if (k.frei.length === 0) return null;
     const d = obs.getRenderObjectData(ro);
@@ -3579,7 +3656,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const rend = frame && frame.renderer;
     if (
         !rend ||
-        obs.hasAnimation === true ||
         !obs.renderObjects.has(ro) ||
         obs.needsVelocity(rend) ||
         ro.getNodeBuilderState().updateAfterNodes.length > 0
@@ -3590,25 +3666,25 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         obs.renderId = rid;
         AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
     }
-    // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
-    if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
-    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
+    // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben — die Bindung folgt ihr im
+    // Objekt-Gang (11, `Bindings._update`: Hochladen, neue Generation → neue Bindegruppe), geteilte Gruppen im Gang je Render
+    const textur = AnazhRealm._diaetVorTextur(obs, ro);
     const nbs = ro.getNodeBuilderState();
-    const frei = AnazhRealm._diaetFreiAnders(
-        obs,
-        ro,
-        nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs))
-    );
-    if (frei) {
-        if (obs._anazhWelt) {
-            const n = frei.nodeUniform.node;
-            obs._anazhWelt._bruchMelden(
-                `DIÄT: ${(obj && obj.name) || (ro.material && ro.material.type)} — die Objekt-Uniform ${
-                    n.name || frei.name
-                } wechselte ohne geteilte Heimat (Pflicht-Paar _uniformHeimatTeilen): der Uniform-Wächter frischt je Wechsel voll auf`
-            );
-        }
-        return true;
+    const gang = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    // (10) ein Objekt-Verweis wechselte seinen Wert (der Stoff-Wert eines atmenden Stoffs): der Objekt-Gang (11) stellt ihn
+    const verweis = AnazhRealm._diaetVerweisAnders(obs, ro, gang);
+    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`): ein Objekt-Wert wie die Lage —
+    // der Objekt-Gang (11) lädt die eigene Gruppe, die ihn trägt (bis E1-n1 ein Voll-Refresh und ein Bruch je Wechsel)
+    const frei = AnazhRealm._diaetFreiAnders(obs, ro, gang) !== null;
+    // (11) DIE LAGE vor equals(): eine neue Welt-Matrix ist ein Objekt-Wert (der Objekt-Gang), kein Grund für den vollen
+    // Gang; jede andere Änderung (Stoff · Geometrie · Morph · Lichter), die equals() danach sieht, bleibt einer.
+    const od = obs.getRenderObjectData(ro);
+    let lage = false;
+    if (obj && od.worldMatrix.equals(obj.matrixWorld) !== true) {
+        od.worldMatrix.copy(obj.matrixWorld);
+        lage = true;
     }
-    return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
+    if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
+    if (lage || verweis || textur || frei || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
+    return false;
 };

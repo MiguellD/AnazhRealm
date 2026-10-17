@@ -1280,11 +1280,6 @@ class AnazhRealm_siedlung_bauten {
         if (!mat) {
             mat = this._buildToonNodeMaterial(opts);
             mat.userData.sharedFoliage = true;
-            // OBSERVER-DIÄT: die sharedFoliage-Singletons hängen NUR an geteilten Sätzen (Atmo/LOD/Wind,
-            // renderGroup) + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/instanceColor.
-            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der Textur-Wächter
-            // (`_diaetVorTextur`).
-            this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
         return mat;

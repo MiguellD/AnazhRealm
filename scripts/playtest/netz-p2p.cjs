@@ -2787,50 +2787,52 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const v836Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const proto = Object.getPrototypeOf(r);
-        const allSrc = [];
-        for (const name of Object.getOwnPropertyNames(proto)) {
-            try {
-                const fn = proto[name];
-                if (typeof fn === "function") allSrc.push({ name, src: window.__codeOf(fn) });
-            } catch {
-                /* skip */
-            }
-        }
-        const srcOf = (name) => {
-            const m = allSrc.find((x) => x.name === name);
-            return m ? m.src : "";
-        };
-
-        // 1. (P3 — der Ammo-Player-Body + sein DISABLE_DEACTIVATION/forceActivationState
-        //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
-        //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
-
-        // 2. 3rd-Person-Kamera — Kollisions-Wurf in der Kamera-Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera;
-        //    K06: der Wurf ist die Kugel der Kamera (`_fieldRaycast` mit `radius`), nicht mehr der Ammo-Rückruf.
-        {
-            const src = srcOf("_loopCamera");
-            out.cameraRaycast =
-                /cameraMode === "third"/.test(src) &&
-                /this\._fieldRaycast\(tx, ty, tz, camX, camY, camZ, \{[^}]*radius: kr/.test(src);
-        }
-
-        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das 3D-Feld kennt keine
-        // Säulen-Akkumulation); Marker ist `carveRadius = 3.5` (~140 Zellen), `_applyModifyOpToChunk` ist weg.
-        out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
+        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
-        // 4. Wasser-/Boden-Durchfall: `_stepCharacter` snappt auf die Feld-Oberfläche (kein Auftrieb unter
-        //    Terrain) und die KILLPLANE fängt einen echten Durchfall — beide Stücke müssen da sein.
+        // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche
+        // (die leere Säule ist Bühne; die Wand-Kugel schiebt nicht seitlich).
         {
-            const src = srcOf("_stepCharacter");
-            out.waterGate = /(?:submerged|schwimmt)/.test(src) && /killPlaneY/.test(src);
+            const s = r.state,
+                pm = s.playerMesh,
+                pos = pm.position.clone();
+            const buehne = {
+                _fieldSolid: () => false,
+                _fieldSurfaceBelow: () => null,
+                _fieldResolveSphere: () => false,
+                _koerperWasser: () => -Infinity,
+            };
+            Object.assign(r, buehne);
+            try {
+                pm.position.set(pos.x, -1e4, pos.z);
+                s._fieldVy = 0;
+                s.playerVel.setValue(0, 0, 0);
+                r._stepCharacter(r.constructor.FIXED_DT, 0);
+                const p1 = pm.position;
+                out.waterGate = p1.y > -1e3 && Math.abs(p1.y - r.findSurfaceAbove(p1.x, 0, p1.z)) < 3;
+            } finally {
+                for (const k in buehne) delete r[k];
+                pm.position.copy(pos);
+                s._fieldVy = 0;
+                s.playerVel.setValue(0, 0, 0);
+            }
         }
 
-        // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
-        out.logCssRule = [...document.querySelectorAll("style")].some((s) =>
-            s.textContent.includes("console-log-section:has")
-        );
+        // 5. Logbuch: aufgeklappt wächst es wie der Chat (50/50), eingeklappt nicht — am berechneten Layout.
+        {
+            const sec = document.getElementById("console-log-section"),
+                chat = document.getElementById("console-chat-section"),
+                log = document.getElementById("log"),
+                knopf = document.getElementById("console-log-toggle");
+            const war = log.hidden;
+            if (war) knopf.click();
+            const offen = !log.hidden,
+                gAuf = getComputedStyle(sec).flexGrow;
+            knopf.click();
+            const gZu = getComputedStyle(sec).flexGrow;
+            if (!war) knopf.click();
+            out.logCssRule = offen && gAuf === "1" && gAuf === getComputedStyle(chat).flexGrow && gZu === "0";
+        }
 
         // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
         {
@@ -2857,17 +2859,12 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     if (v836Results && !v836Results.error) {
         // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
         // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
-        check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
-        check(
-            "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
-            v836Results.digRadiusVoxel
-        );
         check(
             "V9.36: _applyModifyOpToChunk ist gelöscht (Heightfield-Höhen-Clamp obsolet — Voxel-Feld braucht keinen)",
             v836Results.digHeightClampObsolete
         );
-        check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
-        check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
+        check("V8.36: die Killplane fängt einen Durchfall und stellt den Körper auf die Oberfläche", v836Results.waterGate);
+        check("V8.36: das aufgeklappte Logbuch teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
         check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
     } else {
         check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
@@ -3067,9 +3064,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // F — 3D-Preview-Höhe.
         {
-            out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
-                /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
-            );
+            // das berechnete Seitenverhältnis des Viewers (die Höhe darf max-height kappen, das Verhältnis nicht)
+            const cv = document.getElementById("workshop-preview-canvas");
+            out.previewAspect = !!cv && getComputedStyle(cv).aspectRatio.replace(/\s/g, "") === "5/3";
         }
 
         return out;
@@ -3278,7 +3275,18 @@ async function checkBandM8MakroFenster(ctx) {
         const el = document.getElementById("p2p-broker-stats");
         out.statsCached = !!p2p.brokerStats && p2p.brokerStats.rooms === 3 && p2p.brokerStats.peers === 7;
         out.statsShown = !!el && /7 online in 3/.test(el.textContent);
-        out.welcomeAsks = /type: "stats"/.test(window.__codeOf(r._p2pMsgWelcome));
+        // das welcome des Brokers fragt die stats über den bestehenden Kanal an (gefangen am Senden)
+        const sendEigen = Object.prototype.hasOwnProperty.call(r, "p2pSend"),
+            sendAlt = r.p2pSend,
+            gesendet = [];
+        r.p2pSend = (m) => (gesendet.push(m), true);
+        try {
+            r._p2pMsgWelcome({ peers: [] }, p2p);
+        } finally {
+            if (sendEigen) r.p2pSend = sendAlt;
+            else delete r.p2pSend;
+        }
+        out.welcomeAsks = gesendet.some((m) => m && m.type === "stats");
         // Müll fällt (defensive Wand).
         r._p2pMsgStats({ rooms: "x", peers: null }, p2p);
         out.statsWall = p2p.brokerStats.rooms === 3;
@@ -3316,18 +3324,13 @@ async function checkBandM8MakroFenster(ctx) {
             r.state.feedKind = savedKind;
             r._applyLibraryFilter();
         }
-        // (3) der Karten-Chip ist verdrahtet (Source irgendeiner Render-Methode
-        // trägt den feed-ident-Klick) + der Backup-Hinweis steht.
-        const protoSrcs = Object.getOwnPropertyNames(Object.getPrototypeOf(r)).map((n) => {
-            try {
-                return typeof r[n] === "function" ? window.__codeOf(r[n]) : "";
-            } catch {
-                return "";
-            }
-        });
-        out.identChip = protoSrcs.some(
-            (src) => /feed-ident/.test(src) && /_libraryAuthorFilter = item\.author/.test(src)
-        );
+        // (3) der Karten-Chip: ein Klick auf 👤 setzt den Autor-Filter auf den Autor der Karte + der Backup-Hinweis steht.
+        const filterVor = r.state._libraryAuthorFilter;
+        const chip = r._feedRatingBar({ id: "m8probe-chip", author: "aa11" }).querySelector(".feed-ident");
+        if (chip) chip.click();
+        out.identChip = !!chip && r.state._libraryAuthorFilter === "aa11";
+        r.state._libraryAuthorFilter = filterVor;
+        r._applyLibraryFilter();
         const hint = document.getElementById("vibe-pass-backup-hint");
         out.backupHint = !!hint && /Schlüssel/.test(hint.textContent) && /Fälschung/.test(hint.textContent);
         return out;

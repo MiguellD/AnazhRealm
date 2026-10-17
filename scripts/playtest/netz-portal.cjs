@@ -2128,9 +2128,11 @@ async function checkBandW18CoPresence(ctx) {
             !!reg && reg.coPresence === true && reg.trust === "sandboxed" && /worlds\/begegnung\//.test(reg.world);
         // (4) der Mesh-Pfad ist verdrahtet: ALLOWED-Liste + Dispatch-Tabelle +
         // Empfänger-Rate-Wand je Peer (das _cpRate-Muster).
-        out.channelAllowed = /"subworld-pose"/.test(window.__codeOf(r._p2pHandleChannelMessage));
+        out.channelAllowed = window.__consumes(r, "_p2pHandleChannelMessage", r, "_p2pMsgSubworldPose", [
+            "peerKonsumPose",
+            JSON.stringify({ type: "subworld-pose", worldId: "worlds/begegnung/index.html", pose: { x: 0, y: 0, z: 0, yaw: 0 } }),
+        ]);
         out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
-        out.peerRate = /_p2pPeerRateAdmit\("subworld-pose"/.test(window.__codeOf(r._p2pMsgSubworldPose));
         // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
         // die postMessage-Injektion wird über ein Fake-contentWindow gefangen).
         const savedPo = r._portalOverlay;
@@ -2179,6 +2181,12 @@ async function checkBandW18CoPresence(ctx) {
             r._portalSweepPosePeers();
             out.sweep =
                 !r._portalOverlay.peers.has("peer-test-1") && sent.length === 1 && sent[0].type === "peer-leave";
+            // die Peer-Rate-Wand: ein flutender Gefährte erreicht das iframe höchstens SUBWORLD_POSE_PEER_RATE_MAX-mal
+            sent.length = 0;
+            const M = r.constructor.SUBWORLD_POSE_PEER_RATE_MAX;
+            for (let i = 0; i < M + 5; i++)
+                r._p2pMsgSubworldPose({ peerId: "peer-flut-pose", worldId: msg.worldId, pose: { x: i, y: 0, z: 0, yaw: 0 } }, r.state.p2p);
+            out.peerRate = sent.filter((m) => m.type === "peer-state").length === M;
             if (r._portalOverlay.poseTimer) {
                 clearInterval(r._portalOverlay.poseTimer);
                 r._portalOverlay.poseTimer = null;
@@ -2324,7 +2332,19 @@ async function checkBandW18Dwell(ctx) {
                 hintEl: { textContent: "" },
                 iframe: { contentWindow: { postMessage: (m) => sent.push(m) } },
             };
-            const dw = r.dwellInPortal();
+            // „wohne hier" annonciert das Wohnen im soul-Kanal (gefangen am Senden)
+            const gesendet = [],
+                p2pAn = r.state.p2p.enabled;
+            r.p2pSend = (m) => gesendet.push(m);
+            r.state.p2p.enabled = true;
+            let dw;
+            try {
+                dw = r.dwellInPortal();
+            } finally {
+                delete r.p2pSend;
+                r.state.p2p.enabled = p2pAn;
+            }
+            out.soulSends = gesendet.some((m) => m.type === "soul" && m.dwell === "Begegnungs-Feld");
             const marker = r._loadPortalDwelling();
             out.dwellSets = dw.ok === true && !!marker && marker.worldId === "begegnung";
             out.hintDwell = /wohnst hier/.test(r._portalOverlay.hintEl.textContent);
@@ -2357,13 +2377,17 @@ async function checkBandW18Dwell(ctx) {
             if (savedStates === null) localStorage.removeItem("anazh.portalState");
             else localStorage.setItem("anazh.portalState", savedStates);
         }
-        // (7) Verdrahtung: der Boot ruft die Rückkehr; das Wohnen reist im
-        // soul-Kanal (Sender + Empfänger + Name-Schild); die Chat-Gesten
+        // (7) der Empfänger merkt sich, wo der Gefährte wohnt, und sein Namensschild zeichnet es; die Chat-Gesten
         // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
-        out.bootWired = /_portalDwellingBootReturn/.test(window.__codeOf(r.init));
-        out.soulSends = /dwell/.test(window.__codeOf(r._p2pBroadcastSoul));
-        out.soulReads = /dwellingIn/.test(window.__codeOf(r._p2pMsgSoul));
-        out.labelShows = /wohnt in/.test(window.__codeOf(r._p2pRefreshPeerNameLabel));
+        const pid = "peer-dwell-zensus";
+        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, r.state.p2p);
+        const pe = r.state.p2p.peers.get(pid);
+        const schild = () => (pe && pe.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
+        const ohne = schild();
+        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo", dwell: "Feld" }, r.state.p2p);
+        out.soulReads = !!pe && pe.dwellingIn === "Feld";
+        out.labelShows = !!ohne && schild() !== ohne;
+        r._p2pRemovePeer(pid);
         const examples = r.chatSystemPatterns.map((p) => p.example);
         out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
         // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
@@ -2381,8 +2405,8 @@ async function checkBandW18Dwell(ctx) {
     check("W18-D Wohnen: „ziehe heim“ räumt den Zeiger", res.endClears);
     check("W18-D Boot-Rückkehr: un-auffindbares Zuhause endet ehrlich", res.bootHonest);
     check(
-        "W18-D verdrahtet: Boot-Rückkehr + soul-Kanal (Sender/Empfänger/Name-Schild) + Chat-Gesten",
-        res.bootWired && res.soulSends && res.soulReads && res.labelShows && res.chatGestures
+        "W18-D verdrahtet: soul-Kanal (Sender/Empfänger/Name-Schild) + Chat-Gesten",
+        res.soulSends && res.soulReads && res.labelShows && res.chatGestures
     );
     check("W18-D Souveränität: Zeiger + Slot leben GLOBAL, nie im Welt-Snapshot", res.notInSnapshot);
 }
@@ -2429,12 +2453,27 @@ async function checkBandR6Capability(ctx) {
                 r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
             out.notExecuted = r.state.weather === savedWeather;
             out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
+            // die souveräne Geste: ohne Ja landet nichts, der Vorschlag bleibt in der Quarantäne
+            const altConfirm = window.confirm;
+            let gefragt = 0,
+                nein;
+            window.confirm = () => (gefragt++, false);
+            try {
+                nein = r.grantCapability("regen-tanz");
+            } finally {
+                window.confirm = altConfirm;
+            }
+            out.gestureWired =
+                gefragt === 1 &&
+                nein.ok === false &&
+                nein.reason === "declined" &&
+                !r.state.grantedCapabilities["regen-tanz"] &&
+                r.state.capabilityProposals.has("regen-tanz");
             const granted = r.grantCapability("regen-tanz", { skipConfirm: true });
             out.grants =
                 granted.ok === true &&
                 !!r.state.grantedCapabilities["regen-tanz"] &&
                 !r.state.capabilityProposals.has("regen-tanz");
-            out.gestureWired = /_sovereignGesture/.test(window.__codeOf(r.grantCapability));
             const ran = r.runCapability("regen-tanz");
             out.runs = ran.ok === true && r.state.weather === "rainy";
             const pub = "cd".repeat(32);
