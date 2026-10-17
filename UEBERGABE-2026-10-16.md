@@ -211,3 +211,7 @@ der Macher muss frei sein).
 - integ-probe = 33e0b496 (V18.546.13): + B3d Weltbild = Blick, B3e Wurf aus dem Plan (L3 155,6 -> 66,3 ms, Goldens byte-exakt), CI-Zeiten. main = 93539122 (V18.546.11).
 - OMEN Buendel 7: A = main 93539122, B = e47ad9f8 (bericht/1710-buendel7.md); danach echt-Neulauf (Frost-Wand S2 Wackler?) und main vorspulen auf den gemessenen + CI-gruenen Kopf.
 - Laufend: S2b karte-welt (wf_8e936d95-083). Offen: A12 see-spiegel (CI rot Fern-Ring), Kristall-Rennen (Bepflanzung wartet auf das Buch), D3c-crossfade, D3d, Selbsttest „Bewegung unter Last“ wackelt (0/4 Woelfe springen ohne Takt-Deckel, scripts/playtest/gelaende-boden.cjs checkBandBewegungUnterLast), CI-ALT-Regel feuert alle 8 Merges (Richter-Last).
+
+## 17.10. 08:55 (date) — Lage
+- integ-probe = 094e36f4 (V18.546.14): + A12 See-Spiegel (Hub-Linse liest Wind + Treiber, Tafel wasser 0,8292 Radeon), Bepflanzung wartet auf das Buch (_bepflanzungWartet: Kristall-Rennen strukturell zu, Konsum-Probe 0,0 wartet/pflanzt), K-D6 Bogen-Probe liest die Kraft am Ruf (CI-Wackler Zone x1,25), Frost-Wand S2 urteilt Verhalten (ein Durchgang mehr bei Neubau; echt rot bei bd74a171/e47ad9f8/33e0b496). Voller Playtest gruen, check gruen.
+- Laufend: S2b karte-welt (wf_8e936d95-083, bau2), D3d d3d-absenz (wf_fb3a1993-253, R1: EIN Absenz-Helfer + Quelltext-Wand mit Ratsche), OMEN Buendel 7. Danach: integ-CI 094e36f4 lesen, main vorspulen, S2b einfaedeln.
