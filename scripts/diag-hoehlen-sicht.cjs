@@ -23,8 +23,8 @@
 //   (d) NICHT LEER — Mündung und Höhle zeigen Höhlen-Flächen, und die Linse ist scharf: ohne die Höhlen-Zellen im Abschnitt
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
-//   (f) CODE — der EINE Chokepoint liest die Sicht (`_chunkSatzPass` ruft `_hoehlenSicht`, `_chunkSatzAbschnitt` den
-//       Stempel des Knotens, `_hoehlenSicht` den Weg hinaus); (g) kein Page-Error;
+//   (f) DER STOFF AM GRAPH — der Boden-Stoff legt die Himmels-Sicht als Verdeckung, Normale und Pool-Gewicht (der gebaute
+//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error;
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging);
@@ -302,25 +302,18 @@ function urteil(b) {
                 "LINSE BLIND: (n) Stoff im Worker: auch der Sync-Bau ruft das Fels-Gesetz nicht (die Zählung sieht nichts)"
             );
     }
-    if (c.feinRuft === false || c.feinEigenHash === true)
+    if (c.feinEigenHash === true)
         v.push(
-            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (" +
-                (c.feinRuft === false ? "ruft gelaende-core felsFein/schuttKorn nicht" : "eigene Ziehung fract(sin)") +
-                ") — im Shader fährt ein Zwilling"
+            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (eigene Ziehung fract(sin)) — im " +
+                "Shader fährt ein Zwilling"
         );
-    if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
+    if (c.graphFehler) v.push(`CODE: der Boden-Stoff baut keinen Graph (${c.graphFehler}) — die Proben (f) messen nichts`);
+    if (c.feinEigenHash !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
                 (c.feinRechenwerk
                     ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten`
                     : "fehlt")
-        );
-    if (!c.passLiest)
-        v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
-    if (!c.abschnittLiest) v.push("CODE: `_chunkSatzAbschnitt` liest den Stempel des Höhlen-Knotens nicht");
-    if (!c.hinausLiest)
-        v.push(
-            "CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht (kein Strahl kommt aus einer Höhle an der Sperre vorbei)"
         );
     // (i) HIMMELS-LICHT: keine Höhlen-Wand trägt mehr Himmel, als ihr gerader Abstand zur nächsten Himmels-Fläche lässt,
     // und die Mündung bleibt hell (die Sicht fällt nicht schon an der Kante auf null)
@@ -410,16 +403,12 @@ function selbsttest() {
         ],
         gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
         code: {
-            passLiest: true,
-            abschnittLiest: true,
-            hinausLiest: true,
             himmelLiest: true,
             normaleHoehle: true,
             augenTerm: true,
             augenVorZweig: true,
             augenTslFremd: null,
             poolGesetz: true,
-            feinRuft: true,
             feinEigenHash: false,
             feinRechenwerk: { maxDiff: 0, n: 400 },
         },
@@ -506,10 +495,7 @@ function selbsttest() {
             (b) => (b.blicke[4].augeInHoehle = false),
             /LEER: Blick hinaus: das Auge steht nicht/,
         ],
-        ["Weg hinaus fehlt", (b) => (b.code.hinausLiest = false), /CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht/],
         ["Schatten prüft nichts", (b) => (b.blicke[1].schatten.empfaenger = 0), /LEER: Blick hang: kein Empfänger/],
-        ["Chokepoint fehlt", (b) => (b.code.passLiest = false), /CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht/],
-        ["Stempel ungelesen", (b) => (b.code.abschnittLiest = false), /CODE: `_chunkSatzAbschnitt` liest/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         [
             "die Sperre überlebt den Boden",
@@ -628,7 +614,7 @@ function selbsttest() {
         ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
         ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
         ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
-        ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
+        ["Graph bricht", (b) => (b.code.graphFehler = "x"), /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
         ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
         [
             "Rechenwerk falsch",
@@ -1375,8 +1361,11 @@ const server = statikServer();
                     cam.position.set(p[0], p[1], p[2]);
                     cam.updateMatrixWorld(true);
                     r._applyDayNightToScene();
-                    const imPool = /this\._augenLeuchte\b/.test(window.__codeOf(r._leuchtQuellen || ""));
                     const au = r._augenLeuchte;
+                    // ein Platz des Licht-Pools: brennt das Auge, nennt `_leuchtQuellen` es am Auge beim Namen
+                    const imPool =
+                        !(au && au.L && au.L.staerke > 0) ||
+                        r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
                     const soll =
@@ -1451,57 +1440,96 @@ const server = statikServer();
                 cam.updateMatrixWorld(true);
                 r._applyDayNightToScene();
             }
-            // ── (f) der EINE Chokepoint liest die Sicht
+            // ── (f) DER BODEN-STOFF AM GRAPH (D3c: der gebaute Knoten-Graph und der Ruf, nie der Quelltext): die Himmels-Sicht
+            // reist in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`), der Chunk-Stoff legt sie als
+            // Verdeckung; die 2.5D-Lichtung und der Licht-Pool lesen sie nur mit `himmelsSicht` (in der Höhle die wahre Normale)
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
-            // der Boden-Stoff trägt die Himmels-Sicht (`himmelsSicht`), der EINE Stoff-Bau liest sie als Verdeckung und als
-            // Grenze der 2.5D-Lichtung (die wahre Normale in der Höhle)
-            const pbr = code(r._buildPbrNodeMaterial);
-            // die Himmels-Sicht reist im Boden-Satz in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`)
-            const knoten = code(r._bodenStufenKnoten);
-            const himmelQuelle = /himmel:\s*nZ4\.w/.test(knoten) && /attribute\("aNormalZiel",\s*"vec4"\)/.test(knoten);
-            aus.code.himmelLiest =
-                /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
-                /\.aoNode\s*=\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr) &&
-                himmelQuelle;
-            aus.code.normaleHoehle =
-                /_flat\.mul\(_hS\)/.test(pbr) &&
-                /_hS\s*=\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr);
-            const pool = code(r._lichtPoolTerm);
-            aus.code.augenTerm =
-                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(
-                    pbr
-                ) && /lichtErsatz/.test(pool);
-            // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum
-            // (1 − (d/R)⁴)² und (d² + k²)^(−abfall/2)), und nur er ruft die BRDF eines Punktlichts
-            const P = Object.getPrototypeOf(r);
-            const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
-            );
-            aus.code.poolGesetz =
-                /\.pow2\(\)\s*\.oneMinus\(\)\s*\.clamp\(\)\s*\.pow2\(\)/.test(pool) &&
-                /\.add\(kern\)\s*\.pow\(farbe\.a\.mul\(-0\.5\)\)/.test(pool) &&
-                !/reciprocal\(\)/.test(pool) &&
-                brdfRufer.length === 1 &&
-                brdfRufer[0] === "_lichtPoolTerm";
-            // die zwei Fallen des Terms (Werkbank 11.10., echte GPU — der Null-Renderer baut keinen Graph): die geteilten
-            // Variablen VOR dem Zweig gelesen — in der BEDINGUNG des `select` (r184 baut sie vor dem `if`; ein Fn-Rumpf mit
-            // If fiel, der Stoff-Graph sah ihn nicht: Integration V18.541) —, und nur Namen, die `three/tsl` der Seite kennt
-            const def = (n) => {
-                const m = new RegExp("const\\s+" + n.replace(/\$/g, "\\$") + "\\s*=\\s*([^;]+);").exec(pool);
-                return m ? m[1] : "";
+            const haelt = (w, n) => {
+                const seen = new Set();
+                const geh = (x) => {
+                    if (!x || typeof x !== "object" || seen.has(x)) return false;
+                    seen.add(x);
+                    if (x === n) return true;
+                    for (const c of typeof x.getChildren === "function" ? x.getChildren() : []) if (geh(c)) return true;
+                    return false;
+                };
+                return geh(w);
             };
-            const aufloesen = (t) => t.replace(/[\w$]+/g, (w) => (def(w) ? "(" + def(w) + ")" : w));
-            const sel = /Te\.select\(\s*([\w$]+)/.exec(pool);
-            const bedingung = sel ? aufloesen(aufloesen(aufloesen(def(sel[1])))) : "";
-            aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionView\b/.test(bedingung);
-            const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
-            aus.code.augenTslFremd = fremd ? fremd[1] : null;
+            try {
+                const P = Object.getPrototypeOf(r);
+                const kh = r._bodenStufenKnoten().himmel;
+                const stoffArg = [];
+                r._leuchtStoff = function (m, mp, h) {
+                    stoffArg.push(h);
+                    return P._leuchtStoff.apply(this, arguments);
+                };
+                let m1, m0;
+                try {
+                    m1 = r._buildPbrNodeMaterial({ vertexColors: true, geomorph: true, himmelsSicht: true });
+                    stoffArg.push("|");
+                    m0 = r._buildPbrNodeMaterial({ vertexColors: true, geomorph: true });
+                } finally {
+                    delete r._leuchtStoff;
+                }
+                const trenn = stoffArg.indexOf("|");
+                aus.code.himmelLiest =
+                    !!kh &&
+                    kh.isSplitNode === true &&
+                    kh.components === "w" &&
+                    kh.node.getAttributeName() === "aNormalZiel" &&
+                    kh.node.nodeType === "vec4" &&
+                    r._getVoxelChunkMaterial().aoNode === kh &&
+                    m1.aoNode === kh &&
+                    m0.aoNode !== kh;
+                aus.code.normaleHoehle = haelt(m1.normalNode, kh) && !haelt(m0.normalNode, kh);
+                // der Boden reicht dem Pool seine Himmels-Sicht, jeder Himmels-Ersatz hängt im gebauten Term; im selben Ruf: der
+                // Pool ruft die EINE BRDF, und die Bedingung jedes Zweigs (`select`) liest normalView/positionView (r184 baut
+                // das Emissiv VOR der Lichtung)
+                const atmo = r._ensureAtmoUniforms();
+                const bed = [];
+                let brdf = 0;
+                const Te = Object.create(THREE.TSL, {
+                    select: { value: (c, a, b) => (bed.push(c), THREE.TSL.select(c, a, b)) },
+                });
+                r._punktLichtBrdf = function () {
+                    brdf++;
+                    return P._punktLichtBrdf.apply(this, arguments);
+                };
+                let term;
+                try {
+                    term = r._lichtPoolTerm(Te, atmo, kh);
+                } finally {
+                    delete r._punktLichtBrdf;
+                }
+                aus.code.augenTerm =
+                    stoffArg.slice(0, trenn).includes(kh) &&
+                    !stoffArg.slice(trenn).includes(kh) &&
+                    atmo.lichtErsatz.length > 0 &&
+                    atmo.lichtErsatz.every((u) => haelt(term, u));
+                aus.code.augenVorZweig =
+                    bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
+                // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d
+                const pool = code(r._lichtPoolTerm);
+                const brdfRufer = Object.getOwnPropertyNames(P).filter(
+                    (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
+                );
+                aus.code.poolGesetz =
+                    brdf >= atmo.lichtLage.length &&
+                    brdf > 0 &&
+                    !/reciprocal\(\)/.test(pool) &&
+                    brdfRufer.every((n) => n === "_lichtPoolTerm");
+                const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
+                aus.code.augenTslFremd = fremd ? fremd[1] : null;
+                m1.dispose();
+                m0.dispose();
+            } catch (e) {
+                aus.code.graphFehler = String((e && e.message) || e).split("\n")[0];
+            }
             // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und `schuttKorn`
             // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
             // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
             // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
             const fein = code(r._terrainGeologyAlbedo);
-            aus.code.feinRuft = /GK\.felsFein\(_O,/.test(fein) && /GK\.schuttKorn\(_O,/.test(fein);
             aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
@@ -1656,9 +1684,6 @@ const server = statikServer();
                 }
                 return { maxDiff, n };
             })();
-            aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
-            aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
-            aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
             return aus;
         }, ORTE);
     } catch (e) {
@@ -1764,7 +1789,7 @@ const server = statikServer();
         );
     const fr = befund.code && befund.code.feinRechenwerk;
     console.log(
-        `  (m) Shader: ruft das Gesetz ${befund.code && befund.code.feinRuft}, eigene Ziehung ${befund.code && befund.code.feinEigenHash}, ` +
+        `  (m) Shader: eigene Ziehung ${befund.code && befund.code.feinEigenHash}, ` +
             `TSL-Rechenwerk gegen Zahlen-Rechenwerk ${fr ? `max. Abstand ${fr.maxDiff} an ${fr.n} Punkten` : "fehlt"}`
     );
     const v = urteil(befund);
