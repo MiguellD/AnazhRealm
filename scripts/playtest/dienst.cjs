@@ -47,9 +47,9 @@ async function checkBandW3UiPuls(ctx) {
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;
     });
-    // (4b) die Absenz über den EINEN Helfer: die direkte Aufruf-Krankheit ist tot — den Hof-Renderer ruft NUR der Raum
-    // des UI-Pulses (`_uiRoomRegistry`), jeder Mechanik-Pfad meldet `_uiDirty("hof")`.
-    const srcOk = stammLib.fehlt({ ausser: "_uiRoomRegistry" }, /this\._renderCreatureListUI\(/);
+    // (4b) die Absenz über den EINEN Helfer: die direkte Aufruf-Krankheit der Mechanik-Pfade ist tot (sie melden
+    // `_uiDirty("hof")`, s. hofPfade am Ruf); die Hof-UI selbst rendert ihre Liste weiter direkt.
+    const srcOk = stammLib.fehlt(null, /if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/);
     check(
         "W3 UI-Puls: das EINE Organ (_uiDirty + _uiRoomRegistry mit ich/hof) existiert",
         res.organExists && res.registryRooms

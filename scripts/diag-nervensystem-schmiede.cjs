@@ -80,7 +80,7 @@ function staticLaws(q) {
         const rot = staticLaws((t) =>
             stammLib.ersetze(t, [
                 [null, /(\n {4}geraet_schwert: \{)/, "$1\n        portalMeta: {},"],
-                [null, /(\n {4}_refreshHeldMesh\(\) \{)/, "$1\n        this._warmCompilePipeline();"],
+                [null, /(\n {4}_refreshHeldMesh\([^)]*\) \{)/, "$1\n        this._warmCompilePipeline();"],
             ])
         ).filter((l) => !l[1]);
         check("Selbst-Test 6/8: portalMeta in geraet_schwert, Vorwärmen in der Hand -> S6 S8 feuern", rot.length === 2, rot.map((l) => l[2]).join(" · "));
