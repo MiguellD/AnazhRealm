@@ -31,7 +31,6 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -127,6 +126,7 @@ function ladeschirmVerdict(m) {
         else if (th.omnibox) out.push("hinter dem Ladeschirm öffnet Strg+K die Omnibox");
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
+    if (m.schleifeFragt === false) out.push("die Render-Schleife fragt das Weltbild nicht (`_loopRender` → `_ankunftsBild`)");
     const A = m.ankunft; // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding die billigste ganze Stufe
     if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
     else {
@@ -261,6 +261,9 @@ function kameraVerdict(m) {
     if (!(m.kreuzAbstand >= 0.35)) out.push(`das Fadenkreuz steht in 3rd auf der Figur (${m.kreuzAbstand} m vom Strahl der Bildmitte)`);
     const fk = m.fadenkreuz || {};
     if (!(fk.stellungen > 0)) out.push("Fadenkreuz-Strahl: keine Stellung (Vorbedingung)");
+    if (!fk.kreatur) out.push("Fadenkreuz-Strahl: keine Kreatur vor dem Spieler (Vorbedingung)");
+    for (const [fn, ok] of Object.entries(m.konsum || { "die Konsum-Probe": false }))
+        if (ok !== true) out.push(`Konsum: \`${fn}\` ${ok === null ? "ohne Vorbedingung (keine Streu nah)" : "ruft sein Gesetz nicht"}`);
     for (const [fn, n] of Object.entries(fk.hinten || {}))
         if (n > 0) out.push(`Fadenkreuz-Strahl: \`${fn}\` trifft in ${n} von ${fk.stellungen} Stellungen HINTER dem Spieler (was zwischen Kamera und Spieler liegt)`);
     if (fk.kreatur && fk.kreaturVornProben > 0 && fk.kreaturVorn < fk.kreaturVornProben)
@@ -326,75 +329,21 @@ function dorfVerdict(m) {
 }
 
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
-function wand(src, html) {
+function wand(src) {
     const nc = ohneKommentare(src);
     const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\([^)]*\) \{/) || "";
-    const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\([^)]*\) \{/) || "";
-    const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
-    const dorfOp = (stammLib.treffer(nc, "dslEffects", /spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
     const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\([^)]*\) \{/) || "";
-    const kamera = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
-    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\([^)]*\) \{/) || "";
-    const ladeIdx = html.indexOf('id="ladeschirm"');
-    const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
-    // die Proben durch die Bildmitte (Gegenprüfung Runde 2): jede nimmt den EINEN Strahl
-    const kreuzOhne = [
-        "_pickArchitectureAtCrosshair()",
-        "_raycastWorldHit(maxDist = 30)",
-        "_resolvePhantomTarget()",
-        "_pickCreatureAtCrosshair()",
-        "_pickScatterAtCrosshair()",
-        "_hasMagnifyingInSight()",
-        "_blickZiel(maxDist)",
-        "_kampfKlingenAchse(sw, out)",
-    ].filter((sig) => {
-        const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
-        return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);
-    });
-    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\([^)]*\) \{/) || "";
+    // die Proben durch die Bildmitte ohne Verhaltens-Band rechnen keine eigene Richtung ab der Kamera
+    const kreuzEigen = ["_pickScatterAtCrosshair()", "_hasMagnifyingInSight()", "_kampfKlingenAchse(sw, out)"].filter((sig) =>
+        /getWorldDirection\(/.test(fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "")
+    );
     return [
+        ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", !/'Setze Wetter rainy'/.test(fallback)],
+        ["W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)", !/_structureSpawnPos/.test(autoDorf)],
+        ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", !/JSON\.stringify\(reply\.program\)/.test(nc)],
         [
-            "W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand",
-            /this\.chatDslPatterns/.test(hilfe) &&
-                /this\.chatSystemPatterns/.test(hilfe) &&
-                /KEYBINDING_LABELS/.test(hilfe) &&
-                !/'Setze Wetter rainy'/.test(fallback),
-        ],
-        [
-            "W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`, und `_ankunftsBild` fragt, was dem Weltbild fehlt (`_weltbildFehlt`)",
-            ladeIdx >= 0 &&
-                !/\bhidden\b/.test(ladeTag) &&
-                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\([^)]*\) \{/) || "") &&
-                /this\._weltbild(Fehlt|Luecken)\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\([^)]*\) \{/) || ""),
-        ],
-        [
-            "W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)",
-            /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\([^)]*\) \{/) || ""),
-        ],
-        [
-            "W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos(\"haus_basis\")` in spawnSettlement, spawn_village und dem Welt-Dorf (`_autoSettlementSpawnCell`); spawn_village trägt den Blick des Sprechers",
-            /this\._siedlungsAnker\(plan/.test(siedlung) &&
-                !/_structureSpawnPos/.test(siedlung) &&
-                !/_structureSpawnPos/.test(dorfOp) &&
-                /blick/.test(dorfOp) &&
-                /this\._siedlungsAnker\(plan/.test(autoDorf) &&
-                !/_structureSpawnPos/.test(autoDorf),
-        ],
-        [
-            "W5 die 3rd-Kamera rückt nur vor Boden und Bau ein (der Strahl in `_loopCamera` geht `durchPflanzen`, keine Kronen-Grenze), jeder Pflanzen-Stoff trägt die Durchsicht (`_kameraDurchsichtNode` in `_foundryTreeMaterial`)",
-            /durchPflanzen: true/.test(kamera) && !/_kameraKronenGrenze/.test(kamera) && /this\._kameraDurchsichtNode\(/.test(stoff),
-        ],
-        [
-            "W6 kein rohes Programm und keine Siedlungs-Zahl im Spieler-Chat (kein `JSON.stringify(reply.program)`, kein `Seed ${` an `_chatEcho`)",
-            !/JSON\.stringify\(reply\.program\)/.test(nc) && !/_chatEcho\?*\.?\(msg\)/.test(siedlung),
-        ],
-        [
-            `W7 der Strahl des Fadenkreuzes ist EINER (\`_fadenkreuzStrahl\`): jede Probe durch die Bildmitte nimmt ihn und rechnet keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzOhne.length ? " — ohne: " + kreuzOhne.join(", ") : ""}`,
-            kreuzOhne.length === 0,
-        ],
-        [
-            "W8 die Durchsicht rechnet die EINE Formel (`_durchsichtGewicht` in `_kameraDurchsichtNode`, die Linse rechnet sie über `DURCHSICHT_ZAHLEN`), das Ziel im 1st ist das Auge ohne Radius (kein `egoM`)",
-            /AnazhRealm\._durchsichtGewicht\(/.test(durchNode) && /AnazhRealm\.DURCHSICHT_ZAHLEN = /.test(nc) && !/egoM/.test(nc),
+            `W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`,
+            kreuzEigen.length === 0,
         ],
     ];
 }
@@ -417,6 +366,25 @@ async function probe(arg) {
             await sleep(ms || 30);
         }
     };
+    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
+    const ruft = (wer, methode, lieferer, name, args) => {
+        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
+        const echt = lieferer[name];
+        let n = 0;
+        lieferer[name] = function (...x) {
+            n++;
+            return echt.apply(this, x);
+        };
+        try {
+            wer[methode](...args);
+        } catch (_e) {
+            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
+        } finally {
+            if (eigen) lieferer[name] = echt;
+            else delete lieferer[name];
+        }
+        return n > 0;
+    };
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
     await tick(30, 30);
@@ -427,6 +395,11 @@ async function probe(arg) {
         m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
+        // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
+        const daVor = st._weltbildDa;
+        st._weltbildDa = 0;
+        m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
+        st._weltbildDa = daVor;
         if (ls && typeof r._ankunftsBild === "function") {
             // Die Welt wächst, bis sie steht (das Weltbild ist fertig: `_weltbildFehlt` leer) — höchstens 90 s.
             if (typeof r._weltbildFehlt === "function") {
@@ -1121,7 +1094,8 @@ async function probe(arg) {
                 for (const mt of mats) if (mt && mt.userData && PFLANZE.has(mt.userData.foundryKind)) stoffe.add(mt);
             });
             m.stoffe = stoffe.size;
-            const ohne = Array.from(stoffe).filter((mt) => !(mt.maskNode && mt.maskNode.isNode));
+            const kn = Object.values(r._kamDurchKnoten || {});
+            const ohne = Array.from(stoffe).filter((mt) => !(mt.maskNode && kn.includes(mt.maskNode)));
             m.stoffeOhne = ohne.length;
             m.stoffeOhneArten = Array.from(new Set(ohne.map((mt) => mt.userData.foundryKind)));
             m.schattenGeschnitten = Array.from(stoffe).filter((mt) => mt.maskNode && mt.maskNode.isNode && !(mt.maskShadowNode && mt.maskShadowNode.isNode)).length;
@@ -1225,6 +1199,19 @@ async function probe(arg) {
             {
                 const K = r.constructor;
                 const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
+                // DER KONSUM AM RUF (Spion am Ruf, kein Quelltext): die Proben durch die Bildmitte ohne eigenes Band nehmen den
+                // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
+                const nahStreu = st.nahStreu && st.nahStreu.senken && st.nahStreu.senken.size > 0;
+                const rahmen = r._kampfSchwungRahmen({});
+                const knoten = r._kamDurchKnoten;
+                r._kamDurchKnoten = {};
+                m.konsum = {
+                    _hasMagnifyingInSight: ruft(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []),
+                    _pickScatterAtCrosshair: nahStreu ? ruft(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) : null,
+                    _kampfKlingenAchse: ruft(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]),
+                    _kameraDurchsichtNode: ruft(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]),
+                };
+                r._kamDurchKnoten = knoten;
                 // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)
                 const ziel = () => {
                     const k = st._kamZiel;
@@ -1583,7 +1570,6 @@ async function probe(arg) {
 
 (async () => {
     const quelle = stammLib.text(root);
-    const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
@@ -1709,6 +1695,7 @@ async function probe(arg) {
                     ["ruhende Lücke hält fest", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: false, warn: 0 } } }, "eine ruhende Lücke hält den Spieler"],
                     ["ruhende Lücke still", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 0 } } }, "eine ruhende Lücke weicht ohne Wort"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
+                    ["Schleife fragt das Weltbild nicht", { schleifeFragt: false }, "die Render-Schleife fragt das Weltbild nicht"],
                     [
                         "flackernde Lücke ohne Deckel (Gegenprüfung Runde 2)",
                         { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 }, lueckeFlackert: { weg: false, warn: 0 } } },
@@ -1806,6 +1793,7 @@ async function probe(arg) {
                     kreuzAbstand: 0.6,
                     zielAbstand: 0.6,
                     fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96, zielAchse: 0 },
+                    konsum: { _hasMagnifyingInSight: true, _pickScatterAtCrosshair: true, _kampfKlingenAchse: true, _kameraDurchsichtNode: true },
                     durchsicht: {
                         formel: true,
                         first: { anlaeufe: 8, faellt: 0, abstand: [0.3, 0.8], wMin: 1, punkte: 900 },
@@ -1841,6 +1829,8 @@ async function probe(arg) {
                         "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler",
                     ],
                     ["Kreatur vorn verfehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 0, kreaturVornProben: 96, zielAchse: 0 } }, "Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler"],
+                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, kreaturVorn: 0, kreaturVornProben: 0, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
+                    ["Lupe ohne den EINEN Strahl", { konsum: { _hasMagnifyingInSight: false } }, "Konsum: `_hasMagnifyingInSight`"],
                     [
                         "Loch im Stamm im 1st (Gegenprüfung Runde 2)",
                         { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } },
@@ -1900,25 +1890,19 @@ async function probe(arg) {
                 check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
             }
         }
-        const gruen = wand(quelle, html);
+        const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
         const vorStand = stammLib.ersetze(quelle, [
-            ["_loopRender", "if (!this.state._weltbildDa) this._ankunftsBild();", ""],
-            ["_ankunftsBild", "const luecken = this._weltbildLuecken();", 'const luecken = this._builtRingRadius() >= 0 ? [] : [{ satz: "Boden" }];'],
-            ["constructor", "hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],'],
-            ["spawnSettlement", "const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);'],
-            ["_foundryTreeMaterial", 'const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");', "const _durch = null;"],
-            [null, /(\n {4}_raycastWorldHit\([^)]*\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()"],
-            ["_kameraDurchsichtNode", "AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,"],
+            kopfMit("_chatHandleConversationalFallback", `"'Setze Wetter rainy'"`),
+            kopfMit("_autoSettlementSpawnCell", "this._structureSpawnPos"),
             ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
-            ["chatSystemPatterns", "for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");"],
-            [null, /_hilfeZeilen\([^)]*\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n"],
+            kopfMit("_hasMagnifyingInSight", "this.camera.getWorldDirection(this._v)"),
         ]);
-        const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
-        const rot = wand(vorStand, vorHtml);
+        const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (kein Ankunfts-Bild, Alt-Gurt, geschätzter Dorf-Anker, Kamera ohne Durchsicht, Hilfe von Hand, Ladeschirm versteckt, rohes Programm, ein Strahl ab der Kamera, eine zweite Formel) → W1–W8 feuern",
-            rot.filter((w) => !w[1]).length === 8,
+            "Selbst-Test W: der Vor-Stand (Liste von Hand, geschätzter Dorf-Anker, rohes Programm, eine eigene Kamera-Richtung) → W1, W4, W6, W7 feuern",
+            rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         if (errs.length) {
@@ -1930,7 +1914,7 @@ async function probe(arg) {
     }
 
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of wand(quelle, html)) check(name, ok, detail);
+    for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 600000 });

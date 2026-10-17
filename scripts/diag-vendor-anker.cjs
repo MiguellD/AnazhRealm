@@ -435,18 +435,15 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);", organ: "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)" },
 ];
 
-// DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten
+// DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
 // Semantik: EIN Beobachter und EINE geteilte Gruppe je Programm, mehrere Objekte je Programm, die Vendor-Bahn
-// (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest: "abkuerzung" kürzt jedes bekannte Objekt
-// ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518 mit Render-Stempel), "schreiben" nimmt der Diät ihr Schreiben der
-// geteilten Gruppe (falls sie eins hat).
-// Weitere Manipulationen (Welle K, EIN GANG JE KNOTEN UND GRUPPE): "gangWiederholung" nimmt den Knoten ihren Render-Stempel
-// (jedes Programm stellt sie wieder), "gruppenWiederholung" nimmt der geteilten Gruppe ihren
-// (jedes Programm lädt sie wieder), "eigen" nimmt ihm die Weiche für Knoten je Zeichen-Objekt (ein Verweis ohne festes
-// Objekt teilte dann den Gang eines Geschwisters und arbeitete nie für sein eigenes Objekt), "stempelOhneVerlassen" nimmt
-// dem Stempel den Render-Abschnitt (nur die Render-Id: er überlebt einen verschachtelten Render, der die geteilten Knoten
-// über die Vendor-Bahn auf seine Kamera stellt — Gegenprüfung 07.10.).
+// (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest tauschen den VERSORGER am geladenen Objekt,
+// nie den Text: "abkuerzung" kürzt jedes bekannte Objekt ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518),
+// "schreiben" nimmt der Diät ihr Schreiben der geteilten Gruppe, "ohneGetragen" macht jede neue Version zum Grund
+// für jedes Render-Objekt (der Stand vor K71), "getragenImmer" hält jede Version für getragen (ein Attribut, das nur
+// ein Pass liest, lüde nie hoch). Ruft die Diät einen Versorger nicht, bleibt die Manipulation wirkungslos und der
+// Selbsttest wird ROT (Konsum statt Zitat).
 function diaetLaden(manipuliert) {
     const stamm = stammLib.text(root);
     const b = (stammLib.treffer(stamm, null, "AnazhRealm._diaetRefresh = function") || { index: -1 }).index;
@@ -458,40 +455,11 @@ function diaetLaden(manipuliert) {
     }
     const e = stamm.indexOf("\n};\n", b);
     if (e < 0) return null;
-    let src = stamm.slice(a, e + 3);
-    const ersetze = (alt, neu) => {
-        const vor = src;
-        src = src.split(alt).join(neu);
-        return src !== vor;
-    };
-    if (manipuliert === "schreiben" && !ersetze("AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);", "")) return null;
-    if (
-        manipuliert === "gangWiederholung" &&
-        !(
-            ersetze("if (n._anazhRid === rid && n._anazhRuf === ruf) continue;", "") &&
-            ersetze("if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;", "")
-        )
-    )
-        return null;
-    if (manipuliert === "gruppenWiederholung" && !ersetze("if (g._anazhRid === rid && g._anazhRuf === ruf) continue;", ""))
-        return null;
-    if (manipuliert === "stempelOhneVerlassen" && !ersetze("rend.info.calls", "rid")) return null;
-    if (
-        manipuliert === "frameAlt" &&
-        !ersetze(
-            "rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);",
-            "(nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateBeforeNode(n);"
-        )
-    )
-        return null;
-    if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
-        return null;
-    // (8) GETRAGEN (K71): "ohneGetragen" — jede neue Version ist ein Grund für jedes Render-Objekt (der Stand vor K71);
-    // "getragenImmer" — die Diät hält jede Version für getragen (ein Attribut, das nur ein Pass liest, lüde nie hoch).
-    if (manipuliert === "ohneGetragen" && !ersetze("if (!A || !A.has(a)) return false;", "return false;")) return null;
-    if (manipuliert === "getragenImmer" && !ersetze("if (!A || !A.has(a)) return false;", "return true;")) return null;
     const AnazhRealm = {};
-    new Function("AnazhRealm", src)(AnazhRealm);
+    new Function("AnazhRealm", stamm.slice(a, e + 3))(AnazhRealm);
+    if (manipuliert === "schreiben") AnazhRealm._diaetGeteiltSchreiben = () => {};
+    if (manipuliert === "ohneGetragen") AnazhRealm._diaetGetragen = () => false;
+    if (manipuliert === "getragenImmer") AnazhRealm._diaetGetragen = () => true;
     const echt = AnazhRealm._diaetRefresh;
     if (manipuliert === "abkuerzung")
         return (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR));
@@ -840,166 +808,18 @@ function diaetProbe(selftest) {
     let selbstFeuert = false;
     if (selftest) {
         const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
-        // Die Diät MUSS ihr Schreiben tragen: fehlt der Ruf `_diaetGeteiltSchreiben(rend, ro)`, ist die Manipulation
-        // nicht anwendbar und der Selbsttest rot (nie still übersprungen).
-        const schreibFn = diaetLaden("schreiben");
-        if (!schreibFn) fehler.push("Selbsttest: die Diät trägt keinen Ruf `AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);`");
-        const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : [];
-        // Der Gang je Signatur MUSS seinen Render-Stempel und seine Weiche je Zeichen-Objekt tragen (sonst rot, nie still).
-        const gangFn = diaetLaden("gangWiederholung");
-        if (!gangFn) fehler.push("Selbsttest: der Knoten-Gang trägt keinen Render-Stempel je Knoten (`n._anazhRid` · `n._anazhVorRid`)");
-        const gruppeFn = diaetLaden("gruppenWiederholung");
-        if (!gruppeFn) fehler.push("Selbsttest: die geteilte Gruppe trägt keinen Render-Stempel `if (g._anazhRid === rid) continue;`");
-        const wieder = [
-            ...(gangFn ? pruefe(diaetLauf(gangFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
-            ...(gruppeFn ? pruefe(diaetLauf(gruppeFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
-        ];
-        const frameFn = diaetLaden("frameAlt");
-        if (!frameFn) fehler.push("Selbsttest: der Gang stellt den Node-Frame nicht je Vorher-Knoten neu");
-        const frameAlt = frameFn ? pruefe(diaetLauf(frameFn)) : [];
-        const eigenFn = diaetLaden("eigen");
-        if (!eigenFn) fehler.push("Selbsttest: der Gang trägt keine Weiche für Knoten je Zeichen-Objekt");
-        const ohneEigen = eigenFn ? pruefe(diaetLauf(eigenFn)) : [];
-        const verlassenFn = diaetLaden("stempelOhneVerlassen");
-        if (!verlassenFn) fehler.push("Selbsttest: der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`");
-        const ohneVerlassen = verlassenFn ? pruefe(diaetLauf(verlassenFn)) : [];
-        const ohneGFn = diaetLaden("ohneGetragen");
-        const immerFn = diaetLaden("getragenImmer");
-        if (!ohneGFn || !immerFn) fehler.push("Selbsttest: die Diät fragt `_diaetGetragen` nicht (`if (!A || !A.has(a)) return false;`)");
-        const ohneG = ohneGFn ? getragenPruefe(getragenLauf(ohneGFn)) : [];
-        const immer = immerFn ? getragenPruefe(getragenLauf(immerFn)) : [];
+        // Die Diät MUSS ihr Schreiben tragen und den Getragen-Wächter fragen: ein stummer Versorger lässt Programme an der
+        // alten Kamera kleben, ein blinder Wächter frischt jede Version auf bzw. lädt die Normale nie.
+        const ohneSchreiben = pruefe(diaetLauf(diaetLaden("schreiben")));
+        const ohneG = getragenPruefe(getragenLauf(diaetLaden("ohneGetragen")));
+        const immer = getragenPruefe(getragenLauf(diaetLaden("getragenImmer")));
         selbstFeuert =
             ohneG.some((e) => e.startsWith("GETRAGEN: eine neue Version")) &&
             immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
             abk.some((e) => e.startsWith("Kamera-Treue")) &&
-            ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")) &&
-            wieder.length === 2 &&
-            ohneEigen.some((e) => e.startsWith("Zeichen-Objekt")) &&
-            frameAlt.some((e) => e.startsWith("Node-Frame")) &&
-            ohneVerlassen.some((e) => e.startsWith("Verschachtelt"));
+            ohneSchreiben.some((e) => e.startsWith("Kamera-Treue"));
     }
     return { fehler, selbstFeuert, stand, getragen };
-}
-
-// DIE SCHATTEN-STOFF-PROBE: den Block aus _configureRenderer schneiden und an einem Schein-Renderer fahren, dessen
-// renderObject wie r184 je Objekt alphaTest des Originals auf den geteilten Stoff setzt und je Bürger den Schlüssel
-// prüft, sobald die Stoff-Version wechselt. Der Setter ist der Vendor-Text (Anker oben). 40 Objekte, Blätter und
-// Stämme im Wechsel: im Stand prüft kein Bürger, ein eigener alphaTest-Wechsel prüft genau EINEN.
-function schattenStoffProbe(ohne) {
-    const stamm = stammLib.text(root);
-    const kopf = 'if (typeof renderer.renderObject !== "function")';
-    const a = (stammLib.treffer(stamm, "_configureRenderer", kopf) || { index: -1 }).index;
-    const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhSchattenStoff = true;", a);
-    const zu = e < 0 ? -1 : stamm.indexOf("}", e);
-    if (zu < 0) return { fehler: ["der Schatten-Stoff-Block fehlt in _configureRenderer"] };
-    const laut = [];
-    const block = new Function("renderer", stamm.slice(a, zu + 1));
-    const einbau = (r) => block.call({ log: (m) => laut.push(m) }, r);
-    const core = fs.readFileSync(path.join(root, "vendor/three.core.min.js"), "latin1");
-    const setter = "set alphaTest(t){this._alphaTest>0!=t>0&&this.version++,this._alphaTest=t}";
-    if (!core.includes(setter)) return { fehler: ["der Vendor-Setter alphaTest fehlt (Anker)"] };
-    const Stoff = new Function(
-        `return class { constructor() { this.version = 0; this._alphaTest = 0; this.allowOverride = true; } get alphaTest() { return this._alphaTest; } ${setter} }`
-    )();
-    const sm = new Stoff();
-    sm.isShadowPassMaterial = true;
-    const szene = { overrideMaterial: sm };
-    const gesehen = new Map();
-    let pruefungen = 0;
-    const renderer = {
-        renderObject(object, scene, camera, geometry, material) {
-            const s = scene.overrideMaterial;
-            s.alphaTest = material.alphaTest;
-            const v = gesehen.get(object);
-            if (v !== s.version) {
-                if (v !== undefined) pruefungen++;
-                gesehen.set(object, s.version);
-            }
-        },
-    };
-    if (!ohne) einbau(renderer);
-    if (laut.length) return { fehler: ["Schatten-Stoff meldet sich laut am Schein-Renderer: " + laut[0]] };
-    const objekte = [];
-    for (let i = 0; i < 40; i++) {
-        const m = new Stoff();
-        m.alphaTest = i % 2 ? 0.5 : 0;
-        objekte.push({ o: { i }, m });
-    }
-    const frame = () => {
-        pruefungen = 0;
-        for (const x of objekte) renderer.renderObject(x.o, szene, null, null, x.m);
-        return pruefungen;
-    };
-    frame();
-    frame();
-    const stand = frame();
-    objekte[4].m.alphaTest = 0.5;
-    const eigener = frame();
-    const fehler = [];
-    if (stand !== 0)
-        fehler.push(`Schatten-Stoff: ${stand} von 40 Bürgern prüfen im Stand je Frame ihren Schlüssel (die geteilte Version springt je Objekt)`);
-    if (eigener !== 1) fehler.push(`Schatten-Stoff: ein eigener alphaTest-Wechsel prüft ${eigener} Bürger (Soll genau 1)`);
-    return { fehler, stand, eigener };
-}
-
-// DIE BUNDLE-WAHRHEITS-PROBE: den Block aus _configureRenderer (Chokepoint _renderScene) schneiden und an einem
-// Schein-Renderer mit der r184-Semantik fahren — die Aufnahme setzt den Zeiger und nullt ihn danach OHNE Stapel; der
-// erste Bürger wird verfolgt, BEVOR sein updateBefore den Schatten-Render startet; der Schatten-Render trägt
-// overrideMaterial an der Szene; _projectObject sammelt Bundles nur, solange backend.beginBundle steht.
-// Soll: die Haupt-Aufnahme verfolgt 10 von 10, kein Bundle unter dem Override-Stoff, nach dem Render steht der Zeiger
-// der äußeren Aufnahme wieder und beginBundle ist wieder die Methode des Backends. `ohne` = ohne Block (Selbsttest).
-function bundleWahrheitProbe(ohne) {
-    const stamm = stammLib.text(root);
-    const kopf = 'if (typeof renderer._renderScene !== "function" || !renderer.backend)';
-    const a = (stammLib.treffer(stamm, "_configureRenderer", kopf) || { index: -1 }).index;
-    const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhBundleWahrheit = true;", a);
-    const zu = e < 0 ? -1 : stamm.indexOf("}", e);
-    if (zu < 0) return { fehler: ["der Bundle-Wahrheits-Block fehlt in _configureRenderer"] };
-    const laut = [];
-    const block = new Function("renderer", stamm.slice(a, zu + 1));
-    class Backend {
-        beginBundle() {}
-    }
-    const be = new Backend();
-    const z = { verfolgtHaupt: 0, gezeichnetHaupt: 0, unterOverride: 0, schattenAufnahmen: 0 };
-    const renderer = {
-        backend: be,
-        _currentRenderBundle: null,
-        _renderScene(scene) {
-            const bundles = this.backend.beginBundle !== undefined ? scene.bundles : [];
-            if (scene.overrideMaterial) z.unterOverride += bundles.length;
-            for (const b of bundles) {
-                this._currentRenderBundle = b;
-                for (let i = 0; i < b.n; i++) {
-                    if (scene.haupt) {
-                        z.gezeichnetHaupt++;
-                        if (this._currentRenderBundle !== null) z.verfolgtHaupt++;
-                    } else z.schattenAufnahmen++;
-                    if (i === 0 && scene.schatten) this._renderScene(scene.schatten);
-                }
-                this._currentRenderBundle = null;
-            }
-            return scene;
-        },
-    };
-    if (!ohne) block.call({ log: (m) => laut.push(m) }, renderer);
-    const schatten = { overrideMaterial: { isShadowPassMaterial: true }, bundles: [{ n: 4 }], schatten: null };
-    const haupt = { haupt: true, overrideMaterial: null, bundles: [{ n: 10 }], schatten };
-    const aussen = { aeussere: true };
-    renderer._currentRenderBundle = aussen;
-    renderer._renderScene(haupt);
-    const fehler = [];
-    if (laut.length) fehler.push("Bundle-Wahrheit meldet sich laut am Schein-Renderer: " + laut[0]);
-    if (z.verfolgtHaupt !== z.gezeichnetHaupt)
-        fehler.push(
-            `Aufnahme-Stapel: die Haupt-Aufnahme verfolgt ${z.verfolgtHaupt} von ${z.gezeichnetHaupt} Draws (der Schatten-Render nullte den Zeiger) — der Replay refresht die übrigen nie`
-        );
-    if (z.unterOverride !== 0)
-        fehler.push(`Override-Stoff: ${z.unterOverride} Bundle(s) unter einem overrideMaterial gesammelt — der Replay refresht sie gegen den geteilten Stoff`);
-    if (renderer._currentRenderBundle !== aussen) fehler.push("Aufnahme-Stapel: der Zeiger der äußeren Aufnahme kam nicht zurück");
-    if (Object.prototype.hasOwnProperty.call(be, "beginBundle") || typeof be.beginBundle !== "function")
-        fehler.push("Override-Stoff: backend.beginBundle ist nach dem Render nicht wieder die Methode des Backends");
-    return { fehler, z };
 }
 
 function main() {
@@ -1040,40 +860,21 @@ function main() {
         if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file} → Organ: ${a.organ}`);
     }
     // (3) DIE DIÄT-PRÜFUNG am Schein-Programm (r184-Semantik: Beobachter + geteilte Gruppe je Programm, renderId-
-    // Wand, equals()): AnazhRealm._diaetRefresh aus dem Stamm-Quelltext, deterministisch, GPU-frei.
+    // Wand, equals()): AnazhRealm._diaetRefresh aus dem Stamm geladen, deterministisch, GPU-frei. Bundle-Wahrheit und
+    // Schatten-Stoff beweist gate:kamera-treue am echten Renderer (Aufnahme verfolgt, kein Bundle unter dem Override).
     const diaet = diaetProbe(selftest);
     for (const e of diaet.fehler) errs.push("DIÄT: " + e);
-    // (4) DIE SCHATTEN-STOFF-PROBE (der Block aus _configureRenderer am Schein-Renderer, Setter aus dem Vendor).
-    const stoff = schattenStoffProbe(false);
-    for (const e of stoff.fehler) errs.push("SCHATTEN: " + e);
-    // (5) DIE BUNDLE-WAHRHEITS-PROBE (der Chokepoint-Block aus _configureRenderer am Schein-Renderer).
-    const wahr = bundleWahrheitProbe(false);
-    for (const e of wahr.fehler) errs.push("BUNDLE: " + e);
     if (selftest) {
         const feuert = errs.some((e) => e.includes("hasNode"));
         const diaetFeuert = diaet.selbstFeuert;
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung oder ein stummer Schreiber lässt Programme an der alten Kamera kleben; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
-        const stoffFeuert = schattenStoffProbe(true).fehler.length > 0;
-        console.log(
-            stoffFeuert
-                ? "✅ SELBST-TEST: die Schatten-Stoff-Probe feuert (ohne den Block prüft jeder Bürger je Frame seinen Schlüssel)"
-                : "❌ SELBST-TEST: die Schatten-Stoff-Probe ist vakuös"
-        );
-        const ohneWahr = bundleWahrheitProbe(true).fehler;
-        const wahrFeuert =
-            ohneWahr.some((e) => e.startsWith("Aufnahme-Stapel")) && ohneWahr.some((e) => e.startsWith("Override-Stoff"));
-        console.log(
-            wahrFeuert
-                ? "✅ SELBST-TEST: die Bundle-Wahrheits-Probe feuert (ohne den Block: Zeiger genullt, Bundle unter dem Override-Stoff)"
-                : "❌ SELBST-TEST: die Bundle-Wahrheits-Probe ist vakuös"
-        );
         if (errs.length > 1 || !errs.some((e) => e.includes("hasNode"))) for (const e of errs) console.error("   ❌ " + e);
-        process.exit(feuert && diaetFeuert && stoffFeuert && wahrFeuert && errs.length === 1 ? 0 : 1);
+        process.exit(feuert && diaetFeuert && errs.length === 1 ? 0 : 1);
     }
     if (errs.length) {
         console.error("⛔ DIE VENDOR-ANKER-WAND:");
@@ -1081,7 +882,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf).`
     );
 }
 main();

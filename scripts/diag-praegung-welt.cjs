@@ -24,11 +24,8 @@
 //   node scripts/diag-praegung-welt.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -38,36 +35,6 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── Quell-Proben (Konsum-Tripwires: die Naht-Zeilen leben im Stamm) ──
-    console.log("=== PRÄGUNG-WELT — Quell-Proben (die Naht lebt im Stamm) ===");
-    const stamm = stammLib.text(root);
-    // Der Stempel reist über den EINEN Zug je Körper-Schlüssel (`_foundryZug`, K38): er reicht sein ov als 4. Arg an
-    // `_foundryRequest` — jeder Besteller reicht den Stempel an den Zug.
-    const zugReicht = /_foundryRequest\(preset, variant, lod, ov \|\| undefined, wo\)/.test(stamm);
-    check(
-        "Q: _foundryFlattenFor liest den Entry-Stempel + reicht ihn als 4. Arg",
-        /const entryOv = this\._artifactStudioOv\(entry\);/.test(stamm) &&
-            /_foundryZug\(key, preset, variant, lod, entryOv, entry\.position\b/.test(stamm) &&
-            zugReicht
-    );
-    check(
-        "Q: _heldFoundryGroup liest den Bauplan-Stempel + reicht ihn als 4. Arg",
-        /const heldOv = this\._artifactStudioOv\(bp\);/.test(stamm) &&
-            /_foundryZug\(key, preset, variant, 0, heldOv, 0\)/.test(stamm) &&
-            zugReicht
-    );
-    check(
-        "Q: der Guss stempelt (_forgeMaterialAndFreeze + schöpfer-wield rufen _stampStudioOv)",
-        (stamm.match(/this\._stampStudioOv\(bp, name\)/g) || []).length >= 2
-    );
-    check(
-        "Q: confirmBuild stempelt Entry + place-DSL (spawn_blueprint Slot 6)",
-        /studioOv: bmStamp \|\| undefined/.test(stamm) &&
-            // die Probe wandert mit dem Code: Slot 7 trägt seit der Gegenprüfung 08.10. die Drehung des Werks
-            /spawn_blueprint: \(\[name, positionNode, seed, archId, studioOv, drehung\], ctx\)/.test(stamm)
-    );
-    check("Q: studioOv ist deklariertes BLUEPRINT_KNOWN_KEYS-Feld (Taille)", /"studioOv",\n\]\);/.test(stamm));
-
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -273,6 +240,21 @@ function check(name, ok, detail) {
             delete ws.studioOv["langschwert"];
             r._stampStudioOv(bp, "klinge_langschwert");
             res.g.cleared = bp.studioOv === undefined;
+            // KONSUM: auch der Schmiede-Guss stempelt (Spion an _stampStudioOv, Station und Kosten freigestellt).
+            {
+                const st0 = r._stampStudioOv;
+                let n = 0;
+                r._stampStudioOv = (...a) => (n++, st0.apply(r, a));
+                r._makeStationGate = () => ({ ok: true });
+                r._makeCostGate = () => ({ ok: true, free: true });
+                try {
+                    r._forgeMaterialAndFreeze("klinge_langschwert");
+                } finally {
+                    for (const k of ["_stampStudioOv", "_makeStationGate", "_makeCostGate"]) delete r[k];
+                    delete bp.wear;
+                }
+                res.g.schmiedeStempelt = n > 0;
+            }
             if (oldMode === undefined) delete wm.gameMode;
             else wm.gameMode = oldMode;
             r.getGameMode(); // die Spiegelung (state.gameMode) sauber zurücksetzen
@@ -305,6 +287,10 @@ function check(name, ok, detail) {
             res.r.bpSer = !!(ser.studioOv && ser.studioOv.__tradition === "Nihon");
             const des = r._deserializeBlueprint(JSON.parse(JSON.stringify(ser)));
             res.r.bpDes = !!(des && des.studioOv && des.studioOv.__tradition === "Nihon");
+            // studioOv ist ein deklariertes Bauplan-Feld: ein kaputter Stempel fällt im eigenen Zweig, nie als Unbekanntes vorbei
+            bp.studioOv = [1, 2];
+            const kaputt = JSON.parse(JSON.stringify(Object.assign({}, ser, { studioOv: [1, 2] })));
+            res.r.bpKaputt = r._serializeBlueprint(bp).studioOv === undefined && r._deserializeBlueprint(kaputt).studioOv === undefined;
             delete bp.studioOv;
             // place-DSL (die P2P-Naht: Slot 6 reist durch den Op in den Entry):
             const ovStern = KC.vehicle.ov("stern", VC.CULTURES);
@@ -376,6 +362,7 @@ function check(name, ok, detail) {
     );
     check("nachträgliches präge ändert das bestehende Artefakt NICHT", out.g.frozen === true);
     check("Neu-Guss OHNE Prägung räumt den Alt-Stempel", out.g.cleared === true);
+    check("auch der Schmiede-Guss stempelt (Konsum _forgeMaterialAndFreeze → _stampStudioOv)", out.g.schmiedeStempelt === true);
 
     console.log("\n=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · place-DSL · Taille ===");
     check(
@@ -392,6 +379,7 @@ function check(name, ok, detail) {
         out.r.bpSer === true && out.r.bpDes === true
     );
     check("place-DSL: spawn_blueprint Slot 6 reist in den Entry (P2P-Naht)", out.r.dslCarries === true);
+    check("Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden", out.r.bpKaputt === true);
     check("Taille-Wand: >8-KiB-Stempel fällt am Chokepoint", out.r.fatRejected === true);
 
     console.log("\n=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===");

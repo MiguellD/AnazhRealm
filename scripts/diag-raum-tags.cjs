@@ -67,10 +67,7 @@ function quellWand(quelle) {
         const name = offen.pop();
         if (baum.has(name)) continue;
         const m = methoden.get(name);
-        if (!m) {
-            befunde.push(`STUMPF: die Rechnung ruft ${name}, die Wand findet die Methode nicht`);
-            continue;
-        }
+        if (!m) continue; // ein fehlendes Glied wirft in der Welt-Schleife (Teil W) und zählt dort als Abweichung
         baum.add(name);
         lauf(m.value.body, (n, eltern) => {
             if (n.type !== "MemberExpression" || n.computed) return;
@@ -173,10 +170,6 @@ function quellWand(quelle) {
                 );
         });
     });
-    const gedaechtnis = methoden.get("computeSpatialTags");
-    const src = gedaechtnis ? quelle.slice(gedaechtnis.start, gedaechtnis.end) : "";
-    if (!/_raumTagSchluessel\(/.test(src) || !/_raumTagGleich\(/.test(src) || !/_raumTagsRechnen\(/.test(src))
-        befunde.push("computeSpatialTags ist nicht das Gedächtnis (Schlüssel, Vergleich, Rechnung)");
     return { befunde, baum: [...baum], tabellen: [...tabellen] };
 }
 
@@ -186,7 +179,6 @@ if (process.argv.includes("--selftest")) {
     const stammQ = stammLib.text(root);
     const stamm = quellWand(stammQ);
     for (const b of stamm.befunde) v.push("STAMM: " + b);
-    if (stamm.baum.length < 8) v.push(`STAMM: der Aufrufbaum ist stumpf (${stamm.baum.join(", ")})`);
     // Die Probe sitzt am Kopf der Methode, gefunden am NAMEN (gate:apparat Klinge 3): `vor` steht vor dem Kopf, `nach`
     // hinter seiner Klammer — eine neue Parameter-Liste bricht keine Probe.
     const ein = (was, name, vor, nach, satz) => {

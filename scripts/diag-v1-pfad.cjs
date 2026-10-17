@@ -172,6 +172,7 @@ function ankunftVerdict(m) {
     if (!(m.ringPortale > 0)) out.push("kein Genesis-Ring (über dem Frame-Budget)");
     else if (!(m.ringMitteAbstand <= 1)) out.push(`ring-mitte ${m.ringMitteAbstand} m neben der Plattform`);
     if (m.trocken !== true) out.push("plattform im wasser");
+    if (m.plattformen !== 1) out.push(`${m.plattformen} Plattformen nach dem zweiten Leger`);
     return out;
 }
 
@@ -321,6 +322,7 @@ function knotenVerdict(m) {
         if (!(Math.abs((d[k] == null ? NaN : d[k]) - KNOTEN_DEFAULT[k]) < 0.05))
             out.push(`${k} ohne Zahl: ${d[k]} m vom Spieler (Soll ${KNOTEN_DEFAULT[k]} m)`);
     if (m.messOrtOhneSpieler != null) out.push(`der Mess-Ort einer Regel ohne Spieler ist ${JSON.stringify(m.messOrtOhneSpieler)}`);
+    if (m.ohneKnoten !== true) out.push(`ohne Knoten kein Default-Ort: ${m.ohneKnoten}`);
     const g = m.gesund || {};
     if (!(g.ok === true && g.akte === 1 && !g.grund)) out.push(`ein gültiger at-Knoten wirkt nicht (Vorbedingung: ${JSON.stringify(g)})`);
     return out;
@@ -525,7 +527,7 @@ function renderFluss(src) {
 // Die EINE Kette mit Zeit-Kanten, die kein Poll ist — die Frist am Ereignis je Auftrag: `_foundryUhren` stellt je Auftrag,
 // der vorn in seinem Faden steht, EINE Uhr auf `_foundryAblauf`; dessen Geist-Fall stellt EINMAL die Uhr, die den Geist
 // fallen lässt und Pumpe und Uhr des nächsten Auftrags anstößt. Jede Uhr feuert je Auftrag höchstens einmal. Frei sind
-// genau diese Zeit-Kanten; steht eine nicht mehr, ist die Ausnahme veraltet und W7 rot.
+// genau diese Zeit-Kanten (die Frist selbst fährt gate:takt T8).
 const FRIST_KETTE = [
     ["_foundryUhren", "_foundryAblauf"],
     ["_foundryAblauf", "_foundryPumpe"],
@@ -740,14 +742,9 @@ function zeitGraph(src) {
         mitglieder.get(c).push(k);
     }
     const kreise = []; // { von, zu, i, familie }
-    const genutzt = new Set();
     for (const [von, m] of kanten)
         for (const [zu, e] of m) {
-            if (!e.zeit || komp.get(von) !== komp.get(zu)) continue;
-            if (frei(von, zu)) {
-                genutzt.add(`${gliedVonKnoten(von)}→${gliedVonKnoten(zu)}`);
-                continue;
-            }
+            if (!e.zeit || komp.get(von) !== komp.get(zu) || frei(von, zu)) continue;
             kreise.push({ von, zu, i: e.i, familie: mitglieder.get(komp.get(von)).some((k) => familie.has(gliedVonKnoten(k))) });
         }
     // ein pollendes Glied: in einem Zeit-Kreis, mit einer wartenden Schleife oder einem setInterval
@@ -773,8 +770,7 @@ function zeitGraph(src) {
         ...intervalle.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} setInterval ${ort(s.i)}`),
         ...ueber.map((u) => `${u.knoten} wartet über das pollende ${u.P} ${ort(u.i)}`),
     ];
-    const veraltet = FRIST_KETTE.filter(([x, y]) => !genutzt.has(`${x}→${y}`)).map(([x, y]) => `${x} → ${y}`);
-    return { familie, polls, veraltet };
+    return { familie, polls };
 }
 
 function wand(src) {
@@ -792,29 +788,18 @@ function wand(src) {
     };
     const da = (...rs) => rs.every((r) => r !== null);
     const ohne = (...namen) => (namen.some((n) => fehlt.includes(n)) ? ` · Glied fehlt: ${namen.filter((n) => fehlt.includes(n)).join(", ")}` : "");
-    const buehne = rumpf("_buehneRender");
-    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
-    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers. Zeichnen darf nur die Bühne und der
-    // Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im Render-Fluss (oben).
+    // Zeichnen darf nur die Bühne und der Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im
+    // Render-Fluss (oben). Dass die Vorschau über die Bühne ungemaskt zeichnet, misst V-D3 im Render.
     const renderRufe = renderFluss(src);
-    const renderOrte = renderRufe.map((r) => r.glied || "(außerhalb jeder Methode)");
     const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
     const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
     const direkt = direktOrte.length;
-    const buehnen = stammLib
-        .rufe(src)
-        .filter((r) => r.ziel === "this._buehneRender")
-        .map((r) => {
-            const wer = r.args[r.args.length - 1];
-            return wer && wer.type === "Literal" ? String(wer.value) : wer ? src.slice(wer.start, wer.end) : "?";
-        });
     const evalPos = rumpf("dslEvalPos");
     const effekte = rumpf("dslEffects");
     const wachen = ((effekte || "").match(/if \(!pos\)/g) || []).length;
-    // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
-    const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
+    // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie; V-D1 fährt es).
     const plattform = rumpf("_genesisPlattform");
-    const plattQuelle = /\.type === "start_plattform"/.test(plattform || "");
+    const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length - ((plattform || "").match(/\.type === "start_plattform"/g) || []).length;
     // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
     // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
     // Ort an der Engstelle.
@@ -835,25 +820,13 @@ function wand(src) {
     const foundryNamen = zg.familie;
     return [
         [
-            "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
-            da(buehne) && /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
-            ohne("_buehneRender").slice(3),
+            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`)",
+            direkt === 0,
+            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""}`,
         ],
         [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`, die Werkstatt-Vorschau ruft die Bühne beim Namen)",
-            direkt === 0 && renderOrte.includes("_buehneRender") && buehnen.includes("Werkstatt-Vorschau"),
-            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""} · über die Bühne: ${buehnen.join(", ") || "keiner"}`,
-        ],
-        [
-            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null; den Default-Spawn nur ohne Knoten, `node == null`)",
-            da(evalPos) &&
-                /throw fehler;/.test(evalPos) &&
-                /this\._dslKeinOrt\(/.test(evalPos) &&
-                !/return null/.test(evalPos) &&
-                (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
-                // der Default-Spawn nur für `node == null` — seit 10.10. läuft auch er durch die Feld-Wand der Engstelle
-                // (das Feld hat keinen Ort, wo die Wildnis nicht trägt), darum wird er gesetzt statt sofort zurückgegeben
-                /if \(node == null\) pos = this\._defaultSpawnPos\(\);\n\s+else if \(!Array\.isArray\(node\)\)/.test(evalPos),
+            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` liefert nie null; den benannten Grund und den Default-Spawn ohne Knoten fährt V-k5)",
+            da(evalPos) && !/return null/.test(evalPos),
             ohne("dslEvalPos").slice(3),
         ],
         [
@@ -863,18 +836,18 @@ function wand(src) {
         ],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            da(plattform) && plattQuelle && plattSuchen === 1,
-            `${plattSuchen} Suche(n) nach start_plattform${ohne("_genesisPlattform")}`,
+            da(plattform) && plattSuchen === 0,
+            `${plattSuchen} Suche(n) nach start_plattform neben _genesisPlattform${ohne("_genesisPlattform")}`,
         ],
         [
-            "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` setzt at_player nur für `== null`)",
-            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
+            "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz)",
+            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && !/Array\.isArray/.test(regelPos),
             `Ersatz-Stellen ${ersatz.join("/")}${ohne("dslPositions", "dslEffects", "_dslRulePos")}`,
         ],
         [
             "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0 && zg.veraltet.length === 0,
-            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}${zg.veraltet.length ? " · Ausnahme ohne Zeit-Kante: " + zg.veraltet.join(", ") : ""}`,
+            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
+            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
         ],
     ];
 }
@@ -915,6 +888,8 @@ async function probe(arg) {
         const P = plat.position;
         m.plattform = [+P.x.toFixed(1), +P.z.toFixed(1)];
         m.trocken = r._landAt(P.x, P.z, 0);
+        r._ensureGenesisPlatform(); // die Spawn-Idempotenz liest `_genesisPlattform`: kein zweiter Leger legt eine zweite
+        m.plattformen = st.architectures.filter((a) => a && a.type === "start_plattform").length;
         // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
         const baeume = () =>
             st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
@@ -1247,6 +1222,8 @@ async function probe(arg) {
                     at_player_forward: abstandVon(["at_player_forward"]),
                     at_field_need: abstandVon(["at_field_need"]),
                 };
+                // Ohne Knoten (node == null) der Default-Spawn: ein Ort, kein Wurf.
+                k.ohneKnoten = grundVon(null) || [r.dslEvalPos(null, r.dslCtx({ source: "test" }))].every((q) => [q.x, q.y, q.z].every(Number.isFinite));
                 // Der Mess-Ort einer Regel ohne Positions-Knoten (Wetter) ohne Spieler: keiner — nie der Ursprung.
                 k.messOrtOhneSpieler = ohneSpieler(() => r._ruleRewardPos(["weather", "sunny"], r.dslCtx({ source: "test" })));
                 // Gegenprobe: ein gültiger at-Knoten wirkt genau einmal.
@@ -1793,13 +1770,14 @@ async function probe(arg) {
             const v = rahmenVerdict(Object.assign({}, gesundR, bruch));
             check(`Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true };
+        const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true, plattformen: 1 };
         check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
         for (const [name, bruch, soll] of [
             ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
             ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
             ["kein Ring über dem Frame-Budget", { ringPortale: 0 }, "kein Genesis-Ring"],
             ["Plattform im See", { trocken: false }, "plattform im wasser"],
+            ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
             ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
         ]) {
             const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
@@ -1852,12 +1830,9 @@ async function probe(arg) {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
         const vorStand = stammLib.ersetze(quelle, [
             ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
-            ["_buehneRender", "if (an !== null) lu.uLodMaskOn.value = 0;", ""],
             // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
-            // für jeden Nicht-Array-Knoten den Spieler
-            ["dslEvalPos", "if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();"],
+            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
             ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
@@ -2069,8 +2044,7 @@ async function probe(arg) {
                 (w7[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w7Soll.length,
             `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
-        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim
-        // Namen, und eine Kante der Ausnahme, die nicht mehr steht, macht sie veraltet.
+        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim Namen.
         const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
         const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
         const inDerKette = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
@@ -2079,12 +2053,6 @@ async function probe(arg) {
             quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
             inDerKette[2]
         );
-        const ohneUhr = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, "if (!vorMir) this._foundryAblauf(f, reqId);"));
-        check(
-            "Selbst-Test W: die Uhr ohne Zeitgeber → die Ausnahme der Frist-Kette ist veraltet (W7 nennt _foundryUhren → _foundryAblauf)",
-            !ohneUhr[1] && ohneUhr[2].includes("Ausnahme ohne Zeit-Kante: _foundryUhren → _foundryAblauf"),
-            ohneUhr[2]
-        );
         // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
         const effekteGlied = stammLib.glieder(quelle).find((g) => g.name === "dslEffects");
         const umbenannt = quelle.slice(0, effekteGlied.start) + quelle.slice(effekteGlied.start).replace("dslEffects", "dslWirkungen");
@@ -2092,8 +2060,8 @@ async function probe(arg) {
         check("Selbst-Test W: dslEffects umbenannt → W4 nennt das fehlende Glied", !w4[1] && w4[2].includes("Glied fehlt: dslEffects"), w4[2]);
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W1–W7 feuern",
-            rot.filter((w) => !w[1]).length === 7,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W2–W7 feuern",
+            rot.filter((w) => !w[1]).length === 6,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
@@ -2131,6 +2099,7 @@ async function probe(arg) {
             laeufe: Object.fromEntries(KNOTEN.map(([name]) => [name, kGesund(name)])),
             defaults: { near_water: "kein Wasser im Umkreis von 60 m", at_player_forward: 5, at_field_need: 50 },
             messOrtOhneSpieler: null,
+            ohneKnoten: true,
             gesund: { ok: true, akte: 1, grund: null },
         };
         check("Selbst-Test V-k5-Klasse (Rest): gesund == 0 Täter", knotenVerdict(gesundK).length === 0, knotenVerdict(gesundK).join(" · "));
@@ -2149,6 +2118,7 @@ async function probe(arg) {
             ["vorn ohne Abstand 1 m", mitD({ at_player_forward: 1 }), "at_player_forward ohne Zahl"],
             ["Bedarf ohne Radius 10 m", mitD({ at_field_need: 10 }), "at_field_need ohne Zahl"],
             ["der Mess-Ort ohne Spieler ist der Ursprung", Object.assign({}, gesundK, { messOrtOhneSpieler: { x: 0, z: 0 } }), "der Mess-Ort"],
+            ["ohne Knoten scheitert der Spawn", Object.assign({}, gesundK, { ohneKnoten: "nicht verlangt" }), "ohne Knoten kein Default-Ort"],
             ["ein gültiger Knoten wirkt nicht (vakuös)", Object.assign({}, gesundK, { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } }), "ein gültiger at-Knoten"],
         ]) {
             const v = knotenVerdict(bruch);

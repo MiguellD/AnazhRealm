@@ -7,7 +7,7 @@
 // Schuss fern (1,7 m, 10 m voraus) und Armlänge (1,6 m, 0,8 m voraus) + die Halm-Zahl: mittlerer
 // Nachbar-Kontrast der unteren Bildhälfte (hochfrequente Struktur = Halme, glatter Boden ≈ 0). Seit V18.508
 // steht nah die Nah-Wiese (Studio-Gras im Kamera-Ring); die Aufnahme schwingt sie für jede Kamera ein.
-// Die Wind-Uhr steht für jeden Schuss (S3 08.10.); `--stelle x,z` setzt die Stelle fest (Vorher/Nachher an derselben).
+// Die Uhren des Bilds hält die Bühne (A8); `--stelle x,z` setzt die Stelle fest (Vorher/Nachher an derselben).
 //   node scripts/diag-wiese.cjs [--tag name] [--out DIR] [--stelle x,z]
 "use strict";
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
@@ -37,15 +37,7 @@ const RENDER_FN = async (kam, W, H, png) => {
     const THREE_ = window.THREE;
     const rend = r.state.renderer;
     rend.setAnimationLoop(null);
-    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
-    // Die Wind-Uhr steht (S3 08.10.): die Halme wiegen mit `uWindTime`, die der Takt aus der Seiten-Zeit schreibt — zwei
-    // Boots trafen den Wind in verschiedener Phase (im 3-m-Ausschnitt 11,5 je Pixel), ein Vorher/Nachher der Gestalt maß
-    // den Wind mit. Die Linse hält die Uhr auf 100 s; ihre Seite zeigt nur Schüsse.
-    const wu = r.state.windUniforms && r.state.windUniforms.uWindTime;
-    if (wu && !wu.__fest) {
-        Object.defineProperty(wu, "value", { get: () => 100, set: () => {}, configurable: true });
-        wu.__fest = true;
-    }
+    window.__buehne(); // Mittag · Sonne · Sommer, jede Uhr des Bilds auf T (scripts/lib/ausgabe-aufnahme.cjs)
     const cam = r.state.camera;
     cam.position.set(kam.px, kam.py, kam.pz);
     cam.lookAt(kam.lx, kam.ly, kam.lz);

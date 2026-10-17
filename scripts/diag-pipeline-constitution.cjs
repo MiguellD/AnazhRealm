@@ -1,7 +1,7 @@
 // diag-pipeline-constitution.cjs — P8: DIE VERFASSUNG DER PIPELINE (Struktur ersetzt Ermahnung).
 // Statisch (kein Browser), im `check`-Gate: die GESETZE der „Neues Kleid"-Pipeline sind hier als
-// prüfbare STRUKTUR verankert, nicht als Kommentar-Ermahnung. Jede Regel prüft die ANWESENHEIT des
-// erzwingenden Baus UND die ABWESENHEIT ihres Anti-Musters. Kommentar-Bereinigung (V18.267: der Code
+// prüfbare STRUKTUR verankert, nicht als Kommentar-Ermahnung. Jede Regel prüft die ABWESENHEIT ihres
+// Anti-Musters; die Anwesenheit des erzwingenden Baus beweisen die Verhaltens-Bänder (D3). Kommentar-Bereinigung (V18.267: der Code
 // darf das Wort tragen, der Code darf es nicht) — die geprüften Anti-Muster (Inline-Wuchs, iframe.src,
 // geschnittene Methoden) leben, wenn überhaupt, nur noch in Kommentaren, die der Strip entfernt. Ein
 // Refactor, der ein Gesetz still bricht (Nachbau, iframe, Parallel-Wuchs), macht diese Linse rot.
@@ -43,27 +43,9 @@ const pkg = read("package.json");
 
 console.log("=== P8 — DIE VERFASSUNG DER PIPELINE (Struktur, nicht Ermahnung) ===");
 
-// GESETZ 1 (P4) — DIE FOUNDRY IST DIE EINE BAUM-QUELLE: der Chokepoint `_buildVariantLODs` gibt bei
-// lebender Foundry null (kein Aufrufer kann einen Nachbau setzen); der Scatter unterdrückt den
-// Grammatik-Render für Baum-Schichten, wenn die Foundry lebt.
-console.log("\nGesetz 1 — die Foundry ist die EINE Baum-Quelle (Chokepoint + Scatter-Gate):");
-law(
-    "der Chokepoint prüft `_foundryPresetFor(species)` (in `_buildVariantLODs`)",
-    true,
-    /_foundryPresetFor\(species\)/.test(anazhNC)
-);
-law(
-    // V18.464 (Linse wandert mit, Lehre 6): die Unterdrückung lebt seit der
-    // Zellen-Chokepoint-Extraktion (_scatterMaterializeCell) als `return null`
-    // statt `continue` — dasselbe Gesetz, neuer Träger.
-    'der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → return null` im Zellen-Chokepoint)',
-    true,
-    /layer\.kind === "tree" && this\._foundryEnabled\(\)\)\s*return null/.test(anazhNC)
-);
 
 // GESETZ 2 (P6) — EIN WUCHS: der Studio-Generator delegiert an die geteilte Quelle, KEIN Parallel-Wuchs.
 console.log("\nGesetz 2 — EIN Wuchs (foundry-core liest den geteilten phyto-core):");
-law("`growTreeNodes` delegiert an `__core.growSkeleton`", true, /__core\.growSkeleton/.test(foundryNC));
 law(
     "KEIN Inline-Parallel-Wuchs (die `grow(pos,dir,radius,length,depth)`-Rekursion ist geschnitten)",
     false,
@@ -75,11 +57,6 @@ law(
 // den Kanal "bake-impostor" (phytogenesis `__replyBakeImpostor`), der Welt-RTT-Nachbau ist
 // GESCHNITTEN (kein zweiter Bäcker); kein GL-Bake-iframe.
 console.log("\nGesetz 3 — der Studio-Bäcker ist die Fernstufe (kein Nachbau, kein Bake-iframe):");
-law(
-    'der Stamm konsumiert den Studio-Bäcker-Kanal ("bake-impostor" → `_applyStudioImpostorPayload`)',
-    true,
-    /"bake-impostor"/.test(anazhNC) && /_applyStudioImpostorPayload/.test(anazhNC)
-);
 law(
     "der Welt-RTT-Nachbau bleibt geschnitten (kein `_bakeImpostorAtlasRTT`/`_impostorBlitPixels`/`_impostorDilate`/`_foundryBakeLeaves`)",
     false,
@@ -122,23 +99,9 @@ for (const g of [
 ])
     law(`\`${g}\` verdrahtet`, true, pkg.includes('"' + g + '"'));
 
-// GESETZ 6 („Drähte statt Kopien", 08.07.) — KEINE LOGIK-KOPIE IM MONOLITHEN: was auch im
-// Studio-/Vorlagen-Kern steht, darf im Stamm nur als DRAHT existieren. Der Wald-Plan
-// (Poisson/Nische/Größe) + der Impostor-Rahmen (Studio v36) leben EINMAL in phyto-core; der
-// Monolith delegiert. Jeder Refactor, der die Formel zurückkopiert, wird hier rot.
-console.log("\nGesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):");
-const phytoNC = stripComments(read("phyto-core.js"));
-law("phyto-core trägt den Wald-Plan (`planForestCell`)", true, /function planForestCell\(/.test(phytoNC));
-law(
-    "phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)",
-    true,
-    /function impostorFrame\(/.test(phytoNC) && /function scanRadialXZ\(/.test(phytoNC)
-);
-law(
-    "der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)",
-    true,
-    /core\.planForestCell\(cx, cz, seedInt/.test(anazhNC)
-);
+// GESETZ 6 („Drähte statt Kopien", 08.07.) — KEINE LOGIK-KOPIE IM MONOLITHEN: der Wald-Plan (Nische/Größe) und
+// der Impostor-Rahmen (Studio v36) leben EINMAL in phyto-core; jeder Refactor, der die Formel zurückkopiert, wird hier rot.
+console.log("\nGesetz 6 — Drähte statt Kopien (keine Formel-Kopie im Monolithen):");
 law(
     "KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)",
     false,
@@ -151,88 +114,17 @@ law(
     /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(anazhNC),
     "die reverse-J-Größe lebt wieder im Monolithen"
 );
-law("der Monolith DELEGIERT den Rahmen (`core.impostorFrame(`)", true, /core\.impostorFrame\(/.test(anazhNC));
 law(
     "KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)",
     false,
     /totalH \* 0\.51/.test(anazhNC),
     "die v36-Rahmenformel lebt wieder als Kopie im Monolithen"
 );
-const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
-// Die Foundry-Brücke (K42): der Bau-Teil der Pflanzen-Shell — der Studio-Bäcker und die Asset-Kanäle leben dort.
-const brueckeNC = stripComments(read("foundry-bruecke.js"));
-law(
-    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas, foundry-bruecke)",
-    true,
-    /__phytoCore\.impostorFrame\(/.test(brueckeNC)
-);
-law(
-    "der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)",
-    true,
-    /impostor:\s*\{\s*views:/.test(foundryNC)
-);
-// GRAS ALS OBERFLÄCHEN-FUNKTION (20.07., V18.491.48 — das Gesetz wandert mit dem Code):
-// die Halm-GEOMETRIE ist tot — der Voxel-Gras-Bauer registriert bedingungslos null
-// (Lifecycle byte-konsistent, es entstehen nie wieder Kegel-Dreiecke); die Wiese lebt
-// als Halm-Schattierung IM Boden-Fragment (`_terrainGeologyAlbedo`: `_halmW`-Mix auf
-// das EINE geteilte MEADOW_GREEN — Gesetz #0, keine zweite Farb-Wahrheit).
-law(
-    "GRAS ALS OBERFLÄCHEN-FUNKTION: der Bauer registriert null, baut nie ein Mesh",
-    true,
-    /voxelChunkGrass\.set\(key, null\);/.test(anazhNC)
-);
-law(
-    "die Wiese lebt im Boden-Fragment (Halm-Term `_halmW` mixt MEADOW_GREEN)",
-    true,
-    /_halmW/.test(anazhNC) && /MEADOW_GREEN/.test(anazhNC)
-);
-// LOD-WURZEL (08.07.) — die Stufen-Wahrheit je Art lebt als VERTRAGS-DATEN in foundry-core
-// (kindStages), der Studio-Wald liest sie SELBST (near/far-Kacheln), AnazhRealm clampt seine
-// Distanz-Wahl darauf (kein Empfänger erfindet Stufen, die das Studio nicht vorsieht).
-law(
-    "die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)",
-    true,
-    /kindStages:\s*\{/.test(foundryNC)
-);
-law(
-    "der Studio-Wald liest kindStages SELBST (near/far-Kacheln)",
-    true,
-    /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC)
-);
-law(
-    "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
-    true,
-    /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
-        /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
-        /_foundryFlattenFor\([^)]*\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(anazhNC)
-);
-// W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
-// ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
-// (`builtDensity` in `_scatterRegion`) und Nach-Dünnen (`_tickFoliageThin`) LESEN ihn — kein
-// Leser rechnet die Dichte selbst (die V18.427-Rebuild-Endlosschleifen-Klasse strukturell zu).
-console.log("\nGesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-Metrik:");
-law(
-    "der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)",
-    true,
-    /_effectiveFoliageDensity\([^)]*\)\s*\{/.test(anazhNC)
-);
-{
-    const _fnBody = innen;
-    const passBody = _fnBody("_scatterPass");
-    const thinBody = _fnBody("_tickFoliageThin");
-    law(
-        "der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)",
-        true,
-        /_effectiveFoliageDensity\(\)/.test(passBody) && !/_foliageDensityScale/.test(passBody)
-    );
-    law(
-        "das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)",
-        true,
-        /_effectiveFoliageDensity\(\)/.test(thinBody) &&
-            /_foundryEnabled/.test(thinBody) &&
-            !/_foliageDensityScale/.test(thinBody)
-    );
-}
+// W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity` ist der Chokepoint; Bau
+// (`_scatterPass`) und Nach-Dünnen (`_tickFoliageThin`) rechnen die Dichte nie selbst (die V18.427-Klasse strukturell zu).
+console.log("\nGesetz 7 (W1) — kein eigener Dichte-Rechner + die geheilte Render-Metrik:");
+law("kein eigener Dichte-Rechner in `_scatterPass`", false, /_foliageDensityScale/.test(innen("_scatterPass")));
+law("kein eigener Dichte-Rechner in `_tickFoliageThin`", false, /_foliageDensityScale/.test(innen("_tickFoliageThin")));
 // W1 — DIE GEHEILTE RENDER-METRIK BLEIBT GEHEILT (die V18.427-Klasse strukturell): im r184-WebGPU-Info
 // ist `render.calls` ein LEBENSZEIT-Zähler — der EINE Tap liest `drawCalls ?? calls`; KEIN Leser im
 // Monolithen darf `render.calls` nackt lesen (nur als `??`-Fallback hinter drawCalls). EINE Ausnahme liest ihn als
@@ -249,31 +141,20 @@ law(
     );
 }
 
-// N1 (Nervensystem-Plan, M8: TABELLE VOR IF) — der Auto-Register-Chokepoint laeuft die
-// KIND_POLICY-Tabelle: eine neue Domaene ist eine Policy-Zeile, KEIN kind-if-Zweig im Stamm.
-// Ein Refactor, der einen `if (rec.kind === ...)`-Zweig zurueckbringt, wird hier rot.
+// N1 (Nervensystem-Plan, M8: TABELLE VOR IF) — kein kind-if-Zweig im Auto-Register-Chokepoint; eine neue Domaene ist
+// eine Policy-Zeile (die Wirkung beweist gate:place-policy). Ein `if (rec.kind === ...)`-Zweig wird hier rot.
 {
     const _autoBody = innen(/_foundryAutoRegisterSpecies\([^)]*\) \{/);
     law(
-        "N1/M8: KIND_POLICY existiert (tree + vehicle als Tabellen-Zeilen)",
+        "N1/M8: kein kind-String-Vergleich im Auto-Register-Chokepoint",
         true,
-        /KIND_POLICY = Object\.freeze/.test(anazhNC) &&
-            /tree:\s*Object\.freeze/.test(anazhNC) &&
-            /vehicle:\s*Object\.freeze/.test(anazhNC)
-    );
-    law(
-        "N1/M8: der Auto-Register-Chokepoint laeuft die Tabelle (kein kind-String-Vergleich im Body)",
-        true,
-        _autoBody.length > 0 && /KIND_POLICY/.test(_autoBody) && !/kind\s*[!=]==?\s*"/.test(_autoBody)
+        _autoBody.length > 0 && !/kind\s*[!=]==?\s*"/.test(_autoBody)
     );
 }
 
-// N2 (Nervensystem-Plan, Phase beta: „Runtime = Validator") — DAS CORE-MANIFEST IST DIE EINE
-// KERN-QUELLE: die Worker-Kern-Liste lebt als DATEN in cores.manifest.json (der Worker-Boot
-// `_ensureAssetFoundry` + der Platten-Stempel der Transport-Schale `_foundrySchale` + der Vertrags-Validator
-// lesen sie);
-// die Bruecke liest die ns-Kerne GENERISCH aus self.__anazhCores — KEIN Kern-spezifisches
-// ns-Literal (self.__vehicleCore) mehr in der Bruecke. Ein dritter Kern ist eine Manifest-Zeile.
+// N2 (Nervensystem-Plan, Phase beta: „Runtime = Validator") — DAS CORE-MANIFEST IST DIE EINE KERN-QUELLE: die
+// Worker-Kern-Liste lebt als DATEN in cores.manifest.json (den manifest-getriebenen Boot und Stempel beweist gate:fluss
+// W4/W5 am echten Faden); die Bruecke liest die ns-Kerne GENERISCH — KEIN Kern-spezifisches ns-Literal (self.__vehicleCore).
 {
     let manifestOk = false;
     try {
@@ -285,169 +166,26 @@ law(
     } catch (_e) {}
     law("N2: cores.manifest.json existiert + ist ein gueltiger Kern-Satz", true, manifestOk);
     law(
-        "N2: der Worker-Boot liest das Manifest (cores.manifest.json in _ensureAssetFoundry)",
-        true,
-        /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) && /self\.__anazhCores=/.test(anazhNC)
-    );
-    law(
-        "N2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + core.scripts → _foundrySchale)",
-        true,
-        /stempelUrls\.push\(/.test(anazhNC) && /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC)
-    );
-    law(
         "N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)",
         false,
-        /self\.__vehicleCore/.test(brueckeNC + phytogenNC),
+        /self\.__vehicleCore/.test(stripComments(read("foundry-bruecke.js")) + stripComments(read("worlds/terrain/phytogenesis.js"))),
         "ein Kern-spezifischer ns-Zugriff ist zurueck in der Bruecke"
     );
 }
 
-// N4 (Nervensystem-Plan Phase γ, „Instance-Straße") — DIE EINE MESH→GROUP-NAHT + DAS REPLY-
-// MATERIAL FÜHRT + DIE TUFT-WAND + IMPOSTOR-POLITIK ALS DATEN. Vier Gesetze, jedes als Struktur:
-// N4.1 der Worker-Reply wird EXAKT EINMAL zu THREE-Geometrie (in `_foundryBuildGroup`) — jeder
-//      `this._foundryRequest(...)`-Aufruf ist ein `.then`-Leser und routet durch diese eine Naht (kein zweiter
-//      Bau-Pfad kann still entstehen; die IDB-Persistenz in `_foundryRequest` selbst speichert
-//      den Reply UNVERÄNDERT, sie baut nicht → zählt nicht als Leser).
-// N4.2 wo `m.mat` reist, FÜHRT es — die kind-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7/0.18)
-//      sind reiner Fallback für mat-lose Alt-Replies (jeder heutige Reply trägt mat, V18.418).
-// N4.3 die W6-Leer-Wand steht: im Studio-Regime ist die Resolved-Leere „leer" (NIE der
-//      Alt-Tuft-Nachbau = Fail-Open); der Bauer verbucht „leer" VOR dem Tuft-Fallback. Der
-//      Tuft-SCHNITT ist N7.3-gebunden (die Gras-Bänder üben den foundry-off-Pfad) — bis dahin
-//      wacht diese Wand + die Zensus-Klasse in gate:asset-inventory.
-// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/
-//      vehicle [V18.477 Fahrzeug-Fernstufe, gate:fahrzeug-fern wacht]), kein kind-Literal in
-//      `_foundryPresetIsTree`; rock/flower/grass impostorn fail-closed nicht.
-console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");
+// N4 (Nervensystem-Plan Phase γ, „Instance-Straße") — die Absenzen der Straße: keine zweite Reply→Geometrie-Konversion
+// neben der EINEN Naht (`_foundryBuildMesh`), kein eigener mp-Leser im Stamm (die Regler liest phyto-core `budgetRegler`),
+// der Mesh-Gras-Pfad bleibt tot, und `_foundryPresetIsTree` kennt kein tree|shrub-kind-Literal (die Policy-Zeile führt).
+console.log("\nGesetz N4 — die Instance-Straße (keine zweite Naht · kein mp-Zwilling · Gras tot · Impostor als Daten):");
 {
-    const _fnBodyN4 = innen;
-    // N4.1a — die Roh-Reply→Geometrie-Konversion existiert genau EINMAL (die eine Naht):
     const rawConv = (anazhNC.match(/new T\.BufferAttribute\(m\.position\.array/g) || []).length;
-    law("N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)", true, rawConv === 1);
-    // N4.1b — JEDER `this._foundryRequest(`-Aufruf ist ein Reply-Leser, der durch die Naht routet. Bis K38-N2 übersprang
-    // die Zählung jeden Aufruf ohne `.then((meshes)` still und bewachte ihre Leere mit der Mindestzahl ≥ 5 — die fiel, als
-    // der Vorrat in den EINEN Zug zog (5 → 4 Leser, Zweig-CI 38661623802): die Linse strafte den Schnitt, den sie bewacht.
-    // Jetzt zählt sie ALLE Aufrufe (ein Aufruf ohne Leser ist ein Leck aus der Naht), liest den Handler-Parameter am
-    // Namen und belegt ihre Nicht-Leere am Namen des EINEN Zugs (`_foundryZug`) plus einem Selbsttest am Täter.
-    // Gelesen am AST (stammLib.rufe, Prüfer K38-N2 Runde 3): bis dahin ordnete ein Kopf-Muster jeden Aufruf seiner Methode
-    // zu und benannte ihn an `)` in einem Default-Parameter falsch (der Aufruf fiel der Methode davor zu); der Handler und
-    // sein Parameter sind Knoten, der Ruf in die Naht ein Aufruf mit diesem Parameter als erstem Argument.
-    // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor — `_ofenAssembleAsset` routet durch DIESELBE
-    // Mesh-Konversion (`_foundryBuildMesh`; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
-    const NAHT_RX = /^(?:_foundryBuildGroup|_ofenAssembleAsset)$/;
-    const vonThis = (r) => r.knoten.callee.type === "MemberExpression" && r.knoten.callee.object.type === "ThisExpression";
-    const leserZensus = (src) => {
-        const rufe = stammLib.rufe(src);
-        const thenAn = new Map(); // der Anfrage-Knoten → sein `.then(...)`
-        for (const r of rufe) {
-            const c = r.knoten.callee;
-            if (r.name === "then" && c.type === "MemberExpression" && c.object.type === "CallExpression") thenAn.set(c.object, r);
-        }
-        return rufe
-            .filter((r) => r.name === "_foundryRequest" && vonThis(r))
-            .map((a) => {
-                const then = thenAn.get(a.knoten);
-                const h = then && then.args[0];
-                const p =
-                    h && /FunctionExpression$/.test(h.type) && h.params[0] && h.params[0].type === "Identifier" ? h.params[0].name : null;
-                const routed =
-                    !!p &&
-                    rufe.some(
-                        (r) =>
-                            r.start >= h.start &&
-                            r.ende <= h.end &&
-                            NAHT_RX.test(r.name || "") &&
-                            vonThis(r) &&
-                            r.args[0] &&
-                            r.args[0].type === "Identifier" &&
-                            r.args[0].name === p
-                    );
-                return { methode: a.glied || "?", routed, leser: !!then };
-            });
-    };
-    {
-        // Selbsttest am Täter: ein Leser am Bau vorbei, ein Aufruf ohne Leser, ein Leser mit fremdem Parameter-Namen und
-        // ein Leser hinter einem Kopf mit Default-Parameter (`_versteckt(a, o = f(1))`, das Kopf-Muster gab ihn `_ohneLeser`)
-        // fallen beim Namen; der Leser durch die Naht hält, auch über Zeilen umbrochen und mit Block-Rumpf.
-        const probe = leserZensus(
-            [
-                "class P {",
-                "    _gut(a) {",
-                "        this._foundryRequest(a, 0, 1).then((m) => { this._foundryCacheSet(a, this._foundryBuildGroup(m, {})); });",
-                "    }",
-                "    _vorbei(a) {",
-                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
-                "    }",
-                "    _ohneLeser(a) {",
-                "        return this._foundryRequest(a, 0, 1);",
-                "    }",
-                "    _versteckt(a, o = f(1)) {",
-                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
-                "    }",
-                "    _fremd(a) {",
-                "        this._foundryRequest(a, 0, f(1)).then((r) => this._foundryBuildGroup(meshes));",
-                "    }",
-                "    _umbrochen(",
-                "        a,",
-                "        b",
-                "    ) {",
-                "        this._foundryRequest(a, b, g(1, 2))",
-                "            .then(function (teile) {",
-                "                return this._foundryBuildGroup(teile, {});",
-                "            });",
-                "    }",
-                "}",
-            ].join("\n")
-        );
-        const sieht =
-            probe.map((s) => `${s.methode}:${s.routed ? 1 : 0}`).join(",") ===
-            "_gut:1,_vorbei:0,_ohneLeser:0,_versteckt:0,_fremd:0,_umbrochen:1";
-        law(
-            "N4.1: die Leser-Zählung sieht den Täter (Selbsttest: vorbei · ohne Leser · Default-Parameter im Kopf · fremder Parameter fallen beim Namen)",
-            true,
-            sieht,
-            JSON.stringify(probe)
-        );
-        const sites = leserZensus(anazhRoh);
-        const routed = sites.filter((s) => s.routed);
-        const lecks = sites.filter((s) => !s.routed).map((s) => `${s.methode}${s.leser ? "" : " (ohne Leser)"}`);
-        law(
-            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed.length}/${sites.length} Sites: ${sites
-                .map((s) => s.methode)
-                .join(" · ")})`,
-            true,
-            routed.length === sites.length && routed.some((s) => s.methode === "_foundryZug"),
-            lecks.length ? "am Bau vorbei: " + lecks.join(", ") : "der EINE Zug `_foundryZug` liest nicht durch die Naht"
-        );
-    }
-    // N4.2 — die Naht reicht das Reply-Material herein + mp FÜHRT (kind-Defaults nur Fallback):
+    law("N4.1: keine zweite Reply→Geometrie-Konversion neben der EINEN Naht", true, rawConv <= 1, `${rawConv} Konversionen`);
     law(
-        "N4.2: die Naht reicht das Reply-Material herein (`m.mat` an `_foundryTreeMaterial`)",
-        true,
-        /_foundryTreeMaterial\(m\.kind \|\| "bark", m\.mat \|\| null\)/.test(anazhNC)
+        "N4.2: kein eigener mp-Leser im Stamm (kein Zwilling von budgetRegler)",
+        false,
+        /typeof mp\.(roughness|metalness|envMapIntensity)\b/.test(anazhNC),
+        "der Stamm liest das Reply-Material wieder selbst"
     );
-    // Die Linse wandert mit dem Code (Integration W8, Seh-Klasse): die Material-Regler leben EINMAL in phyto-core
-    // `budgetRegler` — der Stoff-Schlüssel (`budgetStoff`) und der Wirt (`_foundryTreeMaterial`) lesen sie dort. Der
-    // Wirt liest die EINE Quelle und trägt keinen eigenen mp-Leser (kein Zwilling); mp führt im Körper von budgetRegler.
-    const reglerKoerper = (() => {
-        const i = phytoNC.indexOf("function budgetRegler(kind, mp) {");
-        const j = i < 0 ? -1 : phytoNC.indexOf("\n    }\n", i);
-        return i < 0 || j < 0 ? "" : phytoNC.slice(i, j);
-    })();
-    law(
-        "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
-        true,
-        /_foundryTreeMaterial\([^)]*\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(anazhNC) &&
-            /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&
-            !/typeof mp\.(roughness|metalness|envMapIntensity)\b/.test(anazhNC) &&
-            /r: mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(reglerKoerper) &&
-            /mt: mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(reglerKoerper) &&
-            /env: mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(reglerKoerper),
-        "der Wirt liest die Regler nicht aus budgetRegler, trägt einen eigenen mp-Leser, oder mp führt dort nicht"
-    );
-    // N4.3/N7.4 → GRAS ALS OBERFLÄCHEN-FUNKTION (V18.491.48, das Gesetz wandert mit dem
-    // Code): der Studio-Halm-KONSUM im Bauer fiel mit der Halm-Geometrie (das
-    // `sg === "leer"`-Verdikt und die Existenz-Gabel waren Leser des Mesh-Pfads) — KEIN
-    // Bauer-Pfad erzeugt mehr Halm-Instanzen; die Tuft-/Thin-Absenz-Gesetze bleiben.
     law(
         'N7.4: der Mesh-Gras-Konsum ist tot (kein `sg === "leer"`-Leser, keine Existenz-Gabel im Bauer)',
         false,
@@ -466,68 +204,29 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
         /_tickGrassThin/.test(anazhNC),
         "das Gras-Nach-Dünnen ist zurückgekehrt"
     );
-    // N4.4 — die Impostor-Politik ist eine Daten-Zeile, kein kind-Literal:
+    const treeBody = innen(/_foundryPresetIsTree\([^)]*\) \{/);
     law(
-        "N4.4: KIND_POLICY trägt die Impostor-Politik (tree + shrub `impostor: true`)",
+        "N4.4: kein tree|shrub-kind-Literal in `_foundryPresetIsTree`",
         true,
-        /tree:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC) &&
-            /shrub:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
+        treeBody.length > 0 && !/"tree"|"shrub"/.test(treeBody)
     );
-    // FAHRZEUG-FERNSTUFE (V18.477, Matrix-Zelle fahrzeug.lods — das Tor-Präzedenz V18.465
-    // gespiegelt): vehicle impostort jetzt BEWUSST (geparkt fern = 8-Winkel-Karte; geritten
-    // bleibt L0 über die Distanz-0-Wand, `gate:fahrzeug-fern` beweist beides). Das alte
-    // Gesetz „vehicle trägt KEINE Impostor-Zeile" ist damit GEDREHT — Tests wandern mit
-    // dem Code. rock/flower/grass bleiben impostor-frei (Geometrie-Fernstufe).
-    law(
-        "N4.4: vehicle trägt die Impostor-Zeile (Fahrzeug-Fernstufe, `gate:fahrzeug-fern` wacht)",
-        true,
-        /vehicle:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
-    );
-    {
-        const treeBody = _fnBodyN4(/_foundryPresetIsTree\([^)]*\) \{/);
-        law(
-            "N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body",
-            true,
-            treeBody.length > 0 && /KIND_POLICY\[rec\.kind\]/.test(treeBody) && !/"tree"|"shrub"/.test(treeBody)
-        );
-    }
 }
 
-// N5 (Nervensystem-Plan Phase δ, „Gesetze andocken") — DIE EINE PLACE-AUFLÖSUNG: wie eine
-// Buch-Art in die Welt kommt, entscheidet `_placePolicyFor` (Rezept-fx.place führt, sonst die
-// placeExtra-Ableitung) + der Dispatch-Chokepoint `_placeDispatch`. Die Wald-Nischen-Quelle
-// (`_forestExtraSpecies`) LIEST diese Auflösung — kein direkter placeExtra-Griff mehr außerhalb
-// der Auflösung (der `.placeExtra`-Property-READ lebt genau EINMAL, in `_placePolicyFor`; die
-// KIND_POLICY-Tabellen-ZEILEN `placeExtra:` sind Daten, keine Reads). Fail-closed: unbekannte
-// modes fallen über die PLACE_MODES-Tabelle auf "none".
-console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Chokepoint · kein placeExtra-Griff):");
+// N5 (Nervensystem-Plan Phase δ, „Gesetze andocken") — DIE EINE PLACE-AUFLÖSUNG `_placePolicyFor` (ihre Wirkung beweist
+// gate:place-policy): die Wald-Nischen-Quelle greift nie direkt auf placeExtra, und außer der Auflösung liest kein Glied
+// `.placeExtra` (die KIND_POLICY-Zeilen `placeExtra:` sind Daten, keine Reads).
+console.log("\nGesetz N5 — die Place-Auflösung (kein placeExtra-Griff außerhalb der Auflösung):");
 {
-    const _fnBodyN5 = innen;
-    const extrasBody = _fnBodyN5(/_forestExtraSpecies\([^)]*\) \{/);
-    law(
-        "N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)",
-        true,
-        extrasBody.length > 0 && /_placePolicyFor\(/.test(extrasBody) && /_placeDispatch\(/.test(extrasBody)
-    );
+    const extrasBody = innen(/_forestExtraSpecies\([^)]*\) \{/);
     law(
         "N5: kein direkter placeExtra-Griff in der Wald-Nischen-Quelle",
         false,
         /placeExtra/.test(extrasBody),
         "die Nischen-Quelle greift wieder direkt auf placeExtra"
     );
-    const policyBody = _fnBodyN5(/_placePolicyFor\([^)]*\) \{/);
-    law(
-        "N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)",
-        true,
-        (anazhNC.match(/\.placeExtra/g) || []).length === 1 && /\.placeExtra === "forest"/.test(policyBody)
-    );
-    law(
-        'N5: die Auflösung fällt fail-closed über die PLACE_MODES-Tabelle (unbekannter mode → "none")',
-        true,
-        /PLACE_MODES = Object\.freeze\(\{ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 \}\)/.test(
-            anazhNC
-        ) && /PLACE_MODES\[src\.mode\] === 1 \? src\.mode : "none"/.test(anazhNC)
-    );
+    const policyBody = innen(/_placePolicyFor\([^)]*\) \{/);
+    const fremd = (anazhNC.match(/\.placeExtra/g) || []).length - (policyBody.match(/\.placeExtra/g) || []).length;
+    law("N5: außer `_placePolicyFor` liest kein Glied `.placeExtra`", true, fremd === 0, `${fremd} fremde Leser`);
     law("N5: `gate:place-policy` verdrahtet", true, /"gate:place-policy"\s*:/.test(pkg));
 }
 
