@@ -2,18 +2,15 @@
 // Beweist die drive-Reise Lab-Formel → Buch → Host-Profil, OHNE dass ein zweiter
 // Wahrheits-Satz oder ein zweiter Fahr-Pfad entsteht (M1/M9 · N6.4):
 //   A (statisch + numerisch, Node):
-//     A1 exportDrive + FAHR leben im KERN (vehicle-core), die Shell traegt KEIN
-//        eigenes FAHR-Literal/carPhys mehr (sie LIEST VC.FAHR — der N6.1-Umzug).
+//     A1 die Shell traegt KEIN eigenes FAHR-Literal/carPhys mehr (der N6.1-Umzug).
 //     A2 (Formel-Paritaet, Kriterium d): exportDrive == die Hand-Ableitung aus den
 //        Primitiven carPhys/FAHR/DEFAULT_P an 3 Presets, byte-exakt (===) — die
 //        Shell faehrt ihre Probefahrt mit EXAKT diesen Primitiven, also Kern==Shell.
 //     A3 (H7, Kriterium b numerisch): GT vs Supersport — mindestens zwei drive-
 //        Skalare messbar verschieden (Lab-Formel != Emergenz-Zufall).
-//     A4 die Bruecke rechnet fahrprofil GENERISCH beim Buch-Bau (zk.kern.exportDrive,
-//        kein ns-Literal — Gesetz #0: kein eingefrorenes Preset-Duplikat).
-//     A5 (N6.3/N6.4): _vehicleProfile liest den B6-Steckplatz (fx.fahrprofil), und
-//        der Bewegungs-Loop bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul leben je
-//        GENAU EINMAL, alle in _loopPlayerMovement — kein zweiter Fahr-Code).
+//     A4 die Bruecke kennt kein ns-Literal (Gesetz #0: kein eingefrorenes Preset-Duplikat).
+//     A5 (N6.4): der Bewegungs-Loop bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul leben
+//        je GENAU EINMAL — kein zweiter Fahr-Code).
 //   B (Browser, foundry-ON, Null-Renderer — der lebende Draht):
 //     B-a das LIVE-Buch traegt fahrprofil je Fahrzeug-Preset (5/5, finite Skalare).
 //     B-b GT vs Supersport im LIVE-Buch verschieden UND bit-exakt == den Node-
@@ -30,13 +27,13 @@
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
 //     die Instanz-Matrix (der EINE _archInstanceUpdate-Weg) + die Blocker (_populate-
 //     BlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot) die neue
-//     Position tragen. Statisch dazu A6: _tickMountedMovement ist an den Chokepoint
-//     gebunden (pos folgt pm · _archInstanceUpdate · Blocker), _archInstanceUpdate ist
-//     foundry-bewusst (EINE Flat-Quelle wie _rebuildArchitectureMesh).
+//     Position tragen; _archInstanceUpdate liest die EINE Flat-Quelle (Zähl-Spion: die
+//     Foundry-Gestalt, ohne Foundry der Bauplan), und der Kapsel-Chokepoint stößt den
+//     Reiter nie an sein eigenes Gefährt (am Lauf, mit und ohne dessen Boxen).
 //   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
 //     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert;
 //     (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
-//     Verdikt-Linse feuert; ein Stamm ohne _archInstanceUpdate-Bindung → A6 feuert.
+//     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -55,10 +52,6 @@ function check(name, ok, detail) {
 }
 // Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren Muster woertlich).
 const stripComments = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
 function countOcc(src, needle) {
     let n = 0,
         i = 0;
@@ -97,6 +90,7 @@ function driveVerdict(d) {
         out.push("visual"); // Instanz-Matrix/Mesh zieht mit (die B2-Wurzel)
     if (!d || !Number.isFinite(d.blockerMax) || d.blockerMax > 8) out.push("blocker");
     if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
+    if (!d || d.flatFoundry !== true || d.flatBauplan !== true) out.push("flat"); // die EINE Flat-Quelle der Instanz
     if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
     // DONOR-ABSCHIED (18.07.): Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
     // Anker; Blocker-Huelle == exportDrive.huelle-Laenge (> 3 m — die 2.1-m-Donor-
@@ -151,83 +145,29 @@ function expectedFor(presetId) {
     return VC.exportDrive(Object.assign({}, p.s, p.fx));
 }
 
-// ===== TEIL A: die statischen + numerischen Gesetze =====
-function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
-    const vcNC = stripComments(vcSrc);
+// ===== TEIL A: die statischen Absenzen (Node, kommentarfrei) — die Präsenzen (Kern-Export, Brücke, Steckplatz, die Bindung
+// des Ritts an den Chokepoint, Kern-Sitz und Kern-Hülle) beweisen A2/A3 und der lebende Draht B-a … B-d =====
+function staticLaws(garageSrc, anazhSrc, phytoSrc) {
     const garNC = stripComments(garageSrc);
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
     out.push([
-        "A1: exportDrive + FAHR leben im Kern (definiert + im Namensraum exportiert)",
-        /function exportDrive\(/.test(vcNC) &&
-            /exportDrive:\s*exportDrive/.test(vcNC) &&
-            /FAHR:\s*FAHR/.test(vcNC) &&
-            /const FAHR\s*=/.test(vcNC),
+        "A1: die Shell trägt kein eigenes FAHR-Literal und kein eigenes carPhys (sie liest VC.FAHR)",
+        !/maxSteer\s*:/.test(garNC) && !/function\s+carPhys/.test(garNC),
     ]);
-    out.push([
-        "A1: die Shell liest FAHR aus dem Kern (kein eigenes Literal, kein eigenes carPhys)",
-        /FAHR\s*=\s*VC\.FAHR/.test(garNC) && !/maxSteer\s*:/.test(garNC) && !/function\s+carPhys/.test(garNC),
-    ]);
-    out.push([
-        "A4: die Bruecke rechnet fahrprofil generisch beim Buch-Bau (zk.kern.exportDrive, kein ns-Literal)",
-        /zk\.kern\.exportDrive/.test(phytoNC) &&
-            /fx\.fahrprofil\s*=\s*fp/.test(phytoNC) &&
-            !/self\.__vehicleCore/.test(phytoNC),
-    ]);
-    const vp = fnBody(anazhNC, /_vehicleProfile\(entry\)\s*/);
-    out.push([
-        "A5: _vehicleProfile liest den B6-Steckplatz (fx.fahrprofil fuehrt, Emergenz = Fallback)",
-        vp !== null && /fx\.fahrprofil/.test(vp) && /Number\.isFinite\(_fp\.topSpeedMul\)/.test(vp),
-    ]);
-    // N6.4 — EIN Bewegungs-Pfad: jeder ride-Skalar lebt GENAU EINMAL, alle im EINEN Loop.
-    const move = fnBody(anazhNC, /_loopPlayerMovement\(currentTime, dtOverride\)\s*/);
+    out.push(["A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", !/self\.__vehicleCore/.test(phytoNC)]);
+    // N6.4 — EIN Bewegungs-Pfad: jeder ride-Skalar lebt GENAU EINMAL im Stamm.
     const rides = ["ride.topSpeedMul", "ride.kAcc", "ride.kBrake"];
     out.push([
-        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake je genau 1x, alle in _loopPlayerMovement)",
-        move !== null && rides.every((n) => countOcc(anazhNC, n) === 1 && countOcc(move, n) === 1),
+        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake je genau 1× im Stamm)",
+        rides.every((n) => countOcc(anazhNC, n) === 1),
         rides.map((n) => `${n}=${countOcc(anazhNC, n)}`).join(" "),
-    ]);
-    // B2 (14.07.) — der GERITTENE Eintrag haengt am EINEN Bewegungs-Chokepoint: Position
-    // folgt dem Reiter, die Instanz-Matrix zieht ueber den EINEN Update-Weg mit, die
-    // Blocker folgen. [^.] vor dem Namen = die DEFINITION, nie der this.-Aufruf.
-    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\([^)]*\)\s*\{/);
-    out.push([
-        "A6/B2: _tickMountedMovement bindet den Eintrag an den Chokepoint (pos folgt pm + _archInstanceUpdate + Blocker)",
-        tmm !== null &&
-            /entry\.position\.x = pm\.x/.test(tmm) &&
-            /_archInstanceUpdate\(entry\)/.test(tmm) &&
-            /_populateBlockerAABBs\(entry\)/.test(tmm),
-    ]);
-    const aiu = fnBody(anazhNC, /[^.]_archInstanceUpdate\([^)]*\)\s*\{/);
-    out.push([
-        "A6/B2: _archInstanceUpdate liest die EINE Flat-Quelle (foundry-bewusst: _foundryFlattenFor ODER _archFlattenBlueprint)",
-        aiu !== null && /_foundryFlattenFor/.test(aiu) && /_archFlattenBlueprint/.test(aiu),
-    ]);
-    // DONOR-ABSCHIED (18.07.) — die Struktur-Wand: der Blocker-Chokepoint traegt
-    // den Fahrzeug-Zweig VOR dem generischen bp.parts-Pfad (die Tor-Klasse), der
-    // Sitz liest _fahrzeugGesetzFor, und der Kern exportiert sitz + huelle.
-    const pba = fnBody(anazhNC, /[^.]_populateBlockerAABBs\([^)]*\)\s*\{/);
-    out.push([
-        "A7/DONOR: _populateBlockerAABBs traegt den _fahrzeugBlockerParts-Zweig VOR dem generischen Parts-Pfad",
-        pba !== null &&
-            /_fahrzeugBlockerParts/.test(pba) &&
-            pba.indexOf("_fahrzeugBlockerParts") < pba.indexOf("bp.parts"),
-    ]);
-    const ma = fnBody(anazhNC, /[^.]mountArchitecture\(entry\)\s*\{/);
-    out.push([
-        "A7/DONOR: mountArchitecture liest den Kern-Sitz (_fahrzeugGesetzFor) vor dem Donor-_attachPointFor",
-        ma !== null && /_fahrzeugGesetzFor/.test(ma) && ma.indexOf("_fahrzeugGesetzFor") < ma.indexOf("_attachPointFor"),
-    ]);
-    out.push([
-        "A7/DONOR: exportDrive exportiert sitz + huelle (die Stations-Wahrheit reist als Daten)",
-        /sitz:\s*\{/.test(vcNC) && /huelle:\s*\{/.test(vcNC) && /noseX:\s*D\.noseX/.test(vcNC),
     ]);
     return out;
 }
 
 (async () => {
-    const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const garageSrc = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
     const anazhSrc = stammLib.text(root);
     const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
@@ -246,7 +186,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             /const FAHR\s*=\s*VC\.FAHR[^\n]*/,
             "const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};"
         );
-        const a1 = staticLaws(vcSrc, brokenShell, anazhSrc, phytoSrc).filter((l) => l[0].startsWith("A1"));
+        const a1 = staticLaws(brokenShell, anazhSrc, phytoSrc).filter((l) => l[0].startsWith("A1"));
         check(
             "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
             a1.some((l) => l[1] === false)
@@ -261,6 +201,8 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             visDZ: 0.001,
             blockerMax: 2.1,
             riderSkip: true,
+            flatFoundry: true,
+            flatBauplan: true,
             snapDist: 14.4,
             sitzKern: true,
             huelleKern: true,
@@ -303,13 +245,6 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             "Selbst-Test 13 (B-f): ‚keine Hang-Probe gefunden' → die Stand-Linse feuert",
             standVerdict({ proben: 0, spaltM: 0 }).length === 1
         );
-        // V4 (B2): ein Stamm OHNE die Chokepoint-Bindung → die A6-Wand feuert.
-        const brokenAnazh = stammLib.ersetze(anazhSrc, "_tickMountedMovement", "this._archInstanceUpdate(entry);", "");
-        const a6 = staticLaws(vcSrc, garageSrc, brokenAnazh, phytoSrc).filter((l) => l[0].startsWith("A6"));
-        check(
-            "Selbst-Test 7 (B2): _tickMountedMovement ohne _archInstanceUpdate → die A6-Wand feuert",
-            a6.some((l) => l[1] === false)
-        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -319,7 +254,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     }
 
     console.log("=== N6/H7 — TEIL A: Formel + Paritaet + ein Pfad (Node) ===");
-    for (const [name, ok, detail] of staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(garageSrc, anazhSrc, phytoSrc)) check(name, ok, detail);
 
     // A2 (Kriterium d) — FORMEL-PARITAET an 3 Presets: exportDrive == Hand-Ableitung aus den
     // Primitiven, mit denen die Shell ihre Probefahrt faehrt (carPhys + FAHR + DEFAULT_P/BASE_P).
@@ -467,6 +402,24 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                     await new Promise((res3) => setTimeout(res3, 200));
                 }
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
+                // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
+                const ruft = (k) => {
+                    const f0 = r[k];
+                    let n = 0;
+                    r[k] = (...a) => (n++, f0.apply(r, a));
+                    try {
+                        r._archInstanceUpdate(entry);
+                    } finally {
+                        delete r[k];
+                    }
+                    return n > 0;
+                };
+                const instF = entry.instFoundry;
+                res.drive.flatFoundry = !!entry.instanced && ruft("_foundryFlattenFor");
+                entry.instFoundry = false;
+                res.drive.flatBauplan = !!entry.instanced && ruft("_archFlattenBlueprint");
+                entry.instFoundry = instF;
+                r._archInstanceUpdate(entry);
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
                 res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
@@ -547,7 +500,21 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                     }
                     res.drive.blockerMax = bMax;
                 }
-                res.drive.riderSkip = /riddenId/.test(String(r._stepCharacterStructures));
+                // der Reiter stößt nie an sein eigenes Gefährt: mit und ohne dessen Boxen dasselbe, ungeritten wirkt es
+                const fy = entry.position.y;
+                const kapsel = () => {
+                    const p = { x: entry.position.x, z: entry.position.z };
+                    return [p.x, p.z, r._stepCharacterStructures(p, fy, fy + 1.7, 0.35, null, null)].join();
+                };
+                const mit = kapsel();
+                const bx = entry.blockerAABBs;
+                entry.blockerAABBs = null;
+                const ohne = kapsel();
+                entry.blockerAABBs = bx;
+                r.state.player.mountedArch = null;
+                const fremd = kapsel();
+                r.state.player.mountedArch = entry.id;
+                res.drive.riderSkip = mit === ohne && fremd !== mit;
                 // Persistenz: der Snapshot traegt die GEFAHRENE Position (wie jede Architektur-Bewegung).
                 const snap = r.buildStateSnapshot();
                 const se =
