@@ -32,8 +32,7 @@
 //   (R) REGLER: der Tageszeit-Regler der Einstellungen zeigt die Welt-Zeit;
 //   (T) TAG: die Tag-Länge einer frischen Welt trägt eine Szene (von Mittag bis Sonnenuntergang ≥ `TAG_SZENE_MINUTEN`), und
 //       ein alter Spielstand setzt sie nicht zurück (die Wahl des Spielers lebt bei ihm, der Kopf trägt sie nur für die Taille);
-//   (Q) QUELLE: im Stamm schreibt `state.weather` nur `_setWeather` und das Laden (genau zweimal), `state.timeOfDay` nur
-//       `_uhrSetzen` (genau einmal), `_setWeather` liest den Halt; der Zwilling `time_of_day` ist fort; kein NEUER Wurf des
+//   (Q) QUELLE: der Zwilling `time_of_day` ist fort (die Schreiber nennt (H)/(U) im Verhalten); kein NEUER Wurf des
 //       Nexus (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op — was er aus seiner Geschichte erbt (die Uhr-Sätze
 //       des Spielers, `dslSelectByFitness` → `dslMutate`), wirft die Uhr weiter und steht in (G)/(B) als verweigert beim Namen;
 //   (U) UHR (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit`, der Loop läuft drei Frames weiter — jeder Leser

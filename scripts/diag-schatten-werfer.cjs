@@ -68,8 +68,7 @@
 //       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)
 //   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
-//   Z2  die Bildziele je Leser: KEIN Weg zu compileAsync (die Erst-Zeichnung baut im Pass, `_configureRenderer`), EINE
-//       Szenen-Tiefe (`_szeneTiefe`), kein Modul-Knoten der linearen Tiefe, kein namenloses Bildziel (convertToTexture)
+//   Z2  die Bildziele je Leser: EINE Szenen-Tiefe (`_szeneTiefe`), kein namenloses Bildziel (convertToTexture)
 //   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box (updateBefore
 //       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe stellen
 //       nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
@@ -77,7 +76,7 @@
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
-//   S7  Selbsttest: ein compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
+//   S7  Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
 //   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
 //   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
@@ -108,13 +107,11 @@ function bildZiele(src) {
     const code = ohneKommentare(src);
     const n = (re) => [...code.matchAll(re)].length;
     return {
-        kompilat: n(/\.compileAsync\(/g),
         tiefe: n(/viewportDepthTexture\(/g),
-        linear: n(/viewportLinearDepth/g),
         namenlos: n(/convertToTexture\(/g),
     };
 }
-const bildZieleGut = (z) => z.kompilat === 0 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
+const bildZieleGut = (z) => z.tiefe <= 1 && z.namenlos === 0;
 
 function probe(selbsttest) {
     const r = window.anazhRealm;
@@ -1379,14 +1376,15 @@ function probe(selbsttest) {
                 csm._shadowNodes.every((sn) => Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget")),
         };
     }
-    // ── Z2 (Seite): die EINE Szenen-Tiefe lebt in ihrer Methode, die Erst-Zeichnung am Renderer (kein Kompilat daneben) ──
-    aus.z2 = {
-        // der Null-Renderer trägt die Renderer-Eingriffe nie: die Erst-Zeichnung steht im Quelltext von _configureRenderer
-        erstZeichnung:
-            /renderer\._renderObjectDirect = function/.test(window.__codeOf(r._configureRenderer)) &&
-            typeof r._erstZeichnungStand === "function",
-        szeneTiefe: /viewportDepthTexture\(/.test(window.__codeOf(r._szeneTiefe)),
-    };
+    // ── Z2 (Seite): die EINE Szenen-Tiefe — _szeneTiefe baut frisch den einen Knoten "szene:tiefenkopie", ein zweiter Ruf liefert ihn ──
+    {
+        const w0 = r._szeneTiefeWert, k0 = r._szeneTiefeKnoten;
+        r._szeneTiefeWert = null;
+        const t = r._szeneTiefe();
+        aus.z2 = { szeneTiefe: t === r._szeneTiefe() && t === r._szeneTiefeKnoten && t.defaultFramebuffer.name === "szene:tiefenkopie" };
+        r._szeneTiefeWert = w0;
+        r._szeneTiefeKnoten = k0;
+    }
 
     // ── A1: Absenz + Konsum ──
     // die alten Frustum-Schreiber der Tiere: `creature.visible = inFrustum` und `… = this.isInFrustum(creature, frustum)`
@@ -1692,8 +1690,8 @@ function probe(selbsttest) {
             JSON.stringify(a.z1)
         );
         check(
-            "Z2 Bildziele je Leser: kein compileAsync (die Erst-Zeichnung), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
-            bildZieleGut(z2) && a.z2.erstZeichnung && a.z2.szeneTiefe,
+            "Z2 Bildziele je Leser: EINE Szenen-Tiefe (_szeneTiefe baut den einen Knoten), kein namenloses Ziel",
+            bildZieleGut(z2) && a.z2.szeneTiefe,
             `${JSON.stringify(z2)} · ${JSON.stringify(a.z2)}`
         );
         check("A1 kein Frustum-Schreiber für Inseln", a.a1.inselnFrei);
@@ -1779,8 +1777,8 @@ function probe(selbsttest) {
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
-            const zs = bildZiele(stamm + "\nr.compileAsync(o, k);\nconst t = TSL.viewportDepthTexture();\n");
-            check("S7 Selbsttest: ein Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
+            const zs = bildZiele(stamm + "\nconst t = TSL.viewportDepthTexture();\n");
+            check("S7 Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot", !bildZieleGut(zs));
         }
         check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {

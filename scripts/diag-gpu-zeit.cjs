@@ -24,10 +24,8 @@
 //       Async("render") → Promise<ms>) → `_perfGpuResolveKick` konsumiert
 //       sie fire-and-forget, der nächste Fold liest Quelle "echt" mit dem
 //       gelieferten Wert; ein ABGESTANDENER Messwert (> PERF_GPU_TS_STALE_MS)
-//       fällt ehrlich auf "proxy" zurück.
-//   (5) RENDERER-BAU-VERTRAG (kommentar-gestrippte Quelltext-Probe): der
-//       echte WebGPURenderer-Bau fordert `trackTimestamp: true` an, und der
-//       Kick liest `resolveTimestampsAsync` — kein toter Schalter.
+//       fällt ehrlich auf "proxy" zurück; ohne das Adapter-Feature
+//       (backend.trackTimestamp false) ruft der Kick nichts.
 //
 //   SELBST-TEST (die Linse kann rot): ein künstlich KAPUTTES Quelle-Feld
 //   („gpuQuelle: 'kaputt'") MUSS durch dieselbe Prüfung fallen.
@@ -125,6 +123,14 @@ function check(name, ok, detail) {
                 },
             };
             r.state.rendererReady = true;
+            // das Tor: ohne das Adapter-Feature (backend.trackTimestamp) ruft der Kick nichts und landet nichts
+            r.state.renderer.backend.trackTimestamp = false;
+            r._gpuTsLast = undefined;
+            r._gpuTsPending = false;
+            r._perfGpuResolveKick();
+            await Promise.resolve();
+            res.torOhneFeature = resolveCalls === 0 && r._gpuTsLast === undefined;
+            r.state.renderer.backend.trackTimestamp = true;
             r._gpuTsLast = undefined;
             r._gpuTsAtMs = undefined;
             r._gpuTsPending = false;
@@ -155,18 +161,6 @@ function check(name, ok, detail) {
             r._gpuTsLast = undefined;
             r._gpuTsAtMs = undefined;
             r._gpuTsPending = false;
-
-            // ── (5) Renderer-Bau-Vertrag (Quelltext-Probe — headless baut den echten nie).
-            // Kommentar-gestrippt (die __codeOf-Disziplin, lokal definiert — der Kommentar
-            // dürfte das Wort tragen, der CODE muss es): der Haupt-Renderer-Bau lebt in
-            // `init()` und muss trackTimestamp:true an den WebGPURenderer geben.
-            const codeOf = window.__codeOf;
-            const bauSrc = codeOf(r.init);
-            res.bauFordertTrackTimestamp =
-                /new THREE\.WebGPURenderer\(/.test(bauSrc) && /trackTimestamp:\s*true/.test(bauSrc);
-            const kickSrc = codeOf(r._perfGpuResolveKick);
-            res.kickKonsumiertResolve =
-                /resolveTimestampsAsync\("render"\)/.test(kickSrc) && /trackTimestamp/.test(kickSrc);
 
             // ── SELBST-TEST: ein künstlich kaputtes Quelle-Feld MUSS rot lesen ──
             res.selbstTestKaputtFaellt = quelleGueltig("kaputt") === false;
@@ -229,18 +223,11 @@ function check(name, ok, detail) {
         `Quelle=${out.echtQuelle} · sample=${out.echtSample != null ? (+out.echtSample).toFixed(2) : "—"}`
     );
     check(`(4) Panel folgt: „GPU (echt)" im Grid`, /GPU \(echt\)/.test(out.gridEcht));
+    check("(4) ohne das Adapter-Feature (backend.trackTimestamp) ruft der Kick nichts", out.torOhneFeature === true);
     check(
         `(4) abgestandener Messwert (> Stale-Fenster) fällt ehrlich auf "proxy" zurück`,
         out.staleQuelle === "proxy",
         `Quelle=${out.staleQuelle}`
-    );
-    check(
-        "(5) Renderer-Bau fordert trackTimestamp:true an (Quelltext-Probe)",
-        out.bauFordertTrackTimestamp === true
-    );
-    check(
-        "(5) der Kick konsumiert die r184-API (resolveTimestampsAsync + backend.trackTimestamp)",
-        out.kickKonsumiertResolve === true
     );
     check(
         `SELBST-TEST: künstlich kaputtes Quelle-Feld („kaputt") fällt durch die Prüfung`,

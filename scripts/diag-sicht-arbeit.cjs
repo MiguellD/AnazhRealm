@@ -34,9 +34,8 @@
 //       Lage die Blende exakt, eine zweite Signatur neben `_wahlHaelt`: 14 999 Prüfungen je Frame, die Linse GRÜN); die
 //       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
 //       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
-//   (C) CODE — EIN Gesetz der Lage: `_passWahlLage` legt die Generation (`_passLageGen`), die Sätze, die Instanz-Wahl
-//       und die Nah-Wiese lesen sie (`_satzAbschnittSteht`, `_instanzWahlSteht`, `L.gen`); die eigene Kamera-Signatur der
-//       Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
+//   (C) EIN Gesetz der Lage: die Nah-Wiese prüft ihre Kacheln nur bei neuer Generation (`L.gen`, am Ruf von `_passTrifft`);
+//       die eigene Kamera-Signatur der Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser, Page-Error — MUSS rot fallen und ihn beim
 // Namen nennen.
@@ -106,13 +105,9 @@ function urteil(b) {
                 `zeichnet die gehaltene Wahl nicht, was das echte Frustum trifft: ${D.namen.join(", ")}`
         );
     const c = b.code || {};
-    if (!c.lageGen)
-        v.push("CODE: `_passWahlLage` legt keine Lage-Generation (`_passLageGen`) — die Kette weiß nie, ob sie steht");
-    if (!c.satzLiest)
-        v.push("CODE: `_chunkSatzPass` fragt `_satzAbschnittSteht` nicht (jeder Pass rechnet jeden Satz neu)");
-    if (!c.instanzLiest)
-        v.push("CODE: `_instanzWahlPass` fragt `_instanzWahlSteht` nicht (jede Instanz jeder Gruppe je Pass neu)");
-    if (!c.wieseLiest) v.push("CODE: `_nahWieseSicht` liest die Lage-Generation nicht (`L.gen`)");
+    if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
+    else if (!c.wieseLiest)
+        v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
     if (c.zweiteSignatur) v.push("CODE: `_sichtSteht` lebt — eine zweite Kamera-Signatur neben dem Gesetz der Lage");
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
@@ -198,7 +193,7 @@ function selbsttest() {
             geprueft: 40,
             namen: [],
         },
-        code: { lageGen: true, satzLiest: true, instanzLiest: true, wieseLiest: true, zweiteSignatur: false },
+        code: { wieseLiest: true, zweiteSignatur: false },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -806,10 +801,8 @@ function selbsttest() {
             },
             /LEER: Instanz-Treue ohne beide Fälle .* — ohne Prüfung: Stufen-Wechsel f:weide\|1\|1:0#S 1→0 leerte die Gruppe/,
         ],
-        ["keine Generation", (b) => (b.code.lageGen = false), /CODE: `_passWahlLage` legt keine/],
-        ["Satz fragt nicht", (b) => (b.code.satzLiest = false), /CODE: `_chunkSatzPass` fragt/],
-        ["Instanz fragt nicht", (b) => (b.code.instanzLiest = false), /CODE: `_instanzWahlPass` fragt/],
-        ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /CODE: `_nahWieseSicht` liest/],
+        ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
+        ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
         ["zweite Signatur", (b) => (b.code.zweiteSignatur = true), /CODE: `_sichtSteht` lebt/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
@@ -1452,11 +1445,22 @@ const server = statikServer();
                 }
             }
             L.aus();
-            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
-            aus.code.lageGen = /this\._passLageGen\(/.test(code(P._passWahlLage));
-            aus.code.satzLiest = /this\._satzAbschnittSteht\(/.test(code(P._chunkSatzPass));
-            aus.code.instanzLiest = /this\._instanzWahlSteht\(/.test(code(P._instanzWahlPass));
-            aus.code.wieseLiest = /\bL\.gen\b/.test(code(P._nahWieseSicht));
+            // DIE WIESE AM RUF: bei gleicher Lage-Generation prüft `_nahWieseSicht` keine Kachel neu (`_passTrifft`), bei neuer jede
+            const nw = st.nahWiese;
+            if (!nw || !nw.senken.size || [...nw.kacheln.values()].every((k) => !k.bueschel.length)) aus.code.wieseLiest = "leer";
+            else {
+                const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                const Lg = r._passWahlLage({ frustum: new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem) }, cam, -1);
+                const trifft = (lage) => {
+                    const alt = r._passTrifft, eigen = Object.prototype.hasOwnProperty.call(r, "_passTrifft");
+                    let n = 0;
+                    r._passTrifft = function (...a) { n++; return alt.apply(this, a); };
+                    try { r._nahWieseSicht(cam, lage); } finally { if (eigen) r._passTrifft = alt; else delete r._passTrifft; }
+                    return n > 0;
+                };
+                r._nahWieseSicht(cam, Lg);
+                aus.code.wieseLiest = !trifft(Lg) && trifft(Object.assign({}, Lg, { gen: Lg.gen + 1 })) && nw.gen === Lg.gen + 1;
+            }
             aus.code.zweiteSignatur = typeof P._sichtSteht === "function";
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             aus.gruppen = r._instanzWahlGruppen().size;

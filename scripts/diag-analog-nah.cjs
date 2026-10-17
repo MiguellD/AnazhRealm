@@ -11,7 +11,8 @@
 // ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer.
 // Dazu die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen
 // steht keine (sonst wäre ein Nah-Wald aus Karten grün).
-//   S  statisch: zwei Wurzeln der Klumpen-Rampe stehen als Struktur (Bäcker frei · Karten-Rang); den Nah-Gang fährt T9
+//   S  am Ruf: zwei Wurzeln der Klumpen-Rampe — der feste Takt ruft den Karten-Bäcker, die Karte reist im Rang ihres
+//      nächsten Wartenden durch die Worker-Schlange (nie Vorrats-Rang); den Nah-Gang fährt T9
 //   E  Einschwingen: binnen GRENZE_E Takten steht die Welt (Bauten in der Mesh-Zone, Chunks gleich, Foundry-Schlange und
 //      Karten-Bäcker leer) und 30 Takte am Stück ohne Satz — Spitze, Dauer und die Längsten beim Namen
 //   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m und am Ende keine Brücke < 64 m
@@ -20,10 +21,6 @@
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
-
-const root = path.resolve(__dirname, "..");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
 // je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten
@@ -35,87 +32,6 @@ const GRENZE_E = 1500; // Takte bis zum ersten satzfreien Zustand nach dem Boot
 const RUHE = 100; // Takte, in denen eingeschwungen kein Satz auftauchen darf
 const GRENZE_T = 120; // Takte nach der Rückkehr bis 0
 const server = statikServer();
-
-// S — DIE KLASSE KEHRT NICHT ZURÜCK (statisch, vor dem Boot): die Wurzeln der Klumpen-Rampe stehen als Struktur.
-//   S1 der Karten-Bäcker wartet nicht auf die Bühne (der Kreis Bühne → Streu → Karte → Bühne) und läuft im festen Takt
-//      (`_runFrameScheduler`), nie im Deko-Job (`_tickScatterStreaming`, unter Last jeder 4. Frame)
-//   S2 die Karte reist im Rang ihres nächsten Wartenden durch die Worker-Schlange, nie mit Vorrats-Rang (null)
-//   (S3 — der Nah-Gang bricht nie ab — stand bis G2-n2 am Rumpf-TEXT und fiel mit `_kappeOffen`: gate:takt T9 am Lauf)
-function methode(src, name) {
-    const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
-    if (a < 0) return null;
-    const b = src.indexOf("\n    }\n", a);
-    return stammLib.ohneKommentare(src.slice(a, b));
-}
-// Der Rumpf einer Methode MIT ihren Gehilfen (jede eigene `this._x(`-Methode, die sie ruft, eine Ebene tief): eine
-// Linse am Rumpf-TEXT fiel mit jedem Schnitt, der Arbeit in einen Gehilfen trug (K60-2 zog das Senden der Karte aus
-// `_tickImpostorBake` nach `_impostorBakeSende` — S1 sah die Bühne dort nicht mehr; Lehre 6).
-function mitGehilfen(src, name) {
-    const kern = methode(src, name);
-    if (!kern) return null;
-    const teile = [kern];
-    const gesehen = new Set([name]);
-    for (const m of kern.matchAll(/this\.(_[A-Za-z0-9_]+)\(/g)) {
-        if (gesehen.has(m[1])) continue;
-        gesehen.add(m[1]);
-        const g = methode(src, m[1]);
-        if (g) teile.push(g);
-    }
-    return teile.join("\n");
-}
-function klassenWand(src) {
-    const bake = mitGehilfen(src, "_tickImpostorBake") || "";
-    const sched = methode(src, "_runFrameScheduler") || "";
-    const streu = methode(src, "_tickScatterStreaming") || "";
-    const req = methode(src, "_foundryBakeImpostorRequest") || "";
-    const S1 =
-        bake.length > 0 &&
-        !/_buehneSteht\(/.test(bake) &&
-        /this\._tickImpostorBake\(\);/.test(sched) &&
-        !/_tickImpostorBake\(/.test(streu);
-    const S2 = /this\._foundryAuftrag\(\s*f,\s*"imp",\s*msg,\s*Number\.isFinite\(bedarfD2\)/.test(req);
-    return { ok: S1 && S2, S1, S2 };
-}
-{
-    const stamm = stammLib.text(root);
-    const heil = klassenWand(stamm);
-    if (SELBST) {
-        const brueche = [
-            [
-                "S1 Bühnen-Wache im Bäcker",
-                stammLib.ersetze(stamm, "_tickImpostorBake",
-                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n",
-                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n        if (!this._buehneSteht()) return 0;\n"
-                ),
-            ],
-            [
-                // derselbe Bruch im Gehilfen des Ticks: die Linse am Rumpf allein war hier blind (K60-3)
-                "S1 Bühnen-Wache im Gehilfen des Bäckers",
-                stammLib.ersetze(stamm, null,
-                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n",
-                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n        if (!this._buehneSteht()) return -1;\n"
-                ),
-            ],
-            [
-                "S2 Vorrats-Rang der Karte",
-                stammLib.ersetze(stamm, "_foundryBakeImpostorRequest", /msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
-            ],
-        ];
-        const roh = brueche.map(([n, s]) => [n, s !== stamm && !klassenWand(s).ok]);
-        const ok = heil.ok && roh.every(([, rot]) => rot);
-        console.log(
-            `${ok ? "✅" : "❌"} SELBST-TEST S: heil ${JSON.stringify(heil)} · ` +
-                roh.map(([n, rot]) => `${n} → ${rot ? "rot" : "NICHT rot"}`).join(" · ")
-        );
-        if (!ok) process.exit(1);
-    } else {
-        console.log(
-            `${heil.ok ? "✅" : "❌"} S  die Klumpen-Klasse steht als Struktur (S1 Bäcker frei im festen Takt ${heil.S1} · ` +
-                `S2 Karte im Rang des Wartenden ${heil.S2})`
-        );
-        if (!heil.ok) process.exit(1);
-    }
-}
 
 // Das Urteil über EINEN Zensus: hart = zeichnet und schwindet nicht (oder sein Schwund hängt). Die Täter beim Namen.
 function urteil(z) {
@@ -221,6 +137,18 @@ function urteil(z) {
             while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
+            // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Karte ohne Rang
+            const sProbe = (sched, req) => {
+                const wo = [];
+                let bake = 0;
+                r._tickImpostorBake = () => (bake++, 0);
+                try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
+                r._foundryAuftrag = (f, p, m, w) => (wo.push(w), Promise.resolve(null));
+                try { req.call(r, "eiche", 1, null, "probe", 400); req.call(r, "eiche", 1, null, "probe"); } finally { delete r._foundryAuftrag; }
+                return { S1: bake > 0, S2: wo[0] === 400 && wo[1] === null };
+            };
+            const S = sProbe(r._runFrameScheduler, r._foundryBakeImpostorRequest);
+            const sBruch = k.selbst && sProbe(() => 0, function (a, b, c) { return r._foundryBakeImpostorRequest(a, b, c, "probe"); });
             let taktFehlerN = 0,
                 taktFehler1 = null;
             const tick = async () => {
@@ -262,6 +190,8 @@ function urteil(z) {
                 const ohne = r._analogZensus();
                 return {
                     selbst: true,
+                    S,
+                    sBruch,
                     backend,
                     gesetzt: !!h,
                     z,
@@ -383,6 +313,7 @@ function urteil(z) {
                 rampeNull,
                 rampeZ,
                 ende: r._analogZensus(),
+                S,
                 backend,
                 taktFehler: { n: taktFehlerN, erster: taktFehler1 },
             };
@@ -400,13 +331,17 @@ function urteil(z) {
         const mit = urteil(res.z);
         const ohne = urteil(res.ohne);
         const genannt = mit.hart.some((a) => a.satz === "selbsttest:nah20" && a.d <= 20 && a.klasse === "unbekannt");
-        const ok = res.gesetzt && genannt && !ohne.hart.some((a) => a.satz === "selbsttest:nah20");
+        const sOk = res.S.S1 && res.S.S2 && !res.sBruch.S1 && !res.sBruch.S2;
+        console.log(`${sOk ? "✅" : "❌"} SELBST-TEST S: heil ${JSON.stringify(res.S)} · Takt ohne Bäcker und Karte ohne Rang ${JSON.stringify(res.sBruch)}`);
+        const ok = sOk && res.gesetzt && genannt && !ohne.hart.some((a) => a.satz === "selbsttest:nah20");
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: erzwungener Kapsel-Satz in 20 m ${res.gesetzt ? "gesetzt" : "NICHT gesetzt"} → ` +
                 `${genannt ? "rot und genannt" : "NICHT genannt"} (${mit.text || "-"}); nach dem Abbau ${ohne.hart.some((a) => a.satz === "selbsttest:nah20") ? "noch da" : "fort"}`
         );
         process.exit(ok ? 0 : 1);
     }
+    const S = res.S.S1 && res.S.S2;
+    console.log(`${S ? "✅" : "❌"} S  am Ruf: der feste Takt ruft den Karten-Bäcker ${res.S.S1} · die Karte reist im Rang des Wartenden ${res.S.S2}`);
     const E = res.frei !== null;
     const R = res.ruheMax === 0 && res.brueckenEnde.length === 0;
     const T = res.rampeNull !== null;
@@ -435,7 +370,7 @@ function urteil(z) {
             ? "✅ X  keine Ausnahme im Spiel-Takt"
             : `❌ X  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
     );
-    const gruen = E && R && T && TF && pageErrors.length === 0;
+    const gruen = S && E && R && T && TF && pageErrors.length === 0;
     console.log(
         gruen
             ? "✅ GRÜN — nah und mittel trägt das Studio-Mesh: kein Analog-Satz < 64 m nach dem Einschwingen, die Rampe kurz und benannt."
