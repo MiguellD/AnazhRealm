@@ -1287,20 +1287,20 @@ class AnazhRealm_siedlung_bauten {
 
     // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
     // recorded und replayed (kein per-Frame-Encode je Draw). Dynamisches (Kreaturen/Wasser/Spieler) bleibt
+    // Trägt das Backend Bündel? Nur das WebGPU-Backend implementiert die Bundle-API (beginBundle/finishBundle/addBundle) —
+    // auf dem WebGL2-Rückfall wirft eine BundleGroup im Render-Loop. Klassen-Existenz ist blind; das Urteil fällt am
+    // BACKEND. Headless: Bundles sind reine Gruppen-Knoten. Leser: die Region-Bündel und die Leib-Hülle (`_leibHuelle`).
+    _buendelTraegt() {
+        const r = this.state.renderer;
+        return !(r && !r._isHeadlessNull && !(r.backend && r.backend.isWebGPUBackend === true));
+    }
     // DRAUSSEN: im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein. Die Bundles
     // sind der EINE Weg (04.10. in EINER Welt gegen den direkten Pfad gemessen, echte GPU, Mess-Wiese: Render-CPU p50
     // −1,1 ms im Stand, −0,3 ms im Gehen trotz ~0,8 Neuaufnahmen je Frame, +11 % gezeichnete Frames); ihre Wahrheit
     // (Aufnahme-Stapel, kein Bundle unter einem Override-Stoff) hält `_configureRenderer` am Chokepoint `_renderScene`,
     // die Klasse THREE.BundleGroup pinnt gate:vendor-anker.
     _archRegionBundleFor(regionKey) {
-        if (regionKey == null) return null;
-        // Nur das WebGPU-Backend implementiert die Bundle-API (beginBundle/finishBundle/addBundle) — auf dem
-        // WebGL2-Rückfall wirft eine BundleGroup im Render-Loop. Klassen-Existenz ist blind; das Urteil fällt
-        // am BACKEND. Headless: Bundles sind reine Gruppen-Knoten.
-        {
-            const _r = this.state.renderer;
-            if (_r && !_r._isHeadlessNull && !(_r.backend && _r.backend.isWebGPUBackend === true)) return null;
-        }
+        if (regionKey == null || !this._buendelTraegt()) return null;
         const scene = this.state.scene;
         if (!scene) return null;
         let map = this.state._regionBundles;
