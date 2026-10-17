@@ -160,11 +160,7 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         if (!r || typeof r._gameLoopTick !== "function") return { error: "kein _gameLoopTick" };
-        const src = window.__codeOf(r._gameLoopTick);
         const out = {};
-        out.loopHasTry = /try\s*\{/.test(src);
-        out.loopCallsBoundary = /_loopErrorBoundary/.test(src);
-        out.boundaryExists = typeof r._loopErrorBoundary === "function";
         // CONSUM (behavioral): ein werfender Frame-Schritt (updateFps) darf den Loop NICHT
         // mehr brechen — die Boundary fängt ihn, zählt ihn, der Tick kehrt normal zurück.
         const st = r.state;
@@ -189,10 +185,6 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
         check("V18.278: Loop-Error-Boundary (realm)", false, res.error);
         return;
     }
-    check(
-        "V18.278: der Loop wickelt seinen Body in try/catch + ruft _loopErrorBoundary (Source — der ewige Loop ist jetzt ewig)",
-        res.loopHasTry && res.loopCallsBoundary && res.boundaryExists
-    );
     check(
         "V18.278 CONSUM: ein werfender Frame-Schritt erstarrt den Loop NICHT (abgefangen, weiter — kein Welt-Freeze)",
         res.loopSurvivesThrow
@@ -794,11 +786,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
         // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
-        // sein (1 Compute je Soul, nicht je Tick × Quelle). Source-Probe +
-        // Cache-Verhalten.
-        out.a3SizeCacheSrc = /_scentSizeBySoul/.test(window.__codeOf(r._creatureScentHuntDir));
+        // sein (1 Compute je Soul, nicht je Tick × Quelle) — am Cache-Verhalten zweier echter Witterungs-Rufe.
         out.a3SizeCacheReuse = false;
-        if (out.a3SizeCacheSrc) {
+        {
             // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
             // Cache-Size 1; nochmal rufen mit der gleichen Soul, Cache-Size bleibt 1.
             if (r._scentSizeBySoul) r._scentSizeBySoul.clear();
@@ -1208,7 +1198,6 @@ async function checkBandRauschGesetz(ctx) {
             const feinSrc =
                 GK && GK.felsFein && GK.felsWelle ? window.__codeOf(GK.felsFein) + window.__codeOf(GK.felsWelle) : "";
             const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
-            if (!feinSrc || !/o\.rausch\(/.test(feinSrc)) out.absenz.push("felsFein ohne o.rausch");
             for (const [n, src] of [
                 ["felsFein", feinSrc],
                 ["schuttKorn", kornSrc],
@@ -1525,28 +1514,14 @@ async function checkBandExistenzBoden(ctx) {
 }
 
 // Godrays (V8 Kür) — eingefaltet aus gate:godray (D3b): der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
-// (A) die EINE Quelle steht + fließt (March gDelta/godrayDensity, `godrayUniforms`, additiv in die Bloom-Summe; `_loopRender`
-// projiziert die Sonne und liest `_godrayFrameGate`; `_nexusPerfActuate` fährt `_godrayScale` aus PERF_GODRAY_MAX), die reine
-// `_godrayFrameGate` remappt Höhe×Wetter; (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
+// (A) die reine `_godrayFrameGate` remappt Höhe×Wetter (dass der March im Ausgabe-Bild zeichnet, beweist gate:post-kette an
+// und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
 async function checkBandGodray(ctx) {
     const { page, check } = ctx;
     const o = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const st = r.state;
         const out = { MAX: r.constructor.PERF_GODRAY_MAX };
-        // (A) SOURCE-PROBE — die LIVE-Methoden ohne Kommentare (der EINE Leser `__codeOf`)
-        const epp = window.__codeOf(r._ensurePostProcessing);
-        const lr = window.__codeOf(r._loopRender);
-        const npa = window.__codeOf(r._nexusPerfActuate);
-        out.quelle = {
-            frameGate: typeof r._godrayFrameGate === "function",
-            ppMarch: /gDelta/.test(epp) && /godrayDensity/.test(epp) && /sceneColor\.sample/.test(epp),
-            ppUniforms: /godrayUniforms/.test(epp) && /godraySun/.test(epp) && /godrayStrength/.test(epp),
-            ppAdded: /\.add\(godray\)/.test(epp), // additiv in DIESELBE Bloom-Summe
-            lrProject: /godrayUniforms/.test(lr) && /\.project\(/.test(lr) && /sunScreenPos/.test(lr),
-            lrGate: /_godrayFrameGate/.test(lr),
-            npaLever: /PERF_GODRAY_MAX/.test(npa) && /_godrayScale/.test(npa),
-        };
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
         out.gateHigh = r._godrayFrameGate(0.9, 1.0);
         out.gateBelow = r._godrayFrameGate(-0.2, 1.0);
@@ -1568,9 +1543,6 @@ async function checkBandGodray(ctx) {
         }
         return out;
     });
-    const q = (o && o.quelle) || {};
-    const fehlt = Object.keys(q).filter((k) => q[k] !== true);
-    check("Godray (A) die EINE Quelle im Post-FX-Pass, die Sonne projiziert, der Hebel im EINEN Aktuator", !!o && fehlt.length === 0, fehlt.join(" · "));
     const g = o || {};
     check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateStorm}`);
     check(

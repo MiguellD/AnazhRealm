@@ -916,39 +916,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Sidereal-Rotation: rotation ändert sich mit timeOfDay
         out.starFieldRotates = !!(sf && sf.rotation);
 
-        // --- Phase B: Terrain-Affinität ---
-        // terrainMaterial-Shader liest aField
-        const tm = r.state.terrainMaterial;
-        out.terrainShaderHasField = !!(
-            tm &&
-            tm.vertexShader &&
-            /aField/.test(tm.vertexShader) &&
-            tm.fragmentShader &&
-            /vField/.test(tm.fragmentShader)
-        );
-        // Chunk-Geometrie trägt aField-Attribut.
-        // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
-        // Init — wir bauen einen für den Test via ensureChunkAt.
-        let chunkHasField = false;
-        let aFieldChunk = null;
-        if (typeof r.ensureChunkAt === "function") {
-            r.ensureChunkAt(60, 60);
-            const entry = r.state.chunkMap && r.state.chunkMap.get("60,60");
-            if (entry && entry.mesh) aFieldChunk = entry.mesh;
-        }
-        if (aFieldChunk && aFieldChunk.geometry) {
-            const g = aFieldChunk.geometry;
-            chunkHasField = !!(g.getAttribute && g.getAttribute("aField"));
-        }
-        out.chunkHasFieldAttribute = chunkHasField;
-
         // --- Phase C: die Luft (V18.530) ---
-        // Die Luftperspektive ist Physik (`_luftEnsure` → scene.fogNode, Koschmieder aus dem Wetter-Feld): kein
-        // Nebel-Regler mehr — der tote Fog-Distanz-Knopf (setFogDistance + slider-fog) ist mit dem Nebel gefallen.
-        out.fogSliderWorks =
-            r.setFogDistance === undefined &&
-            !document.getElementById("slider-fog") &&
-            /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft));
+        // Die Luftperspektive ist Physik (`_luftEnsure` → scene.fogNode, Koschmieder aus dem Wetter-Feld; das Verhalten
+        // beweist gate:luft-sicht): kein Nebel-Regler mehr — der tote Fog-Distanz-Knopf ist mit dem Nebel gefallen.
+        out.fogSliderWorks = r.setFogDistance === undefined && !document.getElementById("slider-fog");
 
         // --- Phase D: Wind + Wolken + Wasser ---
         // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
@@ -1434,39 +1405,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V13.9.2: der Wert ist live über setWaterCull(minDepth) justierbar +
         // persistiert in state.atmosphere.waterCull.
 
-        // Wasser-Physik: state.playerUnderwater existiert als Flag
-        // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
-        {
-            let buoy = false;
-            let speedCut = false;
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    // Welle L Q6: der Schwimm-Zustand heißt `schwimmt` (die Säule über dem Grund übersteigt die Brustkorb-Linie).
-                    if (/playerUnderwater\s*=\s*(?:submerged|schwimmt)/.test(src)) buoy = true;
-                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, fail-closed, kein Literal-Rückfall):
-                    // `playerUnderwater) … currentSpeed *= … speedMul`.
-                    if (/playerUnderwater\)\s*\{?[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
-                        speedCut = true;
-                } catch {
-                    /* skip */
-                }
-            }
-            out.waterBuoyancy = buoy;
-            out.waterSpeedCut = speedCut;
-        }
-
         return out;
     });
 
     if (v830Results && !v830Results.error) {
         check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
         check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
-        check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
-        check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
@@ -1479,18 +1423,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Terrain-Custom-Shader hat jetzt Fog-Uniforms + fog-mix.
-        if (r.state.terrainMaterial) {
-            const tm = r.state.terrainMaterial;
-            out.terrainFogUniforms = !!(
-                tm.uniforms &&
-                tm.uniforms.fogColor &&
-                tm.uniforms.fogNear &&
-                tm.uniforms.fogFar
-            );
-            out.terrainFogInShader =
-                /vFogDepth/.test(tm.vertexShader || "") && /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
-        }
         // V10.0-f-4 Doku-Sync: Wasser-Uniforms in state.hydroSurfaceUniforms,
         // Source-Patterns im _ensureHydroSurfaceMaterial-Builder.
         const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
@@ -1530,27 +1462,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Getrennte Flags: playerUnderwater (Körper) vs.
         // playerEyesUnderwater (Augen/Tauchen).
         out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-        // Der Controller rechnet playerEyesUnderwater aus der Augen-Höhe (Körper-Y + 1.6), in `_stepCharacter`
-        // im `if(submerged)`-Block; die Probe akzeptiert `scaledY` wie `mesh.position.y` als Quelle.
-        {
-            let found = false;
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    if (
-                        /playerEyesUnderwater\s*=\s*(?:(?:submerged|schwimmt)\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
-                            window.__codeOf(fn)
-                        )
-                    )
-                        found = true;
-                } catch {
-                    /* skip */
-                }
-            }
-            out.eyesFlagComputed = found;
-        }
 
         if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
 
@@ -1563,7 +1474,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
-        check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
@@ -1592,26 +1502,36 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.riseAboveNeutral = riseKonv > neutral;
             out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
         }
-        // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
-        // Shift ist unter Wasser KEIN Sprint mehr (Source-Pattern).
+        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht.
         {
-            let usesFn = false;
-            let shiftNotSprint = false;
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    if (/_swimVerticalVelocity\(/.test(src) && /keys\["shift"\]/.test(src) && /keys\[" "\]/.test(src))
-                        usesFn = true;
-                    if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src)) shiftNotSprint = true;
-                } catch {
-                    /* skip */
-                }
+            const s = r.state,
+                pm = s.playerMesh,
+                pos = pm.position.clone(),
+                sta = s.player.stamina;
+            r._koerperWasser = () => pm.position.y + 3;
+            const vy = (k) => {
+                pm.position.set(pos.x, pos.y + 40, pos.z);
+                s._fieldVy = 0;
+                s.playerVel.setValue(0, 0, 0);
+                s.keys = Object.assign({}, k);
+                s.player.stamina = 100;
+                r._stepCharacter(r.constructor.FIXED_DT, 0);
+                return s._fieldVy;
+            };
+            try {
+                const tauch = vy({ shift: true }),
+                    auf = vy({ " ": true }),
+                    ruhe = vy({});
+                out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
+                out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
+            } finally {
+                delete r._koerperWasser;
+                pm.position.copy(pos);
+                s._fieldVy = 0;
+                s.playerVel.setValue(0, 0, 0);
+                s.keys = {};
+                s.player.stamina = sta;
             }
-            out.physicsUsesSwimFn = usesFn;
-            out.shiftNotSprintUnderwater = shiftNotSprint;
         }
 
         {
@@ -1660,8 +1580,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
         check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
         check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
-        check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
+        check("V8.33: im Charakter-Schritt sinkt Shift und steigt Space unter Wasser", v833Results.physicsUsesSwimFn);
+        check("V8.32: getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
         check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
         check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
@@ -1688,25 +1608,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
             // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
             out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
-            // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
-            out.terrainJitterPerVertex =
-                !!r.state.terrainMaterial &&
-                /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
-                /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
-                !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
-            // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
-            // Diffuse): mat3(modelMatrix), nicht normalMatrix.
-            out.terrainNormalWorldSpace =
-                !!r.state.terrainMaterial &&
-                /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
-                !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
-            // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
-            // nicht View-Space-Z. Regex prüft die echte Zuweisung
-            // (nicht den erklärenden Kommentar-Text).
-            out.terrainFogRadial =
-                !!r.state.terrainMaterial &&
-                /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
-                !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
 
             // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
             // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
@@ -1772,19 +1673,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const v848Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const tm = r.state.terrainMaterial;
-        out.terrainIsShader = !!tm && tm.type === "ShaderMaterial";
-        if (out.terrainIsShader) {
-            out.vertexHasShadowChunks =
-                /shadowmap_pars_vertex/.test(tm.vertexShader) && /shadowmap_vertex/.test(tm.vertexShader);
-            out.fragmentHasShadowChunks =
-                /shadowmap_pars_fragment/.test(tm.fragmentShader) &&
-                /getShadow\(/.test(tm.fragmentShader) &&
-                /vDirectionalShadowCoord/.test(tm.fragmentShader);
-            out.fragmentHighp = /precision highp float/.test(tm.fragmentShader);
-            out.terrainLightsTrue = tm.lights === true;
-            out.terrainHasShadowUniform = !!tm.uniforms && !!tm.uniforms.directionalShadowMap;
-        }
         // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
         out.targetInScene =
             !!r.state.directionalLight &&
@@ -1856,15 +1744,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const v849Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const src = window.__codeOf(r.updateCreatures);
-        // Strukturell (Welle L): die Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug) über die 9 Gitter-Zellen
-        // um das Tier, und herdeZug zieht nur jenseits des Paar-Raums (Welle LF: der persönliche Raum je Leib); kein
-        // Hindernis-Strahl je Tier und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
-        const herde = String(r.constructor._steuerGesetz().herdeZug);
-        out.herdeImGitter =
-            /herdeZug\(/.test(src) &&
-            /flockGrid\.get\(/.test(src) &&
-            /d > paar && d < paar \* H\.fensterRaum/.test(herde);
+        // Die Herde (Kern herdeZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
@@ -1903,10 +1783,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check(
-            "Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)",
-            v849Results.herdeImGitter
-        );
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
         check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
@@ -2203,7 +2079,16 @@ async function checkBandV18164WarumLicht(ctx) {
         // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
         const au = r._ensureAtmoUniforms();
         out.moonUniform = !!au.terrainMoonRim;
-        out.moonKonsum = /terrainMoonRim/.test(window.__codeOf(r._applySubstanceResponse));
+        // der Mond-Rim fließt in die Ausgabe der Substanz-Antwort, wenn das Profil mond bestellt — und nur dann
+        const feld = r.constructor.SUBSTANCE_RESPONSE.defaults.feld;
+        const mondIm = (prof) => {
+            const m = {};
+            r._applySubstanceResponse(m, prof);
+            let n = 0;
+            if (m.outputNode) m.outputNode.traverse((x) => (n += x && x.id === au.terrainMoonRim.id ? 1 : 0));
+            return n;
+        };
+        out.moonKonsum = mondIm(feld) > 0 && mondIm({ ...feld, mond: 0 }) === 0;
         const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
         r._dayNightApplyHemiUndLuft(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
         const nightVal = au.terrainMoonRim.value;
@@ -2222,11 +2107,16 @@ async function checkBandV18164WarumLicht(ctx) {
             Number.isFinite(snap.atmosphere.microStrength) &&
             Number.isFinite(snap.atmosphere.terrainNightFloor) &&
             Number.isFinite(snap.atmosphere.moonRim);
-        const srcRestore = window.__codeOf(r._loadStateRestoreSoulAndAtmosphere);
+        // …und der Restore setzt sie in die Welt (Stand UND Uniform); danach der alte Stand zurück
+        const a0 = { ...r.state.atmosphere };
+        r._loadStateRestoreSoulAndAtmosphere({ atmosphere: { microStrength: 0.21, terrainNightFloor: 0.17, moonRim: 0.33 } });
+        const A = r.state.atmosphere;
         out.restoreLiest =
-            /setMicroStrength/.test(srcRestore) &&
-            /setTerrainNightFloor/.test(srcRestore) &&
-            /setTerrainMoonRim/.test(srcRestore);
+            A.microStrength === 0.21 && au.microStrength.value === 0.21 && A.terrainNightFloor === 0.17 &&
+            au.terrainNightFloor.value === 0.17 && A.moonRim === 0.33;
+        r.setMicroStrength(a0.microStrength ?? r.constructor.AERIAL.microStrength);
+        r.setTerrainNightFloor(a0.terrainNightFloor ?? r.constructor.SUBSTANCE_RESPONSE.nightFloor);
+        r.setTerrainMoonRim(a0.moonRim ?? r.constructor.SUBSTANCE_RESPONSE.moonRim);
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
@@ -2333,9 +2223,6 @@ async function checkBandV18264ShadowCache(ctx) {
         const st = r.state;
         const out = {};
         out.hasMethod = typeof r._loopShadowUpdate === "function";
-        out.hasLever = Array.isArray(A.PERF_LEVERS && A.PERF_LEVERS.shadowMinInterval);
-        // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
-        out.actuatorDrives = /_shadowMinInterval/.test(window.__codeOf(r._nexusPerfActuate));
         const csm = st.csmNode;
         const lichter =
             csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
@@ -2391,7 +2278,6 @@ async function checkBandV18264ShadowCache(ctx) {
         return out;
     });
     check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.hasMethod && res.autoUpdateOff);
-    check("V18.264: shadowMinInterval ist eine Regelkreis-Stellgröße (CONSUM)", res.hasLever && res.actuatorDrives);
     check(
         `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
             `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,

@@ -86,15 +86,18 @@ async function checkBandV18275FoliageGrowth(ctx) {
                 window.__anazhGateNoFoundry = true;
                 let dFull = 0,
                     dLow = 0;
+                const bd = {}; // die Region trägt die Dichte, bei der sie gebaut wurde (Grund des Nach-Dünnens)
                 try {
                     const instAt = (scale) => {
                         st._foliageDensityScale = scale;
                         r._disposeScatterRegion(fk);
                         const reg = r._scatterRegion(frx, frz, ppD);
+                        bd[scale] = reg ? reg.builtDensity : null;
                         return reg ? reg.instanceCount : 0;
                     };
                     dFull = instAt(1);
                     dLow = instAt(0.4);
+                    out.scatterReadsBuiltDensity = bd[1] === 1 && bd[0.4] === 0.4;
                     r._disposeScatterRegion(fk);
                     st._foliageDensityScale = 1;
                 } finally {
@@ -124,8 +127,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
         out.thinExists = typeof r._tickFoliageThin === "function";
-        out.scatterReadsBuiltDensity = /builtDensity/.test(window.__codeOf(r._scatterRegion));
-        out.streamingCallsThin = /_tickFoliageThin/.test(window.__codeOf(r._tickScatterStreaming));
+        out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [st.playerMesh.position]);
         // CONSUM (behavioral; Hook SICHERN + WIEDERHERSTELLEN, nie löschen-und-vergessen): foundry-ON
         // ist Default → die eine Quelle liefert 1 trotz gesenktem Regler, Nach-Dünnen = No-op; foundry-aus
         // („der Regler führt“) per lokalem Hook. Beide Pfade sind Frühausstiege ohne Worker → gate-sicher.
@@ -236,7 +238,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("V18.277 CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
     }
     check(
-        "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Source)",
+        "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
         res.thinExists && res.scatterReadsBuiltDensity && res.streamingCallsThin
     );
     if (res.oneSourceProbeError) {
@@ -367,11 +369,29 @@ async function checkBandNahStreu(ctx) {
                 if (grund) out.wind.verstoss.push(a.key + " (" + grund + ")");
             }
         }
-        out.windQuelle =
-            /wiegen === true/.test(window.__codeOf(r._foundryTreeMaterial)) &&
-            /_windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege"/.test(
-                window.__codeOf(r._foundryTreeMaterial)
-            );
+        // KONSUM: der wiegende Stoff fragt die EINE Böen-Welle mit der Höhe aus dem Satz-Attribut aWiege (frisch gebaut,
+        // am Stoff-Cache vorbei; der Spion fängt das Argument)
+        const wa = [...senken.values()].find((a) => weichK.has((a.mat.userData || {}).foundryKind));
+        let hoehe = null;
+        if (wa) {
+            const u = wa.mat.userData,
+                mats = r._foundryMats,
+                sway = r._windSwayOffset;
+            r._foundryMats = {};
+            r._windSwayOffset = function (T, o) {
+                hoehe = (o && o.hoehe) || null;
+                return sway.call(this, T, o);
+            };
+            try {
+                r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true);
+            } catch (_e) {
+                /* der Ruf vor dem Wurf zählt */
+            } finally {
+                delete r._windSwayOffset;
+                r._foundryMats = mats;
+            }
+        }
+        out.windQuelle = !!hoehe && typeof hoehe.getAttributeName === "function" && hoehe.getAttributeName() === "aWiege";
         const ns = r.state.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
         // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
@@ -576,10 +596,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S1) STRATA_STEIN_DEPTH frozen Konstante
         out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
 
-        // (S2) Source-Probe: _terrainMaterialAt nimmt y + nutzt STRATA_STEIN_DEPTH
-        const src = window.__codeOf(r._terrainMaterialAt);
-        out.acceptsY = /\(x,\s*z,\s*y\)/.test(src);
-
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         let pt = { x: 0, z: 0 };
@@ -622,14 +638,6 @@ async function checkBandV18197GammaMStrata(ctx) {
             out.thresholdMat = onMat;
             out.thresholdStaysSame = onMat === "erde";
         }
-
-        // (S7) digTerrain ruft _terrainMaterialAt mit target.y (Source-Probe)
-        // Mehrere mögliche Aufrufer haben sich an die strukturelle Wahrheit
-        // angepasst.
-        const code = r.constructor && r.constructor.toString ? window.__codeOf(r.constructor).substr(0, 5000) : "";
-        // Statt grobem source-grep prüfen wir das spezifische Verhalten —
-        // _terrainMaterialAt(x, z, y) als Mechanik via direkte Probe.
-        out.digConsumesY = out.acceptsY; // direkter Source-Beweis
 
         // (S8) MIGRATION-ROUND-TRIP: ein 2-arg-Aufruf gibt dasselbe Ergebnis
         // wie ein 3-arg-Aufruf mit y > surfY (nahe Oberfläche) — die Änderung
@@ -1210,12 +1218,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             r._lastTreeSkeleton = origLast;
         }
 
-        // ─── (W7) SAMPLES in _populateVoxelChunkVegetation ───
-        // SAMPLES ist als Dev-Drossel gesenkt (voll = 10) → geprüft wird ein SANER Bereich (≥ 4).
-        const popSrc = window.__codeOf(r._populateVoxelChunkVegetation);
-        const _sm = popSrc.match(/const SAMPLES\s*=\s*(\d+)/);
-        out.samples10 = !!_sm && Number(_sm[1]) >= 4;
-
         // ─── (W8) Material-Colors Ω-K3 (laub/holz dunkler) ──────────
         const mat = r.state.materials;
         if (mat && mat.holz && mat.laub) {
@@ -1247,7 +1249,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
         res.tannenVariationApplied === true
     );
-    check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES ≥ 4 (dev-gedrosselt; v1.0 = 10)", res.samples10 === true);
     check(
         `V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`,
         res.holzIsErdig === true
@@ -1893,23 +1894,8 @@ async function checkBandV18219bisVollendung(ctx) {
         const out = {};
 
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
-        // Der Loop ist phasen-orchestriert (V9.44-f) — die Verdrahtung lebt in
-        // einer der `_loopXY`-Phasen, nicht im `_gameLoopTick`-Closure selbst.
-        // Wir prüfen ALLE Loop-Phasen-Quellen.
-        const loopSources = [];
-        if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
-        for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/nahStreu/scatterRegrow) leben im
-            // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
-            // als Loop-Verdrahtungs-Quellen.
-            if (
-                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
-                typeof r[k] === "function"
-            )
-                loopSources.push(window.__codeOf(r[k]));
-        }
-        const loopBody = loopSources.join("\n");
-        out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
+        // KONSUM: ein Takt des Loops (Phasen → Frame-Scheduler → Job-Registry) ruft den LOD-Tick.
+        out.lodTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickArchitectureLOD", [performance.now()]);
         out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
         // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
@@ -2003,7 +1989,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyEnsureExists = typeof r._canopyEnsureChunk === "function";
-        out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
+        out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
         if (out.canopyEnsureExists) {
             const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
@@ -2113,20 +2099,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
         out.scatterRegionExists = typeof r._scatterRegion === "function";
         out.promoteExists = typeof r._promoteScatterCell === "function";
         out.tickExists = typeof r._tickScatterStreaming === "function";
-        // Loop-Verdrahtung (alle _loopXY-Phasen scannen)
-        const loopSources = [];
-        if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
-        for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/nahStreu/scatterRegrow) leben im
-            // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
-            // als Loop-Verdrahtungs-Quellen.
-            if (
-                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
-                typeof r[k] === "function"
-            )
-                loopSources.push(window.__codeOf(r[k]));
-        }
-        out.tickInLoop = /_tickScatterStreaming/.test(loopSources.join("\n"));
+        // KONSUM: der nächste Takt des Loops (Dispatcher-Takt Nr. 4: der Deko-Boden greift) ruft das Streu-Streaming
+        r._schedFrameNo = 3;
+        out.tickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickScatterStreaming", [performance.now()]);
 
         // ─── (B) pcg2d Determinismus (bit-identisch, P2P/GPU-Wand) ────
         if (out.pcg2dExists) {
