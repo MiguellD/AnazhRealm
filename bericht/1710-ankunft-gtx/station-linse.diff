@@ -1,0 +1,94 @@
+diff --git a/scripts/diag-boot-stage.cjs b/scripts/diag-boot-stage.cjs
+index 8e14bf4e..57d1a85b 100644
+--- a/scripts/diag-boot-stage.cjs
++++ b/scripts/diag-boot-stage.cjs
+@@ -132,6 +132,12 @@ async function kaltLauf() {
+     try {
+         const page = await browser.newPage();
+         await page.evaluateOnNewDocument(KALT_PROBE);
++        // OMEN Wald-Kette (Stationslinse): die Probe je Auftrag/Stück und das CPU-Profil (0,5 ms) bis zum Weltbild
++        await page.evaluateOnNewDocument(require("C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610am/menge-probe.js").WALD_PROBE);
++        const cdpWald = await page.target().createCDPSession();
++        await cdpWald.send("Profiler.enable");
++        await cdpWald.send("Profiler.setSamplingInterval", { interval: 500 });
++        await cdpWald.send("Profiler.start");
+         const t0 = Date.now();
+         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+         while (Date.now() - t0 < SEK * 1000) {
+@@ -141,6 +147,11 @@ async function kaltLauf() {
+                 .catch(() => 0);
+             if (da) break;
+         }
++        {
++            const { profile } = await cdpWald.send("Profiler.stop");
++            const j = OPT("--json", null);
++            if (j) fs.writeFileSync(path.resolve(j).replace(/.json$/, "") + ".cpuprofile", JSON.stringify(profile));
++        }
+         // DAS BILD DER ANKUNFT (`--bild datei.png`): der erste Blick des Spielers aus dem Ausgabe-Pfad
+         // (scripts/lib/ausgabe-aufnahme.cjs), der Loop ruht, die Bühne hält Mittag · Sonne · Sommer.
+         const bildDatei = OPT("--bild", null);
+@@ -165,6 +176,7 @@ async function kaltLauf() {
+                     const ctx = cv.getContext("2d");
+                     const img = ctx.createImageData(W, H);
+                     img.data.set(auf.u8.subarray(0, W * H * 4));
++                    window.__bild1 = auf.u8.slice(0, W * H * 4); // OMEN: das zweite Bild vergleicht dagegen
+                     ctx.putImageData(img, 0, 0);
+                     return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+                 },
+@@ -176,6 +188,48 @@ async function kaltLauf() {
+                 delete bildInfo.png;
+             }
+         }
++        // OMEN (Stations-Linse, nicht im Repo): DAS BILD DANACH (`--bild2 datei.png`, `--nach s`, Vorgabe 10): der Spiel-Loop
++        // läuft weiter (`_gameLoopTick`), nach der Frist dasselbe Bild der Bühne; der Sprung = Anteil der Pixel mit |Δ| > 24
++        // in einem Kanal und das mittlere |Δ| gegen das Bild der Ankunft.
++        const bild2Datei = OPT("--bild2", null);
++        if (bildDatei && bild2Datei && bildInfo && !bildInfo.fehlt) {
++            const nach = Number(OPT("--nach", 10));
++            await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(window.anazhRealm._gameLoopTick));
++            await new Promise((q) => setTimeout(q, nach * 1000));
++            const b2 = await page.evaluate(
++                async (W, H) => {
++                    const r = window.anazhRealm;
++                    r.state.renderer.setAnimationLoop(null);
++                    window.__buehne();
++                    let auf = null;
++                    for (let i = 0; i < 2; i++) {
++                        r._schattenAlleNeu();
++                        auf = await window.__ausgabeAufnahme(W, H, 1);
++                    }
++                    const a = window.__bild1, b = auf.u8;
++                    let n = 0, summe = 0;
++                    for (let i = 0; i < W * H * 4; i += 4) {
++                        const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]));
++                        summe += d;
++                        if (d > 24) n++;
++                    }
++                    const cv = document.createElement("canvas");
++                    cv.width = W;
++                    cv.height = H;
++                    const ctx = cv.getContext("2d");
++                    const img = ctx.createImageData(W, H);
++                    img.data.set(b.subarray(0, W * H * 4));
++                    ctx.putImageData(img, 0, 0);
++                    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, sprungPct: +((100 * n) / (W * H)).toFixed(2), mittelDelta: +(summe / (W * H)).toFixed(2), png: cv.toDataURL("image/png") };
++                },
++                ECHT ? 960 : 640,
++                ECHT ? 540 : 360
++            );
++            fs.writeFileSync(path.resolve(bild2Datei), Buffer.from(b2.png.split(",")[1], "base64"));
++            delete b2.png;
++            bildInfo.danach = Object.assign({ datei: path.resolve(bild2Datei), nachS: nach }, b2);
++            console.log(`  das Bild ${nach} s danach: ${b2.dc} Befehle · ${b2.dreiecke} Dreiecke · Sprung ${b2.sprungPct} % der Pixel (|Δ| > 24) · mittel |Δ| ${b2.mittelDelta}`);
++        }
+         out = await page.evaluate(() => {
+             const r = window.anazhRealm;
+             const st = (r && r.state) || {};
+@@ -192,6 +246,7 @@ async function kaltLauf() {
+                 version: r && r.constructor && r.constructor.VERSION,
+                 adapter,
+                 ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
++                wald: window.__wald || null,
+             });
+         });
+         if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
