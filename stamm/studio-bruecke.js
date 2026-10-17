@@ -905,7 +905,19 @@ class AnazhRealm_studio_bruecke {
         const zug = this._foundryRequest(preset, variant, lod, ov || undefined, wo).then((meshes) => {
             if (zuege.get(key) === zug) zuege.delete(key);
             if (meshes) {
-                this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                const grp = this._foundryBuildGroup(meshes, { lod, preset });
+                this._foundryCacheSet(key, grp);
+                // DER WURF REIST MIT (B3e, Budget `wurfMit`): die Stufe 3 der Gestalt kam im selben Auftrag — sie liegt unter
+                // ihrem eigenen Schlüssel (ein eigener Auftrag, der schon fliegt, legt sich selbst ab)
+                const w = grp && grp._wurf;
+                if (w) {
+                    grp._wurf = null;
+                    const kw = this._foundryKoerperKey(preset, variant, w._wurfStufe, ov);
+                    if (!zuege.has(kw) && this._foundryCacheGet(kw) === undefined) {
+                        this._foundryCacheSet(kw, w);
+                        f.requested.add(kw);
+                    }
+                }
                 return true;
             }
             f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu

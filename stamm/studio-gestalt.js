@@ -163,6 +163,10 @@ class AnazhRealm_studio_gestalt {
     }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
+        // DER WURF REIST MIT (B3e, Budget `wurfMit`): Meshes und Beipack mit `wurf: true` sind die Wurf-Stufe derselben
+        // Gestalt (Budget `schatten`) — ihre eigene Gruppe (`group._wurf`), `_foundryZug` legt sie unter ihren Schlüssel.
+        const wurf = meshes.filter((m) => m && m.wurf === true);
+        if (wurf.length) meshes = meshes.filter((m) => !(m && m.wurf === true));
         const T = THREE;
         let group = null;
         // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
@@ -245,6 +249,13 @@ class AnazhRealm_studio_gestalt {
             // (gegen `_geomDisposedCount`). Lazy-init, kein state.X-Feld.
             const _f = this._foundry;
             if (_f) _f._geomBuiltCount = (_f._geomBuiltCount || 0) + (group.children ? group.children.length : 0);
+            if (wurf.length && stage && stage.preset) {
+                const ws = this._foundryBudgetZeile(stage.preset, stage.lod).schatten;
+                // (ohne die Marke: in ihrer eigenen Gruppe ist sie die Gestalt)
+                const ohne = wurf.map(({ wurf: _w, ...m }) => m);
+                group._wurf = this._foundryBuildGroup(ohne, { lod: ws, preset: stage.preset });
+                if (group._wurf) group._wurf._wurfStufe = ws;
+            }
             return group;
         }
         return null;
@@ -815,8 +826,11 @@ class AnazhRealm_studio_gestalt {
                 // Stufe wartete doppelt.
                 vor: () => {
                     if (entryOv) return;
-                    const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
-                    if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
+                    const _zeile = this._foundryBudgetZeile(preset, lod);
+                    const _wurf = _zeile.schatten;
+                    // B3e: trägt die Stufe ihren Wurf im eigenen Auftrag (`wurfMit`), bestellt ihn niemand einzeln
+                    if (_wurf !== false && _wurf !== lod && _zeile.wurfMit !== true)
+                        this._foundryFlattenFor(entry, preset, _wurf);
                 },
                 nach: (ok) => {
                     if (ok) this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen

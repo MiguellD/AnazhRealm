@@ -95,8 +95,10 @@
                 // Fern-Fenster kostet 14–16 Dreiecke (Rahmen-Kasten, Scheibe, Kreuz): L2 tris 7000 → 7250 (marokkanisch/1 7224, 31 Fenster).
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
-                    1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7250, band: 2000, draws: 4, schatten: 3 },
+                    // DER WURF REIST MIT (B3e, `wurfMit`): die Stufen 1 und 2 tragen ihre Stufe 3 im selben Auftrag (aus ihrem B, das Massen
+                    // und Fassaden-Ton schon trägt) — vorher bestellte der Wirt sie als eigenen Auftrag, der den Ton noch einmal maß.
+                    1: { tris: 44000, band: 10000, draws: 4, schatten: 3, wurfMit: true },
+                    2: { tris: 7250, band: 2000, draws: 4, schatten: 3, wurfMit: true },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
@@ -3625,10 +3627,7 @@
                 B3.frag = null;
                 B3.fragStufe = undefined;
             }
-            mischeGeoms(geoms, fragFuer(B3, 3));
-            B3.frag = null;
-            B3.fragStufe = undefined;
-            geoms.__fern = huelleVonBau(B3);
+            geoms = wurfVon(B3);
         } else {
             var B = massBau(p);
             if (stufe === 2 && !turm) {
@@ -3642,8 +3641,21 @@
             B.frag = null;
             B.fragStufe = undefined;
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            // DER WURF REIST MIT (B3e, `wurfMit` der Budget-Zeile): B trägt Massen und Ton schon — die Stufe 3 aus demselben B
+            // kostet die Liste (~1 ms), der Wirt bestellt sie nicht mehr als eigenen Auftrag (der den Ton noch einmal maß).
+            if (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].wurfMit === true) geoms.__wurf = wurfVon(B);
         }
         return geoms;
+    }
+    // DER WURF EINES BAUS (Stufe 3, NUR-WURF): die EINE Liste als EIN Gitter (`fragFuer(B, 3)`) und ihre Fernform `__fern` —
+    // aus jedem B, das Massen und Fassaden-Ton trägt (die Stufe 3 aus dem Plan, die Stufen 1 und 2 aus ihrem eigenen Bau).
+    function wurfVon(B) {
+        var w = {};
+        mischeGeoms(w, fragFuer(B, 3));
+        B.frag = null;
+        B.fragStufe = undefined;
+        w.__fern = huelleVonBau(B);
+        return w;
     }
 
     // ── Rollen-Fragmente → EINE THREE.Group — der sofort-Zweig von
@@ -3693,6 +3705,13 @@
         var stufe = HOST_STUFEN[0];
         for (var i = 0; i < HOST_STUFEN.length; i++) if (HOST_STUFEN[i] <= L) stufe = HOST_STUFEN[i];
         var gm = buildStufe(p, stufe);
+        var g = stufenGruppe(gm, rezeptId, seed, stufe);
+        // DER WURF REIST MIT (B3e): die Stufe 3 aus dem B der gezeigten Stufe, dieselbe Gruppe wie buildInstance(…, 3)
+        if (gm.__wurf) g.userData.__wurf = stufenGruppe(gm.__wurf, rezeptId, seed, PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].schatten);
+        return g;
+    }
+    // Die Gruppe EINER Stufe aus ihren Rollen-Geoms (buildInstance und der mitreisende Wurf).
+    function stufenGruppe(gm, rezeptId, seed, stufe) {
         var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
