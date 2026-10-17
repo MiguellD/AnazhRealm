@@ -197,7 +197,8 @@ class AnazhRealm_bau_teile {
     // Welt-Reaktionen konsultieren dieses Profil statt einer hardcoded Bauplan-Liste.
     // DIE TAGS EINMAL JE URTEIL (B3c): `tags` (optional) sind die Compound-Tags dieses Bauplans (`computeCompoundTags`), vom
     // Aufrufer EINMAL gerechnet und an jeden Tester gereicht — bis B3c rechnete jeder Tester sie neu und die Stärke das ganze
-    // Urteil noch einmal (je Spawn 13×; der Wald vor dem ersten Weltbild 0,9 s im Haupt-Faden, Radeon kalt).
+    // Urteil noch einmal (je Spawn bis zu 12×, ein Baum 8–10×; Urteil und Stärke zusammen vor dem ersten Weltbild
+    // 0,64 s im Haupt-Faden, davon der Wald 0,63 s — Radeon kalt, je Probe einmal gezählt).
     computeBlueprintAffordances(bp, tags) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
         // Ein Portal IST ein Tor: einzige Affordance "betreten". Die Rolle schließt räumliche Affordances

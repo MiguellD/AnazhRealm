@@ -488,8 +488,8 @@ function standUrteil(b) {
                 `ORT: der Abbau von ${Q.abbau} Natur-Stücken speicherte die Welt ${Q.saves}× synchron (\`removeArchitecture › ` +
                     `saveState\`, Σ ${Q.saveMs} ms) — räumt ein Dorf beim Nähern seinen Grund, liegt je Stück ein voller Save im Takt`
             );
-        // das Solo-Haus (Vorschau, KI): bis B3c baute der Wirt das ganze Haus im Kern, um die Kamin-Spitze zu finden (K69 an der
-        // Radeon 167 ms, B3c die Portal-Vorschau im kalten Boot 1,6 s vor dem ersten Weltbild) — die Spitze reist mit der Hülle
+        // das Solo-Haus (Vorschau, KI): bis B3c baute der Wirt das ganze Haus im Kern, um die Kamin-Spitze zu finden
+        // (K69 Radeon 167 ms, B3c die Portal-Vorschau kalt 1,6–1,9 s vor dem ersten Weltbild) — sie reist mit der Hülle
         const H = O.kamin;
         if (!H || !H.gesetzt) v.push("LEER: die Ort-Phase setzte kein Solo-Haus — die Wurzel ist ungeprüft");
         else if (H.bau > 0)
