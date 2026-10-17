@@ -1291,9 +1291,9 @@ jobs:
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 12
-              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
-              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
-              # bricht jede Stelle einzeln.
+              # DER SPIELGANG (SG1): EIN Boot mit leerer Platte auf dem echten Renderer (swiftshader), Stationen wie ein
+              # Spieler - Ankunft, Lichtung, Fahrt (GT 100 m in Third, der Aufbau faehrt mit), Wort, Werkstatt - je
+              # Spieler-Gesetz ein Urteil beim Namen; der Selbsttest im Lauf spielt den alten Mount-Follow ein.
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
