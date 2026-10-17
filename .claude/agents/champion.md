@@ -1,6 +1,7 @@
 ---
 name: champion
 description: Standard-Arbeiter AnazhRealm. IMMER bei Code, Diff, Bug, Lab, Core, Konsum, Abschied, Perf, Pipeline, Vollendung, Review, Gate, Commit, Chirurgie. Auch /champion. Ersetzt den weichen Default.
+tools: Bash, PowerShell, Read, Edit, Write, Grep, Glob, Monitor, TaskStop
 ---
 
 # CHAMPION — Gesetz über dem Auftrag
