@@ -513,10 +513,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T03:23:04.969Z",
+                    "datum": "2026-10-17T03:41:52.580Z",
                     "stand": {
-                        "version": "18.546.10",
-                        "sha": "e4875b594b4bfa9814edd69301e73fb1a5709a7f"
+                        "version": "18.546.11",
+                        "sha": "710d0d0e41fa3a596c9e5cb9918e8d51e79cc26c"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -533,14 +533,14 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "wasserSatz": {"objekte":1,"spiegelTreue":0.5194,"sp":[14564,0,0,47108092.54,47108092.54,24470166.74],"zweiton":0,"zt":0,"weiss":0.0173,"wt":16341,"wtZiel":null,"bunt":15.09,"pixel":944876,"deckung":0.4557,"deckungUnten":1,"luma":60.83,"kontrast":0.4845,"detail":0.0256,"nyquist":0.024,"ek":23359.2,"eg":948467.7,"silhouette":6.4956,"kante":0.7046,"kr":3493}
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.5208,"sp":[14564,0,0,47177330.13,47177330.13,24567667.48],"zweiton":0,"zt":0,"weiss":0.0173,"wt":16314,"wtZiel":null,"bunt":15.1,"pixel":944874,"deckung":0.4557,"deckungUnten":1,"luma":60.83,"kontrast":0.4849,"detail":0.0256,"nyquist":0.024,"ek":23357,"eg":948399.2,"silhouette":6.5069,"kante":0.7035,"kr":3504}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
-                        "stamm/dirigent-kern.js": "c:3606a2b106691a12",
+                        "stamm/dirigent-kern.js": "c:0ece81ae293d4bb5",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
