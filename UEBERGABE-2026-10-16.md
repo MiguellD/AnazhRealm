@@ -203,3 +203,6 @@ der Macher muss frei sein).
 - OMEN Buendel 7: B auf e47ad9f8 umgestellt (bericht/1710-buendel7.md).
 - Offen/Karten: Kristall-Rennen richtig schneiden (die Bepflanzung eines Chunks wartet auf das Buch, nie ein stiller Zweig); B3d (weltbild-blick 44630e1e: der Schnitt GRUEN, CI rot nur durch meinen Fix -> nach Merge von e47ad9f8 neu pruefen); B3e (wurf-aus-plan 8ae44fa7: Merge-Konflikte fachwerk-core planBau/B3c kaminSpitze und dirigent-takt spielZeit/A9 _bildZeit, semantisch loesen); A12 (see-spiegel 9fe6f589, CI rot Fern-Ring); S2b (karte-welt, Messung an Spiel-Distanzen laeuft); D3c-crossfade, D3d.
 - Lehre: ein Default im Konstruktor fuer eine Buch-Groesse bricht Leser, die ihr Dasein als „Buch da" lesen; schnelle Maschinen verbergen Rennen — vor Push auch an langsamer Lage pruefen (CI ist der Richter).
+
+## 17.10. 08:00 (date) — Notiz
+- CI e47ad9f8: alles gruen ausser echt — Frost-Wand S2 („Welt-GPU kompiliert beim Seelenwechsel nach", +3 Module/+2 Pipelines, Soll <= 2), wie an bd74a171, nicht an 93539122: Wackler-Verdacht auf der GTX. Nach Buendel 7 echt neu fahren (rerun-failed-jobs Lauf 39007430669); erst dann main vorspulen. Agent bringt B3d/B3e auf e47ad9f8.
