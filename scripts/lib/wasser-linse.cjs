@@ -1,23 +1,7 @@
 const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
-// wasser-linse.cjs — DIE WASSER-LINSE der Leben-Prüfung (Welle L, Klassen Q6 + Q7): drei Proben, die den Defekt beim
-// NAMEN nennen und den Chokepoint selbst rufen (nie einen Stub). Befund 06.10. (sichtbares Fenster, echte Radeon,
-// artifacts/profiband/leben/befund-wasser-fluss.md): der Fluss steigt bergauf (14,3 % der 2-m-Schritte), wölbt sich
-// 1,55 m über die Breite, wird mit der Spielzeit ein weißes Zebra; wer in den See geht, geht am Grund (4,52 m unter dem
-// Spiegel), der Schwimmer treibt auf dem 1,8-m-Zell-Dach, kraulen kriecht mit 0,137 m/s (Soll 0,977), das Eintauchen
-// ist stumm.
-//
-//   window.__wasserFluss()           Q7-Gestalt: steigende 2-m-Schritte der Lauf-Fläche längs aller Flussmitten, der
-//                                    Querschnitt (Spanne der Lauf-Fläche quer über die Kanal-Breite), Wasserfall-Doppel
-//   window.__wasserKoerper(o)        Q6-Körper: Hineingehen (Frames „Brustkorb unter dem Spiegel UND geerdet"), Schwimm-
-//                                    Lage (Füße unter dem See-Spiegel in Ruhe), Kraul-Tempo gegen das Gesetz, Eintauchen
-//                                    (Landungs-Ereignis „wasser"); der See-Spiegel `lake.level` ist die sichtbare Wahrheit
-//   window.__wasserBild(o)           Q7-Bild: das ECHTE Wasser-Material auf einem synthetischen Fluss-Bogen, gerendert
-//                                    bei Wasser-Uhr 60 s und 3600 s — Kanten-Dichte (mittlere Luma-Variation je Pixel)
-//                                    und Weiß-Anteil; ein Phasen-Zerfall macht die 3600-s-Kanten-Dichte zum Vielfachen
-//   window.__wasserUferFarbe(o)      Q7-Gestalt: Sprünge der Boden-Farbe quer zum Fluss + Worker↔Main-Farbe am Ufer
-//   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
-//
-// Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
+// wasser-linse.cjs — DIE PROBEN DER WASSER-WAND (scripts/diag-wasser-leben.cjs, Welle L Q6 + Q7 bis F3): je Probe eine Seiten-
+// Funktion `window.__wasser*` (WASSER_INSTALL), die den Chokepoint selbst ruft (nie einen Stub); was sie misst und warum, steht
+// über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
 ("use strict");
 
 // ── Q7-Gestalt ──
@@ -580,51 +564,16 @@ function wasserUfer(opts) {
         const st = r.state;
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const HC = r.constructor.HYDROSPHERE;
         const ziel = o.ort || (({ fluss }) => [fluss.x, fluss.z])(window.__wasserOrte({}));
-        let best = null,
-            bd = Infinity;
-        // Die Heimat-Region und die fernen Kacheln (der Fluss des Befunds liegt jenseits ±1024 m).
-        const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
-        const fluesse = [];
-        for (const g of regionen) for (const rv of g.rivers || []) fluesse.push(rv);
-        for (const rv of fluesse)
-            for (const p of rv.points) {
-                if (p.inLake) continue;
-                const d = Math.hypot(p.x - ziel[0], p.z - ziel[1]);
-                if (d < bd) {
-                    bd = d;
-                    best = p;
-                }
-            }
+        const { p: best, fluesse } = __wasserFlussNah(r, ziel[0], ziel[1]); // der Fluss des Befunds liegt jenseits ±1024 m
         if (!best) return { fehler: "kein Fluss" };
-        const pm = st.playerMesh;
-        pm.position.set(best.x, r._voxelSurfaceY(best.x, best.z) + 3, best.z);
-        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-        const worker = st.voxelWorker;
-        st.voxelWorker = null;
-        const t0 = performance.now();
-        let last = -1,
-            still = performance.now();
-        for (;;) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {}
-            const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
-            await new Promise((res) => setTimeout(res, 0));
-        }
-        st.voxelWorker = worker;
+        await window.__wasserStrom([best.x, best.z], 3);
         for (let k = 0; k < (o.takte || 600); k++) r._tickWorldWaterCA();
         // Der Körper-Leser: die EINE Wasser-Wahrheit am Körper; vor der Welle L das Zell-Dach (`_playerWaterContext`).
         const koerper = (x, z, boden) => r._koerperWasser(x, z, boden);
         const span = r._voxelChunkConfig(0).span;
-        const pcx = Math.floor(pm.position.x / span),
-            pcz = Math.floor(pm.position.z / span);
+        const pcx = Math.floor(st.playerMesh.position.x / span),
+            pcz = Math.floor(st.playerMesh.position.z / span);
         let trocken = 0,
             geflutet = 0,
             maxFlut = 0;
@@ -661,6 +610,153 @@ function wasserUfer(opts) {
             }
         }
         return { ort: [best.x, best.z], trocken, geflutet, maxFlutM: Math.round(maxFlut * 100) / 100, beispiele };
+    })();
+}
+
+// Der Fluss-Punkt nächst (x, z) über die Heimat und die fernen Kacheln (nie im See): { p, vor (sein Nachbar im Lauf),
+// fluesse (jeder Fluss der geladenen Regionen) }; p null ohne Fluss.
+function __wasserFlussNah(r, x, z) {
+    const st = r.state;
+    const fluesse = [];
+    for (const h of [st.hydrosphere].concat(st.hydroTiles ? [...st.hydroTiles.values()] : []))
+        if (h && h.ready) fluesse.push(...(h.rivers || []));
+    const aus = { p: null, vor: null, fluesse };
+    for (const rv of fluesse)
+        rv.points.forEach((q, k) => {
+            if (!q.inLake && (!aus.p || Math.hypot(q.x - x, q.z - z) < Math.hypot(aus.p.x - x, aus.p.z - z)))
+                ((aus.p = q), (aus.vor = rv.points[k - 1] || rv.points[k + 1]));
+        });
+    return aus;
+}
+
+// DER STROM AN EINEN ORT (Seite, EIN Weg für jede Probe der Wand): der Spieler `hoehe` über dem Boden an `ort`, die Welt
+// streamt synchron um ihn (Worker ausgehängt — wie der Playtest), bis die Chunk-Zahl steht. Der Bild-Renderer ruht dabei.
+function wasserStrom(ort, hoehe) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        if (st.renderer) {
+            st.renderer.render = function () {};
+            if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+        }
+        st.postProcessingFailed = true;
+        st.playerMesh.position.set(ort[0], r._voxelSurfaceY(ort[0], ort[1]) + hoehe, ort[1]);
+        if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
+        const worker = st.voxelWorker;
+        st.voxelWorker = null;
+        const t0 = performance.now();
+        for (let last = -1, still = t0; ; await new Promise((res) => setTimeout(res, 0))) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n !== last) ((last = n), (still = performance.now()));
+            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+        }
+        st.voxelWorker = worker;
+    })();
+}
+
+// ── F3: DER GRABEN AM FLUSS (Schöpfer 17.10.: „zwei Wasser-Oberflächen — die schöne spiegelnde und eine zackige, die in den
+// Boden geht"; die Wiese daneben flackert) ── Je ein Graben 1 m und 3 m jenseits der Krone (`__wasserKroneVon`, je eine Bank)
+// über den Weg des Grabe-Hiebs (DSL `voxel_carve`, r 3,5 m), dann Takt um Takt, bis der Automat ruht (höchstens `o.takte`).
+// Je Takt über ±9 m je 0,5 m das GEZEICHNETE Wasser > 10 cm über dem gezeichneten Boden (`_bodenSichtAt`) gegen den Spiegel
+// des Gesetzes (`_atlasWaterLevelAt`, jenseits der Krone `_hydroSpiegelQuer`): `doppelt`, `ueber` (> 10 cm darüber), in Ruhe
+// `abseits` (> 10 cm darunter, wo der Spiegel über dem Boden des Gesetzes liegt); die Nah-Wiese ganz außerhalb 10 m (Kugel,
+// zwei Zellen des Sheets, eine Zelle seines Netzes: Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
+function wasserGraben(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const span = r._voxelChunkConfig(0).span;
+        const K = r.constructor.NAH_WIESE.kachel;
+        const f2 = (v) => Math.round(v * 100) / 100;
+        const { p: a, vor: b } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
+        if (!a || !b) return { fehler: "kein Fluss am Ort" };
+        const nl = Math.hypot(a.x - b.x, a.z - b.z) || 1;
+        const nx = -(a.z - b.z) / nl,
+            nz = (a.x - b.x) / nl;
+        const krone = __wasserKroneVon(r, a);
+        // die Höhen des gezeichneten Wassers über (x, z): je Netz, das den Punkt trägt, seine oberste Fläche (`_wasserNetzHoehe`,
+        // ein Netz zeichnet je Zelle ein Viereck), aufsteigend, je Fläche eine (10 cm trennen zwei)
+        const flaechen = (x, z) => {
+            const ys = [];
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
+                    const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+                    if (y !== null) ys.push(y);
+                }
+            return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+        };
+        const messen = (px, pz) => {
+            const m = { nass: 0, doppelt: 0, ueber: 0, ueberM: 0, abseits: 0, abseitsM: 0 };
+            for (let gz = -9; gz <= 9; gz += 0.5)
+                for (let gx = -9; gx <= 9; gx += 0.5) {
+                    const x = px + gx,
+                        z = pz + gz;
+                    const g = r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
+                    const ys = flaechen(x, z).filter((y) => y > g + 0.1);
+                    if (!ys.length) continue;
+                    const atlas = r._atlasWaterLevelAt(x, z, g);
+                    const S = atlas > -Infinity ? atlas : r._hydroSpiegelQuer(x, z);
+                    const top = ys[ys.length - 1];
+                    m.nass++;
+                    if (ys.length > 1) m.doppelt++;
+                    if (top > S + 0.1) ((m.ueber++), (m.ueberM = Math.max(m.ueberM, f2(top - Math.max(g, S)))));
+                    else if (S - top > 0.1 && S > r._voxelSurfaceY(x, z)) // wo das Gesetz die Spalte nass nennt
+                        ((m.abseits++), (m.abseitsM = Math.max(m.abseitsM, f2(S - top))));
+                }
+            return m;
+        };
+        const graeben = [];
+        for (const [abstand, sg] of o.graeben || [
+            [1, 1],
+            [3, -1],
+        ]) {
+            const px = a.x + nx * sg * (krone + abstand),
+                pz = a.z + nz * sg * (krone + abstand);
+            await window.__wasserStrom([px + nx * sg * 6, pz + nz * sg * 6], 0.6); // der Spieler 6 m landeinwärts
+            await window.__weltStehtNach(() => r._gameLoopTick(performance.now()), 600); // die Welt steht, die Wiese mit
+            const aussen = (key) => {
+                const [tx, tz] = key.split(",").map(Number);
+                return Math.hypot(Math.max(tx * K - px, 0, px - (tx + 1) * K), Math.max(tz * K - pz, 0, pz - (tz + 1) * K)) > 10;
+            };
+            const g = { abstand, ort: [f2(px), f2(pz)], sheets: 0, sheetMs: 0, caMs: 0, wieseFaelle: 0, ruhe: -1 };
+            Object.assign(g, { bueschel: [Infinity, -Infinity], doppelt: 0, ueber: 0, ueberM: 0 });
+            const huelle = (name, wirkt) => {
+                const f = r[name];
+                r[name] = function (...args) {
+                    const t = performance.now();
+                    return [f.apply(this, args), wirkt(performance.now() - t, args)][0];
+                };
+            };
+            huelle("_buildVoxelChunkWaterCellSheet", (ms) => ((g.sheets++), (g.sheetMs += ms)));
+            huelle("_tickWorldWaterCA", (ms) => (g.caMs += ms));
+            huelle("_nahWieseKachelFaellt", (ms, [key]) => aussen(key) && g.wieseFaelle++);
+            g.vor = messen(px, pz).nass;
+            try {
+                r.dslRun(["voxel_carve", px, r._voxelSurfaceY(px, pz), pz, 3.5], { source: "human" });
+                for (let t = 0; t < (o.takte || 900) && g.ruhe < 0; t++) {
+                    r._gameLoopTick(performance.now());
+                    const m = messen(px, pz);
+                    for (const k of ["doppelt", "ueber", "ueberM"]) g[k] = Math.max(g[k], m[k]);
+                    let n = 0;
+                    for (const [key, kt] of st.nahWiese ? st.nahWiese.kacheln : []) if (aussen(key)) n += kt.bueschel.length;
+                    g.bueschel = [Math.min(g.bueschel[0], n), Math.max(g.bueschel[1], n)];
+                    const wach = (st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks;
+                    if (!wach && !(st.pendingWaterIso && st.pendingWaterIso.size)) g.ruhe = t; // Automat, Neubau, Sheets ruhen
+                    if (t % 5 === 4) await new Promise((res) => setTimeout(res, 0));
+                }
+            } finally {
+                for (const name of ["_buildVoxelChunkWaterCellSheet", "_tickWorldWaterCA", "_nahWieseKachelFaellt"]) delete r[name];
+            }
+            const m = messen(px, pz);
+            Object.assign(g, { nass: m.nass, abseits: m.abseits, abseitsM: m.abseitsM, caMs: f2(g.caMs) });
+            graeben.push(Object.assign(g, { sheetMs: f2(g.sheetMs) }));
+        }
+        return { ort: [f2(a.x), f2(a.z)], krone: f2(krone), graeben };
     })();
 }
 
@@ -2527,29 +2623,6 @@ function wasserLeser(opts) {
         const r = window.anazhRealm;
         const st = r.state;
         if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
-        const pm = st.playerMesh;
-        const strom = async (px, pz) => {
-            pm.position.set(px, r._voxelSurfaceY(px, pz) + 3, pz);
-            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-            const worker = st.voxelWorker;
-            st.voxelWorker = null;
-            const t0 = performance.now();
-            let last = -1,
-                still = performance.now();
-            for (;;) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                const n = st.voxelChunks ? st.voxelChunks.size : 0;
-                if (n !== last) {
-                    last = n;
-                    still = performance.now();
-                }
-                if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
-                await new Promise((res) => setTimeout(res, 0));
-            }
-            st.voxelWorker = worker;
-        };
         const { dim, dimY, step, span, floorDrop } = r._voxelChunkConfig(0);
         const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const dq = dim * dim;
@@ -2566,7 +2639,7 @@ function wasserLeser(opts) {
         const bsp = { klang: [], scheu: [], kueste: [], trinken: [] };
         const R1 = (v) => Math.round(v * 10) / 10;
         for (const [px, pz] of o.orte || (({ see, kueste }) => [see.ufer, kueste])(window.__wasserOrte({}))) {
-            await strom(px, pz);
+            await window.__wasserStrom([px, pz], 3);
             aus.orte.push([px, pz, st.voxelChunks.size]);
             const pcx = Math.floor(px / span),
                 pcz = Math.floor(pz / span);
@@ -2838,6 +2911,9 @@ module.exports = {
         `window.__wasserKroneVon = ${__wasserKroneVon.toString()};` +
         `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
         `window.__wasserUfer = ${wasserUfer.toString()};` +
+        `window.__wasserStrom = ${wasserStrom.toString()};` +
+        `window.__wasserFlussNah = ${__wasserFlussNah.toString()};` +
+        `window.__wasserGraben = ${wasserGraben.toString()};` +
         `window.__wasserUferFarbe = ${wasserUferFarbe.toString()};` +
         `window.__wasserKoerper = ${wasserKoerper.toString()};` +
         `window.__wasserBild = ${wasserBild.toString()};` +
