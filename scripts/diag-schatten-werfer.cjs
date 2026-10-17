@@ -1390,18 +1390,17 @@ function probe(selbsttest) {
     // die alten Frustum-Schreiber der Tiere: `creature.visible = inFrustum` und `… = this.isInFrustum(creature, frustum)`
     const TIER_SCHREIBER = /\.visible\s*=\s*(?:this\.isInFrustum\(|inFrustum\b)/;
     aus.a1 = {
-        inselnFrei: !/isInFrustum\(/.test(window.__codeOf(r._loopFrustumCulling)),
-        tiereFrei:
-            !TIER_SCHREIBER.test(window.__codeOf(r.updateCreatures)) &&
-            !TIER_SCHREIBER.test(window.__codeOf(r._loopFrustumCulling)),
+        inselnFrei: window.__fehlt(r._loopFrustumCulling, /isInFrustum\(/),
+        tiereFrei: window.__fehlt([r.updateCreatures, r._loopFrustumCulling], TIER_SCHREIBER),
         eigeneMethode: ["updateBefore", "_init", "_updateShadowBounds"].every((k) =>
             Object.prototype.hasOwnProperty.call(csm, k)
         ),
         // kein Umbau nach der Geburt: die Karten-Ziele fallen nie im laufenden Frame (Bind-Gruppen der Bundles)
-        keinUmbau: !/\.dispose\(\)|_kaskadenKarten|_kaskadenZiele/.test(window.__codeOf(r._kaskadenPassen)),
+        keinUmbau: window.__fehlt(r._kaskadenPassen, /\.dispose\(\)|_kaskadenKarten|_kaskadenZiele/),
         // die Sicht je Pass schaltet keine Bundle-Eigenschaft (die Bundle-Wahrheit am Chokepoint trägt den Schatten-Pass)
-        keineBruecke: !/isBundleGroup\s*=[^=]|\.static\s*=[^=]/.test(
-            window.__codeOf(r._passSicht) + window.__codeOf(r._passSichtZurueck) + window.__codeOf(r._werferWahl)
+        keineBruecke: window.__fehlt(
+            [r._passSicht, r._passSichtZurueck, r._werferWahl],
+            /isBundleGroup\s*=[^=]|\.static\s*=[^=]/
         ),
     };
     if (selbsttest)

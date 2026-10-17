@@ -22,17 +22,12 @@
 // Playtest prüft ihren Konsum (Boden-Grün → Halm-Gewicht). GPU-frei.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
 // Port über GRASS_THIN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4331.
 const PORT = Number(process.env.GRASS_THIN_PORT || 4331);
 const server = statikServer();
 
-// Kommentar-Strip (die V18.267-Falle: ein erklärender Kommentar zitiert das geschnittene
-// Symbol → ein naiver Absenz-Grep stolpert). Dieselbe Disziplin wie gate:constitution.
-const stripComments = stammLib.ohneKommentare;
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
@@ -80,8 +75,7 @@ const stripComments = stammLib.ohneKommentare;
             o.grassNonNull = nonNull;
             o.grassInstances = instances;
             o.lodMapSize = st.voxelChunkGrassLod ? st.voxelChunkGrassLod.size : 0;
-            // (b) QUELLE — der Schnitt steht (kommentar-bereinigt, sonst V18.267-Falle).
-            const strip = window.__codeOf;
+            // (b) QUELLE — der Schnitt steht (kommentar-bereinigt über den EINEN Absenz-Helfer, sonst V18.267-Falle).
             o.tuftMethodGone = typeof r._grassBladeTuftGeometry === "undefined";
             o.thinMethodGone = typeof r._tickGrassThin === "undefined";
             o.densityMapGone = st.voxelChunkGrassDensity === undefined;
@@ -89,9 +83,8 @@ const stripComments = stammLib.ohneKommentare;
             // BODEN-FUNKTION — der Bau verbucht jede Zelle bewusst halm-los (null), baut
             // KEIN InstancedMesh, die Halm-Maschinerie (Pool/Studio-Geometrie/Stufen-
             // Tick) ist physisch geschnitten, die Halme zeichnet der Terrain-Albedo.
-            const buildSrc = strip(r._buildVoxelChunkGrass.toString());
             // halm-los verbucht misst (a) am Zustand; die Parallax-Halme und der Streu-Thin am Ruf (D3c, vorher am Rumpf-TEXT)
-            o.existenzGabel = !/InstancedMesh/.test(buildSrc);
+            o.existenzGabel = window.__fehlt(r._buildVoxelChunkGrass, /InstancedMesh/);
             const ruft = (f, ziel, k) => {
                 const alt = ziel[k],
                     eigen = Object.prototype.hasOwnProperty.call(ziel, k);
@@ -106,9 +99,8 @@ const stripComments = stammLib.ohneKommentare;
                 typeof r._tickGrassStage === "undefined";
             const T = window.THREE.TSL;
             o.farFactorLiteral = ruft(() => r._terrainGeologyAlbedo(T, T.attribute("color", "vec3"), T.positionWorld), r._rauschAtlas(), "ebene");
-            o.keinTuftAufruf = !/_grassBladeTuftGeometry/.test(buildSrc);
-            const idleSrc = strip(r._tickScatterStreaming.toString());
-            o.idleOhneGrasThin = !/_tickGrassThin/.test(idleSrc);
+            o.keinTuftAufruf = window.__fehlt(r._buildVoxelChunkGrass, /_grassBladeTuftGeometry/);
+            o.idleOhneGrasThin = window.__fehlt(r._tickScatterStreaming, /_tickGrassThin/);
             // der Streu-Thin (V18.280) LEBT weiter — der eine verbliebene Thin-Hebel:
             o.streuThinLebt = ruft(() => r._tickScatterStreaming(st.playerMesh.position, performance.now() + 8), r, "_tickFoliageThin");
             return o;
@@ -125,9 +117,8 @@ const stripComments = stammLib.ohneKommentare;
     }
 
     // Statische Doppel-Wand (Node-seitig, ohne Browser-Umweg): das Symbol lebt nirgends im Stamm.
-    const anazhNC = stripComments(stammLib.text(root));
-    const staticTuftGone = !/_grassBladeTuftGeometry/.test(anazhNC) && !/GRASS_TUFT_BLADES/.test(anazhNC);
-    const staticThinGone = !/_tickGrassThin/.test(anazhNC) && !/voxelChunkGrassDensity/.test(anazhNC);
+    const staticTuftGone = stammLib.fehlt(null, /_grassBladeTuftGeometry|GRASS_TUFT_BLADES/);
+    const staticThinGone = stammLib.fehlt(null, /_tickGrassThin|voxelChunkGrassDensity/);
 
     const checks = [
         {

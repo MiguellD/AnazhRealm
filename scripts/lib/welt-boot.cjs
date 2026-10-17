@@ -31,8 +31,9 @@ const { ohneKommentare } = require("./stamm.cjs");
 // Code einer Funktion oder eines Quelltexts ohne Kommentare: der EINE Stripper aus stamm.cjs, als Text übertragen) und
 // `window.__dokuOf` (ungestrippt, für Marker, die per Definition im Kommentar wohnen — nie rohes .toString(), gate:apparat).
 // Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
-// `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3c): true = das Muster fehlt im Code ohne Kommentare.
-const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => !re.test(window.__codeOf(f));`;
+// `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
+// Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
+const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); });`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 

@@ -1124,7 +1124,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             typeof r._buildCanopyShell === "undefined" &&
             typeof r._disposeCanopyShell === "undefined";
         out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
-        out.cRestoreClean = !/_disposeCanopyShell/.test(window.__codeOf(r._loadStateRestoreWorldMeta));
+        out.cRestoreClean = window.__fehlt(r._loadStateRestoreWorldMeta, /_disposeCanopyShell/);
 
         return out;
     });

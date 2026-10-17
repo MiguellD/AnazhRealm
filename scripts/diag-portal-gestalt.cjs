@@ -95,7 +95,7 @@ function check(name, ok, detail) {
         delete f.recipes.verkalkt;
         res.b.ohneRezept = r._foundryPresetForEntry({ type: "welt_terrain" });
         f.recipes.verkalkt = altV;
-        res.b.ohneWeltLiteral = !/welt_/.test(window.__codeOf(r._foundryPresetForEntry)); // Absenz: der Resolver ist generisch
+        res.b.ohneWeltLiteral = window.__fehlt(r._foundryPresetForEntry, /welt_/); // Absenz: der Resolver ist generisch
         res.b.eiche = r._foundryPresetForEntry({ type: "baum_eiche" });
         res.b.esse = r._foundryPresetForEntry({ type: "esse" });
         res.b.wagen = r._foundryPresetForEntry({ type: "fahrzeug_wagen" });

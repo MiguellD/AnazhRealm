@@ -783,7 +783,6 @@ async function probe() {
     aus.decke.beruehrt = beruehrt(p0.x, p0.y + 0.55, p0.z, p0.x, p0.y + 5.05, p0.z);
     // (Q) der Konsum am Ruf: der Strahl fragt das Netz, der Tier-Leib die Plätze (Spion am Ruf); die alten Schleifen bleiben tot
     const P = Object.getPrototypeOf(r);
-    const code = (f) => (typeof P[f] === "function" ? window.__codeOf(P[f]) : "");
     const ruft = (fn, nach, args) => {
         const echt = r[nach];
         let n = 0;
@@ -806,10 +805,8 @@ async function probe() {
         tierFragtPlatz:
             !!tier &&
             ruft("_kreaturHuellenKontakt", "_blockerUmPlatz", [tier, r._kreaturHueftL(tier), tier.position.x, tier.position.z]),
-        strahlSchleife: /this\.state\.architectures/.test(
-            code("_fieldRaycast").replace(/const arches = this\.state\.architectures;/, "")
-        ),
-        tierSchleife: /for \(let a = 0; a < arches\.length; a\+\+\)/.test(code("_kreaturHuellenKontakt")),
+        strahlSchleife: !window.__fehlt(P._fieldRaycast, /(?<!const arches = )this\.state\.architectures/),
+        tierSchleife: !window.__fehlt(P._kreaturHuellenKontakt, /for \(let a = 0; a < arches\.length; a\+\+\)/),
     };
     return aus;
 }

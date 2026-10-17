@@ -101,9 +101,8 @@ function probe(stoerung) {
         r._applyDayNightToScene();
     } else out.sichtWasser = -1;
     const A = r.constructor;
-    const luftSrc = window.__codeOf(r._dayNightApplyHemiUndLuft);
     out.absenz = {
-        waldKante: !/foliageRadius|visualEdge/.test(luftSrc),
+        waldKante: window.__fehlt(r._dayNightApplyHemiUndLuft, /foliageRadius|visualEdge/),
         ladeNebel: typeof r._smoothFogEdge === "undefined" && typeof r._builtGrassRingRadius === "undefined",
         wasserFront: typeof r._builtWaterRingRadius === "undefined",
         kokon: A.AWAKEN_FOG_FAR === undefined && A.FOG_EDGE === undefined,

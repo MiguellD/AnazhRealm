@@ -1443,7 +1443,6 @@ const server = statikServer();
             // ── (f) DER BODEN-STOFF AM GRAPH (D3c: der gebaute Knoten-Graph und der Ruf, nie der Quelltext): die Himmels-Sicht
             // reist in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`), der Chunk-Stoff legt sie als
             // Verdeckung; die 2.5D-Lichtung und der Licht-Pool lesen sie nur mit `himmelsSicht` (in der Höhle die wahre Normale)
-            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             const haelt = (w, n) => {
                 const seen = new Set();
                 const geh = (x) => {
@@ -1509,17 +1508,18 @@ const server = statikServer();
                 aus.code.augenVorZweig =
                     bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
                 // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d
-                const pool = code(r._lichtPoolTerm);
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                    (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
+                    (n) => n !== "constructor" && typeof P[n] === "function" && !window.__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
                 aus.code.poolGesetz =
                     brdf >= atmo.lichtLage.length &&
                     brdf > 0 &&
-                    !/reciprocal\(\)/.test(pool) &&
+                    window.__fehlt(r._lichtPoolTerm, /reciprocal\(\)/) &&
                     brdfRufer.every((n) => n === "_lichtPoolTerm");
-                const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
-                aus.code.augenTslFremd = fremd ? fremd[1] : null;
+                aus.code.augenTslFremd =
+                    ["diffuseContribution", "specularColorBlended"].find(
+                        (n) => !window.__fehlt([r._lichtPoolTerm, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
+                    ) || null;
                 m1.dispose();
                 m0.dispose();
             } catch (e) {
@@ -1529,8 +1529,7 @@ const server = statikServer();
             // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
             // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
             // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
-            const fein = code(r._terrainGeologyAlbedo);
-            aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
+            aus.code.feinEigenHash = !window.__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
                 if (

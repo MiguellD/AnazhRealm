@@ -981,8 +981,27 @@ function stripperTafel(root) {
     return rot;
 }
 
+// DER EINE ABSENZ-HELFER in Node (PFLICHT-OFFEN D3d), der Zwilling von `window.__fehlt` (welt-boot.cjs): true = `re` fehlt
+// im Code ohne Kommentare. `glied` ein Name (das Klassen-Glied wie `rumpf`), ein Kopf-Regex, eine Liste davon oder null (der
+// ganze Text); `quelle` der Text — ohne ihn der virtuelle Stamm der Wurzel, als Funktion gewandelt (der Vor-Stand eines
+// Selbsttests). Ein Glied ohne Definition wirft: eine Absenz an einem Toten misst nichts (gate:source-probes, Quelltext-Wand).
+const fehltMerk = { stamm: null, roh: null, nc: null };
+function fehlt(glied, re, quelle) {
+    const stamm = () => fehltMerk.stamm || (fehltMerk.stamm = text(path.resolve(__dirname, "..", "..")));
+    const roh = typeof quelle === "string" ? quelle : typeof quelle === "function" ? quelle(stamm()) : stamm();
+    if (fehltMerk.roh !== roh) Object.assign(fehltMerk, { roh, nc: ohneKommentare(roh) });
+    const nc = fehltMerk.nc;
+    return [].concat(glied).every((g) => {
+        const b = g == null ? nc : rumpf(nc, g);
+        if (b == null) throw new Error(`stammLib.fehlt: das Glied ${g} hat keine Definition — die Absenz misst nichts`);
+        re.lastIndex = 0;
+        return !re.test(b);
+    });
+}
+
 module.exports = {
     ohneKommentare,
+    fehlt,
     stripperTafel,
     ALT,
     DIR,

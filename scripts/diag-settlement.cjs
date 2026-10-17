@@ -1542,15 +1542,10 @@ const FIXTURES = [
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
         // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
-        const src = window.__codeOf ? window.__codeOf(r.spawnSettlement) : r.spawnSettlement.toString();
-        const srcSame = window.__codeOf(r._bauSame);
         // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
-        const srcHier = baueHier
-            ? window.__codeOf(baueHier.build)
-            : "";
-        res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0 && !/Math\.random/.test(srcHier);
-        res.gammaStream = ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 && !/Math\.random/.test(src) && !/Math\.random/.test(srcSame);
+        res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0 && window.__fehlt(baueHier.build, /Math\.random/);
+        res.gammaStream = ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 && window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
         // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
         // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel; seit der Gegenprüfung fragt der
@@ -1597,7 +1592,7 @@ const FIXTURES = [
             res.villageNHErr = (e && e.message) || String(e);
         }
         delete r._siedlungsAnker;
-        res.anchorChokepoint = nA >= 1 && !/_structureSpawnPos/.test(src);
+        res.anchorChokepoint = nA >= 1 && window.__fehlt(r.spawnSettlement, /_structureSpawnPos/);
         // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
         res.c = {};
         try {

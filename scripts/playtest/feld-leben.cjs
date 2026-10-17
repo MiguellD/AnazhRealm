@@ -728,10 +728,8 @@ async function checkBandWelle6APolish(ctx) {
         delete r.state.blueprints._t_w6a_haus;
 
         // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
-        // __codeOf strippt Kommentare — sonst träfe der Absenz-Grep den Kommentar, der den Code zitiert.
-        out.noDoomLoopInSelfAnalysis = !/processOptimization|optimizePhysics/.test(
-            window.__codeOf(r._loopSelfAnalysis)
-        );
+        // __fehlt liest ohne Kommentare — sonst träfe der Absenz-Grep den Kommentar, der den Code zitiert.
+        out.noDoomLoopInSelfAnalysis = window.__fehlt(r._loopSelfAnalysis, /processOptimization|optimizePhysics/);
         out.nexusProcessOptGone = !(r.nexus && typeof r.nexus.processOptimization === "function");
 
         return out;

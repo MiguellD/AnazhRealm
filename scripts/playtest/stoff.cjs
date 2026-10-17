@@ -29,7 +29,7 @@ async function checkBandV18136Audit(ctx) {
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
         // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
-        out.tileLean = !/eTile|_computeErosion|erosionTiles/.test(window.__codeOf(r._ensureHydroTilesAround));
+        out.tileLean = window.__fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
         return out;
     });
     if (!res) {
@@ -522,12 +522,10 @@ async function checkBandWahrerAnblickGras(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
-        const matSrc = window.__codeOf(r._grassInstanceMat);
         // Der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad (setupDiffuseColor multipliziert
         // instanceColor selbst) — ein manueller instanceColor-Read ist redundant und wirft „instanceColor not
-        // found". __codeOf strippt Kommentare, die den entfernten Read zitieren.
-        const matCode = window.__codeOf(matSrc);
-        out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
+        // found". __fehlt liest ohne die Kommentare, die den entfernten Read zitieren.
+        out.matNoManualInstanceColor = window.__fehlt(r._grassInstanceMat, /attribute\(["']instanceColor["']/);
 
         // (B) Material baut (der instanceColor-colorNode kompiliert ohne Wurf)
         const m = r._grassInstanceMat();

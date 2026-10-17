@@ -2392,7 +2392,7 @@ async function checkBandW18Dwell(ctx) {
         out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
         // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
         // buildStateSnapshot kennt sie nicht.
-        out.notInSnapshot = !/portalDwelling|portalState/.test(window.__codeOf(r.buildStateSnapshot));
+        out.notInSnapshot = window.__fehlt(r.buildStateSnapshot, /portalDwelling|portalState/);
         return out;
     });
     check("W18-D Wohnen: außerhalb eines Portals ehrlich unmöglich", res.dwellOutside);
