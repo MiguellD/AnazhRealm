@@ -220,16 +220,18 @@ function taeterStoff(sb, c, g) {
 // Helfer); dessen `buildMaterials` prägt die Rinden-Normale (`makeBarkNormal`). Ihre Kerne griffen an gebrochenen Indizes in ein Float32Array: das schreibt nichts (die Spezifikation
 // verwirft den Index) und nimmt den langsamen Pfad der Eigenschafts-Namen — Radeon kalt 1,3 s im Buch-Faden vor dem Buch,
 // 2,0–3,1 s in jedem der acht Fäden zugleich. Die Linse zählt jeden Zugriff eines Start-Arrays an einem gebrochenen Index
-// (Täter beim Namen) und hält die Bytes der Normale (sha256, die Prägung der Saat 99).
+// (Täter beim Namen) und hält die Bytes der Normale (sha256, die Prägung der Saat 99). B3a: jede Start-Leinwand ist eine
+// CPU-Leinwand (willReadFrequently) — ihr putImageData auf der GPU-Leinwand wartete im Faden auf den GPU-Prozess (Radeon kalt 2,27 s).
 const RINDE_SHA = "039367ab31640d7f";
 const BRUECKE = fs.readFileSync(path.join(ROOT, "foundry-bruecke.js"), "utf8");
 function ofenStart(eingriff) {
     const sb = ladeOfen();
     let bild = null;
+    const gpu = [];
     sb.OffscreenCanvas = function (w, h) {
         this.width = w;
         this.height = h;
-        this.getContext = () => ({
+        this.getContext = (_art, o) => (gpu.push(!(o && o.willReadFrequently)), {
             createImageData: (iw, ih) => ({ data: new Uint8ClampedArray(iw * ih * 4) }),
             putImageData: (img) => (bild = img.data),
         });
@@ -273,6 +275,7 @@ function ofenStart(eingriff) {
     const sha = bild ? crypto.createHash("sha256").update(Buffer.from(bild.buffer)).digest("hex") : null;
     return {
         gebrochen: zaehl.gebrochen,
+        gpu: gpu.filter(Boolean).length,
         arrays: zaehl.zugriffe,
         sha,
         ms: Date.now() - t0,
@@ -282,7 +285,7 @@ function ofenStart(eingriff) {
 // S4 — die alte Rinde: jeder Kern-Zugriff greift, ob er schreibt oder nicht (der Bau vor K60-2).
 function taeterRinde(sb) {
     const src = vm.runInContext("makeBarkNormal.toString()", sb);
-    const alt = src.replace(/if \(ganz\(k\)\) /g, "");
+    const alt = src.replace(/if \(ganz\(k\)\) /g, "").replace(", { willReadFrequently: true }", "");
     if (alt === src)
         throw new Error(
             "S4: die Schreib-Regel `if (ganz(k))` fehlt in makeBarkNormal — der Selbst-Test kennt den Kern nicht mehr"
@@ -337,8 +340,8 @@ function taeterRinde(sb) {
         check("S3 korruptes Golden: rot an genau der Klasse", s3.length === 1 && s3[0].startsWith(k0 + ": sha256"));
         const s4 = ofenStart(taeterRinde);
         check(
-            `S4 die alte Rinde (jeder Kern-Zugriff greift): rot an makeBarkNormal mit ${s4.gebrochen} gebrochenen Zugriffen, dieselben Bytes`,
-            s4.gebrochen > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
+            `S4 die alte Rinde (jeder Kern-Zugriff greift, GPU-Leinwand): rot an makeBarkNormal mit ${s4.gebrochen} gebrochenen Zugriffen und ${s4.gpu} GPU-Leinwand, dieselben Bytes`,
+            s4.gebrochen > 0 && s4.gpu > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
             `${s4.ms} ms`
         );
         if (errs.length) {
@@ -395,8 +398,8 @@ function taeterRinde(sb) {
     // 5) DER START DES OFENS (K60-2): die Rinden-Normale jedes Studio-Fadens greift nie an einen gebrochenen Index.
     const start = ofenStart();
     check(
-        `Start des Ofens (die Brücke im Faden, foundryModus): makeBarkNormal greift ${start.gebrochen}-mal an einen gebrochenen Index (Soll 0, ${start.arrays} Start-Arrays)`,
-        start.gebrochen === 0,
+        `Start des Ofens (die Brücke im Faden, foundryModus): makeBarkNormal greift ${start.gebrochen}-mal an einen gebrochenen Index (Soll 0, ${start.arrays} Start-Arrays) und malt auf ${start.gpu} GPU-Leinwand (Soll 0: dort wartet putImageData auf den GPU-Prozess)`,
+        start.gebrochen === 0 && start.gpu === 0,
         `${start.ms} ms`
     );
     check(

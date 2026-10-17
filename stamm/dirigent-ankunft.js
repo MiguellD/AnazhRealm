@@ -2,6 +2,10 @@ class AnazhRealm_dirigent_ankunft {
     // ===== ATLAS · Dirigent/ankunft — init · das erste Weltbild · Ladeschirm · der Boot =====
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // DIE STUDIO-FÄDEN KOMMEN MIT DER SEITE (B3a): ihre Kerne sind statisch (`?v=`), nichts in ihnen wartet auf die Welt —
+        // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
+        // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
+        this._ensureAssetFoundry(true); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
         // Versions-Anzeige (title + .version) aus `AnazhRealm.VERSION` — EIN Wahrheits-Ort, kein
         // hartkodierter String in index.html.
         const versionLabel = `v${AnazhRealm.VERSION}`;
@@ -183,19 +187,18 @@ class AnazhRealm_dirigent_ankunft {
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
         // dann bleibt perfSense beim Subtraktions-Proxy ("proxy").
-        const renderer =
-            typeof window !== "undefined" && window.__anazhHeadlessNullRenderer
-                ? this._makeHeadlessRenderer(canvas)
-                : new THREE.WebGPURenderer({
-                      canvas,
-                      // KEIN MSAA: die Kantenglättung ist die zeitliche Auflösung (TRAA) am Anfang der Post-Kette
-                      // (_ensurePostProcessing; das Holz-Profil schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU
-                      // und 267 MB VRAM (04.10., Radeon 890M).
-                      antialias: false,
-                      trackTimestamp: true,
-                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe) und die Geräte-Grenzen (G1).
-                      ...this._rendererGeraet(),
-                  });
+        const renderer = this._nullRendererGewaehlt()
+            ? this._makeHeadlessRenderer(canvas)
+            : new THREE.WebGPURenderer({
+                  canvas,
+                  // KEIN MSAA: die Kantenglättung ist die zeitliche Auflösung (TRAA) am Anfang der Post-Kette
+                  // (_ensurePostProcessing; das Holz-Profil schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU
+                  // und 267 MB VRAM (04.10., Radeon 890M).
+                  antialias: false,
+                  trackTimestamp: true,
+                  // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe) und die Geräte-Grenzen (G1).
+                  ...this._rendererGeraet(),
+              });
         // DIE TONKURVE (F1, die Foto-Kette): Khronos PBR Neutral (r184 NeutralToneMapping) — bis zur Schulter (0,76) geht die
         // Farbe des Stoffs unverändert ins Bild (nur der Schwarzpunkt 0,04), darüber rollt sie zu Weiß ohne Farbdrehung. Gemessen
         // gegen ACES (Filmic, Sättigung und Kontrast in der Kurve) und AgX in EINER Welt (Radeon 890M, 15.10.): die Öffnung der
@@ -540,6 +543,7 @@ class AnazhRealm_dirigent_ankunft {
         // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (Platz → .bak → IndexedDB; der IDB-Stand
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
+        this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
         this.generateNewWorld();
 
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
@@ -992,6 +996,12 @@ class AnazhRealm_dirigent_ankunft {
             (this._impostorBakeFlug ? this._impostorBakeFlug.size : 0);
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
+    }
+
+    // Die Wahl des Renderers, bevor er steht: der Null-Renderer (GPU-frei, opt-in der Linsen) oder der echte. EINE Frage für
+    // `init` und die Studio-Fäden, die vor ihm geboren werden (Platte, Bäcker — `_ensureAssetFoundry`, B3a).
+    _nullRendererGewaehlt() {
+        return typeof window !== "undefined" && !!window.__anazhHeadlessNullRenderer;
     }
 
     // Die Stand-Zeile des Ladeschirms (nur solange er steht).

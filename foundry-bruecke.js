@@ -716,16 +716,23 @@ const foundryKanal = (() => {
                     // (fachwerk SIEDLUNG) reist additiv mit; ein Alt-Empfaenger
                     // ohne den Steckplatz ignoriert das Feld (must-ignore).
                     siedlung: __zweitKernSiedlung(),
-                    // DER EINE BLATT-ATLAS reist als Bild (S7): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette,
-                    // die Transport-Schale gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie
-                    // (kalt ~125 ms im Haupt-Thread, mit GPU-Leinwand ~450 ms).
-                    blattAtlas:
-                        typeof window === "undefined"
-                            ? self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) })
-                            : undefined,
                 },
                 "*"
             );
+            // DER EINE BLATT-ATLAS reist als Bild (S7) NACH dem Buch (B3a): der Worker malt ihn (OffscreenCanvas) samt
+            // Mip-Kette, die Transport-Schale macht ihn zur Fracht und gibt die Puffer per Transfer weiter — der Haupt-Thread
+            // malt und mippt nie. Bis B3a war er die Vorbedingung des ganzen Buchs (Radeon kalt 1,81 s Malen + 0,98 s Fracht
+            // vor jedem Auftrag); jetzt bestellt die Welt, während er entsteht, und nur ein Körper, der ihn liest, wartet.
+            if (typeof window === "undefined")
+                __post(
+                    {
+                        type: "blatt-atlas",
+                        world: "terrain",
+                        reqId: msg && msg.reqId,
+                        blattAtlas: self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }),
+                    },
+                    "*"
+                );
         }
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
@@ -1341,9 +1348,12 @@ const foundryKanal = (() => {
 })();
 // DER WORKER-START: der Foundry-Worker (self.__PHYTO_FOUNDRY_WORKER=true vor importScripts; eine Blob-URL trägt kein
 // ?search) lädt diese Datei als letzte — der Foundry-Modus, der Kanal-Hörer (die Transport-Schale `_foundrySchale`
-// ruft ihn nach ihrem eigenen), dann ready. Im Labor-Fenster tut diese Datei beim Laden nichts.
+// ruft ihn nach ihrem eigenen), dann ready. Im Labor-Fenster tut diese Datei beim Laden nichts. DAS BUCH REIST MIT DER
+// GEBURT (B3a): der Faden, den der Wirt „buch" nennt (`_ensureAssetFoundry`), antwortet es sofort — ohne Frage, denn eine
+// Nachricht vor dem Ende dieses Skripts reicht Chrome erst weiter, wenn der Haupt-Faden „Skript gelaufen" gelesen hat.
 if (typeof window === "undefined" && typeof self !== "undefined" && self.__PHYTO_FOUNDRY_WORKER === true) {
     foundryModus();
     self.onmessage = (event) => foundryKanal(event && event.data);
     foundryPost({ type: "ready", world: "terrain" });
+    if (self.name === "buch") foundryKanal({ type: "get-book", reqId: "book" });
 }
