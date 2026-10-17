@@ -83,10 +83,12 @@ function stationenFuer(dateien, ordnung) {
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
 Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.005, wagenMax: 0.2, rauschenMax: 0.002, stufeM: 2, radMax: 0.05 });
 // Der Wechsel und der Hang (Befund des Schöpfers 17.10.): je Rückkehr nach Third die Kamera ≤ azGrad an der Gier nach 10 Bildern,
-// die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); der Ruck bei fester Lenkung (die zweite Differenz der
-// Kamera im Rahmen des Wagens je Bild, p95) ≤ ruckM; bergab höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um mehr
-// als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon, Spielgang 18.10.): siehe die Zeilen des Urteils.
-Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.05, gleichMax: 0.15, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
+// die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche Ruck (die zweite Differenz
+// der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der Abweichung des Bild-Tempos vom Tempo um es)
+// ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um
+// mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032;
+// Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°).
+Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
 // ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
 // Ladeschirm ist weg, W trägt den Spieler.
@@ -137,7 +139,7 @@ function fahrtVerdict(m) {
     // DER RUCK, DER GLEICHLAUF, DIE HÖHE über der Fahrbahn: im Kreis (feste Lenkung) und am Hang
     for (const [wo, a] of [["im Wechsel", w], ["am Hang", h]]) {
         if (a === h && !(h.gefaelle >= SOLL.hangMittel)) continue;
-        if (!(a.ruckN >= 30 && a.gleichN >= 30)) out.push(`kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 30)`);
+        if (!(a.ruckN >= 20 && a.gleichN >= 20)) out.push(`kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 20)`);
         else {
             if (a === w && !(a.ruckP95 <= SOLL.ruckM)) out.push(`kamera-ruck seitlich p95 ${a.ruckP95} m je Bild bei fester Lenkung (Soll ≤ ${SOLL.ruckM}): die Kamera springt quer gegen den Wagen`);
             if (!(a.gleichP95 <= SOLL.gleichMax))
@@ -657,12 +659,15 @@ async function probe(arg) {
             const lauf = () => (L = { arm: [], imWagen: 0, stufeWeg: 0, stufeTaeter: null, wechsel: [], c: [], ruck: [], hoch: [], gleich: [], sicht: st.cameraMode, fest: false });
             A.jeTakt = () => {
                 if (!L || !e || st.player.mountedArch !== e.id) return;
-                // DER GLEICHLAUF des gezeichneten Wagens: sein Weg je Bild durch die Zeit des Bilds gegen das Tempo des Kerns (1 =
-                // er zeigt, wo die Physik ihn zu dieser Zeit hat; ein Bild mit zwei Sim-Schritten oder keinem bricht es)
-                const v = e._fahr ? Math.hypot(e._fahr.vlong || 0, e._fahr.vlat || 0) : 0;
-                const [p, t] = [[e.position.x, e.position.z], A.t];
-                if (L.fest && L.p && t - L.t > 0 && t - L.t < 100 && v > 1) L.gleich.push(Math.hypot(p[0] - L.p[0], p[1] - L.p[1]) / ((t - L.t) / 1000) / v);
-                [L.p, L.t] = [p, t];
+                // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen sein Tempo über
+                // die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem bricht es), über 1 m/s
+                const [p, t] = [[e.position.x, e.position.z, A.t], A.t];
+                const spur = (L.spur = L.spur || []);
+                if (spur.length && !(t - spur[spur.length - 1][2] > 0 && t - spur[spur.length - 1][2] < 100)) spur.length = 0;
+                spur.push(p);
+                if (spur.length > 11) spur.shift();
+                const tempo = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) / ((b[2] - a[2]) / 1000);
+                if (L.fest && spur.length === 11 && tempo(spur[0], p) > 1) L.gleich.push(tempo(spur[4], spur[5]) / tempo(spur[0], p));
                 const f = fahrt();
                 r._archEntryWorldMatrix(e, M);
                 const oben = V.setFromMatrixColumn(M, 1).normalize().toArray();
@@ -820,7 +825,7 @@ async function probe(arg) {
                         }
                     }
                     const [x0, z0, g0] = [e.position.x, e.position.z, fahrt()];
-                    L.fest = !zurueck && i > 30;
+                    L.fest = !zurueck && i > 10;
                     await tick(1);
                     const d = Math.hypot(e.position.x - x0, e.position.z - z0);
                     pfad += d;
@@ -1854,7 +1859,7 @@ async function probe(arg) {
                     ["das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) }, "gleichlauf im Wechsel p95 0.56"],
                     ["die Kamera steht bergab unter der Fahrbahn (Elevation zur Welt)", { hang: Object.assign({}, HANG_GESUND, { hochP05: -4.7, ruckP95: 0.31 }) }, "kamera am Hang p05 -4.7°"],
                     ["der Band-Partner zeigt das Rad in Ruhe", { radN: 768, radWeg: 1.998 }, "rad: die Stufen im Band"],
-                    ["Wechsel ohne Gleichlauf-Proben (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) }, "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf"],
+                    ["Wechsel ohne Gleichlauf-Proben (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) }, "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf (vakuös, Soll ≥ 20)"],
                     ["der Band-Partner bleibt im Wechsel zurück", { wechsel: Object.assign({}, WECHSEL_GESUND, { stufeWeg: 9.4, stufeTaeter: "L1 (Band)" }) }, "aufbau im Wechsel 9.4 m"],
                     ["der Wagen fehlt nach dem Wechsel im Bild", { wechsel: Object.assign({}, WECHSEL_GESUND, { anteil: 0 }) }, "wagen im Wechsel im Bild 0.0 %"],
                     ["der Arm pumpt bergab", { hang: Object.assign({}, HANG_GESUND, { schnapp: 14, armWeg: 6.2 }) }, "kamera-arm pumpt bergab: 14"],
