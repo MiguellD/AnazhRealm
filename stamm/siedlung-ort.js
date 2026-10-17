@@ -824,68 +824,71 @@ class AnazhRealm_siedlung_ort {
         rec.u = u;
     }
 
-    // Flügel drehen im Template-Raum VOR der Welt-Scale auf den gebackenen Geschlossen-Vertices:
-    // M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h); Vorzeichen = seite·sign(zf) (leafL −a · leafR +a,
-    // hinten gespiegelt). Flügel-Marken je Eintrag EINMAL aus entry.instSlots, neu bei Slot-Wechsel; der Slot wird je
-    // Tick frisch aus der Marke gelesen (das Verdichten der Gruppe zieht ihn um, `_archGroupFree`).
+    // DER FLÜGEL SCHWENKT ÜBER DEN EINEN SETZER (SG1-F1 Klasse): der Tick führt nur den Winkel des Eintrags
+    // (`entry._fluegelWinkel`, transient wie `instSlots`) und schreibt über `_archInstanceUpdate(entry, true)` — die Blätter mit
+    // Scharnier in JEDER zeichnenden Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`); eine neue Stufe wird im Winkel
+    // geboren (`_archInstanceAdd`). Bis SG1-F1 schrieb der Tick die Slots der Primär-Stufe selbst, neben dem Setzer: dessen
+    // Schreibung stellte den Flügel in die gebackene Pose zurück (eingeschwungen schrieb der Tick nie nach), ein Band-Partner
+    // stand gebacken, und jeder Stufen-Wechsel setzte den Winkel auf den Start zurück (die Haustür schwang je Wechsel neu zu).
     _tickTorFluegel(rec, entry, act) {
         const slots = entry.instSlots;
         if (!Array.isArray(slots) || !slots.length) return;
-        if (rec._fluegelSrc !== slots) {
+        if (rec._fluegelSrc !== slots || rec._fluegelBand !== entry.instSlotsBand) {
             rec._fluegelSrc = slots;
-            rec._fluegel = [];
+            rec._fluegelBand = entry.instSlotsBand;
             const groups = this.state.archInstanceGroups;
-            if (groups) {
-                for (const s of slots) {
-                    const g = groups.get(s.key);
-                    const t = s.tuer || (g && g.tuer);
-                    if (g && t) rec._fluegel.push({ g, ref: s, tuer: t });
-                }
-            }
-            // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
-            // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
-            // Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel (K43-2): ihre
-            // Flügel kommen mit dem Wechsel aus der Stufe 1, die die Fern-Pose trägt — ein weicher Start bei 0 schlösse sie.
-            rec._fluegelWinkel = Number.isFinite(rec._fluegelStart) ? rec._fluegelStart : null;
+            rec._fluegelN = 0;
+            for (const list of [slots, entry.instSlotsBand])
+                if (groups && Array.isArray(list))
+                    for (const s of list) {
+                        const g = groups.get(s.key);
+                        if (g && (s.tuer || g.tuer)) rec._fluegelN++;
+                    }
+            // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose (rec._fluegelStart = Gesetz-Winkel): die Tür
+            // schliesst beim ersten Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel
+            // (K43-2): ihre Flügel kommen mit dem Wechsel aus der Stufe 1, die die Fern-Pose trägt. Der Start gilt EINMAL je
+            // Eintrag — ein Stufen-Wechsel behält den Winkel (die neue Stufe wird in ihm geboren).
+            if (entry._fluegelWinkel === undefined)
+                entry._fluegelWinkel = Number.isFinite(rec._fluegelStart) ? rec._fluegelStart : null;
         }
-        if (!rec._fluegel || !rec._fluegel.length) return;
-        // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
-        // (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling fiel 19.07.,
-        // der Leser ist fail-closed).
+        if (!rec._fluegelN) return;
+        // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling
+        // fiel 19.07., der Leser ist fail-closed).
         const ziel = act * AnazhRealm._tuerOffenRad();
-        const alt = rec._fluegelWinkel;
+        const alt = entry._fluegelWinkel;
         const neu = alt == null ? ziel : alt + (ziel - alt) * 0.12;
         if (alt != null && Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
-        rec._fluegelWinkel = neu;
+        entry._fluegelWinkel = neu;
+        this._archInstanceUpdate(entry, true);
+    }
+    // Trägt das Blatt ein Scharnier und sein Eintrag einen Winkel? → der Schwenk-Träger (`ref.tuer` des Blatts, sonst der
+    // der Gruppe, DIE FLÜGEL-INSTANZ 1310-4), sonst null: das Blatt steht in seiner gebackenen Matrix.
+    _fluegelVon(entry, leaf, g) {
+        if (!Number.isFinite(entry._fluegelWinkel)) return null;
+        return (leaf && leaf.tuer) || (g && g.tuer) || null;
+    }
+    // DIE POSE EINES FLÜGELS: im Template-Raum VOR der Welt-Skala auf den gebackenen Geschlossen-Vertices,
+    // M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h) [· Basis]; Vorzeichen = seite·sign(zf) (leafL −a · leafR +a, hinten
+    // gespiegelt). Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu: fern um
+    // −offen zu, nah auf die Offen-Pose; porta-Tore (gebacken zu, kein offen) drehen absolut. Zeichnet der Flügel die Gestalt
+    // eines anderen, setzt seine Basis sie an ihren Platz (1310-4).
+    _fluegelPose(entry, t, ew, preset, out) {
         const T = THREE;
-        const ew = this._archEntryWorldMatrix(entry, this._torTmpEw || (this._torTmpEw = new T.Matrix4()));
+        const neu = entry._fluegelWinkel;
+        const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+        const gz = AnazhRealm._tuerOffenRad() || 1;
+        const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
         const mA = this._torTmpA || (this._torTmpA = new T.Matrix4());
         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
-        for (const f of rec._fluegel) {
-            const t = f.tuer;
-            // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
-            // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
-            const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
-            const gz = AnazhRealm._tuerOffenRad() || 1;
-            const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
-            // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
-            mA.makeRotationY(winkel);
-            mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
-            mB.multiply(mA); // T(h)·R
-            mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
-            mB.multiply(mA); // T(h)·R·T(−h)
-            // EntryWorld enthält bereits die Welt-Skala/Rotation des Eintrags;
-            // die Flügel-Leaves tragen localMatrix = WorldScale — die steckt in
-            // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
-            mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
-            mA.multiply(mB);
-            // DIE FLÜGEL-INSTANZ (1310-4): zeichnet der Flügel die Gestalt eines anderen, setzt seine Basis sie an ihren Platz
-            if (t.basis) mA.multiply(t.basis);
-            if (!(f.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): der nächste Slot-Wechsel sammelt neu
-            f.g.mesh.setMatrixAt(f.ref.slot, mA);
-            f.g.mesh.instanceMatrix.needsUpdate = true;
-            f.g.mesh.boundingSphere = null;
-        }
+        mA.makeRotationY(winkel);
+        mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
+        mB.multiply(mA); // T(h)·R
+        mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
+        mB.multiply(mA); // T(h)·R·T(−h)
+        out.multiplyMatrices(ew, this._foundryWorldScaleMatrix(preset));
+        out.multiply(mB);
+        if (t.basis) out.multiply(t.basis);
+        return out;
     }
 
     // ═══ KAMIN-RAUCH ═══
@@ -1076,7 +1079,6 @@ class AnazhRealm_siedlung_ort {
             const rec =
                 e._tuerRec ||
                 (e._tuerRec = {
-                    tor: { gestalt: this._foundryPresetForEntry(e) || "haus" },
                     _fluegelStart: gz, // Start = gebackene Offen-Pose (weiches Erst-Schliessen)
                 });
             this._tickTorFluegel(rec, e, act);
