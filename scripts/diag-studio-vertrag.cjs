@@ -1447,15 +1447,15 @@ function validateManifest(m) {
     // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
     // einstufig (validateManifest oben; hier der Selbsttest).
     {
-        const pg = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die EINE Pipe der Brücke (B3e: __meshesDerGruppe)
+        const pg = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // __replyBuildAsset lebt in der Brücke (K42)
         const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
         const absenz = (pgS, pcS) => {
             const v = [];
-            const a = pgS.indexOf("function __meshesDerGruppe(");
+            const a = pgS.indexOf("function __replyBuildAsset(");
             const body = a >= 0 ? pgS.slice(a, pgS.indexOf("\n    }\n", a)) : "";
             const zweig = body.indexOf("if (isZweitKern) {");
             const ruf = [...body.matchAll(/budgetErzwingen\(/g)].map((x) => x.index);
-            if (!body) v.push("__meshesDerGruppe nicht gefunden");
+            if (!body) v.push("__replyBuildAsset nicht gefunden");
             else if (ruf.some((i) => zweig < 0 || i < zweig || i > body.indexOf("\n            }\n", zweig)))
                 v.push(
                     "budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (die Pflanzen-Zeile ist der Bau-Regler)"

@@ -1,14 +1,25 @@
-// diag-nervensystem-fachwerk.cjs — DER ε-BEWEIS DER HAUS-DOMAENE (W-A5a; Nervensystem-Plan IV ε): fachwerk-core
-// (__fachwerkCore) dockt NUR ueber §ε an (Manifest-Zeile N2 + KIND_POLICY-Zeile + Donor-Blueprint N1 + fx.place-Daten N5.7,
-// mode "settlement", deliberater Kanal), der Stamm ohne Logik-Zweig (M8); dazu die MEHR-STUFEN-PROBE (kindStages [0,1,2,3],
-// 3 = NUR-WURF: der Flatten-Chokepoint klemmt die Distanz-Wahl auf die DEKLARIERTEN Stufen, nie fail-closed auf [0]):
-//   S (Node): Manifest traegt fachwerk · Absenzen: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8), die
-//     Donor-Zeile haus_basis traegt kein portalMeta/roleManual. --selftest streicht die Manifest-Zeile.
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-Rezepte (s.W == Kern) · kindStages.haus ==
-//     [0,1,2,3] gemerged · haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon) · die haus_-Regel loest auf · Place
-//     liefert "settlement" (deliberater Kanal, keine haus_-Wald-Nische) · _foundryRequest("alemannisch",7,L) liefert Meshes
-//     auf ALLEN vier Stufen (die 3 mit __fern) · der Flatten-Chokepoint bedient 1/2 mit |1|/|2|, faltet 5 auf 2 · der Wurf
-//     reist mit der Stufe 2 (B3e).
+// diag-nervensystem-fachwerk.cjs — DER ε-BEWEIS DER HAUS-DOMAENE (Katalysator-Bogen
+// W-A5a; Nervensystem-Plan TEIL IV Phase ε). Die Haus-Domaene (fachwerk-core.js,
+// __fachwerkCore) dockt NUR ueber die Checkliste §ε an: Manifest-Zeile (N2) +
+// KIND_POLICY-Zeile + Donor-Blueprint (N1, beides DATEN) + fx.place als Rezept-Daten
+// (N5.7, mode "settlement" + siteTag "haus" — der deliberate Kanal, Worldgen streut nicht) —
+// der Stamm bekam KEINEN Logik-Zweig (M8). Gestraffte Schwester zu
+// diag-nervensystem-schmiede.cjs, PLUS die MEHR-STUFEN-PROBE (die erste Domaene mit
+// kindStages [0,1,2,3] (3 = NUR-WURF, S3 haus) ausserhalb der Baeume — der Flatten-Chokepoint muss die
+// Distanz-Wahl auf die DEKLARIERTEN Stufen klemmen statt fail-closed auf [0]):
+//   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · Absenzen: der Auto-Register-
+//     Chokepoint vergleicht keinen kind-String (M8), die Donor-Zeile haus_basis traegt kein
+//     portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH gefallen). --selftest streicht die Manifest-Zeile.
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
+//     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
+//     [0,1,2,3] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
+//     haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon, KEIN
+//     _grownSpecies) · die generische haus_-Regel loest auf · die Place-
+//     Aufloesung liefert mode "settlement", der Dispatch benennt den deliberaten Kanal (kein Worldgen-Streuer) + keine
+//     haus_-Wald-Nische · _foundryRequest("alemannisch",7,L) liefert Meshes
+//     end-to-end fuer ALLE vier Stufen (die Stufe 3 mit Beipack __fern; der Wurf-Ruf nennt sie beim Namen) (Mesh-Zahl je Stufe geloggt) · der
+//     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
+//     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -21,8 +32,6 @@ const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
-const WURF_MIT = "F (B3e): der Wurf reist mit der Stufe 2 (kein Auftrag der Stufe 3, danach im Cache)";
-const wurfMit = (w) => !!w && Array.isArray(w.einzeln) && w.einzeln.length === 0 && w.cache === true;
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
@@ -84,7 +93,6 @@ function ksRow(src, name) {
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "fachwerk"));
         const s1 = staticLaws(anazhSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: fachwerk-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        check("Selbst-Test 2: ein Auftrag der Stufe 3 -> B3e feuert", !wurfMit({ einzeln: ["georgian|3"], cache: true }));
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -216,9 +224,13 @@ function ksRow(src, name) {
         } catch (e) {
             res.e.err = (e && e.message) || String(e);
         }
-        // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT; ohne den N7.5-Merge klemmte ein
-        // Rezept fail-closed auf [0]). L1 ist eine echte Studio-Stufe (V18.500): Wahl 2 fragt |2|, Wahl 1 die ECHTE |1| (kein
-        // Mapping, kein [0]-Kollaps), Wahl 5 faltet auf |2|, Wahl 0 bleibt |0| (die Stufen-Existenz beweist gate:trias N/B).
+        // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
+        // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
+        // FLÄCHEN-STUFE (V18.500 — der Test wandert mit dem Entscheid): L1 ist eine echte
+        // Studio-Stufe (17–33 % von L0), der Host-Umweg lodServe {1:2} ist gefallen. Also:
+        // Wahl 2 fragt |2| frisch an; Wahl 1 fragt die ECHTE Stufe |1| frisch an (kein
+        // Mapping, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|; Wahl 0
+        // bleibt die feine |0| (die Stufen-Existenz [0,1,2] beweist gate:trias N/B).
         try {
             if (!f.requested) f.requested = new Set();
             const probe = (preset, lodWahl) => {
@@ -233,17 +245,6 @@ function ksRow(src, name) {
             res.f.k0 = probe("japanisch", 0);
             // der Wurf- und Fern-Ruf (S3 haus): eine NUR-WURF-Stufe beim Namen baut genau sie, nie die Klammer
             res.f.k3 = probe("tudor", 3);
-            // B3e (Konsum): die Stufe 2 trägt ihren Wurf — kein Auftrag der Stufe 3, nach ihrer Ankunft liegt er im Cache
-            const auf = [];
-            r._foundryRequest = function (p, v, l, ...a) {
-                auf.push(p + "|" + l);
-                return AnazhRealm.prototype._foundryRequest.call(this, p, v, l, ...a);
-            };
-            const kW = probe("georgian", 2);
-            if (kW && f.zuege && f.zuege.get(kW)) await f.zuege.get(kW);
-            delete r._foundryRequest;
-            const g3 = kW ? f.cache.get(kW.split("|").map((x, i) => (i === 2 ? "3" : x)).join("|")) : undefined;
-            res.f.wurf = { einzeln: auf.filter((a) => a === "georgian|3"), cache: !!(g3 && g3._fern) };
         } catch (e) {
             res.f.err = (e && e.message) || String(e);
         }
@@ -368,7 +369,6 @@ function ksRow(src, name) {
         /^[^|]*\|[^|]*\|3(\||$)/.test(out.f.k3 || ""),
         String(out.f.k3)
     );
-    check(WURF_MIT, wurfMit(out.f.wurf), JSON.stringify(out.f.wurf || out.f.err));
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {

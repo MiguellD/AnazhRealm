@@ -942,104 +942,6 @@ const foundryKanal = (() => {
         }
         return { teile, farbe: fn ? [farbe[0] / fn, farbe[1] / fn, farbe[2] / fn] : null };
     }
-    // DIE EINE PIPE einer gebauten Gruppe → die Meshes der Antwort (Extraktion · Räder · Budget-Ausgang · Beipacks): die
-    // Gestalt des Auftrags und — B3e, fachwerk `wurfMit` — der Wurf, der mit ihr reist (dieselbe Pipe wie sein eigener Auftrag).
-    function __meshesDerGruppe(g, lod, isZweitKern, zweit, presetId) {
-        let meshes = [];
-        let budgetBruch = null;
-        let budgetBericht = null;
-        g.updateMatrixWorld(true);
-        // WELLE L (Q13 F-D8, additiv, must-ignore): DAS RAD REIST EINMAL. Ein Fahrzeug trägt seine Naben als Daten
-        // (vehicle-core buildWheels: userData.rad {ecke, front, os}, userData.radDreht am drehenden Teil). Die Teile
-        // der Ecke 0 reisen nabenrelativ gebacken mit `rad` = {dreht, raeder}: raeder nennt jede Ecke (Naben-Lage
-        // im Vorlagen-Raum, lenkt, Drehung π für die Gegenseite — die Felge der Gegenseite ist die gespiegelte
-        // Ecke 0 um π gedreht). Die übrigen Ecken reisen nicht: die Welt setzt das eine Rad viermal als Instanz.
-        // Ein Kern ohne Naben bleibt byte-alt.
-        const __naben = [];
-        g.traverse((o) => {
-            if (o.userData && o.userData.rad && typeof o.userData.rad.ecke === "number") __naben.push(o);
-        });
-        const __nabe0 = __naben.find((h) => h.userData.rad.ecke === 0) || null;
-        let __nabeInv = null;
-        let __raeder = null;
-        if (__nabe0) {
-            __nabeInv = new THREE.Matrix4().copy(__nabe0.matrixWorld).invert();
-            const os0 = __nabe0.userData.rad.os;
-            __raeder = __naben.map((h) => {
-                const p = new THREE.Vector3().setFromMatrixPosition(h.matrixWorld);
-                return { hx: p.x, hy: p.y, hz: p.z, front: !!h.userData.rad.front, dreh: h.userData.rad.os === os0 ? 0 : Math.PI };
-            });
-        }
-        g.traverse((o) => {
-            if (o.isMesh) {
-                let nabe = null;
-                let dreht = false;
-                for (let a = o.parent; a && __nabe0; a = a.parent) {
-                    if (a.userData && a.userData.radDreht) dreht = true;
-                    if (a.userData && a.userData.rad) {
-                        nabe = a;
-                        break;
-                    }
-                }
-                if (nabe) {
-                    if (nabe !== __nabe0) return; // dieselbe Gestalt — die Welt setzt sie als Instanz
-                    const mr = __extractAssetMesh(o, isZweitKern, __nabeInv);
-                    if (mr) {
-                        mr.rad = { dreht: dreht, raeder: __raeder };
-                        meshes.push(mr);
-                    }
-                    return;
-                }
-                const m = __extractAssetMesh(o, isZweitKern);
-                if (m) meshes.push(m);
-            }
-        });
-        // DIE EINE PIPE: der Gelenk-Baum reist als Pseudo-Eintrag im selben
-        // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
-        // IDB trägt ihn gratis mit).
-        if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
-        // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
-        g.traverse((o) => {
-            if (o.isMesh) {
-                if (o.geometry) o.geometry.dispose();
-            }
-        });
-        // DAS BUDGET-GESETZ AM AUSGANG (Studio-Vertrag B2c, W8): jede Zweit-Kern-Gestalt verlaesst das Studio
-        // auf ihrer Budget-Zeile (PORTAL_RENDER_CONFIG.lod.budget[kind][stufe] des EIGENEN Kerns) — die Stoffe
-        // falten je Bindungs-Klasse auf `draws` (phyto-core `budgetErzwingen`; innerhalb der Zeile byte-gleich).
-        // Ein Bruch (Zeile fehlt, Stufe ueber tris/draws) reist als `budgetBruch` mit und schreit hier; die Wand
-        // (gate:asset-contract) baut jede Stufe und wird rot. Die Pflanzen tragen ihr Budget im Bau selbst.
-        if (isZweitKern) {
-            const PC = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
-            const pk = zweit.kern.PRESETS[presetId];
-            const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, lod);
-            const res = PC.budgetErzwingen(meshes, bz && bz.zeile);
-            meshes = res.meshes;
-            budgetBericht = {
-                stufe: bz ? bz.stufe : null,
-                vorher: res.bericht.vorher,
-                nachher: res.bericht.nachher,
-                faltungen: res.bericht.faltungen.length,
-            };
-            if (res.bericht.bruch.length) {
-                budgetBruch = res.bericht.bruch;
-                console.error("[budget] " + presetId + " L" + (lod) + ": " + JSON.stringify(budgetBruch));
-            }
-        }
-        // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
-        // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
-        // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
-        // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
-        // kein Teil. Andere Gestalten tragen die Felder nie. Der Baum trägt sein Maß (`__mass`, K20: der Hub des Schafts).
-        for (const __bp of ["__huelle", "__fern", "__mass"])
-            if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
-                meshes.push({ kind: __bp, huelle: g.userData[__bp] });
-        // DIE KRONE REIST MIT (D10, Beipack `__krone`, must-ignore): jeder Baum und Strauch trägt die Krone, die er
-        // zeichnet — der Spiegel des Wassers liest sie (das Kronen-Buch des Wirts), nie eine Ableitung im Haupt-Faden.
-        if (!isZweitKern && PRESETS[presetId] && /^(tree|shrub)$/.test(PRESETS[presetId].kind))
-            meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
-        return { meshes, bericht: budgetBericht, bruch: budgetBruch };
-    }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
@@ -1096,18 +998,96 @@ const foundryKanal = (() => {
                     ? zweitBaecker(zweit.kern, msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
                     : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
                 : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
-            const __aus = __meshesDerGruppe(g, msg.lod | 0, isZweitKern, zweit, msg.presetId);
-            meshes = __aus.meshes;
-            budgetBericht = __aus.bericht;
-            budgetBruch = __aus.bruch;
-            // DER WURF REIST MIT (B3e, fachwerk `wurfMit`): die Stufe 3 aus dem B der gezeigten Stufe — ihre Meshes und ihre
-            // Fernform tragen `werfer: true`, der Wirt legt sie unter den Schlüssel der Stufe 3 (`_foundryBuildGroup`).
-            const __w = g.userData && g.userData.__werfer;
-            if (__w) {
-                const __aw = __meshesDerGruppe(__w, __w.userData.lod | 0, isZweitKern, zweit, msg.presetId);
-                for (const m of __aw.meshes) meshes.push(Object.assign(m, { werfer: true }));
-                if (__aw.bruch) budgetBruch = (budgetBruch || []).concat(__aw.bruch);
+            g.updateMatrixWorld(true);
+            // WELLE L (Q13 F-D8, additiv, must-ignore): DAS RAD REIST EINMAL. Ein Fahrzeug trägt seine Naben als Daten
+            // (vehicle-core buildWheels: userData.rad {ecke, front, os}, userData.radDreht am drehenden Teil). Die Teile
+            // der Ecke 0 reisen nabenrelativ gebacken mit `rad` = {dreht, raeder}: raeder nennt jede Ecke (Naben-Lage
+            // im Vorlagen-Raum, lenkt, Drehung π für die Gegenseite — die Felge der Gegenseite ist die gespiegelte
+            // Ecke 0 um π gedreht). Die übrigen Ecken reisen nicht: die Welt setzt das eine Rad viermal als Instanz.
+            // Ein Kern ohne Naben bleibt byte-alt.
+            const __naben = [];
+            g.traverse((o) => {
+                if (o.userData && o.userData.rad && typeof o.userData.rad.ecke === "number") __naben.push(o);
+            });
+            const __nabe0 = __naben.find((h) => h.userData.rad.ecke === 0) || null;
+            let __nabeInv = null;
+            let __raeder = null;
+            if (__nabe0) {
+                __nabeInv = new THREE.Matrix4().copy(__nabe0.matrixWorld).invert();
+                const os0 = __nabe0.userData.rad.os;
+                __raeder = __naben.map((h) => {
+                    const p = new THREE.Vector3().setFromMatrixPosition(h.matrixWorld);
+                    return { hx: p.x, hy: p.y, hz: p.z, front: !!h.userData.rad.front, dreh: h.userData.rad.os === os0 ? 0 : Math.PI };
+                });
             }
+            g.traverse((o) => {
+                if (o.isMesh) {
+                    let nabe = null;
+                    let dreht = false;
+                    for (let a = o.parent; a && __nabe0; a = a.parent) {
+                        if (a.userData && a.userData.radDreht) dreht = true;
+                        if (a.userData && a.userData.rad) {
+                            nabe = a;
+                            break;
+                        }
+                    }
+                    if (nabe) {
+                        if (nabe !== __nabe0) return; // dieselbe Gestalt — die Welt setzt sie als Instanz
+                        const mr = __extractAssetMesh(o, isZweitKern, __nabeInv);
+                        if (mr) {
+                            mr.rad = { dreht: dreht, raeder: __raeder };
+                            meshes.push(mr);
+                        }
+                        return;
+                    }
+                    const m = __extractAssetMesh(o, isZweitKern);
+                    if (m) meshes.push(m);
+                }
+            });
+            // DIE EINE PIPE: der Gelenk-Baum reist als Pseudo-Eintrag im selben
+            // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
+            // IDB trägt ihn gratis mit).
+            if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
+            // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
+            g.traverse((o) => {
+                if (o.isMesh) {
+                    if (o.geometry) o.geometry.dispose();
+                }
+            });
+            // DAS BUDGET-GESETZ AM AUSGANG (Studio-Vertrag B2c, W8): jede Zweit-Kern-Gestalt verlaesst das Studio
+            // auf ihrer Budget-Zeile (PORTAL_RENDER_CONFIG.lod.budget[kind][stufe] des EIGENEN Kerns) — die Stoffe
+            // falten je Bindungs-Klasse auf `draws` (phyto-core `budgetErzwingen`; innerhalb der Zeile byte-gleich).
+            // Ein Bruch (Zeile fehlt, Stufe ueber tris/draws) reist als `budgetBruch` mit und schreit hier; die Wand
+            // (gate:asset-contract) baut jede Stufe und wird rot. Die Pflanzen tragen ihr Budget im Bau selbst.
+            if (isZweitKern) {
+                const PC = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
+                const pk = zweit.kern.PRESETS[msg.presetId];
+                const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, msg.lod | 0);
+                const res = PC.budgetErzwingen(meshes, bz && bz.zeile);
+                meshes = res.meshes;
+                budgetBericht = {
+                    stufe: bz ? bz.stufe : null,
+                    vorher: res.bericht.vorher,
+                    nachher: res.bericht.nachher,
+                    faltungen: res.bericht.faltungen.length,
+                };
+                if (res.bericht.bruch.length) {
+                    budgetBruch = res.bericht.bruch;
+                    console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
+                }
+            }
+            // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
+            // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
+            // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
+            // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
+            // kein Teil. Andere Gestalten tragen die Felder nie. Der Baum trägt sein Maß (`__mass`, K20: der Hub des Schafts).
+            for (const __bp of ["__huelle", "__fern", "__mass"])
+                if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
+                    meshes.push({ kind: __bp, huelle: g.userData[__bp] });
+            // DIE KRONE REIST MIT (D10, Beipack `__krone`, must-ignore): jeder Baum und Strauch trägt die Krone, die er
+            // zeichnet — der Spiegel des Wassers liest sie (das Kronen-Buch des Wirts), nie eine Ableitung im Haupt-Faden.
+            if (!isZweitKern && PRESETS[msg.presetId] && /^(tree|shrub)$/.test(PRESETS[msg.presetId].kind))
+                meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
         } catch (e) {
             meshes = [];
             try {
