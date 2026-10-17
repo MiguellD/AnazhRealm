@@ -18,12 +18,10 @@
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -31,47 +29,28 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-// Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
-const stripComments = stammLib.ohneKommentare;
-// Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
-
-// ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc) {
-    const anazhNC = stripComments(anazhSrc);
-    const out = [];
-    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — die Wirkung der Policy beweist Teil D.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
-    out.push([
-        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8 — s. a. gate:constitution N1)",
-        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
-    ]);
+/// ===== TEIL S: die statischen Gesetze — die Absenz über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
+// Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
+// constitution N1 wörtlich; die Wirkung der Policy beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
+function staticLaws(q) {
     // S6 (Absenz): die Donor-Zeile tor_basis trägt keinen Blueprint-Namen und kein portalMeta; Teile und Klon prüft Teil D.
-    const torRow = ksRow(anazhNC, "tor_basis");
-    out.push([
-        "S6: die Donor-SUBSTANZ tor_basis trägt kein portalMeta — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
-        !!torRow && !/name:\s*"tor_basis"/.test(torRow) && !/portalMeta/.test(torRow),
-    ]);
-    return out;
-}
-
-// ERFINDER-WELLE — die Zeile der KIND_SUBSTANCE: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher.
-function ksRow(src, name) {
-    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
-    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
-    return (tafel && stammLib.rumpf(tafel, zeile, { zitate: true })) || "";
+    return [
+        [
+            "S6: die Donor-SUBSTANZ tor_basis trägt kein portalMeta — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
+            stammLib.fehlt(/\n {4}tor_basis: [^{\n]*\{/, /name:\s*"tor_basis"|portalMeta/, q),
+            stammLib.fehlt.wo,
+        ],
+    ];
 }
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
         check("Selbst-Test 4: eine abgeschriebene Stufen-Liste faellt beim Namen (kern-stufen)", kernStufen.selbsttest());
+        // V6: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
+        const s6 = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}tor_basis: \{)/, "$1\n        portalMeta: {},"))[0];
+        check("Selbst-Test 6: portalMeta in tor_basis -> S6 feuert", !s6[1], s6[2]);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -81,7 +60,7 @@ function ksRow(src, name) {
     }
 
     console.log("=== ε-BEWEIS PORTA — TEIL S: die statischen Absenzen (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

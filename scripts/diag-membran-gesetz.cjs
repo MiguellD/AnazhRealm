@@ -14,7 +14,7 @@
 //
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";
-const fs = require("fs");
+const stammLib = require("./lib/stamm.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -159,15 +159,14 @@ for (const fall of faelle) {
 }
 check(`Ableitungs-Wand: membranUniforms == Alt-Formeln (${faelle.length} Fälle)`, abl.length === 0, abl.slice(0, 3).join(" · "));
 
-// ── Wand 3: die Alt-Literale sind raus (den Konsum der Welt beweist gate:portal-membran am Verhalten) ──
-const shell = fs.readFileSync(path.join(root, "worlds/portale/porta.js"), "utf8");
-check("Shell: Wellenzahl 13.8 steht nicht mehr roh im Text", !/13\.8/.test(shell));
-check("Shell: Puls 1.25 nur noch als Gesetz", !/Math\.sin\(t\s*\*\s*1\.25\)/.test(shell));
+// ── Wand 3: die Alt-Literale sind raus, über den EINEN Absenz-Helfer (den Konsum der Welt und das Laden des Kerns
+// beweist gate:portal-membran am Verhalten, den ?v=-Buster gate:charakter-achsen V) ──
+const shell = (re) => [stammLib.fehlt(null, re, { datei: "worlds/portale/porta.js" }), stammLib.fehlt.wo];
+check("Shell: Wellenzahl 13.8 steht nicht mehr roh im Text", ...shell(/13\.8/));
+check("Shell: Puls 1.25 nur noch als Gesetz", ...shell(/Math\.sin\(t\s*\*\s*1\.25\)/));
 // DER NEBEL FIEL (D8): Kasten, Gesetz und Regler hält gate:altlasten beim Namen
 check("porta-core: membranUniforms trägt kein fog", !("fog" in PC.membranUniforms(PC.gateParams(PC.PRESETS.kathedrale))));
-check("Shell: buildFog ist fort", !/buildFog|fogMat/.test(shell));
-const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
-check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
+check("Shell: buildFog ist fort", ...shell(/buildFog|fogMat/));
 
 // ── Selbst-Test: eine injizierte Drift MUSS rot erkannt werden ──
 const kaputt = JSON.parse(JSON.stringify(FROZEN));

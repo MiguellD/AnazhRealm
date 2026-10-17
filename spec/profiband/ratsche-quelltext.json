@@ -97,15 +97,6 @@
         }
     },
     "ratsche": {
-        "scripts/diag-charakter-achsen.cjs": {
-            "grund": "Präsenz: index.html lädt schmiede-core und vehicle-core mit ?v=",
-            "datei": 1
-        },
-        "scripts/diag-fahr-leben.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2,
-            "datei": 2
-        },
         "scripts/diag-fluss.cjs": {
             "grund": "Absenz- und Struktur-Wand am Stamm, phyto-core im vm (S2b-Besitz)",
             "stamm": 1,
@@ -119,43 +110,6 @@
         "scripts/diag-foundry-impostor.cjs": {
             "grund": "Präsenz: zählt Direkt-Abtastungen im Stoff-Text (S2b-Besitz)",
             "seite": 1
-        },
-        "scripts/diag-freie-slots.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-kampf-gefuehl.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "datei": 1
-        },
-        "scripts/diag-klang-zensus.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2
-        },
-        "scripts/diag-membran-gesetz.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "datei": 2
-        },
-        "scripts/diag-nervensystem-fachwerk.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-nervensystem-porta.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-nervensystem-schmiede.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-nervensystem-vehicle.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1,
-            "datei": 1
-        },
-        "scripts/diag-nervensystem.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "datei": 1
         },
         "scripts/diag-pipeline-constitution.cjs": {
             "grund": "Absenz-Wand am Stamm-Text, 20 Absenzen (S2b-Besitz)",

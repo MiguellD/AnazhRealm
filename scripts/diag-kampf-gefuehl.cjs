@@ -74,10 +74,7 @@
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-
-const root = path.resolve(__dirname, "..");
+const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -1598,8 +1595,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
         );
-        const shellSrc = fs.readFileSync(path.join(root, "worlds/schmiede/schmiede.js"), "utf8");
-        const shellPf = { eigenerPfeil: /function buildPfeil\s*\(/.test(shellSrc) };
+        const shellPf = { eigenerPfeil: !stammLib.fehlt(null, /function buildPfeil\s*\(/, { datei: "worlds/schmiede/schmiede.js" }) };
         console.log(
             `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
         );

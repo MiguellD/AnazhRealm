@@ -14,12 +14,9 @@
 //     (Die LODs fließen konstruktiv: buildInstance(id, seed, 0/1/2) ist die Studio-eigene Stufung.)
 //   node scripts/diag-nervensystem.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const { ohneKommentare } = require("./lib/stamm.cjs");
-const fs = require("fs");
-const path = require("path");
+const { fehlt } = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4406);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -30,8 +27,11 @@ function check(name, ok, detail) {
 
 (async () => {
     // TEIL A: die Platzierungs-Quelle beweisen B und C am lebenden Draht; hier wacht nur die Absenz des alten Wald-Literals.
-    const phytoCode = ohneKommentare(fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8"));
-    check("phytogenesis: kein lokales SCALE-Literal", !/const SCALE = \{\s*gras: 0\.24/.test(phytoCode));
+    check(
+        "phytogenesis: kein lokales SCALE-Literal",
+        fehlt(null, /const SCALE = \{\s*gras: 0\.24/, { datei: "worlds/terrain/phytogenesis.js" }),
+        fehlt.wo
+    );
 
     console.log("\n=== TEIL B-D: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

@@ -595,33 +595,18 @@ const WIRT_LESER = {
 
 // (G) DIE STAMM-KLASSE, statisch: jede Stelle im Stamm, die eine Quelle baut (createOscillator · createBufferSource ·
 // createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
-// beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht. Die Methode einer Zeile ist
-// das Glied der Klasse, in dem sie steht (am AST, stammLib.glieder — ein Kopf-Muster gab umbrochene Köpfe der Methode davor).
+// beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht; der Helfer leert die Leiber der
+// Wirt-Leser an ihrer Definition (ein toter Wirt-Leser wirft) und nennt den Täter mit Datei und Zeile.
 // Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
+const QUELL_BAU = /\.create(Oscillator|BufferSource|ConstantSource)\(/;
 const STAMM_WURZEL =
     UEBER && (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR)))
         ? UEBER
         : root;
-function stammQuellen(src) {
-    const rot = [];
-    let stellen = 0;
-    const zeilen = src.split("\n");
-    const gl = stammLib.glieder(src);
-    for (let i = 0, o = 0; i < zeilen.length; o += zeilen[i].length + 1, i++) {
-        const z = zeilen[i];
-        const g = stammLib.gliedAn(gl, o + z.search(/\S|$/));
-        const methode = g ? g.name : null;
-        const t = z.trimStart();
-        if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue;
-        const m = /\.create(Oscillator|BufferSource|ConstantSource)\(/.exec(z);
-        if (!m) continue;
-        const kommentar = /(^|\s)\/\//.exec(z);
-        if (kommentar && kommentar.index < m.index) continue;
-        stellen++;
-        if (!WIRT_LESER[methode])
-            rot.push(`G Stamm: ${methode || "(außerhalb einer Methode)"} baut ${m[1]} ohne Gesetz (${stammLib.ort(STAMM_WURZEL, i + 1)})`);
-    }
-    return { rot, stellen };
+// die EINE Absenz über den Helfer: außerhalb der Wirt-Leser baut keine Stelle eine Quelle; `q` die Wandlung des Vor-Stands
+function stammQuellen(q) {
+    const ok = stammLib.fehlt({ ausser: Object.keys(WIRT_LESER) }, QUELL_BAU, { wurzel: STAMM_WURZEL, wandel: q });
+    return { rot: ok ? [] : [`G Stamm: ${stammLib.fehlt.wo} baut eine Klang-Quelle ohne Gesetz (außerhalb der Wirt-Leser)`] };
 }
 // SOLL je Ort (dB am Welt-Bus, Lage bei mittlerer Böe; der Master legt −9 dB darauf, die Musik liegt bei
 // −27 dBFS — die Welt trägt 10–18 dB darunter).
@@ -1455,11 +1440,11 @@ function drucke(zeilen, offline, kostenErg, lab) {
         const { rot, zeilen } = urteile(daten, offline, lab, ereig, phasen, spitzen);
         for (const w of kostenErg.wachsen) rot.push(`K: ${w} wächst mit der Welt`);
         // (G) die Stamm-Klasse, statisch: jede Quell-Stelle des Stamms in einem Wirt-Leser.
-        const stamm = stammQuellen(stammLib.text(STAMM_WURZEL));
+        const stamm = stammQuellen();
         for (const t of stamm.rot) rot.push(t);
         ergebnis.stamm = stamm;
         console.log(
-            `\n── STAMM-KLASSE (statisch): ${stamm.stellen} Quell-Stellen im Stamm, ${stamm.rot.length} ohne Gesetz (Wirt-Leser: ${Object.keys(WIRT_LESER).join(" · ")})`
+            `\n── STAMM-KLASSE (statisch): ${stamm.rot.length ? "eine Quell-Stelle ohne Gesetz" : "jede Quell-Stelle des Stamms in einem Wirt-Leser"} (Wirt-Leser: ${Object.keys(WIRT_LESER).join(" · ")})`
         );
         drucke(zeilen, offline, kostenErg, lab);
         // Die Summe der Welt über die Tour (Anreise + Orte + Kosten-Takte + Ereignisse).
@@ -1606,14 +1591,12 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
             // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
             // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
-            const s9Text = stammLib.text(STAMM_WURZEL);
-            const s9Nach = stammLib.glieder(s9Text)[0].ende; // hinter das erste Glied der Klasse (die Methode am AST)
-            const s9 = stammQuellen(
-                s9Text.slice(0, s9Nach) +
-                    "\n    zwillingPing(\n        tags\n    ) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }" +
-                    s9Text.slice(s9Nach)
-            );
-            if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))
+            const s9 = stammQuellen((t) => {
+                const nach = stammLib.glieder(t)[0].ende; // hinter das erste Glied der Klasse (die Methode am AST)
+                const ping = "\n    zwillingPing(\n        tags\n    ) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }";
+                return t.slice(0, nach) + ping + t.slice(nach);
+            });
+            if (!s9.rot.some((t) => /^G Stamm: Zeile \d+ `\.createOscillator\(` baut eine Klang-Quelle ohne Gesetz/.test(t)))
                 fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");
             // S10: ein Wald-Ort, an dem die Karte Wald sagt, aber kein Baum steht — der Bestand nennt es.
             if (daten.wald && daten.wiese) {

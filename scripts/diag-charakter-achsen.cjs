@@ -12,15 +12,16 @@
 //   K (Kultur): die KULTUREN-Tabelle ist exportiert, jede Zeile trägt den
 //     fx-Dial-Vektor (die vehicle-Merge-Ordnung konsumiert ov seit je).
 //   G (Genres): klang-core exportiert >= 20 Genre-Presets (kind "klang").
-//   V (Lade-Karte): beide Kerne laden main-seitig (index.html, ?v=-Buster). Die
-//     Prägung in der Welt beweist gate:praegung-welt am Verhalten; hier liest
-//     keine Probe Quelltext (D3c).
+//   V (Lade-Karte): index.html lädt kein Spiel-Script ohne ?v=-Buster (Lehre 10,
+//     eine Absenz über den EINEN Helfer stammLib.fehlt; vendor/ ausgenommen). Dass
+//     die Kerne main-seitig laden, beweist die Prägung in der Welt (gate:praegung-
+//     welt, gate:portal-membran) am Verhalten; keine Probe liest Quelltext (D3c/D3d).
 //
 //   node scripts/diag-charakter-achsen.cjs
 "use strict";
 const crypto = require("crypto");
-const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -84,9 +85,11 @@ const GENRES = Object.keys(KC.PRESETS || {});
 check(`G: klang-core exportiert die Genre-Presets (${GENRES.length})`, GENRES.length >= 20, GENRES.slice(0, 6).join(" · ") + " …");
 
 // ── V: die Lade-Karte der Welt ──
-const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
-check("V: schmiede-core + vehicle-core laden main-seitig (?v=-Buster)",
-    /schmiede-core\.js\?v=/.test(idx) && /vehicle-core\.js\?v=/.test(idx));
+check(
+    "V: index.html lädt kein Spiel-Script ohne ?v=-Buster (vendor/ ausgenommen)",
+    stammLib.fehlt(null, /src="(?!vendor\/)[^"?]+\.js"/, { datei: "index.html" }),
+    stammLib.fehlt.wo
+);
 
 // ── Selbst-Test: eine kaputte Tradition MUSS rot erkannt werden ──
 const kaputtGleich = fp(SC.buildInstance("langschwert", 7, 0, { __tradition: "Nihon" })) === frank;
