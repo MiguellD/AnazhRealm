@@ -1289,7 +1289,7 @@ class AnazhRealm_dirigent_takt {
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
             // der Versatz des Laubs (A3, `_laubVersatz`) gehört der Folge der zeitlichen Auflösung (ihr `setViewOffset`, A3b);
             // ohne die Auflösung 0
-            if (_lu.uLaubVersatz && !this.state.traaNode) _lu.uLaubVersatz.value.set(0, 0);
+            if (_lu.uLaubVersatz && !this.state.traaNode) _lu.uLaubVersatz.value.set(0, 0, 0);
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;

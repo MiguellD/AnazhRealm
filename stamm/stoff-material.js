@@ -2003,9 +2003,10 @@ class AnazhRealm_stoff_material {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): der Versatz der Deckungs-Probe dieses Frames in Eingangs-Pixeln — die
-            // Halton-Achsen 5 und 7 am Frame der Geschichte, ±LAUB_VERSATZ, ohne zeitliche Auflösung 0 (`_zeitAufloesung`)
-            uLaubVersatz: _T.uniform(new THREE.Vector2(0, 0)),
+            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): xy die Phase der Deckungs-Probe dieses Frames — die Halton-Achsen 5
+            // und 7 am Frame der Geschichte (`_zeitAufloesung`), je Pixel gedreht —, z die Weite in Eingangs-Pixeln
+            // (LAUB_VERSATZ), ohne zeitliche Auflösung 0
+            uLaubVersatz: _T.uniform(new THREE.Vector3(0, 0, 0)),
             uLodD0: _T.uniform(_D.thresh01),
             uLodD1: _T.uniform(_D.thresh12),
             uLodFade: _T.uniform(_D.fade),

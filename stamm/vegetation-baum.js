@@ -194,10 +194,20 @@ class AnazhRealm_vegetation_baum {
     // (zweiton 49–224 px; die Varianz-Klemme der Auflösung dämpfte es — ohne sie 251–724 px); die um ½ gröbere Stufe schloss
     // es, schloss aber jede Lücke unter zwei Pixeln (laub-kante 0,212 → 0,222). Ohne zeitliche Auflösung (Holz kienspan) und in
     // der Kaskade (orthographisch, m[3][3] = 1) ist der Versatz 0: der Schatten schneidet still an derselben Schwelle.
+    // JE PIXEL EINE EIGENE PHASE (A3b): die Folge des Frames (`uLaubVersatz.xy`) dreht sich je Pixel um das IGN des
+    // transponierten Gitters (die Stufen-Blende liest das gerade, `_dh`) — je Pixel bleibt sie gleichmäßig, Nachbarn teilen
+    // ihren Restfehler nicht mehr. Bis A3b sah jedes Pixel dieselben 31 Versätze: der Rest nach 32 Frames stand in jeder Phase
+    // des Gitters der Auflösung (3 Eingangs- auf 4 Ausgabe-Pixel) gleich, ein Raster im Takt von 4 Pixeln (Radeon, Tafel-Pose,
+    // Wanduhr: zweiton 0–127 px → 0 in 6 von 7 Schüssen). Eine wandernde Schwelle statt des Versatzes rasterte stärker
+    // (682–2 249 px), eine feinere Stufe der Deckung ebenso (Weite ½: 175 → 490 px).
     _laubVersatz(T, uv, dx, dy) {
         const lu = this._ensureLodUniforms();
         if (!lu || !lu.uLaubVersatz) throw this._blendeBruch("der LOD-Uniform-Satz trägt keinen uLaubVersatz");
-        const v = T.cameraProjectionMatrix.element(3).w.lessThan(0.5).select(lu.uLaubVersatz, T.vec2(0, 0));
+        const fc = T.screenCoordinate;
+        const phase = T.fract(T.float(52.9829189).mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715)))));
+        const lv = lu.uLaubVersatz;
+        const o = T.fract(lv.xy.add(phase)).sub(0.5).mul(lv.z.mul(2));
+        const v = T.cameraProjectionMatrix.element(3).w.lessThan(0.5).select(o, T.vec2(0, 0));
         return uv.add(dx.mul(v.x)).add(dy.mul(v.y));
     }
 

@@ -1020,10 +1020,11 @@ class AnazhRealm_bild_kosten {
                 const v = this.camera.view;
                 this._zitter.value.set(v.offsetX, v.offsetY);
                 // DER VERSATZ DES LAUBS (A3, `_laubVersatz`) gehört zur Folge des Frames: die Halton-Achsen 5 und 7 am Frame
-                // seit dem Beginn der Geschichte (ein Neubeginn steht an, wenn ihre Größe nicht die der Ausgabe ist), ±LAUB_VERSATZ
-                // Eingangs-Pixel. Bis A3b lief er am Index des Zitterns: jedes Ausgabe-Pixel wiegt die Frames nach der Nähe
-                // seines Abtastpunkts (`wNah`), so sah jede Phase des Gitters immer dieselben Versätze — ein Raster im Takt des
-                // Gitters (Radeon, Tafel-Pose, 256 Frames ohne Klemme: zweiton locker 58 135 → 20 452 px).
+                // seit dem Beginn der Geschichte (ein Neubeginn steht an, wenn ihre Größe nicht die der Ausgabe ist) als Phase, die
+                // der Stoff je Pixel dreht (`_laubVersatz`), z die Weite ±LAUB_VERSATZ Eingangs-Pixel. Bis A3b lief er am Index
+                // des Zitterns: jedes Ausgabe-Pixel wiegt die Frames nach der Nähe seines Abtastpunkts (`wNah`), so sah jede Phase
+                // des Gitters immer dieselben Versätze — ein Raster im Takt des Gitters (Radeon, Tafel-Pose, 256 Frames ohne
+                // Klemme: zweiton locker 58 135 → 20 452 px).
                 const lu = realm.state.lodUniforms;
                 if (lu && lu.uLaubVersatz) {
                     const sch = realm._schirm();
@@ -1036,8 +1037,9 @@ class AnazhRealm_bild_kosten {
                         let h = 0;
                         for (let i = this._versatzIndex + 1, f = 1; i > 0; i = Math.floor(i / b))
                             h += (f /= b) * (i % b);
-                        o.setComponent(a, (h - 0.5) * 2 * AnazhRealm.LAUB_VERSATZ);
+                        o.setComponent(a, h);
                     }
+                    o.z = AnazhRealm.LAUB_VERSATZ;
                 }
             }
             setSize(w, h) {
