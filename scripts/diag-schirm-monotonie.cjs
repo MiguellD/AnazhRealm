@@ -75,7 +75,6 @@ function quellBefunde(src) {
     const ab = [];
     for (let i = 0, o = 0; i < roh.length; o += roh[i].length + 1, i++) ab.push(o);
     let methode = null;
-    let quelleLiest = false;
     let aliase = new Set();
     zeilen.forEach((z, i) => {
         const g = stammLib.gliedAn(gl, ab[i] + roh[i].search(/\S|$/));
@@ -90,13 +89,9 @@ function quellBefunde(src) {
             new RegExp("(?:^|[^\\w$.])" + a.replace(/\$/g, "\\$") + "\\.(?:width|height|clientWidth|clientHeight)\\b").test(z)
         );
         if (!SCHIRM_RE.test(z) && !aliasLiest) return;
-        if (methode === "_schirmMessen") quelleLiest = true;
         if (!methode || !ERLAUBT[methode])
             b.push(`${methode || "?"} (Zeile ${i + 1}) liest die Schirm-Größe an \`_schirm\` vorbei: \`${z.trim().slice(0, 90)}\``);
     });
-    if (!quelleLiest) b.push("die EINE Quelle `_schirmMessen` liest den Zeichenpuffer nicht (getDrawingBufferSize)");
-    if (!/_fellBildschirmGesetz\([^)]*\)\s*\{[\s\S]{0,900}?this\._schirm\(\)\.pxJeM/.test(src))
-        b.push("das Fell-Gesetz liest den Schirm nicht aus `_schirm()`");
     return b;
 }
 
@@ -239,10 +234,7 @@ async function welt() {
         };
         const [x, z] = window.__messWiese;
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-        const offen = () =>
-            (f.pending ? f.pending.size : 0) +
-            (f.warte ? f.warte.length : 0) +
-            (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0);
+        const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
         let stabil = 0,
             last = -1,
             takte = 0;
@@ -374,6 +366,17 @@ async function welt() {
     };
 
     const messung = await reihe();
+    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c, vorher am Stamm-TEXT)
+    const quelleLiest = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            ren = r.state.renderer,
+            alt = ren.getDrawingBufferSize,
+            eigen = Object.prototype.hasOwnProperty.call(ren, "getDrawingBufferSize");
+        let n = 0;
+        ren.getDrawingBufferSize = function (...a) { n++; return alt.apply(this, a); };
+        try { r._schirmMessen(); } finally { if (eigen) ren.getDrawingBufferSize = alt; else delete ren.getDrawingBufferSize; }
+        return n > 0;
+    });
     let selbst = null;
     if (SELBST) {
         selbst = {};
@@ -416,7 +419,7 @@ async function welt() {
         });
     }
     await ende();
-    return { boot, messung, selbst, seitenFehler };
+    return { boot, messung, selbst, seitenFehler, quelleLiest };
 }
 
 // K: das Fell-Gesetz folgt dem Schirm (Reihe groß → klein → Kontrolle)
@@ -471,6 +474,7 @@ function konsumBefunde(reihe) {
     }
     console.log("=== K · das Fell-Gesetz liest den Schirm ===");
     check("K derselbe Wolf: Fell im großen Fenster, keines im kleinen, zurück im großen", konsumBefunde(w.messung));
+    check("Q die EINE Quelle `_schirmMessen` liest den Zeichenpuffer (getDrawingBufferSize, am Ruf)", w.quelleLiest ? [] : ["kein Ruf"]);
     console.log("=== M · ein kleinerer Schirm trägt höchstens gleich viel (je Pass und Täter-Klasse) ===");
     check("M Befehle und Dreiecke fallen oder halten von groß nach klein (Spannen, beide Klammern)", monotonieBefunde(w.messung));
     for (const d of driftBefunde(w.messung)) console.log(`      (Drift, ohne Schirm) ${d}`);

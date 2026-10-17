@@ -21,22 +21,17 @@
 //   (G) GEHEN — W gehalten: Stufen-Wahlen, Cull und Nah-Streu arbeiten, der Spieler kommt voran — und Gehen kostet nur
 //       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
-//   (C) CODE — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`; SCHREIBER — jeder Schreiber eines bewachten
-//       Zustands (Chunk-Menge, Wasser-Zellen, Bau-Menge, Streu-Regionen und -Zellen, Ernte, Nah-Kacheln) ist auf JEDEM
-//       PFAD von seinem Weckruf gedeckt (`schreiberWand`, der Stamm als AST); (P) kein Page-Error.
+//   (P) kein Page-Error. Dass jeder Takt die Wache fragt und seinen Gang meldet, beweisen (S) und (X) am Verhalten (ein
+//       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext (D3c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
-// Gehen, verhungernder Strom, ein Takt ohne Wache, ein Schreiber ohne Weckruf, Page-Error — MUSS rot fallen und ihn beim
-// Namen nennen; dazu die Schreiber-Wand am Stamm selbst (grün), mit einem eingeschmuggelten Schreiber (rot beim Namen),
-// die MUTATIONS-PROBE (je einen Weckruf des Stamms streichen: jeder fällt rot) und jede Form eines Schreibers und jeder
-// ungedeckte Pfad (rot) neben Anlage, Wecker-Ruf, gedecktem Helfer und Eigner-Takt (grün).
+// Gehen, verhungernder Strom, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
 //   node scripts/diag-stand-takt.cjs [--selftest]   (npm run gate:stand-takt; Port STAND_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const urteil = (b) => STAND.standUrteil(b);
 
@@ -78,7 +73,6 @@ function selbsttest() {
             for (const n in je) X.phase.takte[n].wirkt = 1;
             return X;
         })(),
-        schreiber: { befunde: [], schreiber: Object.fromEntries(Object.keys(STAND.BEWACHT).map((f) => [f, ["_x"]])) },
         gehen: (() => {
             const g = Object.assign(phase(30, 40), { weg: 6.2, zelleGleich: true, ankerGleich: true });
             Object.assign(g.takte.strom, { summe: 0, mittel: 0, max: 0, mitArbeit: 0 });
@@ -147,7 +141,6 @@ function selbsttest() {
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
-        code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
         pageErrors: [],
     };
@@ -227,16 +220,6 @@ function selbsttest() {
             /STROM: nach dem Sprung an \(-300, -850\) steht der Spieler-Chunk nach 40 Takten nicht/,
         ],
         [
-            "ein Takt fragt die Wache nicht",
-            (b) => (b.code.streuLod.fragt = false),
-            /CODE: _tickScatterLod fragt die Stand-Wache nicht/,
-        ],
-        [
-            "ein Takt meldet seinen Gang nicht",
-            (b) => (b.code.nahStreu.meldet = false),
-            /CODE: _tickNahStreu meldet seinen Gang nicht/,
-        ],
-        [
             "die Treue-Phase geht 6 Frames (die Streu 960 von 1 845 Zellen)",
             (b) => Object.assign(b.bruch.takte.streuLod, { gang: 960 }),
             /TREUE-LÜCKE: streuLod \(_tickScatterLod\) ging nach der Ruhe 960 von 1845 Einheiten/,
@@ -286,22 +269,6 @@ function selbsttest() {
             "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
             (b) => Object.assign(b.wecken.wahrnehmung.takte.streuLod, { summe: 0, mitArbeit: 0 }),
             /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
-        ],
-        [
-            "ein Schreiber ohne Weckruf",
-            (b) =>
-                b.schreiber.befunde.push({
-                    methode: "_schmuggel",
-                    feld: "architectures",
-                    zeile: 7,
-                    ruf: "_weltRegt()",
-                }),
-            /SCHREIBER: _schmuggel schreibt architectures \(Zeile 7\) ohne _weltRegt\(\)/,
-        ],
-        [
-            "die Schreiber-Wand ist stumpf (ein Feld heißt anders)",
-            (b) => (b.schreiber.schreiber.scatterRegions = []),
-            /STUMPF: die Schreiber-Wand sieht keinen Schreiber von scatterRegions/,
         ],
         [
             "der Erdbau wirft das Dart-Gedächtnis der Welt (bis K69)",
@@ -446,206 +413,11 @@ function selbsttest() {
         if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
-    schreiberSelbsttest(fehler);
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
         process.exit(1);
     }
     console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
-}
-
-// DIE SCHREIBER-WAND am Stamm (acorn, ohne Browser — sie läuft in `npm run check`): der Stamm ist grün; ein eingeschmuggelter
-// Schreiber ohne Weckruf fällt rot beim Namen; DIE MUTATIONS-PROBE streicht je einen Weckruf des Stamms — jeder fällt rot
-// (ein grüner Weckruf ist überflüssig oder die Wand blind), die Weckrufe von `_finalizeVoxelChunkBuild` (Geschwister-Zweige)
-// und `_scatterRegionWork` (der Hauptpfad von `_scatterRegion`) beim Namen; jede Form eines Schreibers und jeder ungedeckte
-// Pfad wird gefunden; Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt und Leser bleiben grün.
-function schreiberSelbsttest(fehler) {
-    const path = require("path");
-    const stamm = stammLib.text(path.join(__dirname, ".."));
-    const wand = STAND.schreiberWand(stamm);
-    const wv = STAND.schreiberUrteil(wand);
-    const zahl = Object.entries(wand.schreiber)
-        .map(([f, m]) => `${f} ${m.length}`)
-        .join(" · ");
-    console.log(
-        `  ${wv.length ? "❌" : "✅"} Schreiber-Wand am Stamm (${zahl} Methoden, ${wand.weckrufe} Weckrufe) → ` +
-            (wv.join(" · ") || "jeder Pfad weckt")
-    );
-    if (wv.length) fehler.push("der Stamm: " + wv.join(" · "));
-    const anker = stammLib.kopf(stamm, "_bauRegt"); // am Namen (gate:apparat Klinge 3)
-    if (anker < 0) fehler.push("der Schmuggel-Anker `_bauRegt` fehlt im Stamm");
-    else {
-        const schmuggel = "\n    _schmuggelSchreiber(e) {\n        this.state.architectures.push(e);\n    }\n";
-        const s = STAND.schreiberWand(stamm.slice(0, anker) + schmuggel + stamm.slice(anker));
-        const v = STAND.schreiberUrteil(s);
-        const ok =
-            v.length === 1 && /SCHREIBER: _schmuggelSchreiber schreibt architectures .* ohne _weltRegt\(\)/.test(v[0]);
-        if (!ok) fehler.push("ein eingeschmuggelter Schreiber im Stamm fällt nicht rot beim Namen: " + v.join(" · "));
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „ein Schreiber ohne Weckruf im Stamm" → rot: ${v.join(" · ")}`);
-    }
-    // DIE MUTATIONS-PROBE: je einen Weckruf streichen
-    const probe = STAND.weckProbe(stamm);
-    const gruen = probe.filter((p) => !p.befunde.length);
-    for (const p of gruen) fehler.push(`Weckruf ${p.methode} (Zeile ${p.zeile}) gestrichen → die Wand bleibt grün`);
-    console.log(
-        `  ${gruen.length ? "❌" : "✅"} Mutations-Probe: ${probe.length - gruen.length} von ${probe.length} Weckrufen ` +
-            `fallen gestrichen rot` +
-            (gruen.length ? " — grün: " + gruen.map((p) => `${p.methode}:${p.zeile}`).join(", ") : "")
-    );
-    const benannt = [
-        ["_finalizeVoxelChunkBuild", "_finalizeVoxelChunkBuild", 2],
-        ["_scatterRegionWork", "_scatterRegion", 1],
-    ];
-    for (const [wo, nennt, soll] of benannt) {
-        const ps = probe.filter((p) => p.methode === wo);
-        const ok = ps.length === soll && ps.every((p) => p.befunde.some((b) => b.methode === nennt));
-        if (!ok)
-            fehler.push(`der gestrichene Weckruf in ${wo} nennt ${nennt} nicht (${ps.length} von ${soll} Weckrufen)`);
-        for (const p of ps)
-            console.log(
-                `  ${ok ? "✅" : "❌"} Selbsttest „Weckruf ${wo}:${p.zeile} gestrichen" → rot: ` +
-                    p.befunde.map((b) => `${b.methode} schreibt ${b.feld}`).join(", ")
-            );
-    }
-    const formen = [
-        "class X {",
-        // die Formen eines Schreibers
-        "    _alias() { const arches = this.state.architectures; arches.splice(0, 1); }",
-        '    _zerlegt() { const { voxelChunks: c } = this.state; c.delete("0,0"); }',
-        "    _karte() { return this.state.scatterRegions; }",
-        '    _ueberZugriff() { this._karte().set("1,1", {}); }',
-        "    _index(e) { const st = this.state; st.architectures[3] = e; }",
-        "    _laenge() { this.state.architectures.length = 0; }",
-        "    _neu() { this.state.voxelChunks = new Map(); }",
-        "    _bodenOhneTrue(k) { this.state.voxelChunks.set(k, {}); this._weltRegt(); }",
-        "    _feld(k) { const e = this.state.voxelChunks.get(k); e.waterCells = null; }",
-        "    _feldParam(e) { e.waterCells = null; }",
-        "    _assignFeld(e, w) { Object.assign(e, { waterCells: w }); }",
-        "    _dynamisch(n) { this.state[n] = []; }",
-        "    _dynamischAlias(n) { const st = this.state; delete st[n]; }",
-        "    _feldWeg(k) { for (const [, e] of this.state.voxelChunks) delete e.waterCells; }",
-        "    _ernte() { const h = this.state.scatterHarvested || new Map(); h.clear(); }",
-        "    _element(k, i) { this.state.scatterHarvested.get(k).add(i); }",
-        "    get _getter() { return this.state.architectures; }",
-        "    _ueberGetter(x) { this._getter.push(x); }",
-        "    _merk() { this._halt = this.state.voxelChunks; }",
-        "    _ueberFeld(k) { this._halt.set(k, {}); }",
-        "    _assign(xs) { Object.assign(this.state.architectures, xs); }",
-        "    _protoRuf(k) { Map.prototype.set.call(this.state.voxelChunks, k, {}); }",
-        "    _reflect(k) { Reflect.apply(Map.prototype.set, this.state.voxelChunks, [k, {}]); }",
-        "    _pushApply(xs) { Array.prototype.push.apply(this.state.architectures, xs); }",
-        "    _hilfArg(a, x) { a.push(x); }",
-        "    _ueberArg(x) { this._hilfArg(this.state.architectures, x); }",
-        "    _forOf(k) { for (const m of [this.state.voxelChunks]) m.set(k, {}); }",
-        "    _bedingt(x, c) { const a = c ? this.state.architectures : []; a.push(x); }",
-        "    _zerlegtZuweisung(s) { ({ architectures: this.state.architectures } = s); }",
-        "    _pfeil(x) { const g = () => this.state.architectures; g().push(x); }",
-        "    _paramVorgabe(k, { voxelChunks } = this.state) { voxelChunks.set(k, {}); }",
-        "    _optional(x) { this.state.architectures?.push(x); }",
-        "    _anlageMitBedingung(r) { if (!this.state.voxelChunks || r) this.state.voxelChunks = new Map(); }",
-        "    _filterNeu() { this.state.architectures = this.state.architectures.filter((a) => a); }",
-        "    _kachelFremd(k) { this.state.nahWiese.kacheln.delete(k); }",
-        "    _zustandFremd(k) { const ns = this.state.nahStreu; const x = ns.kacheln.get(k); x.zustand = null; }",
-        "    _zelle(region, rec) { region.cells.push(rec); }",
-        '    _fremd() { const snap = {}; snap.architectures = []; snap.voxel = new Map(); snap.voxel.set("a", 1); }',
-        // die ungedeckten Pfade
-        "    _fruehRaus(x, c) { this.state.architectures.push(x); if (c) return; this._weltRegt(); }",
-        "    _geschwister(k, c) { if (c) { this.state.voxelChunks.set(k, 1); } else { this._weltRegt(true); } }",
-        "    _bedingterWeckruf(k, c) { this.state.scatterRegions.delete(k); if (c) this._weltRegt(); }",
-        "    _spaeter(x) { this._weltRegt(); setTimeout(() => this.state.architectures.push(x), 0); }",
-        "    _dannRuf(k) { this._weltRegt(true); Promise.resolve().then(() => this.state.voxelChunks.set(k, {})); }",
-        "    _schleifeRaus(xs) { for (const x of xs) { this.state.architectures.push(x); if (!x) break; this._weltRegt(); } }",
-        "    _hilfUngedeckt(k) { this.state.scatterRegions.delete(k); }",
-        "    _ungedeckterRufer(k) { this._hilfUngedeckt(k); }",
-        // grün: Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt, Schleifen, Leser, fremde Kacheln und Wasser-Zellen
-        "    _anlage() { if (!this.state.voxelChunks) this.state.voxelChunks = new Map(); }",
-        "    _anlageOder() { this.state.scatterRegions = this.state.scatterRegions || new Map(); }",
-        "    _weckt(e) { this.state.architectures.push(e); this._weltRegt(); }",
-        "    _wecktBoden(k) { const m = this.state.voxelChunks; m.delete(k); this._weltRegt(true); }",
-        "    _liest() { return this.state.architectures.filter((a) => a.x > 0).length; }",
-        "    _wecker(n) { const a = n + 1; this._weltRegt(); return a; }",
-        "    _ueberWecker(k) { this.state.scatterRegions.set(k, { cells: [] }); return this._wecker(1); }",
-        "    _hilfGedeckt(k) { this.state.scatterRegions.delete(k); }",
-        "    _gedeckterRufer(k) { this._weltRegt(); this._hilfGedeckt(k); }",
-        '    _tickNahWiese() { this.state.nahWiese.kacheln.clear(); this._hilfEigner("a"); }',
-        "    _hilfEigner(k) { this.state.nahWiese.kacheln.delete(k); }",
-        "    _schleife(xs) { for (const x of xs) { if (!x) continue; this._weltRegt(); this.state.architectures.push(x); } }",
-        "    _nachSchleife(xs) { for (const x of xs) this.state.architectures.push(x); this._weltRegt(); }",
-        "    _hoehle(H) { const K = H.kacheln || (H.kacheln = new Map()); K.set(1, 2); }",
-        "    _frisch(d) { return { waterCells: d.waterCells, lod: 0 }; }",
-        "    _inhalt(k) { const e = this.state.voxelChunks.get(k); e.waterCells[0] = 1; e.waterCells.fill(0); }",
-        '    _stateLiteral() { this.state["x"] = 1; }',
-        "}",
-        'X._statisch = function (st) { st.scatterRegions.delete("a"); };',
-        "function _wurf(realm) { realm.worker.onmessage = (e) => { realm.state.voxelChunks.set(e.k, e); }; }",
-        "if (typeof window !== 'undefined') window.realm.state.architectures.push({});",
-    ].join("\n");
-    const s = STAND.schreiberWand(formen);
-    const rot = {
-        _alias: "architectures",
-        _zerlegt: "voxelChunks",
-        _ueberZugriff: "scatterRegions",
-        _index: "architectures",
-        _laenge: "architectures",
-        _neu: "voxelChunks",
-        _bodenOhneTrue: "voxelChunks",
-        _feld: "waterCells",
-        _feldWeg: "waterCells",
-        _feldParam: "waterCells",
-        _assignFeld: "waterCells",
-        _dynamisch: "state[…]",
-        _dynamischAlias: "state[…]",
-        _ernte: "scatterHarvested",
-        _element: "scatterHarvested",
-        _ueberGetter: "architectures",
-        _ueberFeld: "voxelChunks",
-        _assign: "architectures",
-        _protoRuf: "voxelChunks",
-        _reflect: "voxelChunks",
-        _pushApply: "architectures",
-        _ueberArg: "architectures",
-        _forOf: "voxelChunks",
-        _bedingt: "architectures",
-        _zerlegtZuweisung: "architectures",
-        _pfeil: "architectures",
-        _paramVorgabe: "voxelChunks",
-        _optional: "architectures",
-        _anlageMitBedingung: "voxelChunks",
-        _filterNeu: "architectures",
-        _kachelFremd: "nahWiese.kacheln",
-        _zustandFremd: "zustand",
-        _zelle: "cells",
-        // ein Objekt, das nur so heißt wie ein bewachter Zustand, ist ein Schreiber (die Wand liest Namen, keine Typen —
-        // lieber ein benannter Fehlalarm als ein stiller Schreiber)
-        _fremd: "architectures",
-        _fruehRaus: "architectures",
-        _geschwister: "voxelChunks",
-        _bedingterWeckruf: "scatterRegions",
-        _spaeter: "architectures",
-        _dannRuf: "voxelChunks",
-        _schleifeRaus: "architectures",
-        _hilfUngedeckt: "scatterRegions",
-        "X._statisch": "scatterRegions",
-        _wurf: "voxelChunks",
-        "(Modul)": "architectures",
-    };
-    const ungesehen = [];
-    for (const [m, f] of Object.entries(rot))
-        if (!s.befunde.some((b) => b.methode === m && b.feld === f)) ungesehen.push(`${m} (${f})`);
-    for (const u of ungesehen) fehler.push(`Schreiber-Form ${u}: die Wand nennt sie nicht`);
-    console.log(
-        `  ${ungesehen.length ? "❌" : "✅"} Selbsttest Schreiber-Formen und ungedeckte Pfade: ` +
-            `${Object.keys(rot).length - ungesehen.length} von ${Object.keys(rot).length} rot beim Namen` +
-            (ungesehen.length ? " — UNGESEHEN: " + ungesehen.join(", ") : "")
-    );
-    const zuviel = s.befunde.filter((b) => !(b.methode in rot));
-    if (zuviel.length)
-        fehler.push("die Wand schlägt bei Unschuldigen an: " + zuviel.map((b) => `${b.methode}/${b.feld}`).join(", "));
-    console.log(
-        `  ${zuviel.length ? "❌" : "✅"} Selbsttest: Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt, Schleifen und ` +
-            `Leser bleiben grün` +
-            (zuviel.length ? " — " + zuviel.map((b) => `${b.methode}/${b.feld} (${b.weil})`).join(", ") : "")
-    );
 }
 
 if (process.argv.includes("--selftest")) {
@@ -654,9 +426,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const path = require("path");
-
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
 const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
@@ -699,11 +468,8 @@ const server = statikServer();
                         if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
                     }
                 };
-                const foundryOffen = () => {
-                    const f = r._foundry;
-                    return (f && f.pending ? f.pending.size : 0) + (f && f.warte ? f.warte.length : 0);
-                };
-                // einschwingen: der Ring steht, kein Worker-Auftrag offen, die Foundry-Schlange leer
+                // einschwingen: der Ring steht, und nichts baut mehr (A9 `_weltOffen`: Chunks, die Foundry und die Schlange des
+                // Walds samt ihren Pflanz-Gängen — K69: sie plant im Takt, solange sie plant, weckt ihre Regung die Fege-Takte)
                 const schwinge = async (max) => {
                     let stabil = 0,
                         last = -1;
@@ -715,14 +481,8 @@ const server = statikServer();
                             stabil = 0;
                             last = sz;
                         }
-                        // offen ist, was die Welt noch baut: Chunks, die Foundry und die Schlange des Walds samt ihren
-                        // Pflanz-Gängen (K69: sie plant im Takt — solange sie plant, weckt ihre Regung die Fege-Takte)
-                        const offen =
-                            (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
-                            foundryOffen() > 0 ||
-                            (r._waldPlanSchlange && r._waldPlanSchlange.size > 0) ||
-                            (r._waldPflanzWarten && r._waldPflanzWarten.size > 0);
-                        if (i > 60 && stabil > 80 && !offen) break;
+                        const o = r._weltOffen();
+                        if (i > 60 && stabil > 80 && o.chunks + o.foundry + o.wald === 0) break;
                         if (i % 5 === 0) await pause(10);
                     }
                     return last;
@@ -733,7 +493,7 @@ const server = statikServer();
                 st.perfRegulator = false;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 const ring = await schwinge();
-                const aus = { ring, architekturen: (st.architectures || []).length, code: {} };
+                const aus = { ring, architekturen: (st.architectures || []).length };
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -1557,14 +1317,6 @@ const server = statikServer();
                     };
                 }
                 L.aus();
-                const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
-                for (const [n, m] of Object.entries(TAKTE)) {
-                    const c = code(P[m]);
-                    aus.code[n] = {
-                        fragt: c.includes(`this._standRuht("${n}"`),
-                        meldet: c.includes(`this._standMeldet("${n}"`),
-                    };
-                }
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
                 // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
@@ -1572,18 +1324,16 @@ const server = statikServer();
                 // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
                 {
                     const p = st.playerMesh.position;
-                    const schlange = () =>
-                        (r._waldPlanSchlange ? r._waldPlanSchlange.size : 0) +
-                        (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0);
+                    const o = () => r._weltOffen(); // was die Welt noch baut (A9): die Schlange des Walds und die Foundry
                     let i = 0;
                     for (; i < 2000; i++) {
-                        if (schlange() === 0 && foundryOffen() === 0 && r._streuWartet(p) === 0) break;
+                        if (o().wald + o().foundry === 0 && r._streuWartet(p) === 0) break;
                         takt();
                         if (i % 10 === 0) await pause(5);
                     }
                     const warten = [];
                     r._streuWartet(p, warten);
-                    aus.nachschub = { takte: i, schlange: schlange(), foundry: foundryOffen(), warten };
+                    aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
                 }
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
@@ -1601,7 +1351,6 @@ const server = statikServer();
         process.exit(1);
     }
     befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
-    befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
         `  ${n.padEnd(8)} ${x.frames} Frames · Σ ${x.summe} Einheiten · ` +
@@ -1632,12 +1381,6 @@ const server = statikServer();
             );
         rundeZeile("Täter", X.phase);
     }
-    const S = befund.schreiber;
-    console.log(
-        `  Schreiber-Wand: ${Object.entries(S.schreiber)
-            .map(([f, m]) => `${f} ${m.length}`)
-            .join(" · ")} Methoden, ${S.befunde.length} ohne Weckruf`
-    );
     if (befund.gehen) console.log(`  Gehen: ${befund.gehen.weg} m`);
     const W = befund.wecken;
     if (W) {

@@ -7,6 +7,18 @@ class AnazhRealm_kampf {
         Object.getPrototypeOf(c).updateMatrixWorld.call(c, true);
     }
 
+    // DIE LEIBES-MITTE eines Tiers: die Mitte seiner dicksten Rumpf-Kapsel der Treffer-Gestalt (_kreaturTrefferGlieder) in der
+    // laufenden Pose — die Mitte der Hülle (Box) liegt beim Vierbeiner unter dem Bauch, zwischen den Läufen, ein Strahl durch sie
+    // verfehlt den Leib (die Ankunfts-Linse LK: Wolf 72, Fuchs 24 von 96 Stellungen). Jeder Leser, der auf ein Tier zielt (der
+    // Hieb ohne Punkt, _kampfZielMerken), liest sie. Ohne Studio-Leib null: keine Gestalt, kein Ziel.
+    _leibMitte(cr, out = new THREE.Vector3()) {
+        let g = null;
+        for (const x of this._kreaturTrefferGlieder(cr) || []) if (x.zone === "rumpf" && (!g || x.r > g.r)) g = x;
+        if (!g) return null;
+        this._leibMatrix(cr);
+        return out.copy(g.a).lerp(g.b, 0.5).applyMatrix4(g.anker.matrixWorld);
+    }
+
     // Der LMB-Klick LÖST nur den 3-Phasen-Schwung aus (Windup/Strike/Recover); getroffen wird im
     // Klingen-Sweep der Strike-Phase (_kampfSweepTick). Cooldown = Schwung-Dauer ∝ √I aus der EINEN
     // Quelle _swingDauerFuerBlueprint (kein attackSpeed-Tag-Pfad); Kreaturen behalten ihr Tag-Profil.
@@ -222,7 +234,8 @@ class AnazhRealm_kampf {
     }
 
     // DAS ZIEL DES HIEBS (Welle LF, Posten 2): der Punkt unter dem Fadenkreuz beim Drücken, im Raum des Tiers gemerkt (das
-    // Tier läuft weiter, der Punkt mit ihm); ein Tier ohne Punkt: seine Leibes-Mitte; ohne Tier null — dann geht die Klinge
+    // Tier läuft weiter, der Punkt mit ihm); ein Tier ohne Punkt: seine Leibes-Mitte (`_leibMitte`, nie die Mitte der Box unter
+    // dem Bauch); ohne Tier oder ohne Gestalt null — dann geht die Klinge
     // durch den Austritt des Fadenkreuz-Strahls aus ihrer Reichweite (_kampfKlingenAchse).
     _kampfZielMerken(ziel) {
         const c =
@@ -232,8 +245,8 @@ class AnazhRealm_kampf {
         const pt =
             ziel.point && Number.isFinite(ziel.point.x)
                 ? new THREE.Vector3(ziel.point.x, ziel.point.y, ziel.point.z)
-                : new THREE.Box3().setFromObject(c).getCenter(new THREE.Vector3());
-        return { c, lokal: c.worldToLocal(pt) };
+                : this._leibMitte(c);
+        return pt ? { c, lokal: c.worldToLocal(pt) } : null;
     }
 
     // DIE ACHSE DES SCHWUNGS (Welle L K-D3, Welle LF Posten 2): Gier und Neigung, in denen die Klinge zur Mitte des Strikes

@@ -90,17 +90,27 @@ const stripComments = stammLib.ohneKommentare;
             // KEIN InstancedMesh, die Halm-Maschinerie (Pool/Studio-Geometrie/Stufen-
             // Tick) ist physisch geschnitten, die Halme zeichnet der Terrain-Albedo.
             const buildSrc = strip(r._buildVoxelChunkGrass.toString());
-            o.existenzGabel = /voxelChunkGrass\.set\(key, null\)/.test(buildSrc) && !/InstancedMesh/.test(buildSrc);
+            // halm-los verbucht misst (a) am Zustand; die Parallax-Halme und der Streu-Thin am Ruf (D3c, vorher am Rumpf-TEXT)
+            o.existenzGabel = !/InstancedMesh/.test(buildSrc);
+            const ruft = (f, ziel, k) => {
+                const alt = ziel[k],
+                    eigen = Object.prototype.hasOwnProperty.call(ziel, k);
+                let n = 0;
+                ziel[k] = function (...a) { n++; return alt.apply(this, a); };
+                try { f(); } catch (_e) { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) ziel[k] = alt; else delete ziel[k]; }
+                return n > 0;
+            };
             o.dichteLiteral =
                 typeof r._acquireGrassMesh === "undefined" &&
                 typeof r._grassStudioGeometry === "undefined" &&
                 typeof r._tickGrassStage === "undefined";
-            o.farFactorLiteral = /_halmHoch/.test(strip(r._terrainGeologyAlbedo.toString()));
+            const T = window.THREE.TSL;
+            o.farFactorLiteral = ruft(() => r._terrainGeologyAlbedo(T, T.attribute("color", "vec3"), T.positionWorld), r._rauschAtlas(), "ebene");
             o.keinTuftAufruf = !/_grassBladeTuftGeometry/.test(buildSrc);
             const idleSrc = strip(r._tickScatterStreaming.toString());
             o.idleOhneGrasThin = !/_tickGrassThin/.test(idleSrc);
             // der Streu-Thin (V18.280) LEBT weiter — der eine verbliebene Thin-Hebel:
-            o.streuThinLebt = /_tickFoliageThin/.test(idleSrc) && typeof r._tickFoliageThin === "function";
+            o.streuThinLebt = ruft(() => r._tickScatterStreaming(st.playerMesh.position, performance.now() + 8), r, "_tickFoliageThin");
             return o;
         });
     } catch (e) {

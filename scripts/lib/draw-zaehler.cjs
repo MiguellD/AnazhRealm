@@ -207,7 +207,7 @@ function drawZensus(opts) {
             const t0 = performance.now();
             // Der Zähler vor dem gezählten Frame: was danach gezeichnet wird, trägt einen höheren (`__pufferZensus`).
             window.__zensusCalls = rend.info.render.calls;
-            r._loopRender(performance.now() / 1000);
+            r._loopRender();
             if (q) await q.onSubmittedWorkDone();
             frameMs = Math.round(performance.now() - t0);
         } finally {

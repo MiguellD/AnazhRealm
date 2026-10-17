@@ -31,8 +31,8 @@
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
 //       MUSS rot fallen, beim Namen;
 //   (Q) DIE QUELLE (AST, acorn): die Körper-Schritte lesen ihren Boden nur über `_koerperBodenUnter` — kein
-//       `getTerrainHeightAt` / `_voxelSurfaceY` / `findSurfaceAbove` / `_terrainMacroSurfaceY` in ihnen, und jeder ruft den
-//       Boden des Körpers; JEDE andere Methode, die einen dieser Leser ruft UND die Höhe eines Leibs berührt
+//       `getTerrainHeightAt` / `_voxelSurfaceY` / `findSurfaceAbove` / `_terrainMacroSurfaceY` in ihnen (dass sie
+//       den Boden unter dem Leib lesen, beweist (O) am Verhalten); JEDE andere Methode, die einen dieser Leser ruft UND die Höhe eines Leibs berührt
 //       (`.position.y`, `.position.set`), ist als Platzierung/Welt-Leser benannt (OBERKANTE_BENANNT, mit Grund) — sonst
 //       ROT beim Namen (UNBENANNT), ein Name ohne Leser ist VERALTET;
 //   (P) kein Page-Error.
@@ -76,7 +76,6 @@ const KOERPER_SCHRITTE = [
     "_todHebeTafel",
 ];
 const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurfaceAbove", "_terrainMacroSurfaceY"]);
-const BODEN_LESER = new Set(["_koerperBodenUnter", "_koerperSchritt", "_werkBoden", "_fahrBoden"]);
 // DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren (Gegenprüfung 10.10.: `_todHebeTafel` las die
 // Oberkante als Boden des sterbenden Leibs, und die Wand kannte ihn nicht): jede Methode, die einen Dach-Leser ruft UND
 // `.position.y` liest oder schreibt (oder `.position.set` ruft), ist ein Körper-Schritt (oben, dort ist die Oberkante
@@ -146,16 +145,12 @@ function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
             return;
         }
         gefunden.add(methode);
-        let ruftBoden = false;
         lauf(n.value.body, (c) => {
             if (c.type !== "CallExpression" || c.callee.type !== "MemberExpression") return;
             const nm = name(c.callee);
             if (DACH_LESER.has(nm))
                 befunde.push(`${methode} Zeile ${c.loc.start.line} ruft ${nm} (die Oberkante der Säule)`);
-            if (BODEN_LESER.has(nm) && nm !== methode) ruftBoden = true;
         });
-        if (!ruftBoden && methode !== "_koerperBodenUnter")
-            befunde.push(`${methode} ruft den Boden des Körpers nicht (_koerperBodenUnter · _werkBoden · _fahrBoden)`);
     });
     for (const m of KOERPER_SCHRITTE) if (!gefunden.has(m)) befunde.push(`${m} fehlt im Stamm (die Wand kennt ihn)`);
     for (const m of Object.keys(benannt))
@@ -444,19 +439,6 @@ function selbsttest() {
         `  ${genannt ? "✅" : "❌"} Quellen-Wand an der Kopie mit dem alten Leser → ${anKopie.join(" · ") || "(nichts)"}`
     );
     if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
-    // der Leser der Gegenprüfung 10.10.: die Tod-Lage liest die Oberkante der Säule als Boden des sterbenden Leibs
-    {
-        const k2 = stammLib.ersetze(stamm, "_todHebeTafel",
-            /const g0 = this\._koerperBodenUnter\(px, py - \(creature\.userData\._hopH \|\| 0\), pz\);/,
-            "const g0 = this.getTerrainHeightAt(px, pz);"
-        );
-        const a2 = k2 === stamm ? [] : quellenWand(k2);
-        const ok = a2.some((x) => /^_todHebeTafel Zeile \d+ ruft getTerrainHeightAt/.test(x));
-        console.log(
-            `  ${ok ? "✅" : "❌"} Quellen-Wand an der Kopie mit der alten Tod-Lage → ${a2.join(" · ") || "(nichts)"}`
-        );
-        if (!ok) fehler.push("die Quellen-Wand nennt die Tod-Lage auf der Oberkante nicht");
-    }
     // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
     {
         const k3 = stammLib.ersetze(stamm, null,

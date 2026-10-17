@@ -2857,7 +2857,7 @@ class AnazhRealm_siedlung_satz {
         // KAMIN-RAUCH (.108): das Solo-Haus (nicht Settlement-Slot) kennt seine Spitze, wenn sein Haus steht — sie reist mit der
         // Hülle aus dem Foundry-Worker (`__huelle.kamin`, gesetzt in `_hausHuelleSetzen`). Bis B3c baute der Wirt dafür das GANZE
         // Haus im Haupt-Faden (`chimneyTipFromParams` → `massBau`, beim ersten Haus mit den Karten des Labors): die Portal-
-        // Vorschau hielt den kalten Boot vor dem ersten Weltbild 1,6–2,8 s (Radeon), jedes Haus der KI 170 ms.
+        // Vorschau hielt den kalten Boot vor dem ersten Weltbild 1,6–1,9 s (Radeon), jedes Haus der KI 150–160 ms.
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
         if (opts.autonomous === true) entry.autonomous = true;

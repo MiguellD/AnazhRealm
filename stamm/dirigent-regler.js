@@ -385,7 +385,9 @@ class AnazhRealm_dirigent_regler {
         // Der Schatten-Pass (ein zweiter Voll-Render) unter dem EINEN Regler: `effArch` skaliert die
         // Schatten-Reichweite zwischen Last-Floor und User-Ceiling (`atmosphere.shadowRange`) — unter Last
         // schrumpft das Frustum (weniger Caster, schärfere Nah-Schatten); jenseits ~150 m deckt der Nebel.
-        // Dead-Band 6 m gegen updateProjectionMatrix-Churn; headless → Ceiling.
+        // Die Reichweite liegt auf dem RASTER von 6 m ab der Decke, das Totband (¾ Stufe) hält gegen updateProjectionMatrix-
+        // Churn — der Wert ist eine Funktion der Last, nie des Wegs (A9-n2: das Totband hielt den Wert des letzten Sprungs, unter
+        // Regler voll stand die Karte je Rampe bei 167,8 oder 168,0 m statt 170, die Kaskaden-Scheiben mit ihr); headless → Ceiling.
         if (!(st.renderer && st.renderer._isHeadlessNull) && typeof this._applyEffectiveShadowRange === "function") {
             const srCeil =
                 st.atmosphere && Number.isFinite(st.atmosphere.shadowRange)
@@ -393,7 +395,8 @@ class AnazhRealm_dirigent_regler {
                     : AnazhRealm.PERF_SHADOW_RANGE_MAX;
             const srTarget = lerp(AnazhRealm.PERF_SHADOW_RANGE_MIN, srCeil, effArch);
             const srApplied = Number.isFinite(this._shadowRangeApplied) ? this._shadowRangeApplied : srCeil;
-            if (Math.abs(srTarget - srApplied) > 6) this._applyEffectiveShadowRange(srTarget);
+            const srStufe = srCeil - 6 * Math.round((srCeil - srTarget) / 6);
+            if (srStufe !== srApplied && Math.abs(srTarget - srApplied) > 4.5) this._applyEffectiveShadowRange(srStufe);
         }
         // Godray-Hebel unter dem EINEN Regler (`effArch`): die Licht-Schäfte sind reine Optik und geben
         // zuerst nach — Kopfraum → PERF_GODRAY_MAX, anhaltende Last → 0. `_loopRender` liest `_godrayScale`

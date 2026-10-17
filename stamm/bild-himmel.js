@@ -167,7 +167,7 @@ class AnazhRealm_bild_himmel {
         // Skybox als MeshBasicNodeMaterial (TSL): die Himmels-Sicht der EINEN Atmosphäre + horizont-genordete Wolken.
         // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
         // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): _dayNightApplySkybox (cloudCover; die Tönung über
-        // himmelTint, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
+        // himmelTint, den Träger des Tints), _loopRender (time aus der Bild-Uhr _bildZeit).
         const TSL = THREE.TSL;
         // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
         // stapeln (kein Doppel-Heap).
@@ -895,7 +895,7 @@ class AnazhRealm_bild_himmel {
         this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
         return this._rainSystem;
     }
-    _tickRain(currentTime) {
+    _tickRain() {
         const st = this.state;
         const wf = this._weatherFieldFor(st.weather);
         if (!(wf.rain > 0.01)) {
@@ -909,8 +909,8 @@ class AnazhRealm_bild_himmel {
         const cam = st.camera;
         if (cam) sys.mesh.position.copy(cam.position);
         sys.mesh.material.opacity = Math.min(RG.deckung, wf.rain * RG.deckung);
-        // Die Uhr der Schlieren (s), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
-        const t = ((currentTime || 0) / 1000) % 3600;
+        // Die Uhr der Schlieren: die Bild-Uhr (s, A9), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
+        const t = this._bildZeit % 3600;
         sys.uZeit.value = t;
         const wd = this._windDirAt(t);
         const v = RG.drift * Math.max(wf.wind, 0.1);
@@ -1118,11 +1118,9 @@ class AnazhRealm_bild_himmel {
             lightColor.b = Math.min(1, lightColor.b + a * 0.5);
         }
         if (chaos > 0.3) {
-            // performance.now() — Side-Effect-Stream-Position: das chaos-Flimmern
-            // liest die Zeit hier (Tint-Phase). V9.56-i bewahrt die Aufruf-
-            // Reihenfolge bit-identisch.
+            // das Chaos-Flimmern auf der Bild-Uhr (A9; bis dahin die Wanduhr in ms / 180)
             const c = (chaos - 0.3) * 0.15 * auraK;
-            const flutter = Math.sin(performance.now() / 180) * c;
+            const flutter = Math.sin((this._bildZeit * 1000) / 180) * c;
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
