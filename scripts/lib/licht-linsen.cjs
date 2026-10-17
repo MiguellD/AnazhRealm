@@ -1332,7 +1332,7 @@ function laubGegenlicht(opts) {
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
-        const abstand = opts.abstand || 8;
+        let abstand = opts.abstand || 8;
         // Die Sonne steht HINTER der Krone: ihre Höhe ist die Peilung vom Auge zur Kronen-Mitte (mindestens 5°) — eine feste
         // Höhe (`sonne` in Grad) stand für den hohen Baum unter der Krone (aus 8 m blickt das Auge 40° hinauf).
         let elev = opts.sonne > 0 ? (opts.sonne * Math.PI) / 180 : null;
@@ -1356,6 +1356,7 @@ function laubGegenlicht(opts) {
             q = new T.Quaternion(),
             s = new T.Vector3();
         let ziel = null;
+        const gef = (x, z) => [r._voxelSurfaceY(x + 2, z) - r._voxelSurfaceY(x - 2, z), r._voxelSurfaceY(x, z + 2) - r._voxelSurfaceY(x, z - 2)].map((v) => v / 4);
         for (const o of laub) {
             const n = o.isInstancedMesh ? o.count : 1;
             if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
@@ -1370,7 +1371,8 @@ function laubGegenlicht(opts) {
                 const d = opts.ziel
                     ? Math.hypot(p.x - opts.ziel[0], p.z - opts.ziel[1])
                     : Math.hypot(p.x - von[0], p.z - von[1]);
-                if ((opts.ziel || opts.anker || d > 6) && (!ziel || d < ziel.d)) {
+                // `hang` (S2b): nur ein Exemplar an einem Hang mindestens so steil (Gefälle am Fuß), das Auge steht talwärts
+                if ((opts.ziel || opts.anker || d > 6) && (!ziel || d < ziel.d) && (!opts.hang || opts.ziel || Math.hypot(...gef(p.x, p.z)) >= opts.hang)) {
                     const box = o.geometry.boundingBox.clone().applyMatrix4(m4);
                     ziel = { d, o, i, box, fuss: p.clone() };
                 }
@@ -1381,14 +1383,26 @@ function laubGegenlicht(opts) {
         const mitte = ziel.box.getCenter(new T.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
         const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
-        const dh = new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z).normalize();
+        const tal = opts.hang && !opts.ziel ? gef(ziel.fuss.x, ziel.fuss.z) : null;
+        const dh = (tal ? new T.Vector3(-tal[0], 0, -tal[1]) : new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
+        // DAS SPIEL-AUGE (S2b): `wechsel` stellt das Auge in den Abstand, ab dem das Spiel die Karte zeigt — die Stufen-Wahl
+        // (`_chooseLODForDistance`) aus der Karte heraus für die Höhe des Exemplars, die nächste Distanz mit Karte —, mal `wechsel`;
+        // `augeH` ist die Augenhöhe über dem Boden (Ego 1,6, Third 3,5).
+        if (opts.wechsel > 0) {
+            let d = 4;
+            while (d < 600 && r._chooseLODForDistance(d, 2, hoehe) !== 2) d += 0.25;
+            abstand = d * opts.wechsel;
+        }
         // Die Stufe folgt dem Spieler: `plan` nennt den Augen-Ort (der Aufrufer stellt den Spieler dorthin und lässt die Stufen
         // einschwingen); mit `ziel` steht das Auge am Spieler.
         const auge = opts.ziel
             ? new T.Vector3(pp.x, 0, pp.z)
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
-        auge.y = r._voxelSurfaceY(auge.x, auge.z) + 1.7;
-        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1) };
+        auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
+        // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 zeigt (der Schuss der Gestalt)
+        const D = r.constructor.LOD_DISTANCES;
+        const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + D.hysteresis + 1).toFixed(1);
+        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;
@@ -1417,6 +1431,7 @@ function laubGegenlicht(opts) {
         const out = {
             art: opts.art || "buche",
             abstand: +Math.hypot(auge.x - ziel.fuss.x, auge.z - ziel.fuss.z).toFixed(1),
+            gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1),
             sonneGrad: +((elev * 180) / Math.PI).toFixed(1),
             hoehe: +hoehe.toFixed(1),
             d: +ziel.d.toFixed(1),

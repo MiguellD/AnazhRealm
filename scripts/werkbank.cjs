@@ -3378,6 +3378,9 @@ async function starte() {
         // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
         const oben = argv.includes("--oben");
         const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
+        // DAS SPIEL-AUGE (S2b): `--wechsel f` das Auge im f-fachen Abstand, ab dem das Spiel die Karte zeigt, `--auge h` die
+        // Augenhöhe (Ego 1,6 · Third 3,5), `--hang g` ein Exemplar am Hang (Gefälle ≥ g), das Auge talwärts
+        const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}`;
         for (const art of String(arten).split(",")) {
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
@@ -3388,7 +3391,7 @@ async function starte() {
             for (let i = 0; i < (argv.includes("--karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
                 plan = (await rufe("/eval", {
                     // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
-                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8} }; ${c}`,
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
                 })).ergebnis;
             if (!plan || plan.fehler) {
                 welt[art] = plan || { fehler: "kein Plan" };
@@ -3398,17 +3401,23 @@ async function starte() {
             await ein();
             // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann jede Krone auf ihrer Karte (die Schwellen der
             // Stufen kurz auf 0,3/0,6 m, der Lauf schwingt ein), danach die Schwellen zurück
-            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, karte: ${n} }; ${c}` });
-            const stufen = async (an) => {
-                const D = "const D = r.constructor.LOD_DISTANCES;";
-                await rufe("/eval", { code: an ? `${D} window.__karteD = [D.thresh01, D.thresh12]; D.thresh01 = 0.3; D.thresh12 = 0.6; return 1;` : `${D} [D.thresh01, D.thresh12] = window.__karteD; return 1;` });
+            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, karte: ${n}, ${spiel} }; ${c}` });
+            // die Schwelle der Karte: `plan.l1` hält das Exemplar im Spiel-Abstand auf L1 (die Gestalt), 0,6 m stellt jede Krone auf
+            // die Karte, null stellt zurück
+            const stufen = async (t12) => {
+                const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
+                await rufe("/eval", { code: t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = Math.min(window.__karteD[0], ${t12} / 2); D.thresh12 = ${t12}; return 1;` });
                 await ein();
             };
-            if (argv.includes("--karte")) await k(1).then(() => stufen(true));
+            if (argv.includes("--karte")) {
+                if (opt("--wechsel")) await stufen(plan.l1);
+                await k(1);
+                await stufen(0.6);
+            }
             const w = argv.includes("--karte")
                 ? (await k(2)).ergebnis
                 : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
-            if (argv.includes("--karte")) await stufen(false);
+            if (argv.includes("--karte")) await stufen(null);
             if (w && w.karte && opt("--ordner"))
                 w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${art}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
             if (w && w.karte) delete w.karte.png;
