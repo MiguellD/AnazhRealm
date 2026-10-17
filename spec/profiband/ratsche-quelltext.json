@@ -91,6 +91,10 @@
             "zweck": "Messung: führt _diaetRefresh aus dem Stamm gegen r184 aus (Konsum statt Zitat)",
             "stamm": 1
         },
+        "scripts/diag-werk-im-wasser.cjs": {
+            "zweck": "Messung: führt vehicle-core im vm mit eingeschmuggelten Tätern aus (Kern-Linse K), die Leser-Absenzen über den Helfer",
+            "datei": 1
+        },
         "scripts/diag-worker-dichte.cjs": {
             "zweck": "Messung: führt gelaende-core und simplex im vm aus (der Worker-Spiegel bit-gleich)",
             "datei": 2
@@ -102,6 +106,10 @@
         "scripts/lib/stamm.cjs": {
             "zweck": "die EINE Lese-Schnittstelle des Stamms: index.html nennt seine Dateien",
             "datei": 2
+        },
+        "scripts/playtest/netz.cjs": {
+            "zweck": "Struktur: jeder Broker-Typ des signaling-servers steht im Andock-Vertrag (Leuchtturm §7, Zugehörigkeit)",
+            "datei": 1
         },
         "scripts/stamm-rehome.cjs": {
             "zweck": "Werkzeug: der Umzug eines Zweigs liest den Stamm an Revisionen und im Klon",
@@ -138,44 +146,6 @@
         "scripts/diag-s4-impostor-workshop.cjs": {
             "grund": "Absenz am Alias von __codeOf (S2b-Besitz)",
             "seite": 1
-        },
-        "scripts/diag-trias.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-vehicle-drive.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1,
-            "datei": 2
-        },
-        "scripts/diag-wasser-leben.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2
-        },
-        "scripts/diag-weltgrenze.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-werk-im-wasser.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2,
-            "datei": 1
-        },
-        "scripts/diag-werkstatt-weg.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-ziel-zensus.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2
-        },
-        "scripts/playtest/dienst.cjs": {
-            "grund": "Präsenz: zählt den direkten Listen-Ruf im Stamm",
-            "stamm": 1
-        },
-        "scripts/playtest/netz.cjs": {
-            "grund": "Präsenz: der signaling-server trägt den vibe- und Broker-Handler (Quell-Check)",
-            "datei": 2
         }
     }
 }

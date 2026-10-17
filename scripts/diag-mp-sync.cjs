@@ -434,6 +434,9 @@ function bericht(p) {
         await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "A kennt B", idB);
         await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), 20000, "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
+        // W13 P3 am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
+        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, 20000, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
+        check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
         const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), 120000, "A: Ladeschirm weg");

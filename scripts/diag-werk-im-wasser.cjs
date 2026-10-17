@@ -335,58 +335,29 @@ function urteil(b) {
     return v;
 }
 
-// ── L: DIE LESER (kommentarfrei). ──
-const ohneKommentare = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
+// ── L: DIE LESER — jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter mit Datei und Zeile). ──
 // Die Leser-Linse trägt nur noch die Wache des Gefallenen (Absenzen, D3c): jede Präsenz misst die Welt am Ruf (`konsum` in
-// probe) oder am Verhalten (H · Z · S · R · D · F · E).
-function leserUrteil(srcRoh) {
-    const src = ohneKommentare(srcRoh);
+// probe) oder am Verhalten (H · Z · S · R · D · F · E). `w` wandelt den Stamm (der Vor-Stand des Selbsttests).
+function leserUrteil(w) {
     const v = [];
-    if (/_isAboveWaterAt\s*\(/.test(src)) v.push("die Zwillings-Probe des Lands `_isAboveWaterAt` lebt");
+    const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
+    nicht(null, /_isAboveWaterAt\s*\(/, "die Zwillings-Probe des Lands `_isAboveWaterAt` lebt");
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
-    const re = /\b_waterLevelAt\(([^()]*)\)/g;
-    let mm;
-    while ((mm = re.exec(src))) {
-        if (/^\s*x\s*,\s*z\s*,\s*aus\s*$/.test(mm[1])) continue; // die Definition
-        if (mm[1].split(",").length !== 3) {
-            const z = src.slice(0, mm.index).split("\n").length;
-            v.push(
-                `\`_waterLevelAt(${mm[1].trim()})\` liest den Bezug der Ufer-Bänder als Wasser-Probe (Code-Zeile ${z})`
-            );
-        }
-    }
-    const wald = fnBody(src, /\n {4}_forestCellDarts\([^)]*\) \{/);
-    const waldWasser = wald ? /waterYAt:([\s\S]*?)slopeAt:/.exec(wald) : null;
-    if (waldWasser && /_waterLevelAt\(/.test(waldWasser[1]))
-        v.push("der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
+    nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
+    nicht("_forestCellDarts", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
     // DER DAMM: der Automat wacht am Zell-Stempel, nie am Setz-Punkt; der Stempel läuft nur die Werke am Ort durch
-    const spawn = fnBody(src, /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/);
-    if (spawn && /_invalidateWaterCapsAround\(/.test(spawn))
-        v.push("ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
-    const stamp = fnBody(src, /\n {4}_stampArchitectureSolidCellsInto\([^)]*\) \{/);
-    if (stamp && /for \(const \w+ of this\.state\.architectures\)/.test(stamp))
-        v.push("der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)");
-    if (/_stempelImWasser\(/.test(src))
-        v.push(
-            "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)"
-        );
-    if (/_wasserVerdraengt/.test(src))
-        v.push("das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
-    for (const [wer, rx] of [
-        ["spawnArchitecture", /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/],
-        ["spawnCreatureAt", /\n {4}spawnCreatureAt\([^)]*\) \{/],
-    ]) {
-        const body = fnBody(src, rx);
-        // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
-        const ohneNein = body ? body.replace(/const nein = \(grund\) => \{[\s\S]*?return null;\s*\};/, "") : "";
-        if (/return null;/.test(ohneNein))
-            v.push(`die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
-    }
-    if (/natur_weicht/.test(src)) v.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis");
+    nicht("spawnArchitecture", /_invalidateWaterCapsAround\(/, "ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
+    nicht(
+        "_stampArchitectureSolidCellsInto",
+        /for \(const \w+ of this\.state\.architectures\)/,
+        "der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)"
+    );
+    nicht(null, /_stempelImWasser\(/, "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)");
+    nicht(null, /_wasserVerdraengt/, "das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
+    // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
+    for (const wer of ["spawnArchitecture", "spawnCreatureAt"])
+        nicht(wer, /(?<!const nein = \(grund\) => \{[^}]*)return null;/, `die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
+    nicht(null, /natur_weicht/, "das alte Protokoll `natur_weicht` lebt neben dem Ergebnis");
     return v;
 }
 
@@ -2302,9 +2273,8 @@ function selbsttest() {
         console.log(`  ${t ? "✅" : "❌"} ${name} → ${v[0] || "(kein Täter)"}`);
         if (!t) ok = false;
     }
-    // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm
-    const src = stammLib.text(path.join(__dirname, ".."));
-    const echt = leserUrteil(src);
+    // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
+    const echt = leserUrteil();
     const gifte = [
         [
             "Zwilling zurück",
@@ -2361,8 +2331,13 @@ function selbsttest() {
     console.log(`  ${echtOk ? "✅" : "❌"} der echte Stamm → ${echt.length ? echt.join(" · ") : "0 Täter"}`);
     if (!echtOk) ok = false;
     for (const [name, gift, re] of gifte) {
-        const s2 = gift(src);
-        const v = s2 === src ? ["(Gift griff nicht)"] : leserUrteil(s2);
+        let griff = true;
+        const v0 = leserUrteil((s) => {
+            const s2 = gift(s);
+            griff = griff && s2 !== s;
+            return s2;
+        });
+        const v = griff ? v0 : ["(Gift griff nicht)"];
         const t = v.some((x) => re.test(x));
         console.log(`  ${t ? "✅" : "❌"} Leser: ${name} → ${v[0] || "(kein Täter)"}`);
         if (!t) ok = false;
@@ -2580,7 +2555,7 @@ async function lauf() {
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
     const root = path.resolve(__dirname, "..");
     const befund = {};
-    befund.leser = leserUrteil(stammLib.text(root));
+    befund.leser = leserUrteil();
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = statikServer();

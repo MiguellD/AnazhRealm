@@ -3,11 +3,9 @@
 // 2 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const path = require("path");
 const SK = require("../lib/shader-kosten.cjs");
 const stammLib = require("../lib/stamm.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
-const SKRIPTE = path.join(__dirname, "..");
 
 // W3 UI-Puls: dirty(raum) → EINE rAF-gebündelte Render-Insel pro Raum. Das Organ `_uiDirty` dedupt
 // (Set + ein rAF) → Doppel-Render/Stale durch hand-verdrahtete Render-Aufrufe strukturell unmöglich.
@@ -49,18 +47,9 @@ async function checkBandW3UiPuls(ctx) {
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;
     });
-    // (4b) die GREP-WAND am Quelltext (außerhalb der Sandbox lesbar): die direkte Aufruf-Krankheit ist tot.
-    let srcOk = false;
-    try {
-        const src = stammLib.text(path.join(SKRIPTE, ".."));
-        const directMechanic = (
-            src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||
-            []
-        ).length;
-        srcOk = directMechanic === 0;
-    } catch (_e) {
-        srcOk = false;
-    }
+    // (4b) die Absenz über den EINEN Helfer: die direkte Aufruf-Krankheit ist tot — den Hof-Renderer ruft NUR der Raum
+    // des UI-Pulses (`_uiRoomRegistry`), jeder Mechanik-Pfad meldet `_uiDirty("hof")`.
+    const srcOk = stammLib.fehlt({ ausser: "_uiRoomRegistry" }, /this\._renderCreatureListUI\(/);
     check(
         "W3 UI-Puls: das EINE Organ (_uiDirty + _uiRoomRegistry mit ich/hof) existiert",
         res.organExists && res.registryRooms

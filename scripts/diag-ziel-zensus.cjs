@@ -41,10 +41,12 @@ const AUSGLEICH_NULL = [1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64];
 const VERBRAUCH_MIN = 3;
 
 // (r) DIE QUELL-WAND DER RUNDUNG (rein, Node, Absenz): keine zweite Abtastung des Szenen-Bilds umgeht den Ausgleich. Dass
-// `bild` ihn trägt, das Uniform den Vektor der Sonde liest und die Sonde lief, misst die Rundungs-Probe am Bild.
-function rundungQuelle(src) {
-    const n = ((stammLib.rumpf(src, "_ensurePostProcessing") || "").match(/sceneColor\.sample\(/g) || []).length;
-    return n > 1 ? [`das Szenen-Bild wird ${n}× abgetastet — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`] : [];
+// `bild` ihn trägt, das Uniform den Vektor der Sonde liest und die Sonde lief, misst die Rundungs-Probe am Bild. Über den EINEN
+// Helfer (stammLib.fehlt: Kommentare fallen, der Täter mit Zeile); `w` wandelt den Stamm (der Vor-Stand des Selbsttests).
+function rundungQuelle(w) {
+    return stammLib.fehlt("_ensurePostProcessing", /sceneColor\.sample\([\s\S]*sceneColor\.sample\(/, w)
+        ? []
+        : [`das Szenen-Bild wird mehrfach abgetastet (${stammLib.fehlt.wo}) — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`];
 }
 
 // Das Urteil der Wand über einen Lauf (rein).
@@ -154,23 +156,19 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${f.name}" → ${v.join(" · ") || "(grün)"}`);
     }
     // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
-    const stamm = stammLib.text(require("path").join(__dirname, ".."));
-    const q0 = rundungQuelle(stamm);
+    const q0 = rundungQuelle();
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
     console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
     const quellFaelle = [
         {
             name: "zweite Abtastung am Ausgleich vorbei",
-            src: stammLib.ersetze(stamm, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
-            muss: /2× abgetastet/,
+            // eine Mutation, die den Stamm nicht trifft, wirft (stammLib.ersetze: vakuös)
+            wandel: (t) => stammLib.ersetze(t, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
+            muss: /mehrfach abgetastet/,
         },
     ];
     for (const q of quellFaelle) {
-        if (q.src === stamm) {
-            fehler.push(`${q.name}: die Mutation trifft den Stamm nicht (die Probe ist veraltet)`);
-            continue;
-        }
-        const b = rundungQuelle(q.src);
+        const b = rundungQuelle(q.wandel);
         const ok = b.some((x) => q.muss.test(x));
         if (!ok) fehler.push(`${q.name}: die Quell-Wand nennt den Täter nicht (${q.muss})`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${q.name}" → ${b.join(" · ") || "(grün)"}`);
@@ -434,7 +432,7 @@ function rundungProbe() {
         out.karte = await page.evaluate(karteOhneFarbe);
         log(`Karte ohne Farbe: ${JSON.stringify(out.karte)}`);
         // (r) die Rundung des Ausgabe-Ziels: Quelle und echter Frame
-        out.rundungQuelle = rundungQuelle(stammLib.text(root));
+        out.rundungQuelle = rundungQuelle();
         out.rundung = await page.evaluate(rundungProbe);
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));

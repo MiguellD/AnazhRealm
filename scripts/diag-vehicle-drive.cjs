@@ -36,7 +36,6 @@
 //     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -49,18 +48,6 @@ const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
-}
-// Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren Muster woertlich).
-const stripComments = stammLib.ohneKommentare;
-function countOcc(src, needle) {
-    let n = 0,
-        i = 0;
-    for (;;) {
-        i = src.indexOf(needle, i);
-        if (i < 0) return n;
-        n++;
-        i += needle.length;
-    }
 }
 
 // ── DIE DIVERGENZ-LINSE: welche drive-Skalare weichen vom Soll ab? (===, byte) ──
@@ -147,31 +134,27 @@ function expectedFor(presetId) {
 
 // ===== TEIL A: die statischen Absenzen (Node, kommentarfrei) — die Präsenzen (Kern-Export, Brücke, Steckplatz, die Bindung
 // des Ritts an den Chokepoint, Kern-Sitz und Kern-Hülle) beweisen A2/A3 und der lebende Draht B-a … B-d =====
-function staticLaws(garageSrc, anazhSrc, phytoSrc) {
-    const garNC = stripComments(garageSrc);
-    const anazhNC = stripComments(anazhSrc);
-    const phytoNC = stripComments(phytoSrc);
+// Jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter beim Namen); `garage` wandelt die Shell (Selbsttest-Vor-Stand).
+function staticLaws(garage) {
     const out = [];
-    out.push([
+    const fehlt = (name, ...a) => out.push([name, stammLib.fehlt(...a), stammLib.fehlt.wo]);
+    fehlt(
         "A1: die Shell trägt kein eigenes FAHR-Literal und kein eigenes carPhys (sie liest VC.FAHR)",
-        !/maxSteer\s*:/.test(garNC) && !/function\s+carPhys/.test(garNC),
-    ]);
-    out.push(["A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", !/self\.__vehicleCore/.test(phytoNC)]);
-    // N6.4 — EIN Bewegungs-Pfad: jeder ride-Skalar lebt GENAU EINMAL im Stamm.
-    const rides = ["ride.topSpeedMul", "ride.kAcc", "ride.kBrake"];
-    out.push([
-        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake je genau 1× im Stamm)",
-        rides.every((n) => countOcc(anazhNC, n) === 1),
-        rides.map((n) => `${n}=${countOcc(anazhNC, n)}`).join(" "),
-    ]);
+        null,
+        /maxSteer\s*:|function\s+carPhys/,
+        { datei: "worlds/garage/garage.js", wandel: garage }
+    );
+    fehlt("A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", null, /self\.__vehicleCore/, { datei: "foundry-bruecke.js" });
+    // N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
+    fehlt(
+        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
+        { ausser: "_loopPlayerMovement" },
+        /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/
+    );
     return out;
 }
 
 (async () => {
-    const garageSrc = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
-    const anazhSrc = stammLib.text(root);
-    const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
-
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: ein verfaelschtes fahrprofil (Kriterium e) → die Divergenz-Linse MUSS feuern.
@@ -182,11 +165,12 @@ function staticLaws(garageSrc, anazhSrc, phytoSrc) {
         const bad2 = Object.assign({}, exp, { kBrake: exp.kAcc }); // kBrake auf kAcc gefaelscht (die Formel-Verwechslung)
         check("Selbst-Test 2: verfaelschtes kBrake → Divergenz erkannt", driveDiverges(bad2, exp).length >= 1);
         // V2: eine Shell mit EIGENEM FAHR-Literal (der Rueckfall vor den N6.1-Umzug) → A1 feuert.
-        const brokenShell = garageSrc.replace(
-            /const FAHR\s*=\s*VC\.FAHR[^\n]*/,
-            "const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};"
-        );
-        const a1 = staticLaws(brokenShell, anazhSrc, phytoSrc).filter((l) => l[0].startsWith("A1"));
+        const brokenShell = (t) =>
+            t.replace(
+                /const FAHR\s*=\s*VC\.FAHR[^\n]*/,
+                "const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};"
+            );
+        const a1 = staticLaws(brokenShell).filter((l) => l[0].startsWith("A1"));
         check(
             "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
             a1.some((l) => l[1] === false)
@@ -254,7 +238,7 @@ function staticLaws(garageSrc, anazhSrc, phytoSrc) {
     }
 
     console.log("=== N6/H7 — TEIL A: Formel + Paritaet + ein Pfad (Node) ===");
-    for (const [name, ok, detail] of staticLaws(garageSrc, anazhSrc, phytoSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     // A2 (Kriterium d) — FORMEL-PARITAET an 3 Presets: exportDrive == Hand-Ableitung aus den
     // Primitiven, mit denen die Shell ihre Probefahrt faehrt (carPhys + FAHR + DEFAULT_P/BASE_P).

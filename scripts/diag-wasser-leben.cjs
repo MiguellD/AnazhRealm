@@ -73,19 +73,9 @@ const SCHWELLE = {
 
 // B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
 // ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
-// (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Wand liest die Quelle (Kommentare fallen) und nennt die Zeile.
-function hashSin(quelle) {
-    // das Glied am Namen und sein Bereich am AST (stammLib.glieder, K38-N2): das Ende las bis dahin ein Kopf-Muster der
-    // nächsten Methode — ein umbrochener Kopf danach verlängerte den Stoff still um die Nachbarn
-    const g = stammLib.glieder(quelle).find((x) => x.name === "_ensureHydroSurfaceMaterial");
-    if (!g) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
-    const zeilen = quelle.slice(g.start, g.ende).split("\n");
-    for (const z of zeilen) {
-        const code = stammLib.ohneKommentare(z);
-        if (/\bsin\s*\(/.test(code)) return z.trim();
-    }
-    return null;
-}
+// (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Absenz über den EINEN Helfer (stammLib.fehlt: das Glied
+// am Namen, Kommentare fallen, ein fehlender Stoff wirft) nennt die Zeile; `quelle` ein Text statt des Stamms (Selbsttest).
+const hashSin = (quelle) => (stammLib.fehlt("_ensureHydroSurfaceMaterial", /\bsin\s*\(/, quelle) ? null : stammLib.fehlt.wo);
 
 // Der Täter des Selbsttests: der Hash vor K40, im Gewand des Stoffs.
 const HASH_ALT =
@@ -791,7 +781,7 @@ function selbsttest() {
     ];
     let rot = 0;
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
-    const quelleSin = hashSin(stammLib.text(require("path").join(__dirname, "..")));
+    const quelleSin = hashSin();
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
@@ -942,7 +932,7 @@ async function lauf() {
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
         });
-    let befund = { seitenFehler, hashSin: hashSin(stammLib.text(root)) };
+    let befund = { seitenFehler, hashSin: hashSin() };
     let exit = 1;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
