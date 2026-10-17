@@ -263,7 +263,7 @@ function sollIstSchreiben(ziele, messung) {
 // (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
 // Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
 function tafelText(v, ein = "") {
-    if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return JSON.stringify(v).replace(/,/g, ", ");
+    if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return `[${v.map((x) => JSON.stringify(x)).join(", ")}]`;
     if (!v || typeof v !== "object") return JSON.stringify(v);
     const innen = ein + "    ";
     const jeZeile = (k) => k === "klassen" && v.werkzeug && v[k] && typeof v[k] === "object" && !Array.isArray(v[k]);

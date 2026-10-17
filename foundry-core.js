@@ -153,7 +153,9 @@ var WASSER_GESETZ = {
     // K2 (rein additiv) — DIE WELLE DER WELT (Welt-Leser; das Studio-GLSL liest sie nicht): der Hub des Hydro-Stoffs. Duenung der
     // offenen See (drei Rausch-Oktaven je +-0,5, Gewichte duenung) und Kraeuseln ((Rausch + oktave*Rausch - mitte) * kraeusel *
     // Kraeusel-Staerke <= kraeuselDecke); phase (s) = die Fluss-Phase einer advektierten Lage des Wasser-Bilds.
-    welle: { duenung: [1.4, 0.7, 0.34], oktave: 0.4, mitte: 0.7, kraeusel: 2.2, kraeuselDecke: 1, phase: 4 },
+    // A12-n1 (rein additiv): treiber = was das Kraeuseln treibt, t0 * Stroemungs-Anteil + t1 * Wind (0 ruhig ... 1 Sturm) -
+    // der stille See kraeuselt allein im Wind, der Fluss wirbelt auch in der Flaute; die Duenung traegt weiter `wind`.
+    welle: { duenung: [1.4, 0.7, 0.34], oktave: 0.4, mitte: 0.7, kraeusel: 2.2, kraeuselDecke: 1, phase: 4, treiber: [0.7, 0.9] },
 };
 
 // DAS REGEN-GESETZ (Welle L, rein additiv): EIN Regen fuer Labor und Welt — fallende Schlieren in einem Kasten um das
