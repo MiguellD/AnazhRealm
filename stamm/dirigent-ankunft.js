@@ -931,6 +931,13 @@ class AnazhRealm_dirigent_ankunft {
         const w = Math.acos(Math.max(-1, Math.min(1, (dx * B.fx + dz * B.fz) / d)));
         return w - Math.asin(Math.min(1, rr / d)) <= B.halb;
     }
+    // Der Schlüssel des Blicks im Rang der Foundry-Schlange (`_foundryAuftragD2`): bis das erste Weltbild steht, trägt ein Ding
+    // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
+    _blickRang(x, z) {
+        const E = AnazhRealm.ERSTER_BLICK;
+        if (this.state._weltbildDa || this._imErstenBlick(x, z, E.dingM)) return 0;
+        return E.ausserD2;
+    }
     // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2.
     _rangImErstenBlick(rang) {
         return rang < AnazhRealm.ERSTER_BLICK.ausserD2;

@@ -1083,13 +1083,8 @@ class AnazhRealm_studio_bruecke {
         if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
         const dx = wo.x - pm.x,
             dz = wo.z - pm.z;
-        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — außer Blick trägt er
-        // ERSTER_BLICK.ausserD2 obenauf, nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt den Schlüssel wieder ab
-        const aus =
-            !this.state._weltbildDa && !this._imErstenBlick(wo.x, wo.z, AnazhRealm.ERSTER_BLICK.dingM)
-                ? AnazhRealm.ERSTER_BLICK.ausserD2
-                : 0;
-        return dx * dx + dz * dz + aus;
+        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — `_blickRang`
+        return dx * dx + dz * dz + this._blickRang(wo.x, wo.z);
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
     // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk. Ein Werk-Helfer (`_foundryHelfer`) trägt
