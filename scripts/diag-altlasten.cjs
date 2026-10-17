@@ -1555,17 +1555,17 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
 
 // DIE KARTEN-WAND (W6): die Karten-Methoden malen nichts im Haupt-Thread — keine CanvasTexture, kein Canvas, kein
 // getContext/putImageData (bis V18.528: je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
-// kommt kodiert aus dem Worker und wird kopiert (`_impostorAtlasSchreibe`).
+// backt im Welt-Renderer, die GPU legt sie ab (`_karteWeltBacken`, `_karteAblage`, S2).
 const KARTEN_METHODEN = [
     "_impostorAtlas",
     "_impostorAtlasTexturen",
-    "_impostorAtlasSchreibe",
+    "_karteWeltBacken",
+    "_karteAblage",
     "_impostorZelleNeu",
     "_impostorQuad",
     "_impostorAtlasMaterial",
     "_impostorLeaf",
     "_tickImpostorBake",
-    "_applyStudioImpostorPayload",
     "_buildImpostorLeaf",
     "_foundryEnsureImpostorRecord",
     "_foundryBuildImpostorFlat",
@@ -3345,7 +3345,7 @@ function main() {
             scanKartenWand(stamm).length === 0 &&
             scanKartenWand(
                 stammLib.ersetze(stamm, null,
-                    /(\n {4}_impostorAtlasSchreibe\([^)]*\) \{)/,
+                    /(\n {4}_karteAblage\([^)]*\) \{)/,
                     '$1\n        const cv = document.createElement("canvas");'
                 )
             ).length === 1;

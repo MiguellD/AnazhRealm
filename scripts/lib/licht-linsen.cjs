@@ -719,7 +719,10 @@ function albedoSicht(opts) {
 // dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
+    // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
+    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
     const zeichne = () => {
+        window.anazhRealm._schattenAlleNeu();
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
@@ -1329,7 +1332,8 @@ function laubGegenlicht(opts) {
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
-        const abstand = opts.abstand || 8;
+        let abstand = opts.abstand || 8;
+        let verdeckt = null;
         // Die Sonne steht HINTER der Krone: ihre Höhe ist die Peilung vom Auge zur Kronen-Mitte (mindestens 5°) — eine feste
         // Höhe (`sonne` in Grad) stand für den hohen Baum unter der Krone (aus 8 m blickt das Auge 40° hinauf).
         let elev = opts.sonne > 0 ? (opts.sonne * Math.PI) / 180 : null;
@@ -1344,13 +1348,16 @@ function laubGegenlicht(opts) {
             const k = o.material && o.material.userData && o.material.userData.foundryKind;
             if ((k === "foliage" || k === "foliageTex") && art.test(r._taeterKlasse(o))) laub.push(o);
         });
-        if (!laub.length) return { fehler: "keine Laub-Senke der Art " + art };
+        // der Schuss der Karte (`karte: 2`) sucht kein Exemplar: alle Kronen stehen auf der Karte, das Ziel ist das der Gestalt
+        const vorher = opts.karte === 2 ? window.__karteGestalt : null;
+        if (!laub.length && !vorher) return { fehler: "keine Laub-Senke der Art " + art };
         // Das Exemplar: die nächste Instanz zum Spieler (ab 6 m, sonst stünde das Auge im Stamm).
         const m4 = new T.Matrix4(),
             p = new T.Vector3(),
             q = new T.Quaternion(),
             s = new T.Vector3();
         let ziel = null;
+        const gef = (x, z) => [r._voxelSurfaceY(x + 2, z) - r._voxelSurfaceY(x - 2, z), r._voxelSurfaceY(x, z + 2) - r._voxelSurfaceY(x, z - 2)].map((v) => v / 4);
         for (const o of laub) {
             const n = o.isInstancedMesh ? o.count : 1;
             if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
@@ -1365,24 +1372,72 @@ function laubGegenlicht(opts) {
                 const d = opts.ziel
                     ? Math.hypot(p.x - opts.ziel[0], p.z - opts.ziel[1])
                     : Math.hypot(p.x - von[0], p.z - von[1]);
-                if ((opts.ziel || opts.anker || d > 6) && (!ziel || d < ziel.d)) {
+                // `hang` (S2b): nur ein Exemplar an einem Hang mindestens so steil (Gefälle am Fuß), das Auge steht talwärts
+                if ((opts.ziel || opts.anker || d > 6) && (!ziel || d < ziel.d) && (!opts.hang || opts.ziel || Math.hypot(...gef(p.x, p.z)) >= opts.hang)) {
                     const box = o.geometry.boundingBox.clone().applyMatrix4(m4);
                     ziel = { d, o, i, box, fuss: p.clone() };
                 }
             }
         }
+        if (vorher) ziel = vorher.ziel;
         if (!ziel) return { fehler: "kein Exemplar der Art" };
+        // der Schuss der Gestalt nur am Exemplar des Plans in seiner Gestalt (sonst stünde ein fremder Baum im Vergleich)
+        if (opts.karte === 1 && opts.ziel && ziel.d > 1.5) return (window.__karteGestalt = null), { fehler: "das Exemplar zeigt keine Gestalt", d: +ziel.d.toFixed(1) };
         const mitte = ziel.box.getCenter(new T.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
         const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
-        const dh = new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z).normalize();
+        const tal = opts.hang && !opts.ziel ? gef(ziel.fuss.x, ziel.fuss.z) : null;
+        let dh = (tal ? new T.Vector3(-tal[0], 0, -tal[1]) : new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
+        // DAS SPIEL-AUGE (S2b): `wechsel` stellt das Auge in den Abstand, ab dem das Spiel die Karte zeigt — die Stufen-Wahl
+        // (`_chooseLODForDistance`) aus der Karte heraus für die Höhe des Exemplars, die nächste Distanz mit Karte —, mal `wechsel`;
+        // `augeH` ist die Augenhöhe über dem Boden (Ego 1,6, Third 3,5).
+        if (opts.wechsel > 0) {
+            let d = 4;
+            while (d < 600 && r._chooseLODForDistance(d, 2, hoehe) !== 2) d += 0.25;
+            abstand = d * opts.wechsel;
+            // FREIE SICHT: im Spiel-Abstand stünde das Exemplar im Wald hinter anderen Kronen, und der Vergleich zählte ihre Stufen
+            // mit — das Auge nimmt die Peilung (24 Richtungen, am Hang höchstens 60° neben talwärts), deren Gang zum Exemplar keine
+            // andere Krone (jede Laub- und Karten-Senke, Kronen-Radius 3,5 m) kreuzt, sonst die mit den wenigsten
+            const baeume = [];
+            for (const o of opts.plan ? alle : []) {
+                if (!o.isInstancedMesh || !/^(f|fimp):/.test(r._taeterKlasse(o))) continue;
+                for (let i = 0; i < o.count; i++) {
+                    o.getMatrixAt(i, m4);
+                    m4.premultiply(o.matrixWorld);
+                    p.setFromMatrixPosition(m4);
+                    if (Math.hypot(p.x - ziel.fuss.x, p.z - ziel.fuss.z) > 0.5) baeume.push(p.x, p.z);
+                }
+            }
+            let best = null;
+            for (let k = 0; k < 24; k++) {
+                const a = (k / 24) * Math.PI * 2;
+                const ux = Math.cos(a), uz = Math.sin(a);
+                if (tal && ux * dh.x + uz * dh.z < 0.5) continue;
+                let n = 0;
+                for (let j = 0; j < baeume.length; j += 2) {
+                    const qx = baeume[j] - ziel.fuss.x, qz = baeume[j + 1] - ziel.fuss.z;
+                    const t = qx * ux + qz * uz;
+                    if (t > 2 && t < abstand && Math.abs(qx * uz - qz * ux) < 3.5) n++;
+                }
+                if (!best || n < best.n) best = { n, ux, uz };
+            }
+            if (best && opts.plan) {
+                dh = new T.Vector3(best.ux, 0, best.uz);
+                verdeckt = best.n;
+            }
+        }
         // Die Stufe folgt dem Spieler: `plan` nennt den Augen-Ort (der Aufrufer stellt den Spieler dorthin und lässt die Stufen
         // einschwingen); mit `ziel` steht das Auge am Spieler.
+        // mit `auge` (x, z) steht das Auge genau am Plan-Ort (der Spieler darf beim Einschwingen rutschen)
         const auge = opts.ziel
-            ? new T.Vector3(pp.x, 0, pp.z)
+            ? new T.Vector3(opts.auge ? opts.auge[0] : pp.x, 0, opts.auge ? opts.auge[1] : pp.z)
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
-        auge.y = r._voxelSurfaceY(auge.x, auge.z) + 1.7;
-        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1) };
+        auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
+        // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
+        // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet)
+        const D = r.constructor.LOD_DISTANCES;
+        const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
+        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;
@@ -1411,6 +1466,7 @@ function laubGegenlicht(opts) {
         const out = {
             art: opts.art || "buche",
             abstand: +Math.hypot(auge.x - ziel.fuss.x, auge.z - ziel.fuss.z).toFixed(1),
+            gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1),
             sonneGrad: +((elev * 180) / Math.PI).toFixed(1),
             hoehe: +hoehe.toFixed(1),
             d: +ziel.d.toFixed(1),
@@ -1464,7 +1520,8 @@ function laubGegenlicht(opts) {
             const img = cx.createImageData(W, H);
             const enc = (v) =>
                 Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
-            const Yp = new Float32Array(W * H).fill(-1);
+            const Yp = new Float32Array(W * H).fill(-1),
+                Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
                 for (let x = 0; x < W; x++) {
                     const i = y * schritt + x * 4;
@@ -1473,6 +1530,7 @@ function laubGegenlicht(opts) {
                     if (a > 0) {
                         const c = [half(px[i]), half(px[i + 1]), half(px[i + 2])];
                         Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
                         img.data[o + 1] = enc(c[1]);
                         img.data[o + 2] = enc(c[2]);
@@ -1484,12 +1542,77 @@ function laubGegenlicht(opts) {
                     img.data[o + 3] = 255;
                 }
             cx.putImageData(img, 0, 0);
-            return { Yp, png: cv.toDataURL("image/png") };
+            return { Yp, Cp, png: cv.toDataURL("image/png") };
         };
         try {
             for (const m of alle) m.visible = laub.includes(m);
             bundles();
             if (luftU) luftU.beta.value = 0;
+            if (opts.karte) {
+                // DIE KARTE GEGEN IHRE GESTALT (A7, Lehre 19/21: Labor = Welt, die Karte ist dieselbe Krone in einer anderen Stufe):
+                // dasselbe Auge auf die Kugel des Exemplars, die Licht-Kette der Bühne (Sonne mit Schatten, Himmel), derselbe Baum-Satz
+                // (Laub, Rinde, Karten jeder Art) — Schuss 1 in den Stufen der Gestalt, Schuss 2 (der Aufrufer stellt die Stufen auf
+                // die Karte) jede Krone als Karte. Gezählt jedes Pixel im Rechteck der Box, das beide zeichnen; Mittel linear, L*, C*ab.
+                for (const m of alle)
+                    m.visible = /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material && m.material.userData && m.material.userData.foundryKind));
+                bundles();
+                const fovAlt = cam.fov,
+                    rad = ziel.box.min.distanceTo(ziel.box.max) / 2;
+                cam.position.copy(auge);
+                cam.lookAt(mitte);
+                cam.fov = Math.min(fovAlt, (360 / Math.PI) * Math.atan((1.1 * rad) / auge.distanceTo(mitte)));
+                // DIE TIEFEN-SCHEIBE (S2b): im Spiel-Abstand stehen Kronen vor und hinter dem Exemplar im Rechteck (Wald, Gebüsch,
+                // die Kronen hinter ihm in fremder Stufe) — die Kamera zeichnet nur den Zylinder des Exemplars (near/far um seine
+                // Mitte, so tief wie die Krone breit: die Kugel der Box trug beim hohen Baum die halbe Höhe als Tiefe)
+                const nfAlt = [cam.near, cam.far],
+                    rxz = Math.max(ziel.box.max.x - ziel.box.min.x, ziel.box.max.z - ziel.box.min.z) / 2;
+                cam.near = Math.max(0.1, auge.distanceTo(mitte) - rxz);
+                cam.far = auge.distanceTo(mitte) + rxz;
+                cam.updateProjectionMatrix();
+                cam.updateMatrixWorld(true);
+                const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
+                for (let k = 0; k < 8; k++) {
+                    const e = new T.Vector3(k & 1 ? ziel.box.max.x : ziel.box.min.x, k & 2 ? ziel.box.max.y : ziel.box.min.y, k & 4 ? ziel.box.max.z : ziel.box.min.z).project(cam);
+                    rand[0] = Math.max(rand[0], Math.abs(e.x));
+                    rand[1] = Math.max(rand[1], Math.abs(e.y));
+                }
+                const b = await lies("die Karte gegen die Gestalt");
+                [cam.near, cam.far] = nfAlt;
+                cam.fov = fovAlt;
+                cam.updateProjectionMatrix();
+                if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: r._taeterKlasse(ziel.o), ziel })), { stufe: out.stufe };
+                const g = window.__karteGestalt;
+                const lab = (rgb) => {
+                    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+                    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
+                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+                    return { Y: +Y.toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+                };
+                const sg = [0, 0, 0], sk = [0, 0, 0];
+                let n = 0;
+                // DAS EXEMPLAR ALLEIN (S2b): gezählt wird die Insel um die Mitte der Krone, die beide Schüsse zeichnen (Lücken
+                // bis 3 px gehören zur Krone) — Nachbarn in derselben Tiefe stehen als eigene Inseln daneben
+                const im = (i) => g && g.Yp[i] >= 0 && b.Yp[i] >= 0 && Math.abs(((i % W) + 0.5) / W * 2 - 1) <= rand[0] && Math.abs((((i / W) | 0) + 0.5) / H * 2 - 1) <= rand[1];
+                const insel = new Uint8Array(W * H), stapel = [];
+                for (let i = 0, best = Infinity; i < W * H; i++) {
+                    const dd = ((i % W) - W / 2) ** 2 + (((i / W) | 0) - H / 2) ** 2;
+                    if (im(i) && dd < best) (best = dd), (stapel[0] = i);
+                }
+                if (stapel.length) insel[stapel[0]] = 1;
+                while (stapel.length) {
+                    const i = stapel.pop(), x = i % W, y = (i / W) | 0;
+                    for (let v = Math.max(0, y - 3); v <= Math.min(H - 1, y + 3); v++)
+                        for (let u = Math.max(0, x - 3); u <= Math.min(W - 1, x + 3); u++) if (!insel[v * W + u] && im(v * W + u)) (insel[v * W + u] = 1), stapel.push(v * W + u);
+                }
+                for (let i = 0; g && i < W * H; i++)
+                    if (insel[i]) {
+                        for (let c = 0; c < 3; c++) (sg[c] += g.Cp[i * 3 + c]), (sk[c] += b.Cp[i * 3 + c]);
+                        n++;
+                    }
+                if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
+                const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
+                return Object.assign(out, { stufe: g.stufe, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+            }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
                 // über dem Exemplar, die Licht-Kette der Bühne unberührt (Mittag, Sommer, Sonne mit Schatten, Himmel). Drei Bilder
@@ -1627,10 +1750,18 @@ function laubGegenlicht(opts) {
 // DAS URTEIL DER LAUB-LICHT-LINSE (K19): je Art leuchtet das Laub im Gegenlicht — Luma Gegenlicht / Auflicht ≥ `glanz`
 // (1,3) —, und das Labor zeigt dasselbe Verhältnis (± `labor`, 10 %), wo es gemessen ist. Täter beim Namen.
 function laubLichtUrteil(messung, band) {
-    band = Object.assign({ glanz: 1.3, labor: 0.1 }, band || {});
+    band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
     const zeilen = [];
     for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
+        if (w && w.karte) {
+            // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
+            const k = w.karte;
+            zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC });
+            if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
+                befunde.push(`KARTE ${art}: Karte/Gestalt (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+            continue;
+        }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {
             befunde.push(`LAUB-LICHT ${art}: keine Messung (${(w && w.fehler) || "kein Laub-Pixel"})`);
             continue;

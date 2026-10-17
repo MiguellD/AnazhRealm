@@ -4524,7 +4524,7 @@ init();
         // Escape verlässt das Portal NUR im Studio: im Wald gehört Escape dem PointerLock ("Maus frei") und der ✕-Knopf dem
         // Wald-Ausgang (kein Doppel-Sinn).
         esc: () => !(forestMode || document.pointerLockElement),
-        // DIE ASSET-KANÄLE (build-asset · bake-impostor · render-native · get-book · export-settlement)
+        // DIE ASSET-KANÄLE (build-asset · get-book · export-settlement)
         sonst: (msg) => foundryKanal(msg),
     });
 })();

@@ -445,10 +445,6 @@ class AnazhRealm_stoff_material {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = THREE.TSL;
         this.state.atmoUniforms = {
-            // Tag-Licht-Achse (0 = tiefe Nacht, 1 = voller Tag); Schreiber: das EINE Himmels-Update
-            // (_celestialHorizonFade). Konsument: die Impostor-Karte — ihr eingebackenes Tageslicht MUSS mit der
-            // Sonne fallen (sonst glüht sie nachts).
-            tagLicht: TSL.uniform(1.0),
             // B8 — das warme Struktur-RIM (Fresnel-Saum, die Ghibli-Silhouetten-
             // Kante im Gegenlicht). 0 = aus. Live-tunbar (Schöpfer-Sign-off).
             rimStrength: TSL.uniform(
@@ -846,6 +842,7 @@ class AnazhRealm_stoff_material {
                                     if (!_at.mapNode) {
                                         _at.mapNode = _Ta.texture(_at.map);
                                         _at.nmapNode = _Ta.texture(_at.nmap);
+                                        _at.lmapNode = _Ta.texture(_at.lmap);
                                     }
                                     const _V = _Ta.float(_at.V);
                                     const _uv = _Ta.attribute("uv", "vec2");
@@ -866,7 +863,12 @@ class AnazhRealm_stoff_material {
                                     const _m0 = _naht.spalte(0);
                                     const _sV = _naht.skala; // die Instanz-Skala im Vertex-Takt
                                     const _sInst = _Ta.varying(_sV, "vKarteSkala");
-                                    const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
+                                    // DIE PEILUNG OHNE VORZEICHEN-NULL (S2b, gate:foundry-impostor C auf swiftshader): eine Instanz
+                                    // ohne Drehung trägt Spalte 0 = (1, 0, +0), negiert −0 — swiftshader liest am Vorzeichen-Bit
+                                    // atan2(−0, 1) = π, die Karte zeigte ihre Rückseite (gespiegelt). Jede Peilung der Karte geht
+                                    // darum durch EINEN Leser, der die Null als +0 reicht.
+                                    const _peil = (y, x) => _Ta.atan(_Ta.select(y.equal(0.0), _Ta.float(0.0), y), x);
+                                    const _aRot = _Ta.varying(_peil(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -875,7 +877,7 @@ class AnazhRealm_stoff_material {
                                     const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
                                     const _hl2 = _hx.mul(_hx).add(_hz.mul(_hz));
                                     const _dA = _Ta.sqrt(_hl2.sub(_k.mul(_k)).max(_Ta.float(1e-4)));
-                                    const _ang = _Ta.atan(_hx.negate(), _hz.negate()).add(_Ta.atan(_k, _dA));
+                                    const _ang = _peil(_hx.negate(), _hz.negate()).add(_peil(_k, _dA));
                                     // ── View-Wahl + Blend (Vorlage: vView=fract((ang−aRot)/2π)); Studio-Layout: die Ansichten
                                     //    VERTIKAL gestapelt, Zeile 0 = Unterkante der Ansicht 0 (readPixels bottom-up) ──
                                     const _vView = _Ta.fract(
@@ -891,8 +893,11 @@ class AnazhRealm_stoff_material {
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
                                     const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
                                     const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
-                                    const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
+                                    // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht v in
+                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt.
+                                    const _vZ = _Ta.float(1.0).sub(_vIn);
+                                    const _uvA = _Ta.vec2(_uv.x, _vZ.add(_v0).div(_V));
+                                    const _uvB = _Ta.vec2(_uv.x, _vZ.add(_v1).div(_V));
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -925,7 +930,7 @@ class AnazhRealm_stoff_material {
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, vAns) => {
                                         const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
-                                        const cy = _vIn.mul(_kubY).sub(_Ta.float(0.5));
+                                        const cy = _vZ.mul(_kubY).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
                                         const fx = cx.sub(ix),
@@ -1005,11 +1010,10 @@ class AnazhRealm_stoff_material {
                                         }
                                     }
                                     // Die Schicht ist VORMULTIPLIZIERT (transparent = 0, Karten-Gesetz): rgb / alpha — kein dunkler
-                                    // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß.
-                                    // Das eingebackene Tageslicht fällt mit der Sonne (tagLicht-Uniform) — sonst leuchtet die Karte
-                                    // nachts heller als echte Geometrie; Boden 0.12 = Mond-Silhouette.
+                                    // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß. Seit A7
+                                    // ist er reine Albedo (linear, ohne Tonkurve): das Licht kommt allein aus der EINEN Licht-Kette —
+                                    // die Tag-Licht-Achse, die ein eingebackenes Tageslicht mit der Sonne fallen ließ, fiel mit ihm.
                                     const _rgbK = _samp.rgb.div(_samp.a.max(_Ta.float(1e-3)));
-                                    const _auN = this._ensureAtmoUniforms();
                                     // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
                                     // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
                                     const _suK = this._ensureSeasonUniforms();
@@ -1020,28 +1024,52 @@ class AnazhRealm_stoff_material {
                                             _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
                                         )
                                     );
-                                    albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
+                                    albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
-                                    const _nxy = _Ta
-                                        .mix(_probeA(_at.nmapNode, _uvA).xy, _probeA(_at.nmapNode, _uvB).xy, _fb)
+                                    // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
+                                    // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der
+                                    // Nachbarn, `_karteRechenPlan`)
+                                    const _vm = _at.fmt === "rgba8";
+                                    // DIE NORMALE DER NÄCHSTEN ANSICHT (S2b): die Albedo mischt die beiden Ansichten, die Normale
+                                    // nie — dieselbe Stelle des Quads trifft in zwei Ansichten 45° auseinander verschiedene Blätter,
+                                    // ihr Mittel kippte die lichte Krone zum Auge (Radeon, Genesis Ego, Birke: Zenit-Sonne 54 %,
+                                    // Seiten-Sonne 63–70 %, Front 111 % ihrer L1 — Karte/Gestalt 0,64 → 1,04)
+                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA, _uvB));
+                                    const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
                                     const _nz = _Ta.sqrt(_Ta.float(1.0).sub(_nxy.dot(_nxy)).max(_Ta.float(0.0)));
                                     const _sinA = _Ta.sin(_ang);
                                     const _cosA = _Ta.cos(_ang);
-                                    const _look3 = _Ta.vec3(_sinA, _Ta.float(0.0), _cosA);
+                                    // DER RAHMEN BLICKT AUFS AUGE (A7): der Bäcker sah die Krone waagrecht, das Auge sieht sie
+                                    // unter der Höhe φ (von unten: die Unterseiten, von oben: die Wipfel). Der Rahmen der
+                                    // Normale kippt darum um die Rechte, bis „zur Kamera" auf das Auge zeigt — wie die Gestalt
+                                    // die Flächen zeigt, die zum Auge stehen. Waagrecht gebacken stand die nahe Fichte im
+                                    // Himmels-Licht 1,44 × so hell wie ihre Gestalt (Werkbank, Radeon, Genesis, Auge 1,7 m).
+                                    const _hy = _Ta.positionWorld.y.sub(_Ta.cameraPosition.y);
+                                    const _lE = _Ta.sqrt(_dA.mul(_dA).add(_hy.mul(_hy))).max(_Ta.float(1e-4));
+                                    const _cosE = _dA.div(_lE);
+                                    const _sinE = _hy.negate().div(_lE);
+                                    const _look3 = _Ta.vec3(_sinA.mul(_cosE), _sinE, _cosA.mul(_cosE));
+                                    const _up3 = _Ta.vec3(_sinA.mul(_sinE).negate(), _cosE, _cosA.mul(_sinE).negate());
                                     const _right3 = _Ta.vec3(_cosA, _Ta.float(0.0), _sinA.negate());
                                     const _nW = _Ta.normalize(
-                                        _right3
-                                            .mul(_nxy.x)
-                                            .add(_Ta.vec3(0.0, 1.0, 0.0).mul(_nxy.y))
-                                            .add(_look3.mul(_nz))
+                                        _right3.mul(_nxy.x).add(_up3.mul(_nxy.y)).add(_look3.mul(_nz))
                                     );
                                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView):
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
+                                    // ── DIE SONNEN-SICHT DER KRONE (A7): die volle Krone beschattet sich in der Kaskade selbst,
+                                    //    die Karte wirft nie — ihr Bake misst je Texel, welchen Teil des Richtlichts die eigene
+                                    //    Krone durchlässt (`_karteBuehne`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
+                                    //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
+                                    //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
+                                    //    BC: r8, leer = das Mittel der Schicht; rgba8: vormultipliziert mit der Deckung (g).
+                                    const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
+                                    const _sicht = _vm ? _lP.r.div(_lP.g.max(_Ta.float(1e-3))).min(1.0) : _lP.r;
+                                    mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
                                     //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker

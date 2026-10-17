@@ -28,18 +28,8 @@ Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mi
 seinen ov-Hash an: `<preset>|<gestalt>|<lod>|ov:<hash>` (`_studioOvHash`, reihenfolgefest) — nur die Werkstatt-Vorschau
 und die Hand (`wo === 0` mit ov) sind Unikate ohne Platte.
 
-DIE KARTE (V18.527, W6 als Atlas-Schicht) liegt im selben Store:
-
-```text
-karte|<preset>|<gestalt>[|ov:<hash>]|<fmt>  →  { payload: { cw, ch, V, nt, fmt, frame: { halfH, halfW }, albedo, normal, opak, deckung } }
-```
-
-(`_foundryKartenKey` + Schicht-Format `fmt` = `bc` | `rgba8`; die Schale kodiert die Studio-Karte mit dem Karten-Codec
-aus phyto-core (`karteKodiere`): `albedo` = BC1-sRGB mit deckungstreuen Mips (`bc`) bzw. rgba8-sRGB Stufe 0, `normal`
-= BC5 bzw. rg8 auf 1/`nt`, die Stufen hintereinander nach `karteMasse` — eine Schicht 0,25 MiB in `bc`. Geschrieben
-vor dem Transfer; ein leerer/fehlerhafter Bake wird nie persistiert (die NICHT-LEERE-WAND `KARTEN_GESETZ.minOpak`
-steht in der Schale vor der Platte und beim Lesen von ihr). Der Host lädt die Schicht ohne Umdrehen in den
-EINEN Karten-Atlas, `_impostorAtlas`.)
+DIE KARTE liegt seit S2 auf keiner Platte: sie backt im Welt-Renderer aus der L1-Gestalt (`_karteWeltBacken`), die GPU
+legt sie ab (BC1/BC5, deckungstreue Mips) — kein Kanal, kein Codec im Worker, kein Store-Eintrag.
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
@@ -48,7 +38,7 @@ geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
   `_foundryVariantFor(seed, preset)` wählt sie aus den hohen Hash-Bits, die Bibliothek wärmt 1..V).
 - `lod` — `0 | 1 | 2` (beim Gras trägt die Stufen-Position den `stage`-Wert desselben Formats).
 - KEINE Saison (V18.527): jeder Körper ist Golden-Sommer gebacken — die Transport-Schale nagelt `season: "summer"`
-  auf jeden `build-asset`/`bake-impostor`, bevor das Studio ihn sieht; das Jahr färbt der Host über die Uniform
+  auf jeden `build-asset`, bevor das Studio ihn sieht; das Jahr färbt der Host über die Uniform
   `uSeasonMul` (SAISON_GESETZ). Die 36 Sommer↔Winter-Golden-Paare (`spec/asset-contract`) unterscheiden sich nur in
   `foliage.color`/`foliageTex.color` — Position, Normale, UV, Index und Rinde sind byte-gleich.
 
@@ -113,7 +103,6 @@ stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + brueck
 | Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei Generator- und Format-Edit)         |
 | Headless/Null-Renderer         | Platte AUS (`cfg.platte` false, gate-deterministisch); der Schlüssel reist, die Schale entscheidet |
 | Vorrat (`vorrat: true`)        | liegt der Körper auf der Platte oder gibt es keine: leere Antwort ohne Bau; sonst Bau → Put → leer |
-| Karte (`bake-impostor`)        | Treffer (gleiches `fmt`): `impostor` von der Platte (`platte: true`), kein Bake; Miss: Bake → Kodierung → Put → Transfer; `nurPlatte`-Miss: payload null |
 | Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |
 | Leerer/`null`-Reply            | wird NIE persistiert (der Put verlangt `meshes.length`; die Art bleibt nachfragbar)             |
 
@@ -220,7 +209,7 @@ an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 | `AnazhRealm.LEGACY_LICHT` (§26-Statics) | die EINE Konstante (Math.PI), kein Tuning-Knopf                  |
 | `_dayNightApplyDirectionalLight`        | Sonne/KEY · FILL · RIM · BACK (je `base × LEGACY_LICHT × a.lum`) |
 | `_dayNightApplyAmbient`                 | der Hemi-Tag-Term (`0.45 × LEGACY_LICHT × sunHeight`)            |
-| (Bäcker-Vereinigung)                    | der Impostor-Atlas backt seit der Vereinigung im r128-STUDIO-Bäcker (`bake-impostor`) — dort gilt die Legacy-Lichtwelt nativ, kein Welt-Bake-Rig mehr |
+| (S2 die Karte backt in der Welt)         | der Impostor-Atlas backt im Welt-Renderer (`_karteWeltBacken`) aus denselben Stoffen, die die Welt zeichnet — die Welt-Lichtkette gilt nativ, kein Bake-Rig |
 
 **Ü2 — FARBE (raw-als-linear):** r128 las Hex-Farben ALS LINEAR — treue Studio-Werte reisen
 deshalb als ROHE lineare Zahlen und werden roh=linear gelesen (nie als sRGB-Hex re-interpretiert):

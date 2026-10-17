@@ -26,8 +26,7 @@ function flussLinse() {
         for (const k in x) s += bytesOf(x[k], seen);
         return s;
     };
-    // Beide Studio-Fäden (das Werk und der erste Bäcker, `_foundryBaecker` — mit dem Studio oder beim ersten Karten-Auftrag geboren): je Antwort
-    // die Bahn, die Worker-Auslastung (FIFO) rechnet je Faden.
+    // Der Studio-Faden des Werks: je Antwort die Bahn, die Worker-Auslastung (FIFO) rechnet je Faden.
     const haken = (w, bahn) => {
         const pm = w.postMessage.bind(w);
         w.postMessage = function (msg, tr) {
@@ -66,16 +65,6 @@ function flussLinse() {
         };
     };
     haken(f.worker, "werk");
-    if (f.baecker) haken(f.baecker, "baecker");
-    else if (typeof r._foundryBaecker === "function") {
-        const gb = r._foundryBaecker.bind(r);
-        r._foundryBaecker = (ff) => {
-            const neu = !ff.baecker;
-            const w = gb(ff);
-            if (neu && w) haken(w, "baecker");
-            return w;
-        };
-    }
     const bg = r._foundryBuildGroup.bind(r);
     r._foundryBuildGroup = (meshes, stage) => {
         const t = performance.now();
@@ -128,7 +117,7 @@ function flussBericht() {
         k.desMax = r1(k.desMax);
     }
     // Worker-Auslastung (FIFO je Faden): Arbeit = Antwort − max(Senden, vorige Antwort) — nur Aufträge mit Sende-
-    // Stempel; `worker` ist das Werk, `baecker` der Karten-Faden.
+    // Stempel; `worker` ist das Werk.
     const fifo = (bahn) => {
         const mitStempel = L.done.filter((d) => d.tSend != null && d.bahn === bahn).sort((a, b) => a.tRep - b.tRep);
         let prev = -Infinity,
@@ -168,15 +157,14 @@ function flussBericht() {
             bauN: L.bau.length,
         },
         worker: fifo("werk"),
-        baecker: fifo("baecker"),
         ingest: { n: L.ingest.length, warteP95s: r1(pct(L.ingest, 0.95) / 1000), maxQ: r._foundryIngestMaxQ || 0 },
         cacheMB: r1((f.cacheBytes || 0) / 1e6),
-        // Die Fernstufe: der EINE Karten-Atlas (W6) — Zellen, gebacken, davon von der Platte, Atlas-MB, Format.
+        // Die Fernstufe: der EINE Karten-Atlas (W6) — Zellen, gebacken, Atlas-MB, Format, Haupt-Faden-ms je Bake (Median).
         karten: (() => {
             const z = typeof r._impostorCensus === "function" ? r._impostorCensus() : null;
             return z
-                ? { n: z.zellen, gebacken: z.gebacken, vonPlatte: z.vonPlatte, mb: z.mb, fmt: z.fmt, schichten: z.schichten }
-                : { n: 0, gebacken: 0, vonPlatte: 0, mb: 0, fmt: null, schichten: 0 };
+                ? { n: z.zellen, gebacken: z.gebacken, mb: z.mb, fmt: z.fmt, schichten: z.schichten, weltMs: pct(z.weltMs || [], 0.5) }
+                : { n: 0, gebacken: 0, mb: 0, fmt: null, schichten: 0, weltMs: 0 };
         })(),
         heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null,
         offen: f.pending.size,

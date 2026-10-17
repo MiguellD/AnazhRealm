@@ -1102,7 +1102,6 @@ class AnazhRealm_dirigent_ankunft {
         };
         let karten = 0;
         for (const k of this._impostorBakeQueue || []) if (imBild(k)) karten++;
-        for (const k of (this._impostorBakeFlug && this._impostorBakeFlug.keys()) || []) if (imBild(k)) karten++;
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`, false, karten);
         return out;
     }

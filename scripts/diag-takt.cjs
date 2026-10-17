@@ -21,22 +21,18 @@
 //       bleibt eine Arbeits-Uhr). Befund 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9 s.
 //   T6  und nie verhungert: ist der älteste Wartende älter als FOUNDRY_ALTER_MS, geht er unter lauter Nahen spätestens
 //       als zweiter hinein.
-//   T7  der Bäcker hat seinen Faden (`_foundryBaecker`): eine Karte geht nie zwischen die Körper ins Werk — sie nimmt ihm
-//       keinen Platz, und der nahe Körper hinter K−1 fernen geht sofort hinein (Befund 05.10., gate:arch-feld Erst-Boot:
-//       der kalte Bake einer Birken-Karte hielt den EINEN Worker 387 Takte, die nahe Eichen-L0 brauchte danach 5).
 //   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und
 //       Uhr der Späteren, bis der Worker ihn fertig hat (Befund 05.10.: der Wiederholer einer Karte lief ab, während der
 //       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
 //       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
-//   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm backen die Karten in so vielen Bäcker-Bahnen wie Werk-Fäden
-//       (zwei Karten in zwei Bäcker, `b<k>_`), und jeder Leser des ersten Bilds mit Kappe je Takt fragt die EINE Kappe
+//   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`).
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (sein Name „buch"),
 //       nie als Nachricht — eine Nachricht vor dem Ende seines Start-Skripts reicht Chrome erst weiter, wenn der volle Haupt-Faden
 //       die Meldung „Skript gelaufen" liest (Radeon kalt 0,73–1,26 s); seine Helfer kommen mit ihm. Der Selbsttest fährt den alten Weg.
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
 // Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
-// die Nur-der-Nächste-Pumpe T6, die Ein-Faden-Pumpe T7, die löschende Frist T8, die Ein-Bäcker-Pumpe und die Kappe allein T9.
+// die Nur-der-Nächste-Pumpe T6, die löschende Frist T8, die Kappe allein T9.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -258,50 +254,6 @@ const SELBST = process.argv.includes("--selftest");
                 antworte();
                 return { folge: gesendet.slice(K, K + 2).map((m) => m.presetId) };
             });
-            // T7 — der Bäcker hat seinen Faden: die Karte (im Rang einer Birke in 5 m) geht in den Bäcker, nie zwischen die
-            // Körper; das Werk behält alle Plätze, und der nahe Körper hinter K−1 fernen geht sofort hinein.
-            const eineBahn = function (f) {
-                // die alte Klasse: EIN Faden, EIN Platz-Konto — die Karte reiht sich nah zuerst zwischen die Körper
-                const q = f.warte;
-                while (q.length && f.pending.size < this.constructor.FOUNDRY_IM_FLUG) {
-                    let i = 0;
-                    for (let k = 1; k < q.length; k++)
-                        if (this._foundryAuftragD2(q[k].wo) < this._foundryAuftragD2(q[i].wo)) i = k;
-                    const x = q.splice(i, 1)[0];
-                    const id = x.praefix + f.reqSeq++;
-                    f.pending.set(id, x.resolve);
-                    f.worker.postMessage(Object.assign({ reqId: id }, x.msg));
-                }
-            };
-            const t7 = (() => {
-                const werk = [],
-                    ofen = [];
-                const f = {
-                    ready: true,
-                    worker: { postMessage: (m) => werk.push(m) },
-                    baecker: { postMessage: (m) => ofen.push(m) },
-                    baeckerBereit: true,
-                    pending: new Map(),
-                    reqSeq: 1,
-                };
-                r._foundry = f;
-                if (selbst) r._foundryPumpe = eineBahn;
-                try {
-                    r._foundryAuftrag(f, "imp", { type: "bake-impostor", presetId: "birke", seed: 2 }, 25, 45000, "-");
-                    for (let i = 0; i < K - 1; i++) r._foundryWorkerRequest("fern" + i, 0, 0, null, null, false, null);
-                    r._foundryWorkerRequest("eiche", 0, 0, null, null, false, { x: pm.x + 10, z: pm.z });
-                    return {
-                        ofen: ofen.map((m) => m.type + ":" + m.presetId),
-                        werkKarten: werk.filter((m) => m.type === "bake-impostor").length,
-                        eicheImWerk: werk.some((m) => m.presetId === "eiche"),
-                        werkN: werk.length,
-                    };
-                } finally {
-                    r._foundry = fEcht;
-                    if (pumpeEcht) r._foundryPumpe = pumpeEcht;
-                    else delete r._foundryPumpe;
-                }
-            })();
             // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der
             // erste ab, bekommt sein Besteller null — aber die Uhr des zweiten startet nicht, solange der Worker den ersten
             // noch baut (sein Geist hält Platz und Uhr). Die alte Frist löschte ihn: der zweite lief eine Frist später ab.
@@ -354,46 +306,19 @@ const SELBST = process.argv.includes("--selftest");
                     else delete r._foundryFrist;
                 }
             })();
-            // T9 — die Kappen des Lade-Takts: zwei Karten an zwei bereite Bäcker (der erste und sein Helfer, `_foundryBaecker`)
-            // gehen je in eine Bahn; im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest fährt die
-            // Ein-Bäcker-Pumpe (der Helfer unsichtbar) und die Kappe allein (`_ladeFrist` −∞).
+            // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
+            // fährt die Kappe allein (`_ladeFrist` −∞).
             const t9 = await (async () => {
-                const ofen0 = [],
-                    ofen1 = [];
-                const f = {
-                    ready: true,
-                    worker: { postMessage: () => {} },
-                    baecker: { postMessage: (m) => ofen0.push(m.reqId) },
-                    baeckerBereit: true,
-                    baeckerHelfer: [{ k: 1, bereit: true, w: { postMessage: (m) => ofen1.push(m.reqId) } }],
-                    pending: new Map(),
-                    reqSeq: 1,
-                };
                 const echt = {};
                 const setze = (k, v) => {
                     echt[k] = Object.prototype.hasOwnProperty.call(r, k) ? r[k] : undefined;
                     r[k] = v;
                 };
-                r._foundry = f;
                 const aus9 = {};
                 try {
                     if (selbst) {
-                        const pumpe = Object.getPrototypeOf(r)._foundryPumpe;
-                        setze("_foundryPumpe", function (ff) {
-                            const h = ff.baeckerHelfer;
-                            ff.baeckerHelfer = [];
-                            try {
-                                return pumpe.call(this, ff);
-                            } finally {
-                                ff.baeckerHelfer = h;
-                            }
-                        });
                         setze("_ladeFrist", () => -Infinity);
                     }
-                    for (const seed of [1, 2])
-                        r._foundryAuftrag(f, "imp", { type: "bake-impostor", presetId: "birke", seed }, 25, 45000, "-");
-                    aus9.ofen = [ofen0.length, ofen1.length];
-                    aus9.nummern = [...ofen0, ...ofen1];
                     // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser eine Aufgabe (`await`)
                     const stub = { _archIsRendered: (e) => !!e.t9, _rebuildArchitectureMesh: (e) => (e.t9 = !e.laedt), _populateVoxelChunkVegetation: () => aus9.laub++, _foundryPresetForEntry: (e) => e.dock || null }; // prettier-ignore
                     for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit".split(" ")) stub[k] = () => true; // prettier-ignore
@@ -494,7 +419,6 @@ const SELBST = process.argv.includes("--selftest");
                 t3,
                 t5,
                 t6,
-                t7,
                 t8,
                 t9,
                 n: bauten.length,
@@ -519,13 +443,6 @@ const SELBST = process.argv.includes("--selftest");
         t6 = aus.t6;
     const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K;
     const T6 = t6.folge.includes("alt");
-    const t7 = aus.t7;
-    const T7 =
-        t7.ofen.length === 1 &&
-        t7.ofen[0] === "bake-impostor:birke" &&
-        t7.werkKarten === 0 &&
-        t7.eicheImWerk &&
-        t7.werkN === t5.K;
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
     const helferNr = (t8.nummern || []).filter((k) => /w1_\d+$/.test(k));
@@ -541,21 +458,19 @@ const SELBST = process.argv.includes("--selftest");
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Ort-Wahl ein Vielfaches ihrer 3 Uhr-Fragen; die Frist gilt je Aufgabe
     const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
     const gang = t9.gang.every(Boolean);
-    const T9 = t9.ofen[0] === 1 && t9.ofen[1] === 1 && t9.nummern.some((k) => /^impb1_\d+$/.test(k)) && !Object.values(frist).includes(false) && gang; // prettier-ignore
+    const T9 = !Object.values(frist).includes(false) && gang;
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T7 && !T8 && !T9 && !t9.gang.some(Boolean) && !T10;
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T9 && !t9.gang.some(Boolean) && !T10;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
                 `die FIFO-Pumpe sendet ${t5.folge.join("·")} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Ein-Faden-Pumpe legt die Karte ins Werk (Bäcker ${t7.ofen.length}, Karten im Werk ${t7.werkKarten}, ` +
-                `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
                 `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
@@ -578,10 +493,6 @@ const SELBST = process.argv.includes("--selftest");
         `  ${T6 ? "✅" : "❌"} T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")}`
     );
     console.log(
-        `  ${T7 ? "✅" : "❌"} T7 der Bäcker hat seinen Faden: Bäcker ${t7.ofen.join(" · ") || "leer"} · Karten im Werk ` +
-            `${t7.werkKarten} · die Eiche in 10 m hinter ${t5.K - 1} fernen Körpern im Werk ${t7.eicheImWerk} · Werk ${t7.werkN}/${t5.K}`
-    );
-    console.log(
         `  ${T8 ? "✅" : "❌"} T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
             `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +
             `${t8.helferErster} · zweiter ${t8.helferZweiter} · Geist ${t8.helferGeist}` +
@@ -590,14 +501,12 @@ const SELBST = process.argv.includes("--selftest");
                 : " — Täter _foundryUhren: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden")
     );
     console.log(
-        `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: zwei Karten in die Bäcker ${t9.ofen.join(" / ")} (${t9.nummern.join(" · ")}) · ` +
+        `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: ` +
             `Pflanz ${t9.pflanz}/12 · Ort-Wahl ${t9.ort} Schritte (Kappe 3) · Dorf ${t9.dorf}/12 · Cull-Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · im selben Frame ${t9.gleicherFrame}/4 · Ort-Wahl in eigener Aufgabe ${t9.ortAufgabe} · ` +
             `Nah-Gang (Bau hinter 30 Wartenden, Stufe hinter der Kappe) ${t9.gang.join(" · ")}` +
             (T9
                 ? ""
-                : t9.ofen[1] === 0
-                  ? " — Täter _foundryPumpe: eine Bäcker-Bahn, die Karten backen nacheinander"
-                  : !gang
+                : !gang
                     ? " — Täter tickArchitectureCulling: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab"
                     : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (_kappeOffen)`)
     );
@@ -608,7 +517,7 @@ const SELBST = process.argv.includes("--selftest");
                 ? ""
                 : " — Täter _ensureAssetFoundry: die Buch-Frage reist nicht in der Geburt (Name „buch\"), sie wartet auf den Haupt-Faden")
     );
-    if (!(T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8 && T9 && T10)) {
+    if (!(T1 && T2 && T3 && T4 && T5 && T6 && T8 && T9 && T10)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

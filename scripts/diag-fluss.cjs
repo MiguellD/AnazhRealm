@@ -14,10 +14,8 @@
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
-//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527), als Atlas-Schicht
-//       kodiert (Karten-Codec im Worker) · V10 das Format trennt die Platte (dieselbe Schicht als rgba8 trifft nie) · V11
-//       nurPlatte bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine
-//       leere Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden
+//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden — die Karte reist seit S2
+//       nie durch den Kanal (sie backt im Welt-Renderer, `_karteWeltBacken`)
 // S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die
 //   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
 //   (B3a; vorher S3 · S7a · S7e · W4 · W5)
@@ -183,42 +181,20 @@ function gestalten(teile) {
 
 // Das Studio-Double: antwortet auf build-asset wie die Brücke (frische Puffer, aWind + Uint32-Index), zählt Bauten
 // und meldet, ob sein letzter Puffer nach dem Senden abgelöst ist (= übertragen statt kopiert). Es merkt sich die
-// Saison, die es sah (der Saison-Nagel), und bäckt Karten (bake-impostor → impostor: das Studio-Payload des Bäckers,
-// Albedo + Normale in voller Auflösung, Rahmen; klein gehalten 16×32×8 — die Schale kodiert es mit dem ECHTEN Karten-Codec aus
-// phyto-core, den der Worker wie im Spiel lädt).
-const KARTE = { cw: 16, ch: 32, V: 8 };
-// Die Schicht-Maße derselben Karte je Format — aus dem Karten-Gesetz (phyto-core, rein, per vm geladen).
-const MASSE = (() => {
-    const ctx = { Math, Uint8Array, Float32Array, Float64Array, Int32Array };
-    ctx.globalThis = ctx;
-    ctx.self = ctx;
-    require("vm").runInNewContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx);
-    const nt = ctx.__phytoCore.KARTEN_GESETZ.normalTeiler;
-    const m = (fmt) => ctx.__phytoCore.karteMasse(KARTE.cw, KARTE.ch, KARTE.V, nt, fmt);
-    return { bc: m("bc"), rgba8: m("rgba8") };
-})();
+// Saison, die es sah (der Saison-Nagel).
 const STUDIO = `
-importScripts(location.origin + "/phyto-core.js");
-let gebaut = 0, gebacken = 0, letzte = null;
+let gebaut = 0, letzte = null;
 const saisons = [];
 self.onmessage = (e) => {
     const m = e.data;
-    if (m.type === "build-asset" || m.type === "bake-impostor") saisons.push(m.season === undefined ? "-" : m.season);
-    if (m.type === "bake-impostor") {
-        gebacken++;
-        // "lang" bäckt wie der kalte Bäcker: 1,5 s synchron (Kontext, Programme, Rücklesen — V14)
+    if (m.type === "build-asset") saisons.push(m.season === undefined ? "-" : m.season);
+    if (m.type === "build-asset") {
+        gebaut++;
+        // "lang" baut 1,5 s synchron (V14)
         if (m.presetId === "lang") {
             const bis = Date.now() + 1500;
             while (Date.now() < bis) {}
         }
-        const K = ${JSON.stringify(KARTE)};
-        // "leer" bäckt wie ein gebrochener Bäcker: maßtreue Clear-Pixel (die NICHT-LEERE-WAND, V13)
-        const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(m.presetId === "leer" ? 0 : 200),
-            normal = new Uint8Array(K.cw * K.ch * K.V * 4).fill(128);
-        self.postMessage({ type: "impostor", world: "terrain", reqId: m.reqId, presetId: m.presetId, seed: m.seed,
-            payload: Object.assign({ frame: { halfH: 4.75, halfW: 2.4 }, albedo, normal }, K) });
-    } else if (m.type === "build-asset") {
-        gebaut++;
         const pos = new Float32Array(9);
         letzte = pos;
         const gross = new Float32Array(70000 * 3);
@@ -229,7 +205,7 @@ self.onmessage = (e) => {
                 { kind: "foliage", mat: {}, position: { array: gross, itemSize: 3 }, index: new Uint32Array([0, 1, 69999]) },
             ] });
     } else if (m.type === "frage")
-        self.postMessage({ type: "antwort", gebaut, gebacken, saisons: saisons.slice(), abgeloest: letzte ? letzte.byteLength === 0 : null });
+        self.postMessage({ type: "antwort", gebaut, saisons: saisons.slice(), abgeloest: letzte ? letzte.byteLength === 0 : null });
 };`;
 
 async function verhalten(schaleSrc) {
@@ -237,7 +213,6 @@ async function verhalten(schaleSrc) {
         seiten: {
             "/": "<!doctype html><meta charset=utf-8><title>fluss</title>",
             "/kern.js": "// kern",
-            "/phyto-core.js": () => fs.readFileSync(path.join(root, "phyto-core.js")),
         },
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -246,7 +221,7 @@ async function verhalten(schaleSrc) {
         const page = await browser.newPage();
         await page.goto(`http://127.0.0.1:${PORT}/`);
         return await page.evaluate(
-            async (schale, studio, masse) => {
+            async (schale, studio) => {
                 const neu = (format, platte) => {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
@@ -342,26 +317,15 @@ async function verhalten(schaleSrc) {
                 });
                 aus.format = !!(d1 && !d1.platte && d1.meshes.length === 2);
                 B.w.terminate();
-                // V7 DER SAISON-NAGEL: ein Herbst-Körper (ohne Platte) und eine Winter-Karte erreichen das Studio als
+                // V7 DER SAISON-NAGEL: ein Herbst-Körper (ohne Platte) erreicht das Studio als
                 // Sommer — jeder Bau ist Golden-Sommer, die Farbe trägt der Host.
                 const C = neu(3, false);
                 await C.frag({ type: "build-asset", reqId: "s1", presetId: "x", seed: 2, lod: 1, season: "autumn" });
-                const k1 = await C.frag({
-                    type: "bake-impostor",
-                    reqId: "s2",
-                    presetId: "x",
-                    seed: 2,
-                    season: "winter",
-                    fmt: "rgba8",
-                });
                 const q4 = await C.frag({ type: "frage" }, "antwort");
                 aus.nagel = !!(
                     q4 &&
-                    q4.saisons.length === 2 &&
-                    q4.saisons.every((s) => s === "summer") &&
-                    k1 &&
-                    k1.payload &&
-                    k1.payload.albedo
+                    q4.saisons.length === 1 &&
+                    q4.saisons.every((s) => s === "summer")
                 );
                 C.w.terminate();
                 // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
@@ -421,137 +385,34 @@ async function verhalten(schaleSrc) {
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
-                // V9 KARTEN AUF DIE PLATTE, ALS ATLAS-SCHICHT: der erste Bake geht ans Studio, die Schale kodiert ihn
-                // (BC, Stufen nach karteMasse, sRGB-Albedo) und schreibt ihn; der zweite kommt von der Platte (platte:
-                // true, Schicht und Rahmen unversehrt), das Studio bäckt nur einmal.
-                const karte = (w, reqId, presetId, seed, fmt, extra) =>
-                    w.frag(
-                        Object.assign(
-                            {
-                                type: "bake-impostor",
-                                reqId,
-                                presetId,
-                                seed,
-                                fmt,
-                                platte: `karte|${presetId}|${seed}|${fmt}`,
-                            },
-                            extra || {}
-                        )
-                    );
-                const schicht = (k, fmt) =>
-                    !!(
-                        k &&
-                        k.payload &&
-                        k.payload.fmt === fmt &&
-                        k.payload.albedo.length === masse[fmt].aBytes &&
-                        k.payload.normal.length === masse[fmt].nBytes &&
-                        k.payload.frame.halfH === 4.75 &&
-                        k.payload.opak > 0
-                    );
-                const F = neu(3, true);
-                const kp1 = await karte(F, "kp1", "eiche", 2, "bc");
-                await ruhe(400);
-                const kp2 = await karte(F, "kp2", "eiche", 2, "bc");
-                const q7 = await F.frag({ type: "frage" }, "antwort");
-                aus.karte = !!(
-                    schicht(kp1, "bc") &&
-                    !kp1.platte &&
-                    schicht(kp2, "bc") &&
-                    kp2.platte === true &&
-                    kp2.payload.albedo[0] === kp1.payload.albedo[0] &&
-                    q7 &&
-                    q7.gebacken === 1
-                );
-                // V10 DAS FORMAT TRENNT DIE PLATTE: dieselbe Karte als rgba8 (Gerät ohne BC-Feature) trifft die BC-Schicht
-                // nie — das Studio bäckt sie, die Schale kodiert rgba8 (unter DEMSELBEN Schlüssel misst es der Zweit-Boot, V12).
-                const kr1 = await karte(F, "kr1", "eiche", 2, "rgba8");
-                const q8 = await F.frag({ type: "frage" }, "antwort");
-                aus.kartenFormat = !!(schicht(kr1, "rgba8") && !kr1.platte && q8 && q8.gebacken === 2);
-                // V11 nurPlatte (Ship-Hook) bäckt keine Karte: ein Miss antwortet payload null.
-                const kn = await karte(F, "kn1", "tanne", 1, "bc", { nurPlatte: true });
-                const q9 = await F.frag({ type: "frage" }, "antwort");
-                aus.karteNurPlatte = !!(kn && kn.payload === null && q9 && q9.gebacken === 2);
-                // V13 DIE NICHT-LEERE-WAND: eine leere Karte (Bäcker-Fehler, alle Texel klar) reist als payload null und nie
-                // auf die Platte — der zweite Ruf geht wieder ans Studio (bis V18.529 lag sie dort und vergiftete jeden Boot).
-                const kl1 = await karte(F, "kl1", "leer", 1, "bc");
-                await ruhe(400);
-                const kl2 = await karte(F, "kl2", "leer", 1, "bc");
-                const q11 = await F.frag({ type: "frage" }, "antwort");
-                aus.karteLeer = !!(
-                    kl1 &&
-                    kl1.payload === null &&
-                    kl2 &&
-                    kl2.payload === null &&
-                    !kl2.platte &&
-                    q11 &&
-                    q11.gebacken === 4
-                );
-                // V12 DER ZWEIT-BOOT: n Karten im Erst-Boot gebacken, ein frischer Worker (gleiche Platte, gleicher
-                // Stempel) liefert alle n von der Platte und bäckt 0.
-                await karte(F, "kz1", "fichte", 1, "bc");
-                await karte(F, "kz2", "birke", 2, "bc");
-                await ruhe(400);
-                F.w.terminate();
-                const G = neu(3, true);
-                const zweit = [];
-                for (const [p, s] of [
-                    ["eiche", 2],
-                    ["fichte", 1],
-                    ["birke", 2],
-                ])
-                    zweit.push(await karte(G, "zb" + p, p, s, "bc"));
-                const q10 = await G.frag({ type: "frage" }, "antwort");
-                aus.zweitBoot = !!(
-                    zweit.every((k) => schicht(k, "bc") && k.platte === true) &&
-                    q10 &&
-                    q10.gebacken === 0
-                );
-                // V10 (der Format-Wächter): rgba8 unter dem Schlüssel der BC-Schicht trifft die Platte nicht
-                const kw = await karte(G, "zbw", "eiche", 2, "rgba8", { platte: "karte|eiche|2|bc" });
-                const q12 = await G.frag({ type: "frage" }, "antwort");
-                aus.kartenFormat = aus.kartenFormat && schicht(kw, "rgba8") && !kw.platte && !!q12 && q12.gebacken === 1;
-                G.w.terminate();
-                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (Bäcker und Werk, `_foundryBaecker`). Der
-                // Bäcker bäckt lang (1,5 s synchron); das Werk baut währenddessen zwei Körper — der zweite liest erst nach
-                // dem Platten-Put des ersten. Hielte der Bäcker seine Lese-Transaktion durch den Bake offen, wartete der Put
-                // und mit ihm der zweite Körper bis nach der Karte (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
-                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Karten-Bake).
+                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der eine
+                // baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst nach dem
+                // Platten-Put des ersten. Hielte der lange Faden seine Lese-Transaktion durch den Bau offen, wartete der Put
+                // und mit ihm der zweite Körper bis nach dem langen Bau (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
+                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Bake eines anderen Fadens).
                 const H = neu(3, true);
                 const Wk = neu(3, true);
                 const tH0 = performance.now();
                 let tLang = null;
-                const lang = karte(H, "kh1", "lang", 1, "bc").then((k) => {
+                const koerper = (w, id, presetId) =>
+                    w.frag({ type: "build-asset", reqId: id, presetId, seed: 1, lod: 0, platte: presetId + "|1|0" });
+                const lang = koerper(H, "kh1", "lang").then((k) => {
                     tLang = performance.now() - tH0;
                     return k;
                 });
                 await ruhe(300);
-                const wf1 = await Wk.frag({
-                    type: "build-asset",
-                    reqId: "wf1",
-                    presetId: "f1",
-                    seed: 1,
-                    lod: 0,
-                    platte: "f1|1|0",
-                });
-                const wf2 = await Wk.frag({
-                    type: "build-asset",
-                    reqId: "wf2",
-                    presetId: "f2",
-                    seed: 1,
-                    lod: 0,
-                    platte: "f2|1|0",
-                });
+                const wf1 = await koerper(Wk, "wf1", "f1");
+                const wf2 = await koerper(Wk, "wf2", "f2");
                 const tWerk = performance.now() - tH0;
                 const kLang = await lang;
-                aus.faden = !!(wf1 && wf2 && schicht(kLang, "bc") && tLang != null && tWerk < tLang);
-                aus.fadenMs = { werk: Math.round(tWerk), baecker: tLang == null ? null : Math.round(tLang) };
+                aus.faden = !!(wf1 && wf2 && kLang && kLang.meshes.length === 2 && tLang != null && tWerk < tLang);
+                aus.fadenMs = { werk: Math.round(tWerk), lang: tLang == null ? null : Math.round(tLang) };
                 H.w.terminate();
                 Wk.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
-            STUDIO,
-            MASSE
+            STUDIO
         );
     } finally {
         await browser.close();
@@ -560,7 +421,7 @@ async function verhalten(schaleSrc) {
 }
 
 // DIE WELT-SONDE (Chromium, Null-Renderer, der ECHTE Studio-Worker hinter der echten Schale): die Spiel-Welt bootet,
-// streamt und kommt zur Ruhe; jeder Körper-/Karten-Auftrag an den Foundry-Worker und jede Antwort wird gezählt.
+// streamt und kommt zur Ruhe; jeder Körper-Auftrag an den Foundry-Worker und jede Antwort wird gezählt.
 // W1 GESTALTEN: jede Natur-Art bestellt nur Samen 1..V ihres Budgets, Karten-Records je Art = V.
 // W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht.
 const WELT_HAKEN = () => {
@@ -626,7 +487,7 @@ const WELT_HAKEN = () => {
             });
         }
         postMessage(m, t) {
-            if (m && (m.type === "build-asset" || m.type === "bake-impostor"))
+            if (m && m.type === "build-asset")
                 fl.posts.push({ t: m.type, p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov, w: this.__flNr, id: m.reqId });
             return t ? super.postMessage(m, t) : super.postMessage(m);
         }
@@ -911,18 +772,10 @@ const VERHALTEN = [
     ["V4b die Platte hält die verschlankte Antwort", "platteSchlank"],
     ["V5 nurPlatte: Miss = leere Antwort, kein Bau", "nurPlatte"],
     ["V6 ein neues Transport-Format leert die Platte", "format"],
-    ["V7 Saison-Nagel: Herbst-Körper und Winter-Karte erreichen das Studio als Sommer", "nagel"],
+    ["V7 Saison-Nagel: ein Herbst-Körper erreicht das Studio als Sommer", "nagel"],
     ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
-    [
-        "V9 Karten auf der Platte als Atlas-Schicht: der zweite Bake kommt von der Platte, das Studio bäckt einmal",
-        "karte",
-    ],
-    ["V10 das Schicht-Format trennt die Platte (rgba8 trifft die BC-Schicht nie)", "kartenFormat"],
-    ["V11 nurPlatte bäckt keine Karte (Miss = payload null)", "karteNurPlatte"],
-    ["V12 Zweit-Boot: 3 Karten von der Platte, 0 Bakes", "zweitBoot"],
-    ["V13 Nicht-Leere-Wand: eine leere Karte reist als payload null und nie auf die Platte", "karteLeer"],
-    ["V14 die Platte hält keinen Faden: das Werk baut zwei Körper, während der Bäcker 1,5 s bäckt", "faden"],
+    ["V14 die Platte hält keinen Faden: ein Werk-Faden baut zwei Körper, während ein anderer 1,5 s baut", "faden"],
 ];
 
 (async () => {
@@ -1136,25 +989,7 @@ const VERHALTEN = [
             "Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot",
             ohneVorrat !== schale && v4.vorrat === false
         );
-        const ohneKartenPut = bruch(schale, "if (auftragK.key) schreib(auftragK.key, { payload: k });", "");
-        const v5 = await verhalten(ohneKartenPut);
-        check(
-            "Selbst-Test 13: Schale ohne Karten-Put → V9 und V12 rot (jeder Boot bäckt die Karte neu)",
-            ohneKartenPut !== schale && v5.karte === false && v5.zweitBoot === false
-        );
-        const ohneKodierung = bruch(schale, "core.karteKodiere(p, auftragK.fmt)", "p");
-        const v6 = await verhalten(ohneKodierung);
-        check(
-            "Selbst-Test 15: Schale ohne Karten-Codec (rohe Studio-Pixel) → V9 rot",
-            ohneKodierung !== schale && v6.karte === false
-        );
-        const ohneWand = bruch(schale, / &&\s*p\.opak >= G\.minOpak/, "");
-        const v7 = await verhalten(ohneWand);
-        check(
-            "Selbst-Test 18: Schale ohne Nicht-Leere-Wand (die leere Karte reist auf die Platte) → V13 rot",
-            ohneWand !== schale && v7.karteLeer === false
-        );
-        // Der Studio-Lauf direkt aus dem Lese-Erfolg (die alte Schale): die Lese-Transaktion bleibt durch den Bake offen.
+        // Der Studio-Lauf direkt aus dem Lese-Erfolg (die alte Schale): die Lese-Transaktion bleibt durch den Bau offen.
         const ohneFaden = bruch(
             schale,
             /bauten\.push\(\(\) => \{\s*(if \(typeof W\.onmessage === "function"\) W\.onmessage\(\{ data: weiter \}\);)\s*\}\);\s*los\(\);/,
@@ -1163,14 +998,8 @@ const VERHALTEN = [
         const v8 = await verhalten(ohneFaden);
         check(
             `Selbst-Test 19: Studio-Lauf bei offener Transaktion → V14 rot (Werk ${v8.fadenMs && v8.fadenMs.werk} ms · ` +
-                `Bäcker ${v8.fadenMs && v8.fadenMs.baecker} ms)`,
+                `lang ${v8.fadenMs && v8.fadenMs.lang} ms)`,
             ohneFaden !== schale && v8.faden === false
-        );
-        const ohneFormat = bruch(schale, "karteOk(p) && p.fmt === fmt", "karteOk(p)");
-        const v9 = await verhalten(ohneFormat);
-        check(
-            "Selbst-Test 17: Platten-Treffer ohne Format-Prüfung (rgba8 trifft die BC-Schicht) → V10 rot",
-            ohneFormat !== schale && v9.kartenFormat === false
         );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
@@ -1201,7 +1030,7 @@ const VERHALTEN = [
         check(
             n,
             v[k] === true,
-            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · Bäcker ${v.fadenMs.baecker} ms` : ""
+            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · lang ${v.fadenMs.lang} ms` : ""
         );
     console.log("=== FLUSS-WAND — Welt-Sonde (Null-Renderer, echter Studio-Worker, Boot + Saison-Wechsel) ===");
     const w = await welt();

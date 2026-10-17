@@ -1148,9 +1148,14 @@ class AnazhRealm {
                 this.info.destroyTexture(t);
                 this.info.createTexture(t);
             }
-            const B = welt.state._regionBundles;
-            if (alt.length && B && this.backend.get(t).texture !== alt[0])
-                for (const bg of B.values()) bg.needsUpdate = true;
+            // JEDES Bündel der Szene — die Region-Bündel und jede Leib-Hülle (`_leibHuelle`): ein Leib, der nach dem Abschied
+            // weiter abspielte, band die alte Horizont-Karte (E2, Radeon: 595 Meldungen „Destroyed texture … used in a submit",
+            // Himmel und Bündel fielen aus dem Bild). Der Gang ist selten (erstes Bild, Größen-Wechsel, Wachsen eines Atlas).
+            const sc = welt.state.scene;
+            if (alt.length && sc && this.backend.get(t).texture !== alt[0])
+                sc.traverse((o) => {
+                    if (o.isBundleGroup === true) o.needsUpdate = true;
+                });
             return aus;
         };
     }
@@ -1785,7 +1790,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.14";
+AnazhRealm.VERSION = "18.546.16";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

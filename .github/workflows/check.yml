@@ -1274,10 +1274,6 @@ jobs:
               if: matrix.gruppe == 12
               run: npm run gate:fahrzeug-fern
 
-            - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
-              if: matrix.gruppe == 13
-              run: npm run gate:baecker-kanal
-
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 9
               run: npm run gate:seam

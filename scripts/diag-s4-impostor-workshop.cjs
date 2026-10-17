@@ -2,10 +2,8 @@
 // EAGER + die Werkstatt zeigt auf der L2-Stufe eines BAUMES das Billboard (nicht die schwere
 // L2-Geometrie). Zwei Teile, beide Null-Renderer (hardware-unabhängig; den LOOK des Atlas misst
 // gate:foundry-impostor C auf swiftshader-WebGPU, die Welt die Werkbank auf echter GPU):
-//   A — DER IMPOSTOR BÄCKT EAGER: `_tickImpostorBake` hat den `_frameOverBudget`-Gate NICHT mehr
-//       (Henne-Ei: der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen;
-//       der Bake SENKT die Last, er darf nicht vom Budget blockiert werden). Der Bake bleibt streng
-//       gedeckelt (je Bäcker-Bahn eine Karte im Flug via `_impostorBakeFlug`, K60-2; Null-Renderer-Guard).
+//   (A — der eager Bake über das Bäcker-Bahn-Muster — fiel mit S2: die Karte backt im Welt-Renderer, budgetiert
+//       je Takt `KARTE_WELT_MS`; der Null-Renderer bäckt nie.)
 //   B — WERKSTATT-L2 = BILLBOARD: `_workshopFoundryPreviewGroup` routet einen BAUM bei `_recipeLod===2`
 //       durch `_foundryBuildImpostorFlat` (den 8-Winkel-Impostor) + baut ihn als 1-Instanz-
 //       InstancedMesh (die Karte dekodiert Rotation/Skala aus der Instanz-Matrix). Fels/Kristall
@@ -45,27 +43,7 @@ const server = statikServer();
 
     const out = await page.evaluate(async () => {
         const r = window.anazhRealm;
-        // der Code ohne Kommentare (der EINE __codeOf des Welt-Boots): eine ABSENZ-Probe stolpert nie über den
-        // erklärenden Kommentar, der den entfernten Code zitiert (V18.267-Falle).
-        const code = window.__codeOf;
         const res = { probes: {}, behavior: {} };
-        // ===== TEIL A — der Bake ist EAGER (Frame-Budget-Gate raus) =====
-        // der Bake-Pfad: der Tick und sein Sender (`_impostorBakeSende`, K60-2: je Bäcker-Bahn eine Karte)
-        const bakeSrc = code(r._tickImpostorBake) + " " + code(r._impostorBakeSende);
-        res.probes.bakeNoFrameBudgetGate = !/_frameOverBudget/.test(bakeSrc); // der Gate ist raus
-        // je Bäcker-Bahn eine Karte (K60-2), auch über dem Frame-Budget: der Sender getauscht, der Deckel beobachtet
-        {
-            const q0 = r._impostorBakeQueue, f0 = r._impostorBakeFlug, ob0 = r.state._frameOverBudget;
-            r._impostorBakeQueue = Array.from({ length: 12 }, (_, i) => "fimp:probe|" + i);
-            r._impostorBakeFlug = new Map();
-            r.state._frameOverBudget = true;
-            r._impostorBakeSende = (at, flug) => (flug.set(r._impostorBakeQueue.shift(), { seit: performance.now(), tok: 0 }), 1);
-            const n = r._tickImpostorBake();
-            res.probes.bakeOneAtATime = n > 0 && n === r._foundryFaedenZahl() && r._impostorBakeFlug.size === n && r._impostorBakeQueue.length === 12 - n;
-            delete r._impostorBakeSende;
-            [r._impostorBakeQueue, r._impostorBakeFlug, r.state._frameOverBudget] = [q0, f0, ob0];
-        }
-
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
         try {
             const f = r._ensureAssetFoundry();
@@ -138,9 +116,6 @@ const server = statikServer();
     server.close();
 
     console.log("=== WELLE S4 — IMPOSTOR EAGER + WERKSTATT-L2-BILLBOARD ===\n");
-    console.log("  TEIL A — Bake eager:");
-    console.log(`    _frameOverBudget-Gate raus: ${out.probes.bakeNoFrameBudgetGate} (erw true)`);
-    console.log(`    je Bäcker-Bahn eine Karte:  ${out.probes.bakeOneAtATime} (erw true)`);
     console.log("  TEIL B — Werkstatt-L2 = Billboard:");
     console.log(`    routet durch Impostor:      ${out.probes.wsRoutesImpostor} (erw true)`);
     console.log(`    nur für BÄUME (gated):      ${out.probes.wsTreeGated} (erw true)`);
@@ -155,10 +130,6 @@ const server = statikServer();
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 
     // ===== HARTE Invarianten (hardware-unabhängig) =====
-    if (!out.probes.bakeNoFrameBudgetGate)
-        errs.push("A: `_tickImpostorBake` trägt noch den `_frameOverBudget`-Gate (nicht eager)");
-    if (!out.probes.bakeOneAtATime)
-        errs.push("A: der Bake ist nicht mehr je Bäcker-Bahn gedeckelt (`_impostorBakeFlug`/`_foundryFaedenZahl` fehlt)");
     if (!out.probes.wsRoutesImpostor)
         errs.push("B: die Werkstatt-Vorschau routet L2 NICHT durch `_foundryBuildImpostorFlat`");
     if (!out.probes.wsTreeGated)

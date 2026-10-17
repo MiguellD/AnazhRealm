@@ -240,7 +240,11 @@ class AnazhRealm_bild_kosten {
                 this.log("BUNDLE-REIHENFOLGE: r184-Renderer._renderBundles nicht gefunden (Vendor-Drift)", "ERROR");
             else if (!renderer.__anazhBundleReihenfolge) {
                 const bundlesRoh = renderer._renderBundles;
+                const welt = this;
                 renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
+                    for (let i = 0; i < bundles.length; i++)
+                        if (bundles[i].bundleGroup.userData._creatureSkin === true)
+                            welt._leibBuendelStand(this, bundles[i]);
                     const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
                     const rc = this._currentRenderContext;
                     const d = rc ? this.backend.get(rc) : null;
@@ -491,7 +495,12 @@ class AnazhRealm_bild_kosten {
                 if (ro.getDrawParameters() === null) return;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
-                if (scene !== welt.state.scene) {
+                // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
+                // zeichnete — ihre Hüllen wechseln den Stoff, darum zählt dort kein Pass, und ihre Bau-Frist gilt dem ganzen
+                // Bake-Versuch (13 Render-Aufrufe), nie je Aufruf
+                const B = welt._karteBuehneSatz;
+                const buehne = !!B && scene === B.szene;
+                if (scene !== welt.state.scene && !buehne) {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
@@ -510,7 +519,7 @@ class AnazhRealm_bild_kosten {
                     N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
-                let pass = E.gezeichnet.get(object);
+                let pass = buehne ? undefined : E.gezeichnet.get(object);
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
@@ -519,8 +528,9 @@ class AnazhRealm_bild_kosten {
                 }
                 let bau = -1;
                 if (ungebaut) {
-                    if (E.aufruf !== this.info.calls) {
-                        E.aufruf = this.info.calls;
+                    const aufruf = buehne ? B.versuch : this.info.calls;
+                    if (E.aufruf !== aufruf) {
+                        E.aufruf = aufruf;
                         E.aufrufMs = 0;
                         // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
                         // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
@@ -539,7 +549,7 @@ class AnazhRealm_bild_kosten {
                     E.bauN++;
                     E.bauMs += ms;
                 }
-                if (gezeichnet) {
+                if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
                 }
@@ -831,6 +841,61 @@ class AnazhRealm_bild_kosten {
         sh.bias = (-K.tiefeTexel * texel) / tiefe;
     }
 
+    // DER STAND EINES LEIB-BÜNDELS (E2, `_leibHuelle`): r184 spielt ein Bündel ab, solange seine Version steht — was die
+    // Projektion dieses Passes ihm gibt, liest es dann nie (`_renderBundle`). Ein Leib wechselt aber, was er zeichnet: die
+    // Sicht (Ego nimmt ihn aus der Ebene des Auges), die Stufe (`_gelenkStufe`), das Gerät in der Hand, ein neues Kleid, der
+    // Blick, der ihn verlässt. Je Bündel-Aufnahme (Bündel · Kamera · Render-Kontext) merkt der Stand die Projektion — je Zug
+    // Objekt, Stoff und seine Version, Geometrie und die Summe ihrer Attribut-Versionen, Gruppe; weicht sie ab, nimmt GENAU
+    // diese Aufnahme neu auf (andere Kameras, der See-Spiegel, spielen weiter ab). Ein durchsichtiger Leib-Stoff zeichnete
+    // im Bündel vor der opaken Welt: der Melder nennt ihn.
+    _leibBuendelStand(rend, b) {
+        const d = rend.backend.get(rend._bundles.get(b.bundleGroup, b.camera, rend._currentRenderContext));
+        const s = d._anazhLeib || (d._anazhLeib = []);
+        const L = b.renderList;
+        if (L.transparent.length > 0 || L.transparentDoublePass.length > 0)
+            this._bruchMelden(
+                `LEIB-BÜNDEL: ein durchsichtiger Stoff im Leib „${b.bundleGroup.name || "?"}" — opak ist sein Gesetz`
+            );
+        let i = 0,
+            anders = false;
+        for (const it of L.opaque) {
+            const g = it.geometry;
+            let v = g.index ? g.index.version : 0;
+            for (const k in g.attributes) v += g.attributes[k].version;
+            const w0 = it.object.id,
+                w1 = it.material.id,
+                w2 = it.material.version,
+                w3 = g.id,
+                w4 = it.group ? it.group.start : -1;
+            if (
+                s[i] !== w0 ||
+                s[i + 1] !== w1 ||
+                s[i + 2] !== w2 ||
+                s[i + 3] !== w3 ||
+                s[i + 4] !== v ||
+                s[i + 5] !== w4
+            ) {
+                s[i] = w0;
+                s[i + 1] = w1;
+                s[i + 2] = w2;
+                s[i + 3] = w3;
+                s[i + 4] = v;
+                s[i + 5] = w4;
+                anders = true;
+            }
+            i += 6;
+        }
+        if (s.length !== i) {
+            s.length = i;
+            anders = true;
+        }
+        if (anders && d.bundleGPU !== undefined) {
+            d.bundleGPU = undefined;
+            d.renderObjects = undefined;
+            this._leibBuendelNeu = (this._leibBuendelNeu || 0) + 1;
+        }
+    }
+
     // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
     // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
     // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
@@ -979,7 +1044,6 @@ class AnazhRealm_bild_kosten {
         class ZeitAufloesung extends THREE.TRAANode {
             constructor() {
                 super(farbe, tiefe, bewegung, kamera);
-                this._historyRenderTarget.depthTexture = null;
                 this._zitter = uniform(new THREE.Vector2());
                 this._neustart = uniform(1);
                 // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
@@ -987,24 +1051,36 @@ class AnazhRealm_bild_kosten {
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 // DAS DECKUNGS-GEDÄCHTNIS (A3b): der Resolve schreibt neben dem Bild je Ausgabe-Pixel, wie oft sein 3×3 eine
-                // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT) und seine Geschichte; das Ziel
-                // des Vendors (1×1, nie gezeichnet) fällt
-                const ziel = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
-                ziel.name = "TRAANode.resolve";
-                ziel.textures[0].name = "TRAANode.resolve";
-                ziel.textures[1].name = "TRAANode.flacker";
-                ziel.textures[1].type = THREE.UnsignedByteType;
-                ziel.textures[1].format = THREE.RedFormat;
+                // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT, Schlüssel = Name der Textur).
+                // DIE GESCHICHTE IST DAS ZIEL DES LETZTEN RESOLVE (G7): zwei solche Ziele wechseln je Frame die Rolle
+                // (`updateBefore`), keines wird kopiert. Bis G7 kopierte r184s Weg das Bild in die Geschichte und A3b das
+                // Gedächtnis in seine — jede Kopie ein eigener Befehls-Puffer mit Submit außerhalb jedes Pass-Stempels (Radeon,
+                // Mess-Wiese, gpu-bank in EINER Welt, 120 Paare: die zwei Kopien 0,69 ± 0,25 ms je Frame, die eine von main
+                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. Je Ziel EIN Resolve-Stoff, der fest
+                // das andere liest (seine Bindung steht); die Kette liest das Ziel der Lage über EINE Textur, deren Wert wechselt
+                // (`updateBefore`, DIE LAGE IST DIE GENERATION). Ein Zweig je Abtastung der Kette kostete den Post-Pass 1,67 → 3,14
+                // ms (Radeon, Genesis, Pass-Stempel).
+                const zielBau = () => {
+                    const z = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
+                    z.name = "TRAANode.resolve";
+                    z.textures[0].name = "TRAANode.resolve";
+                    z.textures[1].name = "TRAANode.flacker";
+                    z.textures[1].type = THREE.UnsignedByteType;
+                    z.textures[1].format = THREE.RedFormat;
+                    return z;
+                };
                 this._resolveRenderTarget.dispose();
-                this._resolveRenderTarget = ziel;
-                this._textureNode = T.passTexture(this, ziel.texture);
-                this._flackerGeschichte = new THREE.RenderTarget(1, 1, {
-                    depthBuffer: false,
-                    type: THREE.UnsignedByteType,
-                    format: THREE.RedFormat,
-                });
-                this._flackerGeschichte.name = "TRAANode.flacker.geschichte";
-                this._flackerGeschichte.texture.name = "TRAANode.flacker.geschichte";
+                this._historyRenderTarget.dispose();
+                this._ziele = [zielBau(), zielBau()];
+                // die Lage: das Ziel des letzten Resolve (die Geschichte des nächsten); `setSize` des Vendors und der Neubeginn
+                // lesen die zwei Rollen-Namen
+                this._lage = 0;
+                this._historyRenderTarget = this._ziele[0];
+                this._resolveRenderTarget = this._ziele[1];
+                this._textureNode = T.passTexture(this, this._ziele[0].texture);
+                const zweiter = new this._resolveMaterial.constructor(); // r184 NodeMaterial (der Stoff des Vendors)
+                zweiter.name = this._resolveMaterial.name;
+                this._resolveStoffe = [this._resolveMaterial, zweiter]; // Stoff k schreibt in Ziel k
                 const F = AnazhRealm.FLACKER;
                 this._flacker = {
                     kante: uniform(F.kante),
@@ -1013,9 +1089,12 @@ class AnazhRealm_bild_kosten {
                     ruhePx: uniform(F.ruhePx),
                 };
                 this._versatzIndex = 0;
-                this._quad = new Quad(this._resolveMaterial);
-                this._quad.name = "TRAA";
+                this._quads = this._resolveStoffe.map((m) => Object.assign(new Quad(m), { name: "TRAA" }));
                 this._gr = new THREE.Vector2();
+            }
+            dispose() {
+                super.dispose();
+                this._resolveStoffe[1].dispose();
             }
             // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
             eingang(aus) {
@@ -1053,10 +1132,6 @@ class AnazhRealm_bild_kosten {
                     o.z = AnazhRealm.LAUB_VERSATZ;
                 }
             }
-            setSize(w, h) {
-                super.setSize(w, h);
-                this._flackerGeschichte.setSize(w, h);
-            }
             updateBefore(frame) {
                 const r = frame.renderer;
                 this._previousCameraWorldMatrix.value.copy(this._cameraWorldMatrix.value);
@@ -1081,19 +1156,28 @@ class AnazhRealm_bild_kosten {
                 r.setMRT(null);
                 r.setRenderObjectFunction(null);
                 r.autoClear = true;
-                if (neu) {
-                    r.initRenderTarget(g);
-                    r.initRenderTarget(this._resolveRenderTarget);
-                    r.initRenderTarget(this._flackerGeschichte);
-                }
+                if (neu)
+                    this._ziele.forEach((z, i) => {
+                        r.initRenderTarget(z);
+                        // DIE LAGE IST DIE GENERATION: r184 bindet eine getauschte Textur nur neu, wenn die Generation ihrer
+                        // Renderer-Daten (beim Anlegen ihre `version`) nicht die gebundene ist (`Bindings._update`,
+                        // gate:vendor-anker) — gleiche Versionen hielten die Kette auf dem alten Ziel; je Ziel eine eigene,
+                        // gesetzt nach jedem Anlegen (Größen-Wechsel und Neubeginn laufen hier durch)
+                        r._textures.get(z.texture).generation = "zeit:" + i;
+                    });
                 this._neustart.value = neu ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
                 this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
-                r.setRenderTarget(this._resolveRenderTarget);
-                this._quad.render(r);
+                // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
+                // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
+                const k = 1 - this._lage;
+                r.setRenderTarget(this._ziele[k]);
+                this._quads[k].render(r);
                 r.setRenderTarget(null);
-                r.copyTextureToTexture(this._resolveRenderTarget.texture, g.texture);
-                r.copyTextureToTexture(this._resolveRenderTarget.textures[1], this._flackerGeschichte.texture);
+                this._lage = k;
+                this._textureNode.value = this._ziele[k].texture;
+                this._historyRenderTarget = this._ziele[k];
+                this._resolveRenderTarget = this._ziele[1 - k];
                 r.setRenderTarget(ziel);
                 r.setMRT(mrt);
                 r.setRenderObjectFunction(rof);
@@ -1114,117 +1198,131 @@ class AnazhRealm_bild_kosten {
                 this._velocityNode = builder.context.velocity !== undefined ? builder.context.velocity : T.velocity;
                 const ein = this.beautyNode;
                 const tief = this.depthNode;
-                const geschichte = texture(this._historyRenderTarget.texture);
-                const flackerAlt = texture(this._flackerGeschichte.texture);
-                const flackerNeu = T.property("float", "flackerNeu");
                 const { x: nah, y: fern } = this._cameraNearFar;
-                const resolve = Fn(() => {
-                    const uvA = uv();
-                    const einGr = vec2(ein.size());
-                    const ausGr = vec2(1).div(this._invSize);
-                    const pEin = uvA.mul(einGr);
-                    const zelle = floor(pEin);
-                    const jePx = ausGr.div(einGr);
-                    const hoch = einGr.sub(1);
-                    const summeW = float(0).toVar();
-                    const summeC = vec3(0).toVar();
-                    const m1 = vec3(0).toVar();
-                    const m2 = vec3(0).toVar();
-                    const wNah = float(0).toVar();
-                    const nahD = float(2).toVar();
-                    const nahT = vec2(0).toVar();
-                    const fernD = float(-1).toVar();
-                    for (let y = -1; y <= 1; y++)
-                        for (let x = -1; x <= 1; x++) {
-                            const t = zelle.add(vec2(x, y)).clamp(vec2(0), hoch).toVar();
-                            const c = ein.load(t).rgb.max(0).toVar();
-                            const d = t.add(0.5).add(this._zitter).sub(pEin).mul(jePx);
-                            const w = exp(d.dot(d).mul(this._kern).negate()).toVar();
-                            summeW.addAssign(w);
-                            summeC.addAssign(c.mul(w));
-                            m1.addAssign(c);
-                            m2.addAssign(c.mul(c));
-                            wNah.assign(max(wNah, w));
-                            const tz = tief.load(t).r.toVar();
-                            If(tz.lessThan(nahD), () => {
-                                nahD.assign(tz);
-                                nahT.assign(t);
-                            });
-                            If(tz.greaterThan(fernD), () => {
-                                fernD.assign(tz);
-                            });
-                        }
-                    const jetzt = summeC.div(max(summeW, 1e-5)).toVar();
-                    // die Bewegung des nächsten Texels (NDC → UV), die Geschichte an ihrer Stelle im Vorbild
-                    const versatz = this.velocityNode.load(nahT.add(0.5)).xy.mul(vec2(0.5, -0.5)).toVar();
-                    const gUV = uvA.sub(versatz).toVar();
-                    const hist = geschichte.sample(gUV).toVar();
-                    const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
-                    const posV = T.getViewPosition(gUV, vorD, this._previousCameraProjectionMatrixInverse);
-                    const posW = this._previousCameraWorldMatrix.mul(vec4(posV, 1)).xyz;
-                    const vorJetzt = T.viewZToPerspectiveDepth(
-                        this._cameraWorldMatrixInverse.mul(vec4(posW, 1)).z,
-                        nah,
-                        fern
-                    );
-                    const imBild = gUV.greaterThanEqual(0).all().and(gUV.lessThanEqual(1).all());
-                    const kante = fernD.sub(nahD).greaterThan(this.edgeDepthDiff);
-                    const frei = nahD.sub(vorJetzt).greaterThan(this.depthThreshold);
-                    // der ORT der Geschichte trägt (im Bild, keine Disokklusion); gültig ist sie dazu ohne Neubeginn
-                    const ort = imBild.and(kante.or(frei.not()));
-                    const gueltig = ort.and(this._neustart.equal(0));
-                    const lauf = uvA.sub(gUV).mul(ausGr).length().div(this.maxVelocityLength).saturate();
-                    // DAS DECKUNGS-GEDÄCHTNIS (A3b): eine stochastische Deckung (Laub, Nadeln, Halme, Karten, die Stufen-Blende)
-                    // zeigt je Frame Fläche ODER Grund. In einem Frame, in dem ihre Lücke das 3×3 verlässt, ist die Box nur Fläche,
-                    // und die Varianz-Klemme warf das Mittel der Geschichte weg (Radeon, Tafel-Pose, Abstand zum Mittel aus 256
-                    // Frames ohne Klemme: 4,06 Luma nach 32 Frames, 4,36 nach 256 — es konvergierte nie; ohne Klemme 2,74). Das
-                    // Gedächtnis je Ausgabe-Pixel ist der gleitende Anteil der Frames (`FLACKER.rate`), in denen sein 3×3 eine
-                    // DECKUNGS-KANTE trägt (Tiefen-Sprung über `FLACKER.kante` relativ, Δz/z), mit der Geschichte reprojiziert und
-                    // nur bei einer Disokklusion neu. Wo es über `FLACKER.an` steht, mittelt die Geschichte ungeklemmt — eine Lücke,
-                    // die das 3×3 eben verließ, bleibt im Mittel. Nur in Ruhe (unter `FLACKER.ruhePx` Bewegung je Frame): ein
-                    // laufender Blick klemmt wie bisher, und eine Kante, die nur vorbeizieht (ein Tier), hebt das Gedächtnis nicht.
-                    const deckKante = fernD
-                        .sub(nahD)
-                        .div(float(1).sub(nahD).max(1e-6))
-                        .greaterThan(this._flacker.kante)
-                        .select(float(1), float(0));
-                    const phiAlt = flackerAlt.sample(gUV).r;
-                    flackerNeu.assign(ort.select(mix(phiAlt, deckKante, this._flacker.rate), float(0)));
-                    const ruhe = float(1).sub(uvA.sub(gUV).mul(ausGr).length().div(this._flacker.ruhePx)).saturate();
-                    const lass = T.smoothstep(this._flacker.an.x, this._flacker.an.y, phiAlt).mul(ruhe);
-                    // das Gewicht des Jetzt: Grund 0,05, Unterpixel-Korrektur der Bewegung, mal die Deckung des nächsten Texels
-                    const phase = versatz.mul(ausGr).fract().abs();
-                    const pw = max(phase, phase.oneMinus());
-                    const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
-                    alpha.mulAssign(wNah);
-                    // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
-                    // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
-                    // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
-                    // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
-                    const anlauf = float(1).div(this._anlauf.add(1));
-                    alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
-                    // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel, wo das Deckungs-Gedächtnis sie nicht löst
-                    const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
-                    const mittel = m1.div(9);
-                    const sigma = m2.div(9).sub(mittel.mul(mittel)).max(0).sqrt().mul(gamma);
-                    const histC = mix(klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma)), hist.rgb, lass);
-                    // die Flimmer-Dämpfung nach Luma (r184 flickerReduction)
-                    const wJ = alpha.div(luminance(jetzt.div(max(jetzt.x, jetzt.y, jetzt.z).add(1))).add(1));
-                    const wG = alpha.oneMinus().div(luminance(histC.div(max(histC.x, histC.y, histC.z).add(1))).add(1));
-                    const aus = jetzt
-                        .mul(wJ)
-                        .add(histC.mul(wG))
-                        .div(max(wJ.add(wG), 1e-5));
-                    const dMitte = tief.load(zelle.clamp(vec2(0), hoch)).r;
-                    return vec4(aus, T.perspectiveDepthToViewZ(dMitte, nah, fern));
-                });
-                // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
-                // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
-                // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
-                this._resolveMaterial.mrtNode = T.mrt({
-                    "TRAANode.resolve": resolve(),
-                    "TRAANode.flacker": flackerNeu,
-                });
+                // Stoff k schreibt in Ziel k und liest fest das andere: die Geschichte und ihr Gedächtnis (G7)
+                const stoff = (k) => {
+                    const vor = this._ziele[1 - k];
+                    const geschichte = texture(vor.textures[0]);
+                    const flackerAlt = texture(vor.textures[1]);
+                    const flackerNeu = T.property("float", "flackerNeu");
+                    const resolve = Fn(() => {
+                        const uvA = uv();
+                        const einGr = vec2(ein.size());
+                        const ausGr = vec2(1).div(this._invSize);
+                        const pEin = uvA.mul(einGr);
+                        const zelle = floor(pEin);
+                        const jePx = ausGr.div(einGr);
+                        const hoch = einGr.sub(1);
+                        const summeW = float(0).toVar();
+                        const summeC = vec3(0).toVar();
+                        const m1 = vec3(0).toVar();
+                        const m2 = vec3(0).toVar();
+                        const wNah = float(0).toVar();
+                        const nahD = float(2).toVar();
+                        const nahT = vec2(0).toVar();
+                        const fernD = float(-1).toVar();
+                        for (let y = -1; y <= 1; y++)
+                            for (let x = -1; x <= 1; x++) {
+                                const t = zelle.add(vec2(x, y)).clamp(vec2(0), hoch).toVar();
+                                const c = ein.load(t).rgb.max(0).toVar();
+                                const d = t.add(0.5).add(this._zitter).sub(pEin).mul(jePx);
+                                const w = exp(d.dot(d).mul(this._kern).negate()).toVar();
+                                summeW.addAssign(w);
+                                summeC.addAssign(c.mul(w));
+                                m1.addAssign(c);
+                                m2.addAssign(c.mul(c));
+                                wNah.assign(max(wNah, w));
+                                const tz = tief.load(t).r.toVar();
+                                If(tz.lessThan(nahD), () => {
+                                    nahD.assign(tz);
+                                    nahT.assign(t);
+                                });
+                                If(tz.greaterThan(fernD), () => {
+                                    fernD.assign(tz);
+                                });
+                            }
+                        const jetzt = summeC.div(max(summeW, 1e-5)).toVar();
+                        // die Bewegung des nächsten Texels (NDC → UV), die Geschichte an ihrer Stelle im Vorbild
+                        const versatz = this.velocityNode.load(nahT.add(0.5)).xy.mul(vec2(0.5, -0.5)).toVar();
+                        const gUV = uvA.sub(versatz).toVar();
+                        const hist = geschichte.sample(gUV).toVar();
+                        const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
+                        const posV = T.getViewPosition(gUV, vorD, this._previousCameraProjectionMatrixInverse);
+                        const posW = this._previousCameraWorldMatrix.mul(vec4(posV, 1)).xyz;
+                        const vorJetzt = T.viewZToPerspectiveDepth(
+                            this._cameraWorldMatrixInverse.mul(vec4(posW, 1)).z,
+                            nah,
+                            fern
+                        );
+                        const imBild = gUV.greaterThanEqual(0).all().and(gUV.lessThanEqual(1).all());
+                        const kante = fernD.sub(nahD).greaterThan(this.edgeDepthDiff);
+                        const frei = nahD.sub(vorJetzt).greaterThan(this.depthThreshold);
+                        // der ORT der Geschichte trägt (im Bild, keine Disokklusion); gültig ist sie dazu ohne Neubeginn
+                        const ort = imBild.and(kante.or(frei.not()));
+                        const gueltig = ort.and(this._neustart.equal(0));
+                        const lauf = uvA.sub(gUV).mul(ausGr).length().div(this.maxVelocityLength).saturate();
+                        // DAS DECKUNGS-GEDÄCHTNIS (A3b): eine stochastische Deckung (Laub, Nadeln, Halme, Karten, die Stufen-Blende)
+                        // zeigt je Frame Fläche ODER Grund. In einem Frame, in dem ihre Lücke das 3×3 verlässt, ist die Box nur Fläche,
+                        // und die Varianz-Klemme warf das Mittel der Geschichte weg (Radeon, Tafel-Pose, Abstand zum Mittel aus 256
+                        // Frames ohne Klemme: 4,06 Luma nach 32 Frames, 4,36 nach 256 — es konvergierte nie; ohne Klemme 2,74). Das
+                        // Gedächtnis je Ausgabe-Pixel ist der gleitende Anteil der Frames (`FLACKER.rate`), in denen sein 3×3 eine
+                        // DECKUNGS-KANTE trägt (Tiefen-Sprung über `FLACKER.kante` relativ, Δz/z), mit der Geschichte reprojiziert und
+                        // nur bei einer Disokklusion neu. Wo es über `FLACKER.an` steht, mittelt die Geschichte ungeklemmt — eine Lücke,
+                        // die das 3×3 eben verließ, bleibt im Mittel. Nur in Ruhe (unter `FLACKER.ruhePx` Bewegung je Frame): ein
+                        // laufender Blick klemmt wie bisher, und eine Kante, die nur vorbeizieht (ein Tier), hebt das Gedächtnis nicht.
+                        const deckKante = fernD
+                            .sub(nahD)
+                            .div(float(1).sub(nahD).max(1e-6))
+                            .greaterThan(this._flacker.kante)
+                            .select(float(1), float(0));
+                        // EIN NEUBEGINN (Größe, Aufnahme) startet das Gedächtnis offen: die Geschichte danach ist frisch (das Mittel
+                        // seit dem Neubeginn, `_anlauf`), die Klemme verwürfe nur gültige Frames; an Flächen ohne Kante klingt es in
+                        // ~8 Frames ab, ein laufender Blick klemmt wie immer (`ruhe`). Bis G7 trug ein eigenes Ziel das Gedächtnis
+                        // über den Neubeginn (das des Blicks davor); beim Jetzt (0 | 1) begonnen hielt die Tafel-Pose 49 px Raster.
+                        const phiAlt = this._neustart.equal(0).select(flackerAlt.sample(gUV).r, float(1));
+                        flackerNeu.assign(ort.select(mix(phiAlt, deckKante, this._flacker.rate), float(0)));
+                        const ruhe = float(1)
+                            .sub(uvA.sub(gUV).mul(ausGr).length().div(this._flacker.ruhePx))
+                            .saturate();
+                        const lass = T.smoothstep(this._flacker.an.x, this._flacker.an.y, phiAlt).mul(ruhe);
+                        // das Gewicht des Jetzt: Grund 0,05, Unterpixel-Korrektur der Bewegung, mal die Deckung des nächsten Texels
+                        const phase = versatz.mul(ausGr).fract().abs();
+                        const pw = max(phase, phase.oneMinus());
+                        const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
+                        alpha.mulAssign(wNah);
+                        // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
+                        // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
+                        // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
+                        // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
+                        const anlauf = float(1).div(this._anlauf.add(1));
+                        alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
+                        // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel, wo das Deckungs-Gedächtnis sie nicht löst
+                        const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
+                        const mittel = m1.div(9);
+                        const sigma = m2.div(9).sub(mittel.mul(mittel)).max(0).sqrt().mul(gamma);
+                        const histC = mix(klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma)), hist.rgb, lass);
+                        // die Flimmer-Dämpfung nach Luma (r184 flickerReduction)
+                        const wJ = alpha.div(luminance(jetzt.div(max(jetzt.x, jetzt.y, jetzt.z).add(1))).add(1));
+                        const wG = alpha
+                            .oneMinus()
+                            .div(luminance(histC.div(max(histC.x, histC.y, histC.z).add(1))).add(1));
+                        const aus = jetzt
+                            .mul(wJ)
+                            .add(histC.mul(wG))
+                            .div(max(wJ.add(wG), 1e-5));
+                        const dMitte = tief.load(zelle.clamp(vec2(0), hoch)).r;
+                        return vec4(aus, T.perspectiveDepthToViewZ(dMitte, nah, fern));
+                    });
+                    // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
+                    // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
+                    // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
+                    this._resolveStoffe[k].mrtNode = T.mrt({
+                        "TRAANode.resolve": resolve(),
+                        "TRAANode.flacker": flackerNeu,
+                    });
+                };
+                stoff(0);
+                stoff(1);
                 return this._textureNode;
             }
         }

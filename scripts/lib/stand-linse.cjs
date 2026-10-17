@@ -219,7 +219,7 @@ function standLauf(k) {
                 [
                     st.voxelChunks ? st.voxelChunks.size : 0,
                     r._weltOffen().foundry, // die Foundry, wie das Wort „die Welt steht" sie zählt (A9)
-                    (r._impostorBakeQueue || []).length + (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0),
+                    (r._impostorBakeQueue || []).length,
                 ].join("|");
             const t0 = performance.now();
             let vor = zustand(),

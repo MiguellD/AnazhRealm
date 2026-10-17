@@ -320,7 +320,7 @@ async function kaltLauf() {
                     streu: !!st.playerMesh && wartet === 0,
                     biblio: !!(f && f.ready && !f._vorrat),
                     // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
-                    impost: headless ? true : (!q || q.length === 0) && !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0),
+                    impost: headless ? true : !q || q.length === 0,
                     _streuWartet: wartet,
                 };
             };
@@ -403,49 +403,7 @@ async function kaltLauf() {
                     st._buehneStand = merk.latch;
                     r._buehneT0 = merk.t0;
                 }
-                // ── W4.3 — DER BAKE-WATCHDOG (die 0/115-Wurzel): ein hängender async RTT-Bake
-                // (Readback resolvt nie) würde den IMPOST-Term dieser Bühne FÜR IMMER deadlocken.
-                // Simulation: pending klemmt „seit 20 s" auf einem frischen Record → EIN Tick muss
-                // ihn graziös verwerfen (gescheitert + pending frei + Token entwertet die späte finally).
-                {
-                    const A2 = window.AnazhRealm || r.constructor;
-                    const prevFlug = r._impostorBakeFlug;
-                    const prevTok = r._impostorBakeTok;
-                    const zellen = r._kartenAtlas ? r._kartenAtlas.zellen : null;
-                    const anyKey = zellen && zellen.size ? Array.from(zellen.keys())[0] : null;
-                    const anyRec = anyKey ? zellen.get(anyKey) : null;
-                    const prevFailed = anyRec ? anyRec.gescheitert : null;
-                    if (anyRec && !r._impostorBakeQueue) r._impostorBakeQueue = [];
-                    if (anyRec) {
-                        r._impostorBakeQueue.push("__wd_dummy"); // Queue nicht-leer (der Tick läuft an)
-                        // ein Flug, der „seit 20 s" klemmt (je Bäcker-Bahn einer, K60-2)
-                        r._impostorBakeFlug = new Map([
-                            [anyKey, { seit: performance.now() - (A2.IMPOSTOR_BAKE_TIMEOUT_MS + 5000), tok: -1 }],
-                        ]);
-                        const prevTries = anyRec.versuche;
-                        const tokBefore = r._impostorBakeTok || 0;
-                        r._tickImpostorBake();
-                        o.watchdog = {
-                            pendingCleared: !r._impostorBakeFlug.has(anyKey),
-                            // V18.464 (baum-D7, Lehre 6 — die Linse wandert mit): der Watchdog
-                            // verwirft graziös MIT bounded Retry — der erste Hänger RE-QUEUED den
-                            // Schlüssel (versuche<3), erst der dritte wird terminal gescheitert.
-                            // BEIDE Dispositionen sind die gesunde Wand (nie still verhungern).
-                            recDisposed:
-                                anyRec.gescheitert === true || r._impostorBakeQueue.indexOf(anyKey) >= 0,
-                            tokenBumped: (r._impostorBakeTok || 0) > tokBefore,
-                        };
-                        // WIEDERHERSTELLEN (die Gate-Hook-Lehre)
-                        const qi = r._impostorBakeQueue.indexOf("__wd_dummy");
-                        if (qi >= 0) r._impostorBakeQueue.splice(qi, 1);
-                        const qk = r._impostorBakeQueue.indexOf(anyKey);
-                        if (qk >= 0) r._impostorBakeQueue.splice(qk, 1);
-                        anyRec.gescheitert = prevFailed;
-                        anyRec.versuche = prevTries;
-                        r._impostorBakeFlug = prevFlug;
-                        r._impostorBakeTok = prevTok;
-                    }
-                }
+                // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
             }
             return o;
         }, SELFTEST);
@@ -509,10 +467,6 @@ async function kaltLauf() {
         checks.push({
             name: `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
             pass: s.deckelSteht === true && s.deckelWarnt === true,
-        });
-        checks.push({
-            name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · Retry/gescheitert · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,
-            pass: !!(out.watchdog && out.watchdog.pendingCleared && out.watchdog.recDisposed && out.watchdog.tokenBumped),
         });
     }
     let fails = 0;

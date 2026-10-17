@@ -340,7 +340,7 @@ async function renderAnazh() {
                 }
                 await new Promise((res) => setTimeout(res, 60));
                 const q = r._impostorBakeQueue;
-                if ((!q || q.length === 0) && !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0)) break;
+                if (!q || q.length === 0) break;
             }
             r.state.renderer.render = function () {};
             return {

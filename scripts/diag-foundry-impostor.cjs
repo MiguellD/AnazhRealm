@@ -1,15 +1,17 @@
-// diag-foundry-impostor.cjs — P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS: die Welt-Fernstufe konsumiert den
-// STUDIO-Bäcker (Foundry-Worker-Kanal "bake-impostor") über EINEN Karten-Atlas (W6: eine Array-Textur, eine Schicht
-// je Karte, EIN Material, EINE Gruppe); der Welt-RTT-Nachbau, das GL-Bake-iframe und der Canvas-Atlas je Karte sind
-// GESCHNITTEN. Zwei Teile (der opt-in RTT-Bake B fiel am 16.10.: nie in der CI gefahren, ein ausbleibender Bake nur Notiz):
+// diag-foundry-impostor.cjs — W6 DER EINE KARTEN-ATLAS + S2 DIE KARTE BACKT IN DER WELT: die Welt-Fernstufe liest EINEN
+// Karten-Atlas (eine Array-Textur, eine Schicht je Karte, EIN Material, EINE Gruppe); die Karte backt der Welt-Renderer
+// aus der L1-Gestalt (`_karteWeltBacken`); Studio-Bäcker-Kanal, Welt-RTT-Nachbau, GL-Bake-iframe und Canvas-Atlas je Karte
+// sind GESCHNITTEN. Zwei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
-//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; der Bake-Tick spricht
-//     den Kanal "bake-impostor"; KEIN asset-foundry-iframe im DOM; die gefallenen Methoden sind weg.
-//   C (swiftshader-WebGPU, HART): das LAYOUT — eine synthetische Karte durch den echten Codec + Schicht-Schreiber
-//     steht links oben (nicht gedreht, nicht gespiegelt) — und die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie:
-//     die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte in die Lücke). C5: der Atlas wächst in SEINEN Texturen
-//     über den EINEN Abschied (`_texturAbschied`), die Vorlage des Programms bindet die lebende (Selbsttest: das alte Wachsen).
+//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; KEIN asset-foundry-iframe im DOM; die
+//     gefallenen Methoden sind weg.
+//   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
+//     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
+//     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
+//     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
+//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn keine Lieferung aus A mehr
+//     unterwegs ist (`lieferungenLanden`); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
@@ -37,6 +39,73 @@ async function bootPage(browser, nullRenderer) {
             await new Promise((r) => setTimeout(r, 100));
     });
     return { page, pageErrors };
+}
+
+// DIE PROBE-GESTALTEN (Teil C): Dreiecke in Ansichts-Koordinaten (u, v ∈ 0..1, v = 0 Unterkante) im Rahmen 4 × 8 der
+// Probe, eine Tafel, eine Säule — und der ECHTE Bake: die Gestalt steht als L1 im Foundry-Cache, `_karteWeltBacken`
+// zeichnet sie auf dem Probe-Renderer in ihre Schicht. Zwei Anker setzen den Rahmen (impostorFrame: halfH = 0,51 · maxY,
+// halfW = 1,04 · maxR). Eine bestehende Zelle statt des Schlüssels backt neu.
+async function installiereBacke(page) {
+    await page.evaluate(() => {
+        const T = THREE;
+        const R = 4 / 1.04,
+            Y = 8 / 1.02;
+        window.__fimpFlaeche = (dreiecke) => {
+            const pos = [];
+            for (const d of dreiecke)
+                for (let i = 0; i < 6; i += 2) pos.push(Math.max(-R, Math.min(R, -4 + 8 * d[i])), Math.min(Y, 8 * d[i + 1]), 0);
+            return new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(pos, 3));
+        };
+        window.__fimpRechteck = (u0, v0, u1, v1) => [
+            [u0, v0, u1, v0, u1, v1],
+            [u0, v0, u1, v1, u0, v1],
+        ];
+        window.__fimpSaeule = () => new T.CylinderGeometry(R, R, Y, 32).translate(0, Y / 2, 0);
+        // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
+        // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
+        window.__fimpFormat = (ren) => {
+            const r = window.anazhRealm;
+            const vor = r.state.renderer;
+            r.state.renderer = ren;
+            try {
+                return r._impostorAtlasFormat();
+            } finally {
+                r.state.renderer = vor;
+            }
+        };
+        window.__fimpBacke = async (ren, at, key, variant, geo) => {
+            const r = window.anazhRealm;
+            const vor = r.state.renderer;
+            r.state.renderer = ren;
+            try {
+                let z = key;
+                if (typeof key === "string") {
+                    z = r._impostorZelleNeu(at, key, "eiche", variant, null);
+                    if (!r._impostorAtlasTexturen(at, z.idx + 1)) throw new Error("der Atlas hat keine Texturen (das Buch fehlt)");
+                    const mat = new T.MeshStandardNodeMaterial({ color: 0x3ca028, side: T.DoubleSide });
+                    const anker = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
+                    const g = new T.Group();
+                    g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat));
+                    r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._foundryServierStufe(z.preset, 1), z.ov), g);
+                }
+                const q = r._impostorBakeQueue || [];
+                if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
+                z._weltNeu = true;
+                const bis = performance.now() + 240000;
+                for (;;) {
+                    if (at.fmt !== "bc" || r._karteRechner()) {
+                        const e = r._karteWeltBacken(at, z);
+                        if (e === true) return z;
+                        if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
+                    }
+                    if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
+                    await new Promise((ok) => setTimeout(ok, 50));
+                }
+            } finally {
+                r.state.renderer = vor;
+            }
+        };
+    });
 }
 
 // Wartet, bis der Foundry-Worker ready ist + zwei Atlas-Zellen stehen (Eiche, Fichte — der Rahmen kommt headless aus
@@ -89,7 +158,7 @@ async function driveImpostor(page) {
                     materialGeteilt: l1.mat === l2.mat,
                     billboard: !!(l1.mat && l1.mat.userData && l1.mat.userData.impostorBillboard),
                     schichtenVerschieden: l1.zelle !== l2.zelle,
-                    texturen: !!(at.map && at.nmap && at.map.isDataArrayTexture && at.cap >= at.n),
+                    texturen: !!(at.map && at.nmap && at.lmap && at.cap >= at.n && at.map.image.depth === at.cap),
                     fmt: at.fmt,
                 };
                 // drei Instanzen über BEIDE Slot-Chokepoints: Streu (zwei Arten, Region 3,4) + ein gesetzter Eintrag
@@ -131,7 +200,7 @@ async function driveImpostor(page) {
             // DIE STRICH-WAND am Graphen (Integration W6, Echt-GPU 05.10.): steht die Peilung auf einer Ansichts-Grenze, springt
             // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
             // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
-            // (Albedo und Normale je Ansicht A und B) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
+            // (die Albedo je Ansicht A und B, die Normale der nächsten, S2b) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
             // der den Atlas ohne beides liest, fällt beim Namen.
             const atS = r._impostorAtlas();
             const strich = (m) => {
@@ -150,8 +219,7 @@ async function driveImpostor(page) {
             // die Absenz: keine Atlas-Stichprobe an _probeA vorbei (kein direktes _at.mapNode/_at.nmapNode.sample im Stoff-Bau)
             out.strichDirekt = (window.__codeOf(r._buildPbrNodeMaterial).match(/_at\.(?:mapNode|nmapNode)\.sample\(/g) || []).length;
             out.vereinigung = {
-                requestMethode: typeof r._foundryBakeImpostorRequest === "function",
-                payloadKonsument: typeof r._applyStudioImpostorPayload === "function",
+                weltBake: typeof r._karteWeltBacken === "function",
                 rttNachbau: typeof r._bakeImpostorAtlasRTT,
             };
             // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
@@ -162,6 +230,9 @@ async function driveImpostor(page) {
                 requestImpostor: typeof r._foundryRequestImpostor,
                 ensureBakeIframe: typeof r._foundryEnsureBakeIframe,
                 buildImpostorRecord: typeof r._foundryBuildImpostorRecord,
+                bakeImpostorRequest: typeof r._foundryBakeImpostorRequest,
+                studioImpostorPayload: typeof r._applyStudioImpostorPayload,
+                baecker: typeof r._foundryBaecker,
             };
         } catch (e) {
             out.err = (e && e.message) || String(e);
@@ -170,11 +241,25 @@ async function driveImpostor(page) {
     });
 }
 
-// ===== TEIL C — DIE KARTEN-WAND auf echtem Renderer (swiftshader-WebGPU, frischer in-page Renderer) =====
-// (1) DAS LAYOUT: eine synthetische Studio-Karte (jede Ansicht: nur die LINKE OBERE Viertel-Fläche opak, Zeile 0 =
-//     Unterkante wie readPixels) reist durch den ECHTEN Karten-Codec (__phytoCore.karteKodiere, BC wenn der Adapter
-//     es kann, sonst rgba8) und den ECHTEN Schicht-Schreiber in den Atlas — das Bild MUSS links oben stehen (die Karte
-//     steht richtig herum und ist nicht gespiegelt).
+// DIE RUHE VOR TEIL C (S2b-n2, CI 39023416317): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
+// Teil A bestellte, legt bei ihrer Ankunft ihre Zelle in ihm an (`_foundryZug` → `nach` → `_foundryEnsureImpostorRecord`). Ab
+// der neunten wächst er, das rgba8-Ziel wächst leer und die Probe-Karten backen nie nach (der Null-Renderer der Welt backt
+// nicht): die Wand sah 0 px, je nachdem, wie viele Lieferungen der Läufer noch trug (Zelle der Eiche in A: Schicht 0 rot,
+// Schicht 10 grün). Teil C beginnt, wenn keine Lieferung mehr unterwegs ist — in Lieferungen gezählt, nie in Wanduhr.
+async function lieferungenLanden(page) {
+    return await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const zuege = (r._foundry && r._foundry.zuege) || new Map();
+        let wellen = 0;
+        for (; zuege.size && wellen < 64; wellen++) await Promise.all([...zuege.values()]);
+        return { wellen, offen: zuege.size, foundry: r._weltOffen().foundry };
+    });
+}
+
+// ===== TEIL C — DIE KARTEN-WAND auf echtem Renderer (CI: WebGL2 auf swiftshader, lokal WebGPU; frischer in-page Renderer) =====
+// (1) DAS LAYOUT: eine Probe-Gestalt (eine Tafel in der LINKEN OBEREN Viertel-Fläche) backt durch den ECHTEN Bake
+//     (`_karteWeltBacken`, BC wenn der Adapter es kann, sonst rgba8) in den Atlas — das Bild MUSS links oben stehen (die
+//     Karte steht richtig herum und ist nicht gespiegelt).
 // (2) DIE KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/Feueresse hängen an der Kamera"): Wurzel war
 //     der FREIE Slot — seine Null-3×3 mit lebender Translation machte den Normal-Probe des Impostor-positionNode
 //     singulär, der tote Slot wurde ein welt-spannendes camera-facing Quad. Seit 05.10. gibt es keinen freien Slot mehr:
@@ -199,7 +284,7 @@ async function kleberProbe(page, fmtWunsch) {
             ren.setSize(W, H, false);
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
             // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
-            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
                 return { fmt: "bc", ohneFeature: true };
             out.fmt = fmtWunsch;
             r._kartenAtlas = undefined;
@@ -217,50 +302,14 @@ async function kleberProbe(page, fmtWunsch) {
                 out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
             }
-            // (1) die synthetische Studio-Karte: Albedo linear, links oben opak; Normale zur Kamera
-            const core = window.__phytoCore;
-            const cw = at.cw,
-                ch = at.ch,
-                V = at.V,
-                H0 = 8; // die Sichthöhe der Probe-Karten (= ihr Rahmen 2 · halfH)
-            const alb = new Uint8Array(cw * ch * V * 4);
-            for (let y = 0; y < ch * V; y++)
-                for (let x = 0; x < cw; x++) {
-                    const vy = (y % ch) / ch; // 0 = Unterkante der Ansicht
-                    if (x < cw / 2 && vy >= 0.5) {
-                        const o = (y * cw + x) * 4;
-                        alb[o] = 60;
-                        alb[o + 1] = 160;
-                        alb[o + 2] = 40;
-                        alb[o + 3] = 255;
-                    }
-                }
-            const nrm = new Uint8Array(cw * ch * V * 4); // voll: der Codec mittelt sie auf 1/normalTeiler
-            for (let i = 0; i < nrm.length; i += 4) {
-                nrm[i] = 128;
-                nrm[i + 1] = 128;
-                nrm[i + 2] = 255;
-                nrm[i + 3] = 255;
-            }
-            const schicht = core.karteKodiere(
-                { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
-                at.fmt
-            );
-            const z = r._impostorZelleNeu(at, "fimp:gateKarte|1", "eiche", 1, null);
-            out.geschrieben = r._applyStudioImpostorPayload(z, schicht);
+            // (1) die Probe-Gestalten durch den ECHTEN Bake: links oben eine Tafel (in den Ansichten um die Peilung der
+            // Kamera links), die Säule deckt jede Ansicht ganz (sie trägt den Monster-Slot)
+            const H0 = 8; // die Sichthöhe der Probe-Karten (= ihr Rahmen 2 · halfH)
+            const tafel = window.__fimpFlaeche(window.__fimpRechteck(0, 0.5, 0.5, 1));
+            const z = await window.__fimpBacke(ren, at, "fimp:gateKarte|1", 91, tafel);
+            const zV = await window.__fimpBacke(ren, at, "fimp:gateKarte|2", 92, window.__fimpSaeule());
+            out.geschrieben = z.gebacken && zV.gebacken;
             const leaf = r._impostorLeaf(z, new T.Matrix4(), H0);
-            // die volle Karte (jede Ansicht ganz opak) trägt den Monster-Slot: sein sichtbarer Fuß-Ausschnitt deckt
-            const albV = new Uint8Array(alb.length);
-            for (let i = 0; i < albV.length; i += 4) {
-                albV[i + 1] = 120;
-                albV[i + 3] = 255;
-            }
-            const zV = r._impostorZelleNeu(at, "fimp:gateKarte|2", "eiche", 2, null);
-            const vollOk = r._applyStudioImpostorPayload(
-                zV,
-                core.karteKodiere({ cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: albV, normal: nrm }, at.fmt)
-            );
-            out.geschrieben = out.geschrieben && vollOk;
             const leafV = r._impostorLeaf(zV, new T.Matrix4(), H0);
             const geo = r._lodInstanceFacade(leaf.geom, 2);
             const mesh = new T.InstancedMesh(geo, mat, 2);
@@ -354,6 +403,8 @@ async function kleberProbe(page, fmtWunsch) {
                 );
             })();
             const nachher = await zaehle();
+            // der Probe-Atlas trägt nur die Probe-Karten: jede fremde Zelle ist eine Lieferung der Welt, die ihn nebenher füllte
+            out.fremd = [...at.zellen.keys()].filter((k) => !k.startsWith("fimp:gateKarte|"));
             // das Layout zählt nach der Befreiung (der Monster-Slot deckt vorher auch die linke Box)
             out.layout = { lo: nachher.lo, ro: nachher.ro, lu: nachher.lu, ru: nachher.ru, zeilen: nachher.zeilen };
             out.box = { x0, x1, yOben, yUnten };
@@ -364,7 +415,7 @@ async function kleberProbe(page, fmtWunsch) {
             const vorlagen = () =>
                 (mesh.__renderObjekte || [])
                     .flatMap((ro) => ro.getNodeBuilderState().bindings.flatMap((g) => g.bindings))
-                    .filter((b) => b.isSampledTexture && b.textureNode && /^karte-/.test(b.texture.name || ""))
+                    .filter((b) => b.isSampledTexture && b.textureNode && /^karte-.*:atlas$/.test(b.texture.name || ""))
                     .map((b) => (b.texture === b.textureNode.value ? "" : `Vorlage ${b.texture.name}#${b.texture.id}`));
             const weg = new WeakSet(),
                 P = (self.GPUTexture || class {}).prototype,
@@ -374,23 +425,36 @@ async function kleberProbe(page, fmtWunsch) {
             };
             const gpu = (t) => ren.backend.get(t).texture || ren.backend.get(t).textureGPU;
             try {
-                const alt = [at.map, at.nmap].map(gpu);
-                r._impostorAtlasTexturen(at, at.cap + 1);
+                const alt = [at.map, at.nmap, at.lmap].map(gpu);
+                const vorR = r.state.renderer;
+                r.state.renderer = ren;
+                try {
+                    r._impostorAtlasTexturen(at, at.cap + 1);
+                } finally {
+                    r.state.renderer = vorR;
+                }
+                // rgba8: das Ziel wächst neu, die Schichten backen nach (bc: die GPU kopiert sie)
+                if (at.fmt === "rgba8") for (const zz of [z, zV]) await window.__fimpBacke(ren, at, zz);
                 const q = await zaehle();
                 await new Promise((ok) => setTimeout(ok, 0)); // die alte Form fällt nach dem Submit
-                const leben = [...ren.info.memoryMap.keys()].filter((t) => t.isTexture && /^karte-/.test(t.name || ""));
+                const sonne = (r._karteBuehneSatz && r._karteBuehneSatz.schatten.textures) || [];
+                const leben = [...ren.info.memoryMap.keys()].filter(
+                    (t) => t.isTexture && /^karte-.*:atlas$/.test(t.name || "") && !sonne.includes(t)
+                );
                 const form = (t) => `${t.name}:${t.image.depth}/${gpu(t).depthOrArrayLayers || t.image.depth}`;
                 const v = vorlagen();
                 out.wachsen = [
-                    leben.length === 2 && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
+                    leben.length === 3 && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
                         ? ""
-                        : `bei der GPU ${leben.map(form).join(", ")} statt Albedo und Normale in ${at.cap} Schichten`,
+                        : `bei der GPU ${leben.map(form).join(", ")} statt Albedo, Normale und Sonnen-Sicht in ${at.cap} Schichten`,
                     alt.every((g) => weg.has(g) || ren.backend.gl?.isTexture(g) === false) ? "" : "alte GPU-Form lebt",
                     ["lo", "ro", "lu", "ru"].every((k) => q[k] === nachher[k]) ? "" : "Bild anders nach dem Wachsen",
                     v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
                     ...v,
                 ].filter(Boolean);
-                // SELBSTTEST: das Wachsen bis 16.10. (neue Texturen, der Knoten-Wert getauscht, die alten entsorgt)
+                // SELBSTTEST: das Wachsen bis 16.10. (neue Texturen, der Knoten-Wert getauscht, die alten entsorgt) — an der
+                // BC-Stufe (die rgba8-Schichten sind Ziel-Texturen eines Render-Ziels, ein Klon zeichnet dort nie)
+                if (at.fmt !== "bc") return (out.wachsenSelbst = ["nur bc"]), ren.dispose(), out;
                 const vor = [at.map, at.nmap];
                 [at.map, at.nmap] = vor.map((t) => Object.assign(t.clone(), { needsUpdate: true }));
                 [at.mapNode.value, at.nmapNode.value] = [at.map, at.nmap];
@@ -426,7 +490,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             const W = 128,
                 H = 128;
             ren.setSize(W, H, false);
-            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
                 return { fmt: "bc", ohneFeature: true };
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
@@ -439,47 +503,26 @@ async function vergroessertProbe(page, fmtWunsch) {
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
             if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
-            const core = window.__phytoCore;
-            const cw = at.cw,
-                ch = at.ch,
-                V = at.V;
-            // die Kante: opak, wo x + y > 1 (Ansichts-Koordinaten 0..1) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4
-            const karte = (stufe) => {
-                const alb = new Uint8Array(cw * ch * V * 4);
-                for (let y = 0; y < ch * V; y++)
-                    for (let x = 0; x < cw; x++) {
-                        const yy = y % ch;
-                        const qx = stufe ? Math.floor(x / stufe) * stufe + stufe / 2 : x + 0.5;
-                        const qy = stufe ? Math.floor(yy / (2 * stufe)) * 2 * stufe + stufe : yy + 0.5;
-                        if (qx / cw + qy / ch > 1) {
-                            const o = (y * cw + x) * 4;
-                            alb[o] = 60;
-                            alb[o + 1] = 160;
-                            alb[o + 2] = 40;
-                            alb[o + 3] = 255;
-                        }
-                    }
-                const nrm = new Uint8Array(cw * ch * V * 4);
-                for (let i = 0; i < nrm.length; i += 4) {
-                    nrm[i] = 128;
-                    nrm[i + 1] = 128;
-                    nrm[i + 2] = 255;
-                    nrm[i + 3] = 255;
+            // die Kante: deckend, wo u + v > 1 (Ansichts-Koordinaten) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4; `stufe`
+            // malt sie in Stufen von stufe × 2·stufe Texeln (der Selbsttest)
+            const kante = (stufe) => {
+                if (!stufe) return window.__fimpFlaeche([[0.98, 0.02, 0.98, 0.98, 0.02, 0.98]]);
+                const d = [];
+                for (let x = 0; x < at.cw; x += stufe) {
+                    let y = 0;
+                    while (y < at.ch && !((x + stufe / 2) / at.cw + (y + stufe) / at.ch > 1)) y += 2 * stufe;
+                    if (y < at.ch) d.push(...window.__fimpRechteck(x / at.cw, y / at.ch, (x + stufe) / at.cw, 1));
                 }
-                return core.karteKodiere(
-                    { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
-                    at.fmt
-                );
+                return window.__fimpFlaeche(d);
             };
             const cam = new T.PerspectiveCamera(60, W / H, 0.05, 50);
             const d = 0.866; // ein Pixel 7,8 mm: ein Texel der Höhe (8 m / ch) misst ~4 px
             cam.position.set(0, 4, d);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
-            out.pxJeTexel = +(8 / ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
+            out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
-                const z = r._impostorZelleNeu(at, "fimp:gateKante|" + name, "eiche", 1, null);
-                if (!r._applyStudioImpostorPayload(z, karte(stufe))) return null;
+                const z = await window.__fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
                 const leaf = r._impostorLeaf(z, new T.Matrix4(), 8);
                 const mesh = new T.InstancedMesh(r._lodInstanceFacade(leaf.geom, 1), mat, 1);
                 mesh.frustumCulled = false;
@@ -576,24 +619,7 @@ async function blickProbe(page) {
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
             if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
-            const core = window.__phytoCore;
-            const cw = at.cw,
-                ch = at.ch,
-                V = at.V;
-            const alb = new Uint8Array(cw * ch * V * 4).fill(255);
-            const nrm = new Uint8Array(cw * ch * V * 4);
-            for (let i = 0; i < nrm.length; i += 4) {
-                nrm[i] = 128;
-                nrm[i + 1] = 128;
-                nrm[i + 2] = 255;
-                nrm[i + 3] = 255;
-            }
-            const z = r._impostorZelleNeu(at, "fimp:gateBlick|1", "eiche", 1, null);
-            const payload = core.karteKodiere(
-                { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
-                at.fmt
-            );
-            if (!r._applyStudioImpostorPayload(z, payload)) return { err: "Schicht nicht geschrieben" };
+            const z = await window.__fimpBacke(ren, at, "fimp:gateBlick|1", 95, window.__fimpSaeule());
             const leaf = r._impostorLeaf(z, new T.Matrix4(), 8);
             const anker = new T.Vector3(30, 0, -10),
                 s = 1.5,
@@ -799,7 +825,9 @@ async function windProbe(page) {
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
-    const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
+    await installiereBacke(pageA);
+    const ruhe = await lieferungenLanden(pageA);
+    const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
     const C3 = await blickProbe(pageA);
     const C4 = await windProbe(pageA);
@@ -859,14 +887,13 @@ async function windProbe(page) {
     if (A.vereinigung) {
         const s = A.strich || {};
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        if (!(s.gradMap === 2 && s.gradNmap === 2 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
+        if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
             errs.push(
-                `A: Strich-Wand — Albedo und Normale je Ansicht mit Gradienten der stetigen Koordinate (2/2), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
+                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten mit Gradienten der stetigen Koordinate (2/1), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
-        if (!A.vereinigung.requestMethode) errs.push("A: `_foundryBakeImpostorRequest` fehlt");
-        if (!A.vereinigung.payloadKonsument) errs.push("A: `_applyStudioImpostorPayload` fehlt");
+        if (!A.vereinigung.weltBake) errs.push("A: `_karteWeltBacken` fehlt");
         if (A.vereinigung.rttNachbau !== "undefined")
             errs.push(`A: der RTT-Nachbau ` + "`_bakeImpostorAtlasRTT`" + ` lebt noch (${A.vereinigung.rttNachbau})`);
     } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
@@ -877,14 +904,16 @@ async function windProbe(page) {
     }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
+    console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
+    if (ruhe.offen) errs.push(`C: ${ruhe.offen} Lieferungen blieben nach ${ruhe.wellen} Wellen unterwegs — die Welt kam nicht zur Ruhe`);
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
         console.log(
-            `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===`
+            `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===`
         );
         if (C.ohneFeature) {
             console.log(
-                "  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)"
+                "  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Blick-Sonde)"
             );
             continue;
         }
@@ -916,6 +945,8 @@ async function windProbe(page) {
             errs.push(
                 `${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`
             );
+        if ((C.fremd || []).length)
+            errs.push(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
         if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
         if (!(C.lebtPx > 40))
             errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
@@ -980,7 +1011,7 @@ async function windProbe(page) {
             `\n=== TEIL ${F} — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~${C2.pxJeTexel} px) ===`
         );
         if (C2.ohneFeature) {
-            console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Werkbank)");
+            console.log("  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Werkbank)");
             continue;
         }
         if (C2.err) {
@@ -1008,7 +1039,7 @@ async function windProbe(page) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
+        "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
     );
     process.exit(0);
 })().catch((e) => {

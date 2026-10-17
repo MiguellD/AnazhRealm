@@ -161,7 +161,6 @@ async function main() {
         for (const s of sections) check(md.includes(s), `CONTRACT.md trägt „${s}"`);
         for (const marker of [
             "<preset>|<gestalt>|<lod>",
-            "karte|<preset>|<gestalt>",
             "bruecke_1",
             "SHA-256",
             "__anazhLiveBake",

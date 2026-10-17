@@ -833,13 +833,6 @@
       "lauf": "npm run gate:fahrzeug-fern",
       "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
     },
-    "Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)": {
-      "s": 3,
-      "n": 7,
-      "gruppe": "voll 17",
-      "lauf": "npm run gate:baecker-kanal",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
-    },
     "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
       "s": 25,
       "n": 7,

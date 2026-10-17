@@ -137,18 +137,20 @@ function urteil(z) {
             while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
-            // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Karte ohne Rang
-            const sProbe = (sched, req) => {
-                const wo = [];
+            // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
+            const sProbe = (sched, tick) => {
+                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken"];
                 let bake = 0;
                 r._tickImpostorBake = () => (bake++, 0);
                 try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
-                r._foundryAuftrag = (f, p, m, w) => (wo.push(w), Promise.resolve(null));
-                try { req.call(r, "eiche", 1, null, "probe", 400); req.call(r, "eiche", 1, null, "probe"); } finally { delete r._foundryAuftrag; }
-                return { S1: bake > 0, S2: wo[0] === 400 && wo[1] === null };
+                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge
+                const at = { zellen: new Map([["fern", { key: "fern", _bedarfD2: 400 }], ["nah", { key: "nah", _bedarfD2: 4 }]]) };
+                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null) });
+                try { tick.call(r, at); } finally { for (const k of stubs) delete r[k]; r._impostorBakeQueue = q; }
+                return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern" };
             };
-            const S = sProbe(r._runFrameScheduler, r._foundryBakeImpostorRequest);
-            const sBruch = k.selbst && sProbe(() => 0, function (a, b, c) { return r._foundryBakeImpostorRequest(a, b, c, "probe"); });
+            const S = sProbe(r._runFrameScheduler, r._tickKarteWelt);
+            const sBruch = k.selbst && sProbe(() => 0, function (at) { for (const n of r._impostorBakeQueue) r._karteWeltBacken(at, at.zellen.get(n)); });
             let taktFehlerN = 0,
                 taktFehler1 = null;
             const tick = async () => {
@@ -220,8 +222,7 @@ function urteil(z) {
                         gleich >= 20 &&
                         bauten > 0 &&
                         !!(f && f.ready && f.pending.size === 0 && !(f.warte && f.warte.length)) &&
-                        !(r._impostorBakeQueue && r._impostorBakeQueue.length) &&
-                        !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0)
+                        !(r._impostorBakeQueue && r._impostorBakeQueue.length)
                     );
                 };
             })();

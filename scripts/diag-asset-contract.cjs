@@ -41,21 +41,6 @@ const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1",
 const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
-const KARTE_DE = 2;
-const KARTE_DE_GESTALT = 4;
-// ΔE76 zweier LINEARER sRGB-Farben (D65 → Lab).
-function deltaE76(a, b) {
-    const lab = ([r, g, bl]) => {
-        const X = (0.4124 * r + 0.3576 * g + 0.1805 * bl) / 0.95047,
-            Y = 0.2126 * r + 0.7152 * g + 0.0722 * bl,
-            Z = (0.0193 * r + 0.1192 * g + 0.9505 * bl) / 1.08883;
-        const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
-    };
-    const p = lab(a),
-        q = lab(b);
-    return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-}
 // Die Lagen-Kante: die Lagen je Pixel-Mitte sind ein Punkt-Maß, das Raster (Stufen-Höhe / 120) reicht.
 const LAGEN_TEILER = 120;
 
@@ -64,37 +49,6 @@ function parseName(f) {
     const m = f.match(/^(.+)-s(-?\d+)-L(\d+)-(\w+)\.json$/);
     if (!m) return null;
     return { presetId: m[1], seed: Number(m[2]), lod: Number(m[3]), season: m[4] };
-}
-
-// DER KARTEN-RUNDLAUF (W6, Karten-Gesetz in phyto-core): je Fall (Art, Same) bäckt das Studio die Karte, der Codec
-// kodiert sie zur Atlas-Schicht (BC1-sRGB-Albedo mit deckungstreuen Mips, BC5-Normale auf 1/normalTeiler) und
-// dekodiert sie zurück. Die Wand: Alpha an der Schwelle bitgleich · Albedo-PSNR ≥ 32 dB (opake Texel) · Normalwinkel
-// im Mittel ≤ 4° · Mip-Deckung jeder Stufe = Stufe 0 ± 3 % · Schicht ≤ 0,25 MiB · die lineare Kronenfarbe der als sRGB dekodierten Schicht
-// = Studio-Eingang ± 3 % (die Blick-Tour sah die linearen Bytes als sRGB gelesen: Laub 0,12 → 0,013, die Krone schwarz).
-const KARTEN_FAELLE = [
-    ["eiche", 1],
-    ["fichte", 1],
-    ["birke", 2],
-    ["strauch", 1],
-];
-function kartenUrteil(m) {
-    const aus = [];
-    if (!m || m.fehler) return [`kein Rundlauf (${m ? m.fehler : "—"})`];
-    if (m.alphaFehl !== 0) aus.push(`Alpha an der Schwelle nicht bitgleich (${m.alphaFehl} Texel)`);
-    if (!(m.psnr >= 32)) aus.push(`Albedo-PSNR ${(m.psnr || 0).toFixed(2)} dB < 32`);
-    if (!(m.winkelMittel <= 4)) aus.push(`Normalwinkel Ø ${(m.winkelMittel || 0).toFixed(2)}° > 4°`);
-    // das Karten-Budget: eine Schicht (Albedo + Normale, alle Stufen) kostet höchstens 0,25 MiB — Karten-MB ≤ Zellen × 0,25
-    if (!(m.bytes <= 0.25 * 1048576)) aus.push(`Schicht ${((m.bytes || 0) / 1048576).toFixed(3)} MiB > 0,25 MiB`);
-    const d = m.deckung || [];
-    if (!d.length || d.some((x) => !(Math.abs(x - d[0]) <= 0.03 * d[0])))
-        aus.push(`Mip-Deckung ${d.map((x) => x.toFixed(4)).join("/")} weicht > 3 % von Stufe 0 ab`);
-    const f = m.farbe;
-    const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-    if (!f || !(Math.abs(lum(f.aus) / Math.max(1e-6, lum(f.ein)) - 1) <= 0.03))
-        aus.push(
-            `Kronen-Farbe: die dekodierte Schicht trägt ${f ? lum(f.aus).toFixed(4) : "—"} statt ${f ? lum(f.ein).toFixed(4) : "—"} (linear)`
-        );
-    return aus;
 }
 
 const SCHEMA_ATTRS = ["position"]; // Pflicht-Attribut je Mesh
@@ -407,12 +361,11 @@ function wurfUrteil(mess, budget) {
     return v;
 }
 // (D) DAS BILD JE BLICK-HEBUNG gegen die Bild-Tafel (TAFEL_STAND), zweistufig: das Mittel einer ART über ihre Gestalten je
-// Stufe und Hebung (und die Deckung ihrer Karten) hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
+// Stufe und Hebung hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
 // 22–34 % ihrer Seitenansicht in jeder Gestalt); jede einzelne GESTALT hält GESTALT_BAND — eine Gestalt wächst anders als
 // die Vorlage, aus der V18.536 sie las (die Wedel tragen die Nadel-Wolke, V18.536 je Nadelstelle eine Spray), sie streut
-// um das Mittel. Die Kronenfarbe der Karten hält je Art im Mittel ΔE76 ≤ KARTE_DE, jede Gestalt ≤ KARTE_DE_GESTALT — wie die
-// Deckung das Doppelte des Mittels (V18.536 zeigte zwischen dünnen Sprays je Gestalt verschieden viel Holz: 25–31 % Rinden-
-// Texel bei Tanne und Fichte).
+// um das Mittel. Die Karte misst seit S2 die Welt selbst (`werkbank licht --laub --karte`: Karte gegen Gestalt im
+// Welt-Renderer).
 function bildUrteil(mess, tafel) {
     const v = [];
     const H = ["0°", "30°", "60°"];
@@ -425,23 +378,10 @@ function bildUrteil(mess, tafel) {
             continue;
         }
         m.verhaeltnis = {};
-        const a = art[m.art] || (art[m.art] = { L0: [], L1: [], karte: [], farbe: [], tFarbe: [] });
-        for (const st of ["L0", "L1", "karte"]) {
+        const a = art[m.art] || (art[m.art] = { L0: [], L1: [] });
+        for (const st of ["L0", "L1"]) {
             if (!m[st] || !t[st]) {
                 v.push(`${k}: ${st} ${m[st] ? "ohne Tafel-Zeile" : "nicht gemessen"}`);
-                continue;
-            }
-            if (st === "karte") {
-                const r = m.karte.deckung / t.karte.deckung,
-                    de = deltaE76(m.karte.farbe, t.karte.farbe);
-                m.verhaeltnis.karte = [r, de];
-                a.karte.push([r]);
-                a.farbe.push(m.karte.farbe);
-                a.tFarbe.push(t.karte.farbe);
-                if (!band(r, GESTALT_BAND))
-                    v.push(`${k}: die Karte deckt ${r.toFixed(3)} ihres Bilds der Tafel ${TAFEL_STAND}, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
-                if (!(de <= KARTE_DE_GESTALT))
-                    v.push(`${k}: die Kronenfarbe der Karte weicht um ΔE ${de.toFixed(2)} > ${KARTE_DE_GESTALT} ab (Gestalt)`);
                 continue;
             }
             const r = m[st].map((x, i) => x / t[st][i]);
@@ -454,25 +394,17 @@ function bildUrteil(mess, tafel) {
         }
     }
     for (const [name, a] of Object.entries(art))
-        for (const st of ["L0", "L1", "karte"]) {
+        for (const st of ["L0", "L1"]) {
             if (!a[st].length) continue;
             const n = a[st][0].length;
             for (let i = 0; i < n; i++) {
                 const x = a[st].reduce((s2, r) => s2 + r[i], 0) / a[st].length;
                 if (!band(x, BILD_BAND))
                     v.push(
-                        `${name}: ${st === "karte" ? "die Karten decken" : st + " deckt unter " + H[i]} im Mittel ${x.toFixed(3)} des Bilds der Tafel ${TAFEL_STAND} (${a[st].length} Gestalten), Band [${BILD_BAND.join(", ")}]`
+                        `${name}: ${st} deckt unter ${H[i]} im Mittel ${x.toFixed(3)} des Bilds der Tafel ${TAFEL_STAND} (${a[st].length} Gestalten), Band [${BILD_BAND.join(", ")}]`
                     );
             }
         }
-    // die Kronenfarbe je Art: das Mittel der Karten-Farben ihrer Gestalten gegen das der Tafel
-    for (const [name, a] of Object.entries(art)) {
-        if (!a.farbe.length) continue;
-        const mi = (xs) => [0, 1, 2].map((i) => xs.reduce((s2, c) => s2 + c[i], 0) / xs.length);
-        const de = deltaE76(mi(a.farbe), mi(a.tFarbe));
-        if (!(de <= KARTE_DE))
-            v.push(`${name}: die Kronenfarbe der Karten weicht im Mittel um ΔE ${de.toFixed(2)} > ${KARTE_DE} ab (${a.farbe.length} Gestalten)`);
-    }
     for (const k of Object.keys((tafel && tafel.faelle) || {})) if (!mess[k]) v.push(`${k}: Tafel-Zeile ohne gebauten Baum`);
     return v;
 }
@@ -494,22 +426,18 @@ function bildUrteil(mess, tafel) {
     const paare = {};
     const messungen = [];
     let wand = null;
-    let karten = null;
     const schwebeMess = [];
     let schwebeProbe = null;
     const sehProben = [];
     let gestaltWand = null;
-    // `--tafel-farbe` (der Re-Mint der Kronenfarbe, K19): nur `karte.farbe` je Fall wird neu gelesen, Deckung und Bild
-    // jeder Stufe bleiben die von V18.536; der Akt steht als `remint` in der Tafel.
-    const nurFarbe = process.argv.includes("--tafel-farbe");
-    const tafelSchreiben = nurFarbe || process.argv.includes("--tafel");
+    const tafelSchreiben = process.argv.includes("--tafel");
     const tafel = fs.existsSync(TAFEL_BILD) ? JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8")) : null;
     const lagenMess = [];
     const quotePaare = {};
     const bildMess = {};
     const wurfMess = [];
     let kronenProbe = null;
-    await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
+    await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
         const aa0 = await atlasAlpha();
         const alpha0 = { w: aa0.w, h: aa0.h, alpha: new Uint8Array(Buffer.from(aa0.b64, "base64")), schwelle: 0.5 };
@@ -771,8 +699,7 @@ function bildUrteil(mess, tafel) {
                     }
                 }
             }
-        // DER KARTEN-RUNDLAUF (W6): echte Studio-Bakes durch den Karten-Codec (BC) und zurück, plus der Selbsttest
-        // (eine gestörte BC1-Albedo).
+        // DIE SCHWEBE-PROBE: die Fichte s7 L0 (der Selbsttest der Schwebe-Wand).
         {
             const pr = await build({ presetId: "fichte", seed: 7, lod: 0, season: "summer" });
             schwebeProbe = pr.meshes;
@@ -783,16 +710,8 @@ function bildUrteil(mess, tafel) {
             const a = await build({ presetId: p, seed: 1, lod: l, season: "summer" });
             sehProben.push({ fall: `${p}-s1-L${l}`, teile: teileAus(a.meshes) });
         }
-        karten = { faelle: {}, gestoert: null };
-        for (const [p, sd] of KARTEN_FAELLE) karten.faelle[p + "|" + sd] = await karte(p, sd);
-        // DIE KARTE JE BAUM (Wand D): die Studio-Karte jedes gemessenen Baums — Deckung der Mip 0, mittlere Kronenfarbe.
-        for (const bm of Object.values(bildMess)) {
-            const k = await karte(bm.art, bm.seed);
-            if (k && !k.fehler) bm.karte = { deckung: k.deckung[0], farbe: k.farbe.ein };
-        }
         // Die Tafel schreiben (`--tafel`, auf dem Stand TAFEL_STAND): nur die Bild-Messung, kein Urteil.
         if (tafelSchreiben) return;
-        karten.gestoert = await karte(KARTEN_FAELLE[0][0], KARTEN_FAELLE[0][1], "bc1");
         // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
         const ohneZB = JSON.parse(JSON.stringify(bookReply.renderConfig || {}));
         if (ohneZB.lod) delete ohneZB.lod.zusatzBudget;
@@ -846,26 +765,6 @@ function bildUrteil(mess, tafel) {
         console.log("Plattform-Probe (Chrome-Worker, alle Transzendenten ±1 ULP):");
         await probeWand("v1", { lauf: probeLauf(probeFaelle) }, pruefe);
     });
-    if (tafelSchreiben && nurFarbe) {
-        const r8 = (x) => +x.toPrecision(8);
-        const alt = JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8"));
-        for (const k of Object.keys(alt.faelle)) {
-            const m = bildMess[k];
-            if (!m || !m.karte) throw new Error(`--tafel-farbe: ${k} ohne gemessene Karte`);
-            alt.faelle[k].karte.farbe = m.karte.farbe.map(r8);
-        }
-        alt.remint = (alt.remint || []).concat([
-            {
-                feld: "karte.farbe",
-                karte: "K19",
-                grund: "die Fresnel-Aufhellung des Laubs fiel (foundry-core injectWind: das Laub-Licht ist der Durchlass-Term); der Studio-Bake (nur Halbkugel-Licht) trägt die Laub-Albedo ohne die unbelichtete Silhouetten-Aufhellung",
-                quelle: "node scripts/diag-asset-contract.cjs --tafel-farbe",
-            },
-        ]);
-        fs.writeFileSync(TAFEL_BILD, JSON.stringify(alt, null, 4) + "\n");
-        console.log(`Bild-Tafel: Kronenfarbe neu gelesen in ${Object.keys(alt.faelle).length} Fällen → ${path.relative(process.cwd(), TAFEL_BILD)}`);
-        process.exit(0);
-    }
     if (tafelSchreiben) {
         const faelle = {};
         const r8 = (x) => +x.toPrecision(8);
@@ -875,19 +774,16 @@ function bildUrteil(mess, tafel) {
                 px: r8(m.px),
                 L0: m.L0.map(r8),
                 L1: m.L1.map(r8),
-                karte: { deckung: r8(m.karte.deckung), farbe: m.karte.farbe.map(r8) },
             };
         }
         fs.writeFileSync(
             TAFEL_BILD,
             JSON.stringify(
                 {
-                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist des Stands " + TAFEL_STAND + " (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im Mittel ΔE76 ≤ 2, je Gestalt ≤ 4.",
+                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands " + TAFEL_STAND + " (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
                     quelle: "node scripts/diag-asset-contract.cjs --tafel (" + TAFEL_STAND + ")",
                     band: BILD_BAND,
                     gestaltBand: GESTALT_BAND,
-                    karteDE: KARTE_DE,
-                    karteDEGestalt: KARTE_DE_GESTALT,
                     faelle,
                 },
                 null,
@@ -1095,25 +991,23 @@ function bildUrteil(mess, tafel) {
                                     .map((h, i) => h + " " + spanne(vh.filter((v) => v[st]).map((v) => v[st][i])))
                                     .join(" · ")
                         )
-                        .join(" | ") +
-                    ` | Karte ${spanne(vh.filter((v) => v.karte).map((v) => v.karte[0]))}, ΔE bis ${Math.max(0, ...vh.filter((v) => v.karte).map((v) => v.karte[1])).toFixed(2)}`
+                        .join(" | ")
             );
         // je Art das Mittel über die Gestalten (das Urteil der Wand)
         const jeArt = {};
         for (const m of Object.values(bildMess)) {
             if (!m.verhaeltnis) continue;
-            const e = jeArt[m.art] || (jeArt[m.art] = { L0: [], L1: [], karte: [] });
+            const e = jeArt[m.art] || (jeArt[m.art] = { L0: [], L1: [] });
             for (const st of ["L0", "L1"]) if (m.verhaeltnis[st]) e[st].push(m.verhaeltnis[st]);
-            if (m.verhaeltnis.karte) e.karte.push(m.verhaeltnis.karte);
         }
         const mi = (rs, i) => rs.reduce((s2, r) => s2 + r[i], 0) / Math.max(1, rs.length);
         console.log(
-            "Bild je Art (Mittel der Gestalten, 0°/30°/60°; Karte Deckung, ΔE max): " +
+            "Bild je Art (Mittel der Gestalten, 0°/30°/60°): " +
                 Object.entries(jeArt)
                     .sort()
                     .map(
                         ([a, e]) =>
-                            `${a} L0 ${[0, 1, 2].map((i) => mi(e.L0, i).toFixed(2)).join("/")} L1 ${[0, 1, 2].map((i) => mi(e.L1, i).toFixed(2)).join("/")} Karte ${mi(e.karte, 0).toFixed(2)} ΔE ${Math.max(0, ...e.karte.map((k) => k[1])).toFixed(1)}`
+                            `${a} L0 ${[0, 1, 2].map((i) => mi(e.L0, i).toFixed(2)).join("/")} L1 ${[0, 1, 2].map((i) => mi(e.L1, i).toFixed(2)).join("/")}`
                     )
                     .join(" · ")
         );
@@ -1123,10 +1017,7 @@ function bildUrteil(mess, tafel) {
                 const v = m.verhaeltnis;
                 if (!v) return true;
                 return (
-                    ["L0", "L1"].some((st) => !v[st] || !v[st].every(inBand)) ||
-                    !v.karte ||
-                    !inBand(v.karte[0]) ||
-                    !(v.karte[1] <= KARTE_DE_GESTALT)
+                    ["L0", "L1"].some((st) => !v[st] || !v[st].every(inBand))
                 );
             })
             .map(([k]) => k);
@@ -1146,13 +1037,10 @@ function bildUrteil(mess, tafel) {
             if (t) {
                 const halb = bildDeckung(kartenSkaliert(kronenProbe.bild, 0.5), wand.alpha, kronenProbe.px).hebung;
                 const nur = (m) => bildUrteil({ "eiche-s7": m }, { faelle: { "eiche-s7": t } });
-                const echt = { L0: t.L0, L1: t.L1, karte: t.karte };
+                const echt = { L0: t.L0, L1: t.L1 };
                 const gruen = nur(echt).length === 0;
                 const kHalb = nur(Object.assign({}, echt, { L0: halb })).length >= 1;
-                const kDeck = nur(Object.assign({}, echt, { karte: { deckung: t.karte.deckung * 0.8, farbe: t.karte.farbe } })).length >= 1;
-                const g = t.karte.farbe;
-                const kFarbe = nur(Object.assign({}, echt, { karte: { deckung: t.karte.deckung, farbe: [g[0], g[1] * 1.12, g[2]] } })).length >= 1;
-                sD = gruen && kHalb && kDeck && kFarbe && Object.keys(bildMess).length >= Object.keys(tafel.faelle).length;
+                sD = gruen && kHalb && Object.keys(bildMess).length >= Object.keys(tafel.faelle).length;
             }
         }
         sQ = quoteUrteil({ "birke-L1": { l0: 1000, l1: 630 } }, { tree: { 1: { quote: 0.35 } } }).length === 1;
@@ -1230,40 +1118,6 @@ function bildUrteil(mess, tafel) {
         );
         if (!s14 || !s15 || !s16) fails.push("Selbsttest der Gestalten-Wand feuert nicht");
     } else fails.push("Gestalten-Wand lief nicht");
-
-    // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die
-    // Box-Mip der GPU MUSS die Deckungs-Wand sprengen — sonst misst die Linse nichts).
-    if (karten) {
-        console.log("Karten-Rundlauf (BC1-sRGB + BC5, Studio-Bake → Codec → zurück):");
-        for (const [fall, m] of Object.entries(karten.faelle)) {
-            const urteil = kartenUrteil(m);
-            const d = m.deckung || [];
-            console.log(
-                `  ${fall}: Alpha-Fehler ${m.alphaFehl} · PSNR ${(m.psnr || 0).toFixed(2)} dB · Normale Ø ${(m.winkelMittel || 0).toFixed(2)}° ` +
-                    `(p95 ${(m.winkelP95 || 0).toFixed(1)}°) · Deckung ${d.map((x) => x.toFixed(4)).join("/")} ` +
-                    `(Box ${(m.box || []).map((x) => x.toFixed(4)).join("/")}) · Krone linear ` +
-                    `${(m.farbe ? m.farbe.ein : []).map((x) => x.toFixed(3)).join(",")} → ${(m.farbe ? m.farbe.aus : []).map((x) => x.toFixed(3)).join(",")} · ` +
-                    `${((m.bytes || 0) / 1048576).toFixed(3)} MiB`
-            );
-            fails.push(...urteil.map((x) => `Karte ${fall}: ${x}`));
-        }
-        const erst = Object.values(karten.faelle)[0] || {};
-        const s1 = kartenUrteil(karten.gestoert || {}).length > 0;
-        const s2 = kartenUrteil(Object.assign({}, erst, { deckung: erst.box || [] })).some((x) => x.startsWith("Mip-Deckung"));
-        const s3 =
-            kartenUrteil(
-                Object.assign({}, erst, {
-                    farbe: erst.farbe && { ein: erst.farbe.ein, aus: erst.farbe.ein.map((v) => v * 0.11) },
-                })
-            ).some((x) => x.startsWith("Kronen-Farbe"));
-        // die rgba8-Schicht (1,125 MiB: Albedo 1 MiB + rg8-Normale 0,125 MiB, ohne Mips) sprengt das BC-Budget
-        const s4 = kartenUrteil(Object.assign({}, erst, { bytes: 1.25 * 1048576 })).some((x) => x.startsWith("Schicht"));
-        console.log(
-            `Selbsttest Karten-Linse: gestörte BC1-Albedo wird rot ${s1 ? "✅" : "❌"} · Box-Mip sprengt die Deckungs-Wand ${s2 ? "✅" : "❌"} · ` +
-                `linear-als-sRGB (Blick-Tour: 0,12 → 0,013) wird rot ${s3 ? "✅" : "❌"} · 1,25-MiB-Schicht sprengt das Budget ${s4 ? "✅" : "❌"}`
-        );
-        if (!s1 || !s2 || !s3 || !s4) fails.push("Selbsttest der Karten-Linse feuert nicht");
-    } else fails.push("Karten-Rundlauf lief nicht");
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");
     console.log(`Goldens: ${files.length} · byte-gleich: ${ok}`);
