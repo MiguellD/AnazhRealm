@@ -683,13 +683,19 @@ function erstWandInstall() {
         while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
-        // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) im Takt der Linse — der Takt der Seite
-        // wartet auf swiftshader am Bild des GPU-Prozesses (1,4 s je Takt, die Welt stand in 600 s nie), die Leine hält die GPU
-        await window.__weltStehtNach(() => {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {}
-        });
+        // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
+        let stable = 0,
+            last = -1;
+        while (performance.now() < dl) {
+            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+            if (sz === last) stable++;
+            else {
+                stable = 0;
+                last = sz;
+            }
+            if (sz > 20 && stable > 10) break;
+            await sleep(500);
+        }
         const rend = r.state.renderer;
         if (!rend) return { fatal: "kein Renderer" };
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
