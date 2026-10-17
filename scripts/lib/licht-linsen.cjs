@@ -719,7 +719,10 @@ function albedoSicht(opts) {
 // dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
+    // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
+    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
     const zeichne = () => {
+        window.anazhRealm._schattenAlleNeu();
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
