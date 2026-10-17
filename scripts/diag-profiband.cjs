@@ -18,18 +18,12 @@
 //       (Boots der Messfolge oder Band-Dateien) richtet jede Ratsche gegen die Messung ihres Orts × Geräts × Sicht: eine
 //       Zeile über Messung × (1 + Toleranz) ist zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen 05.–11.10. auf der
 //       Radeon, gerichtet auf der GTX, nie nachgezogen — der Re-Mint (`werkbank ratsche --neu`) heilt H2b
-//   H3  die Namens-Wand: jede Textur, die der Stamm erzeugt, trägt `.name` = Erzeuger (sonst zählt der VRAM-Abgriff
-//       `tex:?`) — auch eine Neu-Zuweisung (`map = new T.DataArrayTexture(…)`), der Name mit Wortgrenze
-//   H4  die Täter-Klasse des Stamms: die drei Methoden stehen im Quelltext und klassifizieren die Schlüssel-Formen,
+//   H4  die Täter-Klasse des Stamms (die echte Klasse im vm, `stammLib.ladeKlasse`) klassifiziert die Schlüssel-Formen,
 //       die der Stamm heute baut (Studio-Leaf als Schlüssel, Schatten-Zwilling `#S`, ov-Hash, Karte, Streu, Bauplan)
-//   H5  jeder Name, den ein Haushalt-Muster wörtlich nennt, vergibt der Stamm noch (ein umbenannter Erzeuger fiele sonst
-//       still aus jeder Klasse — sichtbar erst auf der echten GPU als LINSE rot `haushalt`)
-//   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
-//       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
-//       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
-//   H7  DIE ZEICHEN-REIHE (1310-1, T3): EIN Gesetz `_zeichenRang` für alles Opake — die Bündel (`_buendelReihe`, nach jedem
-//       neuen Bündel) @global · Regionen · @wahl, die losen Opaken jedes Renders (`setOpaqueSort(_zeichenFolge)`) Bau · Boden ·
-//       Fern · Himmel, gleich wer beim Boot zuerst ankam (Objekt-id: der Bau-Satz nach dem Boden, gpu-bank +1,4–1,55 ms)
+//   H7  DIE ZEICHEN-REIHE (1310-1, T3) an der echten Klasse: EIN Gesetz `_zeichenRang` für alles Opake — die Bündel
+//       (`_buendelReihe`) @global · Regionen · @wahl, die losen Opaken jedes Renders (`_configureRenderer` setzt
+//       `_zeichenFolge`) Bau · Boden · Fern · Himmel, gleich wer beim Boot zuerst ankam (Objekt-id: der Bau-Satz nach dem
+//       Boden, gpu-bank +1,4–1,55 ms); im Bündel L0 zuerst, in der Stufe vorn zuerst, neu nur beim Anker-Wechsel
 //   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
 //       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt);
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
