@@ -92,8 +92,8 @@ function ladeschirmVerdict(m) {
         else if (!f[k].weg) out.push(`${name} hält der Ladeschirm („${f[k].stand}") — das erste Bild wartet auf das, was der Spieler nicht sieht (\`_weltbildLuecken\`)`);
     const rg = m.rang;
     if (!rg || !rg.vorBild || !rg.nachBild) out.push("der Rang der Foundry-Schlange: keine Probe (Vorbedingung)");
-    else if (!(rg.vorBild.blick < rg.vorBild.hinten)) out.push(`vor dem ersten Bild rangiert ein Auftrag 20 m hinter dem Spieler (${rg.vorBild.hinten}) vor einem 100 m im Blick (${rg.vorBild.blick}) — der Blick ist nicht der erste Schlüssel (\`_foundryAuftragD2\`)`);
-    else if (!(rg.nachBild.hinten < rg.nachBild.blick)) out.push(`nach dem ersten Bild rangiert der Blick noch vor der Nähe (${rg.nachBild.blick} vor ${rg.nachBild.hinten}, \`_foundryAuftragD2\`)`);
+    else if (rg.vorBild !== "blick") out.push(`vor dem ersten Bild sendet die Pumpe „${rg.vorBild}" an eine Bahn mit einem Auftrag im Flug statt nur des Auftrags im Blick — außer Blick wartet auf eine leere Bahn (_foundryPumpe, _blickRang)`);
+    else if (rg.nachBild !== "hinten,blick") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum („hinten,blick")`);
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
@@ -440,9 +440,11 @@ async function probe(arg) {
                 st.yaw = weg === undefined ? yawM : r._blickGierZu(x - a.x, z - a.z) + (weg ? Math.PI : 0);
                 r._loopCamera(performance.now() / 1000);
             };
-            // der Rang der Foundry-Schlange (`_foundryAuftragD2`): vor dem Bild der Blick zuerst, danach nah zuerst rundum
-            const rang = (da) => ((st._weltbildDa = da), { blick: r._foundryAuftragD2(vorn(100)), hinten: r._foundryAuftragD2(vorn(-20)) });
-            m.rang = { vorBild: rang(0), nachBild: rang(merkDa0 || 1) };
+            // der Rang der Foundry-Schlange (`_foundryPumpe` über `_blickRang`): eine Bahn mit einem Auftrag im Flug, vor dem Bild geht nur
+            // der Auftrag im Blick hinein (außer Blick nur in eine leere Bahn), danach nah zuerst rundum
+            const pumpe = (da, g = [], f = { ready: true, worker: { postMessage: (x) => g.push(x.presetId) }, pending: new Map([["linse", null]]), reqSeq: 1 }) =>
+                ((st._weltbildDa = da), [["hinten", -20], ["blick", 100]].forEach(([n, s]) => r._foundryAuftrag(f, "linse", { type: "build-asset", presetId: n }, vorn(s), 45000, "-")), g.join(","));
+            m.rang = { vorBild: pumpe(0), nachBild: pumpe(merkDa0 || 1) };
             st._weltbildDa = merkDa0;
             const stand = () => (document.getElementById("ladeschirm-stand") || {}).textContent || "";
             // ein Fall: den Ladeschirm wieder stellen, die Lücke schaffen, `_ankunftsBild` fragen, die Lücke schließen
@@ -1604,7 +1606,7 @@ async function probe(arg) {
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
                     terme: l2aTerme,
-                    rang: { vorBild: { blick: 1e4, hinten: 1e12 + 400 }, nachBild: { blick: 1e4, hinten: 400 } },
+                    rang: { vorBild: "blick", nachBild: "hinten,blick" },
                     rundblick: { N: 240, loecher: 0, erstes: null },
                     ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
@@ -1613,7 +1615,7 @@ async function probe(arg) {
                     ["ein Loch hinter dem Spieler hält das erste Bild (B3d vorher, OMEN 1610: 33,4 von 71 Bahn-s außer Blick)", { faelle: Object.assign({}, l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: Object.assign({}, l2aFaelle, { karteOffen: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen" } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
-                    ["der Rang ohne Blick (B3d vorher)", { rang: { vorBild: { blick: 1e4, hinten: 400 }, nachBild: { blick: 1e4, hinten: 400 } } }, "vor dem ersten Bild rangiert ein Auftrag 20 m hinter dem Spieler"],
+                    ["der Rang ohne Blick (B3d vorher, Radeon kalt: 0 wartend, 33 im Werk)", { rang: { vorBild: "hinten,blick", nachBild: "hinten,blick" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick\""],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
                     [
                         "der Vorrat stellt sich in der Ankunft vor die Leser (K30)",
@@ -1954,7 +1956,7 @@ async function probe(arg) {
                 .join(" · ") +
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}` : "") +
-            (m.rang && m.rang.vorBild ? ` · Rang vor dem Bild Blick ${m.rang.vorBild.blick} / hinten ${m.rang.vorBild.hinten}` : "") +
+            (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
