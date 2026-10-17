@@ -557,6 +557,83 @@ function spiegelPearson(sp) {
     return va > 1e-9 && vb > 1e-9 ? cab / Math.sqrt(va * vb) : null;
 }
 
+// DIE ACHSE DES SPIEGELS (A13, rein, in der Seite global): je Pixel der Maske m (das Wasser) das Pixel, das ein idealer Spiegel
+// an der Wasser-Ebene dort zeigt. `s` = die Tiefe der Aufnahme (`tiefe` NDC-z je Pixel in `tw` × `th`, Zeile 0 oben, ≥ 0,99999
+// Himmel) und ihre Kamera (`vp` Projektion · Ansicht, `ivp` ihr Kehrwert, Spalten-Folge wie THREE, `auge` der Ort). Die Ebene
+// y_w ist der Median der Höhe des Wassers; jedes andere Pixel über ihr wird an ihr gespiegelt (der Himmel als Richtung) und
+// projiziert — trifft es Wasser, ist es dessen Partner, das nächste Spiegel-Bild gewinnt. So liegt die Achse am Fuß jeder
+// Gestalt, nie an der Wasser-Kante der Spalte (bis A13: am nahen Ufer maß selbst ein idealer Spiegel 0,16).
+function spiegelPartner(m, W, H, s) {
+    const { tiefe, tw, th, vp: M, ivp: I, auge: C } = s;
+    // die Welt je Pixel (x, y, z, 1 Gestalt | 0 Himmel) EINMAL je Aufnahme — jede Klasse desselben Schusses liest sie
+    const neu = !(s.welt && s.welt.length === W * H * 4);
+    const P = neu ? (s.welt = new Float32Array(W * H * 4)) : s.welt;
+    for (let y = 0, p = 0; neu && y < H; y++)
+        for (let x = 0; x < W; x++, p++) {
+            const v = [((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, tiefe[((((y + 0.5) * th) / H) | 0) * tw + ((((x + 0.5) * tw) / W) | 0)]];
+            const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
+            for (let k = 0; k < 3; k++) P[p * 4 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
+            P[p * 4 + 3] = v[2] >= 0.99999 ? 0 : 1;
+        }
+    const ys = [];
+    for (let p = 0; p < W * H; p++) if (m[p] === 1) ys.push(P[p * 4 + 1]);
+    const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
+    const partner = new Int32Array(W * H).fill(-1),
+        nah = new Float32Array(W * H).fill(Infinity);
+    for (let p = 0; p < W * H; p++) {
+        const e = P[p * 4 + 3],
+            q = [P[p * 4] - (1 - e) * C[0], 2 * yw - P[p * 4 + 1] - (1 - e) * (2 * yw - C[1]), P[p * 4 + 2] - (1 - e) * C[2]];
+        if (m[p] === 1 || !(P[p * 4 + 1] > yw)) continue;
+        const w = M[3] * q[0] + M[7] * q[1] + M[11] * q[2] + M[15] * e;
+        if (!(w > 0)) continue;
+        const x = ((((M[0] * q[0] + M[4] * q[1] + M[8] * q[2] + M[12] * e) / w + 1) / 2) * W) | 0,
+            y = (((1 - (M[1] * q[0] + M[5] * q[1] + M[9] * q[2] + M[13] * e) / w) / 2) * H) | 0,
+            z = y * W + x;
+        if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && (e ? w : Infinity) <= nah[z]) (nah[z] = e ? w : Infinity), (partner[z] = p);
+    }
+    return { partner, yw };
+}
+
+// DIE TIEFE DER AUFNAHME (A13, in der Seite `__spiegelDaten`, unmittelbar nach dem Schuss): die Tiefe des Szenen-Passes (das
+// gezeichnete Bild, das Wasser inbegriffen; depth24plus kopiert WebGPU nie, ein Vollbild-Dreieck schreibt sie in r32float) und
+// die Kamera des Schusses — die Achse des Spiegels (`spiegelPartner`).
+function spiegelDaten() {
+    return (async () => {
+        const r = window.anazhRealm,
+            T = window.THREE,
+            S = T.TSL,
+            rend = r.state.renderer,
+            cam = r.state.camera;
+        const quelle = r.state.scenePass.getTextureNode("depth").value,
+            tw = quelle.image.width,
+            th = quelle.image.height;
+        const rt = new T.RenderTarget(tw, th, { type: T.FloatType, format: T.RedFormat, depthBuffer: false });
+        const mat = new T.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
+        mat.fragmentNode = S.vec4(S.texture(quelle).load(S.ivec2(S.screenCoordinate.xy)).r, 0, 0, 1);
+        const g = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
+        const dreieck = new T.Mesh(g, mat);
+        dreieck.frustumCulled = false;
+        const vorher = rend.getRenderTarget();
+        try {
+            rend.setRenderTarget(rt);
+            r._buehneRender(rend, dreieck, new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), "Spiegel-Tiefe");
+            const roh = await rend.readRenderTargetPixelsAsync(rt, 0, 0, tw, th);
+            const schritt = Math.ceil(tw / 64) * 64,
+                tiefe = new Float32Array(tw * th);
+            for (let y = 0; y < th; y++) tiefe.set(roh.subarray(y * schritt, y * schritt + tw), y * tw);
+            cam.updateMatrixWorld(true);
+            const vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            const auge = new T.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray();
+            return { tiefe, tw, th, vp: vp.elements, ivp: vp.clone().invert().elements, auge };
+        } finally {
+            rend.setRenderTarget(vorher);
+            rt.dispose();
+            mat.dispose();
+            g.dispose();
+        }
+    })();
+}
+
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   deckung       Anteil der Klasse am Bild · deckungUnten derselbe Anteil im unteren Drittel (der Boden vor dem Auge)
@@ -568,7 +645,7 @@ function spiegelPearson(sp) {
 //   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
-function klassenMasse(F, m, W, H, aussen, ohne) {
+function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
@@ -770,40 +847,34 @@ function klassenMasse(F, m, W, H, aussen, ohne) {
                 }
         }
     }
-    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt das Bild über seinem Ufer gespiegelt.
-    // Je Spalte die Uferlinie h0 (das oberste Pixel der Klasse), je 8×8-Block ganz in der Klasse das Luma-Mittel gegen das
-    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r JE BLOCK-ZEILE, gemittelt mit dem Gewicht Σb² der
-    // Zeile (`sp` = n, 0, 0, ΣW, ΣW, ΣW·r — die Tafel fasst Teil-Klassen über die Summen): was eine Zeile gemeinsam hat, ist
-    // Physik des Blick-Winkels, nie der Spiegel — der Fresnel-Verlauf (2 % senkrecht, streifend → 100 %) und der Himmels-
-    // Verlauf hängen an der Zeile; der Spiegel ist, was längs der Zeile steht (Ufer, Stamm, Lücke). Über die rohen Blöcke
-    // bestrafte das Maß den dunklen Körper des nahen Wassers gegen den hellen Himmel als Partner (D10: der Spiegel am Ufer
-    // stand, r fiel 0,21 → 0,16). Llyn Padarn misst 0,922, der Himmel allein im Wasser 0.
-    const oben = new Int32Array(W).fill(-1);
-    for (let x = 0; x < W; x++)
-        for (let y = 0; y < H; y++)
-            if (m[y * W + x] === 1) {
-                oben[x] = y;
-                break;
-            }
+    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt die Welt über ihm gespiegelt. Je 8×8-Block
+    // ganz in der Klasse das Luma-Mittel gegen das Mittel seiner Partner (`spiegelPartner`, die Achse aus Tiefe und Kamera der
+    // Aufnahme `spiegel`; ein Block zählt, wenn die Hälfte seiner Pixel einen trägt); Pearson r JE BLOCK-ZEILE, gemittelt mit
+    // dem Gewicht Σb² der Zeile (`sp` = n, 0, 0, ΣW, ΣW, ΣW·r — die Tafel fasst Teil-Klassen über die Summen): was eine Zeile
+    // gemeinsam hat, ist Physik des Blick-Winkels — Fresnel (2 % senkrecht, streifend → 100 %) und Himmels-Verlauf —, der
+    // Spiegel ist, was längs der Zeile steht (Ufer, Stamm, Lücke). Ohne Tiefe kein Maß (null).
+    const pa = spiegel ? spiegelPartner(m, W, H, spiegel).partner : null;
     const sp = [0, 0, 0, 0, 0, 0];
     const za = [],
         zb = [];
-    for (let y0 = 0; y0 + 8 <= H; y0 += 8) {
+    for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
         za.length = zb.length = 0;
         bloecke: for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
             let a = 0,
-                b = 0;
+                b = 0,
+                k = 0;
             for (let j = 0; j < 8; j++)
                 for (let i = 0; i < 8; i++) {
-                    const x = x0 + i,
-                        y = y0 + j;
-                    const yy = 2 * oben[x] - y;
-                    if (m[y * W + x] !== 1 || yy < 0) continue bloecke;
-                    a += L[y * W + x];
-                    b += L[yy * W + x];
+                    const p = (y0 + j) * W + x0 + i;
+                    if (m[p] !== 1) continue bloecke;
+                    if (pa[p] < 0) continue;
+                    a += L[p];
+                    b += L[pa[p]];
+                    k++;
                 }
-            za.push(a / 64);
-            zb.push(b / 64);
+            if (k < 32) continue;
+            za.push(a / k);
+            zb.push(b / k);
         }
         if (za.length < 2) continue;
         let ma = 0,
@@ -2059,44 +2130,77 @@ function sollTafelSelbsttest(tafel, q) {
         ).detail !== 0
     )
         v.push("Maß detail: Flachbild nicht 0");
-    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, derselbe Spiegel unter dem
-    // Fresnel-Verlauf über dunklem Körper (5 % nah → 100 % am Ufer) → nahe 1 (das rohe Block-r las ihn als 0,73), der
-    // Himmels-Verlauf unter einem Ufer → 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,922 im Soll [0,6, ∞]
+    // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt (Kamera 2 m über dem See, waagrecht, 60° hoch; rechts ein
+    // Sandstreifen 0,4 m über dem See, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder), je Pixel per Strahl: der ideale
+    // Spiegel (F = 1) → ≥ 0,95 (die Ufer-Achse bis A13 las ihn als 0,37), unter dem Fresnel-Verlauf je Zeile (2 % → 100 %) > 0,9;
+    // ohne Himmel im Wasser, der Spiegel 12 px versetzt → unter dem Soll 0,6; ein Wasser ohne Bild (Verlauf) → 0; das Foto Llyn
+    // Padarn (480 × 265) vor einer Kulisse (das Ufer eine Wand, deren Fuß die Zeile 141,5 trifft) → 0,922 im Soll [0,6, ∞]
     {
-        const Ws = 64,
-            Hs = 64,
-            h0 = 30;
-        const wert = (x, y) => 40 + ((x * 37 + y * 101 + ((x >> 3) * (y >> 3) * 53)) % 180);
-        const spiegel = new Uint8Array(Ws * Hs * 4),
-            fresnel = new Uint8Array(Ws * Hs * 4),
-            himmel = new Uint8Array(Ws * Hs * 4),
-            mw = new Uint8Array(Ws * Hs);
-        for (let y = 0; y < Hs; y++)
-            for (let x = 0; x < Ws; x++) {
-                const a = y < h0 ? wert(x, y) : wert(x, Math.max(0, 2 * h0 - y));
-                const f = y < h0 ? 1 : 0.05 + 0.95 * Math.pow((Hs - y) / (Hs - h0), 3);
-                const e = y < h0 ? a : Math.round(12 + f * (a - 12));
-                const c = y < h0 ? wert(x, y) : 60 + y;
-                spiegel.set([a, a, a, 255], (y * Ws + x) * 4);
-                fresnel.set([e, e, e, 255], (y * Ws + x) * 4);
-                himmel.set([c, c, c, 255], (y * Ws + x) * 4);
-                if (y >= h0) mw[y * Ws + x] = 1;
+        const kamera = (Wk, Hk) => {
+            const f = 1.732, a = Wk / Hk, h = 2, A = 1000 / (0.1 - 1000), B = 100 / (0.1 - 1000);
+            const vp = [f / a, 0, 0, 0, 0, f, 0, 0, 0, 0, A, -1, 0, -f * h, B, 0];
+            const ivp = [a / f, 0, 0, 0, 0, 1 / f, 0, 0, 0, h / B, 0, 1 / B, 0, (h * A) / B, -1, A / B];
+            const strahl = (x, y) => [(((x + 0.5) / Wk) * 2 - 1) * a / f, (1 - ((y + 0.5) / Hk) * 2) / f, -1];
+            return { f, h, vp, ivp, strahl, auge: [0, h, 0], tiefe: new Float32Array(Wk * Hk), ndc: (t) => (A * -t + B) / t };
+        };
+        const Ws = 384, Hs = 216, K = kamera(Ws, Hs);
+        const kisten = [[5, -5, -400, 400, 0.4, 10, (x, y, z) => 150 + 25 * ((Math.floor(x) + Math.floor(z)) & 1)], [-400, -5, -600, 400, 1, -150, () => 110]];
+        for (let i = 0; i < 12; i++) kisten.push([9 + (i % 3) * 4, 0, -10 - i * 7, 10.5 + (i % 3) * 4, 5 + ((i * 7) % 9), -8.5 - i * 7, (x, y) => (y > 3 ? 75 + 25 * (Math.floor(y * 2) & 1) : 35)]);
+        for (let i = 0; i < 30; i++) kisten.push([-160 + i * 11, 0, -156, -154 + i * 11, 10 + ((i * 5) % 17), -150, (x, y) => 50 + 3 * ((y * 3) % 7)]);
+        const spur = (o, d) => {
+            let t = Infinity, ton = null;
+            for (const k of kisten) {
+                let t0 = 1e-4, t1 = Infinity;
+                for (let i = 0; i < 3; i++) {
+                    const u = (k[i] - o[i]) / d[i], w = (k[i + 3] - o[i]) / d[i];
+                    (t0 = Math.max(t0, Math.min(u, w))), (t1 = Math.min(t1, Math.max(u, w)));
+                }
+                if (t0 < t1 && t0 < t) (t = t0), (ton = k[6]);
             }
-        const rs = klassenMasse(spiegel, mw, Ws, Hs).spiegelTreue,
-            rf0 = klassenMasse(fresnel, mw, Ws, Hs).spiegelTreue,
-            rh = klassenMasse(himmel, mw, Ws, Hs).spiegelTreue;
-        if (!(rs > 0.999)) v.push(`Maß spiegelTreue: der exakte Spiegel ${rs} statt 1`);
-        if (!(rf0 > 0.9)) v.push(`Maß spiegelTreue: der Spiegel unter dem Fresnel-Verlauf ${rf0} statt nahe 1`);
-        if (!(Math.abs(rh) < 0.3)) v.push(`Maß spiegelTreue: der Himmels-Verlauf ${rh} statt nahe 0`);
+            if (d[1] < 0 && -o[1] / d[1] < t) return { t: -o[1] / d[1], wasser: true };
+            if (ton) return { t, L: ton(o[0] + t * d[0], o[1] + t * d[1], o[2] + t * d[2]) };
+            return { himmel: true, L: 120 + 80 * d[1] + 40 * (Math.sin(Math.atan2(d[0], -d[2]) * 11 + d[1] * 30) > 0.4) };
+        };
+        // das Bild des Spiegels zum Strahl durch (x, y): der an der Ebene gespiegelte Strahl aus seinem Treffer
+        const bild = (x, y) => {
+            const d = K.strahl(x, y).map((c, _i, s) => c / Math.hypot(...s));
+            return d[1] < 0 ? spur([(-K.h / d[1]) * d[0], 0, (-K.h / d[1]) * d[2]], [d[0], -d[1], d[2]]) : { L: 25 };
+        };
+        const namen = ["ideal", "fresnel", "ohneHimmel", "verschoben", "verlauf"],
+            B5 = namen.map(() => new Uint8Array(Ws * Hs * 4)),
+            mw = new Uint8Array(Ws * Hs);
+        for (let y = 0, p = 0; y < Hs; y++)
+            for (let x = 0; x < Ws; x++, p++) {
+                const d = K.strahl(x, y).map((c, _i, s) => c / Math.hypot(...s)),
+                    s = spur(K.auge, d);
+                K.tiefe[p] = s.himmel ? 1 : K.ndc(-s.t * d[2]);
+                let w = [s.L, s.L, s.L, s.L, s.L];
+                if (s.wasser) {
+                    const r = bild(x, y),
+                        F = 0.02 + 0.98 * Math.pow(1 - (1 - ((y + 0.5) / Hs) * 2) / -K.f, 5);
+                    w = [r.L, F * r.L + (1 - F) * 25, r.himmel ? 25 : r.L, bild(x, y - 12).L, 60 + y / 4];
+                    mw[p] = 1;
+                }
+                B5.forEach((b, i) => b.set([w[i], w[i], w[i], 255], p * 4));
+            }
+        const r5 = B5.map((b) => klassenMasse(b, mw, Ws, Hs, null, null, Object.assign({}, K, { tw: Ws, th: Hs })).spiegelTreue);
+        const soll = [(r) => r >= 0.95, (r) => r > 0.9, (r) => r < 0.6, (r) => r < 0.6, (r) => Math.abs(r) < 0.3];
+        r5.forEach((r, i) => soll[i](r) || v.push(`Maß spiegelTreue: der Spiegel „${namen[i]}" ${r} (Soll ${soll[i].toString().slice(7)})`));
         const fs = require("fs"),
             path = require("path");
         const foto = path.join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
         const b = fs.existsSync(foto) ? pngLesen(fs.readFileSync(foto)) : null;
         if (!b) v.push("Maß spiegelTreue: das Foto spec/abnahme/llyn-padarn.png fehlt");
         else {
-            const mf = new Uint8Array(b.W * b.H);
-            for (let p = 141 * b.W; p < b.W * b.H; p++) mf[p] = 1;
-            const rf = klassenMasse(b.u8, mf, b.W, b.H).spiegelTreue;
+            const Kf = kamera(b.W, b.H),
+                mf = new Uint8Array(b.W * b.H),
+                wand = (Kf.h * Kf.f * b.H) / 2 / (141.5 - b.H / 2);
+            for (let p = 0; p < b.W * b.H; p++) {
+                const y = Math.floor(p / b.W);
+                mf[p] = y >= 141 ? 1 : 0;
+                Kf.tiefe[p] = Kf.ndc(mf[p] ? (Kf.h * Kf.f) / -(1 - ((y + 0.5) / b.H) * 2) : wand);
+            }
+            const rf = klassenMasse(b.u8, mf, b.W, b.H, null, null, Object.assign({}, Kf, { tw: b.W, th: b.H })).spiegelTreue;
             if (!(Math.abs(rf - 0.922) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,922`);
         }
     }
@@ -2605,6 +2709,8 @@ module.exports = {
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
+        `window.spiegelPartner = ${spiegelPartner.toString()};` +
+        `window.__spiegelDaten = ${spiegelDaten.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
         `window.__gesichtMasse = ${gesichtMasse.toString()};` +
         `window.__farbtonProbe = ${farbtonProbe.toString()};`,

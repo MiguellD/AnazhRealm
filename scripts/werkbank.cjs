@@ -1206,6 +1206,8 @@ async function starte() {
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             window.__letzteAufnahme = auf.u8;
+            // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
+            const spiegel = (window.__letzteSpiegel = k.klasse ? await window.__spiegelDaten() : null);
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -1433,7 +1435,7 @@ async function starte() {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
