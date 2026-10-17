@@ -1108,8 +1108,8 @@ class AnazhRealm_dirigent_ankunft {
     // DER NACHLAUF (B3d): ab dem ersten Bild baut die Welt hinter dem Spieler weiter wie unter dem Ladeschirm — kein
     // Frame-Budget hält sie an (`_frameOverBudget`: Regler und Takt lesen `state._nachlauf`) —, bis rundum steht, was das Bild
     // im Blick verlangte (`_weltbildLuecken(true)` leer, `_rundumDa`), höchstens RUNDBLICK_BILDER Takte; danach laut, was fehlt.
-    // Ohne ihn hielt das Budget den Bau hinter dem Spieler an (gate:ankunft, Null-Renderer: 1 042 Takte bis zum ganzen
-    // Rundblick, ein Felsbogen in 119 m hinter dem Spieler ungebaut) — vorher baute ihn das Tor unter dem Ladeschirm.
+    // Ohne ihn baute ein Frame über PERF_TARGET_MS nichts (gate:ankunft, Null-Renderer: 1 042 Takte bis zum ganzen Rundblick, ein
+    // Felsbogen in 119 m ungebaut) — vorher baute ihn das Tor unter dem Ladeschirm. Radeon kalt: rundum 0,10–0,18 s nach dem Bild.
     _nachlaufTakt() {
         const st = this.state;
         const fehlt = this._weltbildLuecken(true);
@@ -1346,7 +1346,7 @@ AnazhRealm.ANKUNFT_GLEIT_BILDER = 90;
 // dem Bild auf seinem Rang trägt (d², über jeder Welt-Distanz). Der RUNDBLICK (gate:ankunft L2a): gleich nach der Kontrolle
 // dreht die Kamera in RUNDBLICK_BILDER Takten einmal ganz herum, und kein Takt zeigt ein Loch in seinem Blick.
 AnazhRealm.ERSTER_BLICK = Object.freeze({ randGrad: 15, nahM: 6, dingM: 12, ausserD2: 1e12 });
-AnazhRealm.RUNDBLICK_BILDER = 240;
+AnazhRealm.RUNDBLICK_BILDER = 120;
 // Der Takt der Stufen-Wahl in der Ankunft (`_tickArchitectureLOD`, `_tickScatterLod`): Wechsel der Bauten, Wechsel und
 // Scan der Streu je Bild — die Wahl hält mit der gleitenden Maske Schritt (sonst 5 · 4 · 160).
 AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
