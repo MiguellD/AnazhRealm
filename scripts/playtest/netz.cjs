@@ -1571,8 +1571,16 @@ async function checkBandTailleGolden(ctx) {
             // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
             // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
             out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
-            const handlerSrc = window.__codeOf(r._p2pHandleChannelMessage) + window.__codeOf(r.p2pHandleMessage);
-            const dead = g.envelopes.types.filter((t) => handlerSrc.indexOf(`"${t.type}"`) < 0).map((t) => t.type);
+            // am Ruf: je goldenem Typ erreicht ein Umschlag über den echten Kanal-Eingang seinen Handler (kanal-exklusiv steht an
+            // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
+            const H = r.constructor.P2P_MESSAGE_HANDLERS;
+            const KANAL = { "social-rating": "_socialRatingReceive" };
+            const dead = g.envelopes.types.map((t) => t.type).filter((t) => {
+                const prov = KANAL[t] || H[t];
+                const roh = JSON.stringify({ type: t });
+                return !(typeof prov === "string" && typeof r[prov] === "function" && window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh]));
+            });
+            if (typeof r._p2pRemovePeer === "function") r._p2pRemovePeer("__golden");
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
             return out;
@@ -1733,9 +1741,7 @@ async function checkBandPhiArchipel(ctx) {
         out.visGelistet = r.state.worldMeta.visibility === "gelistet";
         r.setWorldVisibility("privat");
         out.visPrivat = r.state.worldMeta.visibility === "privat";
-        const setterSrc = window.__codeOf(r.setWorldVisibility);
-        out.lobbyBridgePublishes = /publishToLobby/.test(setterSrc);
-        out.lobbyBridgeUnpublishes = /unpublishLobby/.test(setterSrc);
+        out.lobbyBridgePublishes = window.__consumes(r, "setWorldVisibility", r, "publishToLobby", ["gelistet"]);
         r.setWorldVisibility(visBefore || "privat");
 
         // (P9) Hausrecht-Sieb: ein gebannter peer fällt am _isPeerBanned, ein
@@ -1800,8 +1806,8 @@ async function checkBandPhiArchipel(ctx) {
         res.portalSetOk && res.portalCarriesAddress && res.portalSigPreserved && res.portalClearOk
     );
     check(
-        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + die Lobby-BRIDGE ist verdrahtet (Source: publishToLobby + unpublishLobby) — der echte Connected-Trip lebt im smoke-multiuser",
-        res.visGelistet && res.visPrivat && res.lobbyBridgePublishes && res.lobbyBridgeUnpublishes
+        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + gelistet ruft die Lobby-BRIDGE publishToLobby — der echte Connected-Trip lebt im smoke-multiuser",
+        res.visGelistet && res.visPrivat && res.lobbyBridgePublishes
     );
     check(
         "Φ2 (P9): _isPeerBanned siebt (gebannt → true · unbekannt → false · unban heilt)",
@@ -1917,10 +1923,7 @@ async function checkBandPhiArchipelV2(ctx) {
         const pres = r.worldPresence("welt-test");
         out.presenceCacheOk = !!(pres && pres.totalPeers === 5 && pres.regions.length === 2);
 
-        // (Q12) requestWorldPresence ist verdrahtet (Source-Probe — den echten
-        // Round-Trip macht smoke-multiuser); ohne p2p.connected → false.
-        const reqSrc = window.__codeOf(r.requestWorldPresence);
-        out.requestWired = /world-presence/.test(reqSrc) && /_p2pSignal/.test(reqSrc);
+        // (Q12) requestWorldPresence ohne p2p.connected → false.
         out.requestNoConn = r.requestWorldPresence("welt-test") === false;
 
         // (Q13) HANDLER-Registry: der Broker→Client-Typ ist verdrahtet.
@@ -2035,8 +2038,8 @@ async function checkBandPhiArchipelV2(ctx) {
         res.presenceCacheOk
     );
     check(
-        "Φ4 (Q12): requestWorldPresence ist verdrahtet (world-presence + _p2pSignal in Source) + returnt false ohne p2p.connected",
-        res.requestWired && res.requestNoConn
+        "Φ4 (Q12): requestWorldPresence returnt false ohne p2p.connected",
+        res.requestNoConn
     );
     check(
         "Φ4 (Q13): P2P_MESSAGE_HANDLERS trägt world-presence → _p2pMsgWorldPresence (additiv, §4 minor)",

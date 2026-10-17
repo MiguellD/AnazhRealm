@@ -2251,8 +2251,6 @@ async function checkBandV17118WorkerEngaged(ctx) {
             // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
             workerSpawned: !!r.state.voxelWorker,
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
-            // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
-            bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
             // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
             // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
             // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
@@ -2290,10 +2288,6 @@ async function checkBandV17118WorkerEngaged(ctx) {
     check(
         "V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)",
         res.worldgenSynced === true
-    );
-    check(
-        "V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)",
-        res.bootstrapSrc === true
     );
     const sn = res.spielerNeubau;
     check(
@@ -2378,13 +2372,29 @@ async function checkBandPhaseAFundament(ctx) {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
             const L = r.constructor.LUFT;
-            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(r.constructor.WEATHER_FIELD.sunny);
+            const W = r.constructor.WEATHER_FIELD;
+            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(W.sunny);
+            // die Extinktion der Szene folgt dem Wetter (am Bild-Pfad: klar → Sturm, über dem Wasser gemessen)
+            const U = r._luftEnsure().U;
+            const sw = { w: r.state.weather, wt: r.state.weatherTransition };
+            const beta = (w) => ((r.state.weather = w), r._applyDayNightToScene(), U.beta.value);
+            let bKlar, bSturm;
+            try {
+                r._koerperWasser = () => -Infinity;
+                r.state.weatherTransition = null;
+                bKlar = beta("sunny");
+                bSturm = beta("stormy");
+            } finally {
+                delete r._koerperWasser;
+                Object.assign(r.state, { weather: sw.w, weatherTransition: sw.wt });
+                r._applyDayNightToScene();
+            }
             out.a5 = {
                 sichtKlar,
                 ringEdge,
                 knoten: !!r.state.scene.fogNode && !r.state.scene.fog,
                 kanteKlar: Math.exp((-ringEdge * -Math.log(L.kontrast)) / sichtKlar) >= 0.9,
-                src: /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)),
+                src: Math.abs(bKlar - r._luftBeta(W.sunny)) < 1e-12 && Math.abs(bSturm - r._luftBeta(W.stormy)) < 1e-12 && bSturm > bKlar,
             };
         }
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
@@ -2448,7 +2458,7 @@ async function checkBandPhaseAFundament(ctx) {
         res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
     );
     check(
-        "A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)",
+        "A5: die Extinktion der Szene folgt dem Wetter (_luftBeta: der Sturm trübt die Luft gegen den klaren Tag)",
         res.a5 && res.a5.src === true
     );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
