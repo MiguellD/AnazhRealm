@@ -12,17 +12,15 @@
 //   K (Kultur): die KULTUREN-Tabelle ist exportiert, jede Zeile trägt den
 //     fx-Dial-Vektor (die vehicle-Merge-Ordnung konsumiert ov seit je).
 //   G (Genres): klang-core exportiert >= 20 Genre-Presets (kind "klang").
-//   V (Verben/Konsum, Quell-Proben): das spiele-Verb schreibt state.klangPreset
-//     (den der EINE Lofi-Konsument liest), das präge-Verb schreibt den EINEN
-//     Regler-Kanal (state.workshop.studioOv) über die KIND_CHARAKTER-Tabelle
-//     (M8: Tabelle vor if), und beide Kerne laden main-seitig (index.html).
+//   V (Lade-Karte): beide Kerne laden main-seitig (index.html, ?v=-Buster). Die
+//     Prägung in der Welt beweist gate:praegung-welt am Verhalten; hier liest
+//     keine Probe Quelltext (D3c).
 //
 //   node scripts/diag-charakter-achsen.cjs
 "use strict";
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -85,23 +83,10 @@ check(
 const GENRES = Object.keys(KC.PRESETS || {});
 check(`G: klang-core exportiert die Genre-Presets (${GENRES.length})`, GENRES.length >= 20, GENRES.slice(0, 6).join(" · ") + " …");
 
-// ── V: die Welt-Naht (Quell-Proben — Konsum, nicht Existenz) ──
-const stamm = stammLib.text(root);
-check("V: KIND_CHARAKTER-Tabelle (M8) trägt weapon→TRADITIONEN + vehicle→CULTURES",
-    /KIND_CHARAKTER = Object\.freeze/.test(stamm) && /tabelle: "TRADITIONEN"/.test(stamm) && /tabelle: "CULTURES"/.test(stamm));
-check("V: das präge-Verb schreibt den EINEN Regler-Kanal (studioOv)",
-    /pr\(\?:ä\|ae\)ge/.test(stamm) && /ws\.studioOv\[preset\] = Object\.assign/.test(stamm));
-check("V: das spiele-Verb schreibt state.klangPreset (der Lofi-Konsument liest sie)",
-    /example: "spiele techno"/.test(stamm) && /this\.state\.klangPreset = wahl/.test(stamm));
-check(
-    "V: der Lofi-Konsument liest die Welt-Klang-Wahl (ERFINDER-Zeile lebt)",
-    /const chosen = this\.state && typeof this\.state\.klangPreset === "string"/.test(stamm)
-);
+// ── V: die Lade-Karte der Welt ──
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("V: schmiede-core + vehicle-core laden main-seitig (?v=-Buster)",
     /schmiede-core\.js\?v=/.test(idx) && /vehicle-core\.js\?v=/.test(idx));
-check("V: __-Steuer-Schlüssel wandern nie in die Bau-Parameter (Kern-Wand)",
-    /indexOf\("__"\) === 0/.test(fs.readFileSync(path.join(root, "schmiede-core.js"), "utf8")));
 
 // ── Selbst-Test: eine kaputte Tradition MUSS rot erkannt werden ──
 const kaputtGleich = fp(SC.buildInstance("langschwert", 7, 0, { __tradition: "Nihon" })) === frank;
@@ -112,5 +97,5 @@ if (errs.length) {
     process.exit(1);
 }
 console.log(
-    "\n✅ GRÜN — die Charakter-Achsen der Studios sind welt-wählbar: die Tradition FORMT (5 unverwechselbare Klingen-Sprachen, ov-frei byte-stabil), die Kulturen tragen ihre Dial-Vektoren, die Genres stehen im Buch, und die Verben schreiben die EINEN Kanäle (studioOv · klangPreset)."
+    "\n✅ GRÜN — die Charakter-Achsen der Studios sind welt-wählbar: die Tradition FORMT (5 unverwechselbare Klingen-Sprachen, ov-frei byte-stabil), die Kulturen tragen ihre Dial-Vektoren, und die Genres stehen im Buch."
 );
