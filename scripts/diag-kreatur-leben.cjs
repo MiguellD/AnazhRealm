@@ -4,16 +4,13 @@
 // V18.476 reiste das tetrapoda-hunt-Preset ins Buch — und KEIN Pfad wählte es
 // je (gemessen 16.07.: _motionProfileName kannte nur Emotions-Achsen). Diese
 // Linse hält die Klasse tot:
-//   A) DECKUNG — jede Zeile der Zustand-Tabelle (MOTION_ZUSTAND_PROFILES) und
-//      jede Verhaltens-Aktion/Stimmung des Kerns zeigt auf EXISTIERENDE
-//      MOTION-Presets/Aktionen (kein toter Verweis, kein Waisen-Preset).
-//   B) KONSUM-ANKER (window.__codeOf-Disziplin: Quelltext der lebenden
-//      Symbole) — der Zustand führt in der EINEN Brücke, updateCreatures
-//      stempelt jagd/flucht/schwimmen, der Baum-Gang trägt Overlay + bodyX.
-//   C) SELBST-TEST — eine injizierte tote Zeile wird erkannt.
+//   A) DECKUNG — jede Verhaltens-Aktion/Stimmung des Kerns zeigt auf EXISTIERENDE
+//      Aktionen, die Seelen-Blöcke reisen im Buch (kein toter Verweis).
+//   B) SELBST-TEST — eine injizierte tote Stimmungs-Aktion wird erkannt.
+// Den Konsum im Stamm (Zustand-Stempel, Baum-Gang, Biss, Sprung, Herde) beweisen die Bänder mit Welt am
+// Verhalten (gate:kreatur-takt, gate:kampf-gefuehl); hier liest keine Probe Quelltext (D3c).
 "use strict";
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 
 let fails = 0;
@@ -31,32 +28,9 @@ check("tetrapoda-core lädt (Namensraum __tetrapodaCore)", !!core);
 const MOTION = (core && core.MOTION) || {};
 const V = (core && core.VERHALTEN) || null;
 
-// ── A) DECKUNG: Zustand-Tabelle → MOTION-Presets ──
-const stamm = stammLib.text(root);
-const ztMatch = stammLib.treffer(stamm, null, /AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
-check("MOTION_ZUSTAND_PROFILES existiert im Stamm", !!ztMatch);
-const kreaturTargets = [];
-if (ztMatch) {
-    const re = /kreatur: "([a-z]+)"/g;
-    let m;
-    while ((m = re.exec(ztMatch[1]))) kreaturTargets.push(m[1]);
-}
-check(
-    "Zustand-Tabelle trägt Zeilen (schwimmen/jagd/flucht)",
-    kreaturTargets.length >= 3,
-    `Ziele: ${kreaturTargets.join(",")}`
-);
-const deadTargets = kreaturTargets.filter((n) => !MOTION[n]);
-check(
-    "DECKUNG: jedes Zustand-Ziel ist ein existierendes MOTION-Preset (keine tote Zeile)",
-    deadTargets.length === 0,
-    deadTargets.length ? "TOT: " + deadTargets.join(",") : `${kreaturTargets.length} gedeckt`
-);
 check("MOTION trägt hunt UND schwimmen (die einst toten/neuen Gänge)", !!(MOTION.hunt && MOTION.schwimmen));
 
-// ── A2) DECKUNG: Verhaltens-Seele in sich geschlossen ──
-check("fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)", !!(V && V.aktionen && V.stimmung));
-if (V) {
+function stimmungLuecken(V) {
     const missing = [];
     for (const mood in V.stimmung) {
         // SCHLUSS-WELLE 17.07.: "schwellen" ist die Schwellen-DATEN-Zeile
@@ -71,11 +45,22 @@ if (V) {
         if (!Array.isArray(row.alle) || row.alle.length !== 2 || !(row.alle[0] <= row.alle[1]))
             missing.push(mood + ":alle");
     }
+    return missing;
+}
+
+// ── A2) DECKUNG: Verhaltens-Seele in sich geschlossen ──
+check("fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)", !!(V && V.aktionen && V.stimmung));
+if (V) {
+    const missing = stimmungLuecken(V);
     check(
         "jede Stimmungs-Aktion existiert im Katalog + alle=[min,max] gültig",
         missing.length === 0,
         missing.length ? "TOT: " + missing.join(",") : `${Object.keys(V.stimmung).length} Stimmungen`
     );
+    // SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf
+    const tot = { ...V, stimmung: { ...V.stimmung, tot: { aktionen: ["gibtsnicht"], alle: [1, 2] } } };
+    check("SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf", stimmungLuecken(tot).join() === "tot:gibtsnicht");
+
     const bekannt = new Set([
         "freq", "stride", "bodyX", "bodyZ", "headX", "headY", "ear",
         "tailAmp", "tailRate", "tension", "bob", "sway", "kpMul", "phases",
@@ -144,61 +129,10 @@ if (V) {
     check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
 }
 
-// ── B) KONSUM-ANKER im Stamm ──
-const probe = (name, re) => check("KONSUM: " + name, re.test(stamm));
-probe("_motionProfileName trägt den Zustand-Vorrang (zustand vor Emotion)", /MOTION_ZUSTAND_PROFILES\[zustand\]/);
-probe("updateCreatures stempelt die JAGD (Stempel am Hunt-Drive)", /_kreaturZustandStempel\(creature, "jagd"\)/);
-probe("updateCreatures stempelt die FLUCHT", /_kreaturZustandStempel\(creature, "flucht"\)/);
-probe("der Schwimm-Stempel lebt an der Wasser-Wahrheit", /_motionZustand = "schwimmen"/);
-probe("_animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)", /T\.wolf\.rotation\.x =\s*\(Number\(P\.bodyX\)/);
-probe("_animateTierBaum trägt den Aktions-Overlay", /_verhaltenAktion/);
-probe("der Verhaltens-Tick würfelt deterministisch (FNV, kein Math.random)", /_verhaltenHash\(/);
-// SPIEGEL-ZENSUS 17.07. — die Seelen-Konsum-Anker:
-probe(
-    "die Verhaltens-Zahlen fließen durch den EINEN memoisierten Leser (_verhaltenGesetz)",
-    /_verhaltenGesetzMemo/
-);
-probe("der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)", /Array\.isArray\(P\.phases\)/);
-// DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): jeder Biss-Weg setzt den EINEN Biss an, seine Reichweite ist der Weg
-// des Ansprungs; die Gegenwehr springt durch denselben Akt
-probe(
-    "die Gegenwehr ist der EINE Biss (der Ansprung, _kreaturBissAnsatz mit der Quelle gegenwehr)",
-    /_kreaturBissAnsatz\(\s*creature,\s*null,\s*"gegenwehr"/
-);
-probe(
-    "die Reichweite des Bisses ist der Weg des Ansprungs (sein Tempo × die Sprung-Zeit)",
-    /this\._kreaturBissTempo\(creature\) \* this\._kreaturSprungZeit\(creature\)/
-);
-// SCHLUSS-WELLE 17.07. — die Konsum-Anker der neun heimgekehrten Blöcke:
-probe("die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)", /_verhaltenGesetz\(\)\.stimmung\.schwellen/);
-probe("die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)", /_verhaltenGesetz\(\)\.groessen/);
-probe("die Separations-Kraft liest das Gesetz (VERHALTEN.separation)", /_verhaltenGesetz\(\)\.separation/);
-probe("die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)", /aufgaben\.followTempo/);
-probe(
-    "die Schwarm-Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug über VERHALTEN.herde, je Gattung)",
-    /\.herdeZug\([\s\S]{0,400}VG\.herde/
-);
-probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
-probe(
-    "die Hetze hält, wo das Maul den Leib erreicht (_kreaturBissRadial im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)",
-    /const spalt = this\._kreaturBissRadial\(creature, ziel\);/
-);
-probe(
-    "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h)); der Ansprung eines Bisses springt den Grund-Hüpfer (K13)",
-    // der Abflug (creatureJump) und die Höhe (_kreaturSprungHoehe) je an ihrem Ort — die Datei-Ordnung der Glieder zählt nicht (D2)
-    /^(?=[\s\S]*?Math\.sqrt\(2 \* this\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature, ansprung\)\))(?=[\s\S]*?if \(ansprung\) return F\.hopBasisM;[\s\S]{0,300}return froh \? F\.hopHochM : F\.hopBasisM;)/
-);
-probe("eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)", /def\.hop === true\) this\.creatureJump\(/);
-
-// ── C) SELBST-TEST: injizierte tote Zeile wird erkannt ──
-const fakeTargets = kreaturTargets.concat(["gibtsnicht"]);
-const fakeDead = fakeTargets.filter((n) => !MOTION[n]);
-check("SELBST-TEST: eine injizierte tote Zustand-Zeile fällt auf", fakeDead.length === 1);
-
 if (fails > 0) {
     console.log(`\n❌ ROT — ${fails} Verletzung(en).`);
     process.exit(1);
 }
 console.log(
-    "\n✅ GRÜN — DAS KREATUR-LEBEN IST VERBUNDEN: jedes reisende Preset hat einen wählenden Pfad (Zustand vor Emotion), die Verhaltens-Seele ist in sich geschlossen und der Baum-Gang trägt sie."
+    "\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jede Stimmung zeigt auf eine lebende Aktion, die Seelen-Blöcke reisen im Buch."
 );
