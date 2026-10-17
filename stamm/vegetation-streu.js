@@ -1442,8 +1442,9 @@ class AnazhRealm_vegetation_streu {
     // jede Region in Reichweite fehlt. Befund 09.10. (gate:ankunft, CI 37942425121): bei langsamem Takt stand der Ring am
     // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
     // ohne ein einziges Wald-Stück. Ohne Spieler-Ort steht keine.
-    // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`).
-    _streuWartet(p, liste) {
+    // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`); `zaehlt` (optional,
+    // (rx, rz) → bool) nimmt nur diese Regionen (das erste Weltbild: die im Blick, B3d).
+    _streuWartet(p, liste, zaehlt) {
         const SC = AnazhRealm.SCATTER;
         if (!p) {
             if (liste) liste.push("kein Spieler-Ort");
@@ -1456,7 +1457,7 @@ class AnazhRealm_vegetation_streu {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
                 const rx = rx0 + dx;
                 const rz = rz0 + dz;
-                if (!this._streuRegionInReichweite(rx, rz, p)) continue;
+                if (!this._streuRegionInReichweite(rx, rz, p) || (zaehlt && !zaehlt(rx, rz))) continue;
                 const grund = this._streuRegionWartet(`${rx},${rz}`);
                 if (!grund) continue;
                 warten++;

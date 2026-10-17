@@ -1083,7 +1083,8 @@ class AnazhRealm_studio_bruecke {
         if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
         const dx = wo.x - pm.x,
             dz = wo.z - pm.z;
-        return dx * dx + dz * dz;
+        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — `_blickRang`
+        return dx * dx + dz * dz + this._blickRang(wo.x, wo.z);
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
     // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk. Ein Werk-Helfer (`_foundryHelfer`) trägt
@@ -1139,7 +1140,13 @@ class AnazhRealm_studio_bruecke {
             [werkFrei, werkZiel] = freiste(werke, im);
             [baeckerFrei, baeckerZiel] = freiste(baecker, im);
         };
-        const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
+        // DER BLICK ZUERST (B3d): vor dem ersten Weltbild geht ein Auftrag außer Blick (sein Rang, `_blickRang`) nur in eine
+        // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
+        // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
+        const frei = (a) => {
+            const n = this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei;
+            return n > 0 && (n === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.wo)));
+        };
         for (plaetze(); q.length; plaetze()) {
             if (!f.baecker && q.some((a) => this._foundryBahn(a.msg) === "baecker")) this._foundryBaecker(f);
             let i = -1;

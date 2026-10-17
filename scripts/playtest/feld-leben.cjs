@@ -1340,7 +1340,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
-            r._weltbildLuecken().filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
+            r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
         out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
