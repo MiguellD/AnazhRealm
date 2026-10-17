@@ -1,5 +1,5 @@
 {
-    "zweck": "Die Quelltext-Wand (gate:source-probes, PFLICHT-OFFEN D3 Teil 3): je Datei in scripts/ die Leser von Spiel-Quelltext, die NICHT über den EINEN Absenz-Helfer gehen (window.__fehlt, stammLib.fehlt) — Arten seite (__codeOf/__dokuOf, roher toString), stamm (stammLib.text/textAusRev), datei (readFileSync auf Spiel-Code). liste: Struktur- und Mess-Leser mit Zweck. ratsche: Präsenz-Reste und Absenz-Wände, die noch am Helfer vorbei lesen — die Zahl sinkt nur.",
+    "zweck": "Die Quelltext-Wand (gate:source-probes, PFLICHT-OFFEN D3 Teil 3): je Datei in scripts/ die Leser von Spiel-Quelltext, die NICHT über den EINEN Absenz-Helfer gehen (window.__fehlt, stammLib.fehlt) — Arten seite (__codeOf/__dokuOf, roher toString), stamm (stammLib.text/textAusRev), datei (readFileSync auf Spiel-Code). liste: Struktur- und Mess-Leser mit Zweck. ratsche: leer seit D3e (17.10.) — kein Präsenz-Leser bleibt, jeder neue ist ROT beim Namen.",
     "liste": {
         "scripts/audit-strict.cjs": {
             "zweck": "Werkzeug: der Strikt-Audit zählt Glieder und Rufe des Stamms am AST",
@@ -33,6 +33,10 @@
         "scripts/diag-fall-waechter.cjs": {
             "zweck": "Struktur: AST-Wand — kein Dach-Leser im Körper-Schritt, Oberkanten an benannter Liste",
             "stamm": 2
+        },
+        "scripts/diag-fluss.cjs": {
+            "zweck": "Messung: die Schale der geladenen Klasse (A._foundrySchale.toString(), wie studio-bruecke sie in den Worker gibt) läuft im echten Worker (V1–V14, die Selbsttests wandeln sie)",
+            "seite": 1
         },
         "scripts/diag-kamera-laub.cjs": {
             "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM) und die Studio-Quelle der Absenz W3",
@@ -124,23 +128,5 @@
             "stamm": 1
         }
     },
-    "ratsche": {
-        "scripts/diag-fluss.cjs": {
-            "grund": "Absenz- und Struktur-Wand am Stamm (S2b-Besitz)",
-            "stamm": 1
-        },
-        "scripts/diag-foundry-crossfade.cjs": {
-            "grund": "Präsenz: 101 Text-Proben an Stamm, Kernen und Phytogenesis (D3c-crossfade, wartet auf S2)",
-            "stamm": 1,
-            "datei": 3
-        },
-        "scripts/diag-foundry-impostor.cjs": {
-            "grund": "Präsenz: zählt Direkt-Abtastungen im Stoff-Text (S2b-Besitz)",
-            "seite": 1
-        },
-        "scripts/diag-pipeline-constitution.cjs": {
-            "grund": "Absenz-Wand am Stamm-Text, 20 Absenzen (S2b-Besitz)",
-            "stamm": 1
-        }
-    }
+    "ratsche": {}
 }

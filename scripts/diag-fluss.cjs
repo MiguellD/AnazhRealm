@@ -5,7 +5,7 @@
 // (Median 3,3 s); 32 % der Bytes (aWind · aCenter · aType) las niemand. Seit V18.511 trägt die Transport-Schale
 // (`_foundrySchale`, läuft im Worker VOR dem Studio) Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
-// STATISCH (Node, gestrippter Stamm) — nur noch die Wache des Gefallenen (Absenzen): der Asset-Store lebt NUR in der
+// STATISCH (Node, über den EINEN Absenz-Helfer `stammLib.fehlt`) — die Wache des Gefallenen: der Asset-Store lebt NUR in der
 //   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine
 // KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
 //       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
@@ -35,34 +35,29 @@ const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
-const stamm = stammLib.text(root);
 
-const strip = stammLib.ohneKommentare;
-function methode(src, name) {
-    const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
-    if (a < 0) return null;
-    const b = src.indexOf("\n    }\n", a);
-    return b < 0 ? null : src.slice(a + 1, b + 6);
+// STATISCH — die Wache des Gefallenen über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentar-frei; `wandel` färbt den
+// Stamm im Selbsttest): der Asset-Store nur in der Schale, der Streu-Same nur in `_scatterRohSame` (die Engstellen leben —
+// die Schale läuft unten im Worker, der Same in der Klon-Linse).
+function statisch(wandel) {
+    const F = (name, glied, re) => [name, stammLib.fehlt(glied, re, wandel), stammLib.fehlt.wo || ""];
+    return [
+        F("S2b der Asset-Store lebt NUR in der Schale", { ausser: "_foundrySchale" }, /anazhFoundryAssets/),
+        F("S4a kein _foundryVariantCount (die Varianten-Wahl liest das Studio-Budget)", null, /_foundryVariantCount/),
+        F("S4b kein Samen-/Karten-Literal im Vorrat", "_foundryPrefetchLibrary", /<=\s*16\b|seeds:\s*\[1, 2/),
+        F("S4c EIN Streu-Same (die Formel lebt nur in _scatterRohSame)", { ausser: "_scatterRohSame" }, /\*\s*73856093\)\s*\^\s*\(cellZ\s*\*\s*19349663\)/),
+        F(
+            "S5b die Saison-Flip-Maschine ist fort (_foundrySeasonChanged · _drainSeasonFlip · SEASON_FLIP_PER_TICK · _seasonTint)",
+            null,
+            /_foundrySeasonChanged|_drainSeasonFlip|SEASON_FLIP_PER_TICK|_seasonTint\b|_seasonFlipQueue/
+        ),
+    ];
 }
-
-function statisch(src) {
-    const aus = [];
-    const pruef = (name, ok, detail) => aus.push([name, !!ok, detail || ""]);
-    const schale = methode(src, "_foundrySchale");
-    const ohneSchale = strip(schale ? src.replace(schale, "") : src);
-    pruef("S2b der Asset-Store lebt NUR in der Schale", schale && !/anazhFoundryAssets/.test(ohneSchale));
-    const code = strip(src);
-    pruef("S4a kein _foundryVariantCount (die Varianten-Wahl liest das Studio-Budget)", !/_foundryVariantCount/.test(code));
-    const pre = methode(src, "_foundryPrefetchLibrary");
-    pruef("S4b kein Samen-/Karten-Literal im Vorrat", pre && !/<=\s*16\b|seeds:\s*\[1, 2/.test(strip(pre)));
-    const formel = (code.match(/\*\s*73856093\)\s*\^\s*\(cellZ\s*\*\s*19349663\)\s*\^\s*\(variantIndex \+ 1\)/g) || [])
-        .length;
-    pruef("S4c EIN Streu-Same (die Formel genau einmal, kein Zwilling)", formel === 1, `Formel ${formel}×`);
-    pruef(
-        "S5b die Saison-Flip-Maschine ist fort (_foundrySeasonChanged · _drainSeasonFlip · SEASON_FLIP_PER_TICK · _seasonTint)",
-        !/_foundrySeasonChanged|_drainSeasonFlip|SEASON_FLIP_PER_TICK|_seasonTint\b|_seasonFlipQueue/.test(code)
-    );
-    return { gesetze: aus, schale };
+// Die Schale der GELADENEN Klasse, wie die Brücke sie in den Worker gibt (`AnazhRealm._foundrySchale.toString()`,
+// studio-bruecke): ihr Text ist die Messung, die im echten Worker läuft — nie ein Zitat.
+function schaleVon() {
+    const { AnazhRealm: A } = stammLib.ladeKlasse(root);
+    return A._foundrySchale.toString();
 }
 
 // DIE KLON-LINSE (V18.527, K20-N1): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
@@ -794,13 +789,9 @@ const VERHALTEN = [
             }
             return stammLib.ersetze(quelle, glied, alt, neu);
         };
-        const t2 = statisch(
-            bruch(
-                stamm,
-                /(\n {4}_foundryRequest\([^)]*\) \{)/,
-                '$1\n        indexedDB.open("anazhFoundryAssets", 1);'
-            )
-        ).gesetze.find((g) => g[0].startsWith("S2b"));
+        const t2 = statisch((t) =>
+            bruch(t, /(\n {4}_foundryRequest\([^)]*\) \{)/, '$1\n        indexedDB.open("anazhFoundryAssets", 1);')
+        ).find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
         // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
         const gebrochen = (alt, neu) => {
@@ -819,7 +810,7 @@ const VERHALTEN = [
             )
         );
         check("Selbst-Test 11e: das Eimer-Urteil vergisst den Solitär (frei ≠ T) → Klon-Linse rot", !t11e.ok);
-        const { schale } = statisch(stamm);
+        const schale = schaleVon();
         const v1 = await verhalten(bruch(schale, "return roh(msg, puffer(msg.meshes));", "return roh(msg);"));
         check("Selbst-Test 3: Schale ohne Transfer → V3 rot", v1.transfer === false);
         const v2 = await verhalten(bruch(schale, "!LESEN.has(k)) delete m[k]", "false) delete m[k]"));
@@ -1009,8 +1000,8 @@ const VERHALTEN = [
         process.exit(0);
     }
     console.log("=== FLUSS-WAND — statisch ===");
-    const { gesetze, schale } = statisch(stamm);
-    for (const [n, ok, d] of gesetze) check(n, ok, d);
+    for (const [n, ok, d] of statisch()) check(n, ok, d);
+    const schale = schaleVon();
     for (const [n, ok, d] of stempelProbe()) check(n, ok, d);
     console.log("=== FLUSS-WAND — Klon-Linse (Gestalten aus dem Studio-Budget, 600 × 600 Streu-Zellen) ===");
     const gs = gestalten();
