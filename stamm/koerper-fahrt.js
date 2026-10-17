@@ -1773,8 +1773,7 @@ class AnazhRealm_koerper_fahrt {
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
-        this._tickMountedMovement(dt);
-        this._fahrAnzeige();
+        this._fahrAnzeige(); // der Ritt im Bild läuft vor der Kamera (`_tickMountedMovement`, startEternalLoop)
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
