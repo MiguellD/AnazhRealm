@@ -678,23 +678,26 @@ class AnazhRealm_bild_sicht {
                 );
                 const w4 = U.invVP.mul(ndc);
                 const P = w4.xyz.div(w4.w).toVar();
-                const r0 = P.xz.sub(U.mitte).div(kante);
                 // der Wasser-Punkt: eine der vier Zellen um ihn ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem
                 // (0,6 m tiefer gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie. Bis A1
                 // fragte nur die Zelle unter dem Punkt: am Ufer liegt das gezeichnete Wasser bis in die Land-Zellen, dort las der
-                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie)
-                const zw = floor(P.xz.div(S.texel).sub(0.5));
-                const istWasser = (di, dj) => {
-                    const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
-                    return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
-                        .lessThan(0.5)
-                        .and(abs(P.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie). EIN Test für den Ort des Strahls und für
+                // seinen Treffer im Bild (A12, `aufWasser`): was am Wasser liegt, ist nie das Bild des Spiegels.
+                const aufWasser = (pt) => {
+                    const zw = floor(pt.xz.div(S.texel).sub(0.5));
+                    const zelle = (di, dj) => {
+                        const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
+                        return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
+                            .lessThan(0.5)
+                            .and(abs(pt.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                    };
+                    return zelle(0, 0).or(zelle(1, 0)).or(zelle(0, 1)).or(zelle(1, 1));
                 };
-                const wasser = istWasser(0, 0)
-                    .or(istWasser(1, 0))
-                    .or(istWasser(0, 1))
-                    .or(istWasser(1, 1))
-                    .and(max(abs(r0.x), abs(r0.y)).lessThan(0.48));
+                const imFeld = (pt) => {
+                    const rel = pt.xz.sub(U.mitte).div(kante);
+                    return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
+                };
+                const wasser = aufWasser(P).and(imFeld(P));
                 If(wasser, () => {
                     const v = normalize(P.sub(U.auge));
                     const R = vec3(v.x, abs(v.y), v.z);
@@ -759,8 +762,17 @@ class AnazhRealm_bild_sicht {
                                     1
                                 )
                             );
+                            // DAS WASSER IST NIE SEIN BILD (A12): auch der Kamm, der Buckel des Wasser-Dachs und die höhere
+                            // Fläche dahinter nicht — dieselbe Regel wie im Feld (`wasserTraf`). Bis A12 hielt nur die Höhe über
+                            // dem Ort (`bildUfer`): der Strahl traf den Kamm vor ihm und den Buckel des Sees (1,27 m über 0,93 m)
+                            // — das schiefergraue Band ~50 px unter dem fernen Ufer war der See selbst
+                            const hT = h4.xyz.div(h4.w);
                             kandidat.assign(
-                                select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0))
+                                select(
+                                    hT.y.greaterThan(P.y.add(K.bildUfer)).and(aufWasser(hT).and(imFeld(hT)).not()),
+                                    float(1),
+                                    float(0)
+                                )
                             );
                         });
                         If(sDeck.lessThan(0.0).and(dz.lessThan(0.99999)).and(ws.sub(wz).greaterThanEqual(dicke)), () =>
