@@ -145,7 +145,7 @@ async function driveImpostor(page) {
                     materialGeteilt: l1.mat === l2.mat,
                     billboard: !!(l1.mat && l1.mat.userData && l1.mat.userData.impostorBillboard),
                     schichtenVerschieden: l1.zelle !== l2.zelle,
-                    texturen: !!(at.map && at.nmap && at.map.isDataArrayTexture && at.cap >= at.n),
+                    texturen: !!(at.map && at.nmap && at.lmap && at.cap >= at.n && at.map.image.depth === at.cap),
                     fmt: at.fmt,
                 };
                 // drei Instanzen über BEIDE Slot-Chokepoints: Streu (zwei Arten, Region 3,4) + ein gesetzter Eintrag
