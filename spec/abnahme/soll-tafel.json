@@ -500,7 +500,7 @@
                     {
                         "groesse": "spiegelTreue",
                         "band": [0.6, null],
-                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
+                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen ihr Bild an der Wasser-Ebene (Achse aus Tiefe und Kamera der Aufnahme) je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
                         "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,922 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
                     }
                 ]
@@ -513,10 +513,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T01:17:04.561Z",
+                    "datum": "2026-10-17T04:32:36.884Z",
                     "stand": {
-                        "version": "18.546.9",
-                        "sha": "cbc222cc8629c4bc02983e44c8a808b7daa2d2fa+geaendert"
+                        "version": "18.546.11",
+                        "sha": "cee125a85d748388fff6387df215cca155a63955+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -533,26 +533,26 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "wasserSatz": {"objekte":1,"spiegelTreue":0.4973,"sp":[14573,0,0,48028415.32,48028415.32,23882672.71],"zweiton":0,"zt":0,"weiss":0.0168,"wt":15885,"wtZiel":null,"bunt":14.09,"pixel":943974,"deckung":0.4552,"deckungUnten":1,"luma":61.93,"kontrast":0.492,"detail":0.0227,"nyquist":0.0219,"ek":18166.2,"eg":810791,"silhouette":6.4441,"kante":0.7521,"kr":3442}
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.8277,"spiegelEbene":0.912,"sp":[13220,0,0,42603603.35,42603603.35,35264674.59],"zweiton":0,"zt":0,"weiss":0.0173,"wt":16360,"wtZiel":null,"bunt":15.02,"pixel":944890,"deckung":0.4557,"luma":60.83,"kontrast":0.4877,"detail":0.0259,"kante":0.7222,"kr":3459}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
-                        "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
+                        "stamm/dirigent-kern.js": "c:0ece81ae293d4bb5",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
                         "stamm/gelaende-kollision.js": "c:2e87a656ca40b729",
                         "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
-                        "stamm/stoff-material.js": "c:d13f1ee108ed0513",
+                        "stamm/stoff-material.js": "c:6992769997fc2f78",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
-                        "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                        "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
+                        "stamm/siedlung-ort.js": "c:01a8c9f5f4ca0e5d",
+                        "stamm/siedlung-bauten.js": "c:ce252bcd0a4e5154",
                         "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
-                        "stamm/bild-kosten.js": "c:f0f700bdda342ece",
-                        "stamm/bild-sicht.js": "c:4816280621f673f8",
+                        "stamm/bild-kosten.js": "c:3e83972abb23f01d",
+                        "stamm/bild-sicht.js": "c:98d15deb312131c6",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
                         "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
@@ -560,7 +560,7 @@
                         "stamm/feld-leben.js": "c:1700a002085d75ae",
                         "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
                         "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
-                        "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                        "stamm/dirigent-ankunft.js": "c:8582924a3a670618"
                     }
                 }
             },
