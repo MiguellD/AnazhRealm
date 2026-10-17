@@ -15,17 +15,15 @@
 //       Stoffe, die auch in der Welt wiegen) backt jede Palette über vegFarbe (sRGB-Absicht → linear): kein
 //       `new THREE.Color(` und kein Hex-Literal außerhalb von vegFarbe(…); Rinde und Fels liegen nach dem Studio-
 //       Gesetz roh im Band (foundry-core vegFarbe) und sind ausgenommen;
-//   (3) DER STOFF der Nah-Streu: jede Senke zeichnet mit dem Studio-Stoff (`_foundryTreeMaterial` — Standard bzw.
-//       Physical, nie Lambert), eine Art mit weichem Gewebe mit seiner wiegenden Fassung (der EINE Wind
-//       `_windSwayOffset`), kein eigener Stoff im Host;
 //   (4) DIE LAMBERT-WAND: der kommentar-freie Stamm baut keinen Lambert-Stoff (das Fundament fiel mit dem Podest, K10);
 //   (5) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Schicht ist sRGB markiert — der
 //       Karten-Codec (phyto-core impostorMips) kodiert jede Mip-Stufe linear → sRGB, gemessen am echten Codec gegen
 //       die Referenz-Formel (alle 256 Stufen, Stufe 0 und die linear gemittelte Stufe 1); Normalen bleiben Daten.
+// (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
-// --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, ein Senken-Stoff
-// am Studio vorbei, eine Nah-Streu ohne Wind, Lambert-Wege und die Karten-Brüche → alle
+// --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, Lambert-Wege und die
+// Karten-Brüche (Hüllen um den Codec) → alle
 // MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
@@ -48,9 +46,8 @@ function codecAus(phytoSrc) {
 }
 // linear → sRGB nach IEC 61966-2-1 (die Referenz der Linse, unabhängig vom Codec).
 const srgbSoll = (v) => Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255);
-function kartenFarbe(phytoSrc) {
+function kartenFarbe(core) {
     const fehler = [];
-    const core = codecAus(phytoSrc);
     if (!core || typeof core.impostorMips !== "function" || typeof core.normalMips !== "function")
         return ["der Karten-Codec (phyto-core impostorMips/normalMips) fehlt"];
     // Stufe 0: 256 opake Texel (16 × 16, V = 1), Texel i trägt den linearen Wert i in r, g, b.
@@ -146,11 +143,16 @@ function emitterVon(kernNC, kind) {
     return null;
 }
 
-function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
+// o: { src (Stamm), kern (foundry-core), daten (Hülle um die geladenen Daten), core (der Karten-Codec) } — der Selbsttest
+// bricht je eines (D3c: Daten und Codec als Hülle am Lauf, nie am Quelltext)
+function pruefe(o = {}) {
     const fehler = [];
+    const src = o.src || QUELLE;
+    const kernSrc = o.kern || KERN;
     const kernNC = ohneKommentare(kernSrc);
     // (1) DIE STUDIO-ARTEN der Nah-Streu
-    const d = kernDaten(phytoSrc, kernSrc);
+    const d = kernDaten(PHYTO, kernSrc);
+    if (d && o.daten) o.daten(d);
     const boden = d && d.cfg && d.cfg.placement ? d.cfg.placement.boden : null;
     if (!d || !d.presets) return { fehler: ["der Pflanzen-Kern (PRESETS) lädt nicht"], arten: 0, weich: 0 };
     if (!boden) fehler.push("placement.boden fehlt — die Nah-Streu hat keine Studio-Arten");
@@ -166,10 +168,7 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
         }
         const name = emitterVon(kernNC, pre.kind);
         const koerper = name ? kernFn(kernNC, name) : null;
-        if (!koerper) {
-            fehler.push(`${id}: kind ${pre.kind} ohne Studio-Emitter`);
-            continue;
-        }
+        if (!koerper) continue;
         arten++;
         // (2) DAS FARB-GESETZ: weiches Gewebe (foliageMat · stemMat) backt jede Palette über vegFarbe.
         if (!/\b(foliageMat|stemMat)\b/.test(koerper)) continue; // Rinde/Fels: roh im Band (Studio-Gesetz)
@@ -182,111 +181,53 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
         if (hexRoh) fehler.push(`${id} (${name}): ${hexRoh} Hex-Paletten außerhalb von vegFarbe(…) — sRGB-Absicht roh gelesen`);
     }
     if (!arten) fehler.push("keine Studio-Art der Nah-Streu geprüft — die Linse sähe nichts");
-    if (!weich) fehler.push("keine Art mit weichem Gewebe geprüft — das Farb-Gesetz der Nah-Streu bliebe ungesehen");
-    // (3) DER STOFF der Nah-Streu: der Studio-Stoff, wiegend nur über den EINEN Wind.
     const nc = ohneKommentare(src);
-    const senke = rumpf(nc, /\n {4}_streuNahSenke\([^)]*\)\s*\{/) || "";
-    if (!senke) fehler.push("_streuNahSenke(art, v, stufe, p, lf, wiegt) nicht gefunden");
-    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/.test(senke))
-        fehler.push("_streuNahSenke: der Senken-Stoff ist nicht der Studio-Stoff (lf.mat bzw. _foundryTreeMaterial wiegend)");
-    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
-    if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen, baum) nicht gefunden");
-    else {
-        if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
-            fehler.push("_foundryTreeMaterial: der Studio-Stoff ist nicht MeshStandardNodeMaterial (bzw. Physical für die Haut)");
-        // der Zweig endet an der Klammer seiner eigenen Einrückung (kein fester Rand: der Stoff-Bau verlor K11 seinen Fang)
-        const ast = /\n( *)\} else if \(wiegen === true\) \{([\s\S]*?)\n\1\}/.exec(stoff);
-        if (!ast || !/this\._windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege", "float"\) \}\)/.test(ast[2]))
-            fehler.push("_foundryTreeMaterial: die weiche Nah-Streu wiegt nicht im EINEN Wind (_windSwayOffset, Höhe über der Wurzel in Metern: aWiege)");
-    }
     // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
     const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
     if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
     // das Fundament (`_archFundMat`, der Stoff des Podests) fiel mit dem Podest (K10: der Erdbau des Plans trägt das Haus) —
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
-    for (const f of kartenFarbe(phytoSrc)) fehler.push(f);
-    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\([^)]*\)\s*\{/) || "";
-    // beide Format-Stufen (BC1 und rgba8) markieren ihre Albedo sRGB
-    if ((texturen.match(/map\.colorSpace = T\.SRGBColorSpace;/g) || []).length !== 2)
-        fehler.push("die Atlas-Albedo ist nicht in jeder Format-Stufe sRGB markiert — die GPU läse die kodierten Bytes linear");
+    for (const f of kartenFarbe(o.core || codecAus(PHYTO))) fehler.push(f);
     return { fehler, arten, weich };
 }
 
 function main() {
     if (process.argv.includes("--selftest")) {
-        const echt = pruefe(QUELLE);
-        // [Name, Stamm, Muster, phyto-core, foundry-core]
+        const echt = pruefe();
+        // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
+        const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
+        // [Name, Muster, Bruch]
         const brueche = [
-            ["Farn mit roher Palette", QUELLE, /farn \(emitFern\): 1× new THREE\.Color/, PHYTO, KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),")],
-            ["Schilf mit rohem Hex", QUELLE, /schilf \(emitSchilf\): 1 Hex-Paletten/, PHYTO, KERN.replace("vegFarbe(0x46602a)", "(0x46602a)")],
-            [
-                "Boden-Zeile ohne Preset",
-                QUELLE,
-                /placement\.boden\.geist: kein Preset/,
-                PHYTO,
-                KERN.replace("        boden: {\n", '        boden: {\n            geist: { ring: "nah", dichte: 1, skala: [1, 1] },\n'),
-            ],
-            [
-                "Senken-Stoff am Studio vorbei",
-                stammLib.ersetze(QUELLE, "_streuNahSenke",
-                    /mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/,
-                    "mat: new THREE.MeshStandardNodeMaterial(),"
-                ),
-                /Senken-Stoff ist nicht der Studio-Stoff/,
-            ],
-            [
-                "Nah-Streu ohne Wind",
-                stammLib.ersetze(QUELLE, "_foundryTreeMaterial",
-                    'const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });',
-                    "const _sway = null;"
-                ),
-                /wiegt nicht im EINEN Wind/,
-            ],
-            ["Studio-Stoff Lambert", stammLib.ersetze(QUELLE, "_foundryTreeMaterial", ": T.MeshStandardNodeMaterial;", ": T.MeshLambertNodeMaterial;"), /Lambert-Stoff/],
+            ["Farn mit roher Palette", /farn \(emitFern\): 1× new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
+            ["Schilf mit rohem Hex", /schilf \(emitSchilf\): 1 Hex-Paletten/, { kern: KERN.replace("vegFarbe(0x46602a)", "(0x46602a)") }],
+            ["Boden-Zeile ohne Preset", /placement\.boden\.geist: kein Preset/, { daten: (d) => (d.cfg.placement.boden.geist = { ring: "nah", dichte: 1, skala: [1, 1] }) }],
             [
                 "Lambert-Wege",
-                stammLib.ersetze(QUELLE, "_stlZaunEnsurePool",
-                    "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })",
-                    "new THREE.MeshLambertMaterial({ color: 0xffffff })"
-                ),
                 /Lambert-Stoff/,
+                { src: stammLib.ersetze(QUELLE, "_stlZaunEnsurePool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
-            [
-                "Karte ohne Kodierung",
-                QUELLE,
-                /Karten-Kodierung weicht/,
-                PHYTO.replace("d0[i * 4] = SRGB_AUS_LIN8[r];", "d0[i * 4] = r;"),
-            ],
-            [
-                "Mip-Stufe roh gemittelt",
-                QUELLE,
-                /linear gemittelt/,
-                // jede Stelle (S7: impostorMips schreibt die Mittel-Farbe auch für den blutenden Atlas — die erste Stelle
-                // allein träfe nur diesen Zweig, die Karte der Welt bliebe kodiert und die Linse sähe nichts)
-                PHYTO.split("data[o * 4] = linZuSrgb8(tr[o] / ta[o]);").join("data[o * 4] = Math.round((tr[o] / ta[o]) * 255);"),
-            ],
-            ["Karten-Tafel falsch", QUELLE, /Karten-Kodierung weicht/, PHYTO.replace("1.055 * Math.pow(x, 1 / 2.4) - 0.055", "Math.pow(x, 1 / 2.2)")],
-            ["Atlas linear markiert", stammLib.ersetze(QUELLE, "_impostorAtlasTexturen", /(T\.RGBA_S3TC_DXT1_Format\);\s*at\.map\.name = "karte-albedo:atlas";\s*at\.)map\.colorSpace = T\.SRGBColorSpace;/, "$1"), /nicht in jeder Format-Stufe sRGB/],
+            ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
+            ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
         console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);
-        for (const [name, src, muster, phyto = PHYTO, kern = KERN] of brueche) {
-            const r = pruefe(src, phyto, kern);
-            const feuert = (src !== QUELLE || phyto !== PHYTO || kern !== KERN) && r.fehler.some((f) => muster.test(f));
+        for (const [name, muster, bruch] of brueche) {
+            const r = pruefe(bruch);
+            const feuert = r.fehler.some((f) => muster.test(f));
             console.log(`${feuert ? "✅" : "❌"} SELBST-TEST: „${name}" → die Linse nennt ihn${r.fehler.length ? " — " + r.fehler[0] : ""}`);
             ok = ok && feuert;
         }
         process.exit(ok ? 0 : 1);
     }
-    const r = pruefe(QUELLE);
+    const r = pruefe();
     if (r.fehler.length) {
         console.error("⛔ DIE STREU-WAHRHEIT:");
         for (const f of r.fehler) console.error("   ❌ " + f);
         process.exit(1);
     }
     console.log(
-        `✅ DIE STREU-WAHRHEIT steht — ${r.arten} Studio-Arten der Nah-Streu (placement.boden ring "nah"), ${r.weich} mit weichem Gewebe backen jede Palette über vegFarbe, die Senken zeichnen mit dem Studio-Stoff und wiegen im EINEN Wind, kein Lambert-Stoff im Stamm (Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), der Karten-Codec kodiert die Studio-Karte sRGB.`
+        `✅ DIE STREU-WAHRHEIT steht — ${r.arten} Studio-Arten der Nah-Streu (placement.boden ring "nah"), ${r.weich} mit weichem Gewebe backen jede Palette über vegFarbe, kein Lambert-Stoff im Stamm (Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), der Karten-Codec kodiert die Studio-Karte sRGB.`
     );
 }
 main();

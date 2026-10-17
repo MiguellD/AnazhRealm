@@ -167,60 +167,48 @@ class AnazhRealm_vegetation_baum {
     // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
     // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
-    // DIE KANTE (K68): `a` ist die Deckung als Kante von EINEM Pixel um die Schwelle `c` (`_laubKante`), `schwelle` der
-    // Knoten, mit dem der Bild-Pass sie schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
-    _blattAtlasProbe(T, c) {
+    // DIE DECKUNG (A3): `a` liest die Stufe des Schirms am Versatz des Laubs (`_laubVersatz`), der Stoff schneidet sie an
+    // seiner Zahl alphaTest — Bild und Schatten an derselben Schwelle.
+    _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
         const uv = T.attribute("uv", "vec2");
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
-        const deckung = T.texture(tex, uv);
+        const deckung = T.texture(tex, this._laubVersatz(T, uv, T.dFdx(uv), T.dFdy(uv)));
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: this._laubKante(T, deckung.a, c),
-            schwelle: this._laubSchwelle(T),
+            a: deckung.a,
         };
     }
 
-    // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
-    // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
-    // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
-    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster).
-    // Der Bild-Pass vergleicht ihn mit dem Rauschen der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist die
-    // geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL alphaTest
-    // 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
-    _laubKante(T, a, c) {
-        const s = T.float(c == null ? 0.5 : c);
-        return a
-            .sub(s)
-            .div(T.fwidth(a).max(T.float(1e-4)))
-            .add(T.float(0.5))
-            .clamp(0.0, 1.0);
-    }
-
-    // DIE SCHWELLE DER KANTE (K68): das Interleaved-Gradient-Rauschen über den gespiegelten Achsen (y, x) — unabhängig vom
-    // Rauschen der Stufen-Blende und der Durchsicht (`__phytoCore.lodDitherIGN` über (x, y)) —, je Frame um 1/g (die
-    // Plastik-Zahl, `uLaubKante.x`) gedreht: neben der Goldenen Drehung der Blende (`uDitherT`) ist das Paar je Pixel über
-    // die Frames gleichverteilt, Blende und Kante multiplizieren ihre Deckung. Ohne zeitliche Auflösung (`uLaubKante.y` 0,
-    // Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt von vorher, kein stehendes Rauschen. EIN Knoten je Welt.
-    // DIE ZAHL DES STOFFS TRÄGT DIE SCHWELLE (K68-N1, Prüfer K68: das Phantom klont den Knoten, `_ghostMaterialFor` senkt nur
-    // die Zahl — bei Deckkraft 0,4 fiel unter kienspan jedes Laub-Fragment, das Baum-Phantom war wieder unsichtbar): die
-    // Schwelle ist alphaTest × (1 | 2·Rauschen), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`, derselbe Leser
-    // wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert, ändert den Schnitt mit.
-    _laubSchwelle(T) {
-        if (this._laubSchwelleKnoten) return this._laubSchwelleKnoten;
+    // DER VERSATZ DES LAUBS (A3): jede Laub- und Nadel-Karte jeder Stufe — der Blatt-Atlas (Studio- und Grammatik-Laub,
+    // `_blattAtlasProbe`) und der Karten-Atlas (die Karte L2, `_probeA`) — liest ihre Deckung je Frame um einen Versatz in
+    // Eingangs-Pixeln verschoben (`uLaubVersatz`: Halton 5 und 7 am Frame der Geschichte, `_zeitAufloesung`) und schneidet sie
+    // an der Zahl alphaTest. Über die Geschichte der zeitlichen Auflösung ist der Schnitt die Deckung eines Fußabdrucks von
+    // drei Pixeln (±1 Versatz ⊗ ±½ Zitter): die Teil-Deckung der Nadel-Büschel steht als Mischton, eine Lücke ab drei Pixeln
+    // bleibt offen. DER TÄTER (Radeon --echt, Tafel-Pose, je drei bis vier Posen in EINER Welt): die deckungstreue Mip-Kette
+    // (phyto-core `impostorMips` glatt, Castaño) bündelt die Teil-Deckung in ganze Texel der Stufe des Schirms — ein Bit-Muster,
+    // das die Kante von einem Pixel (K68 `_laubKante`) und die Schwelle je Zelle (A3 `_laubSchwelle`) nur nachschnitten
+    // (zweiton 49–224 px; die Varianz-Klemme der Auflösung dämpfte es — ohne sie 251–724 px); die um ½ gröbere Stufe schloss
+    // es, schloss aber jede Lücke unter zwei Pixeln (laub-kante 0,212 → 0,222). Ohne zeitliche Auflösung (Holz kienspan) und in
+    // der Kaskade (orthographisch, m[3][3] = 1) ist der Versatz 0: der Schatten schneidet still an derselben Schwelle.
+    // JE PIXEL EINE EIGENE PHASE (A3b): die Folge des Frames (`uLaubVersatz.xy`) dreht sich je Pixel um das IGN des
+    // transponierten Gitters (die Stufen-Blende liest das gerade, `_dh`) — je Pixel bleibt sie gleichmäßig, Nachbarn teilen
+    // ihren Restfehler nicht mehr. Bis A3b sah jedes Pixel dieselben 31 Versätze: der Rest nach 32 Frames stand in jeder Phase
+    // des Gitters der Auflösung (3 Eingangs- auf 4 Ausgabe-Pixel) gleich, ein Raster im Takt von 4 Pixeln (Radeon, Tafel-Pose,
+    // Wanduhr: zweiton 0–127 px → 0 in 6 von 7 Schüssen). Eine wandernde Schwelle statt des Versatzes rasterte stärker
+    // (682–2 249 px), eine feinere Stufe der Deckung ebenso (Weite ½: 175 → 490 px).
+    _laubVersatz(T, uv, dx, dy) {
         const lu = this._ensureLodUniforms();
-        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
+        if (!lu || !lu.uLaubVersatz) throw this._blendeBruch("der LOD-Uniform-Satz trägt keinen uLaubVersatz");
         const fc = T.screenCoordinate;
-        const h = T.fract(
-            T.float(52.9829189)
-                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
-                .add(lu.uLaubKante.x)
-        );
-        this._laubSchwelleKnoten = T.materialAlphaTest.mul(T.mix(T.float(1), h.mul(2), lu.uLaubKante.y));
-        return this._laubSchwelleKnoten;
+        const phase = T.fract(T.float(52.9829189).mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715)))));
+        const lv = lu.uLaubVersatz;
+        const o = T.fract(lv.xy.add(phase)).sub(0.5).mul(lv.z.mul(2));
+        const v = T.cameraProjectionMatrix.element(3).w.lessThan(0.5).select(o, T.vec2(0, 0));
+        return uv.add(dx.mul(v.x)).add(dy.mul(v.y));
     }
 
     // Stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen (aH0/aH0L) auf eine Laub-Geometrie — EINE Quelle
@@ -1425,13 +1413,11 @@ class AnazhRealm_vegetation_baum {
         let chance = BASE_RATE * bestAffinity * bestAffinity;
         // Streu-Seltenheit aus der Vorlagen-Quelle (PORTAL_RENDER_CONFIG.placement.rarity, live): wie selten
         // Kristall-/Fels-Formationen streuen (kristalle 0.05 = fast nie), editierbar ohne Code.
+        // Kein stiller Zweig mehr: vor B3a streute ein Chunk vor dem Buch ohne Seltenheit (Kristalle 20× zu oft, OMEN 17.10.).
         {
-            const _rcP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.placement;
-            const _rar = _rcP && _rcP.rarity;
-            if (_rar) {
-                const _preset = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bestName) : null;
-                if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
-            }
+            const _rar = AnazhRealm._studioRenderConfig.placement.rarity;
+            const _preset = this._foundryPresetFor(bestName);
+            if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
         }
         if (isTree) {
             const lebendig = welt.lebendig;
@@ -2484,6 +2470,9 @@ AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 // DIE OKTAVE DER LAUB-FARBE (K20): der EINE Leser des Blatt-Atlas (`_blattAtlasProbe`) liest die Farbe so viele Mip-Stufen
 // über der Stufe der Deckung — 2 = kein Farb-Detail unter vier Pixeln (Eiche 25 m, nur L1: Δ-Luma 3,41 → 2,62).
 AnazhRealm.BLATT_FARBE_OKTAVE = 2;
+// DER VERSATZ DES LAUBS (A3, `_laubVersatz`): die Deckung jeder Laub- und Nadel-Karte wandert je Frame im Quadrat ± so
+// viele Eingangs-Pixel — über die zeitliche Auflösung die Deckung eines Fußabdrucks von drei Pixeln.
+AnazhRealm.LAUB_VERSATZ = 1;
 
 // Krone als VOLUMEN: ein Cluster aus K Karten pro Foliage-Anchor, im Kronen-Volumen gejittert (ein
 // Teil zur Mitte gezogen) → geschlossene Krone. Eine card{cross} ist billig (8 Verts); LOD1/2 dünnen

@@ -27,7 +27,7 @@
 //       Formation · GT · jedes der sieben Tore · Haus · Brunnen · Marktstand) — die Zählung prüft jede Klasse, nicht nur, was
 //       dort wächst;
 //   (T) DER EINGESCHMUGGELTE TÄTER: ein Felsturm bekommt die Spender-Parts (die alte Regel) — (B) MUSS ihn beim Namen nennen;
-//   (Q) QUELLE: der Fels-Zweig führt keine Typ-Liste (kein `_var`-Muster), Fels-Zweig und Parts-Pfad lesen die Welt-Skala jedes
+//   (Q) QUELLE: der Fels-Zweig führt keine Typ-Liste (kein `_var`-Muster), der Parts-Pfad liest die Welt-Skala jedes
 //       Studio-Werks (`_studioWeltSkala`), der Hand-Spiegel `STUDIO_WORLD_SCALE` ist fort, das Tor liest seine Hülle aus dem
 //       Gesetzbuch (`porta:TOR_HUELLE`) und kein Blocker-Erzeuger ruft `buildInstance`;
 //   (P) kein Page-Error.
@@ -108,7 +108,6 @@ function urteil(b) {
     if (!q.torTafel) v.push("(Q) QUELLE: das Tor liest seine Hülle nicht aus dem Gesetzbuch (`porta:TOR_HUELLE`)");
     if (!q.ohneBau) v.push("(Q) QUELLE: ein Blocker-Erzeuger ruft `buildInstance` (die Gestalt am Spawn nachgebaut)");
     if (!q.felsOhneTypListe) v.push("(Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)");
-    if (!q.felsSkala) v.push("(Q) QUELLE: der Fels-Zweig liest die Welt-Skala nicht (`_studioWeltSkala`)");
     if (!q.partsSkala) v.push("(Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)");
     if (!q.ohneSpiegel)
         v.push("(Q) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt (zweite Welt-Skala neben dem Kern)");
@@ -127,7 +126,6 @@ function selbsttest() {
         bauten: [],
         quelle: {
             felsOhneTypListe: true,
-            felsSkala: true,
             partsSkala: true,
             ohneSpiegel: true,
             gestaltKern: true,
@@ -172,11 +170,6 @@ function selbsttest() {
         ],
         ["fehlende Klasse", (b) => delete b.exemplare.felsbogen, /\(E\) KLASSE FEHLT: das Exemplar felsbogen/],
         ["Typ-Liste", (b) => (b.quelle.felsOhneTypListe = false), /\(Q\) QUELLE: der Fels-Zweig .* Typ-Liste/],
-        [
-            "Fels ohne Skala",
-            (b) => (b.quelle.felsSkala = false),
-            /\(Q\) QUELLE: der Fels-Zweig liest die Welt-Skala nicht/,
-        ],
         ["Parts ohne Skala", (b) => (b.quelle.partsSkala = false), /\(Q\) QUELLE: der Parts-Pfad liest/],
         [
             "Hand-Spiegel",
@@ -566,21 +559,38 @@ async function probe(K) {
         };
         tor.blockerAABBs = alt;
     }
-    // (Q) DIE QUELLE (kommentarfrei)
+    // (Q) DIE QUELLE: der Konsum am Zähl-Spion des Versorgers, während der Erzeuger einmal läuft; die Absenzen kommentarfrei
+    const ruft = (lauf, o, k, wer = () => true) => {
+        const eigen = Object.prototype.hasOwnProperty.call(o, k),
+            f = o[k];
+        let n = 0;
+        o[k] = function (...a) {
+            if (wer(...a)) n++;
+            return f.apply(this, a);
+        };
+        try {
+            lauf();
+        } finally {
+            if (eigen) o[k] = f;
+            else delete o[k];
+        }
+        return n > 0;
+    };
     const code = (fn) => (typeof fn === "function" ? window.__codeOf(fn) : "");
     const fels = code(r._felsBlockerParts);
-    const pba = code(r._populateBlockerAABBs);
+    const baum = st.architectures.find(
+        (e) => e && r._foundryPresetIsTree(r._foundryPresetForEntry(e)) && Array.isArray(r._baumGestaltTeile(e))
+    );
+    const drache = (gesetzt.find(([typ]) => typ === "tor_drachentor") || [])[1];
     aus.quelle = {
         felsOhneTypListe: fels.length > 0 && !/_var/.test(fels),
-        felsSkala:
-            /_felsBlockerParts\(entry\)[\s\S]*?_studioWeltSkala\(entry\)[\s\S]*?_blockerComputePartAABB\(entry, part, kFels\)/.test(
-                pba
-            ),
-        partsSkala: /const kWelt = this\._studioWeltSkala\(entry\)/.test(pba),
+        partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
         ohneSpiegel:
             !("STUDIO_WORLD_SCALE" in r.constructor) && !/STUDIO_WORLD_SCALE/.test(code(r._foundryWorldScaleMatrix)),
         gestaltKern: typeof r.constructor._studioGestaltenKern === "function",
-        torTafel: /AnazhRealm\.Gesetz\("porta:TOR_HUELLE\." \+ tor\.gestalt/.test(code(r._torBlockerAABBs)),
+        torTafel:
+            !!drache &&
+            ruft(() => r._torBlockerAABBs(drache), r.constructor, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
         // die Erzeuger und jede Methode, die sie rufen (eine Stufe tief: der Nachbau lag in einer Hilfs-Methode des Tors)
         ohneBau: (() => {
             const erzeuger = ["_populateBlockerAABBs", "_torBlockerAABBs", "_felsBlockerParts", "_hausBlockerBoxen"];

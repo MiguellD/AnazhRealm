@@ -2854,39 +2854,10 @@ class AnazhRealm_siedlung_satz {
             entry.userData = entry.userData || {};
             entry.userData.rauchQuelle = tip;
         } else if (opts.chimney === null) entry.chimney = null;
-        // KAMIN-RAUCH (.108): Solo-Haus (nicht Settlement-Slot) — Spitze aus
-        // __fachwerkCore.chimneyTipFromParams(studioOv). Fail-closed bei null
-        // (modern/round/kuppel). Nicht-haus_* erfindet keinen Rauch.
-        // DAS NEIN DES EXPORTS GILT (K69): ein Haus, dessen Plan (der Slot des Exports, der Save) „kein Kamin" sagt
-        // (`chimney: null`), baut seinen Kern nicht nach — `chimneyTipFromParams` rechnet den GANZEN Bau (`massBau`), um die
-        // Spitze zu finden. Bis K69 fiel das Nein des Slots auf undefined (`slot.chimney || undefined`): jedes Haus ohne Kamin
-        // (Kuppel, Rundbau) baute beim Gang ins Dorf sein Haus im Takt nach, 52 ms je Slot (Null-Renderer), an der Radeon
-        // 167 ms (`spawnArchitecture › MK`, die Hänger-Linse) — und beim Laden noch einmal.
-        if (entry.chimney === undefined) {
-            const hausPol = AnazhRealm.KIND_POLICY && AnazhRealm.KIND_POLICY.haus;
-            const isHaus =
-                (hausPol && typeof hausPol.prefix === "string" && String(type).startsWith(hausPol.prefix)) ||
-                String(type).startsWith("haus_");
-            if (isHaus) {
-                const core = globalThis.__fachwerkCore;
-                if (core && typeof core.chimneyTipFromParams === "function") {
-                    const bpTip = this.state.blueprints && this.state.blueprints[type];
-                    const ov =
-                        (opts.studioOv && typeof opts.studioOv === "object" && !Array.isArray(opts.studioOv)
-                            ? opts.studioOv
-                            : null) ||
-                        (entry.studioOv && typeof entry.studioOv === "object" ? entry.studioOv : null) ||
-                        (bpTip && bpTip.studioOv && typeof bpTip.studioOv === "object" ? bpTip.studioOv : null) ||
-                        {};
-                    const tip = core.chimneyTipFromParams(ov);
-                    if (tip && Number.isFinite(tip.x) && Number.isFinite(tip.y) && Number.isFinite(tip.z)) {
-                        entry.chimney = { x: +tip.x, y: +tip.y, z: +tip.z };
-                        entry.userData = entry.userData || {};
-                        entry.userData.rauchQuelle = entry.chimney;
-                    } else entry.chimney = null; // das gerechnete Nein reist durch den Save (`saveState`)
-                }
-            }
-        }
+        // KAMIN-RAUCH (.108): das Solo-Haus (nicht Settlement-Slot) kennt seine Spitze, wenn sein Haus steht — sie reist mit der
+        // Hülle aus dem Foundry-Worker (`__huelle.kamin`, gesetzt in `_hausHuelleSetzen`). Bis B3c baute der Wirt dafür das GANZE
+        // Haus im Haupt-Faden (`chimneyTipFromParams` → `massBau`, beim ersten Haus mit den Karten des Labors): die Portal-
+        // Vorschau hielt den kalten Boot vor dem ersten Weltbild 1,6–1,9 s (Radeon), jedes Haus der KI 150–160 ms.
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
         if (opts.autonomous === true) entry.autonomous = true;
@@ -2894,10 +2865,11 @@ class AnazhRealm_siedlung_satz {
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];
         if (bp) {
-            entry.affordances = this.computeBlueprintAffordances(bp);
+            const tags = this.computeCompoundTags(bp); // EINMAL je Spawn: Urteil und Stärke lesen dieselben Tags
+            entry.affordances = this.computeBlueprintAffordances(bp, tags);
             // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
-            entry.affordanceStrength = this.computeAffordanceStrength(bp);
+            entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die

@@ -43,45 +43,17 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── P: die Quell-Probe (der Promotions-Block walkt den Region-Fächer) ──
+    // ── F (Absenz): kein zweiter Keying-Ort — die Konstante hat höchstens drei Vorkommen (Definition + Key + T3-Kugel),
+    // der `s:`-Super-Key höchstens EINE Ableitung. Dass die Leser lesen, zeigen die Unit-, Kugel- und Diät-Proben im Boot.
     const src = stammLib.text(root);
-    const promoIdx = (stammLib.treffer(src, "_tickScatterStreaming", "baum-D2-Heilung") || { index: -1 }).index;
-    const promoBlock = promoIdx >= 0 ? src.slice(promoIdx, promoIdx + 1800) : "";
-    check(
-        "P: der Promotions-Block walkt ALLE geschnittenen Regionen (rx0..rx1 × rz0..rz1)",
-        /rx0/.test(promoBlock) && /rz1/.test(promoBlock) && /_promoteScatterCell/.test(promoBlock)
-    );
-    // ── F (Quelle): EIN Keying-Chokepoint, kein zweiter Ableitungs-Ort ──
-    // Die Konstante hat GENAU drei Code-Vorkommen: Definition + der eine ABLEITUNGS-
-    // Leser in _archFernRegionKey + der EINE RADIUS-Leser in _archRegionBundleFor (T3, K2 ohne Ersatz-Literal —
-    // die analytische Bundle-Cull-Kugel einer Super-Region skaliert mit S; sie LIEST
-    // die Konstante, LEITET aber keinen Key ab). Die Ableitungs-Einzigkeit prüft die
-    // eigene Probe darunter: der `s:`-Super-Key wird an GENAU EINER Stelle gebaut.
-    // (Probe gewandert in DAS FELD URTEILT [das-feld-zeichnet §2 Stufe 1]: vorkommen
-    // war schon VOR der Welle 5 — der T3-Kugel-Konsum fehlte der Zählung.)
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
-    // (Welle B: der platzierte Bau trägt kein p:-Präfix mehr — der Super-Key BEGINNT mit "s:")
     const fernDeriveSites = (src.match(/"s:" \+ Math\.floor/g) || []).length;
-    const gfK = stammLib.kopf(src, "_archInstanceGroupFor"); // am Namen (gate:apparat Klinge 3)
-    const gfIdx = gfK < 0 ? -1 : gfK + 5;
-    // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.14) sitzt zwischen
-    // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
-    const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 8000) : "";
     check(
-        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 3 Code-Vorkommen (Definition + _archFernRegionKey + der T3-Kugel-Radius-Leser)",
-        fernConstUses === 3 && stammLib.kopf(src, "_archFernRegionKey") >= 0,
+        "F(Absenz): kein vierter Leser von SCATTER_FERN_SUPERREGION",
+        fernConstUses <= 3,
         `vorkommen=${fernConstUses}`
     );
-    check(
-        "F(Quelle): der `s:`-Super-Key wird an GENAU EINER Stelle abgeleitet (_archFernRegionKey)",
-        fernDeriveSites === 1,
-        `ableitungen=${fernDeriveSites}`
-    );
-    check(
-        "F(Quelle): der Keying-Chokepoint mappt VOR dem Gruppen-Key (_archFernRegionKey zuerst)",
-        gfHead.indexOf("this._archFernRegionKey(") >= 0 &&
-            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("const basis = ")
-    );
+    check("F(Absenz): kein zweiter Ableitungs-Ort des `s:`-Super-Keys", fernDeriveSites <= 1, `ableitungen=${fernDeriveSites}`);
 
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
@@ -133,6 +105,18 @@ function check(name, ok, detail) {
         }
         res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
+        // ── P: die Promotion erreicht eine Zelle jenseits der Region-Grenze (nah 0,85·pr in der Nachbar-Region), die ferne
+        // (1,7·pr) nie; Streuen und Räumen schweigen, der Sprung nach Region 950 lässt den echten Ring stehen.
+        {
+            const SC = r.constructor.SCATTER, regM = SC.regionM, pr = SC.promoteM, K = 950, map = r.state.scatterRegions;
+            const ecke = (d) => (K + 1) * regM + pr * d, zelle = (d) => ({ x: ecke(d), z: ecke(d), slots: [], promotable: true, layer: "tree" });
+            const nah = zelle(0.3), weit = zelle(0.9), key = K + 1 + "," + (K + 1), gesehen = [];
+            map.set(key, { regX: K + 1, regZ: K + 1, cells: [nah, weit] });
+            r._promoteScatterCell = (c) => (gesehen.push(c), false);
+            r._streuRegionInReichweite = r._disposeScatterRegion = () => false;
+            try { r._tickScatterStreaming({ x: ecke(-0.3), y: 0, z: ecke(-0.3) }); } finally { delete r._promoteScatterCell; delete r._streuRegionInReichweite; delete r._disposeScatterRegion; map.delete(key); }
+            res.p = gesehen.includes(nah) && !gesehen.includes(weit);
+        }
         if (!cells) return res;
         // Eine lebende Zelle suchen (Schicht-agnostisch — der Tick trägt alle
         // Schichten; im Null-Renderer deferrieren Baum-Fernstufen [kein RTT] →
@@ -380,6 +364,16 @@ function check(name, ok, detail) {
                 r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "7,9") === "7,9" &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, "s:1,2") === "s:1,2";
+            // Die T3-Kugel liest die Konstante: mit verstelltem Hebel (3) misst die Super-Region-Kugel 3 Regionen, die Region eine.
+            {
+                const M = AR.ARCH_REGION_M;
+                let bS;
+                AR.SCATTER_FERN_SUPERREGION = 3;
+                try { bS = r._archRegionBundleFor("s:9001,9001"); } finally { AR.SCATTER_FERN_SUPERREGION = S0; }
+                const b1 = r._archRegionBundleFor("9001,9001"), rad = (b) => b && b.userData.cullSphere && b.userData.cullSphere.radius;
+                fern.kugel = Math.abs(rad(bS) - (M * 3 * Math.SQRT1_2 + 140)) < 1e-6 && Math.abs(rad(b1) - (M * Math.SQRT1_2 + 140)) < 1e-6;
+                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
+            }
             // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
             let flat = null,
@@ -532,6 +526,7 @@ function check(name, ok, detail) {
 
     console.log("=== V18.464 SCATTER-LOD — der Fernwald folgt der LIVE-Distanz ===");
     check("Boot + Scatter-Zellen gebaut", out.boot && out.cells > 40, `zellen=${out.cells}`);
+    check("P: die Promotion erreicht die Zelle jenseits der Region-Grenze (0,85·pr), die ferne (1,7·pr) nie", out.p === true);
     check("Probe-Zelle gefunden", out.probeGefunden === true);
     if (out.l) {
         check(
@@ -581,6 +576,7 @@ function check(name, ok, detail) {
             out.f.unit === true,
             out.f.err || ""
         );
+        check("F: die T3-Kugel liest die Konstante (Hebel 3 → Radius über 3 Regionen, die Region über eine)", out.f.kugel === true, out.f.err || "");
         check("F: Gras-Fernstufe + strauch-Karte über die echte Pipe (lod=2)", out.f.flat === true, out.f.err || "");
         const K = out.f.karten || {};
         check(

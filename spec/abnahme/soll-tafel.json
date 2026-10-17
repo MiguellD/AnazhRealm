@@ -252,9 +252,11 @@
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
                 "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
-                "mangel": {
+                "geheilt": {
                     "befund": "Laub-Karten mit Dither-Muster",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
+                    "warum": "zweiton 0,0002 → 0 (Radeon 890M, Tafel-Pose, A8-Bühne: integ-probe 6fbf4a6f 251 px im Raster; Kopf laub-zeit in drei Welten 0 px bei fester Uhr, bei vier Wanduhr-Zeiten 0–27 px): die Deckung jeder Laub-Karte wandert je Frame um ±1 Eingangs-Pixel (Halton 5/7 am Frame der Geschichte, je Pixel um sein IGN gedreht), und der Resolve mittelt sie, wo sein Deckungs-Gedächtnis eine stochastische Kante kennt, statt sie zu klemmen (A3b, `_zeitAufloesung`)",
+                    "bildPaar": ["artifacts/soll-tafel/laub-vorher.png", "artifacts/soll-tafel/laub.png"]
                 }
             },
             "referenz": [
@@ -288,10 +290,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T01:07:18.726Z",
+                    "datum": "2026-10-17T03:53:55.807Z",
                     "stand": {
-                        "version": "18.546.9",
-                        "sha": "cbc222cc8629c4bc02983e44c8a808b7daa2d2fa+geaendert"
+                        "version": "18.546.11",
+                        "sha": "a43c87728141ef57dec6ab66c7e2ac107dfb6c03"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -304,42 +306,42 @@
                     "rauschen": {
                         "anteil": 0,
                         "pixel": 0,
-                        "max": 0
+                        "max": 1
                     },
-                    "misch": 159570,
+                    "misch": 195453,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4294,"sp":[372,0,0,598866.01,598866.01,257182.88],"zweiton":0.0001,"zt":20,"weiss":0.013,"wt":3271,"wtZiel":null,"bunt":25.31,"pixel":252575,"deckung":0.1218,"deckungUnten":0.004,"luma":74.27,"kontrast":0.5629,"detail":0.1161,"nyquist":0.1466,"ek":937740.4,"eg":5457347,"silhouette":141.5568,"kante":0.1832,"kr":27351},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0014,"zt":95,"weiss":0.1218,"wt":8441,"wtZiel":null,"bunt":15.5,"pixel":69279,"deckung":0.0334,"deckungUnten":0,"luma":84.19,"kontrast":0.6023,"detail":0.1768,"nyquist":0.1637,"ek":737909.5,"eg":3769503.1,"silhouette":68.1436,"kante":0.1502,"kr":10711},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1989,"sp":[527,0,0,755277.74,755277.74,150251.82],"zweiton":0.0009,"zt":279,"weiss":0.0165,"wt":4838,"wtZiel":null,"bunt":24.74,"pixel":293822,"deckung":0.1417,"deckungUnten":0.0047,"luma":72.08,"kontrast":0.572,"detail":0.1306,"nyquist":0.1578,"ek":1495411.3,"eg":7981021.9,"silhouette":102.3737,"kante":0.1526,"kr":30172},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.1054,"sp":[3335,0,0,3822041.19,3822041.19,-402751.25],"zweiton":0.0002,"zt":67,"weiss":0.0018,"wt":775,"wtZiel":null,"bunt":30.06,"pixel":425806,"deckung":0.2053,"deckungUnten":0.0642,"luma":67.22,"kontrast":0.5332,"detail":0.0813,"nyquist":0.111,"ek":686431.5,"eg":5496153.8,"silhouette":87.6133,"kante":0.3876,"kr":17703}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4732,"sp":[451,0,0,724311.95,724311.95,342750.69],"zweiton":0,"zt":0,"weiss":0.0141,"wt":3612,"wtZiel":null,"bunt":24.36,"pixel":256618,"deckung":0.1238,"deckungUnten":0.0045,"luma":73.24,"kontrast":0.5627,"detail":0.1098,"nyquist":0.1288,"ek":559538.4,"eg":3785432.1,"silhouette":126.1768,"kante":0.1997,"kr":22373},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1577,"wt":11221,"wtZiel":null,"bunt":13.72,"pixel":71161,"deckung":0.0343,"deckungUnten":0,"luma":91.98,"kontrast":0.5976,"detail":0.1675,"nyquist":0.1263,"ek":408466.1,"eg":2825860.7,"silhouette":55.7429,"kante":0.1762,"kr":8458},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.0919,"sp":[670,0,0,913363.67,913363.67,83910.57],"zweiton":0,"zt":0,"weiss":0.0186,"wt":5448,"wtZiel":null,"bunt":23.93,"pixel":292995,"deckung":0.1413,"deckungUnten":0.0045,"luma":74.62,"kontrast":0.5693,"detail":0.1289,"nyquist":0.1319,"ek":890316.7,"eg":5860308.1,"silhouette":87.4928,"kante":0.1624,"kr":23192},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0035,"sp":[3578,0,0,4157750.64,4157750.64,-14482],"zweiton":0,"zt":0,"weiss":0.0019,"wt":958,"wtZiel":null,"bunt":29.34,"pixel":506318,"deckung":0.2442,"deckungUnten":0.1156,"luma":65.88,"kontrast":0.5125,"detail":0.0847,"nyquist":0.0987,"ek":485634.8,"eg":4436666.4,"silhouette":76.4883,"kante":0.3811,"kr":16150}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
                         "phyto-core.js": "c:6cf8df94e3dac37e",
-                        "foundry-core.js": "c:3b21a4161089ec4f",
-                        "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
+                        "foundry-core.js": "c:6e8cf71a446dd765",
+                        "stamm/dirigent-kern.js": "c:0ece81ae293d4bb5",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
-                        "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                        "stamm/stoff-material.js": "c:d13f1ee108ed0513",
-                        "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                        "stamm/studio-bruecke.js": "c:c02ee558d706f68f",
+                        "stamm/wasser-zellen.js": "c:56c61979ee32c817",
+                        "stamm/stoff-material.js": "c:ad842b85101e6672",
+                        "stamm/stoff-instanz.js": "c:60a4fbdb979312c7",
+                        "stamm/studio-bruecke.js": "c:1f19ebde32f1e855",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
-                        "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                        "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
-                        "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
-                        "stamm/bild-kosten.js": "c:f0f700bdda342ece",
+                        "stamm/siedlung-ort.js": "c:01a8c9f5f4ca0e5d",
+                        "stamm/siedlung-bauten.js": "c:ce252bcd0a4e5154",
+                        "stamm/vegetation-baum.js": "c:337b8bcd8e5fcc2e",
+                        "stamm/bild-kosten.js": "c:ad2b729bb30c87b4",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
                         "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
                         "stamm/feld-leben.js": "c:1700a002085d75ae",
                         "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
                         "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
-                        "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
-                        "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                        "stamm/dirigent-takt.js": "c:5f44e427c1ac002d",
+                        "stamm/dirigent-ankunft.js": "c:8582924a3a670618"
                     }
                 }
             },
@@ -358,11 +360,9 @@
             "titel": "Laub-Silhouette (der Umriss der Kronen gegen Himmel, Boden und Holz: Karten L0/L1 und Karte L2)",
             "wirkung": {
                 "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig (geteilt aus laub, K68-n2)",
-                "geheilt": {
-                    "befund": "Nadelbaum-Karten groß und kantig",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
-                    "warum": "kante 0,333 → 0,210 (Radeon 890M, Tafel-Pose, umstellen · fenster 1920 × 1080 · bild --w/--h, je zwei Schüsse, Basis a9e21f17 und Kopf a501cbd1 in derselben Folge; Fichte L1 0,262 → 0,186 · Tanne L0 0,581 → 0,190 · Tanne L1 0,300 → 0,172 · Karte L2 0,364 → 0,338): die Wedel-Zelle ist ein Fichten-Zweig aus Fischgräten (9 Unter-Zweiglein, Nadel 9 px) mit Himmel dazwischen bis Mip 2, die Karte wird nie quer gestreckt (Spalten ab wedel.spalte 1,25/1,5 × Stück-Länge; vorher L0 2,3–6,5 × so breit wie lang) und das Kreuz öffnet auf ±40° (vorher ±10°/±5°: von unten standen die Karten auf der Kante)",
-                    "bildPaar": ["artifacts/soll-tafel/laub-kante-vorher.png", "artifacts/soll-tafel/laub-kante.png"]
+                "mangel": {
+                    "befund": "die Karte L2 mit gerader Kante: fimp:atlas:L2 kante 0,37–0,38 auf 23 % des Rands, ohne sie 0,18 (die Nadel-Karten L0/L1 halten seit a501cbd1)",
+                    "quelle": "A3b laub-zeit (Radeon 890M, Tafel-Pose, A8-Bühne, drei Welten, feste Uhr und vier Wanduhr-Zeiten) — der Bake der Karte gehört A7 karten-krone"
                 }
             },
             "referenz": [

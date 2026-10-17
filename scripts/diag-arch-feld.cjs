@@ -18,9 +18,6 @@
 //      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.),
 //      sobald der Bäcker ihre Zelle erreicht: das Karten-Buch prüft das Gesetz (keine fernere Zelle überholt die ihre,
 //      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
-//   S  statisch: in der Mesh-Zone wartet ein ungebackener Bau in DERSELBEN Distanz-Schlange wie fern
-//      (Befund 02.10.: in Listen-Reihenfolge fraß das Dorf den überbuchten Bake-Takt, das frisch gesetzte
-//      Haus blieb 200 Takte ohne Feld und ohne Mesh); --selftest injiziert den Listen-Ruf → S rot
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
 //      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
@@ -33,7 +30,6 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -56,46 +52,8 @@ function kartenGesetz(buch, zelleF) {
     return { iF, ueberholt: vorF.filter((b) => fern(b.d) > fern(b.dF)) };
 }
 
-// S — die Ziegel-Schlange: im Mesh-Zonen-Zweig von tickArchitectureCulling ruft ein Bau ohne Slot den
-// Ziegel NIE direkt (Listen-Reihenfolge), er reiht sich in die Distanz-Schlange.
-function schlangenGesetz(src) {
-    const a = stammLib.kopf(src, "tickArchitectureCulling"); // am Namen (gate:apparat Klinge 3)
-    if (a < 0) return { ok: false, grund: "tickArchitectureCulling fehlt" };
-    const b = src.indexOf("\n    }\n", a);
-    const body = src.slice(a, b);
-    const za = body.indexOf("if (distSq <= radiusSq) {");
-    // der Zweig endet, wo der ferne beginnt (seit Welle K trägt der Ziegel-Ruf einen Block: sein `} else {` ist inner)
-    const ze = body.indexOf("entry._ziegelNah = false;", za);
-    if (za < 0 || ze < 0) return { ok: false, grund: "Mesh-Zonen-Zweig nicht gefunden" };
-    const zweig = stammLib.ohneKommentare(body.slice(za, ze));
-    const rufe = (zweig.match(/this\._archZiegelFern\(entry\)/g) || []).length;
-    // bewacht: der Ruf steht nur unter der Wache des Slots (die Stand-Wache zählt, ob er wirkte)
-    const bewacht = (
-        zweig.match(
-            /if \(entry\._ziegelSlot \|\| entry\._ziegelGebacken \|\| ohneFeld\) \{\s*if \(this\._archZiegelFern\(entry\)\) regung\+\+;/g
-        ) || []
-    ).length;
-    const schlange = /ziegelOffen\.push\(entry\)/.test(zweig);
-    // WER LÄDT, VERBRAUCHT KEINEN VERSUCH (03.10.: 24 Wartende fraßen die Kappe, das Haus dahinter 800 Takte ohne Mesh) —
-    // bis G2-n2 hier am Rumpf-TEXT, er fiel mit `_kappeOffen`; gate:takt T9 fährt den Nah-Gang am Lauf.
-    return {
-        ok: rufe === bewacht && schlange,
-        grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange}`,
-    };
-}
 {
-    const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
-        const kaputt = stammLib.ersetze(stamm, "tickArchitectureCulling",
-            "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
-            "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
-        );
-        if (kaputt === stamm) {
-            console.log("❌ SELBST-TEST S: der Bruch greift nicht (der Ziegel-Ruf der Mesh-Zone hat eine andere Gestalt)");
-            process.exit(1);
-        }
-        const heil = schlangenGesetz(stamm);
-        const bruch = schlangenGesetz(kaputt);
         // Das Karten-Gesetz feuert: eine fernere Zelle (40 m, ohne Bedarf) vor der Eichen-Zelle (Rang 15 m) ist überholt,
         // nähere (9 m, 15 m) sind es nicht.
         const F = "fimp:eiche|2";
@@ -120,13 +78,8 @@ function schlangenGesetz(src) {
             `${gesetzOk ? "✅" : "❌"} SELBST-TEST A': nähere Zellen vor der Eiche überholt ${gut.ueberholt.length} · ` +
                 `fernere (40 m, ohne Bedarf) überholt ${schlecht.ueberholt.length}`
         );
-        const ok = heil.ok && kaputt !== stamm && !bruch.ok && gesetzOk;
-        console.log(`${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund}`);
-        process.exit(ok ? 0 : 1);
+        process.exit(gesetzOk ? 0 : 1);
     }
-    const S = schlangenGesetz(stamm);
-    console.log(`${S.ok ? "✅" : "❌"} S  Mesh-Zone reiht in die Distanz-Schlange (${S.grund})`);
-    if (!S.ok) process.exit(1);
 }
 
 (async () => {

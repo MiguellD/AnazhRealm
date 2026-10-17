@@ -17,9 +17,8 @@
 //   (c) SELBSTTEST IM FRAME — je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` (`__zielSchmuggel`): jeder
 //       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus. Dazu (0910-3 B) ein eigenes
 //       64-bit-Ziel, das sich für die Dauer als Szenen-Ziel ausweist (`__zielAusgabe`): AUSGABE-FORMAT nennt es beim Namen.
-//   (r) DIE RUNDUNG DES AUSGABE-ZIELS (0910-3 B). Quelle: das Szenen-Bild wird in der Post-Kette genau EINMAL abgetastet, in
-//       `bild` mit dem Ausgleich (`.mul(u.ausgabeAusgleich)`), das Uniform liest den Vektor der Sonde, `_ausgabeFormat` ruft
-//       die Sonde. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
+//   (r) DIE RUNDUNG DES AUSGABE-ZIELS (0910-3 B). Quelle (Absenz): das Szenen-Bild wird in der Post-Kette höchstens EINMAL
+//       abgetastet. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
 //       Blau 1 + 2⁻⁶ · 1/(2 ln 2); zum nächsten: 1), die Post-Kette liest DENSELBEN Vektor und VERBRAUCHT ihn (×2 hebt das
 //       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
@@ -41,28 +40,11 @@ const AUSGLEICH_NULL = [1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64];
 // So weit muss der Ausgleich ×2 das Mittel des Ausgabe-Bilds heben (Luma-Stufen), sonst liest die Post-Kette ihn nicht.
 const VERBRAUCH_MIN = 3;
 
-// (r) DIE QUELL-WAND DER RUNDUNG (rein, Node): jede Abtastung des Szenen-Bilds trägt den Ausgleich.
+// (r) DIE QUELL-WAND DER RUNDUNG (rein, Node, Absenz): keine zweite Abtastung des Szenen-Bilds umgeht den Ausgleich. Dass
+// `bild` ihn trägt, das Uniform den Vektor der Sonde liest und die Sonde lief, misst die Rundungs-Probe am Bild.
 function rundungQuelle(src) {
-    const b = [];
-    const methode = (name) => {
-        const i = src.indexOf(`\n    ${name}(`);
-        if (i < 0) return null;
-        const j = src.indexOf("\n    }\n", i);
-        return j < 0 ? null : src.slice(i, j);
-    };
-    const post = methode("_ensurePostProcessing");
-    if (!post) b.push("_ensurePostProcessing fehlt");
-    else {
-        if (!/const bild = \(uv\) => sceneColor\.sample\(uv\)\.rgb\.mul\(u\.ausgabeAusgleich\)/.test(post))
-            b.push("die Abtastung des Szenen-Bilds (`bild`) trägt den Ausgleich nicht (`.mul(u.ausgabeAusgleich)`)");
-        const n = (post.match(/sceneColor\.sample\(/g) || []).length;
-        if (n !== 1) b.push(`das Szenen-Bild wird ${n}× abgetastet — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`);
-        if (!/ausgabeAusgleich: uniform\(this\.state\._ausgabeAusgleich/.test(post))
-            b.push("das Uniform `ausgabeAusgleich` liest nicht den Vektor der Sonde (`state._ausgabeAusgleich`)");
-    }
-    const fmt = methode("_ausgabeFormat");
-    if (!fmt || !/this\._ausgabeSonde\(/.test(fmt)) b.push("`_ausgabeFormat` ruft die Sonde nicht (`_ausgabeSonde`)");
-    return b;
+    const n = ((stammLib.rumpf(src, "_ensurePostProcessing") || "").match(/sceneColor\.sample\(/g) || []).length;
+    return n > 1 ? [`das Szenen-Bild wird ${n}× abgetastet — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`] : [];
 }
 
 // Das Urteil der Wand über einen Lauf (rein).
@@ -171,19 +153,17 @@ function selbsttest() {
         if (!ok) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${f.name}" → ${v.join(" · ") || "(grün)"}`);
     }
-    // die Quell-Wand am Stamm: grün; der Ausgleich entfernt, eine zweite Abtastung, die Sonde nicht gerufen → rot
+    // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
     const stamm = stammLib.text(require("path").join(__dirname, ".."));
     const q0 = rundungQuelle(stamm);
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
     console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
     const quellFaelle = [
-        { name: "Ausgleich entfernt", src: stammLib.ersetze(stamm, "_ensurePostProcessing", ".rgb.mul(u.ausgabeAusgleich)", ".rgb"), muss: /trägt den Ausgleich nicht/ },
         {
             name: "zweite Abtastung am Ausgleich vorbei",
             src: stammLib.ersetze(stamm, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
             muss: /2× abgetastet/,
         },
-        { name: "Sonde nicht gerufen", src: stammLib.ersetze(stamm, "_ausgabeFormat", "this._ausgabeSonde(dev);", ""), muss: /ruft die Sonde nicht/ },
     ];
     for (const q of quellFaelle) {
         if (q.src === stamm) {
@@ -334,7 +314,7 @@ function rundungProbe() {
             for (const [k, rt] of ziele) {
                 A.copy(alt).multiplyScalar(k);
                 rend.setOutputRenderTarget(rt);
-                r._loopRender(performance.now() / 1000);
+                r._loopRender(); // zur Bild-Uhr (A9)
             }
             aus.einFrame = nf.frameId === f0;
             for (const [, rt] of ziele) {

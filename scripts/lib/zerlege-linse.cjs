@@ -191,7 +191,7 @@ function bankRunde(n) {
             const c0 = performance.now();
             if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
             r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
-            r._loopRender(performance.now() / 1000);
+            r._loopRender();
             cpu += performance.now() - c0;
         }
         const tAb = performance.now();

@@ -437,7 +437,6 @@ function lauf(k) {
             // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
             // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
             const ruheZustand = () => {
-                const f = r._foundry;
                 const z = typeof r._impostorCensus === "function" ? r._impostorCensus() || {} : {};
                 const pm = st.playerMesh.position;
                 const R2 = (st.architectureCullingRadius || 0) ** 2;
@@ -449,10 +448,7 @@ function lauf(k) {
                 }
                 return {
                     chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                    foundry:
-                        (f && f.pending ? f.pending.size : 0) +
-                        (f && f.warte ? f.warte.length : 0) +
-                        (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0),
+                    foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
                     karten:
                         (r._impostorBakeQueue || []).length + (z.wartend || 0),
                     meshOffen: offen,
@@ -1069,35 +1065,29 @@ async function starte() {
                 }
                 if (o && o.kamera) r.setCameraMode(o.kamera);
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-                let stabil = 0,
-                    last = -1,
-                    takte = 0;
-                const dl = performance.now() + 150000;
-                while (performance.now() < dl) {
-                    try {
-                        window.__buehne();
-                        window.__ortSchritt();
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                    takte++;
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    if (sz === last) stabil++;
-                    else {
-                        stabil = 0;
-                        last = sz;
+                // eingeschwungen, wenn DIE WELT STEHT (A9, `_weltSteht`: nichts baut, keine Regung seit WELT_STEHT_TAKTE Takten)
+                // und der Ring an seinem Ziel gebaut ist — in Takten gezählt, die Frist ist nur die Wand. Der Ort schwingt unter
+                // REGLER VOLL ein (die Bedingung der Messung, E): der Ring wächst bis an sein Ziel, nie nach der Last der Nachbarn
+                // auf der geteilten GPU (A9, Mess-Wiese: Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
+                const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
+                const decke = r.state.perfTargetMs;
+                r.state.perfTargetMs = 1000;
+                let takte = 0;
+                try {
+                    for (const dl = performance.now() + 150000; performance.now() < dl; takte++) {
+                        try {
+                            window.__buehne();
+                            window.__ortSchritt();
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                        if (r._weltSteht() && r._builtRingRadius() >= ziel) break;
+                        await sleep(50);
                     }
-                    // Ein Toggle-Ort ruht erst, wenn der gebaute Ring sein Ziel erreicht und kein Chunk mehr im Bau ist.
-                    const ruht =
-                        !stell ||
-                        ((!stell.ring || r._builtRingRadius() >= stell.ring) &&
-                            !(r.state.voxelMeshPending && r.state.voxelMeshPending.size > 0));
-                    if (takte >= 40 && stabil >= 15 && ruht) break;
-                    await sleep(50);
+                } finally {
+                    r.state.perfTargetMs = decke;
                 }
-                if (stell && stell.ring && r._builtRingRadius() < stell.ring)
-                    throw new Error(
-                        `Messort ${o.ort}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${stell.ring}`
-                    );
+                if (!(r._builtRingRadius() >= ziel))
+                    throw new Error(`Messort ${o ? o.ort : `${x} ${z}`}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${ziel}`);
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
                 const q = r._autoSettlementQueue;
@@ -1109,7 +1099,8 @@ async function starte() {
                         : null;
                 return {
                     takte,
-                    chunks: last,
+                    steht: r._weltSteht(),
+                    chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
                     gier: +r.state.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
                     ortTakt: window.__ortTakt,

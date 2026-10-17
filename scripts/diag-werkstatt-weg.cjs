@@ -601,8 +601,8 @@ async function probe(argW) {
             }
             return false;
         };
-        // der Schwellen-Knoten des Laubs liest die Zahl seines Stoffs (das Phantom erbt nie 0,5, K68-N1)
-        m.konsum = { "_laubSchwelle → materialAlphaTest": liest(r._laubSchwelle(THREE.TSL), THREE.TSL.materialAlphaTest) };
+        // kein Stoff der Szene trägt einen Schwellen-Knoten: die Zahl regiert den Schnitt (das Phantom erbt nie 0,5, K68-N1; A3)
+        m.konsum = { "Stoff → alphaTest": ((n) => (st.scene.traverse((o) => (n += o.material && o.material.alphaTestNode ? 1 : 0)), n === 0))(0) };
         const toenung = (phantom) => {
             const t = r._phantomTintU || null;
             let stoffe = 0;
@@ -1354,7 +1354,7 @@ async function probe(argW) {
                 },
             },
             werke: { Haus: 1, GT: 1 },
-            konsum: { "_laubSchwelle → materialAlphaTest": true },
+            konsum: { "Stoff → alphaTest": true },
             geraet: { name: "klinge_spitzhacke", zeile: "Spitzhacke: fehlt 12× eisen — sammeln", inHand: false },
             phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             phantomOhneMaterial: "rot",
@@ -1447,9 +1447,9 @@ async function probe(argW) {
                 "auf der Lichtung steht 1 Eiche",
             ],
             [
-                "der Schwellen-Knoten des Laubs ohne die Zahl des Stoffs (K68-N1)",
-                Object.assign({}, gesundG, { konsum: { "_laubSchwelle → materialAlphaTest": false } }),
-                "Konsum: _laubSchwelle → materialAlphaTest",
+                "ein Stoff mit Schwellen-Knoten statt der Zahl (K68-N1)",
+                Object.assign({}, gesundG, { konsum: { "Stoff → alphaTest": false } }),
+                "Konsum: Stoff → alphaTest",
             ],
             [
                 "grün ohne Material (Auflage 2 der zweiten Gegenprüfung)",

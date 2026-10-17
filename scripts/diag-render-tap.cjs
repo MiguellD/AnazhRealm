@@ -11,37 +11,15 @@
 // nicht die Wachsamkeit): ein Fake-Info-Objekt mit EXAKTER r184-Semantik wird dem
 // EINEN Tap untergeschoben (SICHERN+WIEDERHERSTELLEN, die Gate-Hook-Lehre) — liest
 // je wieder ein Konsument den Lebenszeit-Zähler, wächst seine Zahl mit der Session
-// und diese Invarianten werden rot. Dazu statisch: KEIN Render-Linsen-Skript liest
-// `.calls` nackt (drawCalls-first), der Flugschreiber trägt das version-Feld
-// (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
+// und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
+// am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
-
-const root = path.resolve(__dirname, "..");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const server = statikServer();
 
-// Der STATISCHE Teil liest den Stamm ohne Kommentare (die V18.267-Falle: Kommentare zitieren die Muster wörtlich).
-const stripComments = stammLib.ohneKommentare;
-
 (async () => {
-    const staticChecks = [];
-    {
-        // Der Flugschreiber trennt vergiftete Alt-Traces: der Perf-Payload trägt `version:`
-        // (≥ V18.427 = geheilte Traces) + sein drawCalls-Feld liest die (bounded) sense-Zahl,
-        // nie ein rohes info-Objekt. Anker = das eindeutige drawCalls-Feld, version davor.
-        const nc = stripComments(stammLib.text(root));
-        const dcIdx = (stammLib.treffer(nc, "_flightRecorderBuildTrace", /drawCalls:\s*Math\.round\(s\.renderCalls/) || { index: -1 }).index;
-        const before = dcIdx >= 0 ? nc.slice(Math.max(0, dcIdx - 2500), dcIdx) : "";
-        staticChecks.push({
-            name: "Flugschreiber: version-Feld im Perf-Payload (trennt vergiftete Alt-Traces) + drawCalls aus der sense-Zahl",
-            pass: dcIdx >= 0 && /version:\s*AnazhRealm\.VERSION/.test(before),
-        });
-    }
-
     // REAL_RENDERER=1 → der ECHTE Vendor (swiftshader) statt des Fake-Vertrags: liest
     // renderer.info.render.drawCalls über N Frames und prüft NICHT-Monotonie (der
     // Lebenszeit-Detektor am echten r184-Info — die nightly Light-Real-Hälfte; der
@@ -156,12 +134,6 @@ const stripComments = stammLib.ohneKommentare;
                 st.renderer.info = orig; // WIEDERHERSTELLEN (die Gate-Hook-Lehre)
             }
             o.infoRestored = st.renderer.info === orig;
-            // der EINE Tap, kommentar-gestrippt: drawCalls-first (die Probe kann nicht
-            // am erklärenden Kommentar vakuös grün werden — die V18.267-Klasse)
-            const codeOf = window.__codeOf;
-            const lr = codeOf(r._loopRender);
-            o.tapDrawCallsFirst =
-                lr.includes("render.drawCalls") && lr.indexOf("render.drawCalls") < lr.indexOf("render.calls");
             return o;
         });
     } catch (e) {
@@ -205,14 +177,9 @@ const stripComments = stammLib.ohneKommentare;
             pass: out.senseIsScalar === true,
         },
         {
-            name: "der EINE Tap ist drawCalls-first (kommentar-gestrippt — kein vakuöses Grün am Kommentar)",
-            pass: out.tapDrawCallsFirst === true,
-        },
-        {
             name: "das echte renderer.info ist WIEDERHERGESTELLT (die Gate-Hook-Lehre)",
             pass: out.infoRestored === true,
         },
-        ...staticChecks,
     ];
     console.log("\n=== Render-Tap-Wahrheits-Wand (r184: calls=Lebenszeit · drawCalls=pro Frame) ===");
     let fails = 0;

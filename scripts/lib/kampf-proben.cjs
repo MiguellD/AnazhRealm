@@ -36,12 +36,23 @@ async function WELLE_L() {
         swing: r._beginPlayerSwing,
         dsl: r.dslRun,
         damagePlayer: r.damagePlayer,
+        roh: r._kampfRohSchaden,
     };
     let T = 50000; // die Anzeige-Uhr der Probe (Kamera + Schwung), synthetisch
     const treff = [];
     const juice = [];
     const zaehl = { schwung: 0, carve: 0, fill: 0, gegenwehr: 0 };
+    // (T7c) der Roh-Spion: ein Schaden im Namen des Spielers IST der Rückgabewert des EINEN Roh-Schaden-Gesetzes, sonst
+    // nennt rohTat den Rufer (Laufzeit-Marke statt Rumpf-Text, Lehre 6)
+    let roh = null;
+    const rohTat = [];
+    r._kampfRohSchaden = function (...a) {
+        return (roh = orig.roh.apply(this, a));
+    };
     r.damageCreature = function (c, amount, opts) {
+        if (opts && opts.source === "player" && roh !== amount)
+            rohTat.push(String(new Error().stack).split("\n")[2].trim().split(" ")[1]);
+        roh = null;
         const res = orig.damageCreature.call(this, c, amount, opts);
         const st0 = opts && opts.stoss;
         treff.push({
@@ -165,8 +176,7 @@ async function WELLE_L() {
             c.updateMatrixWorld(true);
             const tb = c.userData._tierBaum;
             const o = teil && tb && tb.teile && tb.teile[teil];
-            if (o) return o.getWorldPosition(V3());
-            return new THREE.Box3().setFromObject(c).getCenter(V3());
+            return o ? o.getWorldPosition(V3()) : r._leibMitte(c, V3());
         };
         const schwung = () => {
             p._swing = null;
@@ -608,7 +618,8 @@ async function WELLE_L() {
             try {
                 for (let i = 0; i < 20; i++) {
                     stelle(c, 1.6);
-                    r.damageCreature(c, 5, {
+                    // der Reiz der Probe am Original vorbei (kein Waffen-Pfad — der Roh-Spion zählt nur, was das Spiel schlägt)
+                    orig.damageCreature.call(r, c, 5, {
                         source: "player",
                         fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
                         knockback: 16,
@@ -784,41 +795,25 @@ async function WELLE_L() {
                 w.c.s6 = w.z.s6.ok === false;
             }
         }
-        // (T7c) die KLASSE der Waffen-Schadens-Pfade: jede Methode, die ein Wesen im Namen des Spielers schädigt
-        // (damageCreature mit source "player"), rechnet ihren Schaden im EINEN Roh-Schaden-Gesetz _kampfRohSchaden —
-        // kein Pfad setzt Kraft × Wirkung × Zone selbst zusammen (der Pfeil tat es, ohne Verschleiß).
+        // (T7c) die KLASSE der Waffen-Schadens-Pfade: jeder Schaden im Namen des Spielers (Hieb und Pfeil trafen oben) IST der
+        // Rückgabewert des EINEN Roh-Schaden-Gesetzes _kampfRohSchaden — kein Pfad setzt Kraft × Wirkung × Zone selbst
+        // zusammen (der Pfeil tat es, ohne Verschleiß). Die Zugehörigkeit trägt der Roh-Spion, nie der Rumpf-Text.
         {
-            const klasse = () => {
-                const tat = [];
-                const pfade = [];
-                for (const k of Object.getOwnPropertyNames(A.prototype)) {
-                    const d = Object.getOwnPropertyDescriptor(A.prototype, k);
-                    if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
-                    const code = window.__codeOf(d.value);
-                    if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
-                    pfade.push(k);
-                    if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
-                }
-                return { pfade, tat };
-            };
-            const kl = klasse();
-            w.z.schadensPfade = kl.pfade.join(",");
-            w.z.schadensZwillinge = kl.tat.join(",") || "–";
-            w.c.einRohSchaden = kl.pfade.length >= 2 && kl.tat.length === 0;
-            // (S7) SELBST-TEST mit dem Täter: ein Waffen-Pfad, der seinen Schaden selbst zusammensetzt (die Pfeil-Zeile
-            // von d1ab1c64 wörtlich, als Wurf verkleidet) — die Klassen-Linse muss ihn beim Namen nennen
-            A.prototype.__taeterWurf = function (hit, pf, urteil) {
-                return this.damageCreature(hit, pf.kraft * this._trefferWirkung(urteil) * urteil.zoneMul, {
-                    source: "player",
-                });
+            w.z.schadensPfade = treff.filter((t) => t.src === "player").length + " Spieler-Treffer";
+            w.z.schadensZwillinge = rohTat.join(",") || "–";
+            w.c.einRohSchaden = treff.filter((t) => t.src === "player").length >= 2 && rohTat.length === 0;
+            // (S7) SELBST-TEST mit dem Täter zur Laufzeit: ein Wurf, der seinen Schaden selbst setzt — der Spion nennt ihn
+            const n7 = rohTat.length;
+            r.__taeterWurf = function __taeterWurf(c) {
+                return this.damageCreature(c, 7, { source: "player" });
             };
             try {
-                const kt = klasse();
-                w.z.s7 = kt.tat.join(",") || "–";
-                w.c.s7 = kt.tat.includes("__taeterWurf");
+                r.__taeterWurf(hirsch);
             } finally {
-                delete A.prototype.__taeterWurf;
+                delete r.__taeterWurf;
             }
+            w.z.s7 = rohTat.splice(n7).join(",") || "–";
+            w.c.s7 = w.z.s7.includes("__taeterWurf");
         }
         // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
         // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
@@ -943,11 +938,55 @@ async function WELLE_L() {
             }
             w.c.s8 = w.z.s8.traf && w.z.s8.zerlegt > 0;
         }
-        // (G1) der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) — keine Inline-Kopie der Formel
+        // (G1)(G3) KONSUM am Zähl-Spion (Lehre 6): der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) und fragt das
+        // EINE Grob-Tor (_trefferErreichbar), der Pfeil auch, und das Tor liest den kreatur-Leib (_kreaturLeib)
+        const ruft = (lauf, k) => {
+            const eigen = Object.prototype.hasOwnProperty.call(r, k),
+                f0 = r[k];
+            let n = 0;
+            r[k] = function (...a) {
+                n++;
+                return f0.apply(this, a);
+            };
+            try {
+                lauf();
+            } finally {
+                if (eigen) r[k] = f0;
+                else delete r[k];
+            }
+            return n > 0;
+        };
+        const konsum = {};
         {
+            const c = hirsch, // kein neues Wesen: jeder Spawn verschöbe die netId und so die Leiber der späteren Proben
+                c0 = c.position.clone();
+            stelle(c, 1.6);
+            zielen(punkt(c, null));
+            const sweep = (k) =>
+                ruft(() => {
+                    p._swing = null;
+                    r._beginPlayerSwing(null);
+                    r._kampfSweepTick(p._swing, T, p._swing.windupSec, p._swing.windupSec + p._swing.strikeSec);
+                }, k);
+            konsum.sweepBlick = sweep("_blickVorn");
+            konsum.sweepTor = sweep("_trefferErreichbar");
+            konsum.torLeib = ruft(() => r._trefferErreichbar(c, c.position.x, c.position.z, 1), "_kreaturLeib");
+            ausruesten("klinge_langbogen");
+            p._shotCooldownUntil = 0;
+            p._swing = null;
+            r._beginPlayerShot(rec, 1);
+            const pf = s._pfeile[s._pfeile.length - 1];
+            konsum.pfeilTor = !!pf && ruft(() => r._tickPfeile(pf.born + 1 / 120), "_trefferErreichbar");
+            if (pf && s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
+            p._swing = null;
+            p._hitStopUntil = 0;
+            ausruesten("klinge_langschwert");
+            c.userData._stossV = null;
+            c.position.copy(c0);
+            c.updateMatrixWorld(true);
             const sw = codeVon("_kampfSweepTick");
             w.z.sweepFormel = (sw.match(/Math\.(sin|cos)\(/g) || []).length;
-            w.c.sweepBlickVorn = /this\._blickVorn\(/.test(sw) && w.z.sweepFormel === 0;
+            w.c.sweepBlickVorn = konsum.sweepBlick && w.z.sweepFormel === 0;
         }
         // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
         // die Methode existiert immer; die Probe wäre ein stiller Rückfall, nie ein Vertrag
@@ -995,11 +1034,8 @@ async function WELLE_L() {
             const sw = codeVon("_kampfSweepTick");
             const pf = codeVon("_tickPfeile");
             w.z.grobFremd = ((sw + pf).match(/\.scale\.x\b/g) || []).length;
-            w.c.grobLiestLeib =
-                /this\._trefferErreichbar\(/.test(sw) &&
-                /this\._trefferErreichbar\(/.test(pf) &&
-                /this\._kreaturLeib\(/.test(codeVon("_trefferErreichbar")) &&
-                w.z.grobFremd === 0;
+            w.z.grobKonsum = konsum;
+            w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
         // (T12) DAS GROB-TOR DECKT DIE GESTALT: jede Gattung in jeder Größen-Grenze (VERHALTEN.groessen), 90 Spiel-Takte;
         // je Probe jedes Ende jeder Treffer-Glied-Kapsel (+ ihr Radius) — ein Punkt der Gestalt, den das Tor abweist,
@@ -1527,13 +1563,6 @@ async function WELLE_L() {
                 };
             };
             const K = A._arenaGesetz().schwung;
-            // die Leibes-Mitte: die Mitte der Rumpf-Kapsel der Treffer-Gestalt (die Mitte der Hülle liegt unter dem Bauch,
-            // zwischen den Läufen — ein Strahl durch sie verfehlt den Leib)
-            const rumpfPunkt = (c) => {
-                c.updateMatrixWorld(true);
-                const g = (r._kreaturTrefferGlieder(c) || []).find((x) => x.zone === "rumpf");
-                return g ? g.a.clone().lerp(g.b, 0.5).applyMatrix4(g.anker.matrixWorld) : punkt(c, null);
-            };
             const matrix = (waffen, modi) => {
                 const faelle = [];
                 for (const mode of modi) {
@@ -1550,8 +1579,8 @@ async function WELLE_L() {
                         ])
                             for (const blick of ["rumpf", "horizont"]) {
                                 stelle(wolf, d);
-                                if (blick === "rumpf") zielen(rumpfPunkt(wolf));
-                                else horizont(rumpfPunkt(wolf));
+                                if (blick === "rumpf") zielen(punkt(wolf, null));
+                                else horizont(punkt(wolf, null));
                                 faelle.push({ mode, wn, d: dn, blick, ...klick(wolf) });
                             }
                     }
@@ -1585,7 +1614,7 @@ async function WELLE_L() {
                 // der Wolf als Begleiter (er folgt dir) 1,3 m vor dir, der Blick waagrecht über ihn: der Kegel wählt ihn nie
                 r.assignCreatureTask(wolf, "follow_player", {}, { silent: true });
                 stelle(wolf, 1.3);
-                horizont(rumpfPunkt(wolf));
+                horizont(punkt(wolf, null));
                 const bg = klick(wolf);
                 r.assignCreatureTask(wolf, "wander", {}, { silent: true });
                 // der Dolch Reichweite + 0,8 m vor dem Wolf, das Fadenkreuz auf ihm (3rd): jenseits der Klinge
@@ -1594,7 +1623,7 @@ async function WELLE_L() {
                 if (s.blueprints.klinge_dolch) r._setBlueprintWear(s.blueprints.klinge_dolch, 1);
                 const klingeD = r._kampfSchwungRahmen({}).reach + K.bladeRadiusM;
                 stelle(wolf, klingeD + 0.8);
-                zielen(rumpfPunkt(wolf));
+                zielen(punkt(wolf, null));
                 const zw = klick(wolf);
                 // DIE ERNTE NEBEN DEM WILDTIER (Runde 2): ein ruhiger wilder Wolf steht 1,2 m neben dem Spieler (0,5 rad seitlich) im
                 // Schwung-Kegel, der Blick geht −0,5 rad abwärts (3rd), und das Fadenkreuz trägt sein Ziel in Arm-Länge — ein Stein-
@@ -2157,13 +2186,8 @@ async function WELLE_L() {
                 }
                 return { erst, schritte, rueckkehr, boostAn, boostAb };
             };
-            const ohneKommentar = window.__codeOf;
-            const vollRufer = Object.getOwnPropertyNames(A.prototype)
-                .filter((n) => n !== "constructor" && typeof A.prototype[n] === "function")
-                .filter((n) => /recomputePlayerStats\(\s*\{\s*voll\s*:\s*true/.test(ohneKommentar(A.prototype[n])))
-                .sort();
             try {
-                w.z.leben = { ...lauf(), vollRufer };
+                w.z.leben = lauf();
                 zurueck();
                 // Selbst-Test (S11): die alte Zeile als Hülle um die Neuberechnung
                 const neu = A.prototype.recomputePlayerStats;
@@ -2176,7 +2200,7 @@ async function WELLE_L() {
                     return c;
                 };
                 try {
-                    w.z.lebenSelbst = { ...lauf(), vollRufer };
+                    w.z.lebenSelbst = lauf();
                 } finally {
                     delete r.recomputePlayerStats; // die Hülle fällt, die Methode der Klasse trägt wieder
                 }
@@ -3017,6 +3041,7 @@ async function WELLE_L() {
         r._beginPlayerSwing = orig.swing;
         r.dslRun = orig.dsl;
         r.damagePlayer = orig.damagePlayer;
+        delete r._kampfRohSchaden;
         delete r.damageCreature;
         delete r._kampfHitJuice;
         delete r._beginPlayerSwing;

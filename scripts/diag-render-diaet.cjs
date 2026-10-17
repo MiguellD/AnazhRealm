@@ -57,18 +57,6 @@ function check(name, ok, detail) {
 (async () => {
     // ── Q: die Quell-Proben (Chokepoint-Disziplin, kein Parallelpfad) ──
     const src = stammLib.text(root);
-    const hebel = (src.match(/AnazhRealm\.ARCH_LEAF_MAT_SHARED/g) || []).length;
-    check(
-        "Q: ARCH_LEAF_MAT_SHARED hat genau 2 Code-Vorkommen (Definition + der EINE Konsument _archLeafMaterial)",
-        hebel === 2 && stammLib.kopf(src, "_archLeafMaterial") >= 0,
-        `vorkommen=${hebel}`
-    );
-    const nahtCalls = (src.match(/this\._archSlotColor\(leaf, tintColor\)/g) || []).length;
-    check(
-        "Q: die EINE Slot-Farb-Naht — _archSlotColor definiert + in BEIDEN Slot-Schreibern konsumiert",
-        stammLib.kopf(src, "_archSlotColor") >= 0 && nahtCalls === 2,
-        `konsumenten=${nahtCalls}`
-    );
     // Kein dritter setColorAt-Pfad in den zwei Slot-Schreibern (die alte
     // useInstanceTint-Direktklammer ist gefallen).
     const fnBody = (name) => stammLib.rumpf(src, name) || ""; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
@@ -81,24 +69,6 @@ function check(name, ok, detail) {
             !/userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/.test(addBody) &&
             !/userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/.test(scatBody)
     );
-    // Der Emissiv-SPIEGEL (die Glüh-Frage): der PBR-Bau konsumiert opts.color im
-    // Emissiv hinter der −0.5/0.01-Klammer; _archLeafMaterial spiegelt EXAKT diese
-    // Klammer (Drift = eine Welt, die glühende Farben verliert oder Graubrei backt).
-    check(
-        "Q: der Emissiv-Spiegel steht (PBR-Bau `− 0.5` + `> 0.01` ↔ Leaf-Material `− 0.5) > 0.01`)",
-        /emissiv\) \|\| 0\) - 0\.5\);/.test(src) &&
-            /_glimmen > 0\.01/.test(src) &&
-            /emissiv\) \|\| 0\) - 0\.5\) > 0\.01/.test(src)
-    );
-    check(
-        "Q: die Dispose-Wand — der blocked-Pfad in _archFlattenBlueprint lässt geteilte Materialien stehen",
-        /l\.mat\.dispose && !\(l\.mat\.userData && l\.mat\.userData\.sharedFoliage\)/.test(src)
-    );
-    check(
-        "Q: der Merge-Pfad (_mergeBlueprintByMaterial) zieht das geteilte Tag-Signatur-Material (dieselbe Klasse)",
-        /const mat = this\._sharedFoliageMaterial\(matOpts\);\n[ ]{12}leaves\.push\(\{ geom: merged/.test(src)
-    );
-
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -328,6 +298,33 @@ function check(name, ok, detail) {
         } catch (e) {
             res.farbe = { err: String((e && e.message) || e) };
         }
+        // ── Q am Ruf (D3c, vorher am Stamm-TEXT): die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
+        // das geteilte Material, der blockierte Pfad lässt es stehen (die Glüh-Antwort misst F am Slot)
+        if (neu.probeFlat) {
+            const zaehl = (k, fn) => {
+                let n = 0;
+                r[k] = function (...a) { n++; return AR.prototype[k].apply(this, a); };
+                try { fn(); } finally { delete r[k]; }
+                return n;
+            };
+            const eK = { type: "rd_fixture_neu", seed: 11, scale: 1, position: { x: 953 * R + 60, y: 0, z: 949 * R + 60 } };
+            res.nahtAdd = zaehl("_archSlotColor", () => r._archInstanceAdd(eK, neu.probeFlat)) > 0;
+            r._archInstanceRemove(eK);
+            let sl = null;
+            res.nahtScatter = zaehl("_archSlotColor", () => (sl = r._scatterInstanceAdd("rd_fixture_neu", 953 * R + 70, 0, 949 * R + 70, 0, 1, null, "953,949", neu.probeFlat))) === neu.probeFlat.leaves.length;
+            if (sl) r._scatterFreeSlots(sl);
+            mkBp("rd_merge", "stein", [0x8a5a2b, 0x8a5a2b]);
+            res.mergeGeteilt = zaehl("_sharedFoliageMaterial", () => r._mergeBlueprintByMaterial(r.state.blueprints.rd_merge)) > 0;
+            mkBp("rd_block", "stein", [0xcc3322]);
+            r.state.blueprints.rd_block.parts.push({ shape: "box", material: "stein", color: 0xcc3322, animate: "water_wave", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } });
+            const geteilt = r._archLeafMaterial(r.state.blueprints.rd_block.parts[0]);
+            let weg = 0;
+            const h = () => weg++;
+            geteilt.addEventListener("dispose", h);
+            const fl = r._archFlattenBlueprint("rd_block");
+            geteilt.removeEventListener("dispose", h);
+            res.disposeWand = !!fl && fl.reason === "water_wave" && weg === 0;
+        }
         if (neu.drain) res.neu.leck = neu.drain();
 
         // ── W: der WELT-ZENSUS in der gebauten Dorf-/Wald-Szene ──
@@ -361,7 +358,7 @@ function check(name, ok, detail) {
 
         // Aufräumen: Hebel auf Produktion, Fixturen fallen (kein Debris im Baum).
         AR.ARCH_LEAF_MAT_SHARED = true;
-        for (const n of ["rd_fixture_alt", "rd_fixture_neu", "rd_naht", "rd_glut_a", "rd_glut_b"]) {
+        for (const n of ["rd_fixture_alt", "rd_fixture_neu", "rd_naht", "rd_glut_a", "rd_glut_b", "rd_merge", "rd_block"]) {
             delete r.state.blueprints[n];
             if (r.state.archFlattenCache) r.state.archFlattenCache.delete(n);
         }
@@ -369,6 +366,9 @@ function check(name, ok, detail) {
     });
 
     console.log("=== V18.475 RENDER-DIÄT — EIN Material je Tag-Signatur, die Farbe reist als Instanz-Kanal ===");
+    check("Q: die EINE Slot-Farb-Naht — beide Slot-Schreiber rufen _archSlotColor", out.nahtAdd === true && out.nahtScatter === true, `add=${out.nahtAdd} streu=${out.nahtScatter}`);
+    check("Q: der Merge-Pfad (_mergeBlueprintByMaterial) zieht das geteilte Tag-Signatur-Material", out.mergeGeteilt === true);
+    check("Q: die Dispose-Wand — der blockierte Pfad in _archFlattenBlueprint lässt das geteilte Material stehen", out.disposeWand === true);
     check("Boot + Wald gebaut (Scatter-Zellen)", out.boot && out.cells > 40, `zellen=${out.cells}`);
     if (out.alt) {
         check(
