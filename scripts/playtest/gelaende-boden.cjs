@@ -2919,15 +2919,16 @@ async function checkBandBewegungUnterLast(ctx) {
             s.keys = {};
             const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
             const W = [];
+            const absage = [];
+            const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
+            const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
+            s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
             for (let i = 0; i < 24 && W.length < 4; i++) {
                 const a = (i * 2.399963) % (2 * Math.PI);
                 const x = nearSpot.x + Math.sin(a) * 22;
                 const z = nearSpot.z + Math.cos(a) * 22;
                 if (!r._landAt(x, z)) continue;
-                const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", {
-                    precise: true,
-                    bodySize: 1,
-                });
+                const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", opt);
                 if (!c) continue;
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
@@ -2957,15 +2958,14 @@ async function checkBandBewegungUnterLast(ctx) {
                 const u = c.userData;
                 if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
                 return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
-            }).filter(Boolean);
+            }).filter(Boolean).concat(absage);
             for (const c of W) r.removeCreature(c);
+            s.maxCreatures = maxAlt;
             const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
             return { n: W.length, deckel, weg, grenze, vVor, ueber, halt, max: Math.max(0, ...weg) };
         };
         o.d = pauseLauf(false);
         if (selftest) o.dAus = pauseLauf(true);
-    
-        o.walkSpeed = s.speed || null;
         return o;
     }, true);
     if (!out || out.error) return check("Bewegung unter Last: die Bühne steht (Land für NAH und FERN)", false, out ? out.error : "keine Antwort der Seite");
