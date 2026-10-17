@@ -126,9 +126,8 @@
     },
     "ratsche": {
         "scripts/diag-fluss.cjs": {
-            "grund": "Absenz- und Struktur-Wand am Stamm, phyto-core im vm (S2b-Besitz)",
-            "stamm": 1,
-            "datei": 2
+            "grund": "Absenz- und Struktur-Wand am Stamm (S2b-Besitz)",
+            "stamm": 1
         },
         "scripts/diag-foundry-crossfade.cjs": {
             "grund": "Präsenz: 101 Text-Proben an Stamm, Kernen und Phytogenesis (D3c-crossfade, wartet auf S2)",
@@ -142,10 +141,6 @@
         "scripts/diag-pipeline-constitution.cjs": {
             "grund": "Absenz-Wand am Stamm-Text, 20 Absenzen (S2b-Besitz)",
             "stamm": 1
-        },
-        "scripts/diag-s4-impostor-workshop.cjs": {
-            "grund": "Absenz am Alias von __codeOf (S2b-Besitz)",
-            "seite": 1
         }
     }
 }
