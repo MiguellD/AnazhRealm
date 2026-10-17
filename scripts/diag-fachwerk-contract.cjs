@@ -37,10 +37,10 @@
 // PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
-const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { probeWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck } = require("./lib/plattform-probe.cjs");
+const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -57,50 +57,6 @@ const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
-}
-
-// ── Der kanonische Fingerabdruck einer gebauten Gruppe (exakt die v3/v4/v5-Form) ──
-function fingerprint(group) {
-    const h = crypto.createHash("sha256");
-    let objects = 0;
-    let vertices = 0;
-    group.updateMatrixWorld(true);
-    group.traverse((o) => {
-        const geo = o.geometry;
-        if (!geo || !geo.attributes || !geo.attributes.position) return;
-        objects++;
-        vertices += geo.attributes.position.count;
-        h.update(String(o.type));
-        h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
-        const m = o.material;
-        if (m) {
-            h.update(
-                JSON.stringify({
-                    c: m.color ? m.color.getHex() : null,
-                    e: m.emissive ? m.emissive.getHex() : null,
-                    r: typeof m.roughness === "number" ? m.roughness : null,
-                    mt: typeof m.metalness === "number" ? m.metalness : null,
-                    o: typeof m.opacity === "number" ? m.opacity : null,
-                    t: !!m.transparent,
-                })
-            );
-        }
-        for (const name of Object.keys(geo.attributes).sort()) {
-            const a = geo.attributes[name];
-            const arr = a.array;
-            h.update(name);
-            h.update(String(a.itemSize));
-            h.update(Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength));
-        }
-        if (geo.index) {
-            const ia = geo.index.array;
-            h.update("index");
-            h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
-        }
-    });
-    // DIE FERNFORM (S3 haus): die NUR-WURF-Stufe trägt ihre Liste als Beipack `__fern` — sie gehört zum Fall
-    if (group.userData && group.userData.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
-    return { objects, vertices, sha256: h.digest("hex") };
 }
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).

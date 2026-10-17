@@ -310,10 +310,57 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
     return PP;
 }
 
+// DER KANONISCHE FINGERABDRUCK einer gebauten Gruppe (die v3-Form, die jeder Golden-Satz der Gesetzbücher trägt: fachwerk
+// v3–v5, porta, schmiede, vehicle) — bis F4 stand er viermal wortgleich in den Vertrags-Linsen. `nurGeometrie`: ohne die
+// Material-Signatur (die Seed-Probe des Fahrzeugs); `mitFern`: die NUR-WURF-Stufe des Hauses trägt ihre Fernform als Beipack
+// `__fern` (die Tor-Goldens zählen ihn nicht).
+function fingerabdruck(group, nurGeometrie, mitFern) {
+    const h = require("crypto").createHash("sha256");
+    let objects = 0;
+    let vertices = 0;
+    group.updateMatrixWorld(true);
+    group.traverse((o) => {
+        const geo = o.geometry;
+        if (!geo || !geo.attributes || !geo.attributes.position) return;
+        objects++;
+        vertices += geo.attributes.position.count;
+        h.update(String(o.type));
+        h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
+        const m = nurGeometrie ? null : o.material;
+        if (m) {
+            h.update(
+                JSON.stringify({
+                    c: m.color ? m.color.getHex() : null,
+                    e: m.emissive ? m.emissive.getHex() : null,
+                    r: typeof m.roughness === "number" ? m.roughness : null,
+                    mt: typeof m.metalness === "number" ? m.metalness : null,
+                    o: typeof m.opacity === "number" ? m.opacity : null,
+                    t: !!m.transparent,
+                })
+            );
+        }
+        for (const name of Object.keys(geo.attributes).sort()) {
+            const a = geo.attributes[name];
+            const arr = a.array;
+            h.update(name);
+            h.update(String(a.itemSize));
+            h.update(Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength));
+        }
+        if (geo.index) {
+            const ia = geo.index.array;
+            h.update("index");
+            h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
+        }
+    });
+    if (mitFern && group.userData && group.userData.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
+    return { objects, vertices, sha256: h.digest("hex") };
+}
+
 module.exports = {
     plattformProbe,
     probeAblauf,
     installiereDrift,
     FUNKTIONEN,
     probeWand,
+    fingerabdruck,
 };
