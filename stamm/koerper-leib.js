@@ -82,7 +82,7 @@ class AnazhRealm_koerper_leib {
         });
         AnazhRealm._ofenKlonRebind(klon, teile);
         const f = (8 * AnazhRealm.PLAYER_KH) / 6.0;
-        const wrap = new THREE.Group();
+        const wrap = this._leibHuelle();
         wrap.scale.setScalar(f);
         wrap.position.y = oy;
         wrap.add(klon);
@@ -132,6 +132,16 @@ class AnazhRealm_koerper_leib {
         rig.lidBR = P2("lidBR");
         wrap.userData._leibNah = klon; // die Nah-Gestalt (die Masse misst ihre Haut, nie die Fern-Gestalt)
         return { mesh: wrap, rig, kh, bones: [] };
+    }
+
+    // DIE LEIB-HÜLLE (E2): der Wrap jeder Gelenk-Gestalt (Mensch und Tier, beide Stufen) ist ein BÜNDEL. Ein Leib bewegt sich
+    // und atmet in jedem Bild — lose zahlte jedes seiner Teile je Bild den ganzen r184-Weg (Render-Objekt, Pipeline-Prüfung,
+    // Zug mit acht Attributen), im Bündel nur seinen Objekt-Gang (Lage, Knochen): gemessen in EINER Welt (Radeon, Regler voll,
+    // 24 ABAB-Runden) der lose Weg des Leibs 425 → 66 µs je Takt, das Abspielen +253 µs; CPU-Takt p50 Genesis Third 5,9 → 5,8,
+    // Wiese Third 7,7 → 7,6 ms, Ego gleich. Was das Bündel
+    // zeichnet, stellt die Projektion je Pass (`_leibBuendelStand`); im Schatten-Pass ist es eine Gruppe (Override-Stoff).
+    _leibHuelle() {
+        return this._buendelTraegt() ? new THREE.BundleGroup() : new THREE.Group();
     }
 
     // DIE GELENK-GESTALT (S3, Lehre 19 — die Grobstufe ist gelenkig, das Standbild fiel an der Wurzel): EIN Wrap trägt
@@ -2059,7 +2069,7 @@ class AnazhRealm_koerper_leib {
             // Die Tier-Haut (V18.497) ist geskinnt: der Klon bindet an SEINE Bones.
             AnazhRealm._ofenKlonRebind(klon, teile);
             const tailSegs = (t0.tailNamen || []).map((n) => teile[n]).filter(Boolean);
-            const wrap2 = new THREE.Group();
+            const wrap2 = this._leibHuelle();
             wrap2.scale.setScalar(f2);
             wrap2.position.y = -t0.minY * f2;
             wrap2.add(klon);

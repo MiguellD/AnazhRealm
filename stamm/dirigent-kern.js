@@ -1148,9 +1148,14 @@ class AnazhRealm {
                 this.info.destroyTexture(t);
                 this.info.createTexture(t);
             }
-            const B = welt.state._regionBundles;
-            if (alt.length && B && this.backend.get(t).texture !== alt[0])
-                for (const bg of B.values()) bg.needsUpdate = true;
+            // JEDES Bündel der Szene — die Region-Bündel und jede Leib-Hülle (`_leibHuelle`): ein Leib, der nach dem Abschied
+            // weiter abspielte, band die alte Horizont-Karte (E2, Radeon: 595 Meldungen „Destroyed texture … used in a submit",
+            // Himmel und Bündel fielen aus dem Bild). Der Gang ist selten (erstes Bild, Größen-Wechsel, Wachsen eines Atlas).
+            const sc = welt.state.scene;
+            if (alt.length && sc && this.backend.get(t).texture !== alt[0])
+                sc.traverse((o) => {
+                    if (o.isBundleGroup === true) o.needsUpdate = true;
+                });
             return aus;
         };
     }

@@ -240,7 +240,11 @@ class AnazhRealm_bild_kosten {
                 this.log("BUNDLE-REIHENFOLGE: r184-Renderer._renderBundles nicht gefunden (Vendor-Drift)", "ERROR");
             else if (!renderer.__anazhBundleReihenfolge) {
                 const bundlesRoh = renderer._renderBundles;
+                const welt = this;
                 renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
+                    for (let i = 0; i < bundles.length; i++)
+                        if (bundles[i].bundleGroup.userData._creatureSkin === true)
+                            welt._leibBuendelStand(this, bundles[i]);
                     const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
                     const rc = this._currentRenderContext;
                     const d = rc ? this.backend.get(rc) : null;
@@ -835,6 +839,61 @@ class AnazhRealm_bild_kosten {
         if (!sh || !(texel > 0) || !(tiefe > 0)) return;
         sh.normalBias = this._schattenNormalBias(texel);
         sh.bias = (-K.tiefeTexel * texel) / tiefe;
+    }
+
+    // DER STAND EINES LEIB-BÜNDELS (E2, `_leibHuelle`): r184 spielt ein Bündel ab, solange seine Version steht — was die
+    // Projektion dieses Passes ihm gibt, liest es dann nie (`_renderBundle`). Ein Leib wechselt aber, was er zeichnet: die
+    // Sicht (Ego nimmt ihn aus der Ebene des Auges), die Stufe (`_gelenkStufe`), das Gerät in der Hand, ein neues Kleid, der
+    // Blick, der ihn verlässt. Je Bündel-Aufnahme (Bündel · Kamera · Render-Kontext) merkt der Stand die Projektion — je Zug
+    // Objekt, Stoff und seine Version, Geometrie und die Summe ihrer Attribut-Versionen, Gruppe; weicht sie ab, nimmt GENAU
+    // diese Aufnahme neu auf (andere Kameras, der See-Spiegel, spielen weiter ab). Ein durchsichtiger Leib-Stoff zeichnete
+    // im Bündel vor der opaken Welt: der Melder nennt ihn.
+    _leibBuendelStand(rend, b) {
+        const d = rend.backend.get(rend._bundles.get(b.bundleGroup, b.camera, rend._currentRenderContext));
+        const s = d._anazhLeib || (d._anazhLeib = []);
+        const L = b.renderList;
+        if (L.transparent.length > 0 || L.transparentDoublePass.length > 0)
+            this._bruchMelden(
+                `LEIB-BÜNDEL: ein durchsichtiger Stoff im Leib „${b.bundleGroup.name || "?"}" — opak ist sein Gesetz`
+            );
+        let i = 0,
+            anders = false;
+        for (const it of L.opaque) {
+            const g = it.geometry;
+            let v = g.index ? g.index.version : 0;
+            for (const k in g.attributes) v += g.attributes[k].version;
+            const w0 = it.object.id,
+                w1 = it.material.id,
+                w2 = it.material.version,
+                w3 = g.id,
+                w4 = it.group ? it.group.start : -1;
+            if (
+                s[i] !== w0 ||
+                s[i + 1] !== w1 ||
+                s[i + 2] !== w2 ||
+                s[i + 3] !== w3 ||
+                s[i + 4] !== v ||
+                s[i + 5] !== w4
+            ) {
+                s[i] = w0;
+                s[i + 1] = w1;
+                s[i + 2] = w2;
+                s[i + 3] = w3;
+                s[i + 4] = v;
+                s[i + 5] = w4;
+                anders = true;
+            }
+            i += 6;
+        }
+        if (s.length !== i) {
+            s.length = i;
+            anders = true;
+        }
+        if (anders && d.bundleGPU !== undefined) {
+            d.bundleGPU = undefined;
+            d.renderObjects = undefined;
+            this._leibBuendelNeu = (this._leibBuendelNeu || 0) + 1;
+        }
     }
 
     // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
