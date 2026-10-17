@@ -86,9 +86,6 @@ class AnazhRealm_stoff_material {
             });
         }
 
-        // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
-        // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
-        this._materialObserverDiaet(mat);
         this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
@@ -414,9 +411,11 @@ class AnazhRealm_stoff_material {
     // r184s Monitor schließt needsRefresh auf hasNode kurz (für JEDES TSL-Material true) → jedes Objekt
     // wird jeden Frame refresht. Welt-Materialien, deren Graph NUR geteilte renderGroup-Uniforms +
     // Attribute + Builtins trägt, fahren die ehrliche equals()-Bahn (Änderungen laden weiter hoch; das
-    // erste Objekt je Material/Render refresht). PFLICHT-PAAR mit _uniformHeimatTeilen für ALLE
-    // mutierten Uniforms — fehlt es, frischt der Uniform-Wächter (9, `_diaetRefresh`) je Wechsel voll auf und der EINE
-    // Melder nennt Stoff und Uniform (bis A1-n1 fror die Objekt-Uniform still ein). Headless inert.
+    // erste Objekt je Material/Render refresht). Eine mutierte Uniform ohne _uniformHeimatTeilen lädt der Uniform-Wächter
+    // (9, `_diaetRefresh`) je Wechsel im Objekt-Gang ihres Objekts (bis A1-n1 fror sie still ein, bis E1-n1 frischte sie voll
+    // auf); die geteilte Heimat lädt sie EINMAL je Render. Headless inert.
+    // EIN RUFER (E1): die Erst-Zeichnung der Welt-Szene (`_renderObjectDirect`, `_configureRenderer`) schreibt JEDEN Stoff
+    // der Welt ein, bevor er baut — bis E1 riefen fünf Bau-Stellen, jeder andere Welt-Stoff frischte je Render voll auf.
     _materialObserverDiaet(mat) {
         if (!mat || mat._anazhDiaet === true || typeof mat.setupObserver !== "function") return mat;
         // PFLICHT-PAAR-WÄCHTER (Review-Notiz C): ohne renderGroup-Export wäre die
@@ -424,13 +423,10 @@ class AnazhRealm_stoff_material {
         // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
         mat._anazhDiaet = true;
         const alt = mat.setupObserver;
-        // der Melder der Welt am Beobachter: der Uniform-Wächter (9, `_diaetRefresh`) nennt einen Bruch des Pflicht-Paars
-        const welt = this;
         mat.setupObserver = function (builder) {
             const o = alt.call(this, builder);
             if (!o) return o;
             o.hasNode = false;
-            o._anazhWelt = welt;
             // Vendor-Loch: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH
             // und wären unter der Diät unsichtbar. Der Versions-Wächter prüft sie VOR der Vendor-Bahn (Mutation
             // → genau EIN Refresh).
