@@ -1,0 +1,62 @@
+12:24:51 SERIE START A=f829df97 B=b05a905b Instrument=b05a905b (EIN Instrument für beide Seiten)
+12:24:59 g-third-A1 start gpu[60, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:27:08 g-third-A1 exit=1 gpu[77, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 13.8/16.8/41.5 ms · CPU p50/p95 4.4/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.91 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:27:08 g-third-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+12:28:20 g-third-B1 start gpu[65, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:30:23 g-third-B1 exit=0 gpu[79, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.8 fps · Frame p50/p95/max 15.5/16.8/33.5 ms · CPU p50/p95 4.4/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.24 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:31:33 g-third-A2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:33:36 g-third-A2 exit=1 gpu[81, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 16.2/16.8/25.1 ms · CPU p50/p95 4.5/6.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.38 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:33:36 g-third-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+12:34:46 g-third-B2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:36:49 g-third-B2 exit=0 gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.5 fps · Frame p50/p95/max 16.4/16.8/25.1 ms · CPU p50/p95 4.4/5.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.38 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:37:59 g-third-A3 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:40:01 g-third-A3 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.6 fps · Frame p50/p95/max 16.2/16.8/25.1 ms · CPU p50/p95 4.5/5.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.71 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:40:02 g-third-A3 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+12:41:12 g-third-B3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:43:14 g-third-B3 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 16/16.8/25.2 ms · CPU p50/p95 4.3/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.16 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:44:24 g-third-A4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:46:26 g-third-A4 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.5 fps · Frame p50/p95/max 16.3/16.8/25.1 ms · CPU p50/p95 4.6/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.22 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:46:27 g-third-A4 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+12:47:36 g-third-B4 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:49:39 g-third-B4 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.9 fps · Frame p50/p95/max 8.8/16.8/25.1 ms · CPU p50/p95 4.4/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.86 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+12:50:49 g-ego-A1 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:52:49 g-ego-A1 exit=1 gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 83.2 fps · Frame p50/p95/max 8.4/16.8/33.3 ms · CPU p50/p95 3.5/4.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.62 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 1, deer 4, fox 1, w
+12:52:49 g-ego-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+12:53:59 g-ego-B1 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:55:59 g-ego-B1 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 80.9 fps · Frame p50/p95/max 8.5/16.8/33.3 ms · CPU p50/p95 3.9/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.43 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 1) 
+12:57:10 g-ego-A2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+12:59:10 g-ego-A2 exit=1 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 80.5 fps · Frame p50/p95/max 8.5/16.8/33.2 ms · CPU p50/p95 4.1/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.68 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 1) 
+12:59:10 g-ego-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+13:17:35 g-ego-B2 start gpu[64, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:19:35 g-ego-B2 exit=0 gpu[79, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.8 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.39 · Tiere 8 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 5, deer 3) 
+13:20:45 g-ego-A3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:22:44 g-ego-A3 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.2 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.57 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3, deer 7) 
+13:22:44 g-ego-A3 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+13:23:54 g-ego-B3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:25:54 g-ego-B3 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.4 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.6/4.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.56 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 1, deer 4, fox 1, w
+13:27:04 g-ego-A4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:29:03 g-ego-A4 exit=1 gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 82.9 fps · Frame p50/p95/max 8.4/16.8/25.2 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.93 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, bear 1, deer 6) 
+13:29:04 g-ego-A4 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+13:30:14 g-ego-B4 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:32:13 g-ego-B4 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.2 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.6/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.71 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3, deer 7) 
+13:50:16 w-ego-A1 start gpu[64, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:54:01 w-ego-A1 exit=1 gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 76.4 fps · Frame p50/p95/max 16.6/16.8/41.7 ms · CPU p50/p95 3.4/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.25 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, wolf 3) 
+13:54:01 w-ego-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+13:55:11 w-ego-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:58:57 w-ego-B1 exit=0 gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 74.7 fps · Frame p50/p95/max 16.6/16.8/41.7 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.28 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 5, wolf 5, bear 1) 
+14:00:08 w-ego-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:03:30 w-ego-A2 exit=1 gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 76 fps · Frame p50/p95/max 16.6/16.8/41.6 ms · CPU p50/p95 3.3/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.11 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+14:03:30 w-ego-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+14:20:59 w-ego-B2 start gpu[63, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:24:44 w-ego-B2 exit=0 gpu[81, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 76.2 fps · Frame p50/p95/max 16.6/16.8/41.6 ms · CPU p50/p95 3.1/4.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 2 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+14:25:54 w-ego-A3 start gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:29:23 w-ego-A3 exit=1 gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 76.2 fps · Frame p50/p95/max 16.6/16.8/50 ms · CPU p50/p95 3.1/4.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.03 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+14:29:23 w-ego-A3 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+14:30:33 w-ego-B3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:33:47 w-ego-B3 exit=0 gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 76.7 fps · Frame p50/p95/max 16.6/16.8/41.6 ms · CPU p50/p95 3.1/4.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.88 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3, deer 4, bear 2) 
+14:34:57 w-ego-A4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:38:18 w-ego-A4 exit=1 gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 77 fps · Frame p50/p95/max 16.6/16.8/49.4 ms · CPU p50/p95 3/4.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.96 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+14:38:18 w-ego-A4 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+14:39:28 w-ego-B4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:43:16 w-ego-B4 exit=0 gpu[81, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 75.9 fps · Frame p50/p95/max 16.6/16.8/66.6 ms · CPU p50/p95 3.6/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.33 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, deer 4, bear 2) 
+14:44:24 SERIE ENDE
