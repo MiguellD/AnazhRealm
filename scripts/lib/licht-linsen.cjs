@@ -1497,29 +1497,40 @@ function laubGegenlicht(opts) {
             if (luftU) luftU.beta.value = 0;
             if (opts.karte) {
                 // DIE KARTE GEGEN IHRE GESTALT (A7, Lehre 19/21: Labor = Welt, die Karte ist dieselbe Krone in einer anderen Stufe):
-                // dasselbe Auge, dieselbe Licht-Kette der Bühne (Sonne mit Schatten, Himmel) — Schuss 1 die Laub-Züge der Art in
-                // ihrer Stufe, Schuss 2 (der Aufrufer hat die Stufen auf die Karte gestellt) allein die Karten. Gezählt jedes Pixel,
-                // das beide zeichnen; das Mittel linear, dazu L* und C*ab. Vor A7 stand die Karte 1,06–1,67 × so hell (Genesis).
-                const kk = opts.karte === 1 ? laub : alle.filter((m) => /^fimp:/.test(r._taeterKlasse(m)));
-                for (const m of alle) m.visible = kk.includes(m);
+                // dasselbe Auge auf die Kugel des Exemplars, die Licht-Kette der Bühne (Sonne mit Schatten, Himmel), derselbe Baum-Satz
+                // (Laub, Rinde, Karten jeder Art) — Schuss 1 in den Stufen der Gestalt, Schuss 2 (der Aufrufer stellt die Stufen auf
+                // die Karte) jede Krone als Karte. Gezählt jedes Pixel im Rechteck der Box, das beide zeichnen; Mittel linear, L*, C*ab.
+                for (const m of alle)
+                    m.visible = /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material && m.material.userData && m.material.userData.foundryKind));
                 bundles();
+                const fovAlt = cam.fov,
+                    rad = ziel.box.min.distanceTo(ziel.box.max) / 2;
                 cam.position.copy(auge);
                 cam.lookAt(mitte);
+                cam.fov = Math.min(fovAlt, (360 / Math.PI) * Math.atan((1.1 * rad) / auge.distanceTo(mitte)));
+                cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
+                const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
+                for (let k = 0; k < 8; k++) {
+                    const e = new T.Vector3(k & 1 ? ziel.box.max.x : ziel.box.min.x, k & 2 ? ziel.box.max.y : ziel.box.min.y, k & 4 ? ziel.box.max.z : ziel.box.min.z).project(cam);
+                    rand[0] = Math.max(rand[0], Math.abs(e.x));
+                    rand[1] = Math.max(rand[1], Math.abs(e.y));
+                }
                 const b = await lies("die Karte gegen die Gestalt");
+                cam.fov = fovAlt;
+                cam.updateProjectionMatrix();
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: r._taeterKlasse(ziel.o), ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
                 const lab = (rgb) => {
-                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
                     const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-                    const X = (0.4124 * rgb[0] + 0.3576 * rgb[1] + 0.1805 * rgb[2]) / 0.95047, Z = (0.0193 * rgb[0] + 0.1192 * rgb[1] + 0.9505 * rgb[2]) / 1.08883;
-                    const a = 500 * (f(X) - f(Y)), bb = 200 * (f(Y) - f(Z));
-                    return { Y: +Y.toFixed(5), L: +(116 * f(Y) - 16).toFixed(2), C: +Math.hypot(a, bb).toFixed(2) };
+                    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
+                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+                    return { Y: +Y.toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
                 };
                 const sg = [0, 0, 0], sk = [0, 0, 0];
                 let n = 0;
                 for (let i = 0; g && i < W * H; i++)
-                    if (g.Yp[i] >= 0 && b.Yp[i] >= 0) {
+                    if (g.Yp[i] >= 0 && b.Yp[i] >= 0 && Math.abs(((i % W) + 0.5) / W * 2 - 1) <= rand[0] && Math.abs((((i / W) | 0) + 0.5) / H * 2 - 1) <= rand[1]) {
                         for (let c = 0; c < 3; c++) (sg[c] += g.Cp[i * 3 + c]), (sk[c] += b.Cp[i * 3 + c]);
                         n++;
                     }

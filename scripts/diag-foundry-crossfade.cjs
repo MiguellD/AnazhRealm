@@ -50,11 +50,9 @@
 //       und keine fehlt, die es behält. --selftest: die Weite der Gestalt kehrt ins Fenster zurück (Krone 10 m) → die L1 der
 //       Birke in 5 m wird gezeichnet und genannt.
 //   (9) DIE LAUTE BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied, bricht der Bau des Stoffs laut beim Namen
-//       (`_blendeBruch`, ERROR) — nie ein stilles null, kein schluckender catch, kein Stoff ohne Maske. Statisch: die Maske gibt
-//       nie null zurück und ihr catch bricht, Baum-Stoff und Karte setzen die Maske ohne Wenn, ein Stoff ohne Kanal bricht,
-//       der catch der Karten-Verdrahtung reicht den Bruch weiter, die Blatt-Karte bricht. In der Seite (Teil b): der
-//       Uniform-Satz verliert uLodD0, ein Baum-Stoff wird gebaut — er bricht mit dem Namen des fehlenden Glieds, statt still
-//       ohne Maske zu zeichnen. --selftest: jede stille Stelle zurück in die Quelle wird genannt.
+//       (`_blendeBruch`, ERROR) — nie ein stilles null, kein schluckender catch, kein Stoff ohne Maske. In der Seite (Teil b):
+//       der Uniform-Satz verliert uLodD0, ein Baum-Stoff wird gebaut — er bricht mit dem Namen des fehlenden Glieds, statt still
+//       ohne Maske zu zeichnen (die statische Text-Linse daneben fiel mit A7, Lehre 6: Verhalten statt Text).
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -466,40 +464,6 @@ function massDerBlende(srcNC) {
         !/builder\.__anazhInstanzMatrix/.test(matrix)
     )
         v.push("der Ursprung der Instanz liest nicht die Instanz-Matrix (Spalte 3) in der Welt");
-    return v;
-}
-
-// DIE LAUTE BLENDE (statisch, kommentar-gestrippt): wer im Fehlerfall still weiterzeichnet → Verstöße mit Namen.
-function stilleBlende(srcNC) {
-    const v = [];
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
-    else {
-        if (/return null/.test(maske)) v.push("die Maske gibt still null zurück (der Stoff zeichnet ohne Maske)");
-        const fang = maske.slice(maske.lastIndexOf("catch ("));
-        if (!/catch \(/.test(maske) || !/throw /.test(fang)) v.push("der catch der Maske schluckt den Fehler");
-    }
-    if (/__foundryCrossfadeError|__lodCrossfadeError/.test(srcNC)) v.push("ein Fehler der Blende landet still in einer Fenster-Variable");
-    const bruch = fnBody(srcNC, /_blendeBruch\(was\)\s*/) || "";
-    // die Blende bricht über den EINEN Stoff-Bruch (K22): ERROR mit dem Glied beim Namen über den EINEN Melder
-    // (`_bruchMelden`, Nachbesserung 3: eine neue Meldung sofort ERROR, dieselbe wieder mit Zähler), die Marke `blende` obendrauf
-    const stoffBruch = fnBody(srcNC, /\n {4}_stoffBruch\([^)]*\) \{/) || "";
-    const melder = fnBody(srcNC, /\n {4}_bruchMelden\([^)]*\) \{/) || "";
-    if (
-        !/this\._stoffBruch\(/.test(bruch) ||
-        !/e\.blende = true/.test(bruch) ||
-        !/this\._bruchMelden\(text\);/.test(stoffBruch) ||
-        !/this\.log\(text, "ERROR"\);/.test(melder) ||
-        /"(INFO|WARN|WARNING)"/.test(melder)
-    )
-        v.push("_blendeBruch meldet nicht laut beim Namen");
-    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
-    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
-    if (/if \(_keepX\)/.test(stoff)) v.push("der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))");
-    if (!/else\s+throw this\._blendeBruch\(/.test(stoff) || /if \(kanal\)/.test(stoff)) v.push("der Baum-Stoff ohne Kanal verliert die Maske still");
-    if (/if \(_keepFin\)/.test(srcNC)) v.push("die Karte zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepFin))");
-    if (!/throw this\._stoffBruch\("die Karten-Verdrahtung", _e\);/.test(srcNC)) v.push("der catch der Karten-Verdrahtung schluckt den Bruch der Blende");
-    if (!/throw this\._blendeBruch\("die Blatt-Karte: es fehlt "/.test(srcNC)) v.push("die Blatt-Karte überspringt die Blende still");
     return v;
 }
 
@@ -1840,23 +1804,6 @@ async function main() {
                 check(`Selbst-Test Geister-Baum: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
             }
         }
-        // V(9): jede stille Stelle zurück in die Quelle — die Linse MUSS sie nennen.
-        {
-            const nc = stripComments(anazhSrc);
-            for (const [name, src] of [
-                ["Maske gibt null", nc.replace('if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");', "if (!_dist) return null;")],
-                ["catch schluckt", nc.replace(/throw _e && _e\.blende === true\s*\?\s*_e\s*:\s*this\._blendeBruch\("der Bau der Maske scheiterte: "/, 'return null; ("')],
-                ["Baum-Stoff unter Wenn", nc.replace(/(const _keepX = this\._lodCrossfadeMaskNode\(TSL, \{[^}]*\}\);\s*)\{/, "$1if (_keepX) {")],
-                ["Karte unter Wenn", nc.replace(/(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
-                ["Karte schluckt den Bruch", nc.replace('throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
-                ["Blatt-Karte springt still", nc.replace('throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
-                ["Stoff-Bruch ohne Melder", nc.replace("this._bruchMelden(text);", "")],
-                ["Melder meldet INFO", nc.replace(/(\n {4}_bruchMelden\([^)]*\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
-            ]) {
-                const v = stilleBlende(src);
-                check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
-            }
-        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -2003,10 +1950,6 @@ async function main() {
     {
         const gq = geisterQuelle(anazhNC);
         check("DER GEISTER-BAUM (statisch): EIN Auge für Wahl und Maske, die Stufe ohne Partner hält (Band → Stempel → Maske → Fenster)", gq.length === 0, gq.join(" · "));
-    }
-    {
-        const sb = stilleBlende(anazhNC);
-        check("DIE LAUTE BLENDE (statisch): kein null, kein schluckender catch, keine Maske unter Wenn", sb.length === 0, sb.join(" · "));
     }
     // Statische Scope-Wand der CPU-Hälfte: Band nur für Foundry-BAUM-Einträge (dieselbe
     // Wand wie der aLodLevel-Stempel), Add/Remove nur durch die Slot-Chokepoints.
