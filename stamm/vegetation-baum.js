@@ -2050,7 +2050,7 @@ class AnazhRealm_vegetation_baum {
         return spawned;
     }
 
-    // DIE BEPFLANZUNG WARTET AUF DAS BUCH (Kristall-Rennen, OMEN 17.10. bericht/1710-e1.md): läuft die Foundry, liest jede
+    // DIE BEPFLANZUNG WARTET AUF DAS BUCH (Kristall-Rennen, OMEN 17.10., Zweig koordination): läuft die Foundry, liest jede
     // Streu-Probe die Wahrnehmung des Studios (placement.rarity, `_studioRenderConfig`), die erst das Buch bringt — ein Chunk
     // vor dem Buch streute ohne Seltenheit (Kristalle 20x zu oft: Genesis 347 statt 2). Er wartet in `pendingFoliageChunks`,
     // `_tickFoliageGrowth` pflanzt ihn nach dem Buch. Ohne Foundry (Test-Haken `__anazhGateNoFoundry`) kommt kein Buch.
