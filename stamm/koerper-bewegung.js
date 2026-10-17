@@ -1639,8 +1639,9 @@ class AnazhRealm_koerper_bewegung {
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
                     const K = _fahrRitt.kam;
-                    const yawF = Number.isFinite(ent._bildGier)
-                        ? ent._bildGier
+                    // die Gier des GEZEICHNETEN Wagens (`_tickMountedMovement` lief davor): Lage und Gier aus EINER Bild-Lage
+                    const yawF = Number.isFinite(ent.rotationY)
+                        ? ent.rotationY + (ent._fahrAchseX ? Math.PI / 2 : 0)
                         : Number.isFinite(ent._rideYaw)
                           ? ent._rideYaw
                           : this.state.yaw;
