@@ -755,6 +755,8 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            const rid = this._mountedEntry; // die Gier des gerittenen Werks gehört zum Bild-Zustand (`_tickMountedMovement`)
+            st._fixedPrevGier = rid && Number.isFinite(rid._rideYaw) ? rid._rideYaw : null;
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;

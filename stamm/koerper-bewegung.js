@@ -1620,7 +1620,12 @@ class AnazhRealm_koerper_bewegung {
             const rig = `${this.state.cameraMode}:${_fahrRitt ? _fahrRitt.ent.id : ""}`;
             if (this.state._kamRig !== rig) {
                 this.state._kamRig = rig;
-                this.state._kamArm = this.state._kamAz = this.state._kamEl = this.state._kamT = undefined;
+                this.state._kamArm =
+                    this.state._kamAz =
+                    this.state._kamEl =
+                    this.state._kamElF =
+                    this.state._kamT =
+                        undefined;
             }
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
@@ -1634,7 +1639,11 @@ class AnazhRealm_koerper_bewegung {
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
                     const K = _fahrRitt.kam;
-                    const yawF = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
+                    const yawF = Number.isFinite(ent._bildGier)
+                        ? ent._bildGier
+                        : Number.isFinite(ent._rideYaw)
+                          ? ent._rideYaw
+                          : this.state.yaw;
                     let az = Number.isFinite(this.state._kamAz) ? this.state._kamAz : yawF;
                     let d = yawF - az;
                     while (d > Math.PI) d -= 2 * Math.PI;
@@ -1646,11 +1655,15 @@ class AnazhRealm_koerper_bewegung {
                     // der Arm steht `el` über der Ebene der Räder, nie über der Welt — bergab stand die Welt-Elevation unter dem
                     // Hang hinter dem Wagen, der Boden-Deckel schob die Kamera über jede Welle (Spielgang, Null-Renderer, Hang 0,49:
                     // p05 4,7° UNTER der Fahrbahn, Ruck p95 0,31 m je Bild). Sie folgt der Steigung des Kerns (`steig`, Bug höher
-                    // > 0) mit der Ease-Basis des Labors (`elEase`).
+                    // > 0) als FEDER mit Dämpfer: zwei Stufen mit der Ease-Basis des Labors (`elEase`) — die Ebene der Räder springt
+                    // je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter (Hang 0,34: p95 0,15 m je Bild).
                     const elZ = K.el - (ent._fahr && Number.isFinite(ent._fahr.steig) ? ent._fahr.steig : 0);
+                    const elK = 1 - Math.pow(K.elEase, kDt);
+                    let elF = Number.isFinite(this.state._kamElF) ? this.state._kamElF : elZ;
                     let el = Number.isFinite(this.state._kamEl) ? this.state._kamEl : elZ;
-                    el += (elZ - el) * (1 - Math.pow(K.elEase, kDt));
-                    this.state._kamEl = el;
+                    elF += (elZ - elF) * elK;
+                    el += (elF - el) * elK;
+                    [this.state._kamElF, this.state._kamEl] = [elF, el];
                     const ce = Math.cos(el);
                     const se = Math.sin(el);
                     camX = ent.position.x - Math.sin(az) * ce * K.dist;
