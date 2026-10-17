@@ -540,7 +540,7 @@ class AnazhRealm_stoff_instanz {
         q.sort((a, b) => d2(a) - d2(b));
         const t0 = performance.now();
         let n = 0;
-        for (let i = 0; i < q.length; ) {
+        for (let i = 0; i < q.length;) {
             const z = at.zellen.get(q[i]);
             if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
                 q.splice(i, 1);
