@@ -1,0 +1,39 @@
+abab-ak1	f829df97b036d841b3a1e62a972266022aa7b7b5	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-am	cd20288cc04322a39b9889165d9dbd2d4ebe9ddc	GEMERGT	foundry-bruecke.js scripts/diag-boot-stage.cjs stamm/20a.js 
+abab-b2a	c03ea075c21eefb1bb0ecda26fa20f6889c58caf	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-b2b	1a8ee32cf3819adb9e1054234131bfa099e63a15	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-b538	66005ca6ad984753855b2ac21fae859acdf620b4	GEMERGT	scripts/werkbank.cjs 
+abab-b7b	e47ad9f8d498d7519c0adba0f3f78e4f1b012e4c	GEMERGT	scripts/werkbank.cjs 
+abab-bba	3caca1cdf40938a74da357ac218dcc09547bb9e3	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-bbb	985a923b3492555ab4f6589e9434d94e848ca4a6	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-g2a	cee33f9172b5a314810ed28273501af80e422722	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-g7b	7f06ebf8289bb9ed61e81a30b2a2ce98704dcb90	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-i17e	17e3327b1f4409c27fac1a5dbab19225970b8173	GEMERGT	spec/profiband/haushalt.json 
+abab-i542	a0a05614e6296d40dfd1faf4a7239b81ff99cecf	GEMERGT	scripts/omen-messfolge.cjs 
+abab-i543	bb554abf9b45ac211fb01f39ffc37db2519ee67a	GEMERGT	scripts/omen-messfolge.cjs 
+abab-i546b	08b57ed8b2471c141d8507bf343d436033a03ae0	GEMERGT	spec/profiband/haushalt.json 
+abab-i551a	51cc19afb456206c6167ac45f070eb1fea935934	GEMERGT	spec/profiband/haushalt.json 
+abab-i551b	51cc19afb456206c6167ac45f070eb1fea935934	GEMERGT	scripts/lib/band-urteil.cjs scripts/lib/draw-zaehler.cjs spec/profiband/haushalt.json spec/profiband/ratsche-dorf-gtx-ego.json spec/profiband/ratsche-dorf-gtx-third.json 
+abab-i5e2	c5e2fc8f9cece124777d649a0a84183bd58099a9	GEMERGT	spec/profiband/haushalt.json 
+abab-i9d3	9d3292dea0459fb056bdf75cfc421fff79d9e5a0	GEMERGT	spec/profiband/haushalt.json 
+abab-id47	d47efac70c892875afe78ce1edf835f259938fba	GEMERGT	spec/profiband/haushalt.json 
+abab-if09	f09398e6de068d3bdfaeb1e73919b2d1253db180	GEMERGT	spec/profiband/haushalt.json 
+abab-im062	062ec35757f271e38f97b6e1f185d106677dc7f9	GEMERGT	spec/profiband/haushalt.json 
+abab-p015	015a3f74706ed3f97a00d50b2d192bee921d5526	GEMERGT	scripts/omen-messfolge.cjs scripts/werkbank.cjs 
+abab-s2b	9c8cfab8467ad0e01b34f10ceb08cd0cb9a88133	GEMERGT	scripts/diag-boot-stage.cjs 
+abab-wk1	985a923b3492555ab4f6589e9434d94e848ca4a6	GEMERGT	scripts/diag-boot-stage.cjs stamm/15b.js stamm/20b.js stamm/20c.js 
+albedo-ab	826717edb292b5462a836075e6eba9581cb93659	GEMERGT	gelaende-core.js 
+albedo-bisekt	f6fa9f63fb52b9f565b0e97848844c5c59473fa0	GEMERGT	spec/farbe/albedo-tafel.json 
+albedo-kontrolle	cd945ba093d8a25047fd2fd20effa1f132babbf5	GEMERGT	spec/farbe/albedo-tafel.json 
+ego-kampf	0097998b43584a0f87e39638338a683759e5ffaf	GEMERGT	.github/workflows/check.yml anazhRealm.js docs/studio-vertrag.md koerper-core.js package.json 
+ego-probe	35a900b57c14eca9259728ee2200f74cbb045f2c	LOKAL	scripts/diag-ego-schatten.cjs 
+frost-probe	cee33f9172b5a314810ed28273501af80e422722	GEMERGT	scripts/diag-weltbild-frost.cjs 
+hv2-d	04e72fa0ebbf08f58f1694cc0b3a779c439c561d	GEMERGT	anazhRealm.js 
+linse-probe	826717edb292b5462a836075e6eba9581cb93659	GEMERGT	scripts/diag-ego-schatten.cjs scripts/diag-verdeckungs-abfrage.cjs 
+rf-alt	1457bfa985655924a18e21b856adae885d7fb82b	GEMERGT	scripts/diag-fenster-wechsel.cjs scripts/diag-verdeckungs-abfrage.cjs 
+rf-main	7dd944e6de3e56dabd6adfbc896820fcae0ead5b	GEMERGT	scripts/diag-fenster-wechsel.cjs scripts/diag-portal-membran.cjs 
+s5-a	1185091c6b6270a6dc48dd48b4f3e39b798f2347	GEMERGT	scripts/diag-weltbild-frost.cjs scripts/lib/welt-boot.cjs 
+tw-gesetz	52ac16d84ae35f98dfa8b1f50eac014603b46cbe	GEMERGT	porta-core.js 
+tw-ohne-zwilling	52ac16d84ae35f98dfa8b1f50eac014603b46cbe	GEMERGT	porta-core.js 
+zz-nachher	e5ea0d1030149bd281dcf769663267de64f16019	GEMERGT	scripts/diag-ziel-zensus.cjs 
+zz-vorher	ab5a9f7f82c03dfe355d91c874ca39f923481697	GEMERGT	scripts/diag-ziel-zensus.cjs 

@@ -1,0 +1,22 @@
+2026-10-17 20:26:34Z: Runner reconnected.
+Current runner version: '2.338.0'
+2026-10-17 20:26:34Z: Listening for Jobs
+
+
+TaskName : OMEN actions-runner
+State    : Running
+
+
+
+
+
+
+ProcessId    : 17788
+CreationDate : 17.10.2026 22:24:54
+CommandLine  : "C:\actions-runner\\bin\Runner.Listener.exe"  run 
+
+
+
+
+Get-Service actions.runner.*:
+0
