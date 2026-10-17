@@ -33,7 +33,12 @@ const { ohneKommentare } = require("./stamm.cjs");
 // Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
 // `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
 // Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
-const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); });`;
+// `await window.__weltStehtNach(takt, max)` ist das EINE Einschwingen jeder Linse: `takt(n)` je Takt, bis die Welt steht (A9
+// `_weltSteht`, und das Buch ist da: `_bepflanzungWartet`) — nie eine eigene Heuristik (CI 39016311220: die Ring-Zahl stand,
+// die Nah-Wiese wartete auf ihr Gras). Der Regler hält, solange sie schwingt (headless atmet der PID ohne Bildrate). Der Deckel
+// `max` zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); sonst wirft er beim Grund.
+const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); });
+window.__weltStehtNach = async (takt, max) => { const r = window.anazhRealm, st = r.state, regler = st.perfRegulator, steht = () => r._weltSteht() && !r._bepflanzungWartet(); let n = 0; st.perfRegulator = false; try { for (let k = 0, o; !steht() && k < (max || 1800); n++) { await takt(n); o = r._weltOffen(); if (!(o.foundry + o.chunks + o.wald) && !r._bepflanzungWartet()) k++; if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10)); } } finally { st.perfRegulator = regler; } if (!steht()) throw new Error("DIE WELT STEHT NICHT nach " + n + " Takten: " + (r._bepflanzungWartet() ? "das Buch fehlt" : "Ruhe " + ((r._weltStand || {}).ruhe | 0) + ", zuletzt brach sie: " + (r._weltStand || {}).grund)); return n; };`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 

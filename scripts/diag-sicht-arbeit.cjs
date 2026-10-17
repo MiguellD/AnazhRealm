@@ -855,33 +855,17 @@ const server = statikServer();
                 st = r.state,
                 T = window.THREE;
             const P = Object.getPrototypeOf(r);
-            const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             };
-            // einschwingen: der Ring steht, kein Worker-Auftrag offen
-            const schwinge = async () => {
-                let stabil = 0,
-                    last = -1;
-                for (let i = 0; i < 6000; i++) {
-                    takt();
-                    const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-                    if (sz === last) stabil++;
-                    else {
-                        stabil = 0;
-                        last = sz;
-                    }
-                    if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-                    if (i % 5 === 0) await pause(10);
-                }
-                return last;
-            };
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
-            const ring = await schwinge();
+            // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
+            const takte = await window.__weltStehtNach(takt);
+            const ring = st.voxelChunks.size;
             r._tickChunkSatz();
-            const aus = { ring, code: {} };
+            const aus = { ring, takte, code: {} };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
             const ppos = st.playerMesh.position.clone();
@@ -1496,7 +1480,7 @@ const server = statikServer();
           neu: ${x.taeter.join(", ")}`
             : "");
     console.log(
-        `  Ring ${befund.ring} Chunks · Sätze ${befund.saetze.join(", ")} · Gruppen der Wahl ${befund.gruppen} · Höhle ` +
+        `  Ring ${befund.ring} Chunks nach ${befund.takte} Takten · Sätze ${befund.saetze.join(", ")} · Gruppen der Wahl ${befund.gruppen} · Höhle ` +
             JSON.stringify(befund.hoehle)
     );
     const k = befund.ruheKalt;
