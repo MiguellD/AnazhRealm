@@ -505,7 +505,6 @@ function abnahmeSelbsttest(fixtureDir) {
 // RAUSCHEN_MAX. Bis K63-n1 vier Schüsse unter freier Uhr und eine Schatten-Ausnahme nach der Farbart: zwei Schüsse derselben
 // Pose unterschieden sich an 27,5 % der Nah-Pixel um mehr als 18, 34 673 Pixel standen in zwei Masken, Gras unter den Tannen
 // in der Laub-Maske (Prüfer K63 R1).
-const KLASSEN_SCHWELLE = 18;
 const RAUSCHEN_MAX = 0.002;
 function klassenTeilung(G, Os, W, H, schwelle) {
     const t = schwelle == null ? 18 : schwelle;
@@ -1908,29 +1907,31 @@ function sollTafelUrteil(tafel, q) {
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
         // DER BENANNTE MANGEL (K63-n2; Prüfer K63 R2: Kopf, Laub und Tore standen GRÜN, ihre Maße sahen den Mangel des Plans nicht):
-        // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen — ein GRÜNES Maß neben einem
-        // benannten Mangel ist ein Bruch: das Maß ist blind oder der Mangel geheilt (dann fällt die Zeile mit dem Bild-Paar).
+        // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
+        // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
+        // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
+        // nie ein Bruch der Tafel (A10, 17.10.: der Schreiber `--ist` wies das ehrliche ROT von boden-nah-farbe ab, die Tafel behielt
+        // die Messung vom 16.10. — fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
         const mg = (k.wirkung || {}).mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
-        if (mg && urteil === "GRÜN")
-            fehler.push(
-                `${wo}: der benannte Mangel „${mg.befund}" (${mg.quelle}) steht, das Maß ${ma.name} ist GRÜN — es sieht ihn nicht`
-            );
-        // DER GEHEILTE MANGEL (K63-n3): fällt ein Mangel, weil das heutige Bild ihn nicht mehr zeigt, trägt die Klasse ihn als
-        // `geheilt` mit Befund, Quelle, dem Bild-Paar (vorher ↔ nachher bzw. Stufe ↔ Stufe) und dem Warum in Zahlen — und ihr Maß ist
-        // GRÜN; ein geheilter Mangel neben einem ROTEN oder ungemessenen Maß ist ein Widerspruch, ein Mangel nie beides
         const gh = (k.wirkung || {}).geheilt;
-        if (gh != null) {
-            if (!(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
-                fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
-            else {
-                for (const p of gh.bildPaar) if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
-                // ein VERALTETES Maß ist kein Widerspruch (Koordinator 15.10., K71-Merge): die Messung kennt den neuen Code nicht, die Zeile
-                // steht ROT „veraltet seit …" bis zur Neumessung — sonst sperrte jede Welle, die eine Quelle der Klasse berührt, check:statik
-                if (urteil !== "GRÜN" && !stand)
-                    fehler.push(`${wo}: der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil}`);
-            }
-            if (mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
+        if (gh != null && !(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
+            fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
+        else if (gh != null)
+            for (const p of gh.bildPaar) if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
+        if (gh != null && mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
+        const widerspruch =
+            ist == null || stand
+                ? null
+                : mg && urteil === "GRÜN"
+                  ? `der benannte Mangel „${mg.befund}" (${mg.quelle}) steht, das Maß ${ma.name} ist GRÜN — es sieht ihn nicht`
+                  : gh && urteil !== "GRÜN"
+                    ? `der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil} — er ist zurück`
+                    : null;
+        if (widerspruch) {
+            if (urteil === "GRÜN") abstand = null;
+            urteil = "ROT";
+            grund = `${grund || `${ma.name} ${ist}`} · ${widerspruch}`;
         }
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
@@ -2377,9 +2378,11 @@ function sollTafelSelbsttest(tafel, q) {
                 frisch(k, k.mass.messung);
             },
             "es sieht ihn nicht",
+            "zeile",
         ],
         ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
-        // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß
+        // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß; A10
+        // (17.10.): boden-nah-farbe hieß geheilt, die Neumessung 9,27 < 10,7 — die Zeile ROT „er ist zurück", der Schreiber schreibt
         [
             // das Maß FRISCH gestempelt (am heutigen Code), sonst stünde es veraltet und der Widerspruch ruhte bis zur Neumessung
             "geheilt neben einem roten Maß",
@@ -2389,7 +2392,8 @@ function sollTafelSelbsttest(tafel, q) {
                 frisch(k, k.mass.messung);
                 heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]);
             },
-            "heißt geheilt, das Maß zweiton ist ROT",
+            "heißt geheilt, das Maß zweiton ist ROT — er ist zurück",
+            "zeile",
         ],
         // K63-n8 (Koordinator 15.10.): das Bild der Messung im Scratch (AppData) — ein Verweis aus dem Baum hinaus
         [
@@ -2400,7 +2404,8 @@ function sollTafelSelbsttest(tafel, q) {
         ["Bild-Paar außerhalb", (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]), "liegt nicht unter artifacts/"],
         ["Schuss ins Leere", (t) => (mitMessung(t).mass.messung = "phantom:L1"), 'Schuss „phantom:L1" fehlt'],
     ];
-    for (const [name, fn, wort] of faelle) {
+    // ein Fall „zeile" (Maß gegen den Stand der Klasse) urteilt die ZEILE ROT beim Namen, und der Schreiber `--ist` schreibt ihn
+    for (const [name, fn, wort, zeile] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
         const t = klon();
         try {
@@ -2410,8 +2415,11 @@ function sollTafelSelbsttest(tafel, q) {
             continue;
         }
         const u = sollTafelUrteil(t, q);
-        if (u.ok || !u.fehler.some((f) => f.includes(wort)))
-            v.push(`Tafel-Bruch „${name}": nicht beim Namen (${u.fehler.join(" · ") || "grün"})`);
+        const ab = zeile ? sollIstAbweisung(klon(), t, q) : [];
+        const beimNamen = zeile
+            ? !ab.length && u.zeilen.some((z) => z.urteil === "ROT" && (z.grund || "").includes(wort))
+            : !u.ok && u.fehler.some((f) => f.includes(wort));
+        if (!beimNamen) v.push(`Tafel-Bruch „${name}": nicht beim Namen (${[...u.fehler, ...ab].join(" · ") || "grün"})`);
     }
     // DER EINE SCHUSS (W1-n1): die Zeile, die den Schuss einer anderen NENNT, liest dasselbe Ist wie sein Träger
     const tn = klon(),
@@ -2574,16 +2582,9 @@ function sollIstAbweisung(alt, neu, q) {
 
 module.exports = {
     SCHWELLEN,
-    SOLL_MASSE,
-    KLASSEN_SCHWELLE,
-    RAUSCHEN_MAX,
     klassenTeilung,
     bildRauschen,
     klassenMasse,
-    gesichtMasse,
-    zweitonNatur,
-    rauschBild,
-    sollRechnung,
     sollTafelUrteil,
     standLeser,
     codeAbdruck,
@@ -2594,13 +2595,10 @@ module.exports = {
     sollIstAbweisung,
     abnahmeUrteil,
     bildMasse,
-    paarUrteil,
     pngLesen,
-    pngSchreiben,
     verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,
-    spiegelPearson,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
         `window.__bildMasse = ${bildMasse.toString()};` +
