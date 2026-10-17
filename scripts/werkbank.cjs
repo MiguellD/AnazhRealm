@@ -263,7 +263,7 @@ function sollIstSchreiben(ziele, messung) {
 // (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
 // Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
 function tafelText(v, ein = "") {
-    if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return JSON.stringify(v).replace(/,/g, ", ");
+    if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return `[${v.map((x) => JSON.stringify(x)).join(", ")}]`;
     if (!v || typeof v !== "object") return JSON.stringify(v);
     const innen = ein + "    ";
     const jeZeile = (k) => k === "klassen" && v.werkzeug && v[k] && typeof v[k] === "object" && !Array.isArray(v[k]);
@@ -1194,6 +1194,8 @@ async function starte() {
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             window.__letzteAufnahme = auf.u8;
+            // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
+            const spiegel = (window.__letzteSpiegel = k.klasse ? await window.__spiegelDaten() : null);
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -1421,7 +1423,7 @@ async function starte() {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });

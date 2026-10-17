@@ -299,9 +299,9 @@ function leibInstall(cfg) {
         while (performance.now() < dl) {
             await L.tick(5, 40);
             n++;
-            if (n >= 4 && !r._weltbildFehlt().length) break;
+            if (n >= 4 && !r._weltbildFehlt(true).length) break;
         }
-        return r._weltbildFehlt();
+        return r._weltbildFehlt(true);
     };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
     L.sichtbar = (x, z) => {
@@ -795,9 +795,9 @@ async function probe(arg) {
         while (performance.now() < dl) {
             await tick(5, 40);
             n++;
-            if (n >= 4 && !r._weltbildFehlt().length) break;
+            if (n >= 4 && !r._weltbildFehlt(true).length) break;
         }
-        return r._weltbildFehlt();
+        return r._weltbildFehlt(true);
     };
     await steht(90000);
     out.zeiten.boot = Math.round(performance.now() - t0);

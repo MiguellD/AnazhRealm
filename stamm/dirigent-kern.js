@@ -53,10 +53,6 @@ class AnazhRealm {
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         // DIE WURF-EBENE (K72): `castShadow` ist ein Bit der Ebenen, bevor der erste Knoten der Welt entsteht
         AnazhRealm._wurfEbene();
-        // DIE WAHRNEHMUNG VOM ERSTEN TAKT (OMEN 17.10.): die Studio-PORTAL_RENDER_CONFIG lebt in foundry-core (`__terrainCore`), das die
-        // Seite selbst lädt — der Wirt trägt sie ab hier, das Buch löst sie durch dieselbe ab; kein Chunk streut mehr ohne Seltenheit.
-        AnazhRealm._studioRenderConfig =
-            AnazhRealm._studioRenderConfig || globalThis.__terrainCore.PORTAL_RENDER_CONFIG;
         // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
         this._bildZeit = 0;
         this.state = {
@@ -74,6 +70,9 @@ class AnazhRealm {
             // State-Linse (audit:strict) jeden Lese-Pfad gegen eine Init-Wahrheit prüft und Tippfehler beim Namen nennt.
             scenePass: null, // der Szene-Pass der Post-Kette (_ensurePostProcessing)
             weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
+            // DIE SPIEL-ZEIT (s): die Summe der Spiel-Takte (`delta`, K21) — der EINE Schreiber ist der Loop, die Uhr des lebendigen
+            // Felds (Zerfall von Leben und Gefühl); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
+            spielZeit: 0,
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
@@ -1786,7 +1785,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.12";
+AnazhRealm.VERSION = "18.546.14";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

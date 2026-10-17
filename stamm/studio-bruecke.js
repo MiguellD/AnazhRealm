@@ -962,7 +962,8 @@ class AnazhRealm_studio_bruecke {
         if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
         const dx = wo.x - pm.x,
             dz = wo.z - pm.z;
-        return dx * dx + dz * dz;
+        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — `_blickRang`
+        return dx * dx + dz * dz + this._blickRang(wo.x, wo.z);
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
@@ -978,14 +979,21 @@ class AnazhRealm_studio_bruecke {
         if (!q || !f.worker) return;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
+        let frei = 0,
+            bahn = null;
+        // DER BLICK ZUERST (B3d): vor dem ersten Weltbild geht ein Auftrag außer Blick (sein Rang, `_blickRang`) nur in eine
+        // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
+        // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
+        const darf = (a) =>
+            frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.wo));
         while (q.length) {
             const im = new Map();
             for (const k of f.pending.keys()) {
                 const b = this._foundryBahn(k);
                 im.set(b, (im.get(b) || 0) + 1);
             }
-            let frei = 0,
-                bahn = null;
+            frei = 0;
+            bahn = null;
             for (const w of werke) {
                 const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
                 if (fr > frei) {
@@ -994,12 +1002,19 @@ class AnazhRealm_studio_bruecke {
                 }
             }
             if (!bahn) return; // kein Faden mit Platz
-            let i = 0;
+            let i = -1;
+            for (let k = 0; k < q.length; k++)
+                if (darf(q[k])) {
+                    i = k;
+                    break;
+                }
+            if (i < 0) return; // kein Wartender, der in die freiste Bahn darf
             let aeltester = false;
-            if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
+            if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
             if (!aeltester) {
-                let best = this._foundryAuftragD2(q[0].wo);
-                for (let k = 1; k < q.length; k++) {
+                let best = this._foundryAuftragD2(q[i].wo);
+                for (let k = i + 1; k < q.length; k++) {
+                    if (!darf(q[k])) continue;
                     const d2 = this._foundryAuftragD2(q[k].wo);
                     if (d2 < best) {
                         best = d2;

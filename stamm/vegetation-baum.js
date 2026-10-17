@@ -1413,11 +1413,13 @@ class AnazhRealm_vegetation_baum {
         let chance = BASE_RATE * bestAffinity * bestAffinity;
         // Streu-Seltenheit aus der Vorlagen-Quelle (PORTAL_RENDER_CONFIG.placement.rarity, live): wie selten
         // Kristall-/Fels-Formationen streuen (kristalle 0.05 = fast nie), editierbar ohne Code.
-        // Kein stiller Zweig mehr: vor B3a streute ein Chunk vor dem Buch ohne Seltenheit (Kristalle 20× zu oft, OMEN 17.10.).
         {
-            const _rar = AnazhRealm._studioRenderConfig.placement.rarity;
-            const _preset = this._foundryPresetFor(bestName);
-            if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
+            const _rcP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.placement;
+            const _rar = _rcP && _rcP.rarity;
+            if (_rar) {
+                const _preset = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bestName) : null;
+                if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
+            }
         }
         if (isTree) {
             const lebendig = welt.lebendig;
@@ -2046,6 +2048,14 @@ class AnazhRealm_vegetation_baum {
             spawned++;
         }
         return spawned;
+    }
+
+    // DIE BEPFLANZUNG WARTET AUF DAS BUCH (Kristall-Rennen, OMEN 17.10., Zweig koordination): läuft die Foundry, liest jede
+    // Streu-Probe die Wahrnehmung des Studios (placement.rarity, `_studioRenderConfig`), die erst das Buch bringt — ein Chunk
+    // vor dem Buch streute ohne Seltenheit (Kristalle 20x zu oft: Genesis 347 statt 2). Er wartet in `pendingFoliageChunks`,
+    // `_tickFoliageGrowth` pflanzt ihn nach dem Buch. Ohne Foundry (Test-Haken `__anazhGateNoFoundry`) kommt kein Buch.
+    _bepflanzungWartet() {
+        return !AnazhRealm._studioRenderConfig && this._foundryEnabled();
     }
 
     // Streu-Strukturen eines Voxel-Chunks (Felsen/Geoden/Glutbrunnen/Formationen + Unterwuchs): Sample-

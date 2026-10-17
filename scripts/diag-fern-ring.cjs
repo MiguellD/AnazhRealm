@@ -354,25 +354,19 @@ const server = statikServer();
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
             }
-            // der Hub liest den Wind: das Gesetz mit doppelter Wind-Zeile hebt ihn im Verhältnis
-            const G0 = r.constructor.Gesetz;
-            const hub0 = r.constructor._wasserHubM();
-            const WG = G0("terrain:WASSER_GESETZ", null);
-            let hubW = null;
-            try {
-                r.constructor.Gesetz = (pfad, fb) =>
-                    pfad === "terrain:WASSER_GESETZ"
-                        ? Object.assign({}, WG, { wind: [WG.wind[0] * 2, WG.wind[1] * 2] })
-                        : G0(pfad, fb);
-                hubW = r.constructor._wasserHubM();
-            } finally {
-                r.constructor.Gesetz = G0;
-            }
-            res.hub = {
-                hub: +hub0.toFixed(3),
-                wind: WG.wind,
-                hubDoppelterWind: hubW == null ? null : +hubW.toFixed(3),
+            // der Hub liest das Gesetz: die Wind-Zeile hebt die Dünung, der Treiber (A12) das Kräuseln — beide doppelt heben
+            // ihn im Verhältnis, jede allein hebt ihn (keine Zeile ist ein toter Zwilling)
+            const K = r.constructor, G0 = K.Gesetz, W0 = K.WASSER_WELLE, WG = G0("terrain:WASSER_GESETZ", null);
+            const hubMit = (w, t) => {
+                K.Gesetz = (pfad, fb) => (pfad === "terrain:WASSER_GESETZ" ? { ...WG, wind: WG.wind.map((x) => x * w) } : G0(pfad, fb));
+                K.WASSER_WELLE = { ...W0, treiber: W0.treiber.map((x) => x * t) };
+                try {
+                    return K._wasserHubM();
+                } finally {
+                    [K.Gesetz, K.WASSER_WELLE] = [G0, W0];
+                }
             };
+            res.hub = { hub: hubMit(1, 1), beide: hubMit(2, 2), nurWind: hubMit(2, 1), nurTreiber: hubMit(1, 2), wind: WG.wind, treiber: W0.treiber };
         }
 
         // ===== (3) RE-ZENTRIEREN: 400 m Teleport + Ticks pumpen =====
@@ -1554,9 +1548,9 @@ const server = statikServer();
     );
     const hb = out.hub || {};
     check(
-        "2c: DER HUB liest die Wind-Zeile des Gesetzes (doppelter Wind, doppelter Hub)",
-        hb.hub > 0 && hb.hubDoppelterWind != null && Math.abs(hb.hubDoppelterWind / hb.hub - 2) < 1e-6,
-        `Hub ${hb.hub} m bei Wind ${JSON.stringify(hb.wind)}, mit doppeltem Wind ${hb.hubDoppelterWind} m`
+        "2c: DER HUB liest Wind-Zeile und Treiber des Gesetzes (beide doppelt: doppelter Hub; jede allein hebt ihn)",
+        hb.hub > 0 && Math.abs(hb.beide / hb.hub - 2) < 1e-6 && [hb.nurWind, hb.nurTreiber].every((h) => h > hb.hub && h < 2 * hb.hub),
+        `Hub ${(hb.hub || 0).toFixed(3)} m (Wind ${hb.wind}, Treiber ${hb.treiber}), beide doppelt ×${(hb.beide / hb.hub).toFixed(4)}, nur Wind ${(hb.nurWind || 0).toFixed(3)} m, nur Treiber ${(hb.nurTreiber || 0).toFixed(3)} m`
     );
     check(
         "3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport",

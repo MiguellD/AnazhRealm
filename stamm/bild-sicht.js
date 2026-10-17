@@ -204,8 +204,14 @@ class AnazhRealm_bild_sicht {
     // je Kanal (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m) — EINE Formel
     // für den Wasser-Stoff und jeden Fern-Leser (Ring, Feld-Pass). Bis K16 trug die Ferne ein eigenes Fern-Blau
     // (`FERN_FARBE.wasser`, 0x265273): der Fluss im Ring 4,8× heller als der gebaute (Luma 0,255 gegen 0,053).
+    // DURCH DIE FLÄCHE (A12-n1): die Strahldichte unter Wasser tritt um n² verdünnt aus (L/n² bleibt über die Grenze erhalten;
+    // n aus dem Fresnel des Gesetzes, f0 = ((n − 1)/(n + 1))² = 0,02 → n 1,329) — der Körper zeigt R∞/n², den Fresnel (1 − F)
+    // legt der Blick darauf (`_wasserBlick`). Bis A12-n1 trat er unverdünnt aus: 1,77× zu hell, das Blau des Körpers deckte
+    // das Bild im Spiegel (der See zu blau, spiegelTreue an der Tafel 0,52).
     static _wasserKoerper(WG) {
-        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu));
+        const w = Math.sqrt(WG.fresnel[0]);
+        const n = (1 + w) / (1 - w);
+        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu) / (n * n));
     }
 
     // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): n × n Zellen à texel m um das Auge aus dem GEBAUTEN Boden des Workers
@@ -633,6 +639,13 @@ class AnazhRealm_bild_sicht {
         this._luftEnsure();
         const luft = st.luft;
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
+        // die Tiefe der Szene OHNE das Wasser (das Abbild `_szeneTiefe`, sein Fernstes je waagrechtem Paar): woran der Treffer
+        // erkennt, dass er Wasser ist — fehlt es (kein WebGPU-Abbild), bricht der Pass laut
+        this._szeneTiefe();
+        const abbildTex = this._szeneTiefeKnoten && this._szeneTiefeKnoten.value;
+        if (!abbildTex || abbildTex.name !== "szene:tiefenabbild")
+            throw new Error("SPIEGEL-PASS: das Tiefen-Abbild der Szene (`_szeneTiefe`) fehlt");
+        const abbild = T.texture(abbildTex);
         // das Bild des Szenen-Passes (linear, vor Zeit-Auflösung und Tönung): der Spiegel liest die Strahlung, die es zeichnet
         const farbe = st.scenePass.getTextureNode().value;
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
@@ -678,23 +691,26 @@ class AnazhRealm_bild_sicht {
                 );
                 const w4 = U.invVP.mul(ndc);
                 const P = w4.xyz.div(w4.w).toVar();
-                const r0 = P.xz.sub(U.mitte).div(kante);
                 // der Wasser-Punkt: eine der vier Zellen um ihn ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem
                 // (0,6 m tiefer gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie. Bis A1
                 // fragte nur die Zelle unter dem Punkt: am Ufer liegt das gezeichnete Wasser bis in die Land-Zellen, dort las der
-                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie)
-                const zw = floor(P.xz.div(S.texel).sub(0.5));
-                const istWasser = (di, dj) => {
-                    const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
-                    return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
-                        .lessThan(0.5)
-                        .and(abs(P.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie). Der Ort fragt die Lage (er deckt jedes
+                // gezeichnete Wasser samt Saum), der Treffer im Bild fragt das Abbild (unten): was ER ist, nie wo er liegt.
+                const aufWasser = (pt) => {
+                    const zw = floor(pt.xz.div(S.texel).sub(0.5));
+                    const zelle = (di, dj) => {
+                        const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
+                        return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
+                            .lessThan(0.5)
+                            .and(abs(pt.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                    };
+                    return zelle(0, 0).or(zelle(1, 0)).or(zelle(0, 1)).or(zelle(1, 1));
                 };
-                const wasser = istWasser(0, 0)
-                    .or(istWasser(1, 0))
-                    .or(istWasser(0, 1))
-                    .or(istWasser(1, 1))
-                    .and(max(abs(r0.x), abs(r0.y)).lessThan(0.48));
+                const imFeld = (pt) => {
+                    const rel = pt.xz.sub(U.mitte).div(kante);
+                    return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
+                };
+                const wasser = aufWasser(P).and(imFeld(P));
                 If(wasser, () => {
                     const v = normalize(P.sub(U.auge));
                     const R = vec3(v.x, abs(v.y), v.z);
@@ -759,8 +775,29 @@ class AnazhRealm_bild_sicht {
                                     1
                                 )
                             );
+                            // DAS WASSER IST NIE SEIN BILD (A12) — erkannt an dem, was es IST, nie an einer Höhe (A12-n1): ein
+                            // Texel zeigt Wasser, wo vor der Szene ohne das Wasser (das Tiefen-Abbild, gezogen im Pass-Bruch, ehe
+                            // Wasser, Marsch und Transparentes zeichnen) eine Fläche um mehr als `bildSchicht` näher liegt und
+                            // nicht vor dem Nachbarn ihres waagrechten Paars steht (das Abbild hält je Paar das Fernste: ein
+                            // Halm von 1 px vor dem See trüge sonst dessen Grund). Ohne Fläche im Abbild (die Ferne des Marschs)
+                            // ist es Bild. So fällt der Kamm, der Buckel des Wasser-Dachs, die höhere Fläche dahinter — und jedes
+                            // Ding an der Wasserlinie bleibt. Bis A12-n1 hielt eine Höhe (±1,5 m um den Spiegel in 2×2 Zellen à
+                            // 2 m): Pfahl, Halm, der Watende, der Wagen in der Furt und der Ufer-Busch verloren an der Linie ihr
+                            // Bild (Prüfer A12: unter dem Pfahl 13 Zeilen, der Spiegel des 1,2-m-Stumpfs ganz)
+                            const schicht = wz.mul(K.bildSchicht[0]).add(K.bildSchicht[1]);
+                            const dOpak = abbild.load(ivec2(floor(tx.x.mul(0.5)), tx.y)).r;
+                            const paarX = min(tx.x.add(1).sub(mod(tx.x, 2.0).mul(2)), tiefeGr.x.sub(1));
+                            const wPaar = linear(tiefe.load(ivec2(paarX, tx.y)).r);
+                            const wasserTexel = dOpak
+                                .lessThan(0.99999)
+                                .and(linear(dOpak).sub(wz).greaterThan(schicht))
+                                .and(wz.greaterThan(wPaar.sub(schicht)));
                             kandidat.assign(
-                                select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0))
+                                select(
+                                    h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)).and(wasserTexel.not()),
+                                    float(1),
+                                    float(0)
+                                )
                             );
                         });
                         If(sDeck.lessThan(0.0).and(dz.lessThan(0.99999)).and(ws.sub(wz).greaterThanEqual(dicke)), () =>
@@ -1137,9 +1174,18 @@ class AnazhRealm_bild_sicht {
         const flowDir = aFlowV.div(flowMag.max(float(0.0001)));
         // Kräusel-Amplitude = Floor 0.3 + weite aDepth-Rampe (0.4→4.0 m): aDepth springt an Bett-Nähten
         // minimal — eine harte Rampe machte daraus eine sichtbare Linie. Shader-only.
+        // DAS STILLE WASSER STEHT (A12): was das Kräuseln treibt, ist eine Zeile des Gesetzes (`WASSER_WELLE.treiber`): t0
+        // trägt die STRÖMUNG (der Fluss wirbelt auch ohne Wind, flowMix), t1 · Wind der Wind über jedem Wasser; der See ohne
+        // Strömung kräuselt nur im Wind (Wind 0: ein Spiegel). Bis A12 kräuselte er mit der Normal-Zeile `wind` (w0 + w1 ·
+        // Wind) auch in der Flaute: an der Tafel (Wind 0,06) bis ±0,75 m Hub auf 14 m Welle — der Fresnel des streifenden
+        // Blicks (1–5°) sprang mit Neigung und Hub je Pixel und zerlegte das Spiegelbild in dunkle Flecken (spiegelTreue Ego
+        // 0,463 → 0,563, Third 0,545 → 0,563). Die Hülle `_wasserHubM` liest denselben Treiber.
+        const kraeuselWind = float(AnazhRealm.WASSER_WELLE.treiber[0])
+            .mul(flowMix)
+            .add(uWind.mul(AnazhRealm.WASSER_WELLE.treiber[1]));
         const rippleAmt = uLakeRipple
             .mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))))
-            .mul(windF);
+            .mul(kraeuselWind);
         // EINE Displace-Quelle (Ozean-Gerstner + organische Kräuselung) für alle 3 Normal-Samples.
         const surfDisp = Fn(([xz]) => {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
@@ -3423,7 +3469,8 @@ AnazhRealm.FELD_PANO = Object.freeze({
 // `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
 // Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`). ZUERST spiegelt das BILD (A1): der Strahl als Strecke im Schirm
 // (bis `bildWeit` m) in `bildSchritte` Schritten gegen die Tiefe des Szenen-Passes, Treffer hinter der Fläche um
-// weniger als ihre Dicke (`bildDicke`: Anteil des Abstands + m) über dem Wasser (höher als `bildUfer` m), `bildHalb` Halbierungen,
+// weniger als ihre Dicke (`bildDicke`: Anteil des Abstands + m) über dem Wasser (höher als `bildUfer` m) und nie das Wasser
+// selbst (vor der Szene ohne Wasser näher als `bildSchicht`: Anteil des Abstands + m), `bildHalb` Halbierungen,
 // am Schirm-Rand (`bildRand`) blendet er in das Feld — das trägt nur den Strahl jenseits des Schirms; die Schritte liegen nach
 // q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu,
 // frühestens nach `bildRuheBilder` Bildern (seltener als jedes 20. Bild: der Lauf im Stand trägt nie das p95).
@@ -3433,6 +3480,7 @@ AnazhRealm.SPIEGEL = Object.freeze({
     bildRuheMs: 500,
     bildRuheBilder: 24,
     bildUfer: 0.12,
+    bildSchicht: [0.02, 0.05],
     teil: 4,
     bildWeit: 3000,
     bildDicke: [0.04, 0.5],
@@ -3458,8 +3506,9 @@ AnazhRealm.SPIEGEL = Object.freeze({
 });
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
-// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`), beides × die
-// Wind-Zeile des Gesetzes (w0 + w1 · Wind). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
+// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`), die Dünung ×
+// die Wind-Zeile des Gesetzes (w0 + w1 · Wind), das Kräuseln × seinen `treiber` (t0 · Strömungs-Anteil + t1 · Wind: der
+// stille See kräuselt allein im Wind, A12). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
 // (4,42 m im Sturm; ohne den Wind rechnete er 2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt ihn (vorher nur der
 // Saum 2 m: am Bildrand fehlte ein gehobenes Viertel), das Wasser des Fern-Rings liegt darunter (`_fernRingWasserTiefe`).
 // Die Fluss-Phase `phase` (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
@@ -3471,7 +3520,9 @@ AnazhRealm.WASSER_WELLE = (() => {
         !W ||
         !Array.isArray(W.duenung) ||
         W.duenung.length !== 3 ||
-        ![...W.duenung, W.oktave, W.mitte, W.kraeusel, W.kraeuselDecke, W.phase].every(Number.isFinite)
+        !Array.isArray(W.treiber) ||
+        W.treiber.length !== 2 ||
+        ![...W.duenung, ...W.treiber, W.oktave, W.mitte, W.kraeusel, W.kraeuselDecke, W.phase].every(Number.isFinite)
     )
         return AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ.welle");
     return W;

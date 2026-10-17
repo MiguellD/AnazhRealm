@@ -24,6 +24,7 @@ class AnazhRealm_dirigent_takt {
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
             if (this._portalOverlay) return;
+            this.state.spielZeit += delta; // DIE SPIEL-ZEIT: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
@@ -1262,7 +1263,7 @@ class AnazhRealm_dirigent_takt {
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt
         // es am Frame-Ende weiter aus frameMs — die volle Vereinheitlichung kommt mit dem Default-an).
-        if (B.remainingMs() <= 0 && !this._ladeTakt()) st._frameOverBudget = true;
+        if (B.remainingMs() <= 0 && !this._ladeTakt() && st._nachlauf == null) st._frameOverBudget = true;
     }
 
     _loopVoxelStreaming() {
@@ -1487,7 +1488,7 @@ class AnazhRealm_dirigent_takt {
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
-        if (!this.state._weltbildDa) this._ankunftsBild();
+        if (!this.state._weltbildDa || this.state._nachlauf != null) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
         // `render.calls` ein LEBENSZEIT-Zähler der render()-Aufrufe (reset() löscht ihn nicht) → er
         // vergiftete HUD/Flugschreiber/Regler mit wachsender Phantom-Last. Pro Frame zählt

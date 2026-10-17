@@ -865,7 +865,7 @@ class AnazhRealm_gelaende_chunks {
     // stand, entschied allein der frei laufende Boot.
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
-        if (!pending || pending.size === 0) return;
+        if (!pending || pending.size === 0 || this._bepflanzungWartet()) return;
         if (this.state._frameOverBudget) {
             const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
             if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
@@ -1376,7 +1376,7 @@ class AnazhRealm_gelaende_chunks {
         // V18.275 — KAPAZITÄTS-GATE: nur füllen, wenn der Chunk im `foliageRadius` liegt;
         // sonst wartet er in `pendingFoliageChunks`, bis der Radius (mit der gemessenen
         // Render-Kapazität) zu ihm wächst (`_tickFoliageGrowth`). So bleibt der Spawn leicht.
-        if (this._foliageChunkInRadius(cx, cz)) {
+        if (!this._bepflanzungWartet() && this._foliageChunkInRadius(cx, cz)) {
             this._populateVoxelChunkVegetation(cx, cz);
         } else {
             if (!this.state.pendingFoliageChunks) this.state.pendingFoliageChunks = new Set();

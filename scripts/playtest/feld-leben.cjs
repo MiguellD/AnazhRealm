@@ -112,8 +112,9 @@ async function checkBandV1727WritableField(ctx) {
         const frozen = r.worldFieldAt(X, Z).lebendig;
         // (1) backward-compatible: leerer Overlay → auraAt == worldFieldAt
         out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
-        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1))
-        r._depositLife(X, Z);
+        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1)) — im selben Takt exakt, auch wenn die Wanduhr 3 ms läuft (GC, Last):
+        r._depositLife(X, Z); // die Feld-Uhr ist `state.spielZeit` (CI 39002548016: die Wanduhr trieb 5e-6 ab, ROT ohne Code-Änderung)
+        for (const t0 = performance.now(); performance.now() - t0 < 3; ); // die Wanduhr läuft, der Takt steht
         const afterDeposit = r.auraAt(X, Z).lebendig;
         out.depositRaises = afterDeposit > frozen;
         out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
@@ -180,9 +181,7 @@ async function checkBandV1729CreatureTrickle(ctx) {
         r._tickCreatureLifeTrickle(tending, 1000);
         const after = r._lifeOverlayAt(X, Z);
         out.tendingDeposits = after > before;
-        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit. Die
-        // GESPEICHERTE Menge `a` prüfen (nicht den decayten Lese-Wert — der driftet
-        // real-time pro Lesung; nur ein Deposit ändert `a`).
+        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit (die GESPEICHERTE Menge `a`).
         const aStored = r.state.lifeField.get(key).a;
         r._tickCreatureLifeTrickle(tending, 1000);
         out.rateLimited = r.state.lifeField.get(key).a === aStored;
@@ -1340,7 +1339,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // sperrte G1 und D2M (16.10., n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
-            r._weltbildLuecken().filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
+            r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
         out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {

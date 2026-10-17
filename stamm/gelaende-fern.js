@@ -1366,8 +1366,9 @@ AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
     const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
     const kraeusel = W.kraeusel * Math.max(1 + W.oktave - W.mitte, W.mitte) * W.kraeuselDecke;
-    // der Wind des Gesetzes skaliert beides (Amplitude × (w0 + w1 · Wind), Wind 0 ruhig … 1 Sturm)
+    // der Wind des Gesetzes skaliert die Dünung (Amplitude × (w0 + w1 · Wind), Wind 0 ruhig … 1 Sturm), sein Treiber das
+    // Kräuseln (t0 · Strömung + t1 · Wind, A12): die Decke ist der volle Strom im Sturm
     const WG =
         AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-    return (duenung + kraeusel) * (WG.wind[0] + WG.wind[1]);
+    return duenung * (WG.wind[0] + WG.wind[1]) + kraeusel * (W.treiber[0] + W.treiber[1]);
 };

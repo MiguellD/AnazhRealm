@@ -802,7 +802,10 @@ class AnazhRealm_dirigent_ankunft {
     // was fehlt — ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest.
     _ankunftsBild() {
         const st = this.state;
-        if (st._weltbildDa) return true;
+        if (st._weltbildDa) {
+            if (st._nachlauf != null) this._nachlaufTakt();
+            return true;
+        }
         const luecken = this._weltbildLuecken();
         const fehlt = luecken.map((l) => l.satz);
         if (fehlt.length) {
@@ -840,9 +843,12 @@ class AnazhRealm_dirigent_ankunft {
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
+        st._nachlauf = 0;
+        st._rundumDa = null;
         // die Ankunft aus der Ferne gleitet ab jetzt über die gezeichneten Bilder (`_ankunftsFerne`); der Null-Renderer
         // zeichnet keins — dort gilt die Distanz-Stufe ab dem Bild
         if (st.renderer && !st.renderer._isHeadlessNull) st._ankunftGleit = 0;
+        this._ersterBlickAus();
         const w = st._weltbildWarten;
         st._weltbildWarten = null;
         if (w) w.erfuellt(st._weltbildDa);
@@ -866,25 +872,110 @@ class AnazhRealm_dirigent_ankunft {
         return g >= 0 && g < N ? Math.pow(AnazhRealm.ANKUNFT_FERNE, 1 - g / N) : 1;
     }
 
+    // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera
+    // vom Auge der Stufen (`_lodAuge`; in Third die Kamera auf ihrer Kugel) in der EINEN Vorwärts-Richtung (`state.yaw`,
+    // `_blickVorn`), so breit wie ihr Bildwinkel (fov × aspect) plus ERSTER_BLICK.randGrad je Seite, dazu die Kugel um das
+    // Auge, die den Spieler trägt (sein Abstand + nahM). Befund OMEN 1610-ankunft-menge (GTX kalt): das Tor wartete rundum auf
+    // die ganze Mesh-Zone und jede Karte — 33,4 von 71 Bahn-Sekunden lagen außer Blick. Gemerkt je Stand von Kamera, Gier,
+    // Bildwinkel und Spieler: der Rang der Foundry-Schlange fragt ihn je Wartenden. null = kein Spieler.
+    _ersterBlick() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return null;
+        const cam = st.camera;
+        const c = cam ? cam.position : pm.position;
+        const p = pm.position;
+        const yaw = Number.isFinite(st.yaw) ? st.yaw : 0;
+        const fov = cam && cam.fov > 0 ? cam.fov : 75;
+        const asp = cam && cam.aspect > 0 ? cam.aspect : 1;
+        const B = this._ersterBlickWert;
+        if (
+            B &&
+            B.yaw === yaw &&
+            B.fov === fov &&
+            B.asp === asp &&
+            B.cx === c.x &&
+            B.cz === c.z &&
+            B.px === p.x &&
+            B.pz === p.z
+        )
+            return B;
+        const E = AnazhRealm.ERSTER_BLICK;
+        const auge = this._lodAuge();
+        const v = this._blickVorn(yaw, 0);
+        return (this._ersterBlickWert = {
+            yaw,
+            fov,
+            asp,
+            cx: c.x,
+            cz: c.z,
+            px: p.x,
+            pz: p.z,
+            ex: auge.x,
+            ez: auge.z,
+            fx: v.x,
+            fz: v.z,
+            halb: Math.atan(Math.tan((fov * Math.PI) / 360) * asp) + (E.randGrad * Math.PI) / 180,
+            nah: Math.hypot(p.x - auge.x, p.z - auge.z) + E.nahM,
+        });
+    }
+    // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin.
+    _imErstenBlick(x, z, r) {
+        const B = this._ersterBlick();
+        if (!B) return true;
+        const dx = x - B.ex;
+        const dz = z - B.ez;
+        const d = Math.hypot(dx, dz);
+        const rr = r > 0 ? r : 0;
+        if (d <= B.nah + rr || B.halb >= Math.PI) return true;
+        const w = Math.acos(Math.max(-1, Math.min(1, (dx * B.fx + dz * B.fz) / d)));
+        return w - Math.asin(Math.min(1, rr / d)) <= B.halb;
+    }
+    // Der Schlüssel des Blicks im Rang der Foundry-Schlange (`_foundryAuftragD2`): bis das erste Weltbild steht, trägt ein Ding
+    // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
+    _blickRang(x, z) {
+        const E = AnazhRealm.ERSTER_BLICK;
+        if (this.state._weltbildDa || this._imErstenBlick(x, z, E.dingM)) return 0;
+        return E.ausserD2;
+    }
+    // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2. Die
+    // Frage gilt nur VOR dem Bild — danach ist der Blick rundum: ein Rang ohne Ort (Vorrat, Karte ohne Leser: ∞) läge sonst
+    // für immer außer Blick, und die Pumpe gäbe ihm nur die leere Bahn (CI 39003506058, gate:takt T5–T8: im Flug 1 statt 12).
+    _rangImErstenBlick(rang) {
+        return !!this.state._weltbildDa || rang < AnazhRealm.ERSTER_BLICK.ausserD2;
+    }
+    // Steht das Bild, fällt der Blick-Schlüssel aus jedem wartenden Rang: die Zahl einer Karte (ihr Bedarf) und jedes
+    // Auftrags, der sie trägt — ab jetzt gilt nah zuerst rundum.
+    _ersterBlickAus() {
+        const A = AnazhRealm.ERSTER_BLICK.ausserD2;
+        const ab = (v) => (Number.isFinite(v) && v >= A ? v - A : v);
+        const f = this._foundry;
+        for (const a of (f && f.warte) || []) if (typeof a.wo === "number") a.wo = ab(a.wo);
+        for (const z of this._impostorAtlas().zellen.values()) z._bedarfD2 = ab(z._bedarfD2);
+    }
+
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
-    // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
-    // Buch der Studios, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der
-    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen,
-    // kein Dorf der Ankunft im Werden (fällig, im Export oder mit Häusern der Mesh-Zone in der Schlange).
+    // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), der
+    // Horizont, der Leib, das Buch der Studios — und IM BLICK (`_imErstenBlick`, B3d) jeder Bau und Baum der Mesh-Zone
+    // (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der Streamer holt, gebaut (`_streuWartet`: keine fehlt,
+    // keine wartet auf ihr Asset), keine Karte offen, deren Leser im Blick steht, kein Dorf der Ankunft im Werden (fällig, im
+    // Export oder mit Häusern im Blick in der Schlange). Was dahinter liegt, folgt nah zuerst (der Rundblick, gate:ankunft L2a).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
-    _weltbildFehlt() {
-        return this._weltbildLuecken().map((l) => l.satz);
+    _weltbildFehlt(rundum) {
+        return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
 
     // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
     // seinem Satz. Die Ankunfts-Linse (gate:ankunft L2a) liest die Liste und stellt je Term einen Fall her — ein Term ohne
     // Fall ist ROT beim Namen (die Pflanz-Schlange kam in K60 ohne Fall dazu: ihr Streichen wäre grün geblieben).
-    _weltbildLuecken() {
+    // `rundum`: jede Richtung zählt (der Nachlauf, `_nachlaufTakt`), nicht nur der Blick.
+    _weltbildLuecken(rundum) {
         const st = this.state;
         const out = [];
-        // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht
-        const luecke = (term, satz, arbeitet) => out.push({ term, satz, arbeitet: !!arbeitet });
+        // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht;
+        // `n`: so viele Löcher trägt sie (der Rundblick zählt sie)
+        const luecke = (term, satz, arbeitet, n) => out.push({ term, satz, arbeitet: !!arbeitet, n: n > 0 ? n : 1 });
         const pm = st.playerMesh;
         if (!pm) {
             luecke("welt", "die Welt entsteht");
@@ -925,14 +1016,18 @@ class AnazhRealm_dirigent_ankunft {
         }
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale
+        const ding = AnazhRealm.ERSTER_BLICK.dingM;
+        const imBlick = (x, z, r) => !!rundum || this._imErstenBlick(x, z, r > 0 ? r : ding);
         let ungebaut = 0;
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
             const dx = e.position.x - p.x;
             const dz = e.position.z - p.z;
-            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
+            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e) && imBlick(e.position.x, e.position.z))
+                ungebaut++;
         }
-        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
+        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut);
         // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
         // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
         // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das
@@ -943,9 +1038,11 @@ class AnazhRealm_dirigent_ankunft {
             if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
                 for (let i = q.idx; i < q.plan.slots.length; i++) {
                     const s = q.plan.slots[i];
-                    if (s && (q.origin.x + s.x - p.x) ** 2 + (q.origin.z + s.z - p.z) ** 2 <= R * R) haeuser++;
+                    const hx = s && q.origin.x + s.x;
+                    const hz = s && q.origin.z + s.z;
+                    if (s && (hx - p.x) ** 2 + (hz - p.z) ** 2 <= R * R && imBlick(hx, hz)) haeuser++;
                 }
-            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`);
+            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
             else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
             else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
                 luecke("dorf", "das Dorf wird gegründet");
@@ -955,31 +1052,31 @@ class AnazhRealm_dirigent_ankunft {
         let gesetzt = 0;
         for (const t of st.pendingVegSpawns || []) {
             const q = t && t.position;
-            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
+            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R && imBlick(q.x, q.z)) gesetzt++;
         }
         // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
         // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
         // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
+        const { span } = this._voxelChunkConfig();
+        const chunkImBlick = (cx, cz) => imBlick((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2);
         let saat = 0;
         for (const key of st.pendingFoliageChunks || []) {
             const ci = key.indexOf(",");
-            if (
-                st.voxelChunks &&
-                st.voxelChunks.has(key) &&
-                this._foliageChunkInRadius(Number(key.slice(0, ci)), Number(key.slice(ci + 1)))
-            )
+            const cx = Number(key.slice(0, ci));
+            const cz = Number(key.slice(ci + 1));
+            if (st.voxelChunks && st.voxelChunks.has(key) && this._foliageChunkInRadius(cx, cz) && chunkImBlick(cx, cz))
                 saat++;
         }
         // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69 — die Stufe nach der Saat): sein Chunk
         // trägt noch keinen Baum — ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
         const PW = this._waldPflanzWarten;
         if (PW && PW.size) {
-            const { span } = this._voxelChunkConfig();
             for (const key of PW) {
                 const i = key.indexOf(",");
-                const mx = (Number(key.slice(0, i)) + 0.5) * span;
-                const mz = (Number(key.slice(i + 1)) + 0.5) * span;
-                if ((mx - p.x) ** 2 + (mz - p.z) ** 2 <= R * R) saat++;
+                const cx = Number(key.slice(0, i));
+                const cz = Number(key.slice(i + 1));
+                if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R && chunkImBlick(cx, cz))
+                    saat++;
             }
         }
         if (gesetzt || saat)
@@ -987,13 +1084,46 @@ class AnazhRealm_dirigent_ankunft {
                 "pflanzung",
                 [gesetzt ? `${gesetzt} Bäume werden gepflanzt` : "", saat ? `${saat} Wald-Böden werden bepflanzt` : ""]
                     .filter(Boolean)
-                    .join(", ")
+                    .join(", "),
+                false,
+                gesetzt + saat
             );
-        const warten = this._streuWartet(p);
-        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
-        const karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
-        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
+        const SC = AnazhRealm.SCATTER;
+        const warten = this._streuWartet(p, null, (rx, rz) =>
+            imBlick((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, SC.regionM * Math.SQRT1_2)
+        );
+        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`, false, warten);
+        // die Karte zählt, deren Leser im Blick steht (ihr Bedarf ist sein Rang, `_foundryBuildImpostorFlat`); ein Schlüssel
+        // ohne Zelle zählt immer
+        const zellen = this._impostorAtlas().zellen;
+        const imBild = (k) => {
+            const z = zellen.get(k);
+            return !z || !!rundum || this._rangImErstenBlick(z._bedarfD2);
+        };
+        let karten = 0;
+        for (const k of this._impostorBakeQueue || []) if (imBild(k)) karten++;
+        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`, false, karten);
         return out;
+    }
+
+    // DER NACHLAUF (B3d): ab dem ersten Bild baut die Welt hinter dem Spieler weiter wie unter dem Ladeschirm — kein
+    // Frame-Budget hält sie an (`_frameOverBudget`: Regler und Takt lesen `state._nachlauf`) —, bis rundum steht, was das Bild
+    // im Blick verlangte (`_weltbildLuecken(true)` leer, `_rundumDa`), höchstens RUNDBLICK_BILDER Takte; danach laut, was fehlt.
+    // Ohne ihn baute ein Frame über PERF_TARGET_MS nichts (gate:ankunft, Null-Renderer: 1 042 Takte bis zum ganzen Rundblick, ein
+    // Felsbogen in 119 m ungebaut) — vorher baute ihn das Tor unter dem Ladeschirm. Radeon kalt: rundum 0,10–0,18 s nach dem Bild.
+    _nachlaufTakt() {
+        const st = this.state;
+        const fehlt = this._weltbildLuecken(true);
+        if (!fehlt.length) {
+            st._rundumDa = performance.now();
+            st._nachlauf = null;
+        } else if (++st._nachlauf >= AnazhRealm.RUNDBLICK_BILDER) {
+            st._nachlauf = null;
+            this.log(
+                `Der Rundblick steht nach ${AnazhRealm.RUNDBLICK_BILDER} Takten ohne: ${fehlt.map((l) => l.satz).join(" · ")}`,
+                "WARN"
+            );
+        }
     }
 
     // Die Wahl des Renderers, bevor er steht: der Null-Renderer (GPU-frei, opt-in der Linsen) oder der echte. EINE Frage für
@@ -1212,6 +1342,12 @@ AnazhRealm.WELTBILD_DECKEL_MS = 60000;
 // Grobstufe); danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1.
 AnazhRealm.ANKUNFT_FERNE = 128;
 AnazhRealm.ANKUNFT_GLEIT_BILDER = 90;
+// DER BLICK DES ERSTEN BILDS (B3d, `_ersterBlick`): der Rand je Seite über den halben Bildwinkel (Grad), die Kugel um das
+// Auge über den Abstand zum Spieler hinaus (m), der Radius eines Dings (m) und der Schlüssel, den ein Auftrag außer Blick vor
+// dem Bild auf seinem Rang trägt (d², über jeder Welt-Distanz). Der RUNDBLICK (gate:ankunft L2a): gleich nach der Kontrolle
+// dreht die Kamera in RUNDBLICK_BILDER Takten einmal ganz herum, und kein Takt zeigt ein Loch in seinem Blick.
+AnazhRealm.ERSTER_BLICK = Object.freeze({ randGrad: 15, nahM: 6, dingM: 12, ausserD2: 1e12 });
+AnazhRealm.RUNDBLICK_BILDER = 120;
 // Der Takt der Stufen-Wahl in der Ankunft (`_tickArchitectureLOD`, `_tickScatterLod`): Wechsel der Bauten, Wechsel und
 // Scan der Streu je Bild — die Wahl hält mit der gleitenden Maske Schritt (sonst 5 · 4 · 160).
 AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
