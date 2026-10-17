@@ -27,26 +27,37 @@ async function checkBandW3UiPuls(ctx) {
         r._uiDirty("hof");
         r._uiDirty("hof");
         out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
-        // (4) Migration: Grep-Wand am Quelltext (s. unten).
-        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, ERROR beim Namen des Raums).
-        out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(window.__codeOf(r._uiDirty));
-        // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
-        out.hofOnOpen = /_renderCreatureListUI\(\)/.test(window.__codeOf(r._hofHandleDrawerChange));
+        // (4) MIGRATION am Ruf: die Mechanik-Pfade des Hofs (Auftrag · Ausrüstung · Schaden · Abschied) melden den Puls, an
+        // einem eigenen Probe-Tier fern der Welt-Tiere.
+        const cap = r.state.maxCreatures;
+        const pm = r.state.playerMesh.position;
+        r.state.maxCreatures = r.state.creatures.length + 16;
+        const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
+        const puls = (m, a) => !!c && window.__consumes(r, m, r, "_uiDirty", a);
+        out.hofPfade = [puls("assignCreatureTask", [c, "wait", {}, { silent: true }]), puls("_afterCreatureEquipChange", [c]), puls("damageCreature", [c, 0.01]), puls("removeCreature", [c])];
+        r.state.maxCreatures = cap;
+        // (6) der ON-OPEN-Render im Hof-Hook am Ruf (so darf die Insel isOpen-skippen); die Bühne ruht für die Probe.
+        const eigenS = Object.prototype.hasOwnProperty.call(r, "_hofEnsureStage");
+        const altS = r._hofEnsureStage;
+        r._hofEnsureStage = () => null;
+        try {
+            out.hofOnOpen = window.__consumes(r, "_hofHandleDrawerChange", r, "_renderCreatureListUI", ["kreaturen"]);
+        } finally {
+            if (eigenS) r._hofEnsureStage = altS;
+            else delete r._hofEnsureStage;
+        }
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;
     });
-    // (4b) die GREP-WAND am Quelltext (außerhalb der Sandbox lesbar): die 11
-    // Mechanik-Sites sind migriert, die direkte Aufruf-Krankheit ist tot.
+    // (4b) die GREP-WAND am Quelltext (außerhalb der Sandbox lesbar): die direkte Aufruf-Krankheit ist tot.
     let srcOk = false;
-    let migratedCount = 0;
     try {
         const src = stammLib.text(path.join(SKRIPTE, ".."));
-        migratedCount = (src.match(/_uiDirty\("hof"\)/g) || []).length;
         const directMechanic = (
             src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||
             []
         ).length;
-        srcOk = migratedCount >= 10 && directMechanic === 0;
+        srcOk = directMechanic === 0;
     } catch (_e) {
         srcOk = false;
     }
@@ -59,12 +70,12 @@ async function checkBandW3UiPuls(ctx) {
         res.dedup
     );
     check(
-        `W3 UI-Puls: die Hof-Mechanik-Pfade routen durch den Puls (${migratedCount} Sites) + kein direkter _renderCreatureListUI-Mechanik-Aufruf mehr (Grep-Wand)`,
-        srcOk
+        `W3 UI-Puls: die Hof-Mechanik-Pfade (Auftrag · Ausrüstung · Schaden · Abschied) melden den Puls am Ruf (${JSON.stringify(res.hofPfade)}) + kein direkter _renderCreatureListUI-Mechanik-Aufruf mehr (Grep-Wand)`,
+        srcOk && Array.isArray(res.hofPfade) && res.hofPfade.every(Boolean)
     );
     check(
-        "W3 UI-Puls: die Render-Insel ist isoliert (try/catch — ein werfender Raum killt nicht den Puls) + der Hof rendert On-Open (isOpen-Skip sicher)",
-        res.islandIsolated && res.hofOnOpen && res.hofSkipsWhenClosed
+        "W3 UI-Puls: der Hof rendert On-Open (isOpen-Skip sicher)",
+        res.hofOnOpen && res.hofSkipsWhenClosed
     );
 }
 

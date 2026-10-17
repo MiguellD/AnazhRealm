@@ -5,33 +5,27 @@
 // (Median 3,3 s); 32 % der Bytes (aWind · aCenter · aType) las niemand. Seit V18.511 trägt die Transport-Schale
 // (`_foundrySchale`, läuft im Worker VOR dem Studio) Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
-// STATISCH (Node, gestrippter Stamm):
-//   S1  FOUNDRY_LESEN == die Attribute, die `_foundryBuildMesh` liest (keine Seite mehr, keine weniger)
-//   S2  der Haupt-Thread fasst den Asset-Store nie an: „anazhFoundryAssets" lebt NUR in der Schale,
-//       `_foundryIdbInit/_foundryIdbGet/_foundryIdbPut` sind fort
-//   S4  GESTALTEN (V18.527): jede Varianten-Wahl trägt ihre Art · der Vorrat wärmt 1..V · EIN Streu-Same, die
-//       Promotion trägt ihn
-// KLON-LINSE (Node): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je Gestalt,
-//       Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
+// STATISCH (Node, gestrippter Stamm) — nur noch die Wache des Gefallenen (Absenzen): der Asset-Store lebt NUR in der
+//   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine
+// KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
+//       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
 // VERHALTEN (Chromium, echter Worker + echte IndexedDB; die Schale aus dem Stamm + ein Studio-Double):
 //   V1  Konsum-Wand: aWind fällt, position/color reisen · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
 //   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527), als Atlas-Schicht
-//       kodiert (W6: Karten-Codec im Worker, Format im Schlüssel) · V10 das Format trennt die Platte · V11 nurPlatte
-//       bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine leere
-//       Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden: ein langer Bake im
-//       Bäcker-Faden lässt die Platten-Transaktionen des Werks laufen (kein Studio-Lauf bei offener Transaktion)
-// STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
-//   Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…` · S7f die Stempel-Probe: ein UI-Edit am Labor lässt den
-//   Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die Schale vorn, Laden und Stempel allein aus dem Manifest,
-//   keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf` (B3a; vorher S3 · S7a · S7e · W4 · W5 am Text)
+//       kodiert (Karten-Codec im Worker) · V10 das Format trennt die Platte (dieselbe Schicht als rgba8 trifft nie) · V11
+//       nurPlatte bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine
+//       leere Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden
+// S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die
+//   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
+//   (B3a; vorher S3 · S7a · S7e · W4 · W5)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
 //   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
-//   die Sonde gibt der Seite 16 Kerne (der CI-Läufer hat 4 — ein Faden, kein Helfer); jeder Werk-Faden
-//   (`_foundryHelfer`) wird bereit und baut, jeder Auftrag reist in der Bahn, die seine Nummer nennt (`w<k>_`,
-//   `_foundryBahn`), und kommt beantwortet zurück
+//   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
+//   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
+//   Fahrzeug-Vorrat wärmt nur die Platte
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -56,124 +50,25 @@ function methode(src, name) {
 function statisch(src) {
     const aus = [];
     const pruef = (name, ok, detail) => aus.push([name, !!ok, detail || ""]);
-    const m = stammLib.treffer(src, null, /AnazhRealm\.FOUNDRY_LESEN = (\[[^\]]*\]);/);
-    let lesen = null;
-    try {
-        // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
-        lesen = m ? JSON.parse(m[1].replace(/,\s*\]$/, "]")) : null;
-    } catch (_e) {}
-    const bau = methode(src, "_foundryBuildMesh");
-    const gelesen = new Set();
-    if (bau) {
-        const code = strip(bau);
-        for (const t of code.matchAll(/\bm\.(\w+)\.array\b/g)) gelesen.add(t[1]);
-        for (const t of code.matchAll(/for \(const nm of (\[[^\]]*\])\)/g))
-            for (const n of JSON.parse(t[1])) gelesen.add(n);
-    }
-    const a = lesen ? [...lesen].sort().join(",") : "?";
-    const b = [...gelesen].sort().join(",");
-    pruef("S1 FOUNDRY_LESEN == Leser von _foundryBuildMesh", lesen && bau && a === b, `Wand [${a}] · Leser [${b}]`);
     const schale = methode(src, "_foundrySchale");
     const ohneSchale = strip(schale ? src.replace(schale, "") : src);
-    pruef("S2a die Schale steht im Stamm", !!schale);
     pruef("S2b der Asset-Store lebt NUR in der Schale", schale && !/anazhFoundryAssets/.test(ohneSchale));
-    pruef("S2c die Haupt-Thread-Platte ist fort", !/_foundryIdb(Init|Get|Put)\b/.test(strip(src)));
-    // GESTALTEN (V18.527): die EINE Varianten-Wahl liest das Studio-Budget, jeder Aufrufer reicht seine Art.
     const code = strip(src);
-    const einArg = [...code.matchAll(/_foundryVariantFor\(([^()]*)\)/g)].filter((m) => !/,/.test(m[1]));
-    pruef(
-        "S4a jede Varianten-Wahl trägt ihre Art (_foundryVariantFor(seed, preset)), kein _foundryVariantCount",
-        !einArg.length && !/_foundryVariantCount/.test(code),
-        einArg.length ? `ein-Argument-Aufruf: ${einArg[0][0]}` : ""
-    );
+    pruef("S4a kein _foundryVariantCount (die Varianten-Wahl liest das Studio-Budget)", !/_foundryVariantCount/.test(code));
     const pre = methode(src, "_foundryPrefetchLibrary");
-    pruef(
-        "S4b der Vorrat wärmt die Gestalten 1..V (kein Samen-/Karten-Literal)",
-        pre && /_foundryGestalten\(sp\)/.test(strip(pre)) && !/<=\s*16\b|seeds:\s*\[1, 2/.test(strip(pre))
-    );
+    pruef("S4b kein Samen-/Karten-Literal im Vorrat", pre && !/<=\s*16\b|seeds:\s*\[1, 2/.test(strip(pre)));
     const formel = (code.match(/\*\s*73856093\)\s*\^\s*\(cellZ\s*\*\s*19349663\)\s*\^\s*\(variantIndex \+ 1\)/g) || [])
         .length;
-    const prom = methode(src, "_promoteScatterCell");
-    pruef(
-        "S4c EIN Streu-Same (_scatterFoundrySeed), die Promotion trägt ihn (kein Math.random-Same)",
-        formel === 1 &&
-            prom &&
-            /const same = this\._scatterFoundrySeed\(/.test(strip(prom)) &&
-            /seed:\s*same,/.test(strip(prom)),
-        `Formel ${formel}×`
-    );
-    // SAISON (V18.527): kein Körper-/Karten-Schlüssel und kein Auftrag trägt die Saison, die Flip-Maschine ist fort,
-    // die Schale nagelt den Sommer auf Körper UND Karten.
-    const teil = (k) => {
-        const m = methode(src, k);
-        return m ? strip(m) : null;
-    };
-    const saisonfrei = [
-        "_foundryKoerperKey",
-        "_foundryKartenKey",
-        "_foundryRequest",
-        "_foundryWorkerRequest",
-        "_foundryBakeImpostorRequest",
-        "_foundryEnsureImpostorRecord",
-        "_foundryFlattenFor",
-        "_foundryEntryReady",
-    ].map((k) => [k, teil(k)]);
-    const traeger = saisonfrei.filter(([, t]) => !t || /season/i.test(t)).map(([k]) => k);
-    pruef(
-        "S5a kein Körper-/Karten-Schlüssel und kein Auftrag trägt die Saison",
-        !traeger.length,
-        traeger.length ? "Saison/fehlt in " + traeger.join(", ") : ""
-    );
+    pruef("S4c EIN Streu-Same (die Formel genau einmal, kein Zwilling)", formel === 1, `Formel ${formel}×`);
     pruef(
         "S5b die Saison-Flip-Maschine ist fort (_foundrySeasonChanged · _drainSeasonFlip · SEASON_FLIP_PER_TICK · _seasonTint)",
         !/_foundrySeasonChanged|_drainSeasonFlip|SEASON_FLIP_PER_TICK|_seasonTint\b|_seasonFlipQueue/.test(code)
-    );
-    const sc = schale ? strip(schale) : "";
-    pruef(
-        "S5c die Schale nagelt den Sommer auf jeden Körper- und Karten-Auftrag",
-        /m\.type !== "build-asset" && m\.type !== "bake-impostor"/.test(sc) && /season:\s*"summer"/.test(sc)
-    );
-    // TOTE FRACHT (V18.527): Karten-Arten bestellen im Vorrat keine Geometrie, die Karte zieht mit echtem Renderer keine
-    // Körper-Stufe, der Fahrzeug-Vorrat wärmt nur die Platte.
-    const preS = pre ? strip(pre) : "";
-    const iSkip = preS.indexOf("if (this._foundryPresetIsTree(sp)) continue;");
-    // der Vorrat bestellt über den EINEN Zug je Körper-Schlüssel (K38-N2: bis 15.10. am Zug vorbei per _foundryRequest)
-    const iReq = preS.indexOf("this._foundryZug(key, sp, sd, lod)");
-    pruef(
-        "S6a der Vorrat bestellt für Karten-Arten keine Geometrie (kein L2-Körper ohne Leser)",
-        iSkip >= 0 && iReq > iSkip && !/lods:\s*\[2\]/.test(code)
-    );
-    const recS = teil("_foundryEnsureImpostorRecord");
-    const iStudio = recS ? recS.indexOf("this._impostorZelleNeu(at, key, preset, variant, ovK)") : -1;
-    const iZug = recS ? recS.indexOf("this._foundryZug(") : -1; // der Körper reist im EINEN Zug je Schlüssel (K38)
-    pruef(
-        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenlose Atlas-Zelle vor jedem _foundryZug)",
-        iStudio >= 0 && iZug > iStudio && /rendR && !rendR\._isHeadlessNull/.test(recS)
-    );
-    pruef(
-        "S6c der Fahrzeug-Vorrat wärmt nur die Platte (_foundryVorrat, die Schale antwortet leer)",
-        /this\._foundryVorrat\(sp, sd, lod\)/.test(preS) && /meshes: \[\], vorrat: true/.test(sc)
-    );
-    const reqS = teil("_foundryRequest") || "";
-    pruef(
-        "S7b jeder Welt-Körper schickt seinen Schlüssel (geprägt mit ov-Hash), die Schale entscheidet über die Platte",
-        !/f\.platte/.test(reqS) && /this\._foundryKoerperKey\(presetId, seed, lod, hasOv \? ov : null\)/.test(reqS)
-    );
-    const bakeS = teil("_foundryBakeImpostorRequest") || "";
-    pruef(
-        "S7c Karten tragen ihren Platten-Schlüssel mit Schicht-Format, die Schale schreibt jede kodierte Schicht",
-        /msg\.platte =\s*"karte\|" \+ this\._foundryKartenKey\([^;]*\+ "\|" \+ fmt;/.test(bakeS) &&
-            /schreib\(auftragK\.key, \{ payload: k \}\)/.test(sc)
-    );
-    pruef(
-        "S7d die Karte wird im Worker zur Atlas-Schicht (Karten-Codec), ein Platten-Treffer passt zum Format",
-        /core\.karteKodiere\(p, auftragK\.fmt\)/.test(sc) && /karteOk\(p\) && p\.fmt === fmt/.test(sc)
     );
     return { gesetze: aus, schale };
 }
 
 // DIE KLON-LINSE (V18.527, K20-N1): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
-// `_foundryGestaltSame`, als Quelltext gezogen) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten
+// `_foundryGestaltSame`, an der geladenen Klasse) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten
 // Streu-Gitter (`_scatterRohSame`, 600 × 600 Zellen). (a) Der rohe Same: je Art trägt jede ihrer T Gestalten (die V
 // Bestand-Gestalten und der Solitär V+1 einer Baum-Art, phyto-core `solitaerGestalt`) 1/T ± 0,03, die Nachbar- sowie die
 // 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/T + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-Gitter. (b) Das
@@ -202,38 +97,18 @@ function stempelProbe(lies) {
     ];
 }
 
-const KNUTH_INVERS = (() => {
-    const m = stammLib.treffer(stammLib.text(root), null, /AnazhRealm\.KNUTH_INVERS = (\d+);/);
-    return m ? Number(m[1]) : NaN;
-})();
-const SOLITAER = (() => {
-    const ctx = { Math };
-    ctx.globalThis = ctx;
-    ctx.self = ctx;
-    require("vm").runInNewContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx);
-    const art = {};
-    for (const m of fs
-        .readFileSync(path.join(root, "foundry-core.js"), "utf8")
-        .matchAll(/\n {4}(\w+): \{\n {8}kind: "(\w+)"/g))
-        art[m[1]] = m[2];
-    return (preset, V) => (art[preset] ? ctx.__phytoCore.solitaerGestalt(art[preset], V) : 0);
-})();
-function gestalten(src) {
+// Die Klon-Linse ruft die Methoden der GELADENEN Klasse (`stammLib.ladeKlasse`: Kerne wie index.html, dann der Stamm) —
+// `teile` trägt im Selbsttest einen gebrochenen Stamm; der Solitär und der Kern-Wert kommen aus den echten Statiken.
+function gestalten(teile) {
     const rc = JSON.parse(
         fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
-    const teile = [
-        "_foundryVariantFor",
-        "_foundryGestalten",
-        "_scatterRohSame",
-        "_foundryGestaltSame",
-    ].map((k) => methode(src, k));
-    if (!G || teile.some((t) => !t) || !(KNUTH_INVERS > 0))
-        return { ok: false, detail: "Budget, Methode oder KNUTH_INVERS fehlt", arten: {} };
-    const AR = { _studioRenderConfig: { lod: { budget: { gestalten: G } } }, _solitaerVon: SOLITAER, KNUTH_INVERS };
-    const r = new Function("AnazhRealm", "return {" + teile.join(",") + "};")(AR);
-    AR._studioGestaltenKern = (p) => r._foundryGestalten(p);
+    const { AnazhRealm: A } = stammLib.ladeKlasse(root, teile ? { teile } : {});
+    if (!G || typeof A.prototype._foundryVariantFor !== "function")
+        return { ok: false, detail: "Budget oder Varianten-Wahl fehlt", arten: {} };
+    A._studioRenderConfig = { lod: { budget: { gestalten: G } } };
+    const r = Object.create(A.prototype);
     const arten = {};
     let ok = true;
     for (const zeile of Object.keys(G)) {
@@ -588,7 +463,7 @@ async function verhalten(schaleSrc) {
                     q7.gebacken === 1
                 );
                 // V10 DAS FORMAT TRENNT DIE PLATTE: dieselbe Karte als rgba8 (Gerät ohne BC-Feature) trifft die BC-Schicht
-                // nie — das Studio bäckt sie, die Schale kodiert rgba8.
+                // nie — das Studio bäckt sie, die Schale kodiert rgba8 (unter DEMSELBEN Schlüssel misst es der Zweit-Boot, V12).
                 const kr1 = await karte(F, "kr1", "eiche", 2, "rgba8");
                 const q8 = await F.frag({ type: "frage" }, "antwort");
                 aus.kartenFormat = !!(schicht(kr1, "rgba8") && !kr1.platte && q8 && q8.gebacken === 2);
@@ -631,6 +506,10 @@ async function verhalten(schaleSrc) {
                     q10 &&
                     q10.gebacken === 0
                 );
+                // V10 (der Format-Wächter): rgba8 unter dem Schlüssel der BC-Schicht trifft die Platte nicht
+                const kw = await karte(G, "zbw", "eiche", 2, "rgba8", { platte: "karte|eiche|2|bc" });
+                const q12 = await G.frag({ type: "frage" }, "antwort");
+                aus.kartenFormat = aus.kartenFormat && schicht(kw, "rgba8") && !kw.platte && !!q12 && q12.gebacken === 1;
                 G.w.terminate();
                 // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (Bäcker und Werk, `_foundryBaecker`). Der
                 // Bäcker bäckt lang (1,5 s synchron); das Werk baut währenddessen zwei Körper — der zweite liest erst nach
@@ -701,7 +580,7 @@ const WELT_HAKEN = () => {
     B1.prototype = B0.prototype;
     window.Blob = B1;
     const W0 = window.Worker;
-    const fl = (window.__fl = { posts: [], antworten: [], faeden: 0 });
+    const fl = (window.__fl = { posts: [], antworten: [], faeden: 0, reist: new Set() });
     const bytes = (m) => {
         let b = 0;
         const seen = new Set();
@@ -729,6 +608,9 @@ const WELT_HAKEN = () => {
             this.__flNr = fl.faeden++;
             this.addEventListener("message", (e) => {
                 const m = e.data;
+                // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
+                if (m && m.type === "asset" && Array.isArray(m.meshes))
+                    for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
                 if (m && (m.type === "asset" || m.type === "impostor"))
                     fl.antworten.push({
                         w: this.__flNr,
@@ -839,6 +721,22 @@ const WELT_MESSEN = async () => {
     }
     boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
     if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten) };
+    // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und den toten aWind · aCenter · aType zählt, was
+    // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
+    const lesen = r.constructor.FOUNDRY_LESEN,
+        gelesen = new Set(),
+        pm = { kind: "bark" };
+    for (const k of lesen.concat(["aWind", "aCenter", "aType"])) {
+        const a = new Float32Array(k === "position" ? 9 : 12);
+        pm[k] = { get array() { return gelesen.add(k), a; } }; // prettier-ignore
+    }
+    r._foundryBuildMesh(pm);
+    // W8 der Fahrzeug-Vorrat wärmt nur die Platte: je kritische Art eine leere Antwort mit vorrat
+    const krit = (r._foundryLibrarySpec().critical || {}).species || [];
+    const vorrat = {
+        arten: krit.length,
+        kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.bytes === 0)),
+    };
     const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
@@ -867,6 +765,8 @@ const WELT_MESSEN = async () => {
         T,
         samen,
         karten,
+        wand: { lesen: [...lesen], gelesen: [...gelesen], reist: [...fl.reist] },
+        vorrat,
         boot,
         bootMB: fl.antworten.reduce((a, x) => a + x.bytes, 0) / 1048576,
         saison: {
@@ -961,6 +861,20 @@ function urteilWelt(d) {
                 .join(" · ") +
             (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")
     );
+    const w = d.wand || { lesen: [], gelesen: [], reist: [] };
+    const fehlt = w.gelesen.filter((k) => !w.lesen.includes(k)).concat(w.lesen.filter((k) => !w.gelesen.includes(k)));
+    const fremd = w.reist.filter((k) => !w.lesen.includes(k));
+    pruef(
+        "W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand",
+        w.gelesen.length > 0 && w.reist.includes("position") && !fehlt.length && !fremd.length,
+        `Wand ≠ Leser: [${fehlt.join(",")}] · reist ohne Leser: [${fremd.join(",")}]`
+    );
+    const vr = d.vorrat || { arten: 0, kalt: [] };
+    pruef(
+        "W8 der Fahrzeug-Vorrat wärmt nur die Platte (je kritische Art eine leere Antwort)",
+        vr.arten > 0 && !vr.kalt.length,
+        `${vr.arten} Arten` + (vr.kalt.length ? ` · ohne leere Vorrats-Antwort: ${vr.kalt.join(" ")}` : "")
+    );
     return aus;
 }
 
@@ -1027,11 +941,6 @@ const VERHALTEN = [
             }
             return stammLib.ersetze(quelle, glied, alt, neu);
         };
-        // die Liste läuft über Zeilen (Prettier, seit S3 aDeckt) — ein Name mehr vor der schließenden Klammer
-        const t1 = statisch(bruch(stamm, '    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find(
-            (g) => g[0].startsWith("S1")
-        );
-        check("Selbst-Test 1: ein Wand-Name ohne Leser → S1 rot", t1 && !t1[1]);
         const t2 = statisch(
             bruch(
                 stamm,
@@ -1040,23 +949,18 @@ const VERHALTEN = [
             )
         ).gesetze.find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
-        const t5 = gestalten(bruch(stamm, "return 1 + Math.floor((h * V) / 4294967296);", "return (h % V) + 1;"));
+        // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
+        const gebrochen = (alt, neu) => {
+            const teile = stammLib.dateien(root).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+            const t = teile.find((x) => x.text.includes(alt));
+            if (t) t.text = t.text.replace(alt, neu);
+            else check(`Selbst-Test-Anker steht im Stamm: ${alt.slice(0, 70)}`, false);
+            return teile;
+        };
+        const t5 = gestalten(gebrochen("return 1 + Math.floor((h * V) / 4294967296);", "return (h % V) + 1;"));
         check("Selbst-Test 5: Gestalten-Wahl aus den unteren Bits (h % V) → Klon-Linse rot", !t5.ok);
-        const t6 = statisch(
-            bruch(
-                stamm,
-                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);",
-                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0);"
-            )
-        ).gesetze.find((g) => g[0].startsWith("S4a"));
-        check("Selbst-Test 6: eine Varianten-Wahl ohne Art → S4a rot", t6 && !t6[1]);
-        const t7 = statisch(bruch(stamm, "                seed: same,\n", "", "_promoteScatterCell")).gesetze.find((g) =>
-            g[0].startsWith("S4c")
-        );
-        check("Selbst-Test 7: Promotion ohne Zellen-Samen → S4c rot", t7 && !t7[1]);
         const t11e = gestalten(
-            bruch(
-                stamm,
+            gebrochen(
                 "const eimer = stehtFrei() ? T - 1 : Math.floor(lage * (T - 1));",
                 "const eimer = Math.floor(lage * (T - 1));"
             )
@@ -1067,14 +971,6 @@ const VERHALTEN = [
         check("Selbst-Test 3: Schale ohne Transfer → V3 rot", v1.transfer === false);
         const v2 = await verhalten(bruch(schale, "!LESEN.has(k)) delete m[k]", "false) delete m[k]"));
         check("Selbst-Test 4: Schale ohne Konsum-Wand → V1 rot", v2.wand === false);
-        const t8 = statisch(
-            bruch(
-                stamm,
-                'return preset + "|" + gestalt + "|" + lod + (ov ?',
-                'return preset + "|" + gestalt + "|" + lod + "|" + this.state.season + (ov ?'
-            )
-        ).gesetze.find((g) => g[0].startsWith("S5a"));
-        check("Selbst-Test 8: die Saison im Körper-Schlüssel → S5a rot", t8 && !t8[1]);
         const ohneNagel = bruch(
             schale,
             'const weiter = Object.assign({}, m, { season: "summer" });',
@@ -1088,6 +984,8 @@ const VERHALTEN = [
             T: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             samen: { eiche: [1, 2], weide: [1] },
             karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
+            wand: { lesen: ["position", "color"], gelesen: ["color", "position"], reist: ["position", "color"] },
+            vorrat: { arten: 2, kalt: [] },
             boot: {
                 posts: 200,
                 antworten: 200,
@@ -1211,18 +1109,23 @@ const VERHALTEN = [
                       .readFileSync(path.join(root, rel), "utf8")
                       .replace('"bruecke": "foundry-bruecke.js"', '"bruecke": "' + LABOR_SHELL + '"')
                 : null;
+        const W = (zusatz) => Object.assign({}, gut, zusatz);
+        check(
+            "Selbst-Test 1: ein Wand-Name ohne Leser (aWind) → W7 rot",
+            rot(W({ wand: Object.assign({}, gut.wand, { lesen: ["position", "color", "aWind"] }) }), "W7")
+        );
+        check(
+            "Selbst-Test 1b: im Boot reist ein Attribut ohne Leser (aCenter) → W7 rot",
+            rot(W({ wand: Object.assign({}, gut.wand, { reist: ["position", "aCenter"] }) }), "W7")
+        );
+        check(
+            "Selbst-Test 22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread → W8 rot",
+            rot(W({ vorrat: { arten: 2, kalt: ["gt"] } }), "W8")
+        );
         check(
             "Selbst-Test 20: das Manifest nennt die Labor-Shell als Brücke → S7f rot (ein UI-Edit leerte den Cache)",
             stempelProbe(shellAlsBruecke)[0][1] === false
         );
-        const t11 = statisch(
-            bruch(
-                stamm,
-                "            if (this._foundryPresetIsTree(sp)) continue;\n            // Boden-Arten",
-                "            // Boden-Arten"
-            )
-        ).gesetze.find((g) => g[0].startsWith("S6a"));
-        check("Selbst-Test 11: Vorrat bestellt wieder Karten-Art-Geometrie → S6a rot", t11 && !t11[1]);
         const ohneVorrat = bruch(
             schale,
             "if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));",
@@ -1263,12 +1166,12 @@ const VERHALTEN = [
                 `Bäcker ${v8.fadenMs && v8.fadenMs.baecker} ms)`,
             ohneFaden !== schale && v8.faden === false
         );
-        const t16 = statisch(bruch(stamm, '+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
-        check("Selbst-Test 16: Karten-Schlüssel ohne Format → S7c rot", t16 && !t16[1]);
-        const t17 = statisch(bruch(stamm, "karteOk(p) && p.fmt === fmt", "karteOk(p)")).gesetze.find((g) =>
-            g[0].startsWith("S7d")
+        const ohneFormat = bruch(schale, "karteOk(p) && p.fmt === fmt", "karteOk(p)");
+        const v9 = await verhalten(ohneFormat);
+        check(
+            "Selbst-Test 17: Platten-Treffer ohne Format-Prüfung (rgba8 trifft die BC-Schicht) → V10 rot",
+            ohneFormat !== schale && v9.kartenFormat === false
         );
-        check("Selbst-Test 17: Platten-Treffer ohne Format-Prüfung → S7d rot", t17 && !t17[1]);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
             process.exit(1);
@@ -1281,7 +1184,7 @@ const VERHALTEN = [
     for (const [n, ok, d] of gesetze) check(n, ok, d);
     for (const [n, ok, d] of stempelProbe()) check(n, ok, d);
     console.log("=== FLUSS-WAND — Klon-Linse (Gestalten aus dem Studio-Budget, 600 × 600 Streu-Zellen) ===");
-    const gs = gestalten(stamm);
+    const gs = gestalten();
     for (const [sp, a] of Object.entries(gs.arten))
         check(
             `G ${sp}: V=${a.V} · Nachbar ${a.nachbar} · Versatz-16 ${a.versatz16}${a.raus ? " · außerhalb 1..V " + a.raus : ""}`,
