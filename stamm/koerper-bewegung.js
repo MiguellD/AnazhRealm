@@ -1612,7 +1612,7 @@ class AnazhRealm_koerper_bewegung {
             // wirft weiter in den Kaskaden; die Regel wohnt in _applyEgoSicht (EINE Quelle, der Ebenen-Schalter).
             player.visible = !(_fahrRitt && _fahrRitt.kabine);
             this._applyEgoSicht();
-            // DAS GEDÄCHTNIS DER KAMERA lebt mit ihrem RIG (Sicht × gerittenes Werk): der Arm der 3rd-Kamera, der Azimut der
+            // DAS GEDÄCHTNIS DER KAMERA lebt mit ihrem RIG (Sicht × gerittenes Werk): der Arm der 3rd-Kamera, Azimut und Elevation der
             // Chase-Cam und ihre Uhr gelten nur dem Rig, das sie schrieb — jeder Wechsel (Ego ↔ Third, Auf- und Abstieg, ein
             // anderes Werk) beginnt frei. Befund des Schöpfers 17.10.: der Azimut lebte am Werk und nur der Third-Zweig schrieb
             // ihn, zurückgesetzt nur beim Aufstieg — nach einer Fahrt in Ego begann Third aus der alten Richtung (Spielgang,
@@ -1620,7 +1620,7 @@ class AnazhRealm_koerper_bewegung {
             const rig = `${this.state.cameraMode}:${_fahrRitt ? _fahrRitt.ent.id : ""}`;
             if (this.state._kamRig !== rig) {
                 this.state._kamRig = rig;
-                this.state._kamArm = this.state._kamAz = this.state._kamT = undefined;
+                this.state._kamArm = this.state._kamAz = this.state._kamEl = this.state._kamT = undefined;
             }
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
@@ -1629,7 +1629,7 @@ class AnazhRealm_koerper_bewegung {
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
                 // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: hinter dem Wagen (Kern-Azimut-Ease auf die Gier,
-                // feste Kern-Elevation/-Distanz, Blick auf blickHoehe); Boden-Clamp + Kollision unten gelten gleich.
+                // Kern-Elevation über der Fahrbahn, feste Distanz, Blick auf blickHoehe); Boden-Clamp + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
@@ -1642,8 +1642,17 @@ class AnazhRealm_koerper_bewegung {
                     const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
                     az += d * (1 - Math.pow(K.azEase, kDt));
                     this.state._kamAz = az;
-                    const ce = Math.cos(K.el);
-                    const se = Math.sin(K.el);
+                    // DIE ELEVATION ZUR FAHRBAHN (F1, Befund des Schöpfers 17.10.: „am Steilhang bergab folgt die Kamera komisch"):
+                    // der Arm steht `el` über der Ebene der Räder, nie über der Welt — bergab stand die Welt-Elevation unter dem
+                    // Hang hinter dem Wagen, der Boden-Deckel schob die Kamera über jede Welle (Spielgang, Null-Renderer, Hang 0,49:
+                    // p05 4,7° UNTER der Fahrbahn, Ruck p95 0,31 m je Bild). Sie folgt der Steigung des Kerns (`steig`, Bug höher
+                    // > 0) mit der Ease-Basis des Labors (`elEase`).
+                    const elZ = K.el - (ent._fahr && Number.isFinite(ent._fahr.steig) ? ent._fahr.steig : 0);
+                    let el = Number.isFinite(this.state._kamEl) ? this.state._kamEl : elZ;
+                    el += (elZ - el) * (1 - Math.pow(K.elEase, kDt));
+                    this.state._kamEl = el;
+                    const ce = Math.cos(el);
+                    const se = Math.sin(el);
                     camX = ent.position.x - Math.sin(az) * ce * K.dist;
                     camZ = ent.position.z - Math.cos(az) * ce * K.dist;
                     camY = ent.position.y + K.blickHoehe + se * K.dist;
