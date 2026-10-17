@@ -1,0 +1,617 @@
+{
+ "ort": "genesis",
+ "sicht": "ego",
+ "start": "2026-10-17T04:42:02.276Z",
+ "fenster": {
+  "fenster": [
+   1920,
+   1080
+  ],
+  "ms": 2
+ },
+ "umstellen": {
+  "ort": "genesis",
+  "sicht": "ego",
+  "pose": null,
+  "welt": null,
+  "spieler": [
+   0,
+   0
+  ],
+  "wiese": null,
+  "takte": 40,
+  "chunks": 25,
+  "gier": -1.5708,
+  "dorfZug": false,
+  "ortTakt": [
+   "_genesisPortalRing",
+   "_portalApproachPrefetch"
+  ],
+  "dorfSchwebt": null,
+  "ms": 15059
+ },
+ "buehne": {
+  "ergebnis": {
+   "saison": "summer",
+   "phase": 0.375,
+   "wetter": "sunny"
+  },
+  "ms": 6
+ },
+ "lauf": {
+  "regler": "voll",
+  "sekunden": 15,
+  "frames": 1235,
+  "fps": 82.3,
+  "frameMs": {
+   "p50": 8.4,
+   "p95": 16.8,
+   "p99": 17,
+   "max": 25.2
+  },
+  "cpuTaktMs": {
+   "p50": 4,
+   "p95": 5.5,
+   "p99": 6.8,
+   "max": 8.6
+  },
+  "taktMs": {
+   "p50": 8.3,
+   "p95": 8.5,
+   "p99": 8.7,
+   "max": 17.2
+  },
+  "leine": {
+   "ausgesetztPct": 31.3,
+   "imFlug": 0
+  },
+  "gpuMs": {
+   "p50": 1.56,
+   "p95": 2.18,
+   "p99": 2.4,
+   "max": 2.67,
+   "n": 617,
+   "quelle": "echt"
+  },
+  "gpuDurchsatzMs": {
+   "p50": 11.9,
+   "p95": 14.7,
+   "p99": 16.3,
+   "max": 29.3
+  },
+  "gpuVerzugMs": {
+   "p50": 15.7,
+   "p95": 19,
+   "p99": 21.5,
+   "max": 33.2
+  },
+  "gpuJePassMs": {
+   "post": {
+    "p50": 0.45,
+    "p95": 0.73,
+    "frames": 1235
+   },
+   "TRAA": {
+    "p50": 0.68,
+    "p95": 0.96,
+    "frames": 1235
+   },
+   "haupt": {
+    "p50": 0.23,
+    "p95": 0.27,
+    "frames": 1235
+   },
+   "k1": {
+    "p50": 0.02,
+    "p95": 0.02,
+    "frames": 207
+   },
+   "k0": {
+    "p50": 0.22,
+    "p95": 0.62,
+    "frames": 619
+   },
+   "atmo-himmel": {
+    "p50": 0.07,
+    "p95": 0.07,
+    "frames": 65
+   },
+   "atmo-umgebung": {
+    "p50": 0.01,
+    "p95": 0.01,
+    "frames": 3
+   },
+   "OrthographicCamera": {
+    "p50": 2.37,
+    "p95": 2.44,
+    "frames": 3
+   },
+   "horizont-karte": {
+    "p50": 0.02,
+    "p95": 0.39,
+    "frames": 6
+   }
+  },
+  "stempel": {
+   "imLauf": 0,
+   "seitBoot": 0,
+   "spitze": 50,
+   "pool": {
+    "stand": 0,
+    "max": 2048
+   },
+   "gueltig": true,
+   "warnung": 0
+  },
+  "befehle": {
+   "frames": 1235,
+   "mittel": 57,
+   "p95": 78,
+   "max": 94,
+   "jePass": {
+    "k1": {
+     "anteil": 0.17,
+     "p50": 7,
+     "max": 7
+    },
+    "haupt": {
+     "anteil": 1,
+     "p50": 34,
+     "max": 34
+    },
+    "TRAA": {
+     "anteil": 1,
+     "p50": 1,
+     "max": 1
+    },
+    "post": {
+     "anteil": 1,
+     "p50": 1,
+     "max": 1
+    },
+    "k0": {
+     "anteil": 0.5,
+     "p50": 40,
+     "max": 42
+    },
+    "atmo-umgebung": {
+     "anteil": 0,
+     "p50": 1,
+     "max": 1
+    },
+    "OrthographicCamera": {
+     "anteil": 0,
+     "p50": 15,
+     "max": 15
+    },
+    "atmo-himmel": {
+     "anteil": 0.03,
+     "p50": 1,
+     "max": 1
+    },
+    "horizont-karte": {
+     "anteil": 0,
+     "p50": 6,
+     "max": 6
+    }
+   }
+  },
+  "dreiecke": {
+   "frames": 1235,
+   "mittel": 234502,
+   "p95": 275766,
+   "max": 343839,
+   "jePass": {
+    "k1": {
+     "anteil": 0.17,
+     "p50": 19399,
+     "max": 19773
+    },
+    "haupt": {
+     "anteil": 1,
+     "p50": 188969,
+     "max": 188981
+    },
+    "TRAA": {
+     "anteil": 1,
+     "p50": 1,
+     "max": 1
+    },
+    "post": {
+     "anteil": 1,
+     "p50": 1,
+     "max": 1
+    },
+    "k0": {
+     "anteil": 0.5,
+     "p50": 84528,
+     "max": 86799
+    },
+    "atmo-umgebung": {
+     "anteil": 0,
+     "p50": 1,
+     "max": 1
+    },
+    "OrthographicCamera": {
+     "anteil": 0,
+     "p50": 180,
+     "max": 180
+    },
+    "atmo-himmel": {
+     "anteil": 0.03,
+     "p50": 1,
+     "max": 1
+    },
+    "horizont-karte": {
+     "anteil": 0,
+     "p50": 49920,
+     "max": 49920
+    }
+   }
+  },
+  "ueber17": 0.6,
+  "ueber33": 0,
+  "vramMB": {
+   "jetzt": 102.4,
+   "puffer": 17.5,
+   "texturen": 84.8,
+   "spitze": 117.4,
+   "nPuffer": 516,
+   "nTexturen": 33,
+   "wuchsImFenster": -0.1,
+   "gross": [
+    {
+     "k": "buf:?",
+     "mb": 17.475,
+     "n": 342
+    },
+    {
+     "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+     "mb": 15.82,
+     "n": 1
+    },
+    {
+     "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+     "mb": 15.82,
+     "n": 1
+    },
+    {
+     "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+     "mb": 8,
+     "n": 1
+    },
+    {
+     "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+     "mb": 8,
+     "n": 1
+    },
+    {
+     "k": "tex:tor-ziel rgba16float 512x1792x1",
+     "mb": 7,
+     "n": 1
+    },
+    {
+     "k": "tex:output rg11b10ufloat 1440x810x1",
+     "mb": 4.449,
+     "n": 1
+    },
+    {
+     "k": "tex:depth depth24plus 1440x810x1",
+     "mb": 4.449,
+     "n": 1
+    },
+    {
+     "k": "tex:wege-karte rg8unorm 1024x1024x2",
+     "mb": 4,
+     "n": 1
+    },
+    {
+     "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x20",
+     "mb": 3.333,
+     "n": 1
+    },
+    {
+     "k": "tex:szene:tiefenabbild r32float 720x810x1",
+     "mb": 2.225,
+     "n": 1
+    },
+    {
+     "k": "tex:fluss-karte r8unorm 1024x1024x2",
+     "mb": 2,
+     "n": 1
+    },
+    {
+     "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+     "mb": 1.875,
+     "n": 1
+    },
+    {
+     "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x20",
+     "mb": 1.665,
+     "n": 1
+    }
+   ]
+  },
+  "stellgroessen": {
+   "loadScale": 1,
+   "szeneSkala": 0.75,
+   "pixelRatio": 1,
+   "foliageRadius": 216,
+   "foliageDichte": 1,
+   "archRadius": 150,
+   "ring": 4,
+   "schattenIntervall": 1,
+   "holz": "voll"
+  },
+  "phasenEwmaMs": {
+   "streaming": 0.24,
+   "waterIso": 0,
+   "archCulling": 0.01,
+   "creatures": 0.31,
+   "physics": 0.1,
+   "render": 2.76,
+   "gpuMs": 1.83
+  },
+  "kamera": {
+   "pos": [
+    0,
+    93.4,
+    0
+   ],
+   "blick": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "chunks": 81,
+  "ruhe": {
+   "ruhig": true,
+   "sek": 3,
+   "chunks": 81,
+   "foundry": 0,
+   "karten": 0,
+   "meshOffen": 0
+  },
+  "wetter": "sunny",
+  "wetterHalt": {
+   "vorher": "sunny",
+   "nachher": "sunny",
+   "uhrVorher": -999999997.6,
+   "uhrNachher": -999999959.9,
+   "buch": [
+    {
+     "art": "verweigert",
+     "von": "sunny",
+     "zu": "rainy",
+     "quelle": "nexus",
+     "stapel": "weather ← dslEval ← dslTick ← (anonym)",
+     "seq": 1,
+     "t": 29697,
+     "uhr": -999999986.6
+    }
+   ],
+   "urteil": "GRUEN",
+   "taeter": [],
+   "verweigert": {
+    "nexus → rainy": 1
+   }
+  },
+  "saison": "summer",
+  "fehler": [
+   "[konsole] [AnazhRealm V18.546.9] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+   "[konsole] [AnazhRealm V18.546.9] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+  ],
+  "ms": 38118
+ },
+ "blick1": {
+  "ergebnis": {
+   "version": "18.546.9",
+   "spieler": [
+    0,
+    0
+   ],
+   "R": 150,
+   "kristall": {
+    "gesamt": 2,
+    "nah": 1,
+    "zaehl": {
+     "gezeichnet:kristalle": 1
+    },
+    "beispiele": [
+     {
+      "t": "kristall_var5",
+      "d": 64,
+      "preset": "kristalle",
+      "lod": 2,
+      "mesh": false,
+      "inst": true,
+      "_stufenGrenzen": null,
+      "_lodLevel": 2,
+      "_nahWartet": "obj",
+      "_lodHalt": false,
+      "_lodHaltWartet": false,
+      "instFoundry": true,
+      "_servedLod": 0
+     }
+    ]
+   },
+   "felsVar": {
+    "gesamt": 0,
+    "nah": 0,
+    "zaehl": {},
+    "beispiele": []
+   },
+   "rezept": {
+    "kristalle": "rock",
+    "zacken": "rock"
+   },
+   "budget": {
+    "crystal": null,
+    "rock": [
+     "0",
+     "fernform"
+    ]
+   },
+   "atlas": {
+    "nachAtlas": "fehlt",
+    "buchWartet": false
+   },
+   "cache": [
+    "kristalle|2|0=kinder 1 [?]",
+    "kristalle|3|0=kinder 1 [?]",
+    "kristalle|4|0=kinder 1 [?]",
+    "kristalle|5|0=kinder 1 [?]",
+    "kristalle|6|0=kinder 1 [?]",
+    "kristalle|7|0=kinder 1 [?]",
+    "kristalle|8|0=kinder 1 [?]",
+    "kristalle|9|0=kinder 1 [?]",
+    "kristalle|11|0=kinder 1 [?]",
+    "kristalle|12|0=kinder 1 [?]",
+    "kristalle|13|0=kinder 1 [?]",
+    "kristalle|14|0=kinder 1 [?]",
+    "kristalle|15|0=kinder 1 [?]",
+    "kristalle|16|0=kinder 1 [?]",
+    "zacken|1|0=kinder 1 [?]",
+    "zacken|4|0=kinder 1 [?]",
+    "kristalle|1|0=kinder 1 [?]",
+    "kristalle|10|0=kinder 1 [?]",
+    "zacken|15|0=kinder 1 [?]",
+    "zacken|10|0=kinder 1 [?]",
+    "zacken|3|0=kinder 1 [?]",
+    "zacken|5|0=kinder 1 [?]",
+    "zacken|13|0=kinder 1 [?]",
+    "zacken|7|0=kinder 1 [?]",
+    "zacken|14|0=kinder 1 [?]",
+    "zacken|11|0=kinder 1 [?]",
+    "zacken|8|0=kinder 1 [?]",
+    "zacken|6|0=kinder 1 [?]",
+    "zacken|12|0=kinder 1 [?]",
+    "zacken|9|0=kinder 1 [?]",
+    "zacken|16|0=kinder 1 [?]",
+    "zacken|2|0=kinder 1 [?]"
+   ],
+   "pending": 0,
+   "bruch": [],
+   "bp": [
+    "kristall_var0(donor)",
+    "kristall_var1(donor)",
+    "kristall_var2(donor)",
+    "kristall_var3(donor)",
+    "kristall_var4(donor)",
+    "kristall_var5(donor)",
+    "kristall_var6(donor)",
+    "kristall_var7(donor)",
+    "kristall_geode(donor)"
+   ]
+  },
+  "ms": 3
+ },
+ "takte": {
+  "ergebnis": 600,
+  "ms": 34352
+ },
+ "blick2": {
+  "ergebnis": {
+   "version": "18.546.9",
+   "spieler": [
+    0,
+    0
+   ],
+   "R": 105,
+   "kristall": {
+    "gesamt": 2,
+    "nah": 1,
+    "zaehl": {
+     "gezeichnet:kristalle": 1
+    },
+    "beispiele": [
+     {
+      "t": "kristall_var5",
+      "d": 64,
+      "preset": "kristalle",
+      "lod": 2,
+      "mesh": false,
+      "inst": true,
+      "_stufenGrenzen": null,
+      "_lodLevel": 2,
+      "_nahWartet": "obj",
+      "_lodHalt": false,
+      "_lodHaltWartet": false,
+      "instFoundry": true,
+      "_servedLod": 0
+     }
+    ]
+   },
+   "felsVar": {
+    "gesamt": 0,
+    "nah": 0,
+    "zaehl": {},
+    "beispiele": []
+   },
+   "rezept": {
+    "kristalle": "rock",
+    "zacken": "rock"
+   },
+   "budget": {
+    "crystal": null,
+    "rock": [
+     "0",
+     "fernform"
+    ]
+   },
+   "atlas": {
+    "nachAtlas": "fehlt",
+    "buchWartet": false
+   },
+   "cache": [
+    "kristalle|2|0=kinder 1 [?]",
+    "kristalle|3|0=kinder 1 [?]",
+    "kristalle|4|0=kinder 1 [?]",
+    "kristalle|5|0=kinder 1 [?]",
+    "kristalle|6|0=kinder 1 [?]",
+    "kristalle|7|0=kinder 1 [?]",
+    "kristalle|8|0=kinder 1 [?]",
+    "kristalle|9|0=kinder 1 [?]",
+    "kristalle|11|0=kinder 1 [?]",
+    "kristalle|12|0=kinder 1 [?]",
+    "kristalle|13|0=kinder 1 [?]",
+    "kristalle|14|0=kinder 1 [?]",
+    "kristalle|15|0=kinder 1 [?]",
+    "kristalle|16|0=kinder 1 [?]",
+    "zacken|1|0=kinder 1 [?]",
+    "zacken|4|0=kinder 1 [?]",
+    "kristalle|1|0=kinder 1 [?]",
+    "kristalle|10|0=kinder 1 [?]",
+    "zacken|15|0=kinder 1 [?]",
+    "zacken|10|0=kinder 1 [?]",
+    "zacken|3|0=kinder 1 [?]",
+    "zacken|5|0=kinder 1 [?]",
+    "zacken|13|0=kinder 1 [?]",
+    "zacken|7|0=kinder 1 [?]",
+    "zacken|14|0=kinder 1 [?]",
+    "zacken|11|0=kinder 1 [?]",
+    "zacken|8|0=kinder 1 [?]",
+    "zacken|6|0=kinder 1 [?]",
+    "zacken|12|0=kinder 1 [?]",
+    "zacken|9|0=kinder 1 [?]",
+    "zacken|16|0=kinder 1 [?]",
+    "zacken|2|0=kinder 1 [?]"
+   ],
+   "pending": 0,
+   "bruch": [],
+   "bp": [
+    "kristall_var0(donor)",
+    "kristall_var1(donor)",
+    "kristall_var2(donor)",
+    "kristall_var3(donor)",
+    "kristall_var4(donor)",
+    "kristall_var5(donor)",
+    "kristall_var6(donor)",
+    "kristall_var7(donor)",
+    "kristall_geode(donor)"
+   ]
+  },
+  "ms": 3
+ }
+}
