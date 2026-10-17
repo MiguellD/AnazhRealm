@@ -312,7 +312,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 const v0 = E ? E.verschoben : 0,
                     w0 = E ? E.wartetN : 0;
                 window.__imWarm = true;
-                try { r._loopRender(performance.now()); } catch (_e) {} finally { window.__imWarm = false; }
+                try { r._loopRender(); } catch (_e) {} finally { window.__imWarm = false; }
                 let lichter = 0;
                 s.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
                 objs.forEach((o, i) => (o.visible = vorher[i]));
@@ -356,7 +356,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         // Leerlauf verlangt, dass sie still steht — nichts baut, nichts verschiebt, kein Draw wartet
         window.__bild = () => {
             const c0 = cnt();
-            try { r._loopRender(performance.now()); } catch (_e) {}
+            try { r._loopRender(); } catch (_e) {}
             const E = r._erstZeichnung;
             // der wartende Draw beim Namen: das Label seiner Pipeline (WebGPU, `_erstWartet`) oder der Stoff ihres Programms
             const p = E ? E.wartetAuf : null;
@@ -493,7 +493,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
                 try { r._ensureSkyEnvironment(true); } catch (_e) {}
                 if (window.__selbsttestChurn && s.scene && s.scene.environment) s.scene.environment = s.scene.environment.clone();
-                try { r._loopRender(performance.now()); } catch (_e) {}
+                try { r._loopRender(); } catch (_e) {}
             }, c);
         }
         const b1 = await stand();

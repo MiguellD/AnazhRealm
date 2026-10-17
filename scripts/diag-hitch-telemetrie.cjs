@@ -180,7 +180,7 @@ function erstWandInstall() {
     const bild = () => {
         try {
             if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender(performance.now() / 1000);
+            r._loopRender();
         } catch {
             /* die Linse misst, nie stören */
         }

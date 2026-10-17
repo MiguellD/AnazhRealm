@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.11",
+    "version": "18.546.12",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -182,7 +182,6 @@
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
-        "lens:e-trace": "node scripts/diag-analog-e-metrology.cjs",
         "lens:wiese": "node scripts/diag-wiese.cjs"
     },
     "devDependencies": {

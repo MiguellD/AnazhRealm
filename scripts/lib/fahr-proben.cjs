@@ -22,6 +22,25 @@ async function probeLeben(expected) {
     }
     const P = Object.getPrototypeOf(r);
     const DT = 1 / 60;
+    // KONSUM am Zähl-Spion: der Versorger o[k] zählt, während lauf() den Leser einmal ruft (ein Wurf danach entwertet ihn nicht)
+    const ruft = (lauf, o, k) => {
+        const eigen = Object.prototype.hasOwnProperty.call(o, k);
+        const f0 = o[k];
+        let n = 0;
+        o[k] = function (...a) {
+            n++;
+            return f0.apply(this, a);
+        };
+        try {
+            lauf();
+        } catch (_e) {
+            /* der Ruf zählt */
+        } finally {
+            if (eigen) o[k] = f0;
+            else delete o[k];
+        }
+        return n > 0;
+    };
     // Frame-Zeiten (ms): Frames ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei Sim-Schritten (25 · 33,3).
     const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
     let tMs = performance.now();
@@ -242,9 +261,15 @@ async function probeLeben(expected) {
         let g0 = gierUnwrap(e);
         let gier = 0;
         let gierFrame = 0;
+        let versatz = 0;
+        let stufe = 0;
         for (let i = 0; i < n; i++) {
             const s0 = z.schritte;
             frame(i);
+            // die Geritten-Wand: der Eintrag steht auf dem Reiter, seine Stufe ist 0
+            const pm = st.playerMesh.position;
+            versatz = Math.max(versatz, Math.hypot(e.position.x - pm.x, e.position.z - pm.z));
+            stufe = Math.max(stufe, r._foundryLodForEntry(e));
             fahrWeg += Math.hypot(e.position.x - px, e.position.z - pz);
             px = e.position.x;
             pz = e.position.z;
@@ -269,6 +294,8 @@ async function probeLeben(expected) {
             gierGrad: (gierFrame * 180) / Math.PI,
             gierGesamt: (gier * 180) / Math.PI,
             v: st.playerVel ? Math.hypot(st.playerVel.x(), st.playerVel.z()) : 0,
+            versatz,
+            stufe,
         };
     };
     try {
@@ -498,11 +525,19 @@ async function probeLeben(expected) {
                     return /KERN-PFLICHT/.test(msg) ? "bruch" : "fehler " + msg.slice(0, 80);
                 }
             };
+            // KONSUM (P2): beide Leser lesen den echten Kern durch den EINEN Pflicht-Leser
+            const A = r.constructor;
+            gP._fahrSatz = null;
+            gP._fahrSatzKey = null;
+            const leser =
+                ruft(() => r._fahrSatz(gP, r._vehicleProfile(gP)), A, "_fahrSchrittGesetz") &&
+                ruft(() => r._rittEbene(gP, gP.position.x, gP.position.z, gP._rideYaw), A, "_fahrSchrittGesetz");
             window.__vehicleCore = alt;
             try {
                 gP._fahrSatz = null;
                 gP._fahrSatzKey = null;
                 S.pflicht = {
+                    leser,
                     satz: fang(() => r._fahrSatz(gP, r._vehicleProfile(gP))),
                     ebene: fang(() => r._rittEbene(gP, gP.position.x, gP.position.z, gP._rideYaw)),
                 };
@@ -980,9 +1015,23 @@ async function probeLeben(expected) {
                     for (let i = 0; i < 60; i++) frame(i);
                     r._stepFixedSim = P6;
                     S.huelleSchub = { weg: Math.hypot(gS.position.x - x0, gS.position.z - z0) };
+                    // KONSUM (H5/H6): die Hülle gleitet über die EINE Schleife, Wagen und Tier lösen gegen den EINEN Leib
+                    const k = [gS, r._fahrHuelle(gS), gS.position.x, gS.position.z, 0, 0, DT];
+                    c.userData._huellenNah = null;
+                    S.huelleKonsum = {
+                        gleiten: ruft(() => r._fahrHuelleKontakt(...k), r, "_wandGleiten"),
+                        leibWagen: ruft(() => r._fahrHuelleKontakt(...k), r, "_kreaturLeib"),
+                        leibTier: ruft(() => r._kreaturHuellenKontakt(c, 0, c.position.x, c.position.z), r, "_kreaturLeib"),
+                    };
                     r.removeCreature(c);
                 }
                 weg(gS);
+                // die Kapsel zu Fuß (Schritt 5b) gleitet über dieselbe Schleife
+                if (S.huelleKonsum) {
+                    st.playerVel.setValue(2, 0, 0);
+                    S.huelleKonsum.kapsel = ruft(() => r._stepCharacter(DT, performance.now()), r, "_wandGleiten");
+                    st.playerVel.setValue(0, 0, 0);
+                }
             }
         }
         // H7 — DAS GEDREHTE HAUS (Entscheid D5 der Welle L, Integration): eine Haus-Wand 12 × 0,8 m, 34° gegen die Fahrt

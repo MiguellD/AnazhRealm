@@ -430,9 +430,9 @@ async function renderAnazh() {
                 r.state.renderer.render = window.__origRender;
                 let ms = NaN;
                 try {
-                    r._loopRender(performance.now());
+                    r._loopRender();
                     const t0 = performance.now();
-                    r._loopRender(performance.now());
+                    r._loopRender();
                     ms = +(performance.now() - t0).toFixed(1);
                 } finally {
                     r.state.renderer.render = function () {};

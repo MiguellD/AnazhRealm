@@ -546,41 +546,78 @@ function bildRauschen(A, B, W, H, schwelle) {
     return { anteil: +(n / (W * H)).toFixed(6), pixel: n, max };
 }
 
-// Pearson r aus den Summen [n, Σa, Σb, Σa², Σb², Σab] (die Spiegel-Treue `klassenMasse` spiegelTreue; in der Seite global,
-// denn `__klassenMasse` ruft sie): null unter 8 Blöcken oder ohne Streuung einer Seite.
+// Die Spiegel-Treue aus den Summen `sp` = [n, 0, 0, ΣW, ΣW, ΣW·r] der Block-Zeilen (`klassenMasse`; in der Seite global): das mit
+// W gewogene Mittel der Zeilen-r, null unter 8 Blöcken oder ohne Gewicht.
 function spiegelPearson(sp) {
-    const n = sp[0];
-    if (!(n >= 8)) return null;
-    const va = sp[3] - (sp[1] * sp[1]) / n,
-        vb = sp[4] - (sp[2] * sp[2]) / n,
-        cab = sp[5] - (sp[1] * sp[2]) / n;
-    return va > 1e-9 && vb > 1e-9 ? cab / Math.sqrt(va * vb) : null;
+    return sp[0] >= 8 && sp[3] > 1e-9 ? sp[5] / sp[3] : null;
+}
+
+// DIE ACHSE DES SPIEGELS (A13, rein, in der Seite global): je Wasser-Pixel (Maske m) das Pixel, das ein idealer Spiegel dort zeigt,
+// aus Tiefe (`s.tiefe` NDC-z, `tw` × `th`, ≥ 0,99999 Himmel) und Kamera (`vp`, `ivp`, `auge`) der Aufnahme: jedes andere Pixel über
+// y_w (Median der Wasser-Höhe; der Himmel 10⁷ m fern) gespiegelt und projiziert, das nächste Spiegel-Bild gewinnt — die Achse liegt
+// am Fuß jeder Gestalt, nie an der Wasser-Kante der Spalte (bis A13 maß dort selbst ein idealer Spiegel 0,16).
+function spiegelPartner(m, W, H, s) {
+    const { tiefe, tw, th, vp: M, ivp: I, auge: C } = s;
+    const P = new Float32Array(W * H * 3),
+        ys = [];
+    for (let p = 0; p < W * H; p++) {
+        const x = p % W,
+            y = (p - x) / W;
+        const v = [((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, tiefe[(((y + 0.5) * th) / H | 0) * tw + (((x + 0.5) * tw) / W | 0)]];
+        const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
+        for (let k = 0; k < 3; k++) P[p * 3 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
+        if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
+        if (m[p] === 1) ys.push(P[p * 3 + 1]);
+    }
+    const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
+    const partner = new Int32Array(W * H).fill(-1),
+        nah = new Float32Array(W * H).fill(Infinity);
+    for (let p = 0; p < W * H; p++) {
+        const q = [P[p * 3], 2 * yw - P[p * 3 + 1], P[p * 3 + 2]],
+            w = M[3] * q[0] + M[7] * q[1] + M[11] * q[2] + M[15];
+        if (m[p] === 1 || !(P[p * 3 + 1] > yw) || !(w > 0)) continue;
+        const x = ((((M[0] * q[0] + M[4] * q[1] + M[8] * q[2] + M[12]) / w + 1) / 2) * W) | 0,
+            y = (((1 - (M[1] * q[0] + M[5] * q[1] + M[9] * q[2] + M[13]) / w) / 2) * H) | 0,
+            z = y * W + x;
+        if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && w <= nah[z]) (nah[z] = w), (partner[z] = p);
+    }
+    return { partner, yw };
+}
+
+// DIE TIEFE DER AUFNAHME (A13, `__spiegelDaten` gleich nach dem Schuss): die Szenen-Tiefe samt Wasser (depth24plus kopiert WebGPU
+// nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses.
+function spiegelDaten() {
+    return (async () => {
+        const r = window.anazhRealm,
+            S = window.THREE.TSL,
+            cam = r.state.camera;
+        const q = r.state.scenePass.getTextureNode("depth").value,
+            [tw, th] = [q.image.width, q.image.height],
+            a = S.instancedArray(tw * th, "float"),
+            i = S.instanceIndex;
+        r.state.renderer.compute(S.Fn(() => a.element(i).assign(S.texture(q).load(S.ivec2(S.int(i.mod(tw)), S.int(i.div(tw)))).r))().compute(tw * th));
+        const tiefe = new Float32Array(await r.state.renderer.getArrayBufferAsync(a.value));
+        r._gpuAbschied(a.value);
+        cam.updateMatrixWorld(true);
+        const vp = new window.THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        const auge = new window.THREE.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray();
+        return { tiefe, tw, th, vp: vp.elements, ivp: vp.clone().invert().elements, auge };
+    })();
 }
 
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
-//   deckung       Anteil der Klasse am Bild · deckungUnten derselbe Anteil im unteren Drittel (der Boden vor dem Auge)
-//   luma/kontrast Mittel und σ/Mittel der Luma auf der Klasse
+//   luma          Mittel der Luma auf der Klasse (deckung, kontrast, nyquist, silhouette, deckungUnten fielen mit A13: kein Leser)
 //   detail        mittlerer Gradient-Betrag im Inneren / Mittel (die Normalen- und Textur-Frequenz: glatt → 0)
-//   nyquist       Anteil der Schachbrett-Energie an der Gradient-Energie in 2×2-Blöcken ganz in der Klasse (k = (a−b−c+d)/4
-//                 gegen gx, gy): ein Dither- oder Hash-Muster → 1, weißes Rauschen 1/3, eine glatte Fläche 0; `ek`/`eg` die
-//                 Energien selbst (die Tafel fasst Klassen über ihre Summen zusammen)
-//   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
-function klassenMasse(F, m, W, H, aussen, ohne) {
+function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
         s = 0,
-        s2 = 0,
-        rand = 0,
-        unten = 0,
         g = 0,
-        ng = 0,
-        ek = 0,
-        eg = 0;
-    const y3 = Math.floor((2 * H) / 3);
+        ng = 0;
     const inM = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1;
     for (let y = 0; y < H; y++)
         for (let x = 0; x < W; x++) {
@@ -588,24 +625,9 @@ function klassenMasse(F, m, W, H, aussen, ohne) {
             if (m[p] !== 1) continue;
             n++;
             s += L[p];
-            s2 += L[p] * L[p];
-            if (y >= y3) unten++;
-            const innen = inM(x - 1, y) && inM(x + 1, y) && inM(x, y - 1) && inM(x, y + 1);
-            if (!innen) rand++;
-            else {
+            if (inM(x - 1, y) && inM(x + 1, y) && inM(x, y - 1) && inM(x, y + 1)) {
                 g += Math.hypot(L[p + 1] - L[p - 1], L[p + W] - L[p - W]) / 2;
                 ng++;
-            }
-            if ((x & 1) === 0 && (y & 1) === 0 && inM(x + 1, y) && inM(x, y + 1) && inM(x + 1, y + 1)) {
-                const a = L[p],
-                    b = L[p + 1],
-                    c = L[p + W],
-                    d = L[p + W + 1];
-                const k = (a - b - c + d) / 4,
-                    gx = (a - b + c - d) / 4,
-                    gy = (a + b - c - d) / 4;
-                ek += k * k;
-                eg += gx * gx + gy * gy;
             }
         }
     // ZWEITON (K63-n2, das Dither-Raster): je Fenster 8×8 (Schritt 4), in dem die Klasse ≥ ¼ der Pixel trägt, das BILD (nicht
@@ -770,72 +792,35 @@ function klassenMasse(F, m, W, H, aussen, ohne) {
                 }
         }
     }
-    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt das Bild über seinem Ufer gespiegelt.
-    // Je Spalte die Uferlinie h0 (das oberste Pixel der Klasse), je 8×8-Block ganz in der Klasse das Luma-Mittel gegen das
-    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r JE BLOCK-ZEILE, gemittelt mit dem Gewicht Σb² der
-    // Zeile (`sp` = n, 0, 0, ΣW, ΣW, ΣW·r — die Tafel fasst Teil-Klassen über die Summen): was eine Zeile gemeinsam hat, ist
-    // Physik des Blick-Winkels, nie der Spiegel — der Fresnel-Verlauf (2 % senkrecht, streifend → 100 %) und der Himmels-
-    // Verlauf hängen an der Zeile; der Spiegel ist, was längs der Zeile steht (Ufer, Stamm, Lücke). Über die rohen Blöcke
-    // bestrafte das Maß den dunklen Körper des nahen Wassers gegen den hellen Himmel als Partner (D10: der Spiegel am Ufer
-    // stand, r fiel 0,21 → 0,16). Llyn Padarn misst 0,922, der Himmel allein im Wasser 0.
-    const oben = new Int32Array(W).fill(-1);
-    for (let x = 0; x < W; x++)
-        for (let y = 0; y < H; y++)
-            if (m[y * W + x] === 1) {
-                oben[x] = y;
-                break;
-            }
+    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1): je 8×8-Block ganz im Wasser das Luma-Mittel gegen das seiner Partner (`spiegelPartner`
+    // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
+    // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
+    const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null,
+        pa = sa && sa.partner;
     const sp = [0, 0, 0, 0, 0, 0];
-    const za = [],
-        zb = [];
-    for (let y0 = 0; y0 + 8 <= H; y0 += 8) {
-        za.length = zb.length = 0;
+    for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
+        const z = [0, 0, 0, 0, 0, 0]; // die Block-Mittel der Zeile: n, Σa, Σb, Σa², Σb², Σab
         bloecke: for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
-            let a = 0,
-                b = 0;
+            let [a, b, k] = [0, 0, 0];
             for (let j = 0; j < 8; j++)
-                for (let i = 0; i < 8; i++) {
-                    const x = x0 + i,
-                        y = y0 + j;
-                    const yy = 2 * oben[x] - y;
-                    if (m[y * W + x] !== 1 || yy < 0) continue bloecke;
-                    a += L[y * W + x];
-                    b += L[yy * W + x];
+                for (let i = 0, p = (y0 + j) * W + x0; i < 8; i++, p++) {
+                    if (m[p] !== 1) continue bloecke;
+                    if (pa[p] >= 0) [a, b, k] = [a + L[p], b + L[pa[p]], k + 1];
                 }
-            za.push(a / 64);
-            zb.push(b / 64);
+            if (k >= 32) [1, a / k, b / k, (a / k) ** 2, (b / k) ** 2, (a * b) / (k * k)].forEach((v, i) => (z[i] += v));
         }
-        if (za.length < 2) continue;
-        let ma = 0,
-            mb = 0;
-        for (let k = 0; k < za.length; k++) {
-            ma += za[k];
-            mb += zb[k];
-        }
-        ma /= za.length;
-        mb /= za.length;
-        let xx = 0,
-            yy = 0,
-            xy = 0;
-        for (let k = 0; k < za.length; k++) {
-            const a = za[k] - ma,
-                b = zb[k] - mb;
-            xx += a * a;
-            yy += b * b;
-            xy += a * b;
-        }
-        // die Zeile zählt mit dem, was über dem Ufer zu spiegeln steht (Σb²): ein glatter Himmel als Partner wiegt nichts,
+        // die Zeile zählt mit dem, was ihre Partner zu spiegeln haben (Σb²): ein glatter Himmel als Partner wiegt nichts,
         // ein Wald voll; ihr r ist frei von der Stärke des Spiegels (Fresnel), ein Wasser ohne Struktur vor Struktur 0
-        if (!(yy > 1e-6)) continue;
-        sp[0] += za.length;
-        sp[3] += yy;
-        sp[4] += yy;
+        const [xx, yy, xy] = [z[3] - (z[1] * z[1]) / z[0], z[4] - (z[2] * z[2]) / z[0], z[5] - (z[1] * z[2]) / z[0]];
+        if (!(z[0] >= 2 && yy > 1e-6)) continue;
+        [sp[0], sp[3], sp[4]] = [sp[0] + z[0], sp[3] + yy, sp[4] + yy];
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
+        spiegelEbene: sa && sa.yw != null ? +sa.yw.toFixed(3) : null,
         sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
         zt,
@@ -844,15 +829,8 @@ function klassenMasse(F, m, W, H, aussen, ohne) {
         wtZiel: ohne ? wtZiel : null,
         bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
-        deckung: r4(n / (W * H)),
-        deckungUnten: r4(unten / (W * (H - y3))),
         luma: mittel == null ? null : +mittel.toFixed(2),
-        kontrast: n ? r4(Math.sqrt(Math.max(0, s2 / n - mittel * mittel)) / Math.max(1, mittel)) : null,
         detail: ng ? r4(g / ng / Math.max(1, mittel)) : null,
-        nyquist: ek + eg > 0 ? r4(ek / (ek + eg)) : null,
-        ek: +ek.toFixed(1),
-        eg: +eg.toFixed(1),
-        silhouette: n ? r4(rand / Math.sqrt(n)) : null,
         kante: kr ? r4(ks / kr) : null,
         kr,
     };
@@ -1309,7 +1287,7 @@ const MASS_RECHNER = {
         return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
     },
     // DIE SPIEGEL-TREUE der Klasse (D10, `klassenMasse` spiegelTreue über die Summen `sp` ihrer Teil-Klassen): Pearson r der
-    // Block-Luma gegen das an der Uferlinie gespiegelte Bild; der Täter die Teil-Klasse mit den meisten Blöcken.
+    // Block-Luma gegen ihr Bild an der Wasser-Ebene (`spiegelPartner`); der Täter die Teil-Klasse mit den meisten Blöcken.
     spiegelTreue(ma) {
         const me = ma.messung;
         const f = bildMessungFehler(me);
@@ -1317,12 +1295,12 @@ const MASS_RECHNER = {
         const sp = [0, 0, 0, 0, 0, 0];
         let arg = null;
         for (const [k, z] of Object.entries(me.klassen)) {
-            if (!Array.isArray(z.sp)) return { fehler: `die Messung ohne Spiegel-Summen (${k}) — vor D10 gemessen` };
+            if (z.spiegelEbene === undefined) return { fehler: `die Messung ohne Spiegel-Ebene (${k}) — vor A13 (die Ufer-Achse)` };
             z.sp.forEach((v, i) => (sp[i] += v));
             if (!arg || z.sp[0] > arg[1]) arg = [k, z.sp[0], z.spiegelTreue];
         }
         const r = spiegelPearson(sp);
-        if (r == null) return { fehler: `${sp[0]} Blöcke unter der Uferlinie — kein Spiegel zu messen` };
+        if (r == null) return { fehler: `${sp[0]} Blöcke mit Spiegel-Partner — kein Spiegel zu messen (die Messung ohne Tiefe?)` };
         return {
             ist: +r.toFixed(3),
             taeter: `${arg[0]} (r ${arg[2]} über ${arg[1]} Blöcke)`,
@@ -1997,8 +1975,8 @@ function sollTafelZeile(z) {
 }
 
 // DER SELBSTTEST der Soll-Tafel (rein): die Teilung zeigt die Klasse ohne ihren Schatten und ohne ihre Wurzel, ein Misch-Pixel
-// zählt einmal, das Rauschen zweier gleicher Schüsse ist 0; die Maße treffen ihre Eichpunkte (Schachbrett 1, glatt 0, weißes
-// Rauschen ⅓, 1/f^β fällt mit β, die Lücke einer Wiese mit LAI 2 liest LAI 2); jeder eingeschmuggelte Bruch der Tafel fällt
+// zählt einmal, das Rauschen zweier gleicher Schüsse ist 0; die Maße treffen ihre Eichpunkte (Detail flach 0, der ideale Spiegel
+// ≥ 0,95, 1/f^β fällt mit β, die Lücke einer Wiese mit LAI 2 liest LAI 2); jeder eingeschmuggelte Bruch der Tafel fällt
 // beim Namen; das Ist kommt aus der Rohdatei (eine geänderte Albedo-Tafel ändert das Urteil, ein Ist von Hand ist ein Bruch);
 // ein Ist außerhalb ist ROT, ein ungemessenes nie GRÜN. Rückgabe: Liste der Brüche (leer = grün).
 function sollTafelSelbsttest(tafel, q) {
@@ -2035,68 +2013,68 @@ function sollTafelSelbsttest(tafel, q) {
     if (bildRauschen(G, G, W, H, 18).anteil !== 0) v.push("Rauschen: zwei gleiche Schüsse rauschen");
     if (bildRauschen(G, OA, W, H, 18).pixel !== 25) v.push("Rauschen: 25 geänderte Pixel nicht gezählt");
     const voll = new Uint8Array(W * H).fill(1);
-    const schach = klassenMasse(
-        bild((x, y) => ((x + y) & 1 ? 40 : 200)),
-        voll,
-        W,
-        H
-    );
-    if (!(schach.nyquist > 0.99)) v.push(`Maß nyquist: Schachbrett ${schach.nyquist} statt 1`);
-    const glatt = klassenMasse(
-        bild((x) => 40 + x * 8),
-        voll,
-        W,
-        H
-    );
-    if (!(glatt.nyquist < 0.01)) v.push(`Maß nyquist: Verlauf ${glatt.nyquist} statt 0`);
+    const glatt = klassenMasse(bild((x) => 40 + x * 8), voll, W, H);
     if (!(glatt.detail > 0)) v.push(`Maß detail: Verlauf ${glatt.detail} nicht > 0`);
-    if (
-        klassenMasse(
-            bild(() => 99),
-            voll,
-            W,
-            H
-        ).detail !== 0
-    )
-        v.push("Maß detail: Flachbild nicht 0");
-    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, derselbe Spiegel unter dem
-    // Fresnel-Verlauf über dunklem Körper (5 % nah → 100 % am Ufer) → nahe 1 (das rohe Block-r las ihn als 0,73), der
-    // Himmels-Verlauf unter einem Ufer → 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,922 im Soll [0,6, ∞]
+    if (klassenMasse(bild(() => 99), voll, W, H).detail !== 0) v.push("Maß detail: Flachbild nicht 0");
+    // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
+    // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
+    // (die Ufer-Achse bis A13: 0,37), unter dem Fresnel-Verlauf je Zeile (2 % → 100 %) > 0,9; ohne Himmel im Wasser und 12 px
+    // versetzt → unter dem Soll 0,6; ein Wasser ohne Bild (Verlauf) → 0; das Foto Llyn Padarn (480 × 265) vor einer Kulisse (das Ufer
+    // eine Wand, deren Fuß die Zeile 141,5 trifft) → 0,922 im Soll [0,6, ∞]
     {
-        const Ws = 64,
-            Hs = 64,
-            h0 = 30;
-        const wert = (x, y) => 40 + ((x * 37 + y * 101 + ((x >> 3) * (y >> 3) * 53)) % 180);
-        const spiegel = new Uint8Array(Ws * Hs * 4),
-            fresnel = new Uint8Array(Ws * Hs * 4),
-            himmel = new Uint8Array(Ws * Hs * 4),
-            mw = new Uint8Array(Ws * Hs);
-        for (let y = 0; y < Hs; y++)
-            for (let x = 0; x < Ws; x++) {
-                const a = y < h0 ? wert(x, y) : wert(x, Math.max(0, 2 * h0 - y));
-                const f = y < h0 ? 1 : 0.05 + 0.95 * Math.pow((Hs - y) / (Hs - h0), 3);
-                const e = y < h0 ? a : Math.round(12 + f * (a - 12));
-                const c = y < h0 ? wert(x, y) : 60 + y;
-                spiegel.set([a, a, a, 255], (y * Ws + x) * 4);
-                fresnel.set([e, e, e, 255], (y * Ws + x) * 4);
-                himmel.set([c, c, c, 255], (y * Ws + x) * 4);
-                if (y >= h0) mw[y * Ws + x] = 1;
+        const kamera = (Wk, Hk) => {
+            const [f, a, h, A, B] = [1.732, Wk / Hk, 2, 1000 / (0.1 - 1000), 100 / (0.1 - 1000)];
+            const vp = [f / a, 0, 0, 0, 0, f, 0, 0, 0, 0, A, -1, 0, -f * h, B, 0],
+                ivp = [a / f, 0, 0, 0, 0, 1 / f, 0, 0, 0, h / B, 0, 1 / B, 0, (h * A) / B, -1, A / B];
+            const strahl = (x, y) => [(((x + 0.5) / Wk) * 2 - 1) * a / f, (1 - ((y + 0.5) / Hk) * 2) / f, -1].map((c, _i, s) => c / Math.hypot(...s));
+            return { f, h, vp, ivp, strahl, auge: [0, h, 0], tw: Wk, th: Hk, tiefe: new Float32Array(Wk * Hk), ndc: (t) => (A * -t + B) / t };
+        };
+        const [Ws, Hs, K] = [384, 216, kamera(384, 216)];
+        const kisten = [[5, -5, -400, 400, 0.4, 10, (x, y, z) => 150 + 25 * ((Math.floor(x) + Math.floor(z)) & 1)], [-400, -5, -600, 400, 1, -150, () => 110]];
+        for (let i = 0; i < 12; i++) kisten.push([9 + (i % 3) * 4, 0, -10 - i * 7, 10.5 + (i % 3) * 4, 5 + ((i * 7) % 9), -8.5 - i * 7, (x, y) => (y > 3 ? 75 + 25 * (Math.floor(y * 2) & 1) : 35)]);
+        for (let i = 0; i < 30; i++) kisten.push([-160 + i * 11, 0, -156, -154 + i * 11, 10 + ((i * 5) % 17), -150, (x, y) => 50 + 3 * ((y * 3) % 7)]);
+        const spur = (o, d) => {
+            let [t, ton] = [Infinity, null];
+            for (const k of kisten) {
+                const [u, w] = [0, 1, 2].map((i) => [(k[i] - o[i]) / d[i], (k[i + 3] - o[i]) / d[i]]).reduce(([a, b], [c, e]) => [Math.max(a, Math.min(c, e)), Math.min(b, Math.max(c, e))], [1e-4, Infinity]);
+                if (u < w && u < t) [t, ton] = [u, k[6]];
             }
-        const rs = klassenMasse(spiegel, mw, Ws, Hs).spiegelTreue,
-            rf0 = klassenMasse(fresnel, mw, Ws, Hs).spiegelTreue,
-            rh = klassenMasse(himmel, mw, Ws, Hs).spiegelTreue;
-        if (!(rs > 0.999)) v.push(`Maß spiegelTreue: der exakte Spiegel ${rs} statt 1`);
-        if (!(rf0 > 0.9)) v.push(`Maß spiegelTreue: der Spiegel unter dem Fresnel-Verlauf ${rf0} statt nahe 1`);
-        if (!(Math.abs(rh) < 0.3)) v.push(`Maß spiegelTreue: der Himmels-Verlauf ${rh} statt nahe 0`);
+            if (d[1] < 0 && -o[1] / d[1] < t) return { t: -o[1] / d[1], wasser: true };
+            if (ton) return { t, L: ton(o[0] + t * d[0], o[1] + t * d[1], o[2] + t * d[2]) };
+            return { himmel: true, L: 120 + 80 * d[1] + 40 * (Math.sin(Math.atan2(d[0], -d[2]) * 11 + d[1] * 30) > 0.4) };
+        };
+        // das Bild des Spiegels zum Strahl durch (x, y): der an der Ebene gespiegelte Strahl aus seinem Treffer
+        const bild = (x, y, d = K.strahl(x, y)) => (d[1] < 0 ? spur([(-K.h / d[1]) * d[0], 0, (-K.h / d[1]) * d[2]], [d[0], -d[1], d[2]]) : { L: 25 });
+        const namen = ["ideal", "fresnel", "ohneHimmel", "verschoben", "verlauf"],
+            B5 = namen.map(() => new Uint8Array(Ws * Hs * 4)),
+            mw = new Uint8Array(Ws * Hs);
+        for (let p = 0; p < Ws * Hs; p++) {
+            const [x, y] = [p % Ws, Math.floor(p / Ws)],
+                s = spur(K.auge, K.strahl(x, y)),
+                r = s.wasser && bild(x, y),
+                F = 0.02 + 0.98 * Math.pow(1 - (1 - ((y + 0.5) / Hs) * 2) / -K.f, 5);
+            K.tiefe[p] = s.himmel ? 1 : K.ndc(-s.t * K.strahl(x, y)[2]);
+            mw[p] = s.wasser ? 1 : 0;
+            const w = s.wasser ? [r.L, F * r.L + (1 - F) * 25, r.himmel ? 25 : r.L, bild(x, y - 12).L, 60 + y / 4] : namen.map(() => s.L);
+            B5.forEach((b, i) => b.set([w[i], w[i], w[i], 255], p * 4));
+        }
+        const soll = [(r) => r >= 0.95, (r) => r > 0.9, (r) => r < 0.6, (r) => r < 0.6, (r) => Math.abs(r) < 0.3];
+        B5.forEach((b, i) => {
+            const r = klassenMasse(b, mw, Ws, Hs, null, null, K).spiegelTreue;
+            if (!soll[i](r)) v.push(`Maß spiegelTreue: der Spiegel „${namen[i]}" ${r} (Soll ${soll[i].toString().slice(7)})`);
+        });
         const fs = require("fs"),
-            path = require("path");
-        const foto = path.join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
+            foto = require("path").join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
         const b = fs.existsSync(foto) ? pngLesen(fs.readFileSync(foto)) : null;
         if (!b) v.push("Maß spiegelTreue: das Foto spec/abnahme/llyn-padarn.png fehlt");
         else {
-            const mf = new Uint8Array(b.W * b.H);
-            for (let p = 141 * b.W; p < b.W * b.H; p++) mf[p] = 1;
-            const rf = klassenMasse(b.u8, mf, b.W, b.H).spiegelTreue;
+            const [Kf, mf] = [kamera(b.W, b.H), new Uint8Array(b.W * b.H)];
+            for (let p = 0, wand = (Kf.h * Kf.f * b.H) / 2 / (141.5 - b.H / 2); p < b.W * b.H; p++) {
+                const y = Math.floor(p / b.W);
+                mf[p] = y >= 141 ? 1 : 0;
+                Kf.tiefe[p] = Kf.ndc(mf[p] ? (Kf.h * Kf.f) / -(1 - ((y + 0.5) / b.H) * 2) : wand);
+            }
+            const rf = klassenMasse(b.u8, mf, b.W, b.H, null, null, Kf).spiegelTreue;
             if (!(Math.abs(rf - 0.922) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,922`);
         }
     }
@@ -2154,9 +2132,9 @@ function sollTafelSelbsttest(tafel, q) {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
-    const mitMangel = (t) =>
-        finde(t, (k) => k.wirkung && k.wirkung.mangel && k.mass && k.mass.name === "zweiton" && k.mass.messung);
-    // den benannten Mangel als geheilt erklären (mit oder ohne Bild-Paar) — das Maß bleibt, wie es misst
+    const mitMangel = (t, k = finde(t, (x) => x.wirkung && (x.wirkung.mangel || x.wirkung.geheilt) && x.mass && x.mass.name === "zweiton" && x.mass.messung)) =>
+        k && k.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
+    // die Zeile des Mangels (Zweiton mit Messung; ein geheilter öffnet für den Fall wieder, A3) als geheilt erklären — das Maß bleibt
     const heile = (t, bildPaar) => {
         const k = mitMangel(t);
         k.wirkung.geheilt = { befund: k.wirkung.mangel.befund, quelle: k.wirkung.mangel.quelle, warum: "x", bildPaar };
@@ -2388,7 +2366,7 @@ function sollTafelSelbsttest(tafel, q) {
             "geheilt neben einem roten Maß",
             (t) => {
                 const k = mitMangel(t);
-                for (const z of Object.values(k.mass.messung.klassen)) z.zt = Math.max(z.zt || 0, 0.5);
+                for (const z of Object.values(k.mass.messung.klassen)) z.zt = z.pixel; // jedes Pixel im Raster: ROT, was die Tafel auch misst
                 frisch(k, k.mass.messung);
                 heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]);
             },
@@ -2605,6 +2583,8 @@ module.exports = {
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
+        `window.spiegelPartner = ${spiegelPartner.toString()};` +
+        `window.__spiegelDaten = ${spiegelDaten.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
         `window.__gesichtMasse = ${gesichtMasse.toString()};` +
         `window.__farbtonProbe = ${farbtonProbe.toString()};`,

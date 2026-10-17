@@ -1118,7 +1118,8 @@ function wasserRegen(opts) {
             r._setWeather("stormy", "human");
             st.weatherTransition = null;
             st.camera = cam;
-            r._tickRain(t * 1000);
+            r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
+            r._tickRain();
             const sys = r._rainSystem;
             mesh = sys && sys.mesh;
             if (!mesh) return { fehler: "kein Regen-Objekt" };

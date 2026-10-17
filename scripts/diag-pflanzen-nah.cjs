@@ -27,8 +27,6 @@
 //      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
 //  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
-//  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
-//      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
 //  (V) VOLUMEN — die Normale der Krone (K68-N1, Prüfer K68): jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
 //      Normale der Krone (phyto-core kronenNormalen) — aus 8 Peilungen zeigt die GELICHTETE Normale der nahen Kronen-Hälfte
 //      aus der Krone hinaus (Anteil nach innen ≤ KRONE_WEG_MAX). Gelichtet ist, was die Leser tun: lesen Welt-Stoff, Labor und Bäcker der
@@ -64,13 +62,14 @@
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
 "use strict";
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
+// die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c)
+const OKTAVE = stammLib.ladeKlasse(ROOT).AnazhRealm.BLATT_FARBE_OKTAVE;
 const PORT = Number(process.env.PFLANZEN_PORT || 4548);
 
 // Die Soll-Bänder (lineare Luminanz Y, Tageslicht-Albedo): Betulin-Weiß der Birke 0,40–0,55 (mit Strichen im Mittel
@@ -513,37 +512,6 @@ function kroneUrteil(fall, T, flipFrei, partien) {
     }
     return { v, m };
 }
-// Die Leser der Normale der Krone (K68-N1): Welt-Stoff, Labor und Bäcker der Karte lesen flip-frei; der Grammatik-Baum legt
-// dieselbe Normale wie das Studio. Rückgabe { flipFrei, v } — v nennt den Leser, der kehrt, oder das zweite Gesetz.
-function kronenLeser(q) {
-    const v = [];
-    const welt =
-        /_laubStoffNormale\([^)]*\) \{\s*mat\.normalNode = T\.normalViewGeometry;/.test(q.Stamm) &&
-        /if \(_krone\) this\._laubStoffNormale\(TSL, mat\)/.test(q.Stamm);
-    if (!welt) v.push("Stamm: der Laub-Stoff der Welt liest die Normale der Krone nicht flip-frei (_laubStoffNormale)");
-    const ohneSeite = "normal = normalize( vNormal );";
-    const kc = q["foundry-core.js"];
-    const ki = kc.indexOf("if (krone)");
-    const labor = ki > 0 && kc.slice(ki, ki + 400).includes("#include <normal_fragment_begin>") && kc.slice(ki, ki + 400).includes(ohneSeite);
-    if (!labor) v.push("foundry-core.js: der Laub-Shader des Labors kehrt die Normale der Krone (injectWind krone)");
-    const br = q["foundry-bruecke.js"] || "";
-    const bi = br.indexOf("_impNrmOv.onBeforeCompile");
-    const baecker = bi > 0 && br.slice(bi, bi + 400).includes(ohneSeite);
-    if (!baecker) v.push("foundry-bruecke.js: der Normal-Pass des Karten-Bäckers kehrt die Normale der Krone");
-    const werkstatt =
-        (q.Stamm.match(/this\._kronenNormalenAuf\(g\)/g) || []).length >= 3 &&
-        /_kronenNormalenAuf\([^)]*\) \{[\s\S]{0,240}__phytoCore\.kronenNormalen\(/.test(q.Stamm);
-    if (!werkstatt) v.push("Stamm: der Grammatik-Baum der Werkstatt legt nicht die Normale der Krone (Klingen, Karten, Anker)");
-    if (/_stampFoliageDomeNormals/.test(q.Stamm))
-        v.push("Stamm: die Kuppel-Normale des Wirts (_stampFoliageDomeNormals) lebt neben dem Kern-Gesetz");
-    return { flipFrei: welt && labor && baecker, v };
-}
-function unterseiteUrteil(quellen) {
-    const v = [];
-    for (const [datei, text] of Object.entries(quellen))
-        if (!/__phytoCore\.BLATT_UNTERSEITE/.test(text)) v.push(`${datei} liest BLATT_UNTERSEITE nicht`);
-    return v;
-}
 
 // (F) DIE FRACHT — die GPU nachgerechnet: sRGB-Byte → linear je Texel, bilinear (clamp), alphaTest 0,5.
 const FRACHT_MIN_ZELLE = 8;
@@ -637,8 +605,6 @@ function frachtUrteil(R) {
         }
     return v;
 }
-// Die Quelle des Lesers: `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest nur er (geschrieben wird es
-// in `_ensureFoliageClusterAtlas`).
 // (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
 // (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
 // zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
@@ -794,11 +760,6 @@ function farbKornReihe(mips, zBasis) {
             }
         return summe > 0 ? d / summe : 0;
     };
-}
-// Die Oktave der Farbe, wie der Stamm sie trägt (Kommentare zitieren — gelesen wird die Zuweisung); fehlt sie: 0.
-function farbOktave(quelle) {
-    const m = /\nAnazhRealm\.BLATT_FARBE_OKTAVE = ([0-9.]+);/.exec(quelle);
-    return m ? Number(m[1]) : 0;
 }
 function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
     const v = [],
@@ -1013,19 +974,6 @@ function deckungStufe0(bild) {
     return out.map((n) => n / (Z * m.height));
 }
 
-function leserUrteil(quelle) {
-    const v = [];
-    const text = stammLib.ohneKommentare(quelle); // Kommentare zitieren (Lehre 6) — gezählt wird Code
-    const i = text.indexOf("\n    _blattAtlasProbe(");
-    const rumpf = i < 0 ? "" : text.slice(i, text.indexOf("\n    }\n", i));
-    if (!rumpf) v.push("Stamm:der Leser _blattAtlasProbe fehlt");
-    else if (!/\.rgb\.div\(s\.a\.max\(/.test(rumpf))
-        v.push("Stamm:_blattAtlasProbe teilt rgb nicht durch alpha");
-    const leser =
-        (text.match(/userData\.wert\b(?!\s*=)/g) || []).length - (/userData\.wert\b(?!\s*=)/.test(rumpf) ? 1 : 0);
-    if (leser > 0) v.push(`Stamm: ${leser} Leser von userData.wert neben _blattAtlasProbe`);
-    return v;
-}
 
 // (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
 // Gestalt und seine Leser:
@@ -1034,9 +982,6 @@ function leserUrteil(quelle) {
 //        der gelieferten Gestalt über `windSchlankheit`, den Leser von `_baumWindDaten`): ± F0_TOL.
 //   GLIED der Ausschlag je Glied (Stamm-Spitze, Ast-Hebel, Blatt) über 20 s: Sturm (Wind-Zeile 1) zu Brise (0,06) ≥ STURM_BRISE,
 //        und die Leiter der Frequenzen Stamm < Ast < Blatt.
-//   LESER der EINE Term hat seine Leser — Rinde und Laub der Welt (`_baumWindStoff`, gerufen aus `_foundryTreeMaterial`), die
-//        Karte (`_buildPbrNodeMaterial`) und das Labor (foundry-core `injectWind`); die eigenen Sinus-Formeln sind fort (die
-//        Karte pendelte 0,22 m in jedem Wetter, das Labor bog linear in uWindStrength und las omega nie).
 const F0_TOL = 0.3;
 const STURM_BRISE = 3;
 function stammDurchmesser(T, yT) {
@@ -1109,123 +1054,6 @@ function windUrteil(fall, T, skala, deltaMul) {
         },
     };
 }
-function windLeserUrteil(quellen) {
-    const v = [];
-    const code = stammLib.ohneKommentare;
-    const welt = code(quellen.Stamm);
-    const i = welt.indexOf("\n    _baumWindStoff(");
-    const rumpf = i < 0 ? "" : welt.slice(i, welt.indexOf("\n    }\n", i));
-    if (!/__phytoCore\.windAusschlag\(/.test(rumpf))
-        v.push("Stamm:Rinde und Laub der Welt lesen den Wind-Term nicht");
-    if (!/this\._baumWindStoff\(/.test(welt)) v.push("Stamm:_foundryTreeMaterial ruft _baumWindStoff nicht");
-    if ((welt.match(/__phytoCore\.windAusschlag\(/g) || []).length < 2)
-        v.push("Stamm:die Karte liest den Wind-Term nicht");
-    if (/_Ta\.sin\(_ph\)\.mul\(_fx\)/.test(welt)) v.push("Stamm:die Karte pendelt mit eigener Formel");
-    const j = welt.indexOf("\n    _baumWindDaten(");
-    const daten = j < 0 ? "" : welt.slice(j, welt.indexOf("\n    }\n", j));
-    if (!/__phytoCore\.windSchlankheit\(/.test(daten))
-        v.push("Stamm:_baumWindDaten misst δ nicht an der gelieferten Gestalt (windSchlankheit)");
-    const labor = code(quellen["foundry-core.js"]);
-    if (!/__phytoCore\.windAusschlag\(/.test(labor)) v.push("foundry-core.js: das Labor liest den Wind-Term nicht");
-    // die Halm-Biegung (Gras, Blumen-Stiel) bleibt; der Baum darf sie nicht lesen
-    const h = labor.indexOf("\nfunction halmBiegung(");
-    const ohneHalm = h < 0 ? labor : labor.slice(0, h) + labor.slice(labor.indexOf("\n}\n", h));
-    if (/_theta=clamp\(_sw\*uWindStrength/.test(ohneHalm))
-        v.push("foundry-core.js: das Labor biegt mit eigener Formel");
-    // die Baum-Stoffe: Rinde ×2, Laub ×3 (Boden-Laub, das Klingen-Laub der Krone und die Karte; K68-N1 `krone`)
-    const baeume = (labor.match(/,\s*(true|false),\s*false,\s*true(?:,\s*true)?\s*\)/g) || []).length;
-    if (baeume < 5) v.push(`foundry-core.js: nur ${baeume} von 5 Baum-Stoffen (Rinde ×2, Laub ×3) lesen den Baum-Wind`);
-    const bestand = code(quellen["worlds/terrain/phytogenesis.js"] || "");
-    if ((bestand.match(/windStempel\(geo,/g) || []).length < 4)
-        v.push("phytogenesis.js: der Bestand des Labors trägt den Wind-Stempel nicht an jedem Klon");
-    if (!/WIND\.uWindBaum\.value\.set\(/.test(bestand))
-        v.push("phytogenesis.js: die Einzel-Ansicht trägt den Baum nicht als uWindBaum");
-    // DER WERKSTATT-BAUM (Grammatik-Pfad `_buildTreeSkeletonLeaves` → `_applyVegetationResponse`): Rinde, Laub und Kern
-    // lesen denselben Term über `_baumWindStoff`, δ an der Stamm-Achse seines Skeletts (`windSchlankheitAchse`); die
-    // eigene Sinus-Formel (ohne Wind-Zeile: der Sturm sah aus wie die Brise) ist fort.
-    const rumpfVon = (name) => {
-        const k = welt.indexOf("\n    " + name + "(");
-        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
-    };
-    const veg = rumpfVon("_applyVegetationResponse");
-    if (!/this\._baumWindStoff\(/.test(veg))
-        v.push("Stamm:der Werkstatt-Baum (_applyVegetationResponse) liest den Wind-Term nicht");
-    if (/uWindTime/.test(veg))
-        v.push("Stamm:der Werkstatt-Baum (_applyVegetationResponse) schwingt mit eigener Formel");
-    if (!/__phytoCore\.windSchlankheitAchse\(/.test(rumpfVon("_skelettWindDaten")))
-        v.push("Stamm:der Werkstatt-Baum misst δ nicht an seiner Stamm-Achse (_skelettWindDaten)");
-    // DER WURF (Lehre 26): jeder Schatten-Werfer eines schwingenden Baums trägt denselben Term — der Wurf-Teil der
-    // Foundry-L1 (`kind "schatten"`) und der Zwilling des Werkstatt-Baums; sonst steht der Schatten unter der Krone.
-    const ruf = /if \(([^;{]*)\)\s*this\._baumWindStoff\(mat, kind, baum\)/.exec(rumpfVon("_foundryTreeMaterial"));
-    if (!ruf || !/"schatten"/.test(ruf[1]))
-        v.push("Stamm:der Wurf-Teil der Foundry-L1 (kind schatten) steht im Wind still (_foundryTreeMaterial)");
-    if (!/this\._baumWindStoff\(/.test(rumpfVon("_treeShadowTwinMaterial")))
-        v.push("Stamm:der Schatten-Zwilling des Werkstatt-Baums steht im Wind still (_treeShadowTwinMaterial)");
-    return v;
-}
-// (LL) DAS LAUB-LICHT (K19) hat seine Leser: das Lichtmodell der Welt rechnet phyto-core `laubDurchlass`, jeder Laub-Stoff
-// trägt es (Foundry-Laub und Blatt-Karte, das Grammatik-Laub, die ferne Karte mit der Nadel ihrer Schicht), das Labor
-// lichtet mit demselben Term; die Fresnel-Aufhellung lebt nur noch im Gras des Labors.
-function laubLichtLeserUrteil(quellen) {
-    const v = [];
-    const code = stammLib.ohneKommentare;
-    const welt = code(quellen.Stamm);
-    const rumpfVon = (name) => {
-        const k = welt.indexOf("\n    " + name + "(");
-        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
-    };
-    if (!/__phytoCore\.laubDurchlass\b/.test(rumpfVon("static _laubLichtModell")))
-        v.push("Stamm:das Lichtmodell des Laubs rechnet laubDurchlass nicht (_laubLichtModell)");
-    if (!/this\._laubLichtStoff\(mat, kind === "foliageTex"\)/.test(rumpfVon("_foundryTreeMaterial")))
-        v.push("Stamm:das Foundry-Laub trägt das Laub-Licht nicht (_foundryTreeMaterial)");
-    if (!/this\._laubLichtStoff\(/.test(rumpfVon("_applyVegetationResponse")))
-        v.push("Stamm:das Grammatik-Laub trägt das Laub-Licht nicht (_applyVegetationResponse)");
-    if (!/this\._laubLichtStoff\(mat, \(\) => this\._karteNadel\(/.test(welt))
-        v.push("Stamm:die ferne Karte trägt das Laub-Licht nicht (_karteNadel)");
-    const labor = code(quellen["foundry-core.js"]);
-    if (!/__phytoCore\.laubDurchlass\(/.test(labor)) v.push("foundry-core.js: das Labor-Laub lichtet ohne laubDurchlass");
-    if ((labor.match(/pow\(1\.0-_ndv,2\.5\)\*0\.55/g) || []).length > 1 || !/if \(isGrass\)\s*sh\.fragmentShader/.test(labor))
-        v.push("foundry-core.js: die Fresnel-Aufhellung lebt außerhalb des Grases");
-    return v;
-}
-// (WD) DIE WIND-DATEN HABEN IHREN LESER (K19): jedes Attribut-Schema (a + Großbuchstabe), das der Werkstatt-Baum in seine
-// Geometrie setzt (`_buildTree*`, `_stampFoliage*`) oder das ein Geometrie-Bauer des Kerns liefert (phyto-core
-// buildFoliageQuads · buildLeafBlades · buildBarkTubeArrays), liest ein Stoff — ein TSL-`attribute("aX")` der Welt oder ein
-// GLSL-`attribute … aX;` des Labors. Der Wind liest positionGeometry und aH0; bis K19-N2 erzeugten vier Bauer der Welt und
-// drei des Kerns aFlex/aPhase der gefallenen Werkstatt-Formel, und der Playtest prüfte nur, dass es sie gibt.
-const KERN_GEOMETRIE_BAUER = ["buildFoliageQuads", "buildLeafBlades", "buildBarkTubeArrays"];
-function windDatenUrteil(quellen) {
-    const v = [];
-    const code = stammLib.ohneKommentare;
-    const welt = code(quellen.Stamm);
-    const labor = code(quellen["foundry-core.js"]);
-    const kern = code(quellen["phyto-core.js"]);
-    // die Geometrie der Welt liest ein Stoff der Welt; was der Kern liefert, liest die Welt oder das Labor
-    const inWelt = (a) => new RegExp('attribute\\(\\s*"' + a + '"').test(welt);
-    const imLabor = (a) => new RegExp("attribute\\s+\\w+\\s+" + a + "\\s*;").test(labor);
-    const urteil = (wo, name, namen, gelesen) => {
-        const ohne = [...new Set(namen)].filter((a) => !gelesen(a));
-        if (ohne.length) v.push(`${wo}: ${name} erzeugt ${ohne.join(" · ")} — kein Stoff liest es`);
-    };
-    // die Bauer der Welt am AST (stammLib.glieder, K38-N2): ein umbrochener oder async-Kopf fiel aus dem Kopf-Muster
-    for (const g of stammLib.glieder(quellen.Stamm)) {
-        if (!/^(?:_buildTree\w*|_stampFoliage\w*)$/.test(g.name)) continue;
-        const rumpf = code(quellen.Stamm.slice(g.start, g.ende));
-        const namen = [...rumpf.matchAll(/setAttribute\(\s*"(a[A-Z]\w*)"/g)].map((x) => x[1]);
-        urteil("Stamm", g.name, namen, inWelt);
-    }
-    for (const f of KERN_GEOMETRIE_BAUER) {
-        const k = kern.indexOf("\n    function " + f + "(");
-        if (k < 0) {
-            v.push(`phyto-core.js: ${f} fehlt`);
-            continue;
-        }
-        const rumpf = kern.slice(k, kern.indexOf("\n    }\n", k));
-        const namen = [...rumpf.matchAll(/[{,]\s*(a[A-Z]\w*)\s*(?=[,}:])/g)].map((x) => x[1]);
-        urteil("phyto-core.js", f, namen, (a) => inWelt(a) || imLabor(a));
-    }
-    return v;
-}
 
 (async () => {
     const fails = [];
@@ -1267,14 +1095,6 @@ function windDatenUrteil(quellen) {
     const skala = (p) => (pl.scale && pl.scale[p]) * (buch[p] && buch[p].kind === "tree" ? pl.treeScaleMul || 1 : 1);
     const zeilen = [];
     const ergebnis = {};
-    const quellen = {
-        "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
-        Stamm:stammLib.text(ROOT),
-    };
-    // (V) die Leser der Normale der Krone (Welt, Labor, Bäcker, Werkstatt) — aus den Quellen, VOR dem Urteil je Fall
-    const qBr = { "foundry-bruecke.js": fs.readFileSync(path.join(ROOT, "foundry-bruecke.js"), "utf8") };
-    const kl = kronenLeser(Object.assign({}, qBr, quellen));
-    fails.push(...kl.v);
     for (const [k, f] of Object.entries(roh)) {
         const kind = buch[f.presetId].kind;
         // Rinde und Nadel-Art sind der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
@@ -1304,7 +1124,7 @@ function windDatenUrteil(quellen) {
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
         else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
         if (kind === "tree" || kind === "shrub") {
-            const kv = kroneUrteil(k, f.T, kl.flipFrei, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
+            const kv = kroneUrteil(k, f.T, true, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
             u.v.push(...kv.v);
             Object.assign(u.m, kv.m);
         }
@@ -1326,19 +1146,10 @@ function windDatenUrteil(quellen) {
                     .join(" · ")
         );
     }
-    // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle), der Kern nur die Wind-Daten
-    const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
-    const kernQuelle = fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8");
-    fails.push(
-        ...unterseiteUrteil(quellen),
-        ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen)),
-        ...windDatenUrteil(Object.assign({ "phyto-core.js": kernQuelle }, quellen)),
-        ...laubLichtLeserUrteil(quellen)
-    );
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
     const fracht = frachtReihen(bild);
-    fails.push(...frachtUrteil(fracht), ...leserUrteil(quellen.Stamm));
+    fails.push(...frachtUrteil(fracht));
     const fz = (s) => s.zellen.map((z) => z.Y.toFixed(3)).join("/");
     console.log(
         "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC3 | rgba):\n" +
@@ -1366,10 +1177,10 @@ function windDatenUrteil(quellen) {
                 `  Eichen-Krone auf 25 m (λ ${lamKrone.toFixed(2)}): bc ${korn.m.bc.toFixed(3)} · rgba ${korn.m.rgba.toFixed(3)} (≤ ${KORN_MAX})\n` +
                 KORN_LAMBDA.map((l) => `  λ ${l}: bc ${korn.m["bc@" + l]} | rgba ${korn.m["rgba@" + l]}`).join("\n")
         );
-        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(quellen.Stamm));
+        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, OKTAVE);
         fails.push(...fk.v);
         console.log(
-            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${farbOktave(quellen.Stamm)}): ` +
+            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${OKTAVE}): ` +
                 Object.entries(fk.m)
                     .map(([f, x]) => `${f} ${x.welt.toFixed(4)} (ohne Oktave ${x.ohne.toFixed(4)})`)
                     .join(" · ") +
@@ -1474,17 +1285,6 @@ function windDatenUrteil(quellen) {
         const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
         st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
     } else st.push(["Eiche gebaut", false]);
-    const mitSeite = quellen.Stamm.replace("mat.normalNode = T.normalViewGeometry;", "mat.normalNode = T.normalView;");
-    st.push(["Welt-Stoff liest die Krone mit Seite", kronenLeser(Object.assign({}, qBr, quellen, { Stamm: mitSeite })).flipFrei === false]);
-    st.push([
-        "die Kuppel des Wirts zurück",
-        kronenLeser(Object.assign({}, qBr, quellen, { Stamm: quellen.Stamm + "\n_stampFoliageDomeNormals(g) {}" })).v.length > 0,
-    ]);
-    st.push([
-        "Leser der Unterseite entfernt",
-        unterseiteUrteil({ Stamm:quellen.Stamm.replace(/__phytoCore\.BLATT_UNTERSEITE/g, "X") })
-            .length === 1,
-    ]);
     if (weide1)
         st.push([
             "Weide in der Großblatt-Zelle",
@@ -1499,10 +1299,6 @@ function windDatenUrteil(quellen) {
             ).v.length > 0,
         ]);
     st.push(["BC gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
-    st.push([
-        "Leser teilt nicht durch alpha",
-        leserUrteil(quellen.Stamm.replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
-    ]);
     // Korn: jede Stufe ab 1 je Texel gegen ein Hash-Raster binär geschnitten (die Deckung im Mittel gleich) — die Linse
     // muss das Flimmern nennen.
     if (lamKrone != null) {
@@ -1520,15 +1316,6 @@ function windDatenUrteil(quellen) {
             rgba: kornReihe(kornig(frK.rgba.mips), frK.rgba.mips[0].width / 4),
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
-        // Farb-Korn: der Stamm ohne Oktave (die Farbe in der Stufe der Deckung) MUSS den Leser beim Namen nennen.
-        const ohneOktave = quellen.Stamm.replace(
-            /\nAnazhRealm\.BLATT_FARBE_OKTAVE = [0-9.]+;/,
-            "\nAnazhRealm.BLATT_FARBE_OKTAVE = 0;"
-        );
-        st.push([
-            "Farb-Korn ohne Oktave",
-            farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(ohneOktave)).v.length > 0,
-        ]);
     }
     // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
     // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
@@ -1578,52 +1365,6 @@ function windDatenUrteil(quellen) {
     }
     if (eiche)
         st.push(["Welt-δ ×0,5 (f0 gegen das Gesetz)", windUrteil("halb", eiche.T, skala("eiche"), 0.5).v.length > 0]);
-    st.push([
-        "Wind-Leser entfernt",
-        windLeserUrteil({
-            Stamm:quellen.Stamm.replace(/__phytoCore\.windAusschlag\(/g, "X("),
-            "foundry-core.js": quellen["foundry-core.js"],
-            "worlds/terrain/phytogenesis.js": laborBestand,
-        }).length >= 2,
-    ]);
-    const windMit = (alt, neu) =>
-        windLeserUrteil({
-            Stamm:quellen.Stamm.replace(alt, neu),
-            "foundry-core.js": quellen["foundry-core.js"],
-            "worlds/terrain/phytogenesis.js": laborBestand,
-        }).length >= 1;
-    st.push([
-        "Werkstatt-Baum ohne Wind-Term",
-        windMit(/(\n    _applyVegetationResponse\([\s\S]*?)this\._baumWindStoff\(/, "$1this.X("),
-    ]);
-    st.push([
-        "Wurf-Teil ohne Wind",
-        windMit(/(\n    _foundryTreeMaterial\([\s\S]*?)\|\| kind === "schatten"/, "$1"),
-    ]);
-    const datenMit = (welt, kern) =>
-        windDatenUrteil({
-            Stamm:welt,
-            "foundry-core.js": quellen["foundry-core.js"],
-            "phyto-core.js": kern,
-        }).length >= 1;
-    st.push([
-        "Stempel aH0 ohne Leser",
-        datenMit(quellen.Stamm.replace(/attribute\("aH0"/g, 'attribute("aX0"'), kernQuelle),
-    ]);
-    st.push([
-        "Kern liefert Wind-Daten ohne Leser",
-        datenMit(
-            quellen.Stamm,
-            kernQuelle.replace(/(\n    function buildFoliageQuads\([\s\S]*?return \{ positions,)/, "$1 aSchwung,")
-        ),
-    ]);
-    st.push([
-        "Laub-Licht-Leser entfernt",
-        laubLichtLeserUrteil({
-            Stamm:quellen.Stamm.replace("this._laubLichtStoff(mat, kind === \"foliageTex\")", "this.X(mat)"),
-            "foundry-core.js": quellen["foundry-core.js"],
-        }).length >= 1,
-    ]);
     // (T) der Büschel auf 30 % seiner Weite gestaucht (das Bild vor K56: 0,15 m auf dem 0,72-m-Raster)
     const gras1 = roh["gras-s1-L1"];
     if (gras1) {
@@ -1658,7 +1399,7 @@ function windDatenUrteil(quellen) {
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht · Wind · Teppich ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Teppich ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");

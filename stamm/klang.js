@@ -254,13 +254,6 @@ class AnazhRealm_klang {
         return Math.sin(t * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
     }
 
-    // Die Wind-Uhr (s): uWindTime, die der Loop je Frame setzt — sonst die Wand-Uhr.
-    _windZeit() {
-        const wu = this.state.windUniforms;
-        const t = wu && wu.uWindTime ? wu.uWindTime.value : NaN;
-        return Number.isFinite(t) ? t : performance.now() / 1000;
-    }
-
     // Der RECHTS-Vektor des Ohrs (waagerecht, aus der Kamera-Blickrichtung): Panorama einer Richtung (ux, uz) =
     // ux·x + uz·z (−1 links … +1 rechts). Ohne Kamera {0, 0} — alles mittig.
     _umweltRechts() {
@@ -343,7 +336,7 @@ class AnazhRealm_klang {
         }
         return {
             windFeld: wf.wind * (this._weatherWob || 1),
-            boe: this._windBoeAt(px, pz, this._windZeit()),
+            boe: this._windBoeAt(px, pz, this._bildZeit), // die Böe am Ort auf der Bild-Uhr (A9), wie der Wind im Bild
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: Math.sin(this._sonnenWinkel(tod)),

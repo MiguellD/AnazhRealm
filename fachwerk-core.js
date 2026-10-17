@@ -3489,18 +3489,21 @@
         return B;
     }
 
-    // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
-    // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
-    function chimneyTipFromParams(p) {
-        var B = massBau(p || {});
-        if (!B.chimney) return null;
-        var c = B.chimney;
-        if (!c.min || !c.max) return null;
+    // DIE KAMIN-SPITZE (KAMIN-RAUCH .105, die EINE Formel): die Mitte über dem Stapel-AABB, 0,2 m darüber, haus-lokal —
+    // null ohne Kamin (ROUND/modern/kuppel). Leser: exportSettlement (je Slot), chimneyTipFromParams und die Hülle des
+    // Baus (`buildInstance`: `__huelle.kamin`, B3c — die Spitze reist mit dem Haus aus dem Worker).
+    function kaminSpitze(c) {
+        if (!c || !c.min || !c.max) return null;
         return {
             x: (c.min[0] + c.max[0]) / 2,
             y: c.max[1] + 0.2,
             z: (c.min[2] + c.max[2]) / 2,
         };
+    }
+    // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
+    // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
+    function chimneyTipFromParams(p) {
+        return kaminSpitze(massBau(p || {}).chimney);
     }
 
     // ── DIE EINE STUFEN-QUELLE des Vertrags — buildStufe(p, stufe) → geoms
@@ -3610,6 +3613,7 @@
             // — dieselbe Liste, die das Labor begeht (bauSolidsUndTueren). Die Welt stellte statt ihrer vier EG-Riegel
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
+            geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -3639,6 +3643,7 @@
             B.frag = null;
             B.fragStufe = undefined;
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
         }
         return geoms;
     }
@@ -3710,6 +3715,12 @@
         var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;
         // … in der EINEN Hüllen-Form (S3, N5: jede Solid-Box ein Teil, rolle "fest" — EIN Parser im Wirt, `_huelleVon`)
         g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle ? huelleAusBoxen(huelle.stufe, huelle.boxen) : null };
+        // DER KAMIN REIST MIT DER HÜLLE (B3c, additiv, must-ignore): die Spitze des gebauten Hauses, haus-lokal auf dem Raster
+        // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
+        if (g.userData.__huelle && gm.__kamin) {
+            var ks = gm.__kamin.spitze;
+            g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
+        }
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
         if (gm.__fern) {
@@ -5431,14 +5442,7 @@
                 })(Bs[i].dims),
                 // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
                 // null wenn massBau kein chimney (ROUND/modern/kuppel).
-                chimney: (function (ch) {
-                    if (!ch || !ch.min || !ch.max) return null;
-                    return {
-                        x: (ch.min[0] + ch.max[0]) / 2,
-                        y: ch.max[1] + 0.2,
-                        z: (ch.min[2] + ch.max[2]) / 2,
-                    };
-                })(Bs[i].chimney),
+                chimney: kaminSpitze(Bs[i].chimney),
             });
         }
         return {

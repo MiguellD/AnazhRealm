@@ -702,7 +702,7 @@ function shaderKostenSeite(o) {
             });
             for (let i = 0; i < Math.max(1, opt.frames || 1); i++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(performance.now() / 1000);
+                r._loopRender();
             }
             if (q) await q.onSubmittedWorkDone();
         } finally {

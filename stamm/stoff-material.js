@@ -903,7 +903,11 @@ class AnazhRealm_stoff_material {
                                     const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
-                                    const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
+                                    const _probeA = (tex, uv) =>
+                                        tex
+                                            .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
+                                            .depth(_schicht)
+                                            .grad(_gX, _gY);
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
                                     // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
@@ -970,6 +974,8 @@ class AnazhRealm_stoff_material {
                                         _liesA(_at.mapNode, _uvB, _v1),
                                         _fb
                                     );
+                                    // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
+                                    // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
@@ -1120,12 +1126,10 @@ class AnazhRealm_stoff_material {
                             // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
                             // catch ist gefallen (05.10.: kein Stoff ohne seinen Atlas, wie der Laub-Stoff der Welt);
                             // headless (kein document) zeichnet kein Stoff.
-                            const _atl = this._blattAtlasProbe(_Ta, 0.5);
+                            const _atl = this._blattAtlasProbe(_Ta);
                             if (_atl) {
                                 _alpha = _atl.a;
                                 albedoNode = albedoNode.mul(_atl.rgb);
-                                // die Kante von EINEM Pixel (K68, `_laubKante`): Bild-Pass am Rauschen, Schatten an 0,5
-                                mat.alphaTestNode = _atl.schwelle;
                             }
                             mat.alphaTest = 0.5;
                         }
@@ -1995,9 +1999,10 @@ class AnazhRealm_stoff_material {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DIE KANTE DES LAUBS (K68, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
-            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
-            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
+            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): xy die Phase der Deckungs-Probe dieses Frames — die Halton-Achsen 5
+            // und 7 am Frame der Geschichte (`_zeitAufloesung`), je Pixel gedreht —, z die Weite in Eingangs-Pixeln
+            // (LAUB_VERSATZ), ohne zeitliche Auflösung 0
+            uLaubVersatz: _T.uniform(new THREE.Vector3(0, 0, 0)),
             uLodD0: _T.uniform(_D.thresh01),
             uLodD1: _T.uniform(_D.thresh12),
             uLodFade: _T.uniform(_D.fade),

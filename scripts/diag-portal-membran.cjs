@@ -13,7 +13,7 @@
 //     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
-//     Fallback), und die Uniforms atmen (time/act ändern sich mit Tick+Nähe).
+//     Fallback), und die Uniforms atmen (time folgt der Bild-Uhr `_bildZeit`).
 //   W (Hindurchgehen): kreuzt der Spieler die Membran-Ebene INNERHALB der
 //     Apertur, feuert enterPortal (derselbe Chokepoint wie die E-Taste) —
 //     seitlich am Pfosten vorbei feuert NICHT.
@@ -131,7 +131,7 @@ async function blickProbe(opts) {
         cam.updateMatrixWorld(true);
         zug = [];
         if (nf) nf.update();
-        r._loopRender(performance.now());
+        r._loopRender();
         try {
             await rend.backend.device.queue.onSubmittedWorkDone();
         } catch (_e) {}
@@ -572,9 +572,10 @@ async function blickStufe(check) {
         const rec = reg ? reg.get(entry.id) : null;
         res.m = { built: !!(rec && rec.mesh), inScene: !!(rec && rec.mesh && rec.mesh.parent === r.state.scene) };
         if (rec) {
-            const t0 = rec.u.time.value;
+            const t0 = rec.u.time.value; // der Film atmet auf der Bild-Uhr (A9): der Loop schreibt sie, der Tick liest sie
+            r._bildZeit = t0 + 1.2;
             r._tickPortalMembranes(3.7);
-            res.m.atmet = rec.u.time.value !== t0;
+            res.m.atmet = [t0, rec.u.time.value, r._bildZeit];
             res.m.echt = !!(
                 rec.mesh.material &&
                 rec.mesh.material.userData &&
@@ -751,7 +752,8 @@ async function blickStufe(check) {
     if (out.m) {
         check("M: der Membran-Tick baut das Passage-Mesh (Registry je entry.id)", out.m.built === true);
         check("M: die Membran hängt in der Szene", out.m.inScene === true);
-        check("M: die Uniforms atmen (time folgt dem Tick)", out.m.atmet === true);
+        const [u0, u1, uB] = out.m.atmet || [];
+        check("M: die Uniforms atmen (time folgt der Bild-Uhr)", u1 === uB && u1 !== u0, `${u0} → ${u1} (Bild-Uhr ${uB})`);
         check("M: Material trägt den portalMembran-Marker (oder fail-LAUT-Fallback)", out.m.marker === true);
         check("M: der ECHTE TSL-Gesetz-Graph baute (kein Fallback noetig)", out.m.echt === true);
     } else check("M: Membran-Block erreicht", false);

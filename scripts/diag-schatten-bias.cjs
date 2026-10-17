@@ -75,13 +75,9 @@ function quellWand(quelle) {
         for (const k of kinder(n)) lauf(k, f);
     };
     const befunde = [];
-    let gesetz = false,
-        schreiber = 0,
-        tiefe = 0;
     lauf(ast, (m) => {
         if (m.type !== "MethodDefinition" || !m.value || !m.value.body) return;
         const name = m.key.name || String(m.key.value);
-        if (name === "_schattenNormalBias") gesetz = true;
         lauf(m.value.body, (n) => {
             if (n.type !== "AssignmentExpression" || n.left.type !== "MemberExpression" || n.left.computed) return;
             // der Tiefen-Bias einer Schatten-Karte (`….shadow.bias`, `sh.bias`) steht nur im Gesetz (`_schattenBias`)
@@ -89,7 +85,6 @@ function quellWand(quelle) {
                 n.left.property.name === "bias" &&
                 /(^|\.)(shadow|sh)$/.test(quelle.slice(n.left.object.start, n.left.object.end))
             ) {
-                tiefe++;
                 if (name !== "_schattenBias")
                     befunde.push(
                         `${name} Zeile ${n.loc.start.line}: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — ${quelle
@@ -100,7 +95,6 @@ function quellWand(quelle) {
                 return;
             }
             if (n.left.property.name !== "normalBias") return;
-            schreiber++;
             const rechts = quelle.slice(n.right.start, n.right.end);
             if (!/_schattenNormalBias\(/.test(rechts))
                 befunde.push(
@@ -111,9 +105,6 @@ function quellWand(quelle) {
                 );
         });
     });
-    if (!gesetz) befunde.push("das Gesetz `_schattenNormalBias` fehlt (der Bias ist ein fester Meter-Wert)");
-    if (gesetz && (schreiber < 1 || tiefe < 1))
-        befunde.push(`STUMPF: die Wand sieht ${schreiber} Schreiber von normalBias und ${tiefe} des Tiefen-Bias`);
     return befunde;
 }
 
@@ -185,7 +176,6 @@ if (process.argv.includes("--selftest")) {
     );
     if (!fremd.some((b) => b.includes("ohne das Gesetz")))
         v.push(`ein fester Meter-Wert fällt nicht rot (${JSON.stringify(fremd)})`);
-    const ohne = quellWand("class X { a(l) { l.shadow.normalBias = 1.0; } }");
     const nudge = quellWand(
         "class X { _schattenNormalBias(t) { return t; } _schattenBias(l, t) { l.shadow.normalBias = this._schattenNormalBias(t); l.shadow.bias = -t; } k(sh) { sh.bias =\n        -0.25 / 500; } }"
     );
@@ -194,8 +184,21 @@ if (process.argv.includes("--selftest")) {
     // der Täter-Text steht wörtlich, Leerraum gefaltet (Nachtrag 0710-12: `/s+/g` ohne Backslash nannte „hadow.bia")
     if (!nudge.some((b) => b.endsWith("sh.bias = -0.25 / 500")))
         v.push(`der Täter-Text des Tiefen-Nudge ist verstümmelt (${JSON.stringify(nudge)})`);
-    if (!ohne.some((b) => b.includes("fehlt")))
-        v.push(`ein Stamm ohne Gesetz fällt nicht rot (${JSON.stringify(ohne)})`);
+    // DAS GESETZ WIRKT (die echte Klasse im vm): `_schattenBias` schreibt beide Bias aus Texel, Tiefe und dem Hebel
+    // atmosphere.shadowBias, der Spieler-Regler `setShadowBias` schreibt das Haupt-Licht über dasselbe Gesetz; Zähne: ein fester Meter-Wert.
+    const { AnazhRealm: A } = stammLib.ladeKlasse(root), K = A.SCHATTEN_KASKADE, nah = (a, b) => Math.abs(a - b) < 1e-9;
+    const gesetzWirkt = (fest) => {
+        const w = Object.assign(Object.create(A.prototype), { state: { atmosphere: { shadowBias: 2 } }, saveState() {} }), lw = { shadow: {} };
+        if (fest) w._schattenNormalBias = () => 0.05;
+        w._schattenBias(lw, 0.2, 100);
+        w.state = { atmosphere: { shadowBias: 1 }, directionalLight: { shadow: { camera: { left: -50, right: 50, near: 0, far: 200 }, mapSize: { width: 1024 } } }, csmNode: null };
+        w.setShadowBias(2);
+        const dl = w.state.directionalLight.shadow;
+        return nah(lw.shadow.normalBias, K.normalTexel * 0.4) && nah(lw.shadow.bias, -K.tiefeTexel * 0.002) && nah(dl.normalBias, (K.normalTexel * 200) / 1024) && nah(dl.bias, -(K.tiefeTexel * 100) / 1024 / 200);
+    };
+    if (!gesetzWirkt(false)) v.push("das Gesetz _schattenBias bzw. der Regler setShadowBias schreibt den Bias nicht aus Texel, Tiefe und Hebel");
+    if (gesetzWirkt(true)) v.push("ein fester normalBias-Meter-Wert fällt in der Gesetz-Probe nicht rot");
+    else console.log("  ✅ das Gesetz wirkt (Kaskade und Regler), ein fester Meter-Wert fällt rot");
     const werfer = (zeit, seitlich) =>
         WERFER.map((name) => ({
             name,
@@ -684,7 +687,7 @@ async function probe(cfg) {
             biasAnwenden();
             r._schattenAlleNeu();
             if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender(performance.now());
+            r._loopRender();
             await sleep(50);
             if (i >= 5 && (!E || E.offen.size === 0)) break;
         }

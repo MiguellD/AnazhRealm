@@ -407,7 +407,8 @@ const server = statikServer();
                         const t = 1234.5;
                         wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
                         wu.uWindDir.value.set(0, 0);
-                        r._loopRender(t);
+                        r._bildZeit = t; // die Bild-Uhr (A9), die der Frame-Tick liest
+                        r._loopRender();
                         const b0 = wu.uBend[0].value;
                         const wd = r._windDirAt(t);
                         o.zahlen.tick = { x: b0.x, w: b0.w, px: pp.x };

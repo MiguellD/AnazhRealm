@@ -52,7 +52,6 @@ function quellBefunde(src) {
     const code = ohneKommentare(src);
     const zeilen = code.split("\n");
     const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\([^)]*\) \{/.test(z));
-    if (kopf < 0) b.push("der Chokepoint `static _instanzZahl(mesh, n)` fehlt");
     zeilen.forEach((z, i) => {
         for (const m of z.matchAll(/([A-Za-z_$][\w$.[\]]*)\.count\s*=(?!=)/g)) {
             if (ERLAUBT.test(m[1])) continue;

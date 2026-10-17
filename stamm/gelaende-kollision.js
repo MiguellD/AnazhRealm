@@ -245,6 +245,18 @@ class AnazhRealm_gelaende_kollision {
     // kommt erst unter 8,6 m Mittelabstand). Ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
     _hausHuelleSetzen(entry, huelle) {
         if (!entry || !huelle) return;
+        // DER KAMIN DES GEBAUTEN HAUSES (B3c): kennt der Eintrag seine Spitze noch nicht (das Solo-Haus: Vorschau, KI, Werkstatt —
+        // der Slot des Dorfs bringt sie aus dem Export), liest er sie aus der Hülle (`kamin` [x, y, z] haus-lokal, null = kein
+        // Kamin) und tritt mit „rauch" ins Verzeichnis; das Nein reist wie jede Spitze durch den Save (`chimney: null`).
+        if (entry.chimney === undefined && huelle.kamin !== undefined) {
+            const k = huelle.kamin;
+            if (Array.isArray(k) && Number.isFinite(k[0]) && Number.isFinite(k[1]) && Number.isFinite(k[2])) {
+                entry.chimney = { x: k[0], y: k[1], z: k[2] };
+                entry.userData = entry.userData || {};
+                entry.userData.rauchQuelle = entry.chimney;
+            } else entry.chimney = null;
+            this._blockerNetzSetzen(entry);
+        }
         const alt = entry._hausHuelle;
         if (alt === huelle) return;
         const fest = AnazhRealm._huelleVon(huelle, "fest", "fachwerk:__huelle");

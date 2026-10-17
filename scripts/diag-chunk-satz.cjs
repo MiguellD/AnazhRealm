@@ -167,6 +167,8 @@ function urteil(z) {
                         .map((o) => `${o.key} ${o.n}`)
                         .join(", ")
             );
+        const los = z.stufen.ohneSatz || [];
+        if (los.length) v.push(`BODEN-STUFEN: ${los.length} Naht-Bänder ohne Bereich im Boden-Satz — ${los.slice(0, 4).join(", ")}`);
     }
     return v;
 }
@@ -352,6 +354,11 @@ function selbsttest() {
             name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
             z: { ...gruen, stufen: { ...gruen.stufen, ohneNot: [{ key: "stitch:-19,-18", n: 712 }] } },
             muss: [/BODEN-STUFEN: 712 Naht-Brücken ohne Not.*stitch:-19,-18 712/],
+        },
+        {
+            name: "das Naht-Band zeichnet als eigenes Mesh (kein Bereich im Boden-Satz)",
+            z: { ...gruen, stufen: { ...gruen.stufen, ohneSatz: ["-19,-18"] } },
+            muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
         },
     ];
     for (const f of faelle) {
@@ -676,6 +683,7 @@ function check(name, ok, detail) {
                     naht: 0,
                     bruecken: 0,
                     ohneNot: [],
+                    ohneSatz: [],
                 };
                 const lpc = s.lastPlayerVoxelChunk;
                 const auge = s.stufeAuge;
@@ -697,6 +705,8 @@ function check(name, ok, detail) {
                         const st = e.lodStitchMesh ? e.lodStitchMesh.geometry : null;
                         if (!st) continue;
                         z.stufen.naht += st.index.count / 3;
+                        const bs = s.chunkSaetze && s.chunkSaetze.get("boden");
+                        if (!(bs && bs.bloecke.has("stitch:" + key))) z.stufen.ohneSatz.push(key);
                         // die rohe Lage jedes Chunk-Vertex → sein Morph-Gewicht
                         const P = g.attributes.position.array,
                             W = g.attributes.aMorphWeight.array;
@@ -965,13 +975,6 @@ function check(name, ok, detail) {
                     res.konsum = { opfer: opfer.key, vor, ab, auf };
                 }
             }
-            // Absenz am Code (Kommentare bereinigt): der Boden geht durch den Satz, der platzierte Bau trägt
-            // keine Region.
-            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
-            res.bodenDurchSatz = /_chunkSatzEin\(\s*"boden"/.test(code(r._finalizeVoxelChunkBuild));
-            res.stitchDurchSatz = /_chunkSatzEin\(\s*"boden"/.test(code(r._rebuildLodStitchBand));
-            res.wasserDurchSatz = /_chunkSatzEin\(\s*"wasser"/.test(code(r._finalizeWaterSheetMesh));
-            res.bauOhneRegion = !/"p:"/.test(code(r._archPlacedRegionKey));
             // (i) WACHSEN (Welle 6): ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
@@ -1000,11 +1003,17 @@ function check(name, ok, detail) {
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
-            // Absenz am Code: der Tausch steht im Satz, der Hörer fällt im Register (EINE Antwort, kein frischer Mesh).
-            res.tauschSicher =
-                /\.mesh\.geometry\s*=/.test(code(r._chunkSatzGeometrie)) &&
-                !/_chunkSatzMesh\(/.test(code(r._chunkSatzGeometrie)) &&
-                /_geometryDisposeListeners\.delete\(/.test(code(r._renderObjektRegister));
+            // der Hörer fällt im Register (D3c, vorher am Rumpf-TEXT): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
+            // die neue Geometrie behält keinen Entsorgungs-Hörer, der beim Tausch ihre GPU-Puffer mitnähme
+            {
+                const h = () => {};
+                const geos = { _geometryDisposeListeners: new Map(), info: { memory: { geometries: 1 } } };
+                geos.initGeometry = (ro) => (ro.geometry.addEventListener("dispose", h), geos._geometryDisposeListeners.set(ro.geometry, h));
+                r._renderObjektRegister({ _objects: Object.create({ createRenderObject: () => null }), _geometries: geos });
+                const g = new window.THREE.BufferGeometry();
+                geos.initGeometry({ geometry: g });
+                res.tauschSicher = !geos._geometryDisposeListeners.has(g) && !g.hasEventListener("dispose", h);
+            }
             // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
             // Chokepoint `_chunkSatzPass` mit Stellvertreter-Ortho-Kameras über dem Spieler: „ruhe" = enge Boxen
@@ -1586,16 +1595,6 @@ function check(name, ok, detail) {
     check(
         "(e) KONSUM — der Wiederaufbau kehrt in den Satz zurück (dieselbe Index-Zahl, dieselben Szenen-Kinder)",
         !!k && k.auf.kinder === k.vor.kinder && k.auf.bereiche === k.vor.bereiche && k.auf.index === k.vor.index
-    );
-    check(
-        "Absenz am Code — Boden · Stitch · Wasser gehen durch _chunkSatzEin, der platzierte Bau trägt kein p:",
-        out.bodenDurchSatz && out.stitchDurchSatz && out.wasserDurchSatz && out.bauOhneRegion,
-        JSON.stringify({
-            boden: out.bodenDurchSatz,
-            stitch: out.stitchDurchSatz,
-            wasser: out.wasserDurchSatz,
-            bau: out.bauOhneRegion,
-        })
     );
     const wa = out.wachsen;
     check(

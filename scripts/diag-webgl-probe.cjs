@@ -69,7 +69,7 @@ const server = statikServer();
             const c2 = Object.assign(document.createElement("canvas"), { width: 96, height: 64 }).getContext("2d", { willReadFrequently: true }); // prettier-ignore
             for (o.schussFrames = 1; o.schussFrames <= 120; o.schussFrames++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(performance.now());
+                r._loopRender();
                 c2.drawImage(rend.domElement, 0, 0, 96, 64);
                 const u8 = c2.getImageData(0, 0, 96, 64).data, set = new Set(); // prettier-ignore
                 o.nonzero = 0;

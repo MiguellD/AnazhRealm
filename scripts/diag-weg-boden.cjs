@@ -7,7 +7,7 @@
 //   1 KEIN QUAD   keine Boden-Streifen mehr als Geometrie (der Zaun-Pool trägt nur hüfthohe Zäune)
 //   2 BODEN       die Karte trägt den Weg: Mitte voll, 2 m außerhalb leer; Platz und Acker in ihren Kanälen
 //   3 KANTE       der Rand ist weich (an der Weg-Kante liegt ein Zwischenwert, kein Sprung 0 → 1)
-//   4 KONSUM      der Boden-Shader liest die Karte (Chunk-Material), die Wiese liest das Pfad-Feld
+//   4 KONSUM      der frische Chunk-Stoff mischt die Wege-Farbe aus der Karte (am Ruf), die Wiese dünnt auf dem Weg
 //   5 ECKE        ein um 45° gedrehter Acker trägt seine Ecke (die Ausdehnung ist die Diagonale, kein Achteck)
 //   6 FERNE       ein Weg 300 m vom Spieler steht in der Karte (die ferne Stufe der Clipmap, kein Loch hinter 120 m)
 //   7 BESTAND     die Kronen-Karte derselben Fenster: eine Eintrags-Krone übersteht 1,6 km Ausflug (Register, Streu,
@@ -31,8 +31,20 @@ function probe(stoerung) {
     const st = r.state;
     const T = window.THREE;
     const A = r.constructor;
-    // Ein trockener Probe-Ort nahe dem Spieler (die Wasser-Wand würde Formen verwerfen).
+    // Ein trockener Probe-Ort nahe dem Spieler (die Wasser-Wand würde Formen verwerfen), auf dem der Kern der Straße
+    // (x −24 … −2, |dz| < 1,2) ohne Weg Wiese trägt: die Büschel der Nah-Wiese im Streifen (−1 = eine Kachel ohne Boden).
     const pm = st.playerMesh.position;
+    const KW = A.NAH_WIESE.kachel;
+    const wiese = (p) => {
+        let n = 0;
+        for (let tx = Math.floor((p.x - 24) / KW); tx <= Math.floor((p.x - 2) / KW); tx++) {
+            const k = r._nahWieseKachelBueschel(tx, Math.floor(p.z / KW));
+            if (!k) return -1;
+            n += k.filter((b) => Math.abs(b.z - p.z) < 1.2 && b.x >= p.x - 24 && b.x <= p.x - 2).length;
+        }
+        return n;
+    };
+    r._stlWegeDispose();
     let o = null;
     for (let k = 0; k < 64 && !o; k++) {
         const x = pm.x + (k % 8) * 40 - 140;
@@ -40,7 +52,7 @@ function probe(stoerung) {
         let trocken = true;
         for (let i = -2; i <= 2 && trocken; i++)
             for (let j = -2; j <= 2 && trocken; j++) trocken = r._landAt(x + i * 15, z + j * 15, 0.2);
-        if (trocken) o = { x, z };
+        if (trocken && wiese({ x, z }) >= 10) o = { x, z };
     }
     if (!o) return { fehler: "kein trockener Probe-Ort" };
     // Ein trockener Ort ~300 m vom Probe-Ort (die ferne Stufe): acht Richtungen, die erste trockene trägt den Fern-Weg.
@@ -52,7 +64,7 @@ function probe(stoerung) {
         if (r._landAt(o.x + fx, o.z + fz, 0.2) && r._landAt(o.x + fx + 30, o.z + fz, 0.2))
             fern = { x: fx, z: fz };
     }
-    r._stlWegeDispose();
+    const wieseOhne = wiese(o);
     const randAlt = A.WEGE_KARTE;
     if (stoerung === "hart") A.WEGE_KARTE = Object.freeze(Object.assign({}, randAlt, { randM: 0.001 }));
     const plan = {
@@ -112,12 +124,22 @@ function probe(stoerung) {
     // 6 FERNE: der Fern-Weg (300 m) liest die Karte (die nahe Stufe endet bei 208 m, die ferne trägt)
     out.fernWeg = fern ? +r._wegeFeldAt(o.x + fern.x + 15, o.z + fern.z).toFixed(3) : -1;
     // 4 KONSUM: das Chunk-Material liest die Karte, die Wiese das Pfad-Feld
-    const code = (fn) => window.__codeOf(fn);
-    out.shaderLiest =
-        /wegeKarte: true/.test(code(r._getVoxelChunkMaterial)) &&
-        /_wegeBodenFarbe\(_Ta, albedoNode\)/.test(code(r._buildPbrNodeMaterial)) &&
-        /_wegeKarteEnsure\(\)/.test(code(r._wegeBodenFarbe));
-    out.wieseLiest = /_pfadFeldAt\(/.test(code(r._nahWieseKachelBueschel)) && r._pfadFeldAt(o.x - 12, o.z, null) > 0.9;
+    // am Ruf: der frische Chunk-Stoff mischt die Wege-Farbe (nur mit wegeKarte), sie liest die EINE Karte
+    const ruft = (f, k) => {
+        const alt = r[k], eigen = Object.prototype.hasOwnProperty.call(r, k);
+        let n = 0;
+        r[k] = function (...a) { n++; return alt.apply(this, a); };
+        try { f(); } catch (_e) { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) r[k] = alt; else delete r[k]; }
+        return n > 0;
+    };
+    const stoffAlt = st.voxelChunkMaterial;
+    st.voxelChunkMaterial = null;
+    const pbr = (wegeKarte) => () => r._buildPbrNodeMaterial({ vertexColors: true, wegeKarte, felsImVertex: true, himmelsSicht: true, geomorph: true });
+    out.shaderLiest = ruft(() => r._getVoxelChunkMaterial(), "_wegeBodenFarbe") && !ruft(pbr(false), "_wegeBodenFarbe") && ruft(() => r._wegeBodenFarbe({}, null), "_wegeKarteEnsure");
+    st.voxelChunkMaterial = stoffAlt;
+    // die Wiese dünnt über das Pfad-Feld: auf dem Kern der Straße wächst höchstens 30 % der Büschel von vorher
+    out.wiese = { ohne: wieseOhne, mit: wiese(o) };
+    out.wieseLiest = out.wiese.mit >= 0 && out.wiese.mit <= 0.3 * wieseOhne && r._pfadFeldAt(o.x - 12, o.z, null) > 0.9;
     // 7 BESTAND: eine Eintrags-Krone (a:, trägt sich nur beim Entstehen ein) übersteht einen Ausflug über das ferne
     // Fenster — 1,6 km hin und zurück: sie steht im Register, die Laubstreu liegt unter ihr, und jede verschobene
     // Stufe gleicht dem vollen Neumalen aus dem Register (der Raum-Index verliert keine Krone am Streifen-Rand).
@@ -212,13 +234,13 @@ function trittProbe(stoerung) {
     };
     const gefallen = () => (st.nahWiese.kacheln.has(kw) ? 0 : 1) + (st.nahStreu.kacheln.has(ks) ? 0 : 1);
     const out = { ort: o };
+    saeen(); // vor dem Bau: auf gebautem Boden setzt der Studio-Platz die Fläche schon im Spawn
     const entry = r.spawnArchitecture(
         "glutbrunnen",
         { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z },
         { silent: true, seed: 7 }
     );
     if (!entry) return { fehler: "die Feuerstelle steht nicht (spawnArchitecture)" };
-    saeen();
     r._trittFlaecheSetzen(entry); // der Studio-Platz ruft sie beim ersten Primär-Add (`_archInstanceAdd`)
     out.gesetztForm = !!entry._trittBox;
     out.gesetztCpu = +r._wegeFeldAt(o.x, o.z).toFixed(3);
@@ -270,7 +292,7 @@ function urteil(S) {
     if (!S.shaderLiest) rot.push("4 KONSUM: der Boden-Shader liest die Wege-Karte nicht");
     if (!(S.ecke > 0.3)) rot.push(`5 ECKE: die Ecke des 45°-Ackers trägt ${S.ecke} (soll > 0,3 — die Ausdehnung ist die Diagonale)`);
     if (!(S.fernWeg > 0.5)) rot.push(`6 FERNE: der Weg in 300 m liest ${S.fernWeg} (soll > 0,5 — die ferne Stufe trägt)`);
-    if (!S.wieseLiest) rot.push("4 KONSUM: die Wiese liest das Pfad-Feld nicht");
+    if (!S.wieseLiest) rot.push(`4 WIESE: auf der Straße wachsen ${JSON.stringify(S.wiese)} Büschel (soll mit ≤ 30 % von ohne, keine Kachel ohne Boden)`);
     if (!(S.bestandRegister && S.bestandStreu > 0.5 && S.bestandUngleich === 0))
         rot.push(
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
@@ -315,14 +337,19 @@ function urteil(S) {
         )
             await new Promise((r) => setTimeout(r, 100));
     });
-    // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless)
+    // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
+    // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe)
     await page.evaluate(async () => {
+        const r = window.anazhRealm;
         const dl = performance.now() + 90000;
         const warm = () => {
-            const f = window.anazhRealm._foundry;
-            return f && f.recipes && f.recipes.feuerstelle;
+            const f = r._foundry;
+            return f && f.recipes && f.recipes.feuerstelle && r.state.voxelChunks && r.state.voxelChunks.size > 20;
         };
-        while (!warm() && performance.now() < dl) await new Promise((r) => setTimeout(r, 100));
+        while (!warm() && performance.now() < dl) {
+            r._tickVoxelChunkStreaming(r.state.playerMesh.position);
+            await new Promise((ok) => setTimeout(ok, 20));
+        }
     });
     const messen = async (stoerung) =>
         Object.assign(await page.evaluate(probe, stoerung === "tritt" ? null : stoerung), {
@@ -357,7 +384,7 @@ function urteil(S) {
         console.log(`  Pool: ${S.flacheStreifen} flache Boden-Streifen · ${S.zaeune} Zaun-Streifen`);
         console.log(`  Straße: Mitte ${S.mitte} · 2,5 m außerhalb ${S.aussen} · weiche Rand-Proben ${S.kantenProben}`);
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
-        console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${S.wieseLiest}`);
+        console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
         console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg}`);
         console.log(
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +

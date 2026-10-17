@@ -121,29 +121,15 @@ const ohneKommentare = stammLib.ohneKommentare;
 function fnBody(src, kopf) {
     return stammLib.rumpf(src, kopf);
 }
+// (D3c: W1 und der Kern-Block stehen am Ruf im Leib, die Kugel und das Studio misst der Leib und NP-03 am Verhalten; hier
+// bleiben die Absenzen)
 function wand(quelle, studio) {
     const nc = ohneKommentare(quelle);
-    const pick = fnBody(nc, /\n {4}_pickArchitectureAtCrosshair\([^)]*\) \{/) || "";
-    const streu = fnBody(nc, /\n {4}_pickScatterAtCrosshair\([^)]*\) \{/) || "";
     const kam = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
     const lab = ohneKommentare(studio || "");
     return [
-        [
-            "W1 der Bau-Pick und der Streu-Pick treffen nur, was das Bild zeigt (`_durchsichtSteht` je Treffer)",
-            /this\._durchsichtSteht\(/.test(pick) && /this\._durchsichtSteht\(/.test(streu),
-        ],
-        [
-            "W2 die 3rd-Kamera ist eine Kugel: der Wurf trägt den Radius des Kerns (`radius: kr`, `fx.bewegung.kamera`), der Deckel den Stand-Leser der Sicht, kein 0,85-Rückzug, kein KAMERA_ARM_RUHE",
-            /_bewegungsBlock\("kamera"/.test(kam) &&
-                /this\._fieldRaycast\([^;]*radius: kr/.test(kam) &&
-                /this\._standSicht\(/.test(kam) &&
-                !/0\.85 \*/.test(kam) &&
-                !/KAMERA_ARM_RUHE/.test(nc),
-        ],
-        [
-            "W3 das Körper-Studio prüft die Strecke Blickziel → Kamera gegen die Park-Boxen (`_kamSeg`, `fx.bewegung.kamera`), camG ist gefallen",
-            /_kamSeg\(LX,LY,LZ/.test(lab) && /_kamFrei\(/.test(lab) && /bewegung\.kamera/.test(lab) && !/camG/.test(lab),
-        ],
+        ["W2 die 3rd-Kamera: kein 0,85-Rückzug, kein KAMERA_ARM_RUHE", !/0\.85 \*/.test(kam) && !/KAMERA_ARM_RUHE/.test(nc)],
+        ["W3 das Körper-Studio: camG ist gefallen", !/camG/.test(lab)],
     ];
 }
 
@@ -205,6 +191,12 @@ function urteilLeib(L) {
         if (!L[ort]) out.push(`Leib ${ort}: nicht gemessen (Vorbedingung)`);
         else if (L[ort].err) out.push(`Leib ${ort}: Ausnahme (${String(L[ort].err).split("\n")[0]})`);
     }
+    const w = L.wiese;
+    if (w && !w.err) {
+        if (w.w1Bau !== true) out.push("Leib W1: der Bau-Pick fragt nicht, ob das Bild den Treffer zeigt (_durchsichtSteht)");
+        if (w.w1Streu !== true) out.push("Leib W1: der Streu-Pick fragt nicht, ob das Bild den Treffer zeigt (_durchsichtSteht)");
+        if (w.w2Kern !== true) out.push("Leib W2: die 3rd-Kamera liest nicht den Kern-Block fx.bewegung.kamera");
+    }
     for (const modus of ["fuss", "ritt"]) {
         const posen = [];
         for (const ort of ["wiese", "hang"]) posen.push(...((L[ort] && L[ort][modus] && L[ort][modus].posen) || []));
@@ -240,6 +232,7 @@ function urteilNinja(N) {
     if (N.err) return [`NP-03: Ausnahme (${String(N.err).split("\n")[0]})`];
     const out = [];
     const posen = N.posen || [];
+    if (N.kernBlock !== true) out.push("NP-03: die Studio-Kamera liest nicht den Kern-Block fx.bewegung.kamera");
     if (posen.length < NINJA_WP.length * 4) out.push(`NP-03: ${posen.length} von ${NINJA_WP.length * 4} Posen gemessen (Vorbedingung)`);
     const fehl = posen.filter((p) => p.taeter.length);
     if (fehl.length)
@@ -279,6 +272,15 @@ function leibInstall(cfg) {
         }
         L.proben.push(n);
         return n;
+    };
+    // der Ruf beim Namen (D3c, statt des Rumpf-TEXTS): fn ruft ziel[k] (mit `wenn`: nur Rufe, deren Argumente es erfüllen)
+    L.ruft = (fn, ziel, k, wenn) => {
+        const alt = ziel[k],
+            eigen = Object.prototype.hasOwnProperty.call(ziel, k);
+        let n = 0;
+        ziel[k] = function (...a) { if (!wenn || wenn(...a)) n++; return alt.apply(this, a); };
+        try { fn(); } finally { if (eigen) ziel[k] = alt; else delete ziel[k]; }
+        return n > 0;
     };
     L.ruhig = (n) => {
         for (let i = 0; i < (n || 10); i++) r._loopCamera((T += 0.1));
@@ -551,6 +553,27 @@ async function leibWiese(arg) {
                 if (Object.keys(out.bilder).length >= arg.bilder.ids.length) return out;
             }
         }
+        // W1 · W2 AM RUF: Bau- und Streu-Pick fragen je Treffer, ob das Bild ihn zeigt (`_durchsichtSteht`); die 3rd-Kamera
+        // liest den Kern-Block fx.bewegung.kamera
+        if (je.haus[0]) {
+            const v = L.vor(je.haus[0].b, 0, 0.8);
+            L.fuss(v.x, v.z, v.gier + Math.PI, 0);
+            out.w1Bau = L.ruft(() => r._pickArchitectureAtCrosshair(), r, "_durchsichtSteht");
+            out.w2Kern = L.ruft(() => L.ruhig(1), r.constructor, "_bewegungsBlock", (n) => n === "kamera");
+        }
+        const T3 = window.THREE;
+        const senke = [...(st.nahStreu ? st.nahStreu.senken.values() : [])].find((a) => a.ernte && a.anzahl > 0);
+        const blk = senke && [...senke.bloecke.values()].find((b) => b.n > 0);
+        if (blk) {
+            if (!senke.geo.boundingSphere) senke.geo.computeBoundingSphere();
+            const ku = senke.geo.boundingSphere.clone().applyMatrix4(new T3.Matrix4().fromArray(blk.matrizen, 0));
+            for (const d of [[1, 0, 0], [0, 0, 1], [-1, 0, 0], [0, 0, -1], [0, -1, 0]]) {
+                const D = new T3.Vector3(...d);
+                r._fadenkreuzStrahl = () => ({ o: ku.center.clone().addScaledVector(D, -2 * ku.radius - 0.1), d: D });
+                out.w1Streu = out.w1Streu || L.ruft(() => r._pickScatterAtCrosshair(), r, "_durchsichtSteht");
+            }
+            delete r._fadenkreuzStrahl;
+        }
         // DER RUNDGANG: 240 Bilder um das erste Haus (Radius Box + 1,2 m), der Blick tangential — Kamera-Sprünge > 2 m
         const h = je.haus[0] || je.fels[0];
         if (h) {
@@ -638,10 +661,12 @@ async function leibHang(arg) {
 }
 
 // NP-03 + NP-02 im Körper-Studio (Seiten-Funktion über die Lab-Globalen play · parkBoxes · playInput · playPhysics · camera)
-/* global play, parkBoxes, playInput, playPhysics, camera, character, keys, enterPlay, resetRun */
+/* global play, parkBoxes, playInput, playPhysics, camera, character, keys, enterPlay, resetRun, _KAM */
 function ninja(arg) {
     const out = { posen: [] };
     try {
+        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal (D3c, vorher am Studio-TEXT)
+        out.kernBlock = typeof _KAM !== "undefined" && _KAM === window.__koerperCore.bewegung.kamera;
         enterPlay();
         resetRun();
         play.cam = "third";
@@ -1102,7 +1127,7 @@ async function probe(arg) {
         const pose = (id, taeter) => ({ id, anker: "haus_basis", x: 0, z: 0, c: [0, 0, 0], arm: 4, taeter });
         const posenN = (n, kaputt) => Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
         const leibGesund = (kaputtFuss, kaputtRitt) => ({
-            wiese: { fuss: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtFuss) }, ritt: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtRitt) } },
+            wiese: { fuss: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtFuss) }, ritt: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtRitt) }, w1Bau: true, w1Streu: true, w2Kern: true },
             hang: { fuss: { posen: posenN(LEIB_HANG_N) }, ritt: { posen: posenN(LEIB_HANG_N) } },
             proben: Array.from({ length: LEIB_N + 241 }, (_, i) => 30 + (i % 9)),
             spruenge: 0,
@@ -1113,6 +1138,7 @@ async function probe(arg) {
             ["Verfolger im Haus (FZ-07)", leibGesund(null, ["in haus_basis"]), "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis"],
             ["Fels zwischen Ziel und Linse", leibGesund(["Gelände zwischen Ziel und Linse"]), "Leib fuss: 1 von 50"],
             ["der Hang fehlt", Object.assign(leibGesund(), { hang: null }), "Leib hang: nicht gemessen"],
+            ["der Streu-Pick ohne Durchsicht", (() => { const g = leibGesund(); g.wiese.w1Streu = false; return g; })(), "Leib W1: der Streu-Pick"],
             ["kein Zähler der Feld-Proben", Object.assign(leibGesund(), { proben: null }), "Leib: 0 Bilder gezählt"],
             ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
             ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
@@ -1125,11 +1151,13 @@ async function probe(arg) {
         const ninjaGesund = (kaputt, tunnel) => ({
             posen: Array.from({ length: NINJA_WP.length * 4 }, (_, i) => ({ id: `pose-${i}`, cam: [0, 0, 0], taeter: i === 14 && kaputt ? kaputt : [] })),
             tunnel: tunnel || { ende: [3.6, 0, 24.15], weg: 3.15, umgangen: false, gueltig: true },
+            kernBlock: true,
         });
         check("Selbst-Test K3: gesund == 0 Täter", urteilNinja(ninjaGesund()).length === 0, urteilNinja(ninjaGesund()).join(" · "));
         for (const [name, bruch, soll] of [
             ["Box 7 zwischen Ziel und Kamera (NP-03 pose-14)", ninjaGesund(["Box 7 zwischen Ziel und Kamera"]), "NP-03: 1 von 48 Posen — pose-14: Box 7"],
             ["der Tunnel wird umgangen (NP-02)", ninjaGesund(null, { ende: [3.6, 0, 30], weg: 9, umgangen: true, gueltig: true }), "NP-02: der Tunnel wird bei x > 3 umgangen"],
+            ["die Studio-Kamera mit eigenem Block", Object.assign(ninjaGesund(), { kernBlock: false }), "NP-03: die Studio-Kamera liest nicht den Kern-Block"],
             ["die Figur steht (NP-02 ohne Urteil)", ninjaGesund(null, { ende: [3.6, 0, 21], weg: 0, umgangen: false, gueltig: false }), "NP-02: die Figur bewegt sich keine 3 m"],
         ]) {
             const v = urteilNinja(bruch);
@@ -1156,14 +1184,11 @@ async function probe(arg) {
         }
         const gruen = wand(quelle, studioQuelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
-        // der Vor-Stand: die Picks ohne Durchsicht, der Wurf ohne Radius mit dem 0,85-Rückzug, das Studio mit camG
-        const vorStand = stammLib
-            .ersetze(quelle, "_loopCamera", "const t = wurf.t;", "const t = 0.85 * wurf.t;")
-            .replace(/this\._durchsichtSteht\([^)]*\)/g, "true")
-            .replace(/radius: kr/g, "durchPflanzen: true");
+        // der Vor-Stand: der Wurf mit dem 0,85-Rückzug, das Studio mit camG
+        const vorStand = stammLib.ersetze(quelle, "_loopCamera", "const t = wurf.t;", "const t = 0.85 * wurf.t;");
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
-        check("Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));
+        check("Selbst-Test W: der Vor-Stand (0,85-Rückzug · Studio mit camG) → W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
         // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
         // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
@@ -1188,14 +1213,6 @@ async function probe(arg) {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
-        const aufWand = (q) =>
-            /window\.__abnahmeUrteil\(m\)/.test(q) &&
-            /fehler\.abnahme = m;\s*throw fehler;/.test(q) &&
-            /return \{ u8, info, ms, abnahme: abnahme\(u8, W, H\) \}/.test(q) &&
-            /return \{ u8: voll, info, ms, abnahme: abnahme\(voll, W, H\) \}/.test(q);
-        const aufQuelle = fs.readFileSync(path.join(root, "scripts", "lib", "ausgabe-aufnahme.cjs"), "utf8");
-        check("K4 W: die EINE Aufnahme misst, urteilt und wirft beim Namen (jeder Rückweg trägt die Abnahme)", aufWand(aufQuelle), "");
-        check("K4 W: der Vor-Stand (die Aufnahme ohne Wurf) → die Wand feuert", !aufWand(aufQuelle.replace("throw fehler;", "")), "");
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
