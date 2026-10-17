@@ -197,3 +197,9 @@ der Macher muss frei sein).
 - D: D3c fertig ausser crossfade (101 Stellen, nach S2); D3d offen: EIN Absenz-Helfer (__fehlt / stammLib) + Wand „__codeOf/Stamm-Text nur in Absenzen“, dann faellt D(3).
 - B: Radeon kalt Weltbild ~13 s (vorher 18,5); Haupt-Faden 7–16 s zu 87–99 % belegt (Knoten-Bau 1,9–2,9 s, Streu, Boden, Fern-Ring, Kull); naechste B-Karte: Budget des Haupt-Fadens vor dem ersten Bild.
 - E: Genesis Third CPU p95 6,0 (Soll 5,8) — naechster Posten per Profil.
+
+## 17.10. 07:45 (date) — Lage
+- integ-probe = e47ad9f8 (V18.546.12 + A13 + ZURUECKNAHME meines Seltenheits-Fixes 48c668ef: die Tafel aus __terrainCore traegt die phyto-Budget-Zeilen nicht, Budget-Leser vor dem Buch brachen laut; lokal unsichtbar, CI 79e000ba rot). CI an e47ad9f8 laeuft. main = 93539122.
+- OMEN Buendel 7: B auf e47ad9f8 umgestellt (bericht/1710-buendel7.md).
+- Offen/Karten: Kristall-Rennen richtig schneiden (die Bepflanzung eines Chunks wartet auf das Buch, nie ein stiller Zweig); B3d (weltbild-blick 44630e1e: der Schnitt GRUEN, CI rot nur durch meinen Fix -> nach Merge von e47ad9f8 neu pruefen); B3e (wurf-aus-plan 8ae44fa7: Merge-Konflikte fachwerk-core planBau/B3c kaminSpitze und dirigent-takt spielZeit/A9 _bildZeit, semantisch loesen); A12 (see-spiegel 9fe6f589, CI rot Fern-Ring); S2b (karte-welt, Messung an Spiel-Distanzen laeuft); D3c-crossfade, D3d.
+- Lehre: ein Default im Konstruktor fuer eine Buch-Groesse bricht Leser, die ihr Dasein als „Buch da" lesen; schnelle Maschinen verbergen Rennen — vor Push auch an langsamer Lage pruefen (CI ist der Richter).
