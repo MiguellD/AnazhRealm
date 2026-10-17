@@ -176,3 +176,9 @@ der Macher muss frei sein).
 - Laufend: D3 (wf_3dbe8e2f-259: D3b Richter nach Domaene R2, D3c-studio/-ort/-konsum R1), A3 laub (Nachfolger), A7 Karten-Krone (Nachfolger), A8 Buehne-Uhr (Nachbesserung, ehrlicher A-Stand 5/12 ROT: wasser 0,404, laub 0,0002, boden-nah-farbe 9,27, haus+fels veraltet), E1 CPU-Takt Genesis Third (wf_ccc25a35-d30; schon main 6,5 ms > 5,8).
 - Danach: D3c-bild/-leben/-wasser/-crossfade + D3c-playtest (nach D3b), D3d Absenz-Helfer + Wand; A9 EINE Bild-Uhr im Stamm + „die Welt steht" vor jedem Schuss (nach A8); B3 grosser Schnitt aus OMEN bericht/1610-ankunft-menge.md.
 - Woche 62 % um 00:41.
+
+## 17.10. 03:02 (date) — Lage
+- integ-probe = 3b66b341: + D3c-konsum/-ort/-studio (Praesenz-Text-Proben 419 -> 0 in ihren Gates), RUNDUNG am Welt-Stempel, A8 Buehne haelt jede Uhr, D3b Richter nach Domaene (playtest.cjs 54 605 -> 1 055 + 27 Domaenen-Richter, 28 Gates eingefaltet, CI 194 -> 119 Schritte). scripts/ 229 Dateien, 214 985 Z.
+- Laufend: A3b laub-zeit (laub-kante GRUEN 8/8), A7 Karten-Krone (4. Bauer), A9 EINE Bild-Uhr + Welt steht, A10 Tafel am Kopf, S1 Spike Karte im Welt-Renderer (Studio = Modus der Welt-Engine, Wurzel von A+B), E1 Takt Genesis Third (Voll-Refresh 34,9 -> 2,3/Bild; CI rot an dsl-insel Uniform), B3a Buch ohne Leerlauf, W9 Wackler RUNDUNG + Settlement-O.
+- Offen danach: D3c-bild/-leben/-wasser/-crossfade/-playtest (Pakete d3c/*.json; playtest-Stellen jetzt in scripts/playtest/<domaene>.cjs), D3d (EIN Absenz-Helfer __fehlt + Wand), B3b Karten-Kosten (nach S1/A7).
+- main 3caca1cd wartet auf OMEN Genesis Third Arena A G G A (G1 +0,7 ms GPU?). node_modules im Haupt-Klon war leer (02:43), wiederhergestellt.
