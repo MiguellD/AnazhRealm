@@ -1,0 +1,1 @@
+15:21:03 third: schwarz % 0.296 · 0.296 · 0.296 · Sprung 1→2 {"pct":0.12,"obenPct":0.09} · 2→3 {"pct":0.07,"obenPct":0.09}

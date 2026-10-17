@@ -1,0 +1,298 @@
+
+================ KA1: t(Weltbild)  15.84 s · erster Blick: {"t":15861,"n":100,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.43 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.09 · instanz 1.19 · foundry 1.19 · foundry-worker 1.19 · dom-fertig 1.99 · renderer 2.47 · buch 2.47 · spieler 2.47 · renderer-bereit 3.85 · erster-chunk 3.85 · ring-0 3.85 · weltbild 15.86
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.09     73 ms · idle 18 % · pulsSeite :1 2
+   dom-interaktiv     0.09 →   1.19   1097 ms · idle 9 % · _chatEcho feld-leben.js:604 103 · grow phyto-core.js:104 40 · (garbage collector) :0 33 · _loadPath bau-buch.js:1791 18 · _renderVibePassUI netz-identitaet.js:446 15 · _blueprintProductVector bau-buch.js:1359 13
+        native: pro 495 · gar 33 · je Datei: feld-leben.js 103 · phyto-core.js 94 · bau-buch.js 56 · bau-teile.js 34 · vegetation-streu.js 21 · netz-identitaet.js 18 · three.webgpu.min.js 17 · dirigent-kern.js 15
+   instanz            1.19 →   1.19      0 ms · idle 0 % · 
+   foundry            1.19 →   1.19      0 ms · idle 0 % · 
+   foundry-worker     1.19 →   1.99    802 ms · idle 0 % · (anonym) dienst.js:27 6 · OMEN_TAKTMARKE :265 2
+        native: pro 795 · je Datei: dienst.js 6 · ? 2
+   dom-fertig         1.99 →   2.47    484 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 29 · _hydroRiverSpiegel wasser-hydro.js:1054 28 · _voxelChunkGeometry gelaende-boden.js:1391 17 · (garbage collector) :0 17 · _computeHydrosphere wasser-hydro.js:54 17 · flaeche gelaende-core.js:952 16
+        native: pro 4 · gar 17 · je Datei: gelaende-core.js 126 · gelaende-boden.js 94 · wasser-hydro.js 77 · dienst.js 21 · bau-buch.js 19 · three.webgpu.min.js 16 · bild-himmel.js 14 · studio-bruecke.js 14
+   renderer           2.47 →   2.47      0 ms · idle 0 % · 
+   buch               2.47 →   2.47      0 ms · idle 0 % · 
+   spieler            2.47 →   3.85   1374 ms · idle 2 % · build three.webgpu.min.js:6 109 · _getChildren three.webgpu.min.js:6 48 · _voxelChunkGeometry gelaende-boden.js:1391 47 · getDataFromNode three.webgpu.min.js:6 44 · (garbage collector) :0 43 · _voxelHoehlenGraph gelaende-boden.js:1852 33
+        native: pro 40 · gar 43 · je Datei: three.webgpu.min.js 632 · gelaende-boden.js 248 · gelaende-core.js 58 · ? 30 · siedlung-satz.js 29 · three.core.min.js 27 · gelaende-fern.js 25 · dirigent-takt.js 24
+   renderer-bereit    3.85 →   3.85      0 ms · idle 0 % · 
+   erster-chunk       3.85 →   3.85      0 ms · idle 0 % · 
+   ring-0             3.85 →  15.84  11997 ms · idle 3 % · AnazhRealm._diaetGang bild-kosten.js:3480 920 · build three.webgpu.min.js:6 485 · (garbage collector) :0 365 · _waldPlanKasten vegetation-wiese.js:1580 224 · grow phyto-core.js:104 222 · _ortGestaltSame vegetation-baum.js:887 205
+        native: pro 240 · gar 365 · je Datei: three.webgpu.min.js 2383 · bild-kosten.js 1062 · vegetation-baum.js 733 · vegetation-streu.js 672 · phyto-core.js 623 · gelaende-chunks.js 606 · gelaende-boden.js 566 · gelaende-fern.js 540
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   karte  baum         im Blick           5 ·   7.99 s · L{:5} · 21–88 m · tanne,birke,eiche,fichte,mammut
+   karte  baum         außer Blick       11 ·   7.82 s · L{:11} · 25–1000000 m · tanne,eiche,fichte,birke,weide,buche
+   körper haus         im Blick          39 ·   7.71 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   6.61 s · L{0:1,1:1} · 0–0 m · mensch
+   karte  boden-klein  im Blick           1 ·   6.01 s · L{:1} · 36–36 m · strauch
+   körper baum         außer Blick       11 ·   5.11 s · L{1:11} · 26–1000000 m · weide,tanne,eiche,birke,fichte,buche
+   karte  sonst        im Blick           1 ·   4.71 s · L{:1} · 19–19 m · gt
+   körper fels         außer Blick       12 ·   3.55 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper haus         außer Blick        8 ·   2.53 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper boden-klein  im Blick           2 ·   2.53 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper boden-klein  ohne Ort           6 ·   2.12 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper baum         im Blick           5 ·   1.80 s · L{1:5} · 21–88 m · tanne,birke,fichte,eiche,mammut
+   körper fels         im Blick           6 ·   0.73 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper ausstattung  außer Blick        4 ·   0.69 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   körper ausstattung  im Blick           8 ·   0.61 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   karte  fels         außer Blick        1 ·   0.59 s · L{:1} · 66–66 m · karst
+   körper fels         ohne Ort           1 ·   0.18 s · L{0:1} · – · geroell
+   körper boden-klein  außer Blick        2 ·   0.01 s · L{1:1,2:1} · 16–20 m · blume,gestruepp
+   körper sonst        im Blick           1 ·   0.01 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- Karten im Bäcker (19): Median Atlas NaN ms = Baum-Bau NaN + 8 Ansichten × 2 Pässe NaN + Rest; Rücklesen NaN ms · neue Programme NaN · Dreiecke NaN · Schale: Kodieren NaN ms + Platte NaN ms · von der Platte 0
+   Bahn bäcker: 8 Karten · gesendet   4.02 → letzte Antwort  15.37 = 1.42 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker1: 6 Karten · gesendet   5.71 → letzte Antwort  15.44 = 1.62 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker2: 5 Karten · gesendet   7.07 → letzte Antwort  15.19 = 1.62 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn       Art        gesendet  Start  Antwort · wartet · leer davor · Baum-Bau · Ansichten · Rest · Kodieren · Zustellung (ms)
+   bäcker     gt           4.02   –     8.73 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     tanne        8.88   –    10.03 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    strauch      5.71   –    11.71 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     eiche       10.15   –    11.74 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    tanne        7.07   –    11.85 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     birke       11.98   –    12.86 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    fichte      11.98   –    12.87 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       11.98   –    13.27 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     fichte      12.89   –    13.60 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       12.89   –    13.91 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    tanne       13.52   –    14.15 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     fichte      13.80   –    14.15 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       14.09   –    14.49 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    weide       14.35   –    14.65 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    mammut      14.53   –    14.86 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     karst       14.35   –    14.94 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       14.67   –    15.19 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     buche       14.97   –    15.37 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    buche       14.87   –    15.44 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+-- das Tor: je Term zuletzt offen (s) · welt 1.18 · buch 2.43 · leib 8.23 · dorf 9.11 · pflanzung 13.27 · boden 14.48 · horizont 15.12 · bauten 15.12 · karten 15.12 · streu 15.44
+
+================ KA2: t(Weltbild)  16.25 s · erster Blick: {"t":16260,"n":103,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.22 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.33 · instanz 1.33 · foundry 1.33 · foundry-worker 1.33 · dom-fertig 1.81 · renderer 2.19 · spieler 2.19 · buch 2.29 · renderer-bereit 3.57 · erster-chunk 3.57 · ring-0 3.57 · weltbild 16.26
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.33    331 ms · idle 2 % · pulsSeite :1 2
+        native: pro 323 · je Datei: ? 2
+   dom-interaktiv     0.33 →   1.33    989 ms · idle 16 % · _chatEcho feld-leben.js:604 124 · _holzWahl dirigent-regler.js:527 90 · grow phyto-core.js:104 43 · (garbage collector) :0 30 · _compoundSymmetry bau-teile.js:448 17 · _renderVibePassUI netz-identitaet.js:446 14
+        native: pro 211 · gar 30 · je Datei: feld-leben.js 124 · phyto-core.js 100 · dirigent-regler.js 90 · bau-buch.js 54 · bau-teile.js 38 · ? 18 · netz-identitaet.js 17 · three.core.min.js 14
+   instanz            1.33 →   1.33      0 ms · idle 0 % · 
+   foundry            1.33 →   1.33      0 ms · idle 0 % · 
+   foundry-worker     1.33 →   1.81    479 ms · idle 0 % · (anonym) dienst.js:27 9 · _weltbildFehlt dirigent-ankunft.js:965 2 · OMEN_TAKTMARKE :265 1
+        native: pro 467 · je Datei: dienst.js 9 · dirigent-ankunft.js 2 · ? 1
+   dom-fertig         1.81 →   2.19    380 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 21 · flaeche gelaende-core.js:952 18 · _computeHydrosphere wasser-hydro.js:54 18 · _hydroRiverSpiegel wasser-hydro.js:1054 17 · (anonym) dienst.js:27 14 · _voxelChunkGeometry gelaende-boden.js:1391 11
+        native: pro 7 · gar 5 · je Datei: gelaende-core.js 115 · wasser-hydro.js 69 · gelaende-boden.js 61 · dienst.js 18 · three.core.min.js 16 · three.webgpu.min.js 14 · gelaende-chunks.js 11 · simplex-noise.js 10
+   renderer           2.19 →   2.19      0 ms · idle 0 % · 
+   spieler            2.19 →   2.29     92 ms · idle 1 % · _foundryAutoRegisterSpecies studio-bruecke.js:377 17 · (anonym) :226 6 · _blueprintProductVector bau-buch.js:1359 4 · touch bau-buch.js:1812 4 · (garbage collector) :0 3 · computePartTags bau-buch.js:639 3
+   buch               2.29 →   3.57   1280 ms · idle 0 % · build three.webgpu.min.js:6 91 · _getChildren three.webgpu.min.js:6 47 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 40 · getDataFromNode three.webgpu.min.js:6 38 · getCacheKey three.webgpu.min.js:6 33 · _voxelHoehlenGraph gelaende-boden.js:1852 28
+        native: gar 23 · pro 11 · je Datei: three.webgpu.min.js 649 · gelaende-boden.js 204 · gelaende-core.js 53 · ? 30 · siedlung-satz.js 25 · gelaende-fern.js 24 · siedlung-bauten.js 21 · dirigent-takt.js 21
+   renderer-bereit    3.57 →   3.57      0 ms · idle 0 % · 
+   erster-chunk       3.57 →   3.57      0 ms · idle 0 % · 
+   ring-0             3.57 →  16.25  12678 ms · idle 2 % · AnazhRealm._diaetGang bild-kosten.js:3480 966 · build three.webgpu.min.js:6 436 · (garbage collector) :0 276 · _waldPlanKasten vegetation-wiese.js:1580 253 · grow phyto-core.js:104 234 · _ortGestaltSame vegetation-baum.js:887 186
+        native: pro 271 · gar 276 · je Datei: three.webgpu.min.js 2398 · bild-kosten.js 1126 · vegetation-baum.js 770 · gelaende-boden.js 723 · vegetation-streu.js 680 · gelaende-chunks.js 666 · gelaende-fern.js 645 · vegetation-wiese.js 634
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   karte  baum         außer Blick       12 ·  13.45 s · L{:12} · 23–1000000 m · weide,tanne,eiche,fichte,birke,buche
+   körper haus         im Blick          39 ·  12.91 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   8.36 s · L{0:1,1:1} · 0–0 m · mensch
+   karte  sonst        im Blick           1 ·   6.40 s · L{:1} · 19–19 m · gt
+   körper baum         außer Blick       12 ·   5.40 s · L{1:12} · 26–1000000 m · weide,tanne,eiche,birke,fichte,buche
+   karte  boden-klein  im Blick           1 ·   4.88 s · L{:1} · 36–36 m · strauch
+   karte  baum         im Blick           4 ·   4.29 s · L{:4} · 21–88 m · tanne,birke,fichte,mammut
+   körper boden-klein  im Blick           2 ·   2.78 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper fels         im Blick           6 ·   1.95 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper fels         außer Blick       12 ·   1.80 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper baum         im Blick           4 ·   1.50 s · L{1:4} · 21–88 m · tanne,birke,fichte,mammut
+   körper boden-klein  ohne Ort           6 ·   1.32 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper ausstattung  außer Blick        4 ·   0.89 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   karte  fels         außer Blick        1 ·   0.69 s · L{:1} · 66–66 m · karst
+   körper ausstattung  im Blick           8 ·   0.29 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper fels         ohne Ort           1 ·   0.26 s · L{0:1} · – · geroell
+   körper boden-klein  außer Blick        5 ·   0.05 s · L{1:4,2:1} · 16–1000000 m · blume,gestruepp,farn,totstamm
+   körper haus         außer Blick        8 ·   0.03 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper sonst        im Blick           1 ·   0.01 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- Karten im Bäcker (19): Median Atlas NaN ms = Baum-Bau NaN + 8 Ansichten × 2 Pässe NaN + Rest; Rücklesen NaN ms · neue Programme NaN · Dreiecke NaN · Schale: Kodieren NaN ms + Platte NaN ms · von der Platte 0
+   Bahn bäcker2: 7 Karten · gesendet   5.88 → letzte Antwort  15.49 = 1.37 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker1: 6 Karten · gesendet   5.24 → letzte Antwort  15.54 = 1.72 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker: 6 Karten · gesendet   3.72 → letzte Antwort  15.72 = 2.00 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn       Art        gesendet  Start  Antwort · wartet · leer davor · Baum-Bau · Ansichten · Rest · Kodieren · Zustellung (ms)
+   bäcker2    weide        5.88   –     9.61 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    strauch      5.24   –    10.12 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     gt           3.72   –    10.13 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    tanne        9.74   –    10.84 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    tanne       10.28   –    11.28 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     tanne       10.27   –    12.29 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       10.99   –    12.74 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       11.55   –    13.18 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     fichte      12.36   –    13.48 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    fichte      12.88   –    13.48 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     fichte      13.68   –    14.21 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    eiche       13.34   –    14.21 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    birke       13.68   –    14.52 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    mammut      14.54   –    14.99 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    karst       14.35   –    15.04 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     birke       14.35   –    15.04 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       15.01   –    15.49 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    buche       15.16   –    15.54 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     buche       15.16   –    15.72 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+-- das Tor: je Term zuletzt offen (s) · welt 1.37 · buch 2.19 · dorf 8.81 · leib 9.30 · pflanzung 10.12 · boden 14.21 · karten 15.40 · bauten 15.49 · horizont 15.63 · streu 15.63
+
+================ KA3: t(Weltbild)  17.45 s · erster Blick: {"t":17468,"n":103,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.68 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.10 · instanz 1.38 · foundry 1.38 · foundry-worker 1.38 · dom-fertig 2.21 · renderer 2.72 · buch 2.72 · spieler 2.72 · renderer-bereit 4.07 · erster-chunk 4.07 · ring-0 4.07 · weltbild 17.47
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.10     79 ms · idle 27 % · pulsSeite :1 2
+   dom-interaktiv     0.10 →   1.38   1287 ms · idle 12 % · _chatEcho feld-leben.js:604 116 · _holzWahl dirigent-regler.js:527 62 · grow phyto-core.js:104 55 · (garbage collector) :0 21 · tragen dirigent-kern.js:1749 21 · _renderVibePassUI netz-identitaet.js:446 18
+        native: pro 523 · gar 21 · je Datei: phyto-core.js 123 · feld-leben.js 116 · dirigent-regler.js 63 · bau-buch.js 61 · bau-teile.js 35 · dirigent-kern.js 26 · netz-identitaet.js 20 · vegetation-streu.js 17
+   instanz            1.38 →   1.38      0 ms · idle 0 % · 
+   foundry            1.38 →   1.38      0 ms · idle 0 % · 
+   foundry-worker     1.38 →   2.21    825 ms · idle 0 % · (anonym) dienst.js:27 4 · PerformanceObserver.observe.type :10 2 · OMEN_TAKTMARKE :265 2
+        native: pro 818 · je Datei: dienst.js 4 · ? 3
+   dom-fertig         2.21 →   2.72    509 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 27 · _voxelChunkGeometry gelaende-boden.js:1391 25 · flaeche gelaende-core.js:952 23 · _hydroRiverSpiegel wasser-hydro.js:1054 21 · _computeHydrosphere wasser-hydro.js:54 20 · noise2D simplex-noise.js:83 19
+        native: gar 9 · pro 4 · je Datei: gelaende-core.js 141 · gelaende-boden.js 101 · wasser-hydro.js 74 · dienst.js 21 · simplex-noise.js 21 · daten.js 21 · bau-buch.js 14 · three.webgpu.min.js 12
+   renderer           2.72 →   2.72      0 ms · idle 0 % · 
+   buch               2.72 →   2.72      0 ms · idle 0 % · 
+   spieler            2.72 →   4.07   1349 ms · idle 1 % · build three.webgpu.min.js:6 110 · getDataFromNode three.webgpu.min.js:6 48 · _voxelChunkGeometry gelaende-boden.js:1391 45 · _voxelHoehlenGraph gelaende-boden.js:1852 44 · _getChildren three.webgpu.min.js:6 44 · (garbage collector) :0 25
+        native: pro 28 · gar 25 · je Datei: three.webgpu.min.js 606 · gelaende-boden.js 250 · gelaende-core.js 50 · siedlung-satz.js 35 · dirigent-takt.js 35 · ? 30 · gelaende-fern.js 24 · simplex-noise.js 22
+   renderer-bereit    4.07 →   4.07      0 ms · idle 0 % · 
+   erster-chunk       4.07 →   4.07      0 ms · idle 0 % · 
+   ring-0             4.07 →  17.45  13383 ms · idle 3 % · AnazhRealm._diaetGang bild-kosten.js:3480 1136 · build three.webgpu.min.js:6 451 · (garbage collector) :0 310 · _ortGestaltSame vegetation-baum.js:887 239 · _waldPlanKasten vegetation-wiese.js:1580 235 · grow phyto-core.js:104 233
+        native: pro 269 · gar 310 · je Datei: three.webgpu.min.js 2446 · bild-kosten.js 1294 · vegetation-baum.js 860 · gelaende-boden.js 773 · gelaende-fern.js 709 · vegetation-streu.js 653 · phyto-core.js 644 · gelaende-chunks.js 615
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   karte  baum         außer Blick       11 ·  14.22 s · L{:11} · 25–1000000 m · weide,tanne,eiche,fichte,birke,buche
+   körper haus         im Blick          39 ·  11.32 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   7.61 s · L{0:1,1:1} · 0–0 m · mensch
+   karte  sonst        im Blick           1 ·   7.61 s · L{:1} · 19–19 m · gt
+   körper baum         außer Blick       11 ·   5.17 s · L{1:11} · 26–1000000 m · weide,tanne,eiche,birke,fichte,buche
+   karte  baum         im Blick           5 ·   4.92 s · L{:5} · 21–88 m · tanne,birke,eiche,fichte,mammut
+   karte  boden-klein  im Blick           1 ·   3.95 s · L{:1} · 36–36 m · strauch
+   körper fels         außer Blick       12 ·   3.63 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper boden-klein  im Blick           2 ·   3.07 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper haus         außer Blick        8 ·   2.01 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper baum         im Blick           5 ·   1.87 s · L{1:5} · 21–88 m · tanne,birke,fichte,eiche,mammut
+   körper fels         im Blick           6 ·   0.93 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper ausstattung  außer Blick        4 ·   0.61 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   karte  fels         außer Blick        1 ·   0.57 s · L{:1} · 66–66 m · karst
+   körper ausstattung  im Blick           8 ·   0.44 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper boden-klein  ohne Ort           6 ·   0.09 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper fels         ohne Ort           1 ·   0.05 s · L{0:1} · – · geroell
+   körper boden-klein  außer Blick        5 ·   0.04 s · L{1:4,2:1} · 16–1000000 m · blume,gestruepp,farn,totstamm
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- Karten im Bäcker (19): Median Atlas NaN ms = Baum-Bau NaN + 8 Ansichten × 2 Pässe NaN + Rest; Rücklesen NaN ms · neue Programme NaN · Dreiecke NaN · Schale: Kodieren NaN ms + Platte NaN ms · von der Platte 0
+   Bahn bäcker1: 8 Karten · gesendet   5.88 → letzte Antwort  16.91 = 1.38 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker: 5 Karten · gesendet   4.24 → letzte Antwort  16.67 = 2.49 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker2: 6 Karten · gesendet   6.61 → letzte Antwort  17.16 = 1.76 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn       Art        gesendet  Start  Antwort · wartet · leer davor · Baum-Bau · Ansichten · Rest · Kodieren · Zustellung (ms)
+   bäcker1    strauch      5.88   –     9.83 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    tanne       10.13   –    11.22 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     gt           4.24   –    11.85 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    weide        6.61   –    11.86 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    tanne       11.44   –    12.49 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    fichte      12.57   –    13.50 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    birke       12.06   –    13.97 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    eiche       13.54   –    14.55 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     eiche       12.06   –    14.93 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    fichte      14.43   –    14.93 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       14.74   –    15.57 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    fichte      15.10   –    15.57 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     tanne       15.10   –    15.71 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     mammut      15.73   –    16.13 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       15.69   –    16.26 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    karst       15.69   –    16.26 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     eiche       16.13   –    16.67 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    buche       16.41   –    16.91 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    buche       16.56   –    17.16 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+-- das Tor: je Term zuletzt offen (s) · welt 1.39 · buch 2.67 · leib 8.95 · dorf 9.78 · boden 15.57 · pflanzung 15.57 · horizont 16.64 · bauten 16.64 · karten 16.64 · streu 17.05
+
+================ KA4: t(Weltbild)  17.09 s · erster Blick: {"t":17104,"n":103,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.62 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.12 · instanz 1.35 · foundry 1.35 · foundry-worker 1.35 · dom-fertig 2.14 · renderer 2.66 · buch 2.66 · spieler 2.66 · renderer-bereit 4.08 · erster-chunk 4.08 · ring-0 4.08 · weltbild 17.10
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.12     78 ms · idle 19 % · pulsSeite :1 3 · (anonym) simplex-noise.js:30 2 · KALT_PROBE :1 1
+   dom-interaktiv     0.12 →   1.35   1235 ms · idle 9 % · _chatEcho feld-leben.js:604 111 · _holzWahl dirigent-regler.js:527 62 · grow phyto-core.js:104 62 · (garbage collector) :0 29 · _renderVibePassUI netz-identitaet.js:446 18 · _compoundSymmetry bau-teile.js:448 15
+        native: pro 500 · gar 29 · je Datei: phyto-core.js 132 · feld-leben.js 112 · dirigent-regler.js 64 · bau-buch.js 58 · bau-teile.js 37 · netz-identitaet.js 20 · dirigent-kern.js 18 · vegetation-streu.js 18
+   instanz            1.35 →   1.35      0 ms · idle 0 % · 
+   foundry            1.35 →   1.35      0 ms · idle 0 % · 
+   foundry-worker     1.35 →   2.14    794 ms · idle 0 % · (anonym) dienst.js:27 4 · OMEN_TAKTMARKE :265 2
+        native: pro 788 · je Datei: dienst.js 4 · ? 2
+   dom-fertig         2.14 →   2.66    518 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 24 · _computeHydrosphere wasser-hydro.js:54 23 · flaeche gelaende-core.js:952 16 · (anonym) dienst.js:27 16 · zufall gelaende-core.js:321 15 · noise2D simplex-noise.js:83 13
+        native: gar 10 · pro 8 · je Datei: gelaende-core.js 141 · gelaende-boden.js 99 · wasser-hydro.js 74 · dienst.js 22 · three.core.min.js 19 · three.webgpu.min.js 19 · bau-buch.js 16 · simplex-noise.js 13
+   renderer           2.66 →   2.66      0 ms · idle 0 % · 
+   buch               2.66 →   2.66      0 ms · idle 0 % · 
+   spieler            2.66 →   4.08   1412 ms · idle 1 % · build three.webgpu.min.js:6 123 · _getChildren three.webgpu.min.js:6 60 · _voxelHoehlenGraph gelaende-boden.js:1852 38 · getDataFromNode three.webgpu.min.js:6 33 · _voxelChunkGeometry gelaende-boden.js:1391 30 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 29
+        native: pro 25 · gar 17 · je Datei: three.webgpu.min.js 674 · gelaende-boden.js 236 · gelaende-core.js 58 · dirigent-takt.js 39 · siedlung-satz.js 36 · three.core.min.js 34 · siedlung-bauten.js 26 · gelaende-fern.js 25
+   renderer-bereit    4.08 →   4.08      0 ms · idle 0 % · 
+   erster-chunk       4.08 →   4.08      0 ms · idle 0 % · 
+   ring-0             4.08 →  17.09  13014 ms · idle 2 % · AnazhRealm._diaetGang bild-kosten.js:3480 978 · build three.webgpu.min.js:6 480 · (garbage collector) :0 316 · grow phyto-core.js:104 238 · _ortGestaltSame vegetation-baum.js:887 233 · _waldPlanKasten vegetation-wiese.js:1580 225
+        native: pro 267 · gar 316 · je Datei: three.webgpu.min.js 2482 · bild-kosten.js 1125 · vegetation-baum.js 838 · gelaende-boden.js 758 · gelaende-fern.js 704 · gelaende-chunks.js 700 · phyto-core.js 676 · vegetation-streu.js 622
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   karte  baum         außer Blick       10 ·  12.70 s · L{:10} · 25–1000000 m · weide,tanne,eiche,fichte,birke,buche
+   körper haus         im Blick          39 ·  12.25 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   8.40 s · L{0:1,1:1} · 0–0 m · mensch
+   karte  baum         im Blick           6 ·   6.49 s · L{:6} · 21–88 m · tanne,birke,eiche,fichte,mammut
+   karte  sonst        im Blick           1 ·   5.28 s · L{:1} · 19–19 m · gt
+   karte  boden-klein  im Blick           1 ·   4.88 s · L{:1} · 36–36 m · strauch
+   körper baum         außer Blick       10 ·   4.21 s · L{1:10} · 26–1000000 m · weide,tanne,eiche,birke,fichte,buche
+   körper baum         im Blick           6 ·   3.21 s · L{1:6} · 21–88 m · tanne,birke,fichte,eiche,mammut
+   körper boden-klein  im Blick           2 ·   2.90 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper haus         außer Blick        8 ·   2.13 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper fels         außer Blick       12 ·   1.57 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper boden-klein  ohne Ort           6 ·   1.20 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper ausstattung  außer Blick        4 ·   0.88 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   karte  fels         außer Blick        1 ·   0.80 s · L{:1} · 66–66 m · karst
+   körper fels         im Blick           6 ·   0.78 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper boden-klein  außer Blick        5 ·   0.12 s · L{1:4,2:1} · 16–1000000 m · blume,gestruepp,farn,totstamm
+   körper fels         ohne Ort           1 ·   0.12 s · L{0:1} · – · geroell
+   körper ausstattung  im Blick           8 ·   0.01 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- Karten im Bäcker (19): Median Atlas NaN ms = Baum-Bau NaN + 8 Ansichten × 2 Pässe NaN + Rest; Rücklesen NaN ms · neue Programme NaN · Dreiecke NaN · Schale: Kodieren NaN ms + Platte NaN ms · von der Platte 0
+   Bahn bäcker: 7 Karten · gesendet   4.32 → letzte Antwort  16.18 = 1.69 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker1: 6 Karten · gesendet   6.05 → letzte Antwort  16.45 = 1.73 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn bäcker2: 6 Karten · gesendet   6.72 → letzte Antwort  16.25 = 1.59 s je Karte · Arbeit im Bäcker NaN s je Karte
+   Bahn       Art        gesendet  Start  Antwort · wartet · leer davor · Baum-Bau · Ansichten · Rest · Kodieren · Zustellung (ms)
+   bäcker     gt           4.32   –     9.59 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    strauch      6.05   –    10.93 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    weide        6.72   –    10.93 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     tanne        9.89   –    11.69 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    tanne       10.96   –    12.98 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       10.96   –    12.99 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     birke       11.81   –    13.36 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    eiche       13.09   –    14.27 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     fichte      13.62   –    14.27 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    fichte      13.09   –    14.27 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    tanne       14.45   –    15.00 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    fichte      14.45   –    15.00 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     birke       14.45   –    15.15 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     mammut      15.17   –    15.68 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    birke       15.05   –    15.85 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    karst       15.05   –    15.85 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker     eiche       15.70   –    16.18 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker2    buche       15.87   –    16.25 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+   bäcker1    buche       15.87   –    16.45 · NaN · NaN · NaN · NaN · NaN · NaN · NaN
+-- das Tor: je Term zuletzt offen (s) · welt 1.35 · buch 2.61 · dorf 9.59 · leib 10.16 · pflanzung 13.36 · boden 14.99 · karten 16.15 · streu 16.46 · bauten 16.46 · horizont 16.66
+
+================ ÜBER 4 LÄUFE (Median je Lauf): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild (Antwort-Reihenfolge je Bahn)
+   karte  baum         außer Blick       11 ·  13.45 s
+   körper haus         im Blick          39 ·  12.25 s
+   körper leib         außer Blick        2 ·   8.36 s
+   karte  baum         im Blick           5 ·   6.49 s
+   karte  sonst        im Blick           1 ·   6.40 s
+   körper baum         außer Blick       11 ·   5.17 s
+   karte  boden-klein  im Blick           1 ·   4.88 s
+   körper fels         außer Blick       12 ·   3.55 s
+   körper boden-klein  im Blick           2 ·   2.90 s
+   körper haus         außer Blick        8 ·   2.13 s
+   körper baum         im Blick           5 ·   1.87 s
+   körper boden-klein  ohne Ort           6 ·   1.32 s
+   körper fels         im Blick           6 ·   0.93 s
+   körper ausstattung  außer Blick        4 ·   0.88 s
+   karte  fels         außer Blick        1 ·   0.69 s
+   körper ausstattung  im Blick           8 ·   0.44 s
+   körper fels         ohne Ort           1 ·   0.18 s
+   körper boden-klein  außer Blick        5 ·   0.05 s
+   körper sonst        im Blick           1 ·   0.01 s
+   körper sonst        ohne Ort           1 ·   0.00 s
+   Summe im Blick 35.01 s · außer Blick 30.80 s · ohne Ort 1.59 s
+   Karten (76): wartet NaN · Baum-Bau NaN · Ansichten NaN (mit neuen Programmen NaN, 0×) · Rest NaN · Kodieren NaN · Zustellung NaN · gesendet→Antwort 841 ms
+   Tor, zuletzt offen (Median s): welt 1.4 · buch 2.6 · leib 9.3 · dorf 9.6 · pflanzung 13.4 · boden 15.0 · karten 16.1 · bauten 16.5 · streu 16.5 · horizont 16.6 · Weltbild 17.1

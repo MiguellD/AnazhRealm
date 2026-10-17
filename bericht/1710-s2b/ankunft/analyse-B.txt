@@ -1,0 +1,174 @@
+
+================ KB1: t(Weltbild)  15.38 s · erster Blick: {"t":15396,"n":100,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.38 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.13 · instanz 1.25 · foundry 1.25 · foundry-worker 1.25 · dom-fertig 2.37 · renderer 2.37 · spieler 2.37 · buch 2.43 · renderer-bereit 3.79 · erster-chunk 3.79 · ring-0 3.79 · weltbild 15.39
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.13     96 ms · idle 34 % · pulsSeite :1 3 · KALT_PROBE :1 1 · WALD_PROBE :1 1
+   dom-interaktiv     0.13 →   1.25   1122 ms · idle 8 % · _chatEcho feld-leben.js:604 102 · _holzWahl dirigent-regler.js:527 78 · grow phyto-core.js:104 54 · (garbage collector) :0 27 · _loadPath bau-buch.js:1791 17 · _renderVibePassUI netz-identitaet.js:446 15
+        native: pro 459 · gar 27 · je Datei: phyto-core.js 109 · feld-leben.js 103 · dirigent-regler.js 78 · bau-buch.js 57 · bau-teile.js 32 · netz-identitaet.js 17 · vegetation-streu.js 16 · dirigent-kern.js 15
+   instanz            1.25 →   1.25      0 ms · idle 0 % · 
+   foundry            1.25 →   1.25      0 ms · idle 0 % · 
+   foundry-worker     1.25 →   2.37   1118 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 23 · _computeHydrosphere wasser-hydro.js:54 23 · (anonym) dienst.js:27 19 · _hydroRiverSpiegel wasser-hydro.js:1054 16 · flaeche gelaende-core.js:952 14 · noise2D simplex-noise.js:83 13
+        native: pro 712 · gar 6 · je Datei: gelaende-core.js 114 · gelaende-boden.js 81 · wasser-hydro.js 77 · dienst.js 26 · three.webgpu.min.js 17 · gelaende-chunks.js 14 · daten.js 14 · simplex-noise.js 13
+   dom-fertig         2.37 →   2.37      0 ms · idle 0 % · 
+   renderer           2.37 →   2.37      0 ms · idle 0 % · 
+   spieler            2.37 →   2.43     63 ms · idle 0 % · _foundryAutoRegisterSpecies studio-bruecke.js:317 8 · _compoundSymmetry bau-teile.js:448 5 · computeCompoundTags bau-buch.js:661 4 · (anonym) dienst.js:27 3 · _computeFormRole bau-buch.js:1932 2 · touch bau-buch.js:1812 2
+   buch               2.43 →   3.79   1354 ms · idle 1 % · build three.webgpu.min.js:6 115 · _getChildren three.webgpu.min.js:6 50 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 41 · getDataFromNode three.webgpu.min.js:6 34 · _voxelHoehlenGraph gelaende-boden.js:1852 32 · generate three.webgpu.min.js:6 24
+        native: pro 16 · gar 20 · je Datei: three.webgpu.min.js 651 · gelaende-boden.js 234 · gelaende-core.js 57 · siedlung-satz.js 29 · gelaende-fern.js 28 · three.core.min.js 27 · gelaende-chunks.js 26 · ? 23
+   renderer-bereit    3.79 →   3.79      0 ms · idle 0 % · 
+   erster-chunk       3.79 →   3.79      0 ms · idle 0 % · 
+   ring-0             3.79 →  15.38  11591 ms · idle 2 % · AnazhRealm._diaetGang bild-kosten.js:3486 1396 · build three.webgpu.min.js:6 521 · (garbage collector) :0 227 · getDataFromNode three.webgpu.min.js:6 210 · _bodenKarteAusMesh gelaende-boden.js:1486 170 · _fernRingKlassen gelaende-fern.js:755 160
+        native: pro 167 · gar 227 · je Datei: three.webgpu.min.js 2761 · bild-kosten.js 1577 · gelaende-boden.js 599 · vegetation-baum.js 532 · gelaende-fern.js 518 · gelaende-chunks.js 468 · phyto-core.js 456 · three.core.min.js 453
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   körper haus         im Blick          39 ·   9.86 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   7.67 s · L{0:1,1:1} · 0–0 m · mensch
+   körper baum         außer Blick       11 ·   5.09 s · L{1:11} · 26–1000000 m · weide,tanne,fichte,eiche,birke,buche
+   körper boden-klein  ohne Ort           6 ·   2.72 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper fels         außer Blick       12 ·   2.32 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper boden-klein  im Blick           2 ·   2.30 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper haus         außer Blick        8 ·   2.18 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper ausstattung  außer Blick        4 ·   0.92 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   körper fels         im Blick           6 ·   0.72 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper ausstattung  im Blick           8 ·   0.71 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper baum         im Blick           5 ·   0.61 s · L{1:5} · 21–88 m · tanne,birke,fichte,mammut
+   körper fels         ohne Ort           1 ·   0.16 s · L{0:1} · – · geroell
+   körper boden-klein  außer Blick        2 ·   0.01 s · L{1:1,2:1} · 16–20 m · blume,gestruepp
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- das Tor: je Term zuletzt offen (s) · welt 1.26 · buch 2.37 · leib 8.68 · dorf 8.68 · boden 13.74 · pflanzung 13.74 · bauten 14.65 · karten 14.65 · streu 14.87 · horizont 15.06
+
+================ KB2: t(Weltbild)  16.04 s · erster Blick: {"t":16058,"n":99,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.54 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.13 · instanz 1.23 · foundry 1.23 · foundry-worker 1.23 · dom-fertig 2.12 · renderer 2.58 · buch 2.58 · spieler 2.58 · renderer-bereit 2.63 · erster-chunk 4.01 · ring-0 4.01 · weltbild 16.06
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.13     97 ms · idle 36 % · pulsSeite :1 2
+   dom-interaktiv     0.13 →   1.23   1093 ms · idle 7 % · _chatEcho feld-leben.js:604 110 · grow phyto-core.js:104 61 · _holzWahl dirigent-regler.js:527 39 · (garbage collector) :0 30 · (anonym) bau-teile.js:1472 21 · _loadPath bau-buch.js:1791 20
+        native: pro 402 · gar 30 · je Datei: phyto-core.js 147 · feld-leben.js 110 · bau-buch.js 54 · bau-teile.js 52 · dirigent-regler.js 40 · vegetation-streu.js 27 · netz-identitaet.js 18 · dirigent-kern.js 15
+   instanz            1.23 →   1.23      0 ms · idle 0 % · 
+   foundry            1.23 →   1.23      0 ms · idle 0 % · 
+   foundry-worker     1.23 →   2.12    896 ms · idle 0 % · _weltbildFehlt dirigent-ankunft.js:965 2 · (anonym) :0 1 · OMEN_TAKTMARKE :265 1
+        native: pro 892 · je Datei: ? 2 · dirigent-ankunft.js 2
+   dom-fertig         2.12 →   2.58    458 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 27 · flaeche gelaende-core.js:952 22 · _hydroRiverSpiegel wasser-hydro.js:1054 20 · _voxelChunkGeometry gelaende-boden.js:1391 19 · noise2D simplex-noise.js:83 15 · (anonym) dienst.js:27 15
+        native: gar 12 · pro 5 · je Datei: gelaende-core.js 122 · gelaende-boden.js 87 · wasser-hydro.js 78 · three.core.min.js 18 · bau-buch.js 17 · dienst.js 16 · simplex-noise.js 15 · three.webgpu.min.js 14
+   renderer           2.58 →   2.58      0 ms · idle 0 % · 
+   buch               2.58 →   2.58      0 ms · idle 0 % · 
+   spieler            2.58 →   2.63     52 ms · idle 28 % · (garbage collector) :0 7 · (anonym) dienst.js:27 4 · (anonym) dirigent-ankunft.js:240 2 · (anonym) three.webgpu.min.js:6 1
+   renderer-bereit    2.63 →   4.01   1375 ms · idle 1 % · build three.webgpu.min.js:6 94 · _getChildren three.webgpu.min.js:6 63 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 34 · getDataFromNode three.webgpu.min.js:6 31 · _voxelHoehlenGraph gelaende-boden.js:1852 31 · getCacheKey three.webgpu.min.js:6 25
+        native: pro 13 · gar 12 · je Datei: three.webgpu.min.js 651 · gelaende-boden.js 226 · gelaende-core.js 70 · three.core.min.js 40 · siedlung-satz.js 32 · simplex-noise.js 25 · ? 22 · gelaende-fern.js 22
+   erster-chunk       4.01 →   4.01      0 ms · idle 0 % · 
+   ring-0             4.01 →  16.04  12037 ms · idle 1 % · AnazhRealm._diaetGang bild-kosten.js:3486 1500 · build three.webgpu.min.js:6 467 · (garbage collector) :0 259 · _ortGestaltSame vegetation-baum.js:887 221 · _waldPlanKasten vegetation-wiese.js:1580 193 · _bodenKarteAusMesh gelaende-boden.js:1486 190
+        native: pro 316 · gar 259 · je Datei: three.webgpu.min.js 2784 · bild-kosten.js 1720 · vegetation-baum.js 645 · gelaende-boden.js 607 · gelaende-chunks.js 543 · vegetation-streu.js 532 · phyto-core.js 521 · vegetation-wiese.js 503
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   körper haus         im Blick          39 ·   9.44 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   8.19 s · L{0:1,1:1} · 0–0 m · mensch
+   körper fels         außer Blick       12 ·   4.54 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper baum         außer Blick       12 ·   4.29 s · L{1:12} · 26–1000000 m · weide,tanne,fichte,eiche,birke,buche
+   körper boden-klein  im Blick           2 ·   3.84 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper haus         außer Blick        8 ·   2.08 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper baum         im Blick           4 ·   1.62 s · L{1:4} · 21–88 m · tanne,birke,eiche,mammut
+   körper boden-klein  ohne Ort           6 ·   1.36 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper fels         im Blick           6 ·   0.75 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper ausstattung  außer Blick        4 ·   0.67 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   körper fels         ohne Ort           1 ·   0.06 s · L{0:1} · – · geroell
+   körper ausstattung  im Blick           8 ·   0.02 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper boden-klein  außer Blick        1 ·   0.02 s · L{2:1} · 16–16 m · blume
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- das Tor: je Term zuletzt offen (s) · welt 1.23 · buch 2.54 · leib 9.74 · dorf 9.74 · pflanzung 13.99 · boden 14.88 · bauten 15.48 · karten 15.48 · horizont 15.70 · streu 15.70
+
+================ KB3: t(Weltbild)  15.96 s · erster Blick: {"t":16272,"n":100,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.53 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.12 · instanz 1.40 · foundry 1.40 · foundry-worker 1.40 · dom-fertig 2.10 · renderer 2.59 · buch 2.59 · spieler 2.59 · renderer-bereit 4.00 · erster-chunk 4.00 · ring-0 4.00 · weltbild 16.27
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.12     78 ms · idle 24 % · pulsSeite :1 3 · WALD_PROBE :1 1
+   dom-interaktiv     0.12 →   1.40   1282 ms · idle 8 % · _chatEcho feld-leben.js:604 113 · _holzWahl dirigent-regler.js:527 103 · grow phyto-core.js:104 42 · (garbage collector) :0 27 · _renderVibePassUI netz-identitaet.js:446 18 · tragen dirigent-kern.js:1749 17
+        native: pro 538 · gar 27 · je Datei: feld-leben.js 113 · phyto-core.js 109 · dirigent-regler.js 104 · bau-buch.js 52 · bau-teile.js 41 · dirigent-kern.js 23 · netz-identitaet.js 20 · vegetation-streu.js 15
+   instanz            1.40 →   1.40      0 ms · idle 0 % · 
+   foundry            1.40 →   1.40      0 ms · idle 0 % · 
+   foundry-worker     1.40 →   2.10    704 ms · idle 0 % · (anonym) dienst.js:27 3 · (anonym) :53 2 · OMEN_TAKTMARKE :265 2
+        native: pro 697 · je Datei: ? 4 · dienst.js 3
+   dom-fertig         2.10 →   2.59    485 ms · idle 0 % · _hydroRiverSpiegel wasser-hydro.js:1054 26 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 24 · (anonym) dienst.js:27 23 · flaeche gelaende-core.js:952 19 · _foundryAutoRegisterSpecies studio-bruecke.js:317 18 · _computeHydrosphere wasser-hydro.js:54 15
+        native: pro 6 · gar 9 · je Datei: gelaende-core.js 124 · wasser-hydro.js 75 · gelaende-boden.js 74 · dienst.js 26 · studio-bruecke.js 24 · daten.js 19 · bau-buch.js 16 · three.webgpu.min.js 14
+   renderer           2.59 →   2.59      0 ms · idle 0 % · 
+   buch               2.59 →   2.59      0 ms · idle 0 % · 
+   spieler            2.59 →   4.00   1417 ms · idle 1 % · build three.webgpu.min.js:6 104 · _getChildren three.webgpu.min.js:6 50 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 46 · _voxelHoehlenGraph gelaende-boden.js:1852 36 · getDataFromNode three.webgpu.min.js:6 35 · _voxelChunkGeometry gelaende-boden.js:1391 30
+        native: pro 25 · gar 24 · je Datei: three.webgpu.min.js 648 · gelaende-boden.js 265 · gelaende-core.js 59 · siedlung-satz.js 45 · gelaende-fern.js 31 · ? 28 · three.core.min.js 25 · gelaende-chunks.js 22
+   renderer-bereit    4.00 →   4.00      0 ms · idle 0 % · 
+   erster-chunk       4.00 →   4.00      0 ms · idle 0 % · 
+   ring-0             4.00 →  15.96  11959 ms · idle 0 % · AnazhRealm._diaetGang bild-kosten.js:3486 1497 · build three.webgpu.min.js:6 499 · (garbage collector) :0 315 · _waldPlanKasten vegetation-wiese.js:1580 186 · getDataFromNode three.webgpu.min.js:6 183 · _bodenKarteAusMesh gelaende-boden.js:1486 176
+        native: pro 202 · gar 315 · je Datei: three.webgpu.min.js 2843 · bild-kosten.js 1729 · gelaende-boden.js 596 · vegetation-baum.js 573 · phyto-core.js 532 · gelaende-chunks.js 527 · vegetation-streu.js 517 · gelaende-fern.js 492
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   körper haus         im Blick          39 ·   9.16 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   8.09 s · L{0:1,1:1} · 0–0 m · mensch
+   körper baum         außer Blick       11 ·   4.74 s · L{1:11} · 26–1000000 m · weide,tanne,eiche,birke,fichte,buche
+   körper fels         außer Blick       12 ·   3.51 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper boden-klein  im Blick           2 ·   3.30 s · L{1:1,2:1} · 16–36 m · strauch,blume
+   körper haus         außer Blick        8 ·   2.89 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper boden-klein  ohne Ort           6 ·   2.11 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper baum         im Blick           5 ·   1.09 s · L{1:5} · 21–88 m · tanne,birke,fichte,mammut
+   körper ausstattung  außer Blick        4 ·   1.09 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   körper fels         im Blick           6 ·   0.75 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper fels         ohne Ort           1 ·   0.08 s · L{0:1} · – · geroell
+   körper ausstattung  im Blick           8 ·   0.02 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper boden-klein  außer Blick        2 ·   0.02 s · L{1:1,2:1} · 16–20 m · blume,gestruepp
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- das Tor: je Term zuletzt offen (s) · welt 1.40 · buch 2.52 · leib 9.89 · dorf 9.89 · pflanzung 13.16 · boden 14.52 · bauten 15.35 · karten 15.35 · horizont 15.49 · streu 15.67
+
+================ KB4: t(Weltbild)  16.39 s · erster Blick: {"t":16717,"n":100,"kamera":[0,93.4,0],"fov":75}
+-- das Buch: get-book gesendet   –   · angenommen   2.52 · Worker: {}
+-- Phasen (erste Zeit je Marke): dom-interaktiv 0.13 · instanz 1.36 · foundry 1.36 · foundry-worker 1.36 · dom-fertig 2.07 · renderer 2.56 · buch 2.56 · spieler 2.56 · renderer-bereit 2.61 · erster-chunk 5.26 · ring-0 5.26 · weltbild 16.72
+-- Haupt-Faden je Phase (Fenster ab der Marke bis zur nächsten; idle-Anteil; Top 6 Selbstzeit)
+   navigation         0.00 →   0.13     98 ms · idle 26 % · pulsSeite :1 3
+   dom-interaktiv     0.13 →   1.36   1228 ms · idle 13 % · _chatEcho feld-leben.js:604 104 · _holzWahl dirigent-regler.js:527 78 · grow phyto-core.js:104 40 · (garbage collector) :0 34 · vlen phyto-core.js:43 28 · tragen dirigent-kern.js:1749 18
+        native: pro 449 · gar 34 · je Datei: phyto-core.js 124 · feld-leben.js 104 · dirigent-regler.js 80 · bau-buch.js 54 · bau-teile.js 38 · dirigent-kern.js 21 · netz-identitaet.js 18 · gelaende-core.js 17
+   instanz            1.36 →   1.36      0 ms · idle 0 % · 
+   foundry            1.36 →   1.36      0 ms · idle 0 % · 
+   foundry-worker     1.36 →   2.07    710 ms · idle 0 % · (anonym) dienst.js:27 6 · _weltbildFehlt dirigent-ankunft.js:965 2 · phase :64 1
+        native: pro 701 · je Datei: dienst.js 6 · dirigent-ankunft.js 2 · ? 1
+   dom-fertig         2.07 →   2.56    487 ms · idle 0 % · _voxelExtractSurfaceVertices gelaende-boden.js:1604 24 · _computeHydrosphere wasser-hydro.js:54 24 · noise2D simplex-noise.js:83 20 · _hydroRiverSpiegel wasser-hydro.js:1054 19 · (anonym) dienst.js:27 18 · _voxelChunkGeometry gelaende-boden.js:1391 16
+        native: gar 8 · pro 4 · je Datei: gelaende-core.js 129 · gelaende-boden.js 79 · wasser-hydro.js 74 · dienst.js 26 · simplex-noise.js 20 · bau-buch.js 15 · daten.js 15 · bild-himmel.js 14
+   renderer           2.56 →   2.56      0 ms · idle 0 % · 
+   buch               2.56 →   2.56      0 ms · idle 0 % · 
+   spieler            2.56 →   2.61     55 ms · idle 38 % · (anonym) dienst.js:27 4 · (garbage collector) :0 3 · updateSize three.webgpu.min.js:6 2 · (anonym) dirigent-ankunft.js:240 2 · init three.webgpu.min.js:6 2 · luecke dirigent-ankunft.js:978 2
+   renderer-bereit    2.61 →   5.26   2649 ms · idle 0 % · build three.webgpu.min.js:6 198 · _voxelExtractSurfaceVertices gelaende-boden.js:1604 104 · getDataFromNode three.webgpu.min.js:6 75 · _getChildren three.webgpu.min.js:6 69 · (garbage collector) :0 60 · _voxelHoehlenGraph gelaende-boden.js:1852 57
+        native: pro 13 · gar 60 · je Datei: three.webgpu.min.js 1211 · gelaende-boden.js 479 · gelaende-core.js 146 · three.core.min.js 112 · gelaende-chunks.js 54 · studio-gestalt.js 52 · wasser-hydro.js 45 · bild-sicht.js 36
+   erster-chunk       5.26 →   5.26      0 ms · idle 0 % · 
+   ring-0             5.26 →  16.39  11125 ms · idle 1 % · AnazhRealm._diaetGang bild-kosten.js:3486 1364 · build three.webgpu.min.js:6 440 · grow phyto-core.js:104 242 · (garbage collector) :0 225 · _bodenKarteAusMesh gelaende-boden.js:1486 197 · _waldPlanKasten vegetation-wiese.js:1580 168
+        native: pro 211 · gar 225 · je Datei: three.webgpu.min.js 2305 · bild-kosten.js 1663 · phyto-core.js 629 · vegetation-baum.js 558 · gelaende-boden.js 542 · gelaende-chunks.js 525 · vegetation-streu.js 520 · gelaende-fern.js 488
+-- die Ankunfts-Menge (gestellt bis Weltbild): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild · Stufen · Distanz · Arten
+   körper haus         im Blick          39 ·   8.87 s · L{2:19,3:20} · 11–145 m · drachentor,maschine,kathedrale,gotisch,alpenchalet,schwarzwald,skandinavisch
+   körper leib         außer Blick        2 ·   8.16 s · L{0:1,1:1} · 0–0 m · mensch
+   körper baum         außer Blick       12 ·   3.96 s · L{1:12} · 26–1000000 m · weide,tanne,fichte,eiche,birke,buche
+   körper haus         außer Blick        8 ·   3.28 s · L{1:1,2:3,3:4} · 11–1000000 m · geisttor,maurentor,ruine,alemannisch
+   körper fels         außer Blick       12 ·   2.57 s · L{0:11,1:1} · 16–1000000 m · karst,zacken,kristalle
+   körper boden-klein  ohne Ort           6 ·   2.02 s · L{0:2,1:2,2:2} · – · gras,blume
+   körper fels         im Blick           6 ·   1.48 s · L{0:4,2:1,3:1} · 11–92 m · zacken,verkalkt
+   körper baum         im Blick           4 ·   1.35 s · L{1:4} · 27–88 m · birke,eiche,mammut
+   körper ausstattung  außer Blick        4 ·   1.33 s · L{1:2,3:2} · 1000000–1000000 m · feuerstelle
+   körper boden-klein  außer Blick        3 ·   1.21 s · L{1:2,2:1} · 16–1000000 m · strauch,blume,gestruepp
+   körper fels         ohne Ort           1 ·   0.15 s · L{0:1} · – · geroell
+   körper ausstattung  im Blick           8 ·   0.01 s · L{1:4,3:4} · 111–129 m · laterne,brunnen,marktstand,wandlaterne
+   körper boden-klein  im Blick           1 ·   0.01 s · L{2:1} · 16–16 m · blume
+   körper sonst        im Blick           1 ·   0.00 s · L{1:1} · 19–19 m · gt
+   körper sonst        ohne Ort           1 ·   0.00 s · L{:1} · 0–0 m · ?
+-- das Tor: je Term zuletzt offen (s) · welt 2.07 · leib 9.88 · dorf 9.88 · pflanzung 13.85 · boden 15.05 · bauten 15.51 · karten 15.51 · horizont 15.86 · streu 16.10
+
+================ ÜBER 4 LÄUFE (Median je Lauf): Art × Klasse × erster Blick · Aufträge · Bau-s bis Weltbild (Antwort-Reihenfolge je Bahn)
+   körper haus         im Blick          39 ·   9.44 s
+   körper leib         außer Blick        2 ·   8.16 s
+   körper baum         außer Blick       12 ·   4.74 s
+   körper fels         außer Blick       12 ·   3.51 s
+   körper boden-klein  im Blick           2 ·   3.30 s
+   körper haus         außer Blick        8 ·   2.89 s
+   körper boden-klein  ohne Ort           6 ·   2.11 s
+   körper baum         im Blick           5 ·   1.35 s
+   körper ausstattung  außer Blick        4 ·   1.09 s
+   körper fels         im Blick           6 ·   0.75 s
+   körper fels         ohne Ort           1 ·   0.15 s
+   körper ausstattung  im Blick           8 ·   0.02 s
+   körper boden-klein  außer Blick        2 ·   0.02 s
+   körper sonst        im Blick           1 ·   0.00 s
+   körper sonst        ohne Ort           1 ·   0.00 s
+   Summe im Blick 14.33 s · außer Blick 20.33 s · ohne Ort 2.19 s
+   Tor, zuletzt offen (Median s): welt 1.4 · buch 2.5 · leib 9.9 · dorf 9.9 · pflanzung 13.8 · boden 14.9 · bauten 15.5 · karten 15.5 · horizont 15.7 · streu 15.7 · Weltbild 16.0

@@ -1,0 +1,75 @@
+15:14:25 wiese-A1 start (7f06ebf8)
+15:15:53 wiese-A1 exit=0
+15:16:18   13:15:53 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+15:16:34 wiese-B1 start (9c8cfab8)
+15:18:03 wiese-B1 exit=0
+15:18:28   13:18:03 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+15:18:38 wiese-A2 start (7f06ebf8)
+15:20:09 wiese-A2 exit=0
+15:20:34   13:20:09 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+15:20:45 wiese-B2 start (9c8cfab8)
+15:22:14 wiese-B2 exit=0
+15:22:39   13:22:14 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+15:22:56 wiese-A3 start (7f06ebf8)
+15:24:24 wiese-A3 exit=0
+15:24:49   13:24:24 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+15:42:45 wiese-B3 start (9c8cfab8)
+15:44:12 wiese-B3 exit=0
+15:44:37   13:44:12 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:03:15 wiese-A4 start (7f06ebf8)
+16:04:43 wiese-A4 exit=0
+16:05:08   14:04:43 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:05:18 wiese-B4 start (9c8cfab8)
+16:06:48 wiese-B4 exit=0
+16:07:12   14:06:47 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:07:23 genesis-A1 start (7f06ebf8)
+16:08:57 genesis-A1 exit=0
+16:09:23   14:08:57 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:09:34 genesis-B1 start (9c8cfab8)
+16:11:06 genesis-B1 exit=0
+16:11:31   14:11:06 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:11:47 genesis-A2 start (7f06ebf8)
+16:13:16 genesis-A2 exit=0
+16:13:41   14:13:16 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:13:52 genesis-B2 start (9c8cfab8)
+16:15:25 genesis-B2 exit=0
+16:15:50   14:15:25 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:16:01 genesis-A3 start (7f06ebf8)
+16:17:34 genesis-A3 exit=0
+16:17:59   14:17:34 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:18:15 genesis-B3 start (9c8cfab8)
+16:19:44 genesis-B3 exit=0
+16:20:09   14:19:44 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:20:25 genesis-A4 start (7f06ebf8)
+16:21:54 genesis-A4 exit=0
+16:22:18   14:21:53 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+16:22:29 genesis-B4 start (9c8cfab8)
+16:24:03 genesis-B4 exit=0
+16:24:28   14:24:03 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_
+Stations-Patch A gesetzt
+Stations-Patch B gesetzt
+16:42:53 KA1 exit=1  t(Weltbild) = t(Kontrolle) 15.84 s ab Navigation
+16:43:59 KB1 exit=1  t(Weltbild) = t(Kontrolle) 15.38 s ab Navigation
+16:45:07 KA2 exit=1  t(Weltbild) = t(Kontrolle) 16.25 s ab Navigation
+16:46:14 KB2 exit=1  t(Weltbild) = t(Kontrolle) 16.04 s ab Navigation
+16:47:23 KA3 exit=1  t(Weltbild) = t(Kontrolle) 17.45 s ab Navigation
+16:48:30 KB3 exit=1  t(Weltbild) = t(Kontrolle) 15.96 s ab Navigation
+16:49:39 KA4 exit=1  t(Weltbild) = t(Kontrolle) 17.09 s ab Navigation
+16:50:47 KB4 exit=1  t(Weltbild) = t(Kontrolle) 16.39 s ab Navigation
+16:51:27 auge-A start (7f06ebf8)
+16:53:19 auge-A exit=2
+16:53:44   
+16:53:54 auge-B start (9c8cfab8)
+16:55:45 auge-B exit=2
+16:56:10   
+16:56:11 S2B FERTIG
+17:11:10 auge-A start (7f06ebf8)
+17:13:47 auge-A exit=2 15:12:56 ego: schwarz % 0.001 · 0.001 · 0.001 · Sprung 1→2 {"pct":0.03,"obenPct":0.06} · 2→3 {"pct":0.04,"obenPct":0.09} s2b-auge FEHLER: Error: /bild third 1: {"fehler":"ABNAHME ROT [Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): start_plattform 30.4 % · Ziel Blickziel verdeck
+17:14:22 auge-B start (9c8cfab8)
+17:17:06 auge-B exit=2 15:16:16 ego: schwarz % 0.001 · 0.001 · 0.001 · Sprung 1→2 {"pct":18.28,"obenPct":24.01} · 2→3 {"pct":0.05,"obenPct":0.1} s2b-auge FEHLER: Error: /bild third 1: {"fehler":"ABNAHME ROT [Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): start_plattform 30.4 % · Ziel Blickziel verdec
+17:17:31 AUGE FERTIG
+17:19:14 auge3-A start (7f06ebf8)
+17:21:03 auge3-A exit=0 15:21:03 third: schwarz % 0.296 · 0.296 · 0.296 · Sprung 1→2 {"pct":0.12,"obenPct":0.09} · 2→3 {"pct":0.07,"obenPct":0.09} 
+17:21:38 auge3-B start (9c8cfab8)
+17:23:28 auge3-B exit=0 15:23:28 third: schwarz % 0.296 · 0.296 · 0.296 · Sprung 1→2 {"pct":0.18,"obenPct":0.1} · 2→3 {"pct":0.16,"obenPct":0.1} 
+17:23:53 AUGE3 FERTIG

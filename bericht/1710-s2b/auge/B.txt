@@ -1,0 +1,4 @@
+15:16:16 ego: schwarz % 0.001 · 0.001 · 0.001 · Sprung 1→2 {"pct":18.28,"obenPct":24.01} · 2→3 {"pct":0.05,"obenPct":0.1}
+s2b-auge FEHLER: Error: /bild third 1: {"fehler":"ABNAHME ROT [Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): start_plattform 30.4 % · Ziel Blickziel verdeckt von bauSatz in 14.28 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 50 m · Luma 113.5 σ 42.3 schwarz 0.3 % weiß 0.0 % · Stand 18.546.16 · Bühne summer sunn
+    at C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1710s2b\s2b-auge.cjs:127:64
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)

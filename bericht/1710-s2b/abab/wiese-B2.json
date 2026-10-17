@@ -1,0 +1,432 @@
+{
+ "start": "2026-10-17T13:20:45.562Z",
+ "umstellen": {
+  "ort": "wiese",
+  "sicht": "ego",
+  "pose": null,
+  "welt": null,
+  "spieler": [
+   -280.4,
+   -1045.6
+  ],
+  "wiese": {
+   "messung": {
+    "x": -280.4,
+    "z": -1045.6,
+    "y": 27.48,
+    "hang": 1.81,
+    "rauh": 0.14,
+    "nass": 0,
+    "krone": 0.108,
+    "baeume": 8,
+    "kranz": 0.204,
+    "imBlick": 0,
+    "horizont": 2.6,
+    "blick": [
+     -289.6,
+     -1049.5
+    ],
+    "gras": 1
+   },
+   "befunde": []
+  },
+  "takte": 560,
+  "steht": true,
+  "chunks": 81,
+  "gier": -1.9717,
+  "dorfZug": false,
+  "ortTakt": [],
+  "dorfSchwebt": null,
+  "ms": 47064
+ },
+ "buehne": {
+  "ergebnis": {
+   "saison": "summer",
+   "phase": 0.375,
+   "wetter": "sunny"
+  },
+  "ms": 2
+ },
+ "uhrenVor": {
+  "ergebnis": {
+   "version": "18.546.16",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "frei",
+   "wasserZeit": 12.5,
+   "wasserHalt": "frei",
+   "windHalt": "fehlt",
+   "bildZeit": 12.5,
+   "bildZeitHalt": "gehalten",
+   "tageszeit": 0.5,
+   "wetter": "sunny"
+  },
+  "ms": 2
+ },
+ "lauf": {
+  "fps": 77,
+  "frameP95": 16.8,
+  "frameP50": 16.6,
+  "cpuP95": 4.7,
+  "cpuP99": 5.8,
+  "durchsatz": 13,
+  "befehle": 38,
+  "dreiecke": 267798,
+  "vram": {
+   "jetzt": 98.8,
+   "puffer": 15,
+   "texturen": 83.8,
+   "spitze": 123.6,
+   "nPuffer": 392,
+   "nTexturen": 38,
+   "wuchsImFenster": 0,
+   "gross": [
+    {
+     "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+     "mb": 31.641,
+     "n": 2
+    },
+    {
+     "k": "buf:?",
+     "mb": 14.83,
+     "n": 213
+    },
+    {
+     "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+     "mb": 8,
+     "n": 1
+    },
+    {
+     "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+     "mb": 8,
+     "n": 1
+    },
+    {
+     "k": "tex:output rg11b10ufloat 1440x810x1",
+     "mb": 4.449,
+     "n": 1
+    },
+    {
+     "k": "tex:depth depth24plus 1440x810x1",
+     "mb": 4.449,
+     "n": 1
+    },
+    {
+     "k": "tex:wege-karte rg8unorm 1024x1024x2",
+     "mb": 4,
+     "n": 1
+    },
+    {
+     "k": "tex:TRAANode.flacker r8unorm 1920x1080x1",
+     "mb": 3.955,
+     "n": 2
+    },
+    {
+     "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x20",
+     "mb": 3.333,
+     "n": 1
+    },
+    {
+     "k": "tex:szene:tiefenabbild r32float 720x810x1",
+     "mb": 2.225,
+     "n": 1
+    },
+    {
+     "k": "tex:fluss-karte r8unorm 1024x1024x2",
+     "mb": 2,
+     "n": 1
+    },
+    {
+     "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+     "mb": 1.875,
+     "n": 1
+    },
+    {
+     "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x20",
+     "mb": 1.665,
+     "n": 1
+    },
+    {
+     "k": "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1",
+     "mb": 1.333,
+     "n": 1
+    }
+   ]
+  },
+  "passe": {
+   "post": {
+    "p50": 0.42,
+    "p95": 0.61,
+    "frames": 1154
+   },
+   "TRAA": {
+    "p50": 0.82,
+    "p95": 1.12,
+    "frames": 1154
+   },
+   "haupt": {
+    "p50": 0.46,
+    "p95": 0.78,
+    "frames": 1154
+   },
+   "k0": {
+    "p50": 0.63,
+    "p95": 0.86,
+    "frames": 578
+   },
+   "spiegel:strahl": {
+    "p50": 0.04,
+    "p95": 0.04,
+    "frames": 30
+   },
+   "k1": {
+    "p50": 0.03,
+    "p95": 0.04,
+    "frames": 192
+   },
+   "atmo-himmel": {
+    "p50": 0.07,
+    "p95": 0.08,
+    "frames": 60
+   },
+   "atmo-umgebung": {
+    "p50": 0.01,
+    "p95": 0.01,
+    "frames": 3
+   },
+   "OrthographicCamera": {
+    "p50": 2.41,
+    "p95": 2.44,
+    "frames": 3
+   },
+   "horizont-karte": {
+    "p50": 0.02,
+    "p95": 0.02,
+    "frames": 6
+   }
+  }
+ },
+ "uhrenNach": {
+  "ergebnis": {
+   "version": "18.546.16",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "frei",
+   "wasserZeit": 12.5,
+   "wasserHalt": "frei",
+   "windHalt": "fehlt",
+   "bildZeit": 12.5,
+   "bildZeitHalt": "gehalten",
+   "tageszeit": 0.5105713333333426,
+   "wetter": "sunny"
+  },
+  "ms": 1
+ },
+ "bank": [
+  {
+   "gpu": 12.22,
+   "cpu": 1.83
+  },
+  {
+   "gpu": 12.03,
+   "cpu": 1.8
+  }
+ ],
+ "uhrenBank": {
+  "ergebnis": {
+   "version": "18.546.16",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "frei",
+   "wasserZeit": 12.5,
+   "wasserHalt": "frei",
+   "windHalt": "fehlt",
+   "bildZeit": 12.5,
+   "bildZeitHalt": "gehalten",
+   "tageszeit": 0.5,
+   "wetter": "sunny"
+  },
+  "ms": 2
+ },
+ "anatomie": {
+  "frames": 12,
+  "renderPaesse": [
+   {
+    "was": "TRAA",
+    "n": 1,
+    "mb": 17.798,
+    "ziele": "rgba16float 1920×1080 clear + r8unorm 1920×1080 clear"
+   },
+   {
+    "was": "haupt (Neustart)",
+    "n": 2,
+    "mb": 11.124,
+    "ziele": "rg11b10ufloat 1440×810 load + depth24plus 1440×810 load"
+   },
+   {
+    "was": "haupt",
+    "n": 1,
+    "mb": 8.899,
+    "ziele": "rg11b10ufloat 1440×810 clear + depth24plus 1440×810 clear"
+   },
+   {
+    "was": "post",
+    "n": 1,
+    "mb": 7.91,
+    "ziele": "bgra8unorm 1920×1080 clear"
+   },
+   {
+    "was": "k0",
+    "n": 0.5,
+    "mb": 4,
+    "ziele": "depth16unorm 2048×2048 clear"
+   },
+   {
+    "was": "k1",
+    "n": 0.17,
+    "mb": 1.333,
+    "ziele": "depth16unorm 2048×2048 clear"
+   },
+   {
+    "was": "spiegel:strahl",
+    "n": 0.08,
+    "mb": 0.082,
+    "ziele": "rgba16float 480×270 clear"
+   }
+  ],
+  "renderSumme": {
+   "n": 5.75,
+   "mb": 51.146
+  },
+  "ungestempelt": [
+   {
+    "was": "haupt [szene:tiefenabbild]",
+    "n": 1,
+    "mb": 0
+   }
+  ],
+  "stempelBruch": [
+   {
+    "was": "haupt",
+    "n": 1,
+    "mb": 0
+   }
+  ],
+  "computePaesse": [],
+  "dispatches": 0,
+  "kopien": [
+   {
+    "was": "haupt: Textur depth → szene:tiefenabbild:bruch",
+    "n": 1,
+    "mb": 0
+   },
+   {
+    "was": "ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render",
+    "n": 0.08,
+    "mb": 0
+   },
+   {
+    "was": "ausserhalb: Puffer buffer_timestamp_resolve_render → buffer_timestamp_result_render",
+    "n": 0.08,
+    "mb": 0
+   }
+  ],
+  "kopienSumme": {
+   "n": 1.17,
+   "mb": 0
+  },
+  "hochladen": [
+   {
+    "was": "k0: Puffer bindingBufferundefined_UniformBuffer_#_(vertex)",
+    "n": 2.5,
+    "mb": 0.004
+   },
+   {
+    "was": "haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+    "n": 16,
+    "mb": 0.002
+   },
+   {
+    "was": "haupt: Puffer ?",
+    "n": 5,
+    "mb": 0.001
+   },
+   {
+    "was": "haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment)",
+    "n": 11,
+    "mb": 0
+   },
+   {
+    "was": "k0: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+    "n": 2.17,
+    "mb": 0
+   },
+   {
+    "was": "k0: Puffer ?",
+    "n": 1.5,
+    "mb": 0
+   },
+   {
+    "was": "TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute)",
+    "n": 1,
+    "mb": 0
+   },
+   {
+    "was": "k1: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+    "n": 0.5,
+    "mb": 0
+   },
+   {
+    "was": "k1: Puffer ?",
+    "n": 0.17,
+    "mb": 0
+   }
+  ],
+  "hochladenSumme": {
+   "n": 39.83,
+   "mb": 0.007
+  },
+  "submits": 3.83,
+  "befehlsPuffer": 3.83,
+  "executeBundles": 1,
+  "bundles": 1,
+  "draws": [
+   {
+    "was": "haupt",
+    "n": 23,
+    "mb": 0
+   },
+   {
+    "was": "k0",
+    "n": 12.5,
+    "mb": 0
+   },
+   {
+    "was": "k1",
+    "n": 1.33,
+    "mb": 0
+   },
+   {
+    "was": "TRAA",
+    "n": 1,
+    "mb": 0
+   },
+   {
+    "was": "post",
+    "n": 1,
+    "mb": 0
+   },
+   {
+    "was": "spiegel:strahl",
+    "n": 0.08,
+    "mb": 0
+   }
+  ],
+  "setPipeline": 27.25,
+  "setBindGroup": 51.83,
+  "anlegen": {
+   "createCommandEncoder": 3.83
+  },
+  "leinwand": 1
+ }
+}

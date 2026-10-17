@@ -1,0 +1,225 @@
+{
+ "start": "2026-10-17T15:08:40.444Z",
+ "umstellen": {
+  "ort": "wiese",
+  "sicht": "ego",
+  "pose": null,
+  "welt": null,
+  "spieler": [
+   -280.4,
+   -1045.6
+  ],
+  "wiese": {
+   "messung": {
+    "x": -280.4,
+    "z": -1045.6,
+    "y": 27.48,
+    "hang": 1.81,
+    "rauh": 0.14,
+    "nass": 0,
+    "krone": 0.108,
+    "baeume": 8,
+    "kranz": 0.204,
+    "imBlick": 0,
+    "horizont": 2.6,
+    "blick": [
+     -289.6,
+     -1049.5
+    ],
+    "gras": 1
+   },
+   "befunde": []
+  },
+  "takte": 557,
+  "steht": true,
+  "chunks": 81,
+  "gier": -1.9717,
+  "dorfZug": false,
+  "ortTakt": [],
+  "dorfSchwebt": "Plan 0/18 (Zelle start)",
+  "ms": 43804
+ },
+ "buehne": {
+  "ergebnis": {
+   "saison": "summer",
+   "phase": 0.375,
+   "wetter": "sunny"
+  },
+  "ms": 1
+ },
+ "uhrenVor": {
+  "ergebnis": {
+   "version": "18.546.15",
+   "breaks": [
+    0.3529,
+    1
+   ],
+   "fade": true,
+   "fit": [
+    {
+     "W": 170.3,
+     "H": 310,
+     "zb": -365.9,
+     "zt": -174.1,
+     "tiefe": 191.8,
+     "texel": 0.0831,
+     "texelMin": 0.0831,
+     "weg": 115.2,
+     "bild": 18
+    },
+    {
+     "W": 408.2,
+     "H": 785.5,
+     "zb": -452.5,
+     "zt": -128.6,
+     "tiefe": 323.9,
+     "texel": 0.1993,
+     "texelMin": 0.1993,
+     "weg": 115.2,
+     "bild": 12
+    }
+   ],
+   "kam": [
+    {
+     "breite": 170.3,
+     "hoehe": 310,
+     "near": 0,
+     "far": 191.8,
+     "karte": 2048,
+     "auto": false
+    },
+    {
+     "breite": 408.2,
+     "hoehe": 785.5,
+     "near": 0,
+     "far": 323.9,
+     "karte": 2048,
+     "auto": false
+    }
+   ],
+   "takt": {
+    "nahMax": 2,
+    "fernFaktor": 3
+   },
+   "minIntervall": 1
+  },
+  "ms": 2
+ },
+ "lauf": {
+  "fps": 78.5,
+  "frameP95": 16.8,
+  "cpuP95": 4.1,
+  "durchsatz": 12.5,
+  "passe": {
+   "post": {
+    "p50": 0.42,
+    "p95": 0.43,
+    "frames": 1177
+   },
+   "TRAA": {
+    "p50": 0.83,
+    "p95": 1.11,
+    "frames": 1177
+   },
+   "haupt": {
+    "p50": 0.47,
+    "p95": 0.73,
+    "frames": 1177
+   },
+   "k0": {
+    "p50": 0.64,
+    "p95": 0.8,
+    "frames": 589
+   },
+   "k1": {
+    "p50": 0.03,
+    "p95": 0.04,
+    "frames": 197
+   },
+   "spiegel:strahl": {
+    "p50": 0.04,
+    "p95": 0.04,
+    "frames": 30
+   },
+   "atmo-himmel": {
+    "p50": 0.07,
+    "p95": 0.08,
+    "frames": 60
+   },
+   "atmo-umgebung": {
+    "p50": 0.01,
+    "p95": 0.01,
+    "frames": 3
+   },
+   "OrthographicCamera": {
+    "p50": 2.42,
+    "p95": 2.45,
+    "frames": 3
+   },
+   "horizont-karte": {
+    "p50": 0.02,
+    "p95": 0.41,
+    "frames": 6
+   }
+  }
+ },
+ "uhrenNach": {
+  "ergebnis": {
+   "version": "18.546.15",
+   "breaks": [
+    0.3529,
+    1
+   ],
+   "fade": true,
+   "fit": [
+    {
+     "W": 155,
+     "H": 324.1,
+     "zb": -355.3,
+     "zt": -150.6,
+     "tiefe": 204.6,
+     "texel": 0.0757,
+     "texelMin": 0.0757,
+     "weg": 119.4,
+     "bild": 170
+    },
+    {
+     "W": 329.4,
+     "H": 836.1,
+     "zb": -439.7,
+     "zt": -85.9,
+     "tiefe": 353.8,
+     "texel": 0.1608,
+     "texelMin": 0.1608,
+     "weg": 119.4,
+     "bild": 164
+    }
+   ],
+   "kam": [
+    {
+     "breite": 155,
+     "hoehe": 324.1,
+     "near": 0,
+     "far": 204.6,
+     "karte": 2048,
+     "auto": false
+    },
+    {
+     "breite": 329.4,
+     "hoehe": 836.1,
+     "near": 0,
+     "far": 353.8,
+     "karte": 2048,
+     "auto": false
+    }
+   ],
+   "takt": {
+    "nahMax": 2,
+    "fernFaktor": 3
+   },
+   "minIntervall": 1
+  },
+  "ms": 2
+ },
+ "uhrenBank": null
+}
