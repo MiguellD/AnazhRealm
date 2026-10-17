@@ -91,3 +91,9 @@ Bilder (`bericht/1710-n/echt-t2/`):
 - `echt-t2` ist mit `[ci voll]` gepusht. Merge und der echt-Neulauf an integ-probe per API liegen beim Koordinator.
 - Die Bisektion lief im Baum `n1710-t2` (danach `git bisect reset`).
 - Weiter mit Schritt 2 (B4).
+
+## Nachtrag 23:53 — echt an integ-probe
+
+Der Koordinator spulte integ-probe auf f45ee994 vor. Der Job echt **39071678447** lief auf der OMEN von 23:37 bis 23:53 (hooks/hook.log)
+und ist **success**, jeder Schritt einschließlich der Frost-Wand. Die Sperre auf integ-probe ist gefallen. Die B4-Serie gab dem Job
+Vorfahrt und wartete danach 180 s CI-Ruhe ab.
