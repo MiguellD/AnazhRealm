@@ -98,7 +98,6 @@
         "gate:freie-slots": "node scripts/diag-freie-slots.cjs --selftest",
         "gate:render-diaet": "node scripts/diag-render-diaet.cjs",
         "gate:erstarren": "node scripts/diag-erstarren.cjs",
-        "gate:baecker-kanal": "node scripts/diag-baecker-kanal.cjs",
         "gate:gpu-zeit": "node scripts/diag-gpu-zeit.cjs",
         "gate:charakter-achsen": "node scripts/diag-charakter-achsen.cjs",
         "gate:p2p-gestalt": "node scripts/diag-p2p-gestalt.cjs",

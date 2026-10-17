@@ -22,11 +22,6 @@ class AnazhRealm_studio_bruecke {
         if (this._foundry) return this._foundry;
         const f = {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
-            // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
-            // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker (Kanal "bake-impostor" → Reply "impostor"). EIN
-            // Bake-Pfad — in den Bäcker-Fäden (`_foundryBaecker`: derselbe Boot-Blob, mit dem Studio geboren, K60-2).
-            baecker: null,
-            baeckerBereit: false,
             bootUrl: null,
             ready: false,
             platte: false, // die Transport-Schale führt die Platte (gesetzt beim Worker-Boot)
@@ -124,7 +119,7 @@ class AnazhRealm_studio_bruecke {
                     f.worker = worker;
                     // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt — der Faden
                     // hält sie, bis sein Studio steht (eine Nachricht vor dem Ende seines Start-Skripts wartet auf seinen
-                    // Hörer), und antwortet ohne Rundlauf; Helfer und Bäcker kommen mit ihm (`_foundryHelfer`). Bis K60-2
+                    // Hörer), und antwortet ohne Rundlauf; die Helfer kommen mit ihm (`_foundryHelfer`). Bis K60-2
                     // fragte erst die Antwort auf „ready" — Radeon kalt ruhte der Buch-Faden 0,8 s, bis der volle Haupt-
                     // Faden sie las, und die Helfer begannen ihren Start 2,4 s nach ihm (K602c/q2: Buch 6,8 s).
                     try {
@@ -164,8 +159,8 @@ class AnazhRealm_studio_bruecke {
         }
         return f;
     }
-    // Die Antwort eines Studio-Fadens (Werk wie Bäcker) löst ihren Auftrag ein: Körper (asset), Siedlung (settlement),
-    // Karte (impostor) — EINE pending-Map, die reqIds sind disjunkt.
+    // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement) — EINE pending-Map, die
+    // reqIds sind disjunkt. Die Karte backt seit S2 im Welt-Renderer (`_karteWeltBacken`), kein Faden antwortet ihr.
     _foundryAntwort(f, m) {
         if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
@@ -184,63 +179,11 @@ class AnazhRealm_studio_bruecke {
                 f.pending.delete(m.reqId);
                 ps(m.plan || null);
             }
-        } else if (m.type === "impostor") {
-            // Studio-Bäcker-Antwort (Kanal "bake-impostor" → Reply "impostor": die Atlas-Schicht + Rahmen); Konsum:
-            // `_applyStudioImpostorPayload`.
-            const pi = f.pending.get(m.reqId);
-            if (pi) {
-                f.pending.delete(m.reqId);
-                if (m.payload && m.platte === true) m.payload.vonPlatte = true; // Zensus: von der Platte
-                pi(m.payload || null);
-            }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
         this._foundryUhren(f);
     }
-    // DER BÄCKER HAT SEINEN FADEN. Die Karte rendert das Studio offscreen mit WebGL (`bakeImpostorAtlas`: Kontext,
-    // Programme, 8 Winkel, Rücklesen) und hält dabei den Faden fest, der sie trägt. Bis 05.10. war das der EINE
-    // Werk-Worker: hinter einem Bake wartete jede Geometrie — gemessen (gate:arch-feld, Erst-Boot an der Mess-Wiese,
-    // swiftshader): der erste, kalte Bake hielt den Worker 387 Takte ohne eine einzige Antwort, die nahe Eichen-L0 kam
-    // danach in 5 Takten, die gepflanzte Eiche in 10 m stand über 400 Takte ohne Gestalt (die Satz-Brücke fiel mit dem
-    // Fernwald; in Stufe 1 hielt derselbe Bake 233 Takte und die Brücke verdeckte es). Jetzt bäckt DASSELBE Studio
-    // (derselbe Boot-Blob, dieselbe Schale, dieselbe Platte) in einem zweiten Faden, geboren beim ersten Bake-Auftrag
-    // (headless bäckt nie einer). Die EINE Schlange (`_foundryAuftrag`) bleibt — sie speist zwei Bahnen
-    // (`_foundryPumpe`), und eine Karte nimmt der Geometrie keinen Platz mehr.
-    // DIE KARTEN BACKEN IN BAHNEN (K60-2): Radeon kalt bis zum ersten Bild buk EIN Bäcker 17 Karten nacheinander, je eine im
-    // Flug — er bootete erst beim ersten Karten-Auftrag (1,65 s, 8 s nach der Navigation), jede Karte wartete danach auf den
-    // Rundlauf durch den vollen Haupt-Faden, und die Bäume der Mesh-Zone, deren Stufe die Karte ist, warteten mit (die Werk-
-    // Fäden ruhten von 10 bis 16 s, der Bäcker lief bis 19 s). Jetzt backen so viele Bäcker-Fäden wie Werk-Fäden
-    // (`_foundryFaedenZahl`, dasselbe Gesetz der Kerne), je eine Karte im Flug (`_tickImpostorBake`); geboren werden sie mit
-    // dem Studio, sobald ein echter Renderer zeichnet (`_foundryHelfer`) — headless bäckt nie einer, dort gebiert sie wie
-    // bisher erst ein Karten-Auftrag. Der erste Bäcker heißt weiter `f.baecker` (Bahn "baecker"), jeder weitere trägt seinen
-    // Faden in der Nummer (`imp` + `b<k>_`, Bahn "baecker<k>", `_foundryBahn`).
-    _foundryBaecker(f) {
-        if (f.baecker || !f.bootUrl) return f.baecker;
-        const geburt = (k) => {
-            const w = new Worker(f.bootUrl);
-            const h = { k, w, bereit: false };
-            // ein Boot-/Laufzeit-Fehler eines Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte seiner Bahn
-            w.onerror = (ev) =>
-                this._stoffBruch(
-                    `der Bäcker-Faden${k ? " " + k : ""} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
-                );
-            w.onmessage = (ev) => {
-                const m = ev.data;
-                if (!m || typeof m !== "object") return;
-                if (m.type === "ready" && m.world === "terrain") {
-                    h.bereit = true;
-                    if (k === 0) f.baeckerBereit = true;
-                } else this._foundryAntwort(f, m);
-                this._foundryPumpe(f);
-            };
-            return h;
-        };
-        f.baecker = geburt(0).w;
-        f.baeckerHelfer = [];
-        for (let k = 1; k < this._foundryFaedenZahl(); k++) f.baeckerHelfer.push(geburt(k));
-        return f.baecker;
-    }
-    // Wie viele Studio-Fäden je Arbeit (Werk wie Bäcker): einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
+    // Wie viele Werk-Fäden: einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
     // allein entscheiden, nie der Renderer.
     _foundryFaedenZahl() {
         const kerne =
@@ -251,16 +194,13 @@ class AnazhRealm_studio_bruecke {
     }
     // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
     // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
-    // Boot-Blob (dieselbe Schale, dieselbe Platte, dasselbe Studio — der Bäcker-Weg, `_foundryBaecker`); die EINE Schlange
+    // Boot-Blob (dieselbe Schale, dieselbe Platte, dasselbe Studio); die EINE Schlange
     // speist sie (`_foundryPumpe`). Ihre Zahl folgt der Maschine: ein Werk-Faden je vier Kerne, höchstens
     // FOUNDRY_WERK_FAEDEN (das Werk zählt mit). Die Kerne allein entscheiden, nie der Renderer: bis zur Prüfung K60-1 baute
     // unter dem Null-Renderer das Werk allein — kein Tor fuhr die Mehrbahn-Pumpe (gate:fluss W6 gibt der Seite 16 Kerne).
     _foundryHelfer(f) {
         if (f.helfer || !f.bootUrl) return;
         f.helfer = [];
-        // die Bäcker kommen mit dem Studio, wo ein echter Renderer zeichnet (`_foundryBaecker`, K60-2)
-        const r = this.state.renderer;
-        if (r && !r._isHeadlessNull) this._foundryBaecker(f);
         const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
             const w = new Worker(f.bootUrl);
@@ -532,17 +472,15 @@ class AnazhRealm_studio_bruecke {
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
     // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>[|ov:…]`) fragt erst die
     // Platte; ein Miss geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und
-    // überträgt. `vorrat` wärmt nur die Platte (leere Antwort). Ein `bake-impostor` trägt das Schicht-Format des Hosts
-    // (`fmt` "bc" | "rgba8"): die Schale kodiert jeden frischen Bake zur Atlas-Schicht (Karten-Codec in phyto-core:
-    // deckungstreue Mips, sRGB, BC1/BC5), schreibt sie mit `platte` (`karte|…|<fmt>`) und liest dort zuerst.
-    // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion läuft als
+    // überträgt. `vorrat` wärmt nur die Platte (leere Antwort). `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut
+    // nie: Miss = leere Antwort. Diese Funktion läuft als
     // Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId → Platten-Schlüssel des Studio-Baus, der gerade läuft
-        // DIE PLATTE HÄLT KEINEN FADEN. Zwei Studio-Fäden (Werk und Bäcker, `_foundryBaecker`) teilen EINE IndexedDB. Ein
+        // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
         // synchroner Studio-Lauf, gerufen aus dem Lese-Erfolg, hält dessen Transaktion bis zu seinem Ende offen — und jede
         // Transaktion des anderen Fadens wartet dahinter (gemessen 05.10., gate:arch-feld Erst-Boot: fünf L1-Körper des
         // Werks, in Takt 3 gesendet, kamen in Takt 746–753, einen Takt nach dem kalten Karten-Bake des Bäckers, der seine
@@ -649,20 +587,6 @@ class AnazhRealm_studio_bruecke {
                 dbTot = true;
             }
         };
-        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen UND sie die NICHT-LEERE-WAND des
-        // Karten-Gesetzes hält (ein Bäcker-Fehler liefert maßtreue Clear-Pixel): eine leere Karte reist nie auf die
-        // Platte und nie von ihr — sie kommt als payload null (die Retry-Disziplin des Hosts).
-        const karteOk = (p) => {
-            const G = W.__phytoCore && W.__phytoCore.KARTEN_GESETZ;
-            return !!(
-                G &&
-                p &&
-                ArrayBuffer.isView(p.albedo) &&
-                ArrayBuffer.isView(p.normal) &&
-                p.albedo.buffer !== p.normal.buffer &&
-                p.opak >= G.minOpak
-            );
-        };
         // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
         const hat = (key) =>
             platte.then((d) =>
@@ -730,20 +654,6 @@ class AnazhRealm_studio_bruecke {
                 }
                 return roh(msg, puffer(msg.meshes));
             }
-            const p = msg && msg.payload;
-            const auftragK = msg && msg.type === "impostor" ? schreibAuftrag.get(msg.reqId) : undefined;
-            if (auftragK !== undefined) {
-                // DIE KARTE WIRD IM WORKER ZUR ATLAS-SCHICHT (W6): deckungstreue Mips + BC1/BC5 (ohne BC-Feature rgba8/
-                // rg8) aus dem Karten-Codec (__phytoCore.karteKodiere), Platten-Put VOR dem Transfer — der Haupt-Thread
-                // kopiert nur noch eine Schicht. Ein Kodier-Bruch reist als payload null (die Retry-Disziplin des Hosts).
-                schreibAuftrag.delete(msg.reqId);
-                const core = W.__phytoCore;
-                const k = p && auftragK.fmt && core ? core.karteKodiere(p, auftragK.fmt) : null;
-                if (!karteOk(k)) return roh(Object.assign({}, msg, { payload: null }));
-                if (auftragK.key) schreib(auftragK.key, { payload: k });
-                return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
-            }
-            if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
             // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
@@ -763,7 +673,7 @@ class AnazhRealm_studio_bruecke {
         // (uSeasonMul). So kann kein Saison-Rest im Studio (setSeasonColors) einen Körper oder die Platte färben.
         W.addEventListener("message", (ev) => {
             const m = ev.data;
-            if (!m || (m.type !== "build-asset" && m.type !== "bake-impostor")) return;
+            if (!m || m.type !== "build-asset") return;
             ev.stopImmediatePropagation();
             const weiter = Object.assign({}, m, { season: "summer" });
             delete weiter.platte;
@@ -774,37 +684,6 @@ class AnazhRealm_studio_bruecke {
                 });
                 los();
             };
-            if (m.type === "bake-impostor") {
-                // DIE KARTE: jeder Bake wird hier zur Atlas-Schicht im Format des Hosts (`fmt`, postMessage oben).
-                // Mit `platte` (`karte|<art>|<gestalt>[|ov:…]|<fmt>`) liest die Schale zuerst: Treffer → Antwort ohne
-                // Studio (zero-copy); Miss → das Studio bäckt, die Schale kodiert und schreibt. `nurPlatte` (Ship-Hook)
-                // bäckt nie: Miss = payload null.
-                const fmt = typeof m.fmt === "string" ? m.fmt : null;
-                const backe = () => {
-                    schreibAuftrag.set(m.reqId, { key: typeof m.platte === "string" ? m.platte : null, fmt });
-                    studio();
-                };
-                if (typeof m.platte !== "string") return backe();
-                return lies(m.platte).then((wert) => {
-                    const p = wert && wert.payload;
-                    if (karteOk(p) && p.fmt === fmt)
-                        return roh(
-                            {
-                                type: "impostor",
-                                world: "terrain",
-                                reqId: m.reqId,
-                                presetId: m.presetId,
-                                seed: m.seed,
-                                payload: p,
-                                platte: true,
-                            },
-                            [p.albedo.buffer, p.normal.buffer]
-                        );
-                    if (m.nurPlatte)
-                        return roh({ type: "impostor", world: "terrain", reqId: m.reqId, payload: null, platte: true });
-                    backe();
-                });
-            }
             if (typeof m.platte !== "string") return studio();
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
@@ -946,11 +825,11 @@ class AnazhRealm_studio_bruecke {
     // 01.10.: die Uhr ab Senden ließ Impostor-Karten in der belebten Welt ablaufen, bevor der Worker sie
     // anfasste (strauch|16: 45 s Ablauf im Betrieb, 0,6 s bei freiem Worker) — drei Abläufe, und die Art
     // stand terminal ohne Fernstufe. Nie verklemmt: der älteste offene Auftrag hat immer eine laufende Uhr. FIFO gilt
-    // je FADEN (`_foundryBahn`): eine Karte im Bäcker hält die Uhr eines Körpers im Werk nie an, und umgekehrt.
+    // je FADEN (`_foundryBahn`): ein Auftrag eines Helfers hält die Uhr eines Körpers im Werk nie an, und umgekehrt.
     // DER ABGELAUFENE BLEIBT IM FADEN: der Besteller bekommt null (seine Wiederhol-Disziplin läuft), aber der Worker baut
     // ihn weiter — als GEIST hält er seinen Platz und die Uhr der Späteren seines Fadens an, bis seine späte Antwort kommt
     // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
-    // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
+    // während der Faden den Abgelaufenen noch baute (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
     // DIE UHR STARTET AM EREIGNIS (K38-N2): ein Auftrag meldet seine Frist an (`f.fristen`), `_foundryUhren` stellt sie,
     // sobald kein früherer seines Fadens offen ist — beim Anmelden, nach jeder Antwort und beim Fall eines Geistes. Bis
@@ -1054,7 +933,7 @@ class AnazhRealm_studio_bruecke {
     // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
     // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
     // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
-    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge je Studio-Faden (Werk · Bäcker, `_foundryPumpe`; so viele,
+    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge je Studio-Faden (Werk · Helfer, `_foundryPumpe`; so viele,
     // dass er ohne Rundlauf-Lücke arbeitet:
     // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
     // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
@@ -1075,76 +954,42 @@ class AnazhRealm_studio_bruecke {
             dz = wo.z - pm.z;
         return dx * dx + dz * dz;
     }
-    // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
-    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk. Ein Werk-Helfer (`_foundryHelfer`) trägt
-    // seinen Faden in der Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>".
+    // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
+    // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
     _foundryBahn(reqIdOderMsg) {
-        if (typeof reqIdOderMsg === "string") {
-            if (reqIdOderMsg.startsWith("imp")) {
-                const b = /b(\d+)_\d+$/.exec(reqIdOderMsg);
-                return b ? "baecker" + b[1] : "baecker";
-            }
-            const h = /w(\d+)_\d+$/.exec(reqIdOderMsg);
-            return h ? "werk" + h[1] : "werk";
-        }
-        return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
+        const h = typeof reqIdOderMsg === "string" ? /w(\d+)_\d+$/.exec(reqIdOderMsg) : null;
+        return h ? "werk" + h[1] : "werk";
     }
     // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
-    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Die Bäcker kommen mit dem
-    // Studio (echter Renderer) oder beim ersten Karten-Auftrag (`_foundryBaecker`); bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
-    // die Werk-Bahn mit den meisten freien Plätzen (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen
-    // das Werk).
+    // Wartenden — nah zuerst, nie verhungert (die Alters-Wache). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
+    // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
-        let werkFrei = 0,
-            baeckerFrei = 0,
-            werkZiel = null,
-            baeckerZiel = null;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
-        // die Bäcker-Bahnen (K60-2): der erste Bäcker und jeder bereite weitere (`_foundryBaecker`)
-        const baecker = [];
-        if (f.baecker && f.baeckerBereit) baecker.push({ bahn: "baecker", ziel: f.baecker, k: 0 });
-        for (const h of f.baeckerHelfer || []) if (h.bereit) baecker.push({ bahn: "baecker" + h.k, ziel: h.w, k: h.k });
-        // die Bahn mit den meisten freien Plätzen (unter Gleichen die erste)
-        const freiste = (bahnen, im) => {
-            let frei = 0,
-                ziel = null;
-            for (const w of bahnen) {
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
-                if (fr > frei) {
-                    frei = fr;
-                    ziel = w;
-                }
-            }
-            return [frei, ziel];
-        };
-        const plaetze = () => {
+        while (q.length) {
             const im = new Map();
             for (const k of f.pending.keys()) {
                 const b = this._foundryBahn(k);
                 im.set(b, (im.get(b) || 0) + 1);
             }
-            [werkFrei, werkZiel] = freiste(werke, im);
-            [baeckerFrei, baeckerZiel] = freiste(baecker, im);
-        };
-        const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
-        for (plaetze(); q.length; plaetze()) {
-            if (!f.baecker && q.some((a) => this._foundryBahn(a.msg) === "baecker")) this._foundryBaecker(f);
-            let i = -1;
-            for (let k = 0; k < q.length; k++)
-                if (frei(q[k])) {
-                    i = k;
-                    break;
+            let frei = 0,
+                bahn = null;
+            for (const w of werke) {
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
+                if (fr > frei) {
+                    frei = fr;
+                    bahn = w;
                 }
-            if (i < 0) return; // kein Wartender, dessen Faden Platz hat
+            }
+            if (!bahn) return; // kein Faden mit Platz
+            let i = 0;
             let aeltester = false;
-            if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
+            if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
             if (!aeltester) {
-                let best = this._foundryAuftragD2(q[i].wo);
-                for (let k = i + 1; k < q.length; k++) {
-                    if (!frei(q[k])) continue;
+                let best = this._foundryAuftragD2(q[0].wo);
+                for (let k = 1; k < q.length; k++) {
                     const d2 = this._foundryAuftragD2(q[k].wo);
                     if (d2 < best) {
                         best = d2;
@@ -1153,13 +998,10 @@ class AnazhRealm_studio_bruecke {
                 }
             }
             const a = q.splice(i, 1)[0];
-            const imBaecker = this._foundryBahn(a.msg) === "baecker";
-            const bahnZiel = imBaecker ? baeckerZiel : werkZiel;
-            const reqId = a.praefix + (bahnZiel.k ? (imBaecker ? "b" : "w") + bahnZiel.k + "_" : "") + f.reqSeq++;
-            const ziel = bahnZiel.ziel;
+            const reqId = a.praefix + (bahn.k ? "w" + bahn.k + "_" : "") + f.reqSeq++;
             f.pending.set(reqId, a.resolve);
             try {
-                ziel.postMessage(Object.assign({ reqId }, a.msg));
+                bahn.ziel.postMessage(Object.assign({ reqId }, a.msg));
             } catch (_e) {
                 f.pending.delete(reqId);
                 a.resolve(null);
@@ -1192,39 +1034,6 @@ class AnazhRealm_studio_bruecke {
             if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
             return;
         }
-    }
-    // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
-    // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
-    // Aufrufer trägt den Retry). Dasselbe pending-Routing wie build-asset, reqIds mit Präfix "imp".
-    _foundryBakeImpostorRequest(presetId, seed, ov, fmt, bedarfD2) {
-        const f = this._foundry;
-        if (!f || !f.ready || !f.worker || !fmt) return Promise.resolve(null);
-        ov = this._foundryGestaltOv(presetId, seed, ov); // die Gestalt des Orts (K20) samt der Prägung des Bestellers
-        // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
-        // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
-        // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
-        const msg = { type: "bake-impostor", presetId, seed, fmt };
-        if (ov && typeof ov === "object") msg.ov = ov;
-        // KARTEN AUF DIE PLATTE (V18.527, W6): die Karte trägt ihren Platten-Schlüssel (`karte|` + Karten-Schlüssel,
-        // geprägt mit ov-Hash, + Schicht-Format) — die Schale liest zuerst, kodiert und schreibt jeden frischen Bake; ein
-        // Zweit-Boot bäckt keine Karte neu. Der Ship-Pfad (`__anazhLiveBake === false`) liest NUR die Platte.
-        msg.platte =
-            "karte|" + this._foundryKartenKey(presetId, seed, ov && typeof ov === "object" ? ov : null) + "|" + fmt;
-        if (typeof window !== "undefined" && window.__anazhLiveBake === false) msg.nurPlatte = true;
-        // Durch DIE EINE WORKER-SCHLANGE im Rang ihres nächsten Wartenden (`z._bedarfD2`, d² zum Spieler; ohne Bedarf
-        // Vorrats-Rang). Bis 04.10. reiste jede Karte mit Vorrats-Rang: beim Boot an der Mess-Wiese wartete sie 11 s
-        // hinter 150 Geometrie-Aufträgen, die Bäume, die sie brauchten, standen so lange als Kapsel-Klumpen. EINE Uhr
-        // (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die
-        // Retry-Disziplin des Tick.
-        const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
-        return this._foundryAuftrag(
-            f,
-            "imp",
-            msg,
-            Number.isFinite(bedarfD2) ? bedarfD2 : null,
-            frist,
-            `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`
-        );
     }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
     // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
@@ -1803,7 +1612,7 @@ class AnazhRealm_studio_bruecke {
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
     // `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — die Werkstatt-Vorschau. Liefert die Karte noch nichts,
     // bekommt er die EINE Zusage, auf die sie wartet (das Buch, der Zug ihrer Höhen-Stufe, ihr Bake), und `wo` ist sein
-    // Rang in Schlange und Bäcker; ohne Zusage kann die Karte nicht kommen. Die Welt ruft ohne `wer` (ihr Tick baut nach).
+    // Rang in Schlange und Karten-Takt; ohne Zusage kann die Karte nicht kommen. Die Welt ruft ohne `wer` (ihr Tick baut nach).
     _foundryBuildImpostorFlat(entry, preset, wer) {
         const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) {
@@ -1816,7 +1625,7 @@ class AnazhRealm_studio_bruecke {
         const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined, ovE ? undefined : wer);
         if (z === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!z) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
+        // Bedarf-Stempel für den Karten-Takt (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
         // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
         if (!z.gebacken) {
             const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && (entry.position || entry.wo));

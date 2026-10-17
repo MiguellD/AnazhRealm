@@ -1,7 +1,8 @@
 // AnazhRealm — foundry-bruecke.js: DIE FOUNDRY-BRÜCKE (Karte K42, synthese §0 Bruch 3 / §4 W2a).
 // Der Bau-Teil der Pflanzen-Shell als EIN Modul: die Wirts-Globalen, die foundry-core liest und schreibt (PRNG,
-// Vektor-Helfer, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band), der Studio-Bäcker `bakeImpostorAtlas` und
-// die Asset-Kanäle (build-asset · bake-impostor · render-native · get-book · export-settlement). Klassisches Script
+// Vektor-Helfer, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band), der Studio-Bäcker `bakeImpostorAtlas` (nur das
+// Labor zeichnet ihn — die Welt backt ihre Karte seit S2 im Welt-Renderer, `_karteWeltBacken`) und die Asset-Kanäle
+// (build-asset · get-book · export-settlement). Klassisches Script
 // (die Top-Level-Symbole bleiben global wie in foundry-core), geladen NACH den Kernen. ZWEI Leser, KEIN Zwilling:
 // der Foundry-Worker (cores.manifest.json `bruecke`, ?v=; er lädt keine Labor-Shell und keine Labor-Szene) und das
 // Pflanzen-Labor (worlds/terrain/index.html, vor phytogenesis.js). Der Stempel der Platte hasht diese Datei, nie die
@@ -317,7 +318,7 @@ function bakeImpostorAtlas() {
                bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
                Defaults). Der Studio-Wald-Pfad (specs mit crownBase) bleibt byte-identisch.
                ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt): trägt der Spec einen eigenen Bauer (`bau` —
-               das buildInstance eines Manifest-Kerns, __replyBakeImpostor setzt ihn), baut DER das
+               das buildInstance eines Manifest-Kerns; bis S2 setzte ihn die Welt-Karte), baut DER das
                Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
                unverändert (der Studio-Wald setzt nie `bau`). */
             tree = (typeof s.bau === "function" ? s.bau : buildInstance)(
@@ -421,9 +422,7 @@ function bakeImpostorAtlas() {
     renderer.autoClear = _pAC;
     renderer.setScissorTest(false);
     renderer.setRenderTarget(pRT);
-    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-Worker gibt es kein innerWidth/innerHeight
-    // (ReferenceError) — dort ist der Offscreen-Baecker 256x256 (__foundryBakeRenderer).
-    // Der Fenster-Pfad (Studio/iframe) liest weiter die echten Fenstermasse, byte-identisch.
+    // Der Fenster-Pfad (Studio/iframe) liest die echten Fenstermasse; ohne Fenster 256x256.
     renderer.setViewport(
         0,
         0,
@@ -1110,195 +1109,6 @@ const foundryKanal = (() => {
             );
         }
     }
-    // DER OFFSCREEN-BAKE-RENDERER (nur Foundry): der Studio-Baecker `bakeImpostorAtlas` liest den
-    // GLOBALEN `renderer` — im Foundry-Modus (init kehrt vor dem Display-Renderer zurueck) gibt es
-    // keinen. Wir bauen EINEN kleinen Offscreen-WebGL-Renderer (nie am DOM, kein Display-Loop) und
-    // zeigen den globalen `renderer` darauf. Anderer Kontext-Typ als AnazhRealms WebGPU -> kein
-    // Konflikt (wie die Diag-Offscreen-Renderer). Einmalig, gecacht.
-    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-WORKER gibt es kein window und kein implizites
-    // DOM-Canvas — Scope-Halter G (window ODER self) traegt den Cache, und der Worker-Zweig reicht
-    // ein OffscreenCanvas an r128 (Feature-Guard; fehlt es, fail-closed -> null -> payload null).
-    // Der iframe-Pfad bleibt byte-identisch (window vorhanden -> implizites Canvas wie bisher).
-    function __foundryBakeRenderer() {
-        const G = typeof window !== "undefined" ? window : self;
-        if (G.__foundryGL) return G.__foundryGL;
-        try {
-            const opts = { antialias: true, alpha: true, preserveDrawingBuffer: false };
-            if (typeof window === "undefined") {
-                if (typeof OffscreenCanvas === "undefined") return null; // Worker ohne OffscreenCanvas: kein GL-Baecker moeglich
-                opts.canvas = new OffscreenCanvas(256, 256);
-            }
-            const gl = new THREE.WebGLRenderer(opts);
-            gl.setSize(256, 256, false);
-            if (THREE.sRGBEncoding !== undefined) gl.outputEncoding = THREE.sRGBEncoding;
-            gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 1.0;
-            G.__foundryGL = gl;
-            // eslint-disable-next-line no-global-assign
-            renderer = gl; // der Studio-Baecker liest `renderer` -> auf den Offscreen-GL zeigen
-            return gl;
-        } catch (_e) {
-            return null;
-        }
-    }
-    // Ein Asset mit den STUDIO-EIGENEN Materialien rendern (offscreen WebGL) + Pixel/Kamera zurueck.
-    function __replyRenderNative(msg) {
-        const reqId = msg.reqId;
-        const presetId = msg.presetId || "eiche";
-        const seed = Number(msg.seed) || 0;
-        const lod = msg.lod | 0;
-        const W = msg.size || 320;
-        let payload = null;
-        try {
-            if (msg.season && typeof setSeasonColors === "function") {
-                try {
-                    setSeasonColors(msg.season);
-                } catch (_se) {}
-            }
-            const gl = __foundryBakeRenderer();
-            if (!gl) throw new Error("kein Renderer");
-            if (typeof bakeLeafAtlas === "function") {
-                try {
-                    bakeLeafAtlas();
-                } catch (_le) {}
-            }
-            const g = buildInstance(presetId, seed, lod, msg.ov || null);
-            g.updateMatrixWorld(true);
-            const sc = new THREE.Scene();
-            sc.add(new THREE.HemisphereLight(0xdfeecc, 0x2a2a1a, 0.7));
-            const kl = new THREE.DirectionalLight(0xfff2d9, 2.2);
-            kl.position.set(6, 10, 5);
-            sc.add(kl);
-            sc.add(g);
-            const box = new THREE.Box3().setFromObject(g);
-            const ctr = box.getCenter(new THREE.Vector3()),
-                sz = box.getSize(new THREE.Vector3());
-            const d = Math.max(sz.x, sz.y, sz.z) * 1.6 + 2;
-            const camPos = [ctr.x + d * 0.6, box.min.y + sz.y * 0.55, ctr.z + d * 0.7];
-            const camLook = [ctr.x, ctr.y, ctr.z];
-            const cam = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
-            cam.position.set(camPos[0], camPos[1], camPos[2]);
-            cam.lookAt(camLook[0], camLook[1], camLook[2]);
-            cam.updateProjectionMatrix();
-            const rt = new THREE.WebGLRenderTarget(W, W);
-            const pRT = gl.getRenderTarget();
-            gl.setRenderTarget(rt);
-            gl.setClearColor(0xbcd2e0, 1);
-            gl.clear();
-            gl.render(sc, cam);
-            const buf = new Uint8Array(W * W * 4);
-            gl.readRenderTargetPixels(rt, 0, 0, W, W, buf);
-            gl.setRenderTarget(pRT);
-            g.traverse((o) => {
-                if (o.isMesh && o.geometry) o.geometry.dispose();
-            });
-            rt.dispose();
-            payload = { W: W, pixels: buf, camPos: camPos, camLook: camLook };
-        } catch (e) {
-            try {
-                console.warn("[phyto] render-native", presetId, e && e.message);
-            } catch (_) {}
-        }
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                {
-                    type: "render-native",
-                    world: "terrain",
-                    reqId: reqId,
-                    presetId: presetId,
-                    seed: seed,
-                    payload: payload,
-                },
-                "*"
-            );
-        }
-    }
-    // Die Fernstufe EINES Baums: der Studio-Baecker bakt SEIN 8-Winkel-Billboard (Albedo + Normal),
-    // wir lesen die Atlas-Pixel + Rahmen zurueck. `bakeImpostorAtlas` liest `_impSpecs` (die Zellen),
-    // also fuellen wir EINE Zelle (Art,Seed) — K=1, eine Atlas-Schicht cellW x (cellH*V) im Studio-Layout
-    // (Ansichten vertikal, Zeilen bottom-up). W6: die Render-Targets leben weiter (K bleibt 1, nur die Signatur
-    // erzwingt den Neu-Bake), der Rahmen kommt aus DEMSELBEN Bake (`_impFrame`) statt aus einem dritten L1-Bau;
-    // Albedo und Normale reisen in voller Aufloesung (die Welt-Schicht mittelt der Karten-Codec, phyto-core).
-    function __replyBakeImpostor(msg) {
-        const reqId = msg.reqId;
-        const presetId = msg.presetId || "eiche";
-        const seed = Number(msg.seed) || 0;
-        let payload = null;
-        try {
-            if (msg.season && typeof setSeasonColors === "function") {
-                try {
-                    setSeasonColors(msg.season);
-                } catch (_se) {}
-            }
-            const gl = __foundryBakeRenderer();
-            if (!gl) throw new Error("kein Offscreen-Renderer");
-            // Die Karte zeichnet den Laub-Stoff: sein Atlas-Bild malt der Worker erst hier (die Geometrie braucht es nie).
-            bakeLeafAtlas();
-            // ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt, Studio-Seite): ein Preset, das NICHT im
-            // Pflanzen-Buch steht, baut sein Bake-Subjekt durch den ERSTEN Manifest-Kern,
-            // dessen PRESETS es trägt — exakt der __replyBuildAsset-Dispatch (__zweitKerne()-
-            // Schleife). Der Kern liefert die KOMPLETTE Gruppe (eigene Materialien); der
-            // Bake-Rahmen (impostorFrame/scanRadialXZ über die gebaute Gruppe) ist geometrie-
-            // agnostisch und bleibt. Kennt KEIN Kern das Preset: fail-closed (Wurf -> payload
-            // null) — nie wieder eine LEERE Karte als „Erfolg".
-            let zweit = null;
-            if (typeof presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, presetId)) {
-                for (const zk of __zweitKerne()) {
-                    if (
-                        zk.kern.PRESETS &&
-                        Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, presetId) &&
-                        typeof zk.kern.buildInstance === "function"
-                    ) {
-                        zweit = zk;
-                        break;
-                    }
-                }
-                if (!zweit) throw new Error("kein Kern kennt Preset " + presetId);
-            }
-            const __bau = zweit ? (sp, sd, lod, ov) => zweit.kern.buildInstance(sp, sd, lod, ov) : null;
-            // M2 (Bäcker-Vereinigung): das Bake-Subjekt IST der Welt-Baum — ov reist
-            // VERBATIM aus der Anfrage (Welt baut ov-frei = Preset-Defaults; die alten
-            // Studio-Wald-Konstanten CB/TMUL gehören NUR dem buildForest-Pfad). Sonst
-            // passt die Karte nicht zur Nahstufe (Stamm-Dicke/Kronen-Ansatz-Pop bei 40 m).
-            // Das M2-Gesetz gilt dem Zweit-Kern-Zweig identisch (ov verbatim in `bau`).
-            const bakeOv = msg.ov || null;
-            // EINE Bake-Zelle -> K=1; die leere Signatur erzwingt den Neu-Bake in die lebenden Targets.
-            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv, bau: __bau }];
-            _impCellOf = {};
-            _impCellOf[presetId + "|0"] = 0;
-            _impBakedSig = "";
-            delete _impFrame[presetId + seed];
-            bakeImpostorAtlas(); // DER STUDIO-BAECKER — kein Nachbau
-            const ic = PORTAL_RENDER_CONFIG.impostor,
-                cw = ic.cellW,
-                ch = ic.cellH,
-                V = _impV;
-            const fr = _impFrame[presetId + seed];
-            if (!fr) throw new Error("kein Bake-Rahmen (das Bake-Subjekt baute nicht)");
-            const albedo = new Uint8Array(cw * ch * V * 4);
-            gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
-            const normal = new Uint8Array(cw * ch * V * 4);
-            gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
-            payload = {
-                cw: cw,
-                ch: ch,
-                V: V,
-                frame: { halfH: fr.halfH, halfW: fr.halfW },
-                albedo: albedo,
-                normal: normal,
-            };
-        } catch (e) {
-            try {
-                console.warn("[phyto] bake-impostor", presetId, e && e.message);
-            } catch (_) {}
-        }
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                { type: "impostor", world: "terrain", reqId: reqId, presetId: presetId, seed: seed, payload: payload },
-                "*"
-            );
-        }
-    }
     // Die Kanäle als Tabelle (M8: Tabelle vor if) — dieselben Kommentare wie im alten Portal-Dispatch.
     const KANAL = {
         // DER ASSET-KANAL: AnazhRealm fragt einen fertigen Baum/Pflanze an, die
@@ -1307,17 +1117,6 @@ const foundryKanal = (() => {
         // als transferable zurueck. AnazhRealm pflanzt sie 1:1 — kein Nachbau, kein
         // Sezieren; die Vorlage-Datei IST der Samen (ein Edit hier -> andere Assets).
         "build-asset": __replyBuildAsset,
-        // DER BILLBOARD-KANAL (L2): AnazhRealm fragt die FERNSTUFE eines Baums an. Die Vorlage
-        // laeuft ihren EIGENEN Baecker `bakeImpostorAtlas` (8-Winkel-RTT, Normal-Atlas, per-Art-
-        // Rahmen, Dilation) offscreen und schickt die fertigen Atlas-Pixel + Rahmen zurueck.
-        // KEIN Nachbau in AnazhRealm: editiert der Schoepfer den Baecker/Shader/das Framing hier,
-        // fliesst es automatisch in die AnazhRealm-Ferne. Der Studio-Baecker IST die Fernstufe.
-        "bake-impostor": __replyBakeImpostor,
-        // DER VERGLEICHS-KANAL: das Studio rendert EIN Asset mit SEINEN ECHTEN Materialien
-        // (barkMat/foliageMat/rockMat…) offscreen + schickt die Pixel + die Kamera zurueck.
-        // AnazhRealm rendert dasselbe Asset durch seine Pipeline mit DERSELBEN Kamera → Bild-
-        // Vergleich Seite an Seite (muessen identisch aussehen). Der ehrliche Beweis.
-        "render-native": __replyRenderNative,
         // SYNERGIE-WELLE — DER EINE UMSCHLAG: das Studio exportiert sein KOMPLETTES Buch
         // (Rezepte + B4-Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM
         // Reply. Die drei Einzel-Kanaele (get-recipes/get-world-params/get-render-config)

@@ -987,9 +987,7 @@ class AnazhRealm_dirigent_ankunft {
             );
         const warten = this._streuWartet(p);
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
-        const karten =
-            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) +
-            (this._impostorBakeFlug ? this._impostorBakeFlug.size : 0);
+        const karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }

@@ -3317,7 +3317,17 @@
     // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
-    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64, glaette: 4, glaetteBis: 2 };
+    //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
+    //                 Auflösung als r8, Stufe 0 (die GPU zieht die Mips) — ein weiches Licht-Feld der Krone
+    var KARTEN_GESETZ = {
+        schwelle: 0.34,
+        normalTeiler: 2,
+        minSeite: 4,
+        minOpak: 64,
+        glaette: 4,
+        glaetteBis: 2,
+        lichtTeiler: 4,
+    };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
@@ -3362,6 +3372,9 @@
         };
         const a = ebene(w, h, bc ? karteMipZahl(cw, ch) : 1, bc ? 8 : 4);
         const n = ebene(nw, nh, bc ? karteMipZahl(nw, (ch / nt) | 0) : 1, bc ? 16 : 2);
+        // die Sonnen-Sicht (A7): r8, eine Stufe, in jedem Format
+        const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
+            lh = Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0);
         return {
             fmt: bc ? "bc" : "rgba8",
             w: w,
@@ -3372,6 +3385,9 @@
             n: n.stufen,
             aBytes: a.bytes,
             nBytes: n.bytes,
+            lw: lw,
+            lh: lh,
+            lBytes: lw * lh,
         };
     }
 

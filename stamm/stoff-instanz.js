@@ -22,15 +22,16 @@ class AnazhRealm_stoff_instanz {
     }
 
     // DER EINE KARTEN-ATLAS (W6): jede Impostor-Karte — Foundry-Art × Gestalt [× ov], gestreut und gesetzt — ist EINE
-    // Schicht einer Array-Textur (Albedo + Normale), im Studio-Layout (`bakeImpostorAtlas`: die V Ansichten vertikal
-    // gestapelt, Zeilen bottom-up) ohne Umdrehen geladen. EIN Material, EIN Einheits-Quad, EINE globale Instanz-Gruppe
-    // (`IMPOSTOR_ATLAS_GRUPPE`); Schicht, Rahmen und Sichthöhe reisen je Instanz (aKarte — `_lodSlotStamp`). Das FORMAT
-    // ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-Albedo (deckungstreue
-    // Mips) + BC5-Normale auf 1/normalTeiler (CompressedArrayTexture, 0,25 MiB je Schicht), ohne es rgba8-sRGB + rg8
-    // (DataArrayTexture, die GPU zieht die Mips). Mips und Kodierung laufen im Worker (Transport-Schale, Karten-Codec
-    // in phyto-core), der Haupt-Thread kopiert nur die Schicht. Befund V18.528: je Karte zwei CanvasTextures, ein
-    // Material, eine Gruppe und ein Programm (die Sichthöhe stand als Konstante im Fragment-Graph) — 31 MB, ~90
-    // Pipelines; das Umdrehen je Karte malte im Haupt-Thread.
+    // Schicht einer Array-Textur (Albedo, Normale, Sonnen-Sicht), die V Ansichten vertikal gestapelt, wie der Welt-Renderer
+    // sie zeichnet (Zeile 0 oben, die Ansicht v in der Zelle v). EIN Material, EIN Einheits-Quad, EINE globale Instanz-Gruppe
+    // (`IMPOSTOR_ATLAS_GRUPPE`); Schicht, Rahmen und Sichthöhe reisen je Instanz (aKarte — `_lodSlotStamp`). DIE KARTE BACKT
+    // IN DER WELT (S2, `_karteWeltBacken`): der Welt-Renderer zeichnet die L1-Gestalt, die GPU zieht die deckungstreuen Mips
+    // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer, keine Rücklese,
+    // keine Platte. Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
+    // Albedo + BC5-Normale auf 1/normalTeiler + r8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
+    // Schicht), ohne es (WebGL2, WebGPU ohne BC) zeichnet die Karte direkt in die Schicht eines rgba8-Array-Ziels, die GPU
+    // zieht die Mips (2,8 MiB je Schicht; `_impostorAtlasTexturen` meldet es EINMAL laut). Befund V18.528: je Karte zwei
+    // CanvasTextures, ein Material, eine Gruppe und ein Programm — 31 MB, ~90 Pipelines.
     _impostorAtlas() {
         if (this._kartenAtlas !== undefined) return this._kartenAtlas;
         this._kartenAtlas = {
@@ -44,49 +45,61 @@ class AnazhRealm_stoff_instanz {
             n: 0, // vergebene Schichten
             map: null,
             nmap: null,
+            lmap: null, // die Sonnen-Sicht der Krone (A7-Term): der Anteil des Richtlichts, den die eigene Krone durchlässt
             mapNode: null, // die Basis-Texturknoten: ein Wachsen tauscht nur ihren Wert
             nmapNode: null,
+            lmapNode: null,
             zellen: new Map(), // "fimp:<art>|<gestalt>[|ov:…]" → Zelle
             quad: null,
             mat: null,
-            haengend: 0,
-            verworfen: 0,
         };
         return this._kartenAtlas;
     }
 
-    // Das Schicht-Format: mit WebGPU "welt" — die Karte backt im Welt-Renderer in ein Array-Ziel, das ihr Stoff direkt liest
-    // (Spike S1, `_karteWeltBacken`); ohne WebGPU rgba8 aus dem Studio-Bäcker.
+    // Das Schicht-Format: "bc" mit WebGPU und dem Feature texture-compression-bc (die GPU kodiert, `_karteAblage`), sonst
+    // "rgba8" (die Karte zeichnet direkt in ihre Schicht).
     _impostorAtlasFormat() {
         const r = this.state && this.state.renderer;
-        return r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true ? "welt" : "rgba8";
+        const dev =
+            r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true ? r.backend.device : null;
+        return dev && dev.features && dev.features.has("texture-compression-bc") ? "bc" : "rgba8";
     }
 
     // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
     // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen geschieht IN den
-    // beiden Texturen: ein neues Bild mit den kopierten Schichten, needsUpdate — die neue GPU-Form legt der EINE Abschied an
-    // (`_texturAbschied`: die alte fällt nach dem Submit, jedes Bündel nimmt neu auf). Knoten, Programm-Vorlage und jedes
-    // Render-Objekt binden so immer DIESELBE Textur (ein Tausch ließ die Textur des Programm-Baus wieder aufsteigen).
+    // Texturen: ein neues Bild, needsUpdate — die neue GPU-Form legt der EINE Abschied an (`_texturAbschied`: die alte fällt
+    // nach dem Submit, jedes Bündel nimmt neu auf), und die GPU kopiert die gebackenen Schichten in die neue Form
+    // (`_karteWachsen`, keine Karte backt neu). Knoten, Programm-Vorlage und jedes Render-Objekt binden so immer DIESELBE
+    // Textur (ein Tausch ließ die Textur des Programm-Baus wieder aufsteigen).
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
-        // Der Karten-Codec ist KERN-PFLICHT: fehlt er (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
+        // Das Karten-Gesetz ist KERN-PFLICHT: fehlt es (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
         // die still für immer ohne Karte zeichnet.
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
-        if (!core || typeof core.karteMasse !== "function" || !core.KARTEN_GESETZ)
-            return AnazhRealm._kernPflichtBruch("phyto:karteMasse/KARTEN_GESETZ");
+        if (!core || typeof core.karteMasse !== "function" || !core.KARTEN_GESETZ || !core.KARTEN_GESETZ.lichtTeiler)
+            return AnazhRealm._kernPflichtBruch("phyto:karteMasse/KARTEN_GESETZ.lichtTeiler");
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
         if (!at.masse) {
-            // Bäcker-Spec aus der EINEN Quelle (foundry-core PORTAL_RENDER_CONFIG.impostor, live über das Buch) und
-            // das Karten-Gesetz (phyto-core): Zell-Maße, Blickwinkel, Normal-Teiler teilen Studio und Welt.
+            // Zell-Maße aus der EINEN Quelle (foundry-core PORTAL_RENDER_CONFIG.impostor, live über das Buch) und das
+            // Karten-Gesetz (phyto-core): Zell-Maße, Blickwinkel, Normal- und Licht-Teiler.
             const ic = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.impostor) || null;
             if (!ic || !(ic.views > 0 && ic.cellW > 0 && ic.cellH > 0)) return null; // das Buch fehlt noch
             at.V = ic.views;
             at.cw = ic.cellW;
             at.ch = ic.cellH;
             at.nt = core.KARTEN_GESETZ.normalTeiler;
-            if (!at.fmt) at.fmt = this._impostorAtlasFormat();
-            at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt === "welt" ? "rgba8" : at.fmt);
+            if (!at.fmt) {
+                at.fmt = this._impostorAtlasFormat();
+                const r = this.state.renderer;
+                if (at.fmt !== "bc" && r && !r._isHeadlessNull)
+                    this.log(
+                        `KARTE OHNE BC (${r.backend && r.backend.isWebGPUBackend ? "WebGPU ohne texture-compression-bc" : "WebGL2"}): ` +
+                            "die Karte zeichnet unkomprimiert in ihr rgba8-Ziel (2,8 MiB je Schicht statt 0,27)",
+                        "WARN"
+                    );
+            }
+            at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt);
         }
         const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
         let cap = Math.max(8, at.cap || 0);
@@ -94,111 +107,107 @@ class AnazhRealm_stoff_instanz {
         const M = at.masse;
         const T = THREE;
         const da = !!at.map;
-        if (at.fmt === "welt") {
-            // DAS WELT-ZIEL: Albedo (sRGB) und Normale als ZWEI Schichten-Texturen EINES Array-Ziels (MRT), voll aufgelöst,
-            // die GPU zieht die Mips; die Tiefe ist eine 2D-Textur je Bake. Wachsen legt das Ziel neu an — die Schichten
-            // backen nach (`_karteWeltNeu`, die Bake-Kosten sind Millisekunden).
+        if (at.fmt === "bc") {
+            const alt = da ? this._karteGpuTexturen(at) : null;
+            const mips = (stufen) => stufen.map((s) => ({ data: new Uint8Array(s.bytes * cap), width: s.w, height: s.h }));
             if (da) {
-                at.rt.setSize(M.w, M.h, cap);
-                at.rtBereit = false;
-                const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
-                for (const z of at.zellen.values())
-                    if (z.gebacken) {
-                        z._weltNeu = true;
-                        q.push(z.key);
-                    }
-            } else {
-                at.rt = new T.RenderTarget(M.w, M.h, {
-                    depth: cap,
-                    count: 2,
-                    depthBuffer: true,
-                    generateMipmaps: true,
-                    minFilter: T.LinearMipmapLinearFilter,
-                    magFilter: T.LinearFilter,
-                    colorSpace: T.SRGBColorSpace,
-                });
-                at.map = at.rt.textures[0];
-                at.map.name = "karte-albedo:atlas";
-                at.nmap = at.rt.textures[1];
-                at.nmap.name = "karte-normal:atlas";
-                at.nmap.colorSpace = T.NoColorSpace;
-            }
-        } else if (at.fmt === "bc") {
-            const mips = (stufen, alt) =>
-                stufen.map((s, k) => {
-                    const data = new Uint8Array(s.bytes * cap);
-                    if (alt) data.set(alt[k].data);
-                    return { data, width: s.w, height: s.h };
-                });
-            const a = mips(M.a, da && at.map.mipmaps),
-                n = mips(M.n, da && at.nmap.mipmaps);
-            if (da) {
-                at.map.mipmaps = a;
+                at.map.mipmaps = mips(M.a);
                 at.map.image = { width: M.w, height: M.h, depth: cap };
-                at.nmap.mipmaps = n;
+                at.nmap.mipmaps = mips(M.n);
                 at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
+                at.lmap.image = { data: new Uint8Array(M.lBytes * cap), width: M.lw, height: M.lh, depth: cap };
             } else {
-                // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
-                at.map = new T.CompressedArrayTexture(a, M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
+                // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name).
+                at.map = new T.CompressedArrayTexture(mips(M.a), M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
                 at.map.name = "karte-albedo:atlas";
                 at.map.colorSpace = T.SRGBColorSpace;
-                at.nmap = new T.CompressedArrayTexture(n, M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
+                at.nmap = new T.CompressedArrayTexture(mips(M.n), M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
                 at.nmap.name = "karte-normal:atlas";
-                for (const t of [at.map, at.nmap]) t.generateMipmaps = false;
+                at.lmap = new T.DataArrayTexture(new Uint8Array(M.lBytes * cap), M.lw, M.lh, cap);
+                at.lmap.name = "karte-licht:atlas";
+                at.lmap.format = T.RedFormat;
             }
-        } else {
-            const dA = new Uint8Array(M.w * M.h * 4 * cap),
-                dN = new Uint8Array(M.nw * M.nh * 2 * cap);
-            if (da) {
-                dA.set(at.map.image.data);
-                dN.set(at.nmap.image.data);
-                at.map.image = { data: dA, width: M.w, height: M.h, depth: cap };
-                at.nmap.image = { data: dN, width: M.nw, height: M.nh, depth: cap };
-            } else {
-                at.map = new T.DataArrayTexture(dA, M.w, M.h, cap);
-                at.map.name = "karte-albedo:atlas";
-                at.map.colorSpace = T.SRGBColorSpace;
-                at.nmap = new T.DataArrayTexture(dN, M.nw, M.nh, cap);
-                at.nmap.name = "karte-normal:atlas";
-                at.nmap.format = T.RGFormat;
-                for (const t of [at.map, at.nmap]) t.generateMipmaps = true;
+            for (const t of [at.map, at.nmap, at.lmap]) {
+                t.generateMipmaps = false;
+                t.minFilter = t === at.lmap ? T.LinearFilter : T.LinearMipmapLinearFilter;
+                t.magFilter = T.LinearFilter;
+                t.wrapS = T.ClampToEdgeWrapping;
+                t.wrapT = T.ClampToEdgeWrapping;
+                t.anisotropy = t === at.lmap ? 1 : 4;
+                if (da) t.needsUpdate = true; // gewachsen: die neue Form, die GPU kopiert die gebackenen Schichten
             }
+            at.cap = cap;
+            if (alt) this._karteWachsen(at, alt);
+            return at;
         }
-        for (const t of [at.map, at.nmap]) {
-            t.minFilter = T.LinearMipmapLinearFilter;
-            t.magFilter = T.LinearFilter;
-            t.wrapS = T.ClampToEdgeWrapping;
-            t.wrapT = T.ClampToEdgeWrapping;
-            t.anisotropy = 4;
-            if (da && at.fmt !== "welt") t.needsUpdate = true; // gewachsen: die neue Form mit den kopierten Schichten hochladen
+        // rgba8: das Array-Ziel IST die Schicht (Albedo sRGB, Normale vormultipliziert mit der Deckung in z, Sonnen-Sicht),
+        // die GPU zieht die Mips nach der letzten Ansicht; Wachsen legt das Ziel neu an, die Schichten backen nach.
+        if (da) {
+            at.rt.setSize(M.w, M.h, cap);
+            at.rtBereit = false;
+            const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+            for (const z of at.zellen.values())
+                if (z.gebacken) {
+                    z._weltNeu = true;
+                    q.push(z.key);
+                }
+        } else {
+            at.rt = new T.RenderTarget(M.w, M.h, {
+                depth: cap,
+                count: 3,
+                depthBuffer: true,
+                generateMipmaps: true,
+                minFilter: T.LinearMipmapLinearFilter,
+                magFilter: T.LinearFilter,
+            });
+            [at.map, at.nmap, at.lmap] = at.rt.textures;
+            at.map.name = "karte-albedo:atlas";
+            at.map.colorSpace = T.SRGBColorSpace;
+            at.nmap.name = "karte-normal:atlas";
+            at.lmap.name = "karte-licht:atlas";
+            for (const t of at.rt.textures) {
+                t.wrapS = T.ClampToEdgeWrapping;
+                t.wrapT = T.ClampToEdgeWrapping;
+                t.anisotropy = 4;
+            }
         }
         at.cap = cap;
         return at;
     }
 
-    // Eine Schicht schreiben (die Stufen hintereinander, `karteMasse`): BC lädt das ganze Array neu (r184 kennt für
-    // komprimierte Arrays kein layerUpdates — 0,25 MiB je Schicht), rgba8 nur die Schicht.
-    _impostorAtlasSchreibe(at, idx, payload) {
-        const M = at.masse;
-        if (at.fmt === "bc") {
-            for (let k = 0; k < M.a.length; k++)
-                at.map.mipmaps[k].data.set(
-                    payload.albedo.subarray(M.a[k].off, M.a[k].off + M.a[k].bytes),
-                    idx * M.a[k].bytes
+    // Die GPU-Texturen der Schichten (Albedo, Normale, Sonnen-Sicht) — null, solange r184 sie nicht angelegt hat.
+    _karteGpuTexturen(at) {
+        const be = this.state.renderer && this.state.renderer.backend;
+        const g = (t) => (t && be && be.get(t) ? be.get(t).texture || null : null);
+        const out = [g(at.map), g(at.nmap), g(at.lmap)];
+        return out.every(Boolean) ? out : null;
+    }
+
+    // DAS WACHSEN AUF DER GPU: r184 legt die gewachsene Form an (`_texturAbschied` hält die alte bis nach dem Submit dieser
+    // Aufgabe), die GPU kopiert jede Stufe der alten Schichten hinein — eine gebackene Karte backt nie neu, und kein Bild
+    // fehlt ihr zwischen zwei Takten.
+    _karteWachsen(at, alt) {
+        const rend = this.state.renderer;
+        const tex = [at.map, at.nmap, at.lmap];
+        for (const t of tex) rend._textures.updateTexture(t);
+        const neu = this._karteGpuTexturen(at);
+        if (!neu) throw this._stoffBruch("die Karte: der gewachsene Atlas hat keine GPU-Form");
+        const dev = rend.backend.device;
+        const enc = dev.createCommandEncoder({ label: "karte-wachsen" });
+        for (let i = 0; i < 3; i++) {
+            const schichten = Math.min(alt[i].depthOrArrayLayers, neu[i].depthOrArrayLayers);
+            for (let k = 0; k < Math.min(alt[i].mipLevelCount, neu[i].mipLevelCount); k++)
+                enc.copyTextureToTexture(
+                    { texture: alt[i], mipLevel: k },
+                    { texture: neu[i], mipLevel: k },
+                    {
+                        width: Math.max(1, alt[i].width >> k),
+                        height: Math.max(1, alt[i].height >> k),
+                        depthOrArrayLayers: schichten,
+                    }
                 );
-            for (let k = 0; k < M.n.length; k++)
-                at.nmap.mipmaps[k].data.set(
-                    payload.normal.subarray(M.n[k].off, M.n[k].off + M.n[k].bytes),
-                    idx * M.n[k].bytes
-                );
-        } else {
-            at.map.image.data.set(payload.albedo, idx * M.aBytes);
-            at.nmap.image.data.set(payload.normal, idx * M.nBytes);
-            at.map.addLayerUpdate(idx);
-            at.nmap.addLayerUpdate(idx);
         }
-        at.map.needsUpdate = true;
-        at.nmap.needsUpdate = true;
+        dev.queue.submit([enc.finish()]);
     }
 
     // Eine neue Zelle (Schicht) im Atlas; mit echtem Renderer reiht sie ihren Bake sofort ein (nah zuerst über
@@ -213,8 +222,6 @@ class AnazhRealm_stoff_instanz {
             frame: null,
             gebacken: false,
             gescheitert: false,
-            versuche: 0,
-            vonPlatte: false,
             _bedarfD2: Infinity,
             _flat: null,
             ende: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
@@ -323,21 +330,18 @@ class AnazhRealm_stoff_instanz {
         };
     }
 
-    // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · von der Platte · Atlas-Bytes. Reist im
+    // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · Atlas-Bytes · Haupt-Faden-ms je Bake. Reist im
     // Flugschreiber-Trace (anazhRealmPerf.json) und in der Fluss-Linse; devtools: anazhRealm._impostorCensus().
     _impostorCensus() {
         const at = this._kartenAtlas;
         if (!at || at.zellen.size === 0) return null;
         let gebacken = 0,
             gescheitert = 0,
-            wartend = 0,
-            vonPlatte = 0;
+            wartend = 0;
         const gescheitertArten = [];
         for (const z of at.zellen.values()) {
-            if (z.gebacken) {
-                gebacken++;
-                if (z.vonPlatte) vonPlatte++;
-            } else if (z.gescheitert) {
+            if (z.gebacken) gebacken++;
+            else if (z.gescheitert) {
                 gescheitert++;
                 if (gescheitertArten.length < 8) gescheitertArten.push(z.key);
             } else wartend++;
@@ -348,18 +352,15 @@ class AnazhRealm_stoff_instanz {
             gebacken,
             gescheitert,
             wartend,
-            vonPlatte,
             fmt: at.fmt,
             schichten: at.cap,
-            // das Welt-Ziel: zwei rgba8-Schichten voller Größe mit Mips (4/3) je Karte
+            // bc: die Stufen der drei Schichten · rgba8: drei rgba8-Ziele voller Größe mit Mips (4/3)
             mb: !M
                 ? 0
-                : at.fmt === "welt"
-                  ? +((M.w * M.h * 4 * 2 * (4 / 3) * at.cap) / 1048576).toFixed(2)
-                  : +(((M.aBytes + M.nBytes) * at.cap) / 1048576).toFixed(2),
+                : at.fmt === "bc"
+                  ? +(((M.aBytes + M.nBytes + M.lBytes) * at.cap) / 1048576).toFixed(2)
+                  : +((M.w * M.h * 4 * 3 * (4 / 3) * at.cap) / 1048576).toFixed(2),
             weltMs: at.weltMs ? at.weltMs.slice() : null,
-            haengendeBakes: at.haengend,
-            verworfeneBakes: at.verworfen,
             gescheitertArten,
         };
     }
@@ -376,148 +377,28 @@ class AnazhRealm_stoff_instanz {
                 if (rr > maxR) maxR = rr;
             }
         }
-        // Die FORMEL lebt EINMAL in phyto-core (__phytoCore.impostorFrame, auch vom Studio-Bäcker gelesen);
-        // hier nur das Skelett-Lesen. Ohne Kern → null (kein Impostor), BEWUSST keine Formel-Kopie
-        // (Drift-Quelle; gate:constitution wacht).
+        // Die FORMEL lebt EINMAL in phyto-core (__phytoCore.impostorFrame); hier nur das Skelett-Lesen. Ohne Kern → null
+        // (kein Impostor), BEWUSST keine Formel-Kopie (Drift-Quelle; gate:constitution wacht).
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (core && typeof core.impostorFrame === "function") return core.impostorFrame(totalH, maxR);
         return null;
     }
 
-    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (JE BÄCKER-BAHN EIN Bake im Flug, K60-2; der Bäcker
-    // ist das STUDIO in seinen eigenen Fäden, `_foundryBaecker`, Kanal "bake-impostor"). Der Flug ist EINE Karte je Schlüssel
-    // (`_impostorBakeFlug`: Schlüssel → { seit, tok }); jeder Tick füllt ihn bis zur Zahl der Bäcker-Fäden
-    // (`_foundryFaedenZahl`), die nächste Karte zuerst. Bis K60-2 flog EINE Karte: Radeon kalt 17 Karten in 11 s nacheinander.
-    // Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
+    // DER KARTEN-TAKT (S2): die Karten der Schlange backen im Welt-Renderer (`_tickKarteWelt`); ist sie leer, ruht die
+    // Bühne (`_karteBuehneRuhe`). Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
     _tickImpostorBake() {
-        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
+        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return this._karteBuehneRuhe();
         const at = this._impostorAtlas();
-        if (!at) return 0;
-        if ((at.fmt || this._impostorAtlasFormat()) === "welt") return this._tickKarteWelt(at);
-        const flug = this._impostorBakeFlug || (this._impostorBakeFlug = new Map());
-        // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
-        // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (die Zelle zeichnet
-        // erst gebacken, `_foundryBuildImpostorFlat`; seit 05.10. hat ein Karten-Ding keinen Satz). Bis 04.10. war das ein Kreis: die
-        // Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die Bühne — gelöst erst vom
-        // 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
-        // BAKE-WATCHDOG: ein hängender async Bake klemmte seinen Flug-Platz → die Queue verhungerte still. Nach
-        // der Bake-Uhr (+2 s) bekommt die Zelle einen neuen Versuch (3, dann gescheitert), das Token entwertet die
-        // späte finally (sie darf den NÄCHSTEN Bake nicht löschen); ein später Erfolg darf die Schicht noch schreiben.
-        // Ein Bake-Auftrag, der beim Worker noch offen ist oder in der Schlange wartet, wartet LEGITIM (die EINE
-        // Foundry-Frist zählt nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn
-        // kein Karten-Auftrag mehr offen ist und ein Flug trotzdem klemmt. Vorher verwarf er wartende Karten nach der Uhr
-        // ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
-        if (flug.size) {
-            const fb = this._foundry;
-            let offen = !!(fb && fb.warte && fb.warte.some((a) => a.praefix === "imp"));
-            if (!offen && fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) offen = true;
-            if (!offen) {
-                const jetzt = performance.now();
-                for (const [hungKey, fl] of [...flug]) {
-                    if (jetzt - fl.seit <= AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) continue;
-                    const hung = at.zellen.get(hungKey);
-                    // V18.464 (baum-D7-Heilung): bounded Retry (3 Versuche), erst dann gescheitert.
-                    if (hung) {
-                        hung.versuche++;
-                        if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
-                        else this._karteEndet(hung, false);
-                    }
-                    this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
-                    flug.delete(hungKey);
-                    at.haengend++;
-                    this.log(
-                        `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
-                        "WARN"
-                    );
-                }
-            }
-        }
-        let gesendet = 0;
-        while (this._impostorBakeQueue.length && flug.size < this._foundryFaedenZahl()) {
-            const n = this._impostorBakeSende(at, flug);
-            if (n < 0) break;
-            gesendet += n;
-        }
-        return gesendet;
+        return at ? this._tickKarteWelt(at) : 0;
     }
 
-    // Sendet die nächste Karte der Schlange in den Flug: 1 gesendet, 0 verworfen (die Schlange lebt), −1 die Bäcker können
-    // noch nicht (kein Renderer, kein Studio, kein Format — sie wartet).
-    _impostorBakeSende(at, flug) {
-        const st = this.state;
-        // Der Impostor bäckt EAGER, ohne `_frameOverBudget`-Gate: er ERSETZT schwere L2-Geometrie durch die
-        // billige Karte (netto last-senkend) — ein Budget-Gate wäre Henne-Ei. Gedeckelt: je Bäcker-Bahn EIN Bake im Flug.
-        const rend = st.renderer;
-        if (!rend || rend._isHeadlessNull || !st.rendererReady) return -1;
-        // Ohne Foundry-Welt kein Bäcker → die Zelle fällt TERMINAL (Zensus „gescheitert", der Flatten serviert
-        // Geometrie).
-        if (!this._foundryEnabled()) {
-            const z0 = at.zellen.get(this._impostorBakeQueue.shift());
-            if (z0 && !z0.gebacken) this._karteEndet(z0, false);
-            return 0;
-        }
-        const f = this._ensureAssetFoundry();
-        if (!f || !f.ready || !f.worker) return -1; // das Studio bootet noch — die Zellen warten in der Queue
-        // Das Schicht-Format steht mit den Texturen (das Buch trägt die Zell-Maße) — vorher wartet die Queue.
-        if (!this._impostorAtlasTexturen(at)) return -1;
-        // NAH ZUERST (Lehre 16): die Karte, die der nächste wartende Baum braucht (z._bedarfD2, gestempelt in
-        // _foundryBuildImpostorFlat), statt Anfrage-Reihenfolge — Befund 30.09.: 105 von 112 Karten warteten
-        // FIFO, der Baum vor der Kamera hinter fernen Arten. Ohne Bedarf-Stempel (Streu) gilt die Reihenfolge.
-        const q = this._impostorBakeQueue;
-        let qi = 0;
-        for (let i = 1; i < q.length; i++) {
-            const zi = at.zellen.get(q[i]);
-            const zb = at.zellen.get(q[qi]);
-            if ((zi ? zi._bedarfD2 : Infinity) < (zb ? zb._bedarfD2 : Infinity)) qi = i;
-        }
-        const key = q.splice(qi, 1)[0];
-        const z = at.zellen.get(key);
-        if (!z || z.gebacken || z.gescheitert) {
-            at.verworfen++; // ein Queue-Key ohne frische Zelle ist legitim, aber nie unsichtbar
-            return 0;
-        }
-        // Der Studio-Bäcker dispatcht GENERISCH über die Manifest-Kerne (__replyBakeImpostor) — Pflanzen UND
-        // Tore (gate:baecker-kanal). Der KIND-WÄCHTER bleibt Positivliste der Bake-Kinds (impostor-Policy-
-        // Zeilen); Unbekanntes fällt studio-seitig fail-closed (payload null) → gescheitert nach 3 Versuchen.
-        const bKind = f.recipes && f.recipes[z.preset] && f.recipes[z.preset].kind;
-        if (bKind && !/^(tree|shrub|flower|grass|rock|gate|vehicle)$/.test(bKind)) {
-            this._karteEndet(z, false);
-            return 0;
-        }
-        const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
-        flug.set(key, { seit: performance.now(), tok: _tok });
-        // Seed = die Gestalt der Zelle — dieselbe wie ihre Körper-Stufen. Keine Saison: die Karte ist Golden-Sommer,
-        // das Jahr färbt der Karten-Stoff (uSeasonMul). BÄCKER-OV (V18.478): eine geprägte Zelle bäckt ihr UNIKAT. Der
-        // Auftrag reist im Rang ihres nächsten Wartenden (z._bedarfD2) durch die EINE Worker-Schlange.
-        this._foundryBakeImpostorRequest(z.preset, z.variant, z.ov || undefined, at.fmt, z._bedarfD2)
-            .then((payload) => {
-                if (!this._applyStudioImpostorPayload(z, payload))
-                    throw new Error("Studio-Bäcker ohne brauchbare Schicht für " + key);
-            })
-            .catch((e) => {
-                // V18.464 (baum-D7): bounded Retry — der Flatten serviert Geometrie, die Art heilt beim nächsten Versuch.
-                z.versuche++;
-                if (z.versuche < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(key);
-                else {
-                    this._karteEndet(z, false);
-                    this._stoffBruch(`die Karte ${key} scheiterte ${z.versuche}× — die Fernstufe bleibt Geometrie`, e);
-                }
-            })
-            .finally(() => {
-                // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Flug nicht löschen
-                const fl = flug.get(key);
-                if (fl && fl.tok === _tok) flug.delete(key);
-            });
-        return 1;
-    }
-
-    // DIE KARTE BACKT IN DER WELT (Spike S1 — Labor = Welt per Konstruktion): kein Bäcker im Worker, kein zweiter Renderer,
-    // keine Rücklese, keine Kodierung. Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt —
-    // dieselben Geometrien, dieselben Stoffe — in V Ansichten (die Gestalt gegengedreht wie im Studio-Bäcker, gleiche Zellen,
-    // gleicher Rahmen `impostorFrame`) in die Schicht des Array-Ziels; über MRT schreibt der Stoff seine Albedo
-    // (`diffuseColor`: vor jedem Licht, ohne Tonkurve) und seine Normale (Sicht-Raum der Bake-Kamera), beide vormultipliziert
-    // mit der Deckung. Je Takt EIN Budget-Fenster (`KARTE_WELT_MS`), die nächste Karte zuerst; eine Zelle, deren L1 noch
-    // reist, bestellt sie im Werk (`_foundryZug`) und wartet — die anderen backen weiter.
+    // DIE KARTE BACKT IN DER WELT (S2 — Labor = Welt per Konstruktion): kein Bäcker-Faden, kein zweiter Renderer, keine
+    // Rücklese, keine Platte. Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt — dieselben
+    // Geometrien, dieselben Stoffe — in V Ansichten (die Gestalt gegengedreht, gleiche Zellen, gleicher Rahmen
+    // `impostorFrame`); über MRT schreibt der Stoff seine Albedo (`diffuseColor`: vor jedem Licht, ohne Tonkurve), seine
+    // Normale (Sicht-Raum der Bake-Kamera) und die Sonnen-Sicht seiner Krone. Je Takt EIN Budget-Fenster (`KARTE_WELT_MS`),
+    // die nächste Karte zuerst; eine Zelle, deren L1 noch reist oder deren Programme noch kompilieren, wartet — die anderen
+    // backen weiter.
     _tickKarteWelt(at) {
         const st = this.state;
         const rend = st.renderer;
@@ -533,6 +414,7 @@ class AnazhRealm_stoff_instanz {
         }
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !this._impostorAtlasTexturen(at)) return 0;
+        if (at.fmt === "bc" && !this._karteRechner()) return 0; // die Programme der GPU-Ablage kompilieren noch
         const d2 = (k) => {
             const z = at.zellen.get(k);
             return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
@@ -547,7 +429,7 @@ class AnazhRealm_stoff_instanz {
                 continue;
             }
             if (this._karteWeltBacken(at, z) === null) {
-                i++; // die L1 reist
+                i++; // die L1 reist oder ihre Programme kompilieren
                 continue;
             }
             q.splice(i, 1);
@@ -557,33 +439,118 @@ class AnazhRealm_stoff_instanz {
         return n;
     }
 
-    // Die Bühne der Welt-Karte: EINE Szene, EINE Wurzel, EIN Satz Hüllen (Mesh je Teil, wiederverwendet), die
-    // Ortho-Kamera und der MRT-Knoten (die Namen sind die der Ziel-Texturen).
-    _karteBuehne(at) {
-        if (this._karteBuehneSatz) return this._karteBuehneSatz;
-        const T = THREE;
-        const S = T.TSL;
-        const szene = new T.Scene();
-        const wurzel = new T.Group();
-        szene.add(wurzel);
-        const mrt = S.mrt({
-            [at.map.name]: S.vec4(S.diffuseColor.rgb, 1.0),
-            // die Deckung reist in z: r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1)
-            [at.nmap.name]: S.vec4(S.normalView.xy.mul(0.5).add(0.5), 1.0, 1.0),
-        });
-        this._karteBuehneSatz = {
-            szene,
-            wurzel,
-            mrt,
-            kamera: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
-            huellen: [],
-            box: new T.Box3(),
-            farbe: new T.Color(),
-        };
-        return this._karteBuehneSatz;
+    // Die Bühne ruht: ist die Schlange leer, geben ihre Ziele und Rechen-Puffer (~8 MB VRAM) nach KARTE_BUEHNE_RUHE_MS ihren
+    // Speicher frei — die nächste Karte legt ihn neu an; Szene, MRT-Knoten und Programme bleiben (sie hängen an den
+    // Formaten, nie am Speicher).
+    _karteBuehneRuhe() {
+        const B = this._karteBuehneSatz;
+        if (!B || !B.bereit || performance.now() - B.zuletzt < AnazhRealm.KARTE_BUEHNE_RUHE_MS) return 0;
+        for (const rt of [B.ziel, B.schatten, B.leer]) if (rt && rt !== (this._kartenAtlas && this._kartenAtlas.rt)) rt.dispose();
+        if (B.rechen) for (const b of B.rechen.puffer) b.destroy();
+        B.rechen = null;
+        B.bereit = false;
+        return 0;
     }
 
-    // Eine Karte im Welt-Ziel backen: null = die L1 reist (bestellt), false = gescheitert, true = gebacken.
+    // Die Bühne der Welt-Karte: EINE Szene, EINE Wurzel, EIN Satz Hüllen (Mesh je Teil, wiederverwendet), die Ortho-Kamera
+    // der Ansichten und die der Sonne, die Ziele und der MRT-Knoten. Mit BC zeichnet die Karte in die Bühne (eine Schicht
+    // voller Größe, die GPU legt sie ab); ohne BC ist das Array-Ziel des Atlas selbst ihr Ziel. Die Sonnen-Kacheln tragen
+    // dieselben Formate und Namen — dieselben Programme.
+    _karteBuehne(at) {
+        // je Renderer EINE Bühne (ihre Ziele und Knoten gehören ihm)
+        const rend = this.state.renderer;
+        if (this._karteBuehneSatz && this._karteBuehneSatz.rend === rend) return this._karteBuehneSatz;
+        const T = THREE;
+        const S = T.TSL;
+        const SZ = AnazhRealm.KARTE_SONNEN_SICHT;
+        const K = SZ.karte;
+        const bc = at.fmt === "bc";
+        const ziel = (w, h, n) => {
+            const rt = new T.RenderTarget(w, h, {
+                count: n,
+                depthBuffer: true,
+                generateMipmaps: false,
+                minFilter: T.NearestFilter,
+                magFilter: T.NearestFilter,
+            });
+            rt.depthTexture = new T.DepthTexture(w, h);
+            rt.depthTexture.type = T.FloatType;
+            return rt;
+        };
+        const B = {
+            szene: new T.Scene(),
+            wurzel: new T.Group(),
+            kamera: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
+            licht: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
+            huellen: [],
+            box: new T.Box3(),
+            mitte: new T.Vector3(),
+            farbe: new T.Color(),
+            kompiliert: new WeakSet(),
+            kompiliere: null,
+            bereit: false,
+            zuletzt: 0,
+            rechen: null,
+            rend,
+        };
+        B.szene.add(B.wurzel);
+        B.ziel = bc ? ziel(at.masse.w, at.masse.h, 3) : at.rt;
+        if (bc) ["karte-albedo:buehne", "karte-normal:buehne", "karte-licht:buehne"].forEach((n, i) => (B.ziel.textures[i].name = n));
+        const namen = B.ziel.textures.map((t) => t.name);
+        B.schatten = ziel(K * SZ.richtungen.length, K, 3);
+        B.schatten.textures.forEach((t, i) => (t.name = namen[i]));
+        for (const rt of [B.ziel, B.schatten]) rt.textures[0].colorSpace = T.SRGBColorSpace;
+        // die Lese-Tiefe der Sonnen-Kacheln, solange sie selbst Ziel sind (eine Textur ist nie Ziel und Bindung zugleich)
+        B.leer = ziel(4, 4, 1);
+        // DIE SONNEN-SICHT DER KRONE (A7-Term, `KARTE_SONNEN_SICHT`): die Krone wirft in der Welt ihren Schatten auf sich
+        // selbst, die Karte wirft nie. Je Texel der Anteil des Richtlichts aus dem oberen Halbraum, den die eigene Krone
+        // durchlässt — N·L-gewichtet über die Richtungen, im Baum-Raum (sie drehen mit jeder Ansicht), aus den Tiefen-
+        // Kacheln derselben Krone (3×3 Abgriffe). Der Kartenstoff legt sie auf den EMPFANGENEN Schatten (`receivedShadowNode`),
+        // nie auf die Albedo: der Himmel bleibt frei wie an der Gestalt.
+        B.uBaum = S.uniform(new T.Matrix4());
+        B.uVP = SZ.richtungen.map(() => S.uniform(new T.Matrix4()));
+        B.dirs = SZ.richtungen.map(([h, a]) => {
+            const eh = (h * Math.PI) / 180,
+                ea = (a * Math.PI) / 180;
+            return new T.Vector3(Math.cos(eh) * Math.cos(ea), Math.sin(eh), Math.cos(eh) * Math.sin(ea));
+        });
+        B.tiefe = S.texture(B.leer.depthTexture);
+        const gpuKoord = this.state.renderer.coordinateSystem === T.WebGPUCoordinateSystem;
+        const sicht = S.Fn(() => {
+            const nB = S.normalize(B.uBaum.mul(S.vec4(S.normalWorld, 0.0)).xyz).toVar();
+            const pB = B.uBaum.mul(S.vec4(S.positionWorld, 1.0)).xyz.add(nB.mul(SZ.normalBias)).toVar();
+            const summe = S.float(0.0).toVar();
+            const gew = S.float(0.0).toVar();
+            B.dirs.forEach((d, j) => {
+                const nl = S.max(S.dot(nB, S.vec3(d.x, d.y, d.z)), 0.0);
+                const q = B.uVP[j].mul(S.vec4(pB, 1.0));
+                const u = q.x.mul(0.5).add(0.5);
+                const v = gpuKoord ? S.float(0.5).sub(q.y.mul(0.5)) : q.y.mul(0.5).add(0.5);
+                const ref = (gpuKoord ? q.z : q.z.mul(0.5).add(0.5)).add(SZ.bias);
+                const px = S.ivec2(
+                    S.clamp(u.mul(K).floor(), 1.0, K - 2).add(j * K),
+                    S.clamp(v.mul(K).floor(), 1.0, K - 2)
+                );
+                let vis = S.float(0.0);
+                for (let dy = -1; dy <= 1; dy++)
+                    for (let dx = -1; dx <= 1; dx++) vis = vis.add(S.step(ref, B.tiefe.load(px.add(S.ivec2(dx, dy)))));
+                summe.addAssign(vis.div(9.0).mul(nl));
+                gew.addAssign(nl);
+            });
+            return S.select(gew.greaterThan(1e-4), summe.div(gew), S.float(1.0));
+        })();
+        // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
+        B.mrt = S.mrt({
+            [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
+            [namen[1]]: S.vec4(S.normalView.xy.mul(0.5).add(0.5), 1.0, 1.0),
+            [namen[2]]: S.vec4(sicht, 1.0, 0.0, 1.0),
+        });
+        this._karteBuehneSatz = B;
+        return B;
+    }
+
+    // Eine Karte im Welt-Renderer backen: null = die L1 reist (bestellt) oder ihre Programme kompilieren, false =
+    // gescheitert, true = gebacken.
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const lod = this._foundryServierStufe(z.preset, 1);
@@ -601,17 +568,19 @@ class AnazhRealm_stoff_instanz {
         }
         const T = THREE;
         const core = globalThis.__phytoCore;
+        const SZ = AnazhRealm.KARTE_SONNEN_SICHT;
         const B = this._karteBuehne(at);
+        const bc = at.fmt === "bc";
         const t0 = performance.now();
         // die Gestalt auf die Bühne: dieselben Geometrien und Stoffe, die die Welt zeichnet
         B.wurzel.clear();
         B.wurzel.rotation.set(0, 0, 0);
         let rad2 = 0;
         let h = 0;
+        const neu = [];
         for (const c of g.children) {
             if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
-            // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie (ohne diese Wand
-            // zeichnete die schwarze Wurf-Hülle über das Laub: Eiche, Birke, Buche, Weide mit Albedo 8–16 von 255)
+            // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie
             if (c.userData && typeof c.userData.__teil === "string") continue;
             const m = B.huellen[h] || (B.huellen[h] = new T.Mesh());
             h++;
@@ -621,9 +590,38 @@ class AnazhRealm_stoff_instanz {
             m.matrix.copy(c.matrix);
             m.frustumCulled = false;
             B.wurzel.add(m);
+            if (!B.kompiliert.has(c.material)) neu.push(c.material);
             rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
         }
         B.wurzel.updateMatrixWorld(true);
+        const vor = {
+            rt: rend.getRenderTarget(),
+            face: rend.getActiveCubeFace(),
+            mip: rend.getActiveMipmapLevel(),
+            mrt: rend.getMRT(),
+            ac: rend.autoClear,
+            farbe: rend.getClearColor(B.farbe),
+            alpha: rend.getClearAlpha(),
+        };
+        // DIE PROGRAMME VOR DEM ERSTEN BAKE (compileAsync): ein Stoff, dessen Bühnen-Programm noch nicht steht, kompiliert
+        // asynchron gegen Ziel und MRT der Bühne — die Karte wartet, der Haupt-Faden nie.
+        if (neu.length) {
+            if (!B.kompiliere) {
+                rend.setRenderTarget(B.ziel);
+                rend.setMRT(B.mrt);
+                B.kompiliere = rend
+                    .compileAsync(B.szene, B.kamera)
+                    .then(
+                        () => neu.forEach((m) => B.kompiliert.add(m)),
+                        (e) => this._stoffBruch(`die Karte ${z.key}: ihre Bühnen-Programme kompilieren nicht`, e)
+                    )
+                    .finally(() => (B.kompiliere = null));
+                rend.setRenderTarget(vor.rt, vor.face, vor.mip);
+                rend.setMRT(vor.mrt);
+            }
+            B.wurzel.clear();
+            return null;
+        }
         const box = B.box.setFromObject(B.wurzel);
         const fr = core.impostorFrame(box.max.y, Math.sqrt(rad2));
         const cam = B.kamera;
@@ -649,37 +647,62 @@ class AnazhRealm_stoff_instanz {
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
-        const vor = {
-            rt: rend.getRenderTarget(),
-            face: rend.getActiveCubeFace(),
-            mip: rend.getActiveMipmapLevel(),
-            mrt: rend.getMRT(),
-            ac: rend.autoClear,
-            farbe: rend.getClearColor(B.farbe),
-            alpha: rend.getClearAlpha(),
-        };
-        if (!at.rtBereit) {
+        if (!B.bereit) {
+            for (const rt of bc ? [B.ziel, B.schatten, B.leer] : [B.schatten, B.leer]) rend.initRenderTarget(rt);
+            B.bereit = true;
+        }
+        if (!bc && !at.rtBereit) {
             rend.initRenderTarget(at.rt); // die Mip-Kette steht vor dem ersten Bake
             at.rtBereit = true;
         }
+        const K = SZ.karte;
         const V = at.V;
         const dreh = (Math.PI * 2) / V;
         try {
             rend.setMRT(B.mrt);
             rend.setClearColor(0x000000, 0);
+            // die Sonnen-Kacheln: die Krone aus jeder Richtung (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht
+            B.tiefe.value = B.leer.depthTexture;
+            const R = Math.max(fr.halfW, fr.halfH) * 1.15;
+            B.mitte.set(0, fr.halfH, 0);
+            const L = B.licht;
+            Object.assign(L, { left: -R, right: R, top: R, bottom: -R, near: 0.1, far: R * 6 });
+            L.coordinateSystem = rend.coordinateSystem;
+            for (let j = 0; j < B.dirs.length; j++) {
+                const d = B.dirs[j];
+                L.position.copy(B.mitte).addScaledVector(d, R * 3);
+                if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
+                else L.up.set(0, 1, 0);
+                L.lookAt(B.mitte);
+                L.updateMatrixWorld(true);
+                L.updateProjectionMatrix();
+                B.uVP[j].value.multiplyMatrices(L.projectionMatrix, L.matrixWorldInverse);
+                B.schatten.viewport.set(j * K, 0, K, K);
+                rend.autoClear = j === 0;
+                rend.setRenderTarget(B.schatten);
+                this._buehneRender(rend, B.szene, L, "Karten-Sonne");
+            }
+            B.tiefe.value = B.schatten.depthTexture;
             for (let v = 0; v < V; v++) {
-                // Ansicht v = die Gestalt aus Peilung v·360/V gesehen (Kamera fest, Gestalt gegengedreht — Studio-Bäcker)
+                // Ansicht v = die Gestalt aus Peilung v·360/V gesehen (Kamera fest, Gestalt gegengedreht); WebGPU zeichnet
+                // von oben — der Stoff liest gespiegelt
                 B.wurzel.rotation.y = -v * dreh;
                 B.wurzel.updateMatrixWorld(true);
-                at.rt.viewport.set(0, v * at.ch, at.cw, at.ch); // WebGPU: von oben — der Stoff liest gespiegelt
-                for (const t of at.rt.textures) t.generateMipmaps = v === V - 1; // die Mips nach der letzten Ansicht
+                B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
                 rend.autoClear = v === 0; // die erste Ansicht leert die Schicht (Farbe 0 = leer, Tiefe)
-                rend.setRenderTarget(at.rt, z.idx);
+                if (bc) {
+                    B.ziel.viewport.set(0, v * at.ch, at.cw, at.ch);
+                    rend.setRenderTarget(B.ziel);
+                } else {
+                    at.rt.viewport.set(0, v * at.ch, at.cw, at.ch);
+                    for (const t of at.rt.textures) t.generateMipmaps = v === V - 1; // die Mips nach der letzten Ansicht
+                    rend.setRenderTarget(at.rt, z.idx);
+                }
                 this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
             }
         } finally {
-            for (const t of at.rt.textures) t.generateMipmaps = true;
-            at.rt.viewport.set(0, 0, at.rt.width, at.rt.height);
+            if (!bc) for (const t of at.rt.textures) t.generateMipmaps = true;
+            for (const rt of [B.ziel, B.schatten]) rt.viewport.set(0, 0, rt.width, rt.height);
             rend.setRenderTarget(vor.rt, vor.face, vor.mip);
             rend.setMRT(vor.mrt);
             rend.autoClear = vor.ac;
@@ -690,49 +713,199 @@ class AnazhRealm_stoff_instanz {
             }
             B.wurzel.clear();
         }
-        (at.weltMs || (at.weltMs = [])).push(+(performance.now() - t0).toFixed(2));
+        if (bc) this._karteAblage(at, z.idx, B);
+        B.zuletzt = performance.now();
+        (at.weltMs || (at.weltMs = [])).push(+(B.zuletzt - t0).toFixed(2));
         z._weltNeu = false;
-        if (!z.gebacken) this._karteGebacken(z, fr, false);
+        if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
     }
 
-    // DIE SCHICHT (Transport-Schale, Karten-Codec): { cw, ch, V, nt, fmt, frame:{halfH, halfW}, albedo, normal, opak,
-    // deckung, vonPlatte } — Maße und Format gegen den Atlas (beide lesen PORTAL_RENDER_CONFIG.impostor und das
-    // Karten-Gesetz), die NICHT-LEERE-WAND (ein Bäcker-Fehler liefert maßtreue Clear-Pixel: die Karte muss
-    // ≥ KARTEN_GESETZ.minOpak opake Texel tragen, sonst verschwände das ferne Objekt — dieselbe Wand steht in der Schale
-    // vor der Platte), dann die Schicht schreiben. false → die Retry-Disziplin.
-    _applyStudioImpostorPayload(z, payload) {
-        const at = this._impostorAtlas();
-        if (!z || !payload || !at || !this._impostorAtlasTexturen(at, z.idx + 1)) return false;
+    // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) entstehen asynchron
+    // (createComputePipelineAsync) — bis sie stehen, wartet die Schlange (null).
+    _karteRechner() {
+        const dev = this.state.renderer.backend.device;
+        const R = this._karteRechnerSatz;
+        if (R && R.dev === dev) return R.bereit ? R : null; // je Gerät EIN Satz Programme
+        const S = (b, t) => Object.assign({ binding: b, visibility: GPUShaderStage.COMPUTE }, t);
+        const puffer = (b) => S(b, { buffer: { type: "storage" } });
+        const tex = (b) => S(b, { texture: { sampleType: "float" } });
+        const layout = dev.createBindGroupLayout({
+            label: "karte-rechner",
+            entries: [
+                S(0, { buffer: { type: "uniform", hasDynamicOffset: true } }),
+                tex(1),
+                tex(2),
+                tex(3),
+                ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
+            ],
+        });
+        const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
+        const satz = (this._karteRechnerSatz = { bereit: false, layout, pipes: {}, dev });
+        const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
+        const namen = ["stufe0", "summeK", "glaette", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
+        Promise.all(
+            namen.map((n) =>
+                dev
+                    .createComputePipelineAsync({ label: "karte-" + n, layout: pl, compute: { module: modul, entryPoint: n } })
+                    .then((p) => (satz.pipes[n] = p))
+            )
+        ).then(
+            () => (satz.bereit = true),
+            (e) => this._stoffBruch("die Karte: die Programme ihrer GPU-Ablage kompilieren nicht", e)
+        );
+        return null;
+    }
+
+    // DER PLAN DER ABLAGE einer Schicht (fest je Atlas-Maß: die Parameter liegen EINMAL im Uniform-Puffer, je Bake ändert
+    // sich nur die Ziel-Schicht der Kopien): Stufe 0 zählt die Deckung je Ansicht, jede tiefere Stufe summiert, glättet,
+    // wählt deckungstreu (genau so viele deckende Texel je Ansicht wie Stufe 0 deckt — das Karten-Gesetz der Mips) und
+    // kodiert BC1; die Normale mittelt als Vektor ab 1/normalTeiler und kodiert BC5; die Sonnen-Sicht mittelt über die
+    // deckenden Texel auf 1/lichtTeiler.
+    _karteRechenPlan(at) {
+        const dev = this.state.renderer.backend.device;
         const M = at.masse;
-        if (
-            payload.fmt !== at.fmt ||
-            payload.cw !== at.cw ||
-            payload.ch !== at.ch ||
-            payload.V !== at.V ||
-            payload.nt !== at.nt ||
-            !payload.albedo ||
-            payload.albedo.length !== M.aBytes ||
-            !payload.normal ||
-            payload.normal.length !== M.nBytes
-        )
-            return false;
-        if (!(payload.opak >= globalThis.__phytoCore.KARTEN_GESETZ.minOpak)) return false;
-        const fr = payload.frame;
-        if (!fr || !(Number.isFinite(fr.halfH) && fr.halfH > 0 && Number.isFinite(fr.halfW) && fr.halfW > 0))
-            return false;
-        this._impostorAtlasSchreibe(at, z.idx, payload);
-        this._karteGebacken(z, fr, payload.vonPlatte === true);
-        return true;
+        const G = globalThis.__phytoCore.KARTEN_GESETZ;
+        const V = at.V,
+            W = M.w,
+            H = M.h,
+            hA = at.ch;
+        const pad = (b) => Math.ceil(b / 256) * 256;
+        const slots = [];
+        const zuege = [];
+        const kopien = [];
+        let ausB = 0;
+        const zug = (pipe, p, x, y) => {
+            const s = new ArrayBuffer(64);
+            const u = new Uint32Array(s),
+                f = new Float32Array(s);
+            const ord = ["w", "h", "hA", "k", "quelle", "ziel", "V", "fuss", "aus", "zeile", "thr", "flag", "w0", "hA0", "gi", "t"];
+            ord.forEach((n, i) => {
+                const v = p[n] == null ? 0 : p[n];
+                if (n === "fuss" || n === "thr") f[i] = v;
+                else u[i] = v;
+            });
+            slots.push(u);
+            zuege.push({ pipe, slot: slots.length - 1, x: Math.max(1, x), y: Math.max(1, y || 1) });
+        };
+        const ablage = (tex, mip, w, h, blockB, vonW) => {
+            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; r8: 4 Texel je Wort) — die Zeile auf 256 B gepolstert
+            const zeileB = pad((w / 4) * blockB);
+            const zeilen = tex === 2 ? h : h / 4;
+            const off = ausB;
+            ausB += pad(zeileB * zeilen);
+            kopien.push({ tex, mip, off, zeileB, zeilen, w, h });
+            return { aus: off / 4, zeile: zeileB / 4, vonW };
+        };
+        const base = { V, thr: G.schwelle, w0: W, hA0: hA };
+        zug("stufe0", Object.assign({}, base, { w: W, h: H, hA }), Math.ceil(W / 16), Math.ceil(H / 16));
+        // Albedo: Stufe 0 binär, k ≥ 1 deckungstreu
+        let so = 0;
+        let quelle = 0;
+        for (let k = 0; k < M.a.length; k++) {
+            const wk = W >> k,
+                hk = H >> k,
+                hAk = hA >> k,
+                fuss = 1 << (2 * k);
+            let flag = 0;
+            if (k > 0) {
+                zug("summeK", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, quelle, ziel: so, fuss }), Math.ceil(wk / 16), Math.ceil(hk / 16));
+                const gaenge = k <= G.glaetteBis ? G.glaette : 1;
+                for (let gg = 0; gg < gaenge; gg++)
+                    zug("glaette", Object.assign({}, base, { w: wk, h: hk, hA: hAk, flag: gg & 1 }), Math.ceil(wk / 16), Math.ceil(hk / 16));
+                flag = gaenge & 1;
+                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V }), V, 1);
+            }
+            const a = ablage(0, k, wk, hk, 8);
+            zug("bc1", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V, aus: a.aus, zeile: a.zeile }), Math.ceil(wk / 32), Math.ceil(hk / 32));
+            if (k > 0) {
+                quelle = so;
+                so += wk * hk;
+            }
+        }
+        const summeN = Math.max(1, so);
+        // Normale: Stufe j der Welt = Stufe j+1 der vollen Bühne
+        let no = 0;
+        let nq = 0;
+        for (let j = 0; j < M.n.length; j++) {
+            const wj = M.nw >> j,
+                hj = M.nh >> j;
+            zug("normalK", Object.assign({}, base, { w: wj, h: hj, k: j + 1, quelle: nq, ziel: no }), Math.ceil(wj / 16), Math.ceil(hj / 16));
+            const a = ablage(1, j, wj, hj, 16);
+            zug("bc5", Object.assign({}, base, { w: wj, h: hj, ziel: no, aus: a.aus, zeile: a.zeile }), Math.ceil(wj / 32), Math.ceil(hj / 32));
+            nq = no;
+            no += wj * hj;
+        }
+        // Sonnen-Sicht: r8, eine Stufe
+        const l = ablage(2, 0, M.lw, M.lh, 4);
+        zug("sicht", Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }), Math.ceil((M.lw * M.lh) / 4 / 64), 1);
+        const U = GPUBufferUsage;
+        const mk = (label, size, usage) => dev.createBuffer({ label: "karte-" + label, size: Math.max(16, size), usage });
+        const P = {
+            param: mk("param", slots.length * 256, U.UNIFORM | U.COPY_DST),
+            summe: mk("summe", summeN * 16, U.STORAGE),
+            nsum: mk("nsum", no * 16, U.STORAGE),
+            dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
+            dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
+            zahl: mk("zahl", (V + 2) * 4, U.STORAGE | U.COPY_DST),
+            grenze: mk("grenze", M.a.length * V * 4, U.STORAGE),
+            aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
+        };
+        const roh = new Uint8Array(slots.length * 256);
+        slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
+        dev.queue.writeBuffer(P.param, 0, roh);
+        return { P, puffer: Object.values(P), zuege, kopien, gruppe: null, quellen: null };
     }
 
-    // DIE KARTE STEHT — der EINE Ausgang jedes Bakes (Studio-Bäcker und Welt-Ziel): Rahmen, Ende der Zusage, die wartenden
-    // Regionen und Bau-Takte wecken.
-    _karteGebacken(z, fr, vonPlatte) {
+    // DIE ABLAGE: die GPU zieht aus der Bühne die Stufen der Schicht und kodiert sie, die Kopien legen sie in die Schicht
+    // `idx` der Atlas-Texturen — keine Rücklese, kein Byte über den Haupt-Faden.
+    _karteAblage(at, idx, B) {
+        const rend = this.state.renderer;
+        const dev = rend.backend.device;
+        const R = this._karteRechner();
+        const plan = B.rechen || (B.rechen = this._karteRechenPlan(at));
+        const be = rend.backend;
+        const quellen = B.ziel.textures.map((t) => be.get(t).texture);
+        if (!plan.gruppe || plan.quellen.some((q, i) => q !== quellen[i])) {
+            const P = plan.P;
+            plan.quellen = quellen;
+            plan.gruppe = dev.createBindGroup({
+                label: "karte-rechner",
+                layout: R.layout,
+                entries: [
+                    { binding: 0, resource: { buffer: P.param, size: 64 } },
+                    ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
+                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus"].map((n, i) => ({ binding: 4 + i, resource: { buffer: P[n] } })),
+                ],
+            });
+        }
+        // die Schichten bekommen ihre GPU-Form vor der ersten Ablage (gezeichnet wird eine Karte erst gebacken)
+        if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
+        const ziele = this._karteGpuTexturen(at);
+        if (!ziele) throw this._stoffBruch("die Karte: der Atlas hat keine GPU-Form für die Ablage");
+        const enc = dev.createCommandEncoder({ label: "karte-ablage" });
+        enc.clearBuffer(plan.P.zahl);
+        const pass = enc.beginComputePass({ label: "karte-ablage" });
+        for (const z of plan.zuege) {
+            pass.setPipeline(R.pipes[z.pipe]);
+            pass.setBindGroup(0, plan.gruppe, [z.slot * 256]);
+            pass.dispatchWorkgroups(z.x, z.y);
+        }
+        pass.end();
+        for (const k of plan.kopien)
+            enc.copyBufferToTexture(
+                { buffer: plan.P.aus, offset: k.off, bytesPerRow: k.zeileB, rowsPerImage: k.zeilen },
+                { texture: ziele[k.tex], mipLevel: k.mip, origin: { x: 0, y: 0, z: idx } },
+                { width: k.w, height: k.h, depthOrArrayLayers: 1 }
+            );
+        dev.queue.submit([enc.finish()]);
+    }
+
+    // DIE KARTE STEHT — der EINE Ausgang jedes Bakes: Rahmen, Ende der Zusage, die wartenden Regionen und Bau-Takte wecken.
+    _karteGebacken(z, fr) {
         // RAHMEN-EINHEIT: das Quad nimmt DENSELBEN Rahmen wie die Bake-Kamera (halfH = 1,02·maxY/2, halfW radial) —
         // keine Wurzel-Höhe mehr (bis V18.528 stand das Quad auf max(0,5, maxY − minY): vertikal verzerrt).
         if (!z.rahmenFest) z.frame = { halfH: fr.halfH, halfW: fr.halfW };
-        z.vonPlatte = vonPlatte;
         this._karteEndet(z, true);
         // Die Karte ist gebacken → aufgeschobene Streu-Regionen neu streamen, wie bei jeder Asset-Ankunft: ein Baum-Platz,
         // dessen Nah-Stufe fehlt, wartet auf die gebackene Karte (`_foundryFlattenFor` Stufe 2 liefert vorher false). Ohne
@@ -2866,7 +3039,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_instanz]);
 // (der Flatten serviert Geometrie). Der Tick-Watchdog greift 2 s später (ein Versprechen, das nie abschließt). Befund
 // 30.09.: eine zweite, engere Uhr (15 s) gab Bakes auf, während der SERIELLE Worker noch rechnete, und schob den
 // nächsten nach — auf langsamem Holz eine Kaskade (7 hängend, 3 gescheitert, 0 gebacken; die schweren nahen Arten zuerst).
-AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 45000;
 // W6 — DIE EINE Karten-Gruppe: jede Impostor-Instanz jeder Art (Streu, gesetzt, Band-Partner) zeichnet in DIESER
 // globalen Gruppe (`_archInstanceGroupFor`), die Schicht wählt aKarte.x (`_impostorAtlas`).
 AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
@@ -2887,3 +3059,369 @@ AnazhRealm._studioPlatzKern = function () {
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;
+// Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
+AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
+// DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): Richtlichter aus dem oberen Halbraum als (Höhe, Azimut) in Grad, je
+// gleich stark; die Tiefen-Kachel je Richtung (px) und ihr Versatz (Tiefe, Normale in m) gegen die Selbst-Verschattung.
+AnazhRealm.KARTE_SONNEN_SICHT = Object.freeze({
+    richtungen: Object.freeze([
+        [90, 0],
+        [45, 0],
+        [45, 90],
+        [45, 180],
+        [45, 270],
+    ]),
+    karte: 256,
+    bias: -0.0005,
+    normalBias: 0.04,
+});
+// DER RECHNER DER ABLAGE (`_karteRechenPlan`): Deckung, deckungstreue Mips, BC1, BC5 und die Sonnen-Sicht einer Schicht.
+AnazhRealm.KARTE_RECHNER_WGSL = `
+struct P {
+    w: u32, h: u32, hA: u32, k: u32,
+    quelle: u32, ziel: u32, V: u32, fuss: f32,
+    aus: u32, zeile: u32, thr: f32, flag: u32,
+    w0: u32, hA0: u32, gi: u32, t: u32,
+};
+@group(0) @binding(0) var<uniform> p: P;
+@group(0) @binding(1) var tAlb: texture_2d<f32>;
+@group(0) @binding(2) var tNrm: texture_2d<f32>;
+@group(0) @binding(3) var tSicht: texture_2d<f32>;
+@group(0) @binding(4) var<storage, read_write> summe: array<vec4<f32>>;
+@group(0) @binding(5) var<storage, read_write> nsum: array<vec4<f32>>;
+@group(0) @binding(6) var<storage, read_write> dA: array<f32>;
+@group(0) @binding(7) var<storage, read_write> dB: array<f32>;
+@group(0) @binding(8) var<storage, read_write> zahl: array<atomic<u32>>;
+@group(0) @binding(9) var<storage, read_write> grenze: array<f32>;
+@group(0) @binding(10) var<storage, read_write> aus: array<u32>;
+
+fn deckt(x: u32, y: u32) -> bool {
+    return textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).a >= p.thr;
+}
+
+// Stufe 0: die Deckung je Ansicht und die Sonnen-Sicht über die deckenden Texel (zahl: [0, V) Deckung, V Summe, V+1 Zahl)
+@compute @workgroup_size(16, 16)
+fn stufe0(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    if (!deckt(g.x, g.y)) { return; }
+    atomicAdd(&zahl[g.y / p.hA], 1u);
+    let s = textureLoad(tSicht, vec2<i32>(g.xy), 0).r;
+    atomicAdd(&zahl[p.V], u32(round(clamp(s, 0.0, 1.0) * 255.0)));
+    atomicAdd(&zahl[p.V + 1u], 1u);
+}
+
+// Stufe k aus k-1: die Summe (r·a, g·a, b·a, a) der vier Kinder — a zählt die deckenden Stufe-0-Texel des Fußabdrucks;
+// die Stufe 1 liest die Bühne selbst (Stufe 0 binär an der Schwelle)
+@compute @workgroup_size(16, 16)
+fn summeK(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    var s = vec4<f32>(0.0);
+    if (p.k == 1u) {
+        for (var j = 0u; j < 4u; j++) {
+            let x = g.x * 2u + (j & 1u);
+            let y = g.y * 2u + (j >> 1u);
+            if (deckt(x, y)) { s += vec4<f32>(textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).rgb, 1.0); }
+        }
+    } else {
+        let wq = p.w * 2u;
+        let q = p.quelle + (g.y * 2u) * wq + g.x * 2u;
+        s = summe[q] + summe[q + 1u] + summe[q + wq] + summe[q + wq + 1u];
+    }
+    let i = g.y * p.w + g.x;
+    summe[p.ziel + i] = s;
+    dA[i] = s.a / p.fuss;
+}
+
+// Die Glättung der Deckung (Karten-Gesetz „glaette"): binomial 3×3 in der eigenen Ansicht, flag 0 A→B, 1 B→A
+fn dLies(i: u32, ausB: bool) -> f32 {
+    if (ausB) { return dB[i]; }
+    return dA[i];
+}
+@compute @workgroup_size(16, 16)
+fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    let y0 = (g.y / p.hA) * p.hA;
+    let iy = i32(g.y - y0);
+    var nb = 0.0;
+    for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+            let x = u32(clamp(i32(g.x) + dx, 0, i32(p.w) - 1));
+            let y = y0 + u32(clamp(iy + dy, 0, i32(p.hA) - 1));
+            let gw = select(2.0, 1.0, dx != 0) * select(2.0, 1.0, dy != 0);
+            nb += dLies(y * p.w + x, p.flag == 1u) * gw;
+        }
+    }
+    let o = g.y * p.w + g.x;
+    if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
+}
+
+// Der Schlüssel eines Texels der Stufe: die geglättete Deckung (+ die eigene als Gleichstand), 0 ohne eigene Deckung
+fn schluessel(i: u32) -> f32 {
+    let s = summe[p.ziel + i].a;
+    if (s <= 0.0) { return 0.0; }
+    return select(dA[i], dB[i], p.flag == 1u) + 1e-6 * s / p.fuss;
+}
+
+// DIE DECKUNGSTREUE WAHL je Ansicht: genau M = min(positiv, round(Deckung₀ · nA)) Texel decken — die Grenze ist der
+// M-größte Schlüssel (Halbierung über die Bits nicht-negativer Zahlen: exakt, 31 Schritte)
+var<workgroup> wz: atomic<u32>;
+var<workgroup> wc: u32;
+@compute @workgroup_size(256)
+fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+    let v = wg.x;
+    let nA = p.w * p.hA;
+    let basis = v * nA;
+    if (li == 0u) { atomicStore(&wz, 0u); }
+    workgroupBarrier();
+    var n = 0u;
+    for (var i = li; i < nA; i += 256u) {
+        if (schluessel(basis + i) > 0.0) { n++; }
+    }
+    atomicAdd(&wz, n);
+    workgroupBarrier();
+    if (li == 0u) {
+        let deck0 = f32(atomicLoad(&zahl[v])) / f32(p.w0 * p.hA0);
+        wc = min(atomicLoad(&wz), u32(round(deck0 * f32(nA))));
+    }
+    let M = workgroupUniformLoad(&wc);
+    if (M == 0u) {
+        if (li == 0u) { grenze[p.gi + v] = 3.0e38; }
+        return;
+    }
+    var lo = 0u;
+    var hi = 0x7f800000u;
+    loop {
+        if (hi - lo <= 1u) { break; }
+        let mid = lo + (hi - lo) / 2u;
+        let t = bitcast<f32>(mid);
+        workgroupBarrier();
+        if (li == 0u) { atomicStore(&wz, 0u); }
+        workgroupBarrier();
+        var c = 0u;
+        for (var i = li; i < nA; i += 256u) {
+            if (schluessel(basis + i) >= t) { c++; }
+        }
+        atomicAdd(&wz, c);
+        workgroupBarrier();
+        if (li == 0u) { wc = atomicLoad(&wz); }
+        let zahlT = workgroupUniformLoad(&wc);
+        if (zahlT >= M) { lo = mid; } else { hi = mid; }
+    }
+    if (li == 0u) { grenze[p.gi + v] = bitcast<f32>(lo); }
+}
+
+fn srgb(x: f32) -> f32 {
+    if (x <= 0.0031308) { return 12.92 * x; }
+    return 1.055 * pow(x, 1.0 / 2.4) - 0.055;
+}
+fn q565(c: vec3<f32>) -> u32 {
+    let q = vec3<u32>(round(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)) * vec3<f32>(31.0, 63.0, 31.0)));
+    return (q.x << 11u) | (q.y << 5u) | q.z;
+}
+fn e565(c: u32) -> vec3<f32> {
+    let r = (c >> 11u) & 31u;
+    let g = (c >> 5u) & 63u;
+    let b = c & 31u;
+    return vec3<f32>(f32((r << 3u) | (r >> 2u)), f32((g << 2u) | (g >> 4u)), f32((b << 3u) | (b >> 2u))) / 255.0;
+}
+
+// BC1 einer Stufe (vormultipliziert, binär: ein Block mit Lücke fährt den 3-Farben-Modus, Index 3 = transparent
+// schwarz); die Endpunkte auf der Hauptachse der deckenden Farben (Potenz-Iteration), die Farbe sRGB wie die Schicht
+@compute @workgroup_size(8, 8)
+fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w / 4u || g.y >= p.h / 4u) { return; }
+    var col: array<vec3<f32>, 16>;
+    var ok: array<bool, 16>;
+    var n = 0u;
+    var mitte = vec3<f32>(0.0);
+    let gr = grenze[p.gi + (g.y * 4u) / p.hA];
+    for (var t = 0u; t < 16u; t++) {
+        let x = g.x * 4u + (t & 3u);
+        let y = g.y * 4u + (t >> 2u);
+        var o = false;
+        var c = vec3<f32>(0.0);
+        if (p.k == 0u) {
+            o = deckt(x, y);
+            if (o) { c = textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).rgb; }
+        } else {
+            let i = y * p.w + x;
+            let s = summe[p.ziel + i];
+            o = s.a > 0.0 && schluessel(i) >= gr;
+            if (o) { c = s.rgb / s.a; }
+        }
+        ok[t] = o;
+        if (o) {
+            col[t] = vec3<f32>(srgb(c.r), srgb(c.g), srgb(c.b));
+            mitte += col[t];
+            n++;
+        }
+    }
+    let o2 = p.aus + g.y * p.zeile + g.x * 2u;
+    if (n == 0u) {
+        aus[o2] = 0u;
+        aus[o2 + 1u] = 0xffffffffu;
+        return;
+    }
+    mitte /= f32(n);
+    var c00 = 0.0; var c01 = 0.0; var c02 = 0.0; var c11 = 0.0; var c12 = 0.0; var c22 = 0.0;
+    for (var t = 0u; t < 16u; t++) {
+        if (!ok[t]) { continue; }
+        let d = col[t] - mitte;
+        c00 += d.x * d.x; c01 += d.x * d.y; c02 += d.x * d.z;
+        c11 += d.y * d.y; c12 += d.y * d.z; c22 += d.z * d.z;
+    }
+    let C = mat3x3<f32>(vec3<f32>(c00, c01, c02), vec3<f32>(c01, c11, c12), vec3<f32>(c02, c12, c22));
+    var ax = vec3<f32>(0.577, 0.577, 0.577);
+    for (var it = 0; it < 8; it++) {
+        let a2 = C * ax;
+        let l = length(a2);
+        if (l < 1e-9) { break; }
+        ax = a2 / l;
+    }
+    var tmin = 1e9;
+    var tmax = -1e9;
+    for (var t = 0u; t < 16u; t++) {
+        if (!ok[t]) { continue; }
+        let d = dot(col[t] - mitte, ax);
+        tmin = min(tmin, d);
+        tmax = max(tmax, d);
+    }
+    var c0 = q565(mitte + ax * tmax);
+    var c1 = q565(mitte + ax * tmin);
+    let luecke = n < 16u;
+    if ((luecke && c0 > c1) || (!luecke && c0 < c1)) {
+        let s = c0;
+        c0 = c1;
+        c1 = s;
+    }
+    let p0 = e565(c0);
+    let p1 = e565(c1);
+    var pal: array<vec3<f32>, 4>;
+    pal[0] = p0;
+    pal[1] = p1;
+    var np = 3u;
+    if (c0 > c1) {
+        pal[2] = (2.0 * p0 + p1) / 3.0;
+        pal[3] = (p0 + 2.0 * p1) / 3.0;
+        np = 4u;
+    } else {
+        pal[2] = (p0 + p1) * 0.5;
+    }
+    var bits = 0u;
+    for (var t = 0u; t < 16u; t++) {
+        var idx = 3u;
+        if (ok[t]) {
+            var best = 1e9;
+            for (var j = 0u; j < np; j++) {
+                let d = col[t] - pal[j];
+                let e = dot(d, d);
+                if (e < best) { best = e; idx = j; }
+            }
+        }
+        bits |= idx << (2u * t);
+    }
+    aus[o2] = c0 | (c1 << 16u);
+    aus[o2 + 1u] = bits;
+}
+
+// Die Normale: die volle Bühne um eine Stufe gemittelt (Karten-Gesetz „normalTeiler" 2), ein leerer Texel trägt (0, 0, 1)
+fn nDek(x: u32, y: u32) -> vec3<f32> {
+    if (!deckt(x, y)) { return vec3<f32>(0.0, 0.0, 1.0); }
+    let n = textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0).xy * 2.0 - 1.0;
+    return vec3<f32>(n, sqrt(max(0.0, 1.0 - dot(n, n))));
+}
+@compute @workgroup_size(16, 16)
+fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    var s = vec3<f32>(0.0);
+    if (p.k == 1u) {
+        s = nDek(g.x * 2u, g.y * 2u) + nDek(g.x * 2u + 1u, g.y * 2u) + nDek(g.x * 2u, g.y * 2u + 1u) +
+            nDek(g.x * 2u + 1u, g.y * 2u + 1u);
+    } else {
+        let wq = p.w * 2u;
+        let q = p.quelle + (g.y * 2u) * wq + g.x * 2u;
+        s = nsum[q].xyz + nsum[q + 1u].xyz + nsum[q + wq].xyz + nsum[q + wq + 1u].xyz;
+    }
+    let l = length(s);
+    nsum[p.ziel + g.y * p.w + g.x] = vec4<f32>(select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-9), 0.0);
+}
+
+// BC4 eines Kanals (0..1): Endpunkte min/max im 8-Werte-Modus, der nächste Schritt je Texel
+fn bc4(w: array<f32, 16>) -> vec2<u32> {
+    var mn = 1.0;
+    var mx = 0.0;
+    for (var t = 0u; t < 16u; t++) {
+        mn = min(mn, w[t]);
+        mx = max(mx, w[t]);
+    }
+    let e0 = u32(round(clamp(mx, 0.0, 1.0) * 255.0));
+    let e1 = u32(round(clamp(mn, 0.0, 1.0) * 255.0));
+    var lo = 0u;
+    var hi = 0u;
+    if (e0 > e1) {
+        for (var t = 0u; t < 16u; t++) {
+            let f = clamp((f32(e0) - w[t] * 255.0) / f32(e0 - e1) * 7.0, 0.0, 7.0);
+            let st = u32(round(f));
+            var idx = st + 1u;
+            if (st == 0u) { idx = 0u; } else if (st == 7u) { idx = 1u; }
+            let b = 3u * t;
+            if (b + 3u <= 32u) { lo |= idx << b; } else if (b >= 32u) { hi |= idx << (b - 32u); } else {
+                lo |= (idx & 3u) << 30u;
+                hi |= idx >> 2u;
+            }
+        }
+    }
+    return vec2<u32>(e0 | (e1 << 8u) | ((lo & 0xffffu) << 16u), (lo >> 16u) | (hi << 16u));
+}
+@compute @workgroup_size(8, 8)
+fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w / 4u || g.y >= p.h / 4u) { return; }
+    var rx: array<f32, 16>;
+    var ry: array<f32, 16>;
+    for (var t = 0u; t < 16u; t++) {
+        let n = nsum[p.ziel + (g.y * 4u + (t >> 2u)) * p.w + g.x * 4u + (t & 3u)].xy * 0.5 + 0.5;
+        rx[t] = n.x;
+        ry[t] = n.y;
+    }
+    let a = bc4(rx);
+    let b = bc4(ry);
+    let o = p.aus + g.y * p.zeile + g.x * 4u;
+    aus[o] = a.x;
+    aus[o + 1u] = a.y;
+    aus[o + 2u] = b.x;
+    aus[o + 3u] = b.y;
+}
+
+// Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne
+// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); 4 Texel je Wort
+@compute @workgroup_size(64)
+fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
+    let je = p.w / 4u;
+    let y = g.x / je;
+    if (y >= p.h) { return; }
+    let wx = g.x - y * je;
+    let zz = atomicLoad(&zahl[p.V + 1u]);
+    var mittel = 1.0;
+    if (zz > 0u) { mittel = f32(atomicLoad(&zahl[p.V])) / f32(zz) / 255.0; }
+    var wort = 0u;
+    for (var j = 0u; j < 4u; j++) {
+        let x = wx * 4u + j;
+        var s = 0.0;
+        var n = 0.0;
+        for (var dy = 0u; dy < p.t; dy++) {
+            for (var dx = 0u; dx < p.t; dx++) {
+                let sx = x * p.t + dx;
+                let sy = y * p.t + dy;
+                if (deckt(sx, sy)) {
+                    s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0).r;
+                    n += 1.0;
+                }
+            }
+        }
+        var wert = mittel;
+        if (n > 0.0) { wert = s / n; }
+        wort |= u32(round(clamp(wert, 0.0, 1.0) * 255.0)) << (8u * j);
+    }
+    aus[p.aus + y * p.zeile + wx] = wort;
+}
+`;

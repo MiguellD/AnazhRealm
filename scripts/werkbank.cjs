@@ -454,10 +454,7 @@ function lauf(k) {
                         (f && f.warte ? f.warte.length : 0) +
                         (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0),
                     karten:
-                        (r._impostorBakeQueue || []).length +
-                        (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0) +
-                        (z.wartend || 0) +
-                        (z.haengendeBakes || 0),
+                        (r._impostorBakeQueue || []).length + (z.wartend || 0),
                     meshOffen: offen,
                 };
             };

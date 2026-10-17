@@ -1164,8 +1164,8 @@ class AnazhRealm_dirigent_takt {
         this._tickPendingVegSpawns(4);
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
-        // DER KARTEN-BÄCKER (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker, die Platte liefert gebackene
-        // Karten sofort; lazy beim ersten L2-Bedarf enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
+        // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf
+        // enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
         // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
         // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).

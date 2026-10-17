@@ -54,7 +54,7 @@ law(
 );
 
 // GESETZ 3 (P5 → BÄCKER-VEREINIGUNG) — DER STUDIO-BÄCKER IST DIE FERNSTUFE: der Stamm konsumiert
-// den Kanal "bake-impostor" (phytogenesis `__replyBakeImpostor`), der Welt-RTT-Nachbau ist
+// den Welt-Renderer (S2, `_karteWeltBacken`), der alte Welt-RTT-Nachbau ist
 // GESCHNITTEN (kein zweiter Bäcker); kein GL-Bake-iframe.
 console.log("\nGesetz 3 — der Studio-Bäcker ist die Fernstufe (kein Nachbau, kein Bake-iframe):");
 law(

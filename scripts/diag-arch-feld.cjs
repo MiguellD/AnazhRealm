@@ -222,10 +222,11 @@ function schlangenGesetz(src) {
         const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
-        const gesehen = new Set(r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []);
+        const gebackene = () => (r._kartenAtlas ? [...r._kartenAtlas.zellen].filter(([, z]) => z.gebacken).map(([k]) => k) : []);
+        const gesehen = new Set(gebackene());
         const buche = (t) => {
             const at = r._kartenAtlas;
-            for (const k of r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []) {
+            for (const k of gebackene()) {
                 if (!at || gesehen.has(k)) continue;
                 gesehen.add(k);
                 const zF = at.zellen.get(zelleF);
@@ -347,15 +348,10 @@ function schlangenGesetz(src) {
             zB: zustand(eb),
             zH: zustand(eh),
             taktFehler: { n: taktFehlerN, erster: taktFehler1 },
-            // Die Fäden: was im Werk und was im Bäcker offen ist (ein Karten-Bake im Werk hielt bis 05.10. jede nahe
-            // Geometrie hinter sich — der Täter, wenn A rot wird).
+            // Die Fäden: was im Werk offen ist (ein Karten-Bake im Werk hielt bis 05.10. jede nahe Geometrie hinter sich —
+            // seit S2 backt die Karte im Welt-Renderer).
             werk: {
                 offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
-                imBaecker:
-                    r._foundry && r._foundry.pending
-                        ? [...r._foundry.pending.keys()].filter((k) => r._foundryBahn(k) === "baecker").length
-                        : null,
-                baeckerBereit: !!(r._foundry && r._foundry.baeckerBereit),
                 angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,
                 stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
             },

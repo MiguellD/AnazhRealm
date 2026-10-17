@@ -137,7 +137,7 @@ if (require.main === module) (async () => {
         // unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur für
         // das Screenshot-Artefakt).
         art: REAL_RENDERER ? "webgl" : "null",
-        // GPU-frei entsteht kein WebGL-Kontext: der Offscreen-Bäcker der Foundry (foundry-bruecke `__foundryBakeRenderer`)
+        // GPU-frei entsteht kein WebGL-Kontext: der Offscreen-Bäcker der Foundry (bis S2 foundry-bruecke `__foundryBakeRenderer`)
         // schließt dann zu (null) — r128 meldet das mit drei console.error, erwartet und beim Namen.
         erwartet: REAL_RENDERER
             ? null
