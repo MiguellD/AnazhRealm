@@ -1137,9 +1137,16 @@ class AnazhRealm_bild_sicht {
         const flowDir = aFlowV.div(flowMag.max(float(0.0001)));
         // Kräusel-Amplitude = Floor 0.3 + weite aDepth-Rampe (0.4→4.0 m): aDepth springt an Bett-Nähten
         // minimal — eine harte Rampe machte daraus eine sichtbare Linie. Shader-only.
+        // DAS STILLE WASSER STEHT (A12): die Wind-Zeile des Gesetzes trennt, was die Fläche bewegt — den Grund-Anteil w0
+        // trägt die STRÖMUNG (der Fluss wirbelt auch ohne Wind, flowMix), den Anteil w1 · Wind der Wind über jedem Wasser;
+        // der See ohne Strömung kräuselt nur im Wind (Wind 0: ein Spiegel). Bis A12 kräuselte er mit w0 + w1 · Wind auch
+        // in der Flaute: an der Tafel (Wind 0,06) bis ±0,75 m Hub auf 14 m Welle — der Fresnel des streifenden Blicks
+        // (1–5°) sprang mit Neigung und Hub je Pixel und zerlegte das Spiegelbild in dunkle Flecken (spiegelTreue Ego
+        // 0,463 → 0,563, Third 0,545 → 0,563). Die Hülle `_wasserHubM` (w0 + w1) bleibt die Decke.
+        const kraeuselWind = float(WG.wind[0]).mul(flowMix).add(uWind.mul(WG.wind[1]));
         const rippleAmt = uLakeRipple
             .mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))))
-            .mul(windF);
+            .mul(kraeuselWind);
         // EINE Displace-Quelle (Ozean-Gerstner + organische Kräuselung) für alle 3 Normal-Samples.
         const surfDisp = Fn(([xz]) => {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
@@ -3456,7 +3463,8 @@ AnazhRealm.SPIEGEL = Object.freeze({
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
 // Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`), beides × die
-// Wind-Zeile des Gesetzes (w0 + w1 · Wind). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
+// Wind-Zeile des Gesetzes (w0 + w1 · Wind; das Kräuseln trägt w0 nur, soweit das Wasser strömt — der stille See kräuselt
+// allein im Wind, A12). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
 // (4,42 m im Sturm; ohne den Wind rechnete er 2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt ihn (vorher nur der
 // Saum 2 m: am Bildrand fehlte ein gehobenes Viertel), das Wasser des Fern-Rings liegt darunter (`_fernRingWasserTiefe`).
 // Die Fluss-Phase `phase` (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
