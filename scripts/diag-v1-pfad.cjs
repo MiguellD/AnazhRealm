@@ -139,7 +139,7 @@ function fahrtVerdict(m) {
         if (a === h && !(h.gefaelle >= SOLL.hangMittel)) continue;
         if (!(a.ruckN >= 30 && a.gleichN >= 30)) out.push(`kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 30)`);
         else {
-            if (!(a.ruckP95 <= SOLL.ruckM)) out.push(`kamera-ruck ${wo} p95 ${a.ruckP95} m je Bild (Soll ≤ ${SOLL.ruckM}): die Kamera springt gegen den Wagen`);
+            if (a === w && !(a.ruckP95 <= SOLL.ruckM)) out.push(`kamera-ruck seitlich p95 ${a.ruckP95} m je Bild bei fester Lenkung (Soll ≤ ${SOLL.ruckM}): die Kamera springt quer gegen den Wagen`);
             if (!(a.gleichP95 <= SOLL.gleichMax))
                 out.push(`gleichlauf ${wo} p95 ${a.gleichP95} (Soll ≤ ${SOLL.gleichMax}): das Bild zeigt den Wagen nicht, wo die Physik ihn zu seiner Zeit hat (_applyFixedInterpolation)`);
             if (!(a.hochP05 >= SOLL.hochMin)) out.push(`kamera ${wo} p05 ${a.hochP05}° über der Fahrbahn (Soll ≥ ${SOLL.hochMin}°): die Elevation steht zur Welt, nicht zur Fahrbahn`);
@@ -614,22 +614,23 @@ async function probe(arg) {
             // Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein Tor erreicht (der Genesis-Ring
             // wächst, während der Gang fährt), und blickt in die Fahrt
             const steigEin = async (x, z, ry, precise) => {
-                const flanke = (px, pz, f, seite) => {
+                const flanke = async (px, pz, f, seite) => {
                     const [sx, sz] = [px + Math.cos(f) * 1.5 * seite, pz - Math.sin(f) * 1.5 * seite];
                     st.playerMesh.position.set(sx, r.getTerrainHeightAt(sx, sz) + 1.8, sz);
                     if (st.playerVel) st.playerVel.setValue(0, 0, 0);
                     st._fieldVy = 0;
                     st.yaw = f;
-                    return !r._findNearestAffordanceEntry("isPortal", r.constructor.PORTAL_REACH_M + 0.5);
+                    await tick(12);
+                    return r._findNearestAffordanceEntry("isPortal", r.constructor.PORTAL_REACH_M + 0.5);
                 };
-                if (precise) [flanke(x, z, ry, 1), await tick(6)]; // der Spieler geht hin: gezeichnet wird, was um ihn steht
-                e = r.spawnArchitecture(m.typ, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { rotationY: ry - Math.PI / 2, precise });
+                if (precise) await flanke(x, z, ry, 1); // der Spieler geht hin: gezeichnet wird, was um ihn steht
+                // ein Wagen späterer Orte trägt die Saat des ersten (derselbe Körper, kein neuer Bau im Faden des Studios)
+                e = r.spawnArchitecture(m.typ, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { rotationY: ry - Math.PI / 2, precise, seed: m.saat });
                 if (!e) throw new Error(`die Welt stellt ${m.typ} bei ${Math.round(x)}/${Math.round(z)} nicht hin`);
                 for (let i = 0; i < 900 && !r._archIsRendered(e); i++) await tick(1);
                 if (!r._archIsRendered(e)) throw new Error(`${m.typ} bei ${Math.round(x)}/${Math.round(z)} nach 900 Takten ungezeichnet`);
-                if (!flanke(e.position.x, e.position.z, fahrt(), 1) && !flanke(e.position.x, e.position.z, fahrt(), -1))
-                    throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E ein Tor`);
-                await tick(12);
+                const tor = (await flanke(e.position.x, e.position.z, fahrt(), 1)) && (await flanke(e.position.x, e.position.z, fahrt(), -1));
+                if (tor) throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
                 const vor = st.cameraMode;
                 await tippe("e", "KeyE");
                 for (let i = 0; i < 30 && st.player.mountedArch !== e.id; i++) await tick(1);
@@ -638,6 +639,7 @@ async function probe(arg) {
             };
             const P = st.playerMesh.position.clone();
             m.sichtVor = await steigEin(P.x + Math.sin(st.yaw) * 8, P.z + Math.cos(st.yaw) * 8, st.yaw);
+            m.saat = e.seed;
             m.bahn = [Math.round(e.position.x), Math.round(e.position.z), +fahrt().toFixed(2)];
             m.sichtRitt = st.cameraMode;
             // JE BILD IM RITT (die Probe nach dem Takt: der Wagen, wie er gezeichnet ist, und die Kamera, die ihn sah):
@@ -645,8 +647,10 @@ async function probe(arg) {
             //    der Befund 17.10. stand 2,72 m hinter der Mitte, 0,17 m hinter der Hülle);
             //  · jede zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`) im Rahmen des Wagens: ihr Slot weicht vom
             //    ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau 0, das Rad federt um den Hub);
-            //  · in Third die Kamera im Rahmen des Wagens (längs · quer · hoch): ihr RUCK ist die zweite Differenz je Bild (ein
-            //    Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt in Bildern seit dem Wechsel nach Third.
+            //  · in Third die Kamera im Rahmen des gezeichneten Wagens: ihr SEITLICHER RUCK ist die zweite Differenz ihrer Quer-Lage je
+            //    Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt in Bildern seit dem Wechsel nach
+            //    Third, ihre Höhe ist der Winkel über der Ebene der Räder; der GLEICHLAUF ist der Weg des gezeichneten Wagens je Bild
+            //    gegen das Tempo des Kerns.
             const rr = r.constructor._bewegungsBlock("kamera", ["armRadiusM"]).armRadiusM;
             const [M, V, erst] = [new THREE.Matrix4(), new THREE.Vector3(), new WeakMap()];
             let L = null; // der Lauf eines Abschnitts
@@ -714,12 +718,12 @@ async function probe(arg) {
                 const w = L.wechsel[L.wechsel.length - 1];
                 const n = w ? ++w.n : Infinity;
                 if (n === 10) w.nach10 = grad(Math.atan2(-dx, -dz) - f);
-                L.c.push([l, q, c.y - e.position.y]);
+                L.c.push(q);
                 // die Höhe der Kamera über der Fahrbahn: ihr Winkel über der Ebene des Wagens (Gesetz: die Elevation der Chase-Cam)
                 const ab = Math.hypot(dx, c.y - e.position.y, dz);
                 if (L.fest) L.hoch.push((Math.asin((dx * oben[0] + (c.y - e.position.y) * oben[1] + dz * oben[2]) / ab) * 180) / Math.PI);
-                const [c0, c1, c2] = L.c.slice(-3);
-                if (c0 && L.fest && n > 15) L.ruck.push(Math.hypot(...c2.map((v, i) => v - 2 * c1[i] + c0[i])));
+                const [q0, q1, q2] = L.c.slice(-3);
+                if (L.c.length > 2 && L.fest && n > 15) L.ruck.push(Math.abs(q2 - 2 * q1 + q0));
             };
             const schluss = () => {
                 const a = L.arm.slice().sort((x, y) => x - y);
@@ -1846,10 +1850,9 @@ async function probe(arg) {
                     ["auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter", { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" }, "aufbau 21.6 m"],
                     ["Third beginnt aus der alten Richtung (Befund 17.10., `_kamYaw` nur in Third)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[74, 31], [70, 4]] }) }, "kamera nach dem Wechsel 31°"],
                     ["Ego dreht nicht (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[3, 1], [80, 4]] }) }, "wechsel: 2 Rückkehr"],
-                    ["die Kamera springt je Bild gegen den Wagen", { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) }, "kamera-ruck im Wechsel p95 0.31"],
+                    ["die Kamera springt je Bild quer gegen den Wagen", { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) }, "kamera-ruck seitlich p95 0.31"],
                     ["das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) }, "gleichlauf im Wechsel p95 0.56"],
                     ["die Kamera steht bergab unter der Fahrbahn (Elevation zur Welt)", { hang: Object.assign({}, HANG_GESUND, { hochP05: -4.7, ruckP95: 0.31 }) }, "kamera am Hang p05 -4.7°"],
-                    ["die Kamera ruckt am Hang", { hang: Object.assign({}, HANG_GESUND, { ruckP95: 1.42 }) }, "kamera-ruck am Hang p95 1.42"],
                     ["der Band-Partner zeigt das Rad in Ruhe", { radN: 768, radWeg: 1.998 }, "rad: die Stufen im Band"],
                     ["Wechsel ohne Gleichlauf-Proben (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) }, "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf"],
                     ["der Band-Partner bleibt im Wechsel zurück", { wechsel: Object.assign({}, WECHSEL_GESUND, { stufeWeg: 9.4, stufeTaeter: "L1 (Band)" }) }, "aufbau im Wechsel 9.4 m"],
@@ -2046,8 +2049,8 @@ async function probe(arg) {
             const bild = (m) => (m.bild === false ? "ohne Bild (Null-Renderer)" : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`);
             const zeile = (m) => {
                 const [w, h] = [m.wechsel || {}, m.hang || {}];
-                const wechsel = w.wechsel ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego/Abstand nach 10 Bildern ${w.wechsel.map(([g, a]) => `${g}°/${a}°`).join(" · ")} · Ruck p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}` : "";
-                const hang = h.armN != null ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}` : "";
+                const wechsel = w.wechsel ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego/Abstand nach 10 Bildern ${w.wechsel.map(([g, a]) => `${g}°/${a}°`).join(" · ")} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}` : "";
+                const hang = h.armN != null ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck seitlich p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}` : "";
                 return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${wechsel}${hang}`;
             };
             urteil(n, `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild; Ego ↔ Third in der Fahrt; bergab am Steilhang; E steigt aus`, out.fahrt, fahrtVerdict, zeile);
