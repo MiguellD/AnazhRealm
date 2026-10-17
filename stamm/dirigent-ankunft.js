@@ -889,7 +889,16 @@ class AnazhRealm_dirigent_ankunft {
         const fov = cam && cam.fov > 0 ? cam.fov : 75;
         const asp = cam && cam.aspect > 0 ? cam.aspect : 1;
         const B = this._ersterBlickWert;
-        if (B && B.yaw === yaw && B.fov === fov && B.asp === asp && B.cx === c.x && B.cz === c.z && B.px === p.x && B.pz === p.z)
+        if (
+            B &&
+            B.yaw === yaw &&
+            B.fov === fov &&
+            B.asp === asp &&
+            B.cx === c.x &&
+            B.cz === c.z &&
+            B.px === p.x &&
+            B.pz === p.z
+        )
             return B;
         const E = AnazhRealm.ERSTER_BLICK;
         const auge = this._lodAuge();
@@ -944,8 +953,8 @@ class AnazhRealm_dirigent_ankunft {
     // Export oder mit Häusern im Blick in der Schlange). Was dahinter liegt, folgt nah zuerst (der Rundblick, gate:ankunft L2a).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
-    _weltbildFehlt() {
-        return this._weltbildLuecken().map((l) => l.satz);
+    _weltbildFehlt(rundum) {
+        return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
 
     // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
@@ -1006,7 +1015,8 @@ class AnazhRealm_dirigent_ankunft {
             if (!e || !e.position) continue;
             const dx = e.position.x - p.x;
             const dz = e.position.z - p.z;
-            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e) && imBlick(e.position.x, e.position.z)) ungebaut++;
+            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e) && imBlick(e.position.x, e.position.z))
+                ungebaut++;
         }
         if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut);
         // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
@@ -1056,7 +1066,8 @@ class AnazhRealm_dirigent_ankunft {
                 const i = key.indexOf(",");
                 const cx = Number(key.slice(0, i));
                 const cz = Number(key.slice(i + 1));
-                if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R && chunkImBlick(cx, cz)) saat++;
+                if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R && chunkImBlick(cx, cz))
+                    saat++;
             }
         }
         if (gesetzt || saat)
@@ -1100,7 +1111,10 @@ class AnazhRealm_dirigent_ankunft {
             st._nachlauf = null;
         } else if (++st._nachlauf >= AnazhRealm.RUNDBLICK_BILDER) {
             st._nachlauf = null;
-            this.log(`Der Rundblick steht nach ${AnazhRealm.RUNDBLICK_BILDER} Takten ohne: ${fehlt.map((l) => l.satz).join(" · ")}`, "WARN");
+            this.log(
+                `Der Rundblick steht nach ${AnazhRealm.RUNDBLICK_BILDER} Takten ohne: ${fehlt.map((l) => l.satz).join(" · ")}`,
+                "WARN"
+            );
         }
     }
 

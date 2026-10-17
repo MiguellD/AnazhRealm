@@ -887,7 +887,7 @@ async function proben(mitWiese, umfang) {
         // Ruhe heißt auch: der Wald der Mesh-Zone steht — die EINE Antwort der Welt (`_weltbildLuecken`, Terme `pflanzung` und
         // `streu`). Seit K69 pflanzt die Schlange des Walds im Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen
         // (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155 — der Selbsttest „wiese" blieb an der Streu blind).
-        const waldOffen = () => r._weltbildLuecken().some((l) => l.term === "pflanzung" || l.term === "streu");
+        const waldOffen = () => r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
         for (let t = 0; t < 200 && (stabil < 8 || waldOffen()); t++) {
             setz();
             for (let i = 0; i < 30; i++) {

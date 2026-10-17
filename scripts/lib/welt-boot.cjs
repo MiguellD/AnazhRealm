@@ -638,7 +638,7 @@ async function uferStellen(opts) {
     const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
     const welt = (l) => !opts.welt || opts.welt.includes(l.term); // und die Szenen-Tiefe trägt die Welt, nie nur Himmel
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
-    while (performance.now() - t1 < 240000 && !(steht() && !r._weltbildLuecken().some(welt))) {
+    while (performance.now() - t1 < 240000 && !(steht() && !r._weltbildLuecken(true).some(welt))) {
         if (!fern()) r._ensureFarWaterSheet();
         await warte(100);
     }
