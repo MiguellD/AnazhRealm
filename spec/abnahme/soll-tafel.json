@@ -290,10 +290,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T03:47:11.982Z",
+                    "datum": "2026-10-17T03:53:55.807Z",
                     "stand": {
-                        "version": "18.546.10",
-                        "sha": "b2a16ef454dda5d22ce94fa26b6df352ad3b4da4"
+                        "version": "18.546.11",
+                        "sha": "a43c87728141ef57dec6ab66c7e2ac107dfb6c03"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -308,12 +308,12 @@
                         "pixel": 0,
                         "max": 1
                     },
-                    "misch": 191392,
+                    "misch": 195453,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4826,"sp":[425,0,0,703156.27,703156.27,339313.3],"zweiton":0,"zt":0,"weiss":0.0141,"wt":3542,"wtZiel":null,"bunt":24.79,"pixel":250493,"deckung":0.1208,"deckungUnten":0.0042,"luma":74.5,"kontrast":0.5632,"detail":0.1093,"nyquist":0.1288,"ek":551287.1,"eg":3730445.7,"silhouette":126.3874,"kante":0.1982,"kr":22750},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1579,"wt":11249,"wtZiel":null,"bunt":13.6,"pixel":71237,"deckung":0.0344,"deckungUnten":0,"luma":91.63,"kontrast":0.5994,"detail":0.1692,"nyquist":0.1264,"ek":414230.2,"eg":2863087.5,"silhouette":55.7507,"kante":0.1764,"kr":8462},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1054,"sp":[657,0,0,913868.75,913868.75,96301.06],"zweiton":0,"zt":0,"weiss":0.0183,"wt":5375,"wtZiel":null,"bunt":23.72,"pixel":294098,"deckung":0.1418,"deckungUnten":0.0045,"luma":73.68,"kontrast":0.5734,"detail":0.1298,"nyquist":0.132,"ek":887490.8,"eg":5835610.3,"silhouette":88.5198,"kante":0.1654,"kr":23453},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0046,"sp":[3612,0,0,4210549.9,4210549.9,-19253.16],"zweiton":0,"zt":0,"weiss":0.0021,"wt":1096,"wtZiel":null,"bunt":29.56,"pixel":512311,"deckung":0.2471,"deckungUnten":0.1156,"luma":66.2,"kontrast":0.5143,"detail":0.0834,"nyquist":0.0977,"ek":477996.4,"eg":4414864.7,"silhouette":75.8901,"kante":0.3789,"kr":16387}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4732,"sp":[451,0,0,724311.95,724311.95,342750.69],"zweiton":0,"zt":0,"weiss":0.0141,"wt":3612,"wtZiel":null,"bunt":24.36,"pixel":256618,"deckung":0.1238,"deckungUnten":0.0045,"luma":73.24,"kontrast":0.5627,"detail":0.1098,"nyquist":0.1288,"ek":559538.4,"eg":3785432.1,"silhouette":126.1768,"kante":0.1997,"kr":22373},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1577,"wt":11221,"wtZiel":null,"bunt":13.72,"pixel":71161,"deckung":0.0343,"deckungUnten":0,"luma":91.98,"kontrast":0.5976,"detail":0.1675,"nyquist":0.1263,"ek":408466.1,"eg":2825860.7,"silhouette":55.7429,"kante":0.1762,"kr":8458},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.0919,"sp":[670,0,0,913363.67,913363.67,83910.57],"zweiton":0,"zt":0,"weiss":0.0186,"wt":5448,"wtZiel":null,"bunt":23.93,"pixel":292995,"deckung":0.1413,"deckungUnten":0.0045,"luma":74.62,"kontrast":0.5693,"detail":0.1289,"nyquist":0.1319,"ek":890316.7,"eg":5860308.1,"silhouette":87.4928,"kante":0.1624,"kr":23192},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0035,"sp":[3578,0,0,4157750.64,4157750.64,-14482],"zweiton":0,"zt":0,"weiss":0.0019,"wt":958,"wtZiel":null,"bunt":29.34,"pixel":506318,"deckung":0.2442,"deckungUnten":0.1156,"luma":65.88,"kontrast":0.5125,"detail":0.0847,"nyquist":0.0987,"ek":485634.8,"eg":4436666.4,"silhouette":76.4883,"kante":0.3811,"kr":16150}
                     },
                     "abstand": null,
                     "gesicht": null,
@@ -321,13 +321,13 @@
                     "quellen": {
                         "phyto-core.js": "c:6cf8df94e3dac37e",
                         "foundry-core.js": "c:6e8cf71a446dd765",
-                        "stamm/dirigent-kern.js": "c:3606a2b106691a12",
+                        "stamm/dirigent-kern.js": "c:0ece81ae293d4bb5",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
                         "stamm/wasser-zellen.js": "c:56c61979ee32c817",
                         "stamm/stoff-material.js": "c:ad842b85101e6672",
-                        "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
+                        "stamm/stoff-instanz.js": "c:60a4fbdb979312c7",
                         "stamm/studio-bruecke.js": "c:1f19ebde32f1e855",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
                         "stamm/siedlung-ort.js": "c:01a8c9f5f4ca0e5d",

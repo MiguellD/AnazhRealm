@@ -327,13 +327,12 @@ async function checkBandV1754PlayerAttack(ctx) {
         const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
-        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte richten.
+        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
         r.setCameraMode("first");
         r._loopCamera(performance.now() / 1000);
         {
-            const b = new THREE.Box3().setFromObject(c1);
-            const cp = r.state.camera.position;
-            r.state.pitch = Math.atan2((b.min.y + b.max.y) / 2 - cp.y, Math.max(0.5, c1.position.z - cp.z));
+            const [m, cp] = [r._leibMitte(c1), r.state.camera.position];
+            r.state.pitch = Math.atan2(m.y - cp.y, Math.max(0.5, m.z - cp.z));
             r._loopCamera(performance.now() / 1000);
         }
         p._swing = null;
