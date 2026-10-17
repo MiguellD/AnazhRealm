@@ -3560,27 +3560,66 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             n.object === null &&
             n.count === null
     );
-    // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object (Welt-Matrix, Knochen, Stoff-Verweise) und die Stellen der eigenen
-    // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
-    const objekt = nbs.updateNodes.filter((n) => n.getUpdateType() === "object");
+    // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object, die je Zeichen-Objekt arbeiten (Welt-Matrix, Knochen, Objekt-
+    // Verweise, die Objekt-Gruppe), und die Stellen der eigenen Gruppen — Render-Objekte desselben Programms tragen ihre
+    // eigenen Gruppen an derselben Stelle (`createBindings`). (12) Nicht dazu gehören: ein Stoff-Wert, den equals() je Render
+    // vergleicht (r184 `refreshUniforms`: sein Wechsel frischt voll auf, der Gang stellte nur denselben Wert), und ein
+    // Verweis einer geteilten Gruppe auf ein FESTES Objekt (`fest`: der Schatten des Lichts — bias · normalBias · radius ·
+    // mapSize · intensity · Kaskaden · near, r184 baut ihn im Takt object). Sein Wert hängt an keinem Zeichen-Objekt: gemessen
+    // an Genesis 540 solche Verweise in 53 Programmen über 12 Uniform-Knoten (der EINE Knoten je Quelle), gestellt nur im Gang
+    // eines BEWEGTEN Objekts — die Render-Gruppe trug den neuen bias einer Kaskaden-Wahl erst nach dem nächsten Gang. Jetzt
+    // stellt `_diaetGeteiltSchreiben` jeden dieser Uniform-Knoten EINMAL je Render-Abschnitt, vor dem Laden seiner Gruppe.
+    const ru = nbs.observer ? nbs.observer.refreshUniforms : null;
+    const objekt = [],
+        fest = [];
+    for (const n of nbs.updateNodes) {
+        if (n.getUpdateType() !== "object") continue;
+        if (n.isMaterialReferenceNode === true && n.material === null && ru && ru.indexOf(n.property) >= 0) continue;
+        const festN =
+            typeof n.getValueFromReference === "function" &&
+            n.object !== null &&
+            n.object !== undefined &&
+            n.group &&
+            n.group.shared === true;
+        (festN ? fest : objekt).push(n);
+    }
     const eigen = [];
     ro.getBindings().forEach((g, i) => {
         const b0 = g.bindings && g.bindings[0];
         if (!(b0 && b0.groupNode && b0.groupNode.shared === true)) eigen.push(i);
     });
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, eigen };
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, fest, eigen };
 };
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
 // es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
 // mit Knochen in Bild und Kaskade, Kopf, Plattform und Sonne. Jetzt stellt es seine Objekt-Knoten und lädt seine eigenen Gruppen.
-AnazhRealm._diaetObjektGang = function (rend, ro, k) {
+// (12) DIE PUFFER-SICHT (E2): was ein bewegtes Objekt ändert, steht in den Uniform-Puffern seiner Gruppen; die Texturen und
+// Sampler darin (je Leib-Teil sechs Schatten-Karten) prüfte der Gang trotzdem je Pass. Ihren Wechsel sieht der Textur-Wächter
+// (6) je Render-Objekt — nur dann (`textur`) lädt der Gang die ganze Gruppe, sonst ihre Puffer-Sicht (`_diaetPuffer`).
+AnazhRealm._diaetObjektGang = function (rend, ro, k, textur) {
     const nf = rend._nodes.getNodeFrameForRender(ro);
     for (const n of k.eigenVor) nf.updateBeforeNode(n);
     for (const n of k.objekt) nf.updateNode(n);
     for (const n of k.eigenKnoten) nf.updateNode(n);
     const alle = ro.getBindings();
-    for (const i of k.eigen) rend._bindings._update(alle[i], alle);
+    for (const i of k.eigen) {
+        const g = textur === true ? alle[i] : AnazhRealm._diaetPuffer(alle[i]);
+        if (g !== null) rend._bindings._update(g, alle);
+    }
+};
+// Die Puffer-Sicht einer eigenen Gruppe (EINMAL je Gruppe gemerkt): ihre Bindungen ohne Texturen und Sampler. r184 baut die
+// Bindegruppe nur neu, wenn eine Textur, ein Sampler oder ein Speicher-Puffer wechselt (`Bindings._update`) — die Sicht trägt
+// keinen davon; eine Gruppe mit Speicher-Puffer lädt darum ganz, eine ohne Puffer gar nicht.
+AnazhRealm._diaetPuffer = function (g) {
+    let s = g._anazhPuffer;
+    if (s === undefined) {
+        const nur = g.bindings.filter((b) => b.isSampledTexture !== true && b.isSampler !== true);
+        if (nur.length === g.bindings.length || nur.some((b) => b.isStorageBuffer === true)) s = g;
+        else s = nur.length > 0 ? { name: g.name, id: g.id, bindings: nur } : null;
+        g._anazhPuffer = s;
+    }
+    return s;
 };
 // (10) Wechselte ein Objekt-Verweis des Programms seit dem letzten Blick dieses Render-Objekts? Ein Wechsel ist der Wert
 // eines Stoffs, kein Bruch: EIN Refresh, kein Melder. Der erste Blick merkt (die Erst-Anlage lud eben hoch).
@@ -3705,6 +3744,14 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     if (k.eigenKnoten.length) {
         nf = nf || rend._nodes.getNodeFrameForRender(ro);
         for (const n of k.eigenKnoten) nf.updateNode(n);
+    }
+    // (12) die festen Verweise: der Stempel steht am geteilten Uniform-Knoten (viele Verweise, EIN Knoten)
+    for (const n of k.fest) {
+        const u = n.node || n;
+        if (u._anazhFestRid === rid && u._anazhFestRuf === ruf) continue;
+        u._anazhFestRid = rid;
+        u._anazhFestRuf = ruf;
+        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
     let alle = null;
     for (const g of k.gruppen) {
@@ -3834,6 +3881,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         lage = true;
     }
     if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
-    if (lage || verweis || textur || frei || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
+    if (lage || verweis || textur || frei || obs.hasAnimation === true)
+        AnazhRealm._diaetObjektGang(rend, ro, gang, textur);
     return false;
 };

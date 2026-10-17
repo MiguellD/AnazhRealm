@@ -76,7 +76,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "_update(e,t){const{backend:r}=this;let s=!1,i=!0,n=0,a=0;for(const t of e.bindings){if(!1!==this.nodes.updateGroup(t)){", organ: "AnazhRealm._diaetGeteiltSchreiben (rend._bindings._update je Gruppe)" },
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer)" },
-    { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
+    { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);if(!0!==a.worldMatrix.equals(s.matrixWorld))return a.worldMatrix.copy(s.matrixWorld),!1;const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;for(const e in o){", organ: "AnazhRealm._diaetRefresh (obs.equals) · _diaetGang (12): equals() vergleicht die Stoff-Werte je Render — der Objekt-Gang stellt sie nicht" },
     // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
     // Urteil `_equal`, Id je Objekt `geometryId`) samt drawRange — die Diät stellt diese Daten als geprüft; der Ausschnitt ist ein
     // Draw-Parameter (jeder Draw liest `geometry.drawRange`).
@@ -104,7 +104,7 @@ const ANKER = [
     { file: "vendor/CSMShadowNode.js", sub: "this.setupShadowPosition( builder );", organ: "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)" },
     // EIN SCHREIBEN JE PUFFER: das Backend lädt eine Uniform-Gruppe Bereich für Bereich (je Bereich ein writeBuffer).
     { file: "vendor/three.webgpu.min.js", sub: "updateBinding(e){const t=this.backend,r=t.device,s=e.buffer,i=t.get(e).buffer,n=e.updateRanges;if(0===n.length)r.queue.writeBuffer(i,0,s,0);else{", organ: "EIN SCHREIBEN JE PUFFER (backend.updateBinding: ein writeBuffer je Bereich)" },
-    { file: "vendor/three.webgpu.min.js", sub: "t.isBuffer&&t.updateRanges.length>0&&t.clearUpdateRanges()", organ: "EIN SCHREIBEN JE PUFFER (r184 leert die Bereiche nach dem Upload)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.isBuffer&&t.updateRanges.length>0&&t.clearUpdateRanges()}}!0===s&&this.backend.updateBindings(e,t,i?n:0,a)", organ: "EIN SCHREIBEN JE PUFFER (r184 leert die Bereiche nach dem Upload) · _diaetPuffer (die Bindegruppe baut nur ein Textur-, Sampler- oder Speicher-Wechsel neu)" },
     // EIN GANG JE GRUPPE UND RENDER (_diaetGang): Bindegruppen und Knoten tragen Ids, Vorher-Knoten ihren Takt.
     { file: "vendor/three.webgpu.min.js", sub: 'class bN{constructor(e="",t=[]){this.name=e,this.bindings=t,this.id=yN++}}', organ: "AnazhRealm._diaetGang (die Bindegruppe trägt eine Id)" },
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
@@ -138,7 +138,7 @@ const ANKER = [
     // JEDE TEXTUR DES PROGRAMMS (Integration V18.542): die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
     // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
     { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },
-    { file: "vendor/three.webgpu.min.js", sub: "if(t.isSampledTexture){const o=t.update(),u=t.texture,l=this.textures.get(u);o&&(this.textures.updateTexture(u)", organ: "AnazhRealm._diaetVorTextur (r184 lädt eine Textur nur im Binde-Gang hoch)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(t.isUniformBuffer){t.update()&&r.updateBinding(t)}else if(t.isSampledTexture){const o=t.update(),u=t.texture,l=this.textures.get(u);o&&(this.textures.updateTexture(u)", organ: "AnazhRealm._diaetVorTextur (r184 lädt eine Textur nur im Binde-Gang hoch) · _diaetPuffer (ein Uniform-Puffer lädt für sich)" },
     // DER RENDER-ABSCHNITT (Gegenprüfung 07.10.): der Stempel des Gangs ist (Render-Id, info.calls) — jeder betretene
     // Render zählt info.calls hoch und nimmt ihn als Render-Id, das Verlassen gibt die äußere Id zurück (Anker der
     // Bundle-Wahrheit), info.reset lässt info.calls stehen. So wechselt das Paar beim Betreten UND Verlassen.
@@ -563,7 +563,7 @@ function diaetLauf(fn) {
                     const k = abschnitt() + g.id;
                     dieDiaet.set(k, (dieDiaet.get(k) || 0) + 1);
                     if (g.knoten.some((id) => wert.get(id) !== "haupt")) fremdeGruppe++;
-                } else objektDurchDiaet++;
+                } else objektDurchDiaet += g.bindings.length;
             },
         },
     };
@@ -626,7 +626,7 @@ function diaetLauf(fn) {
             material: { _anazhDiaet: true },
             welt: 0, get matrixWorld() { return { w: this.welt }; },
         };
-        const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
+        const objektGruppe = { bindings: [{ groupNode: { shared: false }, isUniformBuffer: true }, { groupNode: { shared: false }, isSampledTexture: true }, { groupNode: { shared: false }, isSampler: true }] };
         objekte.push({
             prog,
             ro: {
@@ -776,7 +776,7 @@ function diaetProbe(selftest) {
                 f.push(
                     `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
                 );
-            if (r.objektDurchDiaet !== (k === "r4" || k === "r7" ? 1 : 0)) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (Soll: nur die des bewegten Objekts, sein Objekt-Gang)`);
+            if (r.objektDurchDiaet !== (k === "r4" || k === "r7" ? 1 : 0)) f.push(`${k}: die Diät lud ${r.objektDurchDiaet} Objekt-Bindungen (Soll: nur den Puffer des bewegten Objekts, sein Objekt-Gang — Textur und Sampler prüft der Textur-Wächter)`);
             if (r.wiederholt)
                 f.push(
                     `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
