@@ -436,16 +436,18 @@ class AnazhRealm_siedlung_ort {
 
     _torZiele() {
         const TSL = THREE.TSL;
+        // DIE HEIMAT DER ATLAS-WERTE (Pflicht-Paar der Diät, E1): Zeilen-Zahl und Belichtung gelten jeder Membran gleich, die
+        // Belichtung wechselt je Takt — als geteilte renderGroup lädt sie EINMAL je Render statt je Membran-Gruppe.
         return (
             this._torZielAtlas ||
-            (this._torZielAtlas = {
+            (this._torZielAtlas = this._uniformHeimatTeilen({
                 welten: new Map(),
                 n: 0,
                 tex: null,
                 uZeilen: TSL.uniform(1),
                 uBelicht: TSL.uniform(1),
                 buendel: null,
-            })
+            }))
         );
     }
 

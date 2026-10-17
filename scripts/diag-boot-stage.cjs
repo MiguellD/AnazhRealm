@@ -35,6 +35,12 @@ const server = statikServer();
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 function KALT_PROBE() {
     const A = (window.__kalt = { proben: [], lang: [], ev: [] });
+    // der erste Asset-Auftrag an einen Studio-Faden (B3a: bis dahin ruht die Werkstatt)
+    const post = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (m, t) {
+        if (!A.auftrag && m && m.type === "build-asset") A.auftrag = Math.round(performance.now());
+        return post.call(this, m, t);
+    };
     try {
         new PerformanceObserver((l) => {
             for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
@@ -253,6 +259,7 @@ async function kaltLauf() {
         );
     }
     if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
+    if (out.auftrag) console.log(`  ${(out.auftrag / 1000).toFixed(1)} s  der erste Asset-Auftrag ist gesendet`);
     // die Phasen des Vorrats, wie sein Merker sie nennt (je Wechsel die erste Probe)
     let phase = null;
     for (const p of proben) {

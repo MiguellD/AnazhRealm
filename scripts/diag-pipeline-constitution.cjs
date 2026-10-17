@@ -153,8 +153,8 @@ law("kein eigener Dichte-Rechner in `_tickFoliageThin`", false, /_foliageDensity
 }
 
 // N2 (Nervensystem-Plan, Phase beta: „Runtime = Validator") — DAS CORE-MANIFEST IST DIE EINE KERN-QUELLE: die
-// Worker-Kern-Liste lebt als DATEN in cores.manifest.json (den manifest-getriebenen Boot und Stempel beweist gate:fluss
-// W4/W5 am echten Faden); die Bruecke liest die ns-Kerne GENERISCH — KEIN Kern-spezifisches ns-Literal (self.__vehicleCore).
+// Worker-Kern-Liste lebt als DATEN in cores.manifest.json (den manifest-getriebenen Boot und Stempel beweist gate:pack-contract
+// `bootLauf` am Lauf der echten Klasse, B3a); die Bruecke liest die ns-Kerne GENERISCH — KEIN Kern-spezifisches ns-Literal (self.__vehicleCore).
 {
     let manifestOk = false;
     try {

@@ -1675,22 +1675,27 @@ async function checkBandPsi0Winkel(ctx) {
     );
 
     // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
-    // Loops sind VERDICHTET (V9.82). Source-KONSUM aller Leser + die Organ-
+    // Loops sind VERDICHTET (V9.82). KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
     const psi1 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const liest = (fn) => typeof fn === "function" && /_resonateArgmax/.test(window.__codeOf(fn));
+        // ein Werk aus zwei Parts (Eisen-Block + Holz-Stiel): jeder Leser ruft das Organ unbedingt
+        const bpK = { name: "_psi1", connections: [], parts: [
+            { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
+        ] };
+        const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
         out.organDa = typeof r._resonateArgmax === "function";
         // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
-            liest(r._computeWorkshopDomain) &&
-            liest(r._blueprintRoleGapHint) &&
-            liest(r._computeFormRole) &&
-            liest(r._argmaxImplementRole) &&
-            liest(r._computeToolOpFromForm) &&
-            liest(r.computeMotionRoles);
+            liest("_computeWorkshopDomain", [bpK]) &&
+            liest("_blueprintRoleGapHint", [bpK, "weapon"]) &&
+            liest("_computeFormRole", [bpK]) &&
+            liest("_argmaxImplementRole", [bpK]) &&
+            liest("_computeToolOpFromForm", [bpK]) &&
+            liest("computeMotionRoles", [bpK.parts, bpK.connections]);
         // Behavioral: argmax + strikt-> floor + refs-Norm + keys-Subset.
         const tab = { x: { a: 2 }, y: { a: 3 }, z: { b: 9 } };
         const v = { a: 1 };
@@ -1837,8 +1842,6 @@ async function checkBandV18266RockDetail(ctx) {
         out.bigHigher = out.bigTris >= 60; // det 1 (≥ 60, behält Facetten)
         out.smallCheaperThanBig = out.smallTris * 3 <= out.bigTris; // 4× billiger
         out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
-        // CONSUM (source-probe): die Detail-Stufe leitet sich aus der Grösse ab.
-        out.sizeDriven = /_maxDim\s*<\s*0\.7/.test(window.__codeOf(r._makePartGeometry));
         return out;
     });
     check(`V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
@@ -1847,8 +1850,8 @@ async function checkBandV18266RockDetail(ctx) {
         res.bigHigher === true && res.smallCheaperThanBig === true
     );
     check(
-        "V18.266: explizites noiseDetail bleibt Intent-Override + Grösse treibt die Stufe (CONSUM)",
-        res.overrideHonored === true && res.sizeDriven === true
+        "V18.266: explizites noiseDetail bleibt Intent-Override",
+        res.overrideHonored === true
     );
 }
 

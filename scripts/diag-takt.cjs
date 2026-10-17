@@ -31,9 +31,9 @@
 //   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm backen die Karten in so vielen Bäcker-Bahnen wie Werk-Fäden
 //       (zwei Karten in zwei Bäcker, `b<k>_`), und jeder Leser des ersten Bilds mit Kappe je Takt fragt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`).
-//   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt des Werks, seine Helfer kommen mit
-//       ihm — vor seinem „ready". Befund Radeon kalt (K602c/q2): der Buch-Faden ruhte 0,8 s, bis der volle Haupt-Faden sein
-//       „ready" las; die Helfer begannen ihren Start 2,4 s nach ihm. Der Selbsttest fährt den alten Weg.
+//   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (sein Name „buch"),
+//       nie als Nachricht — eine Nachricht vor dem Ende seines Start-Skripts reicht Chrome erst weiter, wenn der volle Haupt-Faden
+//       die Meldung „Skript gelaufen" liest (Radeon kalt 0,73–1,26 s); seine Helfer kommen mit ihm. Der Selbsttest fährt den alten Weg.
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
 // Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
 // die Nur-der-Nächste-Pumpe T6, die Ein-Faden-Pumpe T7, die löschende Frist T8, die Ein-Bäcker-Pumpe und die Kappe allein T9.
@@ -445,19 +445,20 @@ const SELBST = process.argv.includes("--selftest");
                     }
                 }
             })();
-            // T10 — DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt des Werks, seine
-            // Helfer kommen mit ihm — bevor er „ready" sagt. Ein Schein-Faden zählt, was bei ihm liegt. Der Selbsttest fährt
-            // den alten Weg (der Werk-Faden hört bis „ready" nichts, die Helfer kommen erst mit der Antwort darauf; die Seite
-            // verbietet eval, darum am Faden und am Helfer-Ruf gestellt).
+            // T10 — DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name),
+            // seine Helfer kommen mit ihm. Ein Schein-Faden hält Namen und Nachrichten. Der Selbsttest fährt den alten Weg (das
+            // Werk wird ohne die Frage geboren, die Helfer kommen erst mit der Antwort auf „ready"; die Seite verbietet eval,
+            // darum am Faden und am Helfer-Ruf gestellt).
             const t10 = await (async () => {
                 const WorkerEcht = window.Worker;
                 const geboren = [];
-                window.Worker = function (url) {
-                    const taub = selbst && geboren.length === 0; // der alte Weg: vor „ready" erreicht das Werk nichts
+                window.Worker = function (url, o) {
+                    const taub = selbst && geboren.length === 0; // der alte Weg: die Geburt trägt keine Frage
                     const w = {
                         url,
+                        name: taub ? null : (o && o.name) || null,
                         post: [],
-                        postMessage: (m) => taub || w.post.push(m && m.type),
+                        postMessage: (m) => w.post.push(m && m.type),
                         terminate: () => {},
                     };
                     geboren.push(w);
@@ -467,7 +468,7 @@ const SELBST = process.argv.includes("--selftest");
                     ? r._foundryHelfer
                     : undefined;
                 if (selbst) r._foundryHelfer = () => {};
-                const aus10 = { geboren: false, vorBereit: [], helfer: 0, helferSoll: r._foundryFaedenZahl() - 1 };
+                const aus10 = { geboren: false, name: null, post: [], helfer: 0, helferSoll: r._foundryFaedenZahl() - 1 };
                 try {
                     r._foundry = null;
                     const f = r._ensureAssetFoundry();
@@ -475,7 +476,7 @@ const SELBST = process.argv.includes("--selftest");
                     while (f && !f.worker && performance.now() - t0 < 15000)
                         await new Promise((res) => setTimeout(res, 20));
                     aus10.geboren = !!(f && f.worker);
-                    if (aus10.geboren) aus10.vorBereit = f.worker.post.slice();
+                    if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);
                 } finally {
                     window.Worker = WorkerEcht;
@@ -542,7 +543,7 @@ const SELBST = process.argv.includes("--selftest");
     const gang = t9.gang.every(Boolean);
     const T9 = t9.ofen[0] === 1 && t9.ofen[1] === 1 && t9.nummern.some((k) => /^impb1_\d+$/.test(k)) && !Object.values(frist).includes(false) && gang; // prettier-ignore
     const t10 = aus.t10;
-    const T10 = t10.geboren && t10.vorBereit.includes("get-book") && t10.helfer === t10.helferSoll;
+    const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
         const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T7 && !T8 && !T9 && !t9.gang.some(Boolean) && !T10;
         console.log(
@@ -555,7 +556,7 @@ const SELBST = process.argv.includes("--selftest");
                 `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
-                `der alte Weg fragt das Buch erst auf „ready" (vor ihm: ${t10.vorBereit.join("·") || "nichts"}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
+                `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -601,11 +602,11 @@ const SELBST = process.argv.includes("--selftest");
                     : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (_kappeOffen)`)
     );
     console.log(
-        `  ${T10 ? "✅" : "❌"} T10 der Faden wartet nie auf den Haupt-Faden: vor dem „ready" des Werks liegt ${t10.vorBereit.join(" · ") || "nichts"} bei ihm, ` +
+        `  ${T10 ? "✅" : "❌"} T10 der Faden wartet nie auf den Haupt-Faden: das Werk heißt ${t10.name}, als Nachricht fragt ${t10.post.join(" · ") || "nichts"}, ` +
             `Helfer ${t10.helfer}/${t10.helferSoll} geboren` +
             (T10
                 ? ""
-                : " — Täter _ensureAssetFoundry: die Buch-Frage und die Helfer warten auf den Rundlauf durch den Haupt-Faden")
+                : " — Täter _ensureAssetFoundry: die Buch-Frage reist nicht in der Geburt (Name „buch\"), sie wartet auf den Haupt-Faden")
     );
     if (!(T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8 && T9 && T10)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");

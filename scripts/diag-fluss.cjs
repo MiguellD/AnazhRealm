@@ -18,13 +18,14 @@
 //       kodiert (Karten-Codec im Worker) · V10 das Format trennt die Platte (dieselbe Schicht als rgba8 trifft nie) · V11
 //       nurPlatte bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine
 //       leere Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden
-// S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn
+// S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die
+//   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
+//   (B3a; vorher S3 · S7a · S7e · W4 · W5)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
-//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W4 (K42) die Werk-Fäden
-//   laden im Boot die Brücke und keine Labor-Datei · W5 der Stempel der Platte ist die Formel über Manifest, Kerne und
-//   Brücke · W6 (K60) DIE WERK-FÄDEN: auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner
-//   Bahn (`w<k>_`, `_foundryBahn`) · W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts
-//   außerhalb der Wand · W8 der Fahrzeug-Vorrat wärmt nur die Platte
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
+//   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
+//   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
+//   Fahrzeug-Vorrat wärmt nur die Platte
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -730,20 +731,6 @@ const WELT_MESSEN = async () => {
         pm[k] = { get array() { return gelesen.add(k), a; } }; // prettier-ignore
     }
     r._foundryBuildMesh(pm);
-    // W5 DER STEMPEL DES ECHTEN BOOTS: der Eintrag `__stamp` der Platte (Node rechnet die Formel der Schale nach)
-    const stempel = await new Promise((ok) => {
-        const q = indexedDB.open("anazhFoundryAssets");
-        q.onerror = () => ok(null);
-        q.onsuccess = () => {
-            try {
-                const g = q.result.transaction("assets").objectStore("assets").get("__stamp");
-                g.onsuccess = () => (q.result.close(), ok(g.result || null));
-                g.onerror = () => ok(null);
-            } catch (_e) {
-                ok(null);
-            }
-        };
-    });
     // W8 der Fahrzeug-Vorrat wärmt nur die Platte: je kritische Art eine leere Antwort mit vorrat
     const krit = (r._foundryLibrarySpec().critical || {}).species || [];
     const vorrat = {
@@ -779,8 +766,6 @@ const WELT_MESSEN = async () => {
         samen,
         karten,
         wand: { lesen: [...lesen], gelesen: [...gelesen], reist: [...fl.reist] },
-        stempel,
-        format: r.constructor.FOUNDRY_PLATTE_FORMAT,
         vorrat,
         boot,
         bootMB: fl.antworten.reduce((a, x) => a + x.bytes, 0) / 1048576,
@@ -876,20 +861,6 @@ function urteilWelt(d) {
                 .join(" · ") +
             (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")
     );
-    // K42 — DER STUDIO-FADEN LÄDT KEIN LABOR: was die Fäden im Erst-Boot anfragen (W4), trägt die Brücke und keine
-    // Labor-Datei; der Stempel der Platte (W5) ist die Formel der Schale über Manifest, Kern-Skripte und Brücke.
-    const labor = (u) => LABOR_DATEI.test(u);
-    const anfragen = d.anfragen || [];
-    pruef(
-        "W4 die Werk-Fäden laden die Brücke und keine Labor-Shell oder Labor-Szene (ihre Anfragen im Erst-Boot)",
-        anfragen.some((u) => /\/foundry-bruecke\.js(\?|$)/.test(u)) && !anfragen.some(labor),
-        `${anfragen.length} Anfragen` + (anfragen.some(labor) ? ` · Labor: ${anfragen.filter(labor).join(" ")}` : "")
-    );
-    pruef(
-        "W5 der Platten-Stempel des echten Boots ist die Formel über Manifest, Kerne und Brücke (kein Labor)",
-        !!d.stempel && d.stempel === d.stempelSoll,
-        `Platte ${String(d.stempel).slice(0, 12)} · Formel ${String(d.stempelSoll).slice(0, 12)}`
-    );
     const w = d.wand || { lesen: [], gelesen: [], reist: [] };
     const fehlt = w.gelesen.filter((k) => !w.lesen.includes(k)).concat(w.lesen.filter((k) => !w.gelesen.includes(k)));
     const fremd = w.reist.filter((k) => !w.lesen.includes(k));
@@ -906,23 +877,17 @@ function urteilWelt(d) {
     );
     return aus;
 }
-// Eine Labor-Datei im Studio-Faden: jede Welt-Datei unter worlds/<welt>/ außer lib/, und die Szenen-Bibliotheken der Labore.
-const LABOR_DATEI =
-    /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js(\?|$)|\/(OrbitControls|PointerLockControls|EffectComposer|RenderPass|MaskPass|ShaderPass|UnrealBloomPass|CopyShader|LuminosityHighPassShader|FXAAShader)\.js(\?|$)/;
 
 async function welt() {
     const server = statikServer();
-    const anfragen = []; // W4: jede Anfrage eines Fadens (ohne Rahmen: importScripts und Stempel-Quellen der Worker)
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     try {
         const page = await browser.newPage();
-        page.on("request", (q) => q.frame() || anfragen.push(q.url()));
         page.on("pageerror", (e) => console.log("  [Seiten-Fehler]", String((e && e.message) || e).split("\n")[0]));
         await page.evaluateOnNewDocument(WELT_HAKEN);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const erst = await page.evaluate(WELT_MESSEN);
-        const erstAnfragen = anfragen.slice();
         // W3 DER ZWEIT-BOOT: dieselbe Welt lädt neu (gleicher Browser = dieselbe IndexedDB, derselbe Stempel) — was jetzt
         // noch gebaut wird, hat die Platte verfehlt.
         await page.evaluateOnNewDocument(() => {
@@ -930,8 +895,7 @@ async function welt() {
         });
         await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         const zweit = await page.evaluate(WELT_MESSEN);
-        const stempelSoll = require("./lib/pack-kanon.cjs").computeStamp(root) + "|f" + erst.format;
-        return Object.assign({}, erst, { zweit, anfragen: erstAnfragen, stempelSoll });
+        return Object.assign({}, erst, { zweit });
     } finally {
         await browser.close();
         server.close();
@@ -1020,9 +984,6 @@ const VERHALTEN = [
             T: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             samen: { eiche: [1, 2], weide: [1] },
             karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
-            anfragen: ["/index.html", "/worlds/terrain/lib/three-r128.min.js?v=1", "/phyto-core.js?v=1", "/foundry-bruecke.js?v=1"],
-            stempel: "ab12|f3",
-            stempelSoll: "ab12|f3",
             wand: { lesen: ["position", "color"], gelesen: ["color", "position"], reist: ["position", "color"] },
             vorrat: { arten: 2, kalt: [] },
             boot: {
@@ -1148,26 +1109,7 @@ const VERHALTEN = [
                       .readFileSync(path.join(root, rel), "utf8")
                       .replace('"bruecke": "foundry-bruecke.js"', '"bruecke": "' + LABOR_SHELL + '"')
                 : null;
-        const PK = require("./lib/pack-kanon.cjs");
-        const ohneBruecke = (rel) =>
-            rel === "cores.manifest.json"
-                ? fs.readFileSync(path.join(root, rel), "utf8").replace('"bruecke": "foundry-bruecke.js"', '"bruecke": ""')
-                : null;
         const W = (zusatz) => Object.assign({}, gut, zusatz);
-        check(
-            "Selbst-Test 10i: der Boot lädt Orbit-Steuerung + Labor-Shell (der alte Boot, K42) → W4 rot",
-            rot(W({ anfragen: gut.anfragen.concat(["/worlds/terrain/lib/OrbitControls.js?v=1", "/worlds/terrain/phytogenesis.js?v=1"]) }), "W4")
-        );
-        check("Selbst-Test 10k: keine Anfrage gezählt (die Sonde misst nicht) → W4 rot", rot(W({ anfragen: [] }), "W4"));
-        const echtStempel = PK.computeStamp(root) + "|f3";
-        check(
-            "Selbst-Test 10j: der Stempel hasht die Labor-Shell als Brücke → W5 rot",
-            rot(W({ stempel: echtStempel, stempelSoll: PK.computeStamp(root, shellAlsBruecke) + "|f3" }), "W5")
-        );
-        check(
-            "Selbst-Test 14: der Stempel ohne die Brücke → W5 rot",
-            rot(W({ stempel: echtStempel, stempelSoll: PK.computeStamp(root, ohneBruecke) + "|f3" }), "W5")
-        );
         check(
             "Selbst-Test 1: ein Wand-Name ohne Leser (aWind) → W7 rot",
             rot(W({ wand: Object.assign({}, gut.wand, { lesen: ["position", "color", "aWind"] }) }), "W7")

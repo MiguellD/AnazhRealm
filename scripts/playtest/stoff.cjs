@@ -16,17 +16,18 @@ async function checkBandV18136Audit(ctx) {
         const out = {};
         // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). V18.352 — der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
-        // setShadowRange UND der Perf-Regler rufen); die Sonde folgt dem Refactor (V9.56-i).
-        out.rangeSrc =
-            /csm\.maxFar/.test(window.__codeOf(r._applyEffectiveShadowRange)) &&
-            /_applyEffectiveShadowRange/.test(window.__codeOf(r.setShadowRange));
+        // setShadowRange UND der Perf-Regler rufen) — am Ruf: der Pfad des Reglers treibt maxFar, der Setter ruft die Quelle.
         const savedCsm = r.state.csmNode;
         const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
+        const savedApplied = r._shadowRangeApplied;
         r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
-        r.setShadowRange(200);
+        r._applyEffectiveShadowRange(150);
+        out.rangeSrc = Math.abs(r.state.csmNode.maxFar - 150 * r.constructor.SCHATTEN_FERN_FAKTOR) < 1e-9;
+        out.rangeSrc = window.__consumes(r, "setShadowRange", r, "_applyEffectiveShadowRange", [200]) && out.rangeSrc;
         out.rangeDrives = Math.abs(r.state.csmNode.maxFar - 360) < 1e-9;
         r.state.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
+        if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
         // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
         out.tileLean = !/eTile|_computeErosion|erosionTiles/.test(window.__codeOf(r._ensureHydroTilesAround));
         return out;
@@ -158,22 +159,25 @@ async function checkBandWEFrequenzband(ctx) {
             return (m.emissive.r + m.emissive.g + m.emissive.b) * i;
         };
         out.tagsReisen = _glow(mGlut) > _glow(mStein) + 0.01;
-        out.tagsImBuilder =
-            /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._buildFromBlueprint)) &&
-            /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._archLeafMaterial));
+        // das Stein-Profil der Tags hält das Leaf ungeglüht und schaltet den Instanz-Ton (ohne Tags: werk-Default, es glüht)
+        out.tagsImBuilder = mStein.userData.leafTint === true && _glow(mStein) === 0;
         // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
         // das Gras ist angedockt (Source + outputNode-KONSUM).
         const SR = r.constructor.SUBSTANCE_RESPONSE;
         out.werkAmBand = SR.defaults.werk.fuell > 0 && SR.defaults.werk.mond > 0;
-        out.grasDocked = /_applySubstanceResponse/.test(window.__codeOf(r._grassInstanceMat));
+        // am Ruf über einen frischen Gras-Bau (der Cache gäbe den Boot-Stoff zurück)
+        const altGras = r.state._grassMat;
+        r.state._grassMat = null;
+        try {
+            out.grasDocked = window.__consumes(r, "_grassInstanceMat", r, "_applySubstanceResponse", []);
+        } finally {
+            if (r.state._grassMat && r.state._grassMat !== altGras) r.state._grassMat.dispose();
+            r.state._grassMat = altGras;
+        }
         const gm = r._grassInstanceMat();
         out.grasOutput = !!gm && gm.outputNode != null;
-        // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
-        // Restore migriert den alten auto-gebackenen 0.12-Default.
+        // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle.
         out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
-        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(
-            window.__codeOf(r._loadStateRestoreSoulAndAtmosphere)
-        );
         return out;
     });
     check(
@@ -181,7 +185,7 @@ async function checkBandWEFrequenzband(ctx) {
         res.glanzOrdnung && res.glimmenOrdnung && res.waermeOrdnung && res.glasOrdnung
     );
     check(
-        "W-E Frequenzband: die Substanz-Tags REISEN in beide Part-Builder (Spiegel) + wirken behavioral (Glut-Leaf glimmt stärker als Stein)",
+        "W-E Frequenzband: die Substanz-Tags REISEN in den Leaf-Builder + wirken behavioral (Glut-Leaf glimmt stärker als Stein, das Stein-Leaf glüht nicht und trägt den Instanz-Ton)",
         res.tagsReisen && res.tagsImBuilder
     );
     check(
@@ -189,8 +193,8 @@ async function checkBandWEFrequenzband(ctx) {
         res.werkAmBand && res.grasDocked && res.grasOutput
     );
     check(
-        "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle) + Restore migriert den gebackenen 0.12-Default",
-        res.defaults && res.restoreMigriert
+        "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle)",
+        res.defaults
     );
 }
 

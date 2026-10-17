@@ -802,15 +802,26 @@ async function checkBandWFFluss(ctx) {
         // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
         const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
         out.gtFloats = pGt ? pGt.floats : null;
-        // (7) der Ritt im Sim-Schritt und der Boden des Fahr-Schritts legen das Gefährt über die EINE Wahrheit am Körper mit
-        // seiner Gestalt ins Wasser (D4/D10 — der Frame-Tick ist nur Sicht).
-        const ritt = window.__codeOf(r._rittSchritt);
-        const boden = window.__codeOf(r._fahrBoden);
+        // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
+        // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
+        // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
+        const o = window.__wasserOrt("see");
+        const boot = (mat) => {
+            const bp = mkBoat(mat);
+            r.state.blueprints[bp.name] = bp;
+            const e = r.spawnArchitecture(bp.name, { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z }, { silent: true, precise: true });
+            try {
+                const g = r._fahrzeugGestalt(e), w = r._werkBoden(e)(o.x, o.z), s = r._koerperWasser(o.x, o.z, w);
+                return { g, w, s, f: r._fahrBoden(e)(o.x, o.z) };
+            } finally {
+                if (e) r.removeArchitecture(e);
+                delete r.state.blueprints[bp.name];
+            }
+        };
+        const holz = o ? boot("holz") : null, stein = o ? boot("stein") : null;
         out.tickFloatConsumed =
-            /_fahrzeugGestalt\(/.test(ritt) &&
-            /_koerperWasser\([^)]*gestalt\)/.test(ritt) &&
-            /_fahrzeugGestalt\(/.test(boden) &&
-            /_koerperWasser\([^)]*gestalt\)/.test(boden);
+            !!holz && holz.g.linie < Infinity && holz.s - holz.w > holz.g.linie && Math.abs(holz.f - (holz.s - holz.g.linie)) < 1e-6 &&
+            !!stein && stein.f === stein.w;
         return out;
     });
     check(
@@ -818,7 +829,7 @@ async function checkBandWFFluss(ctx) {
         res.runExists && res.dryPassthrough
     );
     check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + im Ritt-Tick über _koerperWasser mit der Gestalt",
+        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
         res.holzFloats === true &&
             res.steinFloats === false &&
             res.eisenFloats === false &&
@@ -1726,13 +1737,16 @@ async function checkBandKoerperBewegung(ctx) {
         ]) {
             if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
         }
-        // Struktur-KONSUM (Lehre 6): die Chokepoints lesen die Gang-Gesetze.
-        // (kommentar-gestrippt — der EINE __codeOf des Welt-Boots)
-        const codeOf = window.__codeOf;
-        o.checks.konsumSpieler = /_gaitTick\(/.test(codeOf(r.animatePlayerSoul));
-        o.checks.konsumPeer = /_gaitTick\(/.test(codeOf(r._p2pUpdatePeer));
-        o.checks.konsumTier = /_creatureSlopeProben\(/.test(codeOf(r.updateCreatures));
-        o.checks.konsumRigIK = /_gaitApplyFussIK\(/.test(codeOf(r._animateHumanoidRig));
+        // KONSUM am Ruf: der nahe, trockene Peer läuft über den EINEN Gang-Tick wie der Spieler (Spieler, Tier-Hang und
+        // Fuß-IK beweisen S1, (D) und (E) an ihrer Wirkung).
+        {
+            const g = r._buildHumanGroup();
+            const pp = s.playerMesh.position;
+            const peer = { mesh: g, x: pp.x + 5, y: pp.y + 1, z: pp.z, yaw: 0, meshKind: "soul", soulName: "human",
+                walkPhase: 0, lastMovedAt: performance.now() / 1000, _gaitPX: pp.x + 4.95, _gaitPZ: pp.z };
+            o.checks.konsumPeer = window.__consumes(r, "_p2pUpdatePeer", r, "_gaitTick", [peer, performance.now() / 1000, 1 / 60]);
+            r._disposeSoulGroup(g);
+        }
     
         // ── (B) ZWEI-KNOCHEN-IK pur — Fußfehler über ein Ziel-Raster ──
         {
@@ -2010,8 +2024,8 @@ async function checkBandKoerperBewegung(ctx) {
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const f = (v, n = 2) => (typeof v === "number" ? v.toFixed(n) : String(v));
-    const k = rot("konsumSpieler", "konsumPeer", "konsumTier", "konsumRigIK");
-    check("Körper-Bewegung KONSUM: Spieler und Peers lesen den EINEN Gang-Tick, Tiere die Hang-Proben, das Rig das Fuß-IK", !k, k && "ROT: " + k);
+    const k = rot("konsumPeer");
+    check("Körper-Bewegung KONSUM: der Peer ruft den EINEN Gang-Tick wie der Spieler", !k, k && "ROT: " + k);
     const a = rot("ratePur", "aRateVerdoppelt", "aSchrittKonstant");
     check(`Körper-Bewegung (A): doppeltes Tempo ⇒ die Phasen-Rate des Gang-Gesetzes (${f(out.rateRatio)}× ≈ ${f(out.rateSoll)}×), die Schritt-Distanz des Gesetzes (${f(out.schritt1)} / ${f(out.schritt2)} m)`, !a, a && "ROT: " + a);
     const b = rot("ikErreichbar", "ikGestreckt", "ikNaNWand");

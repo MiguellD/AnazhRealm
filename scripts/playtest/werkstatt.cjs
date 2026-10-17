@@ -2156,14 +2156,17 @@ async function checkBandV18143Comments(ctx) {
         c3.sig = r._vibeBytesToHex(new Uint8Array(sig3));
         out.revokedReceiveBlocked = (await r._socialCommentReceive("peerX", c3)) === false;
         r.unrevokeKey(pub2);
-        // (4) die Verdrahtung: Handler kanal-exklusiv + onopen-Batch + die
-        // Karte traegt 💬 + der Panel-Text ist textContent (XSS-Wand).
-        const handler = window.__codeOf(r._p2pHandleChannelMessage);
-        out.handlerWired = /social-comment/.test(handler) && /_p2pPeerRateAdmit\("social"/.test(handler);
+        // (4) die Verdrahtung am Ruf: der Kanal reicht social-comment an den Empfang + onopen-Batch; das fremde Wort steht im
+        // Panel als TEXT, nie als Element (XSS-Wand).
+        const roh = JSON.stringify({ type: "social-comment", c: { id: "band143:ziel" } });
+        out.handlerWired = window.__consumes(r, "_p2pHandleChannelMessage", r, "_socialCommentReceive", ["peerZensus143", roh]);
         out.batchExists = typeof r._socialCommentsBatch === "function";
-        out.barHasTalk = /_renderFeedCommentsPanel/.test(window.__codeOf(r._feedRatingBar));
-        const panelSrc = window.__codeOf(r._renderFeedCommentsPanel);
-        out.xssWall = /textContent = c\.x/.test(panelSrc) && !/innerHTML\s*=\s*c\.x/.test(panelSrc);
+        const X = "<img src=x onerror=window.__xss143=1><b>boese</b>";
+        r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", { id: "band143:xss", x: X, t: 1, pub: "ab".repeat(32), sig: "x" });
+        const panel = document.createElement("div");
+        r._renderFeedCommentsPanel(panel, { id: "band143:xss" }, null);
+        const tx = panel.querySelector(".feed-comment-text");
+        out.xssWall = !!tx && tx.textContent === X && tx.children.length === 0 && !panel.querySelector("img, b");
         // restore
         r.state.socialComments = saved;
         if (typeof r._saveSocialComments === "function") r._saveSocialComments();
@@ -2194,8 +2197,8 @@ async function checkBandV18143Comments(ctx) {
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (kanal-exklusiv + R1-Rate · onopen-Batch · Karte trägt 💬 · textContent-XSS-Wand)",
-        res.handlerWired && res.batchExists && res.barHasTalk && res.xssWall
+        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · onopen-Batch · das fremde Wort bleibt Text — XSS-Wand)",
+        res.handlerWired && res.batchExists && res.xssWall
     );
 }
 
@@ -2502,16 +2505,12 @@ async function checkBandWCIchWahrheit(ctx) {
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        // (a) EIN Formatter + drei Konsumenten (Source-KONSUM, V17.31).
+        // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand, V17.31).
         out.formatter =
             typeof r._machTorHint === "function" &&
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /⚒/.test(r._machTorHint({ ok: false, reason: "no_workshop_station", neededDomain: "forging" }));
-        out.konsumenten =
-            /_showMachTorHint/.test(window.__codeOf(r._renderInventoryEquip)) &&
-            /_showMachTorHint/.test(window.__codeOf(r._recipeRow)) &&
-            /_showMachTorHint/.test(window.__codeOf(r._workshopAppendFertigenRow));
         // (a) NUTZER-ZUSTAND (§8.7): frieden + leerer Beutel → der Web-Akt scheitert
         // EHRLICH strukturiert, der Hint nennt das fehlende Material. Deterministisch:
         // Inventar + forgedPrecision (ein früheres Band könnte gefertigt haben) gesichert.
@@ -2527,6 +2526,17 @@ async function checkBandWCIchWahrheit(ctx) {
         out.torEhrlich =
             !!wres && wres.ok === false && wres.reason === "not_enough_material" && /eisen/.test(r._machTorHint(wres));
         out.keinAnlegen = (r.state.player.equipped && r.state.player.equipped.armor) === savedArmor;
+        // die drei Inline-Konsumenten: Slot-Wechsel, Rezept-Zeile und FERTIGEN sprechen das Mach-Tor an ihrer Stelle
+        r._renderInventoryEquip();
+        const sel = document.querySelector("#inventory-equip .equip-slot-select");
+        if (sel) sel.value = "ruestung_brustpanzer";
+        const bR = r._recipeRow("ruestung_brustpanzer", "wear").querySelector("button");
+        if (bR) bR.disabled = false;
+        const panF = document.createElement("div");
+        r._workshopAppendFertigenRow(panF, bpArmor);
+        const bF = panF.querySelector("button.workshop-fertigen");
+        out.konsumenten = !!sel && !!bR && !!bF && window.__consumes(sel, "dispatchEvent", r, "_showMachTorHint", [new Event("change")]) &&
+            window.__consumes(bR, "click", r, "_showMachTorHint", []) && window.__consumes(bF, "click", r, "_showMachTorHint", []);
         r.state.player.inventory = savedInv;
         if (bpArmor && Number.isFinite(savedForged)) bpArmor.forgedPrecision = savedForged;
         r.setGameMode(savedMode);
@@ -2573,12 +2583,16 @@ async function checkBandWCIchWahrheit(ctx) {
         const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
         out.warumTrank = !!whyTrank && /Lebendig|lebendig/.test(whyTrank.text);
-        out.warumFlaechen =
-            /spec-why-line/.test(window.__codeOf(r._specRenderBody)) &&
-            /_blueprintRoleWhy/.test(window.__codeOf(r._specRenderBody));
-        out.warumKarten =
-            /_blueprintRoleWhy/.test(window.__codeOf(r._recipeRow)) &&
-            /_blueprintRoleWhy/.test(window.__codeOf(r._feedRecipeCard));
+        // die drei Flächen tragen das EINE Warum-Gesetz sichtbar: die spec-why-line der Werkstatt (am Ruf), der Tooltip der
+        // Rezept-Zeile und der Rollen-Chip der Bibliotheks-Karte
+        const traegt = (t) => !!whyTrank && typeof t === "string" && t.includes(whyTrank.text);
+        const panW = document.createElement("div");
+        r._specRenderBody(panW, r.state.blueprints.trank_lebenssaft);
+        const wl = panW.querySelector(".spec-why-line");
+        out.warumFlaechen = !!wl && traegt(wl.textContent) &&
+            window.__consumes(r, "_specRenderBody", r, "_blueprintRoleWhy", [document.createElement("div"), r.state.blueprints.trank_lebenssaft]);
+        const chipB = r._feedRecipeCard({ kind: "recipe", prof: r._recipeProfile(r.state.blueprints.trank_lebenssaft) }).querySelector(".feed-role-chip");
+        out.warumKarten = traegt(r._recipeRow("trank_lebenssaft", "drink").title) && !!chipB && traegt(chipB.title);
         // (g) bei Ruhe verlässt das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade, sonst ein
         // unsichtbares Loch in der Leiste); Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
         {
