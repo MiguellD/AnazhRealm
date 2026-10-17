@@ -1004,7 +1004,7 @@ async function windProbe(page) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
+        "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
     );
     process.exit(0);
 })().catch((e) => {

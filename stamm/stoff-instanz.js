@@ -109,13 +109,17 @@ class AnazhRealm_stoff_instanz {
         const da = !!at.map;
         if (at.fmt === "bc") {
             const alt = da ? this._karteGpuTexturen(at) : null;
-            const mips = (stufen) => stufen.map((s) => ({ data: new Uint8Array(s.bytes * cap), width: s.w, height: s.h }));
+            // Die Schichten füllt NUR die GPU (`_karteAblage`, `_karteWachsen`): kein CPU-Byte, keine Null-Ladung. r184 legt
+            // eine Textur mit version 0 als die geteilte 1×1-Vorgabe an (`createDefaultTexture`) — in sie passt keine Ablage,
+            // die Schicht blieb leer. Darum steht die Form ab dem Bau (needsUpdate) und lädt nichts (dataReady false; WebGPU
+            // nullt jede neue Textur).
+            const mips = (stufen) => stufen.map((s) => ({ data: null, width: s.w, height: s.h }));
             if (da) {
                 at.map.mipmaps = mips(M.a);
                 at.map.image = { width: M.w, height: M.h, depth: cap };
                 at.nmap.mipmaps = mips(M.n);
                 at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
-                at.lmap.image = { data: new Uint8Array(M.lBytes * cap), width: M.lw, height: M.lh, depth: cap };
+                at.lmap.image = { data: null, width: M.lw, height: M.lh, depth: cap };
             } else {
                 // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name).
                 at.map = new T.CompressedArrayTexture(mips(M.a), M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
@@ -123,7 +127,7 @@ class AnazhRealm_stoff_instanz {
                 at.map.colorSpace = T.SRGBColorSpace;
                 at.nmap = new T.CompressedArrayTexture(mips(M.n), M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
                 at.nmap.name = "karte-normal:atlas";
-                at.lmap = new T.DataArrayTexture(new Uint8Array(M.lBytes * cap), M.lw, M.lh, cap);
+                at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
                 at.lmap.name = "karte-licht:atlas";
                 at.lmap.format = T.RedFormat;
             }
@@ -134,7 +138,8 @@ class AnazhRealm_stoff_instanz {
                 t.wrapS = T.ClampToEdgeWrapping;
                 t.wrapT = T.ClampToEdgeWrapping;
                 t.anisotropy = t === at.lmap ? 1 : 4;
-                if (da) t.needsUpdate = true; // gewachsen: die neue Form, die GPU kopiert die gebackenen Schichten
+                t.source.dataReady = false;
+                t.needsUpdate = true; // die Form steht; gewachsen: die neue Form, die GPU kopiert die gebackenen Schichten
             }
             at.cap = cap;
             if (alt) this._karteWachsen(at, alt);
@@ -604,13 +609,24 @@ class AnazhRealm_stoff_instanz {
             alpha: rend.getClearAlpha(),
         };
         // DIE PROGRAMME VOR DEM ERSTEN BAKE (compileAsync): ein Stoff, dessen Bühnen-Programm noch nicht steht, kompiliert
-        // asynchron gegen Ziel und MRT der Bühne — die Karte wartet, der Haupt-Faden nie.
+        // asynchron gegen Ziel und MRT der Bühne — die Karte wartet, der Haupt-Faden nie. r184 liest Ziel und MRT im
+        // `prebuild` jedes Objekts (NodeMaterial.setup), und compileAsync baut nur das ERSTE Objekt vor seinem ersten await;
+        // jedes weitere entstünde nach der Rückkehr gegen das Ziel der Welt — ohne die MRT-Ausgänge der Bühne scheitert
+        // seine Pipeline, und der Zustand liegt im Knoten-Cache (Schlüssel ohne MRT) für jede spätere Karte desselben
+        // Stoffs. Darum EIN Aufruf je Hülle mit neuem Stoff, die anderen unsichtbar.
         if (neu.length) {
             if (!B.kompiliere) {
                 rend.setRenderTarget(B.ziel);
                 rend.setMRT(B.mrt);
-                B.kompiliere = rend
-                    .compileAsync(B.szene, B.kamera)
+                const kinder = B.wurzel.children;
+                const zuege = [];
+                for (const m of kinder) {
+                    if (!neu.includes(m.material)) continue;
+                    for (const o of kinder) o.visible = o === m;
+                    zuege.push(rend.compileAsync(B.szene, B.kamera));
+                }
+                for (const o of kinder) o.visible = true;
+                B.kompiliere = Promise.all(zuege)
                     .then(
                         () => neu.forEach((m) => B.kompiliert.add(m)),
                         (e) => this._stoffBruch(`die Karte ${z.key}: ihre Bühnen-Programme kompilieren nicht`, e)
