@@ -773,11 +773,11 @@ async function probe(arg) {
             // der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT beim Namen werden
             if (Object.prototype.hasOwnProperty.call(r, "_archInstanceUpdate")) throw new Error("_archInstanceUpdate ist schon eingespielt");
             const folger = r._archInstanceUpdate;
-            r._archInstanceUpdate = function (entry) {
+            r._archInstanceUpdate = function (entry, ...rest) {
                 const band = entry.instSlotsBand;
                 entry.instSlotsBand = null;
                 try {
-                    return folger.call(this, entry);
+                    return folger.call(this, entry, ...rest);
                 } finally {
                     entry.instSlotsBand = band;
                 }
@@ -903,14 +903,21 @@ async function probe(arg) {
             // keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein Spieler hinstellt (der Hang genau, der Bug bergab).
             const [hx, hz] = [e.position.x, e.position.z];
             boxen = st.architectures.flatMap((a) => (a && a.position && Math.hypot(a.position.x - hx, a.position.z - hz) < 400 ? (a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []) : []));
-            // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"): kein Ort im Kreis der Tore
+            // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"), und wer in seine Apertur tritt, geht hindurch (die
+            // Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER (die Boxen des Gesetzes, ein
+            // Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der Hang-Wagen bei −79/106 stand außerhalb des
+            // Kreises um die Mitte, die Flanke in der Apertur — „Portal betreten: tor_drachentor")
             const torFrei = r.constructor.PORTAL_REACH_M + r.constructor.MOUNT_RANGE_M + 2;
             const ort = (wahl) => {
                 const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
+                const torBoxen = tore.flatMap((a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []);
+                const torNah = (x, z) =>
+                    tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < torFrei) ||
+                    torBoxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < torFrei ** 2);
                 for (let rad = 10; rad <= 300; rad += 10)
                     for (let i = 0, n = Math.round((2 * Math.PI * rad) / 10); i < n; i++) {
                         const [x, z] = [hx + Math.sin((i / n) * 2 * Math.PI) * rad, hz + Math.cos((i / n) * 2 * Math.PI) * rad];
-                        const o = r._landAt(x, z, 0) && !tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < torFrei) && wahl(x, z, r.getTerrainHeightAt(x, z));
+                        const o = r._landAt(x, z, 0) && !torNah(x, z) && wahl(x, z, r.getTerrainHeightAt(x, z), torNah);
                         if (o) return Object.assign(o, { x, z, ort: [Math.round(x), Math.round(z)] });
                     }
                 return null;
@@ -930,11 +937,12 @@ async function probe(arg) {
                     await halt();
                 }
             }
-            const hang = ort((x, z, y) => {
+            const hang = ort((x, z, y, torNah) => {
                 for (let j = 0; j < 16; j++) {
                     const d = (j / 16) * 2 * Math.PI;
                     let [min, alt] = [Infinity, y];
                     for (let s = 5; s <= SOLL.hangM && min >= SOLL.hangMin; s += 5) {
+                        if (torNah(x + Math.sin(d) * s, z + Math.cos(d) * s)) min = -Infinity; // die Falllinie führt durch kein Tor
                         const h = r.getTerrainHeightAt(x + Math.sin(d) * s, z + Math.cos(d) * s);
                         [min, alt] = [Math.min(min, (alt - h) / 5), h];
                     }
