@@ -1182,7 +1182,7 @@ class AnazhRealm_dirigent_takt {
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt
         // es am Frame-Ende weiter aus frameMs — die volle Vereinheitlichung kommt mit dem Default-an).
-        if (B.remainingMs() <= 0 && !this._ladeTakt()) st._frameOverBudget = true;
+        if (B.remainingMs() <= 0 && !this._ladeTakt() && st._nachlauf == null) st._frameOverBudget = true;
     }
 
     _loopVoxelStreaming() {
@@ -1404,7 +1404,7 @@ class AnazhRealm_dirigent_takt {
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
-        if (!this.state._weltbildDa) this._ankunftsBild();
+        if (!this.state._weltbildDa || this.state._nachlauf != null) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
         // `render.calls` ein LEBENSZEIT-Zähler der render()-Aufrufe (reset() löscht ihn nicht) → er
         // vergiftete HUD/Flugschreiber/Regler mit wachsender Phantom-Last. Pro Frame zählt
