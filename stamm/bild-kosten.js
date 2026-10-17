@@ -3562,33 +3562,21 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     );
     // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object, die je Zeichen-Objekt arbeiten (Welt-Matrix, Knochen, Objekt-
     // Verweise, die Objekt-Gruppe), und die Stellen der eigenen Gruppen — Render-Objekte desselben Programms tragen ihre
-    // eigenen Gruppen an derselben Stelle (`createBindings`). (12) Nicht dazu gehören: ein Stoff-Wert, den equals() je Render
-    // vergleicht (r184 `refreshUniforms`: sein Wechsel frischt voll auf, der Gang stellte nur denselben Wert), und ein
-    // Verweis einer geteilten Gruppe auf ein FESTES Objekt (`fest`: der Schatten des Lichts — bias · normalBias · radius ·
-    // mapSize · intensity · Kaskaden · near, r184 baut ihn im Takt object). Sein Wert hängt an keinem Zeichen-Objekt: gemessen
-    // an Genesis 540 solche Verweise in 53 Programmen über 12 Uniform-Knoten (der EINE Knoten je Quelle), gestellt nur im Gang
-    // eines BEWEGTEN Objekts — die Render-Gruppe trug den neuen bias einer Kaskaden-Wahl erst nach dem nächsten Gang. Jetzt
-    // stellt `_diaetGeteiltSchreiben` jeden dieser Uniform-Knoten EINMAL je Render-Abschnitt, vor dem Laden seiner Gruppe.
+    // eigenen Gruppen an derselben Stelle (`createBindings`). (12) Nicht dazu gehört ein Stoff-Wert, den equals() je Render
+    // vergleicht (r184 `refreshUniforms`): sein Wechsel frischt voll auf, der Gang stellte nur denselben Wert (am Leib je Teil
+    // opacity · metalness · roughness · emissive · ior · clearcoat …, an Genesis Third 70 Gänge je Bild).
     const ru = nbs.observer ? nbs.observer.refreshUniforms : null;
-    const objekt = [],
-        fest = [];
-    for (const n of nbs.updateNodes) {
-        if (n.getUpdateType() !== "object") continue;
-        if (n.isMaterialReferenceNode === true && n.material === null && ru && ru.indexOf(n.property) >= 0) continue;
-        const festN =
-            typeof n.getValueFromReference === "function" &&
-            n.object !== null &&
-            n.object !== undefined &&
-            n.group &&
-            n.group.shared === true;
-        (festN ? fest : objekt).push(n);
-    }
+    const objekt = nbs.updateNodes.filter(
+        (n) =>
+            n.getUpdateType() === "object" &&
+            !(n.isMaterialReferenceNode === true && n.material === null && ru && ru.indexOf(n.property) >= 0)
+    );
     const eigen = [];
     ro.getBindings().forEach((g, i) => {
         const b0 = g.bindings && g.bindings[0];
         if (!(b0 && b0.groupNode && b0.groupNode.shared === true)) eigen.push(i);
     });
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, fest, eigen };
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, eigen };
 };
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
@@ -3597,6 +3585,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // (12) DIE PUFFER-SICHT (E2): was ein bewegtes Objekt ändert, steht in den Uniform-Puffern seiner Gruppen; die Texturen und
 // Sampler darin (je Leib-Teil sechs Schatten-Karten) prüfte der Gang trotzdem je Pass. Ihren Wechsel sieht der Textur-Wächter
 // (6) je Render-Objekt — nur dann (`textur`) lädt der Gang die ganze Gruppe, sonst ihre Puffer-Sicht (`_diaetPuffer`).
+// Gemessen in EINER Welt (Radeon, A/B in Blöcken zu 8 Bildern): Genesis Third je Bild 137 → 28 Textur- und Sampler-Prüfungen,
+// die Diät 1,115 → 1,076 ms, Ego gleich; das Bild alt gegen neu 0,00 % der Pixel.
 AnazhRealm._diaetObjektGang = function (rend, ro, k, textur) {
     const nf = rend._nodes.getNodeFrameForRender(ro);
     for (const n of k.eigenVor) nf.updateBeforeNode(n);
@@ -3744,14 +3734,6 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     if (k.eigenKnoten.length) {
         nf = nf || rend._nodes.getNodeFrameForRender(ro);
         for (const n of k.eigenKnoten) nf.updateNode(n);
-    }
-    // (12) die festen Verweise: der Stempel steht am geteilten Uniform-Knoten (viele Verweise, EIN Knoten)
-    for (const n of k.fest) {
-        const u = n.node || n;
-        if (u._anazhFestRid === rid && u._anazhFestRuf === ruf) continue;
-        u._anazhFestRid = rid;
-        u._anazhFestRuf = ruf;
-        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
     let alle = null;
     for (const g of k.gruppen) {
