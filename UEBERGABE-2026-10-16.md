@@ -206,3 +206,8 @@ der Macher muss frei sein).
 
 ## 17.10. 08:00 (date) — Notiz
 - CI e47ad9f8: alles gruen ausser echt — Frost-Wand S2 („Welt-GPU kompiliert beim Seelenwechsel nach", +3 Module/+2 Pipelines, Soll <= 2), wie an bd74a171, nicht an 93539122: Wackler-Verdacht auf der GTX. Nach Buendel 7 echt neu fahren (rerun-failed-jobs Lauf 39007430669); erst dann main vorspulen. Agent bringt B3d/B3e auf e47ad9f8.
+
+## 17.10. 08:28 (date) — Lage (Kontext 96 %, Woche 87 %)
+- integ-probe = 33e0b496 (V18.546.13): + B3d Weltbild = Blick, B3e Wurf aus dem Plan (L3 155,6 -> 66,3 ms, Goldens byte-exakt), CI-Zeiten. main = 93539122 (V18.546.11).
+- OMEN Buendel 7: A = main 93539122, B = e47ad9f8 (bericht/1710-buendel7.md); danach echt-Neulauf (Frost-Wand S2 Wackler?) und main vorspulen auf den gemessenen + CI-gruenen Kopf.
+- Laufend: S2b karte-welt (wf_8e936d95-083). Offen: A12 see-spiegel (CI rot Fern-Ring), Kristall-Rennen (Bepflanzung wartet auf das Buch), D3c-crossfade, D3d, Selbsttest „Bewegung unter Last“ wackelt (0/4 Woelfe springen ohne Takt-Deckel, scripts/playtest/gelaende-boden.cjs checkBandBewegungUnterLast), CI-ALT-Regel feuert alle 8 Merges (Richter-Last).
