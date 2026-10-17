@@ -34,94 +34,91 @@
 //       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
 //       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
-//   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms (cf9a07ba) — GENAU die Probe dieses
-//   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
+//   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
+//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
 
-// DIE BASIS-ZEILEN je Defekt: [geheilte Form im Stamm, Basis-Form]. Der Selbsttest serviert die Basis-Form.
-const BASIS = {
-    traeger: [
-        [
-            "return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);",
-            "return this.getTerrainHeightAt(x, z);",
-        ],
-    ],
-    luft: [
-        [
-            "return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);",
-            "return this.getTerrainHeightAt(x, z);",
-        ],
-        ["ik: this.state.isInAir !== true,", "ik: true,"],
-    ],
-    hoehle: [["const g = this._fieldSurfaceBelow(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);", "const g = null;"]],
-    sicht: [
-        [
-            "const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);",
-            "const v = Number.isFinite(P[k].g) ? P[k].g : centerG;",
-        ],
-        [
-            "baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);",
-            "baseY = terrainHeight;",
-        ],
-    ],
-    tod: [["creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);", "void 0;"]],
-    // K24-N1: die Auflage von Kapsel und Tier liest die Fuge nicht — die Stamm-Fuge trägt (die Leser vor K24-N1)
-    fuge: [
-        ["box.gedeckt !== true &&", "true &&"],
-        ["if (box.gedeckt === true || !(box.topY >= lo", "if (false || !(box.topY >= lo"],
-    ],
-    // K07: der Stand-Leser liest nur die Karte des Eigners — im Rand-Streifen trägt der Träger
-    rand: [
-        [
-            "const k = this._bodenSichtAt(x, z);",
-            // die Karte des Eigners allein (der Leser vor K07, bilinear, null an einer leeren Ecke)
-            "const k = (() => { const S = this._voxelChunkConfig(0).span, ax = Math.floor(x / S), az = Math.floor(z / S), e = this.state.voxelChunks ? this.state.voxelChunks.get(`${ax},${az}`) : null, m = e && e.surfMap; if (!m) return null; const C = this._voxelChunkConfig(e.lod || 0), T = AnazhRealm.BODEN_KARTE_TEILUNG, h = C.step / T, M = T * (C.dim + 3) + 1, u = (x - (ax * C.span - C.step)) / h, v = (z - (az * C.span - C.step)) / h, i = Math.floor(u), j = Math.floor(v); if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null; const a = m[i + j * M], b = m[i + 1 + j * M], c = m[i + (j + 1) * M], d = m[i + 1 + (j + 1) * M]; if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null; const fu = u - i, fv = v - j; return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv; })();",
-        ],
-    ],
-    // K21: Nah-Wiese und Nah-Streu lesen nur die Karte des Eigners — im Rand-Streifen ist sie leer (der Leser vor K21)
-    wiese: [
-        [
-            "const y = this._bodenSichtAt(x, z, grund);",
-            "const y = (() => { const C = this._voxelChunkConfig(0), lx = x - Math.floor(x / C.span) * C.span, lz = z - Math.floor(z / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(x, z, grund); })();",
-        ],
-        [
-            "const py = this._bodenSichtAt(px, pz);",
-            "const py = (() => { const C = this._voxelChunkConfig(0), lx = px - Math.floor(px / C.span) * C.span, lz = pz - Math.floor(pz / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(px, pz); })();",
-        ],
-    ],
-};
-let patch = null;
-let patchFehler = [];
-// Der Patch wirkt auf den virtuellen Stamm (scripts/lib/stamm.cjs) — EINMAL je Patch-Satz; ausgeliefert wird je Stamm-
-// Datei ihr Teil (`liefere`), so trifft jede Zeile die Datei, die sie trägt.
-let gepatcht = { patch: null, text: null };
-function stammGepatcht() {
-    if (gepatcht.patch !== patch) {
-        let txt = stammLib.text(ROOT);
-        for (const [geheilt, basis] of patch) {
-            if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-            else txt = stammLib.ersetze(txt, null, geheilt, basis);
-        }
-        gepatcht = { patch, text: txt };
-    }
-    return gepatcht.text;
+// DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
+// `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst (Seite: `window.__eignerKarte`, Proben und Täter „rand").
+function eignerKarte(r, x, z) {
+    const s = r.state;
+    const span = r._voxelChunkConfig(0).span;
+    const cx = Math.floor(x / span);
+    const cz = Math.floor(z / span);
+    const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
+    const m = e && e.surfMap;
+    if (!m) return null;
+    const C = r._voxelChunkConfig(e.lod || 0);
+    const T = r.constructor.BODEN_KARTE_TEILUNG;
+    const h = C.step / T;
+    const M = T * (C.dim + 3) + 1;
+    const u = (x - (cx * C.span - C.step)) / h;
+    const v = (z - (cz * C.span - C.step)) / h;
+    const i = Math.floor(u);
+    const j = Math.floor(v);
+    if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
+    const ka = m[i + j * M];
+    const kb = m[i + 1 + j * M];
+    const kc = m[i + (j + 1) * M];
+    const kd = m[i + 1 + (j + 1) * M];
+    if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
+    const fu = u - i;
+    const fv = v - j;
+    return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
 }
 
-const server = statikServer({
-    root: ROOT,
-    wandle: (p, data) =>
-        data && patch && stammLib.istStammUrl(ROOT, p) ? stammLib.liefere(ROOT, p, stammGepatcht()) : data,
-});
+// DIE TÄTER DES SELBSTTESTS: je Defekt der Leser vor seiner Heilung als Laufzeit-Stub an der Welt (je Lauf ein eigener
+// Kontext, kein Rückbau) — installiert vor dem Einschwingen, die Wand muss jeden beim Namen rot nennen.
+function taeter(inj) {
+    const r = window.anazhRealm;
+    const P = Object.getPrototypeOf(r);
+    const ueber = (n, vor) =>
+        (r[n] = function (...a) {
+            vor.call(this);
+            try {
+                return P[n].apply(this, a);
+            } finally {
+                delete this._bodenSichtAt;
+            }
+        });
+    // traeger/luft: die Kapsel stand auf der Oberkante der Säule statt auf ihrem Träger; luft: die IK erdete im Sprung
+    if (inj === "traeger" || inj === "luft") r._gaitBodenY = (x, z) => r.getTerrainHeightAt(x, z);
+    if (inj === "luft") r._gaitTick = (m, h, v, dt, o) => P._gaitTick.call(r, m, h, v, dt, o && { ...o, ik: true });
+    if (inj === "hoehle") r._koerperBodenUnter = (x, _y, z) => r._voxelSurfaceY(x, z); // der Boden über der Höhle
+    if (inj === "sicht") r._standSicht = (_x, _z, traegerY) => traegerY; // der Leib steht auf dem Gesetz, nie auf der Karte
+    if (inj === "tod") ueber("_tickLeichname", function () {
+        for (const c of this.state.leichname || []) if (c.userData.dying) c.userData.dying.hebe = null;
+    });
+    if (inj === "fuge") {
+        // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
+        r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
+        for (const e of r.state.architectures || []) r._blockerFugen(e.blockerAABBs);
+    }
+    // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
+    // nichts (vor K21)
+    if (inj === "rand") ueber("_standSicht", function () {
+        this._bodenSichtAt = (x, z) => window.__eignerKarte(this, x, z);
+    });
+    const C = r._voxelChunkConfig(0);
+    const rest = (w) => w - Math.floor(w / C.span) * C.span;
+    const streifen = (x, z) => rest(x) < C.step / 2 || rest(z) < C.step / 2;
+    if (inj === "wiese")
+        for (const n of ["_nahWieseKachelBueschel", "_nahStreuKachel"])
+            ueber(n, function () {
+                this._bodenSichtAt = (x, z, g) => (streifen(x, z) ? null : P._bodenSichtAt.call(this, x, z, g));
+            });
+}
+
+const server = statikServer({ root: ROOT });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
 // DER UMFANG DER K7-PROBE (die EINE Quelle für Messung und Urteil): Büschel der Nah-Wiese und Pflanzen der Nah-Streu neben dem
@@ -140,34 +137,10 @@ async function proben(mitWiese, umfang) {
     const p = s.player;
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
-    // die Boden-Karte des EIGNERS selbst (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke) — die Linse
-    // misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr das Rand-Loch (dort ist sie leer, der Strahl richtet). Seit
-    // K21 liest das Spiel nur `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst.
+    // die Boden-Karte des EIGNERS selbst (eignerKarte) — die Linse misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr
+    // das Rand-Loch (dort ist sie leer, der Strahl richtet)
     const span = r._voxelChunkConfig(0).span;
-    const karte = (x, z) => {
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
-        const m = e && e.surfMap;
-        if (!m) return null;
-        const C = r._voxelChunkConfig(e.lod || 0);
-        const T = A.BODEN_KARTE_TEILUNG;
-        const h = C.step / T;
-        const M = T * (C.dim + 3) + 1;
-        const u = (x - (cx * C.span - C.step)) / h;
-        const v = (z - (cz * C.span - C.step)) / h;
-        const i = Math.floor(u);
-        const j = Math.floor(v);
-        if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
-        const ka = m[i + j * M];
-        const kb = m[i + 1 + j * M];
-        const kc = m[i + (j + 1) * M];
-        const kd = m[i + 1 + (j + 1) * M];
-        if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
-        const fu = u - i;
-        const fv = v - j;
-        return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
-    };
+    const karte = (x, z) => window.__eignerKarte(r, x, z);
     // die Kapsel ruhen lassen (Fuß-Tempo 0) und n feste Sim-Schritte gehen
     const savedVel = s.playerVel;
     let vy = 0;
@@ -1095,9 +1068,6 @@ function zeile(o) {
     let rot = 0;
     try {
         const lauf = async (inj) => {
-            patch = inj && BASIS[inj] ? BASIS[inj] : null;
-            patchFehler = [];
-            gepatcht = { patch: null, text: null }; // je Lauf neu gepatcht (die Fehl-Zeilen zählen je Lauf)
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -1109,6 +1079,7 @@ function zeile(o) {
                 window.__anazhHeadlessNullRenderer = true;
             });
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
+            await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
             await page.waitForFunction(
                 () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
@@ -1116,6 +1087,7 @@ function zeile(o) {
                     timeout: 180000,
                 }
             );
+            if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen (plateau-basiert, das Muster von gate:koerper-bewegung)
             await page.evaluate(async () => {
                 const r = window.anazhRealm;
@@ -1137,8 +1109,7 @@ function zeile(o) {
             });
             const o = await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
-            patch = null;
-            return { o, errs, pf: patchFehler.slice() };
+            return { o, errs };
         };
         if (SELBST) {
             const soll = {
@@ -1152,14 +1123,12 @@ function zeile(o) {
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
             };
             for (const inj of Object.keys(soll)) {
-                const { o, pf } = await lauf(inj);
+                const { o } = await lauf(inj);
                 const f = urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
-                const ok = pf.length === 0 && fehlt.length === 0;
+                const ok = fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
-                console.log(
-                    `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
-                );
+                console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
                 if (!ok) rot++;
             }
         }

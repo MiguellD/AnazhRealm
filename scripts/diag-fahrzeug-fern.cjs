@@ -4,21 +4,10 @@
 // L0-Geometrie (gt: hunderte Meshes auf JEDE Distanz — der alte Fehler); ein
 // GERITTENES Fahrzeug bleibt Voll-Geometrie (die statische Wand).
 //
-// VIER PRÜF-FAMILIEN:
-//   (S) SELBST-TEST (nicht vakuös): dieselben Prüfungen auf MUTIERTER Quelle —
-//       ohne die Policy-Zeile (`impostor: true` in KIND_POLICY.vehicle) MUSS die
-//       Linse rot urteilen; ebenso ohne `vehicle` im Bäcker-Kind-Wächter.
-//   (P) POLICY + CHOKEPOINTS (Quelle, verhaltensecht evaluiert, kein blosser Grep):
-//       KIND_POLICY wird aus dem Stamm extrahiert und AUSGEFÜHRT (vehicle.impostor
-//       === true) · `_foundryPresetIsTree` wird als ECHTE Funktion instanziert und
-//       urteilt kind "vehicle" → true · der Bäcker-Kind-Wächter (Positivliste)
-//       lässt vehicle durch · die Serve-Chokepoints (`_foundryFlattenFor` +
-//       `_foundryEntryReady`) routen lod>=2 über GENAU diese Politik.
-//   (M) GERITTEN-WAND (verhaltensecht): `_foundryLodForEntry` wird als ECHTE
-//       Funktion instanziert — ein Entry AUF der Spieler-Position (das ist die
-//       Fahr-Invariante: `_tickMountedMovement` pinnt entry.position auf pm, per
-//       Quell-Probe belegt) urteilt Stufe 0 (< 2 → nie Impostor, Voll-Geometrie);
-//       dasselbe Entry 500 m fern urteilt Stufe 2 (Impostor).
+// ZWEI PRÜF-FAMILIEN (die Politik, die Serve-Route und die Kette Wagen [0, 1] + Karte beweist gate:foundry-crossfade (7)
+// am echten Spawn, die Geritten-Wand — der gerittene Wagen bleibt Stufe 0 — gate:fahr-leben T1/T3 im echten Ritt; keine
+// Probe liest Quelltext, D3c):
+//   (S) SELBST-TEST (nicht vakuös): eine leere Karte, ein null-Payload und eine Diät ohne Gewicht MÜSSEN rot urteilen.
 //   (N) DIE ECHTE BÄCKEREI (puppeteer + Foundry-WEB-WORKER, das diag-baecker-kanal-
 //       Muster): das ERSTE vehicle-Rezept aus dem LIVE-Buch (get-book) bäckt eine
 //       NICHT-LEERE Impostor-Karte (Alpha-Deckung > 64 Px — die NICHT-LEERE-WAND),
@@ -27,13 +16,9 @@
 //
 //   node scripts/diag-fahrzeug-fern.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { WORKER_BOOT } = require("./lib/asset-worker-harness.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
-const STAMM = stammLib.text(ROOT);
 
 // ── Die Bäcker-Soll-Zahlen (die fixe Naht __replyBakeImpostor, wie diag-baecker-kanal) ──
 const SOLL = { cw: 128, ch: 256, V: 8 };
@@ -42,169 +27,6 @@ const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: echte Pixel, keine Clear-Karte al
 // Die Fernstufe des Wirts: EIN camera-facing Quad (`_impostorQuad`, VC=6).
 const FERN_MESHES = 1;
 const FERN_TRIS = 2;
-
-// ── Quell-Chirurgie: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) — der Block an seinem Kopf ─────────────
-
-// Die Render-Karte des Kerns (foundry-core PORTAL_RENDER_CONFIG, reine Daten) — die EINE Quelle der Stufen-Distanzen (K2).
-const KERN_RENDER = new Function(
-    "const PORTAL_RENDER_CONFIG = " +
-        stammLib.rumpf(require("fs").readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), /const PORTAL_RENDER_CONFIG = \{/) +
-        "; return PORTAL_RENDER_CONFIG;"
-)();
-
-// Eine Stamm-Konstante aus der Quelle AUSGEFÜHRT (verhaltensecht, kein Grep): KIND_POLICY (die Tafel, die der Stamm liest)
-// und LOD_DISTANCES (die EINE Distanz-Tabelle von `_foundryLodForEntry`; K2: sie liest das Kern-Gesetz
-// `terrain:PORTAL_RENDER_CONFIG.lod` — der Stub löst den Pfad über `render` auf, fail-closed wirft). Der Kopf der Zuweisung
-// steht genau einmal im Stamm (stammLib.treffer), der Block an ihm kommt vom EINEN Schneider (stammLib.rumpf); `schluss`
-// schließt, was der Block offen lässt (die Freeze-Klammer bzw. der Ruf der Funktion).
-function ladeKonstante(quelle, name, marker, schluss, render) {
-    const kopf = new RegExp(("AnazhRealm." + name + " = " + marker).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^{;]*\\{");
-    const m = stammLib.treffer(quelle, null, kopf);
-    const rumpf = m && stammLib.rumpf(quelle, kopf);
-    const block = rumpf && m[0].slice(0, -1) + rumpf;
-    if (!block) return null;
-    const kern = (p) => (p.startsWith("terrain:") ? { PORTAL_RENDER_CONFIG: render } : null);
-    const AnazhRealm = {
-        Gesetz: (p) => p.split(":")[1].split(".").reduce((o, k) => (o == null ? o : o[k]), kern(p)),
-        _kernPflichtBruch: (p) => {
-            throw new Error("KERN-PFLICHT " + p);
-        },
-    };
-    try {
-        new Function("AnazhRealm", block + schluss)(AnazhRealm);
-        return AnazhRealm[name] || null;
-    } catch (_e) {
-        return null;
-    }
-}
-
-// Eine Klassen-Methode als ECHTE Funktion instanzieren (Body unverändert — die
-// Linse führt EXAKT den Stamm-Code aus, mit gestubbtem this/AnazhRealm).
-function ladeMethode(quelle, name, argNamen) {
-    const body = stammLib.rumpf(quelle, name);
-    if (!body) return null;
-    try {
-        return new Function("AnazhRealm", "return function(" + argNamen + ") " + body + ";");
-    } catch (_e) {
-        return null;
-    }
-}
-
-// Der Bäcker-Kind-Wächter: die Positivliste der geurteilten Bake-Kinds als ECHTES Regex
-// aus der Quelle (der EINE Chokepoint in `_tickImpostorBake`).
-function ladeKindWaechter(quelle) {
-    const m = stammLib.treffer(quelle, "_impostorBakeSende", /if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
-    if (!m) return null;
-    try {
-        return new RegExp(m[1]);
-    } catch (_e) {
-        return null;
-    }
-}
-
-// ── (P) + (M): die reine Prüf-Funktion über einer QUELLE → Liste roter Befunde ──────────
-// (auch der Selbst-Test ruft sie — mit mutierter Quelle MUSS sie feuern.)
-function pruefeQuelle(quelle, render = KERN_RENDER) {
-    const rot = [];
-    // (P1) Die Policy-Zeile — verhaltensecht ausgeführt.
-    const KP = ladeKonstante(quelle, "KIND_POLICY", "Object.freeze(", ");");
-    if (!KP) rot.push("KIND_POLICY nicht extrahierbar/ausführbar (Tabellen-Chirurgie gerissen)");
-    else if (!(KP.vehicle && KP.vehicle.impostor === true))
-        rot.push(
-            "KIND_POLICY.vehicle trägt KEIN impostor:true — die Fahrzeug-Fernstufe ist tot (gt bleibt Voll-Geometrie fern)"
-        );
-    // (P2) Der EINE Klassifikator urteilt kind "vehicle" → Impostor (echte Funktion).
-    const istBaum = ladeMethode(quelle, "_foundryPresetIsTree", "preset");
-    if (!istBaum) rot.push("_foundryPresetIsTree nicht instanzierbar");
-    else if (KP) {
-        const stub = { _foundry: { recipes: { gt: { kind: "vehicle" } } } };
-        const urteil = istBaum({ KIND_POLICY: KP }).call(stub, "gt");
-        if (urteil !== true)
-            rot.push(
-                "_foundryPresetIsTree(gt · kind vehicle) urteilt " +
-                    urteil +
-                    " statt true — der Serve-Chokepoint kennt die Politik nicht"
-            );
-    }
-    // (P3) Der Bäcker-Kind-Wächter lässt vehicle durch (echtes Regex aus der Quelle).
-    const waechter = ladeKindWaechter(quelle);
-    if (!waechter) rot.push("Bäcker-Kind-Wächter (Positivliste in _tickImpostorBake) nicht gefunden");
-    else {
-        if (!waechter.test("vehicle"))
-            rot.push("Kind-Wächter blockt vehicle (" + waechter + ") — der Bake fiele terminal gescheitert");
-        if (waechter.test("weapon")) rot.push("Kind-Wächter lässt weapon durch — die Positivliste ist keine mehr");
-    }
-    // (P4) Die Serve-Chokepoints routen lod>=2 über GENAU diese Politik (Quell-Proben
-    // am Chokepoint — Lehre 2: die Invariante lebt dort, nicht am Aufrufer).
-    // V18.478 (Bäcker-ov): die Stempel-Wand ist GEFALLEN — geprägte Entries ziehen
-    // jetzt IHRE ov-Karte (der fimp-Key trägt den ov-Hash), die Route ist ov-blind
-    // für den ungeprägten Fall byte-alt. Die Proben wandern mit.
-    if (
-        !/lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/.test(
-            quelle
-        )
-    )
-        rot.push("_foundryFlattenFor: die lod>=2-Impostor-Route fehlt (Fernstufe serviert Geometrie)");
-    if (
-        !/if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) \{\s*\n\s*const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, this\._artifactStudioOv\(entry\)\);/.test(
-            quelle
-        )
-    )
-        rot.push(
-            "_foundryEntryReady: der Dock-Peek kennt die lod>=2-Impostor-Route (mit ov-Spiegel) nicht (Rewarm urteilt übers falsche Asset)"
-        );
-    // Bäcker-ov: der fimp-Key + das Bake-Subjekt (gkey) + der Bake tragen den ov-Hash (V18.527: die EINEN
-    // Schlüssel-Münzer `_foundryKartenKey`/`_foundryKoerperKey` hängen ihn an).
-    if (
-        !/const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, ovK\);/.test(quelle) ||
-        !/_foundryKartenKey\([^)]*\) \{\s*\n\s*return preset \+ "\|" \+ gestalt \+ \(ov \? "\|ov:" \+ this\._studioOvHash\(ov\) : ""\);/.test(
-            quelle
-        )
-    )
-        rot.push(
-            "_foundryEnsureImpostorRecord: der ov-Hash fehlt im fimp-Key (geprägte Karte kollabiert mit der ungeprägten)"
-        );
-    if (!/if \(ov && typeof ov === "object"\) msg\.ov = ov;/.test(quelle))
-        rot.push("_foundryBakeImpostorRequest: die ov reist nicht zum Studio-Bäcker (die Karte bäckt ungeprägt)");
-    // (M) DIE GERITTEN-WAND — verhaltensecht: Distanz-Autorität + Fahr-Pin.
-    const lodFuer = ladeMethode(quelle, "_foundryLodForEntry", "entry");
-    const D = ladeKonstante(quelle, "LOD_DISTANCES", "", ")();", render);
-    const wahl = ladeMethode(quelle, "_chooseLODForDistance", "distance, currentLOD, visHeight");
-    if (!lodFuer || !D || !wahl) rot.push("_foundryLodForEntry/_chooseLODForDistance/LOD_DISTANCES nicht instanzierbar");
-    else {
-        const fn = lodFuer({ LOD_DISTANCES: D });
-        const pm = { x: 100, y: 5, z: -30 };
-        // Der Schätzer fragt die EINE Stufen-Wahl (`_chooseLODForDistance`) mit der Sichthöhe (`_lodTreeVisHeight`,
-        // ein Fahrzeug ist kein Baum: 0 = rohe Distanz) — beide aus der Quelle, nie nachgebaut.
-        // Die Stufen-Wahl misst vom Auge der Stufen (`_lodAuge`, K36): der Reiter sitzt im Gefährt, das Ego-Auge mit ihm.
-        const stub = {
-            state: { playerMesh: { position: pm } },
-            _lodAuge: () => pm,
-            _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
-            _lodTreeVisHeight: () => 0,
-            _ankunftsFerne: () => 1, _archStufenGrenzen: () => null, // die Ankunft ist vorbei (B2), keine Grenzen (K43)
-        };
-        // Fahr-Invariante: das gerittene Entry SITZT auf der Spieler-Position → Stufe 0.
-        const geritten = fn.call(stub, { position: { x: pm.x, y: pm.y, z: pm.z } });
-        if (geritten !== 0)
-            rot.push(
-                "gerittenes Entry (Distanz 0) urteilt Stufe " +
-                    geritten +
-                    " statt 0 — die Voll-Geometrie-Wand ist gerissen"
-            );
-        // Geparkt fern (500 m >> thresh12) → Stufe 2 = Impostor.
-        const geparkt = fn.call(stub, { position: { x: pm.x + 500, y: pm.y, z: pm.z } });
-        if (geparkt !== 2)
-            rot.push("geparktes Entry (500 m) urteilt Stufe " + geparkt + " statt 2 — die Fernstufe greift nie");
-    }
-    // Der Fahr-Pin selbst (die Quell-Probe der Invariante, auf der (M) ruht):
-    // _tickMountedMovement zieht entry.position frame-genau auf die Spieler-Position.
-    if (!/entry\.position\.x = pm\.x;\s*\n\s*entry\.position\.z = pm\.z;/.test(quelle))
-        rot.push(
-            "_tickMountedMovement pinnt entry.position nicht mehr auf pm — die (M)-Invariante (geritten = Distanz 0) trägt nicht"
-        );
-    return rot;
-}
 
 // ── (N): die reine Bäcker-Prüfung (Zahlen aus dem echten Worker) ────────────────────────
 function pruefeBaecker(st) {
@@ -250,48 +72,7 @@ function pruefeDiaet(nah) {
 // ── (S) SELBST-TEST: die Linse muss den ALTEN Fehler rot sehen (nicht vakuös) ───────────
 function selbstTest() {
     const faelle = [];
-    // 1. Die ECHTE Quelle muss (heute) grün sein — sonst ist die Welle nicht gebaut.
-    faelle.push(["echte Quelle -> KEIN Befund", pruefeQuelle(STAMM).length === 0]);
-    // 2. DER ALTE FEHLER: die Policy-Zeile fehlt (impostor:true gestrippt) -> MUSS feuern.
-    const ohnePolicy = stammLib.ersetze(STAMM, null, /(vehicle: Object\.freeze\(\{[^}]*?)\n\s*impostor: true,/, "$1");
-    faelle.push([
-        "ohne KIND_POLICY.vehicle impostor:true -> feuert (der alte gt-328-Meshes-Fehler)",
-        ohnePolicy !== STAMM && pruefeQuelle(ohnePolicy).length > 0,
-    ]);
-    // 3. Der Kind-Wächter ohne vehicle -> MUSS feuern (Bake fiele terminal).
-    const ohneWaechter = stammLib.ersetze(STAMM, "_impostorBakeSende", "|gate|vehicle)$", "|gate)$");
-    faelle.push([
-        "ohne vehicle im Bäcker-Kind-Wächter -> feuert",
-        ohneWaechter !== STAMM && pruefeQuelle(ohneWaechter).length > 0,
-    ]);
-    // 4. Die Serve-Route gerissen (Impostor-Zweig entfernt) -> MUSS feuern.
-    // V18.478 (Bäcker-ov): die Stempel-Wand ist gefallen — die Mutation wandert mit
-    // (regex-basiert; der !== STAMM-Guard macht ein No-op-Replace LAUT rot).
-    const ohneRoute = stammLib.ersetze(STAMM, "_foundryFlattenFor",
-        /if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/,
-        "if (false) return null;"
-    );
-    faelle.push([
-        "ohne lod>=2-Impostor-Route in _foundryFlattenFor -> feuert",
-        ohneRoute !== STAMM && pruefeQuelle(ohneRoute).length > 0,
-    ]);
-    // 4b. Der ov-Hash aus dem fimp-Key gestrippt -> MUSS feuern (geprägte Karte kollabiert).
-    const ohneOvHash = stammLib.ersetze(STAMM, "_foundryKartenKey",
-        'return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");',
-        'return preset + "|" + gestalt;'
-    );
-    faelle.push([
-        "ohne den ov-Hash im fimp-Key -> feuert (geprägte Karte kollabiert mit der ungeprägten)",
-        ohneOvHash !== STAMM && pruefeQuelle(ohneOvHash).length > 0,
-    ]);
-    // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
-    // Die Autorität ist das Kern-Gesetz (K2: der Stamm liest PORTAL_RENDER_CONFIG.lod, keine Zahl im Stamm) — pervertiert dort.
-    const pervers = { ...KERN_RENDER, lod: { ...KERN_RENDER.lod, d0: -1, d1: -1 } };
-    faelle.push(["Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert", pruefeQuelle(STAMM, pervers).length > 0]);
-    // Ein unlesbares Gesetz (Blatt fehlt) bricht fail-closed laut — die Linse nennt die Tabelle nicht instanzierbar.
-    const ohneBlatt = { ...KERN_RENDER, lod: { ...KERN_RENDER.lod, hyst: undefined } };
-    faelle.push(["Kern-Gesetz ohne hyst -> feuert (fail-closed)", pruefeQuelle(STAMM, ohneBlatt).length > 0]);
-    // 6. Bäcker-Prüfung: leere Karte / null payload -> MUSS feuern.
+    // Bäcker-Prüfung: leere Karte / null payload -> MUSS feuern.
     faelle.push(["Bäcker: payload null -> feuert", pruefeBaecker({ got: true, payloadNull: true }).length > 0]);
     faelle.push([
         "Bäcker: LEERE Karte (Alpha 0) -> feuert",
@@ -307,10 +88,10 @@ function selbstTest() {
             normalLen: SOLL_LEN,
         }).length > 0,
     ]);
-    // 7. Diät-Messung: Nah == Fern -> MUSS feuern (vakuöse Messung).
+    // Diät-Messung: Nah == Fern -> MUSS feuern (vakuöse Messung).
     faelle.push(["Diät: nah == fern -> feuert", pruefeDiaet({ meshes: 1, tris: 2 }).length > 0]);
     let ok = true;
-    console.log("===== (S) SELBST-TEST DER LINSE (Quell-Mutation, GPU-frei) =====");
+    console.log("===== (S) SELBST-TEST DER LINSE (GPU-frei) =====");
     for (const [name, gut] of faelle) {
         console.log(`  ${gut ? "✅" : "❌"} Selbst-Test: ${name}`);
         if (!gut) ok = false;
@@ -380,13 +161,7 @@ function pageHtml() {
         console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös/die Welle nicht gebaut, Abbruch.");
         process.exit(1);
     }
-    const rot = pruefeQuelle(STAMM);
-    console.log("\n===== (P/M) POLICY · CHOKEPOINTS · GERITTEN-WAND (verhaltensecht aus der Quelle) =====");
-    console.log(
-        rot.length === 0
-            ? "  ✅ Policy vehicle.impostor:true · Klassifikator urteilt vehicle→Impostor · Wächter offen · Serve-Routen stehen · geritten=L0 / 500 m=L2"
-            : "  (Befunde unten)"
-    );
+    const rot = [];
 
     // ── (N/K) Die echte Bäckerei im Foundry-Worker ──
     const server = statikServer({ seiten: { "/": pageHtml, "/__ff.html": pageHtml } });
@@ -441,7 +216,7 @@ function pageHtml() {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Fahrzeug-Fernstufe steht auf der Tor-Spur: geparkt fern = nicht-leere 8-Winkel-Karte (1 Quad) statt der vollen L0-Geometrie, geritten bleibt Voll-Geometrie (Distanz-0-Wand), der Bäcker-Kanal trägt vehicle."
+        "\n✅ GRÜN — die Fahrzeug-Fernstufe steht auf der Tor-Spur: geparkt fern = nicht-leere 8-Winkel-Karte (1 Quad) statt der vollen L0-Geometrie, der Bäcker-Kanal trägt vehicle."
     );
     process.exit(0);
 })().catch((e) => {
