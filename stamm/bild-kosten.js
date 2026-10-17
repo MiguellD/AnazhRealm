@@ -981,6 +981,7 @@ class AnazhRealm_bild_kosten {
                 // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT) und seine Geschichte; das Ziel
                 // des Vendors (1×1, nie gezeichnet) fällt
                 const ziel = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
+                ziel.name = "TRAANode.resolve";
                 ziel.textures[0].name = "TRAANode.resolve";
                 ziel.textures[1].name = "TRAANode.flacker";
                 ziel.textures[1].type = THREE.UnsignedByteType;
@@ -993,6 +994,7 @@ class AnazhRealm_bild_kosten {
                     type: THREE.UnsignedByteType,
                     format: THREE.RedFormat,
                 });
+                this._flackerGeschichte.name = "TRAANode.flacker.geschichte";
                 this._flackerGeschichte.texture.name = "TRAANode.flacker.geschichte";
                 const F = AnazhRealm.FLACKER;
                 this._flacker = {
