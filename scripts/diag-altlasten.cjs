@@ -3690,9 +3690,10 @@ function main() {
                     /^Fang$/,
                 ],
                 [
+                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; die Kette des Voxel-Fadens trägt den Fall)
                     "stiller Ausstieg der Kette",
-                    '                    if (!Array.isArray(manifest) || !manifest.length)\n                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");',
-                    "                    if (!Array.isArray(manifest) || !manifest.length)\n                        return;",
+                    "            .then((src) => {\n                // V18.112",
+                    "            .then((src) => { if (!src) return;\n                // V18.112",
                     /^Fang$/,
                 ],
                 // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die

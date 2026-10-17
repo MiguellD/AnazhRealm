@@ -32,7 +32,7 @@ function check(ok, label) {
 
 // ---------------------------------------------------------------------------
 // --selftest (Node-pur): ein korruptes Pack-Artefakt MUSS rot vergleichen.
-function selftest() {
+async function selftest() {
     console.log("=== PACK-CONTRACT SELBST-TEST (der Detektor feuert) ===");
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pack-selftest-"));
     try {
@@ -91,12 +91,52 @@ function selftest() {
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
+    // der Boot-Lauf ist nicht vakuös: ein Manifest ohne core.bruecke lässt Laden und Stempel rot werden
+    const ohne = JSON.stringify(PK.readManifest(PK.ROOT).map((c) => Object.assign({}, c, { bruecke: undefined })));
+    const t = await bootLauf(ohne);
+    check(t.laden !== t.sollLaden && t.stempel !== t.sollStempel, "Täter-Manifest ohne core.bruecke → Laden und Stempel rot");
     if (fails) {
         console.error("\n❌ SELBST-TEST ROT — der Detektor ist vakuös.");
         process.exit(1);
     }
     console.log("\n✅ SELBST-TEST GRÜN — ein korruptes Pack-Artefakt wird sicher rot.");
     process.exit(0);
+}
+
+// DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
+// Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` liefert, Laden, Abruf und Digest
+// mitschreibt. Das Soll kommt aus dem echten Manifest; ohne Blob bei der Geburt nennt `fehler` den Täter.
+async function bootLauf(text) {
+    const vm = require("vm");
+    const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
+    const g = vm.runInContext("globalThis", ctx);
+    const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false };
+    let blob = null;
+    Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
+    g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
+    g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
+    g.Worker = function (_u, o) { aus.geburt = (o && o.name) || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
+    const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }); // prettier-ignore
+    try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
+    const echt = PK.readManifest(PK.ROOT);
+    const url = (p) => new URL(p + "?v=" + A.VERSION, "http://wirt/index.html").href;
+    const liste = (feld) => echt.flatMap((c) => [].concat(c[feld] || [])).map(url);
+    aus.sollLaden = ["lib", "scripts", "bruecke"].flatMap(liste).join(" ");
+    const quellen = liste("scripts").concat(liste("bruecke")).map((u) => `<${u}>`);
+    aus.sollStempel = [fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"), ...quellen].join("\n");
+    if (!blob) return Object.assign(aus, { fehler: "kein Boot-Blob bei der Geburt — der Haupt-Faden holt das Manifest (fetch) vor ihr" }); // prettier-ignore
+    const ord = [];
+    const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), postMessage: (m) => (aus.post = m) };
+    w.XMLHttpRequest = function () { this.open = () => {}; this.send = () => (this.responseText = text); }; // prettier-ignore
+    w.importScripts = (...u) => (ord.push("laden"), (aus.laden = ord[0] === "message" ? u.join(" ") : "die Schale steht nicht davor")); // prettier-ignore
+    w.fetch = (u) => Promise.resolve({ text: () => Promise.resolve(`<${u}>`) });
+    w.crypto = { subtle: { digest: (_a, b) => ((aus.stempel = new TextDecoder().decode(b)), new Promise(() => {})) } };
+    w.self = w.globalThis = w;
+    vm.runInContext(blob, vm.createContext(w));
+    w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
+    aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
+    for (let i = 0; i < 50 && aus.stempel == null; i++) await new Promise((r) => setImmediate(r));
+    return aus;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,10 +171,14 @@ async function main() {
             check(md.includes(marker), `CONTRACT.md trägt den Anker „${marker}"`);
     }
 
-    // (b) die Absenz am kommentar-gestrippten Boot: keine Labor-Shell reist in den Stempel (K42). Stempel-Formel und
-    // Schale beweisen gate:fluss (W5, Stempel-Probe) und gate:warm-start am Verhalten, den Ship-Hook beweist (d).
-    const boot = stammLib.rumpf(stammLib.text(PK.ROOT), "_ensureAssetFoundry");
-    check(!!boot && !/core\.shell/.test(PK.stripComments(boot)), "Stempel: keine Labor-Shell im Boot (K42)");
+    // (b) DER BOOT ALS LAUF (B3a, `bootLauf`): Geburt, Laden, Konsum-Wand und Stempel am Lauf der echten Klasse, nie am
+    // Text ihres Rumpfs — keine Labor-Datei im Faden und im Stempel (K42); den Ship-Hook beweist (d).
+    const lauf = await bootLauf(fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"));
+    check(lauf.geburt === "buch", `Boot: der Faden kommt synchron mit der Geburt und heißt „buch" (${lauf.geburt || lauf.fehler})`);
+    const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore
+    check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt lib · scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)"); // prettier-ignore
+    check(lauf.wand, "Boot: die Konsum-Wand (FOUNDRY_LESEN) reist in die Schale — ein ungelesenes Attribut fällt vor dem Transfer");
+    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: Manifest-Text vor ALLEN core.scripts + core.bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);
