@@ -136,8 +136,9 @@ class AnazhRealm_koerper_leib {
 
     // DIE LEIB-HÜLLE (E2): der Wrap jeder Gelenk-Gestalt (Mensch und Tier, beide Stufen) ist ein BÜNDEL. Ein Leib bewegt sich
     // und atmet in jedem Bild — lose zahlte jedes seiner Teile je Bild den ganzen r184-Weg (Render-Objekt, Pipeline-Prüfung,
-    // Zug mit acht Attributen), im Bündel nur seinen Objekt-Gang (Lage, Knochen): gemessen in EINER Welt (Radeon, Genesis
-    // Third, Regler voll, ABAB) Render-CPU p50 8,1 → 7,4 ms, CPU-Takt p95 15,2 → 13,6 ms unter Fremdlast. Was das Bündel
+    // Zug mit acht Attributen), im Bündel nur seinen Objekt-Gang (Lage, Knochen): gemessen in EINER Welt (Radeon, Regler voll,
+    // 24 ABAB-Runden) der lose Weg des Leibs 425 → 66 µs je Takt, das Abspielen +253 µs; CPU-Takt p50 Genesis Third 5,9 → 5,8,
+    // Wiese Third 7,7 → 7,6 ms, Ego gleich. Was das Bündel
     // zeichnet, stellt die Projektion je Pass (`_leibBuendelStand`); im Schatten-Pass ist es eine Gruppe (Override-Stoff).
     _leibHuelle() {
         return this._buendelTraegt() ? new THREE.BundleGroup() : new THREE.Group();
