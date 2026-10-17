@@ -55,12 +55,11 @@ class AnazhRealm_stoff_instanz {
         return this._kartenAtlas;
     }
 
-    // Das Schicht-Format: BC nur über das WebGPU-Feature (WebGL2 kennt BC5 nur über Erweiterungen — dort rgba8).
+    // Das Schicht-Format: mit WebGPU "welt" — die Karte backt im Welt-Renderer in ein Array-Ziel, das ihr Stoff direkt liest
+    // (Spike S1, `_karteWeltBacken`); ohne WebGPU rgba8 aus dem Studio-Bäcker.
     _impostorAtlasFormat() {
         const r = this.state && this.state.renderer;
-        const dev =
-            r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true ? r.backend.device : null;
-        return dev && dev.features && dev.features.has("texture-compression-bc") ? "bc" : "rgba8";
+        return r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true ? "welt" : "rgba8";
     }
 
     // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
@@ -87,7 +86,7 @@ class AnazhRealm_stoff_instanz {
             at.ch = ic.cellH;
             at.nt = core.KARTEN_GESETZ.normalTeiler;
             if (!at.fmt) at.fmt = this._impostorAtlasFormat();
-            at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt);
+            at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt === "welt" ? "rgba8" : at.fmt);
         }
         const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
         let cap = Math.max(8, at.cap || 0);
@@ -95,7 +94,36 @@ class AnazhRealm_stoff_instanz {
         const M = at.masse;
         const T = THREE;
         const da = !!at.map;
-        if (at.fmt === "bc") {
+        if (at.fmt === "welt") {
+            // DAS WELT-ZIEL: Albedo (sRGB) und Normale als ZWEI Schichten-Texturen EINES Array-Ziels (MRT), voll aufgelöst,
+            // die GPU zieht die Mips; die Tiefe ist eine 2D-Textur je Bake. Wachsen legt das Ziel neu an — die Schichten
+            // backen nach (`_karteWeltNeu`, die Bake-Kosten sind Millisekunden).
+            if (da) {
+                at.rt.setSize(M.w, M.h, cap);
+                at.rtBereit = false;
+                const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+                for (const z of at.zellen.values())
+                    if (z.gebacken) {
+                        z._weltNeu = true;
+                        q.push(z.key);
+                    }
+            } else {
+                at.rt = new T.RenderTarget(M.w, M.h, {
+                    depth: cap,
+                    count: 2,
+                    depthBuffer: true,
+                    generateMipmaps: true,
+                    minFilter: T.LinearMipmapLinearFilter,
+                    magFilter: T.LinearFilter,
+                    colorSpace: T.SRGBColorSpace,
+                });
+                at.map = at.rt.textures[0];
+                at.map.name = "karte-albedo:atlas";
+                at.nmap = at.rt.textures[1];
+                at.nmap.name = "karte-normal:atlas";
+                at.nmap.colorSpace = T.NoColorSpace;
+            }
+        } else if (at.fmt === "bc") {
             const mips = (stufen, alt) =>
                 stufen.map((s, k) => {
                     const data = new Uint8Array(s.bytes * cap);
@@ -142,7 +170,7 @@ class AnazhRealm_stoff_instanz {
             t.wrapS = T.ClampToEdgeWrapping;
             t.wrapT = T.ClampToEdgeWrapping;
             t.anisotropy = 4;
-            if (da) t.needsUpdate = true; // gewachsen: die neue Form mit den kopierten Schichten hochladen
+            if (da && at.fmt !== "welt") t.needsUpdate = true; // gewachsen: die neue Form mit den kopierten Schichten hochladen
         }
         at.cap = cap;
         return at;
@@ -323,7 +351,13 @@ class AnazhRealm_stoff_instanz {
             vonPlatte,
             fmt: at.fmt,
             schichten: at.cap,
-            mb: M ? +(((M.aBytes + M.nBytes) * at.cap) / 1048576).toFixed(2) : 0,
+            // das Welt-Ziel: zwei rgba8-Schichten voller Größe mit Mips (4/3) je Karte
+            mb: !M
+                ? 0
+                : at.fmt === "welt"
+                  ? +((M.w * M.h * 4 * 2 * (4 / 3) * at.cap) / 1048576).toFixed(2)
+                  : +(((M.aBytes + M.nBytes) * at.cap) / 1048576).toFixed(2),
+            weltMs: at.weltMs ? at.weltMs.slice() : null,
             haengendeBakes: at.haengend,
             verworfeneBakes: at.verworfen,
             gescheitertArten,
@@ -359,6 +393,7 @@ class AnazhRealm_stoff_instanz {
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
         const at = this._impostorAtlas();
         if (!at) return 0;
+        if ((at.fmt || this._impostorAtlasFormat()) === "welt") return this._tickKarteWelt(at);
         const flug = this._impostorBakeFlug || (this._impostorBakeFlug = new Map());
         // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
         // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (die Zelle zeichnet
@@ -476,6 +511,191 @@ class AnazhRealm_stoff_instanz {
         return 1;
     }
 
+    // DIE KARTE BACKT IN DER WELT (Spike S1 — Labor = Welt per Konstruktion): kein Bäcker im Worker, kein zweiter Renderer,
+    // keine Rücklese, keine Kodierung. Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt —
+    // dieselben Geometrien, dieselben Stoffe — in V Ansichten (die Gestalt gegengedreht wie im Studio-Bäcker, gleiche Zellen,
+    // gleicher Rahmen `impostorFrame`) in die Schicht des Array-Ziels; über MRT schreibt der Stoff seine Albedo
+    // (`diffuseColor`: vor jedem Licht, ohne Tonkurve) und seine Normale (Sicht-Raum der Bake-Kamera), beide vormultipliziert
+    // mit der Deckung. Je Takt EIN Budget-Fenster (`KARTE_WELT_MS`), die nächste Karte zuerst; eine Zelle, deren L1 noch
+    // reist, bestellt sie im Werk (`_foundryZug`) und wartet — die anderen backen weiter.
+    _tickKarteWelt(at) {
+        const st = this.state;
+        const rend = st.renderer;
+        const q = this._impostorBakeQueue;
+        if (!rend || rend._isHeadlessNull || !st.rendererReady || !q || !q.length) return 0;
+        if (!this._foundryEnabled()) {
+            // ohne Foundry-Welt keine Gestalt: die Zellen fallen TERMINAL (Zensus „gescheitert")
+            for (const k of q.splice(0)) {
+                const z = at.zellen.get(k);
+                if (z && !z.gebacken) this._karteEndet(z, false);
+            }
+            return 0;
+        }
+        const f = this._ensureAssetFoundry();
+        if (!f || !f.ready || !this._impostorAtlasTexturen(at)) return 0;
+        const d2 = (k) => {
+            const z = at.zellen.get(k);
+            return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
+        };
+        q.sort((a, b) => d2(a) - d2(b));
+        const t0 = performance.now();
+        let n = 0;
+        for (let i = 0; i < q.length; ) {
+            const z = at.zellen.get(q[i]);
+            if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
+                q.splice(i, 1);
+                continue;
+            }
+            if (this._karteWeltBacken(at, z) === null) {
+                i++; // die L1 reist
+                continue;
+            }
+            q.splice(i, 1);
+            n++;
+            if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
+        }
+        return n;
+    }
+
+    // Die Bühne der Welt-Karte: EINE Szene, EINE Wurzel, EIN Satz Hüllen (Mesh je Teil, wiederverwendet), die
+    // Ortho-Kamera und der MRT-Knoten (die Namen sind die der Ziel-Texturen).
+    _karteBuehne(at) {
+        if (this._karteBuehneSatz) return this._karteBuehneSatz;
+        const T = THREE;
+        const S = T.TSL;
+        const szene = new T.Scene();
+        const wurzel = new T.Group();
+        szene.add(wurzel);
+        const mrt = S.mrt({
+            [at.map.name]: S.vec4(S.diffuseColor.rgb, 1.0),
+            // die Deckung reist in z: r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1)
+            [at.nmap.name]: S.vec4(S.normalView.xy.mul(0.5).add(0.5), 1.0, 1.0),
+        });
+        this._karteBuehneSatz = {
+            szene,
+            wurzel,
+            mrt,
+            kamera: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
+            huellen: [],
+            box: new T.Box3(),
+            farbe: new T.Color(),
+        };
+        return this._karteBuehneSatz;
+    }
+
+    // Eine Karte im Welt-Ziel backen: null = die L1 reist (bestellt), false = gescheitert, true = gebacken.
+    _karteWeltBacken(at, z) {
+        const rend = this.state.renderer;
+        const lod = this._foundryServierStufe(z.preset, 1);
+        const key = this._foundryKoerperKey(z.preset, z.variant, lod, z.ov);
+        const g = this._foundryCacheGet(key);
+        if (g === undefined) {
+            const wo = Number.isFinite(z._bedarfD2) ? z._bedarfD2 : undefined;
+            this._foundryZug(key, z.preset, z.variant, lod, z.ov || undefined, wo, null);
+            return null;
+        }
+        if (!g || !g.children || !g.children.length) {
+            this._karteEndet(z, false);
+            this._stoffBruch(`die Karte ${z.key}: keine L1-Gestalt ${key} — die Fernstufe bleibt leer`);
+            return false;
+        }
+        const T = THREE;
+        const core = globalThis.__phytoCore;
+        const B = this._karteBuehne(at);
+        const t0 = performance.now();
+        // die Gestalt auf die Bühne: dieselben Geometrien und Stoffe, die die Welt zeichnet
+        B.wurzel.clear();
+        B.wurzel.rotation.set(0, 0, 0);
+        let rad2 = 0;
+        let h = 0;
+        for (const c of g.children) {
+            if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
+            // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie (ohne diese Wand
+            // zeichnete die schwarze Wurf-Hülle über das Laub: Eiche, Birke, Buche, Weide mit Albedo 8–16 von 255)
+            if (c.userData && typeof c.userData.__teil === "string") continue;
+            const m = B.huellen[h] || (B.huellen[h] = new T.Mesh());
+            h++;
+            m.geometry = c.geometry;
+            m.material = c.material;
+            m.matrixAutoUpdate = false;
+            m.matrix.copy(c.matrix);
+            m.frustumCulled = false;
+            B.wurzel.add(m);
+            rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
+        }
+        B.wurzel.updateMatrixWorld(true);
+        const box = B.box.setFromObject(B.wurzel);
+        const fr = core.impostorFrame(box.max.y, Math.sqrt(rad2));
+        const cam = B.kamera;
+        cam.left = -fr.halfW;
+        cam.right = fr.halfW;
+        cam.top = fr.halfH;
+        cam.bottom = -fr.halfH;
+        cam.position.set(0, fr.halfH, Math.max(fr.halfW * 2.5, box.max.y) + 40);
+        cam.lookAt(0, fr.halfH, 0);
+        cam.updateProjectionMatrix();
+        cam.updateMatrixWorld(true);
+        // Die Bühne hält still, was keine Gestalt ist: Wind, die zeitliche Laub-Kante, die Durchsicht (die Stufen-Maske hält
+        // `_buehneRender`) — danach zurück auf den Welt-Stand.
+        const lu = this.state.lodUniforms;
+        const wu = this.state.windUniforms;
+        const halt = [];
+        const still = (u, setze) => {
+            if (!u) return;
+            halt.push([u, u.value && u.value.clone ? u.value.clone() : u.value]);
+            setze(u.value, u);
+        };
+        still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
+        still(lu && lu.uLaubKante, (w) => (w.y = 0));
+        still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
+        still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
+        const vor = {
+            rt: rend.getRenderTarget(),
+            face: rend.getActiveCubeFace(),
+            mip: rend.getActiveMipmapLevel(),
+            mrt: rend.getMRT(),
+            ac: rend.autoClear,
+            farbe: rend.getClearColor(B.farbe),
+            alpha: rend.getClearAlpha(),
+        };
+        if (!at.rtBereit) {
+            rend.initRenderTarget(at.rt); // die Mip-Kette steht vor dem ersten Bake
+            at.rtBereit = true;
+        }
+        const V = at.V;
+        const dreh = (Math.PI * 2) / V;
+        try {
+            rend.setMRT(B.mrt);
+            rend.setClearColor(0x000000, 0);
+            for (let v = 0; v < V; v++) {
+                // Ansicht v = die Gestalt aus Peilung v·360/V gesehen (Kamera fest, Gestalt gegengedreht — Studio-Bäcker)
+                B.wurzel.rotation.y = -v * dreh;
+                B.wurzel.updateMatrixWorld(true);
+                at.rt.viewport.set(0, v * at.ch, at.cw, at.ch); // WebGPU: von oben — der Stoff liest gespiegelt
+                for (const t of at.rt.textures) t.generateMipmaps = v === V - 1; // die Mips nach der letzten Ansicht
+                rend.autoClear = v === 0; // die erste Ansicht leert die Schicht (Farbe 0 = leer, Tiefe)
+                rend.setRenderTarget(at.rt, z.idx);
+                this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
+            }
+        } finally {
+            for (const t of at.rt.textures) t.generateMipmaps = true;
+            at.rt.viewport.set(0, 0, at.rt.width, at.rt.height);
+            rend.setRenderTarget(vor.rt, vor.face, vor.mip);
+            rend.setMRT(vor.mrt);
+            rend.autoClear = vor.ac;
+            rend.setClearColor(vor.farbe, vor.alpha);
+            for (const [u, w] of halt) {
+                if (u.value && u.value.copy && typeof w === "object") u.value.copy(w);
+                else u.value = w;
+            }
+            B.wurzel.clear();
+        }
+        (at.weltMs || (at.weltMs = [])).push(+(performance.now() - t0).toFixed(2));
+        z._weltNeu = false;
+        if (!z.gebacken) this._karteGebacken(z, fr, false);
+        return true;
+    }
+
     // DIE SCHICHT (Transport-Schale, Karten-Codec): { cw, ch, V, nt, fmt, frame:{halfH, halfW}, albedo, normal, opak,
     // deckung, vonPlatte } — Maße und Format gegen den Atlas (beide lesen PORTAL_RENDER_CONFIG.impostor und das
     // Karten-Gesetz), die NICHT-LEERE-WAND (ein Bäcker-Fehler liefert maßtreue Clear-Pixel: die Karte muss
@@ -502,10 +722,17 @@ class AnazhRealm_stoff_instanz {
         if (!fr || !(Number.isFinite(fr.halfH) && fr.halfH > 0 && Number.isFinite(fr.halfW) && fr.halfW > 0))
             return false;
         this._impostorAtlasSchreibe(at, z.idx, payload);
+        this._karteGebacken(z, fr, payload.vonPlatte === true);
+        return true;
+    }
+
+    // DIE KARTE STEHT — der EINE Ausgang jedes Bakes (Studio-Bäcker und Welt-Ziel): Rahmen, Ende der Zusage, die wartenden
+    // Regionen und Bau-Takte wecken.
+    _karteGebacken(z, fr, vonPlatte) {
         // RAHMEN-EINHEIT: das Quad nimmt DENSELBEN Rahmen wie die Bake-Kamera (halfH = 1,02·maxY/2, halfW radial) —
         // keine Wurzel-Höhe mehr (bis V18.528 stand das Quad auf max(0,5, maxY − minY): vertikal verzerrt).
         if (!z.rahmenFest) z.frame = { halfH: fr.halfH, halfW: fr.halfW };
-        z.vonPlatte = payload.vonPlatte === true;
+        z.vonPlatte = vonPlatte;
         this._karteEndet(z, true);
         // Die Karte ist gebacken → aufgeschobene Streu-Regionen neu streamen, wie bei jeder Asset-Ankunft: ein Baum-Platz,
         // dessen Nah-Stufe fehlt, wartet auf die gebackene Karte (`_foundryFlattenFor` Stufe 2 liefert vorher false). Ohne
@@ -2658,3 +2885,5 @@ AnazhRealm._studioPlatzKern = function () {
 // Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht ~0,25 MB, das Wachsen kopiert nur beim
 // Einzug einer Art (BC1-Albedo 170 KB + RGTC2-Normale 85 KB je Schicht, 512 px samt Mips; Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
+AnazhRealm.KARTE_WELT_MS = 4;

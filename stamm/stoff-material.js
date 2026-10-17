@@ -895,8 +895,11 @@ class AnazhRealm_stoff_material {
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
                                     const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
                                     const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
-                                    const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
+                                    // Das Welt-Ziel liegt, wie WebGPU zeichnet: die Zeile 0 oben (die Ansicht v in der Zelle v von
+                                    // oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt; das Studio-Layout bottom-up.
+                                    const _vZ = _at.fmt === "welt" ? _Ta.float(1.0).sub(_vIn) : _vIn;
+                                    const _uvA = _Ta.vec2(_uv.x, _vZ.add(_v0).div(_V));
+                                    const _uvB = _Ta.vec2(_uv.x, _vZ.add(_v1).div(_V));
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -925,7 +928,7 @@ class AnazhRealm_stoff_material {
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, vAns) => {
                                         const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
-                                        const cy = _vIn.mul(_kubY).sub(_Ta.float(0.5));
+                                        const cy = _vZ.mul(_kubY).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
                                         const fx = cx.sub(ix),
@@ -1021,8 +1024,10 @@ class AnazhRealm_stoff_material {
                                     albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
-                                    const _nxy = _Ta
-                                        .mix(_probeA(_at.nmapNode, _uvA).xy, _probeA(_at.nmapNode, _uvB).xy, _fb)
+                                    // Das Welt-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
+                                    // Leer-Normale an der Silhouette; BC5 und rg tragen keine Deckung
+                                    const _nP = _Ta.mix(_probeA(_at.nmapNode, _uvA), _probeA(_at.nmapNode, _uvB), _fb);
+                                    const _nxy = (_at.fmt === "welt" ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
                                     const _nz = _Ta.sqrt(_Ta.float(1.0).sub(_nxy.dot(_nxy)).max(_Ta.float(0.0)));
