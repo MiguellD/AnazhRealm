@@ -765,9 +765,10 @@ function auditAtmosphereHardcode() {
 //    localStorage). Die Wand fängt nur den Set/Map/Array-Method-Sniff.
 function auditPlaytestSkipGates() {
     console.log("\n=== Playtest-Skip-Gate-Audit (§6.5) ===");
-    const PLAYTEST = path.join(ROOT, "scripts", "playtest.cjs");
-    const src = fs.readFileSync(PLAYTEST, "utf8");
-    const lines = src.split("\n");
+    // der Richter: der Läufer und seine Domänen-Dateien (scripts/playtest/*.cjs, D3b) — je Zeile mit ihrer Datei
+    const orte = ["playtest.cjs", ...fs.readdirSync(path.join(ROOT, "scripts", "playtest")).map((f) => "playtest/" + f)]
+        .flatMap((f) => fs.readFileSync(path.join(ROOT, "scripts", f), "utf8").split("\n").map((z, i) => [z, `${f}:${i + 1}`]));
+    const lines = orte.map((o) => o[0]);
     // Pattern: `if (X && X.add)`, `if (X.has)`, `if (X.delete)` — Set/Map-API-
     // Existenz-Sniff. `set` und `size` ausgenommen: `set` matcht zu viele
     // Vector3/Color/Matrix-Aufrufe (false positives), `size` ist semantisch
@@ -789,7 +790,7 @@ function auditPlaytestSkipGates() {
         if (allowMarker.test(here) || allowMarker.test(prev)) continue;
         fail(
             "SKIP-GATE",
-            `playtest.cjs:${i + 1} — verbotenes \`if (api.method)\`-Sniff-Gate`,
+            `${orte[i][1]} — verbotenes \`if (api.method)\`-Sniff-Gate`,
             here.trim().slice(0, 100)
         );
         bad++;
