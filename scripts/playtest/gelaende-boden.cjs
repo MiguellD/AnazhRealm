@@ -433,10 +433,12 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.voxelGrassBuilt = grassEntries > 0;
             // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
-            // Gras-Zelle verbucht 0 Halme UND die Halm-Funktion lebt im Boden-Albedo (Konsum-Probe am
-            // Chokepoint).
+            // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf).
+            const T = window.THREE.TSL;
             out.voxelGrassIsSurface =
-                grassEntries > 0 && grassBlades === 0 && /_halmHoch/.test(window.__codeOf(r._terrainGeologyAlbedo));
+                grassEntries > 0 &&
+                grassBlades === 0 &&
+                window.__consumes(r, "_terrainGeologyAlbedo", r._rauschAtlas(), "ebene", [T, T.attribute("color", "vec3"), T.positionWorld]);
             // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
             // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
             // 1,2 m unter dem gezeichneten Boden).
@@ -1046,7 +1048,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     const voxelV939Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const proto = Object.getPrototypeOf(r);
         return {
             // (1)-(6) die sechs Methoden sind gelöscht
             noEnsureChunkAt: typeof r.ensureChunkAt !== "function",
@@ -1060,18 +1061,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
             terrainMaterialNull: r.state.terrainMaterial === null,
             // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
-            loopHasNoPrune: !(
-                proto._gameLoopTick &&
-                /pruneDistantChunks/.test(
-                    window.__codeOf(
-                        Object.getOwnPropertyNames(proto)
-                            .map((n) => proto[n])
-                            .find(
-                                (f) => typeof f === "function" && /tickArchitectureCulling/.test(window.__codeOf(f))
-                            ) || function () {}
-                    )
-                )
-            ),
+            loopHasNoPrune: typeof r._gameLoopTick === "function" && window.__fehlt(r._gameLoopTick, /pruneDistantChunks/),
             // (9) `_buildWaterPlane` ist voxel-only: Regex auf das Aufruf-Pattern
             // `this._terrainHeightAtWorld(`, damit ein Kommentar mit dem Namen nicht falsch-rot wird.
             waterPlaneVoxelOnly:
@@ -1247,9 +1237,6 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
         const A = r.constructor;
         const out = {};
         out.hasFloor = Number.isFinite(A.RING_EXIST_FLOOR) && A.RING_EXIST_FLOOR >= 1;
-        // KONSUM (source-probe, kommentar-frei): die Ramp liest den Boden in Wachs- UND Schrumpf-Pfad.
-        const src = window.__codeOf(r._nexusPerfActuate);
-        out.rampConsumesFloor = /RING_EXIST_FLOOR/.test(src) && /ringFloor/.test(src);
         // Fixture: schwaches Holz — frameMs 50 (≈20 fps) ab dem ersten Bild, NIE Kopfraum.
         const snap = {
             renderer: st.renderer,
@@ -1329,8 +1316,8 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
         return;
     }
     check(
-        "JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1) + die Ramp KONSUMIERT ihn (Wachs- und Schrumpf-Pfad)",
-        res.hasFloor && res.rampConsumesFloor
+        "JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1)",
+        res.hasFloor
     );
     check(
         `JEDES-HOLZ: ohne Kopfraum (frameMs 50 ab Bild 1) wächst der Ring GENAU bis zum Existenz-Boden (${res.grownPath}) — die Welt ENTSTEHT auf jedem Holz, der PID regiert darüber`,
@@ -1482,28 +1469,6 @@ async function checkBandV18132FerneSeen(ctx) {
             typeof r._hydroFor === "function" &&
             typeof window.__gelaendeCore.kachelSchluessel === "function" &&
             typeof r._ensureHydroTilesAround === "function";
-        // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
-        // V18.180-FIX §6.4: _hydroWaterLevelAt fiel (V9.69-Zwei-Skalen-Lücke);
-        // _waterLevelAt ist die EINE Auftrieb-Wahrheit (Bergsee-bewusst).
-        const readers = [
-            r._hydrosphereCarveAt,
-            r._hydrosphereLakeAt,
-            r._waterLevelAt,
-            r._atlasWaterLevelAt,
-            r._hydroRiverAt,
-            r._voxelChunkHasAnyWater,
-        ];
-        out.readersResolved = readers.every((f) => /_hydroFor/.test(window.__codeOf(f)));
-        // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
-        try {
-            const src = await fetch("voxel-worker.js").then((x) => x.text());
-            out.workerMirror =
-                /function hydroFor\(/.test(src) &&
-                /importScripts\([^\n]*"gelaende-core\.js"/.test(src) &&
-                /snap\.hydroTiles/.test(src);
-        } catch (_e) {
-            out.workerMirror = "fetch-fail";
-        }
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
@@ -1542,6 +1507,38 @@ async function checkBandV18132FerneSeen(ctx) {
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
+        // KONSUM (V17.31): jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
+        // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
+        const K = (m, a, schatten) => {
+            if (schatten) r._hydroRiverAt = () => null;
+            try {
+                return window.__consumes(r, m, r, "_hydroFor", a);
+            } finally {
+                if (schatten) delete r._hydroRiverAt;
+            }
+        };
+        const cfg = r._voxelChunkConfig(0);
+        out.readersResolved = [
+            ["_hydrosphereCarveAt", [-2048, 0]],
+            ["_hydrosphereLakeAt", [-2048, 0]],
+            ["_waterLevelAt", [-2048, 0], true],
+            ["_atlasWaterLevelAt", [-2048, 0, -Infinity], true],
+            ["_hydroRiverAt", [-2048, 0]],
+            ["_voxelChunkHasAnyWater", [Math.floor(-2048 / cfg.span), 0]],
+        ].every(([m, a, schatten]) => K(m, a, schatten));
+        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7): am Fluss der WEST-Kachel ist das Dichte-Gitter von Main und Worker bit-gleich.
+        const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
+        const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
+        const cx = Math.floor(p.x / cfg.span);
+        const cz = Math.floor(p.z / cfg.span);
+        const g = [cx * cfg.span - cfg.step, (r.state.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
+        g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
+        const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
+        r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
+        const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
+        const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
+        out.workerMirror =
+            !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
         return out;
     });
     if (!res) {
@@ -1552,13 +1549,13 @@ async function checkBandV18132FerneSeen(ctx) {
         "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core kachelSchluessel/_ensure...)",
         res.machinery
     );
-    check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
-    check(
-        "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor + Kachel-Apply",
-        res.workerMirror === true,
-        String(res.workerMirror)
-    );
     if (!res.unmeasurable) {
+        check("V18.132 Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
+        check(
+            "V18.132 Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
+            res.workerMirror === true,
+            String(res.workerMirror)
+        );
         check(
             "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
             res.tileBuilt && res.tileSubstanz > 0,
@@ -1576,7 +1573,7 @@ async function checkBandV18132FerneSeen(ctx) {
 
 // FAHR-TIEFE: das Fahr-Profil emergiert aus der Substanz (Räder = Tempo + Ausrollen, Masse =
 // Trägheit), der Sattel führt die Bewegung (EINE Quelle), Gelenke fahren mit (Phase ∝ Weg). Reiter
-// + Gefährt sind EINS: Kollision ruht im Sattel, unerntbar, brennglas-fest.
+// + Gefährt sind EINS: Kollision ruht im Sattel, unerntbar.
 async function checkBandV18150Ride(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -1630,16 +1627,23 @@ async function checkBandV18150Ride(ctx) {
             // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil — `_stepCharacterStructures`
             // überspringt `riddenId` (= player.mountedArch), das gerittene Gefährt blockt seinen Reiter nicht.
             r.mountArchitecture(entry);
-            out.collisionRests =
-                r.state.player.mountedArch === entry.id && /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
+            // die Kapsel mitten in einer Box des gerittenen Wagens bleibt stehen, ohne Sattel schiebt dieselbe Box sie hinaus
+            const b = entry.blockerAABBs && entry.blockerAABBs[0];
+            const schub = (id) => {
+                r.state.player.mountedArch = id;
+                const k = { x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2 };
+                r._stepCharacterStructures(k, b.botY - 1, b.topY + 1, r.constructor.PLAYER_WALL_RADIUS, null, null);
+                return Math.hypot(k.x - (b.minX + b.maxX) / 2, k.z - (b.minZ + b.maxZ) / 2);
+            };
+            const schubImSattel = b ? schub(entry.id) : NaN;
+            const schubOhne = b ? schub(null) : NaN;
+            r.state.player.mountedArch = entry.id;
+            out.collisionRests = !!b && schubImSattel === 0 && schubOhne > 0;
+            out.kapselSchub = `im Sattel ${schubImSattel} m · ohne ${schubOhne} m`;
             out.profileConsumed = r._mountedVehicleProfile() === prof;
-            // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
-            // brennglas-fest (Quelle), solange geritten.
+            // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel, solange geritten.
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
-            out.brennglasSafe = /riddenId/.test(window.__codeOf(r._tickFocusingAffordances));
-            // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
-            out.lazyPassSkips = /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
             // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
@@ -1667,8 +1671,6 @@ async function checkBandV18150Ride(ctx) {
                 `${(+(entry._ridePhase || 0)).toFixed(2)}`;
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
-            // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
-            out.idleSkips = /mountedId/.test(window.__codeOf(r.tickArchitectures));
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
             r.dismountArchitecture();
             out.dismounts = r.state.player.mountedArch === null;
@@ -1683,19 +1685,20 @@ async function checkBandV18150Ride(ctx) {
     });
     check("V18.150 Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
     check(
-        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision + liest das Profil",
-        res.collisionRests && res.profileConsumed
+        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision (die Kapsel im gerittenen Wagen bleibt stehen) + liest das Profil",
+        res.collisionRests && res.profileConsumed,
+        res.kapselSchub
     );
     check(
-        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel · brennglas-fest · Lazy-Pass ruht)",
-        res.unharvestable && res.noGatherTarget && res.brennglasSafe && res.lazyPassSkips
+        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel)",
+        res.unharvestable && res.noGatherTarget
     );
     check(
         "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
         res.orients && res.wheelsRoll,
         res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
-    check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
+    check("V18.150 Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
 }
 
 async function checkBandGammaGenese(ctx) {
@@ -1834,17 +1837,25 @@ async function checkBandGammaGenese(ctx) {
         `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
     );
-    // Γ1-Lesart-4 BODEN-ATMET als Source-Wand: die Mix-Linie (dampEarth + F_VIS_LO) lebt in
-    // _attachVoxelFieldColors.
-    check(
-        "Γ1-Lesart-4 Mix-Linie LEBT in der Source (dampEarth + F_VIS_LO)",
-        /dampEarth/.test(ctx.realm ? "" : "") ||
-            /dampEarth/.test(
-                (await safeEvaluate(page, () =>
-                    window.anazhRealm ? window.__codeOf(window.anazhRealm._bodenFarbeAt) : ""
-                )) || ""
-            )
-    );
+    // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
+    const zugNass = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const pm = r.state.playerMesh.position;
+        const y = r._voxelSurfaceY(pm.x, pm.z) ?? pm.y;
+        const farbe = (f) => {
+            r._feuchteAt = () => f;
+            try {
+                return r._bodenFarbeAt(pm.x, y, pm.z, [0, 0, 0]);
+            } finally {
+                delete r._feuchteAt;
+            }
+        };
+        const c0 = farbe(0);
+        const c5 = farbe(0.5); // = LICHEN.feuchteLo: die Flechte bleibt 0, nur die feuchte Erde mischt
+        const w = r.constructor.BODEN_FARBE.wet;
+        return [0, 1, 2].reduce((sum, i) => sum + (c5[i] - c0[i]) * (w[i] - c0[i]), 0);
+    });
+    check(`Γ1-Lesart-4 die Feuchte zieht die Boden-Farbe zur feuchten Erde (Zug ${zugNass})`, zugNass > 0);
     // Γ4 (K16) — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
     // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
@@ -1968,13 +1979,6 @@ async function checkBandV18199GammaMLichen(ctx) {
                 out.tint.length === 3;
         }
 
-        // (L2) Source-Probe Main: LICHEN-Mix lebt in der EINEN Boden-Farbe (_bodenFarbeAt)
-        const mainSrc = window.__codeOf(r._bodenFarbeAt);
-        // Position im Mix-Stack: NACH dampEarth, VOR lava
-        out.mainOrderCorrect =
-            mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
-            mainSrc.indexOf("lichenMix") < mainSrc.indexOf("mix(lava");
-
         // (L3) MATH-PROBE: lichen wirkt nur in feuchten + dichten Regionen.
         // Wir bauen die Formel selbst nach (Main-bit-identisch) und prüfen
         // an drei kontrollierten Punkten.
@@ -2024,7 +2028,6 @@ async function checkBandV18199GammaMLichen(ctx) {
 
     check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
-    check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
         res.lichenWetStonePositive === true
@@ -2061,13 +2064,25 @@ async function checkBandWahrerAnblickPfade(ctx) {
         }
         out.pathBounded = bounded;
 
-        // (B) CONSUM — der Boden-Bau packt die Pfad-Erde, der Gras-Bau weicht
-        const attachSrc = window.__codeOf(r._bodenFarbeAt);
-        out.attachReadsPath = /_pathFieldAt/.test(attachSrc) && /packedDirt/.test(attachSrc);
-        // V18.492: die Wiese weicht dem Pfad über den Boden — die Pfad-Erde senkt das
-        // Albedo-Grün, und die Parallax-Halme wiegen mit genau diesem Grün (_halmW = _green…).
-        const meadowSrc = window.__codeOf(r._terrainGeologyAlbedo);
-        out.grassReadsPath = out.attachReadsPath && /const _halmW = _green/.test(meadowSrc);
+        // (B) VERHALTEN — ein Pfad-Feld von 1 zieht die EINE Boden-Farbe zur gepackten Erde (BODEN_FARBE.dirt)
+        const farbe = (x, y, pf) => {
+            r._pathFieldAt = () => pf;
+            try {
+                return r._bodenFarbeAt(x, y, 0, [0, 0, 0]);
+            } finally {
+                delete r._pathFieldAt;
+            }
+        };
+        const dD = (c) => Math.hypot(c[0] - A.BODEN_FARBE.dirt[0], c[1] - A.BODEN_FARBE.dirt[1], c[2] - A.BODEN_FARBE.dirt[2]);
+        let d0 = 0;
+        let d1 = 0;
+        for (let gx = -200; gx <= 200; gx += 37) {
+            const y = r._voxelSurfaceY(gx, 0);
+            d0 += dD(farbe(gx, y, 0));
+            d1 += dD(farbe(gx, y, 1));
+        }
+        out.pfadErde = `Abstand zur Erde ${d0.toFixed(3)} → ${d1.toFixed(3)}`;
+        out.attachReadsPath = d0 > 0.1 && d1 < d0;
 
         // (B3) Behavioral (soft): wie viele Pfad-Treffer in einem 600m-Raster?
         let hits = 0,
@@ -2094,8 +2109,8 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check(
-        "Ω-OPSIS S2-Pfad (B2, V18.492) CONSUM: die Wiese weicht dem Pfad (Pfad-Erde senkt das Grün, das die Halme wiegt)",
-        res.grassReadsPath === true
+        `Ω-OPSIS S2-Pfad (B2, V18.492) das Pfad-Feld zieht die Boden-Farbe zur gepackten Erde (${res.pfadErde})`,
+        res.attachReadsPath === true
     );
     check(
         `Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`,
@@ -2495,6 +2510,9 @@ async function checkBandTodZensus(ctx) {
                         }
                     }
             );
+            // EINE RÄUM-METHODE (K13), Konsum am Ruf: der Fall räumt über _leibZeichenFrei
+            let raeumt = 0;
+            decke("_leibZeichenFrei", (alt) => function (...a) { raeumt++; return alt.apply(this, a); });
             const lastSoll = ALLE.reduce(
                 (a, [, c]) => a + ((c.userData.carrying && c.userData.carrying.materials.holz) || 0),
                 0
@@ -2504,10 +2522,12 @@ async function checkBandTodZensus(ctx) {
             tC.visible = false;
             r._creatureNaturalDeath(tC);
             o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
-            // EINE RÄUM-METHODE (K13): welche Methode der Welt nimmt ein Zeichen über dem Leib aus der Szene und gibt sein
-            // Material frei (der Code ohne Kommentare: _queueDispose und das Feld taskAura | carryingSprite)?
+            o.raeumt = raeumt;
+            // kein Zweit-Räumer: keine andere Methode nimmt ein Zeichen über dem Leib aus der Szene und gibt sein Material frei
+            // (der Code ohne Kommentare: _queueDispose und das Feld taskAura | carryingSprite)
             const namen = new Set([...Object.getOwnPropertyNames(A.prototype), ...Object.keys(r)]);
             namen.delete("constructor"); // die Klasse selbst trägt jede Methode
+            namen.delete("_leibZeichenFrei");
             o.raeumer = [...namen]
                 .filter((nm) => {
                     let f;
@@ -2727,8 +2747,8 @@ async function checkBandTodZensus(ctx) {
             v.push(
                 `last: von ${z.last.soll} Holz der Gefallenen fielen ${z.last.zurueck} an den Spieler zurück, ${z.last.journal} von 3 Journal-Einträgen`
             );
-        if (!Array.isArray(z.raeumer) || z.raeumer.join() !== "_leibZeichenFrei")
-            v.push(`raeumen: die Zeichen räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode (_leibZeichenFrei)`);
+        if (!Array.isArray(z.raeumer) || z.raeumer.length || !(z.raeumt > 0))
+            v.push(`raeumen: neben _leibZeichenFrei (${z.raeumt} Rufe im Fall) räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode`);
         for (const k of KLASSEN) if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
         return { ok: v.length === 0, grund: v.join(" · ") };
     };

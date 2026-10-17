@@ -2897,30 +2897,16 @@ async function checkBandKreaturKosten(ctx) {
         const s7W = o.w.find((x) => x.s7);
         o.s7 = s7W ? s7W.s7 : null;
         o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
-        // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss, kein Leser der Wirts-
-        // Distanzen (die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
+        // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
+        // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
         const codeW = window.__codeOf;
         const LIT = /castShadow\s*=\s*false/g;
         o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].reduce(
             (n, k) => n + ((typeof r[k] === "function" ? codeW(r[k]) : "").match(LIT) || []).length,
             0
         );
-        const DIST = /\b(?:TIER_FERN_DIST_SQ|TIER_FERN_HYST|MENSCH_FERN_DIST_SQ)\b/g;
-        const distLeser = [];
-        for (const ziel of [A.prototype, A]) {
-            for (const k of Object.getOwnPropertyNames(ziel)) {
-                if (k === "constructor") continue; // die Klasse selbst ist kein Leser (ihr Text trüge jeden)
-                const d = Object.getOwnPropertyDescriptor(ziel, k);
-                for (const fn of [d && d.value, d && d.get]) {
-                    if (typeof fn !== "function") continue;
-                    const n = (codeW(fn).match(DIST) || []).length;
-                    if (n) distLeser.push(k + "×" + n);
-                }
-            }
-        }
-        o.wDistLeser = distLeser;
         o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
-        o.checks.wAbsenz = o.wLiterale === 0 && distLeser.length === 0 && o.wDistKonst.length === 0;
+        o.checks.wAbsenz = o.wLiterale === 0 && o.wDistKonst.length === 0;
     
         // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
         // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten
