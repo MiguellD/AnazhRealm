@@ -325,29 +325,28 @@ function rundungProbe() {
         };
         if (!A) return Object.assign(aus, { gelaufen: true, ruhig: true, verbrauch: 0, zurueck: 0 });
         // DIE EINE UHR der Mess-Schüsse (die Bühne, A8): drei Schüsse derselben Welt sind dasselbe Bild (A8-n1: ohne Bühne zurück
-        // −2,62 im CI). Ob die Welt stand, sagt ihr Regungs-Stempel (`_weltRegt`), nie Befehle|Dreiecke — die Arena (G1) zeichnet
-        // Neues ohne neuen Befehl, der Rückweg maß −1,66 … −2,71 die Lade-Welle. Vor jedem Versuch ruht sie 30 Frames (höchstens
-        // 600), sonst läuft er neu, bis 4-mal.
+        // −2,62 im CI). Ob die Welt stand, sagt das EINE Wort `_weltSteht` (A9), nie Befehle|Dreiecke — die Arena (G1) zeichnet
+        // Neues ohne neuen Befehl, der Rückweg maß −1,66 … −2,71 die Lade-Welle. Vor jedem Versuch wartet die Bühne auf sie
+        // (`__weltStehtWarten`); regte sie sich bis zum dritten Schuss, läuft er neu, bis 4-mal.
         window.__buehne();
-        const r = window.anazhRealm, regung = () => `${r._weltRegung | 0}|${r._bauRegung | 0}|${r._karteRegung | 0}`;
-        const ruht = async () => { for (let s = regung(), n = 0, k = 0; n < 30 && k < 600; k++, n = s === regung() ? n + 1 : ((s = regung()), 0)) await new Promise((ok) => requestAnimationFrame(ok)); };
+        const r = window.anazhRealm;
         const mittel = async () => {
             const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
             let s = 0;
             for (let i = 0; i < auf.u8.length; i += 4) s += 0.2126 * auf.u8[i] + 0.7152 * auf.u8[i + 1] + 0.0722 * auf.u8[i + 2];
-            return { m: s / (auf.u8.length / 4), szene: regung() };
+            return { m: s / (auf.u8.length / 4) };
         };
         const alt = A.clone();
         try {
             for (aus.versuche = 1; ; aus.versuche++) {
-                await ruht();
+                await window.__weltStehtWarten();
                 const m0 = await mittel();
                 A.set(2, 2, 2);
                 const m1 = await mittel();
                 A.copy(alt);
                 const m2 = await mittel();
                 Object.assign(aus, { mittel: +m0.m.toFixed(1), verbrauch: +(m1.m - m0.m).toFixed(2), zurueck: +(m2.m - m0.m).toFixed(2) });
-                aus.ruhig = m0.szene === m2.szene;
+                aus.ruhig = r._weltSteht();
                 if (aus.ruhig || aus.versuche >= 4) break;
             }
         } finally {

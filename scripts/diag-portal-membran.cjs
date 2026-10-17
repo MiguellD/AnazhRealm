@@ -131,7 +131,7 @@ async function blickProbe(opts) {
         cam.updateMatrixWorld(true);
         zug = [];
         if (nf) nf.update();
-        r._loopRender(performance.now());
+        r._loopRender();
         try {
             await rend.backend.device.queue.onSubmittedWorkDone();
         } catch (_e) {}

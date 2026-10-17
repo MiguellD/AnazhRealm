@@ -561,7 +561,7 @@ function pruefRaum(echt) {
             F.zeichneTakt = F.zeichne;
             F.zeichne = async (n) => {
                 for (let i = 0; i < n; i++) {
-                    r._loopRender(performance.now());
+                    r._loopRender();
                     await dev.queue.onSubmittedWorkDone();
                 }
             };

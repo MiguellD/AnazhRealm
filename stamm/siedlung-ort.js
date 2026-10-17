@@ -707,9 +707,10 @@ class AnazhRealm_siedlung_ort {
                 }
             }
             rec._act = act;
-            rec.puls = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
+            // Puls und Welle auf der Bild-Uhr (A9); der Scan und das Nachglühen der Heimkehr sind Gänge der Loop-Zeit
+            rec.puls = 0.5 + 0.5 * Math.sin(this._bildZeit * MG.puls);
             if (rec.u) {
-                rec.u.time.value = currentTime;
+                rec.u.time.value = this._bildZeit;
                 rec.u.act.value = act;
                 rec.u.pulse.value = rec.puls;
                 rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);

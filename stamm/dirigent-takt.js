@@ -24,6 +24,9 @@ class AnazhRealm_dirigent_takt {
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
             if (this._portalOverlay) return;
+            // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
+            // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
+            this._bildZeit = currentTime;
 
             // Error-Boundary des ewigen Loops: ein einziger Throw in einem Frame-Schritt bräche den
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
@@ -188,9 +191,6 @@ class AnazhRealm_dirigent_takt {
                 this._loopVoxelStreaming();
                 this._perfSenseLap("streaming", _pt);
 
-                // ### Skybox-Zeit ### (V9.44-f → _loopSkyboxZeit)
-                this._loopSkyboxZeit(currentTime);
-
                 if (!ruht) {
                     // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
                     this._tickPortalMembranes(currentTime);
@@ -260,7 +260,7 @@ class AnazhRealm_dirigent_takt {
                 if (bild) {
                     _pt = performance.now();
                     this._loopShadowUpdate();
-                    this._loopRender(currentTime);
+                    this._loopRender();
                     this._perfSenseLap("render", _pt);
                     this._gpuLeineAnlegen();
                 }
@@ -288,6 +288,8 @@ class AnazhRealm_dirigent_takt {
             // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `wandDelta` (s) treibt eine
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
             this._tickFoundryIngest(wandDelta);
+            // DER STAND DER WELT je Takt (A9, `_weltSteht`): auf der LÄUFT-IMMER-Seite wie das Laden, das ihn bewegt
+            this._weltStandTakt();
 
             // Deferierter Avatar-Bau: EINMAL bauen, sobald seine zwei Vorlagen aus dem Faden im Memo liegen (`_leibBereit`,
             // K60-2 — bis dahin hielt der Guss im sechsten Frame den Haupt-Faden 2,4 s, und nach dem Buch goss er neu).
@@ -308,6 +310,49 @@ class AnazhRealm_dirigent_takt {
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
+    // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
+    // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
+    // schmutzig oder im Bau. Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in
+    // jeder Sitzung (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand). Die Bühne wartet vor jedem Schuss
+    // darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
+    _weltStandTakt() {
+        const W = this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, ruhe: 0, takte: 0 });
+        W.takte++;
+        const welt = this._weltRegung | 0,
+            bau = this._bauRegung | 0,
+            karte = this._karteRegung | 0;
+        const o = this._weltOffen();
+        if (welt !== W.welt || bau !== W.bau || karte !== W.karte || o.foundry + o.chunks > 0) {
+            W.welt = welt;
+            W.bau = bau;
+            W.karte = karte;
+            W.ruhe = 0;
+        } else W.ruhe++;
+    }
+    // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe) und Chunks (schmutzig, im Bau).
+    _weltOffen() {
+        const f = this._foundry;
+        const st = this.state;
+        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0 }); // je Takt, ohne Müll
+        o.foundry =
+            (f && f.pending ? f.pending.size : 0) +
+            (f && f.warte ? f.warte.length : 0) +
+            (this._foundryIngestQueue ? this._foundryIngestQueue.length : 0);
+        o.chunks =
+            (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+        return o;
+    }
+    _weltSteht() {
+        const W = this._weltStand;
+        if (!W || W.ruhe < AnazhRealm.WELT_STEHT_TAKTE) return false;
+        // live: eine Regung oder ein Auftrag seit dem letzten Takt (der Loop ruht, ein Bild weckte) zählt sofort
+        if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
+            return false;
+        const o = this._weltOffen();
+        return o.foundry + o.chunks === 0;
     }
 
     // ═══ DIE GPU-LEINE ═══
@@ -843,14 +888,6 @@ class AnazhRealm_dirigent_takt {
         this.updateCreatures(delta);
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
-        // Kontinuierlicher Böen-Drift (Math.random-frei): deterministische layered-sine-Modulation auf
-        // weatherEffectTime (~±18 % um die Wort-Basis). `_weatherWob` ist ein Instanz-Feld (nicht
-        // serialisiert); Wetter berührt den Fixed-Step nicht → Sim/Replay unberührt.
-        {
-            const wt = this.state.weatherEffectTime;
-            const gust = Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
-            this._weatherWob = 1 + 0.18 * gust; // ~[0.82, 1.18]
-        }
         // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
         // Wesen schreiben nie selbst), sonst eines aus dem Vokabular (nie zweimal dasselbe Wort), und geht sanft über die
         // Transition. Takt `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des
@@ -1176,7 +1213,7 @@ class AnazhRealm_dirigent_takt {
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
-        this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
+        this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickCanopyStreaming();
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
@@ -1189,14 +1226,6 @@ class AnazhRealm_dirigent_takt {
         // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
         // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
         return this._runFrameScheduler(this.state.playerMesh.position);
-    }
-
-    _loopSkyboxZeit(currentTime) {
-        // time-Uniform lebt in state.skyboxUniforms; Existenz-Probe, weil createGalaxySkybox bei
-        // Vendor-Bruch früh returnen kann.
-        if (this.state.skyboxUniforms && this.state.skyboxUniforms.time) {
-            this.state.skyboxUniforms.time.value = currentTime;
-        }
     }
 
     _loopAutoSave(currentTime) {
@@ -1217,7 +1246,7 @@ class AnazhRealm_dirigent_takt {
         }
     }
 
-    _loopRender(currentTime) {
+    _loopRender() {
         // ### Rendering ###
         // DER BLICK DES BILDS (K59): die Kamera dieses Bilds steht — wen sie sieht, der ruht nicht mehr (`_ruheImBild`
         // weckt ihn und schreibt sein Feld, bevor er gezeichnet wird; Teleport, Portal, Schwenk, die Ausgabe-Aufnahme).
@@ -1240,11 +1269,26 @@ class AnazhRealm_dirigent_takt {
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
         // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
         this._followCelestialBodies();
-        // Das geteilte Hydrosphären-Material (Fluss-Ribbons + See-Planes) zentral animieren; der
-        // Flow-Shader scrollt den Schaum stromab nach per-Vertex-`aFlow`.
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
-            this.state.hydroSurfaceUniforms.time.value = currentTime;
-        }
+        // DIE BILD-UHR AM BILD (A9): jede Shader-Zeit dieses Bilds liest die EINE Uhr `_bildZeit` (Sekunden, der Loop schreibt
+        // sie je Takt) — Himmel, Wasser (der Flow-Shader scrollt den Schaum stromab nach `aFlow`), Wind und seine Richtung, die
+        // Böe und die TSL-`time` des Vendors (die Knoten-Uhr, die seine Animations-Schleife je Frame weiterzählt: der Atem
+        // des Fells). Wer ein Bild zeichnet, zeichnet es zur Bild-Uhr; die Bühne hält nur sie.
+        const bildZeit = this._bildZeit;
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.time)
+            this.state.skyboxUniforms.time.value = bildZeit;
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time)
+            this.state.hydroSurfaceUniforms.time.value = bildZeit;
+        const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
+        if (knotenUhr) knotenUhr.time = bildZeit;
+        // Kontinuierlicher Böen-Drift (Math.random-frei): layered-sine auf der Bild-Uhr (~±18 % um die Wort-Basis), ein
+        // Instanz-Feld (nicht serialisiert; Klang und Wind lesen es) — bis A9 auf der Uhr des Wetter-Zugs, die bei jedem Zug
+        // auf 0 sprang.
+        this._weatherWob =
+            1 +
+            0.18 *
+                (Math.sin(bildZeit * 0.19) * 0.6 +
+                    Math.sin(bildZeit * 0.47 + 1.3) * 0.3 +
+                    Math.sin(bildZeit * 1.13 + 3.7) * 0.1);
         // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
         // Gefühle beleben das Wasser, Trauer dämpft.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
@@ -1263,16 +1307,16 @@ class AnazhRealm_dirigent_takt {
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
-            this.state.windUniforms.uWindTime.value = currentTime;
+            this.state.windUniforms.uWindTime.value = bildZeit;
             // Böen-Amplitude = wind-Kanal des Wetter-Felds (stormy 1.0·AMP, sunny 0.06·AMP; AMP=0.55) ×
-            // Böen-Drift `_weatherWob` (gesetzt in `_loopWeatherAndGrowth`).
+            // Böen-Drift `_weatherWob` (oben, auf der Bild-Uhr).
             this.state.windUniforms.uWindStrength.value =
-                this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * (this._weatherWob || 1);
+                this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * this._weatherWob;
             // Die EINE Wind-Richtungs-Quelle + Interaktions-Sphären ticken mit dem Wind-Uniform: uWindDir =
-            // seeded Mäander `_windDirAt` (currentTime in s, dieselbe Uhr wie uWindTime), uBend =
+            // seeded Mäander `_windDirAt` (auf der Bild-Uhr wie uWindTime), uBend =
             // Spieler/Ritt/nahe Kreaturen (`_tickGrasBend`, render-rein).
             if (this.state.windUniforms.uWindDir) {
-                const _wdir = this._windDirAt(currentTime);
+                const _wdir = this._windDirAt(bildZeit);
                 this.state.windUniforms.uWindDir.value.set(_wdir.x, _wdir.z);
             }
             this._tickGrasBend();
@@ -1481,6 +1525,8 @@ AnazhRealm.ZEIT_SCHAERFE = 1;
 // DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
 // Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
 AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DIE WELT STEHT (`_weltSteht`, A9): so viele Takte ohne Regung und ohne Offenes (die Rundungs-Probe maß mit 30 die Ruhe)
+AnazhRealm.WELT_STEHT_TAKTE = 30;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).

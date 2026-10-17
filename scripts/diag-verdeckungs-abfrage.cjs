@@ -382,7 +382,7 @@ async function verdeckungPhase(opts) {
         for (let i = 0; i < n; i++) {
             if (vor) vor(i);
             if (nf) nf.update();
-            r._loopRender(performance.now());
+            r._loopRender();
             await frei();
         }
     };

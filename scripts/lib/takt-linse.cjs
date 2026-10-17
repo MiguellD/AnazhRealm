@@ -36,7 +36,6 @@ const LOOP_METHODEN = [
     "_loopSelfAnalysis",
     "_loopWeatherAndGrowth",
     "_loopVoxelStreaming",
-    "_loopSkyboxZeit",
     "_tickPortalMembranes",
     "_tickHausTueren",
     "_updateDorfRauch",

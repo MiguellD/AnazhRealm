@@ -1264,7 +1264,7 @@ const server = statikServer();
                         blick(-1, 0);
                         let fehler = null;
                         try {
-                            r._loopRender(performance.now());
+                            r._loopRender();
                         } catch (e) {
                             fehler = String((e && e.message) || e).slice(0, 120);
                         }

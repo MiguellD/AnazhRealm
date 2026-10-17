@@ -17,7 +17,7 @@
 // liefen in den Sonden frei: das WETTER (Auto-Zug alle 120 s; an derselben Wiese sonnig 90,2 · Regen 40,3 Helligkeit),
 // die JAHRESZEIT (Jahr 2400 s, der Saison-Flip baut jedes Foundry-Asset neu), jede SHADER-ZEIT des Bilds (A8: wasser
 // 0,17–0,69 am selben Code). Die Saison hält `saisonFest`, sobald die Welt existiert; die Bühne setzt Zeit und Wetter
-// über den EINEN Wetter-Schreiber (ohne 45-s-Cross-Fade, der Regen fällt im selben Zug), jede Uhr des Bilds auf T.
+// über den EINEN Wetter-Schreiber (ohne 45-s-Cross-Fade, der Regen fällt im selben Zug), die EINE Bild-Uhr auf T (A9).
 const { KAMERA_NAH_INSTALL } = require("./kamera-nah.cjs");
 const { ABNAHME_INSTALL } = require("./abnahme-urteil.cjs");
 
@@ -292,52 +292,74 @@ function weltaktBuch(seit) {
     };
 }
 
-// DIE UHREN DES BILDS (A8), [Name, Halter, Schlüssel, Wert bei T]: Himmel (`_loopSkyboxZeit`), Wasser, Wind, Richtung
-// (`_loopRender`, `_windDirAt`; `_windZeit`: das Flackern der Leuchtquellen), Böe (`_loopWeatherAndGrowth`, Mitte 1),
-// TSL `time` (NodeFrame: der Atem des Fells), Tor mit Puls und Glut (`_tickPortalMembranes` setzt sie zu T).
-function bildUhren(T) {
+// DIE LESER DER BILD-UHR (A9), [Name, Halter, Schlüssel]: was ein Bild zur EINEN Uhr `_bildZeit` zeichnet — Himmel, Wasser,
+// Wind und seine Richtung, Böe (`_loopRender`), die Knoten-Uhr des Vendors (TSL `time`: der Atem des Fells), Regen, je Tor
+// Welle, Puls und Glut (`_tickPortalMembranes`). Die Bühne hält keinen von ihnen; die Uhr-Wache prüft an ihnen, dass jeder
+// mit der gehaltenen Uhr steht.
+function bildUhren() {
     const r = window.anazhRealm;
     const st = r.state;
     const wu = st.windUniforms || {};
-    const d = r._windDirAt(T);
     const v2 = wu.uWindDir && wu.uWindDir.value;
     const u = [
-        ["himmel", st.skyboxUniforms && st.skyboxUniforms.time, "value", T],
-        ["wasser", st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.time, "value", T],
-        ["wind", wu.uWindTime, "value", T],
-        ["wind-x", v2, "x", d.x],
-        ["wind-z", v2, "y", d.z],
-        ["böe", r, "_weatherWob", 1],
-        ["fell", st.renderer && st.renderer._nodes && st.renderer._nodes.nodeFrame, "time", T],
+        ["himmel", st.skyboxUniforms && st.skyboxUniforms.time, "value"],
+        ["wasser", st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.time, "value"],
+        ["wind", wu.uWindTime, "value"],
+        ["wind-x", v2, "x"],
+        ["wind-z", v2, "y"],
+        ["böe", r, "_weatherWob"],
+        ["fell", st.renderer && st.renderer._nodes && st.renderer._nodes.nodeFrame, "time"],
+        ["regen", r._rainSystem && r._rainSystem.uZeit, "value"],
     ];
     for (const [n, m] of r._portalMembranes || [])
-        if (m.u)
-            u.push([`tor ${n}`, m.u.time, "value", T], [`puls ${n}`, m.u.pulse, "value"], [`glut ${n}`, m, "puls"]);
+        if (m.u) u.push([`tor ${n}`, m.u.time, "value"], [`puls ${n}`, m.u.pulse, "value"], [`glut ${n}`, m, "puls"]);
     return u.filter((x) => x[1]);
 }
 
-// DIE UHR DER BÜHNE: T = 12,5 s (unter jeder Boot-Dauer, der 1-Hz-Scan der Membranen läuft weiter); die Bühne schreibt
-// jede Uhr über ihren Schreiber und hält sie wie das Wetter: nur sie schreibt (`durch`), jeden Zug sonst verweigert sie und
-// bucht ihn je Uhr. Ein Halter, der NACH der Bühne entsteht (`_tiefenKnotenTausch` baut das Wasser frisch, eine Membran kommt
-// in Sicht), hält ab dem nächsten Frame der Aufnahme: sie ruft `__uhrHalten` je Frame (A8-n1: Wasser nach dem Tausch 114,3
-// statt 113,1, Saum 30 von 35 Kanten).
+// DIE UHR DER BÜHNE (A9): T = 12,5 s (unter jeder Boot-Dauer) auf der EINEN Bild-Uhr `_bildZeit` — die Bühne hält NUR sie und
+// zählt jeden Zug des Loops, den sie verweigert (die Uhr-Wache liest ihn). Wer je Bild zeichnet, liest sie im Bild
+// (`_loopRender`); Tor und Regen, die im Takt schreiben, lesen sie einmal beim Halt. Bis A9 hielt sie ~12 Uhren einzeln, je
+// Frame neu für jeden Halter, der nach ihr entstand.
 function uhrHalten() {
     const r = window.anazhRealm;
-    const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, durch: false, verweigert: {} });
-    const frei = () => window.__bildUhren(S.T).filter((u) => !(Object.getOwnPropertyDescriptor(u[1], u[2]) || {}).get?.__buehne);
-    if (!frei().length) return;
-    S.durch = true;
-    try {
-        r._tickPortalMembranes(S.T);
-        for (const [n, o, k, w] of frei()) {
-            let v = w !== undefined ? w : o[k];
-            const get = Object.assign(() => v, { __buehne: true });
-            const set = (x) => (S.durch ? (v = x) : (S.verweigert[n] = (S.verweigert[n] || 0) + 1));
-            Object.defineProperty(o, k, { configurable: true, enumerable: true, get, set });
+    const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
+    const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
+    if (d && d.get && d.get.__buehne) return;
+    const get = Object.assign(() => S.T, { __buehne: true });
+    Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
+    r._tickPortalMembranes(performance.now() / 1000);
+    r._tickRain();
+}
+
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne, bis die Welt steht — in Takten des Spiels, nie in
+// Wanduhr: läuft der Loop, zählt er selbst; ruht er, schaltet sie ihn je Frame und stellt die Kamera des Schusses zurück.
+// Steht sie nach `max` Takten nicht, bricht der Schuss LAUT beim Namen dessen, was baut — ein Bild halb gebauter Welt ist
+// kein Beweis (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
+function weltStehtWarten(max) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const cam = r.state.camera;
+        const pose = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
+        const takte = () => (r._weltStand ? r._weltStand.takte : 0);
+        const t0 = takte();
+        for (let k = 0; !r._weltSteht() && k < (max || 1800); k++) {
+            const vor = takte();
+            await new Promise((ok) => requestAnimationFrame(ok));
+            if (takte() !== vor) continue;
+            r._gameLoopTick(performance.now());
+            cam.position.copy(pose[0]);
+            cam.quaternion.copy(pose[1]);
+            if (cam.fov !== pose[2]) (cam.fov = pose[2]), cam.updateProjectionMatrix();
+            cam.updateMatrixWorld(true);
         }
-    } finally {
-        S.durch = false;
-    }
+        const o = r._weltOffen();
+        if (!r._weltSteht())
+            throw new Error(
+                `DIE WELT STEHT NICHT — nach ${takte() - t0} Takten: Ruhe ${r._weltStand ? r._weltStand.ruhe : 0} von ` +
+                    `${r.constructor.WELT_STEHT_TAKTE} Takten, Foundry offen ${o.foundry}, Chunks offen ${o.chunks}`
+            );
+        return takte() - t0;
+    })();
 }
 
 function buehne() {
@@ -351,7 +373,6 @@ function buehne() {
     // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
     window.__wetterSetzen("sunny");
     window.__uhrHalten();
-    if (typeof r._tickRain === "function") r._tickRain(performance.now());
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
     // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
@@ -583,7 +604,7 @@ function abnahmeMessen(opt) {
             saison: st.season || null,
             wetter: st.weather || null,
             uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
-            bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Shader-Zeit des Bilds (A8), ohne Bühne frei
+            bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Bild-Uhr (A9), ohne Bühne frei
             tiereGehalten: !!Object.getPrototypeOf(r).__tiereGehalten,
         },
         geraet: {
@@ -679,6 +700,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
+        // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
+        const weltTakte =
+            window.__buehneUhr && !(opt && opt.satz === "messung") ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL (K32) vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
         const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
@@ -686,6 +710,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
         const abnahme = (u8, W2, H2) => {
             const m = window.__abnahmeMessen(opt);
+            m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
             const u = window.__abnahmeUrteil(m);
@@ -707,12 +732,10 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
-            // Der Frame trägt die Loop-Zeit in SEKUNDEN (bis A8 ms); unter der Bühne hält er jede Uhr des Bilds auf T, auch
-            // die eines Halters, der nach ihr entstand (`__uhrHalten`).
+            // Der Frame zeichnet zur Bild-Uhr (A9; unter der Bühne steht sie).
             const frame = () => {
-                if (window.__buehneUhr) window.__uhrHalten();
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(performance.now() / 1000);
+                r._loopRender();
             };
             // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
@@ -1320,6 +1343,7 @@ module.exports = {
         `window.__uhrSpion = ${uhrSpion.toString()};` +
         `window.__bildUhren = ${bildUhren.toString()};` +
         `window.__uhrHalten = ${uhrHalten.toString()};` +
+        `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
         `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
