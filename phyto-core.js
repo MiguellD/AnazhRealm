@@ -3372,6 +3372,9 @@
         };
         const a = ebene(w, h, bc ? karteMipZahl(cw, ch) : 1, bc ? 8 : 4);
         const n = ebene(nw, nh, bc ? karteMipZahl(nw, (ch / nt) | 0) : 1, bc ? 16 : 2);
+        // die Sonnen-Sicht (A7): r8, eine Stufe, in jedem Format
+        const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
+            lh = Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0);
         return {
             fmt: bc ? "bc" : "rgba8",
             w: w,
@@ -3382,10 +3385,9 @@
             n: n.stufen,
             aBytes: a.bytes,
             nBytes: n.bytes,
-            // die Sonnen-Sicht (A7): r8, eine Stufe, in jedem Format
-            lw: Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
-            lh: Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0),
-            lBytes: Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0) * Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0),
+            lw: lw,
+            lh: lh,
+            lBytes: lw * lh,
         };
     }
 
