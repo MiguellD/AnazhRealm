@@ -999,8 +999,6 @@ function validateManifest(m) {
             );
     }
 
-    // Der kommentarfreie Stamm für die Absenz-Proben unten.
-    const realm = stammLib.ohneKommentare(stammLib.text(root));
 
     // W8 — JEDER Kern mit Gestalt trägt sein Budget (B2c), jeder Zweit-Kern seine Gestalten je Rezept: die
     // Studio-Übertragung ist kein offener Rest mehr. Klang trägt keine Gestalt (keine kindStages) und kein Budget.
@@ -1064,14 +1062,11 @@ function validateManifest(m) {
     // W8 — DIE SIPPE IST EINE REGEL (Absenz): Flatten und Starr-Bindung gruppieren nach der Sippe des Gesetzes, nie nach
     // einer eigenen Attribut-Signatur (kein Zwilling). Die Leser des Budget-Gesetzes beweisen gate:sippen-wirt,
     // gate:asset-contract und gate:kreatur-kosten am Verhalten.
-    const signaturZwilling = ["_foundryFlatVerschmelzen", "_ofenStarrBinden"].filter((n) => {
-        const b = stammLib.rumpf(realm, n);
-        return !b || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(b);
-    });
+    // (über den EINEN Absenz-Helfer; ein totes Glied wirft beim Namen)
     check(
         "W8: Flatten und Starr-Bindung tragen keine eigene Attribut-Signatur (die Sippe des Gesetzes gruppiert)",
-        signaturZwilling.length === 0,
-        signaturZwilling.join(", ")
+        stammLib.fehlt(["_foundryFlatVerschmelzen", "_ofenStarrBinden"], /Object\.keys\(g\.attributes\)\s*\.sort\(\)/),
+        stammLib.fehlt.wo
     );
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
@@ -1123,7 +1118,6 @@ function validateManifest(m) {
     }
     // EIN WERT, EINE STELLE (K2) — die Linse (`einWertTaeter`) über dem Code-Baum des Stamms; Kommentare zitieren straflos.
     (function einWertEineStelle() {
-        const src = stammLib.text(root); // fehlt der Stamm, bricht die Wand laut
         const dateien = stammLib.dateien(root).map((d) => ({ name: d, src: fs.readFileSync(path.join(root, d), "utf8") }));
         const taeter = einWertTaeter(dateien, KERNE);
         check(
@@ -1447,25 +1441,17 @@ function validateManifest(m) {
     // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
     // einstufig (validateManifest oben; hier der Selbsttest).
     {
-        const pg = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // __replyBuildAsset lebt in der Brücke (K42)
-        const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
-        const absenz = (pgS, pcS) => {
+        // die Absenzen über den EINEN Helfer (kommentarfrei, der Täter mit Datei und Zeile); `pgW`/`pcW` wandeln Brücke
+        // (K42: __replyBuildAsset lebt in der Brücke) und phyto-core im Selbsttest
+        const absenz = (pgW, pcW) => {
             const v = [];
-            const a = pgS.indexOf("function __replyBuildAsset(");
-            const body = a >= 0 ? pgS.slice(a, pgS.indexOf("\n    }\n", a)) : "";
-            const zweig = body.indexOf("if (isZweitKern) {");
-            const ruf = [...body.matchAll(/budgetErzwingen\(/g)].map((x) => x.index);
-            if (!body) v.push("__replyBuildAsset nicht gefunden");
-            else if (ruf.some((i) => zweig < 0 || i < zweig || i > body.indexOf("\n            }\n", zweig)))
-                v.push(
-                    "budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (die Pflanzen-Zeile ist der Bau-Regler)"
-                );
-            const seh = /seh: Object\.freeze\((\[[^\]]*\])\)/.exec(pcS);
-            if (!seh || JSON.parse(seh[1]).indexOf("laub") >= 0)
-                v.push("die Seh-Klasse laub lebt in BUDGET_GESETZ.seh");
+            if (!stammLib.fehlt({ ausser: /if \(isZweitKern\) \{/ }, /budgetErzwingen\(/, { datei: "foundry-bruecke.js", wandel: pgW }))
+                v.push(`budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (${stammLib.fehlt.wo}) — die Pflanzen-Zeile ist der Bau-Regler`);
+            if (!stammLib.fehlt(null, /seh: Object\.freeze\(\[[^\]]*"laub"/, { datei: "phyto-core.js", wandel: pcW }))
+                v.push(`die Seh-Klasse laub lebt in BUDGET_GESETZ.seh (${stammLib.fehlt.wo})`);
             return v;
         };
-        const echt = absenz(pg, pcSrc);
+        const echt = absenz();
         check(
             "B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub",
             echt.length === 0,
@@ -1494,16 +1480,8 @@ function validateManifest(m) {
                 },
             },
         });
-        const falten = absenz(
-            pg
-                .replace("if (isZweitKern) {", "if (true) {")
-                .replace(
-                    "const res = PC.budgetErzwingen(meshes",
-                    "const res0 = PC.budgetErzwingen(meshes, null); const res = PC.budgetErzwingen(meshes"
-                ),
-            pcSrc
-        );
-        const laub = absenz(pg, pcSrc.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",'));
+        const falten = absenz((t) => t.replace("const isZweitKern = !!zweit;", "const isZweitKern = !!zweit;\n            PC.budgetErzwingen(meshes, null);"));
+        const laub = absenz(undefined, (t) => t.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",'));
         check(
             "SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub)",
             [

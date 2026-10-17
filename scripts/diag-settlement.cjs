@@ -48,12 +48,35 @@ const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 // Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random
 // zwischen `_autoSettlementCellInfo` und `_tickAutoSettlement`. Die Gesetze selbst (Reservierung, Strom des Welt-Seeds, die
 // EINE Slot-Quelle, Headless-Ruhe, ov-Stempel, Erlebnis-Schichten) fahren Teil B und C im Verhalten.
-function autoStaticLaws(anazhSrc) {
-    const nc = stammLib.ohneKommentare(anazhSrc);
-    const k = stammLib.kopf(nc, "_autoSettlementCellInfo");
-    const i = k < 0 ? -1 : k + 5;
-    const j = i >= 0 ? nc.indexOf("_tickAutoSettlement(", i) : -1;
-    return [["C-S2: kein Math.random im Auto-Dorf-Pfad (Γ5; den Strom des Welt-Seeds fährt C1)", i >= 0 && j > i && !/Math\.random/.test(nc.slice(i, j))]];
+// der Auto-Dorf-Pfad an einer LISTE (Lehre 6: Zugehörigkeit am Namen, nie an der Lage im Text); ein totes Glied wirft im
+// EINEN Absenz-Helfer beim Namen
+const AUTO_DORF_PFAD = [
+    "_autoSettlementCellInfo",
+    "_genesisMitte",
+    "_genesisPlattform",
+    "_autoSettlementSiteOk",
+    "_autoSettlementFindSite",
+    "_genesisPortalRing",
+    "_portalVorschauOrt",
+    "_ensurePortalPreview",
+    "_portalApproachPrefetch",
+    "_autoSettlementStartInfo",
+    "_autoSettlementChannelLive",
+    "_siedlungEpoche",
+    "_autoSettlementSpawnCell",
+    "_tickGenesisOrt",
+    "_dorfTaktLebt",
+    "_startDorfFaellig",
+    "_tickAutoSettlement",
+];
+function autoStaticLaws(q) {
+    return [
+        [
+            "C-S2: kein Math.random im Auto-Dorf-Pfad (Γ5; den Strom des Welt-Seeds fährt C1)",
+            stammLib.fehlt(AUTO_DORF_PFAD, /Math\.random/, q),
+            stammLib.fehlt.wo,
+        ],
+    ];
 }
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
@@ -2688,7 +2711,7 @@ const FIXTURES = [
         FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
-    for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);
+    for (const [name, ok, detail] of autoStaticLaws()) check(name, ok, detail);
     const c = out.c || {};
     check(
         "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich) und zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; Γ5)",

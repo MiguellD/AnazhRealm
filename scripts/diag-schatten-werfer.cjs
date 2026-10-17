@@ -99,19 +99,16 @@ const SELBSTTEST = process.argv.includes("--selftest");
 const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
-// Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst — die diag-altlasten-Methode).
-const ohneKommentare = stammLib.ohneKommentare;
-
-// Z2 — die Bildziele je Leser, gezählt im kommentar-bereinigten Stamm.
-function bildZiele(src) {
-    const code = ohneKommentare(src);
-    const n = (re) => [...code.matchAll(re)].length;
-    return {
-        tiefe: n(/viewportDepthTexture\(/g),
-        namenlos: n(/convertToTexture\(/g),
-    };
+// Z2 — die Bildziele je Leser über den EINEN Absenz-Helfer (kommentarfrei): die Szenen-Tiefe zieht NUR `_szeneTiefe`, kein
+// namenloses Bildziel. `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum; dass alle Leser dieselbe Tiefe lesen, misst
+// die Probe am Verhalten (a.z2).
+function bildZiele(q) {
+    const z = {};
+    if (!stammLib.fehlt({ ausser: "_szeneTiefe" }, /viewportDepthTexture\(/, q)) z.tiefe = stammLib.fehlt.wo;
+    if (!stammLib.fehlt(null, /convertToTexture\(/, q)) z.namenlos = stammLib.fehlt.wo;
+    return z;
 }
-const bildZieleGut = (z) => z.tiefe <= 1 && z.namenlos === 0;
+const bildZieleGut = (z) => !Object.keys(z).length;
 
 function probe(selbsttest) {
     const r = window.anazhRealm;
@@ -1476,8 +1473,7 @@ function probe(selbsttest) {
     };
     try {
         // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)
-        const stamm = stammLib.text(root);
-        const z2 = bildZiele(stamm);
+        const z2 = bildZiele();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 120000,
@@ -1776,8 +1772,8 @@ function probe(selbsttest) {
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
-            const zs = bildZiele(stamm + "\nconst t = TSL.viewportDepthTexture();\n");
-            check("S7 Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot", !bildZieleGut(zs));
+            const zs = bildZiele((t) => t + "\nconst t = TSL.viewportDepthTexture();\n");
+            check("S7 Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot", !bildZieleGut(zs), zs.tiefe);
         }
         check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {

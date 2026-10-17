@@ -55,9 +55,29 @@
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",
             "stamm": 1
         },
+        "scripts/diag-raum-tags.cjs": {
+            "zweck": "Struktur: AST-Wand — der Aufrufbaum von _raumTagsRechnen liest nur die Eingänge seines Schlüssels, keiner schreibt seine Tabellen",
+            "stamm": 2
+        },
+        "scripts/diag-reconnect.cjs": {
+            "zweck": "Messung: führt die Reconnect-Glieder des Stamms mit injizierter Umwelt aus (Fixturen A–C, Selbsttest C wandelt eine)",
+            "stamm": 1
+        },
         "scripts/diag-regler-wirkt.cjs": {
             "zweck": "Messung: führt die statischen Wurf-Gesetze des Stamms in Node aus",
             "stamm": 1
+        },
+        "scripts/diag-schatten-bias.cjs": {
+            "zweck": "Struktur: AST-Wand — jede Zuweisung an normalBias steht im Gesetz _schattenNormalBias",
+            "stamm": 2
+        },
+        "scripts/diag-schirm-monotonie.cjs": {
+            "zweck": "Struktur: jede Schirm-Lesung am AST ihrem Glied zugeordnet, Alias-Fluss je Methode, Erzeuger und UI-Lage an benannter Liste",
+            "stamm": 1
+        },
+        "scripts/diag-streu-wahrheit.cjs": {
+            "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",
+            "datei": 2
         },
         "scripts/diag-tor-fern.cjs": {
             "zweck": "Messung: führt _huelleVon aus der Quelle aus (die Fernform liest, was er liest)",
@@ -115,60 +135,9 @@
             "grund": "Absenz-Wand am Stamm-Text, 20 Absenzen (S2b-Besitz)",
             "stamm": 1
         },
-        "scripts/diag-raum-tags.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2
-        },
-        "scripts/diag-reconnect.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-render-diaet.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
         "scripts/diag-s4-impostor-workshop.cjs": {
             "grund": "Absenz am Alias von __codeOf (S2b-Besitz)",
             "seite": 1
-        },
-        "scripts/diag-scatter-lod.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-schatten-bias.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2
-        },
-        "scripts/diag-schatten-werfer.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-schirm-monotonie.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-season-meadow.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1,
-            "datei": 1
-        },
-        "scripts/diag-settlement.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1
-        },
-        "scripts/diag-streu-wahrheit.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 1,
-            "datei": 2
-        },
-        "scripts/diag-studio-huelle.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "datei": 1
-        },
-        "scripts/diag-studio-vertrag.cjs": {
-            "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",
-            "stamm": 2,
-            "datei": 2
         },
         "scripts/diag-trias.cjs": {
             "grund": "Absenz-Wand liest noch am Helfer vorbei (D3d-Rest: auf stammLib.fehlt ziehen)",

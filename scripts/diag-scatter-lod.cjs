@@ -43,17 +43,19 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── F (Absenz): kein zweiter Keying-Ort — die Konstante hat höchstens drei Vorkommen (Definition + Key + T3-Kugel),
-    // der `s:`-Super-Key höchstens EINE Ableitung. Dass die Leser lesen, zeigen die Unit-, Kugel- und Diät-Proben im Boot.
-    const src = stammLib.text(root);
-    const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
-    const fernDeriveSites = (src.match(/"s:" \+ Math\.floor/g) || []).length;
+    // ── F (Absenz über den EINEN Helfer): kein zweiter Keying-Ort — die Konstante lesen NUR der Key (`_archFernRegionKey`)
+    // und die T3-Kugel (`_archRegionBundleFor`), der `s:`-Super-Key hat EINE Ableitung (`_archFernRegionKey`). Dass die
+    // Leser lesen, zeigen die Unit-, Kugel- und Diät-Proben im Boot.
     check(
-        "F(Absenz): kein vierter Leser von SCATTER_FERN_SUPERREGION",
-        fernConstUses <= 3,
-        `vorkommen=${fernConstUses}`
+        "F(Absenz): kein dritter Leser von SCATTER_FERN_SUPERREGION (nur Key und T3-Kugel)",
+        stammLib.fehlt({ ausser: ["_archFernRegionKey", "_archRegionBundleFor"] }, /AnazhRealm\.SCATTER_FERN_SUPERREGION(?!\s*=[^=])/),
+        stammLib.fehlt.wo
     );
-    check("F(Absenz): kein zweiter Ableitungs-Ort des `s:`-Super-Keys", fernDeriveSites <= 1, `ableitungen=${fernDeriveSites}`);
+    check(
+        "F(Absenz): kein zweiter Ableitungs-Ort des `s:`-Super-Keys",
+        stammLib.fehlt({ ausser: "_archFernRegionKey" }, /"s:" \+ Math\.floor/),
+        stammLib.fehlt.wo
+    );
 
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
