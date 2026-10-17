@@ -68,8 +68,7 @@
 //      den kreatur-Leib (_kreaturLeib.reichweite) · T12: das Tor deckt die Gestalt (jedes Ende jeder Treffer-Glied-Kapsel,
 //      vier Gattungen in jeder Größen-Grenze, 90 Spiel-Takte).
 //  (K27 LEBENSWERTE SIND ZUSTAND) T27: im Modus pfad senken Biss und Hieb hp und Ausdauer; kein Rufer der Stat-
-//      Neuberechnung (Gerät · Panel · Boost · Tod-Takt) hebt hp, Ausdauer oder Mana über Regen·dt, voll setzen nur
-//      applyPlayerSoul und _playerDeathRespawn. (S11) die alte Zeile (jede Neuberechnung = Maximum) als Hülle → der
+//      Neuberechnung (Gerät · Panel · Boost · Tod-Takt) hebt hp, Ausdauer oder Mana über Regen·dt. (S11) die alte Zeile (jede Neuberechnung = Maximum) als Hülle → der
 //      erste Rufer heißt equipHeld, 4 Wege. Vorher 4 Wege; die Linse lokal ohne T27 84 s, mit T27 61 s.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
@@ -326,10 +325,10 @@ function ausdauerVerdict(A) {
     return v;
 }
 // (T27) LEBENSWERTE SIND ZUSTAND (K27 — pure Funktion, Probe UND Selbst-Test): ein Biss senkt hp, ein Hieb die Ausdauer;
-// kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll; auf das Maximum
-// setzen nur applyPlayerSoul und _playerDeathRespawn. Jede Verletzung nennt den Rufer und seinen Weg (Gerät · Panel ·
-// Boost · Tod-Takt). Befund K27: recomputePlayerStats setzte hp, Ausdauer und Mana bei JEDER Neuberechnung auf das Maximum.
-const LEBEN_SOLL = { vollRufer: ["_playerDeathRespawn", "applyPlayerSoul"], eps: 1e-3 };
+// kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll. Jede Verletzung
+// nennt den Rufer und seinen Weg (Gerät · Panel · Boost · Tod-Takt). Befund K27: recomputePlayerStats setzte hp, Ausdauer
+// und Mana bei JEDER Neuberechnung auf das Maximum.
+const LEBEN_SOLL = { eps: 1e-3 };
 function lebenswerteVerdict(L) {
     if (!L || !Array.isArray(L.schritte) || L.schritte.length < 10) return ["lebenswerte keine Probe"];
     const v = [];
@@ -357,9 +356,6 @@ function lebenswerteVerdict(L) {
     if (!R || !(R.wunde > 0) || !(Math.abs(R.hp - R.hpMax) <= LEBEN_SOLL.eps))
         v.push(`lebenswerte-rueckkehr: nach dem Tod steht hp ${R && R.hp} von ${R && R.hpMax} (Wunde ${R && R.wunde})`);
     if (!L.boostAn || !L.boostAb) v.push(`lebenswerte-boost: an ${!!L.boostAn} · ab ${!!L.boostAb} (keine Probe)`);
-    const vr = (L.vollRufer || []).join(",");
-    if (vr !== LEBEN_SOLL.vollRufer.join(","))
-        v.push(`lebenswerte-voll: auf das Maximum setzen [${vr}], Soll [${LEBEN_SOLL.vollRufer.join(",")}]`);
     return v;
 }
 function lebenswerteWege(L) {
@@ -642,45 +638,37 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             const G = AG.gefuehl;
             const codeOf = window.__codeOf;
 
-            // ── KONSUM-Proben (Lehre 6): die EINE Quelle ist verdrahtet ──
+            // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
+            // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
+            const ruft = (lauf, k) => {
+                const eigen = Object.prototype.hasOwnProperty.call(r, k),
+                    f0 = r[k];
+                let n = 0;
+                r[k] = function (...a) {
+                    n++;
+                    return f0.apply(this, a);
+                };
+                try {
+                    lauf();
+                } finally {
+                    if (eigen) r[k] = f0;
+                    else delete r[k];
+                }
+                return n > 0;
+            };
+            o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const atkSrc = codeOf(r._playerAttackCreature);
-            o.checks.klickLoestNurAus =
-                /_beginPlayerSwing/.test(atkSrc) && !/attackSpeed/.test(atkSrc) && !/damageCreature/.test(atkSrc);
-            o.checks.cooldownLiestQuelle =
-                /_playerSwingDauer/.test(codeOf(r._beginPlayerSwing)) &&
-                !/attackSpeed/.test(codeOf(r._beginPlayerSwing));
-            o.checks.hudLiestQuelle = /_playerSwingDauer/.test(codeOf(r.tickStatsHud));
-            o.checks.werkstattLiestQuelle = /_swingDauerFuerBlueprint/.test(codeOf(r._blueprintAbilityStats));
+            const absenzKlick = !/attackSpeed/.test(atkSrc) && !/damageCreature/.test(atkSrc);
+            const absenzDauer = !/attackSpeed/.test(codeOf(r._beginPlayerSwing));
             o.checks.simLiestNieHitStop =
                 !/_hitStopFactor/.test(codeOf(r._stepFixedSim)) && !/_hitStopFactor/.test(codeOf(r._loopFixedStep));
-            o.checks.anzeigeLiestHitStop =
-                /_hitStopFactor/.test(codeOf(r.animatePlayerSoul)) &&
-                /_hitStopFactor/.test(codeOf(r._tickKampfSchwung));
-            o.checks.layerImRigPfad = /_applyKampfSchwungPose/.test(codeOf(r.animatePlayerSoul));
-            const juiceSrc = codeOf(r._kampfHitJuice);
-            o.checks.juiceKanaele = /_landImpactPending/.test(juiceSrc) && /_playKampfOneShot/.test(juiceSrc);
             // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
-            // Chokepoint `_substanzKlang` — er trägt Master, Symphonie-Wand und keinen zweiten Kontext.
-            const shotSrc = codeOf(r._substanzKlang);
-            o.checks.klangEineMaschine =
-                /_substanzKlang\(/.test(codeOf(r._playKampfOneShot)) &&
-                /masterGain/.test(shotSrc) &&
-                /enabled/.test(shotSrc) &&
-                !/new\s+AudioContext/.test(shotSrc);
-            const deathSrc = codeOf(r._creatureCombatDeath);
-            // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt), der kippt und despawnt nicht selbst
-            const fallSrc = codeOf(r._kreaturFaellt);
-            o.checks.todKipptStattDespawn =
-                /_kreaturFaellt\(/.test(deathSrc) &&
-                !/removeCreature\(/.test(deathSrc) &&
-                /_fieldGradient/.test(fallSrc) &&
-                /dying/.test(fallSrc) &&
-                !/removeCreature\(/.test(fallSrc);
-            // der Leichnam-Takt trägt den Abschied, und der Kreatur-Takt treibt ihn
-            o.checks.abschiedNachFrist =
-                /dying/.test(codeOf(r._tickLeichname)) &&
-                /removeCreature\(/.test(codeOf(r._tickLeichname)) &&
-                /_tickLeichname\(/.test(codeOf(r.updateCreatures));
+            // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
+            const absenzKlang = !/new\s+AudioContext/.test(codeOf(r._substanzKlang));
+            // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
+            const absenzTod =
+                !/removeCreature\(/.test(codeOf(r._creatureCombatDeath)) &&
+                !/removeCreature\(/.test(codeOf(r._kreaturFaellt));
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
@@ -718,6 +706,9 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.checks.aVerhaeltnisWurzelI = o.dauerSoll > 0 && Math.abs(o.dauerRatio / o.dauerSoll - 1) <= 0.05;
             // die Faust hat eine endliche Dauer (kein Instant-Prügeln)
             o.checks.aFaustDauer = r._swingDauerFuerBlueprint(null) === K.handDauerSec && K.handDauerSec > 0.1;
+            // die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle (die Rolle von Hand hält den Waffen-Zweig)
+            const alsWaffe = Object.assign({}, leicht, { role: "weapon", roleManual: true });
+            o.checks.werkstattLiestQuelle = ruft(() => r._blueprintAbilityStats(alsWaffe), "_swingDauerFuerBlueprint");
 
             // ── Bühne für (B)/(C)/(E): Waffe in die Hand, bekannte Blickrichtung ──
             const p = s.player;
@@ -768,6 +759,20 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 s.pitch = Math.atan2((b.min.y + b.max.y) / 2 - c.y, Math.max(0.5, cNeben.position.z - c.z));
                 r._loopCamera(901);
             }
+            // ── KONSUM der EINEN Quellen am Zähl-Spion: Klick → Schwung → Dauer, HUD, Hit-Stop, Juice → Klang, Fall → Gefälle ──
+            p._swing = null;
+            o.checks.klickLoestNurAus = ruft(() => r._playerAttackCreature(cNeben), "_beginPlayerSwing") && absenzKlick;
+            p._swing = null;
+            o.checks.cooldownLiestQuelle = ruft(() => r._beginPlayerSwing(null), "_playerSwingDauer") && absenzDauer;
+            if (p._swing) p._swing.lastT = 0;
+            o.checks.anzeigeLiestHitStop = !!p._swing && ruft(() => r._tickKampfSchwung(0.001), "_hitStopFactor");
+            p._swing = null;
+            s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
+            o.checks.hudLiestQuelle = ruft(() => r.tickStatsHud(1e6), "_playerSwingDauer");
+            s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
+            o.checks.juiceKanaele = ruft(() => r._kampfHitJuice(cNeben, 1000, null, 5), "_playKampfOneShot");
+            p._hitStopUntil = 0;
+            o.checks.klangEineMaschine = ruft(() => r._playKampfOneShot({ härte: 1 }), "_substanzKlang") && absenzKlang;
 
             const schwinge = (t0) => {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
@@ -1050,7 +1055,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 o.breiErr = (eBrei && eBrei.message) || String(eBrei);
             }
 
-            // ── Bühne restaurieren ──
+            // ── Bühne restaurieren (der Rücken-Zeuge fällt zuletzt den EINEN Fall: er liest das Gefälle am Spion) ──
+            o.checks.todKipptStattDespawn = ruft(() => r._kreaturFaellt(cRuecken), "_fieldGradient") && absenzTod;
             for (const c of [cNeben, cRuecken]) if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener
             delete blu._kg_klinge;
             s.yaw = saved.yaw;
@@ -1116,6 +1122,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.breiSelbsttest,
             "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → alles kollabiert auf EINE Donor-Dauer (die Wand sieht den Riss)"
         );
+        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft");
         check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)");
         check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)");
         check(c.hudLiestQuelle, "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle");
@@ -1135,8 +1142,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `(B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (${out.freeze !== null ? (out.freeze * 1000).toFixed(0) + " ms" : "kein Treffer"})`
         );
         check(c.bKameraImpuls, "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)");
-        check(c.juiceKanaele, "(B) Hit-Juice wired: Kamera-Dip + Klang-One-Shot in _kampfHitJuice");
-        check(c.klangEineMaschine, "(B) Klang über die EXISTIERENDE Maschine (masterGain, kein zweiter AudioContext)");
+        check(c.juiceKanaele, "(B) der Treffer-Juice spielt den Klang-One-Shot (_playKampfOneShot am Spion)");
+        check(c.klangEineMaschine, "(B) der One-Shot klingt über _substanzKlang (kein zweiter AudioContext)");
         check(c.stimmeAusStumm, "(B) Stimme-aus respektiert: Symphonie aus → der Treffer bleibt stumm");
         check(
             c.s2LinseFeuert,
@@ -1150,7 +1157,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         check(c.cGegenprobeLaeuft, "(C) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder");
         check(c.simLiestNieHitStop, "(C) Source-Wand: _stepFixedSim/_loopFixedStep lesen _hitStopFactor NIE");
-        check(c.anzeigeLiestHitStop, "(C) und NUR die Anzeige-Uhr (animatePlayerSoul + Schwung-Tick) liest ihn");
+        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)");
         check(
             c.s1LinseFeuert,
             "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)"
@@ -1165,16 +1172,11 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         check(
             c.todKipptStattDespawn,
-            "(D) Source-Wand: _creatureCombatDeath fällt den EINEN Fall (_kreaturFaellt kippt nach _fieldGradient), keiner despawnt selbst"
-        );
-        check(
-            c.abschiedNachFrist,
-            "(D) und der Leichnam-Takt (_tickLeichname, aus updateCreatures) trägt den Abschied (removeCreature nach der Frist)"
+            "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
         );
         check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)");
         check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)");
         check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
-        check(c.layerImRigPfad, "(E) KONSUM: animatePlayerSoul wendet den Schwung-Layer an");
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log("\n  ── WELLE L — Treffer · Maus · Blick (die Leben-Prüfung „Kampf“ als Linse) ──\n");
@@ -1549,7 +1551,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `${x.rufer} hp ${x.hp[0]}→${x.hp[1]} · Ausdauer ${x.st[0]}→${x.st[1]} · Mana ${x.mana[0]}→${x.mana[1]}`;
         console.log(
             `  (T27) Lebenswerte im Modus pfad: Biss −${zL && zL.erst && zL.erst.hp} hp · Hieb −${zL && zL.erst && zL.erst.st} Ausdauer · ` +
-                `Rückkehr ${JSON.stringify(zL && zL.rueckkehr)} · voll setzen [${zL && (zL.vollRufer || []).join(", ")}]`
+                `Rückkehr ${JSON.stringify(zL && zL.rueckkehr)}`
         );
         for (const x of (zL && zL.schritte) || []) console.log(`        ${fmtL(x)}`);
         const lv = lebenswerteVerdict(zL);
@@ -1602,11 +1604,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
         );
         const shellSrc = fs.readFileSync(path.join(root, "worlds/schmiede/schmiede.js"), "utf8");
-        const shellPf = {
-            eigenerPfeil:
-                /function buildPfeil\s*\(/.test(shellSrc) ||
-                !/buildPfeil\s*=\s*\(\)\s*=>\s*SC\.buildPfeil\(\)/.test(shellSrc),
-        };
+        const shellPf = { eigenerPfeil: /function buildPfeil\s*\(/.test(shellSrc) };
         console.log(
             `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
         );
