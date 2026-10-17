@@ -580,23 +580,11 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         // Warmup: die Welt settled pumpen (plateau-basiert, die V18.273-Lehre).
         await page.evaluate(async () => {
             const r = window.anazhRealm;
-            let lastSize = -1,
-                stable = 0,
-                ticks = 0;
-            while (ticks < 3000) {
+            await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                ticks++;
-                const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (sz === lastSize) stable++;
-                else {
-                    stable = 0;
-                    lastSize = sz;
-                }
-                if (sz > 20 && stable > 40) break;
-                if (ticks % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
+            }); // die Welt steht (welt-boot)
         });
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).

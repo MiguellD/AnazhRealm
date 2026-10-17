@@ -434,24 +434,13 @@ function check(name, ok, detail) {
                 s = r.state;
             const res = {};
             const pause = () => new Promise((ok) => setTimeout(ok, 0));
-            // Einschwingen: der Ring steht (Chunk-Zahl stabil), dann Streu, Wasser und Fern-Deko austreiben.
-            let lastSize = -1,
-                stable = 0,
-                ticks = 0;
-            while (ticks < 4000) {
+            // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
+            // austreiben.
+            await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                ticks++;
-                const sz = s.voxelChunks ? s.voxelChunks.size : 0;
-                if (sz === lastSize) stable++;
-                else {
-                    stable = 0;
-                    lastSize = sz;
-                }
-                if (sz > 20 && stable > 60) break;
-                if (ticks % 10 === 0) await pause();
-            }
+            });
             for (let i = 0; i < 60; i++) if (!r._tickPendingWaterIso(8)) break;
             // Die Nah-Streu: der Kachel-Ring um die Kamera, bis Studio-Teile ankommen und nichts mehr offen ist.
             for (let i = 0; i < 900; i++) {

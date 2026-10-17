@@ -1641,24 +1641,13 @@ function zeile(o) {
                     timeout: 180000,
                 }
             );
-            await page.evaluate(async () => {
-                const r = window.anazhRealm;
-                let last = -1;
-                let stable = 0;
-                for (let t = 0; t < 3000; t++) {
+            await page.evaluate(() =>
+                window.__weltStehtNach(() => {
                     try {
-                        r._gameLoopTick(performance.now());
+                        window.anazhRealm._gameLoopTick(performance.now());
                     } catch (_e) {}
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    if (sz === last) stable++;
-                    else {
-                        stable = 0;
-                        last = sz;
-                    }
-                    if (sz > 20 && stable > 40) break;
-                    if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-                }
-            });
+                })
+            );
             const o = await page.evaluate(proben, phasen || null);
             await kontext.close();
             platz.z = null;

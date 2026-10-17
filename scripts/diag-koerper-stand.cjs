@@ -1064,25 +1064,14 @@ function zeile(o) {
                 }
             );
             if (inj) await page.evaluate(taeter, inj);
-            // die Welt einschwingen (plateau-basiert, das Muster von gate:koerper-bewegung)
-            await page.evaluate(async () => {
-                const r = window.anazhRealm;
-                let last = -1;
-                let stable = 0;
-                for (let t = 0; t < 3000; t++) {
+            // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
+            await page.evaluate(() =>
+                window.__weltStehtNach(() => {
                     try {
-                        r._gameLoopTick(performance.now());
+                        window.anazhRealm._gameLoopTick(performance.now());
                     } catch (_e) {}
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    if (sz === last) stable++;
-                    else {
-                        stable = 0;
-                        last = sz;
-                    }
-                    if (sz > 20 && stable > 40) break;
-                    if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-                }
-            });
+                })
+            );
             const o = await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
             return { o, errs };

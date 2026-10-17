@@ -1179,24 +1179,9 @@ function sichtLauf(k) {
         });
         try {
             await sleep((k.ein || 5) * 1000);
-            // DIE WELT STEHT: 3 s lang kein neuer Chunk und kein neuer Stand eines Satzes (Bereich, Hülle, Ordnung) — sonst misst
-            // die Ruhe das Einschwingen (höchstens `ruheMax` s)
-            const welt = () => {
-                let n = st.voxelChunks ? st.voxelChunks.size : 0;
-                if (st.chunkSaetze) for (const x of st.chunkSaetze.values()) n += 1e6 * (x.stand || 0) + x.bloecke.size;
-                return n;
-            };
-            const t0 = performance.now();
-            let vor = welt(),
-                seit = performance.now();
-            while (performance.now() - t0 < (k.ruheMax || 120) * 1000 && performance.now() - seit < 3000) {
-                await sleep(250);
-                const w = welt();
-                if (w !== vor) {
-                    vor = w;
-                    seit = performance.now();
-                }
-            }
+            // DIE WELT STEHT (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite) — sonst misst die Ruhe das
+            // Einschwingen (bis D3d: 3 s Wanduhr ohne neuen Chunk und ohne neuen Stand eines Satzes)
+            await window.__weltStehtNach();
             messen = true;
             naechste();
             if (!phase) rend.setAnimationLoop(null);

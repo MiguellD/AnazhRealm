@@ -683,19 +683,8 @@ function erstWandInstall() {
         while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
-        // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
-        let stable = 0,
-            last = -1;
-        while (performance.now() < dl) {
-            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-            if (sz === last) stable++;
-            else {
-                stable = 0;
-                last = sz;
-            }
-            if (sz > 20 && stable > 10) break;
-            await sleep(500);
-        }
+        // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
+        await window.__weltStehtNach();
         const rend = r.state.renderer;
         if (!rend) return { fatal: "kein Renderer" };
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
