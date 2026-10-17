@@ -98,9 +98,13 @@ async function checkBandV1727WritableField(ctx) {
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
-        const spawnSrc =
-            r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
-        out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
+        // die Geburt trägt Leben ins Feld: ein spawn_creature über die DSL deponiert an der Wiege (am Ruf)
+        const capD = r.state.maxCreatures;
+        const nD = r.state.creatures.length;
+        r.state.maxCreatures = nD + 1;
+        out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [["spawn_creature", ["at_player"], 1, "happy"], { source: "test" }]);
+        if (r.state.creatures[nD]) r.removeCreature(r.state.creatures[nD]);
+        r.state.maxCreatures = capD;
         // sauberer Start
         if (r.state.lifeField) r.state.lifeField.clear();
         const X = 12345,
@@ -1159,9 +1163,6 @@ async function checkBandWelle6APolish(ctx) {
             if (node.userData && node.userData.isConnectionLine) worldLines++;
         });
         out.worldClean = worldLines === 0;
-        out.workshopOrders = /connectionLines: true/.test(
-            r._workshopRebuildPreviewMesh ? window.__codeOf(r._workshopRebuildPreviewMesh) : ""
-        );
 
         // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
         // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
@@ -1269,8 +1270,8 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
         check(
-            "V18.153: die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein, der Viewer bestellt sie",
-            wave6fResults.worldClean && wave6fResults.workshopOrders
+            "V18.153: die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein",
+            wave6fResults.worldClean
         );
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
         check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);

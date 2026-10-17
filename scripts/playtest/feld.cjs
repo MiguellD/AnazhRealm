@@ -216,9 +216,20 @@ async function checkBandV1723Harmony(ctx) {
             r.state.skyTintTarget = 0;
             r.state.skyTintStrength = 0;
         }
-        const spawnSrc =
-            r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
-        out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
+        // drei Wesen am Spieler: sie stehen im Ring um ihn (4–6,5 m), nie auf ihm und nie gestapelt
+        const pmR = r.state.playerMesh.position;
+        const capR = r.state.maxCreatures,
+            n0 = r.state.creatures.length;
+        r.state.maxCreatures = n0 + 3;
+        r.dslRun(["spawn_creature", ["at_player"], 3, "happy"], { source: "test" });
+        const born = r.state.creatures.slice(n0);
+        const dR = born.map((c) => Math.hypot(c.position.x - pmR.x, c.position.z - pmR.z));
+        out.spawnRings =
+            born.length > 0 &&
+            dR.every((d) => d >= 4 - 1e-6 && d <= 6.5 + 1e-6) &&
+            born.every((a, i) => born.every((b, j) => j <= i || Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) > 0.05));
+        born.forEach((c) => r.removeCreature(c));
+        r.state.maxCreatures = capR;
         return out;
     });
     check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
@@ -329,7 +340,7 @@ async function checkBandV1733WorldRules(ctx) {
         out.registryArray = Array.isArray(r.state.worldRules);
         out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickDefined = typeof r._tickWorldRules === "function";
-        out.tickWired = /this\._tickWorldRules\(currentTime\)/.test(window.__codeOf(r.startEternalLoop));
+        out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
         const savedRules = r.state.worldRules.slice();

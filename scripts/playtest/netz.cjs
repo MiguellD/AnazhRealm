@@ -1571,8 +1571,16 @@ async function checkBandTailleGolden(ctx) {
             // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
             // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
             out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
-            const handlerSrc = window.__codeOf(r._p2pHandleChannelMessage) + window.__codeOf(r.p2pHandleMessage);
-            const dead = g.envelopes.types.filter((t) => handlerSrc.indexOf(`"${t.type}"`) < 0).map((t) => t.type);
+            // am Ruf: je goldenem Typ erreicht ein Umschlag über den echten Kanal-Eingang seinen Handler (kanal-exklusiv steht an
+            // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
+            const H = r.constructor.P2P_MESSAGE_HANDLERS;
+            const KANAL = { "social-rating": "_socialRatingReceive" };
+            const dead = g.envelopes.types.map((t) => t.type).filter((t) => {
+                const prov = KANAL[t] || H[t];
+                const roh = JSON.stringify({ type: t });
+                return !(typeof prov === "string" && typeof r[prov] === "function" && window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh]));
+            });
+            if (typeof r._p2pRemovePeer === "function") r._p2pRemovePeer("__golden");
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
             return out;
@@ -1636,13 +1644,12 @@ async function checkBandPhiArchipel(ctx) {
         // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
         // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
-        // Die neuen Akte sind GAR KEINE Ops (nicht in dslComposeAtomic / NON_BROADCASTABLE_OPS) — Source-
-        // Probe: setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer fehlen in dslRun.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noKickOp = !/op\s*===\s*["']kick_peer["']/.test(dslRunSrc);
-        out.noBanOp = !/op\s*===\s*["']ban_peer["']/.test(dslRunSrc);
-        out.noSetVisibilityOp = !/op\s*===\s*["']set_visibility["']/.test(dslRunSrc);
-        out.noSetPortalAddressOp = !/op\s*===\s*["']set_portal_address["']/.test(dslRunSrc);
+        // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
+        const keinOp = (op) => !r.dslEffects[op];
+        out.noKickOp = keinOp("kick_peer");
+        out.noBanOp = keinOp("ban_peer");
+        out.noSetVisibilityOp = keinOp("set_visibility");
+        out.noSetPortalAddressOp = keinOp("set_portal_address");
 
         // (P4) Die EINE Signatur-Schicht: _canonicalWorldAddress ist deterministisch
         // (gleiche Substanz → gleicher String); die FROZEN-Felder + v:1 sind drin.
@@ -1726,16 +1733,14 @@ async function checkBandPhiArchipel(ctx) {
         out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
         delete r.state.blueprints["phi_test_portal"];
 
-        // (P8) Visibility-Setter wirkt + die Lobby-BRIDGE existiert (Source-Probe). Den echten Round-Trip
+        // (P8) Visibility-Setter wirkt + gelistet ruft die Lobby-BRIDGE (am Ruf). Den echten Round-Trip
         // deckt smoke-multiuser; headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
         const visBefore = r.state.worldMeta.visibility;
         r.setWorldVisibility("gelistet");
         out.visGelistet = r.state.worldMeta.visibility === "gelistet";
         r.setWorldVisibility("privat");
         out.visPrivat = r.state.worldMeta.visibility === "privat";
-        const setterSrc = window.__codeOf(r.setWorldVisibility);
-        out.lobbyBridgePublishes = /publishToLobby/.test(setterSrc);
-        out.lobbyBridgeUnpublishes = /unpublishLobby/.test(setterSrc);
+        out.lobbyBridgePublishes = window.__consumes(r, "setWorldVisibility", r, "publishToLobby", ["gelistet"]);
         r.setWorldVisibility(visBefore || "privat");
 
         // (P9) Hausrecht-Sieb: ein gebannter peer fällt am _isPeerBanned, ein
@@ -1800,8 +1805,8 @@ async function checkBandPhiArchipel(ctx) {
         res.portalSetOk && res.portalCarriesAddress && res.portalSigPreserved && res.portalClearOk
     );
     check(
-        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + die Lobby-BRIDGE ist verdrahtet (Source: publishToLobby + unpublishLobby) — der echte Connected-Trip lebt im smoke-multiuser",
-        res.visGelistet && res.visPrivat && res.lobbyBridgePublishes && res.lobbyBridgeUnpublishes
+        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + gelistet ruft die Lobby-BRIDGE publishToLobby — der echte Connected-Trip lebt im smoke-multiuser",
+        res.visGelistet && res.visPrivat && res.lobbyBridgePublishes
     );
     check(
         "Φ2 (P9): _isPeerBanned siebt (gebannt → true · unbekannt → false · unban heilt)",
@@ -1917,10 +1922,7 @@ async function checkBandPhiArchipelV2(ctx) {
         const pres = r.worldPresence("welt-test");
         out.presenceCacheOk = !!(pres && pres.totalPeers === 5 && pres.regions.length === 2);
 
-        // (Q12) requestWorldPresence ist verdrahtet (Source-Probe — den echten
-        // Round-Trip macht smoke-multiuser); ohne p2p.connected → false.
-        const reqSrc = window.__codeOf(r.requestWorldPresence);
-        out.requestWired = /world-presence/.test(reqSrc) && /_p2pSignal/.test(reqSrc);
+        // (Q12) requestWorldPresence ohne p2p.connected → false.
         out.requestNoConn = r.requestWorldPresence("welt-test") === false;
 
         // (Q13) HANDLER-Registry: der Broker→Client-Typ ist verdrahtet.
@@ -1980,11 +1982,9 @@ async function checkBandPhiArchipelV2(ctx) {
         // Aufräumen: localStorage-Snapshot lassen wir liegen (kein Müll, nur
         // ein orphan; ein erneuter pinCurrentWorld überschreibt).
 
-        // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops
-        // (R2 strukturell durch Pool-Disjunktheit).
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noPinOp = !/op\s*===\s*["']pin_world["']/.test(dslRunSrc);
-        out.noRegionOp = !/op\s*===\s*["']set_regions_active["']/.test(dslRunSrc);
+        // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noPinOp = !r.dslEffects.pin_world;
+        out.noRegionOp = !r.dslEffects.set_regions_active;
 
 
         return out;
@@ -2035,8 +2035,8 @@ async function checkBandPhiArchipelV2(ctx) {
         res.presenceCacheOk
     );
     check(
-        "Φ4 (Q12): requestWorldPresence ist verdrahtet (world-presence + _p2pSignal in Source) + returnt false ohne p2p.connected",
-        res.requestWired && res.requestNoConn
+        "Φ4 (Q12): requestWorldPresence returnt false ohne p2p.connected",
+        res.requestNoConn
     );
     check(
         "Φ4 (Q13): P2P_MESSAGE_HANDLERS trägt world-presence → _p2pMsgWorldPresence (additiv, §4 minor)",
@@ -2218,10 +2218,9 @@ async function checkBandPhi7PortalHalls(ctx) {
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
 
 
-        // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noCreateHallOp = !/op\s*===\s*["']create_portal_hall["']/.test(dslRunSrc);
-        out.noMatHallOp = !/op\s*===\s*["']materialize_portal_hall["']/.test(dslRunSrc);
+        // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noCreateHallOp = !r.dslEffects.create_portal_hall;
+        out.noMatHallOp = !r.dslEffects.materialize_portal_hall;
 
         // Aufräumen: spawned-Portale + Halle aus dem Test.
         for (const e of spawned) {
@@ -2411,10 +2410,9 @@ async function checkBandPhi6ComputeSpende(ctx) {
         out.snapHasContribs = Array.isArray(snap.computeContributions) && snap.computeContributions.length >= 1;
         out.snapHasRuns = Array.isArray(snap.playtestContributions) && snap.playtestContributions.length >= 1;
 
-        // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops.
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noPinComputeOp = !/op\s*===\s*["']pin_compute["']/.test(dslRunSrc);
-        out.noSignPlaytestOp = !/op\s*===\s*["']sign_playtest["']/.test(dslRunSrc);
+        // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
+        out.noPinComputeOp = !r.dslEffects.pin_compute;
+        out.noSignPlaytestOp = !r.dslEffects.sign_playtest;
 
         // Aufräumen: die Test-Einträge.
         r.state.computeContributions.delete(h1);

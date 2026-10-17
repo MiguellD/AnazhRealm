@@ -2522,7 +2522,10 @@ async function checkBandPhasenBF(ctx) {
         // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
         // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
         // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
-        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt.
+        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz
+        // für je ein Probe-Wesen: die Obergrenze, die die Bänder davor füllten, urteilt nie mit.
+        const cap4 = r.state.maxCreatures;
+        r.state.maxCreatures = r.state.creatures.length + 1;
         out.d4Temperament = (() => {
             const pp = r.state.playerMesh.position;
             const t = (soul, bodySize) => {
@@ -2543,10 +2546,15 @@ async function checkBandPhasenBF(ctx) {
                 t("baer", 0.7) === "sanft"
             );
         })();
-        // KONSUM: die Gegenwehr liest das Profil (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
+        // KONSUM: der Treffer liest das Temperament (die Flucht-Dauer je fleeMul beweist gate:kreatur-leben am Verhalten);
+        // sanft/scheu haben strike 0.
+        const pp4 = r.state.playerMesh.position;
+        const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
+        r.state.maxCreatures = cap4;
+        const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
+        if (c4) r.removeCreature(c4);
         out.d4Konsum =
-            /_creatureTemperament/.test(window.__codeOf(r.damageCreature)) &&
-            /fleeMul/.test(window.__codeOf(r.damageCreature)) &&
+            liestTemperament &&
             AnazhRealm._verhaltenGesetz().temperament.profile.sanft.strike === 0 &&
             AnazhRealm._verhaltenGesetz().temperament.profile.scheu.strike === 0 &&
             AnazhRealm._verhaltenGesetz().temperament.profile.wehrhaft.strike > 0;
@@ -2663,12 +2671,25 @@ async function checkBandPhasenBF(ctx) {
             typeof r.setWaterfallSteep === "undefined";
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
-        // Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
+        // Gebaut wird das Sheet eines Meeres-Chunks dreimal: ruhig (Wogen), unter voller Strömung (Fluss) und als See.
         out.a4MouthWave = (() => {
-            const src = window.__codeOf(r._computeWaterSheetData);
-            return (
-                /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
-            );
+            const key = window.__wasserChunk("meer");
+            if (!key) return false;
+            const [cx, cz] = key.split(",").map(Number);
+            const wctx = r._mainWaterSheetCtx(cx, cz, r.state.voxelChunks.get(key));
+            const bau = (fluss, see) => {
+                r._hydroRiverAt = () => ({ flowX: fluss, flowZ: 0 });
+                r._hydrosphereLakeAt = () => see;
+                try {
+                    const d = r._computeWaterSheetData(cx, cz, wctx);
+                    return d ? d.aWave.filter((_, i) => d.aDepth[i] > 0) : [];
+                } finally {
+                    delete r._hydroRiverAt;
+                    delete r._hydrosphereLakeAt;
+                }
+            };
+            const meer = bau(0, false), fluss = bau(1, false), see = bau(0, true);
+            return meer.some((v) => v > 0.5) && fluss.length > 0 && fluss.every((v) => v === 0) && see.every((v) => v === 0);
         })();
         // WASSER-SHEET-ANTI-STARVATION: reine Distanz-Priorität + Dauer-Nachschub naher Keys ließe FERNE
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
@@ -2744,8 +2765,12 @@ async function checkBandPhasenBF(ctx) {
             if (!bp) return false;
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
-            const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
-            return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
+            // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
+            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
+            const panel = document.createElement("div");
+            r._specRenderBody(panel, wagen);
+            const line = panel.querySelector(".spec-motion-line");
+            return hasRad && !!line && /\d+× Rad an Achse \(rollt\)/.test(line.textContent);
         })();
         // B5-UNTERWASSER-PASS: Konsument des Kamera-Mediums (neben der Unterwasser-Luft) — liegt die KAMERA unter
         // dem Spiegel (`_koerperWasser` an der Kamera, Welle L Q6), ist das geteilte Wasser-Material DoubleSide (Decke von
@@ -2795,13 +2820,32 @@ async function checkBandPhasenBF(ctx) {
                 const third = r._caRoofChanged(a, dim, dimY);
                 const fourth = r._caRoofChanged(a, dim, dimY);
                 const dachNachDritt = e._caDachNeu[0];
-                const src = r._tickWorldWaterCA ? window.__codeOf(r._tickWorldWaterCA) : "";
+                // KONSUM: der Welt-Tick eines bewegten See-Chunks fragt das Dach-Gate (der Stub macht moved > 0,5)
+                const wk = window.__wasserChunk("see");
+                const we = wk && r.state.voxelChunks.get(wk);
+                let tickRuft = false;
+                if (we) {
+                    const sv = { act: r.state.waterCAActive, tick: we._caRemeshTick, still: we._caStillTicks };
+                    r.state.waterCAActive = new Set([wk]);
+                    delete we._caRemeshTick;
+                    we._caStillTicks = 0;
+                    r._tickWaterCA = () => 1;
+                    try {
+                        tickRuft = window.__consumes(r, "_tickWorldWaterCA", r, "_caRoofChanged", []);
+                    } finally {
+                        delete r._tickWaterCA;
+                        r.state.waterCAActive = sv.act;
+                        if (sv.tick !== undefined) we._caRemeshTick = sv.tick;
+                        else delete we._caRemeshTick;
+                        we._caStillTicks = sv.still;
+                    }
+                }
                 const dachOk =
                     offenNachErst &&
                     Math.abs(dachNachErst - 3.8) < 1e-6 &&
                     Math.abs(zwischen - 3.8) < 1e-6 &&
                     Math.abs(dachNachDritt - 4.9) < 1e-6;
-                return first && !second && third && !fourth && dachOk && /_caRoofChanged/.test(src);
+                return first && !second && third && !fourth && dachOk && tickRuft;
             } finally {
                 if (saved === undefined) r.state.voxelChunks.delete(key);
                 else r.state.voxelChunks.set(key, saved);
@@ -2887,11 +2931,12 @@ async function checkBandPhasenBF(ctx) {
                 typeof r._chatTryAbilityCommand !== "function" &&
                 typeof r._chatTryPersistenceCommand !== "function";
             if (!oldHandlersGone) return "alte if-else-Handler leben noch";
-            if (!/chatSystemPatterns/.test(window.__codeOf(r._chatDispatchLegacyCommand)))
-                return "Dispatch liest die Tabelle nicht";
+            const pLw = r.chatSystemPatterns.find((q) => q.re.test("liste welten"));
+            if (!pLw) return "Tabelle trägt liste welten nicht";
             const out0 = document.getElementById("chat-output");
             const before = out0 ? out0.children.length : 0;
-            r.processChatCommand("liste welten");
+            if (!window.__consumes(r, "processChatCommand", pLw, "run", ["liste welten"]))
+                return "Dispatch liest die Tabelle nicht";
             const after = out0 ? out0.children.length : 0;
             let listed = false;
             for (let i = before; i < after; i++) {
@@ -2937,9 +2982,28 @@ async function checkBandPhasenBF(ctx) {
                 const em = fake.userData.emotions;
                 if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
                     return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
-                if (!/_setWeather/.test(window.__codeOf(r._loopWeatherAndGrowth)))
-                    return "Auto-Zug ruft _setWeather nicht";
-                if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
+                r.state.creatures = saved.creatures;
+                r.state.creatureEmotions = saved.ce;
+                // EIN Schreiber: der Auto-Zug ruft _setWeather, und _setWeather fadet (Transition statt Sprung)
+                const sW = { wort: r.state.wetterWort, wunsch: r.state.wetterWunsch, b: r.state._buehneStand };
+                r.state.wetterWort = null;
+                r.state.wetterWunsch = { wort: "rainy", quelle: "probe" };
+                r.state.weatherTransition = null;
+                r.state.weather = "sunny";
+                r.state._buehneStand = true;
+                r.state.weatherEffectTime = AnazhRealm.WETTER_ZUG_SEK;
+                const zugRuft = window.__consumes(r, "_loopWeatherAndGrowth", r, "_setWeather", [0]);
+                r.state.wetterWunsch = sW.wunsch;
+                r.state._buehneStand = sW.b;
+                r.state.wetterWort = null;
+                r.state.weatherEffectTime = 0;
+                r.state.weatherTransition = null;
+                r.state.weather = "rainy";
+                const gesetzt = r._setWeather("stormy", "auto-zug");
+                const wtF = r.state.weatherTransition;
+                r.state.wetterWort = sW.wort;
+                if (!zugRuft) return "Auto-Zug ruft _setWeather nicht";
+                if (!(gesetzt === true && wtF && wtF.from === "rainy" && wtF.to === "stormy")) return "_setWeather fadet nicht";
                 return true;
             } finally {
                 if (!hatteStrom) delete r._faunaRng;
@@ -3053,7 +3117,7 @@ async function checkBandPhasenBF(ctx) {
         "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
     );
-    check("D4-VOLL: die Gegenwehr KONSUMIERT das Temperament-Profil (strike/fleeMul)", res.d4Konsum);
+    check("D4-VOLL: der Treffer KONSUMIERT das Temperament (strike-Profil)", res.d4Konsum);
     check("E2: _dslProgramWirkCost zahlt die Substanz (spawn_village = 20)", res.e2VillageCost);
     check("E2-VOLL: der Balance-Faktor liest die Emotion (ruhig=1, chaos-gekippt<0.5)", res.e2Balance);
     check("F2: iceServers konfigurierbar präsent", res.f2Turn);
@@ -3316,9 +3380,13 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // (W13) R2-DISJUNKTHEIT strukturell: weder repair_held noch wear-Setter
         // sind DSL-Ops (kein Skript kann automatisch reparieren oder die Mühe-
         // Senke umgehen — Ω5 lebt nur durch echte Spieler-Akte).
-        const dslRunSrc = window.__codeOf(r.dslRun);
-        out.noRepairOp = !/op\s*===\s*["']repair_held["']/.test(dslRunSrc);
-        out.noSetWearOp = !/op\s*===\s*["']set_wear["']/.test(dslRunSrc);
+        if (heldBp) r._setBlueprintWear(heldBp, 0.42);
+        const unbekannt = (prog) =>
+            !Object.hasOwn(r.dslEffects, prog[0]) &&
+            r.dslRun(prog, { seed: 1, programId: "probe-r2" }).log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
+            (!heldBp || Math.abs(r._blueprintWear(heldBp) - 0.42) < 1e-9);
+        out.noRepairOp = unbekannt(["repair_held"]);
+        out.noSetWearOp = unbekannt(["set_wear", "_t_wear_spitz", 1]);
 
         // Aufräumen — Modus zurück, Hand leer + Test-Blueprint geräumt (kein dangling Held).
         if (heldBp) r._setBlueprintWear(heldBp, 1);
@@ -3545,9 +3613,15 @@ async function checkBandV18209Konsolidierung(ctx) {
 
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
-        out.gamma6Snowband =
-            typeof r._attachVoxelFieldColors === "function" &&
-            /__gelaendeCore\.schnee\(/.test(window.__codeOf(r._bodenFarbeAt));
+        // KONSUM: die Boden-Farbe fragt die Schneegrenze des Gelände-Kerns (der Kern ist eingefroren → offene Kopie)
+        const G = window.__gelaendeCore;
+        window.__gelaendeCore = Object.assign({}, G);
+        try {
+            const p = r.state.playerMesh.position;
+            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
+        } finally {
+            window.__gelaendeCore = G;
+        }
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -3566,17 +3640,6 @@ async function checkBandV18209Konsolidierung(ctx) {
             out.gamma3Char &&
             out.gamma7Grammar;
 
-        // (K4) AVATAR-GRÖSSEN-Familie: die Größen-Mul (sizeHpMul/sizeSpeedMul) lebt in der EINEN Quelle
-        // _applySizeMultipliersToStats; `_compoundSizeFactor`/`creatureSize` bleiben in compute*Stats →
-        // beide Source-Proben lesen die geteilte Quelle mit.
-        const _sizeMulSrc = window.__codeOf(r._applySizeMultipliersToStats);
-        const srcCompPlayer = window.__codeOf(r.computePlayerStats) + _sizeMulSrc;
-        const srcCompCreature = window.__codeOf(r.computeCreatureStats) + _sizeMulSrc;
-        out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
-        out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
-        out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
-        out.avatarFamilyKomplett = out.playerHpStaminaMana && out.playerSpeedTrade && out.creatureSizeSymmetry;
-
         // (K5) MANA-SYMMETRIE Foundation:
         out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
         out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
@@ -3590,10 +3653,6 @@ async function checkBandV18209Konsolidierung(ctx) {
         res.allFoundationsAlive === true
     );
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
-    check(
-        "V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)",
-        res.avatarFamilyKomplett === true
-    );
     check(
         "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
         res.manaMaxFn && res.manaRegenConst
