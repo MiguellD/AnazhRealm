@@ -4,7 +4,7 @@
 // eine Zeile AnazhRealm-Edit durch die EINE Pipeline fliesst:
 //   A (statisch, Node — Absenzen): der Stamm nennt die Zusatz-Felder nie selbst und ruft kerneVereinen genau
 //     einmal (kein zweiter Ingest-Pfad); die Bruecke kennt kein self.__vehicleCore-Literal; der Auto-Register-
-//     Chokepoint kennt kein kind-if (M8). Den manifest-getriebenen Boot und Stempel beweist gate:fluss (W4/W5)
+//     Chokepoint kennt kein kind-if (M8). Den manifest-getriebenen Boot und Stempel beweist gate:pack-contract (`bootLauf`, B3a)
 //     am echten Faden. --selftest injiziert einen zweiten Ingest-Pfad und beweist: die Linse feuert.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Fahrzeug-Presets (der
 //     Draht lebt end-to-end durch den echten Worker); kindStages.vehicle == [0] gemerged,
