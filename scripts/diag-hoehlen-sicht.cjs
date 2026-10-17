@@ -680,29 +680,13 @@ const server = statikServer();
             const r = window.anazhRealm,
                 st = r.state,
                 T = window.THREE;
-            const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             };
-            // einschwingen: der Ring steht, kein Worker-Auftrag offen
-            let last = -1;
-            const schwinge = async () => {
-                let stabil = 0;
-                last = -1;
-                for (let i = 0; i < 6000; i++) {
-                    takt();
-                    const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-                    if (sz === last) stabil++;
-                    else {
-                        stabil = 0;
-                        last = sz;
-                    }
-                    if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-                    if (i % 5 === 0) await pause(10);
-                }
-            };
+            // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
+            const schwinge = () => window.__weltStehtNach(takt);
             // ── (n) DER STOFF ENTSTEHT IM WORKER: der Kern ist eingefroren — die Wand reicht dem Haupt-Thread eine zählende
             // Kopie (jeder Leser fragt `globalThis.__gelaendeCore` je Ruf) und zählt die Rufe des Fels-Gesetzes je Worker-Bau
             const GK0 = globalThis.__gelaendeCore;
@@ -744,7 +728,7 @@ const server = statikServer();
             stoffWorker.msMax = +stoffWorker.msMax.toFixed(2);
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
-            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size, stoffWorker };
+            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: st.voxelChunks.size, bereiche: s.bloecke.size, stoffWorker };
 
             // ── (a) SPIEGEL: Main-Sync gegen Worker für Chunks verschiedener Stufe
             const lpc = st.lastPlayerVoxelChunk;

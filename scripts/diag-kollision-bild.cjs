@@ -237,25 +237,12 @@ async function probe(K) {
         r._gameLoopTick(tMs);
     };
     const f = r._ensureAssetFoundry();
-    const dl = performance.now() + 90000;
-    while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.zacken)) await pause(100);
     const MW = K.mess; // die Mess-Wiese aus EINER Quelle (spec/profiband/haushalt.json), nie ihre Abschrift
     st.playerMesh.position.set(MW.x, r._voxelSurfaceY(MW.x, MW.z) + 1.8, MW.z);
-    let stabil = 0,
-        last = -1;
-    for (let i = 0; i < 6000; i++) {
-        takt();
-        const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-        if (sz === last) stabil++;
-        else {
-            stabil = 0;
-            last = sz;
-        }
-        if (i > 300 && stabil > 120 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-        if (i % 5 === 0) await pause(10);
-    }
+    // die Welt steht, das Buch ist da (das EINE Einschwingen, welt-boot `__weltStehtNach`; bis D3d 90 s Wanduhr auf das Buch)
+    await window.__weltStehtNach(takt);
     const aus = {
-        ring: last,
+        ring: st.voxelChunks.size,
         exemplare: {},
         zensus: { werke: 0, taeter: [], klassen: {} },
         quelle: {},

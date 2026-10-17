@@ -143,35 +143,14 @@ function werkzeug() {
     };
     W.umstellen = async (x, z) => {
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-        let stabil = 0;
-        let last = -1;
-        let takte = 0;
-        const dl = performance.now() + 120000;
-        while (performance.now() < dl) {
+        // Einschwingen, bis die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`: Ring, Foundry und Wald — K69-2:
+        // die Schlange des Walds plant im Takt, die Kronen-Karte trägt nur gepflanzte Kronen; vor dem Stand des Walds fand die
+        // Suche der Orte Deckung 0,6 statt 1, kz-B6.log). Die Decke zählt Takte, nie Sekunden; steht die Welt nicht, wirft sie.
+        const takte = await window.__weltStehtNach(() => {
             W.takt();
             st.playerMesh.position.x = x;
             st.playerMesh.position.z = z;
-            takte++;
-            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (sz === last) stabil++;
-            else {
-                stabil = 0;
-                last = sz;
-            }
-            if (takte >= 40 && stabil >= 15) break;
-            await sleep(20);
-        }
-        // Einschwingen, bis der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
-        // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26). Auch die Suche der Orte liest danach: die Kronen-Karte
-        // trägt nur gepflanzte Kronen — vor dem Stand des Walds fand sie Deckung 0,6 statt 1 (kz-B6.log).
-        // Die Decke zählt Takte (Bau-Gelegenheiten), nie Sekunden; steht der Wald nach ihr nicht, ist der Ort ROT (`urteile`).
-        let waldTakte = 0;
-        while (!W.waldSteht() && waldTakte < 3000) {
-            W.takt();
-            takte++;
-            waldTakte++;
-            await sleep(0);
-        }
+        });
         const wald = W.waldSteht();
         // Die Kamera blickt nach Norden (−z), 3 m hinter und 1,6 m über dem Spieler: das Panorama ist definiert.
         const cam = st.camera;
@@ -181,7 +160,7 @@ function werkzeug() {
             cam.lookAt(p.x, p.y + 1.2, p.z - 10);
             cam.updateMatrixWorld(true);
         }
-        return { takte, chunks: last, wald, waldTakte };
+        return { takte, chunks: st.voxelChunks.size, wald, waldTakte: takte };
     };
     // DER WALD STEHT: nichts im Wald baut (`_weltOffen`, A9: Plan-Schlange, Pflanz-Gänge, Pflanz-Schlange), keine Streu-Region wartet.
     W.waldSteht = () => r._weltOffen().wald === 0 && r._streuWartet(st.playerMesh.position) === 0;

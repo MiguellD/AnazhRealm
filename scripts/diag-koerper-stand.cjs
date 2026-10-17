@@ -135,6 +135,11 @@ async function proben(mitWiese, umfang) {
     const o = {};
     const pm = s.playerMesh;
     const p = s.player;
+    const takt = () => {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch (_e) {}
+    };
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
     // die Boden-Karte des EIGNERS selbst (eignerKarte) — die Linse misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr
@@ -314,21 +319,7 @@ async function proben(mitWiese, umfang) {
             pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
             mitte = { x: start.x + ox, z: start.z + oz };
             savedVel.setValue(0, 0, 0);
-            let last = -1;
-            let stabil = 0;
-            for (let t = 0; t < 3000; t++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                const sz = s.voxelChunks ? s.voxelChunks.size : 0;
-                if (sz === last) stabil++;
-                else {
-                    stabil = 0;
-                    last = sz;
-                }
-                if (t > 50 && stabil > 40 && !(s.voxelMeshPending && s.voxelMeshPending.size)) break;
-                if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
+            await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
             s.playerVel = vel;
         }
         for (let dx = -60; dx <= 60; dx += 2)
@@ -854,28 +845,13 @@ async function proben(mitWiese, umfang) {
         const setz = () => {
             pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
             s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
         };
-        let last = -1;
-        let stabil = 0;
-        // Ruhe heißt auch: der Wald der Mesh-Zone steht — die EINE Antwort der Welt (`_weltbildLuecken`, Terme `pflanzung` und
-        // `streu`). Seit K69 pflanzt die Schlange des Walds im Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen
-        // (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155 — der Selbsttest „wiese" blieb an der Streu blind).
+        // Ruhe heißt: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), und der Wald der Mesh-Zone steht — die
+        // Antwort des Weltbilds (`_weltbildLuecken`, Terme `pflanzung` und `streu`). Seit K69 pflanzt die Schlange des Walds im
+        // Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155).
         const waldOffen = () => r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
-        for (let t = 0; t < 200 && (stabil < 8 || waldOffen()); t++) {
-            setz();
-            for (let i = 0; i < 30; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                if (i % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
-            const n = [...s.voxelChunks.values()].filter((e) => e && e.surfMap).length;
-            if (n === last) stabil++;
-            else {
-                stabil = 0;
-                last = n;
-            }
-        }
+        await window.__weltStehtNach(() => (setz(), takt()));
         o.k7wald = !waldOffen();
         const C = r._voxelChunkConfig(0);
         // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe

@@ -507,19 +507,7 @@ async function probe(K) {
         st.playerMesh.position.set(x, Number.isFinite(y) ? y : r._voxelSurfaceY(x, z) + 1.8, z);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         st._fieldVy = 0;
-        let stabil = 0,
-            last = -1;
-        for (let i = 0; i < 6000; i++) {
-            takt();
-            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (sz === last) stabil++;
-            else {
-                stabil = 0;
-                last = sz;
-            }
-            if (i > 200 && stabil > 100 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-            if (i % 5 === 0) await pause(10);
-        }
+        await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
     };
     const tasten = (w) => {
         for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
