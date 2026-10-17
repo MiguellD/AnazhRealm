@@ -349,9 +349,12 @@ async function weltStehtWarten(max) {
     if (st.timeOfDay !== uhr) {
         st.timeOfDay = uhr;
         if (st.world) st.world.timeOfDay = uhr;
-        r._himmelSprung = true; // die Stunde springt zurück, der Himmel mit ihr (wie die Bühne)
-        r._applyDayNightToScene();
     }
+    // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt, ihre Lesung abgewartet — die
+    // Drift-Schwelle hielt sonst die Malung des Boots (Mess-Wiese: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904)
+    r._applyDayNightToScene();
+    await r._himmelFrisch();
+    r._applyDayNightToScene();
     const o = r._weltOffen();
     if (!r._weltSteht())
         throw new Error(

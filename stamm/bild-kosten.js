@@ -1565,12 +1565,14 @@ class AnazhRealm_bild_kosten {
     }
 
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
-    // echten Leser.
+    // echten Leser, und jede Kaskade legt ihre Box frisch aus dem Blick, der jetzt gilt (A9-n2: der Halt des Takts und die
+    // Größen-Hysterese trugen die Box des Boots in den Schuss — Erst- und Zweit-Boot zeichneten verschiedene Karten).
     _schattenAlleNeu() {
         const csm = this.state.csmNode;
         const dl = this.state.directionalLight;
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
         for (const l of lichter) if (l.shadow) l.shadow.needsUpdate = true;
+        if (csm && csm._anazhFit) csm._anazhFit.length = 0;
     }
 
     // ═══ DIE KASKADEN-BOX (W7) ═══
