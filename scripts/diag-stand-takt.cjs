@@ -468,31 +468,15 @@ const server = statikServer();
                         if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
                     }
                 };
-                // einschwingen: der Ring steht, und nichts baut mehr (A9 `_weltOffen`: Chunks, die Foundry und die Schlange des
-                // Walds samt ihren Pflanz-Gängen — K69: sie plant im Takt, solange sie plant, weckt ihre Regung die Fege-Takte)
-                const schwinge = async (max) => {
-                    let stabil = 0,
-                        last = -1;
-                    for (let i = 0; i < (max || 6000); i++) {
-                        takt();
-                        const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-                        if (sz === last) stabil++;
-                        else {
-                            stabil = 0;
-                            last = sz;
-                        }
-                        const o = r._weltOffen();
-                        if (i > 60 && stabil > 80 && o.chunks + o.foundry + o.wald === 0) break;
-                        if (i % 5 === 0) await pause(10);
-                    }
-                    return last;
-                };
                 // Der Regler hält (die Mess-Bühne, wie `werkbank stand --regler voll`): headless folgt der Cull-Radius dem
                 // PID Frame für Frame ohne die Grenzzyklus-Wand des Spiels (`_nexusPerfActuate`) — ein atmender Radius ist
                 // eine echte Eingabe der Wache (er weckt sie, Phase W prüft es), aber kein Stand.
                 st.perfRegulator = false;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
-                const ring = await schwinge();
+                // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
+                // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
+                await window.__weltStehtNach(takt);
+                const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);

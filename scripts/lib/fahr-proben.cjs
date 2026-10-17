@@ -194,27 +194,15 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
-    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht — der Ring der Chunks
-    // ändert sich 80 Frames lang nicht, kein Bau wartet (höchstens 3000 Frames). Die Orte der Stationen kommen aus der Welt und
+    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
+    // welt-boot `__weltStehtNach`; bis D3d: der Ring der Chunks 80 Frames ruhig). Die Orte der Stationen kommen aus der Welt und
     // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
     // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
     const ankommen = async (x, zz) => {
         st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         st._fieldVy = 0;
-        let stabil = 0;
-        let zuletzt = -1;
-        for (let i = 0; i < 3000; i++) {
-            frame(i);
-            const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n === zuletzt) stabil++;
-            else {
-                stabil = 0;
-                zuletzt = n;
-            }
-            if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-            if (i % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
-        }
+        await window.__weltStehtNach(frame);
     };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {

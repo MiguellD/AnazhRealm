@@ -891,23 +891,11 @@ async function probe(arg) {
         m.trocken = r._landAt(P.x, P.z, 0);
         r._ensureGenesisPlatform(); // die Spawn-Idempotenz liest `_genesisPlattform`: kein zweiter Leger legt eine zweite
         m.plattformen = st.architectures.filter((a) => a && a.type === "start_plattform").length;
-        // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
+        // Der Wald wächst um den Spieler: ticken, bis die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`; bis D3d
+        // 150 s Wanduhr, bis die Bäume im 40-m-Kreis 15 Runden ruhten)
         const baeume = () =>
             st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
-        let stabil = 0,
-            last = -1;
-        const dl = performance.now() + 150000;
-        const t0 = performance.now();
-        while (performance.now() < dl) {
-            await tick(4, 20);
-            const n = baeume().length;
-            if (n === last) stabil++;
-            else {
-                stabil = 0;
-                last = n;
-            }
-            if (stabil >= 15 && n > 0 && performance.now() - t0 > 8000) break;
-        }
+        await window.__weltStehtNach(() => tick(1, 20));
         let kronen = 0,
             naechster = Infinity,
             art = null;

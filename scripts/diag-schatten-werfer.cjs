@@ -1478,27 +1478,15 @@ function probe(selbsttest) {
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 120000,
         });
-        // Die Welt plateau-pumpen (der Null-Renderer hat keinen Loop): Chunks > 20 und 40 Takte stabil.
+        // Die Welt pumpen, bis sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`; der Null-Renderer hat keinen Loop).
         const welt = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const st = r.state;
-            let last = -1,
-                stabil = 0,
-                takte = 0;
-            while (takte < 3000) {
+            const takte = await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                takte++;
-                const n = st.voxelChunks ? st.voxelChunks.size : 0;
-                if (n === last) stabil++;
-                else {
-                    stabil = 0;
-                    last = n;
-                }
-                if (n > 20 && stabil > 40) break;
-                if (takte % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
+            });
             // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen Atlas-Gruppe)
             // und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles mehr (gemessen
             // 05.10.: nur "@global"; 14 auf 386f91c, 4 auf b9bf2bc). Vier Regionen um den Spieler bekommen je eine
@@ -1537,7 +1525,7 @@ function probe(selbsttest) {
                         const y = r._voxelSurfaceY(x, z);
                         r._scatterInstanceAdd(bauplan, x, Number.isFinite(y) ? y : 0, z, 0, 1, null, rx + "," + rz);
                     }
-            return { takte, chunks: last, welt: welt0, bauplan, bundles: regionen() };
+            return { takte, chunks: st.voxelChunks.size, welt: welt0, bauplan, bundles: regionen() };
         });
         if (!(welt.bundles >= 4)) throw new Error(`keine vier Region-Bundles (${JSON.stringify(welt)})`);
         const a = await page.evaluate(probe, SELBSTTEST);
