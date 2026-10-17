@@ -315,20 +315,32 @@ class AnazhRealm_dirigent_takt {
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr. Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der
-    // stehenden Welt ist dasselbe Bild in jeder Sitzung (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr — und kein Fege-Takt der Stand-Wache geht noch (ihre Arbeit
+    // steht: ein Takt, der auf ein Budget wartet, hält sich wach, ohne die Welt zu regen; A9 Zweit-Boot an der Mess-Wiese: die
+    // Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh, als die Stempel schon 30 Takte standen — boden-nah 2,418 statt
+    // 1,830). Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
     // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
     _weltStandTakt() {
-        const W = this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, ruhe: 0, takte: 0 });
+        const W =
+            this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, ruhe: 0, takte: 0 });
         W.takte++;
         const welt = this._weltRegung | 0,
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
+        let arbeit = 0;
+        if (this._standWache) for (const t of this._standWache.takte.values()) arbeit += t.arbeit;
         const o = this._weltOffen();
-        if (welt !== W.welt || bau !== W.bau || karte !== W.karte || o.foundry + o.chunks + o.wald > 0) {
+        if (
+            welt !== W.welt ||
+            bau !== W.bau ||
+            karte !== W.karte ||
+            arbeit !== W.arbeit ||
+            o.foundry + o.chunks + o.wald > 0
+        ) {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
+            W.arbeit = arbeit;
             W.ruhe = 0;
         } else W.ruhe++;
     }
