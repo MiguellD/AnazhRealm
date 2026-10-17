@@ -53,6 +53,9 @@ class AnazhRealm {
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         // DIE WURF-EBENE (K72): `castShadow` ist ein Bit der Ebenen, bevor der erste Knoten der Welt entsteht
         AnazhRealm._wurfEbene();
+        // DIE WAHRNEHMUNG VOM ERSTEN TAKT (OMEN 17.10.): die Studio-PORTAL_RENDER_CONFIG lebt in foundry-core (`__terrainCore`), das die
+        // Seite selbst lädt — der Wirt trägt sie ab hier, das Buch löst sie durch dieselbe ab; kein Chunk streut mehr ohne Seltenheit.
+        AnazhRealm._studioRenderConfig = AnazhRealm._studioRenderConfig || globalThis.__terrainCore.PORTAL_RENDER_CONFIG;
         this.state = {
             // ### Kern ###
             renderer: null,
