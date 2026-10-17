@@ -426,6 +426,9 @@ class AnazhRealm_stoff_instanz {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !this._impostorAtlasTexturen(at)) return 0;
         if (at.fmt === "bc" && !this._karteRechner()) return 0; // die Programme der GPU-Ablage kompilieren noch
+        // Die Karte ist GPU-Arbeit wie das Bild: sie geht an der EINEN Leine (`_gpuLeineStraff`), ihr Takt bindet sich an
+        // (`_gpuLeineBinden`) — auf einer langsamen GPU wartet so das nächste Bild auf sie, statt hinter ihr zu verhungern.
+        if (this._gpuLeineStraff()) return 0;
         const d2 = (k) => {
             const z = at.zellen.get(k);
             return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
@@ -433,6 +436,8 @@ class AnazhRealm_stoff_instanz {
         q.sort((a, b) => d2(a) - d2(b));
         const t0 = performance.now();
         let n = 0;
+        const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
+        const v0 = gezeichnet();
         for (let i = 0; i < q.length;) {
             const z = at.zellen.get(q[i]);
             if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
@@ -448,6 +453,7 @@ class AnazhRealm_stoff_instanz {
             n++;
             if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
         }
+        if (gezeichnet() !== v0) this._gpuLeineBinden();
         return n;
     }
 

@@ -863,7 +863,12 @@ class AnazhRealm_stoff_material {
                                     const _m0 = _naht.spalte(0);
                                     const _sV = _naht.skala; // die Instanz-Skala im Vertex-Takt
                                     const _sInst = _Ta.varying(_sV, "vKarteSkala");
-                                    const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
+                                    // DIE PEILUNG OHNE VORZEICHEN-NULL (S2b, gate:foundry-impostor C auf swiftshader): eine Instanz
+                                    // ohne Drehung trägt Spalte 0 = (1, 0, +0), negiert −0 — swiftshader liest am Vorzeichen-Bit
+                                    // atan2(−0, 1) = π, die Karte zeigte ihre Rückseite (gespiegelt). Jede Peilung der Karte geht
+                                    // darum durch EINEN Leser, der die Null als +0 reicht.
+                                    const _peil = (y, x) => _Ta.atan(_Ta.select(y.equal(0.0), _Ta.float(0.0), y), x);
+                                    const _aRot = _Ta.varying(_peil(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -872,7 +877,7 @@ class AnazhRealm_stoff_material {
                                     const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
                                     const _hl2 = _hx.mul(_hx).add(_hz.mul(_hz));
                                     const _dA = _Ta.sqrt(_hl2.sub(_k.mul(_k)).max(_Ta.float(1e-4)));
-                                    const _ang = _Ta.atan(_hx.negate(), _hz.negate()).add(_Ta.atan(_k, _dA));
+                                    const _ang = _peil(_hx.negate(), _hz.negate()).add(_peil(_k, _dA));
                                     // ── View-Wahl + Blend (Vorlage: vView=fract((ang−aRot)/2π)); Studio-Layout: die Ansichten
                                     //    VERTIKAL gestapelt, Zeile 0 = Unterkante der Ansicht 0 (readPixels bottom-up) ──
                                     const _vView = _Ta.fract(

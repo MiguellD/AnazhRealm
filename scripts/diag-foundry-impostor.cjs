@@ -60,6 +60,18 @@ async function installiereBacke(page) {
             [u0, v0, u1, v1, u0, v1],
         ];
         window.__fimpSaeule = () => new T.CylinderGeometry(R, R, Y, 32).translate(0, Y / 2, 0);
+        // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
+        // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
+        window.__fimpFormat = (ren) => {
+            const r = window.anazhRealm;
+            const vor = r.state.renderer;
+            r.state.renderer = ren;
+            try {
+                return r._impostorAtlasFormat();
+            } finally {
+                r.state.renderer = vor;
+            }
+        };
         window.__fimpBacke = async (ren, at, key, variant, geo) => {
             const r = window.anazhRealm;
             const vor = r.state.renderer;
@@ -256,7 +268,7 @@ async function kleberProbe(page, fmtWunsch) {
             ren.setSize(W, H, false);
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
             // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
-            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
                 return { fmt: "bc", ohneFeature: true };
             out.fmt = fmtWunsch;
             r._kartenAtlas = undefined;
@@ -460,7 +472,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             const W = 128,
                 H = 128;
             ren.setSize(W, H, false);
-            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
                 return { fmt: "bc", ohneFeature: true };
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
@@ -880,7 +892,7 @@ async function windProbe(page) {
         );
         if (C.ohneFeature) {
             console.log(
-                "  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)"
+                "  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Blick-Sonde)"
             );
             continue;
         }
@@ -976,7 +988,7 @@ async function windProbe(page) {
             `\n=== TEIL ${F} — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~${C2.pxJeTexel} px) ===`
         );
         if (C2.ohneFeature) {
-            console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Werkbank)");
+            console.log("  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Werkbank)");
             continue;
         }
         if (C2.err) {

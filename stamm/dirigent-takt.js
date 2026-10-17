@@ -415,7 +415,7 @@ class AnazhRealm_dirigent_takt {
             this._gpuLeine ||
             (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, sammelMs: 0, versuch: false });
         L.versuch = false;
-        if (this._gpuLeineQueue() && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG) {
+        if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
             return false;
         }
@@ -440,12 +440,24 @@ class AnazhRealm_dirigent_takt {
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
+    // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild und die
+    // Karte (S2b: die Karte backte neben der Leine; swiftshader, Mess-Wiese, 20 Karten: in 15 s 3 Bilder, 17 Bakes bei
+    // gespannter Leine — die Probe des Hauptbilds sah in der CI kein Bild).
+    _gpuLeineStraff() {
+        const L = this._gpuLeine;
+        return !!L && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG && !!this._gpuLeineQueue();
+    }
     _gpuLeineAnlegen() {
         const L = this._gpuLeine;
         if (!L) return;
         L.gerendert++;
+        this._gpuLeineBinden();
+    }
+    // Eine abgeschickte GPU-Arbeit an die Leine (das Bild, die Karte): unterwegs, bis die Queue sie abgearbeitet hat.
+    _gpuLeineBinden() {
+        const L = this._gpuLeine;
         const q = this._gpuLeineQueue();
-        if (!q) return;
+        if (!L || !q) return;
         L.imFlug++;
         const los = () => {
             L.imFlug = Math.max(0, L.imFlug - 1);
