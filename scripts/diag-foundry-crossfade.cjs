@@ -59,13 +59,10 @@ function studioBlende(laub) {
     KLASSE.ctx.injectWind(mat, laub, false, false);
     const sh = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "void main() {" };
     mat.onBeforeCompile(sh);
-    const f = sh.fragmentShader;
-    const a = f.indexOf("if(uLodMaskOn");
-    let e = f.indexOf("{", a);
-    for (let tiefe = 0; a >= 0 && e < f.length; e++) if ((tiefe += f[e] === "{" ? 1 : f[e] === "}" ? -1 : 0) === 0) break;
-    if (a < 0 || e >= f.length) throw new Error("die Studio-Blende fehlt im Fragment-Satz von injectWind");
-    const js = f
-        .slice(a, e + 1)
+    const kopf = /if\(uLodMaskOn[^)]*\)/;
+    const block = stammLib.rumpf(sh.fragmentShader, kopf);
+    if (!block) throw new Error("die Studio-Blende fehlt im Fragment-Satz von injectWind");
+    const js = (sh.fragmentShader.match(kopf)[0] + block)
         .replace(/\bfloat\s+/g, "var ")
         .replace(/\bdiscard\b/g, "return [false, _dh]")
         .replace(/gl_FragCoord\.xy/g, "FC")

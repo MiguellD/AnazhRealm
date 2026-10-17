@@ -5,7 +5,7 @@
 // (Median 3,3 s); 32 % der Bytes (aWind · aCenter · aType) las niemand. Seit V18.511 trägt die Transport-Schale
 // (`_foundrySchale`, läuft im Worker VOR dem Studio) Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
-// STATISCH (Node, gestrippter Stamm) — nur noch die Wache des Gefallenen (Absenzen): der Asset-Store lebt NUR in der
+// STATISCH (Node, über den EINEN Absenz-Helfer `stammLib.fehlt`) — die Wache des Gefallenen: der Asset-Store lebt NUR in der
 //   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine
 // KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
 //       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
