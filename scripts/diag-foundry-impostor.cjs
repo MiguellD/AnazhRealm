@@ -25,8 +25,6 @@ async function bootPage(browser, nullRenderer) {
     }, nullRenderer);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    const konsole = [];
-    page.on("console", (m) => m.type() === "error" && konsole.push(m.text().slice(0, 240)));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
@@ -39,7 +37,7 @@ async function bootPage(browser, nullRenderer) {
         )
             await new Promise((r) => setTimeout(r, 100));
     });
-    return { page, pageErrors, konsole };
+    return { page, pageErrors };
 }
 
 // DIE PROBE-GESTALTEN (Teil C): Dreiecke in Ansichts-Koordinaten (u, v ∈ 0..1, v = 0 Unterkante) im Rahmen 4 × 8 der
@@ -242,6 +240,21 @@ async function driveImpostor(page) {
     });
 }
 
+// DIE RUHE VOR TEIL C (S2b-n2, CI 39023416317): jede Probe in C nimmt den EINEN Karten-Atlas der Welt — und jede Lieferung, die
+// Teil A bestellte, legt bei ihrer Ankunft ihre Zelle in ihm an (`_foundryZug` → `nach` → `_foundryEnsureImpostorRecord`). Ab
+// der neunten wächst er, das rgba8-Ziel wächst leer und die Probe-Karten backen nie nach (der Null-Renderer der Welt backt
+// nicht): die Wand sah 0 px, je nachdem, wie viele Lieferungen der Läufer noch trug (Zelle der Eiche in A: Schicht 0 rot,
+// Schicht 10 grün). Teil C beginnt, wenn keine Lieferung mehr unterwegs ist — in Lieferungen gezählt, nie in Wanduhr.
+async function lieferungenLanden(page) {
+    return await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const zuege = (r._foundry && r._foundry.zuege) || new Map();
+        let wellen = 0;
+        for (; zuege.size && wellen < 64; wellen++) await Promise.all([...zuege.values()]);
+        return { wellen, offen: zuege.size, foundry: r._weltOffen().foundry };
+    });
+}
+
 // ===== TEIL C — DIE KARTEN-WAND auf echtem Renderer (CI: WebGL2 auf swiftshader, lokal WebGPU; frischer in-page Renderer) =====
 // (1) DAS LAYOUT: eine Probe-Gestalt (eine Tafel in der LINKEN OBEREN Viertel-Fläche) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`, BC wenn der Adapter es kann, sonst rgba8) in den Atlas — das Bild MUSS links oben stehen (die
@@ -389,43 +402,13 @@ async function kleberProbe(page, fmtWunsch) {
                 );
             })();
             const nachher = await zaehle();
+            // der Probe-Atlas trägt nur die Probe-Karten: jede fremde Zelle ist eine Lieferung der Welt, die ihn nebenher füllte
+            out.fremd = [...at.zellen.keys()].filter((k) => !k.startsWith("fimp:gateKarte|"));
             // das Layout zählt nach der Befreiung (der Monster-Slot deckt vorher auch die linke Box)
             out.layout = { lo: nachher.lo, ro: nachher.ro, lu: nachher.lu, ru: nachher.ru, zeilen: nachher.zeilen };
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
-            // DER BEFUND (WebGL2): trägt die Schicht ihre Karte (Deckung der Stufe 0 und 3 je Probe-Karte), steht das Programm,
-            // zeichnet das Quad ohne Wind — die blinde Wand nennt so Bake, Programm oder Bühne beim Namen
-            if (ren.backend.gl) {
-                const gl = ren.backend.gl;
-                const deckung = (idx, s) => {
-                    const fb = gl.createFramebuffer(),
-                        vor = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING),
-                        w = at.masse.w >> s,
-                        h = at.masse.h >> s,
-                        px = new Uint8Array(w * h * 4);
-                    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
-                    gl.framebufferTextureLayer(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, ren.backend.get(at.map).textureGPU, s, idx);
-                    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-                    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, vor);
-                    gl.deleteFramebuffer(fb);
-                    return px.filter((a, i) => i % 4 === 3 && a > 0).length;
-                };
-                const ro = (mesh.__renderObjekte || [])[0];
-                const prog = ro && ro.pipeline ? ren.backend.get(ro.pipeline).programGPU : null;
-                const wu = r.state.windUniforms && r.state.windUniforms.uWindStrength;
-                const wind = wu ? wu.value : null;
-                if (wu) wu.value = 0;
-                const still = await zaehle();
-                if (wu) wu.value = wind;
-                out.befund = {
-                    schicht: [z, zV].map((zz) => `${zz.idx}: ${deckung(zz.idx, 0)}/${deckung(zz.idx, 3)}`),
-                    gelinkt: prog ? gl.getProgramParameter(prog, gl.LINK_STATUS) : null,
-                    glFehler: gl.getError(),
-                    wind,
-                    ohneWind: still.links,
-                };
-            }
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
@@ -839,10 +822,11 @@ async function windProbe(page) {
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
-    const { page: pageA, pageErrors: errA, konsole: konsoleA } = await bootPage(browserA, true);
+    const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
-    const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
+    const ruhe = await lieferungenLanden(pageA);
+    const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
     const C3 = await blickProbe(pageA);
     const C4 = await windProbe(pageA);
@@ -919,6 +903,8 @@ async function windProbe(page) {
     }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
+    console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
+    if (ruhe.offen) errs.push(`C: ${ruhe.offen} Lieferungen blieben nach ${ruhe.wellen} Wellen unterwegs — die Welt kam nicht zur Ruhe`);
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
         console.log(
@@ -958,11 +944,11 @@ async function windProbe(page) {
             errs.push(
                 `${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`
             );
+        if ((C.fremd || []).length)
+            errs.push(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
         if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
         if (!(C.lebtPx > 40))
-            errs.push(
-                `${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind; Befund ${JSON.stringify(C.befund)} · Konsole ${JSON.stringify(konsoleA.slice(0, 3))}`
-            );
+            errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
             errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
