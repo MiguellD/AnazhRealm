@@ -1,0 +1,33 @@
+14:45:01 wiese-A1 start (93539122)
+14:45:58 wiese-A1 exit=0 12:45:58 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+14:46:33 wiese-B1 start (7f06ebf8)
+14:48:04 wiese-B1 exit=0 12:48:04 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+14:48:39 wiese-A2 start (93539122)
+14:49:34 wiese-A2 exit=0 12:49:34 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+14:50:09 wiese-B2 start (7f06ebf8)
+14:51:38 wiese-B2 exit=0 12:51:38 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+14:52:13 wiese-A3 start (93539122)
+14:53:07 wiese-A3 exit=0 12:53:07 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+14:53:42 wiese-B3 start (7f06ebf8)
+14:55:12 wiese-B3 exit=0 12:55:12 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+14:55:47 wiese-A4 start (93539122)
+14:56:42 wiese-A4 exit=0 12:56:42 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+14:57:22 wiese-B4 start (7f06ebf8)
+14:58:49 wiese-B4 exit=0 12:58:49 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+14:59:29 genesis-A1 start (93539122)
+15:00:23 genesis-A1 exit=0 13:00:22 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+15:01:03 genesis-B1 start (7f06ebf8)
+15:02:34 genesis-B1 exit=0 13:02:34 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+15:03:09 genesis-A2 start (93539122)
+15:04:06 genesis-A2 exit=0 13:04:06 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+15:04:41 genesis-B2 start (7f06ebf8)
+15:06:14 genesis-B2 exit=0 13:06:14 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+15:06:49 genesis-A3 start (93539122)
+15:07:45 genesis-A3 exit=0 13:07:45 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+15:08:20 genesis-B3 start (7f06ebf8)
+15:09:53 genesis-B3 exit=0 13:09:53 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+15:10:28 genesis-A4 start (93539122)
+15:11:25 genesis-A4 exit=0 13:11:24 anatomie kopien je Bild {"n":2.17,"mb":15.82} · [{"was":"post: Textur TRAANode.resolve → TRAANode.history","n":1,"mb":15.82},{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: A
+15:12:00 genesis-B4 start (7f06ebf8)
+15:13:33 genesis-B4 exit=0 13:13:32 anatomie kopien je Bild {"n":1.17,"mb":0} · [{"was":"haupt: Textur depth → szene:tiefenabbild:bruch","n":1,"mb":0},{"was":"ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render","n":
+15:13:57 G7 FERTIG
