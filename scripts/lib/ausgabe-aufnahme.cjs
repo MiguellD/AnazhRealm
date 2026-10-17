@@ -347,9 +347,8 @@ async function weltStehtWarten(max) {
         cam.updateMatrixWorld(true);
     }
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
-    // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt, ihre Lesung abgewartet — die
-    // Drift-Schwelle hielt sonst die Malung des Boots (Mess-Wiese: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904);
-    // das Gemüt steht ruhig wie in der Bühne (die Takte des Wartens trieben es)
+    // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
+    // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     r._applyDayNightToScene();
     await r._himmelFrisch();
