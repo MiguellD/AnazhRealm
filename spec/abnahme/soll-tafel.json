@@ -513,10 +513,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T00:06:29.621Z",
+                    "datum": "2026-10-17T02:59:19.732Z",
                     "stand": {
                         "version": "18.546.9",
-                        "sha": "6fbf4a6fa96b5b1983e302e2c7e7e035bfb3b570"
+                        "sha": "dfcefe89137ee22475507cadfba238864a06c878"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -533,7 +533,7 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "wasserSatz": {"objekte":1,"spiegelTreue":0.4972,"sp":[14570,0,0,48031115.05,48031115.05,23881570.45],"zweiton":0,"zt":0,"weiss":0.0168,"wt":15880,"wtZiel":null,"bunt":14.09,"pixel":944014,"deckung":0.4553,"deckungUnten":1,"luma":61.93,"kontrast":0.492,"detail":0.0227,"nyquist":0.022,"ek":18255.7,"eg":812847.7,"silhouette":6.4574,"kante":0.7599,"kr":3455}
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.5203,"sp":[14566,0,0,48219521.78,48219521.78,25090353.42],"zweiton":0,"zt":0,"weiss":0.0173,"wt":16350,"wtZiel":null,"bunt":15.02,"pixel":944903,"deckung":0.4557,"deckungUnten":1,"luma":60.84,"kontrast":0.4874,"detail":0.0259,"nyquist":0.0238,"ek":23735.7,"eg":971596.8,"silhouette":6.4492,"kante":0.7203,"kr":3448}
                     },
                     "abstand": null,
                     "gesicht": null,
@@ -552,7 +552,7 @@
                         "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
                         "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
                         "stamm/bild-kosten.js": "c:f0f700bdda342ece",
-                        "stamm/bild-sicht.js": "c:4816280621f673f8",
+                        "stamm/bild-sicht.js": "c:eb85900494bf0651",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
                         "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
