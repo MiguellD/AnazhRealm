@@ -89,8 +89,7 @@ eingefrorenen JSONs bleiben die Byte-Wahrheit der Payloads.
 
 ## Außerhalb v1 (kommt in v2 / P5)
 
-- `bake-impostor` / `render-native` — GL-gebunden (der Offscreen-Bäcker); der Wald-Impostor
-  wandert in P5 auf den EINEN Haupt-Renderer.
+- `bake-impostor` / `render-native` — gefallen mit S2: die Karte backt im EINEN Welt-Renderer (`_karteWeltBacken`).
 - `enter` / `dsl` / `exit` / `event` — die Portal-UI-Kanäle (das Studio als begehbare Welt).
 - Kreatur-/Fahrzeug-Kanäle (`skin` / `sockets` / `judge`) — Vertrag **v2** (P7).
 

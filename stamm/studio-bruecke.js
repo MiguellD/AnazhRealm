@@ -558,7 +558,7 @@ class AnazhRealm_studio_bruecke {
                       if (!d) dbTot = true;
                       return d;
                   });
-        // Der Platten-Wert eines Schlüssels: Körper `{ meshes }`, Karte `{ payload }` (oder null).
+        // Der Platten-Wert eines Schlüssels: Körper `{ meshes }` (oder null).
         const lies = (key) =>
             platte.then((d) =>
                 d
@@ -668,7 +668,7 @@ class AnazhRealm_studio_bruecke {
             return roh(msg, a, b);
         };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
-        // Nachricht zuerst und hält jeden Körper- und Karten-Auftrag an. DER SAISON-NAGEL (V18.527): jeder Bau ist
+        // Nachricht zuerst und hält jeden Körper-Auftrag an. DER SAISON-NAGEL (V18.527): jeder Bau ist
         // Golden-Sommer — das Studio sieht season "summer", gleich was der Auftrag trägt; das Jahr färbt der Host
         // (uSeasonMul). So kann kein Saison-Rest im Studio (setSeasonColors) einen Körper oder die Platte färben.
         W.addEventListener("message", (ev) => {
@@ -1035,9 +1035,8 @@ class AnazhRealm_studio_bruecke {
             return;
         }
     }
-    // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
-    // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
-    // eigener Baecker, der Studio-Edit fliesst mit (der Schoepfer-Weg).
+    // Die Foundry-Art einer Grammatik-Spezies (Bäume, Sträucher …): ihre Fernstufe ist die Karte, die die Welt aus der L1
+    // derselben Art bäckt (`_karteWeltBacken`).
     _foundryPresetFor(species) {
         const map = {
             // Baeume

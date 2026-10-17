@@ -39,7 +39,7 @@ const server = statikServer();
 // S — DIE KLASSE KEHRT NICHT ZURÜCK (statisch, vor dem Boot): die Wurzeln der Klumpen-Rampe stehen als Struktur.
 //   S1 der Karten-Bäcker wartet nicht auf die Bühne (der Kreis Bühne → Streu → Karte → Bühne) und läuft im festen Takt
 //      (`_runFrameScheduler`), nie im Deko-Job (`_tickScatterStreaming`, unter Last jeder 4. Frame)
-//   S2 die Karte reist im Rang ihres nächsten Wartenden durch die Worker-Schlange, nie mit Vorrats-Rang (null)
+//   S2 die Karte backt im Rang ihres nächsten Wartenden (`_tickKarteWelt`: die Schlange nah zuerst), nie in Ankunfts-Folge
 //   (S3 — der Nah-Gang bricht nie ab — stand bis G2-n2 am Rumpf-TEXT und fiel mit `_kappeOffen`: gate:takt T9 am Lauf)
 function methode(src, name) {
     const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
@@ -67,13 +67,13 @@ function klassenWand(src) {
     const bake = mitGehilfen(src, "_tickImpostorBake") || "";
     const sched = methode(src, "_runFrameScheduler") || "";
     const streu = methode(src, "_tickScatterStreaming") || "";
-    const req = methode(src, "_foundryBakeImpostorRequest") || "";
+    const karte = methode(src, "_tickKarteWelt") || "";
     const S1 =
         bake.length > 0 &&
         !/_buehneSteht\(/.test(bake) &&
         /this\._tickImpostorBake\(\);/.test(sched) &&
         !/_tickImpostorBake\(/.test(streu);
-    const S2 = /this\._foundryAuftrag\(\s*f,\s*"imp",\s*msg,\s*Number\.isFinite\(bedarfD2\)/.test(req);
+    const S2 = /z\._bedarfD2/.test(karte) && /q\.sort\(\(a, b\) => d2\(a\) - d2\(b\)\);/.test(karte);
     return { ok: S1 && S2, S1, S2 };
 }
 {
@@ -84,21 +84,21 @@ function klassenWand(src) {
             [
                 "S1 Bühnen-Wache im Bäcker",
                 stammLib.ersetze(stamm, "_tickImpostorBake",
-                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n",
-                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n        if (!this._buehneSteht()) return 0;\n"
+                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return this._karteBuehneRuhe();\n",
+                    "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return this._karteBuehneRuhe();\n        if (!this._buehneSteht()) return 0;\n"
                 ),
             ],
             [
                 // derselbe Bruch im Gehilfen des Ticks: die Linse am Rumpf allein war hier blind (K60-3)
                 "S1 Bühnen-Wache im Gehilfen des Bäckers",
                 stammLib.ersetze(stamm, null,
-                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n",
-                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n        if (!this._buehneSteht()) return -1;\n"
+                    "    _tickKarteWelt(at) {\n        const st = this.state;\n",
+                    "    _tickKarteWelt(at) {\n        const st = this.state;\n        if (!this._buehneSteht()) return 0;\n"
                 ),
             ],
             [
                 "S2 Vorrats-Rang der Karte",
-                stammLib.ersetze(stamm, "_foundryBakeImpostorRequest", /msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
+                stammLib.ersetze(stamm, "_tickKarteWelt", "        q.sort((a, b) => d2(a) - d2(b));\n", ""),
             ],
         ];
         const roh = brueche.map(([n, s]) => [n, s !== stamm && !klassenWand(s).ok]);
