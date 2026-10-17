@@ -1,0 +1,239 @@
+diff --git a/foundry-bruecke.js b/foundry-bruecke.js
+index 98fd3fc8..b9a0e68d 100644
+--- a/foundry-bruecke.js
++++ b/foundry-bruecke.js
+@@ -10,6 +10,7 @@
+ 
+ /* ---------- Konstanten & deterministischer PRNG (Saat -> Individuum) ------- */
+ /* V18.491.243 — Lab Phyllotaxis golden ← PHYLO_GESETZ.golden fail-soft; Host none (PHYLO_VIS). FIB stays local (dead). */
++var __omenStart = typeof performance !== "undefined" ? performance.now() : 0; // OMEN-Stationsmessung: Skript-Beginn im Worker
+ const GOLDEN_FALLBACK = Math.PI * (3 - Math.sqrt(5)); // 137.50776 deg Phyllotaxis
+ const _PHYLO_G = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.PHYLO_GESETZ) || null;
+ const GOLDEN = (_PHYLO_G && isFinite(_PHYLO_G.golden)) ? _PHYLO_G.golden : GOLDEN_FALLBACK;
+@@ -242,6 +243,7 @@ const LOD_D0 = PORTAL_RENDER_CONFIG.lod.d0,
+     LOD_FADE = PORTAL_RENDER_CONFIG.lod.fade,
+     LOD_FADE0 = PORTAL_RENDER_CONFIG.lod.fade0;
+ const _lodU = { uLodMaskOn: { value: 1 }, uLodRef: { value: PORTAL_RENDER_CONFIG.lod.ref }, uDitherT: { value: 0 } };
++var _omenT = {}; // OMEN-Stationsmessung (nicht im Repo): die Zeiten des Kartenbacks
+ function bakeImpostorAtlas() {
+     const _impSpec = PORTAL_RENDER_CONFIG.impostor || {};
+     const K = Math.max(1, _impSpecs.length),
+@@ -320,12 +322,14 @@ function bakeImpostorAtlas() {
+                das buildInstance eines Manifest-Kerns, __replyBakeImpostor setzt ihn), baut DER das
+                Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
+                unverändert (der Studio-Wald setzt nie `bau`). */
++            const _ot0 = performance.now();
+             tree = (typeof s.bau === "function" ? s.bau : buildInstance)(
+                 s.sp,
+                 s.seed,
+                 1,
+                 s.ov !== undefined ? s.ov : { crownBase: s.crownBase }
+             );
++            _omenT.bau = performance.now() - _ot0;
+             if (!tree) continue; // fail-soft: ein Kern-Bauer darf null liefern (unbekanntes Rezept) — Zelle bleibt leer statt Wurf mit halb-gebundenem Renderer-State
+         } catch (e) {
+             continue;
+@@ -360,6 +364,10 @@ function bakeImpostorAtlas() {
+         cam.position.set(0, halfH, Math.max(halfW * 2.5, box.max.y) + 40);
+         cam.lookAt(0, halfH, 0);
+         cam.updateProjectionMatrix();
++        const _ot1 = performance.now();
++        let _otTris = 0;
++        tree.traverse((o) => { if (o.isMesh && o.geometry && o.geometry.index) _otTris += o.geometry.index.count / 3; });
++        _omenT.dreiecke = _otTris;
+         for (let v = 0; v < V; v++) {
+             tree.rotation.y = -v * ((Math.PI * 2) / V);
+             tree.updateMatrixWorld(true); // Ansicht v = Baum aus Peilung v*45 Grad gesehen (Kamera fix, Baum gegenrotiert)
+@@ -378,6 +386,7 @@ function bakeImpostorAtlas() {
+             renderer.render(bs, cam);
+             bs.overrideMaterial = null;
+         }
++        _omenT.ansichten = performance.now() - _ot1;
+         bs.remove(tree);
+         tree.traverse((o) => {
+             if (o.isMesh && o.geometry.dispose) o.geometry.dispose();
+@@ -701,7 +710,10 @@ const foundryKanal = (() => {
+     // Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Reply — der
+     // Host (und jedes Gate) fragt EINEN Kanal statt drei.
+     function __replyBook(msg) {
++        const _ob0 = performance.now();
+         const bp = __bookPayload();
++        const _ob1 = performance.now();
++        var __omenBuch = { skriptStart: __omenStart, anfrage: _ob0, buchDaten: _ob1 - _ob0 };
+         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+             __post(
+                 {
+@@ -710,19 +722,20 @@ const foundryKanal = (() => {
+                     reqId: msg && msg.reqId,
+                     book: bp.book,
+                     paramsByKind: bp.paramsByKind,
+-                    worldParams: __worldParamsPayload(),
+-                    renderConfig: __renderConfigPayload(),
++                    worldParams: (() => { const _x = performance.now(); const v = __worldParamsPayload(); __omenBuch.welt = performance.now() - _x; return v; })(),
++                    renderConfig: (() => { const _x = performance.now(); const v = __renderConfigPayload(); __omenBuch.render = performance.now() - _x; return v; })(),
+                     // SPIEGEL-ZENSUS 17.07. — das Siedlungs-Existenz-Gesetz
+                     // (fachwerk SIEDLUNG) reist additiv mit; ein Alt-Empfaenger
+                     // ohne den Steckplatz ignoriert das Feld (must-ignore).
+-                    siedlung: __zweitKernSiedlung(),
++                    siedlung: (() => { const _x = performance.now(); const v = __zweitKernSiedlung(); __omenBuch.siedlung = performance.now() - _x; return v; })(),
+                     // DER EINE BLATT-ATLAS reist als Bild (S7): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette,
+                     // die Transport-Schale gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie
+                     // (kalt ~125 ms im Haupt-Thread, mit GPU-Leinwand ~450 ms).
+                     blattAtlas:
+                         typeof window === "undefined"
+-                            ? self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) })
++                            ? (() => { const _x = performance.now(); const v = self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }); __omenBuch.blatt = performance.now() - _x; __omenBuch.ende = performance.now(); return v; })()
+                             : undefined,
++                    _omen: __omenBuch,
+                 },
+                 "*"
+             );
+@@ -1268,18 +1281,25 @@ const foundryKanal = (() => {
+             _impCellOf[presetId + "|0"] = 0;
+             _impBakedSig = "";
+             delete _impFrame[presetId + seed];
++            _omenT = { t0: performance.now() };
++            const _p0 = renderer.info && renderer.info.programs ? renderer.info.programs.length : -1;
+             bakeImpostorAtlas(); // DER STUDIO-BAECKER — kein Nachbau
++            _omenT.atlas = performance.now() - _omenT.t0;
++            _omenT.prog = renderer.info && renderer.info.programs ? renderer.info.programs.length - _p0 : -1;
+             const ic = PORTAL_RENDER_CONFIG.impostor,
+                 cw = ic.cellW,
+                 ch = ic.cellH,
+                 V = _impV;
+             const fr = _impFrame[presetId + seed];
+             if (!fr) throw new Error("kein Bake-Rahmen (das Bake-Subjekt baute nicht)");
++            const _ot2 = performance.now();
+             const albedo = new Uint8Array(cw * ch * V * 4);
+             gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
+             const normal = new Uint8Array(cw * ch * V * 4);
+             gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
++            _omenT.lesen = performance.now() - _ot2;
+             payload = {
++                _omen: Object.assign({}, _omenT),
+                 cw: cw,
+                 ch: ch,
+                 V: V,
+diff --git a/scripts/diag-boot-stage.cjs b/scripts/diag-boot-stage.cjs
+index 8e14bf4e..57d1a85b 100644
+--- a/scripts/diag-boot-stage.cjs
++++ b/scripts/diag-boot-stage.cjs
+@@ -132,6 +132,12 @@ async function kaltLauf() {
+     try {
+         const page = await browser.newPage();
+         await page.evaluateOnNewDocument(KALT_PROBE);
++        // OMEN Wald-Kette (Stationslinse): die Probe je Auftrag/Stück und das CPU-Profil (0,5 ms) bis zum Weltbild
++        await page.evaluateOnNewDocument(require("C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610am/menge-probe.js").WALD_PROBE);
++        const cdpWald = await page.target().createCDPSession();
++        await cdpWald.send("Profiler.enable");
++        await cdpWald.send("Profiler.setSamplingInterval", { interval: 500 });
++        await cdpWald.send("Profiler.start");
+         const t0 = Date.now();
+         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+         while (Date.now() - t0 < SEK * 1000) {
+@@ -141,6 +147,11 @@ async function kaltLauf() {
+                 .catch(() => 0);
+             if (da) break;
+         }
++        {
++            const { profile } = await cdpWald.send("Profiler.stop");
++            const j = OPT("--json", null);
++            if (j) fs.writeFileSync(path.resolve(j).replace(/.json$/, "") + ".cpuprofile", JSON.stringify(profile));
++        }
+         // DAS BILD DER ANKUNFT (`--bild datei.png`): der erste Blick des Spielers aus dem Ausgabe-Pfad
+         // (scripts/lib/ausgabe-aufnahme.cjs), der Loop ruht, die Bühne hält Mittag · Sonne · Sommer.
+         const bildDatei = OPT("--bild", null);
+@@ -165,6 +176,7 @@ async function kaltLauf() {
+                     const ctx = cv.getContext("2d");
+                     const img = ctx.createImageData(W, H);
+                     img.data.set(auf.u8.subarray(0, W * H * 4));
++                    window.__bild1 = auf.u8.slice(0, W * H * 4); // OMEN: das zweite Bild vergleicht dagegen
+                     ctx.putImageData(img, 0, 0);
+                     return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+                 },
+@@ -176,6 +188,48 @@ async function kaltLauf() {
+                 delete bildInfo.png;
+             }
+         }
++        // OMEN (Stations-Linse, nicht im Repo): DAS BILD DANACH (`--bild2 datei.png`, `--nach s`, Vorgabe 10): der Spiel-Loop
++        // läuft weiter (`_gameLoopTick`), nach der Frist dasselbe Bild der Bühne; der Sprung = Anteil der Pixel mit |Δ| > 24
++        // in einem Kanal und das mittlere |Δ| gegen das Bild der Ankunft.
++        const bild2Datei = OPT("--bild2", null);
++        if (bildDatei && bild2Datei && bildInfo && !bildInfo.fehlt) {
++            const nach = Number(OPT("--nach", 10));
++            await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(window.anazhRealm._gameLoopTick));
++            await new Promise((q) => setTimeout(q, nach * 1000));
++            const b2 = await page.evaluate(
++                async (W, H) => {
++                    const r = window.anazhRealm;
++                    r.state.renderer.setAnimationLoop(null);
++                    window.__buehne();
++                    let auf = null;
++                    for (let i = 0; i < 2; i++) {
++                        r._schattenAlleNeu();
++                        auf = await window.__ausgabeAufnahme(W, H, 1);
++                    }
++                    const a = window.__bild1, b = auf.u8;
++                    let n = 0, summe = 0;
++                    for (let i = 0; i < W * H * 4; i += 4) {
++                        const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]));
++                        summe += d;
++                        if (d > 24) n++;
++                    }
++                    const cv = document.createElement("canvas");
++                    cv.width = W;
++                    cv.height = H;
++                    const ctx = cv.getContext("2d");
++                    const img = ctx.createImageData(W, H);
++                    img.data.set(b.subarray(0, W * H * 4));
++                    ctx.putImageData(img, 0, 0);
++                    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, sprungPct: +((100 * n) / (W * H)).toFixed(2), mittelDelta: +(summe / (W * H)).toFixed(2), png: cv.toDataURL("image/png") };
++                },
++                ECHT ? 960 : 640,
++                ECHT ? 540 : 360
++            );
++            fs.writeFileSync(path.resolve(bild2Datei), Buffer.from(b2.png.split(",")[1], "base64"));
++            delete b2.png;
++            bildInfo.danach = Object.assign({ datei: path.resolve(bild2Datei), nachS: nach }, b2);
++            console.log(`  das Bild ${nach} s danach: ${b2.dc} Befehle · ${b2.dreiecke} Dreiecke · Sprung ${b2.sprungPct} % der Pixel (|Δ| > 24) · mittel |Δ| ${b2.mittelDelta}`);
++        }
+         out = await page.evaluate(() => {
+             const r = window.anazhRealm;
+             const st = (r && r.state) || {};
+@@ -192,6 +246,7 @@ async function kaltLauf() {
+                 version: r && r.constructor && r.constructor.VERSION,
+                 adapter,
+                 ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
++                wald: window.__wald || null,
+             });
+         });
+         if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
+diff --git a/stamm/20a.js b/stamm/20a.js
+index 4b578f49..de6dca4b 100644
+--- a/stamm/20a.js
++++ b/stamm/20a.js
+@@ -1427,17 +1427,23 @@ class AnazhRealm_Z20a {
+                 // kopiert nur noch eine Schicht. Ein Kodier-Bruch reist als payload null (die Retry-Disziplin des Hosts).
+                 schreibAuftrag.delete(msg.reqId);
+                 const core = W.__phytoCore;
++                const _okt0 = performance.now(); // OMEN-Stationsmessung
+                 const k = p && auftragK.fmt && core ? core.karteKodiere(p, auftragK.fmt) : null;
++                const _okod = performance.now() - _okt0;
+                 if (!karteOk(k)) return roh(Object.assign({}, msg, { payload: null }));
++                const _okt1 = performance.now();
+                 if (auftragK.key) schreib(auftragK.key, { payload: k });
+-                return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
++                const _osch = performance.now() - _okt1;
++                return roh(Object.assign({}, msg, { payload: k, _omen: p && p._omen, _omenKod: _okod, _omenSchreib: _osch }), [k.albedo.buffer, k.normal.buffer]);
+             }
+             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
+             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
+             // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
+             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
+             if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
++                const _ofr = performance.now(); // OMEN-Stationsmessung
+                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
++                if (msg._omen) msg._omen.fracht = performance.now() - _ofr;
+                 const stufen = fr ? fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []) : [];
+                 return roh(
+                     Object.assign({}, msg, { blattAtlas: fr }),
