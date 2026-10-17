@@ -315,9 +315,9 @@ class AnazhRealm_dirigent_takt {
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau. Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in
-    // jeder Sitzung (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand). Die Bühne wartet vor jedem Schuss
-    // darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr. Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der
+    // stehenden Welt ist dasselbe Bild in jeder Sitzung (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
+    // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
     _weltStandTakt() {
         const W = this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, ruhe: 0, takte: 0 });
         W.takte++;
@@ -325,24 +325,29 @@ class AnazhRealm_dirigent_takt {
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
         const o = this._weltOffen();
-        if (welt !== W.welt || bau !== W.bau || karte !== W.karte || o.foundry + o.chunks > 0) {
+        if (welt !== W.welt || bau !== W.bau || karte !== W.karte || o.foundry + o.chunks + o.wald > 0) {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
             W.ruhe = 0;
         } else W.ruhe++;
     }
-    // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe) und Chunks (schmutzig, im Bau).
+    // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe), Chunks (schmutzig, im Bau) und
+    // der Wald (die Plan-Schlange, die Pflanz-Gänge, die wartenden Pflanzungen, K69) — jede Linse liest SIE, nie die Marken.
     _weltOffen() {
         const f = this._foundry;
         const st = this.state;
-        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0 }); // je Takt, ohne Müll
+        const o = this._weltOffenWert || (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0 }); // je Takt, ohne Müll
         o.foundry =
             (f && f.pending ? f.pending.size : 0) +
             (f && f.warte ? f.warte.length : 0) +
             (this._foundryIngestQueue ? this._foundryIngestQueue.length : 0);
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+        o.wald =
+            (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
+            (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
+            (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         return o;
     }
     _weltSteht() {
@@ -352,7 +357,7 @@ class AnazhRealm_dirigent_takt {
         if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
             return false;
         const o = this._weltOffen();
-        return o.foundry + o.chunks === 0;
+        return o.foundry + o.chunks + o.wald === 0;
     }
 
     // ═══ DIE GPU-LEINE ═══

@@ -292,10 +292,7 @@ function weltaktBuch(seit) {
     };
 }
 
-// DIE LESER DER BILD-UHR (A9), [Name, Halter, Schlüssel]: was ein Bild zur EINEN Uhr `_bildZeit` zeichnet — Himmel, Wasser,
-// Wind und seine Richtung, Böe (`_loopRender`), die Knoten-Uhr des Vendors (TSL `time`: der Atem des Fells), Regen, je Tor
-// Welle, Puls und Glut (`_tickPortalMembranes`). Die Bühne hält keinen von ihnen; die Uhr-Wache prüft an ihnen, dass jeder
-// mit der gehaltenen Uhr steht.
+// DIE LESER DER BILD-UHR `_bildZeit` (A9), [Name, Halter, Schlüssel] — die Uhr-Wache prüft, dass jeder mit ihr steht.
 function bildUhren() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -316,10 +313,8 @@ function bildUhren() {
     return u.filter((x) => x[1]);
 }
 
-// DIE UHR DER BÜHNE (A9): T = 12,5 s (unter jeder Boot-Dauer) auf der EINEN Bild-Uhr `_bildZeit` — die Bühne hält NUR sie und
-// zählt jeden Zug des Loops, den sie verweigert (die Uhr-Wache liest ihn). Wer je Bild zeichnet, liest sie im Bild
-// (`_loopRender`); Tor und Regen, die im Takt schreiben, lesen sie einmal beim Halt. Bis A9 hielt sie ~12 Uhren einzeln, je
-// Frame neu für jeden Halter, der nach ihr entstand.
+// DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
+// sie verweigert (die Uhr-Wache liest ihn); Tor und Regen, die im Takt schreiben, lesen sie einmal beim Halt.
 function uhrHalten() {
     const r = window.anazhRealm;
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
@@ -331,42 +326,39 @@ function uhrHalten() {
     r._tickRain();
 }
 
-// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne, bis die Welt steht — in Takten des Spiels, nie in
-// Wanduhr: läuft der Loop, zählt er selbst; ruht er, schaltet sie ihn je Frame und stellt Kamera und Stunde des Schusses zurück.
-// Steht sie nach `max` Takten nicht, bricht der Schuss LAUT beim Namen dessen, was baut — ein Bild halb gebauter Welt ist
-// kein Beweis (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
-function weltStehtWarten(max) {
-    return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
-        const cam = st.camera;
-        const pose = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
-        const takte = () => (r._weltStand ? r._weltStand.takte : 0);
-        const t0 = takte();
-        for (let k = 0; !r._weltSteht() && k < (max || 1800); k++) {
-            const vor = takte();
-            await new Promise((ok) => requestAnimationFrame(ok));
-            if (takte() !== vor) continue;
-            r._gameLoopTick(performance.now());
-            cam.position.copy(pose[0]);
-            cam.quaternion.copy(pose[1]);
-            if (cam.fov !== pose[2]) (cam.fov = pose[2]), cam.updateProjectionMatrix();
-            cam.updateMatrixWorld(true);
-        }
-        if (st.timeOfDay !== pose[3]) {
-            st.timeOfDay = pose[3];
-            if (st.world) st.world.timeOfDay = pose[3];
-            r._himmelSprung = true; // die Stunde springt zurück, der Himmel mit ihr (wie die Bühne)
-            r._applyDayNightToScene();
-        }
-        const o = r._weltOffen();
-        if (!r._weltSteht())
-            throw new Error(
-                `DIE WELT STEHT NICHT — nach ${takte() - t0} Takten: Ruhe ${r._weltStand ? r._weltStand.ruhe : 0} von ` +
-                    `${r.constructor.WELT_STEHT_TAKTE} Takten, Foundry offen ${o.foundry}, Chunks offen ${o.chunks}`
-            );
-        return takte() - t0;
-    })();
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie, in Takten, nie in Wanduhr — läuft der Loop,
+// zählt er; ruht er, schaltet sie ihn und stellt Kamera und Stunde des Schusses zurück. Steht sie nach `max` Takten nicht,
+// bricht der Schuss LAUT beim Namen dessen, was baut (A8: boden-nah zwischen Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
+async function weltStehtWarten(max) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const cam = st.camera;
+    const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
+    const takte = () => (r._weltStand ? r._weltStand.takte : 0);
+    const t0 = takte();
+    for (let k = 0, vor; !r._weltSteht() && k < (max || 1800); k++) {
+        vor = takte();
+        await new Promise((ok) => requestAnimationFrame(ok));
+        if (takte() !== vor) continue;
+        r._gameLoopTick(performance.now());
+        cam.position.copy(p);
+        cam.quaternion.copy(q);
+        if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
+        cam.updateMatrixWorld(true);
+    }
+    if (st.timeOfDay !== uhr) {
+        st.timeOfDay = uhr;
+        if (st.world) st.world.timeOfDay = uhr;
+        r._himmelSprung = true; // die Stunde springt zurück, der Himmel mit ihr (wie die Bühne)
+        r._applyDayNightToScene();
+    }
+    const o = r._weltOffen();
+    if (!r._weltSteht())
+        throw new Error(
+            `DIE WELT STEHT NICHT nach ${takte() - t0} Takten: Ruhe ${r._weltStand ? r._weltStand.ruhe : 0}/` +
+                `${r.constructor.WELT_STEHT_TAKTE}, Foundry offen ${o.foundry}, Chunks offen ${o.chunks}`
+        );
+    return takte() - t0;
 }
 
 function buehne() {

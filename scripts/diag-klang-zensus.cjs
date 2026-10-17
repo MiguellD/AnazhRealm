@@ -183,13 +183,8 @@ function werkzeug() {
         }
         return { takte, chunks: last, wald, waldTakte };
     };
-    // DER WALD STEHT: die Schlange des Walds leer, kein Pflanz-Gang und keine Streu-Region wartet, kein gepflanzter Baum
-    // steht in der Pflanz-Schlange.
-    W.waldSteht = () =>
-        !(r._waldPlanSchlange && r._waldPlanSchlange.size) &&
-        !(r._waldPflanzWarten && r._waldPflanzWarten.size) &&
-        !(st.pendingVegSpawns && st.pendingVegSpawns.length) &&
-        r._streuWartet(st.playerMesh.position) === 0;
+    // DER WALD STEHT: nichts im Wald baut (`_weltOffen`, A9: Plan-Schlange, Pflanz-Gänge, Pflanz-Schlange), keine Streu-Region wartet.
+    W.waldSteht = () => r._weltOffen().wald === 0 && r._streuWartet(st.playerMesh.position) === 0;
     // Die Nässe des Klangs ist SEINE (`_nassAt`: der Boden unter der EINEN Wasser-Wahrheit am Körper) — die Linse rechnet
     // sie nie nach (bis Welle L ein Zwilling über das 3×3-gedehnte `_waterLevelAt`).
     W.nass = (x, z) => r._nassAt(x, z);
