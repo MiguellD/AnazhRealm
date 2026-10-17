@@ -108,79 +108,6 @@ function pageHtml() {
     const b = window.__phytoCore.bakeLeafAtlasBild(document);
     return { wert: b.wert, mips: b.mips.map((m) => ({ w: m.width, h: m.height, b64: b64(m.data) })) };
   };
-  // DER KARTEN-RUNDLAUF (W6): der Studio-Bäcker bäckt die Karte (Kanal bake-impostor, ohne Schale = das rohe
-  // Studio-Payload), der ECHTE Karten-Codec (phyto-core, hier im Seiten-Kontext) kodiert sie zur Atlas-Schicht und
-  // dekodiert sie zurück. Gemessen: Alpha-Fehler an der Schwelle, Albedo-PSNR (opake Texel, sRGB), Normalwinkel
-  // (Mittel/p95, opake Texel), Mip-Deckung je Stufe gegen Stufe 0 (Codec und — zum Vergleich — die Box-Mip der GPU),
-  // die mittlere LINEARE Kronenfarbe (Studio-Eingang gegen die als sRGB dekodierte Schicht). \`stoer\`: "bc1" kippt
-  // Bytes der kodierten Albedo (der Selbsttest der Linse).
-  window.__karte = (presetId, seed, stoer) => ask({ type: "bake-impostor", presetId, seed }).then((r) => {
-    const p = r && r.payload, core = window.__phytoCore;
-    if (!p || !p.albedo) return { fehler: "kein Bake" };
-    const k = core.karteKodiere(p, "bc");
-    if (!k) return { fehler: "Codec lieferte keine Schicht" };
-    const nt = core.KARTEN_GESETZ.normalTeiler, ab = Math.round(Math.log2(nt));
-    const M = core.karteMasse(p.cw, p.ch, p.V, nt, "bc");
-    if (stoer === "bc1") for (let i = 64; i < M.a[0].bytes; i += 97) k.albedo[i] ^= 0x5a;
-    const W = M.w, H = M.h, thr = core.KARTEN_GESETZ.schwelle * 255;
-    const ref = core.impostorMips(p.albedo, W, H, p.V, core.KARTEN_GESETZ.schwelle, 1).stufen[0].data;
-    const dec = core.bcDekodiere(k.albedo.subarray(0, M.a[0].bytes), W, H, "bc1");
-    const lin = (b) => { const c = b / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-    let alphaFehl = 0, se = 0, n = 0;
-    const ein = [0, 0, 0], aus = [0, 0, 0];
-    let nOp = 0;
-    for (let i = 0; i < W * H; i++) {
-      const a0 = p.albedo[i * 4 + 3] >= thr, a1 = dec[i * 4 + 3] >= 128;
-      if (a0 !== a1) alphaFehl++;
-      if (!a0) continue;
-      nOp++;
-      for (let c = 0; c < 3; c++) {
-        const d = ref[i * 4 + c] - dec[i * 4 + c];
-        se += d * d; n++;
-        ein[c] += p.albedo[i * 4 + c] / 255;
-        aus[c] += lin(dec[i * 4 + c]);
-      }
-    }
-    const psnr = n ? 10 * Math.log10((255 * 255) / Math.max(1e-9, se / n)) : 0;
-    // Normale (opake Texel des halben Rasters): die Referenz ist das Vektor-Mittel der vollen Studio-Normale
-    const nw = M.nw, nh = M.nh;
-    const nref = core.normalMips(p.normal, W, H, 4, 1 + ab)[ab].data;
-    const ndec = core.bcDekodiere(k.normal.subarray(0, M.n[0].bytes), nw, nh, "bc5");
-    const vz = (a, i) => { const x = a[i * 2] / 127.5 - 1, y = a[i * 2 + 1] / 127.5 - 1; return [x, y, Math.sqrt(Math.max(0, 1 - x * x - y * y))]; };
-    const ws = [];
-    for (let y = 0; y < nh; y++) for (let x = 0; x < nw; x++) {
-      let op = false;
-      for (let dy = 0; dy < nt && !op; dy++) for (let dx = 0; dx < nt; dx++) if (p.albedo[((y * nt + dy) * W + x * nt + dx) * 4 + 3] >= thr) op = true;
-      if (!op) continue;
-      const a = vz(nref, y * nw + x), b = vz(ndec, y * nw + x);
-      const l = Math.hypot(a[0], a[1], a[2]) * Math.hypot(b[0], b[1], b[2]) || 1;
-      ws.push((Math.acos(Math.max(-1, Math.min(1, (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / l))) * 180) / Math.PI);
-    }
-    ws.sort((x, y) => x - y);
-    // Mip-Deckung: Codec (dekodiert) und Box-Mip (Alpha-Mittel, dann Schwelle) je Stufe
-    const deckung = [], box = [];
-    let ba = new Float32Array(W * H);
-    for (let i = 0; i < W * H; i++) ba[i] = p.albedo[i * 4 + 3] >= thr ? 1 : 0;
-    let bw = W, bh = H;
-    for (let s = 0; s < M.a.length; s++) {
-      const st = M.a[s];
-      const d = core.bcDekodiere(k.albedo.subarray(st.off, st.off + st.bytes), st.w, st.h, "bc1");
-      let op = 0; for (let i = 0; i < st.w * st.h; i++) if (d[i * 4 + 3] >= 128) op++;
-      deckung.push(op / (st.w * st.h));
-      let ob = 0; for (let i = 0; i < bw * bh; i++) if (ba[i] >= core.KARTEN_GESETZ.schwelle) ob++;
-      box.push(ob / (bw * bh));
-      const w2 = bw >> 1, h2 = bh >> 1, nb = new Float32Array(w2 * h2);
-      for (let y = 0; y < h2; y++) for (let x = 0; x < w2; x++)
-        nb[y * w2 + x] = (ba[2 * y * bw + 2 * x] + ba[2 * y * bw + 2 * x + 1] + ba[(2 * y + 1) * bw + 2 * x] + ba[(2 * y + 1) * bw + 2 * x + 1]) / 4;
-      ba = nb; bw = w2; bh = h2;
-    }
-    return {
-      alphaFehl, psnr, winkelMittel: ws.reduce((s, x) => s + x, 0) / Math.max(1, ws.length),
-      winkelP95: ws.length ? ws[Math.floor(0.95 * (ws.length - 1))] : 0, deckung, box,
-      farbe: { ein: ein.map((v) => v / Math.max(1, nOp)), aus: aus.map((v) => v / Math.max(1, nOp)) },
-      bytes: k.albedo.length + k.normal.length, opak: k.opak,
-    };
-  });
   // Das Buch trägt das Bild des Blatt-Atlas (S7, Mips als Uint8Array): über die page.evaluate-Grenze reist nur sein Steckbrief.
   window.__aget = (type) => ask({ type }).then((r) => {
     if (r && r.blattAtlas) r.blattAtlas = { breite: r.blattAtlas.breite, hoehe: r.blattAtlas.hoehe, stufen: r.blattAtlas.mips.length, wert: r.blattAtlas.wert };
@@ -386,7 +313,6 @@ async function runWithWorker(port, cb) {
         const atlas = () => page.evaluate(() => window.__atlas());
         const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
         const atlasBild = () => page.evaluate(() => window.__atlasBild());
-        const karte = (presetId, seed, stoer) => page.evaluate((p, sd, st) => window.__karte(p, sd, st), presetId, seed, stoer || null);
         // Die Plattform-Probe (S1 Wände): `probeLauf` ist der `lauf` von plattform-probe probeAblauf — liste = [{ key, msg }].
         const probeLauf = (liste) => (d, welche, bis, fangen) =>
             page.evaluate(
@@ -397,7 +323,7 @@ async function runWithWorker(port, cb) {
                 bis == null ? null : bis,
                 fangen == null ? -1 : fangen
             );
-        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, karte, probeLauf, pageErrors });
+        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, probeLauf, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

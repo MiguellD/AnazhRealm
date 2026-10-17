@@ -1,29 +1,26 @@
 // diag-fahrzeug-fern.cjs — DIE FAHRZEUG-FERNSTUFEN-LINSE (Matrix-Zelle fahrzeug.lods,
 // das Tor-Präzedenz V18.465 1:1 gespiegelt): ein GEPARKTES Fahrzeug fern serviert das
-// 8-Winkel-Billboard aus der EINEN Bäckerei (bake-impostor) statt seiner vollen
+// 8-Winkel-Billboard (die Welt bäckt es aus seiner L1-Gestalt, `_karteWeltBacken`) statt seiner vollen
 // L0-Geometrie (gt: hunderte Meshes auf JEDE Distanz — der alte Fehler); ein
 // GERITTENES Fahrzeug bleibt Voll-Geometrie (die statische Wand).
 //
 // VIER PRÜF-FAMILIEN:
 //   (S) SELBST-TEST (nicht vakuös): dieselben Prüfungen auf MUTIERTER Quelle —
 //       ohne die Policy-Zeile (`impostor: true` in KIND_POLICY.vehicle) MUSS die
-//       Linse rot urteilen; ebenso ohne `vehicle` im Bäcker-Kind-Wächter.
+//       Linse rot urteilen.
 //   (P) POLICY + CHOKEPOINTS (Quelle, verhaltensecht evaluiert, kein blosser Grep):
 //       KIND_POLICY wird aus dem Stamm extrahiert und AUSGEFÜHRT (vehicle.impostor
 //       === true) · `_foundryPresetIsTree` wird als ECHTE Funktion instanziert und
-//       urteilt kind "vehicle" → true · der Bäcker-Kind-Wächter (Positivliste)
-//       lässt vehicle durch · die Serve-Chokepoints (`_foundryFlattenFor` +
+//       urteilt kind "vehicle" → true · die Serve-Chokepoints (`_foundryFlattenFor` +
 //       `_foundryEntryReady`) routen lod>=2 über GENAU diese Politik.
 //   (M) GERITTEN-WAND (verhaltensecht): `_foundryLodForEntry` wird als ECHTE
 //       Funktion instanziert — ein Entry AUF der Spieler-Position (das ist die
 //       Fahr-Invariante: `_tickMountedMovement` pinnt entry.position auf pm, per
 //       Quell-Probe belegt) urteilt Stufe 0 (< 2 → nie Impostor, Voll-Geometrie);
 //       dasselbe Entry 500 m fern urteilt Stufe 2 (Impostor).
-//   (N) DIE ECHTE BÄCKEREI (puppeteer + Foundry-WEB-WORKER, das diag-baecker-kanal-
-//       Muster): das ERSTE vehicle-Rezept aus dem LIVE-Buch (get-book) bäckt eine
-//       NICHT-LEERE Impostor-Karte (Alpha-Deckung > 64 Px — die NICHT-LEERE-WAND),
-//       und die Mess-Zahl reist in den Bericht: L0-Meshes/-Tris (build-asset lod 0)
-//       gegen die Fernstufe (1 Quad = 2 Tris, das Einheits-Quad des Karten-Atlas `_impostorQuad`).
+//   (N) DIE KARTEN-QUELLE (puppeteer + Foundry-WEB-WORKER): das ERSTE vehicle-Rezept aus dem LIVE-Buch (get-book)
+//       liefert eine NICHT-LEERE L1-Gestalt (aus ihr bäckt die Welt die Karte), und die Mess-Zahl reist in den Bericht:
+//       L0-Meshes/-Tris (build-asset lod 0) gegen die Fernstufe (1 Quad = 2 Tris, das Einheits-Quad des Karten-Atlas `_impostorQuad`).
 //
 //   node scripts/diag-fahrzeug-fern.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -35,10 +32,6 @@ const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
 const STAMM = stammLib.text(ROOT);
 
-// ── Die Bäcker-Soll-Zahlen (die fixe Naht __replyBakeImpostor, wie diag-baecker-kanal) ──
-const SOLL = { cw: 128, ch: 256, V: 8 };
-const SOLL_LEN = SOLL.cw * SOLL.ch * SOLL.V * 4;
-const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: echte Pixel, keine Clear-Karte als „Erfolg"
 // Die Fernstufe des Wirts: EIN camera-facing Quad (`_impostorQuad`, VC=6).
 const FERN_MESHES = 1;
 const FERN_TRIS = 2;
@@ -90,18 +83,6 @@ function ladeMethode(quelle, name, argNamen) {
     }
 }
 
-// Der Bäcker-Kind-Wächter: die Positivliste der geurteilten Bake-Kinds als ECHTES Regex
-// aus der Quelle (der EINE Chokepoint in `_tickImpostorBake`).
-function ladeKindWaechter(quelle) {
-    const m = stammLib.treffer(quelle, "_impostorBakeSende", /if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
-    if (!m) return null;
-    try {
-        return new RegExp(m[1]);
-    } catch (_e) {
-        return null;
-    }
-}
-
 // ── (P) + (M): die reine Prüf-Funktion über einer QUELLE → Liste roter Befunde ──────────
 // (auch der Selbst-Test ruft sie — mit mutierter Quelle MUSS sie feuern.)
 function pruefeQuelle(quelle, render = KERN_RENDER) {
@@ -126,14 +107,6 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
                     " statt true — der Serve-Chokepoint kennt die Politik nicht"
             );
     }
-    // (P3) Der Bäcker-Kind-Wächter lässt vehicle durch (echtes Regex aus der Quelle).
-    const waechter = ladeKindWaechter(quelle);
-    if (!waechter) rot.push("Bäcker-Kind-Wächter (Positivliste in _tickImpostorBake) nicht gefunden");
-    else {
-        if (!waechter.test("vehicle"))
-            rot.push("Kind-Wächter blockt vehicle (" + waechter + ") — der Bake fiele terminal gescheitert");
-        if (waechter.test("weapon")) rot.push("Kind-Wächter lässt weapon durch — die Positivliste ist keine mehr");
-    }
     // (P4) Die Serve-Chokepoints routen lod>=2 über GENAU diese Politik (Quell-Proben
     // am Chokepoint — Lehre 2: die Invariante lebt dort, nicht am Aufrufer).
     // V18.478 (Bäcker-ov): die Stempel-Wand ist GEFALLEN — geprägte Entries ziehen
@@ -153,7 +126,7 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
         rot.push(
             "_foundryEntryReady: der Dock-Peek kennt die lod>=2-Impostor-Route (mit ov-Spiegel) nicht (Rewarm urteilt übers falsche Asset)"
         );
-    // Bäcker-ov: der fimp-Key + das Bake-Subjekt (gkey) + der Bake tragen den ov-Hash (V18.527: die EINEN
+    // Karten-ov: der fimp-Key trägt den ov-Hash, die Welt bäckt aus dem geprägten Körper (V18.527: die EINEN
     // Schlüssel-Münzer `_foundryKartenKey`/`_foundryKoerperKey` hängen ihn an).
     if (
         !/const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, ovK\);/.test(quelle) ||
@@ -164,8 +137,6 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
         rot.push(
             "_foundryEnsureImpostorRecord: der ov-Hash fehlt im fimp-Key (geprägte Karte kollabiert mit der ungeprägten)"
         );
-    if (!/if \(ov && typeof ov === "object"\) msg\.ov = ov;/.test(quelle))
-        rot.push("_foundryBakeImpostorRequest: die ov reist nicht zum Studio-Bäcker (die Karte bäckt ungeprägt)");
     // (M) DIE GERITTEN-WAND — verhaltensecht: Distanz-Autorität + Fahr-Pin.
     const lodFuer = ladeMethode(quelle, "_foundryLodForEntry", "entry");
     const D = ladeKonstante(quelle, "LOD_DISTANCES", "", ")();", render);
@@ -206,31 +177,11 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
     return rot;
 }
 
-// ── (N): die reine Bäcker-Prüfung (Zahlen aus dem echten Worker) ────────────────────────
-function pruefeBaecker(st) {
-    const rot = [];
-    if (!st || !st.got) {
-        rot.push("keine impostor-Antwort vom Worker (Kanal stumm)");
-        return rot;
-    }
-    if (st.payloadNull) {
-        rot.push("payload ist null — der Bäcker kennt das vehicle-Preset nicht (Zweit-Kern-Dispatch gerissen)");
-        return rot;
-    }
-    if (st.cw !== SOLL.cw || st.ch !== SOLL.ch || st.V !== SOLL.V)
-        rot.push(`Zell-Masse divergieren: cw=${st.cw} ch=${st.ch} V=${st.V} (soll ${SOLL.cw}/${SOLL.ch}/${SOLL.V})`);
-    if (st.albedoLen !== SOLL_LEN) rot.push(`albedo-Länge ${st.albedoLen} != ${SOLL_LEN}`);
-    if (!(st.alphaPx > SOLL_ALPHA_PX))
-        rot.push(
-            `Alpha-Deckung ${st.alphaPx} <= ${SOLL_ALPHA_PX} Px — LEERE Karte als „Erfolg" (die NICHT-LEERE-WAND muss greifen)`
-        );
-    // W6: der Rahmen reist aus DEMSELBEN Bake (Quad = Bake-Kamera); die Normale reist voll (der Karten-Codec halbiert
-    // sie, der Labor-Wald bleibt byte-gleich).
-    const fr = st.frame || {};
-    if (!(fr.halfH > 0 && isFinite(fr.halfH) && fr.halfW > 0 && isFinite(fr.halfW)))
-        rot.push(`Rahmen unbrauchbar: ${JSON.stringify(st.frame)}`);
-    if (st.normalLen !== SOLL_LEN) rot.push(`normal-Länge ${st.normalLen} != ${SOLL_LEN} (voll)`);
-    return rot;
+// ── (N): die Karten-Quelle — die L1-Gestalt, aus der die Welt die Karte bäckt, ist nicht leer ──
+function pruefeGestalt(l1) {
+    if (!l1 || !(l1.meshes > 0 && l1.tris > 0))
+        return [`die L1-Gestalt ist leer (${l1 ? l1.meshes + " Meshes" : "keine Antwort"}) — die Welt bäckt keine Fahrzeug-Karte`];
+    return [];
 }
 
 // Die Mess-Zahl: nah gegen fern — die Fernstufe MUSS massiv billiger sein.
@@ -257,12 +208,6 @@ function selbstTest() {
     faelle.push([
         "ohne KIND_POLICY.vehicle impostor:true -> feuert (der alte gt-328-Meshes-Fehler)",
         ohnePolicy !== STAMM && pruefeQuelle(ohnePolicy).length > 0,
-    ]);
-    // 3. Der Kind-Wächter ohne vehicle -> MUSS feuern (Bake fiele terminal).
-    const ohneWaechter = stammLib.ersetze(STAMM, "_impostorBakeSende", "|gate|vehicle)$", "|gate)$");
-    faelle.push([
-        "ohne vehicle im Bäcker-Kind-Wächter -> feuert",
-        ohneWaechter !== STAMM && pruefeQuelle(ohneWaechter).length > 0,
     ]);
     // 4. Die Serve-Route gerissen (Impostor-Zweig entfernt) -> MUSS feuern.
     // V18.478 (Bäcker-ov): die Stempel-Wand ist gefallen — die Mutation wandert mit
@@ -291,22 +236,8 @@ function selbstTest() {
     // Ein unlesbares Gesetz (Blatt fehlt) bricht fail-closed laut — die Linse nennt die Tabelle nicht instanzierbar.
     const ohneBlatt = { ...KERN_RENDER, lod: { ...KERN_RENDER.lod, hyst: undefined } };
     faelle.push(["Kern-Gesetz ohne hyst -> feuert (fail-closed)", pruefeQuelle(STAMM, ohneBlatt).length > 0]);
-    // 6. Bäcker-Prüfung: leere Karte / null payload -> MUSS feuern.
-    faelle.push(["Bäcker: payload null -> feuert", pruefeBaecker({ got: true, payloadNull: true }).length > 0]);
-    faelle.push([
-        "Bäcker: LEERE Karte (Alpha 0) -> feuert",
-        pruefeBaecker({
-            got: true,
-            payloadNull: false,
-            cw: 128,
-            ch: 256,
-            V: 8,
-            albedoLen: SOLL_LEN,
-            alphaPx: 0,
-            frame: { halfH: 1, halfW: 0.5 },
-            normalLen: SOLL_LEN,
-        }).length > 0,
-    ]);
+    // 6. Karten-Quelle leer -> MUSS feuern.
+    faelle.push(["Karten-Quelle: leere L1-Gestalt -> feuert", pruefeGestalt({ meshes: 0, tris: 0 }).length > 0]);
     // 7. Diät-Messung: Nah == Fern -> MUSS feuern (vakuöse Messung).
     faelle.push(["Diät: nah == fern -> feuert", pruefeDiaet({ meshes: 1, tris: 2 }).length > 0]);
     let ok = true;
@@ -341,27 +272,16 @@ function pageHtml() {
     worker.postMessage(Object.assign({ reqId }, msg));
     setTimeout(() => { if (pending.has(reqId)) { pending.delete(reqId); res(null); } }, 90000);
   });
-  const alphaPx = (u) => { let n = 0; for (let i = 3; i < u.length; i += 4) if (u[i] > 32) n++; return n; };
   // Das ERSTE vehicle-Rezept aus dem ECHTEN Buch (kein hartkodierter Spiegel).
   window.__erstesVehicleRezept = () => ask({ type: "get-book" }).then((r) => {
     const b = (r && r.book) || {};
     for (const id in b) if (b[id] && b[id].kind === "vehicle") return id;
     return null;
   });
-  window.__bakeStats = (presetId, seed) => ask({ type: "bake-impostor", presetId: presetId, seed: seed }).then((r) => {
-    if (!r) return { got: false, workerError: S.error };
-    const p = r.payload;
-    if (!p) return { got: true, payloadNull: true, workerError: S.error };
-    const a = p.albedo || new Uint8Array(0);
-    return {
-      got: true, payloadNull: false, cw: p.cw, ch: p.ch, V: p.V, frame: p.frame,
-      albedoLen: a.length, alphaPx: alphaPx(a), normalLen: p.normal ? p.normal.length : 0,
-    };
-  });
-  // Die NAH-Messung: build-asset lod 0 -> Mesh-Zahl + Dreiecks-Zensus (index/3 bzw. pos/9;
+  // Die Stufen-Messung: build-asset lod 0 (nah) bzw. 1 (die Karten-Quelle) -> Mesh-Zahl + Dreiecks-Zensus (index/3 bzw. pos/9;
   // position reist als {array,itemSize} — __extractAssetMesh-Vertrag; __skelett-Pseudo-
   // Einträge tragen kein position und zählen nicht).
-  window.__nahStats = (presetId, seed) => ask({ type: "build-asset", presetId: presetId, seed: seed, lod: 0 }).then((r) => {
+  window.__stufeStats = (presetId, seed, lod) => ask({ type: "build-asset", presetId: presetId, seed: seed, lod: lod }).then((r) => {
     const meshes = (r && r.meshes) || [];
     let tris = 0, n = 0;
     for (const m of meshes) {
@@ -384,16 +304,16 @@ function pageHtml() {
     console.log("\n===== (P/M) POLICY · CHOKEPOINTS · GERITTEN-WAND (verhaltensecht aus der Quelle) =====");
     console.log(
         rot.length === 0
-            ? "  ✅ Policy vehicle.impostor:true · Klassifikator urteilt vehicle→Impostor · Wächter offen · Serve-Routen stehen · geritten=L0 / 500 m=L2"
+            ? "  ✅ Policy vehicle.impostor:true · Klassifikator urteilt vehicle→Impostor · Serve-Routen stehen · geritten=L0 / 500 m=L2"
             : "  (Befunde unten)"
     );
 
-    // ── (N/K) Die echte Bäckerei im Foundry-Worker ──
+    // ── (N/K) Die Karten-Quelle im Foundry-Worker ──
     const server = statikServer({ seiten: { "/": pageHtml, "/__ff.html": pageHtml } });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     let vId = null;
-    let bake = null;
+    let l1 = null;
     let nah = null;
     try {
         const page = await browser.newPage();
@@ -409,25 +329,22 @@ function pageHtml() {
         if (st.error) throw new Error("WORKER-BOOT: " + st.error);
         vId = await page.evaluate(() => window.__erstesVehicleRezept());
         if (vId) {
-            nah = await page.evaluate((id) => window.__nahStats(id, 7), vId);
-            bake = await page.evaluate((id) => window.__bakeStats(id, 7), vId);
+            nah = await page.evaluate((id) => window.__stufeStats(id, 7, 0), vId);
+            l1 = await page.evaluate((id) => window.__stufeStats(id, 7, 1), vId);
         }
-        if (!bake || bake.payloadNull) for (const m of meldungen.slice(-8)) console.error("  [seite] " + m);
+        if (!l1 || !(l1.meshes > 0)) for (const m of meldungen.slice(-8)) console.error("  [seite] " + m);
     } finally {
         await browser.close();
         server.close();
     }
 
     console.log(
-        `\n===== (N) DIE ECHTE BÄCKEREI — erstes vehicle-Rezept aus dem Buch: ${vId || "KEINES GEFUNDEN"} (seed 7) =====`
+        `\n===== (N) DIE KARTEN-QUELLE — erstes vehicle-Rezept aus dem Buch: ${vId || "KEINES GEFUNDEN"} (seed 7) =====`
     );
     if (!vId) rot.push("kein vehicle-Rezept im Buch (get-book) — der Zweit-Kern reist nicht");
     else {
-        if (bake && bake.got && !bake.payloadNull)
-            console.log(
-                `  Impostor-Karte: cw=${bake.cw} ch=${bake.ch} V=${bake.V} · Alpha-Px=${bake.alphaPx} · Rahmen ${JSON.stringify(bake.frame)} · Normale ${bake.normalLen} B`
-            );
-        for (const x of pruefeBaecker(bake)) rot.push(`[${vId}] ${x}`);
+        if (l1) console.log(`  Karten-Quelle L1: ${l1.meshes} Meshes / ${l1.tris} Tris (die Welt bäckt daraus die 8 Ansichten)`);
+        for (const x of pruefeGestalt(l1)) rot.push(`[${vId}] ${x}`);
         if (nah)
             console.log(
                 `  DIE MESS-ZAHL (fahrzeug.lods): nah L0 = ${nah.meshes} Meshes / ${nah.tris} Tris → fern L2 = ${FERN_MESHES} Quad-Mesh / ${FERN_TRIS} Tris (Faktor ~${Math.round(nah.tris / FERN_TRIS)}× Tris)`
