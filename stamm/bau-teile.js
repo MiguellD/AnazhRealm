@@ -195,19 +195,23 @@ class AnazhRealm_bau_teile {
 
     // Liefert {moveable?, magnifying?, focusing?, ...}; beim Spawn als entry.affordances gespeichert.
     // Welt-Reaktionen konsultieren dieses Profil statt einer hardcoded Bauplan-Liste.
-    computeBlueprintAffordances(bp) {
+    // DIE TAGS EINMAL JE URTEIL (B3c): `tags` (optional) sind die Compound-Tags dieses Bauplans (`computeCompoundTags`), vom
+    // Aufrufer EINMAL gerechnet und an jeden Tester gereicht — bis B3c rechnete jeder Tester sie neu und die Stärke das ganze
+    // Urteil noch einmal (je Spawn 13×; der Wald vor dem ersten Weltbild 0,9 s im Haupt-Faden, Radeon kalt).
+    computeBlueprintAffordances(bp, tags) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return {};
         // Ein Portal IST ein Tor: einzige Affordance "betreten". Die Rolle schließt räumliche Affordances
         // aus — sonst träfe der welt_portal-Ring zufällig _isMoveable und klebte per Mount am Spieler.
         if (bp.role === "portal") return { isPortal: true };
+        const t = tags || this.computeCompoundTags(bp);
         const out = {};
-        if (this._isMoveable(bp)) out.moveable = true;
-        if (this._isMagnifying(bp)) out.magnifying = true;
-        if (this._isFocusing(bp)) out.focusing = true;
-        if (this._isRadiating(bp)) out.radiating = true;
-        if (this._isBroadcasting(bp)) out.broadcasting = true;
-        if (this._isBalancing(bp)) out.balancing = true;
-        if (this._isLifting(bp)) out.lifting = true;
+        if (this._isMoveable(bp, t)) out.moveable = true;
+        if (this._isMagnifying(bp, t)) out.magnifying = true;
+        if (this._isFocusing(bp, t)) out.focusing = true;
+        if (this._isRadiating(bp, t)) out.radiating = true;
+        if (this._isBroadcasting(bp, t)) out.broadcasting = true;
+        if (this._isBalancing(bp, t)) out.balancing = true;
+        if (this._isLifting(bp, t)) out.lifting = true;
         return out;
     }
 
@@ -215,12 +219,13 @@ class AnazhRealm_bau_teile {
     // die Stärke skaliert darüber mit der Substanz — Tag-Überschuss (0.4..1.0) × Qualität (0.5..1.0).
     // Leser: _tickRadiatingAffordances + das broadcasting-Relais; eingefroren als
     // entry.affordanceStrength.
-    computeAffordanceStrength(bp) {
-        const aff = this.computeBlueprintAffordances(bp);
+    // `aff` und `t` (optional): das Urteil und die Tags, die der Aufrufer schon hält (`spawnArchitecture`).
+    computeAffordanceStrength(bp, aff, t) {
+        if (!aff) aff = this.computeBlueprintAffordances(bp, t);
         const out = {};
         const keys = Object.keys(aff);
         if (keys.length === 0) return out;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         const quality = Math.max(0, Math.min(1, this.computeBlueprintQuality(bp)));
         const precF = 0.5 + 0.5 * quality; // §6.3 — min-Faktor 0.5
         const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -328,7 +333,7 @@ class AnazhRealm_bau_teile {
     // 1. ≥2 Stütz-Parts in der unteren bbox-Hälfte, 2. die SPREIZEN horizontal (keine vertikale Säule —
     // sonst läse ein hoher Baum mit magieleitendem Laub als Reittier), 3. dichte über Schwelle,
     // 4. Antrieb: magieleitung ODER stromleitung über Schwelle.
-    _isMoveable(bp) {
+    _isMoveable(bp, t) {
         // Ein GEWACHSENER Baum/Busch (_grownSpecies) ist verwurzelt, nie Fahrzeug: gesetz-wahre Kronen
         // spreizen die tiefen Äste über die supportSpreadMin-Schwelle (0.35), die Heuristik allein reicht
         // nicht. Der Marker ist die definitive Wahrheit (Fahrzeuge tragen ihn nie).
@@ -358,7 +363,7 @@ class AnazhRealm_bau_teile {
             const spread = Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW;
             if (spread < T.supportSpreadMin) return false; // schmale Säule (Baum) → kein Fahrzeug
         }
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         if ((tags.dichte || 0) < T.dichteMin) return false;
         const antrieb = Math.max(tags.magieleitung || 0, tags.stromleitung || 0);
         return antrieb >= T.antriebTagMin;
@@ -366,9 +371,9 @@ class AnazhRealm_bau_teile {
 
     // magnifying (Teleskop-Signatur), keine Form-Whitelist: transparent über Schwelle, ≥60 % der Parts
     // auf einer Achse, mindestens 2 Parts darauf.
-    _isMagnifying(bp) {
+    _isMagnifying(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.magnifying;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         if ((tags.transparent || 0) < T.transparentMin) return false;
         const align = this._axialAlignment(bp);
         return align.alignmentRatio >= T.axialAlignmentMin && align.count >= T.minAxialParts;
@@ -377,19 +382,19 @@ class AnazhRealm_bau_teile {
     // focusing — brennfähiges Compound (Brennglas-Signatur).
     // Reine Tag-Sprache: transparent + wärmeleitung. Form irrelevant —
     // jede Geometrie die diese Tag-Kombination trägt kann Licht bündeln.
-    _isFocusing(bp) {
+    _isFocusing(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
     }
 
     // radiating, keine Form-Whitelist: resoniert über Schwelle · radiale Spreizung (alignmentRatio unter
     // radialMax — eine Linie strahlt gerichtet) · ≥ minParts. Hoher resoniert speist zugleich die
     // Symphonie (_lofiNearResonantArchitecture) ohne Extra-Code.
-    _isRadiating(bp) {
+    _isRadiating(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.radiating;
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         if ((tags.resoniert || 0) < T.resoniertMin) return false;
         const align = this._axialAlignment(bp);
         return align.alignmentRatio < T.radialMax;
@@ -398,19 +403,19 @@ class AnazhRealm_bau_teile {
     // broadcasting (Relais-Mast), keine Form-Whitelist: axis "y" + alignmentRatio ≥ alignMin ·
     // stromleitung ODER magieleitung über Schwelle · ≥ minParts. Kein eigener Tick: der Mast VERSTÄRKT
     // die Reichweite eines nahen radiating-Strahlers (siehe _tickRadiatingAffordances).
-    _isBroadcasting(bp) {
+    _isBroadcasting(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
         const align = this._axialAlignment(bp);
         if (align.axis !== "y" || align.alignmentRatio < T.alignMin) return false;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
         return leit >= T.leitfaehigMin;
     }
 
     // balancing (gründet den Ort), keine Form-Whitelist: horizontale Spannweite ≥ vertikale ·
     // ≥ bottomHeavyMin der Parts in der unteren bbox-Hälfte · dichte ≥ dichteMin (1.5) · ≥ minParts.
-    _isBalancing(bp) {
+    _isBalancing(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
         const bbox = this._compoundBBox(bp);
@@ -420,16 +425,16 @@ class AnazhRealm_bau_teile {
         if (spanXZ < spanY * T.wideMin) return false; // breiter als hoch
         const below = this._partsBelowMidline(bp, 0.5).length;
         if (below / bp.parts.length < T.bottomHeavyMin) return false;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         return (tags.dichte || 0) >= T.dichteMin;
     }
 
     // lifting (Auftriebs-Bereich), keine Form-Whitelist: magieleitung ≥ magieMin (1.5) ·
     // dichte ≤ dichteMax (1.0, das Komplement zu balancing) · ≥ minParts. Magie trägt kein Gewicht.
-    _isLifting(bp) {
+    _isLifting(bp, t) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.lifting;
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
-        const tags = this.computeCompoundTags(bp) || {};
+        const tags = t || this.computeCompoundTags(bp) || {};
         if ((tags.magieleitung || 0) < T.magieMin) return false;
         return (tags.dichte || 0) <= T.dichteMax;
     }
