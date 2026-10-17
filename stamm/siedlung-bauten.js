@@ -1285,8 +1285,6 @@ class AnazhRealm_siedlung_bauten {
         return mat;
     }
 
-    // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
-    // recorded und replayed (kein per-Frame-Encode je Draw). Dynamisches (Kreaturen/Wasser/Spieler) bleibt
     // Trägt das Backend Bündel? Nur das WebGPU-Backend implementiert die Bundle-API (beginBundle/finishBundle/addBundle) —
     // auf dem WebGL2-Rückfall wirft eine BundleGroup im Render-Loop. Klassen-Existenz ist blind; das Urteil fällt am
     // BACKEND. Headless: Bundles sind reine Gruppen-Knoten. Leser: die Region-Bündel und die Leib-Hülle (`_leibHuelle`).
@@ -1294,7 +1292,11 @@ class AnazhRealm_siedlung_bauten {
         const r = this.state.renderer;
         return !(r && !r._isHeadlessNull && !(r.backend && r.backend.isWebGPUBackend === true));
     }
-    // DRAUSSEN: im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein. Die Bundles
+
+    // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
+    // recorded und replayed (kein per-Frame-Encode je Draw). Wasser bleibt DRAUSSEN; der Leib jeder Gelenk-Gestalt ist sein
+    // EIGENES Bündel (`_leibHuelle`, sein Stand je Pass `_leibBuendelStand`), nie Bürger einer Region.
+    // Im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein. Die Bundles
     // sind der EINE Weg (04.10. in EINER Welt gegen den direkten Pfad gemessen, echte GPU, Mess-Wiese: Render-CPU p50
     // −1,1 ms im Stand, −0,3 ms im Gehen trotz ~0,8 Neuaufnahmen je Frame, +11 % gezeichnete Frames); ihre Wahrheit
     // (Aufnahme-Stapel, kein Bundle unter einem Override-Stoff) hält `_configureRenderer` am Chokepoint `_renderScene`,
