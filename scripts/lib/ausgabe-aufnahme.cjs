@@ -332,14 +332,15 @@ function uhrHalten() {
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne, bis die Welt steht — in Takten des Spiels, nie in
-// Wanduhr: läuft der Loop, zählt er selbst; ruht er, schaltet sie ihn je Frame und stellt die Kamera des Schusses zurück.
+// Wanduhr: läuft der Loop, zählt er selbst; ruht er, schaltet sie ihn je Frame und stellt Kamera und Stunde des Schusses zurück.
 // Steht sie nach `max` Takten nicht, bricht der Schuss LAUT beim Namen dessen, was baut — ein Bild halb gebauter Welt ist
 // kein Beweis (A8: boden-nah zwischen zwei Sitzungen 1,84 ↔ 2,68 je nach Bau-Stand).
 function weltStehtWarten(max) {
     return (async () => {
         const r = window.anazhRealm;
-        const cam = r.state.camera;
-        const pose = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
+        const st = r.state;
+        const cam = st.camera;
+        const pose = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
         const takte = () => (r._weltStand ? r._weltStand.takte : 0);
         const t0 = takte();
         for (let k = 0; !r._weltSteht() && k < (max || 1800); k++) {
@@ -351,6 +352,12 @@ function weltStehtWarten(max) {
             cam.quaternion.copy(pose[1]);
             if (cam.fov !== pose[2]) (cam.fov = pose[2]), cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
+        }
+        if (st.timeOfDay !== pose[3]) {
+            st.timeOfDay = pose[3];
+            if (st.world) st.world.timeOfDay = pose[3];
+            r._himmelSprung = true; // die Stunde springt zurück, der Himmel mit ihr (wie die Bühne)
+            r._applyDayNightToScene();
         }
         const o = r._weltOffen();
         if (!r._weltSteht())
