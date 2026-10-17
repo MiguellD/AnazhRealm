@@ -1,0 +1,39 @@
+22:52:16 1215d560 GUT ( lauf1 EXIT=0 T2-Index-Wache-rot=0; lauf2 EXIT=0 T2-Index-Wache-rot=0;)
+22:52:16 Gegenprobe main 1215d560: rc=0
+Bisecting: 13 revisions left to test after this (roughly 4 steps)
+[e3dea1a33470a23ffab10d7f8c4c2a95464807fe] WIP D3d: hitch schwingt im Takt der Linse ein, die Werkbank traegt __weltStehtNach, der Puls nennt die Ruhe der Welt [skip ci]
+running bash C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/n1710/bisect-t2.sh
+Bisecting: 6 revisions left to test after this (roughly 3 steps)
+[130ba565548b829573fedc9e7e0ea4d4c6c0ca8e] E2 das Leib-Buendel nach integ-probe (8cf4df15, ohne den Diaet-Schnitt b05a905b, der kamera-treue und post-kette bricht): jede Gelenk-Gestalt zeichnet im Hauptbild als Buendel, der Textur-Abschied nimmt jedes Buendel neu auf - loser Leib-Weg 425 -> 66 us je Takt, Radeon Genesis Third p50 5,9 -> 5,8 ms [ci voll]
+running bash C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/n1710/bisect-t2.sh
+Bisecting: 3 revisions left to test after this (roughly 2 steps)
+[60256641e4201d53e65dd9ca5bde207cf9b60db4] WIP E2: Leib-Buendel GPU-sauber gemessen, Genesis Third p50 5,9 -> 5,8 ms, p95 unveraendert - Ziel nicht erreicht [skip ci]
+running bash C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/n1710/bisect-t2.sh
+Bisecting: 0 revisions left to test after this (roughly 1 step)
+[7f41463d65dc261c5b287e8733362989aa1ee7df] WIP E2: der Leib zeichnet als Buendel (Leib-Huelle), der Stand je Aufnahme folgt der Projektion, der Textur-Abschied nimmt jedes Buendel der Szene neu auf [skip ci]
+running bash C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/n1710/bisect-t2.sh
+Bisecting: 0 revisions left to test after this (roughly 0 steps)
+[b4f0e489638231a40461a68e8a30939681f58c85] WIP E2: Objekt-Gang traegt feste Verweise einmal je Abschnitt, Textur-Bindungen nur bei Wechsel, geteilte Listen mit Stempel [skip ci]
+running bash C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/n1710/bisect-t2.sh
+7f41463d65dc261c5b287e8733362989aa1ee7df is the first bad commit
+commit 7f41463d65dc261c5b287e8733362989aa1ee7df
+Author: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date:   Sat Oct 17 10:31:57 2026 +0200
+
+    WIP E2: der Leib zeichnet als Buendel (Leib-Huelle), der Stand je Aufnahme folgt der Projektion, der Textur-Abschied nimmt jedes Buendel der Szene neu auf [skip ci]
+    
+    Stand: Wrap jeder Gelenk-Gestalt (Mensch, Tier) ist eine BundleGroup (_leibHuelle, _buendelTraegt = das EINE Backend-Urteil auch der Region-Buendel); _leibBuendelStand vergleicht je Aufnahme die Projektion und nimmt nur diese neu auf; _texturAbschied bumpt jedes Buendel der Szene (vorher nur Region: 595 GPU-Meldungen, Himmel fiel aus). Die Diaet-Schnitte 12-14 des Vorgaengers fallen (ohne messbaren Abstand).
+    Naechster Schritt: ABAB in EINER Welt (Genesis/Wiese x Ego/Third), check, playtest:fast, Linse.
+    Rohdaten: C:\Users\micha\AppData\Local\Temp\claude\e2-takt\f1\
+    Beruehrte Methoden: _leibHuelle, _buendelTraegt, _archRegionBundleFor, _leibBuendelStand, _configureRenderer (_renderBundles), _texturAbschied.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ stamm/bild-kosten.js     | 177 ++++++++++++++++++++---------------------------
+ stamm/dirigent-kern.js   |  11 ++-
+ stamm/koerper-leib.js    |  13 +++-
+ stamm/siedlung-bauten.js |  16 ++---
+ 4 files changed, 101 insertions(+), 116 deletions(-)
+bisect run success
+23:15:37 bisect run rc=0
+KETTE ENDE

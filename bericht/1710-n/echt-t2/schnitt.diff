@@ -1,0 +1,41 @@
+diff --git a/scripts/diag-weltbild-frost.cjs b/scripts/diag-weltbild-frost.cjs
+index b6f56f6e..6edfa4f5 100644
+--- a/scripts/diag-weltbild-frost.cjs
++++ b/scripts/diag-weltbild-frost.cjs
+@@ -142,7 +142,8 @@ function pruefRaum(echt) {
+     r.setCameraMode("third");
+     if (echt) {
+         F.wurzel = r.state.scene;
+-        F.leib = r.state.playerMesh;
++        // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
++        Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
+         F.zeichne = async (n) => {
+             const info = rend.info.render;
+             const a = info.calls,
+@@ -1057,21 +1058,15 @@ function pruefRaum(echt) {
+         let ziel = null;
+         window.__frostWand.leib.traverse((o) => {
+             const g = o.geometry;
+-            if (
+-                ziel ||
+-                !o.visible ||
+-                !g ||
+-                !g.index ||
+-                !(g.index.array instanceof Uint16Array) ||
+-                !be.data.has(g.index)
+-            )
+-                return;
+-            if (be.data.get(g.index).buffer) ziel = o;
++            if (ziel || !o.visible || !g || !g.index || !(g.index.array instanceof Uint16Array)) return;
++            if (be.data.has(g.index) && be.data.get(g.index).buffer) ziel = o;
+         });
+         if (!ziel) return null;
+         const vor = r._gpuWache ? r._gpuWache.n : 0;
+-        // genau, was ein fremdes r184-Backend beim Anlegen tut: die geweitete Form zurück in das geteilte Attribut
++        // genau, was ein fremdes r184-Backend beim Anlegen tut: die geweitete Form zurück in das geteilte Attribut. Das Leib-
++        // Bündel (E2) spielt seine schmale Aufnahme ab, bis es neu aufnimmt (Stufe, Sicht, Gerät): der Täter ist diese Aufnahme
+         ziel.geometry.index.array = new Uint32Array(ziel.geometry.index.array);
++        for (let o = ziel; o; o = o.parent) if (o.isBundleGroup === true) o.needsUpdate = true;
+         return { geometrie: ziel.geometry.id, name: ziel.name || ziel.type, vor };
+     });
+     if (!t2) check("T2 der Mensch trägt einen schmalen Index auf der Welt-GPU", false, "kein Ziel");

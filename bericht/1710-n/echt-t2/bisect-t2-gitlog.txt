@@ -1,0 +1,14 @@
+# bad: [25f53923a06231de2b6188a46c7623c57a49df7a] V18.546.17: PFLICHT-OFFEN D faellt - die Klarheit haelt in allen drei Teilen (Doku-Karte jede .md, Zitat-Wand 0 tote Aussagen; Stamm nach Domaene unter der Atlas-Ratsche; scripts/ unter der Decke: groesste Datei 3 934 Z., EIN Stripper, Quelltext-Ratsche 0, 149 Absenzen ueber den EINEN Helfer); dazu D3d/D3e (scripts/ -1 517 Z.), das Leib-Buendel (E2), Reiter + Gefaehrt = EIN Koerper fuer den Kamera-Strahl [ci voll]
+# good: [1215d5606c831433984290343206b14fddb714b2] Reiter + Gefaehrt = EIN Koerper auch fuer den Strahl: der gleitende Arm der Third-Kamera trifft das gerittene Werk nicht mehr - in Third verschwand das Fahrzeug [ci voll]
+git bisect start '25f53923' '1215d560'
+# good: [e3dea1a33470a23ffab10d7f8c4c2a95464807fe] WIP D3d: hitch schwingt im Takt der Linse ein, die Werkbank traegt __weltStehtNach, der Puls nennt die Ruhe der Welt [skip ci]
+git bisect good e3dea1a33470a23ffab10d7f8c4c2a95464807fe
+# bad: [130ba565548b829573fedc9e7e0ea4d4c6c0ca8e] E2 das Leib-Buendel nach integ-probe (8cf4df15, ohne den Diaet-Schnitt b05a905b, der kamera-treue und post-kette bricht): jede Gelenk-Gestalt zeichnet im Hauptbild als Buendel, der Textur-Abschied nimmt jedes Buendel neu auf - loser Leib-Weg 425 -> 66 us je Takt, Radeon Genesis Third p50 5,9 -> 5,8 ms [ci voll]
+git bisect bad 130ba565548b829573fedc9e7e0ea4d4c6c0ca8e
+# bad: [60256641e4201d53e65dd9ca5bde207cf9b60db4] WIP E2: Leib-Buendel GPU-sauber gemessen, Genesis Third p50 5,9 -> 5,8 ms, p95 unveraendert - Ziel nicht erreicht [skip ci]
+git bisect bad 60256641e4201d53e65dd9ca5bde207cf9b60db4
+# bad: [7f41463d65dc261c5b287e8733362989aa1ee7df] WIP E2: der Leib zeichnet als Buendel (Leib-Huelle), der Stand je Aufnahme folgt der Projektion, der Textur-Abschied nimmt jedes Buendel der Szene neu auf [skip ci]
+git bisect bad 7f41463d65dc261c5b287e8733362989aa1ee7df
+# good: [b4f0e489638231a40461a68e8a30939681f58c85] WIP E2: Objekt-Gang traegt feste Verweise einmal je Abschnitt, Textur-Bindungen nur bei Wechsel, geteilte Listen mit Stempel [skip ci]
+git bisect good b4f0e489638231a40461a68e8a30939681f58c85
+# first bad commit: [7f41463d65dc261c5b287e8733362989aa1ee7df] WIP E2: der Leib zeichnet als Buendel (Leib-Huelle), der Stand je Aufnahme folgt der Projektion, der Textur-Abschied nimmt jedes Buendel der Szene neu auf [skip ci]
