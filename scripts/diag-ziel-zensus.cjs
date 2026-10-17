@@ -334,7 +334,7 @@ function rundungProbe() {
             for (const [k, rt] of ziele) {
                 A.copy(alt).multiplyScalar(k);
                 rend.setOutputRenderTarget(rt);
-                r._loopRender(performance.now() / 1000);
+                r._loopRender(); // zur Bild-Uhr (A9)
             }
             aus.einFrame = nf.frameId === f0;
             for (const [, rt] of ziele) {

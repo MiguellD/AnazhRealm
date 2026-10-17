@@ -239,10 +239,7 @@ async function welt() {
         };
         const [x, z] = window.__messWiese;
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-        const offen = () =>
-            (f.pending ? f.pending.size : 0) +
-            (f.warte ? f.warte.length : 0) +
-            (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0);
+        const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
         let stabil = 0,
             last = -1,
             takte = 0;

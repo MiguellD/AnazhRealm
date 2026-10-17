@@ -55,7 +55,10 @@ class AnazhRealm {
         AnazhRealm._wurfEbene();
         // DIE WAHRNEHMUNG VOM ERSTEN TAKT (OMEN 17.10.): die Studio-PORTAL_RENDER_CONFIG lebt in foundry-core (`__terrainCore`), das die
         // Seite selbst lädt — der Wirt trägt sie ab hier, das Buch löst sie durch dieselbe ab; kein Chunk streut mehr ohne Seltenheit.
-        AnazhRealm._studioRenderConfig = AnazhRealm._studioRenderConfig || globalThis.__terrainCore.PORTAL_RENDER_CONFIG;
+        AnazhRealm._studioRenderConfig =
+            AnazhRealm._studioRenderConfig || globalThis.__terrainCore.PORTAL_RENDER_CONFIG;
+        // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
+        this._bildZeit = 0;
         this.state = {
             // ### Kern ###
             renderer: null,
@@ -130,14 +133,14 @@ class AnazhRealm {
             voxelRebuildAttempts: null,
             skybox: null,
             // Live-Uniforms der TSL-Skybox (time, himmelTint, cloudCover), init in createGalaxySkybox();
-            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopSkyboxZeit.
+            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopRender (time aus _bildZeit).
             skyboxUniforms: null,
             // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
             // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
-            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxZeit (time) +
+            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopRender (time aus _bildZeit) +
             // _dayNightApplyWaterMaterials (sunDir, light).
             hydroSurfaceUniforms: null,
             // Defer-Queue für GPU-Disposals. Ein Set, damit geteilte Materials (z. B. ein Compound mit EINEM
@@ -1522,7 +1525,7 @@ class AnazhRealm {
     // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
     // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
-    // Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
     // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
     _leuchtTakt() {
@@ -1548,6 +1551,8 @@ class AnazhRealm {
                 plaetze: [],
             });
         const cp = cam.position;
+        // Wahl-Takt und Blende sind ein GANG zu ihrem Fixpunkt (ein, aus), keine Phase des Bilds: sie gehen mit der Wanduhr
+        // wie das Laden — unter der stehenden Bild-Uhr der Bühne (A9) blendete sonst keine Quelle je ein
         const jetzt = performance.now() / 1000;
         const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
         pool.uhr = jetzt;
@@ -1580,7 +1585,7 @@ class AnazhRealm {
             pool.blende[frei] = Math.min(1, schritt);
         }
         const c = this._leuchtC || (this._leuchtC = new THREE.Color());
-        const t = this._windZeit();
+        const t = this._bildZeit; // das Flackern auf der Bild-Uhr (A9)
         pool.plaetze.length = 0;
         for (let k = 0; k < H.length; k++) {
             const q = H[k];
@@ -1635,7 +1640,7 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
-    // DIE STÄRKE einer Quelle zur Wind-Zeit t (K11): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
     _leuchtStaerke(q, t) {
         const L = q.L;
         const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
@@ -1665,7 +1670,7 @@ class AnazhRealm {
     // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
     _leuchtQuellen(x, y, z, R, F) {
         const out = [];
-        const t = this._windZeit();
+        const t = this._bildZeit; // das Flackern auf der Bild-Uhr (A9)
         const kugel = F ? this._leuchtKugel || (this._leuchtKugel = new THREE.Sphere()) : null;
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);

@@ -67,7 +67,7 @@ function zielZensus(k) {
             erst = await window.__erstRuhe(
                 () => {
                     if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                    r._loopRender(performance.now());
+                    r._loopRender();
                 },
                 k,
                 "der Zensus"

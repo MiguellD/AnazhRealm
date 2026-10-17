@@ -148,8 +148,8 @@ function probe(selbsttest) {
     };
     // jede Kaskade rendert UND legt ihre Box frisch (die Box-Messungen messen den Fit, nicht den Halt des Takts)
     const alleNeu = () => {
-        csm._anazhFit = [];
-        csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = true)));
+        csm.lights.forEach((l) => (l.shadow.autoUpdate = false));
+        r._schattenAlleNeu();
     };
     const S = r._kaskadenSchmier();
     // Kamera der Kaskade so, wie `renderShadow` sie stellt (updateMatrices), dann ihr Frustum.

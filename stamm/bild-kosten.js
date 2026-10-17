@@ -1643,12 +1643,8 @@ class AnazhRealm_bild_kosten {
         // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
         // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
         // das Bild noch eine halbe Sekunde lang.
-        if (!z.ort) z.ort = new THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
-        const ox = z.ort.x,
-            oy = z.ort.y,
-            oz = z.ort.z;
-        z.ort.setFromMatrixPosition(cam.matrixWorld);
-        z.sprung = z.neu || Math.hypot(z.ort.x - ox, z.ort.y - oy, z.ort.z - oz) > AnazhRealm.ZEIT_SPRUNG_M;
+        const e = cam.matrixWorld.elements;
+        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;
@@ -1656,13 +1652,26 @@ class AnazhRealm_bild_kosten {
         z.R.value.copy(z.jetzt).invert().premultiply(z.vor);
     }
 
+    // DER SPRUNG DES AUGES (K68, A9-n2) — EIN Maß für jedes Gedächtnis des Blicks: springt das Auge seit dem letzten Blick des
+    // Halters `h` weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), gilt sein Gedächtnis nicht mehr — die Geschichte der
+    // zeitlichen Auflösung beginnt neu, jede Stufen-Hysterese der Nah-Sätze wählt frisch aus dem Jetzt. Der erste Blick springt.
+    _augeSprung(h, x, y, z) {
+        const sprung = h.augeX == null || Math.hypot(x - h.augeX, y - h.augeY, z - h.augeZ) > AnazhRealm.ZEIT_SPRUNG_M;
+        h.augeX = x;
+        h.augeY = y;
+        h.augeZ = z;
+        return sprung;
+    }
+
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
-    // echten Leser.
+    // echten Leser, und jede Kaskade legt ihre Box frisch aus dem Blick, der jetzt gilt (A9-n2: der Halt des Takts und die
+    // Größen-Hysterese trugen die Box des Boots in den Schuss — Erst- und Zweit-Boot zeichneten verschiedene Karten).
     _schattenAlleNeu() {
         const csm = this.state.csmNode;
         const dl = this.state.directionalLight;
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
         for (const l of lichter) if (l.shadow) l.shadow.needsUpdate = true;
+        if (csm && csm._anazhFit) csm._anazhFit.length = 0;
     }
 
     // ═══ DIE KASKADEN-BOX (W7) ═══

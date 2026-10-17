@@ -971,7 +971,7 @@ class AnazhRealm_bild_sicht {
         // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Schaum aus dem Gesetz, Blinn-Phong-Spec, Fresnel-
         // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aWave, aDepth, aSlope (float). Live-Uniforms in
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
-        // _loopSkyboxZeit (time) + _dayNightApplyWaterMaterials (sunDir, light).
+        // _loopRender (time aus _bildZeit) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
         const {
             uniform,

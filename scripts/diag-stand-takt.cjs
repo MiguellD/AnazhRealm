@@ -468,11 +468,8 @@ const server = statikServer();
                         if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
                     }
                 };
-                const foundryOffen = () => {
-                    const f = r._foundry;
-                    return (f && f.pending ? f.pending.size : 0) + (f && f.warte ? f.warte.length : 0);
-                };
-                // einschwingen: der Ring steht, kein Worker-Auftrag offen, die Foundry-Schlange leer
+                // einschwingen: der Ring steht, und nichts baut mehr (A9 `_weltOffen`: Chunks, die Foundry und die Schlange des
+                // Walds samt ihren Pflanz-Gängen — K69: sie plant im Takt, solange sie plant, weckt ihre Regung die Fege-Takte)
                 const schwinge = async (max) => {
                     let stabil = 0,
                         last = -1;
@@ -484,14 +481,8 @@ const server = statikServer();
                             stabil = 0;
                             last = sz;
                         }
-                        // offen ist, was die Welt noch baut: Chunks, die Foundry und die Schlange des Walds samt ihren
-                        // Pflanz-Gängen (K69: sie plant im Takt — solange sie plant, weckt ihre Regung die Fege-Takte)
-                        const offen =
-                            (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
-                            foundryOffen() > 0 ||
-                            (r._waldPlanSchlange && r._waldPlanSchlange.size > 0) ||
-                            (r._waldPflanzWarten && r._waldPflanzWarten.size > 0);
-                        if (i > 60 && stabil > 80 && !offen) break;
+                        const o = r._weltOffen();
+                        if (i > 60 && stabil > 80 && o.chunks + o.foundry + o.wald === 0) break;
                         if (i % 5 === 0) await pause(10);
                     }
                     return last;
@@ -1333,18 +1324,16 @@ const server = statikServer();
                 // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
                 {
                     const p = st.playerMesh.position;
-                    const schlange = () =>
-                        (r._waldPlanSchlange ? r._waldPlanSchlange.size : 0) +
-                        (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0);
+                    const o = () => r._weltOffen(); // was die Welt noch baut (A9): die Schlange des Walds und die Foundry
                     let i = 0;
                     for (; i < 2000; i++) {
-                        if (schlange() === 0 && foundryOffen() === 0 && r._streuWartet(p) === 0) break;
+                        if (o().wald + o().foundry === 0 && r._streuWartet(p) === 0) break;
                         takt();
                         if (i % 10 === 0) await pause(5);
                     }
                     const warten = [];
                     r._streuWartet(p, warten);
-                    aus.nachschub = { takte: i, schlange: schlange(), foundry: foundryOffen(), warten };
+                    aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
                 }
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;

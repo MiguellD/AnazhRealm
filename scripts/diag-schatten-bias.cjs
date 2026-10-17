@@ -684,7 +684,7 @@ async function probe(cfg) {
             biasAnwenden();
             r._schattenAlleNeu();
             if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender(performance.now());
+            r._loopRender();
             await sleep(50);
             if (i >= 5 && (!E || E.offen.size === 0)) break;
         }

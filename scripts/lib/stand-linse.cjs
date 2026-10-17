@@ -215,14 +215,12 @@ function standLauf(k) {
         const aus = { phasen: {}, folge: [] };
         try {
             await sleep((k.ein || 5) * 1000);
-            const zustand = () => {
-                const f = r._foundry;
-                return [
+            const zustand = () =>
+                [
                     st.voxelChunks ? st.voxelChunks.size : 0,
-                    (f && f.pending ? f.pending.size : 0) + (f && f.warte ? f.warte.length : 0),
+                    r._weltOffen().foundry, // die Foundry, wie das Wort „die Welt steht" sie zählt (A9)
                     (r._impostorBakeQueue || []).length + (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0),
                 ].join("|");
-            };
             const t0 = performance.now();
             let vor = zustand(),
                 ruhigSeit = performance.now();
