@@ -8,15 +8,12 @@
 //                     oder in den Werkstatt-Dateien des Stamms (am Regler-Glied) — der EINE Generator ist AnazhHuelle.regler
 //   H2 Brücken-Kopie  eine eigene ready-Meldung (`type: "ready"`) oder ein Element-Adapter (`op[0]` je Element des
 //                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
-//   H3 Umstieg        jede umgestiegene Welt lädt ../huelle/huelle.js und ruft die Brücke; jedes Studio dazu Regler,
-//                     Sitzung und Kosten-Leiste; die Werkstatt ruft DENSELBEN Generator (kein Zwilling); das Gelände-Studio
-//                     (worlds/gelaende/studio.js, ein Panel über der Welt-Engine) ruft Regler, Sitzung und Kosten-Leiste
-//                     der Hülle, die die Heimat VOR ihm lädt
-//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) zeigt den Ofen-
-//                     Körper: es lädt foundry-core, baut über BAKERS_BY_KIND.<kind> und nie einen eigenen Leib (bauTier ·
-//                     bauMensch · morphAuf · fellStreu · haarStreu · kleidZonen · surfaceNets in der Shell — K45: das tetrapoda-
-//                     Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das koerperstudio-Labor 332 645 △ gegen
-//                     40 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT. Keine Ausnahme.
+//   H3 Umstieg        (D3: die Text-Präsenz fiel) die Brücke beweist gate:portal-konformanz je Betreten (readyEcho), Regler,
+//                     Sitzung und Kosten-Leiste je Studio zählt das Bild (--bild: Schieber gesamt == Schieber der Hülle)
+//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) baut nie einen
+//                     eigenen Leib (bauTier · bauMensch · morphAuf · fellStreu · haarStreu · kleidZonen · surfaceNets in der
+//                     Shell — K45: das tetrapoda-Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das
+//                     koerperstudio-Labor 332 645 △ gegen 40 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT.
 //   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
 //                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
 //                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
@@ -26,9 +23,8 @@
 //
 //   node scripts/diag-studio-huelle.cjs --selftest   die Täter eingespielt (ein Hand-Regler in der garage, eine eigene
 //                                                    ready in der schmiede, der Element-Adapter in der klang, ein
-//                                                    Werkstatt-Schieber im Stamm, die fachwerk ohne Kosten-Leiste, ein
-//                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor,
-//                                                    das terrain-Labor ohne Sitzung)
+//                                                    Werkstatt-Schieber im Stamm, ein eigener Leib im Ofen-Labor, ein
+//                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor)
 //                                                    → jede Wand rot beim Namen
 //   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H5
 //   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
@@ -160,56 +156,15 @@ function pruefe(karte) {
         zahl.elementAdapter += nE;
         if (nE) rot.push(`H2 ${rel}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
-    // H3 — der Umstieg
-    for (const id of [...STUDIOS, ...NEBENWELTEN]) {
-        const html = karte[`worlds/${id}/index.html`] || "";
-        const js = Object.entries(karte)
-            .filter(([r]) => r.startsWith(`worlds/${id}/`) && r.endsWith(".js"))
-            .map(([, t]) => t)
-            .join("\n");
-        if (!/<script src="\.\.\/huelle\/huelle\.js\?v=[0-9.]+"><\/script>/.test(html)) rot.push(`H3 ${id}: lädt ../huelle/huelle.js nicht (mit ?v=)`);
-        if (!/AnazhHuelle\.bruecke\(/.test(js + html)) rot.push(`H3 ${id}: ruft die Brücke der Hülle nicht (AnazhHuelle.bruecke)`);
-        if (!STUDIOS.includes(id)) continue;
-        if (!/<link rel="stylesheet" href="\.\.\/huelle\/huelle\.css\?v=[0-9.]+"/.test(html)) rot.push(`H3 ${id}: lädt die Tokens der Hülle nicht (../huelle/huelle.css)`);
-        for (const [fn, was] of [
-            ["regler", "Regler-Generator"],
-            ["sitzung", "Sitzung (Undo/Redo · Same)"],
-            ["kosten", "Kosten-Leiste je LOD-Stufe"],
-        ])
-            if (!new RegExp(`AnazhHuelle\\.${fn}\\(`).test(js)) rot.push(`H3 ${id}: ohne ${was} (AnazhHuelle.${fn})`);
-    }
-    // H4 — Labor = Welt
+    // H4 — Labor = Welt (Absenz): kein Ofen-Studio baut einen eigenen Leib; den Ofen-Körper zeigt die Kosten-Leiste im Bild (--bild).
     for (const [id, o] of Object.entries(OFEN_STUDIOS)) {
-        const html = karte[`worlds/${id}/index.html`] || "";
         const js = Object.entries(karte)
             .filter(([r]) => r.startsWith(`worlds/${id}/`) && r.endsWith(".js"))
             .map(([, t]) => t)
             .join("\n");
-        if (!/<script src="\.\.\/\.\.\/foundry-core\.js\?v=[0-9.]+"><\/script>/.test(html)) rot.push(`H4 ${id}: lädt foundry-core nicht (der EINE Bäcker der Welt)`);
-        if (!new RegExp(`BAKERS_BY_KIND\\.${o.kind}\\(`).test(js)) rot.push(`H4 ${id}: baut nicht über BAKERS_BY_KIND.${o.kind} (das Labor zeigt den Ofen-Körper)`);
         const eigen = js.match(o.eigenbau) || [];
         if (eigen.length) rot.push(`H4 ${id}: baut einen eigenen Leib (${[...new Set(eigen.map((x) => x.replace(/\s+/g, "")))].join(" · ")}) — ein Zwilling des Ofen-Körpers`);
     }
-    // das Gelände-Studio: Regler, Sitzung und Kosten-Leiste der Hülle, die die Heimat VOR ihm lädt
-    const gel = karte[GELAENDE] || "";
-    for (const [fn, was] of [
-        ["regler", "Regler-Generator"],
-        ["sitzung", "Sitzung (Undo/Redo · Same)"],
-        ["kosten", "Kosten-Leiste je LOD-Stufe"],
-    ])
-        if (!new RegExp(`AnazhHuelle\\.${fn}\\(`).test(gel)) rot.push(`H3 gelaende: ohne ${was} (AnazhHuelle.${fn})`);
-    const heim = karte["index.html"] || "";
-    const iH = heim.indexOf('src="worlds/huelle/huelle.js?v=');
-    const iG = heim.indexOf('src="worlds/gelaende/studio.js?v=');
-    if (iG >= 0 && !(iH >= 0 && iH < iG)) rot.push("H3 gelaende: die Heimat lädt worlds/huelle/huelle.js nicht vor worlds/gelaende/studio.js");
-    const werkstatt = Object.entries(karte)
-        .filter(([r]) => WERKSTATT.has(r))
-        .map(([, t]) => t)
-        .join("\n");
-    const generatorRufe = zaehl(werkstatt, /AnazhHuelle\.regler\(/g);
-    if (generatorRufe < 2) rot.push(`H3 Werkstatt (${[...WERKSTATT].join(", ")}): ruft den Generator ${generatorRufe}× (Soll: Rezept-Regler UND Studio-Regler über AnazhHuelle.regler)`);
-    if (!/<script src="worlds\/huelle\/huelle\.js\?v=[0-9.]+" defer><\/script>/.test(karte["index.html"] || ""))
-        rot.push("H3 index.html: die Heimat lädt worlds/huelle/huelle.js nicht vor dem Stamm");
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -293,13 +248,6 @@ function selbsttest() {
             soll: /^H2 worlds\/klang\/klang\.js: Element-Adapter/,
         },
         {
-            name: "H3 die fachwerk ohne Kosten-Leiste",
-            rel: "worlds/fachwerk/fachwerk.js",
-            vor: "AnazhHuelle.kosten(",
-            nach: "AnazhHuelle.__kostenFort(",
-            soll: /^H3 fachwerk: ohne Kosten-Leiste/,
-        },
-        {
             name: "H4 das tetrapoda-Labor baut seinen eigenen Leib (bauTier + Fell-Streu)",
             rel: "worlds/tetrapoda/tetrapoda.js",
             vor: "BAKERS_BY_KIND.kreatur(",
@@ -307,25 +255,11 @@ function selbsttest() {
             soll: /^H4 tetrapoda: baut einen eigenen Leib \((?:fellStreu\( · bauTier\(|bauTier\( · fellStreu\()\)/,
         },
         {
-            name: "H4 das tetrapoda-Labor ohne den Bäcker der Welt (foundry-core)",
-            rel: "worlds/tetrapoda/index.html",
-            vor: "<script src=\"../../foundry-core.js?v=",
-            nach: "<script src=\"../../foundry-zwilling.js?v=",
-            soll: /^H4 tetrapoda: lädt foundry-core nicht/,
-        },
-        {
             name: "H4 das koerperstudio-Labor baut seinen eigenen Menschen (bauMensch + Haar-Streu)",
             rel: "worlds/koerperstudio/koerperstudio.js",
             vor: "BAKERS_BY_KIND.koerper(",
             nach: "KC.bauMensch(F);KC.haarStreu(params);BAKERS_BY_KIND.koerper(",
             soll: /^H4 koerperstudio: baut einen eigenen Leib \((?:bauMensch\( · haarStreu\(|haarStreu\( · bauMensch\()\)/,
-        },
-        {
-            name: "H4 das koerperstudio-Labor ohne den Bäcker der Welt (foundry-core)",
-            rel: "worlds/koerperstudio/index.html",
-            vor: '<script src="../../foundry-core.js?v=',
-            nach: '<script src="../../foundry-zwilling.js?v=',
-            soll: /^H4 koerperstudio: lädt foundry-core nicht/,
         },
         {
             name: "H1 ein Hand-Regler im Gelände-Studio",
@@ -342,24 +276,10 @@ function selbsttest() {
             soll: /^H2 worlds\/terrain\/phytogenesis\.js: 1× eine eigene ready/,
         },
         {
-            name: "H3 das terrain-Labor ohne Sitzung",
-            rel: "worlds/terrain/phytogenesis.js",
-            vor: "AnazhHuelle.sitzung(",
-            nach: "AnazhHuelle.__sitzungFort(",
-            soll: /^H3 terrain: ohne Sitzung/,
-        },
-        {
-            name: "H3 das Gelände-Studio ohne Kosten-Leiste",
-            rel: GELAENDE,
-            vor: "AnazhHuelle.kosten(",
-            nach: "AnazhHuelle.__kostenFort(",
-            soll: /^H3 gelaende: ohne Kosten-Leiste/,
-        },
-        {
             name: "H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)",
             rel: "worlds/garage/garage.js",
-            vor: "AnazhHuelle.bruecke(",
-            nach: "/* ein neuer Look */ AnazhHuelle.bruecke(",
+            vor: /$/, // ankerfrei: ein Kommentar am Ende der Quelle
+            nach: "\n/* ein neuer Look */",
             soll: /^H5 garage: das Panorama ist veraltet/,
         },
         {

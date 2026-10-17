@@ -45,66 +45,15 @@ function check(name, ok, detail) {
 }
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
-// Nachlese-Welle — die STATISCHEN Auto-Dorf-Gesetze (kommentar-gestrippt, die
-// V18.267-Falle): Reservierung + Γ5-Stream + die EINE Slot-Quelle + Headless-Ruhe.
-const stripComments = stammLib.ohneKommentare;
+// Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random
+// zwischen `_autoSettlementCellInfo` und `_tickAutoSettlement`. Die Gesetze selbst (Reservierung, Strom des Welt-Seeds, die
+// EINE Slot-Quelle, Headless-Ruhe, ov-Stempel, Erlebnis-Schichten) fahren Teil B und C im Verhalten.
 function autoStaticLaws(anazhSrc) {
-    const nc = stripComments(anazhSrc);
-    return [
-        [
-            // DORF-ERLEBNIS (17.07.) — das Band wandert MIT dem Gesetz: die
-            // Reservierung trägt jetzt das Rebuild-Gedächtnis {seed,nH,x,z}
-            // (Wege-Streifen über Reload) statt der nackten 1 — truthy bleibt.
-            "C-S1: _autoSettlementSpawnCell RESERVIERT (settlementCells[key] = {seed,nH,x,z} — das Spawn-einmal- + Rebuild-Gedächtnis)",
-            /settlementCells\[key\] = \{ seed:/.test(nc),
-        ],
-        [
-            'C-S2: die Zell-Wahrheit zieht aus dem ":dorf"-Stream (Γ5, kein Math.random im Auto-Pfad)',
-            /:dorf:/.test(nc) &&
-                (() => {
-                    const k = stammLib.kopf(nc, "_autoSettlementCellInfo");
-                    const i = k < 0 ? -1 : k + 5;
-                    const j = i >= 0 ? nc.indexOf("_tickAutoSettlement(", i) : -1;
-                    return i >= 0 && j > i && !/Math\.random/.test(nc.slice(i, j));
-                })(),
-        ],
-        [
-            "C-S3: der Tick platziert durch DIE EINE Slot-Quelle (_spawnSettlementSlot — kein Parallel-Platzierer)",
-            /_tickAutoSettlement\([^)]*\) \{[\s\S]{0,4000}_spawnSettlementSlot\(/.test(nc),
-        ],
-        [
-            "C-S4: der Auto-Zug ruht headless (Null-Renderer-Wand + __anazhAutoSettlement-Hook)",
-            /_isHeadlessNull\) return;/.test(nc) && /__anazhAutoSettlement/.test(nc),
-        ],
-        [
-            // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.): das Slot-Rezept (ov)
-            // reist als Guss-Stempel in den Spawn — die Optik baut aus DERSELBEN
-            // hp-Wahrheit wie Blocker/ext. Ohne diese Zeile ist das Dorf ein
-            // Kultur-Default-Klonfeld (der Riss).
-            "C-S5: _spawnSettlementSlot reicht slot.ov als studioOv (Optik == Plan, kein Kultur-Default-Klon)",
-            /studioOv: slot\.ov/.test(nc),
-        ],
-        [
-            // SCHICHT-VOLLENDUNG (18.07.): die Hof-Bäume + Marktstände des
-            // Exports heben durch den EINEN Chokepoint (Orchestrierung, kein
-            // Parallel-System), Zäune durch den Zaun-Pool, Wege + Äcker durch die Wege-Karte (V18.530: Boden).
-            "C-S6: der Erlebnis-Hebel konsumiert trees/staende (spawnArchitecture) + fences (Zaun-Pool) / felder (Wege-Karte)",
-            (() => {
-                const k = stammLib.kopf(nc, "_spawnSettlementErlebnis");
-                const i = k < 0 ? -1 : k + 5;
-                const j = i >= 0 ? nc.indexOf("_spawnSettlementFromExport(", i) : -1;
-                const erlebnis = i >= 0 && j > i ? nc.slice(i, j) : "";
-                return (
-                    /plan\.trees/.test(erlebnis) &&
-                    /baum_/.test(erlebnis) &&
-                    /plan\.staende/.test(erlebnis) &&
-                    /marktstand_dorf/.test(erlebnis) &&
-                    /plan\.fences/.test(nc) &&
-                    /plan\.felder/.test(nc)
-                );
-            })(),
-        ],
-    ];
+    const nc = stammLib.ohneKommentare(anazhSrc);
+    const k = stammLib.kopf(nc, "_autoSettlementCellInfo");
+    const i = k < 0 ? -1 : k + 5;
+    const j = i >= 0 ? nc.indexOf("_tickAutoSettlement(", i) : -1;
+    return [["C-S2: kein Math.random im Auto-Dorf-Pfad (Γ5; den Strom des Welt-Seeds fährt C1)", i >= 0 && j > i && !/Math\.random/.test(nc.slice(i, j))]];
 }
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
@@ -819,28 +768,6 @@ const FIXTURES = [
         const b = JSON.parse(JSON.stringify(a));
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
-        // V3 (Nachlese-Welle): die Auto-Dorf-Struktur-Gesetze feuern auf Injektion.
-        const anazhSrcST = stammLib.text(root);
-        const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
-        check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
-        const broken1 = stammLib.ersetze(anazhSrcST, "_autoSettlementSpawnCell", "settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
-        const cs1 = autoStaticLaws(broken1).find((l) => l[0].startsWith("C-S1"));
-        check("Selbst-Test 4: Reservierung entfernt -> C-S1 feuert", cs1 && cs1[1] === false);
-        const broken2 = anazhSrcST.replace(
-            /_spawnSettlementSlot\(q\.plan\.slots/g,
-            "_meinParallelPlatzierer(q.plan.slots"
-        );
-        const cs3 = autoStaticLaws(broken2).find((l) => l[0].startsWith("C-S3"));
-        check("Selbst-Test 5: Parallel-Platzierer injiziert -> C-S3 feuert", cs3 && cs3[1] === false);
-        // V4 (HAUS-DOPPELBAU): der ov-Stempel entfernt -> C-S5 feuert (der
-        // Doppelbau-Riss kann nicht still wiederkehren).
-        const broken3 = anazhSrcST.replace(/studioOv: slot\.ov/g, "/* ov verworfen */");
-        const cs5 = autoStaticLaws(broken3).find((l) => l[0].startsWith("C-S5"));
-        check("Selbst-Test 6: ov-Stempel entfernt -> C-S5 feuert", cs5 && cs5[1] === false);
-        // V5 (SCHICHT-VOLLENDUNG): der Baum-Konsum entfernt -> C-S6 feuert.
-        const broken4 = anazhSrcST.replace(/plan\.trees/g, "planXtrees");
-        const cs6 = autoStaticLaws(broken4).find((l) => l[0].startsWith("C-S6"));
-        check("Selbst-Test 7: plan.trees-Konsum entfernt -> C-S6 feuert", cs6 && cs6[1] === false);
         // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
         // dem Grund und ein Haus ohne Weg fallen beim Namen; das Verdikt nennt jede verfehlte Zahl.
         const haus = (x, z, y) => ({
@@ -1565,6 +1492,42 @@ const FIXTURES = [
         const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
+        // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — die Zahl der Rufe
+        const ruft = (wer, methode, lieferer, name, args) => {
+            const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
+            const echt = lieferer[name];
+            let n = 0;
+            lieferer[name] = function (...x) {
+                n++;
+                return echt.apply(this, x);
+            };
+            try {
+                wer[methode](...args);
+            } catch (_e) {
+                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
+            } finally {
+                if (eigen) lieferer[name] = echt;
+                else delete lieferer[name];
+            }
+            return n;
+        };
+        // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, die Zäune laufen über den
+        // Zaun-Pool, die Äcker in die Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne). Die Probe räumt ihre Bauten.
+        const erlebnis = (p, key) => {
+            const n0 = r.state.architectures.length;
+            const wk = r._wegeKarteEnsure();
+            const b0 = wk.siedlungen.length;
+            const zaeune = ruft(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
+            const neu = r.state.architectures.slice(n0);
+            neu.forEach((e) => r.removeArchitecture(e));
+            const aecker = wk.siedlungen.slice(b0).some((b) => b.formen.some((fo) => fo.kanal === 1));
+            const plan_ = [p.trees, p.staende, p.fences, p.felder].map((x) => (x || []).length).join("/");
+            return { baeume: neu.filter((e) => e.type.indexOf("baum_") === 0).length, staende: neu.filter((e) => e.type === "marktstand_dorf").length, zaeune, aecker, plan: plan_ };
+        };
+        // Die Stände stehen nur auf einem Markt-Platz; der Plan des Samens 7 hat keinen — zwei Stände an Hof-Baum-Plätzen des Plans.
+        res.erlebnis = v2 ? erlebnis(Object.assign({}, v2, { staende: (v2.trees || []).slice(0, 2).map((t) => ({ x: t.x, z: t.z })) }), "__probe") : null;
+        res.planKern = [plan.kernel, (plan.staende || []).length];
+        res.erlebnisLeer = v2 ? erlebnis(Object.assign({}, v2, { trees: [], staende: [], fences: [], felder: [] }), "__probe2") : null;
         // DORF-IN-TERRAIN — der Footprint reist als entry.fundament (der Grundriss der Wände und des Erdbaus eines Altstands);
         // das Podest fiel mit dem Erdbau (K10): keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
@@ -1586,29 +1549,33 @@ const FIXTURES = [
         const srcHier = baueHier
             ? window.__codeOf(baueHier.build)
             : "";
-        res.gammaHier = /_bauSame\(/.test(srcHier) && !/Math\.random/.test(srcHier);
-        res.gammaStream =
-            /_bauSame\("stadt"\)/.test(src) &&
-            !/Math\.random/.test(src) &&
-            /:\$\{art\}:/.test(srcSame) &&
-            !/Math\.random/.test(srcSame);
+        res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0 && !/Math\.random/.test(srcHier);
+        res.gammaStream = ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 && !/Math\.random/.test(src) && !/Math\.random/.test(srcSame);
         // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
         // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel; seit der Gegenprüfung fragt der
         // Slot das EINE Land des Fundaments (`_fundamentLand`: jeder Punkt des `_fundamentRaster` fragt `_landAt`) — dieselbe
         // Probe wie die Wand jedes Werks an der Wurzel.
-        const codeOf = (f) => (window.__codeOf ? window.__codeOf(f) : f.toString());
-        const fl = typeof r._fundamentLand === "function" ? codeOf(r._fundamentLand) : "";
+        const v2s = r._ortPlanSetzen(plan, o1);
+        const n0s = r.state.architectures.length;
+        const pmW = r.state.playerMesh.position;
+        const fpW = { ex: 2, ez: 2, ox: 0, oz: 0 };
         res.waterWall =
-            /_fundamentLand\(/.test(codeOf(r._spawnSettlementSlot)) &&
-            /_fundamentRaster\(/.test(fl) &&
-            /_landAt\(/.test(fl);
+            ruft(r, "_spawnSettlementSlot", r, "_fundamentLand", [v2s.slots[0], o1, r._foundry, { plan: v2s, si: 0 }]) > 0 &&
+            ruft(r, "_fundamentLand", r.constructor, "_fundamentRaster", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0 &&
+            ruft(r, "_fundamentLand", r, "_landAt", [pmW.x, pmW.z, 0, fpW, null, 0]) > 0;
+        r.state.architectures.slice(n0s).forEach((e) => r.removeArchitecture(e));
         // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
         // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
-        res.anchorChokepoint = /this\._siedlungsAnker\(plan/.test(src) && !/_structureSpawnPos/.test(src);
         // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
         //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
         //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
+        const anker = r._siedlungsAnker;
+        let nA = 0;
+        r._siedlungsAnker = function (...a) {
+            nA++;
+            return anker.apply(this, a);
+        };
         try {
             const SG = r.constructor._siedlungGesetz();
             const same = 0x5a5a1234;
@@ -1629,6 +1596,8 @@ const FIXTURES = [
         } catch (e) {
             res.villageNHErr = (e && e.message) || String(e);
         }
+        delete r._siedlungsAnker;
+        res.anchorChokepoint = nA >= 1 && !/_structureSpawnPos/.test(src);
         // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
         res.c = {};
         try {
@@ -1650,6 +1619,14 @@ const FIXTURES = [
             res.c.hashRare = candCount > 0 && candCount < 169; // selten, aber existent (13x13 Zellen)
             const rep = cand ? r._autoSettlementCellInfo(parseInt(cand.key), parseInt(cand.key.split(",")[1])) : null;
             res.c.deterministic = !!(cand && rep && JSON.stringify(cand) === JSON.stringify(rep));
+            const zellen = () => [...Array(169).keys()].map((n) => r._autoSettlementCellInfo((n % 13) - 6, Math.floor(n / 13) - 6)).filter(Boolean).map((z) => z.key + ":" + z.seed).join("|");
+            const wmS = r.state.worldMeta;
+            const s0 = wmS.seed;
+            const z0 = zellen();
+            wmS.seed = (s0 || "anazh-realm-seed") + ":x";
+            const z1 = zellen();
+            wmS.seed = s0;
+            res.c.seedStrom = z0 !== "" && z0 !== z1 && z0 === zellen();
             res.c.spawnClearWall = r._autoSettlementSiteOk(0, 0) === false; // die Warmup-Welt bleibt dorffrei
             res.c.channelLive = r._autoSettlementChannelLive() === true; // der Dispatch-Kanal (M8)
             // C2 — HEADLESS-DEFAULT: Null-Renderer ohne Hook -> der Tick ruht (kein Pending).
@@ -1741,13 +1718,17 @@ const FIXTURES = [
             let ticks = 0;
             let maxPerTick = 0;
             let prevCount = haeuserZahl();
+            const haeuser0 = prevCount;
+            let slotRufe = 0;
             while (r._autoSettlementQueue && ticks < 500) {
-                r._tickAutoSettlement({ x: cand.x, z: cand.z });
+                slotRufe += ruft(r, "_tickAutoSettlement", r, "_spawnSettlementSlot", [{ x: cand.x, z: cand.z }]);
                 const now2 = haeuserZahl();
                 if (now2 - prevCount > maxPerTick) maxPerTick = now2 - prevCount;
                 prevCount = now2;
                 ticks++;
             }
+            res.c.slotRufe = slotRufe;
+            res.c.hausNeu = haeuserZahl() - haeuser0;
             const archAfter = r.state.architectures.length;
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
@@ -2549,9 +2530,16 @@ const FIXTURES = [
         "B: HAUS-DOPPELBAU — der Flatten-Chokepoint liest den Stempel (ov-Hash trennt Kirche von Wohnhaus)",
         out.ovKeysSplit === true
     );
+    const eh = out.erlebnis || {};
+    const el = out.erlebnisLeer || {};
+    check(
+        "B: der Erlebnis-Hebel hebt die Schichten des Plans (Hof-Bäume, Marktstände, Zäune über den Zaun-Pool, Äcker in der Wege-Karte) — ohne sie keine",
+        eh.baeume > 0 && eh.staende > 0 && eh.zaeune > 0 && eh.aecker === true && el.baeume === 0 && el.staende === 0 && el.zaeune === 0 && el.aecker === false,
+        `mit ${JSON.stringify(out.erlebnis)} · ohne ${JSON.stringify(out.erlebnisLeer)} · Plan ${JSON.stringify(out.planKern)}`
+    );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
-    check("B: Γ5 — der Siedlungs-Same zieht aus dem :stadt-Stream (kein Math.random)", out.gammaStream === true);
+    check("B: Γ5 — der Siedlungs-Same zieht aus dem Bau-Strom (`_bauSame` am Ruf, kein Math.random)", out.gammaStream === true);
     check("B: Γ5 — „baue dorf hier“ zieht denselben Bau-Strom (_bauSame, kein Math.random)", out.gammaHier === true);
     check(
         "B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes (nach der Buch-Ankunft, nie der Kern-Default)",
@@ -2706,9 +2694,9 @@ const FIXTURES = [
     for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);
     const c = out.c || {};
     check(
-        "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich, Γ5)",
-        c.hashRare === true && c.deterministic === true,
-        c.err || ""
+        "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich) und zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; Γ5)",
+        c.hashRare === true && c.deterministic === true && c.seedStrom === true,
+        c.err || `seedStrom=${c.seedStrom}`
     );
     check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
     check("C1c: der Dispatch-Kanal lebt (mind. ein Rezept -> settlement, M8)", c.channelLive === true);
@@ -2720,6 +2708,11 @@ const FIXTURES = [
         "C3: die erzwungene Dorf-Zelle materialisiert (Export -> Reservierung -> Häuser)",
         c.planOk === true && c.reserved === true && c.placed >= 1 && c.allHaus === true,
         `placed=${c.placed} ticks=${c.ticks}`
+    );
+    check(
+        "C3a: der Tick setzt jedes Haus durch DIE EINE Slot-Quelle (`_spawnSettlementSlot` am Ruf, kein Parallel-Platzierer)",
+        c.hausNeu >= 1 && c.slotRufe >= c.hausNeu,
+        `${c.hausNeu} Häuser über ${c.slotRufe} Slot-Rufe`
     );
     check(
         "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte)",

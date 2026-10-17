@@ -39,7 +39,7 @@ die Zelle deferriert (`region._deferredFoundry`) + neu gestreamt, NIE ein Gramma
 Baum spawnt, ist es so"). Nur eine WIRKLICH ungemappte Art (kein Foundry-Zwilling, z. B. Understory-
 Farne der Understory-Grammatik) fällt auf die Grammatik-Deko, die dort die einzige Quelle bleibt. Der
 RICHTER (`_growTreeBlueprintRich` → Tags/Physik) + die Understory (`_growTreeBlueprintForSpawn`) bleiben
-load-bearing. **Die Linse:** `gate:no-second-treebuilder` (Null-Renderer + Foundry-ON) tickt die Welt +
+load-bearing. **Die Linse:** der Band `checkBandKeinZweiterBaumbaecker` des vollen Playtests (Null-Renderer + Foundry-ON) tickt die Welt +
 beweist ZAHL-genau: 0 Grammatik-Baum-Gruppen, der Scatter trägt Studio-Presets (Bäume + geroell/Fels).
 
 ### Gesetz 2 — EIN Wuchs

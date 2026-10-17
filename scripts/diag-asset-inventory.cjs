@@ -46,12 +46,9 @@
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 (async () => {
     const selftest = process.argv.includes("--selftest");
@@ -584,23 +581,6 @@ const server = statikServer();
 
     const fails = [];
     for (const x of out.wieseFehl || []) fails.push("Nah-Wiese: " + x);
-    // DIE KENNUNG AN DER QUELLE (Stamm, kommentarfrei): jeder Instanz-Pool der Bau-Methoden entsteht über `_poolKennung`
-    // (auch der Verdopplungs-Pool) — ein Pool, der erst später ins Bild kommt (das Auto-Dorf während der Inventur), trägt
-    // seinen Stempel von Geburt an.
-    {
-        const stamm = stammLib.text(root);
-        for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip"]) {
-            const a = stamm.indexOf(`\n    ${m}(`);
-            const e = a < 0 ? -1 : stamm.indexOf("\n    }\n", a);
-            const body = a < 0 || e < 0 ? "" : stammLib.ohneKommentare(stamm.slice(a, e));
-            const pools = (body.match(/_instanzMesh\(/g) || []).length;
-            const kennung = (body.match(/_poolKennung\(/g) || []).length;
-            console.log(`  Kennung an der Quelle: ${m} — ${pools} Pool-Erzeugung(en), ${kennung} mit _poolKennung`);
-            if (!body) fails.push(`Kennung: ${m} nicht im Stamm gefunden`);
-            else if (!(pools >= 1) || kennung !== pools)
-                fails.push(`Kennung: ${m} erzeugt ${pools} Pool(s), ${kennung} davon mit _poolKennung — ein Pool ohne Identität`);
-        }
-    }
     if (!out.foundryReady) fails.push("Foundry nicht ready (Linse misst die falsche Welt)");
     if (!(out.studioScatterGroups > 0)) fails.push("keine bestückte fscatter:-Gruppe (Linse misst nichts)");
     if (!(out.stampedClasses > 0)) fails.push("keine gestempelte inventar-Klasse in der Szene (Wörterbuch vakuös)");

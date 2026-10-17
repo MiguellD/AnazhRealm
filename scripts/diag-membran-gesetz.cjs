@@ -9,16 +9,13 @@
 //   2. ABLEITUNGS-WAND: membranUniforms(p) == die alten Inline-Formeln der
 //      Shell (hier verbatim nachgerechnet aus deriveGate) für alle 7 Presets
 //      UND einen deterministischen Dial-Fächer (mulberry32-Strom).
-//   3. KONSUM-WAND: die Shell LIEST das Gesetz (MEMBRAN_GESETZ/membranUniforms/
-//      GN-Injektion vorhanden; die kritischen Alt-Literale [13.8-Wellenzahl
-//      etc.] stehen NICHT mehr roh im Shell-Text) UND der Stamm-Leser
-//      (Stamm) konsumiert dieselben Flächen.
+//   3. ABSENZ-WAND: die Alt-Literale der Shell [13.8-Wellenzahl, Puls 1.25,
+//      der Nebel] stehen NICHT mehr roh im Shell-Text.
 //
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -162,25 +159,12 @@ for (const fall of faelle) {
 }
 check(`Ableitungs-Wand: membranUniforms == Alt-Formeln (${faelle.length} Fälle)`, abl.length === 0, abl.slice(0, 3).join(" · "));
 
-// ── Wand 3: KONSUM (Shell + Stamm lesen das Gesetz; Alt-Literale sind raus) ──
+// ── Wand 3: die Alt-Literale sind raus (den Konsum der Welt beweist gate:portal-membran am Verhalten) ──
 const shell = fs.readFileSync(path.join(root, "worlds/portale/porta.js"), "utf8");
-check("Shell liest MEMBRAN_GESETZ", shell.includes("MEMBRAN_GESETZ"));
-check("Shell liest membranUniforms", shell.includes("membranUniforms"));
-check("Shell injiziert per GN(", /GN\(MG\./.test(shell));
 check("Shell: Wellenzahl 13.8 steht nicht mehr roh im Text", !/13\.8/.test(shell));
 check("Shell: Puls 1.25 nur noch als Gesetz", !/Math\.sin\(t\s*\*\s*1\.25\)/.test(shell));
-const stamm = stammLib.text(root);
-check("Stamm konsumiert membranUniforms (Welt-Leser)", stamm.includes("membranUniforms"));
-check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GESETZ"));
-// DER FILM (D8): Shell und Welt lesen die Film-Zahlen (`MEMBRAN_GESETZ.film`) — dieselbe Technik, dieselben Zahlen
-check("Shell liest die Film-Zahlen (MG.film)", /\bMG\.film\b/.test(shell));
-check("Stamm liest die Film-Zahlen (MG.film)", /\bMG\.film\b/.test(stamm));
-// DER NEBEL FIEL (D8): der Bodennebel-Kasten, sein Gesetz und sein Regler — kein Leser, kein Rest (laut beim Namen; die Wand
-// der Altlasten hält jeden Rückkehrer)
-const kern = fs.readFileSync(path.join(root, "porta-core.js"), "utf8");
-check("porta-core: NEBEL_GESETZ · nebelAct · NEBEL_VIS und der Regler fog sind fort", !/NEBEL_GESETZ|nebelAct|NEBEL_VIS|\['fog',/.test(kern));
+// DER NEBEL FIEL (D8): Kasten, Gesetz und Regler hält gate:altlasten beim Namen
 check("porta-core: membranUniforms trägt kein fog", !("fog" in PC.membranUniforms(PC.gateParams(PC.PRESETS.kathedrale))));
-check("Stamm: der Nebel-Kasten ist fort (_nebelMaterialFor · rec.nebel)", !/_nebelMaterialFor|rec\.nebel\b/.test(stamm));
 check("Shell: buildFog ist fort", !/buildFog|fogMat/.test(shell));
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
@@ -203,4 +187,4 @@ if (errs.length) {
     console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
     process.exit(1);
 }
-console.log("\n✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, Shell UND Welt konsumieren dieselben Flächen, der Nebel ist fort.");
+console.log("\n✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, die Alt-Literale der Shell und der Nebel sind fort.");

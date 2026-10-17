@@ -17,11 +17,8 @@
 //   node scripts/diag-reload-treue.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RELOAD_TREUE_PORT || 4459);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -31,26 +28,7 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    console.log("=== RELOAD-TREUE — Quell-Proben (der Guss-Pin lebt im Stamm) ===");
-    const stamm = stammLib.text(root);
-    check(
-        "Q: spawnCreatureAt reicht opts.dialsOv in den Guss (Restore-Pin)",
-        /const gussOv = opts\.dialsOv && typeof opts\.dialsOv === "object" \? opts\.dialsOv : null;/.test(stamm) &&
-            /this\._buildCreatureGroup\(chosenSoul, gussOv \? \{ dialsOv: gussOv \} : undefined\)/.test(stamm)
-    );
-    check(
-        "Q: der Guss friert die wirksame Übergabe ein (group.userData.gussDials, nur wenn aktiv)",
-        /group\.userData\.gussDials = JSON\.parse\(JSON\.stringify\(eff\)\);/.test(stamm)
-    );
-    check(
-        "Q: _serializeCreature trägt gussDials (plain object oder undefined)",
-        /gussDials:\s*\n\s*ud\.gussDials && typeof ud\.gussDials === "object"/.test(stamm)
-    );
-    check(
-        "Q: der Restore validiert die Guss-Dials durch DENSELBEN Kreatur-Validator",
-        /this\._studioUebergabeValidate\("kreatur", \{ gattung: recIdR, s: snap\.gussDials \}\)/.test(stamm)
-    );
-
+    console.log("=== RELOAD-TREUE — der Guss-Pin am Verhalten ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -160,7 +138,16 @@ function check(name, ok, detail) {
         const rows = window.__tetrapodaCore && window.__tetrapodaCore.PARAMS_BY_KIND.kreatur;
         const sizeRow = rows && rows.find((x) => x.id === "size");
         const snapBoese = Object.assign({}, snapA, { gussDials: { size: 9999 } });
+        // der EINE Validator: der Restore klemmt durch _studioUebergabeValidate("kreatur", …), keinen Zwilling (Spion am Ruf)
+        const echtV = r._studioUebergabeValidate;
+        let validiert = 0;
+        r._studioUebergabeValidate = function (art, ...x) {
+            if (art === "kreatur") validiert++;
+            return echtV.call(this, art, ...x);
+        };
         const wolfW = r._restoreCreatureFromSnapshot(snapBoese, "happy");
+        delete r._studioUebergabeValidate;
+        res.w.einValidator = validiert > 0;
         res.w.geclampt = !!(
             wolfW &&
             wolfW.userData.gussDials &&
@@ -207,6 +194,7 @@ function check(name, ok, detail) {
         `(W) ein Riesen-Dial (9999) im Snapshot wird am Restore geclampt (≤ ${out.w.maxSoll}, ist ${out.w.istWert})`,
         out.w.geclampt === true
     );
+    check("(W) der Restore klemmt durch DENSELBEN Kreatur-Validator", out.w.einValidator === true);
     check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {

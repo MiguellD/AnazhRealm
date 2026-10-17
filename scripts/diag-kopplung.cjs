@@ -23,15 +23,12 @@
 //
 // Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm)
 // mit synthetischem Dichtefeld/Wasser-Kontext — die wasser-wahrheit-Disziplin)
-// und trägt ihren SELBST-TEST: der Fix wird per Quell-Patch künstlich
-// deaktiviert (new Function auf der echten Quelle) — die Fixture MUSS dann
+// und trägt ihren SELBST-TEST: der Fix wird an seinem Gesetz abgeschaltet
+// (Strömung null, SLIDE_CLIP_PLANES 0, Hang-Grenze −1) — die Fixture MUSS dann
 // rot sehen. Exit 1 bei jedem Fail; alle Zahlen explizit.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
@@ -54,21 +51,12 @@ const server = statikServer();
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
             { timeout: 120000 }
         );
-        out = await page.evaluate(async (stammDateien) => {
+        out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const AR = r.constructor;
             const o = { fails: [], zahlen: {} };
             const fail = (msg) => o.fails.push(msg);
             const DT = 1 / 60;
-
-            // Quell-Patch-Helfer (Selbst-Test-Disziplin): Methoden-Shorthand → Funktion;
-            // split/join ersetzt ALLE Marker-Vorkommen (vx- UND vz-Zeile).
-            const patchFn = (fn, name, from, to) => {
-                const src = String(fn);
-                if (!src.includes(from)) return null;
-                const patched = src.split(from).join(to);
-                return new Function("AnazhRealm", "THREE", `return ({ ${patched} }).${name};`)(AR, window.THREE);
-            };
 
             // ── Der Bewegungs-Shim: ECHTE `_stepCharacter`/`_loopPlayerMovement` auf
             //    synthetischem Dichtefeld + Wasser-Kontext (reine Welt-Ersatzquelle,
@@ -124,13 +112,12 @@ const server = statikServer();
                 shim._hydroRiverAt = (x, z) => riverAt(x, z);
                 return shim;
             };
-            const runTicks = (shim, n, keys, yaw, stepFn) => {
+            const runTicks = (shim, n, keys, yaw) => {
                 shim.state.keys = keys || {};
                 shim.state.yaw = yaw || 0;
                 let t = 0;
                 for (let i = 0; i < n; i++) {
-                    if (stepFn) stepFn.call(shim, DT, t);
-                    else shim._stepCharacter(DT, t);
+                    shim._stepCharacter(DT, t);
                     shim._loopPlayerMovement(t, DT);
                     t += DT;
                 }
@@ -195,23 +182,20 @@ const server = statikServer();
                 o.zahlen.bootDrift = { x: bp.x, z: bp.z };
                 if (!(bp.x > 0.5))
                     fail(`F1c: schwimmendes Boot driftete nur ${bp.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
-                // Selbst-Test F1: Advektion deaktiviert (k → 0) → der Schwimmer MUSS stehen.
-                const deadStep = patchFn(r._stepCharacter, "_stepCharacter", "= fl.", "= 0 * fl.");
-                if (!deadStep)
-                    fail("F1-Selbsttest: Strömungs-Marker (stromX = fl.x) nicht in `_stepCharacter` (Fix fehlt?)");
-                else {
-                    const sw2 = mkShim(
-                        (x, y) => deepFloor(x, y),
-                        () => 3,
-                        riverX
+                // Selbst-Test F1: die EINE Quelle schweigt (`_waterFlowAt` → null) → der Schwimmer MUSS stehen —
+                // die Drift aus F1a kommt durch die echte Kette `_stepCharacter` → `_waterFlowAt` → `_hydroRiverAt`.
+                const sw2 = mkShim(
+                    (x, y) => deepFloor(x, y),
+                    () => 3,
+                    riverX
+                );
+                sw2._waterFlowAt = () => null;
+                runTicks(sw2, 90, {}, 0);
+                o.zahlen.schwimmerDriftTot = sw2.state.playerMesh.position.x;
+                if (!(Math.abs(sw2.state.playerMesh.position.x) < 0.05))
+                    fail(
+                        `F1-Selbsttest: ohne Strömung driftete der Schwimmer trotzdem (${sw2.state.playerMesh.position.x.toFixed(3)} m)`
                     );
-                    runTicks(sw2, 90, {}, 0, deadStep);
-                    o.zahlen.schwimmerDriftTot = sw2.state.playerMesh.position.x;
-                    if (!(Math.abs(sw2.state.playerMesh.position.x) < 0.05))
-                        fail(
-                            `F1-Selbsttest: deaktivierte Advektion driftete trotzdem (${sw2.state.playerMesh.position.x.toFixed(3)} m)`
-                        );
-                }
             }
 
             // ══ FIXTURE 2 (F2) — GLEITEN STATT VOLLSTOPP ══
@@ -232,10 +216,10 @@ const server = statikServer();
             };
             const yaw45 = Math.PI / 4; // forward = (0.707, 0, 0.707) → 45° auf die Wand
             const intentProj = (p0, p1) => (p1.x - p0.x + (p1.z - p0.z)) / Math.SQRT2;
-            const runWallWindow = (shim, stepFn) => {
-                runTicks(shim, 180, { w: true }, yaw45, stepFn); // Anlauf: sicher an der Wand
+            const runWallWindow = (shim) => {
+                runTicks(shim, 180, { w: true }, yaw45); // Anlauf: sicher an der Wand
                 const p0 = shim.state.playerMesh.position.clone();
-                runTicks(shim, 120, { w: true }, yaw45, stepFn); // Mess-Fenster: 2 s an der Wand
+                runTicks(shim, 120, { w: true }, yaw45); // Mess-Fenster: 2 s an der Wand
                 const p1 = shim.state.playerMesh.position;
                 return { proj: intentProj(p0, p1), x: p1.x, z: p1.z };
             };
@@ -251,23 +235,23 @@ const server = statikServer();
                         `F2a: 45°-Wand-Gleiten aus dem Takt — Absichts-Tempo ${(ratio * 100).toFixed(0)} % der freien Fahrt (soll ~50 %, Band 30–75 %)`
                     );
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
-                // Selbst-Test F2a: Klip-Schleife tot (SLIDE_CLIP_PLANES → 0 Ebenen) →
-                // fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
-                // Kontakt-Lösers (`_wandGleiten`, Welle L: Kapsel 5b und Wagen-Hülle teilen sie) — der Shim
-                // trägt die tote Schleife, der echte `_stepCharacter` ruft sie.
-                const noClip = patchFn(r._wandGleiten, "_wandGleiten", "pl < AnazhRealm.SLIDE_CLIP_PLANES", "pl < 0");
-                if (!noClip) fail("F2a-Selbsttest: SLIDE_CLIP_PLANES-Marker nicht in `_wandGleiten` (Fix fehlt?)");
-                else {
-                    const totShim = mkWallShim();
-                    totShim._wandGleiten = noClip;
-                    const stopped = runWallWindow(totShim);
-                    const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
-                    o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
-                    if (!(deadRatio < 0.1))
-                        fail(
-                            `F2a-Selbsttest: Voll-Stopp glitt trotzdem (${(deadRatio * 100).toFixed(0)} % — die Fixture sähe den alten Bug nicht)`
-                        );
+                // Selbst-Test F2a: das Gesetz der Klip-Schleife auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten` liest es
+                // je Ruf) → fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
+                // Kontakt-Lösers (Welle L: Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
+                const k0 = AR.SLIDE_CLIP_PLANES;
+                AR.SLIDE_CLIP_PLANES = 0;
+                let stopped;
+                try {
+                    stopped = runWallWindow(mkWallShim());
+                } finally {
+                    AR.SLIDE_CLIP_PLANES = k0;
                 }
+                const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
+                o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
+                if (!(deadRatio < 0.1))
+                    fail(
+                        `F2a-Selbsttest: Voll-Stopp glitt trotzdem (${(deadRatio * 100).toFixed(0)} % — die Fixture sähe den alten Bug nicht)`
+                    );
             }
             // (b) STEILHANG: Ebene fällt mit Gradient 2,5 (~68°, Normale ny≈0.37 <
             //     hang.maxSlopeY 0.5, Kern-Gesetz) in +x — ohne Input rutscht der Körper bergab
@@ -287,19 +271,24 @@ const server = statikServer();
                 if (!(sp.x > 0.3))
                     fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
                 if (!(sp.y < 0.4)) fail(`F2b: der Rutsch folgte der Fläche nicht abwärts (y=${sp.y.toFixed(2)})`);
-                // Tests wandern 19.07.: der Marker liest das Kern-Gesetz direkt
-                // (hoisted Konstante hangMaxSlopeY statt State-Feld).
-                const noSlide = patchFn(r._stepCharacter, "_stepCharacter", "gN.y < hangMaxSlopeY", "gN.y < -1");
-                if (!noSlide) fail("F2b-Selbsttest: Steilhang-Marker nicht in `_stepCharacter` (Fix fehlt?)");
-                else {
-                    const stuck = mkSlopeShim();
-                    runTicks(stuck, 120, {}, 0, noSlide);
-                    o.zahlen.steilhangTot = stuck.state.playerMesh.position.x;
-                    if (!(Math.abs(stuck.state.playerMesh.position.x) < 0.05))
-                        fail(
-                            `F2b-Selbsttest: deaktivierter Rutsch rutschte trotzdem (${stuck.state.playerMesh.position.x.toFixed(3)} m)`
-                        );
+                // Selbst-Test F2b: die Hang-Grenze des Kern-Gesetzes auf −1 (`_stepCharacter` liest hang.maxSlopeY je
+                // Schritt über `_bewegungsBlock`) → kein Hang ist steil → der Körper MUSS haften.
+                const B0 = AR._bewegungsBlock;
+                AR._bewegungsBlock = function (k, f) {
+                    const b = B0.call(this, k, f);
+                    return k === "hang" ? Object.assign({}, b, { maxSlopeY: -1 }) : b;
+                };
+                const stuck = mkSlopeShim();
+                try {
+                    runTicks(stuck, 120, {}, 0);
+                } finally {
+                    AR._bewegungsBlock = B0;
                 }
+                o.zahlen.steilhangTot = stuck.state.playerMesh.position.x;
+                if (!(Math.abs(stuck.state.playerMesh.position.x) < 0.05))
+                    fail(
+                        `F2b-Selbsttest: deaktivierter Rutsch rutschte trotzdem (${stuck.state.playerMesh.position.x.toFixed(3)} m)`
+                    );
             }
 
             // ══ FIXTURE 3 (F3) — WIND-RICHTUNG (dot-getriebene Phase) ══
@@ -341,13 +330,13 @@ const server = statikServer();
                 };
                 return s;
             };
-            const evalSway = (shim, wx, wz, localY, fn) => {
+            const evalSway = (shim, wx, wz, localY) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
                 // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Wurzel bei y = 0; Lehre 22: r184 rechnet den
                 // positionNode vor der Instanz-Matrix).
                 mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
-                const res = (fn || r._windSwayOffset).call(shim, mockTSL, {});
+                const res = r._windSwayOffset.call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
             };
             {
@@ -370,23 +359,8 @@ const server = statikServer();
                     fail("F3: Wind +x — zwei Punkte LÄNGS der Windrichtung sind phasengleich (kein Orts-Term?)");
                 if (!eq(aZ, quZ)) fail("F3: Wind +z — die Quer-Paarung folgt der GEDREHTEN Richtung nicht");
                 if (!ne(aZ, laZ)) fail("F3: Wind +z — die Längs-Paarung folgt der GEDREHTEN Richtung nicht");
-                // Selbst-Test F3: uWindDir-Konsum gekappt → Fallback-Konstanten (0.28, 0.21)
-                // sind NICHT quer-invariant → die Quer-Paarung MUSS brechen.
-                const noDir = patchFn(
-                    r._windSwayOffset,
-                    "_windSwayOffset",
-                    "const wd = wu.uWindDir || null;",
-                    "const wd = null;"
-                );
-                if (!noDir) fail("F3-Selbsttest: uWindDir-Marker nicht in `_windSwayOffset` (Fix fehlt?)");
-                else {
-                    const bA = evalSway(sx, 0, 0, 0.8, noDir);
-                    const bQ = evalSway(sx, 0, L, 0.8, noDir);
-                    if (eq(bA, bQ))
-                        fail(
-                            "F3-Selbsttest: ohne uWindDir blieb die Quer-Paarung gleich (die Fixture sähe den alten Baum nicht)"
-                        );
-                }
+                // (der Rollen-Tausch ist der Selbst-Test: ohne uWindDir-Konsum rechneten beide Richtungen dieselben
+                // Fallback-Konstanten, und die Quer-Paarung bräche in einer der beiden)
                 // Die CPU-Richtungs-Quelle: seeded (gleicher Seed = gleicher Wind, anderer
                 // Seed = anderer), langsam (< 0.02 rad/s Drift) und einheitslang.
                 const d10 = r._windDirAt(10);
@@ -423,17 +397,24 @@ const server = statikServer();
                 if (!(nearR.x > nearR0.x + 1e-3)) fail("F4: Halm rechts der Sphäre biegt nicht RADIAL WEG (+x)");
                 if (!(Math.abs(root.x - root0.x) < 1e-9)) fail("F4: die WURZEL biegt sich (hf-Gewichtung fehlt)");
                 if (!(Math.abs(far.x - far0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
-                // CPU-Seite: `_tickGrasBend` füllt Slot 0 mit dem Spieler; tote Slots ruhen.
+                // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus `_windDirAt(t)` und füllt über
+                // `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
                 if (window.THREE && THREE.TSL && r.state.windUniforms) {
                     r._ensureWindCoupling(THREE.TSL);
                     const wu = r.state.windUniforms;
-                    if (wu.uBend && r.state.playerMesh) {
+                    if (wu.uBend && wu.uWindDir && r.state.playerMesh) {
                         const pp = r.state.playerMesh.position;
-                        r._tickGrasBend();
+                        const t = 1234.5;
+                        wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
+                        wu.uWindDir.value.set(0, 0);
+                        r._loopRender(t);
                         const b0 = wu.uBend[0].value;
+                        const wd = r._windDirAt(t);
                         o.zahlen.tick = { x: b0.x, w: b0.w, px: pp.x };
                         if (!(Math.abs(b0.x - pp.x) < 1e-6 && b0.w > 0))
-                            fail(`F4: \`_tickGrasBend\` trägt den Spieler nicht in Slot 0 (x=${b0.x}, w=${b0.w})`);
+                            fail(`F4: der Frame-Tick trägt den Spieler nicht in Slot 0 (x=${b0.x}, w=${b0.w})`);
+                        if (!(wu.uWindDir.value.x === wd.x && wu.uWindDir.value.y === wd.z))
+                            fail("F3: der Frame-Tick (`_loopRender`) speist uWindDir nicht aus `_windDirAt`");
                         const bLast = wu.uBend[wu.uBend.length - 1].value;
                         if (!(bLast.w === 0)) fail("F4: ungenutzte Slots sind nicht aus (w≠0)");
                     } else {
@@ -444,24 +425,57 @@ const server = statikServer();
                 }
             }
 
-            // ══ KONSUM-PROBEN (Lehre 5/6: verifiziere KONSUM, nicht Existenz) ══
+            // ══ KONSUM-PROBEN (Lehre 5/6: der Ruf, nie der Text — der Lieferant zählt, der Leser läuft) ══
             {
-                // der Stamm-Text, wie die Seite ihn lädt: jede Stamm-Datei der EINEN Liste (scripts/lib/stamm.cjs)
-                const src = (await Promise.all(stammDateien.map((p) => fetch(p).then((x) => x.text())))).join("\n");
-                const count = (needle) => src.split(needle).length - 1;
-                if (!String(r.updateCreatures).includes("_waterFlowAt"))
-                    fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
-                if (!String(r._rittSchritt).includes("_afloat"))
-                    fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
-                if (!(count("._ensureWindCoupling(") >= 3))
+                const ruft = (obj, m, prov, key, args) => {
+                    const alt = prov[key];
+                    let n = 0;
+                    prov[key] = function (...a) {
+                        n++;
+                        return alt.apply(this, a);
+                    };
+                    try {
+                        obj[m](...args);
+                    } finally {
+                        delete prov[key];
+                    }
+                    return n;
+                };
+                // die Strömung trägt schwimmende Tiere (`updateCreatures` liest `_waterFlowAt`), Land-Läufer nie
+                const P = r.state.playerMesh.position;
+                const c = r.spawnCreatureAt(P.x + 6, 30, P.z, "happy", "wesen", { precise: true });
+                r._hydroRiverAt = riverX;
+                r._kreaturSchwimmt = () => 3;
+                const imWasser = ruft(r, "updateCreatures", r, "_waterFlowAt", [0.02]);
+                r._kreaturSchwimmt = () => null;
+                const anLand = ruft(r, "updateCreatures", r, "_waterFlowAt", [0.02]);
+                delete r._kreaturSchwimmt;
+                delete r._hydroRiverAt;
+                if (c) r.removeCreature(c);
+                o.zahlen.tierStrom = { imWasser, anLand };
+                if (!(imWasser > 0 && anLand === 0))
                     fail(
-                        `KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_baumWindStoff + Karte sollen DIESELBE Quelle lesen)`
+                        `KONSUM: \`updateCreatures\` liest \`_waterFlowAt\` nicht nur im Wasser (${imWasser}/${anLand})`
                     );
-                if (!(count("_tickGrasBend()") >= 1) || !src.includes("_windDirAt(currentTime)"))
-                    fail("KONSUM: der Frame-Tick speist uWindDir/uBend nicht (`_loopRender`)");
+                // EIN Wind, seine Leser: Gras und Baum-Stoff holen uWindDir aus derselben Quelle `_ensureWindCoupling`
+                if (window.THREE && THREE.TSL) {
+                    const baum = Object.create(r);
+                    baum._baumWindKnoten = {};
+                    const mat = new THREE.MeshStandardNodeMaterial();
+                    const gras = ruft(r, "_windSwayOffset", r, "_ensureWindCoupling", [THREE.TSL, {}]);
+                    const rinde = ruft(baum, "_baumWindStoff", r, "_ensureWindCoupling", [
+                        mat,
+                        "bark",
+                        { ht: 12, delta: 0.3, an: 1 },
+                    ]);
+                    if (!(gras > 0 && rinde > 0))
+                        fail(
+                            `KONSUM: uWindDir hat nicht EINE Quelle (Gras ${gras}, Rinde ${rinde} Rufe von \`_ensureWindCoupling\`)`
+                        );
+                }
             }
             return o;
-        }, stammLib.dateien(root));
+        });
     } catch (e) {
         console.error("LINSE-FEHLER:", e.message);
         out = { fails: [`Harness: ${e.message}`], zahlen: {} };
@@ -473,7 +487,7 @@ const server = statikServer();
     const z = out.zahlen || {};
     if (z.schwimmerDrift)
         console.log(
-            `  F1 Strömung: Schwimmer ${z.schwimmerDrift.x.toFixed(2)} m · Land ${z.landDrift.x.toFixed(4)} m · Boot ${z.bootDrift.x.toFixed(2)} m · k=0 → ${Number(z.schwimmerDriftTot).toFixed(4)} m`
+            `  F1 Strömung: Schwimmer ${z.schwimmerDrift.x.toFixed(2)} m · Land ${z.landDrift.x.toFixed(4)} m · Boot ${z.bootDrift.x.toFixed(2)} m · ohne Strom → ${Number(z.schwimmerDriftTot).toFixed(4)} m · Tier liest den Strom ${JSON.stringify(z.tierStrom)}`
         );
     if (z.klip)
         console.log(

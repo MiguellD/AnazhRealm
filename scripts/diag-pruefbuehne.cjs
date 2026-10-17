@@ -205,13 +205,13 @@ async function s4Probe(page, station, schein) {
 // dazu die Bestrahlung des Pools in 2 m (das EINE Gesetz fachwerk `lichtAbfall`, lineare Farbe nach Luminanz) gegen die der Nacht
 // selbst (`_waagrechtIrradianz`, dieselbe, die die Belichtung liest) und die Fenster-Glut des Zeitplans um Mitternacht und
 // Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
-// im Stamm (jede Methode, die einen beleuchteten Stoff baut, ruft `_leuchtStoff`) UND jedes beleuchteten Stoffs der Szene
-// (`userData.lichtPool`); EIN Punktlicht-Gesetz (nur `_lichtPoolTerm` ruft `_punktLichtBrdf`, kein Szenen-Licht im Stamm); die
+// im Stamm (keine Methode baut einen beleuchteten Stoff ohne Knoten) UND jedes beleuchteten Stoffs der Szene
+// (`userData.lichtPool`); EIN Punktlicht-Gesetz (`_lichtPoolTerm` ruft `_punktLichtBrdf`, kein anderer, kein Szenen-Licht); die
 // Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
 // ihr Licht das Datum ihres Rezepts) leuchtet nachts und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
 // DER HIMMEL FOLGT DEM SPRUNG (K10) misst im Bild-Lauf (`--licht`, `himmelProbe`): der Himmel lebt auf der GPU (D3).
 // `schein` (der Selbsttest): die Feuerstelle und die Laterne tragen kein Emitter-Datum (`_lichtDatum`), ein
-// Bauer `_scheinStoff` baut einen Stoff ohne Pool, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
+// Bauer `_scheinRueckfall` baut im Fang einen Stoff ohne Knoten, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
 // MUSS jeden beim Namen nennen.
 const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
 // das Feuer trägt in 2 m mindestens dieses Vielfache der waagrechten Bestrahlung der Nacht — der Nordstern Fachwerk: nachts hebt
@@ -249,9 +249,6 @@ async function s0Probe(page, station, schein) {
             const P = Object.getPrototypeOf(r);
             if (schein) {
                 r._lichtDatum = () => null;
-                P._scheinStoff = function () {
-                    return new THREE.MeshStandardNodeMaterial({ color: 0xffffff });
-                };
                 // der stille Rückfall unter fremdem Namen: ein Bauer mit Pool, dessen Fang einen Stoff ohne Pool baut
                 P._scheinRueckfall = function () {
                     const T3 = THREE;
@@ -275,13 +272,24 @@ async function s0Probe(page, station, schein) {
                 const c = code(P[n]);
                 if (/new THREE\.PointLight\(/.test(c)) out.bauer.push(n);
                 const bau = [...c.matchAll(LIT)];
-                if (bau.some((b) => !b[2]) || (bau.length && !/this\._leuchtStoff\(/.test(c))) out.ohnePool.push(n);
+                if (bau.some((b) => !b[2])) out.ohnePool.push(n);
                 if (/this\._punktLichtBrdf\(/.test(c)) out.brdf.push(n);
             }
-            if (schein) {
-                delete P._scheinStoff;
-                delete P._scheinRueckfall;
+            if (schein) delete P._scheinRueckfall;
+            // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
+            const echtB = r._punktLichtBrdf;
+            let brdf = 0;
+            r._punktLichtBrdf = function (...x) {
+                brdf++;
+                return echtB.apply(this, x);
+            };
+            try {
+                r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null);
+            } catch (_e) {
+                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             }
+            delete r._punktLichtBrdf;
+            out.poolRuftBrdf = brdf > 0;
             r._setWeather("sunny", "human");
             s.weatherTransition = null;
             // die Uhr springt über den Pfad des Spielers (sein Satz, `setTimeOfDay`): EIN Anwenden des Tags, kein Nachmalen
@@ -428,7 +436,7 @@ async function s0Probe(page, station, schein) {
                     `S0 Bauer ohne Pool: ${out.ohnePool.map((b) => "`" + b + "`").join(", ")} bauen einen beleuchteten Stoff ` +
                         "ohne `_leuchtStoff`"
                 );
-            if (out.brdf.length !== 1 || out.brdf[0] !== "_lichtPoolTerm")
+            if (!out.poolRuftBrdf || out.brdf.some((b) => b !== "_lichtPoolTerm"))
                 out.befunde.push(
                     `S0 Punktlicht-Gesetz: die BRDF eines Punktlichts rufen ${out.brdf.map((b) => "`" + b + "`").join(", ") || "niemand"} ` +
                         "(Soll: nur `_lichtPoolTerm`, das EINE Gesetz)"
@@ -1984,7 +1992,7 @@ function zeige(rep) {
         const s0Rest = {
             laterne: s0B.some((b) => /^S0 Laterne: .*`laterne_dorf`/.test(b)),
             stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
-            bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b) && /`_scheinRueckfall`/.test(b)),
+            bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinRueckfall`/.test(b)),
         };
         selbst = {
             benannt: namen,
