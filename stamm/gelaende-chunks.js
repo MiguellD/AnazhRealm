@@ -2206,7 +2206,7 @@ class AnazhRealm_gelaende_chunks {
                     const e = zelle[i];
                     if (e._blockerFrage === frage) continue;
                     e._blockerFrage = frage;
-                    if (!e.blockerAABBs || !e.position) continue;
+                    if (!e.blockerAABBs || !e.position || this._gerittenesWerk(e)) continue;
                     // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;

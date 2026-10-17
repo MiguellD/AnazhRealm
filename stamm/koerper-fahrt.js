@@ -729,6 +729,15 @@ class AnazhRealm_koerper_fahrt {
         return entry ? this._vehicleProfile(entry) : null;
     }
 
+    // REITER + GEFÄHRT = EIN KÖRPER: das gerittene Werk ist der Leib des Spielers — seine Blocker blocken weder den Spieler
+    // noch seine Strahlen (der gleitende Arm der Third-Kamera, das Fadenkreuz) noch die Ziel-Wahl eines Tiers. Die EINE Frage
+    // aller Leser; bis hierher trugen drei Leser je ihre Kopie, und der Strahl keine: der Arm traf im Ritt den eigenen Wagen,
+    // zog die Kamera an sein Heck (Arm 0,30) und beim Fahren in ihn hinein — in Third verschwand das Fahrzeug.
+    _gerittenesWerk(e) {
+        const id = this.state.player ? this.state.player.mountedArch : null;
+        return id !== null && id !== undefined && !!e && e.id === id;
+    }
+
     mountArchitecture(entry) {
         if (!entry || !entry.affordances || !entry.affordances.moveable) {
             this.log("Mount: Architektur ist nicht fahrbar", "INFO");
@@ -1472,7 +1481,6 @@ class AnazhRealm_koerper_fahrt {
         const ignitions = [];
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
         // Reiter + Gefährt sind EINS.
-        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         // DIE BETROFFENEN (0710-10, Lehre 25): erwärmen kann sich nur, wer in Reichweite eines Brennglases steht — die Plätze um
         // jedes (`_blockerUmPlatz`) —, kühlen nur, wer warm ist (`warm`, die Menge dieses Takts); jeder andere Eintrag ginge
         // ohne Wirkung durch. In der Ordnung des Bestands (die Sätze und das Feuer in derselben Folge) — dieselben Urteile wie
@@ -1498,7 +1506,7 @@ class AnazhRealm_koerper_fahrt {
             const warm = target.heatBuildup > 0;
             if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
-            if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
+            if (this._gerittenesWerk(target)) continue;
             let quelle = null;
             if (punkte.length) {
                 // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein

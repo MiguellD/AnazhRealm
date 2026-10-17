@@ -1286,7 +1286,6 @@ class AnazhRealm_kreatur_leben {
     // Nächste Architektur, deren Bauplan einen Part aus diesem Material trägt. Nur sichtbare (mesh !==
     // null) zählen — Distance-Culling ist die natürliche Reichweite (wie _pickArchitectureAtCrosshair).
     _findNearestArchitectureWithMaterial(fromPos, materialName) {
-        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         if (!fromPos || typeof materialName !== "string" || materialName.length === 0) return null;
         if (!Array.isArray(this.state.architectures)) return null;
         let best = null;
@@ -1297,7 +1296,7 @@ class AnazhRealm_kreatur_leben {
             // kein „holz" mehr).
             if (!a || !this._archIsRendered(a)) continue;
             // V18.150 — das GERITTENE Gefährt ist kein Sammler-Ziel.
-            if (riddenId !== null && riddenId !== undefined && a.id === riddenId) continue;
+            if (this._gerittenesWerk(a)) continue;
             const bp = this.state.blueprints && this.state.blueprints[a.type];
             if (!bp || !Array.isArray(bp.parts)) continue;
             const hasMaterial = bp.parts.some((p) => p && p.material === materialName);

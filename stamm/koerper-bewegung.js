@@ -996,7 +996,6 @@ class AnazhRealm_koerper_bewegung {
         let supportTop = -Infinity;
         // Das GERITTENE Gefährt blockt seinen Reiter nicht — er sitzt per Definition in dessen
         // blockerAABBs und würde sonst beim Aufsteigen herausgedrückt.
-        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         // DIE NACHBARSCHAFT (0710-7): eine Box wirkt nur, wenn der Körper ihre Hülle erreicht — die Kapsel ihren Radius weit
         // (Auflage und Wand verlangen die Position in der Hülle ± radius), die Hülle des Wagens |mitte| + hl + hw weit (sonst
         // trennt eine Achse ihr Rechteck von der Box). Gelöst werden nur die Einträge der Nachbarschaft (`_blockerNahe`),
@@ -1011,7 +1010,7 @@ class AnazhRealm_koerper_bewegung {
         for (let a = 0; a < nah.length; a++) {
             const e = nah[a];
             if (!e.blockerAABBs || !e.position) continue;
-            if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
+            if (this._gerittenesWerk(e)) continue;
             // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler.
             // V18.464: + gestempelte Blocker-Reichweite (_blockerReach) — der
             // Zentrums-Cull verlor bei großen/skalierten Bauwerken die Rand-Parts.
