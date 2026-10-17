@@ -9,7 +9,6 @@
 //   S1  FOUNDRY_LESEN == die Attribute, die `_foundryBuildMesh` liest (keine Seite mehr, keine weniger)
 //   S2  der Haupt-Thread fasst den Asset-Store nie an: „anazhFoundryAssets" lebt NUR in der Schale,
 //       `_foundryIdbInit/_foundryIdbGet/_foundryIdbPut` sind fort
-//   S3  der Worker-Boot stellt die Schale voran und reicht ihr FOUNDRY_LESEN + FOUNDRY_PLATTE_FORMAT
 //   S4  GESTALTEN (V18.527): jede Varianten-Wahl trägt ihre Art · der Vorrat wärmt 1..V · EIN Streu-Same, die
 //       Promotion trägt ihn
 // KLON-LINSE (Node): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je Gestalt,
@@ -25,13 +24,12 @@
 //       Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden: ein langer Bake im
 //       Bäcker-Faden lässt die Platten-Transaktionen des Werks laufen (kein Studio-Lauf bei offener Transaktion)
 // STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
-//   Stempel hasht die Foundry-Brücke (K42, vorher die Shell), jeder Welt-Körper schickt seinen Schlüssel, Karten tragen
-//   `karte|…` · S7e die Worker-Liste kommt ganz aus dem Manifest · S7f die Stempel-Probe: ein UI-Edit am Labor lässt den
-//   Stempel stehen, ein Brücken-Edit bewegt ihn
+//   Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…` · S7f die Stempel-Probe: ein UI-Edit am Labor lässt den
+//   Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die Schale vorn, Laden und Stempel allein aus dem Manifest,
+//   keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf` (B3a; vorher S3 · S7a · S7e · W4 · W5 am Text)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
-//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W4/W5 (K42) der
-//   Studio-Faden lädt und stempelt keine Labor-Datei (Absenz über den Boot-Quelltext des echten Spiels) · W6 (K60) DIE
-//   WERK-FÄDEN: die Sonde gibt der Seite 16 Kerne (der CI-Läufer hat 4 — ein Faden, kein Helfer); jeder Werk-Faden
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
+//   die Sonde gibt der Seite 16 Kerne (der CI-Läufer hat 4 — ein Faden, kein Helfer); jeder Werk-Faden
 //   (`_foundryHelfer`) wird bereit und baut, jeder Auftrag reist in der Bahn, die seine Nummer nennt (`w<k>_`,
 //   `_foundryBahn`), und kommt beantwortet zurück
 //
@@ -80,14 +78,6 @@ function statisch(src) {
     pruef("S2a die Schale steht im Stamm", !!schale);
     pruef("S2b der Asset-Store lebt NUR in der Schale", schale && !/anazhFoundryAssets/.test(ohneSchale));
     pruef("S2c die Haupt-Thread-Platte ist fort", !/_foundryIdb(Init|Get|Put)\b/.test(strip(src)));
-    const boot = methode(src, "_ensureAssetFoundry");
-    const bootCode = boot ? strip(boot) : "";
-    pruef(
-        "S3 der Worker-Boot stellt die Schale voran (FOUNDRY_LESEN + FOUNDRY_PLATTE_FORMAT)",
-        /AnazhRealm\._foundrySchale\.toString\(\)/.test(bootCode) &&
-            /AnazhRealm\.FOUNDRY_LESEN/.test(bootCode) &&
-            /AnazhRealm\.FOUNDRY_PLATTE_FORMAT/.test(bootCode)
-    );
     // GESTALTEN (V18.527): die EINE Varianten-Wahl liest das Studio-Budget, jeder Aufrufer reicht seine Art.
     const code = strip(src);
     const einArg = [...code.matchAll(/_foundryVariantFor\(([^()]*)\)/g)].filter((m) => !/,/.test(m[1]));
@@ -163,22 +153,6 @@ function statisch(src) {
     pruef(
         "S6c der Fahrzeug-Vorrat wärmt nur die Platte (_foundryVorrat, die Schale antwortet leer)",
         /this\._foundryVorrat\(sp, sd, lod\)/.test(preS) && /meshes: \[\], vorrat: true/.test(sc)
-    );
-    // DIE PLATTE TRÄGT DEN ZWEIT-BOOT (V18.527): der Stempel hasht die Generator-Quellen, jeder Welt-Körper schickt seinen
-    // Schlüssel (die Schale entscheidet), Karten reisen mit `karte|…` und werden geschrieben. K42: die Mesh-Extraktion
-    // und der Karten-Bäcker leben in der Foundry-Brücke — der Stempel hasht SIE, nie die Labor-Shell.
-    pruef(
-        "S7a der Stempel hasht die Foundry-Brücke (core.bruecke — Mesh-Extraktion + Karten-Bäcker), nie eine Labor-Shell",
-        /stempelUrls\.push\(new URL\(core\.bruecke \+ v, base\)\.href\)/.test(bootCode) && !/core\.shell/.test(bootCode)
-    );
-    // K42 — DER WORKER LÄDT KEIN LABOR: die importScripts-Liste kommt ganz aus dem Manifest (lib · scripts · bruecke),
-    // kein Pfad-Literal im Boot (die alte Liste trug OrbitControls · PointerLockControls · Composer · Bloom · FXAA hart).
-    pruef(
-        "S7e der Worker-Boot liest seine Skripte nur aus dem Manifest (core.lib · core.scripts · core.bruecke), kein Pfad-Literal",
-        /core\.lib/.test(bootCode) &&
-            /rel\.push\(core\.bruecke\)/.test(bootCode) &&
-            !/["']worlds\//.test(bootCode) &&
-            !/core\.shell/.test(bootCode)
     );
     const reqS = teil("_foundryRequest") || "";
     pruef(
@@ -720,8 +694,6 @@ const WELT_HAKEN = () => {
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
         if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0) {
-            // K42: der Boot-Quelltext des echten Studio-Fadens — W4/W5 lesen daraus seine importScripts- und Stempel-Liste
-            window.__flBootQuelle = teile[0];
             teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
         }
         return new B0(teile, opt);
@@ -895,7 +867,6 @@ const WELT_MESSEN = async () => {
         T,
         samen,
         karten,
-        bootQuelle: window.__flBootQuelle || "",
         boot,
         bootMB: fl.antworten.reduce((a, x) => a + x.bytes, 0) / 1048576,
         saison: {
@@ -974,9 +945,6 @@ function urteilWelt(d) {
         dreh > 0.3 && s.name === "autumn",
         `(${s.mul0.map((v) => v.toFixed(2)).join(",")}) → (${s.mul1.map((v) => v.toFixed(2)).join(",")}) · ${s.name}`
     );
-    // K42 — DER STUDIO-FADEN LÄDT KEIN LABOR (die Absenz über den Boot-Quelltext des echten Spiels): seine importScripts-
-    // Liste (W4) und die Stempel-Liste der Schale (W5) tragen die Foundry-Brücke und keine Labor-Datei — keine Shell
-    // unter worlds/<welt>/ (außer lib/), keine Labor-Szene (Orbit-/PointerLock-Steuerung, Composer, Bloom, FXAA).
     const wk = d.boot && d.boot.werk;
     const bahnen = (wk && wk.bahnen) || [];
     pruef(
@@ -993,41 +961,7 @@ function urteilWelt(d) {
                 .join(" · ") +
             (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")
     );
-    const { liste, stempel } = bootListen(d.bootQuelle);
-    const labor = (u) => LABOR_DATEI.test(u);
-    const bruecke = (u) => /\/foundry-bruecke\.js(\?|$)/.test(u);
-    const kurz = (u) => u.replace(/^[a-z]+:\/\/[^/]+\//, "").replace(/\?.*$/, "");
-    pruef(
-        "W4 der Studio-Faden lädt keine Labor-Shell und keine Labor-Szene (die importScripts-Liste des echten Boots)",
-        liste.length > 0 && liste.some(bruecke) && !liste.some(labor),
-        `${liste.length} Skripte` +
-            (liste.some(labor) ? ` · Labor im Faden: ${liste.filter(labor).map(kurz).join(" ")}` : "") +
-            (liste.some(bruecke) ? "" : " · die Brücke fehlt")
-    );
-    pruef(
-        "W5 der Platten-Stempel des echten Boots hasht die Brücke, nie eine Labor-Datei (ein UI-Edit leert keinen Cache)",
-        stempel.length > 0 && stempel.some(bruecke) && !stempel.some(labor),
-        `${stempel.length} Quellen` + (stempel.some(labor) ? ` · Labor im Stempel: ${stempel.filter(labor).map(kurz).join(" ")}` : "")
-    );
     return aus;
-}
-// Eine Labor-Datei im Studio-Faden: jede Welt-Datei unter worlds/<welt>/ außer lib/, und die Szenen-Bibliotheken der Labore.
-const LABOR_DATEI =
-    /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js(\?|$)|\/(OrbitControls|PointerLockControls|EffectComposer|RenderPass|MaskPass|ShaderPass|UnrealBloomPass|CopyShader|LuminosityHighPassShader|FXAAShader)\.js(\?|$)/;
-// Die zwei Listen aus dem Boot-Quelltext: importScripts(...) und die Stempel-URLs der Schale (JSON im Blob).
-function bootListen(quelle) {
-    const q = String(quelle || "");
-    let liste = [],
-        stempel = [];
-    try {
-        const m = q.match(/importScripts\(([^)]*)\)/);
-        if (m) liste = JSON.parse("[" + m[1] + "]");
-    } catch (_e) {}
-    try {
-        const m = q.match(/"stempelUrls":(\[[^\]]*\])/);
-        if (m) stempel = JSON.parse(m[1]);
-    } catch (_e) {}
-    return { liste, stempel };
 }
 
 async function welt() {
@@ -1154,9 +1088,6 @@ const VERHALTEN = [
             T: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             samen: { eiche: [1, 2], weide: [1] },
             karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
-            bootQuelle:
-                '(function _foundrySchale(cfg){})({"stempelUrls":["http://h/phyto-core.js?v=1","http://h/foundry-bruecke.js?v=1"]});' +
-                'importScripts("http://h/worlds/terrain/lib/three-r128.min.js?v=1","http://h/phyto-core.js?v=1","http://h/foundry-bruecke.js?v=1");',
             boot: {
                 posts: 200,
                 antworten: 200,
@@ -1274,26 +1205,6 @@ const VERHALTEN = [
                 "W3"
             )
         );
-        // K42 — der alte Boot (Basis 3e13e7bc): Labor-Szene + Shell im Faden, die Shell im Stempel
-        const altBoot = gut.bootQuelle
-            .replace('"http://h/foundry-bruecke.js?v=1"]', '"http://h/worlds/terrain/phytogenesis.js?v=1"]')
-            .replace(
-                'importScripts("http://h/worlds/terrain/lib/three-r128.min.js?v=1",',
-                'importScripts("http://h/worlds/terrain/lib/three-r128.min.js?v=1","http://h/worlds/terrain/lib/OrbitControls.js?v=1",'
-            )
-            .replace('"http://h/foundry-bruecke.js?v=1");', '"http://h/worlds/terrain/phytogenesis.js?v=1");');
-        check(
-            "Selbst-Test 10i: der Studio-Faden lädt Orbit-Steuerung + Labor-Shell (der alte Boot) → W4 rot",
-            rot(Object.assign({}, gut, { bootQuelle: altBoot }), "W4")
-        );
-        check(
-            "Selbst-Test 10j: der Stempel hasht die Labor-Shell (der alte Boot) → W5 rot",
-            rot(Object.assign({}, gut, { bootQuelle: altBoot }), "W5")
-        );
-        check(
-            "Selbst-Test 10k: kein Boot-Quelltext gefangen (die Sonde misst nicht) → W4 rot",
-            rot(Object.assign({}, gut, { bootQuelle: "" }), "W4")
-        );
         const shellAlsBruecke = (rel) =>
             rel === "cores.manifest.json"
                 ? fs
@@ -1304,14 +1215,6 @@ const VERHALTEN = [
             "Selbst-Test 20: das Manifest nennt die Labor-Shell als Brücke → S7f rot (ein UI-Edit leerte den Cache)",
             stempelProbe(shellAlsBruecke)[0][1] === false
         );
-        const t21 = statisch(
-            bruch(
-                stamm,
-                "                    const rel = [];\n",
-                '                    const rel = ["worlds/terrain/lib/OrbitControls.js"];\n'
-            )
-        ).gesetze.find((g) => g[0].startsWith("S7e"));
-        check("Selbst-Test 21: ein Labor-Pfad-Literal in der Worker-Liste → S7e rot", t21 && !t21[1]);
         const t11 = statisch(
             bruch(
                 stamm,
@@ -1366,14 +1269,6 @@ const VERHALTEN = [
             g[0].startsWith("S7d")
         );
         check("Selbst-Test 17: Platten-Treffer ohne Format-Prüfung → S7d rot", t17 && !t17[1]);
-        const t14 = statisch(
-            bruch(
-                stamm,
-                '                    for (const core of manifest) {\n                        if (core && typeof core.bruecke === "string" && core.bruecke)\n                            stempelUrls.push(new URL(core.bruecke + v, base).href);\n                    }\n',
-                ""
-            )
-        ).gesetze.find((g) => g[0].startsWith("S7a"));
-        check("Selbst-Test 14: Stempel ohne die Brücke → S7a rot", t14 && !t14[1]);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
             process.exit(1);

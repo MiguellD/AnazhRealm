@@ -478,21 +478,17 @@ function diaetLauf(fn) {
         getRenderObjectData(ro) {
             let d = this.renderObjects.get(ro);
             if (!d) {
-                d = { welt: ro.object.welt };
+                d = { worldMatrix: { w: ro.object.welt, equals: (m) => m.w === d.worldMatrix.w, copy: (m) => (d.worldMatrix.w = m.w) } };
                 this.renderObjects.set(ro, d);
             }
             return d;
         },
-        needsVelocity() {
-            return false;
-        },
-        getLights() {
-            return [];
-        },
+        needsVelocity: () => false,
+        getLights: () => [],
         equals(ro) {
             const d = this.getRenderObjectData(ro);
-            if (d.welt !== ro.object.welt) {
-                d.welt = ro.object.welt;
+            if (d.worldMatrix.w !== ro.object.welt) {
+                d.worldMatrix.w = ro.object.welt;
                 return false;
             }
             return true;
@@ -582,7 +578,9 @@ function diaetLauf(fn) {
     // Ein Vorher-Knoten aller Programme (wie der Schatten des Lichts): EINMAL je Render.
     const vorKnoten = { id: 900, verschachtelt: true, getUpdateBeforeType: () => "render" };
     // DER STEIN (Gegenprüfung 07.10.): ein Diät-Stoff ohne Schatten-Empfang zeichnet ZUERST — er stellt und stempelt den
-    // geteilten Knoten, bevor der Schatten des ersten Empfängers verschachtelt; seine eigene Gruppe lädt nur ihn.
+    // geteilten Knoten, bevor der Schatten des ersten Empfängers verschachtelt; seine eigene Gruppe lädt nur ihn — und seine
+    // freie Uniform (ein Schreiber setzt `.value`, E1-n1): ihr Wechsel lädt die eigene Gruppe im Objekt-Gang, nie voll.
+    const freiWert = { isUniformNode: true, value: 0, getUpdateType: () => "none" };
     const steinProg = {
         id: 20,
         obs: beobachter(),
@@ -593,10 +591,10 @@ function diaetLauf(fn) {
         prog: steinProg,
         ro: {
             progId: 20,
-            object: { material: { _anazhDiaet: true }, welt: 0 },
+            object: { material: { _anazhDiaet: true }, welt: 0, get matrixWorld() { return { w: this.welt }; } },
             material: { _anazhDiaet: true },
             lightsNode: {},
-            getBindings: () => [steinProg.geteilt],
+            getBindings: () => [steinProg.geteilt, { bindings: [{ groupNode: { shared: false }, isUniformBuffer: true, uniforms: [{ nodeUniform: { node: freiWert }, getValue: () => freiWert.value }] }] }],
             getNodeBuilderState: () => steinProg.nbs,
         },
     };
@@ -626,7 +624,7 @@ function diaetLauf(fn) {
             instanceMatrix: { version: 0 },
             instanceColor: null,
             material: { _anazhDiaet: true },
-            welt: 0,
+            welt: 0, get matrixWorld() { return { w: this.welt }; },
         };
         const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
         objekte.push({
@@ -682,7 +680,8 @@ function diaetLauf(fn) {
     const r4 = render(() => objekte[7].ro.object.welt++);
     const r5 = render(() => objekte[11].ro.object.instanceMatrix.version++);
     const r6 = render();
-    return { r1, r2, r3, r4, r5, r6 };
+    const r7 = render(() => freiWert.value++);
+    return { r1, r2, r3, r4, r5, r6, r7 };
 }
 // (8) GETRAGEN (K71): EIN Objekt in zwei Pässen — der Schatten (zuerst) liest Instanz-Matrix und Lage, das Hauptbild dazu
 // die Normale; jeder Pass hat seinen Beobachter. Der Schein-Renderer lädt wie r184 je Attribut-Objekt EINMAL je Version
@@ -707,7 +706,7 @@ function getragenLauf(fn) {
             renderId: -1,
             hasAnimation: false,
             getRenderObjectData(ro) {
-                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, {});
+                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, { worldMatrix: { equals: () => true } });
                 return this.renderObjects.get(ro);
             },
             getGeometryData: () => ({}),
@@ -777,7 +776,7 @@ function diaetProbe(selftest) {
                 f.push(
                     `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
                 );
-            if (r.objektDurchDiaet) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (nur die geteilte ist ihre)`);
+            if (r.objektDurchDiaet !== (k === "r4" || k === "r7" ? 1 : 0)) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (Soll: nur die des bewegten Objekts, sein Objekt-Gang)`);
             if (r.wiederholt)
                 f.push(
                     `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
@@ -795,7 +794,8 @@ function diaetProbe(selftest) {
                     `Zeichen-Objekt ${k}: ${r.zeichenFehlt} von 2 Programmen mit einem Verweis ohne festes Objekt gingen keinen eigenen Gang — er arbeitete nie für ihr Objekt`
                 );
         }
-        if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
+        if (z.r4.voll.has(7)) f.push("Objekt-Gang: ein bewegtes Objekt frischt voll auf, statt nur seine eigenen Werte zu stellen");
+        if (z.r7.steinVoll) f.push("Uniform-Wächter: eine freie Objekt-Uniform frischt voll auf, statt ihre eigene Gruppe zu laden");
         if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
         return f;
     };
