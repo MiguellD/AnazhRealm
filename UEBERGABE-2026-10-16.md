@@ -182,3 +182,10 @@ der Macher muss frei sein).
 - Laufend: A3b laub-zeit (laub-kante GRUEN 8/8), A7 Karten-Krone (4. Bauer), A9 EINE Bild-Uhr + Welt steht, A10 Tafel am Kopf, S1 Spike Karte im Welt-Renderer (Studio = Modus der Welt-Engine, Wurzel von A+B), E1 Takt Genesis Third (Voll-Refresh 34,9 -> 2,3/Bild; CI rot an dsl-insel Uniform), B3a Buch ohne Leerlauf, W9 Wackler RUNDUNG + Settlement-O.
 - Offen danach: D3c-bild/-leben/-wasser/-crossfade/-playtest (Pakete d3c/*.json; playtest-Stellen jetzt in scripts/playtest/<domaene>.cjs), D3d (EIN Absenz-Helfer __fehlt + Wand), B3b Karten-Kosten (nach S1/A7).
 - main 3caca1cd wartet auf OMEN Genesis Third Arena A G G A (G1 +0,7 ms GPU?). node_modules im Haupt-Klon war leer (02:43), wiederhergestellt.
+
+## 17.10. 05:33 (date) — Lage
+- main = c0f5f4fd (V18.546.9, OMEN-gemessen: Genesis Third GPU im echten Frame gleich, das +0,70 war eine Fichte in L0 in der Band-Szene). integ-probe = 93539122 (V18.546.11): + E1 Takt (Voll-Refresh 34,9 -> 2,3), B3a Buch (7,06 -> 2,61 s kalt), A10 Tafel (3/12 ROT frisch), W9 Wackler (RUNDUNG am selben Frame, Settlement-Ereignis), D3c-pt1/-pt2/-wasser, Lobby-Fix (unpublishFromLobby), A11 Arena-instanceColor (Wiese nach Art/Alter, boden-nah-farbe GRUEN).
+- OMEN: E1-ABAB A=3b66b341 B=bd74a171 (Genesis Third/Ego, Wiese Ego, 4+4) seit 04:44, ~2,5 h -> bericht/1710-e1.md; danach main auf bd74a171 bzw. weiter.
+- Laufend: S2 Karte der Welt (R3, Compute-BC, alte Baecker gefallen, Linsen nachziehen), B3c Faden frei (Pruefer 2), B3d Weltbild = Blick (Entscheidung: Blick-Kegel + Rand ganz, Rundblick-Probe nach N Frames), B3e Wurf-L3 aus dem Plan, A3b laub-zeit (Fadenkreuz-Bruch nachbessern), A9 Bild-Uhr, A12 See-Spiegel, D3c-bild/-leben (wf_c983fdef-595). Danach D3d (EIN Absenz-Helfer + Wand), D3c-crossfade (101 Stellen, nach S2).
+- Ankunfts-Menge (OMEN bericht/1610-ankunft-menge.md): 147 Auftraege, Werk 89-99 %, im Blick 37,4 / ausser Blick 33,4 Bahn-s, Wurf-L3 = L2-Kosten.
+- Woche 79 % um 05:10.
