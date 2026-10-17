@@ -293,6 +293,8 @@ function pulsSeite() {
         if (st) {
             t.push(`renderer ${st.rendererReady === true ? "bereit" : "—"}`, `weltbild ${st._weltbildDa ? "da" : "—"}`);
             if (st.flightRecorder) t.push(`frames ${st.flightRecorder.frames}`);
+            const W = window.anazhRealm._weltStand; // worauf das Einschwingen wartet (`__weltStehtNach`), beim Namen
+            if (W) t.push(`welt ${W.takte} Takte · Ruhe ${W.ruhe} · zuletzt ${W.grund}`);
         } else t.push("anazhRealm —");
         t.push(`programme ${Z.programme}`, `gl-sync ${Z.sync}`);
         if (Z.letzt) t.push(`zuletzt ${Z.letzt}`);
@@ -695,6 +697,7 @@ module.exports = {
     REZEPTE,
     GPU_REZEPTE,
     CODE_OF_SEITE,
+    weltStehtNach,
     statikServer,
     starteBrowser,
     oeffneWelt,

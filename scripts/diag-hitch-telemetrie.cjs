@@ -683,8 +683,13 @@ function erstWandInstall() {
         while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
-        // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
-        await window.__weltStehtNach();
+        // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) im Takt der Linse — der Takt der Seite
+        // wartet auf swiftshader am Bild des GPU-Prozesses (1,4 s je Takt, die Welt stand in 600 s nie), die Leine hält die GPU
+        await window.__weltStehtNach(() => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+        });
         const rend = r.state.renderer;
         if (!rend) return { fatal: "kein Renderer" };
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
