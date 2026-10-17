@@ -6,7 +6,7 @@
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
 //     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; KEIN asset-foundry-iframe im DOM; die
 //     gefallenen Methoden sind weg.
-//   C (swiftshader-WebGPU, HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
+//   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
@@ -240,7 +240,7 @@ async function driveImpostor(page) {
     });
 }
 
-// ===== TEIL C — DIE KARTEN-WAND auf echtem Renderer (swiftshader-WebGPU, frischer in-page Renderer) =====
+// ===== TEIL C — DIE KARTEN-WAND auf echtem Renderer (CI: WebGL2 auf swiftshader, lokal WebGPU; frischer in-page Renderer) =====
 // (1) DAS LAYOUT: eine Probe-Gestalt (eine Tafel in der LINKEN OBEREN Viertel-Fläche) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`, BC wenn der Adapter es kann, sonst rgba8) in den Atlas — das Bild MUSS links oben stehen (die
 //     Karte steht richtig herum und ist nicht gespiegelt).
@@ -888,7 +888,7 @@ async function windProbe(page) {
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
         console.log(
-            `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===`
+            `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===`
         );
         if (C.ohneFeature) {
             console.log(
