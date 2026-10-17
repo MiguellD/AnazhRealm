@@ -187,13 +187,11 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const path = require("path");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.ZIEL_ZENSUS_PORT) || 4597;
 const server = statikServer();
 

@@ -43,11 +43,9 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
-const root = path.resolve(__dirname, "..");
 
 const errs = [];
 function check(name, ok, detail) {

@@ -305,7 +305,7 @@ async function welt() {
             takte,
             stillTakte,
             still: still >= 3,
-            chunks: last,
+            chunks: st.voxelChunks ? st.voxelChunks.size : 0,
             foundryOffen: offen(),
             dStern: +dStern.toFixed(2),
             dWolf: +cam.position.distanceTo(w.position).toFixed(2),

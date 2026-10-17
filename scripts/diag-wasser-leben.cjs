@@ -916,7 +916,6 @@ async function lauf() {
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
-    const root = path.resolve(__dirname, "..");
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({

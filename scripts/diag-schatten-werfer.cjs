@@ -91,12 +91,10 @@
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
 const SELBSTTEST = process.argv.includes("--selftest");
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 // Z2 — die Bildziele je Leser über den EINEN Absenz-Helfer (kommentarfrei): die Szenen-Tiefe zieht NUR `_szeneTiefe`, kein
