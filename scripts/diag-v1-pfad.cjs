@@ -1,75 +1,37 @@
-// diag-v1-pfad.cjs — DIE V1-PFAD-LINSE (Welle L, Familie auge-v1): die Defekte, die die Leben-Prüfung am 06.10. auf dem
-// gespielten v1.0-Pfad fand (artifacts/profiband/leben/befund-v1-pfad.md,
-// artifacts/profiband/leben/synthese.md Q14/Q15), je beim NAMEN. Jede
-// Probe ruft den Chokepoint selbst (die Methode, in der der Defekt saß) im echten Boot (headless, foundry-ON,
-// Null-Renderer der Welt) und misst seine Wirkung — keine Probe ersetzt die Stelle, an der der Defekt sitzt (Q0).
-//
-//   V-D3 (Q14) — DIE VORSCHAU ZEIGT IHR WERK: die Werkstatt öffnet, die Eiche wird gewählt, die Vorschau zeichnet über
-//     `_workshopRender`. Die Linse liest am Vorschau-Renderer, mit welchem Masken-Stand er gerufen wird (der
-//     Neben-Renderer ist der Beobachtungs-Punkt — er bekommt den Stand, die GPU-Arbeit bleibt aus), und rechnet mit dem
-//     EINEN Masken-Gesetz (`__phytoCore.lodCrossfadeMask`) über die Vertices der Vorschau, welcher Anteil der Eiche
-//     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
-//     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
-//
-//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
-//     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
-//     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
-//     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
-//     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
-//     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
-//     Dazu die Wand W7: der Foundry-Pfad pollt nicht — EIN Zeit-Graph über jedes Glied, das die Familie erreicht (Kreise
-//     mit Zeit-Kante, Schleifen mit Schlaf, setInterval, Warten auf ein pollendes Glied); frei nur die Frist-Kette.
-//
-//   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
-//     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
-//     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
-//     Waffe des Buchs gemessen. Befund 32027dc2: Messer 0,059, Waffen-Median 0,146, 71 von 232 unter 0,5 (der
-//     3-m-Mindestabstand in `_workshopCenterPreviewOn`).                                          Soll [0,5; 0,9]
-//
-//   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
-//     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
-//     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
-//     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
-//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
-//     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
-//
-//   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
-//     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
-//     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
-//     V-D6 — `llmCall` gegen einen lokalen Endpunkt ohne Dienst: der Fehler nennt den Host, nie CORS.
-//     V-k5 — „pflanz mir einen eichenhain am wasser" an einem Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster):
-//       0 Eichen, die Absage im Chat (Befund: 6 Eichen um den Spieler, „am Wasser gewachsen").
-//     V-k6 — „pflanz mir zwei birken" mit P2P an: das gesendete Programm trägt den Ort aufgelöst (["at", …]), der
-//       Empfänger 200 m weiter pflanzt beim Absender (Befund: 203/206 m vom Absender). Der Sende-Punkt `p2pSend` ist
-//       der Beobachtungs-Punkt (das Netz), der Chokepoint `dslRun` → `_dslMitOrten` läuft echt.
-//     V-D8 — das Label der Art im Chat („Birke", nie „baum_birke"), die Dorf-Zählung nur im Log.
-//     V-k5-KLASSE — an demselben trockenen Ort läuft JEDE Op mit ["near_water", 60] (spawn_creature · tree · studio ·
-//       island · ufo · village · temple · waterfall · blueprint · fractal · deposit_life · deposit_emotion) und eine chain
-//       durch `dslRun`: jede scheitert benannt an der Engstelle `dslEvalPos` („kein Wasser im Umkreis von 60 m", die Op im
-//       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
-//       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
-//       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
-//     V-k5-KLASSE, DER REST (Gegenprüfung pruef3) — jeder UNGÜLTIGE Ort scheitert benannt an derselben Engstelle: ein
-//       Text, eine Zahl, ein Objekt oder [] statt Knoten (die KI schreibt "near_water" ohne Klammern), `at` mit fehlendem
-//       oder nicht-numerischem x/y/z (Number(null) === 0), jeder Auflöser mit einem Text statt seiner Zahl (Radius,
-//       Abstand, Spanne), `far_player` ohne Abstände, die Koordinaten von voxel_carve/voxel_fill, jeder spieler-relative
-//       Ort ohne Spieler (auch der Feld-Akt ohne Knoten, die nächste Kreatur, der Mess-Ort einer Regel). Dazu die Defaults:
-//       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
-//       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
-//       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
-//     R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` (mit den Fels-Beweisen `_felsUeber`) gegen den vollen Spalten-Scan,
-//       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
-//       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
-//       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
-//
-//   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
+// diag-v1-pfad.cjs — DER SPIELGANG (SG1, 17.10.; vorher die V1-Pfad-Linse der Welle L). Schöpfer 17.10.: „ein effizienter,
+// schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird nur der getestet."
+// Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen Wagen, Arm 0,30) — kein Gate
+// fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`).
+// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer (lokal der Hardware-Adapter, die CI swiftshader:
+// die EINE Weiche `linsenWebGpuArgs`); der Loop treibt die Welt selbst, die Proben warten in seinen Takten (`__gang.takte`), die
+// Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station Spieler-Gesetze als Urteil und ein
+// Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne · Sommer):
+//   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das Gesetz
+//             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den Spieler;
+//             V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft immer.
+//   lichtung  V-D1 (Q15): keine Krone über der Genesis-Plattform, EINE Plattform, der Ring um sie auch über dem Frame-Budget.
+//   fahrt     ein Studio-Wagen (`fahrzeug_gt`) an einer Bahn, die das Gesetz des Fahr-Platzes trägt (`_fahrPlatzFrei` alle
+//             10 m über 110 m); E steigt ein, die Sicht springt auf Third, W fährt 100 m: der Kamera-Arm (`_kamArm`) hält
+//             p50 ≥ 0,9 und der Wagen füllt im Third-Bild sein Band (die Klassen-Teilung der Abnahme `__klassenTeilung`: das
+//             Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht kehrt zurück. DER SELBSTTEST IM LAUF:
+//             derselbe Wagen fährt weiter mit dem alten Strahl (`_fieldRaycast` ohne `_gerittenesWerk`, eingespielt) — das
+//             Urteil muss ROT werden und den Arm beim Namen nennen.
+//   werkstatt V-D5 das Rezeptbuch nach dem Spielmodus · V-D3 die Vorschau zeigt ihr Werk (Masken-Gesetz ≥ 99 %) · V-D3
+//             FREMDER ZUG jeder Wartende erwacht nach einem fremd gezogenen Körper (≤ 20 s) · V-D3 RAHMEN jede Gestalt füllt
+//             die Vorschau [0,5; 0,9].
+//   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne ihren
+//             Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt trocken ≤ 8 je Ring.
+// Die Befunde jeder Probe trägt git (Lehre 15); die statische Wand W2–W7 (Text am AST) fiel mit SG1 (Richter-Macher 16.10.:
+// Linsen urteilen Verhalten, nie Text) — ihr Verhalten tragen V-D3, V-D1 und V-k5.
+// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>: eine
+// stamm-Datei ruft die Stationen ihres Moduls (spec/stamm/modul-karte.json, Tafel STATIONEN), was die Welt sonst lädt
+// (worlds/, Kerne, index.html, diese Linse), den ganzen Gang; Doku, Spec und andere Skripte nur die Ankunft.
+//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 const root = path.resolve(__dirname, "..");
@@ -79,14 +41,70 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
+const ARGV = process.argv.slice(2);
+const OPT = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
 
-const ohneKommentare = stammLib.ohneKommentare;
+// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft. ──
+const STATIONEN = [
+    ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/],
+    ["lichtung", /^(Gelaende\/boden|Vegetation\/baum|Siedlung\/(ort|satz))$/],
+    ["fahrt", /^(Koerper\/(fahrt|bewegung)|Gelaende\/(chunks|kollision))$/],
+    ["werkstatt", /^(Werkstatt|Studio|Bau)\//],
+    ["wort", /^(Feld\/|Wasser\/hydro$|Netz\/p2p$)/],
+];
+// Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen Gang;
+// was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
+const ALLE_MODULE = /^(Dirigent\/kern|Dienst|Daten)$/;
+const NIE_GELADEN = /^(docs|spec|artifacts|\.github|\.claude)\/|\.md$|^scripts\/(?!diag-v1-pfad\.cjs$|lib\/(welt-boot|ausgabe-aufnahme|abnahme-urteil|software-gpu)\.cjs$)/;
+function stationenFuer(dateien, ordnung) {
+    const modulVon = new Map(ordnung.map(([m]) => [`stamm/${m.toLowerCase().replace("/", "-")}.js`, m]));
+    const S = new Set(["ankunft"]);
+    const grund = [];
+    for (const d of dateien) {
+        if (NIE_GELADEN.test(d)) continue;
+        const m = modulVon.get(d);
+        const s = m && !ALLE_MODULE.test(m) ? STATIONEN.filter(([, re]) => re.test(m)).map(([n]) => n) : STATIONEN.map(([n]) => n);
+        s.forEach((n) => S.add(n));
+        grund.push(`${d}${m ? ` (${m})` : ""} → ${s.join(",") || "ankunft"}`);
+    }
+    return { stationen: STATIONEN.map(([n]) => n).filter((n) => S.has(n)), grund };
+}
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
+// Das Band des Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet) aus der Messung 17.10. (Radeon, GT nach 100 m).
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
-// W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
-// die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
-const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
+Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.03, wagenMax: 0.5, rauschenMax: 0.002 });
+const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
+// ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
+// Ladeschirm ist weg, W trägt den Spieler.
+function ankunftVerdict(m) {
+    if (!m || m.gestartet !== true) return ["ankunft start"];
+    const out = [];
+    if (!(m.ms > 0)) out.push("ankunft: kein erstes Weltbild (`_weltbildDa` fehlt)");
+    if ((m.ohne || []).length) out.push(`ankunft halb: ${m.ohne[0]}`);
+    if (m.ladeschirm) out.push("ankunft: der Ladeschirm steht nach dem Weltbild");
+    if (!(m.weg >= SOLL.kontrolleM)) out.push(`kontrolle: W trug den Spieler ${m.weg} m in ${m.wegTakte} Takten (Soll ≥ ${SOLL.kontrolleM} m)`);
+    return out;
+}
+// FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild, Abstieg in die alte Sicht.
+// Der Täter des Arms beim Namen: endet er in der Hülle des gerittenen Werks (`imWagen`), trifft sein Strahl den eigenen Wagen.
+function fahrtVerdict(m) {
+    if (!m || m.gestartet !== true) return [`fahrt start${m && m.grund ? `: ${m.grund}` : ""}`];
+    const out = [];
+    if (m.sichtRitt !== "third") out.push(`sicht: im Ritt ${m.sichtRitt}, nicht third`);
+    if (!(m.weg >= SOLL.fahrM)) out.push(`fahrt: ${m.weg} m statt ${SOLL.fahrM} m`);
+    if (!(m.armN > 0)) out.push("kamera-arm: keine Probe im Ritt (vakuös)");
+    else if (!(m.armP50 >= SOLL.armMin))
+        out.push(
+            `kamera-arm p50 ${m.armP50} (min ${m.armMin}) < ${SOLL.armMin}${m.imWagen > m.armN / 2 ? ` — ${m.imWagen} von ${m.armN} Proben enden in der Hülle des gerittenen Werks ${m.typ}: der Strahl der Kamera trifft den eigenen Wagen` : ""}`
+        );
+    if (!(m.anteil >= SOLL.wagenMin && m.anteil <= SOLL.wagenMax))
+        out.push(`wagen im Bild ${pct(m.anteil)} außerhalb [${pct(SOLL.wagenMin)}; ${pct(SOLL.wagenMax)}]`);
+    if (!(m.rauschen <= SOLL.rauschenMax)) out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
+    if (m.abgestiegen !== true) out.push("fahrt: E steigt nicht aus");
+    else if (m.sichtNach !== m.sichtVor) out.push(`sicht: nach dem Abstieg ${m.sichtNach} statt ${m.sichtVor}`);
+    return out;
+}
 // V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
@@ -164,7 +182,7 @@ function vorschauVerdict(m) {
     return out;
 }
 
-function ankunftVerdict(m) {
+function lichtungVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!(m.baeume > 0)) out.push("kein Wald um die Plattform gewachsen");
@@ -352,534 +370,94 @@ function sucheVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, am AST). Liefert [name, ok, detail]. ──
-const FN_ART = /^(?:FunctionExpression|ArrowFunctionExpression|FunctionDeclaration)$/;
-const SCHLEIFE_ART = /^(?:WhileStatement|DoWhileStatement|ForStatement|ForInStatement|ForOfStatement)$/;
-const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame|requestIdleCallback)$/;
-const RENDER = /^render(?:Async)?$/;
-// der Name eines Zugriffs: `a.b`, `a["b"]`, a[`b`]
-const eigenName = (m) =>
-    !m.computed
-        ? m.property.name
-        : m.property.type === "Literal"
-          ? String(m.property.value)
-          : m.property.type === "TemplateLiteral" && !m.property.expressions.length
-            ? m.property.quasis[0].value.cooked
-            : null;
-const gerufenName = (c) => (c.type === "Identifier" ? c.name : c.type === "MemberExpression" ? eigenName(c) : null);
-const umfasst = (a, i) => a.start <= i && i < a.end;
-// ein Bezug, der einen Namen nur DEKLARIERT oder als Schlüssel trägt (kein Lesen des Werts)
-const nurName = (n, p) =>
-    p &&
-    ((p.type === "MemberExpression" && p.property === n && !p.computed) ||
-        (p.type === "Property" && p.key === n && !p.computed) ||
-        ((p.type === "MethodDefinition" || p.type === "PropertyDefinition") && p.key === n) ||
-        (p.type === "VariableDeclarator" && p.id === n) ||
-        (p.type === "AssignmentExpression" && p.left === n) ||
-        (FN_ART.test(p.type) && (p.id === n || p.params.includes(n))) ||
-        (p.type === "AssignmentPattern" && p.left === n));
-
-// W2 — DER RENDER-FLUSS: wo die Render-Funktion eines Renderers GERUFEN wird. Gefolgt wird dem WERT `x.render` /
-// `x.renderAsync` (auch `x["render"]`, ein Destrukturieren `{ render }`) durch `||`, `?:`, Klammern und `?.`, durch `.bind`
-// (gebundene Argumente zählen mit), in einen Bezeichner, ein Feld (`this.z = …`, `{ z: … }`), einen Parameter eines Glieds
-// (`this.g(x.render)`), die Rückgabe eines Glieds oder einer Closure — bis zum Ruf: direkt mit ≥ 2 Argumenten (Szene,
-// Kamera), `.call` mit ≥ 3, `.apply`, `Reflect.apply`, ein Zeitgeber mit Szene und Kamera hinter der Frist. Ein Feld der
-// Info (`info.render.calls`) und ein Wert im Test (`ri && ri.render`) sind kein Ruf. Bis Runde 4 las W2 die Ruf-FORMEN
-// `render(…)` · `.call` · `.apply` — `const z = r.render.bind(r); z(s, c)` blieb still grün (Prüfer K38-N2 Runde 4, mut-bind).
-function renderFluss(src) {
-    const baum = stammLib.ast(src);
-    const gl = stammLib.glieder(src);
-    const gliedVon = (i) => {
-        const g = stammLib.gliedAn(gl, i);
-        return g ? g.name : null;
-    };
-    const treffer = new Map(); // Start des Rufs → { glied, wie, i, text }
-    const lokal = new Map(); // "glied|bezeichner" → [gebundene Argumente, Weg]
-    const feld = new Map(); // feldname → [gebundene Argumente, Weg]
-    const rueck = new Map(); // "glied" oder "glied|closure" → [gebundene Argumente, Weg] (die Rückgabe trägt die Funktion)
-    let neu = false;
-    const merke = (karte, k, gebunden, weg) => {
-        if (!karte.has(k)) karte.set(k, [gebunden, weg]), (neu = true);
-    };
-    const trifft = (ruf, wie) => {
-        if (!treffer.has(ruf.start))
-            treffer.set(ruf.start, { glied: gliedVon(ruf.start), wie, i: ruf.start, text: src.slice(ruf.start, Math.min(ruf.end, ruf.start + 90)).replace(/\s+/g, " ") });
-    };
-    const fliesse = (kette, n, gebunden, weg) => {
-        const triff = (ruf, wie) => trifft(ruf, `${weg}${wie}`);
-        let cur = n;
-        for (let k = kette.length - 1; k >= 0; k--) {
-            const p = kette[k];
-            const t = p.type;
-            if (
-                t === "ChainExpression" ||
-                t === "ParenthesizedExpression" ||
-                t === "LogicalExpression" ||
-                (t === "ConditionalExpression" && p.test !== cur) ||
-                (t === "SequenceExpression" && p.expressions[p.expressions.length - 1] === cur)
-            ) {
-                cur = p;
-                continue;
-            }
-            if (t === "MemberExpression" && p.object === cur) {
-                const was = eigenName(p);
-                const pp = kette[k - 1];
-                if (!pp || pp.type !== "CallExpression" || pp.callee !== p) return; // ein Feld des Werts (info.render.calls)
-                if (was === "bind") {
-                    gebunden += Math.max(0, pp.arguments.length - 1);
-                    weg += ".bind → ";
-                    cur = pp;
-                    k--;
-                    continue;
-                }
-                if (was === "call" && gebunden + pp.arguments.length - 1 >= 2) triff(pp, ".call");
-                if (was === "apply") triff(pp, ".apply");
-                return;
-            }
-            if (t === "CallExpression" && p.callee === cur) {
-                if (gebunden + p.arguments.length >= 2) triff(p, "Ruf");
-                return;
-            }
-            if (t === "CallExpression") {
-                const idx = p.arguments.indexOf(cur);
-                const nm = gerufenName(p.callee);
-                if (idx === 0 && nm === "apply" && p.callee.type === "MemberExpression" && gerufenName(p.callee.object) === "Reflect") triff(p, "Reflect.apply");
-                else if (idx === 0 && ZEITGEBER.test(nm || "") && gebunden + p.arguments.length - 2 >= 2) triff(p, nm);
-                else if (idx >= 0 && p.callee.type === "MemberExpression") {
-                    // ein Parameter eines Glieds trägt die Funktion weiter
-                    const g = gl.find((x) => x.name === nm);
-                    const fn = g && (g.knoten.value || null);
-                    const par = fn && FN_ART.test(fn.type) ? fn.params[idx] : null;
-                    const id = par && (par.type === "AssignmentPattern" ? par.left : par);
-                    if (id && id.type === "Identifier") merke(lokal, `${nm}|${id.name}`, gebunden, `${weg}Parameter ${nm}(${id.name}) → `);
-                }
-                return;
-            }
-            if (t === "VariableDeclarator" && p.init === cur) {
-                if (p.id.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.id.name}`, gebunden, `${weg}${p.id.name} → `);
-                return;
-            }
-            if (t === "AssignmentExpression" && p.right === cur) {
-                if (p.left.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.left.name}`, gebunden, `${weg}${p.left.name} → `);
-                else if (p.left.type === "MemberExpression" && eigenName(p.left)) merke(feld, eigenName(p.left), gebunden, `${weg}Feld .${eigenName(p.left)} → `);
-                return;
-            }
-            if (t === "Property" && p.value === cur) {
-                const nm = !p.computed && p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? String(p.key.value) : null;
-                if (nm) merke(feld, nm, gebunden, `${weg}Feld .${nm} → `);
-                return;
-            }
-            if (t === "ReturnStatement" || (t === "ArrowFunctionExpression" && p.body === cur)) {
-                // die Funktion, die zurückgibt: das Glied selbst oder eine benannte Closure
-                let j = t === "ReturnStatement" ? k - 1 : k;
-                while (j >= 0 && !FN_ART.test(kette[j].type)) j--;
-                const f = kette[j];
-                const fp = kette[j - 1];
-                const glied = gliedVon(p.start);
-                if (f && fp && (fp.type === "MethodDefinition" || fp.type === "PropertyDefinition")) merke(rueck, glied, gebunden, `${weg}Rückgabe ${glied}() → `);
-                else if (f && fp && fp.type === "VariableDeclarator" && fp.id.type === "Identifier") merke(rueck, `${glied}|${fp.id.name}`, gebunden, `${weg}Rückgabe ${fp.id.name}() → `);
-                else if (f && f.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
-                return;
-            }
-            return;
-        }
-    };
-    for (let runde = 0; runde === 0 || neu; runde++) {
-        neu = false;
-        stammLib.wandere(baum, (n, ahnen) => {
-            const p = ahnen[ahnen.length - 1];
-            if (n.type === "MemberExpression") {
-                const nm = eigenName(n);
-                if (!nm || (p && p.type === "AssignmentExpression" && p.left === n)) return true;
-                if (RENDER.test(nm)) fliesse(ahnen, n, 0, "");
-                else if (feld.has(nm)) fliesse(ahnen, n, ...feld.get(nm));
-            } else if (n.type === "Property" && p && p.type === "ObjectPattern") {
-                const nm = !n.computed && n.key.type === "Identifier" ? n.key.name : n.key.type === "Literal" ? String(n.key.value) : null;
-                const v = n.value.type === "AssignmentPattern" ? n.value.left : n.value;
-                if (nm && RENDER.test(nm) && v.type === "Identifier") merke(lokal, `${gliedVon(n.start)}|${v.name}`, 0, `{ ${nm} } → ${v.name} → `);
-            } else if (n.type === "Identifier" && lokal.size && !nurName(n, p)) {
-                const k = `${gliedVon(n.start)}|${n.name}`;
-                if (lokal.has(k)) fliesse(ahnen, n, ...lokal.get(k));
-            } else if (n.type === "CallExpression" && rueck.size) {
-                const c = n.callee;
-                const k = c.type === "Identifier" ? `${gliedVon(n.start)}|${c.name}` : c.type === "MemberExpression" ? eigenName(c) : null;
-                if (k && rueck.has(k)) fliesse(ahnen, n, ...rueck.get(k));
-            }
-            return true;
-        });
-        if (runde > 12) throw new Error("renderFluss: kein Fixpunkt nach 12 Runden");
-    }
-    return [...treffer.values()];
-}
-
-// W7 — DER ZEIT-GRAPH: Knoten sind die Glieder der Klasse und jede benannte Closure darin (const/let/Zuweisung = Funktion,
-// function-Deklaration, benannter Funktions-Ausdruck); eine Kante führt zu jedem Knoten, den ein Knoten beim Namen nennt
-// (`this.g`, ein Alias von this, ein Glied der Familie über jedes Objekt; die Closure beim Bezeichner). Eine Kante ist ZEIT,
-// wenn die Nennung erst nach Zeit läuft: im Rückruf eines Zeitgebers (setTimeout · setInterval · requestAnimationFrame ·
-// requestIdleCallback, auch `window.` und `["…"]`) oder eines Zeitgeber-Glieds (es ruft einen Parameter im Zeitgeber), im
-// Rückruf von then/catch/finally auf einem zeitigen Versprechen, in einer Funktion, die auf Zeit wartet (`await` auf einen
-// Zeitgeber oder auf einen Schlaf — ein Knoten, dessen Rückgabe ein Zeitgeber einlöst). Ein POLL ist ein Kreis mit einer
-// Zeit-Kante (über beliebig viele Glieder und Closures), eine Schleife, die in ihrem Rumpf auf Zeit wartet, ein setInterval —
-// oder ein Wartender der Familie, der auf ein pollendes Glied wartet (await · then · return · ein Rückruf als Argument).
-// Gelesen werden die Glieder, die die Familie erreicht. Bis Runde 4 las W7 je Glied einen eigenen Graphen ohne Schleifen:
-// `while (!f.buchDa) await new Promise((r) => setTimeout(r, 50))` (mut-schlaf) und `_foundryHorch` ⇄ `_foundryHorchNochmal`
-// (mut-kreuz) blieben still grün (Prüfer K38-N2 Runde 4).
-// Die EINE Kette mit Zeit-Kanten, die kein Poll ist — die Frist am Ereignis je Auftrag: `_foundryUhren` stellt je Auftrag,
-// der vorn in seinem Faden steht, EINE Uhr auf `_foundryAblauf`; dessen Geist-Fall stellt EINMAL die Uhr, die den Geist
-// fallen lässt und Pumpe und Uhr des nächsten Auftrags anstößt. Jede Uhr feuert je Auftrag höchstens einmal. Frei sind
-// genau diese Zeit-Kanten (die Frist selbst fährt gate:takt T8).
-const FRIST_KETTE = [
-    ["_foundryUhren", "_foundryAblauf"],
-    ["_foundryAblauf", "_foundryPumpe"],
-    ["_foundryAblauf", "_foundryUhren"],
-];
-const FOUNDRY_FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
-function zeitGraph(src) {
-    const gl = stammLib.glieder(src);
-    const gliedNamen = new Set(gl.map((g) => g.name));
-    const wurzel = (g) => g.knoten.value || g.knoten;
-    const istSelbst = (a, o) => o.type === "ThisExpression" || (o.type === "Identifier" && a.selbst.has(o.name));
-    // ein Bezug auf ein Glied: this.g und ein Alias von this für jedes Glied, jedes Objekt für ein Glied der Familie
-    const gliedZiel = (a, n) => {
-        const nm = eigenName(n);
-        return nm && gliedNamen.has(nm) && (istSelbst(a, n.object) || FOUNDRY_FAMILIE.test(nm)) ? nm : null;
-    };
-    // 1) je Glied die Glied-Bezüge → die Glieder, die die Familie erreicht
-    const akte = new Map();
-    for (const g of gl) {
-        const a = { g, selbst: new Set(), zugriffe: [] };
-        stammLib.wandere(wurzel(g), (n) => {
-            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && n.init.type === "ThisExpression") a.selbst.add(n.id.name);
-            else if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && n.right.type === "ThisExpression") a.selbst.add(n.left.name);
-            else if (n.type === "MemberExpression") a.zugriffe.push(n);
-            return true;
-        });
-        a.glieder = new Set(a.zugriffe.map((n) => gliedZiel(a, n)).filter(Boolean));
-        a.zugriffe = null;
-        if (!akte.has(g.name)) akte.set(g.name, []);
-        akte.get(g.name).push(a);
-    }
-    const erreicht = new Set(gl.filter((g) => FOUNDRY_FAMILIE.test(g.name)).map((g) => g.name));
-    const familie = new Set(erreicht);
-    for (const offen = [...erreicht]; offen.length; )
-        for (const a of akte.get(offen.pop()) || []) for (const y of a.glieder) if (!erreicht.has(y)) erreicht.add(y), offen.push(y);
-    // 2) die erreichten Glieder voll: Funktionen, Closures, Rufe, awaits, Schleifen, Bezüge
-    const akten = [];
-    for (const name of erreicht)
-        for (const a of akte.get(name) || []) {
-            Object.assign(a, { fns: [], closures: [], rufe: [], awaits: [], schleifen: [], bezuege: [] });
-            stammLib.wandere(wurzel(a.g), (n, ahnen) => {
-                const p = ahnen[ahnen.length - 1];
-                if (FN_ART.test(n.type)) {
-                    a.fns.push(n);
-                    if (n.id && n.type !== "ArrowFunctionExpression") a.closures.push({ name: n.id.name, fn: n, id: n.id });
-                }
-                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && FN_ART.test(n.init.type)) a.closures.push({ name: n.id.name, fn: n.init, id: n.id });
-                if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && FN_ART.test(n.right.type)) a.closures.push({ name: n.left.name, fn: n.right, id: n.left });
-                if (n.type === "CallExpression") a.rufe.push({ n, p, nm: gerufenName(n.callee) });
-                if (n.type === "AwaitExpression") a.awaits.push(n);
-                if (SCHLEIFE_ART.test(n.type)) a.schleifen.push(n);
-                if (n.type === "MemberExpression" || n.type === "Identifier") a.bezuege.push({ n, p });
-                return true;
-            });
-            a.closureNamen = new Set(a.closures.map((c) => c.name));
-            akten.push(a);
-        }
-    const ziel = (a, n, p) => {
-        if (n.type === "MemberExpression") return gliedZiel(a, n);
-        if (n.type !== "Identifier" || !a.closureNamen.has(n.name) || nurName(n, p)) return null;
-        return `${a.g.name}/${n.name}`;
-    };
-    const knotenAn = (a, i) => {
-        let k = null;
-        for (const c of a.closures) if (umfasst(c.fn, i) && (!k || c.fn.start >= k.fn.start)) k = c;
-        return k ? `${a.g.name}/${k.name}` : a.g.name;
-    };
-    const fnAn = (a, i) => {
-        let f = null;
-        for (const x of a.fns) if (umfasst(x, i) && (!f || x.start >= f.start)) f = x;
-        return f;
-    };
-    // Schlaf (die Rückgabe löst ein Zeitgeber ein) und Zeitgeber-Glied (ein Parameter wird im Zeitgeber gerufen): Fixpunkt
-    const schlaf = new Set();
-    const geber = new Set();
-    const rufZiel = (a, c) => ziel(a, c.callee, c);
-    const zeitig = (a, e) => {
-        let z = false;
-        stammLib.wandere(e, (n) => {
-            if (z) return false;
-            if (n.type === "CallExpression" && (ZEITGEBER.test(gerufenName(n.callee) || "") || schlaf.has(rufZiel(a, n) || ""))) z = true;
-            return true;
-        });
-        return z;
-    };
-    const istZeitRuf = (a, r) => ZEITGEBER.test(r.nm || "") || geber.has(rufZiel(a, r.n) || "");
-    const rueckrufe = (r) =>
-        ZEITGEBER.test(r.nm || "")
-            ? r.n.arguments.slice(0, 1)
-            : r.n.arguments.filter((x) => FN_ART.test(x.type) || x.type === "ObjectExpression" || x.type === "Identifier" || x.type === "MemberExpression");
-    for (let neu = true; neu; ) {
-        neu = false;
-        for (const a of akten)
-            for (const k of [{ name: a.g.name, fn: wurzel(a.g) }, ...a.closures.map((c) => ({ name: `${a.g.name}/${c.name}`, fn: c.fn }))]) {
-                if (!FN_ART.test(k.fn.type)) continue;
-                if (!schlaf.has(k.name)) {
-                    let z = k.fn.type === "ArrowFunctionExpression" && k.fn.expression && zeitig(a, k.fn.body);
-                    if (!z)
-                        stammLib.wandere(k.fn.body, (n) => {
-                            if (z || (n !== k.fn.body && FN_ART.test(n.type))) return false;
-                            if (n.type === "ReturnStatement" && n.argument && zeitig(a, n.argument)) z = true;
-                            return true;
-                        });
-                    if (z) schlaf.add(k.name), (neu = true);
-                }
-                if (!geber.has(k.name)) {
-                    const params = new Set(
-                        k.fn.params
-                            .map((x) => (x.type === "AssignmentPattern" ? x.left : x))
-                            .filter((x) => x.type === "Identifier")
-                            .map((x) => x.name)
-                    );
-                    const istParam = (x) => x && x.type === "Identifier" && params.has(x.name);
-                    let z = false;
-                    for (const r of a.rufe) {
-                        if (z || !params.size || !umfasst(k.fn, r.n.start) || !istZeitRuf(a, r)) continue;
-                        for (const arg of rueckrufe(r))
-                            if (istParam(arg)) z = true;
-                            else
-                                stammLib.wandere(arg, (n) => {
-                                    if (n.type === "CallExpression" && (istParam(n.callee) || (n.callee.type === "MemberExpression" && istParam(n.callee.object)))) z = true;
-                                    return !z;
-                                });
-                    }
-                    if (z) geber.add(k.name), (neu = true);
-                }
-            }
-    }
-    // die Kanten
-    const kanten = new Map(); // von → Map(zu → { zeit, i })
-    const schleifen = [];
-    const intervalle = [];
-    for (const a of akten) {
-        const bereiche = [];
-        for (const r of a.rufe) {
-            if (r.nm === "setInterval") intervalle.push({ knoten: knotenAn(a, r.n.start), i: r.n.start });
-            if (istZeitRuf(a, r)) bereiche.push(...rueckrufe(r));
-            else if (/^(?:then|catch|finally)$/.test(r.nm || "") && r.n.callee.type === "MemberExpression" && zeitig(a, r.n.callee.object)) bereiche.push(...r.n.arguments);
-        }
-        const zeitAwaits = a.awaits.filter((w) => zeitig(a, w.argument));
-        const wartet = new Set(zeitAwaits.map((w) => fnAn(a, w.start)));
-        for (const { n, p } of a.bezuege) {
-            const zu = ziel(a, n, p);
-            if (!zu) continue;
-            const von = knotenAn(a, n.start);
-            const zeit = bereiche.some((x) => umfasst(x, n.start)) || wartet.has(fnAn(a, n.start));
-            if (!kanten.has(von)) kanten.set(von, new Map());
-            const alt = kanten.get(von).get(zu);
-            if (!alt || (zeit && !alt.zeit)) kanten.get(von).set(zu, { zeit, i: n.start });
-        }
-        // die innerste Schleife um ein zeitiges await derselben Funktion
-        for (const w of zeitAwaits) {
-            const f = fnAn(a, w.start);
-            let s = null;
-            for (const x of a.schleifen) if (umfasst(x, w.start) && fnAn(a, x.start) === f && (!s || x.start >= s.start)) s = x;
-            if (s && !schleifen.some((y) => y.i === s.start)) schleifen.push({ knoten: knotenAn(a, s.start), i: s.start });
-        }
-    }
-    // die starken Komponenten (Tarjan, iterativ)
-    const komp = new Map();
-    {
-        const index = new Map();
-        const low = new Map();
-        const auf = new Set();
-        const stapel = [];
-        let zaehler = 0;
-        let nr = 0;
-        const nach = (v) => [...(kanten.get(v) || new Map()).keys()][Symbol.iterator]();
-        const knoten = new Set();
-        for (const [v, m] of kanten) {
-            knoten.add(v);
-            for (const w of m.keys()) knoten.add(w);
-        }
-        const betrete = (v) => {
-            index.set(v, zaehler), low.set(v, zaehler++), stapel.push(v), auf.add(v);
-        };
-        for (const v0 of knoten) {
-            if (index.has(v0)) continue;
-            betrete(v0);
-            const rahmen = [[v0, nach(v0)]];
-            while (rahmen.length) {
-                const [v, it] = rahmen[rahmen.length - 1];
-                const nx = it.next();
-                if (!nx.done) {
-                    const w = nx.value;
-                    if (!index.has(w)) betrete(w), rahmen.push([w, nach(w)]);
-                    else if (auf.has(w)) low.set(v, Math.min(low.get(v), index.get(w)));
-                    continue;
-                }
-                rahmen.pop();
-                if (rahmen.length) {
-                    const u = rahmen[rahmen.length - 1][0];
-                    low.set(u, Math.min(low.get(u), low.get(v)));
-                }
-                if (low.get(v) === index.get(v)) {
-                    let w;
-                    do {
-                        w = stapel.pop();
-                        auf.delete(w);
-                        komp.set(w, nr);
-                    } while (w !== v);
-                    nr++;
-                }
-            }
-        }
-    }
-    const gliedVonKnoten = (k) => k.split("/")[0];
-    const frei = (von, zu) => FRIST_KETTE.some(([x, y]) => gliedVonKnoten(von) === x && gliedVonKnoten(zu) === y);
-    const mitglieder = new Map();
-    for (const [k, c] of komp) {
-        if (!mitglieder.has(c)) mitglieder.set(c, []);
-        mitglieder.get(c).push(k);
-    }
-    const kreise = []; // { von, zu, i, familie }
-    for (const [von, m] of kanten)
-        for (const [zu, e] of m) {
-            if (!e.zeit || komp.get(von) !== komp.get(zu) || frei(von, zu)) continue;
-            kreise.push({ von, zu, i: e.i, familie: mitglieder.get(komp.get(von)).some((k) => familie.has(gliedVonKnoten(k))) });
-        }
-    // ein pollendes Glied: in einem Zeit-Kreis, mit einer wartenden Schleife oder einem setInterval
-    const pollend = new Set([...kreise.flatMap((k) => mitglieder.get(komp.get(k.von))), ...schleifen.map((s) => s.knoten), ...intervalle.map((s) => s.knoten)].map(gliedVonKnoten));
-    const ueber = [];
-    for (const a of akten) {
-        if (!familie.has(a.g.name)) continue;
-        for (const r of a.rufe) {
-            const P = r.n.callee.type === "MemberExpression" ? gliedZiel(a, r.n.callee) : null;
-            if (!P || familie.has(P) || !pollend.has(P)) continue;
-            const p = r.p;
-            const wartet =
-                (p && (p.type === "AwaitExpression" || p.type === "ReturnStatement" || (p.type === "ArrowFunctionExpression" && p.body === r.n))) ||
-                (p && p.type === "MemberExpression" && p.object === r.n && /^(?:then|catch|finally)$/.test(eigenName(p) || "")) ||
-                r.n.arguments.some((x) => FN_ART.test(x.type) || (x.type === "Identifier" && a.closureNamen.has(x.name)));
-            if (wartet) ueber.push({ knoten: knotenAn(a, r.n.start), P, i: r.n.start });
-        }
-    }
-    const ort = (i) => stammLib.ort(root, stammLib.zeileVon(src, i));
-    const polls = [
-        ...kreise.filter((k) => k.familie).map((k) => `${k.von} → ${k.zu} Zeit-Kreis ${ort(k.i)}`),
-        ...schleifen.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} wartet in einer Schleife auf Zeit ${ort(s.i)}`),
-        ...intervalle.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} setInterval ${ort(s.i)}`),
-        ...ueber.map((u) => `${u.knoten} wartet über das pollende ${u.P} ${ort(u.i)}`),
-    ];
-    return { familie, polls };
-}
-
-function wand(src) {
-    const nc = ohneKommentare(src);
-    // Die Rümpfe am AST beim Namen (kommentarfrei); ein fehlendes Glied macht seine Prüfung ROT, nie still leer.
-    const gl = stammLib.glieder(src);
-    const fehlt = [];
-    const rumpf = (name) => {
-        const gs = gl.filter((g) => g.name === name);
-        if (!gs.length) {
-            fehlt.push(name);
-            return null;
-        }
-        return gs.map((g) => ohneKommentare(src.slice(g.start, g.ende))).join("\n");
-    };
-    const da = (...rs) => rs.every((r) => r !== null);
-    const ohne = (...namen) => (namen.some((n) => fehlt.includes(n)) ? ` · Glied fehlt: ${namen.filter((n) => fehlt.includes(n)).join(", ")}` : "");
-    // Zeichnen darf nur die Bühne und der Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im
-    // Render-Fluss (oben). Dass die Vorschau über die Bühne ungemaskt zeichnet, misst V-D3 im Render.
-    const renderRufe = renderFluss(src);
-    const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
-    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
-    const direkt = direktOrte.length;
-    const evalPos = rumpf("dslEvalPos");
-    const effekte = rumpf("dslEffects");
-    const wachen = ((effekte || "").match(/if \(!pos\)/g) || []).length;
-    // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie; V-D1 fährt es).
-    const plattform = rumpf("_genesisPlattform");
-    const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length - ((plattform || "").match(/\.type === "start_plattform"/g) || []).length;
-    // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
-    // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
-    // Ort an der Engstelle.
-    const positionen = rumpf("dslPositions");
-    const regelPos = rumpf("_dslRulePos");
-    const ersatz = [
-        ((positionen || "").match(/_defaultSpawnPos\(\)/g) || []).length,
-        ((positionen || "").match(/dslClamp\(/g) || []).length,
-        ((positionen || "").match(/\bNumber\(/g) || []).length,
-        ((effekte || "").match(/const c[xyz] = Number\(/g) || []).length,
-        ((effekte || "").match(/playerMesh\.position : \{ x: 0/g) || []).length,
-    ];
-    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
-    // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
-    // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
-    const zg = zeitGraph(src);
-    const polls = zg.polls;
-    const foundryNamen = zg.familie;
-    return [
-        [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`)",
-            direkt === 0,
-            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""}`,
-        ],
-        [
-            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` liefert nie null; den benannten Grund und den Default-Spawn ohne Knoten fährt V-k5)",
-            da(evalPos) && !/return null/.test(evalPos),
-            ohne("dslEvalPos").slice(3),
-        ],
-        [
-            "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
-            da(effekte) && wachen === 0,
-            `${wachen} Wache(n)${ohne("dslEffects")}`,
-        ],
-        [
-            "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            da(plattform) && plattSuchen === 0,
-            `${plattSuchen} Suche(n) nach start_plattform neben _genesisPlattform${ohne("_genesisPlattform")}`,
-        ],
-        [
-            "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz)",
-            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && !/Array\.isArray/.test(regelPos),
-            `Ersatz-Stellen ${ersatz.join("/")}${ohne("dslPositions", "dslEffects", "_dslRulePos")}`,
-        ],
-        [
-            "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
-            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
-        ],
-    ];
-}
-
 const server = statikServer();
 
-// ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
+// DER ZÄHLER DER TAKTE (Seite, vor dem ersten Skript): sobald der Loop steht, läuft er über diese Hülle — sie zählt jeden
+// Takt, merkt den Takt der Kontrolle (`_weltbildDa`) und ruft je Takt die Probe der Station (`jeTakt`).
+function TAKT_ZAEHLER() {
+    const A = (window.__gang = { takte: 0, kontrolle: null, jeTakt: null, loop: null });
+    const iv = setInterval(() => {
+        const r = window.anazhRealm;
+        const R = r && r.state && r.state.renderer;
+        if (!R || typeof r._gameLoopTick !== "function" || typeof R.setAnimationLoop !== "function") return;
+        clearInterval(iv);
+        const loop = r._gameLoopTick;
+        A.loop = (t) => {
+            A.takte++;
+            loop(t);
+            if (A.kontrolle == null && r.state._weltbildDa) A.kontrolle = A.takte;
+            if (A.jeTakt) A.jeTakt();
+        };
+        R.setAnimationLoop(A.loop);
+    }, 1);
+}
+
+// ── DIE STATIONEN IN DER SEITE (Funktionsrumpf; r = die Welt, der Loop treibt sie, `tick(n)` wartet n seiner Takte). ──
 async function probe(arg) {
-    const kiPort = arg && arg.kiPort;
-    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
+    const { kiPort, soll: SOLL } = arg;
+    const S = new Set(arg.stationen);
+    const zugFrist = SOLL.zugMs + 2000; // die Frist des fremden Zugs, 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const out = {};
-    const dl0 = performance.now() + 90000;
-    while (
-        (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-        performance.now() < dl0
-    )
-        await sleep(100);
+    const out = { zeit: [], bilder: {} };
     const r = window.anazhRealm;
     const st = r.state;
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {}
-            await sleep(ms || 30);
+    const R = st.renderer;
+    const A = window.__gang;
+    const marke = (n) => out.zeit.push([n, Math.round(performance.now()), A.takte]);
+    const tick = async (n) => {
+        const z = A.takte + (n || 1);
+        for (const dl = performance.now() + 120000; A.takte < z && performance.now() < dl; ) await sleep(4);
+    };
+    const taste = (art, key, code) => window.dispatchEvent(new KeyboardEvent(art, { key, code, bubbles: true }));
+    const tippe = async (key, code) => (taste("keydown", key, code), taste("keyup", key, code), tick(2));
+    // DAS BILD aus dem Ausgabe-Pfad (Satz „messung": der Schuss zeigt, was jetzt steht), der Loop ruht um den Schuss
+    const [W, H] = [640, 360];
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const png = (u8) => {
+        const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+        const ctx = cv.getContext("2d");
+        const img = ctx.createImageData(W, H);
+        img.data.set(u8.subarray(0, W * H * 4));
+        ctx.putImageData(img, 0, 0);
+        return cv.toDataURL("image/png");
+    };
+    const angehalten = async (fn) => {
+        R.setAnimationLoop(null);
+        try {
+            return await fn();
+        } finally {
+            R.setAnimationLoop(A.loop);
         }
     };
-    // ── V-D1: die Ankunft ──
+    // ── ANKUNFT: Start → Kontrolle, das erste Bild, W trägt den Spieler; V-k4 der Fensterwechsel löst W ──
+    marke("ankunft");
     try {
+        const m = (out.ankunft = { gestartet: false, ms: Math.round(st._weltbildDa || 0), takte: A.kontrolle });
+        m.ohne = (st.logBuffer || []).map(String).filter((z) => /Das erste Weltbild steht ohne/.test(z));
+        m.ladeschirm = r._ladeschirmSteht();
+        await angehalten(async () => {
+            window.__buehne();
+            out.bilder.ankunft = png(await schuss());
+        });
+        const p0 = st.playerMesh.position.clone();
+        const weg = () => Math.hypot(st.playerMesh.position.x - p0.x, st.playerMesh.position.z - p0.z);
+        const k0 = A.takte;
+        taste("keydown", "w", "KeyW");
+        for (let i = 0; i < 600 && weg() < SOLL.kontrolleM; i++) await tick(1);
+        [m.weg, m.wegTakte] = [+weg().toFixed(2), A.takte - k0];
+        const t = (out.taste = { gestartet: false, gedrueckt: st.keys.w === true });
+        window.dispatchEvent(new Event("blur"));
+        t.nachBlur = st.keys.w === true;
+        taste("keyup", "w", "KeyW");
+        t.gestartet = m.gestartet = true;
+    } catch (e) {
+        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+    }
+    if (S.has("lichtung")) marke("lichtung");
+    // ── V-D1: die Ankunft ──
+    if (S.has("lichtung")) try {
         const m = { gestartet: false };
-        out.ankunft = m;
+        out.lichtung = m;
         const dl0b = performance.now() + 60000;
         while (performance.now() < dl0b && !st.architectures.some((a) => a && a.type === "start_plattform")) await tick(1, 100);
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
@@ -925,18 +503,14 @@ async function probe(arg) {
         m.naechsterStamm = Number.isFinite(naechster) ? +naechster.toFixed(2) : null;
         m.naechsteArt = art;
         // Der Genesis-Ring: der Kreis der Kern-Portale um den Genesis-Ort — im ECHTEN Spiel-Takt auf einem Gerät, dessen
-        // Frame-Budget immer überschritten ist (die Radeon 890M der Werkbank: 160 von 160 Proben über 40 s). Headless ruht
-        // der Auto-Zug; der Hook öffnet ihn wie im Spiel, `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
-        const hookAlt = window.__anazhAutoSettlement;
-        window.__anazhAutoSettlement = true;
+        // Frame-Budget immer überschritten ist (die Radeon 890M der Werkbank: 160 von 160 Proben über 40 s):
+        // `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
-            if (hookAlt === undefined) delete window.__anazhAutoSettlement;
-            else window.__anazhAutoSettlement = hookAlt;
         }
         const ring = st.architectures.filter(
             (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 80
@@ -949,52 +523,160 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+        out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
-    try {
-        const m = { gestartet: false };
-        out.rezept = m;
-        const host = document.getElementById("inventory-recipes");
-        if (!host) throw new Error("kein #inventory-recipes");
-        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
-        const knopf = () => {
-            for (const row of host.querySelectorAll(".recipe-row")) {
-                const nm = row.querySelector(".recipe-name");
-                if (nm && nm.textContent === lbl) return row.querySelector("button");
+    // ── FAHRT: ein Studio-Wagen an einer Bahn, Aufstieg, 100 m mit W, der Arm und das Bild, der alte Strahl, Abstieg ──
+    if (S.has("fahrt")) {
+        marke("fahrt");
+        const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
+        try {
+            const AR = r.constructor;
+            // DIE BAHN, wenn die Welt steht (A9 `_weltSteht`: der Wald ist gepflanzt): eine Bahn, die nur das Gesetz des Fahr-
+            // Platzes prüfte, fuhr am 17.10. nach 64 m in eine Eiche (die Blocker eines fernen Baums entstehen erst in seiner
+            // Nähe), ein freier Kreis von 18 m fand sich im Wald um die Lichtung nicht. Die Bahn: die erste von 24 Richtungen ab dem
+            // Blick (Start 8–80 m vor dem Spieler), an der über 140 m (100 m, 30 m alter Strahl, Auslauf) kein Werk näher als die
+            // halbe Wagen-Breite + 0,6 m an der Spur steht und das Gesetz des Fahr-Platzes den Wagen alle 5 m frei stellt.
+            for (let i = 0; i < 3000 && !r._weltSteht(); i++) await tick(1);
+            const pe = { type: m.typ, position: { x: 0, y: 0, z: 0 }, rotationY: 0, scale: 1, _fahrAchseX: true };
+            const G = r._fahrSatz(pe, r._vehicleProfile(pe));
+            if (!G) throw new Error(`kein Fahr-Gesetz für ${m.typ} (Buch kalt?)`);
+            const k = r._fahrHuelleBau(pe, G);
+            const P = st.playerMesh.position.clone();
+            const werke = st.architectures.filter((a) => a && a.position && a.type !== "start_plattform");
+            const sperrt = (x, z, fx, fz) =>
+                werke.some((a) => {
+                    const [dx, dz] = [a.position.x - x, a.position.z - z];
+                    const t = dx * fx + dz * fz;
+                    return t > -6 && t < 146 && Math.abs(dx * fz - dz * fx) < k.hw + 0.6;
+                });
+            let platz = null;
+            for (const s0 of [8, 20, 35, 50, 65, 80])
+                for (let j = 0; j < 24 && !platz; j++) {
+                    const ry = st.yaw + (j * Math.PI) / 12;
+                    const [fx, fz] = [Math.sin(ry), Math.cos(ry)];
+                    const [x, z] = [P.x + fx * s0, P.z + fz * s0];
+                    let frei = !sperrt(x, z, fx, fz);
+                    for (let s = 0; frei && s <= 140; s += 5) frei = !r._fahrPlatzFrei(pe, G, k, x + fx * s, z + fz * s, ry);
+                    if (frei) platz = { x, z, ry };
+                }
+            if (!platz) throw new Error("keine Bahn von 140 m um den Spieler (24 Richtungen, Start 8–80 m)");
+            const e = r.spawnArchitecture(m.typ, { x: platz.x, y: r.getTerrainHeightAt(platz.x, platz.z) + 0.5, z: platz.z }, { rotationY: platz.ry - Math.PI / 2 });
+            if (!e) throw new Error(`die Welt stellt ${m.typ} an der Bahn nicht hin`);
+            for (let i = 0; i < 900 && !r._archIsRendered(e); i++) await tick(1);
+            if (!r._archIsRendered(e)) throw new Error(`${m.typ} nach 900 Takten ungezeichnet`);
+            const fahrt = () => (Number.isFinite(e.rotationY) ? e.rotationY : 0) + Math.PI / 2; // Studio-Wagen: Bug +x
+            m.bahn = [Math.round(e.position.x), Math.round(e.position.z), +fahrt().toFixed(2)];
+            // der Spieler tritt 1,5 m neben die Mitte an die Flanke und blickt in die Fahrt, E steigt ein
+            const [qx, qz] = [Math.cos(fahrt()), -Math.sin(fahrt())];
+            const [sx, sz] = [e.position.x + qx * 1.5, e.position.z + qz * 1.5];
+            st.playerMesh.position.set(sx, r.getTerrainHeightAt(sx, sz) + 1.8, sz);
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
+            st.yaw = fahrt();
+            await tick(12);
+            m.sichtVor = st.cameraMode;
+            await tippe("e", "KeyE");
+            for (let i = 0; i < 30 && st.player.mountedArch !== e.id; i++) await tick(1);
+            if (st.player.mountedArch !== e.id) throw new Error(`E steigt nicht ein (${(st.logBuffer || []).slice(-2).join(" · ")})`);
+            m.sichtRitt = st.cameraMode;
+            // JE TAKT DER ARM und wo er endet: in der Hülle des gerittenen Werks (Fahrt-Rahmen, um den Kugel-Radius der Kamera)
+            const rr = AR._bewegungsBlock("kamera", ["armRadiusM"]).armRadiusM;
+            const proben = [];
+            A.jeTakt = () => {
+                if (st.player.mountedArch !== e.id || !(st._kamArm >= 0)) return;
+                const c = st.camera.position;
+                const [dx, dz, f] = [c.x - e.position.x, c.z - e.position.z, fahrt()];
+                const l = dx * Math.sin(f) + dz * Math.cos(f);
+                const q = dx * Math.cos(f) - dz * Math.sin(f);
+                proben.push([st._kamArm, l >= k.heck - rr && l <= k.bug + rr && Math.abs(q) <= k.hw + rr]);
+            };
+            const arm = () => {
+                const a = proben.map((p) => p[0]).sort((x, y) => x - y);
+                const n = { armN: a.length, armP50: +(a[a.length >> 1] || 0).toFixed(3), armMin: +(a[0] || 0).toFixed(3) };
+                n.imWagen = proben.filter((p) => p[1]).length;
+                proben.length = 0;
+                return n;
+            };
+            // DER WAGEN IM BILD (die Klassen-Teilung der Abnahme): dieselbe Pose mit und ohne Wagen, sein Wurf aus in beiden
+            const wagenBild = (name) =>
+                angehalten(async () => {
+                    const gr = new Set((e.instSlots || []).map((s) => (st.archInstanceGroups.get(s.key) || {}).mesh).filter(Boolean));
+                    if (e.mesh) gr.add(e.mesh);
+                    const alt = [...gr].map((o) => [o, o.visible, o.castShadow]);
+                    const bundles = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+                    const auf = async (ohne) => {
+                        for (const [o, v] of alt) o.visible = ohne ? false : v;
+                        bundles();
+                        r._schattenAlleNeu();
+                        return schuss();
+                    };
+                    try {
+                        for (const o of gr) o.castShadow = false;
+                        const [G1, G2, O] = [await auf(false), await auf(false), await auf(true)];
+                        const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
+                        out.bilder[name] = png(G1);
+                        return { anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4), rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil, teile: gr.size };
+                    } finally {
+                        for (const [o, v, c] of alt) [o.visible, o.castShadow] = [v, c];
+                        bundles();
+                    }
+                });
+            // DER WEG: die Länge der gefahrenen Spur (je Takt)
+            let pfad = 0;
+            const fahre = async (bis) => {
+                for (let i = 0, still = 0; i < 4000 && pfad < bis && still < 240; i++) {
+                    const [x0, z0] = [e.position.x, e.position.z];
+                    await tick(1);
+                    const d = Math.hypot(e.position.x - x0, e.position.z - z0);
+                    pfad += d;
+                    still = d < 0.005 ? still + 1 : 0;
+                }
+            };
+            const weg = () => pfad;
+            const k0 = A.takte;
+            taste("keydown", "w", "KeyW");
+            await fahre(SOLL.fahrM);
+            [m.weg, m.fahrTakte] = [+weg().toFixed(1), A.takte - k0];
+            Object.assign(m, arm(), await wagenBild("fahrt"));
+            // DER SELBSTTEST IM LAUF: derselbe Wagen fährt 30 m weiter mit dem alten Strahl — `_fieldRaycast` ohne die Frage
+            // `_gerittenesWerk` (der Stand vor 1215d560); das Urteil muss ROT werden und den Arm beim Namen nennen
+            if (Object.prototype.hasOwnProperty.call(r, "_fieldRaycast")) throw new Error("_fieldRaycast ist schon eingespielt");
+            const strahl = r._fieldRaycast;
+            r._fieldRaycast = function (...a) {
+                this._gerittenesWerk = () => false;
+                try {
+                    return strahl.apply(this, a);
+                } finally {
+                    delete this._gerittenesWerk;
+                }
+            };
+            try {
+                await fahre(weg() + 30);
+                out.fahrtAlt = Object.assign({}, m, { gestartet: true }, arm(), await wagenBild("fahrt-alter-strahl"));
+            } finally {
+                delete r._fieldRaycast;
+                A.jeTakt = null;
+                taste("keyup", "w", "KeyW");
             }
-            return null;
-        };
-        const modusAlt = r.getGameMode();
-        r.setGameMode("frieden");
-        r.renderRecipeBook();
-        const k0 = knopf();
-        m.friedenGesperrt = !!k0 && k0.disabled === true;
-        r.setGameMode("schöpfer");
-        r.renderRecipeBook();
-        const k1 = knopf();
-        m.schoepferFrei = !!k1 && k1.disabled === false;
-        m.titel = k1 ? k1.title || "" : "kein Knopf";
-        r.setGameMode(modusAlt);
-        m.gestartet = true;
-    } catch (e) {
-        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
+            taste("keydown", "s", "KeyS"); // die Bremse bis zum Stand
+            for (let i = 0, still = 0; i < 900 && still < 20; i++) {
+                const [x0, z0] = [e.position.x, e.position.z];
+                await tick(1);
+                still = Math.hypot(e.position.x - x0, e.position.z - z0) < 0.002 ? still + 1 : 0;
+            }
+            taste("keyup", "s", "KeyS");
+            await tippe("e", "KeyE");
+            for (let i = 0; i < 30 && st.player.mountedArch === e.id; i++) await tick(1);
+            [m.abgestiegen, m.sichtNach] = [st.player.mountedArch == null, st.cameraMode];
+            m.gestartet = true;
+        } catch (e) {
+            Object.assign(m, { err: (e && e.stack) || String(e), grund: String((e && e.message) || e) });
+            A.jeTakt = null;
+        }
     }
-    // ── V-k4: der Fensterwechsel löst die Tasten ──
-    try {
-        const m = { gestartet: false };
-        out.taste = m;
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
-        m.gedrueckt = st.keys.w === true;
-        window.dispatchEvent(new Event("blur"));
-        m.nachBlur = st.keys.w === true;
-        window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
-        m.gestartet = true;
-    } catch (e) {
-        out.taste = Object.assign(out.taste || {}, { err: (e && e.stack) || String(e) });
-    }
+    if (S.has("wort")) marke("wort");
     // ── V-D6: der KI-Fehler nennt die Ursache ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false };
         out.ki = m;
         const llm = st.llm;
@@ -1027,7 +709,7 @@ async function probe(arg) {
         out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-k5 · V-k6 · V-D8: der Satz trifft die Welt ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false };
         out.satz = m;
         const archs = st.architectures;
@@ -1120,7 +802,7 @@ async function probe(arg) {
         out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-k5-KLASSE: jede Op, deren verlangter Ort fehlt, scheitert benannt — an dem trockenen Ort der Satz-Probe ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false, ops: {} };
         out.ort = m;
         const ort = out.satz && out.satz.trockenOrt;
@@ -1257,7 +939,7 @@ async function probe(arg) {
         out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
     }
     // ── R2: DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN — gezählt werden Spalten-Scans (`_voxelSurfaceY`) ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false, zaehlung: {} };
         out.suche = m;
         const ort = out.satz && out.satz.trockenOrt;
@@ -1396,8 +1078,38 @@ async function probe(arg) {
     } catch (e) {
         out.suche = Object.assign(out.suche || {}, { err: (e && e.stack) || String(e) });
     }
+    if (S.has("werkstatt")) marke("werkstatt");
+    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
+    if (S.has("werkstatt")) try {
+        const m = { gestartet: false };
+        out.rezept = m;
+        const host = document.getElementById("inventory-recipes");
+        if (!host) throw new Error("kein #inventory-recipes");
+        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
+        const knopf = () => {
+            for (const row of host.querySelectorAll(".recipe-row")) {
+                const nm = row.querySelector(".recipe-name");
+                if (nm && nm.textContent === lbl) return row.querySelector("button");
+            }
+            return null;
+        };
+        const modusAlt = r.getGameMode();
+        r.setGameMode("frieden");
+        r.renderRecipeBook();
+        const k0 = knopf();
+        m.friedenGesperrt = !!k0 && k0.disabled === true;
+        r.setGameMode("schöpfer");
+        r.renderRecipeBook();
+        const k1 = knopf();
+        m.schoepferFrei = !!k1 && k1.disabled === false;
+        m.titel = k1 ? k1.title || "" : "kein Knopf";
+        r.setGameMode(modusAlt);
+        m.gestartet = true;
+    } catch (e) {
+        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
+    }
     // ── V-D3: die Werkstatt-Vorschau ──
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false };
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
@@ -1496,7 +1208,7 @@ async function probe(arg) {
     // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
     // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
     // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false };
         out.zug = m;
         const ws = r._ensureWorkshopState();
@@ -1636,7 +1348,7 @@ async function probe(arg) {
     // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
     // stellt `_workshopRender` (der Vorschau-Renderer ist oben der Beobachtungs-Punkt, keine GPU-Arbeit); gemessen wird
     // die projizierte Box3 der Gestalt: größere Kante je Bildkante (NDC, auf das Bild geklemmt) — das Maß des Runners.
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false, eintraege: [] };
         out.rahmen = m;
         const ws = r._ensureWorkshopState();
@@ -1708,11 +1420,11 @@ async function probe(arg) {
     } catch (e) {
         out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
     }
+    marke("ende");
     return out;
 }
 
 (async () => {
-    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesund = { gestartet: true, renders: 1, vertices: 1200, anteil: 1, maskeImRender: 0, maskeWelt: 1, maskeDanach: 1 };
@@ -1771,7 +1483,7 @@ async function probe(arg) {
             check(`Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true, plattformen: 1 };
-        check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
+        check("Selbst-Test V-D1: gesunde Lichtung == 0 Täter", lichtungVerdict(gesundA).length === 0);
         for (const [name, bruch, soll] of [
             ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
             ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
@@ -1780,7 +1492,7 @@ async function probe(arg) {
             ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
             ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
         ]) {
-            const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
+            const v = lichtungVerdict(Object.assign({}, gesundA, bruch));
             check(`Selbst-Test V-D1: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         // Die Einzelschnitte: je ein gesunder Zustand ohne Täter, je der Befund-Zustand mit Täter beim Namen.
@@ -1819,6 +1531,33 @@ async function probe(arg) {
                     ["Telemetrie im Chat (V-D8)", { telemetrieImChat: true }, "Dorf-Telemetrie"],
                 ],
             ],
+            [
+                "Ankunft",
+                ankunftVerdict,
+                { gestartet: true, ms: 9000, takte: 120, ohne: [], ladeschirm: false, weg: 2.4, wegTakte: 40 },
+                [
+                    ["halbes Weltbild über den Deckel (L2a)", { ohne: ["Das erste Weltbild steht ohne: Horizont — der Deckel von 60000 ms ist erreicht."] }, "ankunft halb"],
+                    ["der Ladeschirm bleibt", { ladeschirm: true }, "ankunft: der Ladeschirm"],
+                    ["W trägt den Spieler nicht", { weg: 0, wegTakte: 600 }, "kontrolle: W trug den Spieler 0 m"],
+                ],
+            ],
+            [
+                "Fahrt",
+                fahrtVerdict,
+                { gestartet: true, typ: "fahrzeug_gt", sichtVor: "first", sichtRitt: "third", sichtNach: "first", weg: 100.4, armN: 300, armP50: 1, armMin: 0.6, imWagen: 0, anteil: 0.12, rauschen: 0, abgestiegen: true },
+                [
+                    [
+                        "der Arm trifft den eigenen Wagen (Befund 17.10., Arm 0,30)",
+                        { armP50: 0.3, armMin: 0.28, imWagen: 280 },
+                        "kamera-arm p50 0.3 (min 0.28) < 0.9 — 280 von 300 Proben enden in der Hülle des gerittenen Werks fahrzeug_gt: der Strahl der Kamera trifft den eigenen Wagen",
+                    ],
+                    ["im Ritt bleibt die Sicht", { sichtRitt: "first" }, "sicht: im Ritt first"],
+                    ["der Wagen verschwindet im Bild", { anteil: 0.001 }, "wagen im Bild 0.1 %"],
+                    ["die Fahrt bleibt stecken", { weg: 12 }, "fahrt: 12 m"],
+                    ["nach dem Abstieg bleibt Third", { sichtNach: "third" }, "sicht: nach dem Abstieg third"],
+                    ["kein Wagen an der Bahn", { gestartet: false, grund: "keine Bahn von 140 m" }, "fahrt start: keine Bahn"],
+                ],
+            ],
         ]) {
             check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
             for (const [name, bruch, soll] of brueche) {
@@ -1826,244 +1565,6 @@ async function probe(arg) {
                 check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
             }
         }
-        const gruen = wand(quelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
-        const vorStand = stammLib.ersetze(quelle, [
-            ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
-            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
-            ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
-            ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
-                'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
-            ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
-                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"],
-            // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
-            ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
-                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
-            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
-            ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
-                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
-        ]);
-        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
-        const weniger = wand(stammLib.ersetze(quelle, "_hofStartRAF", 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
-        check(
-            "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
-            quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
-            weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
-        );
-        // DIE TÄTER DER RUNDEN 3 UND 4 (Prüfer K38-N2: mut-w2b, mut-bind, mut-schlaf, mut-kreuz) und ihre Klassen in EINEM
-        // Text. W2: jeder Weg der Render-Funktion zu ihrem Ruf — zusammengesetzte Argumente (||, ?:, ein Aufruf im Argument),
-        // renderAsync, .call, .apply über Reflect, .bind (auch mit vorgebundener Szene), Alias, Destrukturieren, Feld,
-        // Parameter, Rückgabe, Zeitgeber; ein Feld der Info und ein UI-Raum schweigen. W7: jede Form des Polls — die Closure,
-        // die sich neu stellt (Block-Rumpf, zwei Closures), das Glied per Zeitgeber, die Schleife mit Schlaf (inline und über
-        // eine Schlaf-Closure), der Kreis über zwei Glieder, die async-Rekursion nach dem Schlaf, then auf einem Schlaf, das
-        // Zeitgeber-Glied, ein Alias von this, setInterval über `window["…"]`, das Warten auf ein pollendes Glied; die
-        // einmalige Frist und ein Render-Takt, den die Familie nur startet, schweigen.
-        const bue = stammLib.glieder(quelle).find((g) => g.name === "_buehneRender");
-        const ichRuf = 'this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");';
-        const klasse = (quelle.slice(0, bue.ende) +
-            [
-                "",
-                "    _fremdeBuehne(s, k = f(1)) {",
-                "        s.renderer.render(s.scene, s.cam ? s.cam : s.camera);",
-                "    }",
-                "    _bauBuehne(s) {",
-                "        s.renderer.render(this._szeneVon(s, 1), s.camera);",
-                "        s.renderer.renderAsync(s.scene, s.camera);",
-                "        s.renderer.render.call(s.renderer, s.scene, s.camera);",
-                "    }",
-                "    _bindBuehne(s) {",
-                "        const zeichne = s.renderer.render.bind(s.renderer);",
-                "        zeichne(s.scene, s.camera);",
-                "    }",
-                "    _vorgebunden(s) {",
-                "        s.renderer.render.bind(s.renderer, s.scene)(s.camera);",
-                "    }",
-                "    _zerlegt(s) {",
-                "        const { render: male } = s.renderer;",
-                "        male.call(s.renderer, s.scene, s.camera);",
-                "    }",
-                "    _reflektiert(s) {",
-                '        Reflect.apply(s.renderer["render"], s.renderer, [s.scene, s.camera]);',
-                "    }",
-                "    _merkeZeichner(s) {",
-                "        this._zeichner = s.renderer.renderAsync.bind(s.renderer);",
-                "    }",
-                "    _nutzeZeichner(s) {",
-                "        this._zeichner(s.scene, s.camera);",
-                "    }",
-                "    _reiche(s) {",
-                "        this._zeichneMit(s.renderer.render.bind(s.renderer), s);",
-                "    }",
-                "    _zeichneMit(f, s) {",
-                "        f(s.scene, s.camera);",
-                "    }",
-                "    _gibZeichner(s) {",
-                "        return s.renderer.render.bind(s.renderer);",
-                "    }",
-                "    _holeZeichner(s) {",
-                "        this._gibZeichner(s)(s.scene, s.camera);",
-                "    }",
-                "    _spaeter(s) {",
-                "        setTimeout(s.renderer.render.bind(s.renderer), 0, s.scene, s.camera);",
-                "    }",
-                "    _zaehle(s, room) {",
-                "        room.render();",
-                "        return s.renderer.info.render.calls + (s.perf.render || 0);",
-                "    }",
-                "    _foundryLauscher(k, o = f(1)) {",
-                "        const warte = () => {",
-                "            if (!this._foundry) {",
-                "                window.setTimeout(() => {",
-                "                    warte();",
-                "                }, 150);",
-                "            }",
-                "        };",
-                "        warte();",
-                "    }",
-                "    async _foundryNachfrage(k) {",
-                "        if (!this._foundry) setTimeout(() => this._foundryNachfrage(k), 150);",
-                "    }",
-                "    _foundryPingPong() {",
-                "        const ping = () => pong();",
-                "        function pong() {",
-                "            requestAnimationFrame(ping);",
-                "        }",
-                "        ping();",
-                "    }",
-                "    async _foundryWarteBuch() {",
-                "        while (!this._foundry.buchDa) await new Promise((r) => setTimeout(r, 50));",
-                "    }",
-                "    async _foundryDoeset() {",
-                "        const schlafe = (ms) => new Promise((r) => setTimeout(r, ms));",
-                "        for (;;) {",
-                "            if (this._foundry) break;",
-                "            await schlafe(30);",
-                "        }",
-                "    }",
-                "    _foundryHorch() {",
-                "        if (!this._foundry) setTimeout(() => this._foundryHorchNochmal(), 150);",
-                "    }",
-                "    _foundryHorchNochmal() {",
-                "        this._foundryHorch();",
-                "    }",
-                "    async _foundryErneut(k) {",
-                "        await new Promise((r) => setTimeout(r, 100));",
-                "        if (!this._foundry) return this._foundryErneut(k);",
-                "    }",
-                "    _foundryKette() {",
-                "        this._schlummer(80).then(() => this._foundryKette());",
-                "    }",
-                "    _schlummer(ms) {",
-                "        return new Promise((r) => setTimeout(r, ms));",
-                "    }",
-                "    _naechsterTakt(cb) {",
-                "        requestAnimationFrame(() => cb());",
-                "    }",
-                "    _foundryTakt() {",
-                "        if (!this._foundry) this._naechsterTakt(() => this._foundryTakt());",
-                "    }",
-                "    _warteBis(pruef) {",
-                "        return new Promise((ok) => {",
-                "            const sieh = () => (pruef() ? ok() : setTimeout(sieh, 40));",
-                "            sieh();",
-                "        });",
-                "    }",
-                "    async _foundryWarteBis() {",
-                "        await this._warteBis(() => this._foundry);",
-                "    }",
-                "    _foundryIntervall() {",
-                '        window["setInterval"](() => this._foundryEinmal(1), 500);',
-                "    }",
-                "    _foundryAlias() {",
-                "        const selbst = this;",
-                "        setTimeout(() => selbst._foundryAlias(), 99);",
-                "    }",
-                "    _foundryEinmal(k) {",
-                "        const ab = () => this._foundryAblauf(k);",
-                "        setTimeout(ab, 5000);",
-                "    }",
-                "    _vorschauTakt() {",
-                "        const tick = () => requestAnimationFrame(tick);",
-                "        tick();",
-                "    }",
-                "    _foundryStarteTakt() {",
-                "        this._vorschauTakt();",
-                "    }",
-            ].join("\n") +
-            quelle.slice(bue.ende)).replace(ichRuf, "s.renderer.render(s.scene, s.cam || s.camera);");
-        const wk = wand(klasse);
-        const w2 = wk.find((w) => w[0].startsWith("W2"));
-        const w7 = wk.find((w) => w[0].startsWith("W7"));
-        // je Stelle EIN Eintrag — die Zahl der genannten Orte ist die Zahl der Einträge, keine feste Zahl
-        const w2Soll = [
-            "_ichStartRAF: s.renderer.render(s.scene, s.cam || s.camera)",
-            "_fremdeBuehne:",
-            "_bauBuehne: s.renderer.render(this",
-            "_bauBuehne: s.renderer.renderAsync(",
-            "[.call]",
-            "_bindBuehne: zeichne(s.scene, s.camera) [.bind → zeichne → Ruf]",
-            "_vorgebunden: s.renderer.render.bind(s.renderer, s.scene)(s.camera) [.bind → Ruf]",
-            "_zerlegt: male.call(s.renderer, s.scene, s.camera) [{ render } → male → .call]",
-            "_reflektiert: Reflect.apply(",
-            "_nutzeZeichner: this._zeichner(s.scene, s.camera) [.bind → Feld ._zeichner → Ruf]",
-            "_zeichneMit: f(s.scene, s.camera) [.bind → Parameter _zeichneMit(f) → Ruf]",
-            "_holeZeichner: this._gibZeichner(s)(s.scene, s.camera) [.bind → Rückgabe _gibZeichner() → Ruf]",
-            "_spaeter: setTimeout(",
-        ];
-        const w2Still = ["_zaehle", "_merkeZeichner", "_reiche:", "_gibZeichner:"];
-        const w7Soll = [
-            "_foundryLauscher/warte → _foundryLauscher/warte",
-            "_foundryNachfrage → _foundryNachfrage",
-            "_foundryPingPong/pong → _foundryPingPong/ping",
-            "_foundryWarteBuch wartet in einer Schleife",
-            "_foundryDoeset wartet in einer Schleife",
-            "_foundryHorch → _foundryHorchNochmal",
-            "_foundryErneut → _foundryErneut",
-            "_foundryKette → _foundryKette",
-            "_foundryTakt → _foundryTakt",
-            "_foundryWarteBis wartet über das pollende _warteBis",
-            "_foundryIntervall setInterval",
-            "_foundryAlias → _foundryAlias",
-        ];
-        const w7Still = ["_foundryEinmal", "_foundryStarteTakt", "_vorschauTakt", "_foundryUhren", "_foundryAblauf", "_foundryPumpe"];
-        check(
-            "Selbst-Test W: die Täter der Runden 3 und 4 (s.cam || s.camera, .bind) und ihre Klasse (?:, Aufruf im Argument, renderAsync, .call, Reflect.apply, vorgebunden, Alias, Destrukturieren, Feld, Parameter, Rückgabe, Zeitgeber) → W2 nennt jeden, Info und UI-Raum schweigen",
-            quelle.includes(ichRuf) &&
-                !w2[1] &&
-                w2Soll.every((n) => w2[2].includes(n)) &&
-                !w2Still.some((n) => w2[2].includes(n)) &&
-                (w2[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w2Soll.length,
-            `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
-        );
-        check(
-            "Selbst-Test W: die Täter der Runde 4 (Schleife mit Schlaf, Kreis über zwei Glieder) und jede Form des Polls → W7 nennt jeden, die einmalige Frist, der gestartete Render-Takt und die Frist-Kette schweigen",
-            !w7[1] &&
-                w7Soll.every((n) => w7[2].includes(n)) &&
-                !w7Still.some((n) => w7[2].includes(n)) &&
-                (w7[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w7Soll.length,
-            `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
-        );
-        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim Namen.
-        const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
-        const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
-        const inDerKette = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
-        check(
-            "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
-            quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
-            inDerKette[2]
-        );
-        // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
-        const effekteGlied = stammLib.glieder(quelle).find((g) => g.name === "dslEffects");
-        const umbenannt = quelle.slice(0, effekteGlied.start) + quelle.slice(effekteGlied.start).replace("dslEffects", "dslWirkungen");
-        const w4 = wand(umbenannt).find((w) => w[0].startsWith("W4"));
-        check("Selbst-Test W: dslEffects umbenannt → W4 nennt das fehlende Glied", !w4[1] && w4[2].includes("Glied fehlt: dslEffects"), w4[2]);
-        const rot = wand(vorStand);
-        check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W2–W7 feuern",
-            rot.filter((w) => !w[1]).length === 6,
-            rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
-        );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const opGesund = (op) => ({ ok: false, grund: "kein Wasser im Umkreis von 60 m", effekt: op, fehler: null, kalt: false, akte: [] });
         const gesundO = {
@@ -2147,6 +1648,20 @@ async function probe(arg) {
             const v = sucheVerdict(bruch);
             check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang, Doku nur die Ankunft
+        const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
+        for (const [dateien, soll] of [
+            [["stamm/koerper-fahrt.js"], "ankunft,fahrt"],
+            [["stamm/bild-kosten.js"], "ankunft"],
+            [["docs/PFLICHT-OFFEN.md", "scripts/diag-ankunft.cjs"], "ankunft"],
+            [["stamm/werkstatt-vorschau.js", "stamm/feld-dsl.js"], "ankunft,werkstatt,wort"],
+            [["stamm/dienst.js"], "ankunft,lichtung,fahrt,werkstatt,wort"],
+            [["worlds/garage/vehicle-core.js"], "ankunft,lichtung,fahrt,werkstatt,wort"],
+            [["scripts/diag-v1-pfad.cjs"], "ankunft,lichtung,fahrt,werkstatt,wort"],
+        ]) {
+            const ist = stationenFuer(dateien, ordnung).stationen.join(",");
+            check(`Selbst-Test Wahl: ${dateien.join(" + ")} → ${soll}`, ist === soll, ist);
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -2155,155 +1670,121 @@ async function probe(arg) {
         process.exit(0);
     }
 
-    console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
+    // DIE WAHL DER STATIONEN: `--station` nennt sie, `--nach-diff` liest sie aus den Dateien seit <rev>, sonst der ganze Gang
+    const alle = STATIONEN.map(([n]) => n);
+    let stationen = alle;
+    if (OPT("--station")) {
+        const w = OPT("--station").split(",");
+        const fremd = w.filter((n) => !alle.includes(n));
+        if (fremd.length) throw new Error(`unbekannte Station ${fremd.join(",")} — es gibt ${alle.join(" · ")}`);
+        stationen = alle.filter((n) => n === "ankunft" || w.includes(n));
+    } else if (OPT("--nach-diff")) {
+        const diff = require("child_process").execFileSync("git", ["diff", "--name-only", OPT("--nach-diff")], { cwd: root, encoding: "utf8" });
+        const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
+        const w = stationenFuer(diff.split("\n").filter(Boolean), ordnung);
+        w.grund.forEach((g) => console.log(`  ${g}`));
+        stationen = w.stationen;
+    }
+    console.log(`=== DER SPIELGANG: ${stationen.join(" → ")} ===`);
+    const os = require("os");
+    const bilderOrt = path.resolve(OPT("--bilder") || path.join(os.tmpdir(), "spielgang"));
+    const platte = fs.mkdtempSync(path.join(os.tmpdir(), "spielgang-platte-")); // die leere Platte (IDB leer)
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "linse", frist: 1800000, profil: platte });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
+    await page.evaluateOnNewDocument(TAKT_ZAEHLER);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    const t0 = Date.now();
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state._weltbildDa && window.__gang.loop, { timeout: 900000, polling: 250 });
+    const bootS = ((Date.now() - t0) / 1000).toFixed(1);
+    await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
+    fs.rmSync(platte, { recursive: true, force: true });
+    fs.mkdirSync(bilderOrt, { recursive: true });
+    for (const [name, url] of Object.entries(out.bilder)) fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
 
-    console.log("=== V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG ===");
-    const am = out.ankunft || {};
-    if (am.err) check("V-D1 Probe ohne Ausnahme", false, am.err.split("\n")[0]);
-    const vA = ankunftVerdict(am);
-    check(
-        "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
-        vA.length === 0,
-        `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
-    );
-    console.log("=== V-D5 · V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
-    for (const [kurz, name, m, urteil, zeile] of [
-        [
-            "V-D5",
-            "das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
-            out.rezept,
-            rezeptVerdict,
-            (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`,
-        ],
-        [
-            "V-k4",
-            "der Fensterwechsel löst die gehaltene Taste",
-            out.taste,
-            tasteVerdict,
-            (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`,
-        ],
-        [
-            "V-D6",
-            "der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)",
-            out.ki,
-            kiVerdict,
-            (m) => `„${(m.fehler || "").slice(0, 90)}"`,
-        ],
-        [
-            "V-k5 V-k6 V-D8",
-            "der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie",
-            out.satz,
-            satzVerdict,
-            (m) =>
-                `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`,
-        ],
-    ]) {
+    // DAS URTEIL je Station: die Probe ohne Ausnahme, die Täter beim Namen; die Laufzeit aus den Marken der Seite
+    const urteil = (station, name, m, verdikt, zeile) => {
+        if (!stationen.includes(station)) return [];
         const mm = m || {};
-        if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
-        const v = urteil(mm);
-        check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+        if (mm.err) check(`${name.split(" ")[0]} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
+        const v = verdikt(mm);
+        check(name, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+        return v;
+    };
+    for (const [i, [n, ms, takte]] of out.zeit.slice(0, -1).entries()) {
+        const [, ms2, takte2] = out.zeit[i + 1];
+        console.log(`=== ${n.toUpperCase()} — ${((ms2 - ms) / 1000).toFixed(1)} s · ${takte2 - takte} Takte${n === "ankunft" ? ` (Boot bis Kontrolle ${bootS} s)` : ""} ===`);
+        if (n === "ankunft") {
+            urteil(n, "Ankunft das erste Weltbild ist ganz, der Ladeschirm weicht, W trägt den Spieler", out.ankunft, ankunftVerdict, (m) =>
+                `Kontrolle nach ${m.takte} Takten · ${(m.ms / 1000).toFixed(1)} s ab Navigation · ${m.ohne.length}× halb · W ${m.weg} m in ${m.wegTakte} Takten`);
+            urteil(n, "V-k4 der Fensterwechsel löst die gehaltene Taste", out.taste, tasteVerdict, (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`);
+        } else if (n === "lichtung")
+            urteil(n, "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie", out.lichtung, lichtungVerdict, (m) =>
+                `Plattform ${JSON.stringify(m.plattform)} · ${m.baeume} Bäume im 40-m-Kreis · nächster Stamm ${m.naechsterStamm} m (${m.naechsteArt}) · Kronen über der Scheibe ${m.kronen} · Ring ${m.ringPortale} Portale, Mitte ${m.ringMitteAbstand} m`);
+        else if (n === "fahrt") {
+            const zeile = (m) =>
+                `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} in der Hülle) · Wagen ${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`;
+            urteil(n, `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild, E steigt aus`, out.fahrt, fahrtVerdict, zeile);
+            const alt = out.fahrtAlt ? fahrtVerdict(out.fahrtAlt) : [];
+            check(
+                "Selbst-Test im Lauf: der alte Strahl (`_fieldRaycast` ohne `_gerittenesWerk`) macht die Fahrt ROT beim Namen",
+                alt.some((t) => t.includes("der Strahl der Kamera trifft den eigenen Wagen")),
+                out.fahrtAlt ? `${zeile(out.fahrtAlt)} — ${alt.join(" · ")}` : "nicht gefahren"
+            );
+        } else if (n === "wort") {
+            urteil(n, "V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)", out.ki, kiVerdict, (m) => `„${(m.fehler || "").slice(0, 90)}"`);
+            urteil(n, "V-k5 V-k6 V-D8 der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie", out.satz, satzVerdict, (m) =>
+                `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`);
+            const opZeile = (om, op) => {
+                const e = (om.ops || {})[op] || {};
+                return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
+            };
+            urteil(n, "V-k5-Klasse jede Op mit near_water in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)", out.ort, ortVerdict, (m) =>
+                `${m.radius} m: ${ORT_OPS.map((op) => opZeile(m, op)).join(" · ")} · chain ${m.chain && m.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${m.dorfAuftraege}`);
+            urteil(n, `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme), die Defaults der Auflöser gelten`, out.knoten, knotenVerdict, (m) => {
+                const kl = m.laeufe || {};
+                const kd = m.defaults || {};
+                const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
+                const akte = KNOTEN.reduce((s, [name]) => s + ((kl[name] && kl[name].akte) || []).length, 0);
+                return `${benannt}/${KNOTEN.length} benannt · ${akte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(m.messOrtOhneSpieler)}`;
+            });
+            urteil(n, "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche", out.suche, sucheVerdict, (m) => {
+                const zz = m.zaehlung || {};
+                const z = (k) => (zz[k] ? `${k} ${zz[k].R} m: ${zz[k].proben} Proben/${zz[k].scans} Scans${zz[k].hoch != null ? ` (hochgerechnet ${zz[k].hoch})` : ""}` : `${k} —`);
+                const ex = m.exakt ? `${m.exakt.falsch} von ${m.exakt.n} Urteilen abweichend (${m.exakt.nass} nass)` : "—";
+                return [ex, ...["trinken", "chat", "ki"].flatMap((p) => [z(`${p}@trocken`), z(`${p}@plattform`)]), z("ki@trocken-voll")].join(" · ");
+            });
+        } else if (n === "werkstatt") {
+            urteil(n, "V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)", out.rezept, rezeptVerdict, (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`);
+            urteil(n, "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)", out.vorschau, vorschauVerdict, (m) =>
+                `${m.vertices || 0} Proben · ${pct(m.anteil)} behalten · Maske im Render ${m.maskeImRender} · Welt-Auge ${m.augeAbstand} m`);
+            const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}` : `${wer} —`);
+            urteil(n, `V-D3 Fremder Zug jeder Wartende erwacht nach einem fremd gezogenen Körper, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`, out.zug, zugVerdict, (m) =>
+                `${zZ("vorschau", m.vorschau)} · ${zZ("hand", m.hand)} · Stufen ${(m.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")} · Vorrat ${m.vorrat ? `${m.vorrat.key} ${m.vorrat.auftraege}× bestellt` : "—"}`);
+            urteil(n, `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`, out.rahmen, rahmenVerdict, (m) => {
+                const s = (m.eintraege || []).map((q) => q.fuell).filter(Number.isFinite).sort((a, b) => a - b);
+                return `${s.length} gemessen (min ${s[0]} · median ${s[s.length >> 1]} · max ${s[s.length - 1]}) · ${(m.eintraege || []).filter((q) => q.leer).length} ehrlich leer · ${m.waffenImBuch} Waffen · ${m.ms} ms`;
+            });
+        }
     }
-    console.log("=== V-k5-KLASSE (Q15) — DER VERLANGTE ORT, DEN ES NICHT GIBT ===");
-    const om = out.ort || {};
-    if (om.err) check("V-k5-Klasse Probe ohne Ausnahme", false, om.err.split("\n")[0]);
-    const vO = ortVerdict(om);
-    const opZeile = (op) => {
-        const e = (om.ops || {})[op] || {};
-        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
-    };
-    check(
-        `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
-        vO.length === 0,
-        `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
-    );
-    console.log("=== V-k5-KLASSE, DER REST — JEDER UNGÜLTIGE ORT SCHEITERT BENANNT ===");
-    const km = out.knoten || {};
-    if (km.err) check("V-k5-Klasse (Rest) Probe ohne Ausnahme", false, km.err.split("\n")[0]);
-    const vK = knotenVerdict(km);
-    const kl = km.laeufe || {};
-    const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
-    const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
-    const kd = km.defaults || {};
-    check(
-        `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten`,
-        vK.length === 0,
-        `${km.gestartet ? `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
-    );
-    console.log("=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===");
-    const sm = out.suche || {};
-    if (sm.err) check("R2 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
-    const vS = sucheVerdict(sm);
-    const zz = sm.zaehlung || {};
-    const zZeile = (k) =>
-        zz[k]
-            ? `${k} ${zz[k].R} m: ${zz[k].proben} ${zz[k].nass != null ? "trockene " : ""}Proben/${zz[k].scans} Scans${zz[k].gefunden ? " (Wasser)" : ""}${zz[k].nass != null ? ` (${zz[k].nass} nasse ohne Zählung; ganz trocken hochgerechnet ${zz[k].hoch})` : ""}`
-            : `${k} —`;
-    check(
-        "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche",
-        vS.length === 0,
-        `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${["trinken", "chat", "ki"]
-            .flatMap((p) => [zZeile(`${p}@trocken`), zZeile(`${p}@plattform`)])
-            .concat([zZeile("ki@trocken-voll")])
-            .join(" · ")}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
-    );
-    console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
-    const vm = out.vorschau || {};
-    if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
-    const vV = vorschauVerdict(vm);
-    check(
-        "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
-        vV.length === 0,
-        `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
-    );
-    const zm = out.zug || {};
-    if (zm.err) check("V-D3 Fremder Zug Probe ohne Ausnahme", false, zm.err.split("\n")[0]);
-    const vZ = zugVerdict(zm);
-    const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
-    check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
-        vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
-    );
-    const rm = out.rahmen || {};
-    if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
-    const vR = rahmenVerdict(rm);
-    const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
-    const stat = (xs) => {
-        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
-        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
-    };
-    const rw = re.filter((q) => q.kind === "weapon");
-    check(
-        `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
-        vR.length === 0,
-        `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
-    );
-    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
+    console.log(`  Bilder: ${Object.keys(out.bilder).map((b) => path.join(bilderOrt, b + ".png")).join(" · ")}`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
+    console.log("\n✅ GRÜN — der Spielgang trägt seine Spieler-Gesetze.");
     process.exit(0);
 })().catch((e) => {
-    console.error("V1-Pfad-Linse-Fehler:", (e && e.stack) || e);
+    console.error("Spielgang-Fehler:", (e && e.stack) || e);
     process.exit(2);
 });
