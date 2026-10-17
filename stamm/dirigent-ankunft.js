@@ -938,9 +938,11 @@ class AnazhRealm_dirigent_ankunft {
         if (this.state._weltbildDa || this._imErstenBlick(x, z, E.dingM)) return 0;
         return E.ausserD2;
     }
-    // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2.
+    // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2. Die
+    // Frage gilt nur VOR dem Bild — danach ist der Blick rundum: ein Rang ohne Ort (Vorrat, Karte ohne Leser: ∞) läge sonst
+    // für immer außer Blick, und die Pumpe gäbe ihm nur die leere Bahn (CI 39003506058, gate:takt T5–T8: im Flug 1 statt 12).
     _rangImErstenBlick(rang) {
-        return rang < AnazhRealm.ERSTER_BLICK.ausserD2;
+        return !!this.state._weltbildDa || rang < AnazhRealm.ERSTER_BLICK.ausserD2;
     }
     // Steht das Bild, fällt der Blick-Schlüssel aus jedem wartenden Rang: die Zahl einer Karte (ihr Bedarf) und jedes
     // Auftrags, der sie trägt — ab jetzt gilt nah zuerst rundum.
