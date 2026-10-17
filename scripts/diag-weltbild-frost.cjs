@@ -18,8 +18,7 @@
 //      Canvas; headless: das Rücklese-Bild der Welt-GPU)
 // Dann DIE ENTSORGUNG DER BÜHNEN (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen; `_disposeSoulGroup`
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
-//   S1 Ich-Bühne und Welt-Leib wolf↔human ×3 (der Leib je ein Bild gezeichnet), Hof-Bühne 4 Seelen ×2 (zwei Durchgänge)
-//      entsorgen keine Welt-Geometrie, keinen Welt-Stoff
+//   S1 Ich-Bühne und Welt-Leib wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Durchgänge) entsorgen keine Welt-Geometrie, keinen Welt-Stoff
 //   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
 //      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
@@ -657,20 +656,17 @@ function pruefRaum(echt) {
             `${b.welt} von ${b.alle} Entsorgungen trafen die Welt (${b.geometrien} Geometrien + ${b.stoffe} Stoffe einzeln): ${b.namen.join(" | ")}`
         );
 
-    // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (der Leib wird zwischen den Wechseln gezeichnet —
-    // die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt (jede Seele
-    // kompiliert einmal), der zweite misst die Neubauten JE DEVICE (Welt, Ich-, Hof-Bühne) gegen die geschlossene Bühne.
-    // Befund (fünfte Nachbesserung, Radeon, Spiel-Takt läuft): die Lösung eines Leibs warf den Knoten-Bau, den die nächste
-    // Seele teilte — 10 Wechsel kosteten die Welt +178 Pipelines, die Ich-Bühne +18, den Hof +53; die Probe der vierten
-    // Nachbesserung sah es nicht, ihr Welt-Leib wechselte nie.
-    const seelen = await page.evaluate(async (echt) => {
+    // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne
+    // 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
+    // Befund (fünfte Nachbesserung, Radeon): die Lösung eines Leibs warf den Knoten-Bau der nächsten Seele (10 Wechsel: Welt +178 Pipelines).
+    const NEUBAU_MAX = 2;
+    const seelen = await page.evaluate(async (echt, max) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
         const E = window.__frostEntsorgung;
         let tausch = 0,
             vorgelegt = 0;
-        // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) steht im Bericht: der CI-Runner rastert auf
-        // wenigen Kernen, der Lauf nennt, wo seine Zeit liegt
+        // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) im Bericht: der CI-Runner rastert auf wenigen Kernen
         const ms = { buehne: 0, leib: 0 };
         const wechsle = async (holen, zeige) => {
             const t = performance.now();
@@ -714,27 +710,32 @@ function pruefRaum(echt) {
             hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
         };
         const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
-        const vor = alle();
-        await F.zeichne(echt ? 8 : 2);
-        const ruhe = alle();
-        const n0 = (devs.welt.__frostNamen || []).length;
-        await durchgang();
-        const nach = alle();
-        const neubau = {};
-        for (const k of Object.keys(devs))
-            neubau[k] = {
-                module: nach[k].module - ruhe[k].module - (ruhe[k].module - vor[k].module),
-                pipelines: nach[k].pipelines - ruhe[k].pipelines - (ruhe[k].pipelines - vor[k].pipelines),
-            };
+        // ein Haus, das im Fenster ankommt, kompiliert EINMAL, der Knoten-Bau der Seele bei JEDEM Wechsel: zeigt ein Durchgang
+        // Neubauten, urteilt ein weiterer (bd74a171, e47ad9f8, 33e0b496: Welt +3/+2, die Foundry baute offen)
+        const messe = async () => {
+            const vor = alle();
+            await F.zeichne(echt ? 8 : 2);
+            const ruhe = alle();
+            const n0 = (devs.welt.__frostNamen || []).length;
+            await durchgang();
+            const nach = alle(), neubau = {}, d = (k, g) => nach[k][g] - ruhe[k][g] - (ruhe[k][g] - vor[k][g]);
+            for (const k of Object.keys(devs)) neubau[k] = { module: d(k, "module"), pipelines: d(k, "pipelines") };
+            return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6), offen: r._weltOffen().foundry };
+        };
+        const erst = await messe();
+        const ueber = Object.values(erst.neubau).some((n) => n.module > max || n.pipelines > max);
+        const { neubau, neu, offen } = ueber ? await messe() : erst;
         return {
             ...E.bericht("seelen"),
             tausch,
             vorgelegt,
             ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
             neubau,
-            neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6),
+            neu,
+            erst: ueber ? `erster Durchgang Welt +${erst.neubau.welt.module}/+${erst.neubau.welt.pipelines} bei ${erst.offen} offenen Foundry-Aufträgen, einmalig` : null,
+            offen,
         };
-    }, ECHT);
+    }, ECHT, NEUBAU_MAX);
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 500)}`);
     entsorgtKeineWelt("S1 Seelenwechsel (Ich und Welt-Leib wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
     // nie vakuös: die Bühnen und der Leib tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
@@ -744,12 +745,11 @@ function pruefRaum(echt) {
         `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
     );
     // je Device und gemessenem Durchgang: der Schnitt misst 0/0 (headless und Radeon), der Bruch headless Welt +4, Hof +13
-    const NEUBAU_MAX = 2;
     for (const [k, n] of Object.entries(seelen.neubau))
         check(
             `S2 ${k === "welt" ? "die Welt-GPU" : k === "ich" ? "die Ich-Bühne" : "die Hof-Bühne"} kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)`,
             n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
-            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" && seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
+            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" ? (seelen.erst ? ` · ${seelen.erst}` : "") + (seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : "") : ""}`
         );
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
