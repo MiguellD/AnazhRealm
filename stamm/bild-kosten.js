@@ -3503,25 +3503,95 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     );
     // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object (Welt-Matrix, Knochen, Stoff-Verweise) und die Stellen der eigenen
     // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
-    const objekt = nbs.updateNodes.filter((n) => n.getUpdateType() === "object");
+    // (12) DER FESTE VERWEIS (E2): ein Verweis mit festem Objekt (Licht und Schatten der Kaskaden: bias · normalBias · radius ·
+    // mapSize · intensity · camera.near · _cascades) liest nie das zeichnende Objekt (r184 `updateReference`) — sein Wert ist
+    // je Render-Abschnitt derselbe, er geht EINMAL je Abschnitt (Stempel wie die Knoten (4)), nie je Objekt.
+    const objekt = [],
+        fest = [];
+    for (const n of nbs.updateNodes)
+        if (n.getUpdateType() === "object")
+            (n.object != null && typeof n.getValueFromReference === "function" && n.isMaterialReferenceNode !== true
+                ? fest
+                : objekt
+            ).push(n);
     const eigen = [];
     ro.getBindings().forEach((g, i) => {
         const b0 = g.bindings && g.bindings[0];
         if (!(b0 && b0.groupNode && b0.groupNode.shared === true)) eigen.push(i);
     });
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, eigen };
+    return {
+        vor: AnazhRealm._diaetListe("v", vor),
+        knoten: AnazhRealm._diaetListe("k", knoten),
+        eigenVor,
+        eigenKnoten,
+        gruppen,
+        texturen,
+        frei,
+        verweise,
+        objekt,
+        fest,
+        eigen,
+    };
+};
+// (13) DIE GETEILTE LISTE (E2, Lehre 25): die Programme tragen dieselben Vorher- und render-/frame-Knoten (der EINE Knoten je
+// Quelle) — gemessen an Genesis Third 84 Programme mit 22 verschiedenen Knoten-Listen und 4 Vorher-Listen, je Bild 1 108
+// Besuche für 30 Gänge. Gleiche Listen sind EINE Liste (Schlüssel: die Knoten-Ids, geheftet an ihren ersten Knoten — fällt
+// er, fällt die Liste); ihr Stempel (Render-Id, `info.calls`) hält, was jeder ihrer Knoten-Stempel hielte.
+AnazhRealm._diaetListe = function (art, knoten) {
+    if (knoten.length === 0) return knoten;
+    const W = AnazhRealm._diaetListen || (AnazhRealm._diaetListen = new WeakMap());
+    let m = W.get(knoten[0]);
+    if (!m) W.set(knoten[0], (m = new Map()));
+    let s = art;
+    for (const n of knoten) s += "," + n.id;
+    let l = m.get(s);
+    if (!l) {
+        l = knoten.slice();
+        l._anazhRid = -1;
+        l._anazhRuf = -1;
+        m.set(s, l);
+    }
+    return l;
+};
+// (14) DIE WERTE EINER EIGENEN GRUPPE (E2): bewegt sich ein Objekt, atmet es oder trägt es Knochen, ändern sich nur seine Werte —
+// die Uniform-Puffer der Gruppe. Ihre Textur- und Sampler-Bindungen (die Kaskaden-Karten jedes Empfängers) lädt der Gang nur,
+// wenn eine Textur des Programms wechselte (6) oder ein Verweis (10) — r184 frischt eine Textur-Bindung allein an Wechsel von
+// Textur oder Version (NodeSampledTexture.update). Eine Gruppe mit Speicher-Puffer oder Speicher-Textur geht ganz (ihr
+// Wechsel baut die Bindegruppe neu).
+AnazhRealm._diaetWerteTeil = function (g) {
+    if (g._anazhWerte !== undefined) return g._anazhWerte;
+    const werte = [];
+    let ganz = false;
+    for (const b of g.bindings) {
+        if (b.isUniformBuffer === true) werte.push(b);
+        else if (
+            b.isStorageBuffer === true ||
+            (b.isSampledTexture === true && !!b.texture && b.texture.isStorageTexture === true) ||
+            (b.isSampledTexture !== true && b.isSampler !== true)
+        )
+            ganz = true;
+    }
+    g._anazhWerte = ganz || werte.length === g.bindings.length ? g : { bindings: werte };
+    return g._anazhWerte;
 };
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
 // es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
 // mit Knochen in Bild und Kaskade, Kopf, Plattform und Sonne. Jetzt stellt es seine Objekt-Knoten und lädt seine eigenen Gruppen.
-AnazhRealm._diaetObjektGang = function (rend, ro, k) {
+AnazhRealm._diaetObjektGang = function (rend, ro, k, rid, bindung) {
     const nf = rend._nodes.getNodeFrameForRender(ro);
     for (const n of k.eigenVor) nf.updateBeforeNode(n);
+    const ruf = rend.info.calls;
+    for (const n of k.fest) {
+        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
+        n._anazhRid = rid;
+        n._anazhRuf = ruf;
+        nf.updateNode(n);
+    }
     for (const n of k.objekt) nf.updateNode(n);
     for (const n of k.eigenKnoten) nf.updateNode(n);
     const alle = ro.getBindings();
-    for (const i of k.eigen) rend._bindings._update(alle[i], alle);
+    for (const i of k.eigen) rend._bindings._update(bindung ? alle[i] : AnazhRealm._diaetWerteTeil(alle[i]), alle);
 };
 // (10) Wechselte ein Objekt-Verweis des Programms seit dem letzten Blick dieses Render-Objekts? Ein Wechsel ist der Wert
 // eines Stoffs, kein Bruch: EIN Refresh, kein Melder. Der erste Blick merkt (die Erst-Anlage lud eben hoch).
@@ -3628,20 +3698,37 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     // gate:kamera-treue ÄNDERUNG 0,10 statt 1). Der Stempel ist der RENDER-ABSCHNITT (rid, `rend.info.calls`, s. (5)):
     // ein Vorher-Knoten trägt den Abschnitt NACH seinem Ruf (der Render, den er verschachtelt, ist dann vorbei), Knoten
     // und Gruppen den Abschnitt nach allen Vorher-Knoten.
+    // Die geteilte Liste (13): ihr Stempel steht, wenn jeder ihrer Knoten im Abschnitt ging — eine Vorher-Liste stempelt nur,
+    // wenn keiner ihrer Knoten einen Render verschachtelte (sonst gingen die Knoten vor ihm im neuen Abschnitt noch einmal).
     let nf = null;
-    for (const n of k.vor) {
-        if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
-        rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
-        n._anazhVorRid = rid;
-        n._anazhVorRuf = rend.info.calls;
+    const vor = k.vor;
+    if (vor._anazhRid !== rid || vor._anazhRuf !== rend.info.calls) {
+        const ruf0 = rend.info.calls;
+        for (const n of vor) {
+            if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
+            rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+            n._anazhVorRid = rid;
+            n._anazhVorRuf = rend.info.calls;
+        }
+        if (rend.info.calls === ruf0 && vor.length) {
+            vor._anazhRid = rid;
+            vor._anazhRuf = ruf0;
+        }
     }
     for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
     const ruf = rend.info.calls;
-    for (const n of k.knoten) {
-        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
-        n._anazhRid = rid;
-        n._anazhRuf = ruf;
-        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+    const knoten = k.knoten;
+    if (knoten._anazhRid !== rid || knoten._anazhRuf !== ruf) {
+        for (const n of knoten) {
+            if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
+            n._anazhRid = rid;
+            n._anazhRuf = ruf;
+            (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+        }
+        if (knoten.length) {
+            knoten._anazhRid = rid;
+            knoten._anazhRuf = ruf;
+        }
     }
     if (k.eigenKnoten.length) {
         nf = nf || rend._nodes.getNodeFrameForRender(ro);
@@ -3775,6 +3862,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         lage = true;
     }
     if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
-    if (lage || verweis || textur || frei || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
+    if (lage || verweis || textur || frei || obs.hasAnimation === true)
+        AnazhRealm._diaetObjektGang(rend, ro, gang, rid, textur || verweis);
     return false;
 };
