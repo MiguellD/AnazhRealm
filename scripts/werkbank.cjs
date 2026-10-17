@@ -3401,7 +3401,7 @@ async function starte() {
             await ein();
             // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann jede Krone auf ihrer Karte (die Schwellen der
             // Stufen kurz auf 0,3/0,6 m, der Lauf schwingt ein), danach die Schwellen zurück
-            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, karte: ${n}, ${spiel} }; ${c}` });
+            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(plan.auge)}, karte: ${n}, ${spiel} }; ${c}` });
             // die Schwelle der Karte: `plan.l1` hält das Exemplar im Spiel-Abstand auf L1 (die Gestalt), 0,6 m stellt jede Krone auf
             // die Karte, null stellt zurück
             const stufen = async (t12) => {

@@ -1333,6 +1333,7 @@ function laubGegenlicht(opts) {
         if (window.__buehne) window.__buehne();
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
         let abstand = opts.abstand || 8;
+        let verdeckt = null;
         // Die Sonne steht HINTER der Krone: ihre Höhe ist die Peilung vom Auge zur Kronen-Mitte (mindestens 5°) — eine feste
         // Höhe (`sonne` in Grad) stand für den hohen Baum unter der Krone (aus 8 m blickt das Auge 40° hinauf).
         let elev = opts.sonne > 0 ? (opts.sonne * Math.PI) / 180 : null;
@@ -1384,7 +1385,7 @@ function laubGegenlicht(opts) {
         const hoehe = ziel.box.max.y - ziel.fuss.y;
         const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
         const tal = opts.hang && !opts.ziel ? gef(ziel.fuss.x, ziel.fuss.z) : null;
-        const dh = (tal ? new T.Vector3(-tal[0], 0, -tal[1]) : new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
+        let dh = (tal ? new T.Vector3(-tal[0], 0, -tal[1]) : new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
         // DAS SPIEL-AUGE (S2b): `wechsel` stellt das Auge in den Abstand, ab dem das Spiel die Karte zeigt — die Stufen-Wahl
         // (`_chooseLODForDistance`) aus der Karte heraus für die Höhe des Exemplars, die nächste Distanz mit Karte —, mal `wechsel`;
         // `augeH` ist die Augenhöhe über dem Boden (Ego 1,6, Third 3,5).
@@ -1392,17 +1393,48 @@ function laubGegenlicht(opts) {
             let d = 4;
             while (d < 600 && r._chooseLODForDistance(d, 2, hoehe) !== 2) d += 0.25;
             abstand = d * opts.wechsel;
+            // FREIE SICHT: im Spiel-Abstand stünde das Exemplar im Wald hinter anderen Kronen, und der Vergleich zählte ihre Stufen
+            // mit — das Auge nimmt die Peilung (24 Richtungen, am Hang höchstens 60° neben talwärts), deren Gang zum Exemplar keine
+            // andere Krone (jede Laub- und Karten-Senke, Kronen-Radius 3,5 m) kreuzt, sonst die mit den wenigsten
+            const baeume = [];
+            for (const o of opts.plan ? alle : []) {
+                if (!o.isInstancedMesh || !/^(f|fimp):/.test(r._taeterKlasse(o))) continue;
+                for (let i = 0; i < o.count; i++) {
+                    o.getMatrixAt(i, m4);
+                    m4.premultiply(o.matrixWorld);
+                    p.setFromMatrixPosition(m4);
+                    if (Math.hypot(p.x - ziel.fuss.x, p.z - ziel.fuss.z) > 0.5) baeume.push(p.x, p.z);
+                }
+            }
+            let best = null;
+            for (let k = 0; k < 24; k++) {
+                const a = (k / 24) * Math.PI * 2;
+                const ux = Math.cos(a), uz = Math.sin(a);
+                if (tal && ux * dh.x + uz * dh.z < 0.5) continue;
+                let n = 0;
+                for (let j = 0; j < baeume.length; j += 2) {
+                    const qx = baeume[j] - ziel.fuss.x, qz = baeume[j + 1] - ziel.fuss.z;
+                    const t = qx * ux + qz * uz;
+                    if (t > 2 && t < abstand && Math.abs(qx * uz - qz * ux) < 3.5) n++;
+                }
+                if (!best || n < best.n) best = { n, ux, uz };
+            }
+            if (best && opts.plan) {
+                dh = new T.Vector3(best.ux, 0, best.uz);
+                verdeckt = best.n;
+            }
         }
         // Die Stufe folgt dem Spieler: `plan` nennt den Augen-Ort (der Aufrufer stellt den Spieler dorthin und lässt die Stufen
         // einschwingen); mit `ziel` steht das Auge am Spieler.
+        // mit `auge` (x, z) steht das Auge genau am Plan-Ort (der Spieler darf beim Einschwingen rutschen)
         const auge = opts.ziel
-            ? new T.Vector3(pp.x, 0, pp.z)
+            ? new T.Vector3(opts.auge ? opts.auge[0] : pp.x, 0, opts.auge ? opts.auge[1] : pp.z)
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
         auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
         // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 zeigt (der Schuss der Gestalt)
         const D = r.constructor.LOD_DISTANCES;
         const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + D.hysteresis + 1).toFixed(1);
-        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
+        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;
@@ -1526,6 +1558,11 @@ function laubGegenlicht(opts) {
                 cam.position.copy(auge);
                 cam.lookAt(mitte);
                 cam.fov = Math.min(fovAlt, (360 / Math.PI) * Math.atan((1.1 * rad) / auge.distanceTo(mitte)));
+                // DIE TIEFEN-SCHEIBE (S2b): im Spiel-Abstand stehen Kronen vor und hinter dem Exemplar im Rechteck (Wald, Gebüsch,
+                // die Kronen hinter ihm in fremder Stufe) — die Kamera zeichnet nur die Kugel des Exemplars (near/far um seine Mitte)
+                const nfAlt = [cam.near, cam.far];
+                cam.near = Math.max(0.1, auge.distanceTo(mitte) - rad);
+                cam.far = auge.distanceTo(mitte) + rad;
                 cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
                 const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
@@ -1535,6 +1572,7 @@ function laubGegenlicht(opts) {
                     rand[1] = Math.max(rand[1], Math.abs(e.y));
                 }
                 const b = await lies("die Karte gegen die Gestalt");
+                [cam.near, cam.far] = nfAlt;
                 cam.fov = fovAlt;
                 cam.updateProjectionMatrix();
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: r._taeterKlasse(ziel.o), ziel })), { stufe: out.stufe };
