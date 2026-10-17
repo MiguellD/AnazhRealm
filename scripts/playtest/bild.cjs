@@ -1010,11 +1010,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 return false;
             }
         })();
-        // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
-        // KONSUM: `_applySubstanceResponse` setzt outputNode IDENTISCH auf Terrain UND Strukturen;
+        // ===== WELLE J → W-E → F6 — der EINE Empfänger der Mikro-Tiefe (Render-Harmonie) =====
+        // KONSUM: `_applySubstanceResponse` setzt den outputNode, wo das Profil Mikro-Tiefe bestellt (Strukturen);
         // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
-        // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
-        out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
+        // (1) Terrain (vertexColors) trägt KEINE Antwort: seine Mikro-Tiefe trägt der colorNode, und Licht trägt kein Profil
+        // (F6 — das additive Band leuchtete den Boden am streifenden Blick der Ferne aus sich selbst).
+        out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
         const _structMat =
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
@@ -1132,8 +1133,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
         check(
-            "V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)",
-            v828Results.terrainHasAerialOutput
+            "V17.J → F6: das Terrain trägt keine Antwort nach dem Licht (kein outputNode — der Boden leuchtet nicht aus sich selbst)",
+            v828Results.terrainOhneAntwort
         );
         check(
             "V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)",
@@ -2073,48 +2074,15 @@ async function checkBandV18164WarumLicht(ctx) {
         out.baumMicro =
             !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
 
-        // (4) §7.5(a) das MOND-RIM: Uniform existiert + wird im Output-Chain
-        // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
+        // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): der Snapshot trägt microStrength, der Restore liest sie.
         const au = r._ensureAtmoUniforms();
-        out.moonUniform = !!au.terrainMoonRim;
-        // der Mond-Rim fließt in die Ausgabe der Substanz-Antwort, wenn das Profil mond bestellt — und nur dann
-        const feld = r.constructor.SUBSTANCE_RESPONSE.defaults.feld;
-        const mondIm = (prof) => {
-            const m = {};
-            r._applySubstanceResponse(m, prof);
-            let n = 0;
-            if (m.outputNode) m.outputNode.traverse((x) => (n += x && x.id === au.terrainMoonRim.id ? 1 : 0));
-            return n;
-        };
-        out.moonKonsum = mondIm(feld) > 0 && mondIm({ ...feld, mond: 0 }) === 0;
-        const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
-        r._dayNightApplyHemiUndLuft(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
-        const nightVal = au.terrainMoonRim.value;
-        r._dayNightApplyHemiUndLuft(Math.PI / 2, tintProbe); // Mittag (sin=1)
-        const noonVal = au.terrainMoonRim.value;
-        out.moonNachtGetrieben = nightVal > 0.01 && noonVal === 0;
-        // Den echten Tag-Nacht-Zustand wiederherstellen (die Sonde schrieb
-        // synthetische Winkel in Hemi/Luft/Uniforms — Folge-Bands lesen sauber).
-        if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-
-        // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): Snapshot trägt
-        // microStrength/terrainNightFloor/moonRim, der Restore liest sie.
         const snap = r.buildStateSnapshot();
-        out.persistenz =
-            !!snap.atmosphere &&
-            Number.isFinite(snap.atmosphere.microStrength) &&
-            Number.isFinite(snap.atmosphere.terrainNightFloor) &&
-            Number.isFinite(snap.atmosphere.moonRim);
+        out.persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
         // …und der Restore setzt sie in die Welt (Stand UND Uniform); danach der alte Stand zurück
         const a0 = { ...r.state.atmosphere };
-        r._loadStateRestoreSoulAndAtmosphere({ atmosphere: { microStrength: 0.21, terrainNightFloor: 0.17, moonRim: 0.33 } });
-        const A = r.state.atmosphere;
-        out.restoreLiest =
-            A.microStrength === 0.21 && au.microStrength.value === 0.21 && A.terrainNightFloor === 0.17 &&
-            au.terrainNightFloor.value === 0.17 && A.moonRim === 0.33;
+        r._loadStateRestoreSoulAndAtmosphere({ atmosphere: { microStrength: 0.21 } });
+        out.restoreLiest = r.state.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
         r.setMicroStrength(a0.microStrength ?? r.constructor.AERIAL.microStrength);
-        r.setTerrainNightFloor(a0.terrainNightFloor ?? r.constructor.SUBSTANCE_RESPONSE.nightFloor);
-        r.setTerrainMoonRim(a0.moonRim ?? r.constructor.SUBSTANCE_RESPONSE.moonRim);
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
@@ -2135,11 +2103,7 @@ async function checkBandV18164WarumLicht(ctx) {
         res.baumInstanced && res.baumMicro
     );
     check(
-        "V18.164 §7.5(a) Mond-Rim: Uniform konsumiert im EINEN Output-Chain + nacht-getrieben (Mitternacht > 0, Mittag exakt 0)",
-        res.moonUniform && res.moonKonsum && res.moonNachtGetrieben
-    );
-    check(
-        "V18.164 §7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength/terrainNightFloor/moonRim reisen im Snapshot + der Restore liest sie",
+        "V18.164 §7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength reist im Snapshot + der Restore liest sie",
         res.persistenz && res.restoreLiest
     );
     check(

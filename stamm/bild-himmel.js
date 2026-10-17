@@ -2354,18 +2354,6 @@ class AnazhRealm_bild_himmel {
                 U.hoehe.value = L.skalenHoeheM;
             }
         }
-        // Mond-Rim atmet mit der Nacht: voll bei Sonne unter dem Horizont, ausgeblendet bis Sonnenhöhe 0.25, tags
-        // 0; Regen dämpft. Der Wert IST das Shader-Gate.
-        const au = this.state.atmoUniforms;
-        if (au && au.terrainMoonRim) {
-            const rainyMix = this._weatherBlendedValue(0, 1);
-            const moonBase =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
-                    ? this.state.atmosphere.moonRim
-                    : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
-            const sunUp = Math.max(0, Math.sin(angle));
-            au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
-        }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
         // fehlte die Decke. Liegt die Kamera unter Wasser, wird das EINE geteilte Wasser-Material
         // DoubleSide, beim Auftauchen zurück BackSide (von oben unverändert).

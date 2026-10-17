@@ -2027,38 +2027,6 @@ class AnazhRealm_werkstatt_hud {
                 if (stbVal) stbVal.textContent = v.toFixed(2);
             });
         }
-        const nfS = document.getElementById("slider-nightfloor");
-        const nfVal = document.getElementById("slider-nightfloor-val");
-        if (nfS) {
-            const n0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
-                    ? this.state.atmosphere.terrainNightFloor
-                    : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor;
-            nfS.value = String(Math.round(n0 * 100));
-            if (nfVal) nfVal.textContent = n0.toFixed(2);
-            nfS.addEventListener("input", () => {
-                const v = parseInt(nfS.value, 10) / 100;
-                this.setTerrainNightFloor(v);
-                if (nfVal) nfVal.textContent = v.toFixed(2);
-            });
-        }
-        // §7.5(a) (V18.164) — das Terrain-Mond-Rim (Basis; der Tag-Nacht-Sync
-        // treibt den Live-Wert: nachts Basis, tags 0).
-        const mrS = document.getElementById("slider-moonrim");
-        const mrVal = document.getElementById("slider-moonrim-val");
-        if (mrS) {
-            const r0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
-                    ? this.state.atmosphere.moonRim
-                    : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
-            mrS.value = String(Math.round(r0 * 100));
-            if (mrVal) mrVal.textContent = r0.toFixed(2);
-            mrS.addEventListener("input", () => {
-                const v = parseInt(mrS.value, 10) / 100;
-                this.setTerrainMoonRim(v);
-                if (mrVal) mrVal.textContent = v.toFixed(2);
-            });
-        }
         const esS = document.getElementById("slider-edgesharp");
         const esVal = document.getElementById("slider-edgesharp-val");
         if (esS) {

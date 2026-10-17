@@ -73,19 +73,6 @@ class AnazhRealm_stoff_material {
             }
         }
 
-        // Das Gras dockt ans Frequenzband: dieselben Band-Uniforms über den EINEN Empfänger (kein
-        // Material-Merge) → Füll-Licht + Aerial-Haze. Albedo = mittlere Wiesen-Farbe als Konstante (reicht
-        // fürs 0.06-Füll-Licht; kein attribute()-Lookup).
-        {
-            this._ensureAtmoUniforms();
-            const _SRg = AnazhRealm.SUBSTANCE_RESPONSE;
-            this._applySubstanceResponse(mat, _SRg.defaults.gras, {
-                // V18.386 — PHYTO-KLEID: die mittlere Wiesen-Farbe fürs Band-Füll-Licht folgt dem
-                // Vorlagen-Gras (Mittel aus Wurzel-Boden-Ton und Sommer-Akzent-Spitze, sRGB→linear).
-                albedoNode: TSL.vec3(0.108, 0.225, 0.031),
-            });
-        }
-
         this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
@@ -445,13 +432,6 @@ class AnazhRealm_stoff_material {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = THREE.TSL;
         this.state.atmoUniforms = {
-            // B8 — das warme Struktur-RIM (Fresnel-Saum, die Ghibli-Silhouetten-
-            // Kante im Gegenlicht). 0 = aus. Live-tunbar (Schöpfer-Sign-off).
-            rimStrength: TSL.uniform(
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.rimStrength)
-                    ? this.state.atmosphere.rimStrength
-                    : 0.16
-            ),
             // 2.5D-Lichtung als Konsolen-Hebel (Init aus der Konstante, NICHT persistiert, render-only):
             //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.7
             terrainFlatten: TSL.uniform(AnazhRealm.TERRAIN_NORMAL_FLATTEN),
@@ -462,13 +442,6 @@ class AnazhRealm_stoff_material {
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
                     ? this.state.atmosphere.microStrength
                     : AnazhRealm.AERIAL.microStrength
-            ),
-            // Nacht-Boden = Füll-Licht für ALLE opaken Ebenen (profil-gewichtet, s. _applySubstanceResponse);
-            // Default 0.06, EINE Quelle: SUBSTANCE_RESPONSE.
-            terrainNightFloor: TSL.uniform(
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
-                    ? this.state.atmosphere.terrainNightFloor
-                    : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor
             ),
             // Isolations-Regler (Default 1 = unverändert): `aoScale`=0 schaltet die Kavitäts-AO ab (der
             // `fwidth`-Term zeichnet Surface-Nets-Facetten-Kanten als Linien):
@@ -516,10 +489,6 @@ class AnazhRealm_stoff_material {
             // DAS AUGE DER STUFEN (K51-2, `_stufeAugeTakt`): der Spieler des Streaming-Takts — der Geomorph des Bodens misst daran
             // den Chebyshev-Abstand jedes Vertex zu seinem Übergangs-Band
             stufeAuge: TSL.uniform(new THREE.Vector2(0, 0)),
-            // Terrain-Mond-Rim: kühler Fresnel-Saum auf den vertexColors-Ebenen; den Wert treibt der Tag-Nacht-
-            // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
-            // _dayNightApplyHemiUndLuft).
-            terrainMoonRim: TSL.uniform(0.0),
             // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
             // lineare Farbe × Stärke (rgb) mit dem Abfall (a), der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
             // Himmel fehlt — das Licht des Auges) und der Kern der Quelle (k², K11b `lichtAbfall`) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
@@ -554,9 +523,9 @@ class AnazhRealm_stoff_material {
     }
 
     // Das Antwort-Profil emergiert aus den 10 Substanz-Tags (eine weitere LESART der Substanz-Wahrheit):
-    // glanz = härte+dichte (Rim/Specular) · tiefe = dichte (AO) · glimmen = magieleitung + wärmeleitung·
-    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · detail =
-    // max(lebendig·(1−dichte), magieleitung·transparent). Den Wind trägt kein Tag: er ist das Wind-Gesetz des Baums (K19).
+    // tiefe = dichte (AO) · glimmen = magieleitung + wärmeleitung·brennbar (Emissiv). Den Wind trägt kein Tag: er ist das
+    // Wind-Gesetz des Baums (K19). Kein Tag trägt Licht (F6): Rim, Nacht-Boden, Mond-Rim und der Gegenlicht-Glow (detail) sind
+    // gefallen — das Licht ist die EINE Licht-Kette.
     // Nimmt ein Material oder ein tags-Objekt. Darunter die FEATURE-Gewichte (Antennen → Render-Hebel):
     _substanceResponseProfile(materialOrTags) {
         let tags = null;
@@ -576,46 +545,33 @@ class AnazhRealm_stoff_material {
             const v = +tags[k];
             return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
         };
-        const haerte = t("härte");
         const dichte = t("dichte");
         const magieleitung = t("magieleitung");
-        const transparent = t("transparent");
         const brennbar = t("brennbar");
-        const lebendig = t("lebendig");
         const waermeleitung = t("wärmeleitung");
-        // 5 tesla-Substanzen:
-        const glanz = Math.min(1, haerte * 0.6 + dichte * 0.4);
         const tiefe = dichte;
         const glimmen = Math.min(1, magieleitung * 0.55 + waermeleitung * brennbar * 0.6);
-        const waerme = lebendig;
-        const glas = transparent;
-        // die clever-gauss-Achse (Λ.6):
-        const detail = Math.max(lebendig * (1 - dichte), magieleitung * transparent);
         return {
-            glanz,
             tiefe,
             glimmen,
-            waerme,
-            glas,
-            detail,
             micro: 0.5 + 0.5 * tiefe,
-            rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
             // emissiv darf > 1 (Glut glüht ÜBER den Familien-Floor hinaus);
             // der Leser deckelt bei 1.6.
             emissiv: 0.5 + glimmen,
-            // dichte Substanz hält mehr von ihrer Dunkelheit (Kontrast-Hierarchie
-            // bleibt), lebendig-leichte fängt mehr Füll-Licht.
-            fuell: 1 - 0.3 * tiefe,
-            mond: 0.35 + 0.65 * glanz,
         };
     }
 
     // ===== DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
-    // JEDE opake Ebene ruft sie identisch POST-lighting (`TSL.output`); die Luftperspektive (Distanz UND Höhe)
-    // trägt allein die Luft (`scene.fogNode`, `_luftEnsure`) — hier lebt kein Dunst. Frequenzband per Profil (Gewicht 0 = Block fällt
-    // bit-gleich); Mikro-Tiefe output-seitig (bricht `material.color` nicht); die Albedo reicht der
-    // Aufrufer (`layerOpts.albedoNode`, kein attribute()-Lookup). Fehler → `window.__aerialOutputError`.
-    _applySubstanceResponse(mat, profile = {}, layerOpts = {}) {
+    // Die Mikro-Tiefe POST-lighting (`TSL.output`, bricht `material.color` nicht) — ein FAKTOR auf dem Licht, nie ein
+    // Licht: die Luftperspektive trägt allein die Luft (`scene.fogNode`, `_luftEnsure`), das Licht allein die EINE Licht-
+    // Kette (Sonne/Mond, Himmel, Hemi, Ambient, der Pool). Das additive Band (warmes Rim, Nacht-Boden, Mond-Rim, dazu der
+    // Gegenlicht-Glow der Vegetation) fiel mit F6 (17.10.): es leuchtete aus sich selbst, nur auf Host-Stoffen (Karte, Boden,
+    // Fern-Ring, Werk, Gras), nie auf der Studio-
+    // Gestalt, und am streifenden Blick der Ferne am stärksten — die Karte der Fichte stand in der Dämmerung 8,3 ×, nachts
+    // 4,8 × so hell wie ihre Gestalt (Radeon, Mess-Wiese; `werkbank licht --laub --karte --uhr`). Lehre 21: Fill und Rim
+    // leben im Labor.
+    // Gewicht 0 = kein Knoten (der Stoff behält den Ausgang des Vendors).
+    _applySubstanceResponse(mat, profile = {}) {
         if (!mat) return;
         try {
             const _T = THREE.TSL;
@@ -623,12 +579,11 @@ class AnazhRealm_stoff_material {
             const cfg = AnazhRealm.AERIAL;
             // Antennen-Gewicht [0..1]: 0 = der Block fällt (kein toter Shader-Ast).
             const _p = (k) => Math.max(0, Math.min(1, Number(profile[k]) || 0));
-            const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
-            let _rgb = _o.xyz;
-            const _wp = _T.positionWorld;
             // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
             // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
             if (_p("micro") > 0) {
+                const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
+                const _wp = _T.positionWorld;
                 const _ra = this._rauschAtlas();
                 const _n1 = _ra.raum(_wp.mul(0.33));
                 const _n2 = _ra.raum(_wp.mul(1.6));
@@ -647,35 +602,8 @@ class AnazhRealm_stoff_material {
                     _p("micro")
                 );
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
-                _rgb = _rgb.mul(_shade.mul(_ao));
+                mat.outputNode = _T.vec4(_o.xyz.mul(_shade.mul(_ao)), _o.w);
             }
-            // Warmes RIM-Licht: ein Fresnel-Saum hebt die Kontur im Gegenlicht — POST-lighting im selben Output-
-            // Chain (kein zweiter outputNode: zwei Zuweisungen überschrieben sich). glanz wichtet die Stärke,
-            // waerme tönt die Farbe. Live: anazhRealm.state.atmoUniforms.rimStrength.value.
-            if (_p("rim") > 0 && _au.rimStrength) {
-                const _vd = _T.cameraPosition.sub(_wp).normalize();
-                const _fres = _T.normalWorld.dot(_vd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                const _rimCol = _T.mix(_T.vec3(0.85, 0.88, 0.98), _T.vec3(1.0, 0.72, 0.45), _p("waerme"));
-                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength).mul(_p("rim"))));
-            }
-            // Nacht-Boden als fuell-Antenne = additives Füll-Licht lit + albedo·floor·(1−lit), nie max()-Clamp
-            // (der fraß AO/Cel/Triplanar zu einer flachen Fläche); (1−lit) dämpft es bei hellem Licht.
-            if (_p("fuell") > 0 && _au.terrainNightFloor && layerOpts.albedoNode) {
-                const _albedo = layerOpts.albedoNode;
-                const _fill = _albedo.mul(_au.terrainNightFloor).mul(_p("fuell"));
-                _rgb = _rgb.add(_fill.mul(_rgb.oneMinus().clamp(0.0, 1.0)));
-            }
-            // Mond-Rim als mond-Antenne: kühler Fresnel-Saum; der Uniform-Wert IST das Gate (nachts > 0, mittags
-            // 0, kein Branch). Dieselbe Fresnel-Form wie das warme Rim → Licht-Parität der Ebenen.
-            if (_p("mond") > 0 && _au.terrainMoonRim) {
-                const _mvd = _T.cameraPosition.sub(_wp).normalize();
-                const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                // der Farbton ist der EINE Mond-Hue des Gesetzes (MOONLIGHT ← ATMO_GESETZ.nacht.mond, D3)
-                const _M = AnazhRealm.MOONLIGHT;
-                const _mondHue = _T.vec3(_M.r, _M.g, _M.b);
-                _rgb = _rgb.add(_mondHue.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
-            }
-            mat.outputNode = _T.vec4(_rgb, _o.w);
         } catch (_e) {
             throw this._stoffBruch("die Umgebungs-Antwort (outputNode)", _e);
         }
@@ -1217,7 +1145,7 @@ class AnazhRealm_stoff_material {
             } catch (_e) {
                 throw this._stoffBruch("der PBR-Stoff (Albedo-Quelle)", _e);
             }
-            this._applySubstanceResponse(mat, responseProfile, { albedoNode });
+            this._applySubstanceResponse(mat, responseProfile);
         }
         // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
         // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
@@ -1340,7 +1268,7 @@ class AnazhRealm_stoff_material {
         }
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
         // Laub (pflanzenStoff) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
-        this._applyVegetationResponse(mat, opts, responseProfile);
+        this._applyVegetationResponse(mat, opts);
         // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
         this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
@@ -2403,7 +2331,7 @@ class AnazhRealm_stoff_material {
         return w >= 0.5;
     }
 
-    _applyVegetationResponse(mat, opts, responseProfile) {
+    _applyVegetationResponse(mat, opts) {
         if (opts.useInstanceTint) {
             if (!mat.userData) mat.userData = {};
             mat.userData.useInstanceTint = true;
@@ -2415,27 +2343,6 @@ class AnazhRealm_stoff_material {
         // Sinus-Formel ohne Wind-Zeile (der Sturm sah aus wie die Brise). Die Karte (impostorAtlas) trägt ihren eigenen Term.
         if (opts.baumWind && !opts.impostorAtlas)
             this._baumWindStoff(mat, opts.foliageLeaf === true ? "foliage" : "bark", opts.baumWind);
-        // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
-        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha). Laub trägt das Laub-Licht (K19), nie ihn.
-        if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
-            try {
-                const _Td = THREE.TSL;
-                const _wu = this._windUniformsEnsure();
-                {
-                    const _vd = _Td.normalize(_Td.cameraPosition.sub(_Td.positionWorld));
-                    const _sunBack = _wu.uSunDir.mul(_Td.float(-1.0));
-                    const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
-                    const _backlit = _Td.pow(_backDot, _Td.float(3.0));
-                    const _detailStrength = Math.max(0, Math.min(1, responseProfile.detail));
-                    const _glowColor = _Td.vec3(1.0, 0.85, 0.6);
-                    const _glow = _glowColor.mul(_backlit).mul(_Td.float(_detailStrength * 0.18));
-                    const _currentOutput = mat.outputNode || _Td.output;
-                    mat.outputNode = _currentOutput.add(_Td.vec4(_glow, _Td.float(0.0)));
-                }
-            } catch (_e) {
-                throw this._stoffBruch("das Gegenlicht der Vegetation", _e);
-            }
-        }
         // DAS LAUB-LICHT (K19): das Grammatik-Laub (Blatt-Karte und Klinge) lichtet mit dem EINEN Laub-Licht-Term des Foundry-
         // Laubs (`_laubLichtStoff`, phyto-core `laubDurchlass`) — die unbelichtete Silhouetten-Aufhellung (die Fresnel-Kopie des
         // Labors) und der sonnen-blinde Gegenlicht-Glow sind gefallen; die Klinge ist Laub, die Karte erkennt die Nadel am Atlas.
@@ -2602,30 +2509,6 @@ class AnazhRealm_stoff_material {
         this.state.atmosphere.r5StructureBoost = val;
         const au = this._ensureAtmoUniforms();
         if (au && au.r5StructureBoost) au.r5StructureBoost.value = val;
-        if (typeof this.saveState === "function") this.saveState();
-        return val;
-    }
-
-    // M7 (Befund 20) → W-E — der NACHT-BODEN-Regler ist seit dem Frequenzband
-    // ein BAND-Regler (Füll-Licht ALLER opaken Ebenen, profil-gewichtet):
-    // 0 = das alte Schwarz, 0.06 = das Schöpfer-Wort (R-013), höher = heller.
-    setTerrainNightFloor(v) {
-        const val = Math.max(0, Math.min(0.3, Number(v) || 0));
-        if (!this.state.atmosphere) this.state.atmosphere = {};
-        this.state.atmosphere.terrainNightFloor = val;
-        const au = this._ensureAtmoUniforms();
-        if (au && au.terrainNightFloor) au.terrainNightFloor.value = val;
-        if (typeof this.saveState === "function") this.saveState();
-        return val;
-    }
-
-    // §7.5(a) (V18.164) — die BASIS-Stärke des Terrain-Mond-Rims (0..0.5).
-    // Den LIVE-Wert treibt der Tag-Nacht-Sync (nachts Basis, tags 0) — dieser
-    // Setter stellt nur die Basis; der nächste Sync-Tick übernimmt sie.
-    setTerrainMoonRim(v) {
-        const val = Math.max(0, Math.min(0.5, Number(v) || 0));
-        if (!this.state.atmosphere) this.state.atmosphere = {};
-        this.state.atmosphere.moonRim = val;
         if (typeof this.saveState === "function") this.saveState();
         return val;
     }

@@ -362,14 +362,6 @@ class AnazhRealm_speicher_laden {
             // persistiert über den Reload (sonst rauscht der Slider beim Welt-Wechsel).
             const sb5 = Number(state.atmosphere.r5StructureBoost);
             if (Number.isFinite(sb5)) this.setStructureBoost(sb5);
-            // Ein exakter 0.12-Wert (nightFloor/moonRim) ist der alte, in jeden Save gebackene DEFAULT, keine
-            // Wahl → er wandert aufs Band-Default (SUBSTANCE_RESPONSE); jede andere Zahl bleibt.
-            const _bandNf = AnazhRealm.SUBSTANCE_RESPONSE.nightFloor;
-            const _bandMr = AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
-            const nf = Number(state.atmosphere.terrainNightFloor);
-            if (Number.isFinite(nf)) this.setTerrainNightFloor(Math.abs(nf - 0.12) < 1e-9 ? _bandNf : nf);
-            const mr = Number(state.atmosphere.moonRim);
-            if (Number.isFinite(mr)) this.setTerrainMoonRim(Math.abs(mr - 0.12) < 1e-9 ? _bandMr : mr);
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();

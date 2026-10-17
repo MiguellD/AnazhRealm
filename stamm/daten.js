@@ -610,30 +610,21 @@ class AnazhRealm_daten {
     // ihre EINE Quelle ist das Top-Level-Assignment `AnazhRealm.AERIAL = ...` am Dateiende. NIE einen
     // `static get AERIAL()` daneben — ein Getter ohne Setter schluckt das Assignment lautlos.
 
-    // Das Frequenzband: JEDE opake Ebene empfängt die Band-Uniforms über EIN Antwort-PROFIL (Gewichte
-    // 0..1, der Unterschied der Ebenen ist DATEN): micro (Mikro-Tiefe/AO) · rim (warmes Rim) · fuell
-    // (Nacht-Füll-Licht, additiv lit + albedo·floor·(1−lit), nie max()-Clamp) · mond (kühles Rim) ·
-    // emissiv. `defaults` = Familien-Profile; mit Substanz-Tags emergiert das Profil via
-    // _substanceResponseProfile. nightFloor/moonRim 0.06 = die EINE Default-Quelle.
+    // Das Antwort-PROFIL je Ebene (Gewichte 0..1, der Unterschied der Ebenen ist DATEN): micro (Mikro-Tiefe/AO, ein
+    // Faktor auf dem Licht) · emissiv (das Glimmen der Substanz). `defaults` = Familien-Profile; mit Substanz-Tags
+    // emergiert das Profil via _substanceResponseProfile. Kein Profil trägt Licht: das additive Band (Rim, Nacht-Boden,
+    // Mond-Rim) fiel mit F6 — das Licht ist die EINE Licht-Kette.
     static get SUBSTANCE_RESPONSE() {
         return Object.freeze({
             defaults: Object.freeze({
                 // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
                 // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
                 // triplanar-colorNode (darum hier 0).
-                feld: Object.freeze({ micro: 0, rim: 0, waerme: 0, fuell: 1, mond: 1, emissiv: 0 }),
-                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare) hängen AUCH am fuell/mond-Band — sonst ist ein
-                // Bau nachts dunkler als das Terrain (Silhouetten).
-                werk: Object.freeze({ micro: 1, rim: 1, waerme: 1, fuell: 1, mond: 0.7, emissiv: 1 }),
-                // Gras (Schritt 3, eigenes Material — KEIN Merge): es
-                // konsumiert dieselben Band-Uniforms (E1: floor-Hebel traf das
-                // Gras mit −2.0, jetzt antwortet es).
-                gras: Object.freeze({ micro: 0, rim: 0, waerme: 1, fuell: 1, mond: 0, emissiv: 0 }),
-                // Weder vertexColors noch Farbe: nur der Aerial-Haze (wie zuvor).
+                feld: Object.freeze({ micro: 0, emissiv: 0 }),
+                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare)
+                werk: Object.freeze({ micro: 1, emissiv: 1 }),
                 frei: Object.freeze({}),
             }),
-            nightFloor: 0.06,
-            moonRim: 0.06,
         });
     }
 }

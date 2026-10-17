@@ -46,29 +46,24 @@ async function checkBandV18136Audit(ctx) {
     );
 }
 
-// M7 Licht-Feinschliff: der Terrain-NACHT-BODEN als Füll-Licht (Mittag per Konstruktion ≈ gleich)
-// + die Mikro-Struktur als LEBENDIGER Regler (eine Konstante im Tree wäre ein toter Slider-Knopf).
+// M7 Licht-Feinschliff: die Mikro-Struktur als LEBENDIGER Regler (eine Konstante im Tree wäre ein toter Slider-Knopf);
+// der Nacht-Boden fiel mit F6 (das Licht ist die EINE Licht-Kette).
 async function checkBandM7LichtFeinschliff(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
         const au = r._ensureAtmoUniforms();
-        // (1) beide Hebel sind UNIFORMS (lebendig, nicht eingebacken).
-        out.uniforms = !!au && !!au.microStrength && !!au.terrainNightFloor;
-        // (2) die Setter TREIBEN die Uniforms (KONSUM, mit Restore).
+        // (1) der Hebel ist eine UNIFORM (lebendig, nicht eingebacken).
+        out.uniforms = !!au && !!au.microStrength;
+        // (2) der Setter TREIBT die Uniform (KONSUM, mit Restore).
         const m0 = au.microStrength.value;
-        const n0 = au.terrainNightFloor.value;
         r.setMicroStrength(0.27);
-        r.setTerrainNightFloor(0.21);
-        out.settersDrive =
-            Math.abs(au.microStrength.value - 0.27) < 1e-9 && Math.abs(au.terrainNightFloor.value - 0.21) < 1e-9;
+        out.settersDrive = Math.abs(au.microStrength.value - 0.27) < 1e-9;
         r.setMicroStrength(m0);
-        r.setTerrainNightFloor(n0);
-        // (4) die Regler leben in den Einstellungen + treiben die Setter.
+        // (4) der Regler lebt in den Einstellungen + treibt den Setter.
         const mtS = document.getElementById("slider-microtex");
-        const nfS = document.getElementById("slider-nightfloor");
-        out.slidersLive = !!mtS && !!nfS;
+        out.slidersLive = !!mtS;
         if (mtS) {
             mtS.value = "30";
             mtS.dispatchEvent(new Event("input", { bubbles: true }));
@@ -79,15 +74,15 @@ async function checkBandM7LichtFeinschliff(ctx) {
         return out;
     });
     check(
-        "M7 Licht: Mikro-Struktur + Nacht-Boden sind LEBENDIGE Uniforms (keine eingebackenen Konstanten)",
+        "M7 Licht: die Mikro-Struktur ist eine LEBENDIGE Uniform (keine eingebackene Konstante)",
         res.uniforms
     );
     check(
-        "M7 Licht: die Setter treiben die Uniforms (setMicroStrength/setTerrainNightFloor — KONSUM)",
+        "M7 Licht: der Setter treibt die Uniform (setMicroStrength — KONSUM)",
         res.settersDrive
     );
     check(
-        "M7 Licht: die Einstellungs-Regler leben und treiben die Setter (kein toter Knopf)",
+        "M7 Licht: der Einstellungs-Regler lebt und treibt den Setter (kein toter Knopf)",
         res.slidersLive && res.sliderDrives
     );
 }
@@ -105,30 +100,6 @@ async function checkBandLambda3Wind(ctx) {
     check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
 }
 
-async function checkBandLambda6Detail(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3 } });
-        const glasProfile = r._substanceResponseProfile({ tags: { transparent: 1, magieleitung: 0.8 } });
-        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
-        out.laubDetail = laubProfile.detail;
-        out.glasDetail = glasProfile.detail;
-        out.steinDetailNull = steinProfile.detail;
-        return out;
-    });
-    check(
-        `Λ.6 Detail: laub-Profil.detail > 0.4 (GEMESSEN ${res.laubDetail && res.laubDetail.toFixed(3)})`,
-        Number.isFinite(res.laubDetail) && res.laubDetail > 0.4
-    );
-    check(
-        `Λ.6 Detail: glas-Profil.detail > 0.4 (GEMESSEN ${res.glasDetail && res.glasDetail.toFixed(3)})`,
-        Number.isFinite(res.glasDetail) && res.glasDetail > 0.4
-    );
-    check("Λ.6 Detail: stein-Profil.detail === 0 (kein Translucency auf Stein)", res.steinDetailNull === 0);
-}
-
 async function checkBandWEFrequenzband(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -141,10 +112,8 @@ async function checkBandWEFrequenzband(ctx) {
         const pGlut = r._substanceResponseProfile(mats.glut.tags);
         const pStein = r._substanceResponseProfile(mats.stein.tags);
         const pQuarz = r._substanceResponseProfile(mats.quarz.tags);
-        out.glanzOrdnung = pEisen.glanz > pHolz.glanz + 0.2;
         out.glimmenOrdnung = pGlut.glimmen > pStein.glimmen + 0.3 && pQuarz.glimmen > pStein.glimmen + 0.2;
-        out.waermeOrdnung = pHolz.waerme > pEisen.waerme + 0.3;
-        out.glasOrdnung = pQuarz.glas > 0.8 && pStein.glas < 0.1;
+        out.tiefeOrdnung = pStein.micro > pHolz.micro && pEisen.micro >= pHolz.micro;
         // (2) die Tags REISEN in beide Part-Builder (Spiegel-Disziplin) und
         // WIRKEN behavioral (V17.31, kein Existenz-Test): das HISM-Leaf eines
         // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
@@ -161,40 +130,26 @@ async function checkBandWEFrequenzband(ctx) {
         out.tagsReisen = _glow(mGlut) > _glow(mStein) + 0.01;
         // das Stein-Profil der Tags hält das Leaf ungeglüht und schaltet den Instanz-Ton (ohne Tags: werk-Default, es glüht)
         out.tagsImBuilder = mStein.userData.leafTint === true && _glow(mStein) === 0;
-        // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
-        // das Gras ist angedockt (Source + outputNode-KONSUM).
+        // (4) KEIN PROFIL TRÄGT LICHT (F6): das additive Band (Rim, Nacht-Boden, Mond-Rim, der Gegenlicht-Glow) ist fort — kein Profil nennt
+        // eine Licht-Achse, das Gras trägt keine Antwort (Gewicht 0 = kein Knoten; der Boden: V17.J), das Licht ist die EINE Kette
         const SR = r.constructor.SUBSTANCE_RESPONSE;
-        out.werkAmBand = SR.defaults.werk.fuell > 0 && SR.defaults.werk.mond > 0;
-        // am Ruf über einen frischen Gras-Bau (der Cache gäbe den Boot-Stoff zurück)
-        const altGras = r.state._grassMat;
-        r.state._grassMat = null;
-        try {
-            out.grasDocked = window.__consumes(r, "_grassInstanceMat", r, "_applySubstanceResponse", []);
-        } finally {
-            if (r.state._grassMat && r.state._grassMat !== altGras) r.state._grassMat.dispose();
-            r.state._grassMat = altGras;
-        }
+        const achsen = [pEisen, pHolz, pGlut, pStein, pQuarz, SR.defaults.werk, SR.defaults.feld].flatMap(Object.keys);
+        out.ohneBand = !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
         const gm = r._grassInstanceMat();
-        out.grasOutput = !!gm && gm.outputNode != null;
-        // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle.
-        out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
+        out.grasOhneAntwort = !!gm && gm.outputNode == null;
         return out;
     });
     check(
-        "W-E Frequenzband: die Antenne EMERGIERT aus der Substanz (glanz: Eisen>Holz · glimmen: Glut/Quarz>Stein · waerme: Holz>Eisen · glas: Quarz)",
-        res.glanzOrdnung && res.glimmenOrdnung && res.waermeOrdnung && res.glasOrdnung
+        "W-E Frequenzband: die Antenne EMERGIERT aus der Substanz (glimmen: Glut/Quarz>Stein · tiefe: Stein/Eisen>Holz)",
+        res.glimmenOrdnung && res.tiefeOrdnung
     );
     check(
         "W-E Frequenzband: die Substanz-Tags REISEN in den Leaf-Builder + wirken behavioral (Glut-Leaf glimmt stärker als Stein, das Stein-Leaf glüht nicht und trägt den Instanz-Ton)",
         res.tagsReisen && res.tagsImBuilder
     );
     check(
-        "W-E Frequenzband: das Band trifft ALLE Ebenen — Werk-Familie am fuell/mond-Band + Gras angedockt (outputNode-KONSUM)",
-        res.werkAmBand && res.grasDocked && res.grasOutput
-    );
-    check(
-        "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle)",
-        res.defaults
+        "F6: kein Profil trägt Licht — keine Achse rim/fuell/mond/detail, das Gras ohne Antwort-Knoten (das Licht ist die EINE Kette)",
+        res.ohneBand && res.grasOhneAntwort
     );
 }
 
@@ -567,6 +522,6 @@ async function checkBandWahrerAnblickGras(ctx) {
 }
 
 module.exports = {
-    checkBandV18136Audit, checkBandM7LichtFeinschliff, checkBandLambda3Wind, checkBandLambda6Detail,
+    checkBandV18136Audit, checkBandM7LichtFeinschliff, checkBandLambda3Wind,
     checkBandWEFrequenzband, checkBandV18223PbrKohaerenz, checkBandWahrerAnblickSaeule1, checkBandWahrerAnblickGras,
 };
