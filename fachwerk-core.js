@@ -1961,6 +1961,10 @@
     const LOD1F={gelaende:false,geruest:false,boeden:false,innenwaende:false,herd:false,treppe:false,moebel:false};
     // prettier-ignore
     const LOD1S=Object.assign({},LOD1F,{herd:true,boeden:true,geruest:true});   // FLÄCHEN-STUFE: Stufe 1 trägt Schornstein (herd baut unter flaechig nur den Teil über Dach), Boden-Platten und den Ständer-/Rähm-Ring (sie schließen die Geschoss-Schlitze, durch die sonst der Innenkörper leuchtet) — das Bild springt bei 20 m nicht
+    // DIE STUFE 1 BAUT NUR, WAS SIE ZEIGT (B3e): die Teilsysteme, die LOD1S verwirft (Gelände, Innenwände, Treppe, Möbel),
+    // baut der Kern gar nicht erst (`MK`, LAZY-KERN) — die Fassade, der Innenkörper und der Ton byte-gleich (gate:fachwerk-contract).
+    // prettier-ignore
+    const L1NUR={gelaende:false,innenwaende:false,treppe:false,moebel:false};
     // prettier-ignore
     function bakeLOD(g,kol,geoms,minVol,alles){                                                  // wie bakeHaus, aber Kleinst-Prims fallen (Destillat). alles=true: Türen/Fenster MITBAKEN (Chunk-Stufen — LÜCKENLOS-GESETZ: kein Live-Mesh darf fern fehlen)
   const live=new Set(); if(!alles) g.traverse(o=>{ if(o.userData&&(o.userData.door||o.userData.window)) o.traverse(d=>live.add(d)); });
@@ -2670,7 +2674,7 @@
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        var B = massBau(p);
+        var B = planBau(p);
         if (!((p.storeys || 1) >= 6)) {
             fragFuer(B, 1);
             B.frag = null;
@@ -2752,7 +2756,7 @@
   if(stufe===3){ huelleGeoms(koerperListe(B).map(x=>x.teil), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
-    const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:null));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
+    const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
     const wrap=bauOrtWrap(B); wrap.add(st.g);
     wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
@@ -3455,6 +3459,36 @@
         return B;
     }
 
+    // ── DER PLAN DES HAUSES (B3e) — die Massen ohne die Teile, die keine Masse tragen ──
+    //    Der Fernkörper (Stufe 3, NUR-WURF, und seine Fernform `__fern`) liest vom Bau nur die MASSEN (`koerperListe`:
+    //    Grundriss, Geschoss- und Traufhöhen, Dach-Form und -Neigung, Kamin) und für den Fassaden-Ton `dims` und `fp`. Bis B3e
+    //    baute er dafür den Mass-Bau (Ziegel, Giebel, Dachwerk, Fenster — die Maß-Träger der Box `ext`, die er nie liest):
+    //    0,30–0,39 s je Haus auf der GTX, so viel wie die L2 (OMEN 1610). Der Plan baut nur die Teilsysteme, die eine Masse
+    //    setzen (`addMasse`: Fundament, Tür-Treppen, Anbau, Flügel, Hof, Turm, Portikus …, der Herd den Kamin) — Massen,
+    //    `dims` und `fp` byte-gleich dem Mass-Bau (gate:fachwerk-contract, die Split-Parität der Stufe 3 komponiert ihn).
+    //    Die Stapel-Naht (`stapelBau`, > 11 Geschosse) hebt den Aufsatz auf den Umriss der gebauten Basis, und den trägt im
+    //    Mass-Bau das Fenster: dort baut der Plan es mit.
+    var PLANNUR = Object.assign({}, MASSNUR, { gelaende: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, balkon: false, dachAlt: false, pilotis: false });
+    function planBau(p) {
+        var nur = (p.storeys || 1) > 11 ? Object.assign({}, PLANNUR, { fenster: true }) : PLANNUR;
+        var plan = stapelBau(Object.assign({}, p, { nur: nur }), LOD1F);
+        var B = {
+            p: p,
+            q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, // der eigene Rahmen des Ofens (wie massBau)
+            lod: "chunk",
+            dyn: false,
+            dims: plan.H.dims,
+            fp: fpVon(plan.H),
+            masse: masseVon(plan),
+            hofGap: 2.5,
+            meshes: [],
+        };
+        plan.g.traverse(function (o) {
+            if (o.geometry) o.geometry.dispose();
+        });
+        return B;
+    }
+
     // DIE KAMIN-SPITZE (KAMIN-RAUCH .105, die EINE Formel): die Mitte über dem Stapel-AABB, 0,2 m darüber, haus-lokal —
     // null ohne Kamin (ROUND/modern/kuppel). Leser: exportSettlement (je Slot), chimneyTipFromParams und die Hülle des
     // Baus (`buildInstance`: `__huelle.kamin`, B3c — die Spitze reist mit dem Haus aus dem Worker).
@@ -3587,17 +3621,15 @@
         } else if (stufe === 3) {
             // DIE STUFE 3 (nurWurf, S3): der Fernkörper des Gesetzbuchs. Der Warm-Pfad misst den Fassaden-Ton (wie die L2),
             // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
-            // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe).
-            var B3 = massBau(p);
+            // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe). Ihre Massen
+            // kommen aus dem PLAN (`planBau`, B3e), nie aus dem Mass-Bau der gezeigten Stufen.
+            var B3 = planBau(p);
             if (!turm) {
                 fragFuer(B3, 1);
                 B3.frag = null;
                 B3.fragStufe = undefined;
             }
-            mischeGeoms(geoms, fragFuer(B3, 3));
-            B3.frag = null;
-            B3.fragStufe = undefined;
-            geoms.__fern = huelleVonBau(B3);
+            geoms = wurfVon(B3);
         } else {
             var B = massBau(p);
             if (stufe === 2 && !turm) {
@@ -3614,6 +3646,16 @@
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
         }
         return geoms;
+    }
+    // DER WURF EINES BAUS (Stufe 3, NUR-WURF): die EINE Liste als EIN Gitter (`fragFuer(B, 3)`) und ihre Fernform `__fern`
+    // aus einem B, das Massen und Fassaden-Ton trägt (der Plan, `planBau`).
+    function wurfVon(B) {
+        var w = {};
+        mischeGeoms(w, fragFuer(B, 3));
+        B.frag = null;
+        B.fragStufe = undefined;
+        w.__fern = huelleVonBau(B);
+        return w;
     }
 
     // ── Rollen-Fragmente → EINE THREE.Group — der sofort-Zweig von

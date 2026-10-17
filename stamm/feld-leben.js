@@ -1757,7 +1757,8 @@ class AnazhRealm_feld_leben {
     }
 
     // === Das lebendige Feld — die SCHREIB-Seite ===
-    // Sparse Map: "cx,cz" (16-m-Zelle) → { a, t } (Overlay-Menge, Zeit in s). Decay LAZY beim Lesen
+    // Sparse Map: "cx,cz" (16-m-Zelle) → { a, t } (Overlay-Menge, `state.spielZeit` in s — nie die Wanduhr: ein Takt liest,
+    // was er schrieb, die Pause zerfällt nicht; Lese- und Gefühls-Seite teilen die Uhr). Decay LAZY beim Lesen
     // (a · e^(−λ·Δt)), kein Sweep (O(1) je Lese/Deposit, Prune ~alle 5 s). Nur intentionale Spawns
     // (Nexus/Chat/DSL via spawn_creature) deponieren — ambiente Fauna und Restore nicht (kein Runaway).
     // Nicht persistiert (reaktiv wie Wetter).
@@ -1772,7 +1773,7 @@ class AnazhRealm_feld_leben {
         if (!lf || lf.size === 0) return 0;
         const e = lf.get(this._lifeCellKey(x, z));
         if (!e) return 0;
-        const dt = Math.max(0, performance.now() / 1000 - e.t);
+        const dt = Math.max(0, this.state.spielZeit - e.t);
         return dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
     }
 
@@ -1786,7 +1787,7 @@ class AnazhRealm_feld_leben {
         if (!this.state.lifeField) this.state.lifeField = new Map();
         const lf = this.state.lifeField;
         const cfg = AnazhRealm.LIFE_FIELD;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const cx = Math.floor(x / cfg.cell);
         const cz = Math.floor(z / cfg.cell);
         const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
@@ -1811,7 +1812,7 @@ class AnazhRealm_feld_leben {
         const lf = this.state.lifeField;
         if (!lf || lf.size === 0) return;
         const cfg = AnazhRealm.LIFE_FIELD;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (now - (this.state.lifeFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
         this.state.lifeFieldLastPrune = now;
         for (const [key, e] of lf) {
@@ -1839,7 +1840,7 @@ class AnazhRealm_feld_leben {
         if (!this.state.emotionField) this.state.emotionField = new Map();
         const ef = this.state.emotionField;
         const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
         let cell = ef.get(key);
         if (cell) {
@@ -1862,7 +1863,7 @@ class AnazhRealm_feld_leben {
         if (!ef || ef.size === 0) return null;
         const cell = ef.get(this._lifeCellKey(x, z));
         if (!cell) return null;
-        const dt = Math.max(0, performance.now() / 1000 - cell.t);
+        const dt = Math.max(0, this.state.spielZeit - cell.t);
         const f = dt === 0 ? 1 : Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * dt);
         let out = null;
         for (const axis of Object.keys(cell.axes)) {
@@ -1879,7 +1880,7 @@ class AnazhRealm_feld_leben {
         const ef = this.state.emotionField;
         if (!ef || ef.size === 0) return;
         const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (now - (this.state.emotionFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
         this.state.emotionFieldLastPrune = now;
         for (const [key, cell] of ef) {

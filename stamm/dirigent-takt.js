@@ -24,6 +24,7 @@ class AnazhRealm_dirigent_takt {
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
             if (this._portalOverlay) return;
+            this.state.spielZeit += delta; // DIE SPIEL-ZEIT: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
