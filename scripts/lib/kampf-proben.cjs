@@ -44,10 +44,10 @@ async function WELLE_L() {
     const zaehl = { schwung: 0, carve: 0, fill: 0, gegenwehr: 0 };
     // (T7c) der Roh-Spion: ein Schaden im Namen des Spielers IST der Rückgabewert des EINEN Roh-Schaden-Gesetzes, sonst
     // nennt rohTat den Rufer (Laufzeit-Marke statt Rumpf-Text, Lehre 6)
-    let roh = null;
+    let roh = null, rohKraft = null; // rohKraft: die Kraft der Führung am Ruf (K-D6 liest sie, nie Zone oder Wirkung)
     const rohTat = [];
     r._kampfRohSchaden = function (...a) {
-        return (roh = orig.roh.apply(this, a));
+        return (rohKraft = a[2]), (roh = orig.roh.apply(this, a));
     };
     r.damageCreature = function (c, amount, opts) {
         if (opts && opts.source === "player" && roh !== amount)
@@ -57,7 +57,7 @@ async function WELLE_L() {
         const st0 = opts && opts.stoss;
         treff.push({
             c,
-            amount,
+            amount, kraft: rohKraft,
             src: opts && opts.source,
             t: T,
             ok: !!(res && res.ok),
@@ -747,7 +747,7 @@ async function WELLE_L() {
                 stelle(hirsch, 2.5);
                 zielen(punkt(hirsch, null));
                 const sh = schuss(1, hirsch);
-                return { flog: sh.flog, amount: sh.treffer ? sh.treffer.amount : null, nach: r._blueprintWear(bpB) };
+                return { flog: sh.flog, amount: sh.treffer ? sh.treffer.amount : null, kraft: sh.treffer ? sh.treffer.kraft : null, nach: r._blueprintWear(bpB) };
             };
             const bogenProbe = () => {
                 const b1 = bogenBei(1),
@@ -756,7 +756,7 @@ async function WELLE_L() {
                 r._setBlueprintWear(bpB, 1);
                 const F = A.WEAR_STAT_FLOOR;
                 const soll = F + (1 - F) * 0.5;
-                const verh = b1.amount && b5.amount !== null ? b5.amount / b1.amount : null;
+                const verh = b1.kraft && b5.kraft != null ? b5.kraft / b1.kraft : null; // die Kraft, nie der Schaden: die Zone des Treffers wechselt
                 return {
                     voll: b1.amount,
                     halb: b5.amount,
