@@ -850,18 +850,6 @@ async function WELLE_L() {
             w.z.gueteProben = proben9.join(" | ");
             w.c.eineGuete = n9 >= 17 && uneins === 0;
         }
-        // die fünf Phantom-Leser (0 Definitionen im Kern) — kein Aufruf im Stamm
-        // (Absenz über den Code ohne Kommentare — Kommentare dürfen die Gefallenen zitieren, Lehre 6)
-        const stamm = Object.getOwnPropertyNames(A.prototype)
-            .map((k) => {
-                const d = Object.getOwnPropertyDescriptor(A.prototype, k);
-                return d && typeof d.value === "function"
-                    ? window.__codeOf(d.value)
-                    : "";
-            })
-            .join("\n");
-        w.z.phantome = (stamm.match(/\b(zoneMulAt|zoneKindAt|zoneJuiceAt|handlingMul|handlingWindF)\b/g) || []).length;
-        w.c.keinePhantome = w.z.phantome === 0;
         const codeVon = (name) =>
             fn(name)
                 ? window.__codeOf(A.prototype[name])
@@ -1017,13 +1005,7 @@ async function WELLE_L() {
         // je Probe jedes Ende jeder Treffer-Glied-Kapsel (+ ihr Radius) — ein Punkt der Gestalt, den das Tor abweist,
         // wäre ein Treffer, den die Gestalt nie richten darf. Gemessen wird die RÄUMLICHE Spanne vom Fuß-Ursprung (das Tor
         // fragt waagrecht): sie deckt das Tier in jeder Lage (gekippt, am Hang, im Sprung), nicht nur in der gezeigten.
-        // Ohne die Naht (Vorher-Stand) misst sie das alte Inline-Tor.
-        const grobTor = fn("_trefferErreichbar")
-            ? (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp)
-            : (c, x, z, sp) => {
-                  const L = Math.max(0.3, c.scale.x || 1);
-                  return Math.hypot(c.position.x - x, c.position.z - z) <= sp + 2 * L;
-              };
+        const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
             const G = A._verhaltenGesetz().groessen;

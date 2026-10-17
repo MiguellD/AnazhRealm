@@ -951,7 +951,6 @@ const FORBIDDEN = [
             "scripts/diag-ankunft.cjs",
             "scripts/diag-boot-stage.cjs",
             "scripts/diag-fluss.cjs",
-            "scripts/diag-leistungs-vertrag.cjs",
             "scripts/diag-p2p-gestalt.cjs",
             "scripts/diag-parity.cjs",
             "scripts/diag-praegung-welt.cjs",

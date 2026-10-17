@@ -1,10 +1,12 @@
 "use strict";
 // scripts/playtest/wasser.cjs — der Richter von Wasser (spec/stamm/modul-karte.json): Hydrosphäre · Flüsse · Seen · Wasserfälle · Pegel · die Wasser-Wahrheit · Wasser-Zellen · Sheet · Iso · Wasser-CA · Stau.
-// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 12 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
+const path = require("path");
 const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
+const SKRIPTE = path.join(__dirname, "..");
 
 // V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
@@ -2565,9 +2567,189 @@ async function checkBandScatterWasserAB(ctx) {
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
 }
 
+// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b, V18.345): der Worker baut den
+// Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
+// (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
+// je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.
+async function checkBandWasserSheetSpiegel(ctx) {
+    const { page, check } = ctx;
+    await safeEvaluate(page, require(path.join(SKRIPTE, "lib", "wasser-linse.cjs")).WASSER_INSTALL);
+    const steer = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        if (!s || !s.playerMesh) return { err: "kein Spieler" };
+        const px = s.playerMesh.position.x,
+            pz = s.playerMesh.position.z;
+        const O = window.__wasserOrte({ mess: [px, pz] });
+        // DAS NÄCHSTE WASSER (K16): See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
+        // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
+        const kand = [];
+        if (O && O.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });
+        if (O && O.fluss) kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
+        const spot = kand
+            .filter((k) => Number.isFinite(k.L))
+            .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz))[0];
+        if (!spot) return { err: "kein See und kein Fluss in der Welt (`__wasserOrte`)" };
+        // Spieler ans Wasser (Body-frei seit V18.331 — nur die Mesh-Position treibt das Streaming).
+        s.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
+        // Streaming-Pump: der Worker baut die Chunks um den Spieler + liefert waterCells.
+        // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (Frist 60 s), mindestens 280 Takte
+        const t0 = performance.now();
+        const steht = () => {
+            let n = 0;
+            for (const e of s.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
+            return s.voxelChunks.size > 8 && n > 0;
+        };
+        for (let i = 0; i < 280 || (!steht() && performance.now() - t0 < 60000); i++) {
+            try {
+                if (typeof r._tickVoxelChunkStreaming === "function") r._tickVoxelChunkStreaming();
+                r._gameLoopTick(performance.now());
+                if (r._drainPendingWaterIso) r._drainPendingWaterIso();
+            } catch (_e) {
+                /* */
+            }
+            if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
+        }
+        return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: s.voxelChunks.size };
+    });
+    const report = (await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {
+            ok: true,
+            msgs: [],
+            compared: 0,
+            waterChunks: 0,
+            withCells: 0,
+            withWater: 0,
+            maxDiff: 0,
+            mismatches: [],
+        };
+        if (!r || !r.state || !r.state.voxelChunks) {
+            out.ok = false;
+            out.msgs.push("keine Welt/voxelChunks");
+            return out;
+        }
+        if (!r.state.voxelWorker || !r.state.voxelWorkerReady) {
+            out.ok = false;
+            out.msgs.push("Worker nicht bereit");
+            return out;
+        }
+        // Welt EINFRIEREN: der rAF-Loop würde sonst streamen. `_gameLoopTick` →no-op. Dann `waterCAActive`
+        // LEEREN (nichts fliesst → der `waterCAActive`-Gate lässt alle durch). Das Sheet liest den Live-Pegel
+        // nie (05.10.: das GEZEICHNETE Dach, `entry._caDach`); ein Chunk mit Dach im 3×3 baut der Main
+        // (`_waterSheetCaFree` false) — verglichen wird genau die Worker-Route: dachlos = Flood = identisch.
+        r._gameLoopTick = () => {};
+        if (r.state.waterCAActive) r.state.waterCAActive.clear();
+        if (r.state.waterStauFields) r.state.waterStauFields.clear();
+        // Kandidaten: CA-freie Chunks, deren Main-Sheet NICHT null ist (also Wasser tragen).
+        const keys = [...r.state.voxelChunks.keys()];
+        const cand = [];
+        for (const key of keys) {
+            const ci = key.indexOf(",");
+            const cx = parseInt(key.slice(0, ci), 10);
+            const cz = parseInt(key.slice(ci + 1), 10);
+            const entry = r.state.voxelChunks.get(key);
+            if (!entry || !entry.waterCells || entry.waterCells.length === 0) continue;
+            out.withCells++;
+            // hat die Spalten-Zelle echtes WATER (CELL_STATE.WATER=1)?
+            let anyWater = false;
+            for (let q = 0; q < entry.waterCells.length; q++) {
+                if (entry.waterCells[q] === 1) {
+                    anyWater = true;
+                    break;
+                }
+            }
+            if (anyWater) out.withWater++;
+            if (!r._waterSheetCaFree(cx, cz)) continue;
+            let mainData = null;
+            try {
+                mainData = r._computeWaterSheetData(cx, cz, r._mainWaterSheetCtx(cx, cz, entry));
+            } catch (e) {
+                out.msgs.push(`main-compute-throw ${key}: ${e.message}`);
+                continue;
+            }
+            if (!mainData) continue; // kein Wasser-Sheet in diesem Chunk
+            cand.push({ cx, cz, key, mainData });
+            if (cand.length >= 24) break;
+        }
+        out.waterChunks = cand.length;
+        if (cand.length === 0) {
+            out.ok = false;
+            out.msgs.push("KEIN CA-freier Wasser-Chunk gefunden (Welt ohne Wasser im Ring?)");
+            return out;
+        }
+    
+        const f32 = (a) => (a instanceof Float32Array ? a : new Float32Array(a));
+        const u32 = (a) => (a instanceof Uint32Array ? a : new Uint32Array(a));
+        const cmpF = (label, a, b, ctx) => {
+            const A = f32(a);
+            const B = f32(b);
+            if (A.length !== B.length) {
+                out.ok = false;
+                out.mismatches.push(`${ctx} ${label} LEN ${A.length}≠${B.length}`);
+                return;
+            }
+            for (let i = 0; i < A.length; i++) {
+                const d = Math.abs(A[i] - B[i]);
+                if (d > out.maxDiff) out.maxDiff = d;
+                if (d !== 0) {
+                    out.ok = false;
+                    if (out.mismatches.length < 12)
+                        out.mismatches.push(`${ctx} ${label}[${i}] ${A[i]}≠${B[i]} (Δ${d})`);
+                }
+            }
+        };
+        const cmpU = (label, a, b, ctx) => {
+            const A = u32(a);
+            const B = u32(b);
+            if (A.length !== B.length) {
+                out.ok = false;
+                out.mismatches.push(`${ctx} ${label} LEN ${A.length}≠${B.length}`);
+                return;
+            }
+            for (let i = 0; i < A.length; i++) {
+                if (A[i] !== B[i]) {
+                    out.ok = false;
+                    if (out.mismatches.length < 12) out.mismatches.push(`${ctx} ${label}[${i}] ${A[i]}≠${B[i]}`);
+                    if (1 > out.maxDiff) out.maxDiff = 1;
+                }
+            }
+        };
+    
+        for (const c of cand) {
+            let wd = null;
+            try {
+                wd = await r._workerBuildWaterSheet(c.cx, c.cz);
+            } catch (e) {
+                out.ok = false;
+                out.msgs.push(`worker-throw ${c.key}: ${e.message}`);
+                continue;
+            }
+            if (!wd || wd.empty) {
+                out.ok = false;
+                out.mismatches.push(`${c.key}: Worker EMPTY, Main hatte ${c.mainData.positions.length / 3} Verts`);
+                continue;
+            }
+            cmpF("position", c.mainData.positions, wd.positions, c.key);
+            cmpU("index", c.mainData.indices, wd.indices, c.key);
+            cmpF("aFlow", c.mainData.aFlow, wd.aFlow, c.key);
+            cmpF("aWave", c.mainData.aWave, wd.aWave, c.key);
+            cmpF("aDepth", c.mainData.aDepth, wd.aDepth, c.key);
+            cmpF("aSlope", c.mainData.aSlope, wd.aSlope, c.key);
+            out.compared++;
+        }
+        return out;
+    })) || { ok: false, msgs: ["keine Antwort der Seite"], mismatches: [] };
+    check(
+        `Wasser-Sheet-Spiegel: Worker == Main byte-identisch (maxDiff ${report.maxDiff}) über ${report.compared} CA-freie Wasser-Chunks am Wasser ${steer && !steer.err ? `(${steer.x}, ${steer.z})` : ""}`,
+        !!steer && !steer.err && report.ok && report.compared > 0 && report.maxDiff === 0,
+        [steer && steer.err, ...report.msgs, ...report.mismatches].filter(Boolean).join(" · ").slice(0, 300)
+    );
+}
+
 module.exports = {
     checkBandHydrosphere, checkBandWelleC1WaterCells, checkBandWelleC2WaterIsoSurface,
     checkBandWellePerfHWaterIsoQueue, checkBandV17117FarWater, checkBandWelleV11D1WaterContext,
     checkBandWelleV11D2WaterBias, checkBandV18129HochBecken, checkBandV18194Gamma6Befoerderung,
-    checkBandWasserWahrheit, checkBandScatterWasserAB,
+    checkBandWasserWahrheit, checkBandScatterWasserAB, checkBandWasserSheetSpiegel,
 };

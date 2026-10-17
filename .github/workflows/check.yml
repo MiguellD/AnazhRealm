@@ -1213,10 +1213,6 @@ jobs:
               if: matrix.gruppe == 16
               run: npm run gate:scatter-lod
 
-            - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
-              if: matrix.gruppe == 2
-              run: npm run gate:leistungs-vertrag
-
             - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
               if: matrix.gruppe == 5
               run: npm run gate:erstarren
@@ -1242,7 +1238,7 @@ jobs:
               run: npm run gate:webgl-probe
 
             - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 2
               # K67: jede Seite der Boot-Lib trägt Puls und Stempel; steht der Puls ≥ 20 s oder reißt eine Frist, schreibt
               # scripts/lib/welt-boot.cjs die Akte ins Log (Phase, Stempel, CPU je Prozess, Stapel, GPU-Spur, Stderr, Urteil).
               run: npm run gate:welt-boot
@@ -1263,10 +1259,6 @@ jobs:
               # Gruppe 9 (die leichteste, 8,9 min Median): in Gruppe 4 trug sie nach main bb554abf 11,6 min (Waage 11).
               if: matrix.gruppe == 3
               run: npm run gate:tor-fern
-
-            - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
-              if: matrix.gruppe == 14
-              run: npm run gate:worker-watersheet
 
             - name: Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)
               if: matrix.gruppe == 14
@@ -1569,10 +1561,6 @@ jobs:
             - name: Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)
               if: ${{ !cancelled() }}
               run: npm run gate:post-kette
-
-            - name: Himmel-Tag auf der Karte (am Mittag steht kein Punkt am Himmel)
-              if: ${{ !cancelled() }}
-              run: npm run gate:himmel-tag
 
             - name: Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)
               if: ${{ !cancelled() }}

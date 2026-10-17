@@ -2759,7 +2759,7 @@ async function checkBandTodZensus(ctx) {
         ["last", /last:/],
         ["raeumen", /raeumen:/],
     ];
-    const lauf = (t) => safeEvaluate(page, (src, tt) => (0, eval)("(" + src + ")")(window.anazhRealm, window.THREE, tt), todZensus.toString(), t);
+    const lauf = (t) => safeEvaluate(page, `(${todZensus})(window.anazhRealm, window.THREE, ${JSON.stringify(t)})`);
     const u = urteil(await lauf(null));
     check("Tod-Zensus: der Leichnam liegt in der Stufe seines Abstands, wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme", u.ok, u.ok ? "" : u.grund.slice(0, 300));
     const blind = [];

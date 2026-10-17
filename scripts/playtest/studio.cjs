@@ -1,9 +1,11 @@
 "use strict";
 // scripts/playtest/studio.cjs — der Richter von Studio (spec/stamm/modul-karte.json): Foundry-Brücke · Bücher · Aufträge · Uhren · Vorrat · Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft.
-// 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
+const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
+const SKRIPTE = path.join(__dirname, "..");
 
 async function checkBandLambda4Streu(ctx) {
     const { page, check } = ctx;
@@ -477,7 +479,302 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
     );
 }
 
+// Der Leistungs-Vertrag — eingefaltet aus gate:leistungs-vertrag (D3b, Profi-Doktrin Welle 5, 18.07.): die erkämpften Leistungs-
+// Invarianten stehen als VERTRAG. V1 Stand-Churn null (Welt gesettelt, Spieler steht → 0 Gruppen-Mints) · V2 der Ingest-Takt (echte
+// Request-Ergebnisse resolven nie synchron, ≤ 3 je Frame in Ankunfts-Reihenfolge, über Budget 1, headless sofort) · V3 die Gruppen
+// klettern im Stand nicht · V4 der Trace trägt bundleDeckung + ingestTakt + gruppenChurn · V5 das Szene-Live-Set < 700 MB;
+// Selbsttest: ein absichtlicher Mint+Dispose im Fenster bewegt die Churn-Zähler.
+async function checkBandLeistungsVertrag(ctx) {
+    const { page, check } = ctx;
+    const { EINSCHWING_INSTALL } = require(path.join(SKRIPTE, "lib", "band-urteil.cjs"));
+    await safeEvaluate(page, EINSCHWING_INSTALL); // die EINE Liste dessen, was die Welt noch baut (band-urteil `einschwingOffen`)
+    const out = (await safeEvaluate(page, async () => {
+        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
+        const o = { err: null };
+        try {
+            const dl = performance.now() + 90000;
+            while (
+                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
+                performance.now() < dl
+            )
+                await sleep(100);
+            const r = window.anazhRealm,
+                st = r.state;
+            // Kurzes Boot-Settle, dann PRODUKTIONS-TREUES Regime: headless streamt
+            // mit Radius=MAX endlos Welt (Boot-Mints ≠ Churn) — das Stand-Fenster
+            // misst darum im GELÜFTETEN Regler-Regime (das regler-sim-Muster:
+            // _isHeadlessNull ab, GPU-Anwender gestubbt, Über-Budget-Folds fahren
+            // den Radius auf den Boden 70 m → die kleine Welt wird schnell FERTIG).
+            for (let i = 0; i < 200; i++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                if (i % 15 === 0) await sleep(15);
+            }
+            // DIE WARTENDEN REGIONEN (06.10., V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
+            // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
+            // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —
+            // das Stand-Fenster misst Churn, nicht den Boot.
+            {
+                const dlW = performance.now() + 150000;
+                // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
+                // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
+                const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
+                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
+                // — der Streamer lief noch nie — als „keine wartet")
+                const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
+                while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
+                    for (let i = 0; i < 30; i++) {
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                    }
+                    await sleep(30);
+                }
+                o.wartendListe = [];
+                o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
+                o.vorratPhase = vorrat();
+            }
+            const _oH0 = st.renderer._isHeadlessNull;
+            const _oRS = r._applyRenderScale,
+                _oSR = r._applyEffectiveShadowRange;
+            st.renderer._isHeadlessNull = false;
+            r._applyRenderScale = () => {};
+            r._applyEffectiveShadowRange = () => {};
+            // DIE KARTE IST EIN GPU-ANWENDER wie Render-Skala und Schatten-Weite: mit echtem Renderer trägt eine Baum-Karte
+            // erst gebacken (`_foundryBuildImpostorFlat`), der Null-Renderer bäckt nie — er legt ihre Zelle aus der
+            // L1-Geometrie an. Gelüftet nahm er den Bäcker-Zweig und wartete für immer: 2–4 Regionen blieben aufgeschoben
+            // (Erle und Tanne auf 289–377 m), jede Lieferung baute sie ganz neu, 6–8 Mints im Fenster (3 von 3 Läufen).
+            // Die Karten-Leser laufen darum mit der Null-Semantik, wie die anderen GPU-Anwender gestubbt sind.
+            const _oKF = r._foundryBuildImpostorFlat,
+                _oKR = r._foundryEnsureImpostorRecord;
+            const nullKarte =
+                (f) =>
+                (...a) => {
+                    const h = st.renderer._isHeadlessNull;
+                    st.renderer._isHeadlessNull = true;
+                    try {
+                        return f.apply(r, a);
+                    } finally {
+                        st.renderer._isHeadlessNull = h;
+                    }
+                };
+            r._foundryBuildImpostorFlat = nullKarte(_oKF);
+            r._foundryEnsureImpostorRecord = nullKarte(_oKR);
+            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund, 14.10.): die Physical-Klasse des Klarlacks lebt in der
+            // Node-Bibliothek des Renderers (`_foundryTreeMaterial`), der Null-Renderer trägt keine — kam eine Lieferung mit
+            // Haut im gelüfteten Fenster, brach der Stoff laut („STOFF: die Gruppe der Foundry-Lieferung"). Er baut mit der
+            // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
+            const _oTM = r._foundryTreeMaterial;
+            r._foundryTreeMaterial = nullKarte(_oTM);
+            const feed = (ms) => {
+                st._perfFrame = {
+                    render: 90,
+                    streaming: 2,
+                    waterIso: 1,
+                    archCulling: 0.1,
+                    creatures: 1,
+                    physics: 1,
+                    renderCalls: 1000,
+                    renderTris: 12e6,
+                };
+                st._perfMarks = {};
+                r._perfSenseFoldFrame(ms, ms / 1000);
+            };
+            for (let i = 0; i < 200; i++) feed(150); // Regler auf den Boden (Radius → 70)
+            // Settle bis QUIESZENZ in DIESEM Regime (Batches à 100 Ticks, 2 ruhige in
+            // Folge; 180 s Deadline — erreicht der Boot sie nie, ist DAS der Befund).
+            // Ruhig heißt: kein Mint UND der Streu-Ring steht — dieselben Regionen, keine offene Scheiben-Fortsetzung
+            // (`_cont`), keine wartende Region. Gezählt wurden nur Mints: ein Ring, der nach dem Regime-Wechsel
+            // Regionen in Scheiben neu baute (Zellen 0 → 53), lief durch zwei Batches ohne neuen Schlüssel und münzte
+            // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
+            {
+                // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
+                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
+                const ringWartet = () => {
+                    const liste = [];
+                    r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
+                    if (st.scatterRegions)
+                        for (const k of st.scatterRegions.keys()) {
+                            const grund = r._streuRegionWartet(k);
+                            if (grund && !liste.includes(`${k} ${grund}`)) liste.push(`${k} ${grund}`);
+                        }
+                    return liste;
+                };
+                const ringStand = () =>
+                    (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") + "|" + ringWartet().length;
+                // ... und die Welt baut nichts mehr: die EINE Liste des Einschwingens (band-urteil `einschwingOffen`, dieselbe
+                // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
+                // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
+                // keine wachsende Siedlung). Ein Bau dauert 0,1–25 s; zwei ruhige Batches sind ein Takt-Maß, keine Uhr — am
+                // langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
+                // lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal mit 3 s späteren Worker-Antworten
+                // 88 Mints, 80 → 168. K10-6: der eigene Zähler (Foundry allein) sah den Dorf-Zug nicht — die Ort-Wahl des
+                // Start-Dorfs rechnete in 3 von 3 Läufen noch beim Fenster-Start (18–19 Scheiben), landete im Fenster oder
+                // im Ingest-Takt: CI 12 Mints im Stand (V1), über Budget 0 statt 1 Freigabe (V2, 3 von 6 lokal).
+                const offen = () => window.__einschwingOffen(r);
+                const baut = () => Object.keys(offen()).length;
+                const dlQ = performance.now() + 180000;
+                let ruhigeBatches = 0;
+                while (ruhigeBatches < 2 && performance.now() < dlQ) {
+                    const mv = r._archGruppenMints || 0;
+                    const ring0 = ringStand();
+                    for (let i = 0; i < 100; i++) {
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                        feed(150);
+                        if (i % 20 === 0) await sleep(15);
+                    }
+                    const ring1 = ringStand();
+                    const ruhig =
+                        (r._archGruppenMints || 0) === mv &&
+                        ring0 === ring1 &&
+                        ring1.endsWith("|0") &&
+                        baut() === 0;
+                    ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
+                }
+                o.quieszent = ruhigeBatches >= 2;
+                o.ringOffen = ringWartet();
+                o.baut = baut();
+                o.weltOffen = offen();
+            }
+            // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
+            // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
+            // gesettelten kleinen Welt — keine künftige Welle darf das Live-Set
+            // still zurück in die GB-Klasse wachsen lassen (die 819-MB-Messung
+            // VOR der Batch-Klein-Münze ist die Referenz; das Band liegt mit
+            // Kopfraum darunter).
+            const hz = r._flightRecorderHeapZensus ? r._flightRecorderHeapZensus() : null;
+            o.szeneMB = hz ? hz.szeneMB : null;
+            // ── V1 + V3: STAND-FENSTER (Spieler steht, 400 Ticks im Regime) ──
+            const mints0 = r._archGruppenMints || 0;
+            const groups0 = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
+            let groupsMax = groups0;
+            for (let i = 0; i < 400; i++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                feed(150);
+                if (st.archInstanceGroups && st.archInstanceGroups.size > groupsMax)
+                    groupsMax = st.archInstanceGroups.size;
+                if (i % 25 === 0) await sleep(15);
+            }
+            o.standMints = (r._archGruppenMints || 0) - mints0;
+            o.groups0 = groups0;
+            o.groupsMax = groupsMax;
+            o.groupsEnde = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
+            o.v1ChurnNull = o.standMints === 0;
+            o.v3Stabil = groupsMax <= groups0; // stehen: nichts klettert (Reaper darf senken)
+            // Regime zurück (die Gate-Hook-Lehre: sichern + wiederherstellen):
+            st.renderer._isHeadlessNull = _oH0;
+            r._applyRenderScale = _oRS;
+            r._applyEffectiveShadowRange = _oSR;
+            r._foundryBuildImpostorFlat = _oKF;
+            r._foundryEnsureImpostorRecord = _oKR;
+            // der Stoff bleibt bis nach dem Ingest-Takt unter der Null-Semantik (s. oben)
+            st._perfFrame = {};
+            st._perfMarks = {};
+            st.perfSense = null;
+            r._perfSenseFoldFrame(8, 0.0167);
+            // ── SELBSTTEST: die Churn-Linse ist nicht blind ──
+            let bpName = null;
+            for (const n in st.blueprints) {
+                const fl = r._archFlattenBlueprint(n);
+                if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+                    bpName = n;
+                    break;
+                }
+            }
+            if (bpName) {
+                const mintsVor = r._archGruppenMints || 0;
+                const slots = r._scatterInstanceAdd(bpName, 7000, 10, 7000, 0, 1, null, "888,888");
+                if (slots) r._scatterFreeSlots(slots);
+                o.selbsttestChurn = (r._archGruppenMints || 0) > mintsVor;
+            } else o.selbsttestChurn = false;
+            // ── V2: DER INGEST-TAKT (headless gelüftet = echte Takt-Semantik) ──
+            const _oH = st.renderer._isHeadlessNull;
+            st.renderer._isHeadlessNull = false;
+            const reihenfolge = [];
+            const fertig = [];
+            for (let i = 0; i < 8; i++) {
+                fertig.push(false);
+                r._foundryIngestTakt(["payload" + i]).then(
+                    ((idx) => () => {
+                        fertig[idx] = true;
+                        reihenfolge.push(idx);
+                    })(i)
+                );
+            }
+            await sleep(0); // Microtasks leeren — NICHTS darf schon durch sein
+            o.v2KeineSofort = fertig.every((x) => x === false);
+            st._frameOverBudget = false; // 3 Freigaben je Tick
+            r._tickFoundryIngest();
+            await sleep(0);
+            o.v2NachTick1 = fertig.filter(Boolean).length; // erwartet 3
+            r._tickFoundryIngest();
+            r._tickFoundryIngest();
+            await sleep(0);
+            o.v2Alle = fertig.every(Boolean);
+            o.v2Reihenfolge = reihenfolge.join(",") === "0,1,2,3,4,5,6,7";
+            // Über-Budget-Frame: nur 1 Freigabe.
+            r._foundryIngestTakt(["extra0"]).then(() => reihenfolge.push("e0"));
+            r._foundryIngestTakt(["extra1"]).then(() => reihenfolge.push("e1"));
+            await sleep(0);
+            st._frameOverBudget = true;
+            r._tickFoundryIngest();
+            await sleep(0);
+            o.v2UeberBudgetEins = reihenfolge.filter((x) => x === "e0" || x === "e1").length === 1;
+            st._frameOverBudget = false;
+            r._tickFoundryIngest();
+            await sleep(0);
+            // headless byte-schnell: sofort resolven.
+            st.renderer._isHeadlessNull = true;
+            let hlSofort = false;
+            r._foundryIngestTakt(["hl"]).then(() => (hlSofort = true));
+            await sleep(0);
+            o.v2HeadlessSofort = hlSofort;
+            st.renderer._isHeadlessNull = _oH;
+            r._foundryTreeMaterial = _oTM;
+            // ── V4: LINSEN-KONSUM im gebauten Trace ──
+            const trace = r._flightRecorderBuildTrace ? r._flightRecorderBuildTrace() : null;
+            const ss = trace && trace.steadyState;
+            o.v4Linsen = !!(
+                ss &&
+                ss.bundleDeckung &&
+                Number.isFinite(ss.bundleDeckung.deckungPct) &&
+                ss.ingestTakt &&
+                Number.isFinite(ss.ingestTakt.frei) &&
+                ss.gruppenChurn &&
+                Number.isFinite(ss.gruppenChurn.mints)
+            );
+            o.deckungPct = ss && ss.bundleDeckung ? ss.bundleDeckung.deckungPct : null;
+        } catch (e) {
+            o.err = (e && e.message) || String(e);
+        }
+        return o;
+    })) || { err: "keine Antwort der Seite" };
+    const errs = [];
+    if (out.err) errs.push("Vertrag brach ab: " + out.err);
+    if (out.wartendNachBoot !== 0) errs.push(`BOOT: ${out.wartendNachBoot} Streu-Regionen in Reichweite stehen nicht (${(out.wartendListe || []).join(", ") || "—"})`);
+    if (!out.quieszent) errs.push(`QUIESZENZ: die Welt wurde nie still (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; ${JSON.stringify(out.weltOffen || {})})`);
+    if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
+    if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);
+    if (!(out.v2KeineSofort && out.v2NachTick1 === 3 && out.v2Alle && out.v2Reihenfolge && out.v2UeberBudgetEins && out.v2HeadlessSofort))
+        errs.push(`V2: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort}`);
+    if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (bundleDeckung/ingestTakt/gruppenChurn) fehlen im Trace");
+    if (!(Number.isFinite(out.szeneMB) && out.szeneMB < 700)) errs.push(`V5: Szene-Live-Set ${out.szeneMB} MB ≥ 700`);
+    if (!out.selbsttestChurn) errs.push("SELBSTTEST: die Churn-Linse zählte einen echten Mint NICHT (blind)");
+    check(
+        `Leistungs-Vertrag: 0 Stand-Churn (${out.standMints}), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (${out.groups0} → ${out.groupsMax}), die Mess-Flächen im Trace, Szene ${out.szeneMB} MB < 700, der Selbsttest feuert`,
+        errs.length === 0,
+        errs.join(" · ")
+    );
+}
+
 module.exports = {
     checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio, checkBandFoundrySpeicherFlach,
-    checkBandKristallKleid, checkBandKeinZweiterBaumbaecker,
+    checkBandKristallKleid, checkBandKeinZweiterBaumbaecker, checkBandLeistungsVertrag,
 };

@@ -1534,10 +1534,10 @@ async function checkBandGodray(ctx) {
         const r = window.anazhRealm;
         const st = r.state;
         const out = { MAX: r.constructor.PERF_GODRAY_MAX };
-        // (A) SOURCE-PROBE — die `.toString()`-Linse auf die LIVE-Methoden
-        const epp = r._ensurePostProcessing.toString();
-        const lr = r._loopRender.toString();
-        const npa = r._nexusPerfActuate.toString();
+        // (A) SOURCE-PROBE — die LIVE-Methoden ohne Kommentare (der EINE Leser `__codeOf`)
+        const epp = window.__codeOf(r._ensurePostProcessing);
+        const lr = window.__codeOf(r._loopRender);
+        const npa = window.__codeOf(r._nexusPerfActuate);
         out.quelle = {
             frameGate: typeof r._godrayFrameGate === "function",
             ppMarch: /gDelta/.test(epp) && /godrayDensity/.test(epp) && /sceneColor\.sample/.test(epp),

@@ -749,13 +749,6 @@
       "lauf": "npm run gate:scatter-lod",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)": {
-      "s": 28,
-      "n": 7,
-      "gruppe": "voll 3",
-      "lauf": "npm run gate:leistungs-vertrag",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)": {
       "s": 25,
       "n": 7,
@@ -824,13 +817,6 @@
       "n": 7,
       "gruppe": "voll 6",
       "lauf": "npm run gate:tor-fern",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)": {
-      "s": 18,
-      "n": 7,
-      "gruppe": "voll 11",
-      "lauf": "npm run gate:worker-watersheet",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)": {
