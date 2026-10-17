@@ -2522,7 +2522,10 @@ async function checkBandPhasenBF(ctx) {
         // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
         // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
         // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
-        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt.
+        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz
+        // für je ein Probe-Wesen: die Obergrenze, die die Bänder davor füllten, urteilt nie mit.
+        const cap4 = r.state.maxCreatures;
+        r.state.maxCreatures = r.state.creatures.length + 1;
         out.d4Temperament = (() => {
             const pp = r.state.playerMesh.position;
             const t = (soul, bodySize) => {
@@ -2547,6 +2550,7 @@ async function checkBandPhasenBF(ctx) {
         // sanft/scheu haben strike 0.
         const pp4 = r.state.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
+        r.state.maxCreatures = cap4;
         const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);
         out.d4Konsum =

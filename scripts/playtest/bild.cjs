@@ -1502,15 +1502,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.riseAboveNeutral = riseKonv > neutral;
             out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
         }
-        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht.
+        // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht. Die Bühne
+        // ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie mit (CI 38993175603).
         {
-            const s = r.state,
-                pm = s.playerMesh,
-                pos = pm.position.clone(),
-                sta = s.player.stamina;
-            r._koerperWasser = () => pm.position.y + 3;
+            const s = r.state, pm = s.playerMesh, pos = pm.position.clone(), sta = s.player.stamina, sattel = s.player.mountedArch;
+            const ohne = () => -Infinity;
+            const buehne = { _fieldSolid: () => false, _fieldSurfaceBelow: () => null, _fieldResolveSphere: () => false,
+                _stepCharacterStructures: ohne, _stepCharacterIslands: ohne, _koerperWasser: () => pm.position.y + 3 };
+            Object.assign(r, buehne);
+            s.player.mountedArch = null;
             const vy = (k) => {
-                pm.position.set(pos.x, pos.y + 40, pos.z);
+                pm.position.copy(pos);
                 s._fieldVy = 0;
                 s.playerVel.setValue(0, 0, 0);
                 s.keys = Object.assign({}, k);
@@ -1519,18 +1521,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 return s._fieldVy;
             };
             try {
-                const tauch = vy({ shift: true }),
-                    auf = vy({ " ": true }),
-                    ruhe = vy({});
+                const tauch = vy({ shift: true }), auf = vy({ " ": true }), ruhe = vy({});
                 out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
                 out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
             } finally {
-                delete r._koerperWasser;
+                for (const k in buehne) delete r[k];
+                Object.assign(s, { _fieldVy: 0, keys: {} });
+                Object.assign(s.player, { mountedArch: sattel, stamina: sta });
                 pm.position.copy(pos);
-                s._fieldVy = 0;
                 s.playerVel.setValue(0, 0, 0);
-                s.keys = {};
-                s.player.stamina = sta;
             }
         }
 
