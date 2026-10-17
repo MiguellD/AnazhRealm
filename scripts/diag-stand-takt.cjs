@@ -342,14 +342,14 @@ function selbsttest() {
         ],
         ["die Ort-Phase legt keinen Erdbau", (b) => (b.ort.gelegt = false), /LEER: die Ort-Phase legte keinen Erdbau/],
         [
-            "das Haus ohne Kamin baut seinen Kern nach (bis K69)",
+            "das Solo-Haus baut seinen Kern im Haupt-Faden (bis B3c)",
             (b) => Object.assign(b.ort.kamin, { bau: 1, ms: 52.4 }),
-            /ORT: das Haus ohne Kamin \(alemannisch\) baute seinen Kern 1× nach .*chimneyTipFromParams.*52\.4 ms/,
+            /ORT: das Solo-Haus \(alemannisch\) baute seinen Kern 1× im Haupt-Faden .*chimneyTipFromParams.*52\.4 ms/,
         ],
         [
-            "die Ort-Phase setzt kein Haus ohne Kamin",
+            "die Ort-Phase setzt kein Solo-Haus",
             (b) => (b.ort.kamin.gesetzt = false),
-            /LEER: die Ort-Phase setzte kein Haus ohne Kamin/,
+            /LEER: die Ort-Phase setzte kein Solo-Haus/,
         ],
         [
             "der Satz-Block legt die Ecken eines Hauses frisch an (bis K69)",
@@ -1201,9 +1201,8 @@ const server = statikServer();
                     } finally {
                         core.planForestCell = pfcRoh;
                     }
-                    // DAS HAUS OHNE KAMIN (K69): ein Slot des Dorfs, dessen Export „kein Kamin" sagt (`chimney: null`), steht über
-                    // die EINE Slot-Quelle (`_spawnSettlementSlot`) — gezählt, wie oft der Wirt das ganze Haus im Kern baut, um
-                    // die Spitze zu finden (`chimneyTipFromParams` → `massBau`), und wie lange
+                    // DAS SOLO-HAUS (K69, B3c: Vorschau, KI) über die Wurzel — gezählt, wie oft der Wirt das ganze Haus im Kern baut,
+                    // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
                     {
                         const fc = globalThis.__fachwerkCore;
                         const recs = (r._foundry && r._foundry.recipes) || {};
@@ -1211,8 +1210,7 @@ const server = statikServer();
                             const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
                             return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
                         });
-                        const kx = ox - 40;
-                        const kz = oz + 40;
+                        const [kx, kz] = [ox - 40, oz + 40];
                         const ky = r._voxelSurfaceY(kx, kz);
                         const tipRoh = fc.chimneyTipFromParams;
                         let n = 0;
@@ -1229,8 +1227,8 @@ const server = statikServer();
                         let gesetzt = false;
                         try {
                             if (kultur && Number.isFinite(ky)) {
-                                const slot = { kultur, x: 0, z: 0, y: ky, phi: 0, seed: 4711, chimney: null };
-                                const e = r._spawnSettlementSlot(slot, { x: kx, z: kz }, r._foundry);
+                                const ort = { x: kx, y: ky + 0.5, z: kz };
+                                const e = r.spawnArchitecture("haus_" + kultur, ort, { silent: true });
                                 gesetzt = !!e;
                                 if (e) r.removeArchitecture(e);
                             }
@@ -1672,7 +1670,7 @@ const server = statikServer();
                     ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`
                     : "?") +
                 (O.kamin
-                    ? ` — das Haus ohne Kamin (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
+                    ? ` — das Solo-Haus (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
                       `${O.kamin.bau} Kern-Nachbauten (${O.kamin.ms} ms)`
                     : "") +
                 (O.wald && O.wald.gesetzt
