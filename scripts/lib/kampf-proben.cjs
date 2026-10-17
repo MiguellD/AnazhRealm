@@ -176,8 +176,7 @@ async function WELLE_L() {
             c.updateMatrixWorld(true);
             const tb = c.userData._tierBaum;
             const o = teil && tb && tb.teile && tb.teile[teil];
-            if (o) return o.getWorldPosition(V3());
-            return new THREE.Box3().setFromObject(c).getCenter(V3());
+            return o ? o.getWorldPosition(V3()) : r._leibMitte(c, V3());
         };
         const schwung = () => {
             p._swing = null;
@@ -1564,13 +1563,6 @@ async function WELLE_L() {
                 };
             };
             const K = A._arenaGesetz().schwung;
-            // die Leibes-Mitte: die Mitte der Rumpf-Kapsel der Treffer-Gestalt (die Mitte der Hülle liegt unter dem Bauch,
-            // zwischen den Läufen — ein Strahl durch sie verfehlt den Leib)
-            const rumpfPunkt = (c) => {
-                c.updateMatrixWorld(true);
-                const g = (r._kreaturTrefferGlieder(c) || []).find((x) => x.zone === "rumpf");
-                return g ? g.a.clone().lerp(g.b, 0.5).applyMatrix4(g.anker.matrixWorld) : punkt(c, null);
-            };
             const matrix = (waffen, modi) => {
                 const faelle = [];
                 for (const mode of modi) {
@@ -1587,8 +1579,8 @@ async function WELLE_L() {
                         ])
                             for (const blick of ["rumpf", "horizont"]) {
                                 stelle(wolf, d);
-                                if (blick === "rumpf") zielen(rumpfPunkt(wolf));
-                                else horizont(rumpfPunkt(wolf));
+                                if (blick === "rumpf") zielen(punkt(wolf, null));
+                                else horizont(punkt(wolf, null));
                                 faelle.push({ mode, wn, d: dn, blick, ...klick(wolf) });
                             }
                     }
@@ -1622,7 +1614,7 @@ async function WELLE_L() {
                 // der Wolf als Begleiter (er folgt dir) 1,3 m vor dir, der Blick waagrecht über ihn: der Kegel wählt ihn nie
                 r.assignCreatureTask(wolf, "follow_player", {}, { silent: true });
                 stelle(wolf, 1.3);
-                horizont(rumpfPunkt(wolf));
+                horizont(punkt(wolf, null));
                 const bg = klick(wolf);
                 r.assignCreatureTask(wolf, "wander", {}, { silent: true });
                 // der Dolch Reichweite + 0,8 m vor dem Wolf, das Fadenkreuz auf ihm (3rd): jenseits der Klinge
@@ -1631,7 +1623,7 @@ async function WELLE_L() {
                 if (s.blueprints.klinge_dolch) r._setBlueprintWear(s.blueprints.klinge_dolch, 1);
                 const klingeD = r._kampfSchwungRahmen({}).reach + K.bladeRadiusM;
                 stelle(wolf, klingeD + 0.8);
-                zielen(rumpfPunkt(wolf));
+                zielen(punkt(wolf, null));
                 const zw = klick(wolf);
                 // DIE ERNTE NEBEN DEM WILDTIER (Runde 2): ein ruhiger wilder Wolf steht 1,2 m neben dem Spieler (0,5 rad seitlich) im
                 // Schwung-Kegel, der Blick geht −0,5 rad abwärts (3rd), und das Fadenkreuz trägt sein Ziel in Arm-Länge — ein Stein-

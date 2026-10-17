@@ -986,6 +986,33 @@ class AnazhRealm_bild_kosten {
                 this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
+                // DAS DECKUNGS-GEDÄCHTNIS (A3b): der Resolve schreibt neben dem Bild je Ausgabe-Pixel, wie oft sein 3×3 eine
+                // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT) und seine Geschichte; das Ziel
+                // des Vendors (1×1, nie gezeichnet) fällt
+                const ziel = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
+                ziel.name = "TRAANode.resolve";
+                ziel.textures[0].name = "TRAANode.resolve";
+                ziel.textures[1].name = "TRAANode.flacker";
+                ziel.textures[1].type = THREE.UnsignedByteType;
+                ziel.textures[1].format = THREE.RedFormat;
+                this._resolveRenderTarget.dispose();
+                this._resolveRenderTarget = ziel;
+                this._textureNode = T.passTexture(this, ziel.texture);
+                this._flackerGeschichte = new THREE.RenderTarget(1, 1, {
+                    depthBuffer: false,
+                    type: THREE.UnsignedByteType,
+                    format: THREE.RedFormat,
+                });
+                this._flackerGeschichte.name = "TRAANode.flacker.geschichte";
+                this._flackerGeschichte.texture.name = "TRAANode.flacker.geschichte";
+                const F = AnazhRealm.FLACKER;
+                this._flacker = {
+                    kante: uniform(F.kante),
+                    rate: uniform(F.rate),
+                    an: uniform(new THREE.Vector2(F.an[0], F.an[1])),
+                    ruhePx: uniform(F.ruhePx),
+                };
+                this._versatzIndex = 0;
                 this._quad = new Quad(this._resolveMaterial);
                 this._quad.name = "TRAA";
                 this._gr = new THREE.Vector2();
@@ -1003,6 +1030,32 @@ class AnazhRealm_bild_kosten {
                 super.setViewOffset(e.x, e.y);
                 const v = this.camera.view;
                 this._zitter.value.set(v.offsetX, v.offsetY);
+                // DER VERSATZ DES LAUBS (A3, `_laubVersatz`) gehört zur Folge des Frames: die Halton-Achsen 5 und 7 am Frame
+                // seit dem Beginn der Geschichte (ein Neubeginn steht an, wenn ihre Größe nicht die der Ausgabe ist) als Phase, die
+                // der Stoff je Pixel dreht (`_laubVersatz`), z die Weite ±LAUB_VERSATZ Eingangs-Pixel. Bis A3b lief er am Index
+                // des Zitterns: jedes Ausgabe-Pixel wiegt die Frames nach der Nähe seines Abtastpunkts (`wNah`), so sah jede Phase
+                // des Gitters immer dieselben Versätze — ein Raster im Takt des Gitters (Radeon, Tafel-Pose, 256 Frames ohne
+                // Klemme: zweiton locker 58 135 → 20 452 px).
+                const lu = realm.state.lodUniforms;
+                if (lu && lu.uLaubVersatz) {
+                    const sch = realm._schirm();
+                    const g = this._historyRenderTarget;
+                    this._versatzIndex =
+                        g.width !== sch.breite || g.height !== sch.hoehe ? 0 : (this._versatzIndex + 1) % 1e6;
+                    const o = lu.uLaubVersatz.value;
+                    for (let a = 0; a < 2; a++) {
+                        const b = a ? 7 : 5;
+                        let h = 0;
+                        for (let i = this._versatzIndex + 1, f = 1; i > 0; i = Math.floor(i / b))
+                            h += (f /= b) * (i % b);
+                        o.setComponent(a, h);
+                    }
+                    o.z = AnazhRealm.LAUB_VERSATZ;
+                }
+            }
+            setSize(w, h) {
+                super.setSize(w, h);
+                this._flackerGeschichte.setSize(w, h);
             }
             updateBefore(frame) {
                 const r = frame.renderer;
@@ -1031,6 +1084,7 @@ class AnazhRealm_bild_kosten {
                 if (neu) {
                     r.initRenderTarget(g);
                     r.initRenderTarget(this._resolveRenderTarget);
+                    r.initRenderTarget(this._flackerGeschichte);
                 }
                 this._neustart.value = neu ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
@@ -1039,6 +1093,7 @@ class AnazhRealm_bild_kosten {
                 this._quad.render(r);
                 r.setRenderTarget(null);
                 r.copyTextureToTexture(this._resolveRenderTarget.texture, g.texture);
+                r.copyTextureToTexture(this._resolveRenderTarget.textures[1], this._flackerGeschichte.texture);
                 r.setRenderTarget(ziel);
                 r.setMRT(mrt);
                 r.setRenderObjectFunction(rof);
@@ -1060,6 +1115,8 @@ class AnazhRealm_bild_kosten {
                 const ein = this.beautyNode;
                 const tief = this.depthNode;
                 const geschichte = texture(this._historyRenderTarget.texture);
+                const flackerAlt = texture(this._flackerGeschichte.texture);
+                const flackerNeu = T.property("float", "flackerNeu");
                 const { x: nah, y: fern } = this._cameraNearFar;
                 const resolve = Fn(() => {
                     const uvA = uv();
@@ -1113,8 +1170,28 @@ class AnazhRealm_bild_kosten {
                     const imBild = gUV.greaterThanEqual(0).all().and(gUV.lessThanEqual(1).all());
                     const kante = fernD.sub(nahD).greaterThan(this.edgeDepthDiff);
                     const frei = nahD.sub(vorJetzt).greaterThan(this.depthThreshold);
-                    const gueltig = imBild.and(kante.or(frei.not())).and(this._neustart.equal(0));
+                    // der ORT der Geschichte trägt (im Bild, keine Disokklusion); gültig ist sie dazu ohne Neubeginn
+                    const ort = imBild.and(kante.or(frei.not()));
+                    const gueltig = ort.and(this._neustart.equal(0));
                     const lauf = uvA.sub(gUV).mul(ausGr).length().div(this.maxVelocityLength).saturate();
+                    // DAS DECKUNGS-GEDÄCHTNIS (A3b): eine stochastische Deckung (Laub, Nadeln, Halme, Karten, die Stufen-Blende)
+                    // zeigt je Frame Fläche ODER Grund. In einem Frame, in dem ihre Lücke das 3×3 verlässt, ist die Box nur Fläche,
+                    // und die Varianz-Klemme warf das Mittel der Geschichte weg (Radeon, Tafel-Pose, Abstand zum Mittel aus 256
+                    // Frames ohne Klemme: 4,06 Luma nach 32 Frames, 4,36 nach 256 — es konvergierte nie; ohne Klemme 2,74). Das
+                    // Gedächtnis je Ausgabe-Pixel ist der gleitende Anteil der Frames (`FLACKER.rate`), in denen sein 3×3 eine
+                    // DECKUNGS-KANTE trägt (Tiefen-Sprung über `FLACKER.kante` relativ, Δz/z), mit der Geschichte reprojiziert und
+                    // nur bei einer Disokklusion neu. Wo es über `FLACKER.an` steht, mittelt die Geschichte ungeklemmt — eine Lücke,
+                    // die das 3×3 eben verließ, bleibt im Mittel. Nur in Ruhe (unter `FLACKER.ruhePx` Bewegung je Frame): ein
+                    // laufender Blick klemmt wie bisher, und eine Kante, die nur vorbeizieht (ein Tier), hebt das Gedächtnis nicht.
+                    const deckKante = fernD
+                        .sub(nahD)
+                        .div(float(1).sub(nahD).max(1e-6))
+                        .greaterThan(this._flacker.kante)
+                        .select(float(1), float(0));
+                    const phiAlt = flackerAlt.sample(gUV).r;
+                    flackerNeu.assign(ort.select(mix(phiAlt, deckKante, this._flacker.rate), float(0)));
+                    const ruhe = float(1).sub(uvA.sub(gUV).mul(ausGr).length().div(this._flacker.ruhePx)).saturate();
+                    const lass = T.smoothstep(this._flacker.an.x, this._flacker.an.y, phiAlt).mul(ruhe);
                     // das Gewicht des Jetzt: Grund 0,05, Unterpixel-Korrektur der Bewegung, mal die Deckung des nächsten Texels
                     const phase = versatz.mul(ausGr).fract().abs();
                     const pw = max(phase, phase.oneMinus());
@@ -1126,11 +1203,11 @@ class AnazhRealm_bild_kosten {
                     // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
                     const anlauf = float(1).div(this._anlauf.add(1));
                     alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
-                    // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel
+                    // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel, wo das Deckungs-Gedächtnis sie nicht löst
                     const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
                     const mittel = m1.div(9);
                     const sigma = m2.div(9).sub(mittel.mul(mittel)).max(0).sqrt().mul(gamma);
-                    const histC = klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma));
+                    const histC = mix(klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma)), hist.rgb, lass);
                     // die Flimmer-Dämpfung nach Luma (r184 flickerReduction)
                     const wJ = alpha.div(luminance(jetzt.div(max(jetzt.x, jetzt.y, jetzt.z).add(1))).add(1));
                     const wG = alpha.oneMinus().div(luminance(histC.div(max(histC.x, histC.y, histC.z).add(1))).add(1));
@@ -1141,7 +1218,13 @@ class AnazhRealm_bild_kosten {
                     const dMitte = tief.load(zelle.clamp(vec2(0), hoch)).r;
                     return vec4(aus, T.perspectiveDepthToViewZ(dMitte, nah, fern));
                 });
-                this._resolveMaterial.colorNode = resolve();
+                // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
+                // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
+                // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
+                this._resolveMaterial.mrtNode = T.mrt({
+                    "TRAANode.resolve": resolve(),
+                    "TRAANode.flacker": flackerNeu,
+                });
                 return this._textureNode;
             }
         }
@@ -3229,6 +3312,10 @@ AnazhRealm.SZENE_SKALA_MIN = 0.5;
 // die Breite der Varianz-Klemme im Stand (r184: 1); die Nach-Schärfe je fehlendem Skalen-Anteil (`nachSchaerfe`).
 AnazhRealm.ZEIT_KERN = 7;
 AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
+// DAS DECKUNGS-GEDÄCHTNIS des Resolve (A3b, `_zeitAufloesung`): eine Deckungs-Kante ist ein Tiefen-Sprung im 3×3 über `kante`
+// relativ (Δz/z: 0,4 m auf 20 m — Blatt vor Blatt zählt); das Gedächtnis folgt ihr mit `rate` je Frame; zwischen `an[0]` und
+// `an[1]` löst es die Klemme, voll nur in Ruhe (unter `ruhePx` Ausgabe-Pixeln Bewegung je Frame).
+AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze([0.3, 0.6]), ruhePx: 2 });
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;

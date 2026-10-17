@@ -267,7 +267,7 @@ function kameraVerdict(m) {
     for (const [fn, n] of Object.entries(fk.hinten || {}))
         if (n > 0) out.push(`Fadenkreuz-Strahl: \`${fn}\` trifft in ${n} von ${fk.stellungen} Stellungen HINTER dem Spieler (was zwischen Kamera und Spieler liegt)`);
     if (fk.kreatur && fk.kreaturVornProben > 0 && fk.kreaturVorn < fk.kreaturVornProben)
-        out.push(`Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler trifft er nur in ${fk.kreaturVorn} von ${fk.kreaturVornProben} Stellungen`);
+        out.push(`Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler trifft er nur in ${fk.kreaturVorn} von ${fk.kreaturVornProben} Stellungen ${JSON.stringify(fk.verfehlt || {})}`);
     // Das Ziel der Kamera liegt auf ihrem Blick (Integration V18.536, Gelb 1 der dritten Gegenprüfung): dann steht die Ebene
     // des Strahls senkrecht zum Blick und er beginnt bei jedem Arm am Blickpunkt.
     if (fk.stellungen > 0 && !(fk.zielAchse <= 0.01))
@@ -1126,22 +1126,20 @@ async function probe(arg) {
             // DER STRAHL DES FADENKREUZES (Gegenprüfung Runde 2, ROT 1): der Spieler 2,5 m vor einem Baum, der Blick von ihm weg
             // — der Baum steht zwischen Kamera und Spieler und ist durchsichtig. Kein Treffer-Strahl durch die Bildmitte trifft
             // HINTER dem Spieler: Bau-Pick, Welt-Treffer (Pfeil · Graben · Aufschütten), Blick-Ziel, Bau-Phantom, Kreatur-Pick
-            // (eine Kreatur zwischen Kamera und Spieler) — und eine Kreatur VOR ihm trifft er.
+            // (eine Kreatur zwischen Kamera und Spieler) — und eine Kreatur VOR ihm trifft er: JEDE Seele (Größe 1, je allein unter den
+            // Wesen, nie das zufällige erste Tier der Welt: CI 38993364096 72/96), ihre Leibes-Mitte (`_leibMitte`) auf dem Strahl.
             {
-                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {}, kreaturVorn: 0, kreaturVornProben: 0 });
+                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {}, kreaturVorn: 0, kreaturVornProben: 0, verfehlt: {} });
                 const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
-                const kreatur = (st.creatures || []).find((c) => c && c.position && typeof c.traverse === "function");
-                fk.kreatur = !!kreatur;
-                const kMerk = kreatur ? kreatur.position.clone() : null;
-                const kBox = new THREE.Box3();
-                // die Kreatur so stellen, dass die Mitte ihres Leibs auf dem Strahl der Bildmitte liegt, s Meter vor der Kamera
-                const kreaturAuf = (s) => {
-                    const c = st.camera.position;
-                    const d = st.camera.getWorldDirection(new THREE.Vector3());
+                const [welt, mx, seelen] = [st.creatures, st.maxCreatures, r.constructor.CREATURE_SOUL_NAMES];
+                st.maxCreatures = Infinity;
+                const kreaturen = seelen.map((s) => r.spawnCreatureAt(P.x + 60, hh(P.x + 60, P.z) + 1, P.z, "happy", s, { precise: true, bodySize: 1 }));
+                st.maxCreatures = mx;
+                fk.kreatur = seelen.length > 0 && kreaturen.every((k) => k && r._leibMitte(k));
+                const kreaturAuf = (kreatur, s) => {
+                    const [c, d] = [st.camera.position, st.camera.getWorldDirection(new THREE.Vector3())];
                     kreatur.updateMatrixWorld(true);
-                    kBox.setFromObject(kreatur);
-                    const mitte = kBox.getCenter(new THREE.Vector3());
-                    kreatur.position.add(new THREE.Vector3(c.x + d.x * s, c.y + d.y * s, c.z + d.z * s).sub(mitte));
+                    kreatur.position.add(new THREE.Vector3(c.x + d.x * s, c.y + d.y * s, c.z + d.z * s).sub(r._leibMitte(kreatur)));
                     kreatur.updateMatrixWorld(true);
                 };
                 for (const b of baeume.slice(0, 12))
@@ -1153,7 +1151,7 @@ async function probe(arg) {
                         st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
                         st.yaw = g;
                         st.pitch = 0;
-                        ruhig();
+                        const arm2 = ruhig();
                         fk.stellungen++;
                         // das Ziel der Kamera auf ihrem Blick: sein Abstand von der Achse durch die Bildmitte (jeder Arm)
                         {
@@ -1176,20 +1174,20 @@ async function probe(arg) {
                         if (hinter(r._blickZiel(r.constructor.BLICK_ZIEL_M))) zaehl("_blickZiel");
                         const ph = r._resolvePhantomTarget();
                         if (ph && ph.hit && hinter(ph)) zaehl("_resolvePhantomTarget");
-                        if (kreatur) {
-                            const c = st.camera.position;
-                            const arm2 = Math.hypot(c.x - p.x, c.y - (p.y + 1.0), c.z - p.z);
-                            kreaturAuf(0.5 * arm2);
+                        for (const kreatur of fk.kreatur ? kreaturen : []) {
+                            st.creatures = [kreatur];
+                            kreaturAuf(kreatur, 0.5 * arm2);
                             const kp = r._pickCreatureAtCrosshair();
                             if (kp && kp.creature === kreatur) zaehl("_pickCreatureAtCrosshair");
-                            kreaturAuf(arm2 + 4);
+                            kreaturAuf(kreatur, arm2 + 4);
                             const kv = r._pickCreatureAtCrosshair();
                             fk.kreaturVornProben++;
                             if (kv && kv.creature === kreatur) fk.kreaturVorn++;
-                            kreatur.position.copy(kMerk);
-                            kreatur.updateMatrixWorld(true);
+                            else fk.verfehlt[kreatur.userData.soul] = (fk.verfehlt[kreatur.userData.soul] || 0) + 1;
                         }
                     }
+                st.creatures = welt;
+                for (const k of kreaturen) if (k) r.removeCreature(k);
             }
             // DIE DURCHSICHT NUR ZWISCHEN AUGE UND ZIEL (Gegenprüfung Runde 2, ROT 2): die EINE Formel des Stoffs
             // (`_durchsichtGewicht`, hier über den Zahlen `DURCHSICHT_ZAHLEN`) an der Rinde, je Punkt der Stamm-Hülle bis 3 m vom
