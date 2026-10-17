@@ -1,0 +1,17 @@
+10:25:29 EIGEN AA1 start (Seite 93539122, Instrument 93539122)
+10:26:23 EIGEN AA1 exit=0 08:26:23 bank [{"gpu":11.85,"cpu":2.53},{"gpu":11.88,"cpu":2.82}]
+10:27:04 EIGEN BB1 start (Seite e47ad9f8, Instrument e47ad9f8)
+10:28:35 EIGEN BB1 exit=0 08:28:34 bank [{"gpu":12.23,"cpu":1.7},{"gpu":12.3,"cpu":1.8}]
+10:29:10 EIGEN AA2 start (Seite 93539122, Instrument 93539122)
+10:30:06 EIGEN AA2 exit=0 08:30:05 bank [{"gpu":11.96,"cpu":1.98},{"gpu":11.73,"cpu":1.89}]
+10:30:46 EIGEN BB2 start (Seite e47ad9f8, Instrument e47ad9f8)
+10:32:15 EIGEN BB2 exit=0 08:32:14 bank [{"gpu":12.34,"cpu":1.54},{"gpu":12.25,"cpu":1.66}]
+10:32:50 EIGEN AA3 start (Seite 93539122, Instrument 93539122)
+10:33:45 EIGEN AA3 exit=0 08:33:45 bank [{"gpu":12.07,"cpu":2.08},{"gpu":11.82,"cpu":2.02}]
+10:54:56 EIGEN BB3 start (Seite e47ad9f8, Instrument e47ad9f8)
+10:56:24 EIGEN BB3 exit=0 08:56:24 bank [{"gpu":11.82,"cpu":1.58},{"gpu":11.9,"cpu":1.51}]
+10:57:04 EIGEN AA4 start (Seite 93539122, Instrument 93539122)
+10:57:57 EIGEN AA4 exit=0 08:57:57 bank [{"gpu":11.38,"cpu":1.67},{"gpu":11.28,"cpu":1.92}]
+10:58:32 EIGEN BB4 start (Seite e47ad9f8, Instrument e47ad9f8)
+11:00:01 EIGEN BB4 exit=0 09:00:01 bank [{"gpu":11.92,"cpu":1.67},{"gpu":11.89,"cpu":1.72}]
+11:00:26 EIGEN FERTIG

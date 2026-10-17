@@ -1,0 +1,43 @@
+diff --git a/scripts/werkbank.cjs b/scripts/werkbank.cjs
+index 23b481cd..fee32f90 100644
+--- a/scripts/werkbank.cjs
++++ b/scripts/werkbank.cjs
+@@ -895,6 +895,38 @@ async function starte() {
+     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+     await page.evaluateOnNewDocument(FALTE_INSTALL);
+     await page.evaluateOnNewDocument(vramAbgriff);
++    // OMEN-STATION (Bündel 7, 17.10., nicht für main): EIN Instrument für beide Seiten — eine Seite vor A9 kennt `_weltOffen`/
++    // `_weltSteht` nicht; die Weiche setzt sie NUR dann, aus denselben Feldern (die Ruhe: 30 Takte ohne Offenes, WELT_STEHT_TAKTE).
++    await page.evaluateOnNewDocument(() => {
++        const t = setInterval(() => {
++            const r = window.anazhRealm;
++            if (!r) return;
++            clearInterval(t);
++            const P = Object.getPrototypeOf(r);
++            window.__omenWeiche = [];
++            if (typeof P._weltOffen !== "function") {
++                window.__omenWeiche.push("_weltOffen");
++                P._weltOffen = function () {
++                    const f = this._foundry,
++                        st = this.state;
++                    const o = this.__omenOffen || (this.__omenOffen = { foundry: 0, chunks: 0, wald: 0 });
++                    o.foundry = f ? (f.pending ? f.pending.size : 0) + (f.warte ? f.warte.length : 0) + (f.nachAtlas ? f.nachAtlas.length : 0) + (f.buch ? 1 : 0) : 0;
++                    o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
++                    o.chunks = (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
++                    o.wald = (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) + (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) + (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
++                    return o;
++                };
++            }
++            if (typeof P._weltSteht !== "function") {
++                window.__omenWeiche.push("_weltSteht");
++                P._weltSteht = function () {
++                    const o = this._weltOffen();
++                    this.__omenRuhe = o.foundry + o.chunks + o.wald === 0 ? (this.__omenRuhe | 0) + 1 : 0;
++                    return this.__omenRuhe >= 30;
++                };
++            }
++        }, 20);
++    });
+     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
+     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
+     if (START_ORT && BAND.ladeSpec(START_ORT).ort.dorfZug === false)

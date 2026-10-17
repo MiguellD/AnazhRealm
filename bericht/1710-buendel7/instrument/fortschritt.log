@@ -1,0 +1,7 @@
+10:18:46 INSTRUMENT AA start (Seite 93539122, Instrument 93539122)
+10:19:40 INSTRUMENT AA exit=0 08:19:39 bank [{"gpu":11.5,"cpu":1.94},{"gpu":11.68,"cpu":2}]
+10:20:15 INSTRUMENT AB start (Seite 93539122, Instrument e47ad9f8)
+10:21:30 INSTRUMENT AB exit=0 08:21:29 bank [{"gpu":6.17,"cpu":2.01},{"gpu":6.04,"cpu":1.92}]
+10:22:05 INSTRUMENT BB start (Seite e47ad9f8, Instrument e47ad9f8)
+10:23:38 INSTRUMENT BB exit=0 08:23:38 bank [{"gpu":12.44,"cpu":1.75},{"gpu":12.45,"cpu":1.81}]
+10:24:03 INSTRUMENT FERTIG

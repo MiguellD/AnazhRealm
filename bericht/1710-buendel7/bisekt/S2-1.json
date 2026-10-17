@@ -1,0 +1,162 @@
+{
+ "start": "2026-10-17T09:02:19.776Z",
+ "umstellen": {
+  "ort": "wiese",
+  "sicht": "ego",
+  "pose": null,
+  "welt": null,
+  "spieler": [
+   -280.4,
+   -1045.6
+  ],
+  "wiese": {
+   "messung": {
+    "x": -280.4,
+    "z": -1045.6,
+    "y": 27.48,
+    "hang": 1.81,
+    "rauh": 0.14,
+    "nass": 0,
+    "krone": 0.108,
+    "baeume": 8,
+    "kranz": 0.204,
+    "imBlick": 0,
+    "horizont": 2.6,
+    "blick": [
+     -289.6,
+     -1049.5
+    ],
+    "gras": 1
+   },
+   "befunde": []
+  },
+  "takte": 40,
+  "chunks": 25,
+  "gier": -1.9717,
+  "dorfZug": false,
+  "ortTakt": [],
+  "dorfSchwebt": null,
+  "ms": 10750
+ },
+ "buehne": {
+  "ergebnis": {
+   "saison": "summer",
+   "phase": 0.375,
+   "wetter": "sunny"
+  },
+  "ms": 3
+ },
+ "uhrenVor": {
+  "ergebnis": {
+   "version": "18.546.11",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "gehalten",
+   "wasserZeit": 12.5,
+   "wasserHalt": "gehalten",
+   "windHalt": "fehlt",
+   "bildZeitHalt": "fehlt",
+   "tageszeit": 0.5,
+   "wetter": "sunny"
+  },
+  "ms": 3
+ },
+ "lauf": {
+  "fps": 75.9,
+  "frameP95": 16.8,
+  "cpuP95": 4.7,
+  "durchsatz": 13.3,
+  "passe": {
+   "post": {
+    "p50": 0.42,
+    "p95": 0.61,
+    "frames": 1139
+   },
+   "TRAA": {
+    "p50": 0.81,
+    "p95": 1.13,
+    "frames": 1139
+   },
+   "haupt": {
+    "p50": 0.48,
+    "p95": 0.8,
+    "frames": 1139
+   },
+   "k1": {
+    "p50": 0.03,
+    "p95": 0.04,
+    "frames": 191
+   },
+   "k0": {
+    "p50": 0.63,
+    "p95": 0.8,
+    "frames": 571
+   },
+   "atmo-himmel": {
+    "p50": 0.07,
+    "p95": 0.08,
+    "frames": 60
+   },
+   "atmo-umgebung": {
+    "p50": 0.01,
+    "p95": 0.01,
+    "frames": 3
+   },
+   "OrthographicCamera": {
+    "p50": 2.42,
+    "p95": 2.45,
+    "frames": 3
+   },
+   "spiegel:strahl": {
+    "p50": 0.04,
+    "p95": 0.04,
+    "frames": 29
+   },
+   "horizont-karte": {
+    "p50": 0.02,
+    "p95": 0.02,
+    "frames": 6
+   }
+  }
+ },
+ "uhrenNach": {
+  "ergebnis": {
+   "version": "18.546.11",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "gehalten",
+   "wasserZeit": 12.5,
+   "wasserHalt": "gehalten",
+   "windHalt": "fehlt",
+   "bildZeitHalt": "fehlt",
+   "tageszeit": 0.5106031388888995,
+   "wetter": "sunny"
+  },
+  "ms": 2
+ },
+ "bank": [
+  {
+   "gpu": 12.47,
+   "cpu": 1.81
+  },
+  {
+   "gpu": 12.54,
+   "cpu": 1.56
+  }
+ ],
+ "uhrenBank": {
+  "ergebnis": {
+   "version": "18.546.11",
+   "weiche": null,
+   "himmelZeit": 12.5,
+   "himmelHalt": "gehalten",
+   "wasserZeit": 12.5,
+   "wasserHalt": "gehalten",
+   "windHalt": "fehlt",
+   "bildZeitHalt": "fehlt",
+   "tageszeit": 0.5,
+   "wetter": "sunny"
+  },
+  "ms": 1
+ }
+}
