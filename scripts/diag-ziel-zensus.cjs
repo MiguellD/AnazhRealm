@@ -21,7 +21,7 @@
 //       `bild` mit dem Ausgleich (`.mul(u.ausgabeAusgleich)`), das Uniform liest den Vektor der Sonde, `_ausgabeFormat` ruft
 //       die Sonde. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
 //       Blau 1 + 2⁻⁶ · 1/(2 ln 2); zum nächsten: 1), die Post-Kette liest DENSELBEN Vektor und VERBRAUCHT ihn (×2 hebt das
-//       Mittel des Ausgabe-Bilds, zurückgestellt steht es wieder).
+//       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
 //   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus; Port ZIEL_ZENSUS_PORT, Standard 4597)
@@ -100,8 +100,8 @@ function urteil(z) {
                 `RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um ${rd.verbrauch} Stufen (Soll ≥ ${VERBRAUCH_MIN}) ` +
                     "— die Post-Kette liest ihn nicht"
             );
-        if (!rd.ruhig) v.push(`RUNDUNG: die Welt baute in jeder von ${rd.versuche} Proben zwischen den Schüssen (der Rückweg ist blind)`);
-        else if (!(Math.abs(rd.zurueck) < 1)) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
+        if (!rd.einFrame) v.push("RUNDUNG: die drei Bilder liegen nicht in EINEM Frame (der Rückweg misst die Welt statt des Ausgleichs)");
+        else if (rd.zurueck !== 0) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
     }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
     for (const f of z.seitenFehler || []) v.push("SEITE: " + f);
@@ -129,8 +129,7 @@ function selbsttest() {
             rundung: "gegen null",
             faktor: AUSGLEICH_NULL.slice(),
             gleich: true,
-            ruhig: true,
-            versuche: 1,
+            einFrame: true,
             verbrauch: 24,
             zurueck: 0,
         },
@@ -162,7 +161,7 @@ function selbsttest() {
         { name: "anderer Vektor", z: mit((z) => (z.rundung.gleich = false)), muss: /liest einen anderen Vektor/ },
         { name: "Ausgleich nicht verbraucht", z: mit((z) => (z.rundung.verbrauch = 0)), muss: /die Post-Kette liest ihn nicht/ },
         { name: "Rückweg verschoben", z: mit((z) => (z.rundung.zurueck = -1.77)), muss: /um -1.77 Stufen verschoben/ },
-        { name: "Welt baut in jeder Probe", z: mit((z) => Object.assign(z.rundung, { ruhig: false, versuche: 4 })), muss: /in jeder von 4 Proben/ },
+        { name: "Rückweg über zwei Frames", z: mit((z) => (z.rundung.einFrame = false)), muss: /nicht in EINEM Frame/ },
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
         { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
@@ -313,48 +312,46 @@ function karteOhneFarbe() {
 
 function rundungProbe() {
     return (async () => {
-        const st = window.anazhRealm.state;
-        const A = st._ausgabeAusgleich;
+        const r = window.anazhRealm,
+            st = r.state,
+            rend = st.renderer,
+            A = st._ausgabeAusgleich;
         const U = st.postProcessingUniforms && st.postProcessingUniforms.ausgabeAusgleich;
-        const aus = {
-            gelaufen: false,
-            format: st._ausgabeFormat || null,
-            rundung: st._ausgabeRundung || null,
-            faktor: A ? A.toArray() : null,
-            gleich: !!(A && U && U.value === A),
-        };
-        if (!A) return Object.assign(aus, { gelaufen: true, ruhig: true, verbrauch: 0, zurueck: 0 });
-        // DIE EINE UHR der Mess-Schüsse (die Bühne, A8): drei Schüsse derselben Welt sind dasselbe Bild (A8-n1: ohne Bühne zurück
-        // −2,62 im CI). Ob die Welt stand, sagt ihr Regungs-Stempel (`_weltRegt`), nie Befehle|Dreiecke — die Arena (G1) zeichnet
-        // Neues ohne neuen Befehl, der Rückweg maß −1,66 … −2,71 die Lade-Welle. Vor jedem Versuch ruht sie 30 Frames (höchstens
-        // 600), sonst läuft er neu, bis 4-mal.
+        const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, faktor: A && A.toArray(), gleich: !!(A && U && U.value === A) };
+        if (!A) return Object.assign(aus, { einFrame: true, verbrauch: 0, zurueck: 0 });
+        // DREI BILDER EINES FRAMES (W9): vorher, Ausgleich ×2 und zurück zeichnet die Post-Kette über EINEN Szenen-Pass (r184 rendert
+        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn). Bis W9 drei Schüsse zu je 33
+        // Frames: dazwischen änderte die Welt das Bild ohne Regungs-Stempel (CI integ cbc222cc: vorher 107,8, zurück +2,25).
         window.__buehne();
-        const r = window.anazhRealm, regung = () => `${r._weltRegung | 0}|${r._bauRegung | 0}|${r._karteRegung | 0}`;
-        const ruht = async () => { for (let s = regung(), n = 0, k = 0; n < 30 && k < 600; k++, n = s === regung() ? n + 1 : ((s = regung()), 0)) await new Promise((ok) => requestAnimationFrame(ok)); };
-        const mittel = async () => {
-            const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
-            let s = 0;
-            for (let i = 0; i < auf.u8.length; i += 4) s += 0.2126 * auf.u8[i] + 0.7152 * auf.u8[i + 1] + 0.0722 * auf.u8[i + 2];
-            return { m: s / (auf.u8.length / 4), szene: regung() };
-        };
-        const alt = A.clone();
+        await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe und die Geschichte der zeitlichen Auflösung
+        const db = rend.getDrawingBufferSize(new window.THREE.Vector2()),
+            [W, H] = [Math.round(db.x), Math.round(db.y)];
+        const ziele = [1, 2, 1].map((k) => [k, new window.THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 })]);
+        const [alt, vorOut, vorZiel, nf] = [A.clone(), rend.getOutputRenderTarget(), rend.getRenderTarget(), rend._nodes.nodeFrame];
+        const m = [];
         try {
-            for (aus.versuche = 1; ; aus.versuche++) {
-                await ruht();
-                const m0 = await mittel();
-                A.set(2, 2, 2);
-                const m1 = await mittel();
-                A.copy(alt);
-                const m2 = await mittel();
-                Object.assign(aus, { mittel: +m0.m.toFixed(1), verbrauch: +(m1.m - m0.m).toFixed(2), zurueck: +(m2.m - m0.m).toFixed(2) });
-                aus.ruhig = m0.szene === m2.szene;
-                if (aus.ruhig || aus.versuche >= 4) break;
+            const f0 = (nf.update(), nf.frameId);
+            for (const [k, rt] of ziele) {
+                A.copy(alt).multiplyScalar(k);
+                rend.setOutputRenderTarget(rt);
+                r._loopRender(performance.now() / 1000);
+            }
+            aus.einFrame = nf.frameId === f0;
+            for (const [, rt] of ziele) {
+                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+                const zeile = u8.length > W * 4 * H ? Math.ceil((W * 4) / 256) * 256 : W * 4; // WebGPU richtet Zeilen auf 256 Byte aus
+                let s = 0;
+                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += 0.2126 * u8[o] + 0.7152 * u8[o + 1] + 0.0722 * u8[o + 2];
+                m.push(s / (W * H));
             }
         } finally {
             A.copy(alt);
+            rend.setOutputRenderTarget(vorOut);
+            rend.setRenderTarget(vorZiel);
+            for (const [, rt] of ziele) rt.dispose();
         }
-        aus.gelaufen = true;
-        return aus;
+        return Object.assign(aus, { mittel: +m[0].toFixed(1), verbrauch: +(m[1] - m[0]).toFixed(2), zurueck: +(m[2] - m[0]).toFixed(2) });
     })();
 }
 

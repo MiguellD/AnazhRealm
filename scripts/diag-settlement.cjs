@@ -1986,8 +1986,10 @@ const FIXTURES = [
                         (e) => istHaus(e) && P.slots.some((sl) => sl.seed >>> 0 === e.seed && amOrt(e, sl))
                     );
                     res.haeuser = haeuser.length;
-                    // die Ankunfts-Lesart (bis Karte SO) für den Selbst-Test: die erste neue Zelle, alle Häuser seit vorher
-                    res.ankunft = { zelle: neuKeys[0], haeuser: r.state.architectures.slice(vorher).filter(istHaus).length };
+                    // die Ankunfts-Lesart (bis Karte SO) für den Selbst-Test: die erste neue Zelle, alle Häuser seit vorher — und das
+                    // Ereignis, das er prüft (W9): der Eintrag des zweiten Dorfs steht VOR dem der Zelle (der Zug hält EINE Zelle unterwegs)
+                    const [iZ, iZweit] = [neuKeys.indexOf(res.zelle), neuKeys.indexOf(res.zweit)];
+                    res.ankunft = { zelle: neuKeys[0], haeuser: r.state.architectures.slice(vorher).filter(istHaus).length, zweitVor: iZweit >= 0 && iZweit < iZ };
                     const PR = globalThis.__fachwerkCore.PRESETS;
                     const laternen = r.state.architectures.filter(
                         (e) =>
@@ -2635,8 +2637,8 @@ const FIXTURES = [
         if (outO.zelle)
             check(
                 `O ${modusName}: Selbst-Test — ein zweites Dorf im Fenster, vor der Zelle angekommen, lässt das Urteil der Zelle gleich; die Ankunfts-Reihenfolge (erste neue Zelle, alle Häuser seit vorher) mischt es ein`,
-                !!outO.ankunft && outO.ankunft.zelle === outO.zweit && outO.ankunft.haeuser > outO.haeuser,
-                `zweites Dorf ${outO.zweit} · Ankunft: Zelle ${(outO.ankunft || {}).zelle}, Häuser ${(outO.ankunft || {}).haeuser}/${outO.slots} · Zelle ${outO.zelle}: ${outO.haeuser}/${outO.slots}`
+                !!outO.ankunft && outO.ankunft.zweitVor && outO.ankunft.zelle !== outO.zelle && outO.ankunft.haeuser > outO.haeuser,
+                `zweites Dorf ${outO.zweit}, vor der Zelle ${(outO.ankunft || {}).zweitVor} · Ankunft: Zelle ${(outO.ankunft || {}).zelle}, Häuser ${(outO.ankunft || {}).haeuser}/${outO.slots} · Zelle ${outO.zelle}: ${outO.haeuser}/${outO.slots}`
             );
         check(
             `O ${modusName}: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)`,
