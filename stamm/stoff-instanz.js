@@ -76,8 +76,14 @@ class AnazhRealm_stoff_instanz {
         // Das Karten-Gesetz ist KERN-PFLICHT: fehlt es (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
         // die still für immer ohne Karte zeichnet.
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
-        if (!core || typeof core.karteMasse !== "function" || !core.KARTEN_GESETZ || !core.KARTEN_GESETZ.lichtTeiler)
-            return AnazhRealm._kernPflichtBruch("phyto:karteMasse/KARTEN_GESETZ.lichtTeiler");
+        if (
+            !core ||
+            typeof core.karteMasse !== "function" ||
+            typeof core.karteGlaetteGaenge !== "function" ||
+            !core.KARTEN_GESETZ ||
+            !core.KARTEN_GESETZ.lichtTeiler
+        )
+            return AnazhRealm._kernPflichtBruch("phyto:karteMasse/karteGlaetteGaenge/KARTEN_GESETZ.lichtTeiler");
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
         if (!at.masse) {
@@ -427,14 +433,15 @@ class AnazhRealm_stoff_instanz {
         q.sort((a, b) => d2(a) - d2(b));
         const t0 = performance.now();
         let n = 0;
-        for (let i = 0; i < q.length; ) {
+        for (let i = 0; i < q.length;) {
             const z = at.zellen.get(q[i]);
             if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
                 q.splice(i, 1);
                 continue;
             }
             if (this._karteWeltBacken(at, z) === null) {
-                i++; // die L1 reist oder ihre Programme kompilieren
+                i++; // die L1 reist oder ein Bürger der Bühne wartet auf seine Pipeline
+                if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
                 continue;
             }
             q.splice(i, 1);
@@ -450,7 +457,8 @@ class AnazhRealm_stoff_instanz {
     _karteBuehneRuhe() {
         const B = this._karteBuehneSatz;
         if (!B || !B.bereit || performance.now() - B.zuletzt < AnazhRealm.KARTE_BUEHNE_RUHE_MS) return 0;
-        for (const rt of [B.ziel, B.schatten, B.leer]) if (rt && rt !== (this._kartenAtlas && this._kartenAtlas.rt)) rt.dispose();
+        for (const rt of [B.ziel, B.schatten, B.leer])
+            if (rt && rt !== (this._kartenAtlas && this._kartenAtlas.rt)) rt.dispose();
         if (B.rechen) for (const b of B.rechen.puffer) b.destroy();
         B.rechen = null;
         B.bereit = false;
@@ -491,16 +499,19 @@ class AnazhRealm_stoff_instanz {
             box: new T.Box3(),
             mitte: new T.Vector3(),
             farbe: new T.Color(),
-            kompiliert: new WeakSet(),
-            kompiliere: null,
             bereit: false,
             zuletzt: 0,
             rechen: null,
+            versuch: "", // die Kennung des Bake-Versuchs: die Bau-Frist der Erst-Zeichnung gilt ihm ganz
+            versuchN: 0,
             rend,
         };
         B.szene.add(B.wurzel);
         B.ziel = bc ? ziel(at.masse.w, at.masse.h, 3) : at.rt;
-        if (bc) ["karte-albedo:buehne", "karte-normal:buehne", "karte-licht:buehne"].forEach((n, i) => (B.ziel.textures[i].name = n));
+        if (bc)
+            ["karte-albedo:buehne", "karte-normal:buehne", "karte-licht:buehne"].forEach(
+                (n, i) => (B.ziel.textures[i].name = n)
+            );
         const namen = B.ziel.textures.map((t) => t.name);
         B.schatten = ziel(K * SZ.richtungen.length, K, 3);
         B.schatten.textures.forEach((t, i) => (t.name = namen[i]));
@@ -582,7 +593,6 @@ class AnazhRealm_stoff_instanz {
         B.wurzel.rotation.set(0, 0, 0);
         let rad2 = 0;
         let h = 0;
-        const neu = [];
         for (const c of g.children) {
             if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
             // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie
@@ -595,7 +605,6 @@ class AnazhRealm_stoff_instanz {
             m.matrix.copy(c.matrix);
             m.frustumCulled = false;
             B.wurzel.add(m);
-            if (!B.kompiliert.has(c.material)) neu.push(c.material);
             rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
         }
         B.wurzel.updateMatrixWorld(true);
@@ -608,36 +617,6 @@ class AnazhRealm_stoff_instanz {
             farbe: rend.getClearColor(B.farbe),
             alpha: rend.getClearAlpha(),
         };
-        // DIE PROGRAMME VOR DEM ERSTEN BAKE (compileAsync): ein Stoff, dessen Bühnen-Programm noch nicht steht, kompiliert
-        // asynchron gegen Ziel und MRT der Bühne — die Karte wartet, der Haupt-Faden nie. r184 liest Ziel und MRT im
-        // `prebuild` jedes Objekts (NodeMaterial.setup), und compileAsync baut nur das ERSTE Objekt vor seinem ersten await;
-        // jedes weitere entstünde nach der Rückkehr gegen das Ziel der Welt — ohne die MRT-Ausgänge der Bühne scheitert
-        // seine Pipeline, und der Zustand liegt im Knoten-Cache (Schlüssel ohne MRT) für jede spätere Karte desselben
-        // Stoffs. Darum EIN Aufruf je Hülle mit neuem Stoff, die anderen unsichtbar.
-        if (neu.length) {
-            if (!B.kompiliere) {
-                rend.setRenderTarget(B.ziel);
-                rend.setMRT(B.mrt);
-                const kinder = B.wurzel.children;
-                const zuege = [];
-                for (const m of kinder) {
-                    if (!neu.includes(m.material)) continue;
-                    for (const o of kinder) o.visible = o === m;
-                    zuege.push(rend.compileAsync(B.szene, B.kamera));
-                }
-                for (const o of kinder) o.visible = true;
-                B.kompiliere = Promise.all(zuege)
-                    .then(
-                        () => neu.forEach((m) => B.kompiliert.add(m)),
-                        (e) => this._stoffBruch(`die Karte ${z.key}: ihre Bühnen-Programme kompilieren nicht`, e)
-                    )
-                    .finally(() => (B.kompiliere = null));
-                rend.setRenderTarget(vor.rt, vor.face, vor.mip);
-                rend.setMRT(vor.mrt);
-            }
-            B.wurzel.clear();
-            return null;
-        }
         const box = B.box.setFromObject(B.wurzel);
         const fr = core.impostorFrame(box.max.y, Math.sqrt(rad2));
         const cam = B.kamera;
@@ -674,6 +653,14 @@ class AnazhRealm_stoff_instanz {
         const K = SZ.karte;
         const V = at.V;
         const dreh = (Math.PI * 2) / V;
+        // DIE PROGRAMME ENTSTEHEN IN DER ERST-ZEICHNUNG (`_configureRenderer`, der EINE Ort der Klasse): die Bühne zeichnet
+        // wie die Welt — ein Bürger, dessen Knoten die Bau-Frist verschob oder dessen Pipeline noch im Bau steht, zeichnet
+        // nicht. Dann ist die Karte nicht ganz: sie wird nicht abgelegt und backt im nächsten Takt neu (null) — der
+        // Haupt-Faden kompiliert nie synchron, keine Karte steht halb.
+        const E = this._erstZeichnungStand();
+        const offen = E.wartetN + E.verschoben;
+        B.versuch = "karte|" + ++B.versuchN;
+        let ganz = false;
         try {
             rend.setMRT(B.mrt);
             rend.setClearColor(0x000000, 0);
@@ -716,6 +703,7 @@ class AnazhRealm_stoff_instanz {
                 }
                 this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
             }
+            ganz = E.wartetN + E.verschoben === offen;
         } finally {
             if (!bc) for (const t of at.rt.textures) t.generateMipmaps = true;
             for (const rt of [B.ziel, B.schatten]) rt.viewport.set(0, 0, rt.width, rt.height);
@@ -729,6 +717,7 @@ class AnazhRealm_stoff_instanz {
             }
             B.wurzel.clear();
         }
+        if (!ganz) return null;
         if (bc) this._karteAblage(at, z.idx, B);
         B.zuletzt = performance.now();
         (at.weltMs || (at.weltMs = [])).push(+(B.zuletzt - t0).toFixed(2));
@@ -763,7 +752,11 @@ class AnazhRealm_stoff_instanz {
         Promise.all(
             namen.map((n) =>
                 dev
-                    .createComputePipelineAsync({ label: "karte-" + n, layout: pl, compute: { module: modul, entryPoint: n } })
+                    .createComputePipelineAsync({
+                        label: "karte-" + n,
+                        layout: pl,
+                        compute: { module: modul, entryPoint: n },
+                    })
                     .then((p) => (satz.pipes[n] = p))
             )
         ).then(
@@ -795,7 +788,24 @@ class AnazhRealm_stoff_instanz {
             const s = new ArrayBuffer(64);
             const u = new Uint32Array(s),
                 f = new Float32Array(s);
-            const ord = ["w", "h", "hA", "k", "quelle", "ziel", "V", "fuss", "aus", "zeile", "thr", "flag", "w0", "hA0", "gi", "t"];
+            const ord = [
+                "w",
+                "h",
+                "hA",
+                "k",
+                "quelle",
+                "ziel",
+                "V",
+                "fuss",
+                "aus",
+                "zeile",
+                "thr",
+                "flag",
+                "w0",
+                "hA0",
+                "gi",
+                "t",
+            ];
             ord.forEach((n, i) => {
                 const v = p[n] == null ? 0 : p[n];
                 if (n === "fuss" || n === "thr") f[i] = v;
@@ -825,15 +835,46 @@ class AnazhRealm_stoff_instanz {
                 fuss = 1 << (2 * k);
             let flag = 0;
             if (k > 0) {
-                zug("summeK", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, quelle, ziel: so, fuss }), Math.ceil(wk / 16), Math.ceil(hk / 16));
-                const gaenge = k <= G.glaetteBis ? G.glaette : 1;
+                zug(
+                    "summeK",
+                    Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, quelle, ziel: so, fuss }),
+                    Math.ceil(wk / 16),
+                    Math.ceil(hk / 16)
+                );
+                const gaenge = globalThis.__phytoCore.karteGlaetteGaenge(k);
                 for (let gg = 0; gg < gaenge; gg++)
-                    zug("glaette", Object.assign({}, base, { w: wk, h: hk, hA: hAk, flag: gg & 1 }), Math.ceil(wk / 16), Math.ceil(hk / 16));
+                    zug(
+                        "glaette",
+                        Object.assign({}, base, { w: wk, h: hk, hA: hAk, flag: gg & 1 }),
+                        Math.ceil(wk / 16),
+                        Math.ceil(hk / 16)
+                    );
                 flag = gaenge & 1;
-                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V }), V, 1);
+                zug(
+                    "grenzeK",
+                    Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V }),
+                    V,
+                    1
+                );
             }
             const a = ablage(0, k, wk, hk, 8);
-            zug("bc1", Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V, aus: a.aus, zeile: a.zeile }), Math.ceil(wk / 32), Math.ceil(hk / 32));
+            zug(
+                "bc1",
+                Object.assign({}, base, {
+                    w: wk,
+                    h: hk,
+                    hA: hAk,
+                    k,
+                    ziel: so,
+                    fuss,
+                    flag,
+                    gi: k * V,
+                    aus: a.aus,
+                    zeile: a.zeile,
+                }),
+                Math.ceil(wk / 32),
+                Math.ceil(hk / 32)
+            );
             if (k > 0) {
                 quelle = so;
                 so += wk * hk;
@@ -846,17 +887,33 @@ class AnazhRealm_stoff_instanz {
         for (let j = 0; j < M.n.length; j++) {
             const wj = M.nw >> j,
                 hj = M.nh >> j;
-            zug("normalK", Object.assign({}, base, { w: wj, h: hj, k: j + 1, quelle: nq, ziel: no }), Math.ceil(wj / 16), Math.ceil(hj / 16));
+            zug(
+                "normalK",
+                Object.assign({}, base, { w: wj, h: hj, k: j + 1, quelle: nq, ziel: no }),
+                Math.ceil(wj / 16),
+                Math.ceil(hj / 16)
+            );
             const a = ablage(1, j, wj, hj, 16);
-            zug("bc5", Object.assign({}, base, { w: wj, h: hj, ziel: no, aus: a.aus, zeile: a.zeile }), Math.ceil(wj / 32), Math.ceil(hj / 32));
+            zug(
+                "bc5",
+                Object.assign({}, base, { w: wj, h: hj, ziel: no, aus: a.aus, zeile: a.zeile }),
+                Math.ceil(wj / 32),
+                Math.ceil(hj / 32)
+            );
             nq = no;
             no += wj * hj;
         }
         // Sonnen-Sicht: r8, eine Stufe
         const l = ablage(2, 0, M.lw, M.lh, 4);
-        zug("sicht", Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }), Math.ceil((M.lw * M.lh) / 4 / 64), 1);
+        zug(
+            "sicht",
+            Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }),
+            Math.ceil((M.lw * M.lh) / 4 / 64),
+            1
+        );
         const U = GPUBufferUsage;
-        const mk = (label, size, usage) => dev.createBuffer({ label: "karte-" + label, size: Math.max(16, size), usage });
+        const mk = (label, size, usage) =>
+            dev.createBuffer({ label: "karte-" + label, size: Math.max(16, size), usage });
         const P = {
             param: mk("param", slots.length * 256, U.UNIFORM | U.COPY_DST),
             summe: mk("summe", summeN * 16, U.STORAGE),
@@ -891,7 +948,10 @@ class AnazhRealm_stoff_instanz {
                 entries: [
                     { binding: 0, resource: { buffer: P.param, size: 64 } },
                     ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
-                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus"].map((n, i) => ({ binding: 4 + i, resource: { buffer: P[n] } })),
+                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus"].map((n, i) => ({
+                        binding: 4 + i,
+                        resource: { buffer: P[n] },
+                    })),
                 ],
             });
         }

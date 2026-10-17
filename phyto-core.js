@@ -3349,6 +3349,11 @@
         return Math.max(1, n);
     }
 
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Kodierung im Kern und die GPU-Ablage des Hosts
+    function karteGlaetteGaenge(k) {
+        return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
+    }
+
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
     //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler
     //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature)
@@ -3551,7 +3556,7 @@
                 // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
                 // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
                 for (let i = 0; i < nA; i++) dicht[i] = ta[tex(v, i)] / fuss;
-                const gaenge = k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
+                const gaenge = karteGlaetteGaenge(k);
                 for (let gang = 0; gang < gaenge; gang++) {
                     for (let i = 0; i < nA; i++) {
                         const ix = i % nwA,
@@ -5078,6 +5083,7 @@
         lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
         KARTEN_GESETZ: KARTEN_GESETZ, // W6 — der Karten-Atlas: Schwelle · Normal-Teiler · kleinste Mip-Seite
         karteMasse: karteMasse,
+        karteGlaetteGaenge: karteGlaetteGaenge,
         impostorMips: impostorMips,
         normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,

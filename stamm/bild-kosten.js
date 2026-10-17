@@ -491,7 +491,12 @@ class AnazhRealm_bild_kosten {
                 if (ro.getDrawParameters() === null) return;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
-                if (scene !== welt.state.scene) {
+                // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
+                // zeichnete — ihre Hüllen wechseln den Stoff, darum zählt dort kein Pass, und ihre Bau-Frist gilt dem ganzen
+                // Bake-Versuch (13 Render-Aufrufe), nie je Aufruf
+                const B = welt._karteBuehneSatz;
+                const buehne = !!B && scene === B.szene;
+                if (scene !== welt.state.scene && !buehne) {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
@@ -501,7 +506,7 @@ class AnazhRealm_bild_kosten {
                     N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
-                let pass = E.gezeichnet.get(object);
+                let pass = buehne ? undefined : E.gezeichnet.get(object);
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
@@ -510,8 +515,9 @@ class AnazhRealm_bild_kosten {
                 }
                 let bau = -1;
                 if (ungebaut) {
-                    if (E.aufruf !== this.info.calls) {
-                        E.aufruf = this.info.calls;
+                    const aufruf = buehne ? B.versuch : this.info.calls;
+                    if (E.aufruf !== aufruf) {
+                        E.aufruf = aufruf;
                         E.aufrufMs = 0;
                         // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
                         // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
@@ -530,7 +536,7 @@ class AnazhRealm_bild_kosten {
                     E.bauN++;
                     E.bauMs += ms;
                 }
-                if (gezeichnet) {
+                if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
                 }
