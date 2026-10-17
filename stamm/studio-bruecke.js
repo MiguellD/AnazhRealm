@@ -17,10 +17,16 @@ class AnazhRealm_studio_bruecke {
         if (typeof window !== "undefined" && window.__anazhGateNoFoundry) return false;
         return true;
     }
-    _ensureAssetFoundry() {
+    // `vorWelt` (B3a): die Geburt mit der Seite (`init`, vor dem Laden der Welt) — das Buch wartet, bis der Wirt steht
+    // (`_foundryWirtSteht`); jede spätere Geburt findet ihn stehend.
+    _ensureAssetFoundry(vorWelt) {
         if (!this._foundryEnabled()) return null;
         if (this._foundry) return this._foundry;
         const f = {
+            wirt: !vorWelt, // der Wirt steht: das Buch darf in die Welt (Baupläne, Hotbar, Leib — nach dem Spielstand)
+            buch: null, // das Buch, das vor dem Wirt kam
+            blattAtlas: false, // die Fracht des EINEN Blatt-Atlas ist da (`_foundryBlattAtlas`)
+            nachAtlas: [], // Laub-Körper, die auf ihn warten (`_foundryAntwort`)
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
             // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
             // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker (Kanal "bake-impostor" → Reply "impostor"). EIN
@@ -49,116 +55,65 @@ class AnazhRealm_studio_bruecke {
         f.buchDa = new Promise((r) => (f.buchKam = r));
         this._foundry = f;
         try {
-            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; die Brücke startet ohne Renderer).
-            // importScripts braucht ABSOLUTE URLs (Blob-URL ohne Basis → new URL(..., location.href)). ALLES aus
-            // cores.manifest.json (EINE Quelle), ?v= Pflicht. Reihenfolge: die lib der Kerne (three r128 + die
-            // Geometrie-Helfer — keine Labor-Szene) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → die Brücke
-            // ZULETZT (K42: keine Labor-Shell im Worker). Async: f.ready bleibt false bis zum ready-Handshake; jeder
-            // Fetch-/Parse-Fehler lässt es so.
-            const v = "?v=" + AnazhRealm.VERSION;
-            fetch("cores.manifest.json" + v)
-                .then((res) => res.text())
-                .then((manifestText) => {
-                    const manifest = JSON.parse(manifestText);
-                    // kein Kern-Satz, kein Faden: der Boot bricht laut (der catch unten reicht den Bruch unverändert weiter)
-                    if (!Array.isArray(manifest) || !manifest.length)
-                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-                    const rel = [];
-                    for (const core of manifest) {
-                        if (!core || !Array.isArray(core.lib)) continue;
-                        for (const s of core.lib) if (typeof s === "string" && s) rel.push(s);
-                    }
-                    for (const core of manifest) {
-                        if (!core || !Array.isArray(core.scripts)) continue;
-                        for (const s of core.scripts) if (typeof s === "string" && s) rel.push(s);
-                    }
-                    for (const core of manifest) {
-                        if (core && typeof core.bruecke === "string" && core.bruecke) rel.push(core.bruecke);
-                    }
-                    const base = typeof window !== "undefined" && window.location ? window.location.href : "";
-                    const abs = rel.map((p) => new URL(p + v, base).href);
-                    // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
-                    // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
-                    // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
-                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Brücke (K42) — sie trägt
-                    // `__extractAssetMesh` (backt matrixWorld in die Vertices) und `bakeImpostorAtlas` (die Karte); ein
-                    // Brücken-Edit ohne Stempel lieferte stale Körper und Karten. Die Labor-Shell hasht er nie: ein UI-Edit
-                    // am Pflanzen-Labor leert keinen Asset-Cache.
-                    const stempelUrls = [];
-                    for (const core of manifest) {
-                        if (!core || !Array.isArray(core.scripts)) continue;
-                        for (const s of core.scripts)
-                            if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
-                    }
-                    for (const core of manifest) {
-                        if (core && typeof core.bruecke === "string" && core.bruecke)
-                            stempelUrls.push(new URL(core.bruecke + v, base).href);
-                    }
-                    // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
-                    const rend = this.state.renderer;
-                    f.platte =
-                        typeof indexedDB !== "undefined" &&
-                        typeof crypto !== "undefined" &&
-                        !!crypto.subtle &&
-                        !(rend && rend._isHeadlessNull);
-                    const schale = {
-                        lesen: AnazhRealm.FOUNDRY_LESEN,
-                        format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
-                        platte: f.platte,
-                        manifestText,
-                        stempelUrls,
-                    };
-                    const boot =
-                        "(function " +
-                        AnazhRealm._foundrySchale.toString() +
-                        ")(" +
-                        JSON.stringify(schale) +
-                        ");" +
-                        "self.__PHYTO_FOUNDRY_WORKER=true;self.__anazhCores=" +
-                        JSON.stringify(manifest) +
-                        ";importScripts(" +
-                        abs.map((u) => JSON.stringify(u)).join(",") +
-                        ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
-                    f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
-                    const worker = new Worker(f.bootUrl);
-                    f.worker = worker;
-                    // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt — der Faden
-                    // hält sie, bis sein Studio steht (eine Nachricht vor dem Ende seines Start-Skripts wartet auf seinen
-                    // Hörer), und antwortet ohne Rundlauf; Helfer und Bäcker kommen mit ihm (`_foundryHelfer`). Bis K60-2
-                    // fragte erst die Antwort auf „ready" — Radeon kalt ruhte der Buch-Faden 0,8 s, bis der volle Haupt-
-                    // Faden sie las, und die Helfer begannen ihren Start 2,4 s nach ihm (K602c/q2: Buch 6,8 s).
-                    try {
-                        worker.postMessage({ type: "get-book", reqId: "book" });
-                    } catch (_e) {
-                        throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
-                    }
-                    this._foundryHelfer(f);
-                    // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
-                    // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
-                    worker.onerror = (ev) =>
-                        this._stoffBruch(
-                            "der Foundry-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
-                        );
-                    worker.onmessage = (ev) => {
-                        const m = ev.data;
-                        if (!m || typeof m !== "object") return;
-                        if (m.type === "ready" && m.world === "terrain") {
-                            f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
-                            // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
-                            // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
-                            // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
-                            this._foundryPrefetchLibrary();
-                            // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
-                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
-                            // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
-                            this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
-                        } else if (m.type === "book") {
-                            this._foundryIngestBook(m);
-                        } else this._foundryAntwort(f, m);
-                        this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
-                    };
-                })
-                .catch((e) => this._stoffBruch("die Foundry bootet nicht (Kern-Manifest, Faden-Boot)", e));
+            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; die Brücke startet ohne Renderer). DER FADEN
+            // KOMMT MIT DER SEITE (B3a): er liest das Kern-Manifest selbst (`_foundryStart`) — bis B3a holte es der Haupt-Faden
+            // vor der Geburt, und die Antwort wartete, bis der volle Haupt-Faden sie las (Radeon kalt geboren bei 2,17 s statt
+            // mit init bei 1,04 s). Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto;
+            // die Wahl des Renderers fällt vor ihm (`_nullRendererGewaehlt`).
+            f.platte =
+                typeof indexedDB !== "undefined" &&
+                typeof crypto !== "undefined" &&
+                !!crypto.subtle &&
+                !this._nullRendererGewaehlt();
+            const start = {
+                v: "?v=" + AnazhRealm.VERSION,
+                base: typeof window !== "undefined" && window.location ? window.location.href : "",
+                lesen: AnazhRealm.FOUNDRY_LESEN,
+                format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
+                platte: f.platte,
+            };
+            const boot =
+                "(function " +
+                AnazhRealm._foundryStart.toString() +
+                ")(" +
+                JSON.stringify(start) +
+                ",function " +
+                AnazhRealm._foundrySchale.toString() +
+                ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
+            f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
+            // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt — der Faden
+            // heißt „buch" und antwortet, sobald sein Studio steht (die Brücke, Worker-Start). Eine Nachricht vor dem
+            // Ende seines Start-Skripts reicht Chrome erst weiter, wenn der Haupt-Faden die Meldung „Skript gelaufen"
+            // liest: bis B3a ruhte der Buch-Faden so 0,73–1,26 s (Radeon kalt). Helfer und Bäcker kommen mit ihm
+            // (`_foundryHelfer`).
+            const worker = new Worker(f.bootUrl, { name: "buch" });
+            f.worker = worker;
+            this._foundryHelfer(f);
+            // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
+            // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
+            worker.onerror = (ev) =>
+                this._stoffBruch("der Foundry-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
+            worker.onmessage = (ev) => {
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") {
+                    f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
+                    // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
+                    // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
+                    // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
+                    this._foundryPrefetchLibrary();
+                    // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
+                    // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
+                    // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
+                    this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
+                } else if (m.type === "book") {
+                    // das Buch geht in die Welt, sobald der Wirt steht (nach dem Spielstand, `_foundryWirtSteht`)
+                    if (f.wirt) this._foundryIngestBook(m);
+                    else f.buch = m;
+                } else if (m.type === "blatt-atlas") this._foundryBlattAtlas(f, m);
+                else this._foundryAntwort(f, m);
+                this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
+            };
         } catch (_e) {
             this._stoffBruch("die Foundry bootet nicht", _e);
         }
@@ -174,7 +129,13 @@ class AnazhRealm_studio_bruecke {
             const p = f.pending.get(m.reqId);
             if (p) {
                 f.pending.delete(m.reqId);
-                p(m.meshes || []);
+                const meshes = m.meshes || [];
+                // EIN AUFTRAG WARTET NUR AUF DAS, WAS ER BRAUCHT (B3a): ein Körper mit Laub-Karte oder Wurf liest den EINEN
+                // Blatt-Atlas (`_foundryTreeMaterial` → `_blattAtlasProbe`); kam er vor dessen Fracht, geht er mit ihr in
+                // die Welt (`_foundryBlattAtlas`) — nie malt der Haupt-Faden den Atlas selbst. Sein Platz im Faden ist frei.
+                if (!f.blattAtlas && meshes.some((x) => x && (x.kind === "foliageTex" || x.kind === "schatten")))
+                    f.nachAtlas.push(() => p(meshes));
+                else p(meshes);
             }
         } else if (m.type === "settlement") {
             // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
@@ -196,6 +157,29 @@ class AnazhRealm_studio_bruecke {
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
         this._foundryUhren(f);
+    }
+    // DER EINE BLATT-ATLAS (S7, B3a): seine Fracht kommt NACH dem Buch — der Buch-Faden malt, mippt und kodiert ihn, während
+    // die Welt schon bestellt (bis B3a war er die Vorbedingung des ganzen Buchs: Radeon kalt 1,81 s Malen + 0,98 s Fracht vor
+    // jedem Auftrag); per Transfer, `_ensureFoliageClusterAtlas` lädt ihn, ohne im Haupt-Faden zu malen. Die Laub-Körper, die
+    // vor ihm kamen, gehen jetzt in die Welt.
+    _foundryBlattAtlas(f, m) {
+        const a = m.blattAtlas;
+        if (f.blattAtlas) return; // ein zweites Buch (ein Tor fragt den Kanal) trägt kein neues Bild
+        if (!a || !a.rgba || !Array.isArray(a.rgba.mips) || !a.rgba.mips.length)
+            throw this._stoffBruch("der Blatt-Atlas kam ohne Bild (blatt-atlas)");
+        this._blattAtlasBild = a;
+        f.blattAtlas = true;
+        for (const los of f.nachAtlas.splice(0)) los();
+    }
+    // DER WIRT STEHT (B3a): der Faden kommt mit der Seite (`init`), das Buch geht erst nach dem Spielstand in die Welt — seine
+    // Baupläne, die Hotbar und der Leib lesen den geladenen Stand, wie zuvor, als der Wirt es erst hier erfragte.
+    _foundryWirtSteht() {
+        const f = this._foundry;
+        if (!f || f.wirt) return;
+        f.wirt = true;
+        const m = f.buch;
+        f.buch = null;
+        if (m) this._foundryIngestBook(m);
     }
     // DER BÄCKER HAT SEINEN FADEN. Die Karte rendert das Studio offscreen mit WebGL (`bakeImpostorAtlas`: Kontext,
     // Programme, 8 Winkel, Rücklesen) und hält dabei den Faden fest, der sie trägt. Bis 05.10. war das der EINE
@@ -258,9 +242,9 @@ class AnazhRealm_studio_bruecke {
     _foundryHelfer(f) {
         if (f.helfer || !f.bootUrl) return;
         f.helfer = [];
-        // die Bäcker kommen mit dem Studio, wo ein echter Renderer zeichnet (`_foundryBaecker`, K60-2)
-        const r = this.state.renderer;
-        if (r && !r._isHeadlessNull) this._foundryBaecker(f);
+        // die Bäcker kommen mit dem Studio, wo ein echter Renderer zeichnen wird (`_foundryBaecker`, K60-2; die Wahl fällt
+        // vor ihm, `_nullRendererGewaehlt` — der Faden kommt mit der Seite, B3a)
+        if (!this._nullRendererGewaehlt()) this._foundryBaecker(f);
         const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
             const w = new Worker(f.bootUrl);
@@ -291,10 +275,7 @@ class AnazhRealm_studio_bruecke {
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
-        // Die Fracht des EINEN Blatt-Atlas (S7, 05.10.): im Worker gemalt, gemippt und kodiert, per Transfer —
-        // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
-        if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
-            this._blattAtlasBild = m.blattAtlas;
+        // (Die Fracht des EINEN Blatt-Atlas reist nach dem Buch, `_foundryBlattAtlas`.)
         // das Ereignis für jeden, der auf das Buch wartet (`buchDa`); ein Buch ohne Rezepte bricht laut, die Wartenden
         // sehen es (der Vorrat: FOUNDRY WARM je kritischem Preset, der Dorf-Spawn: FOUNDRY KALT)
         if (!m.book || typeof m.book !== "object") this._stoffBruch("das Studio-Buch kam ohne Rezepte (get-book)");
@@ -517,6 +498,35 @@ class AnazhRealm_studio_bruecke {
     _foundryRecipeFor(preset) {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
+    }
+    // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
+    // nichts außerhalb seines Rumpfs zu. Er liest das Kern-Manifest selbst (synchron: im Faden wartet niemand darauf; ALLES
+    // aus cores.manifest.json, EINE Quelle, ?v= Pflicht), stellt die Transport-Schale VOR das Studio (ihr Kanal-Hörer steht
+    // zuerst) und lädt die lib der Kerne (three r128 + die Geometrie-Helfer, keine Labor-Szene) → die Kerne in Manifest-Folge
+    // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
+    // (die Blob-URL hat keine Basis). Der Stempel der Platte hasht jede Generator-Quelle: die Kern-Skripte UND die Brücke
+    // (`__extractAssetMesh`, `bakeImpostorAtlas`), nie die Labor-Shell. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
+    static _foundryStart(b, schale) {
+        const W = globalThis;
+        const url = (p) => new URL(p + b.v, b.base).href;
+        const x = new W.XMLHttpRequest();
+        x.open("GET", url("cores.manifest.json"), false);
+        x.send();
+        const manifestText = x.responseText;
+        const manifest = JSON.parse(manifestText);
+        if (!Array.isArray(manifest) || !manifest.length)
+            throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
+        const liste = (feld) => {
+            const out = [];
+            for (const core of manifest)
+                for (const s of [].concat((core && core[feld]) || [])) if (typeof s === "string" && s) out.push(url(s));
+            return out;
+        };
+        const quellen = liste("scripts").concat(liste("bruecke"));
+        schale({ lesen: b.lesen, format: b.format, platte: b.platte, manifestText, stempelUrls: quellen });
+        W.__PHYTO_FOUNDRY_WORKER = true;
+        W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
+        W.importScripts(...liste("lib").concat(quellen)); // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
     }
     // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
     // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den
@@ -744,10 +754,10 @@ class AnazhRealm_studio_bruecke {
                 return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
-            // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
+            // Das Bild des EINEN Blatt-Atlas (es reist nach dem Buch, B3a): die Schale macht es im Worker zur FRACHT
             // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
-            if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
+            if (msg && msg.type === "blatt-atlas" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
                 const stufen = fr ? fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []) : [];
                 return roh(
@@ -3169,11 +3179,8 @@ class AnazhRealm_studio_bruecke {
         mat.userData = mat.userData || {};
         mat.userData.foundryKind = kind;
         mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
-        // Observer-Diät auch für die Masken-Familie: ihr Graph hängt an Vertex-Farben + Stempel-Attributen
-        // (aLodLevel/aH0/aH0L — equals sieht Attribut-Versionen), geteilten LOD-Uniforms (renderGroup) und dem
-        // statischen Blatt-Atlas. Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden
-        // Fehler und baute einen Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
-        this._materialObserverDiaet(mat);
+        // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen
+        // Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
         this._foundryMats[key] = mat;
         // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))

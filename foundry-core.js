@@ -918,7 +918,9 @@ function makeBarkNormal() {
     const N = 512,
         c = __mkCanvas();
     c.width = c.height = N;
-    const x = c.getContext("2d");
+    // DIE CPU-LEINWAND (B3a): die Normale ist ein fertiges Bild aus dem Speicher — auf der GPU-Leinwand wartete ihr
+    // putImageData im Studio-Faden auf den GPU-Prozess (Radeon kalt 2,27 s je Faden, vor dem Buch). Dieselben Bytes.
+    const x = c.getContext("2d", { willReadFrequently: true });
     const img = x.createImageData(N, N);
     const h = new Float32Array(N * N);
     let s = mulberry32(99);
