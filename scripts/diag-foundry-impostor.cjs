@@ -216,8 +216,6 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            // die Absenz: keine Atlas-Stichprobe an _probeA vorbei (kein direktes _at.mapNode/_at.nmapNode.sample im Stoff-Bau)
-            out.strichDirekt = (window.__codeOf(r._buildPbrNodeMaterial).match(/_at\.(?:mapNode|nmapNode)\.sample\(/g) || []).length;
             out.vereinigung = {
                 weltBake: typeof r._karteWeltBacken === "function",
                 rttNachbau: typeof r._bakeImpostorAtlasRTT,
@@ -887,9 +885,9 @@ async function windProbe(page) {
     if (A.vereinigung) {
         const s = A.strich || {};
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
+        if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0))
             errs.push(
-                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten mit Gradienten der stetigen Koordinate (2/1), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
+                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten mit Gradienten der stetigen Koordinate (2/1), keine Stichprobe ohne (${JSON.stringify(s)})`
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");

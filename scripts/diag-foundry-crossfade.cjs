@@ -1,73 +1,35 @@
-// diag-foundry-crossfade.cjs — DIE MASKEN-QUELLEN-LINSE (Paritäts-Vollendung W5.3+W5.4).
-// Teil (a) Node-pur, OHNE Browser: beweist, dass die EINE geteilte Masken-Quelle
-// `__phytoCore.lodCrossfadeMask` (phyto-core.js) die Studio-Dither-Blende
-// (foundry-core.js `injectWind`-Fragment, FIX v37 + phytogenesis `_impMat`-fin)
-// EXAKT übersetzt:
-//   (1) RINDE = exakte Partition: keepL0 XOR keepL1 == 1 an JEDEM Rasterpunkt × Distanz-
-//       Sample im Partitions-Band (f1o == 0); im Fern-Band ist die Ausblendung BEWUSST
-//       verzögert (Union L1∪Impostor, das Billboard liegt tiefen-versetzt — foundry-core-
-//       Kommentar Z.232f) → dort Union-lückenlos statt XOR.
-//   (2) LAUB = überlappende Rampen (FIX v37): Union-Deckung ≥ max(Einzel-Deckung) an jedem
-//       Band-Punkt, kein Loch (Union == 100 %), Band-Anfang ~100 % L0, Band-Ende ~100 %
-//       Impostor, monotoner Übergang — auch bei divergenter Blatt-Metrik (vLodDL ≠ vLodD).
-//   (3) NUMERISCHE ÄQUIVALENZ / DRIFT-WAND: die GLSL-Konstanten (die `_dh`-IGN-Koeffizienten,
-//       die Rampen-Struktur, die Branch-Zeilen, die `PORTAL_RENDER_CONFIG.lod`-Zahlen) werden
-//       per Regex aus foundry-core.js/phytogenesis.js geparst (NUR LESEN) und ein Referenz-
-//       Evaluator aus GENAU diesen geparsten Werten gebaut → phyto-core muss auf dem ganzen
-//       Raster × Band numerisch identisch entscheiden. Ändert der Schöpfer das Studio-GLSL,
-//       wird die Linse rot.
-//   (4) --selftest: zwei verfälschte phyto-core-Kopien (IGN-Koeffizient · Rampen-Faktor)
-//       via vm → die Äquivalenz-Checks MÜSSEN feuern (die Linse ist nicht vakuös).
-//   (5) DIE SCHATTEN-WAHRHEIT (V18.513): der Schattenpass liest, was das Auge sieht. r184 rendert ihn mit
-//       der Kaskaden-Kamera (`cameraPosition` = Licht-Kamera, lightMargin 200 m → nahe Bäume lagen 145 m
-//       „weit", die Maske verwarf ALLE ihre Schatten-Fragmente) und liest nur colorNode.a · map.a ·
-//       maskShadowNode, nie opacityNode (die Nadel-Karten warfen Rechtecke). Statisch: jede LOD-Maske misst
-//       vom Auge (`uLodAuge`, je Frame aus der Haupt-Kamera), kein werfender Foundry-Stoff schneidet über
-//       opacityNode aus, der Schatten-Zwilling wirft mit der als Nah-Stufe gestempelten L1-Gestalt (Stempel 3,
-//       `_foundrySchattenGeom`, derselbe Stoff) und besitzt sie nicht. EIN WERFER JE GESTALT (W6): die L1 wirft über
-//       DIESELBEN Zwillings-Leaves wie die L0 (nie über ihre Teile), der Band-Partner trägt keinen Zwilling, den die
-//       Primär-Stufe schon wirft. --selftest bricht jede Klasse einzeln.
-//   (6) DAS FENSTER DER INSTANZ-WAHL (W7-Vereinigung): die Wahl je Pass verwirft eine Instanz, deren Stufen-Maske vom Auge
-//       nichts behält — ihr Fenster (`AnazhRealm._blendeBehaelt` an den Kanten `_blendeKanten`, die per Bisektion AM
-//       Gesetz `lodCrossfadeMask` stehen) darf nie verwerfen, was das Gesetz zeigt. Node-pur: beide Methoden aus dem Stamm
-//       gegen das Gesetz, je Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz ×
-//       Distanz-Intervall, Dither-Raster 256 — kein Loch; der Überschuss (das Fenster behält, das Gesetz nicht) steht als
-//       Zahl. --selftest: verschobene Kanten (je Stufe 1 m nach innen) reißen Löcher und werden genannt.
-//   (7) DIE KETTE DES GESETZBUCHS (K43-3; vorher „die Kette ohne Partner", 06.10. F-D3/V-D3): Wagen und Tor tragen ihre
-//       Stufen-Kette im Gesetzbuch (vehicle [0,1] + Karte, gate [0,1] nach den Grenzen `ab` + NUR-WURF 3) — jede gezeigte
-//       Stufe hat ihren Partner, beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last
-//       (dieselbe Loch-Probe wie die Stufen-Wahrheit, Teil b). Die gezeichnete Stufe einer Satz-Art (das Tor) ist ihre
-//       ZELLE im Bau-Satz: die Linse liest die Stempel je Ecke dort, nie an der Gruppe, die nie zeichnet. Bis 06.10.
-//       stempelte der Gruppen-Bau die einzige L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
-//       Selbsttest im selben Lauf: die L1 lädt nie und die Stufe hält nicht (Loch am Wagen, L1 fehlt im Bild); der Satz
-//       folgt der Stufe nicht (die Marke stumm: fehlende Zelle am Tor — der alte Leser der Gruppen sah 0 Löcher).
-//   (8) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das Maß der Blende ist die INSTANZ (Studio foundry-core
-//       `_iw = instanceMatrix[3].xz`) — Maske, Karte und das Fenster der Instanz-Wahl messen vom Auge zum Ursprung der
-//       Instanz, nie zum Fragment. Statisch: keine Maske misst von positionWorld, die Karte von ihrem Anker (`_dA`), das
-//       Fenster ohne die Weite der Gestalt, der Haken legt die Matrix der Instanz am Builder ab. Node-pur: `_instanzFenster`
-//       aus dem Stamm über eine Birke (Sichthöhe 15,19 m, Skala 0,928, Perf 1,21) und eine Eiche, 0–60 m, je Stufe — keine
-//       Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält („doppelt außerhalb des Fade-Fensters"),
-//       und keine fehlt, die es behält. --selftest: die Weite der Gestalt kehrt ins Fenster zurück (Krone 10 m) → die L1 der
-//       Birke in 5 m wird gezeichnet und genannt.
-//   (9) DIE LAUTE BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied, bricht der Bau des Stoffs laut beim Namen
-//       (`_blendeBruch`, ERROR) — nie ein stilles null, kein schluckender catch, kein Stoff ohne Maske. Statisch: die Maske gibt
-//       nie null zurück und ihr catch bricht, Baum-Stoff und Karte setzen die Maske ohne Wenn, ein Stoff ohne Kanal bricht,
-//       der catch der Karten-Verdrahtung reicht den Bruch weiter, die Blatt-Karte bricht. In der Seite (Teil b): der
-//       Uniform-Satz verliert uLodD0, ein Baum-Stoff wird gebaut — er bricht mit dem Namen des fehlenden Glieds, statt still
-//       ohne Maske zu zeichnen. --selftest: jede stille Stelle zurück in die Quelle wird genannt.
-// Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
-// CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
-// thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
-//   IM Band [Schwelle−fade−M, Schwelle+M] hält er Slots in BEIDEN Stufen-Gruppen,
-//   außerhalb in EXAKT einer, NIE 0 — und die SLOT-BILANZ über den ganzen Sweep ist dicht
-//   (Σ liveCount zurück auf die Baseline · je Gruppe dicht: count == liveCount, Marke i trägt Slot i ·
-//   kein slotEntry-Rest). Der Sweep läuft SYNCHRON in einem Block (keine async-Interleaves),
-//   alle drei Stufen sind VOR der Baseline gewärmt (kein Rewarm-Störer).
+// diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN (Paritäts-Vollendung W5.3+W5.4): das EINE Masken-Gesetz
+// `__phytoCore.lodCrossfadeMask` (phyto-core) gegen die Studio-Blende, das Fenster der Instanz-Wahl und die lebende Welt.
+// Teil (a), Node an der GELADENEN Klasse (`stammLib.ladeKlasse`: die Kerne wie index.html, dann der Stamm) — nie ein
+// Quelltext-Zitat (PFLICHT-OFFEN D3):
+//   (1) DIE STUDIO-BLENDE LÄUFT: der Fragment-Satz, den foundry-core `injectWind` dem Labor-Stoff einsetzt (Rinde und Laub,
+//       mit der Bindung des Wirts aus `PORTAL_RENDER_CONFIG.lod` wie foundry-bruecke), läuft als JS auf dem 64×64-Raster
+//       × Band × beiden Metriken (vLodDL = vLodD und 1,6·vLodD) × 2 uDitherT-Phasen: der Dither (`lodDitherIGN`) und jedes
+//       keep der Stufen L0/L1 gleichen ihm, Abweichung 0. Ändert das Studio seine Blende, wird die Linse rot.
+//   (2) DIE INVARIANTEN DES GESETZES: Rinde = exakte Partition im Partitions-Band (L1 ∪ Karte im Fern-Band, das Billboard
+//       liegt tiefen-versetzt), Laub = überlappende Rampen (FIX v37: Union lückenlos, ≥ max der Einzel-Deckung, Band-Anfang
+//       ~100 % L0, Band-Ende ~100 % Karte, monoton — auch bei divergenter Blatt-Metrik).
+//   (3) DAS FENSTER DER INSTANZ-WAHL (W7): die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
+//       Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz × Distanz-Intervall,
+//       Dither-Raster 256 — kein Loch; der Überschuss steht als Zahl.
+//   (4) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das echte `_instanzFenster` über eine Birke und eine
+//       Eiche, 0–60 m, je Stufe — keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält, keine
+//       fehlt, die es behält.
+//   (5) DIE ABSENZEN DER BLENDE über den EINEN Helfer `stammLib.fehlt`: kein Maß von der Licht-Kamera, zum Fragment oder
+//       Vertex, keine Stufen-Wahl vom Spieler, kein Ausschnitt über opacityNode, kein Fehler in einer Fenster-Variable,
+//       keine Karte unter Wenn.
+//   --selftest: ein verschobener Dither und eine verschobene Fern-Rampe des Gesetzes, jede Absenz zurück in ihr Glied,
+//   Kanten 1 m nach innen, die Weite der Gestalt als Rand im Fenster — die Linse MUSS jede nennen.
+// Teil (b), headless (Null-Renderer, foundry-ON): die CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System — ein Foundry-Baum wird
+// über die Schwellen geschoben: im Band hält er Slots in BEIDEN Stufen-Gruppen, außerhalb in EXAKT einer, nie 0, die
+// Slot-Bilanz dicht; dazu die Stufen-Wahrheit (Stempel = CPU-Sichthöhe, kein Loch voll und unter Last), der Strauch, die
+// Kette des Gesetzbuchs (Wagen, Tor), der Geister-Baum (Auge, Halt, Schatten-Zwilling), der Kehraus des Wurfs, die
+// Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band) und die laute
+// Blende (ohne uLodD0 bricht der Stoff beim Namen).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
@@ -79,103 +41,54 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-// Kommentare strippen (die V18.267-Falle: erklärende Kommentare zitieren die Formeln wörtlich).
-const stripComments = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
 
-// ===== TEIL 1: die Studio-GLSL-Wahrheit parsen (foundry-core.js + phytogenesis.js, NUR LESEN) =====
-const foundrySrc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
-const phytogenSrc = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
-const anazhSrc = stammLib.text(root);
-const coreSrcRaw = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
-
-function parseStudio() {
-    const out = { ok: true, why: [] };
-    // die _dh-IGN-Koeffizienten (Jimenez interleaved gradient noise):
-    const mDh =
-        /_dh=fract\((\d+\.\d+)\*fract\(dot\(gl_FragCoord\.xy,vec2\((\d+\.\d+),(\d+\.\d+)\)\)\)\+uDitherT\)/.exec(
-            foundrySrc
-        );
-    if (mDh) {
-        out.dhA = mDh[1];
-        out.dhBx = mDh[2];
-        out.dhBy = mDh[3];
-    } else {
-        out.ok = false;
-        out.why.push("_dh-Formel nicht gefunden");
-    }
-    // die Rampen-Struktur (_f1 aus vLodD über LOD_D1−LOD_FADE / LOD_FADE · _f0 aus vLodDL / FADE0):
-    out.rampF1 =
-        /_f1=clamp\(\(vLodD-"\s*\+\s*\(LOD_D1 - LOD_FADE\)\.toFixed\(1\)\s*\+\s*"\)\/"\s*\+\s*LOD_FADE\.toFixed\(1\)/.test(
-            foundrySrc
-        );
-    out.rampF0 =
-        /_f0=clamp\(\(vLodDL-"\s*\+\s*\(LOD_D0 - LOD_FADE0\)\.toFixed\(1\)\s*\+\s*"\)\/"\s*\+\s*LOD_FADE0\.toFixed\(1\)/.test(
-            foundrySrc
-        );
-    out.rampF1o = /_f1o=clamp\(_f1\*2\.0-1\.0,0\.0,1\.0\);/.test(foundrySrc);
-    // die Branch-Zeilen (Laub überlappend · Rinde Partition) EXAKT:
-    out.branchFol =
-        foundrySrc.indexOf(
-            "if(vLod<1.5){ if(clamp(_f0*2.0-1.0,0.0,1.0)>=_dh)discard; } else { if(min(_f0*2.0,1.0)<_dh)discard; if(_f1o>=_dh)discard; } }"
-        ) >= 0;
-    out.branchBark =
-        foundrySrc.indexOf(
-            "if(vLod<1.5){ if(_f0>=_dh)discard; } else { if(_f0<_dh)discard; if(_f1o>=_dh)discard; } }"
-        ) >= 0;
-    // die Config-Zahlen (PORTAL_RENDER_CONFIG.lod — DIESELBEN Zahlen, aus denen der GLSL seine
-    // Konstanten ableitet):
-    const mLod = /lod:\s*\{\s*d0:\s*([\d.]+),\s*d1:\s*([\d.]+),\s*fade:\s*([\d.]+),\s*fade0:\s*([\d.]+),/.exec(
-        foundrySrc
-    );
-    if (mLod) {
-        out.cfg = { d0: +mLod[1], d1: +mLod[2], fade: +mLod[3], fade0: +mLod[4] };
-    } else {
-        out.ok = false;
-        out.why.push("PORTAL_RENDER_CONFIG.lod nicht gefunden");
-    }
-    // die fin-EINblendung des Billboards (phytogenesis _impMat-Fragment):
-    out.finRamp = /fin=clamp\(\(vCD-\(uD1-uFade\)\)\/uFade,0\.0,1\.0\)/.test(phytogenSrc);
-    out.finBranch = /if\(max\(min\(fin\*2\.0,1\.0\),vOcc\)<_dh\)discard/.test(phytogenSrc);
-    return out;
+// ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
+const KLASSE = stammLib.ladeKlasse(root);
+const A = KLASSE.AnazhRealm;
+const CORE = KLASSE.ctx.__phytoCore;
+const CFG = vm.runInContext("PORTAL_RENDER_CONFIG.lod", KLASSE.ctx);
+// Die Bindung des Wirts (foundry-bruecke: LOD_* aus PORTAL_RENDER_CONFIG.lod, die Uniform-Sätze), dann der Fragment-Satz,
+// den `injectWind` einsetzt — die Blende vom `if(uLodMaskOn` bis zu ihrer Klammer als JS: [keep, _dh].
+vm.runInContext(
+    "var _lodU = {}, _folDepthU = {}, LOD_D0 = PORTAL_RENDER_CONFIG.lod.d0, LOD_D1 = PORTAL_RENDER_CONFIG.lod.d1, " +
+        "LOD_FADE = PORTAL_RENDER_CONFIG.lod.fade, LOD_FADE0 = PORTAL_RENDER_CONFIG.lod.fade0;",
+    KLASSE.ctx
+);
+function studioBlende(laub) {
+    const mat = {};
+    KLASSE.ctx.injectWind(mat, laub, false, false);
+    const sh = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "void main() {" };
+    mat.onBeforeCompile(sh);
+    const f = sh.fragmentShader;
+    const a = f.indexOf("if(uLodMaskOn");
+    let e = f.indexOf("{", a);
+    for (let tiefe = 0; a >= 0 && e < f.length; e++) if ((tiefe += f[e] === "{" ? 1 : f[e] === "}" ? -1 : 0) === 0) break;
+    if (a < 0 || e >= f.length) throw new Error("die Studio-Blende fehlt im Fragment-Satz von injectWind");
+    const js = f
+        .slice(a, e + 1)
+        .replace(/\bfloat\s+/g, "var ")
+        .replace(/\bdiscard\b/g, "return [false, _dh]")
+        .replace(/gl_FragCoord\.xy/g, "FC")
+        .replace(/\bvec2\(/g, "V(");
+    const glsl = "const uLodMaskOn = 1, V = (x, y) => [x, y], dot = (p, q) => p[0] * q[0] + p[1] * q[1], fract = (v) => v - Math.floor(v), ";
+    const glsl2 = "clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi), min = Math.min, max = Math.max;\n";
+    return new Function("FC", "uDitherT", "vLod", "vLodD", "vLodDL", glsl + glsl2 + js + "\nreturn [true, _dh];");
 }
+const STUDIO = { rinde: studioBlende(false), laub: studioBlende(true) };
 
-// ===== TEIL 2: der Referenz-Evaluator — aus GENAU den geparsten GLSL-Werten gebaut =====
-function refIGN(P, x, y, t) {
-    const fr = (v) => v - Math.floor(v);
-    return fr(+P.dhA * fr(x * +P.dhBx + y * +P.dhBy) + t);
-}
-// stage: 0 = Stufe L0 (GLSL vLod<1.5-Zweig) · 1 = Stufe L1 (else) · 2 = Impostor (fin).
-function refKeep(P, stage, foliage, dS, dL, dh) {
-    const c01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-    const f1 = c01((dS - (P.cfg.d1 - P.cfg.fade)) / P.cfg.fade);
-    const f0 = c01((dL - (P.cfg.d0 - P.cfg.fade0)) / P.cfg.fade0);
-    const f1o = c01(f1 * 2.0 - 1.0);
-    if (stage === 2) return Math.min(f1 * 2.0, 1.0) >= dh; // fin (vOcc = 0)
-    if (stage === 0) return foliage ? c01(f0 * 2.0 - 1.0) < dh : f0 < dh;
-    const fin = foliage ? Math.min(f0 * 2.0, 1.0) >= dh : f0 >= dh;
-    return fin && f1o < dh;
-}
-
-// Das synthetische Dither-Raster: 64×64 Fragment-Zentren (gl_FragCoord = Pixel + 0.5).
+// Das synthetische Dither-Raster: 64×64 Fragment-Zentren (gl_FragCoord = Pixel + 0.5), der Dither des Gesetzes gegen den des
+// Studios.
 const RAS = 64;
-function buildRaster(core, P, t) {
-    const N = RAS * RAS;
-    const dh = new Float64Array(N);
+function buildRaster(core, t) {
+    const dh = new Float64Array(RAS * RAS);
     let mismatch = 0;
     for (let py = 0; py < RAS; py++)
         for (let px = 0; px < RAS; px++) {
-            const x = px + 0.5,
-                y = py + 0.5;
-            const a = core.lodDitherIGN(x, y, t);
-            const b = refIGN(P, x, y, t);
-            if (a !== b) mismatch++;
+            const a = core.lodDitherIGN(px + 0.5, py + 0.5, t);
+            if (a !== STUDIO.rinde([px + 0.5, py + 0.5], t, 1, 0, 0)[1]) mismatch++;
             dh[py * RAS + px] = a;
         }
-    return { dh, mismatch };
+    return { dh, t, mismatch };
 }
 
 // Der Band-Sweep: Distanz-Samples über das ganze Übergangs-Band (+ exakte Kanten).
@@ -184,22 +97,15 @@ function bandSamples(cfg) {
     const lo = cfg.d0 - cfg.fade0 - 4;
     const hi = cfg.d1 + 6;
     for (let d = lo; d <= hi; d += 0.5) out.push(d);
-    for (const e of [
-        cfg.d0 - cfg.fade0,
-        cfg.d0 - cfg.fade0 / 2,
-        cfg.d0,
-        cfg.d1 - cfg.fade,
-        cfg.d1 - cfg.fade / 2,
-        cfg.d1,
-    ])
+    for (const e of [cfg.d0 - cfg.fade0, cfg.d0 - cfg.fade0 / 2, cfg.d0, cfg.d1 - cfg.fade, cfg.d1 - cfg.fade / 2, cfg.d1])
         if (!out.includes(e)) out.push(e);
     out.sort((a, b) => a - b);
     return out;
 }
 
-// Kern-Vergleich + Invarianten auf einem Raster: gibt Zähler zurück (für Selbst-Test wiederverwendbar).
-function evaluate(core, P, raster) {
-    const cfg = P.cfg;
+// Gesetz gegen Studio + Invarianten auf einem Raster: gibt Zähler zurück (für den Selbsttest wiederverwendbar). Die Stufe
+// L0 ist im Studio vLod 1 (der vLod<1.5-Zweig), die L1 vLod 2.
+function evaluate(core, cfg, raster) {
     const dists = bandSamples(cfg);
     const N = raster.dh.length;
     const res = {
@@ -218,34 +124,30 @@ function evaluate(core, P, raster) {
     let prevC0 = Infinity,
         prevC2 = -Infinity;
     for (const d of dists) {
-        // RINDE (aH0L == aH0 → dL == dS) + Impostor auf derselben Skelett-Metrik:
         const f1o = Math.max(0, Math.min(1, ((d - (cfg.d1 - cfg.fade)) / cfg.fade) * 2 - 1));
         const inPartition = f1o <= 0;
         if (inPartition) res.partitionSamples++;
-        // LAUB-Deckungs-Zähler (dL == dS) + per-Distanz-Loch-Zähler:
         let c0 = 0,
             c1 = 0,
             c2 = 0,
             holeFol = 0;
         for (let i = 0; i < N; i++) {
             const dh = raster.dh[i];
-            // beide Metriken: gleich (Rinde/kleiner Baum) + divergent (Blatt-Kappung, dL = 1.6·dS)
+            const FC = [(i % RAS) + 0.5, Math.floor(i / RAS) + 0.5];
             for (const foliage of [false, true]) {
+                const studio = foliage ? STUDIO.laub : STUDIO.rinde;
                 for (const dL of foliage ? [d, d * 1.6] : [d]) {
                     const k0 = core.lodCrossfadeMask(d, dh, cfg, 0, foliage, dL).keep;
                     const k1 = core.lodCrossfadeMask(d, dh, cfg, 1, foliage, dL).keep;
                     const k2 = core.lodCrossfadeMask(d, dh, cfg, 2, foliage, dL).keep;
-                    if (k0 !== refKeep(P, 0, foliage, d, dL, dh)) res.keepMismatch++;
-                    if (k1 !== refKeep(P, 1, foliage, d, dL, dh)) res.keepMismatch++;
-                    if (k2 !== refKeep(P, 2, foliage, d, dL, dh)) res.keepMismatch++;
+                    if (k0 !== studio(FC, raster.t, 1, d, dL)[0]) res.keepMismatch++;
+                    if (k1 !== studio(FC, raster.t, 2, d, dL)[0]) res.keepMismatch++;
                     if (!foliage) {
-                        // (1) RINDE: exakte Partition im Partitions-Band, Union im Fern-Band.
                         if (inPartition) {
                             if ((k0 ? 1 : 0) + (k1 ? 1 : 0) !== 1) res.barkXorFail++;
                         } else if (!k1 && !k2) res.barkFarHole++;
                         if (!k0 && !k1 && !k2) res.barkUnionHole++;
                     } else {
-                        // (2) LAUB: Union lückenlos (überlappende Rampen — FIX v37).
                         if (!k0 && !k1 && !k2) {
                             if (dL === d) {
                                 res.folHole++;
@@ -261,10 +163,8 @@ function evaluate(core, P, raster) {
                 }
             }
         }
-        // Union ≥ max(Einzel-Deckung) an DIESEM Band-Punkt (per-Distanz, nicht akkumuliert).
         const union = N - holeFol;
         if (union < Math.max(c0, c1, c2)) res.folUnionLtMax++;
-        // Monotonie: L0-Deckung fällt, Impostor-Deckung steigt (exakt, integer-zählbar).
         if (c0 > prevC0 || c2 < prevC2) res.folMonotonic = false;
         prevC0 = c0;
         prevC2 = c2;
@@ -274,33 +174,10 @@ function evaluate(core, P, raster) {
     return res;
 }
 
-function loadCore(src, label) {
-    const sandbox = {};
-    sandbox.self = sandbox;
-    vm.runInContext(src, vm.createContext(sandbox), { filename: label });
-    return sandbox.self.__phytoCore;
-}
-
-// ===== (6) DAS FENSTER DER INSTANZ-WAHL — die Kanten aus dem Gesetz, kein Loch je Stufe =====
-// Die zwei reinen Methoden des Stamms (`static _blendeKanten`, `static _blendeBehaelt`) als Funktionen; `verschiebe`
-// fälscht die Kanten (Selbsttest).
+// ===== (3) DAS FENSTER DER INSTANZ-WAHL — die Kanten aus dem Gesetz, kein Loch je Stufe =====
+// Die zwei reinen Methoden der Klasse (`static _blendeKanten`, `static _blendeBehaelt`); `verschiebe` fälscht die Kanten
+// (Selbsttest).
 function fensterLinse(core, cfgs, verschiebe) {
-    const body = (re) => {
-        const b = fnBody(anazhSrc, re);
-        if (!b) throw new Error("Fenster-Methode nicht gefunden: " + re);
-        return b.slice(1, -1);
-    };
-    const kanten = new Function("gesetz", "d0", "d1", "fade", "fade0", body(/static _blendeKanten\(gesetz, d0, d1, fade, fade0\)\s*/));
-    const behaelt = new Function(
-        "K",
-        "stufe",
-        "dSmin",
-        "dSmax",
-        "dLmin",
-        "dLmax",
-        "verdeckt",
-        body(/static _blendeBehaelt\(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt\)\s*/)
-    );
     const gesetz = core.lodCrossfadeMask;
     const out = { proben: 0, loecher: 0, ueberschuss: 0, jeStufe: {}, beispiel: null };
     // die Wahrheit an EINER Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
@@ -314,7 +191,7 @@ function fensterLinse(core, cfgs, verschiebe) {
         return false;
     };
     for (const cfg of cfgs) {
-        const K = kanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
+        const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
         if (verschiebe) verschiebe(K);
         const dMax = 1.6 * cfg.d1 + cfg.fade;
         for (const stufe of [1, 2, 3, "karte"])
@@ -329,7 +206,7 @@ function fensterLinse(core, cfgs, verschiebe) {
                                 const d = dSmin + ((dSmax - dSmin) * j) / 16;
                                 wahr = zeigt(stufe, d, q * d, cfg, laub);
                             }
-                            const fenster = behaelt(K, stufe, dSmin, dSmax, q * dSmin, q * dSmax, false);
+                            const fenster = A._blendeBehaelt(K, stufe, dSmin, dSmax, q * dSmin, q * dSmax, false);
                             out.proben++;
                             const js = out.jeStufe[stufe] || (out.jeStufe[stufe] = { proben: 0, loecher: 0, ueberschuss: 0 });
                             js.proben++;
@@ -344,39 +221,21 @@ function fensterLinse(core, cfgs, verschiebe) {
                             }
                         }
         // die verdeckte Karte blendet voll: ihr Fenster behält sie überall
-        if (!behaelt(K, "karte", 0, 0, 0, 0, true)) out.loecher++;
+        if (!A._blendeBehaelt(K, "karte", 0, 0, 0, 0, true)) out.loecher++;
     }
     return out;
 }
 
-// ===== (8) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
-// `_instanzFenster(g, i, L)` aus dem Stamm (`quelle` = die kommentar-gestrippte Quelle, im Selbsttest verfälscht); `this`
-// trägt nur, was eine alte Fassung las (die Weite der Gestalt, die Krone der Birke 10 m), `AnazhRealm` die reinen Methoden.
-function stufeOhneBildLinse(core, cfg, quelle) {
-    const body = (re) => {
-        const b = fnBody(quelle, re);
-        if (!b) throw new Error("Methode nicht gefunden: " + re);
-        return b.slice(1, -1);
-    };
-    const kanten = new Function("gesetz", "d0", "d1", "fade", "fade0", body(/static _blendeKanten\(gesetz, d0, d1, fade, fade0\)\s*/));
-    const behaelt = new Function(
-        "K",
-        "stufe",
-        "dSmin",
-        "dSmax",
-        "dLmin",
-        "dLmax",
-        "verdeckt",
-        body(/static _blendeBehaelt\(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt\)\s*/)
-    );
-    const AR = { _blendeBehaelt: behaelt, PASS_WAHL: { pflanzeRandM: 2 } };
-    const fenster = new Function("AnazhRealm", "g", "i", "L", body(/^ {4}_instanzFenster\([^)]*\) \{/m));
+// ===== (4) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
+// `fenster(g, i, L)` ist das echte `_instanzFenster` (im Selbsttest gewickelt); `this` trägt nur, was eine alte Fassung las
+// (die Weite der Gestalt, die Krone der Birke 10 m).
+const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
+function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, L)) {
     const gesetz = core.lodCrossfadeMask;
-    const K = kanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
+    const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
     const perf = 1.21,
         ref = 12;
     const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
-    const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
     // die Wahrheit an der Instanz-Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
     const zeigt = (stufe, dS, dL) => {
         for (let k = 0; k < 256; k++) {
@@ -408,7 +267,7 @@ function stufeOhneBildLinse(core, cfg, quelle) {
                 };
                 const dS = d * perf * Math.min(ref / art.h, 1),
                     dL = d * perf * Math.min(ref / hL, 1);
-                const zeichnet = fenster.call(stumpf, AR, g, 0, L);
+                const zeichnet = fenster(g, 0, L);
                 const wahr = zeigt(stufe, dS, dL);
                 // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
                 // um die Instanz ist die Toleranz des Gesetzes, kein Bild ohne Stufe
@@ -428,67 +287,30 @@ function stufeOhneBildLinse(core, cfg, quelle) {
     return out;
 }
 
-// DAS MASS DER BLENDE (statisch, kommentar-gestrippt): die Instanz, nie das Fragment → Verstöße mit Namen.
-function massDerBlende(srcNC) {
-    const v = [];
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (/positionWorld\.[xz]/.test(maske)) v.push("die Foundry-Maske misst zum Fragment (positionWorld)");
-    if (!/const _mitte = this\._instanzMitteNode\(T\);/.test(maske)) v.push("die Foundry-Maske liest den Ursprung der Instanz nicht");
-    if (!/const _mitte = this\._instanzMitteNode\(_Tl\);/.test(srcNC) || /_cam\.x\.sub\(_pw\.x\)/.test(srcNC))
-        v.push("die Grammatik-Blattmaske misst zum Vertex statt zur Instanz");
-    if (!/impostor: true,\s*distNode: _dA,/.test(srcNC)) v.push("die Karte misst zum Fragment ihres Quads statt zu ihrem Anker");
-    const fen = fnBody(srcNC, /^ {4}_instanzFenster\([^)]*\) \{/m) || "";
-    if (!fen) v.push("_instanzFenster fehlt");
-    else if (/weite|_instanzWeite|pflanzeRandM|ak\[i \* 4 \+ 1\]/.test(fen)) v.push("das Fenster der Instanz-Wahl misst die Weite der Gestalt");
-    if (!/if \(assignBuffer && builder\) builder\.__anazhInstanzMatrix = n;/.test(srcNC))
-        v.push("der Haken legt die Matrix der Instanz nicht am Builder ab");
-    // die Kette des Ursprungs (K20-N1): `_instanzMitteNode` → der Anker der EINEN Naht `_weltNaht` (Objekt × Instanz-Matrix,
-    // Spalte 3) → `_instanzMatrixNode` liest die Matrix, die der Haken am Builder ablegt
-    const mitte = fnBody(srcNC, /_instanzMitteNode\(T\)\s*/) || "";
-    const naht = fnBody(srcNC, /^ {4}_weltNaht\(T\)\s*/m) || "";
-    const matrix = fnBody(srcNC, /^ {4}_instanzMatrixNode\(T\)\s*/m) || "";
-    if (
-        !/this\._weltNaht\(T\)\.anker/.test(mitte) ||
-        !/modelWorldMatrix\.mul\(this\._instanzMatrixNode\(T\)\)/.test(naht) ||
-        !/anker: Mw\.element\(3\)/.test(naht) ||
-        !/builder\.__anazhInstanzMatrix/.test(matrix)
-    )
-        v.push("der Ursprung der Instanz liest nicht die Instanz-Matrix (Spalte 3) in der Welt");
-    return v;
-}
-
-// DIE LAUTE BLENDE (statisch, kommentar-gestrippt): wer im Fehlerfall still weiterzeichnet → Verstöße mit Namen.
-function stilleBlende(srcNC) {
-    const v = [];
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
-    else {
-        if (/return null/.test(maske)) v.push("die Maske gibt still null zurück (der Stoff zeichnet ohne Maske)");
-        const fang = maske.slice(maske.lastIndexOf("catch ("));
-        if (!/catch \(/.test(maske) || !/throw /.test(fang)) v.push("der catch der Maske schluckt den Fehler");
-    }
-    if (/__foundryCrossfadeError|__lodCrossfadeError/.test(srcNC)) v.push("ein Fehler der Blende landet still in einer Fenster-Variable");
-    const bruch = fnBody(srcNC, /_blendeBruch\(was\)\s*/) || "";
-    // die Blende bricht über den EINEN Stoff-Bruch (K22): ERROR mit dem Glied beim Namen über den EINEN Melder
-    // (`_bruchMelden`, Nachbesserung 3: eine neue Meldung sofort ERROR, dieselbe wieder mit Zähler), die Marke `blende` obendrauf
-    const stoffBruch = fnBody(srcNC, /\n {4}_stoffBruch\([^)]*\) \{/) || "";
-    const melder = fnBody(srcNC, /\n {4}_bruchMelden\([^)]*\) \{/) || "";
-    if (
-        !/this\._stoffBruch\(/.test(bruch) ||
-        !/e\.blende = true/.test(bruch) ||
-        !/this\._bruchMelden\(text\);/.test(stoffBruch) ||
-        !/this\.log\(text, "ERROR"\);/.test(melder) ||
-        /"(INFO|WARN|WARNING)"/.test(melder)
-    )
-        v.push("_blendeBruch meldet nicht laut beim Namen");
-    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
-    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
-    if (/if \(_keepX\)/.test(stoff)) v.push("der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))");
-    if (!/else\s+throw this\._blendeBruch\(/.test(stoff) || /if \(kanal\)/.test(stoff)) v.push("der Baum-Stoff ohne Kanal verliert die Maske still");
-    if (/if \(_keepFin\)/.test(srcNC)) v.push("die Karte zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepFin))");
-    if (!/throw this\._stoffBruch\("die Karten-Verdrahtung", _e\);/.test(srcNC)) v.push("der catch der Karten-Verdrahtung schluckt den Bruch der Blende");
-    if (!/throw this\._blendeBruch\("die Blatt-Karte: es fehlt "/.test(srcNC)) v.push("die Blatt-Karte überspringt die Blende still");
-    return v;
+// ===== (5) DIE ABSENZEN DER BLENDE — [Name, Glied (null = der ganze Stamm), Anti-Muster, Täter für den Selbsttest] =====
+const ABSENZEN = [
+    ["SCHATTEN: die Foundry-Maske misst nie von cameraPosition (im Schattenpass die Licht-Kamera)", "_lodCrossfadeMaskNode", /cameraPosition/, "T.cameraPosition"],
+    [
+        "SCHATTEN: kein Foundry-Stoff schneidet über opacityNode aus (der r184-Schattenpass liest ihn nie; nur die Blende multipliziert)",
+        "_foundryTreeMaterial",
+        /mat\.opacityNode = (?!mat\.opacityNode\.mul\(_keepX\);)/,
+        "mat.opacityNode = TSL.float(1)",
+    ],
+    ["MASS: die Foundry-Maske misst nie zum Fragment (positionWorld.x/z)", "_lodCrossfadeMaskNode", /positionWorld\.[xz]/, "T.positionWorld.x"],
+    ["MASS: keine Blattmaske misst zum Vertex (_cam.x.sub(_pw.x))", null, /_cam\.x\.sub\(_pw\.x\)/, "_cam.x.sub(_pw.x)"],
+    [
+        "AUGE: keine Stufen-Wahl misst vom Spieler statt vom Auge der Maske",
+        ["_tickArchitectureLOD", "_switchArchitectureLOD", "_foundryLodForEntry", "_updateFoundryLodBand"],
+        /playerMesh/,
+        "this.state.playerMesh",
+    ],
+    ["LAUT: kein Fehler der Blende landet still in einer Fenster-Variable", null, /__foundryCrossfadeError|__lodCrossfadeError/, "window.__lodCrossfadeError = 1"],
+    ["LAUT: die Karte zeichnet nie ohne Maske weiter (if (_keepFin))", null, /if \(_keepFin\)/, "if (_keepFin) {}"],
+];
+// der Täter am Kopf seines (ersten) Glieds — im ganzen Stamm am Kopf der Maske
+function mitTaeter(glied, taeter) {
+    const g = [].concat(glied || "_lodCrossfadeMaskNode")[0];
+    return (t) => t.replace(new RegExp("(\\n {4}" + g + "\\([^)]*\\)\\s*\\{)"), "$1 " + taeter + ";");
 }
 
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
@@ -1439,6 +1261,20 @@ async function runPartB() {
         }
         st.lodUniforms = alt;
         r._foundryMats = mats;
+        // DER SPIEGEL DER BLENDE (W5.4): die Masken-Uniformen tragen je Bild das EINE CPU-Band (LOD_DISTANCES) — eine Änderung
+        // des Bands steht nach dem nächsten Bild (`_loopRender`) in der Maske, vorher nicht (die Gegenprobe im selben Lauf).
+        const D = r.constructor.LOD_DISTANCES;
+        const u = st.lodUniforms;
+        const band = () => [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() === [D.thresh01, D.thresh12, D.fade, D.fade0].join();
+        const d0 = D.thresh01;
+        res.spiegel = { seed: band() };
+        D.thresh01 = d0 + 1.5;
+        res.spiegel.vorBild = band();
+        r._loopRender();
+        res.spiegel.nachBild = band();
+        D.thresh01 = d0;
+        r._loopRender();
+        res.spiegel.zurueck = band();
         return res;
     });
 
@@ -1447,404 +1283,42 @@ async function runPartB() {
     return { out, pageErrors, attrWand, gnade, kehraus, laut };
 }
 
-// DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
-function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
-    const v = [];
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
-    else {
-        if (/cameraPosition/.test(maske)) v.push("die Foundry-Maske misst von cameraPosition (im Schattenpass die Licht-Kamera)");
-        if (!/_lu\.uLodAuge/.test(maske)) v.push("die Foundry-Maske liest das Auge (uLodAuge) nicht");
-    }
-    if (!/const _cam = _lu\.uLodAuge;/.test(srcNC)) v.push("die Grammatik-Blattmaske misst nicht vom Auge");
-    // der Frame-Spiegel liest das EINE Auge der Stufen (`_lodAuge`, K36), und das ist die Haupt-Kamera
-    const augeQuelle = fnBody(srcNC, /\n {4}_lodAuge\([^)]*\)\s*\{/) || "";
-    if (
-        !/uLodAuge: _T\.uniform\(/.test(srcNC) ||
-        !/_lu\.uLodAuge\.value\.copy\(this\._lodAuge\(\)\)/.test(srcNC) ||
-        !/const cam = this\.state\.camera;/.test(augeQuelle) ||
-        !/cam\.getWorldPosition\(/.test(augeQuelle)
-    )
-        v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
-    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
-    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
-    else {
-        // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Schalen trägt ihn in colorNode.a, K28) — nur die
-        // Blende multipliziert einen schon gesetzten Kanal
-        const erlaubt = new Set(["mat.opacityNode.mul(_keepX)"]);
-        for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))
-            if (!erlaubt.has(m[1].trim())) v.push("werfender Stoff schneidet über opacityNode aus: " + m[1].trim());
-    }
-    const flat = fnBody(srcNC, /_foundryFlattenFor\(entry, preset, lodOverride\)\s*/) || "";
-    if (!/geom: this\._foundrySchattenGeom\(lf\)/.test(flat))
-        v.push("der Schatten-Zwilling wirft mit der L1-Gestalt (L1-Stempel: blendet nah aus)");
-    const gestalt = fnBody(srcNC, /_foundrySchattenGeom\(lf\)\s*/) || "";
-    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(3\), 1\)\s*\)/.test(gestalt))
-        v.push("die Zwillings-Gestalt trägt nicht den Nah-Stempel (aLodLevel 3: wirft für L0 und L1, blendet zur Karte aus)");
-    // EIN WERFER JE GESTALT (W6): die Wurf-Quelle wirft über die Zwillings-Leaves, die L0 übernimmt DIESELBEN Objekte.
-    // Die Kosten-Regel (1110-9, `_wurfVonBilligerer`) ist der zweite Term: die eigene Stufe wirft nur, wenn die Regel SIE
-    // wählt — und dann reist kein Zwilling mit (`schatten = null`), sonst würfen beide.
-    if (!/const castsShadow = \(wurf === lod && !zwillingsQuelle\) \|\| \(wurfKosten !== null && wurfKosten\.von === lod\);/.test(flat))
-        v.push("die Wurf-Quelle (L1) wirft über ihre Teile UND als Zwilling der L0 — zwei Gruppen je Gestalt in jeder Kaskade");
-    if (!/if \(von !== "zwilling"\) schatten = null;/.test(flat))
-        v.push("die Kosten-Regel lässt die eigene Stufe werfen UND den Zwilling mitreisen — zwei Werfer je Gestalt");
-    if (!/for \(const lf of schatten\.leaves\) if \(lf\.shadowTwin\) leaves\.push\(lf\);/.test(flat))
-        v.push("die L0 baut einen eigenen Zwilling statt die Zwillings-Leaves der Wurf-Stufe zu tragen");
-    const band = fnBody(srcNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
-    if (!/this\._archInstanceAdd\(entry, this\._bandOhneZwilling\(flat, primFlat\), \{ band: true/.test(band))
-        v.push("der Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
-    if (!/const pf = pf0 && pf0\.instanceable \? this\._bandOhneZwilling\(pf0, foundryFlat\) : pf0;/.test(srcNC))
-        v.push("der gestreute Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
-    // DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz E1): die Stufe mit Wurf-Teil wirft NUR ihr Teil "schatten" — es ist
-    // selbst der Zwilling (nie im Hauptbild), jedes andere Teil wirft nicht; fehlt es, ist das KERN-PFLICHT; es zeichnet mit
-    // dem EINEN Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode — der Schattenpass liest opacityNode nie);
-    // der drawRange-Vorsatz (W6) ist gefallen — und die Wurf-Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
-    if (!/if \(lf\.teil !== wurfTeil\) continue;/.test(flat) || !/z\.geom = this\._foundrySchattenGeom\(z\);/.test(flat))
-        v.push("der Schatten-Teil ist nicht selbst der Zwilling (er zeichnete im Hauptbild, oder jedes Teil würfe)");
-    // der Wähler ist fail-closed: eine Wurf-Zeile ohne Teil-Namen bricht KERN-PFLICHT (sonst träfe undefined === undefined
-    // jedes Leaf ohne Teil — die ganze Stufe würfe still als Zwilling)
-    if (!/if \(wurf && !\(typeof wurfTeil === "string" && wurfTeil\)\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
-        v.push("eine Wurf-Zeile ohne Teil-Namen macht die ganze Stufe still zum Zwilling (undefined === undefined) statt KERN-PFLICHT");
-    if (!/if \(!hat\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
-        v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
-    if (/lf\.wurf|__wurf/.test(flat + gestalt))
-        v.push("der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz");
-    const stoffS = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
-    if (!/kind === "schatten"[\s\S]*?mat\.colorNode = TSL\.vec4\(TSL\.vec3\(0\.0\), atl \? TSL\.max\(deckt, atl\.a\) : deckt\);/.test(stoffS))
-        v.push("der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus");
-    const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\([^)]*\)\s*\{/) || "";
-    if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
-        v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
-    // der Texel der KASKADE (SCHATTEN_KASKADE.texelM[0]) — nie das erste texelM des Stamms (die Laub-Streu trägt eines)
-    const tex = stammLib.treffer(srcNC, null, /SCHATTEN_KASKADE = Object\.freeze\(\{\s*texelM: Object\.freeze\(\[([\d.]+),/);
-    const dm = /wurf: \{ durchmesserM: ([\d.]+),/.exec(fcSrc);
-    if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
-        v.push(
-            `die Wurf-Grenze des Studios (${dm ? dm[1] : "—"} m) ist nicht der Kaskaden-Texel k0 der Welt (${tex ? tex[1] : "—"} m)`
-        );
-    const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
-    if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
-    // das Eigentum des Leafs (Gegenprüfung S3 R2): der Kehraus einer Gruppe räumt nur ihre eigenen Leaves — die L0 trägt
-    // die Zwillings-Leaves ihrer Wurf-Stufe, deren Gestalt fällt mit der Wurf-Stufe (Teil b prüft es am lebenden Baum)
-    if (!/if \(lf\._srcGroup !== g\) continue;/.test(weg))
-        v.push("der Kehraus räumt Leaves fremder Gruppen (die L0 gibt die Wurf-Gestalt der lebenden L1 frei)");
-    // DAS WURF-RECHT DES TEILS (Integration W5 × W6): der Zwilling wirft nach `teilWirft` (Lichtquelle, Durchsicht,
-    // Fell-Schale nie) — `lf.castShadow` ist bei einer Zwillings-Quelle false, Bäume und Sträucher würfen still keinen.
-    // beide Zwillings-Wege (der Schatten-Teil S3 und der ganze Zwilling ohne Wurf-Teil) werfen nach dem Wurf-Recht
-    if (
-        !/teilWirft: child\.castShadow !== false,/.test(flat) ||
-        (flat.match(/castShadow: lf\.teilWirft,\s*shadowTwin: true/g) || []).length < 2
-    )
-        v.push("der Schatten-Zwilling wirft nach lf.castShadow statt nach dem Wurf-Recht seines Teils (teilWirft) — Bäume und Sträucher werfen still nicht");
-    if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
-        v.push("der ganze Zwilling (ohne Wurf-Teil) erbt das Eigentum der Quell-Geometrie (doppelter Dispose)");
-    return v;
-}
-
-// DER GEISTER-BAUM (statisch, K36): die Mitgliedschaft folgt der Maske. (1) EIN Auge: der Takt misst die Stufen-Wahl beider
-// Bestände (Architektur und Streu) von `_lodAuge`, die Maske spiegelt dasselbe Auge, keine Wahl liest den Spieler. (2) Der
-// HALT: die Band-Pflege urteilt ihn, der Slot-Stempel trägt ihn im Vorzeichen (aH0L der 3D-Stufen, aKarte.w der Karte), die
-// Maske und das Fenster der Instanz-Wahl lesen ihn. → Liste der Verstöße mit Namen.
-function geisterQuelle(srcNC) {
-    const v = [];
-    const sched = fnBody(srcNC, /\n {4}_runFrameScheduler\([^)]*\)\s*\{/) || "";
-    if (!/const auge = this\._lodAuge\(\);/.test(sched) || !/this\._tickArchitectureLOD\(5, auge\);/.test(sched))
-        v.push("der Takt reicht der Architektur-Wahl nicht das Auge (_lodAuge)");
-    if (!/this\._tickScatterLod\(auge, /.test(sched)) v.push("der Takt reicht der Streu-Wahl nicht das Auge (_lodAuge)");
-    // das Auge reist mit dem Sprung des Spielers und steht vor der ersten Setzung im Kopf; das Rig setzt es je Bild (K36 N1)
-    const augeQ = fnBody(srcNC, /\n {4}_lodAuge\([^)]*\)\s*\{/) || "";
-    if (!/out\.add\(pm\)\.sub\(r\.pl\)/.test(augeQ)) v.push("_lodAuge trägt den Sprung des Spielers nicht (die Wahl vom alten Ort)");
-    if (!/r\.stand === 1\) return pm \? out\.set\(pm\.x, pm\.y \+ AnazhRealm\.EGO_AUGE_M, pm\.z\)/.test(augeQ))
-        v.push("_lodAuge steht vor der ersten Setzung nicht im Kopf des Spielers (die ungesetzte Kamera wählt)");
-    const rig = fnBody(srcNC, /\n {4}_loopCamera\([^)]*\)\s*\{/) || "";
-    if (!/this\._lodAugeGesetzt\(\);/.test(rig)) v.push("das Rig (_loopCamera) setzt das Auge der Stufen nicht");
-    const pass = fnBody(srcNC, /\n {4}_scatterPass\([^)]*\)\s*\{/) || "";
-    if (!/const auge = this\._lodAuge\(\)/.test(pass) || !/this\._chooseLODForDistance\(distAuge, undefined, visH\)/.test(pass))
-        v.push("die Geburt der Streu (_scatterPass) wählt die Stufe nicht vom Auge");
-    for (const [name, re] of [
-        ["_tickArchitectureLOD", /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/],
-        ["_switchArchitectureLOD", /\n {4}_switchArchitectureLOD\([^)]*\)\s*\{/],
-        ["_foundryLodForEntry", /\n {4}_foundryLodForEntry\([^)]*\)\s*\{/],
-        ["_updateFoundryLodBand", /\n {4}_updateFoundryLodBand\([^)]*\)\s*\{/],
-    ]) {
-        const b = fnBody(srcNC, re) || "";
-        if (!b) v.push(name + " fehlt");
-        else if (/playerMesh/.test(b)) v.push(name + " misst vom Spieler statt vom Auge der Maske");
-    }
-    if (!/_lu\.uLodAuge\.value\.copy\(this\._lodAuge\(\)\)/.test(srcNC)) v.push("die Maske spiegelt nicht das EINE Auge (_lodAuge)");
-    const band = fnBody(srcNC, /\n {4}_updateFoundryLodBand\([^)]*\)\s*\{/) || "";
-    if (!/this\._lodHaltSetzen\(entry, flat === null \? "wartet" : true\);/.test(band))
-        v.push("die Band-Pflege urteilt keinen Halt, wo der Partner fehlt (_lodHaltSetzen)");
-    const voll = fnBody(srcNC, /\n {4}_lodSlotVoll\([^)]*\)\s*\{/) || "";
-    if (!/entry\._lodHalt === true/.test(voll)) v.push("_lodSlotVoll kennt den Halt der Primär-Stufe nicht");
-    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\([^)]*\)\s*\{/) || "";
-    if (!/_h0LTpl \* s \* \(voll \? -1 : 1\)/.test(stempel)) v.push("der Slot-Stempel trägt den Halt nicht im Vorzeichen von aH0L");
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (!/_aH0L\.abs\(\)/.test(maske) || !/\.max\(_halt\)/.test(maske)) v.push("die Stufen-Maske liest den Halt nicht (|aH0L|, max(_halt))");
-    const fen = fnBody(srcNC, /^ {4}_instanzFenster\([^)]*\) \{/m) || "";
-    if (!/hL < 0\)/.test(fen)) v.push("das Fenster der Instanz-Wahl verwirft die haltende Stufe (aH0L < 0)");
-    const streu = fnBody(srcNC, /\n {4}_tickScatterLod\([^)]*\)\s*\{/) || "";
-    if (!/this\._streuBandWechsel\(/.test(streu)) v.push("die Streu pflegt ihr Band nicht (_streuBandWechsel)");
-    return v;
-}
-
-// DIE PERF-WAHRHEIT (statisch): der Perf-Streck der Wahrnehmungs-Distanz hat ZWEI Leser und EINE Zahl — die CPU-
-// Stufenwahl (_lodPerceptionDistance → _lodPerfMul) und jede Shader-Maske (Auge-Distanz × uLodPerf, je Frame aus
-// _lodPerfMul gespiegelt). Liest nur die CPU ihn, legt sie unter Last eine Stufe um, die die Maske noch ausblendet.
-// Dazu die Sichthöhe: die CPU liest den Foundry-Stempel (_foundrySichtHoehe), den die Maske liest.
-function perfWahrheit(srcNC) {
-    const v = [];
-    const pd = fnBody(srcNC, /_lodPerceptionDistance\(rawDist, visHeight\)\s*/) || "";
-    if (!/this\._lodPerfMul\(\)/.test(pd)) v.push("_lodPerceptionDistance liest den Perf-Streck nicht aus _lodPerfMul");
-    if (!/_lu\.uLodPerf\.value = this\._lodPerfMul\(\);/.test(srcNC))
-        v.push("uLodPerf wird nicht je Frame aus _lodPerfMul gespiegelt");
-    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    if (!/const _cd = T\.length\([\s\S]*?\)\.mul\(\s*_lu\.uLodPerf\s*\);/.test(maske))
-        v.push("die Stufen-Maske misst die Auge-Distanz ohne uLodPerf");
-    if (!/let _vCD = _dist\.mul\(_lu\.uLodPerf\);/.test(maske)) v.push("die Billboard-Maske misst ohne uLodPerf");
-    // Der Sichthöhen-Zweig des Billboards rechnet AUF der gestreckten Distanz (bis 04.10. ersetzte er sie durch die rohe).
-    if (!/_vCD = _vCD\.mul\(_k\);/.test(maske)) v.push("die Billboard-Maske ersetzt die gestreckte Distanz durch die rohe (Perf-Streck verloren)");
-    // Das Billboard liest den Sichthöhen-Stempel seiner Instanz (|aKarte.w| = die Höhe der L1 × Instanz-Skala, dieselbe
-    // Zahl wie der aH0-Stempel der L1), nie die Rahmen-Höhe des Bakes.
-    if (!/visHeightNode: _karte\.w\.abs\(\),/.test(srcNC))
-        v.push("das Billboard misst mit eigener Höhe statt dem Sichthöhen-Stempel der L1 (|aKarte.w|)");
-    const flat = fnBody(srcNC, /\n {4}_foundryBuildImpostorFlat\([^)]*\)\s*\{/) || "";
-    // der Wartende (wer) ist Passagier des Wecks, kein Teil des Gesetzes: das Buch wird mit (preset, entry) befragt
-    if (!/const hz = this\._foundryBaumHoehe\(preset, entry(?:, [^)]*)?\);/.test(flat) || !/this\._impostorLeaf\(z, this\._foundryWorldScaleMatrix\(preset\), hz\)/.test(flat))
-        v.push("die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe");
-    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\([^)]*\)\s*\{/) || "";
-    if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
-    // Die einzige Nah-Stufe einer Art ohne L0 (bis Welle 6 der Strauch) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
-    // Jede Stufe blendet nur zu einem Partner, den die Art trägt (06.10.): die L0 zur L1 (1), sonst nur zur Karte (3).
-    const hatDekl = /const _hat = \(s\) => this\._foundryDeclaredStage\(stage\.preset, s\) === s;/.test(srcNC);
-    if (!hatDekl || !/_lodS === 1\s*\?\s*\(?_hat\(0\)\s*\?\s*2\s*:\s*3\)?/.test(srcNC))
-        v.push("die L1 einer Art ohne L0 ist ungemaskt — sie blendet nicht zum Billboard aus");
-    if (!hatDekl || !/_lodS === 0\s*\?\s*\(?_hat\(1\)\s*\?\s*1\s*:\s*3\)?/.test(srcNC))
-        v.push("die L0 einer Art ohne L1 blendet zu einer L1 aus, die es nicht gibt (Wagen und Tor)");
-    if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
-        v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
-    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\([^)]*\)\s*\{/) || "";
-    if (!/_foundrySichtHoehe\(/.test(hoehe)) v.push("_lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)");
-    // Ohne bekannte Höhe KEIN Stufen-Urteil (null), nie still 0 (roh, ohne Perf — der alte Geist); die Höhe lebt im
-    // Höhen-Buch, nicht im LRU der Geometrie.
-    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\([^)]*\)\s*\{/) || "";
-    if (!/if \(h0 == null\) return null;/.test(sicht)) v.push("_foundrySichtHoehe fällt ohne Höhe still auf 0 (roh) zurück");
-    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\([^)]*\)\s*\{/) || "";
-    if (!/f\.hoehen/.test(buch)) v.push("_foundryBaumHoehe liest nicht das Höhen-Buch");
-    const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\([^)]*\)\s*\{/) || "";
-    if (!/f\.hoehen = new Map\(\)\)\)\.set\(key, v\._hoehe\)/.test(satz)) v.push("der Cache-Chokepoint schreibt das Höhen-Buch nicht");
-    // Die Blatt-Kappe der CPU gilt der VORLAGE wie der Stempel (aH0L = min(Vorlage, Kappe) × s; Studio phytogenesis
-    // bhL = min(H0, Kappe) · sc), nie der skalierten Höhe — und jeder Aufrufer reicht seine Instanz-Skala.
-    const partner = fnBody(srcNC, /\n {4}_lodBandPartnerFor\([^)]*\)\s*\{/) || "";
-    if (!/Math\.min\(visH \/ sS, capL\) \* sS/.test(partner))
-        v.push("die CPU-Blatt-Kappe kappt die skalierte Höhe (min(h·s, 24)) statt der Vorlage (min(h, 24)·s)");
-    for (const m of srcNC.matchAll(/this\._lodBandPartnerFor\(([^)]*)\)/g))
-        if (m[1].split(",").length < 4) v.push("ein Aufrufer von _lodBandPartnerFor reicht keine Instanz-Skala: " + m[1].trim());
-    for (const [name, re] of [
-        ["_tickArchitectureLOD", /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/],
-        ["_tickScatterLod", /\n {4}_tickScatterLod\([^)]*\)\s*\{/],
-    ]) {
-        const b = fnBody(srcNC, re) || "";
-        // die Höhen-Stufe lädt: der Eintrag hält Stufe und Band (seit Welle K zählt der Takt ihn als wartend — die
-        // Stand-Wache schläft nicht, solange eine Höhe fehlt)
-        if (!/if \(visH === null\) (?:continue;|\{\s*offen\+\+;\s*continue;\s*\})/.test(b))
-            v.push(name + " urteilt ohne bekannte Höhe (visH null)");
-    }
-    return v;
-}
 
 async function main() {
-    const P = parseStudio();
-    if (!P.ok) {
-        console.error("❌ Studio-GLSL nicht parsbar: " + P.why.join(", "));
-        process.exit(1);
-    }
-
     if (process.argv.includes("--selftest")) {
-        console.log("=== SELBST-TEST: die Linse feuert auf verfälschte Kopien ===");
-        // V1: der IGN-Koeffizient verfälscht → die Dither-Äquivalenz MUSS feuern.
-        const bad1 = coreSrcRaw.split("52.9829189").join("52.9829188");
-        const core1 = loadCore(bad1, "phyto-core(bad-ign)");
-        const r1 = buildRaster(core1, P, 0);
-        check("Selbst-Test 1: verfälschter IGN-Koeffizient → Dither-Äquivalenz feuert", r1.mismatch > 0);
-        // V2: der f1o-Rampen-Faktor verfälscht → die Masken-Äquivalenz MUSS feuern.
-        const bad2 = coreSrcRaw.replace("c01(f1 * 2.0 - 1.0)", "c01(f1 * 2.0 - 0.5)");
-        const core2 = loadCore(bad2, "phyto-core(bad-ramp)");
-        const ras2 = buildRaster(core2, P, 0);
-        const r2 = evaluate(core2, P, ras2);
-        check("Selbst-Test 2: verfälschte f1o-Rampe → Masken-Äquivalenz feuert", r2.keepMismatch > 0);
-        // V3–V5: die drei Schatten-Klassen, je eine zurück in die Quelle → das Schatten-Gesetz MUSS sie nennen.
-        const nc = stripComments(anazhSrc);
-        const brueche = [
-            ["Pass-Kamera", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
-            [
-                // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A); W5 teilt
-                // die Atlas-Farbe durch ihren `wert` — gesucht wird die Alpha-Stelle der Karten-colorNode, zeilenumbruch-fest.
-                // Seit der Integration 05.10. liest der Stoff den EINEN Atlas-Leser (`_blattAtlasProbe`: atl.rgb / atl.a).
-                "Blatt-Alpha in opacityNode",
-                // Ersetzer als Funktion: "$11.0$2" lebte von der Rückfall-Regel ($11 fehlt → $1 + "1"), zerbrechlich.
-                stammLib.ersetze(nc, "_foundryTreeMaterial", /(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
-            ],
-            ["Zwilling mit L1-Stempel", stammLib.ersetze(nc, "_foundryFlattenFor", "geom: this._foundrySchattenGeom(lf),", "")],
-            ["Zwillings-Gestalt als L1 gestempelt", stammLib.ersetze(nc, "_foundrySchattenGeom", "aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
-            ["zwei Werfer je Gestalt", stammLib.ersetze(nc, "_foundryFlattenFor", "const castsShadow = (wurf === lod && !zwillingsQuelle) ||", "const castsShadow = wurf === lod ||")],
-            ["Kosten-Regel wirft doppelt", stammLib.ersetze(nc, "_foundryFlattenFor", 'if (von !== "zwilling") schatten = null;', "")],
-            ["L0 baut eigenen Zwilling", stammLib.ersetze(nc, "_foundryFlattenFor", "for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
-            ["Band wirft doppelt", stammLib.ersetze(nc, "_updateFoundryLodBand", "this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
-            ["Streu-Band wirft doppelt", stammLib.ersetze(nc, "_scatterMaterializeCell", "const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
-            ["Schatten-Teil im Hauptbild, jedes Teil wirft", stammLib.ersetze(nc, "_foundryFlattenFor", "if (lf.teil !== wurfTeil) continue;", "")],
-            ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", stammLib.ersetze(nc, "_foundryFlattenFor", 'if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
-            ["Schatten-Teil fehlt still", stammLib.ersetze(nc, "_foundryFlattenFor", "if (!hat)", "if (false)")],
-            [
-                // die Fell-Schale (Haar · Wolle, Leib und Kopf) schnitt bis K28 über opacityNode aus — der Ausschnitt zurück dorthin
-                "Fell-Schale über opacityNode",
-                stammLib.ersetze(nc, "_foundryTreeMaterial",
-                    /(TSL\.mix\(TSL\.float\(FS\.wurzel\), TSL\.float\(FS\.spitze\), t\)\),\s*)TSL\.max\(haar, wolle\)(\s*\);)/,
-                    (_m, a, b) => a + "1.0" + b + " mat.opacityNode = TSL.max(haar, wolle);"
-                ),
-            ],
-            ["Schatten-Stoff über opacityNode", stammLib.ersetze(nc, "_foundryTreeMaterial", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
-            ["Index-Vorsatz kehrt zurück", stammLib.ersetze(nc, "_foundrySchattenGeom", "z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
-            ["Fassade verliert den Wurf", stammLib.ersetze(nc, "_lodInstanceFacade", "g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
-            ["Zwillings-Gestalt leckt", stammLib.ersetze(nc, "_disposeFoundryGroupGeom", "lf._schattenGeom.dispose();", "")],
-            ["Zwilling besitzt L1-Geometrie", stammLib.ersetze(nc, "_foundryFlattenFor", "_eigen: false,", "")],
-            ["L0-Kehraus räumt die Wurf-Gestalt der L1", stammLib.ersetze(nc, "_disposeFoundryGroupGeom", "if (lf._srcGroup !== g) continue;", "")],
-            ["Zwilling liest das Stufen-Flag", stammLib.ersetze(nc, "_foundryFlattenFor", /(leafKey: lf\.leafKey \+ "#S",\s*)castShadow: lf\.teilWirft,/, "$1castShadow: lf.castShadow !== false,")],
-        ];
-        check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
-        for (const [name, src] of brueche) {
-            const v = schattenWahrheit(src);
-            check(
-                `Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`,
-                src !== nc && v.length > 0,
-                src === nc ? "ANKER FEHLT — die Injektion trifft die Quelle nicht (Probe nachziehen)" : v.join(" · ")
-            );
+        console.log("=== SELBST-TEST: die Linse feuert auf jede Verfälschungs-Klasse ===");
+        // V1: der Dither des Gesetzes verschoben (Phase + 1e-7) → die Dither-Äquivalenz MUSS feuern.
+        const core1 = Object.assign({}, CORE, { lodDitherIGN: (x, y, t) => CORE.lodDitherIGN(x, y, t + 1e-7) });
+        check("Selbst-Test 1: verschobener Dither des Gesetzes → Dither-Äquivalenz feuert", buildRaster(core1, 0).mismatch > 0);
+        // V2: die Fern-Rampe des Gesetzes verschoben (fade × 1,25) → die Masken-Äquivalenz MUSS feuern.
+        const core2 = Object.assign({}, CORE, {
+            lodCrossfadeMask: (d, dh, cfg, lod, laub, dL) => CORE.lodCrossfadeMask(d, dh, Object.assign({}, cfg, { fade: cfg.fade * 1.25 }), lod, laub, dL),
+        });
+        check("Selbst-Test 2: verschobene Fern-Rampe → Masken-Äquivalenz feuert", evaluate(core2, CFG, buildRaster(core2, 0)).keepMismatch > 0);
+        // V3: jede Absenz — die echte Quelle hält sie, ihr Täter zurück am Kopf seines Glieds wird beim Namen genannt.
+        for (const [name, glied, re, taeter] of ABSENZEN) {
+            const heil = stammLib.fehlt(glied, re);
+            const rot = !stammLib.fehlt(glied, re, mitTaeter(glied, taeter));
+            check(`Selbst-Test Absenz: „${taeter}" → ${name.split(":")[0]} nennt ihn`, heil && rot, stammLib.fehlt.wo || "");
         }
-        {
-            // Die Studio-Seite des Wurf-Teils: eine Wurf-Grenze, die nicht der Kaskaden-Texel ist, nennt das Gesetz.
-            const fc = foundrySrc.replace("wurf: { durchmesserM: 0.17,", "wurf: { durchmesserM: 0.12,");
-            const v = schattenWahrheit(nc, fc);
-            check(
-                'Selbst-Test Schatten: „Wurf-Grenze neben dem Texel" → das Gesetz nennt ihn',
-                fc !== foundrySrc && v.length > 0,
-                fc === foundrySrc ? "ANKER FEHLT — die Injektion trifft foundry-core nicht" : v.join(" · ")
-            );
-        }
-        check("Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit", perfWahrheit(nc).length === 0, perfWahrheit(nc).join(" · "));
-        for (const [name, src] of [
-            ["CPU ohne Perf-Helfer", stammLib.ersetze(nc, "_lodPerceptionDistance", "return rawDist * heightFactor * this._lodPerfMul();", "return rawDist * heightFactor;")],
-            ["kein Frame-Spiegel", stammLib.ersetze(nc, "_loopRender", "_lu.uLodPerf.value = this._lodPerfMul();", "")],
-            ["Maske ohne Perf", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", /const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
-            ["Billboard ohne Perf", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
-            ["Billboard-Höhe ersetzt den Streck", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "_vCD = _vCD.mul(_k);", "_vCD = _dist.mul(_k);")],
-            ["Billboard mit Rahmen-Höhe", stammLib.ersetze(nc, "_buildPbrNodeMaterial", "visHeightNode: _karte.w.abs(),", "visHeightNode: _rahmen.y.mul(_sInst),")],
-            [
-                "Karte ohne Höhen-Buch",
-                stammLib.ersetze(nc, "_foundryBuildImpostorFlat",
-                    "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz)",
-                    "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), z.frame.halfH * 2)"
-                ),
-            ],
-            ["Karten-Stempel ohne Instanz-Skala", stammLib.ersetze(nc, "_lodSlotStamp", "h = leaf.sicht * s;", "h = leaf.sicht;")],
-            ["Strauch-L1 ungemaskt", stammLib.ersetze(nc, "_foundryBuildGroup", /(_hat\(0\) \? 2 : )3/, (_m, a) => a + "0")],
-            // 06.10. (F-D3/V-D3): die L0 einer Art ohne L1 zurück auf den alten Stempel 1 — die Linse muss Wagen und Tor nennen.
-            ["Wagen-L0 dithert zu einer L1, die es nicht gibt", stammLib.ersetze(nc, "_foundryBuildGroup", /(_lodS === 0 \? \(_hat\(1\) \? 1 : )3/, (_m, a) => a + "1")],
-            ["Maske ohne einzige Nah-Stufe", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
-            ["Sichthöhe still 0", stammLib.ersetze(nc, "_foundrySichtHoehe", "if (h0 == null) return null;", "if (h0 == null) return 0;")],
-            ["Höhe nur im LRU", stammLib.ersetze(nc, "_foundryCacheSet", "if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
-            ["LOD-Takt urteilt ohne Höhe", stammLib.ersetze(nc, "_tickArchitectureLOD", /if \(visH === null\) \{\s*offen\+\+;\s*continue;\s*\}/, "")],
-            ["CPU-Blatt-Kappe auf der skalierten Höhe", stammLib.ersetze(nc, "_lodBandPartnerFor", "Math.min(visH / sS, capL) * sS", "Math.min(visH, capL)")],
-            ["Streu-Partner ohne Skala", stammLib.ersetze(nc, "_scatterMaterializeCell", "this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
-            [
-                "Sichthöhe aus dem Grammatik-Bauplan",
-                stammLib.ersetze(nc, "_lodTreeVisHeight", "return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),
-            ],
+        // V4: verschobene Kanten des Fensters (je Stufe 1 m nach innen) — die Fenster-Linse MUSS Löcher nennen.
+        for (const [name, fn] of [
+            ["L0 aus", (K) => (K.l0Aus -= 1)],
+            ["L1 ein", (K) => (K.l1Ein += 1)],
+            ["L1 aus", (K) => (K.l1Aus -= 1)],
+            ["Karte ein", (K) => (K.karteEin += 1)],
         ]) {
-            const v = perfWahrheit(src);
-            check(`Selbst-Test Perf: „${name}" → die Wahrheit nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+            const v = fensterLinse(CORE, [CFG], fn);
+            check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
         }
-        // V(6): verschobene Kanten des Fensters (je Stufe 1 m nach innen) — die Fenster-Linse MUSS Löcher nennen.
-        {
-            const core0 = loadCore(coreSrcRaw, "phyto-core");
-            for (const [name, fn] of [
-                ["L0 aus", (K) => (K.l0Aus -= 1)],
-                ["L1 ein", (K) => (K.l1Ein += 1)],
-                ["L1 aus", (K) => (K.l1Aus -= 1)],
-                ["Karte ein", (K) => (K.karteEin += 1)],
-            ]) {
-                const v = fensterLinse(core0, [P.cfg], fn);
-                check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
-            }
-        }
-        // V(8): die Weite der Gestalt kehrt ins Fenster zurück, die Maske misst zum Fragment, die Karte zum Quad, der Haken legt
-        // die Matrix nicht ab — die Linse MUSS die Stufe ohne Bild bzw. das Maß nennen.
-        {
-            const nc = stripComments(anazhSrc);
-            const alt = stammLib.ersetze(nc, "_instanzFenster",
-                /const dMin = Math\.max\(0, d - halt\) \* L\.perf,\s*dMax = \(d \+ halt\) \* L\.perf;/,
-                "const w = this._instanzWeite(geo).r; const dMin = Math.max(0, d - w - halt) * L.perf, dMax = (d + w + halt) * L.perf;"
-            );
-            const S8 = stufeOhneBildLinse(loadCore(coreSrcRaw, "phyto-core"), P.cfg, alt);
-            check(
-                "Selbst-Test Stufe ohne Bild: die Weite der Gestalt (Krone 10 m) im Fenster → die L1 der nahen Birke wird genannt",
-                alt !== nc && !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
-                `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
-            );
-            for (const [name, src] of [
-                [
-                    "Maske zum Fragment",
-                    stammLib.ersetze(nc, "_lodCrossfadeMaskNode",
-                        "const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)))",
-                        "const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)))"
-                    ),
-                ],
-                ["Karte zum Quad", stammLib.ersetze(nc, "_buildPbrNodeMaterial", "distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
-                ["Haken ohne Matrix", stammLib.ersetze(nc, "_configureRenderer", "if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
-                // die Naht ohne Instanz-Matrix: der Ursprung jeder Instanz wäre der Ursprung ihres Objekts (K20-N1)
-                [
-                    "Naht ohne Instanz",
-                    stammLib.ersetze(nc, "_weltNaht", "const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));", "const Mw = T.modelWorldMatrix;"),
-                ],
-            ]) {
-                const v = massDerBlende(src);
-                check(`Selbst-Test Maß: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
-            }
-        }
-        // V(10): der Geister-Baum — das Auge zurück auf den Spieler, der Halt stumm: die Linse MUSS sie nennen.
-        {
-            const nc = stripComments(anazhSrc);
-            check("Selbst-Test Geister-Baum: die echte Quelle hält Auge und Halt", geisterQuelle(nc).length === 0, geisterQuelle(nc).join(" · "));
-            for (const [name, src] of [
-                ["Wahl vom Spieler", stammLib.ersetze(nc, "_runFrameScheduler", "this._tickArchitectureLOD(5, auge);", "this._tickArchitectureLOD(5, this.state.playerMesh.position);")],
-                ["Streu vom Spieler", stammLib.ersetze(nc, "_runFrameScheduler", "this._tickScatterLod(auge, ", "this._tickScatterLod(playerPos, ")],
-                ["Maske ohne Halt", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", ".max(_halt)", "")],
-                ["Stempel ohne Halt", stammLib.ersetze(nc, "_lodSlotStamp", "_h0LTpl * s * (voll ? -1 : 1)", "_h0LTpl * s")],
-                ["Band ohne Halt", stammLib.ersetze(nc, "_updateFoundryLodBand", 'this._lodHaltSetzen(entry, flat === null ? "wartet" : true);', "")],
-                ["Auge ohne Sprung", stammLib.ersetze(nc, "_lodAuge", "if (pm) out.add(pm).sub(r.pl);", "")],
-                ["Rig setzt nicht", stammLib.ersetze(nc, "_loopCamera", "this._lodAugeGesetzt();", "")],
-                ["Geburt vom Spieler", stammLib.ersetze(nc, "_scatterPass", "this._chooseLODForDistance(distAuge, undefined, visH)", "this._chooseLODForDistance(dist, undefined, visH)")],
-            ]) {
-                const v = geisterQuelle(src);
-                check(`Selbst-Test Geister-Baum: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
-            }
-        }
-        // V(9): jede stille Stelle zurück in die Quelle — die Linse MUSS sie nennen.
-        {
-            const nc = stripComments(anazhSrc);
-            for (const [name, src] of [
-                ["Maske gibt null", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", 'if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");', "if (!_dist) return null;")],
-                ["catch schluckt", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", /throw _e && _e\.blende === true\s*\?\s*_e\s*:\s*this\._blendeBruch\("der Bau der Maske scheiterte: "/, 'return null; ("')],
-                ["Baum-Stoff unter Wenn", stammLib.ersetze(nc, "_foundryTreeMaterial", /(const _keepX = this\._lodCrossfadeMaskNode\(TSL, \{[^}]*\}\);\s*)\{/, "$1if (_keepX) {")],
-                ["Karte unter Wenn", stammLib.ersetze(nc, "_buildPbrNodeMaterial", /(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
-                ["Karte schluckt den Bruch", stammLib.ersetze(nc, "_buildPbrNodeMaterial", 'throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
-                ["Blatt-Karte springt still", stammLib.ersetze(nc, "_applyVegetationResponse", 'throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
-                ["Stoff-Bruch ohne Melder", stammLib.ersetze(nc, "_stoffBruch", "this._bruchMelden(text);", "")],
-                ["Melder meldet INFO", stammLib.ersetze(nc, null, /(\n {4}_bruchMelden\([^)]*\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
-            ]) {
-                const v = stilleBlende(src);
-                check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
-            }
-        }
+        // V5: die Weite der Gestalt (Krone 10,06 m) als Rand im Fenster — die L1 der nahen Birke wird genannt.
+        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { halt: L.halt + stumpf._instanzWeite().r }));
+        const S8 = stufeOhneBildLinse(CORE, CFG, weit);
+        check(
+            "Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster → die L1 der nahen Birke wird genannt",
+            !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
+            `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1853,78 +1327,19 @@ async function main() {
         process.exit(0);
     }
 
-    console.log("=== W5.3 — DIE GETEILTE MASKEN-QUELLE (phyto-core ↔ Studio-GLSL) ===");
-    console.log("--- Teil 3: die Drift-Wand (Studio-GLSL-Struktur + Konstanten geparst) ---");
-    check("GLSL: _dh-IGN-Koeffizienten geparst", !!P.dhA, `${P.dhA} · ${P.dhBx} · ${P.dhBy}`);
-    check("GLSL: _f1-Rampe = (vLodD − (LOD_D1−LOD_FADE)) / LOD_FADE", P.rampF1);
-    check("GLSL: _f0-Rampe = (vLodDL − (LOD_D0−LOD_FADE0)) / LOD_FADE0", P.rampF0);
-    check("GLSL: _f1o = clamp(_f1·2 − 1, 0, 1) (verzögerte Fern-Ausblendung)", P.rampF1o);
-    check("GLSL: der Laub-Branch (überlappende Rampen, FIX v37) steht wörtlich", P.branchFol);
-    check("GLSL: der Rinden-Branch (exakte Partition) steht wörtlich", P.branchBark);
+    console.log("=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ===");
     check(
-        "GLSL: PORTAL_RENDER_CONFIG.lod geparst",
-        !!P.cfg,
-        P.cfg ? `d0=${P.cfg.d0} d1=${P.cfg.d1} fade=${P.cfg.fade} fade0=${P.cfg.fade0}` : ""
-    );
-    check("GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)", P.finRamp && P.finBranch);
-    // phyto-core trägt DIESELBEN IGN-Koeffizienten im CODE (kommentar-gestrippte Quelle):
-    const coreNC = stripComments(coreSrcRaw);
-    const ignBody = fnBody(coreNC, /function lodDitherIGN\(/) || "";
-    check(
-        "phyto-core lodDitherIGN trägt die GEPARSTEN Koeffizienten wörtlich",
-        ignBody.includes(P.dhA) && ignBody.includes(P.dhBx) && ignBody.includes(P.dhBy)
-    );
-    // die TSL-Hälfte (anazhRealm._lodCrossfadeMaskNode) mappt DIESELBEN Koeffizienten + die
-    // EINEN Quellen — statische Symbol-Wand. W5.4 (Schritt 3, der Test wandert mit dem Code,
-    // V9.56-i): die Band-Zahlen leben jetzt als LIVE-Uniforms uLodD0/uLodD1/uLodFade/uLodFade0
-    // (der Helfer liest sie statt gefalteter Floats); ihr Seed kommt aus LOD_DISTANCES in
-    // `_ensureLodUniforms`, der Frame-Spiegel (`uLodD0.value = _D.thresh01`) hält sie live.
-    const anazhNC = stripComments(anazhSrc);
-    const tslBody = fnBody(anazhNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
-    check(
-        "TSL-Hälfte (_lodCrossfadeMaskNode): dieselben IGN-Koeffizienten + die Uniform-Quellen",
-        tslBody.includes(P.dhA) &&
-            tslBody.includes(P.dhBx) &&
-            tslBody.includes(P.dhBy) &&
-            /uLodD0/.test(tslBody) &&
-            /uLodD1/.test(tslBody) &&
-            /uLodFade\b/.test(tslBody) &&
-            /uLodFade0/.test(tslBody) &&
-            /uDitherT/.test(tslBody) &&
-            /uLodMaskOn/.test(tslBody)
-    );
-    const ensureBody = fnBody(anazhNC, /_ensureLodUniforms\(\)\s*/) || "";
-    check(
-        "Uniform-Seed + Live-Spiegel: uLodD0..Fade0 aus LOD_DISTANCES (thresh01/thresh12/fade/fade0)",
-        /uLodD0/.test(ensureBody) &&
-            /thresh01/.test(ensureBody) &&
-            /thresh12/.test(ensureBody) &&
-            /uLodD0\.value = _D\.thresh01/.test(anazhNC)
-    );
-
-    const pw = perfWahrheit(anazhNC);
-    check("PERF-WAHRHEIT: CPU-Stufenwahl und jede Maske lesen denselben Perf-Streck und dieselbe Sichthöhe", pw.length === 0, pw.join(" · "));
-    const sw = schattenWahrheit(anazhNC);
-    check(
-        "SCHATTEN-WAHRHEIT: Masken vom Auge · kein opacityNode-Ausschnitt an Werfern · Zwilling L0-gestempelt",
-        sw.length === 0,
-        sw.join(" · ")
-    );
-
-    console.log("--- Teil 1+2: die Masken-Invarianten auf dem 64×64-Raster übers Band ---");
-    require("../phyto-core.js");
-    const core = globalThis.__phytoCore;
-    check(
-        "phyto-core exportiert lodCrossfadeMask + lodDitherIGN",
-        core && typeof core.lodCrossfadeMask === "function" && typeof core.lodDitherIGN === "function"
+        "Gesetz und Studio-Blende geladen (lodCrossfadeMask · lodDitherIGN · der Fragment-Satz für Rinde und Laub)",
+        typeof CORE.lodCrossfadeMask === "function" && typeof CORE.lodDitherIGN === "function",
+        `lod d0=${CFG.d0} d1=${CFG.d1} fade=${CFG.fade} fade0=${CFG.fade0}`
     );
     let totalKeepMismatch = 0,
         totalDhMismatch = 0;
     let agg = null;
     for (const t of [0, 0.61803398875]) {
-        const raster = buildRaster(core, P, t);
+        const raster = buildRaster(CORE, t);
         totalDhMismatch += raster.mismatch;
-        const r = evaluate(core, P, raster);
+        const r = evaluate(CORE, CFG, raster);
         totalKeepMismatch += r.keepMismatch;
         if (!agg) agg = r;
         else {
@@ -1939,8 +1354,8 @@ async function main() {
             agg.covL2End = Math.min(agg.covL2End, r.covL2End);
         }
     }
-    check("Dither-Äquivalenz: lodDitherIGN == geparste GLSL-IGN (2 uDitherT-Phasen)", totalDhMismatch === 0);
-    check("Masken-Äquivalenz: keep == Referenz aus den geparsten Konstanten (alle Stufen)", totalKeepMismatch === 0);
+    check("Dither-Äquivalenz: lodDitherIGN == der _dh der Studio-Blende (2 uDitherT-Phasen)", totalDhMismatch === 0);
+    check("Masken-Äquivalenz: keep L0/L1 == die Studio-Blende (Rinde und Laub, beide Metriken)", totalKeepMismatch === 0);
     check(
         "RINDE: keepL0 XOR keepL1 == 1 an jedem Rasterpunkt × Sample im Partitions-Band",
         agg.barkXorFail === 0 && agg.partitionSamples > 20,
@@ -1954,15 +1369,14 @@ async function main() {
     check("LAUB: Band-Anfang ~100 % L0", agg.covL0Start >= 0.999, (agg.covL0Start * 100).toFixed(2) + " %");
     check("LAUB: Band-Ende ~100 % Impostor", agg.covL2End >= 0.999, (agg.covL2End * 100).toFixed(2) + " %");
     check("LAUB: monotoner Übergang (L0 fällt, Impostor steigt)", agg.folMonotonic === true);
-    // (6) — DAS FENSTER DER INSTANZ-WAHL: die Kanten stehen am Gesetz, kein Loch je Stufe
+    // (3) — DAS FENSTER DER INSTANZ-WAHL: die Kanten stehen am Gesetz, kein Loch je Stufe
     {
-        const core6 = loadCore(coreSrcRaw, "phyto-core");
         const cfgs = [
-            P.cfg,
+            CFG,
             { d0: 8, d1: 30, fade: 6, fade0: 3 },
-            { d0: P.cfg.d0 * 1.5, d1: P.cfg.d1 * 1.5, fade: P.cfg.fade * 1.5, fade0: P.cfg.fade0 * 1.5 },
+            { d0: CFG.d0 * 1.5, d1: CFG.d1 * 1.5, fade: CFG.fade * 1.5, fade0: CFG.fade0 * 1.5 },
         ];
-        const F6 = fensterLinse(core6, cfgs, null);
+        const F6 = fensterLinse(CORE, cfgs, null);
         const t = Object.entries(F6.jeStufe)
             .map(([k, v]) => `${k}: ${v.loecher} Löcher · Überschuss ${v.ueberschuss}/${v.proben}`)
             .join(" · ");
@@ -1971,41 +1385,18 @@ async function main() {
             F6.proben > 1000 && F6.loecher === 0,
             `${F6.proben} Intervalle · ${t}${F6.beispiel ? " · z. B. " + JSON.stringify(F6.beispiel) : ""}`
         );
-        check(
-            "FENSTER (W7): der Stamm liest die Kanten aus dem EINEN Gesetz (_blendeKanten(pc.lodCrossfadeMask, …) in _passWahlLage)",
-            /_blendeKanten\(pc\.lodCrossfadeMask, d0, d1, fade, fade0\)/.test(
-                fnBody(stripComments(anazhSrc), /^ {4}_passWahlLage\([^)]*\) \{/m) || ""
-            )
-        );
     }
+    // (4) — DIE STUFE OHNE BILD: das echte _instanzFenster gegen das Gesetz an der Instanz-Distanz
     {
-        const md = massDerBlende(anazhNC);
-        check("MASS DER BLENDE: Maske · Blattmaske · Karte · Fenster messen die Instanz, nie das Fragment", md.length === 0, md.join(" · "));
-        const S8 = stufeOhneBildLinse(loadCore(coreSrcRaw, "phyto-core"), P.cfg, anazhNC);
+        const S8 = stufeOhneBildLinse(CORE, CFG);
         check(
             "STUFE OHNE BILD: keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält (doppelt außerhalb des Fade-Fensters)",
             S8.proben > 4000 && S8.ohneBild === 0 && S8.loecher === 0,
             `${S8.proben} Proben · ohne Bild ${S8.ohneBild}${S8.beispiel ? " (z. B. " + JSON.stringify(S8.beispiel) + ")" : ""} · Löcher ${S8.loecher}${S8.loch ? " (" + JSON.stringify(S8.loch) + ")" : ""}`
         );
     }
-    {
-        const gq = geisterQuelle(anazhNC);
-        check("DER GEISTER-BAUM (statisch): EIN Auge für Wahl und Maske, die Stufe ohne Partner hält (Band → Stempel → Maske → Fenster)", gq.length === 0, gq.join(" · "));
-    }
-    {
-        const sb = stilleBlende(anazhNC);
-        check("DIE LAUTE BLENDE (statisch): kein null, kein schluckender catch, keine Maske unter Wenn", sb.length === 0, sb.join(" · "));
-    }
-    // Statische Scope-Wand der CPU-Hälfte: Band nur für Foundry-BAUM-Einträge (dieselbe
-    // Wand wie der aLodLevel-Stempel), Add/Remove nur durch die Slot-Chokepoints.
-    const bandBody = fnBody(anazhNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
-    check(
-        "CPU-Band-Pflege: Baum-Wand + Chokepoint-Disziplin (_updateFoundryLodBand)",
-        /_foundryPresetIsTree/.test(bandBody) &&
-            /instFoundry/.test(bandBody) &&
-            /_archInstanceAdd/.test(bandBody) &&
-            /_archInstanceRemove/.test(bandBody)
-    );
+    // (5) — DIE ABSENZEN DER BLENDE über den EINEN Helfer
+    for (const [name, glied, re] of ABSENZEN) check(name, stammLib.fehlt(glied, re), stammLib.fehlt.wo || "");
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
     const { out, pageErrors, attrWand, gnade, kehraus, laut } = await runPartB();
@@ -2043,7 +1434,7 @@ async function main() {
         check("W5.4: foundryCrossfade ist DEFAULT AN", out.flagDefault === true);
         // Die Config-Heimat (W5, Lehre 19, K2): die Welt LIEST die Studio-lod-Zahlen (Gesetz terrain:PORTAL_RENDER_CONFIG.lod),
         // keine Zahl im Stamm — live gemessen statt am Rumpf-Text (thresh01 = d0 · thresh12 = d1 · fade · fade0).
-        const lodKern = [P.cfg.d0, P.cfg.d1, P.cfg.fade, P.cfg.fade0];
+        const lodKern = [CFG.d0, CFG.d1, CFG.fade, CFG.fade0];
         check(
             "LOD_DISTANCES live == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
             JSON.stringify(out.lodLive) === JSON.stringify(lodKern),
@@ -2095,6 +1486,12 @@ async function main() {
         "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
         laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
+    );
+    const sp = (laut && laut.spiegel) || {};
+    check(
+        "SPIEGEL DER BLENDE: die Masken-Uniformen tragen je Bild das CPU-Band (LOD_DISTANCES) — vor dem Bild alt, nach ihm neu",
+        sp.seed === true && sp.vorBild === false && sp.nachBild === true && sp.zurueck === true,
+        JSON.stringify(sp)
     );
 
     if (out && Array.isArray(out.zensus)) {
