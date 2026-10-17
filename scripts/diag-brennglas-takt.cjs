@@ -275,7 +275,7 @@ function quellWand(quelle) {
         }
         // die Schreiber beim Namen (D3c: der Freibrief „ruft _blockerNetzSetzen" am Rumpf fiel; dass das Tor das Verzeichnis
         // nachzieht, beweist (V) am Aufruf)
-        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal";
+        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal" || name === "_hausHuelleSetzen"; // B3c: der Kamin aus der Hülle, gestempelt
         const darfHitze = name === "_tickFocusingAffordances";
         const harmlosUserData = (links, rechts) => {
             if (rechts.type === "ObjectExpression")
