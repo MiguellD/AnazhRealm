@@ -428,8 +428,8 @@ function statischeMethode(src, name) {
     const rumpf = stammLib.rumpf(src, name).slice(1, -1); // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
     return { rumpf, fn: new Function(args, rumpf) };
 }
-function stammRegel(src) {
-    const s = src || stammLib.text(ROOT);
+function stammRegel() {
+    const s = stammLib.text(ROOT);
     return {
         teilWirft: statischeMethode(s, "_teilWirft").fn,
         vonBilligerer: statischeMethode(s, "_wurfVonBilligerer").fn,
@@ -669,20 +669,18 @@ async function selbsttest() {
     const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
     console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
     // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
-    // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, in der Quelle des Stamms gesetzt) wirft am
+    // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, von Hand neben die Regel gesetzt) wirft am
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
     let wHeil = null;
     await runWithWorker(PORT, async (h) => {
         wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
     });
-    const quelle = stammLib.text(ROOT);
-    const taeterQ = stammLib.ersetze(quelle, "_wurfVonBilligerer", 'return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
-    const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
+    const wTaeter = wurfRichten(wHeil.zeilen, { teilWirft: stammRegel().teilWirft, vonBilligerer: () => "zwilling" });
     const rotHeil = wurfUrteil(wHeil.zeilen);
     const rotTaeter = wurfUrteil(wTaeter);
     const wurfOk = wHeil.zeilen.length > 0 && !rotHeil.length && rotTaeter.length > 0;
     console.log(
-        `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${taeterQ === quelle ? "— die Regel fehlt in der Quelle" : rotTaeter.length + " rot (" + rotTaeter.slice(0, 2).join(" · ") + ")"}`
+        `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
     return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk;
 }
