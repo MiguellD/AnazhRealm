@@ -164,7 +164,7 @@ try {
     console.log(
         `\n✅ Geschnitten: ${lineCount} Zeilen raus, node --check grün (${lines.length} → ${kept.length} Zeilen).`
     );
-    console.log("   Nächster Schritt: node scripts/diag-page-error.cjs (Runtime-Wurzel) → dann playtest.");
+    console.log("   Nächster Schritt: npm run playtest:fast (Runtime-Wurzel: jeder Seitenfehler ROT) → dann playtest.");
 } catch (e) {
     fs.writeFileSync(file, backup, "utf8");
     console.error("⛔ node --check ROT nach dem Schnitt → Datei RESTAURIERT (kein Schaden).");
