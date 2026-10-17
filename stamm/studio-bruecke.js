@@ -909,10 +909,10 @@ class AnazhRealm_studio_bruecke {
                 this._foundryCacheSet(key, grp);
                 // DER WURF REIST MIT (B3e, Budget `wurfMit`): die Stufe 3 der Gestalt kam im selben Auftrag — sie liegt unter
                 // ihrem eigenen Schlüssel (ein eigener Auftrag, der schon fliegt, legt sich selbst ab)
-                const w = grp && grp._wurf;
+                const w = grp && grp._werfer;
                 if (w) {
-                    grp._wurf = null;
-                    const kw = this._foundryKoerperKey(preset, variant, w._wurfStufe, ov);
+                    grp._werfer = null;
+                    const kw = this._foundryKoerperKey(preset, variant, w._werferStufe, ov);
                     if (!zuege.has(kw) && this._foundryCacheGet(kw) === undefined) {
                         this._foundryCacheSet(kw, w);
                         f.requested.add(kw);

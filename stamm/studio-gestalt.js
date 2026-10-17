@@ -163,10 +163,10 @@ class AnazhRealm_studio_gestalt {
     }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
-        // DER WURF REIST MIT (B3e, Budget `wurfMit`): Meshes und Beipack mit `wurf: true` sind die Wurf-Stufe derselben
-        // Gestalt (Budget `schatten`) — ihre eigene Gruppe (`group._wurf`), `_foundryZug` legt sie unter ihren Schlüssel.
-        const wurf = meshes.filter((m) => m && m.wurf === true);
-        if (wurf.length) meshes = meshes.filter((m) => !(m && m.wurf === true));
+        // DER WURF REIST MIT (B3e, Budget `wurfMit`): Meshes und Beipack mit `werfer: true` sind die Wurf-Stufe derselben
+        // Gestalt (Budget `schatten`) — ihre eigene Gruppe (`group._werfer`), `_foundryZug` legt sie unter ihren Schlüssel.
+        const werfer = meshes.filter((m) => m && m.werfer === true);
+        if (werfer.length) meshes = meshes.filter((m) => !(m && m.werfer === true));
         const T = THREE;
         let group = null;
         // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
@@ -249,12 +249,12 @@ class AnazhRealm_studio_gestalt {
             // (gegen `_geomDisposedCount`). Lazy-init, kein state.X-Feld.
             const _f = this._foundry;
             if (_f) _f._geomBuiltCount = (_f._geomBuiltCount || 0) + (group.children ? group.children.length : 0);
-            if (wurf.length && stage && stage.preset) {
+            if (werfer.length && stage && stage.preset) {
                 const ws = this._foundryBudgetZeile(stage.preset, stage.lod).schatten;
                 // (ohne die Marke: in ihrer eigenen Gruppe ist sie die Gestalt)
-                const ohne = wurf.map(({ wurf: _w, ...m }) => m);
-                group._wurf = this._foundryBuildGroup(ohne, { lod: ws, preset: stage.preset });
-                if (group._wurf) group._wurf._wurfStufe = ws;
+                const ohne = werfer.map(({ werfer: _w, ...m }) => m);
+                group._werfer = this._foundryBuildGroup(ohne, { lod: ws, preset: stage.preset });
+                if (group._werfer) group._werfer._werferStufe = ws;
             }
             return group;
         }

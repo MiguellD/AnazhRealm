@@ -1101,11 +1101,11 @@ const foundryKanal = (() => {
             budgetBericht = __aus.bericht;
             budgetBruch = __aus.bruch;
             // DER WURF REIST MIT (B3e, fachwerk `wurfMit`): die Stufe 3 aus dem B der gezeigten Stufe — ihre Meshes und ihre
-            // Fernform tragen `wurf: true`, der Wirt legt sie unter den Schlüssel der Stufe 3 (`_foundryBuildGroup`).
-            const __w = g.userData && g.userData.__wurf;
+            // Fernform tragen `werfer: true`, der Wirt legt sie unter den Schlüssel der Stufe 3 (`_foundryBuildGroup`).
+            const __w = g.userData && g.userData.__werfer;
             if (__w) {
                 const __aw = __meshesDerGruppe(__w, __w.userData.lod | 0, isZweitKern, zweit, msg.presetId);
-                for (const m of __aw.meshes) meshes.push(Object.assign(m, { wurf: true }));
+                for (const m of __aw.meshes) meshes.push(Object.assign(m, { werfer: true }));
                 if (__aw.bruch) budgetBruch = (budgetBruch || []).concat(__aw.bruch);
             }
         } catch (e) {

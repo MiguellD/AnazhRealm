@@ -3643,7 +3643,7 @@
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
             // DER WURF REIST MIT (B3e, `wurfMit` der Budget-Zeile): B trägt Massen und Ton schon — die Stufe 3 aus demselben B
             // kostet die Liste (~1 ms), der Wirt bestellt sie nicht mehr als eigenen Auftrag (der den Ton noch einmal maß).
-            if (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].wurfMit === true) geoms.__wurf = wurfVon(B);
+            if (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].wurfMit === true) geoms.__werfer = wurfVon(B);
         }
         return geoms;
     }
@@ -3707,7 +3707,7 @@
         var gm = buildStufe(p, stufe);
         var g = stufenGruppe(gm, rezeptId, seed, stufe);
         // DER WURF REIST MIT (B3e): die Stufe 3 aus dem B der gezeigten Stufe, dieselbe Gruppe wie buildInstance(…, 3)
-        if (gm.__wurf) g.userData.__wurf = stufenGruppe(gm.__wurf, rezeptId, seed, PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].schatten);
+        if (gm.__werfer) g.userData.__werfer = stufenGruppe(gm.__werfer, rezeptId, seed, PORTAL_RENDER_CONFIG.lod.budget.haus[stufe].schatten);
         return g;
     }
     // Die Gruppe EINER Stufe aus ihren Rollen-Geoms (buildInstance und der mitreisende Wurf).
