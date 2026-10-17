@@ -21,7 +21,8 @@
 //       `bild` mit dem Ausgleich (`.mul(u.ausgabeAusgleich)`), das Uniform liest den Vektor der Sonde, `_ausgabeFormat` ruft
 //       die Sonde. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
 //       Blau 1 + 2⁻⁶ · 1/(2 ln 2); zum nächsten: 1), die Post-Kette liest DENSELBEN Vektor und VERBRAUCHT ihn (×2 hebt das
-//       Mittel des Ausgabe-Bilds, zurückgestellt steht es wieder).
+//       Mittel des Ausgabe-Bilds). Der Rückweg fiel: zwei Schüsse der lebenden Welt sind nie dasselbe Bild (CI −2,62 … +1,19
+//       ohne Code-Änderung), und das Zurückstellen ist die Hygiene der Probe (`finally`), kein Gesetz der Welt.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
 //   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus; Port ZIEL_ZENSUS_PORT, Standard 4597)
@@ -100,8 +101,6 @@ function urteil(z) {
                 `RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um ${rd.verbrauch} Stufen (Soll ≥ ${VERBRAUCH_MIN}) ` +
                     "— die Post-Kette liest ihn nicht"
             );
-        if (!rd.ruhig) v.push(`RUNDUNG: die Welt baute in jeder von ${rd.versuche} Proben zwischen den Schüssen (der Rückweg ist blind)`);
-        else if (!(Math.abs(rd.zurueck) < 1)) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
     }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
     for (const f of z.seitenFehler || []) v.push("SEITE: " + f);
@@ -129,10 +128,7 @@ function selbsttest() {
             rundung: "gegen null",
             faktor: AUSGLEICH_NULL.slice(),
             gleich: true,
-            ruhig: true,
-            versuche: 1,
             verbrauch: 24,
-            zurueck: 0,
         },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
@@ -161,8 +157,6 @@ function selbsttest() {
         },
         { name: "anderer Vektor", z: mit((z) => (z.rundung.gleich = false)), muss: /liest einen anderen Vektor/ },
         { name: "Ausgleich nicht verbraucht", z: mit((z) => (z.rundung.verbrauch = 0)), muss: /die Post-Kette liest ihn nicht/ },
-        { name: "Rückweg verschoben", z: mit((z) => (z.rundung.zurueck = -1.77)), muss: /um -1.77 Stufen verschoben/ },
-        { name: "Welt baut in jeder Probe", z: mit((z) => Object.assign(z.rundung, { ruhig: false, versuche: 4 })), muss: /in jeder von 4 Proben/ },
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
         { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
@@ -323,33 +317,22 @@ function rundungProbe() {
             faktor: A ? A.toArray() : null,
             gleich: !!(A && U && U.value === A),
         };
-        if (!A) return Object.assign(aus, { gelaufen: true, ruhig: true, verbrauch: 0, zurueck: 0 });
-        // DIE EINE UHR der Mess-Schüsse (die Bühne, A8): drei Schüsse derselben Welt sind dasselbe Bild (A8-n1: ohne Bühne zurück
-        // −2,62 im CI). Ob die Welt stand, sagt ihr Regungs-Stempel (`_weltRegt`), nie Befehle|Dreiecke — die Arena (G1) zeichnet
-        // Neues ohne neuen Befehl, der Rückweg maß −1,66 … −2,71 die Lade-Welle. Vor jedem Versuch ruht sie 30 Frames (höchstens
-        // 600), sonst läuft er neu, bis 4-mal.
+        if (!A) return Object.assign(aus, { gelaufen: true, verbrauch: 0 });
+        // Die Bühne (A8) hält die Uhren; das Rauschen der lebenden Welt zwischen zwei Schüssen (CI bis ±2,6 Stufen) liegt weit
+        // unter dem Verbrauch (×2 hebt das Mittel um 40–45 Stufen, Soll ≥ VERBRAUCH_MIN).
         window.__buehne();
-        const r = window.anazhRealm, regung = () => `${r._weltRegung | 0}|${r._bauRegung | 0}|${r._karteRegung | 0}`;
-        const ruht = async () => { for (let s = regung(), n = 0, k = 0; n < 30 && k < 600; k++, n = s === regung() ? n + 1 : ((s = regung()), 0)) await new Promise((ok) => requestAnimationFrame(ok)); };
         const mittel = async () => {
             const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
             let s = 0;
             for (let i = 0; i < auf.u8.length; i += 4) s += 0.2126 * auf.u8[i] + 0.7152 * auf.u8[i + 1] + 0.0722 * auf.u8[i + 2];
-            return { m: s / (auf.u8.length / 4), szene: regung() };
+            return s / (auf.u8.length / 4);
         };
         const alt = A.clone();
         try {
-            for (aus.versuche = 1; ; aus.versuche++) {
-                await ruht();
-                const m0 = await mittel();
-                A.set(2, 2, 2);
-                const m1 = await mittel();
-                A.copy(alt);
-                const m2 = await mittel();
-                Object.assign(aus, { mittel: +m0.m.toFixed(1), verbrauch: +(m1.m - m0.m).toFixed(2), zurueck: +(m2.m - m0.m).toFixed(2) });
-                aus.ruhig = m0.szene === m2.szene;
-                if (aus.ruhig || aus.versuche >= 4) break;
-            }
+            const m0 = await mittel();
+            A.set(2, 2, 2);
+            const m1 = await mittel();
+            Object.assign(aus, { mittel: +m0.toFixed(1), verbrauch: +(m1 - m0).toFixed(2) });
         } finally {
             A.copy(alt);
         }
