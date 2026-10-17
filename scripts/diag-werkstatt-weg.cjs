@@ -43,22 +43,14 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
-const root = path.resolve(__dirname, "..");
 
 const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
-}
-
-const ohneKommentare = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
@@ -275,50 +267,40 @@ function werkVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
-function wand(src) {
-    const nc = ohneKommentare(src);
-    const body = (sig) => fnBody(nc, new RegExp("\\n {4}" + sig + "\\([^)]*\\) \\{")) || "";
-    const muster = fnBody(nc, /\n {4}get chatDslPatterns\(\) \{/) || "";
-    const ctx = body("dslCtx");
-    const streu = body("_dslSpawnStudioItems");
-    const zufall = [muster, ctx, streu].map((b) => (b.match(/Math\.random/g) || []).length);
-    const aufl = body("_studioBlueprintForWord");
-    const kat = body("_studioWortKatalog");
-    const wl = body("_studioWordsForPrompt");
-    const hand = (aufl + kat + wl).match(/"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/g) || [];
-    const brücke = (nc.match(/AnazhRealm\.STUDIO_WORT\b/g) || []).length;
-    const setzen = body("confirmBuild");
-    const logs = (setzen.match(/this\.log\(/g) || []).length;
-    const brenn = body("_tickFocusingAffordances");
-    const formel = (nc.match(/\* Math\.PI \* 2 - Math\.PI \/ 2/g) || []).length;
+// ── DIE STATISCHE WAND (Node): jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter mit Datei und Zeile; ein
+// totes Glied wirft). `w` wandelt den Stamm (der Vor-Stand des Selbsttests). Liefert [name, ok, detail]. ──
+function wand(w) {
+    // alle Absenzen einer Zeile: [ok, der erste Täter]
+    const alle = (...faelle) => {
+        for (const [g, re] of faelle) if (!stammLib.fehlt(g, re, w)) return [false, stammLib.fehlt.wo];
+        return [true];
+    };
     const wurzeln = ["spawnArchitecture", "spawnIslandAt", "spawnUfoAt", "_workshopRecipeSpec", "dslCompose", "generateEvolution", "confirmBuild"];
-    const fehlt = wurzeln.filter((n) => !body(n));
-    const zuege = wurzeln.filter((n) => /Math\.random/.test(body(n))).map((n) => `${n} ${body(n).match(/Math\.random/g).length}`);
-    const zaehler = (nc.match(/_bauSameZaehler/g) || []).length;
-    const hash = (nc.match(/Math\.imul\(\w+, 131\)/g) || []).length;
-    const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
+    const WORT = /"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/;
     return [
-        ["W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)", muster.length > 0 && ctx.length > 0 && streu.length > 0 && zufall.every((n) => n === 0), `Math.random ${zufall.join("/")}`],
-        ["W2 die Streuung zieht nie aus dem Programm-Strom (kein `ctx.rng()` in `_dslSpawnStudioItems`)", streu.length > 0 && !/ctx\.rng\(\)/.test(streu)],
+        ["W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)", ...alle([[/\n {4}get chatDslPatterns\(\) \{/, "dslCtx", "_dslSpawnStudioItems"], /Math\.random/])],
+        ["W2 die Streuung zieht nie aus dem Programm-Strom (kein `ctx.rng()` in `_dslSpawnStudioItems`)", ...alle(["_dslSpawnStudioItems", /ctx\.rng\(\)/])],
         [
             "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
-            aufl.length > 0 && kat.length > 0 && wl.length > 0 && brücke === 0 && hand.length === 0,
-            `STUDIO_WORT ${brücke} · Wort-Literale ${hand.length}${hand.length ? " (" + hand.slice(0, 4).join(" ") + ")" : ""}`,
+            ...alle([null, /AnazhRealm\.STUDIO_WORT\b/], [["_studioBlueprintForWord", "_studioWortKatalog", "_studioWordsForPrompt"], WORT]),
         ],
         [
             "W4 das Rezeptbuch legt nie ins Inventar, FERTIGEN fragt kein zweites Tor, das Setzen sagt keine Absage nur ins Log",
-            !/addToInventory/.test(body("craftFromRecipe")) && !/this\._bauVorabTor\(/.test(body("fertigeBlueprint")) && setzen.length > 0 && logs <= 1,
-            `confirmBuild: ${logs}× Log`,
+            ...alle(["craftFromRecipe", /addToInventory/], ["fertigeBlueprint", /this\._bauVorabTor\(/], ["confirmBuild", /this\.log\([\s\S]*this\.log\(/]),
         ],
-        ["W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel", brenn.length > 0 && !/this\.log\(/.test(brenn) && formel === 1, `Sonnen-Winkel ausgeschrieben ${formel}×`],
+        [
+            "W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)",
+            ...alle(["_tickFocusingAffordances", /this\.log\(/], [{ ausser: "_sonnenWinkel" }, /\* Math\.PI \* 2 - Math\.PI \/ 2/]),
+        ],
         [
             "W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · Werkstatt-Würfel · dslCompose · generateEvolution · confirmBuild), kein Sitzungs-Zähler des Welt-Stroms",
-            !fehlt.length && !zuege.length && zaehler === 0,
-            `${fehlt.length ? "fehlt " + fehlt.join(", ") + " · " : ""}Math.random ${zuege.join(", ") || "0"} · Sitzungs-Zähler ${zaehler}`,
+            ...alle([wurzeln, /Math\.random/], [null, /_bauSameZaehler/]),
         ],
-        ["W8 EIN Same-Hash, die Nachricht an den Mitspieler trägt nie den Samen 0", hash === 1 && !null0, `Same-Hash ${hash}× · Samen 0 im Broadcast ${null0 ? "ja" : "nein"}`],
-        ["W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)", body("_streamRng").length > 0 && !/1664525/.test(body("_streamRng"))],
+        [
+            "W8 EIN Same-Hash (`_werkSame`), die Nachricht an den Mitspieler trägt nie den Samen 0",
+            ...alle([{ ausser: "_werkSame" }, /Math\.imul\(\w+, 131\)/], ["confirmBuild", /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/]),
+        ],
+        ["W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)", ...alle(["_streamRng", /1664525/])],
     ];
 }
 
@@ -1169,7 +1151,6 @@ async function probe(argW) {
 }
 
 (async () => {
-    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {
@@ -1226,7 +1207,7 @@ async function probe(argW) {
             );
         }
         // Die Wand: gesund grün, je gebrochene Stelle rot.
-        const w0 = wand(quelle);
+        const w0 = wand();
         check(
             "Selbst-Test Wand: die Quelle ist grün",
             w0.every(([, ok]) => ok),
@@ -1249,7 +1230,7 @@ async function probe(argW) {
             ["die Vorschau hasht ihren Samen selbst", kopfMit("_workshopFoundryPreviewGroup", "Math.imul(seedNum, 131)"), "W8"],
             ["ein zweites LCG im Strom-Gesetz", kopfMit("_streamRng", "1664525"), "W9"],
         ]) {
-            const rot = wand(stammLib.ersetze(quelle, [gift]))
+            const rot = wand((t) => stammLib.ersetze(t, [gift]))
                 .filter(([, ok]) => !ok)
                 .map(([n]) => n);
             check(`Selbst-Test Wand: ‚${name}' → ${soll} rot`, rot.some((n) => n.startsWith(soll)), rot.join(" · ") || "alles grün");
@@ -1611,7 +1592,7 @@ async function probe(argW) {
     }
 
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
+    for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 600000 });

@@ -2553,8 +2553,7 @@ async function checkBandWCIchWahrheit(ctx) {
         const orte = document.querySelectorAll(".ich-boosts");
         const hostBand = document.querySelector("#ich-boosts-host .ich-boosts");
         out.einBandOrt = orte.length === 1 && !!hostBand;
-        const selfSheetSrc = window.__codeOf(r._ichBuildSpecSheet || function () {});
-        out.fusszeileOhneBoosts = !/✺/.test(selfSheetSrc);
+        out.fusszeileOhneBoosts = window.__fehlt(r._ichBuildSpecSheet, /✺/);
         const chip = document.querySelector("#ich-boosts-host .ich-boost-chip");
         if (chip) {
             chip.setAttribute("data-expires", String(nowSec - 1));

@@ -71,7 +71,6 @@
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -113,39 +112,28 @@ function haltVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei): der Ritt sitzt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter,
-// das Lenk-Frame-Flag ist tot. Liefert [name, ok, detail]. ──
-const ohneKommentare = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
+// ── DIE STATISCHE WAND (Node, der EINE Absenz-Helfer `stammLib.fehlt`): der Ritt sitzt im Sim-Schritt, der Frame-Tick
+// schreibt nie den Reiter, das Lenk-Frame-Flag ist tot. Liefert [name, ok, detail]; `q` die Wandlung des Vor-Stands, leer =
+// der Arbeitsbaum. ──
+const fehlt = stammLib.fehlt;
 // (Dass der Sim-Schritt den Ritt trägt und den Sitz setzt, beweisen T1/T3 am Verhalten: Teleport und Luft je Sim-Schritt.)
-function taktWand(src) {
-    const nc = ohneKommentare(src);
-    const frame = fnBody(nc, /\n {4}_tickMountedMovement\([^)]*\) \{/);
-    const flag = (nc.match(/_rideSteer(?!Yaw)\b/g) || []).length;
+function taktWand(q) {
     return [
-        [
-            "W2 der Frame-Tick schreibt nie den Reiter (`_tickMountedMovement` ohne pm.y-Zuweisung)",
-            !!frame && !/\bpm\.y\s*=[^=]/.test(frame),
-        ],
-        ["W3 das Lenk-Frame-Flag `_rideSteer` ist tot (0 im Code)", flag === 0, `${flag}×`],
+        ["W2 der Frame-Tick schreibt nie den Reiter (`_tickMountedMovement` ohne pm.y-Zuweisung)", fehlt("_tickMountedMovement", /\bpm\.y\s*=[^=]/, q), fehlt.wo],
+        ["W3 das Lenk-Frame-Flag `_rideSteer` ist tot (0 im Code)", fehlt(null, /_rideSteer(?!Yaw)\b/, q), fehlt.wo],
     ];
 }
 
-// ── K1 — DIE WAND DES EINEN FAHR-SCHRITTS (Node, kommentarfrei): keiner integriert eine eigene Kopie (die Reifen-
+// ── K1 — DIE WAND DES EINEN FAHR-SCHRITTS (Node, der Absenz-Helfer): keiner integriert eine eigene Kopie (die Reifen-
 // Seitenkraft `FlatF` lebt nur im Kern); dass die Welt dem Kern-Schritt folgt, beweist S1 (Welt == Labor) am Verhalten. ──
-function fahrWand(stamm, garage) {
-    const kopieStamm = (ohneKommentare(stamm).match(/\bFlatF\b/g) || []).length;
-    const kopieLab = (ohneKommentare(garage).match(/\bFlatF\b/g) || []).length;
+function fahrWand(q, garage) {
     return [
-        ["K1b die Welt integriert keine Kopie des Fahr-Schritts", kopieStamm === 0, `FlatF im Stamm ${kopieStamm}×`],
-        ["K1c die Probefahrt integriert keine Kopie", kopieLab === 0, `FlatF in garage.js ${kopieLab}×`],
+        ["K1b die Welt integriert keine Kopie des Fahr-Schritts", fehlt(null, /\bFlatF\b/, q), fehlt.wo],
+        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }), fehlt.wo],
     ];
 }
 
-// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei; Gegenprüfung 07.10.): `_fahrSatz`/`_rittEbene` gaben bei
+// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer; Gegenprüfung 07.10.): `_fahrSatz`/`_rittEbene` gaben bei
 // einem Kern ohne fahrGesetz/fahrEbene still null (der Gesetz-Wagen ritt richtungs-folgend), Hülle, Kontakt und Rad trugen
 // Literal-Zwillinge der FAHR.schritt-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Soll: EIN fail-closed Leser
 // (`AnazhRealm._fahrSchrittGesetz` → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn. ──
@@ -160,27 +148,22 @@ const FAHR_LESER = [
     "_archRadMatrix",
     "_loopPlayerMovement",
 ];
-function pflichtWand(stamm) {
-    const st = ohneKommentare(stamm);
-    const koerper = {};
-    for (const n of FAHR_LESER) koerper[n] = fnBody(st, new RegExp("\\n {4}" + n + "\\([^)]*\\) \\{")) || "";
-    const fehlt = FAHR_LESER.filter((n) => !koerper[n]);
-    const still = ["_fahrSatz", "_rittEbene"].filter((n) => /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/.test(koerper[n]));
-    const zwillinge = [];
-    for (const n of FAHR_LESER) {
-        const b = koerper[n];
-        // dazu die Ebenen-Klammer als Literal (±0,7 rad = FAHR.schritt.ebeneMax) in Stand und Ritt ohne Fahr-Gesetz
-        const treffer = (
-            b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/g) || []
-        ).length;
-        if (treffer) zwillinge.push(`${n} ${treffer}×`);
-    }
+function pflichtWand(q) {
+    // ein Fahr-Leser ohne Definition wirft im Helfer: P1 nennt ihn, seine Absenz zählt nie als grün
+    const tot = new Set();
+    const ohne = (n, re) => {
+        try {
+            return fehlt(n, re, q);
+        } catch {
+            return !tot.add(n);
+        }
+    };
+    const still = ["_fahrSatz", "_rittEbene"].filter((n) => !ohne(n, /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/));
+    // dazu die Ebenen-Klammer als Literal (±0,7 rad = FAHR.schritt.ebeneMax) in Stand und Ritt ohne Fahr-Gesetz
+    const ZWILLING = /__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/;
+    const zwillinge = FAHR_LESER.filter((n) => !ohne(n, ZWILLING) && !tot.has(n));
     return [
-        [
-            "P1 die Wand kennt jeden Fahr-Leser (den lauten Bruch beweist P4 im Spiel)",
-            fehlt.length === 0,
-            fehlt.length ? `ohne Körper: ${fehlt.join(", ")}` : "",
-        ],
+        ["P1 die Wand kennt jeden Fahr-Leser (den lauten Bruch beweist P4 im Spiel)", tot.size === 0, tot.size ? `ohne Körper: ${[...tot].join(", ")}` : ""],
         ["P2 kein stiller Ausweg in `_fahrSatz` und `_rittEbene` (kein typeof → null)", still.length === 0, still.join(", ")],
         [
             "P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern",
@@ -190,7 +173,7 @@ function pflichtWand(stamm) {
     ];
 }
 
-// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, kommentarfrei; Gegenprüfung 07.10.): die Gelände-Gleitschleife der Hülle war eine
+// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, der Absenz-Helfer; Gegenprüfung 07.10.): die Gelände-Gleitschleife der Hülle war eine
 // Kopie der PM_ClipVelocity-Schleife aus Schritt 5b. Soll: die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
 // rufen sie. ──
 // H6 — EIN LEIB JE TIER (Entscheid D2 der Welle L, Integration): der Wagen-Kontakt rechnete das Wesen als zweiten Leib
@@ -198,18 +181,14 @@ function pflichtWand(stamm) {
 // denselben Leib wie Tier gegen Hülle (`_kreaturLeib`, die EINE Größe der Familie kreatur), kein `separation` im Kontakt.
 // Dass Kapsel und Hülle `_wandGleiten` rufen und Wagen wie Tier `_kreaturLeib` lesen, beweist der Zähl-Spion im Lauf
 // (Stationen, huelleKonsum); die gedrehte Box (H7, H8) messen die Fahrten gegen Haus und Mauer an der echten Wand.
-function huelleWand(stamm) {
-    const st = ohneKommentare(stamm);
-    const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
-    const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
-    const kreis = (huelle.match(/\bseparation\b|bodySize/g) || []).length;
+function huelleWand(q) {
     return [
-        ["H5 EINE Gleit-Schleife (`_wandGleiten`), keine Kopie", schleifen === 1, `Schleifen ${schleifen}×`],
         [
-            "H6 EIN Leib je Tier (D2): kein zweiter Kreis im Wagen-Kontakt",
-            !!huelle && kreis === 0,
-            `separation/bodySize im Wagen-Kontakt ${kreis}×`,
+            "H5 EINE Gleit-Schleife (`_wandGleiten`), keine Kopie",
+            fehlt({ ausser: "_wandGleiten" }, /pl < AnazhRealm\.SLIDE_CLIP_PLANES/, q),
+            fehlt.wo,
         ],
+        ["H6 EIN Leib je Tier (D2): kein zweiter Kreis im Wagen-Kontakt", fehlt("_fahrHuelleKontakt", /\bseparation\b|bodySize/, q), fehlt.wo],
     ];
 }
 
@@ -2047,9 +2026,7 @@ function quellenAbgriff() {
             );
         }
         // Die statischen Wände feuern auf den Vor-Stand.
-        const quelle = stammLib.text(root);
-        const garage = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
-        const gruen = taktWand(quelle);
+        const gruen = taktWand();
         check(
             "Selbst-Test W: der Arbeitsbaum ist grün",
             gruen.every((w) => w[1]),
@@ -2058,7 +2035,7 @@ function quellenAbgriff() {
                 .map((w) => w[0])
                 .join(" | ")
         );
-        const vorStand = stammLib.ersetze(quelle, [
+        const vorStand = (t) => stammLib.ersetze(t, [
             [null, /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
                 "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"],
         ]);
@@ -2068,7 +2045,7 @@ function quellenAbgriff() {
             rot.filter((w) => !w[1]).length === 2,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
-        const kGruen = fahrWand(quelle, garage);
+        const kGruen = fahrWand();
         check(
             "Selbst-Test K1: der Arbeitsbaum ist grün",
             kGruen.every((w) => w[1]),
@@ -2078,15 +2055,15 @@ function quellenAbgriff() {
                 .join(" | ")
         );
         const kRot = fahrWand(
-            stammLib.ersetze(quelle, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
-            garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;")
+            (t) => stammLib.ersetze(t, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
+            (g) => g.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;")
         );
         check(
             "Selbst-Test K1: der Vor-Stand (Kopien in Welt und Labor) → K1b K1c feuern",
             kRot.filter((w) => !w[1]).length === 2,
             kRot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 3)}`).join(" ")
         );
-        const pGruen = pflichtWand(quelle);
+        const pGruen = pflichtWand();
         check(
             "Selbst-Test P: der Arbeitsbaum ist grün",
             pGruen.every((w) => w[1]),
@@ -2095,14 +2072,14 @@ function quellenAbgriff() {
                 .map((w) => w[0] + " " + w[2])
                 .join(" | ")
         );
-        const hGruen = huelleWand(quelle);
+        const hGruen = huelleWand();
         check(
             "Selbst-Test H5: der Arbeitsbaum ist grün",
             hGruen.every((w) => w[1]),
             hGruen.map((w) => w[2]).join(" | ")
         );
         const hRot = huelleWand(
-            stammLib.ersetze(quelle, null,
+            (t) => stammLib.ersetze(t, null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) break;"
             )
@@ -2110,7 +2087,7 @@ function quellenAbgriff() {
         check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
         // der Vor-Stand von D2: der Wagen-Kontakt rechnet den Kreis VERHALTEN.separation × bodySize statt des Leibs
         const h6Rot = huelleWand(
-            stammLib.ersetze(quelle, null,
+            (t) => stammLib.ersetze(t, null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.raumKugel;"
             )
@@ -2121,7 +2098,7 @@ function quellenAbgriff() {
             h6Rot[1][2]
         );
         const pRot = pflichtWand(
-            stammLib.ersetze(quelle, [
+            (t) => stammLib.ersetze(t, [
                 [null, /(\n {4}_fahrSatz\([^)]*\) \{)/,
                     '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'],
                 [null, /(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;"],
@@ -2331,13 +2308,12 @@ function quellenAbgriff() {
         process.exit(0);
     }
 
-    const quelle = stammLib.text(root);
     console.log("=== W — DIE STATISCHE WAND DES RITT-TAKTS (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of taktWand(quelle)) check(name, ok, detail);
+    for (const [name, ok, detail] of taktWand()) check(name, ok, detail);
     console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of pflichtWand(quelle)) check(name, ok, detail);
+    for (const [name, ok, detail] of pflichtWand()) check(name, ok, detail);
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): Wand + der Kern selbst (Node) ===");
-    for (const [name, ok, detail] of fahrWand(quelle, fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8")))
+    for (const [name, ok, detail] of fahrWand())
         check(name, ok, detail);
     require(path.join(root, "vehicle-core.js"));
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
@@ -2533,7 +2509,7 @@ function quellenAbgriff() {
             ? `kleinster Abstand zum Teil ${H8.nah.toFixed(3)} m · Eindringen ${H8.tief.toFixed(3)} m · am Ende ${H8.abstand.toFixed(3)} m · ${H8.vorn.toFixed(1)} m gefahren · ${H8.schritte} Schritte`
             : "keine Probe (gedrehte Teil-Box)"
     );
-    for (const [name, ok, detail] of huelleWand(quelle)) check(name, ok, detail);
+    for (const [name, ok, detail] of huelleWand()) check(name, ok, detail);
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
     check(

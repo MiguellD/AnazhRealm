@@ -237,25 +237,12 @@ async function probe(K) {
         r._gameLoopTick(tMs);
     };
     const f = r._ensureAssetFoundry();
-    const dl = performance.now() + 90000;
-    while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.zacken)) await pause(100);
     const MW = K.mess; // die Mess-Wiese aus EINER Quelle (spec/profiband/haushalt.json), nie ihre Abschrift
     st.playerMesh.position.set(MW.x, r._voxelSurfaceY(MW.x, MW.z) + 1.8, MW.z);
-    let stabil = 0,
-        last = -1;
-    for (let i = 0; i < 6000; i++) {
-        takt();
-        const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-        if (sz === last) stabil++;
-        else {
-            stabil = 0;
-            last = sz;
-        }
-        if (i > 300 && stabil > 120 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-        if (i % 5 === 0) await pause(10);
-    }
+    // die Welt steht, das Buch ist da (das EINE Einschwingen, welt-boot `__weltStehtNach`; bis D3d 90 s Wanduhr auf das Buch)
+    await window.__weltStehtNach(takt);
     const aus = {
-        ring: last,
+        ring: st.voxelChunks.size,
         exemplare: {},
         zensus: { werke: 0, taeter: [], klassen: {} },
         quelle: {},
@@ -576,28 +563,34 @@ async function probe(K) {
         }
         return n > 0;
     };
-    const code = (fn) => (typeof fn === "function" ? window.__codeOf(fn) : "");
-    const fels = code(r._felsBlockerParts);
     const baum = st.architectures.find(
         (e) => e && r._foundryPresetIsTree(r._foundryPresetForEntry(e)) && Array.isArray(r._baumGestaltTeile(e))
     );
     const drache = (gesetzt.find(([typ]) => typ === "tor_drachentor") || [])[1];
     aus.quelle = {
-        felsOhneTypListe: fels.length > 0 && !/_var/.test(fels),
+        felsOhneTypListe: window.__fehlt(r._felsBlockerParts, /_var/),
         partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
         ohneSpiegel:
-            !("STUDIO_WORLD_SCALE" in r.constructor) && !/STUDIO_WORLD_SCALE/.test(code(r._foundryWorldScaleMatrix)),
+            !("STUDIO_WORLD_SCALE" in r.constructor) && window.__fehlt(r._foundryWorldScaleMatrix, /STUDIO_WORLD_SCALE/),
         gestaltKern: typeof r.constructor._studioGestaltenKern === "function",
         torTafel:
             !!drache &&
             ruft(() => r._torBlockerAABBs(drache), r.constructor, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
-        // die Erzeuger und jede Methode, die sie rufen (eine Stufe tief: der Nachbau lag in einer Hilfs-Methode des Tors)
-        ohneBau: (() => {
-            const erzeuger = ["_populateBlockerAABBs", "_torBlockerAABBs", "_felsBlockerParts", "_hausBlockerBoxen"];
-            const namen = new Set(erzeuger);
-            for (const n of erzeuger) for (const m of code(r[n]).matchAll(/this\.(_\w+)\(/g)) namen.add(m[1]);
-            return ![...namen].some((n) => /buildInstance|buildGate/.test(code(r[n])));
-        })(),
+        // die Erzeuger und ihre Hilfs-Methoden (der Nachbau lag in einer Hilfs-Methode des Tors) — die Liste beim Namen
+        ohneBau: window.__fehlt(
+            [
+                "_populateBlockerAABBs",
+                "_torBlockerAABBs",
+                "_felsBlockerParts",
+                "_hausBlockerBoxen",
+                "_fahrzeugBlockerParts",
+                "_baumGestaltTeile",
+                "_blockerComputePartAABB",
+                "_blockerStampReach",
+                "_studioWeltSkala",
+            ].map((n) => r[n]),
+            /buildInstance|buildGate/
+        ),
     };
     return aus;
 }

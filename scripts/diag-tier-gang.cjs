@@ -385,12 +385,11 @@ const SCHWERE = (k) => {
         core.gangBecken = beckenEcht;
         r._gangZeile = zeileEcht;
     }
-    // die Zwillinge als Literal (kommentar-gestrippt: der EINE __codeOf des Welt-Boots)
-    const codeOf = window.__codeOf;
+    // die Zwillinge als Literal (kommentar-gestrippt: der EINE Absenz-Helfer des Welt-Boots)
     o.zwillinge = [];
-    if (/\b9\.81\b/.test(codeOf(r._animateHumanoidRig)) || /\b9\.81\b/.test(codeOf(r._gaitGesetz)))
+    if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
-    if (/\[\s*0\s*,\s*Math\.PI\s*\*/.test(codeOf(r._animateTierBaum)))
+    if (!window.__fehlt(r._animateTierBaum, /\[\s*0\s*,\s*Math\.PI\s*\*/))
         o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben MOTION.phases");
     return o;
 };

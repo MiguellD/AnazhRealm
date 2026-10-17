@@ -794,23 +794,24 @@ function wand(src) {
     const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
     const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
     const direkt = direktOrte.length;
-    const evalPos = rumpf("dslEvalPos");
-    const effekte = rumpf("dslEffects");
-    const wachen = ((effekte || "").match(/if \(!pos\)/g) || []).length;
+    // die Absenzen über den EINEN Helfer (ein Glied ohne Definition wirft: ROT mit Namen, nie still leer)
+    const fehltIn = (name, re) => {
+        try {
+            return stammLib.fehlt(name, re, src);
+        } catch (_e) {
+            return !fehlt.push(name);
+        }
+    };
     // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie; V-D1 fährt es).
     const plattform = rumpf("_genesisPlattform");
     const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length - ((plattform || "").match(/\.type === "start_plattform"/g) || []).length;
     // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
     // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
     // Ort an der Engstelle.
-    const positionen = rumpf("dslPositions");
-    const regelPos = rumpf("_dslRulePos");
     const ersatz = [
-        ((positionen || "").match(/_defaultSpawnPos\(\)/g) || []).length,
-        ((positionen || "").match(/dslClamp\(/g) || []).length,
-        ((positionen || "").match(/\bNumber\(/g) || []).length,
-        ((effekte || "").match(/const c[xyz] = Number\(/g) || []).length,
-        ((effekte || "").match(/playerMesh\.position : \{ x: 0/g) || []).length,
+        fehltIn("dslPositions", /_defaultSpawnPos\(\)|dslClamp\(|\bNumber\(/),
+        fehltIn("dslEffects", /const c[xyz] = Number\(|playerMesh\.position : \{ x: 0/),
+        fehltIn("_dslRulePos", /Array\.isArray/),
     ];
     // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
     // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
@@ -826,13 +827,13 @@ function wand(src) {
         ],
         [
             "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` liefert nie null; den benannten Grund und den Default-Spawn ohne Knoten fährt V-k5)",
-            da(evalPos) && !/return null/.test(evalPos),
+            fehltIn("dslEvalPos", /return null/),
             ohne("dslEvalPos").slice(3),
         ],
         [
             "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
-            da(effekte) && wachen === 0,
-            `${wachen} Wache(n)${ohne("dslEffects")}`,
+            fehltIn("dslEffects", /if \(!pos\)/),
+            ohne("dslEffects").slice(3),
         ],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
@@ -841,8 +842,8 @@ function wand(src) {
         ],
         [
             "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz)",
-            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && !/Array\.isArray/.test(regelPos),
-            `Ersatz-Stellen ${ersatz.join("/")}${ohne("dslPositions", "dslEffects", "_dslRulePos")}`,
+            ersatz.every(Boolean),
+            `ohne Ersatz dslPositions/dslEffects/_dslRulePos ${ersatz.join("/")}`,
         ],
         [
             "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
@@ -890,23 +891,11 @@ async function probe(arg) {
         m.trocken = r._landAt(P.x, P.z, 0);
         r._ensureGenesisPlatform(); // die Spawn-Idempotenz liest `_genesisPlattform`: kein zweiter Leger legt eine zweite
         m.plattformen = st.architectures.filter((a) => a && a.type === "start_plattform").length;
-        // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
+        // Der Wald wächst um den Spieler: ticken, bis die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`; bis D3d
+        // 150 s Wanduhr, bis die Bäume im 40-m-Kreis 15 Runden ruhten)
         const baeume = () =>
             st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
-        let stabil = 0,
-            last = -1;
-        const dl = performance.now() + 150000;
-        const t0 = performance.now();
-        while (performance.now() < dl) {
-            await tick(4, 20);
-            const n = baeume().length;
-            if (n === last) stabil++;
-            else {
-                stabil = 0;
-                last = n;
-            }
-            if (stabil >= 15 && n > 0 && performance.now() - t0 > 8000) break;
-        }
+        await window.__weltStehtNach(() => tick(1, 20));
         let kronen = 0,
             naechster = Infinity,
             art = null;

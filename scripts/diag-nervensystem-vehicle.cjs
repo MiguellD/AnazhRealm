@@ -22,13 +22,10 @@
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -36,60 +33,44 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-// Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
-const stripComments = stammLib.ohneKommentare;
-// Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
-function countOcc(src, needle) {
-    let n = 0,
-        i = 0;
-    for (;;) {
-        i = src.indexOf(needle, i);
-        if (i < 0) return n;
-        n++;
-        i += needle.length;
-    }
-}
-
-// ===== TEIL A: die statischen Absenzen (die Präsenzen beweist der lebende Draht B-F) =====
-function staticLaws(anazhSrc, phytoSrc) {
-    const anazhNC = stripComments(anazhSrc);
-    const phytoNC = stripComments(phytoSrc);
-    const out = [];
-    // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): der Stamm nennt keines der Zusatz-Felder selbst und ruft kerneVereinen
-    // genau einmal (ein zweiter Ingest-Pfad wird rot); dass der Chokepoint das Gesetz ruft, beweist Teil C per Spion.
-    const zusatz = ["zusatzKindStages", "zusatzBudget"];
-    const imStamm = zusatz.reduce((s, z) => s + countOcc(anazhNC, z), 0);
-    const rufe = countOcc(anazhNC, "kerneVereinen(");
-    out.push([
-        "A3: kein zweiter Ingest-Pfad für den Zweit-Kern-Merge (Zusatz-Felder im Stamm 0, kerneVereinen genau ein Ruf)",
-        rufe === 1 && imStamm === 0,
-        `Zusatz-Felder im Stamm=${imStamm} · kerneVereinen-Rufe=${rufe}`,
-    ]);
-    // A5: die Brücke greift auf keinen Kern per ns-Literal zu (Kommentare gestrippt).
-    out.push(["A5: die Bruecke kennt kein self.__vehicleCore-Literal", !/self\.__vehicleCore/.test(phytoNC)]);
-    // A10 (M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
-    out.push(["A10: der Auto-Register-Chokepoint kennt kein kind-if (M8)", autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg)]);
-    return out;
+// ===== TEIL A: die statischen Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes Glied wirft beim
+// Namen; die Präsenzen beweist der lebende Draht B-F). (A10, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint —
+// hält gate:pipeline-constitution N1 wörtlich.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
+function staticLaws(q) {
+    return [
+        // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): der Stamm nennt keines der Zusatz-Felder selbst, kerneVereinen ruft
+        // nur der Ingest-Chokepoint (ein zweiter Ingest-Pfad wird rot); dass er das Gesetz ruft, beweist Teil C per Spion.
+        [
+            "A3: kein zweiter Ingest-Pfad für den Zweit-Kern-Merge (Zusatz-Felder im Stamm 0, kerneVereinen nur in _foundryIngestRenderConfig)",
+            stammLib.fehlt(null, /zusatzKindStages|zusatzBudget/, q) && stammLib.fehlt({ ausser: "_foundryIngestRenderConfig" }, /kerneVereinen\(/, q),
+            stammLib.fehlt.wo,
+        ],
+        // A5: die Brücke greift auf keinen Kern per ns-Literal zu (die Brücke, K42).
+        [
+            "A5: die Bruecke kennt kein self.__vehicleCore-Literal",
+            stammLib.fehlt(null, /self\.__vehicleCore/, { datei: "foundry-bruecke.js" }),
+            stammLib.fehlt.wo,
+        ],
+    ];
 }
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-    const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
-
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
-        const broken2 = stammLib.ersetze(anazhSrc, "_foundryRequestSettlement",
-            /(_foundryRequestSettlement\([^)]*\) \{)/,
-            "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
-        );
-        const a3 = staticLaws(broken2, phytoSrc).find((l) => l[0].startsWith("A3"));
-        check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);
+        const a3 = staticLaws((t) =>
+            stammLib.ersetze(t, "_foundryRequestSettlement",
+                /(_foundryRequestSettlement\([^)]*\) \{)/,
+                "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
+            )
+        ).find((l) => l[0].startsWith("A3"));
+        check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false, a3 && a3[2]);
+        // V3: ein zweiter kerneVereinen-Ruf ausserhalb des Chokepoints -> A3 rot.
+        const a3b = staticLaws((t) =>
+            stammLib.ersetze(t, null, /(\n {4}_foundryRequestSettlement\([^)]*\) \{)/, "$1\n        globalThis.__phytoCore.kerneVereinen({});")
+        ).find((l) => l[0].startsWith("A3"));
+        check("Selbst-Test 3: zweiter kerneVereinen-Ruf injiziert -> A3 feuert", a3b && a3b[1] === false, a3b && a3b[2]);
+
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -99,7 +80,7 @@ function staticLaws(anazhSrc, phytoSrc) {
     }
 
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Absenzen (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

@@ -296,17 +296,11 @@ async function buehneBauen() {
     const bx = -893.8,
         bz = -844.9;
     st.playerMesh.position.set(bx - 3, r._voxelSurfaceY(bx - 3, bz) + 1.8, bz);
-    let stabil = 0,
-        last = -1;
-    for (let t = 0; t < 600 && stabil < 25; t++) {
+    await window.__weltStehtNach(() => {
         try {
             r._gameLoopTick(performance.now());
         } catch (_e) {}
-        const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-        stabil = sz === last ? stabil + 1 : 0;
-        last = sz;
-        await sleep(40);
-    }
+    }); // die Welt steht (das EINE Einschwingen, welt-boot)
     for (const c of [...st.creatures]) if (Math.hypot(c.position.x - bx, c.position.z - bz) < 80) r.removeCreature(c);
     window.__sb = { bx, bz };
     return { bx, bz, gy: r._voxelSurfaceY(bx, bz), csm: !!st.csmNode };

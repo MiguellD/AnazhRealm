@@ -74,10 +74,7 @@
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-
-const root = path.resolve(__dirname, "..");
+const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -583,23 +580,11 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         // Warmup: die Welt settled pumpen (plateau-basiert, die V18.273-Lehre).
         await page.evaluate(async () => {
             const r = window.anazhRealm;
-            let lastSize = -1,
-                stable = 0,
-                ticks = 0;
-            while (ticks < 3000) {
+            await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                ticks++;
-                const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (sz === lastSize) stable++;
-                else {
-                    stable = 0;
-                    lastSize = sz;
-                }
-                if (sz > 20 && stable > 40) break;
-                if (ticks % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
+            }); // die Welt steht (welt-boot)
         });
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).
@@ -636,7 +621,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
             const K = AG.schwung;
             const G = AG.gefuehl;
-            const codeOf = window.__codeOf;
 
             // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
             // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
@@ -657,18 +641,14 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 return n > 0;
             };
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
-            const atkSrc = codeOf(r._playerAttackCreature);
-            const absenzKlick = !/attackSpeed/.test(atkSrc) && !/damageCreature/.test(atkSrc);
-            const absenzDauer = !/attackSpeed/.test(codeOf(r._beginPlayerSwing));
-            o.checks.simLiestNieHitStop =
-                !/_hitStopFactor/.test(codeOf(r._stepFixedSim)) && !/_hitStopFactor/.test(codeOf(r._loopFixedStep));
+            const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
+            const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
+            o.checks.simLiestNieHitStop = window.__fehlt([r._stepFixedSim, r._loopFixedStep], /_hitStopFactor/);
             // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
             // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
-            const absenzKlang = !/new\s+AudioContext/.test(codeOf(r._substanzKlang));
+            const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
-            const absenzTod =
-                !/removeCreature\(/.test(codeOf(r._creatureCombatDeath)) &&
-                !/removeCreature\(/.test(codeOf(r._kreaturFaellt));
+            const absenzTod = window.__fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
@@ -1603,8 +1583,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
         );
-        const shellSrc = fs.readFileSync(path.join(root, "worlds/schmiede/schmiede.js"), "utf8");
-        const shellPf = { eigenerPfeil: /function buildPfeil\s*\(/.test(shellSrc) };
+        const shellPf = { eigenerPfeil: !stammLib.fehlt(null, /function buildPfeil\s*\(/, { datei: "worlds/schmiede/schmiede.js" }) };
         console.log(
             `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
         );

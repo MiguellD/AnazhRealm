@@ -772,8 +772,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
         // Der Chat-Toggle ist tot: der Source-Scan prüft das String-Literal `=== "voxel terrain on"`
         // (Code-Logik, nicht einen Kommentar, der den toten Befehl erwähnt).
-        const src = (typeof r.processChatCommand === "function" && window.__codeOf(r.processChatCommand)) || "";
-        out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
+        out.noChatToggle = window.__fehlt(r.processChatCommand, /===\s*["']voxel terrain on["']/);
         return out;
     });
 
@@ -947,16 +946,13 @@ async function checkBandVoxelTerrainCore(ctx) {
     const voxelV934Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" &&
-                window.__codeOf(r.generateTerrainWithParameters)) ||
-            "";
+        const gen = r.generateTerrainWithParameters;
         return {
             noExtendTerrain: typeof r.extendTerrain !== "function",
-            noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
-            noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(srcGen),
-            noCaveDataWrite: !/caveData\[i\]\s*=/.test(srcGen),
-            noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(srcGen),
+            noCaveDataAlloc: window.__fehlt(gen, /const\s+caveData\s*=\s*new\s+Float32Array/),
+            noVolcanoDataAlloc: window.__fehlt(gen, /const\s+volcanoData\s*=\s*new\s+Float32Array/),
+            noCaveDataWrite: window.__fehlt(gen, /caveData\[i\]\s*=/),
+            noVolcanoDataWrite: window.__fehlt(gen, /volcanoData\[i\]\s*=/),
         };
     });
 
@@ -980,29 +976,24 @@ async function checkBandVoxelTerrainCore(ctx) {
     const voxelV938Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" &&
-                window.__codeOf(r.generateTerrainWithParameters)) ||
-            "";
-        const srcGet = (typeof r.getTerrainHeightAt === "function" && window.__codeOf(r.getTerrainHeightAt)) || "";
-        const srcFind = (typeof r.findSurfaceAbove === "function" && window.__codeOf(r.findSurfaceAbove)) || "";
+        const srcGen = r.generateTerrainWithParameters;
         return {
             // (1) `calculateTerrainSteepness` ist gelöscht — kein
             // Aufrufer mehr nach Wasserfall-Loop-Lösch.
             noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
             // (2) heightData-Allokations-Loop in generateTerrain*
             // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
-            noHeightDataAlloc: !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
+            noHeightDataAlloc: window.__fehlt(srcGen, /new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/),
             // (3) der Wasserfall-Loop (256×256) ist weg:
             // kein `for (let z = 0; z < DEPTH; z++)` mehr.
-            noWaterfallLoop: !/for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/.test(srcGen),
+            noWaterfallLoop: window.__fehlt(srcGen, /for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/),
             // (4) `getTerrainHeightAt` ist voxel-only — kein
             // `groundHeightField`-Read mehr in der Source.
-            getHeightVoxelOnly: !/groundHeightField/.test(srcGet),
+            getHeightVoxelOnly: window.__fehlt(r.getTerrainHeightAt, /groundHeightField/),
             // (5) `findSurfaceAbove` ist voxel-only — kein
             // `groundHeightField`-Read mehr, kein floatingIslands-
             // Loop.
-            findSurfaceVoxelOnly: !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
+            findSurfaceVoxelOnly: window.__fehlt(r.findSurfaceAbove, /groundHeightField|floatingIslands/),
             // Regression-Schutz: die zwei verschlankten Funktionen
             // leben weiter + liefern eine endliche Zahl.
             getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
@@ -1066,7 +1057,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             // `this._terrainHeightAtWorld(`, damit ein Kommentar mit dem Namen nicht falsch-rot wird.
             waterPlaneVoxelOnly:
                 typeof r._buildWaterPlane === "function" &&
-                !/this\._terrainHeightAtWorld\s*\(/.test(window.__codeOf(r._buildWaterPlane)),
+                window.__fehlt(r._buildWaterPlane, /this\._terrainHeightAtWorld\s*\(/),
             // (10) Voxel-Pendants leben weiter (Vision-Anker)
             voxelGrassAlive: typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
             voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
@@ -1810,7 +1801,7 @@ async function checkBandGammaGenese(ctx) {
             out.randHits = fns.filter((fn) => {
                 const f = r[fn];
                 if (typeof f !== "function") return true;
-                return /Math\.random/.test(window.__codeOf(f));
+                return !window.__fehlt(f, /Math\.random/);
             });
             // (7) genVersion REIST im Snapshot (V8.59-Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
@@ -2537,8 +2528,7 @@ async function checkBandTodZensus(ctx) {
                         return false;
                     }
                     if (typeof f !== "function") return false;
-                    const code = window.__codeOf(f);
-                    return /_queueDispose\(/.test(code) && /taskAura|carryingSprite/.test(code);
+                    return !(window.__fehlt(f, /_queueDispose\(/) || window.__fehlt(f, /taskAura|carryingSprite/));
                 })
                 .sort();
             o.tot = { A: istTot(tA), B: istTot(tB) && !!(kill && kill.killed), C: istTot(tC) };

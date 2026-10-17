@@ -845,10 +845,6 @@ async function WELLE_L() {
             w.z.gueteProben = proben9.join(" | ");
             w.c.eineGuete = n9 >= 17 && uneins === 0;
         }
-        const codeVon = (name) =>
-            fn(name)
-                ? window.__codeOf(A.prototype[name])
-                : "";
         // (T10) KERN-PFLICHT des Treffer-Volumens: fehlt tetrapoda trefferZone, bricht der erste Treffer-Test LAUT
         // (_kernPflichtBruch, benannt) — nie still null, das je Tier gespeichert jedes Wesen unverwundbar machte.
         // Gegenprobe: mit dem Kern trägt dasselbe Tier seine Glieder, jedes mit Zone.
@@ -984,8 +980,7 @@ async function WELLE_L() {
             c.userData._stossV = null;
             c.position.copy(c0);
             c.updateMatrixWorld(true);
-            const sw = codeVon("_kampfSweepTick");
-            w.z.sweepFormel = (sw.match(/Math\.(sin|cos)\(/g) || []).length;
+            w.z.sweepFormel = window.__fehlt(A.prototype._kampfSweepTick, /Math\.(sin|cos)\(/) ? 0 : 1;
             w.c.sweepBlickVorn = konsum.sweepBlick && w.z.sweepFormel === 0;
         }
         // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
@@ -1019,11 +1014,11 @@ async function WELLE_L() {
                 "_uiSchubladeOffen",
                 "_uiZeigerFrei",
             ];
-            const selbst = [];
-            for (const m of welleL) {
-                for (const x of codeVon(m).matchAll(/typeof this\.([\w$]+) === "function"/g))
-                    if (typeof A.prototype[x[1]] === "function") selbst.push(m + "→" + x[1]);
-            }
+            const eigene = Object.getOwnPropertyNames(A.prototype).filter(
+                (n) => typeof (Object.getOwnPropertyDescriptor(A.prototype, n) || {}).value === "function"
+            );
+            const eigenTypeof = new RegExp('typeof this\\.(?:' + eigene.join("|").replace(/\$/g, "\\$") + ') === "function"');
+            const selbst = welleL.filter((m) => !window.__fehlt(A.prototype[m], eigenTypeof));
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
         }
@@ -1031,9 +1026,7 @@ async function WELLE_L() {
         // (_trefferErreichbar), und das liest den kreatur-Leib (_kreaturLeib) — kein eigenes Körpermaß (2 × Skala) im
         // Treffer-Pfad.
         {
-            const sw = codeVon("_kampfSweepTick");
-            const pf = codeVon("_tickPfeile");
-            w.z.grobFremd = ((sw + pf).match(/\.scale\.x\b/g) || []).length;
+            w.z.grobFremd = window.__fehlt([A.prototype._kampfSweepTick, A.prototype._tickPfeile], /\.scale\.x\b/) ? 0 : 1;
             w.z.grobKonsum = konsum;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
@@ -1480,9 +1473,7 @@ async function WELLE_L() {
                     weit: serieR(1.8, -0.77),
                     nah: serieR(1.3, -0.6),
                     // der Code des Dispatchers ohne Kommentare (die Kommentare zitieren die alte Zahl)
-                    toreZahl: (
-                        window.__codeOf(A.prototype.tryMouseBreak).match(/reachMaxM/g) || []
-                    ).length,
+                    toreZahl: window.__fehlt(A.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
                 };
             } finally {
                 r._spielerSagt = sagRoh;
@@ -2285,7 +2276,7 @@ async function WELLE_L() {
                     s._pfeile.splice(s._pfeile.indexOf(pf), 1);
                 }
             }
-            pfeilAus.wirtZylinder = /CylinderGeometry\(0\.015/.test(A.prototype._pfeilMeshAttach.toString());
+            pfeilAus.wirtZylinder = !window.__fehlt(A.prototype._pfeilMeshAttach, /CylinderGeometry\(0\.015/);
             // ein leerer Guss bricht laut (Nachbesserung 2 + 3): der Ofen liefert nichts — null ODER eine Gruppe ohne ein einziges
             // Mesh (jedes _foundryBuildMesh gab null), die Vorlage frisch — der Pfeil darf nicht still unsichtbar fliegen
             if (fn("_pfeilVorlage")) {
@@ -2388,7 +2379,6 @@ async function WELLE_L() {
             tod.unterWesen = s.creatures.indexOf(hT) !== -1;
             tod.aeltester = r._findOldestCreature() === hT;
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
-            const ohneKommentar = window.__codeOf;
             const FRAGT_ERLAUBT = new Set([
                 "damageCreature",
                 "_creatureCombatDeath",
@@ -2403,7 +2393,7 @@ async function WELLE_L() {
                     !FRAGT_ERLAUBT.has(n) &&
                     d &&
                     typeof d.value === "function" &&
-                    /\.dying\b/.test(ohneKommentar(d.value))
+                    !window.__fehlt(d.value, /\.dying\b/)
                 );
             });
             if (tod.liegt10s) {

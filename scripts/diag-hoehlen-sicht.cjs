@@ -680,29 +680,13 @@ const server = statikServer();
             const r = window.anazhRealm,
                 st = r.state,
                 T = window.THREE;
-            const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             };
-            // einschwingen: der Ring steht, kein Worker-Auftrag offen
-            let last = -1;
-            const schwinge = async () => {
-                let stabil = 0;
-                last = -1;
-                for (let i = 0; i < 6000; i++) {
-                    takt();
-                    const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-                    if (sz === last) stabil++;
-                    else {
-                        stabil = 0;
-                        last = sz;
-                    }
-                    if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-                    if (i % 5 === 0) await pause(10);
-                }
-            };
+            // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
+            const schwinge = () => window.__weltStehtNach(takt);
             // ── (n) DER STOFF ENTSTEHT IM WORKER: der Kern ist eingefroren — die Wand reicht dem Haupt-Thread eine zählende
             // Kopie (jeder Leser fragt `globalThis.__gelaendeCore` je Ruf) und zählt die Rufe des Fels-Gesetzes je Worker-Bau
             const GK0 = globalThis.__gelaendeCore;
@@ -744,7 +728,7 @@ const server = statikServer();
             stoffWorker.msMax = +stoffWorker.msMax.toFixed(2);
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
-            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size, stoffWorker };
+            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: st.voxelChunks.size, bereiche: s.bloecke.size, stoffWorker };
 
             // ── (a) SPIEGEL: Main-Sync gegen Worker für Chunks verschiedener Stufe
             const lpc = st.lastPlayerVoxelChunk;
@@ -1443,7 +1427,6 @@ const server = statikServer();
             // ── (f) DER BODEN-STOFF AM GRAPH (D3c: der gebaute Knoten-Graph und der Ruf, nie der Quelltext): die Himmels-Sicht
             // reist in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`), der Chunk-Stoff legt sie als
             // Verdeckung; die 2.5D-Lichtung und der Licht-Pool lesen sie nur mit `himmelsSicht` (in der Höhle die wahre Normale)
-            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             const haelt = (w, n) => {
                 const seen = new Set();
                 const geh = (x) => {
@@ -1509,17 +1492,18 @@ const server = statikServer();
                 aus.code.augenVorZweig =
                     bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
                 // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d
-                const pool = code(r._lichtPoolTerm);
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                    (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
+                    (n) => n !== "constructor" && typeof P[n] === "function" && !window.__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
                 aus.code.poolGesetz =
                     brdf >= atmo.lichtLage.length &&
                     brdf > 0 &&
-                    !/reciprocal\(\)/.test(pool) &&
+                    window.__fehlt(r._lichtPoolTerm, /reciprocal\(\)/) &&
                     brdfRufer.every((n) => n === "_lichtPoolTerm");
-                const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
-                aus.code.augenTslFremd = fremd ? fremd[1] : null;
+                aus.code.augenTslFremd =
+                    ["diffuseContribution", "specularColorBlended"].find(
+                        (n) => !window.__fehlt([r._lichtPoolTerm, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
+                    ) || null;
                 m1.dispose();
                 m0.dispose();
             } catch (e) {
@@ -1529,8 +1513,7 @@ const server = statikServer();
             // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
             // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
             // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
-            const fein = code(r._terrainGeologyAlbedo);
-            aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
+            aus.code.feinEigenHash = !window.__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
                 if (

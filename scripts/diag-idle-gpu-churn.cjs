@@ -103,24 +103,20 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     r.state.autoSeason = false; // die Saison hält (Bühne)
                     window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                     try { r._gameLoopTick(performance.now()); } catch (_e) {}
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    S.sz = sz;
-                    if (sz === S.lastSize) S.stableFor++; else { S.stableFor = 0; S.lastSize = sz; }
-                    // RUHE heißt auch: die Foundry hat geliefert (keine offenen Worker-Aufträge, Ingest leer) — sonst
-                    // streamen schwere Stoffe NACH dem Warmup herein, und jeder späte Erst-Compile kostet auf
-                    // swiftshader 50–70 s in EINEM Aufruf (gemessen 03.10.: 4 späte Compiles = 286 s).
-                    const f = r._foundry;
-                    const foundryRuhig = !f || ((!f.pending || f.pending.size === 0) && !(r._foundryIngestQueue && r._foundryIngestQueue.length));
-                    // die Chunk-Schwelle folgt dem Ring des Holzes (kienspan: Ring 2 = 25 Chunks; voll: Ring 4)
-                    const ring = r.state.chunkRingRadius || 2;
-                    const soll = Math.min(31, (2 * ring + 1) * (2 * ring + 1));
-                    // und das Start-Dorf steht (gewachsen oder kein Fleck) — es wächst nie in den Warmup hinein
-                    const wm = r.state.worldMeta || {};
-                    const dorfSteht =
-                        !!r._autoSettlementStartHopeless ||
-                        (!!(wm.settlementCells && wm.settlementCells.start) && !r._autoSettlementQueue && !r._autoSettlementPendingKey);
-                    S.dorf = dorfSteht;
-                    if (sz >= soll && S.stableFor > 30 && ((foundryRuhig && dorfSteht) || performance.now() - S.start > 180000)) S.done = true;
+                    // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — je Scheibe höchstens 120 ruhige Takte
+                    S.sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                    try {
+                        await window.__weltStehtNach(() => {
+                            try {
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {}
+                        }, 120);
+                        S.done = true;
+                    } catch (e) {
+                        if (!/DIE WELT STEHT NICHT/.test(String(e && e.message))) throw e;
+                        S.grund = e.message;
+                    }
+                    S.dorf = !!r._autoSettlementStartHopeless || !r._autoSettlementQueue;
                 }
                 await new Promise((res) => setTimeout(res, 6));
             }

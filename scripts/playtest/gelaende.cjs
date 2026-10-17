@@ -2388,7 +2388,7 @@ async function checkBandPhaseAFundament(ctx) {
                 typeof r._ensureHorizonMantle === "undefined" && typeof r._disposeHorizonMantle === "undefined",
             constGone: !r.constructor.HORIZON_MANTLE,
             stateGone: r.state.horizonMantle === undefined && r.state.mantleHoleUniforms === undefined,
-            tickGone: !/_ensureHorizonMantle/.test(window.__codeOf(r._runFrameScheduler)),
+            tickGone: window.__fehlt(r._runFrameScheduler, /_ensureHorizonMantle/),
         };
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).

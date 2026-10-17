@@ -1436,9 +1436,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 wm.fog !== false &&
                 r.state.scene.fogNode
             );
-            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // Kein Wasser-eigener Nebel-Mix mehr im Builder (die Luft ist EINE).
-            out.waterFogInShader = !/uFogNear|uFogFar|uFogColor/.test(builderSrc);
+            out.waterFogInShader = window.__fehlt(r._ensureHydroSurfaceMaterial, /uFogNear|uFogFar|uFogColor/);
         }
 
         return out;
@@ -1612,7 +1611,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
             out.fogTripleRange = r.setFogDistance === undefined;
             out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
-            out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
+            out.fogHandlerTriples = window.__fehlt(r.slidersInitDOM, /slider-fog/);
 
             // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
             const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
@@ -2120,7 +2119,7 @@ async function checkBandV18164WarumLicht(ctx) {
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
         out.ladeNebelKonsum =
-            !/_builtRingRadius|foliageRadius/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)) &&
+            window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/) &&
             r._smoothFogEdge === undefined;
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
@@ -2580,7 +2579,7 @@ async function checkBandSchattenTakt(ctx) {
             st.csmNode = { lights: k6 };
             r._schattenAlleNeu();
             aus.t6 = k6.every((l) => l.shadow.needsUpdate === true);
-            aus.quelle = String(r._loopShadowUpdate);
+            aus.ohneKarte = window.__fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
             // S1 — der alte Schreiber (V18.264: nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
             const k7 = [kaskade(), kaskade()];
             st.csmNode = { lights: k7 };
@@ -2627,7 +2626,7 @@ async function checkBandSchattenTakt(ctx) {
     check("Schatten-Takt T7: die Kamera bewegt sich — nah jeden Frame, fern jeden fernFaktor-ten, beide dürfen in einen Frame", a.t7kamera && a.t7[0] === 30 && a.t7[1] === 30 / T.fernFaktor && a.t7doppelt > 0, `30 Frames → ${a.t7 ? a.t7.join(" / ") : "–"}`);
     check(
         "Schatten-Takt SELBSTTEST: der alte Schreiber markiert keine Kaskade, das Gesetz vor 1410-3 trägt Doppel-Frames, der Takt schreibt nie shadowMap.needsUpdate",
-        a.s1.z[0] === 0 && a.s1.z[1] === 0 && a.s1.auto && a.s2 > 0 && !/shadowMap\.needsUpdate\s*=/.test(a.quelle),
+        a.s1.z[0] === 0 && a.s1.z[1] === 0 && a.s1.auto && a.s2 > 0 && a.ohneKarte,
         `S1 ${a.s1.z.join(" / ")} · S2 doppelt ${a.s2}`
     );
 }

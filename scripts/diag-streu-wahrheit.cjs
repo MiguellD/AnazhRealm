@@ -33,7 +33,6 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
-const QUELLE = stammLib.text(root);
 const PHYTO = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 const KERN = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
 const vm = require("vm");
@@ -143,11 +142,10 @@ function emitterVon(kernNC, kind) {
     return null;
 }
 
-// o: { src (Stamm), kern (foundry-core), daten (Hülle um die geladenen Daten), core (der Karten-Codec) } — der Selbsttest
+// o: { src (Wandlung des Stamms), kern (foundry-core), daten (Hülle um die geladenen Daten), core (der Karten-Codec) } — der Selbsttest
 // bricht je eines (D3c: Daten und Codec als Hülle am Lauf, nie am Quelltext)
 function pruefe(o = {}) {
     const fehler = [];
-    const src = o.src || QUELLE;
     const kernSrc = o.kern || KERN;
     const kernNC = ohneKommentare(kernSrc);
     // (1) DIE STUDIO-ARTEN der Nah-Streu
@@ -173,18 +171,18 @@ function pruefe(o = {}) {
         // (2) DAS FARB-GESETZ: weiches Gewebe (foliageMat · stemMat) backt jede Palette über vegFarbe.
         if (!/\b(foliageMat|stemMat)\b/.test(koerper)) continue; // Rinde/Fels: roh im Band (Studio-Gesetz)
         weich++;
-        const roh = (koerper.match(/new THREE\.Color\(/g) || []).length;
-        if (roh) fehler.push(`${id} (${name}): ${roh}× new THREE.Color( — eine Palette liegt roh als Albedo (Farb-Gesetz: vegFarbe)`);
-        let hexRoh = 0;
-        for (const m of koerper.matchAll(/0x[0-9a-fA-F]{6}\b/g))
-            if (!/vegFarbe\($/.test(koerper.slice(Math.max(0, m.index - 9), m.index))) hexRoh++;
-        if (hexRoh) fehler.push(`${id} (${name}): ${hexRoh} Hex-Paletten außerhalb von vegFarbe(…) — sRGB-Absicht roh gelesen`);
+        // die Absenzen über den EINEN Helfer, im Rumpf des Emitters (die Kern-Quelle des Laufs, gewandelt im Selbsttest)
+        const kopf = new RegExp("\\nfunction " + name + "\\(");
+        const kq = { datei: "foundry-core.js", wandel: o.kern };
+        if (!stammLib.fehlt(kopf, /new THREE\.Color\(/, kq))
+            fehler.push(`${id} (${name}): new THREE.Color( — eine Palette liegt roh als Albedo (Farb-Gesetz: vegFarbe) · ${stammLib.fehlt.wo}`);
+        if (!stammLib.fehlt(kopf, /(?<!vegFarbe\()0x[0-9a-fA-F]{6}\b/, kq))
+            fehler.push(`${id} (${name}): Hex-Palette außerhalb von vegFarbe(…) — sRGB-Absicht roh gelesen · ${stammLib.fehlt.wo}`);
     }
     if (!arten) fehler.push("keine Studio-Art der Nah-Streu geprüft — die Linse sähe nichts");
-    const nc = ohneKommentare(src);
-    // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
-    const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
-    if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
+    // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm, über den EINEN Helfer).
+    if (!stammLib.fehlt(null, /MeshLambert\w*/, o.src))
+        fehler.push(`Lambert-Stoff im Stamm (${stammLib.fehlt.wo}) — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
     // das Fundament (`_archFundMat`, der Stoff des Podests) fiel mit dem Podest (K10: der Erdbau des Plans trägt das Haus) —
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
@@ -199,13 +197,13 @@ function main() {
         const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
         // [Name, Muster, Bruch]
         const brueche = [
-            ["Farn mit roher Palette", /farn \(emitFern\): 1× new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
-            ["Schilf mit rohem Hex", /schilf \(emitSchilf\): 1 Hex-Paletten/, { kern: KERN.replace("vegFarbe(0x46602a)", "(0x46602a)") }],
+            ["Farn mit roher Palette", /farn \(emitFern\): new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
+            ["Schilf mit rohem Hex", /schilf \(emitSchilf\): Hex-Palette/, { kern: KERN.replace("vegFarbe(0x46602a)", "(0x46602a)") }],
             ["Boden-Zeile ohne Preset", /placement\.boden\.geist: kein Preset/, { daten: (d) => (d.cfg.placement.boden.geist = { ring: "nah", dichte: 1, skala: [1, 1] }) }],
             [
                 "Lambert-Wege",
                 /Lambert-Stoff/,
-                { src: stammLib.ersetze(QUELLE, "_stlZaunEnsurePool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
+                { src: (t) => stammLib.ersetze(t, "_stlZaunEnsurePool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
             ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],

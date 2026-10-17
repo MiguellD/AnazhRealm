@@ -1,0 +1,146 @@
+{
+    "zweck": "Die Quelltext-Wand (gate:source-probes, PFLICHT-OFFEN D3 Teil 3): je Datei in scripts/ die Leser von Spiel-Quelltext, die NICHT über den EINEN Absenz-Helfer gehen (window.__fehlt, stammLib.fehlt) — Arten seite (__codeOf/__dokuOf, roher toString), stamm (stammLib.text/textAusRev), datei (readFileSync auf Spiel-Code). liste: Struktur- und Mess-Leser mit Zweck. ratsche: Präsenz-Reste und Absenz-Wände, die noch am Helfer vorbei lesen — die Zahl sinkt nur.",
+    "liste": {
+        "scripts/audit-strict.cjs": {
+            "zweck": "Werkzeug: der Strikt-Audit zählt Glieder und Rufe des Stamms am AST",
+            "stamm": 3
+        },
+        "scripts/diag-altlasten.cjs": {
+            "zweck": "Struktur: die EINE Rückkehr-Wand der Gefallenen (Token über Stamm und Kerne, D3b/S2b-Besitz)",
+            "stamm": 8,
+            "datei": 2
+        },
+        "scripts/diag-apparat.cjs": {
+            "zweck": "Struktur: die Klingen lesen den Stamm am AST, ihre Selbsttest-Fälle sind Text",
+            "stamm": 6
+        },
+        "scripts/diag-atlas.cjs": {
+            "zweck": "Struktur: die Karte des Stamms aus den Stamm-Tags in index.html",
+            "datei": 1
+        },
+        "scripts/diag-betriebsgesetz.cjs": {
+            "zweck": "Struktur: das Muster der Stripper-Wand nennt den __codeOf-Einbau beim Namen",
+            "seite": 2
+        },
+        "scripts/diag-blocker-netz.cjs": {
+            "zweck": "Struktur: AST-Wand — kein Schreiben in die Boxen über Alias und Datenfluss (acorn)",
+            "stamm": 2
+        },
+        "scripts/diag-brennglas-takt.cjs": {
+            "zweck": "Struktur: AST-Wand — der Takt iteriert keinen Bestand über Alias, Destrukturierung, Kopie",
+            "stamm": 2
+        },
+        "scripts/diag-fall-waechter.cjs": {
+            "zweck": "Struktur: AST-Wand — kein Dach-Leser im Körper-Schritt, Oberkanten an benannter Liste",
+            "stamm": 2
+        },
+        "scripts/diag-kamera-laub.cjs": {
+            "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM) und die Studio-Quelle der Absenz W3",
+            "stamm": 1,
+            "datei": 1
+        },
+        "scripts/diag-ofen-contract.cjs": {
+            "zweck": "Messung: führt die Foundry-Brücke als Ofen im vm aus",
+            "datei": 1
+        },
+        "scripts/diag-persistence.cjs": {
+            "zweck": "Messung: führt den save-server aus (der Selbsttest wandelt seine Schreib-Art)",
+            "datei": 1
+        },
+        "scripts/diag-phyto-core-parity.cjs": {
+            "zweck": "Messung: führt foundry-core und three im vm aus (Parität Studio = Welt)",
+            "datei": 4
+        },
+        "scripts/diag-profiband.cjs": {
+            "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",
+            "stamm": 1
+        },
+        "scripts/diag-raum-tags.cjs": {
+            "zweck": "Struktur: AST-Wand — der Aufrufbaum von _raumTagsRechnen liest nur die Eingänge seines Schlüssels, keiner schreibt seine Tabellen",
+            "stamm": 2
+        },
+        "scripts/diag-reconnect.cjs": {
+            "zweck": "Messung: führt die Reconnect-Glieder des Stamms mit injizierter Umwelt aus (Fixturen A–C, Selbsttest C wandelt eine)",
+            "stamm": 1
+        },
+        "scripts/diag-regler-wirkt.cjs": {
+            "zweck": "Messung: führt die statischen Wurf-Gesetze des Stamms in Node aus",
+            "stamm": 1
+        },
+        "scripts/diag-schatten-bias.cjs": {
+            "zweck": "Struktur: AST-Wand — jede Zuweisung an normalBias steht im Gesetz _schattenNormalBias",
+            "stamm": 2
+        },
+        "scripts/diag-schirm-monotonie.cjs": {
+            "zweck": "Struktur: jede Schirm-Lesung am AST ihrem Glied zugeordnet, Alias-Fluss je Methode, Erzeuger und UI-Lage an benannter Liste",
+            "stamm": 1
+        },
+        "scripts/diag-streu-wahrheit.cjs": {
+            "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",
+            "datei": 2
+        },
+        "scripts/diag-tor-fern.cjs": {
+            "zweck": "Messung: führt _huelleVon aus der Quelle aus (die Fernform liest, was er liest)",
+            "stamm": 1
+        },
+        "scripts/diag-v1-pfad.cjs": {
+            "zweck": "Struktur: Render-Fluss (W2) und Zeit-Graph (W7) am AST, Absenzen W3–W6 über den Helfer",
+            "stamm": 1
+        },
+        "scripts/diag-vendor-anker.cjs": {
+            "zweck": "Messung: führt _diaetRefresh aus dem Stamm gegen r184 aus (Konsum statt Zitat)",
+            "stamm": 1
+        },
+        "scripts/diag-werk-im-wasser.cjs": {
+            "zweck": "Messung: führt vehicle-core im vm mit eingeschmuggelten Tätern aus (Kern-Linse K), die Leser-Absenzen über den Helfer",
+            "datei": 1
+        },
+        "scripts/diag-worker-dichte.cjs": {
+            "zweck": "Messung: führt gelaende-core und simplex im vm aus (der Worker-Spiegel bit-gleich)",
+            "datei": 2
+        },
+        "scripts/lib/abnahme-urteil.cjs": {
+            "zweck": "Messung: die Version des Stamms im Stempel des Beweisbilds",
+            "datei": 3
+        },
+        "scripts/lib/stamm.cjs": {
+            "zweck": "die EINE Lese-Schnittstelle des Stamms: index.html nennt seine Dateien",
+            "datei": 2
+        },
+        "scripts/playtest/netz.cjs": {
+            "zweck": "Struktur: jeder Broker-Typ des signaling-servers steht im Andock-Vertrag (Leuchtturm §7, Zugehörigkeit)",
+            "datei": 1
+        },
+        "scripts/stamm-rehome.cjs": {
+            "zweck": "Werkzeug: der Umzug eines Zweigs liest den Stamm an Revisionen und im Klon",
+            "stamm": 10
+        },
+        "scripts/stamm-umzug.cjs": {
+            "zweck": "Werkzeug: die Stamm-Chirurgie teilt Zonen — der Stamm-Text ist ihr Gegenstand",
+            "stamm": 3
+        },
+        "scripts/werkbank.cjs": {
+            "zweck": "Werkbank: --quelle tauscht den Stamm (A/B an einer anderen Quelle)",
+            "stamm": 1
+        }
+    },
+    "ratsche": {
+        "scripts/diag-fluss.cjs": {
+            "grund": "Absenz- und Struktur-Wand am Stamm (S2b-Besitz)",
+            "stamm": 1
+        },
+        "scripts/diag-foundry-crossfade.cjs": {
+            "grund": "Präsenz: 101 Text-Proben an Stamm, Kernen und Phytogenesis (D3c-crossfade, wartet auf S2)",
+            "stamm": 1,
+            "datei": 3
+        },
+        "scripts/diag-foundry-impostor.cjs": {
+            "grund": "Präsenz: zählt Direkt-Abtastungen im Stoff-Text (S2b-Besitz)",
+            "seite": 1
+        },
+        "scripts/diag-pipeline-constitution.cjs": {
+            "grund": "Absenz-Wand am Stamm-Text, 20 Absenzen (S2b-Besitz)",
+            "stamm": 1
+        }
+    }
+}

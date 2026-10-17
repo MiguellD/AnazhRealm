@@ -36,7 +36,6 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-const stripComments = stammLib.ohneKommentare;
 
 // Der DECKEL (aus der Messung, mit Marge): 8-9 Haeuser auf der Fernstufe = ~28k Tris
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
@@ -55,59 +54,28 @@ const KIND_SUBSTANCE_MINT = {
     tor_basis: "3192e75d2f5e82ab941f1b2356de608d45824819d704779750163797732ecfb3",
     haus_basis: "56b2a5e79068d1e21df40e1b77299e11b683f441d47c9bd427c9f7f69f6bc628",
 };
-// ERFINDER-WELLE (Linsen-Heilung) — der Zeilen-Parser war auf EINZEILEN-JSON geeicht
-// (`    name: {...json...},`); ein Prettier-Lauf formatierte die Substanz-Zeilen in
-// MEHRZEILIGE JS-Literale (unquoted keys) → die Regex griff ins Leere → Selbst-Test 5
-// stand rot / 5b vakuoes-gruen (die dokumentierte `gate | tail`-Maskierung verbarg es).
-// Jetzt: klammer-bewusste Extraktion (quote-sicher) + vm-Eval des Literals; die MUENZEN
-// bleiben UNANGETASTET — JSON.stringify(vm-Objekt) reproduziert byte-genau die gemintete
-// Kanonik (Key-Reihenfolge = Quelle, Zahlen exakt), sonst waere es ECHTE Drift.
-// Geschnitten vom EINEN Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher; die Lage der Zeile im Stamm-Text.
-function kindSubstanceRowSpan(src, name) {
-    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
-    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
-    const obj = tafel && stammLib.rumpf(tafel, zeile, { zitate: true });
-    if (!obj) return null;
-    const k = src.indexOf(tafel) + tafel.search(zeile);
-    const objStart = src.indexOf(obj, k);
-    return { rowStart: k + 1, objStart, objEnd: objStart + obj.length };
-}
-function kindSubstanceRows(src) {
-    if (!src.includes("AnazhRealm.KIND_SUBSTANCE = Object.freeze({")) return null;
-    const vm = require("vm");
-    const rows = {};
-    for (const name of Object.keys(KIND_SUBSTANCE_MINT)) {
-        const span = kindSubstanceRowSpan(src, name);
-        if (!span) {
-            rows[name] = null;
-            continue;
-        }
-        try {
-            rows[name] = vm.runInNewContext("(" + src.slice(span.objStart, span.objEnd) + ")");
-        } catch (_e) {
-            rows[name] = null;
-        }
-    }
-    return rows;
-}
+// Die Substanz ist der WERT der geladenen Klasse (`stammLib.ladeKlasse`: Kerne wie index.html, dann der Stamm) — kein
+// Zeilen-Parser am Stamm-Text (ERFINDER-WELLE: er griff nach einem Prettier-Lauf ins Leere); JSON.stringify des Objekts
+// reproduziert die gemintete Kanonik (Key-Reihenfolge = Quelle, Zahlen exakt), sonst waere es ECHTE Drift.
+const kindSubstanceRows = () => stammLib.ladeKlasse(root).AnazhRealm.KIND_SUBSTANCE || null;
+// N4: je Muenze die Zeile steht (parts > 0) und ihr sha256 trifft — [name, ok, detail]
+const n4 = (rows) =>
+    Object.entries(KIND_SUBSTANCE_MINT).map(([name, mint]) => {
+        const row = rows && rows[name];
+        const okParts = !!row && Array.isArray(row.parts) && row.parts.length > 0;
+        const hash = okParts ? kindSubstanceHash(row) : "fehlt";
+        return [`N4: KIND_SUBSTANCE.${name} steht (parts > 0) + sha256 == Muenze`, okParts && hash === mint, hash === mint ? `parts=${row.parts.length}` : hash];
+    });
 function kindSubstanceHash(row) {
     return crypto.createHash("sha256").update(JSON.stringify(row)).digest("hex");
 }
 
-// ── Teil S: die Absenz am Stamm (kommentar-gestrippt) — die Präsenzen beweist Teil B am Verhalten ──
-function triasStaticLaws(anazhSrc) {
-    const clone = stammLib.rumpf(stripComments(anazhSrc), "cloneBlueprint") || "";
-    return [
-        [
-            "T-S4: cloneBlueprint fasst donorOnly NICHT an",
-            clone.length > 0 && !/donorOnly/.test(clone.replace(/donorOnly` reist BEWUSST NICHT/g, "")),
-        ],
-    ];
-}
+// ── Teil S: die Absenz über den EINEN Helfer (stammLib.fehlt) — die Präsenzen beweist Teil B am Verhalten ──
+const triasStaticLaws = () => [
+    ["T-S4: cloneBlueprint fasst donorOnly NICHT an", stammLib.fehlt("cloneBlueprint", /donorOnly/), stammLib.fehlt.wo],
+];
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Trias-Linse feuert ===");
@@ -128,33 +96,23 @@ function triasStaticLaws(anazhSrc) {
             t0 > HAUS_FERN_DECKEL_TRIS,
             `L0=${Math.round(t0)} tris`
         );
-        // AUSLÖSCHUNGS-WELLE — N4 ist nicht vakuoes: eine gedriftete Substanz-Zeile
-        // verfehlt die Muenze, eine fehlende Zeile wird null.
-        // Die Injektionen zielen auf die ECHTE (prettier-formatierte) Form der Zeilen —
-        // eine Injektion, die ins Leere greift, macht den Vergleich vakuoes (genau der
-        // Zustand, den diese Heilung beendet; darum prueft 5 auch die PRAEMISSE laut).
-        const schwertSpan = kindSubstanceRowSpan(anazhSrc, "geraet_schwert");
-        const schwertText = schwertSpan ? anazhSrc.slice(schwertSpan.objStart, schwertSpan.objEnd) : "";
-        const bKS =
-            schwertSpan && /label: "Schwert"/.test(schwertText)
-                ? anazhSrc.slice(0, schwertSpan.objStart) +
-                  schwertText.replace('label: "Schwert"', 'label: "Schwertx"') +
-                  anazhSrc.slice(schwertSpan.objEnd)
-                : anazhSrc;
-        const rowsB = kindSubstanceRows(bKS);
+        // AUSLÖSCHUNGS-WELLE — N4 ist nicht vakuoes: eine gedriftete Substanz-Zeile verfehlt die Muenze, eine fehlende
+        // faellt; T-S4 feuert an einem Klon, der donorOnly anfasst (der Vor-Stand ueber den EINEN Helfer).
+        const rows = kindSubstanceRows();
+        const n4Rot = (wandel) => n4(wandel(structuredClone(rows))).filter((l) => !l[1]).map((l) => l[0]);
+        check("Selbst-Test 5-: die echten Zeilen treffen ihre Muenzen (der Vergleich ist nicht immer rot)", n4(rows).every((l) => l[1]));
         check(
             "Selbst-Test 5: eine gedriftete Substanz-Zeile verfehlt die Muenze (N4 feuert)",
-            !!(schwertSpan && rowsB && rowsB.geraet_schwert) &&
-                kindSubstanceHash(rowsB.geraet_schwert) !== KIND_SUBSTANCE_MINT.geraet_schwert,
-            schwertSpan ? undefined : "geraet_schwert-Zeile nicht gefunden (Parser-Praemisse verletzt)"
+            n4Rot((r) => ((r.geraet_schwert.label += "x"), r)).join() === "N4: KIND_SUBSTANCE.geraet_schwert steht (parts > 0) + sha256 == Muenze"
         );
-        const torSpan = kindSubstanceRowSpan(anazhSrc, "tor_basis");
-        const bKS2 = torSpan ? anazhSrc.slice(0, torSpan.rowStart) + anazhSrc.slice(torSpan.objEnd + 1) : anazhSrc;
-        const rowsB2 = kindSubstanceRows(bKS2);
         check(
-            "Selbst-Test 5b: eine ENTFERNTE Substanz-Zeile wird null (N4 feuert)",
-            !!(torSpan && rowsB2) && rowsB2.tor_basis === null,
-            torSpan ? undefined : "tor_basis-Zeile nicht gefunden (Parser-Praemisse verletzt)"
+            "Selbst-Test 5b: eine ENTFERNTE Substanz-Zeile faellt (N4 feuert)",
+            n4Rot((r) => (delete r.tor_basis, r)).join() === "N4: KIND_SUBSTANCE.tor_basis steht (parts > 0) + sha256 == Muenze"
+        );
+        check(
+            "Selbst-Test 6: ein Klon, der donorOnly anfasst, macht T-S4 rot beim Namen",
+            !stammLib.fehlt("cloneBlueprint", /donorOnly/, (t) => stammLib.ersetze(t, "cloneBlueprint", "const source = ", "const donorOnly = 0, source = ")),
+            stammLib.fehlt.wo
         );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -194,25 +152,13 @@ function triasStaticLaws(anazhSrc) {
                 : null
         ) === "[0,1,2,3]"
     );
-    // AUSLÖSCHUNGS-WELLE — N4: die Substanz-Paritaet als stehende Linse (alle 5
-    // KIND_SUBSTANCE-Zeilen existieren mit nicht-leeren parts, sha256 == Muenze).
-    {
-        const rows = kindSubstanceRows(anazhSrc);
-        for (const [name, mint] of Object.entries(KIND_SUBSTANCE_MINT)) {
-            const row = rows && rows[name];
-            const okParts = !!row && Array.isArray(row.parts) && row.parts.length > 0;
-            const hash = okParts ? kindSubstanceHash(row) : "fehlt";
-            check(
-                `N4: KIND_SUBSTANCE.${name} steht (parts > 0) + sha256 == Muenze`,
-                okParts && hash === mint,
-                hash === mint ? `parts=${row.parts.length}` : hash
-            );
-        }
-    }
+    // AUSLÖSCHUNGS-WELLE — N4: die Substanz-Paritaet als stehende Linse (alle 5 KIND_SUBSTANCE-Zeilen der geladenen
+    // Klasse existieren mit nicht-leeren parts, sha256 == Muenze).
+    for (const [name, ok, detail] of n4(kindSubstanceRows())) check(name, ok, detail);
 
     // ===== Teil S =====
     console.log("\n=== TEIL S: die Absenz am Stamm ===");
-    for (const [name, ok] of triasStaticLaws(anazhSrc)) check(name, ok);
+    for (const [name, ok, wo] of triasStaticLaws()) check(name, ok, wo);
 
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");

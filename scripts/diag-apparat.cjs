@@ -2,12 +2,8 @@
 // ============================================================================
 // DIE APPARAT-LINSE — gate:apparat (ULTRAGUSS U1, V18.452)
 //
-// Gesetz #0: nach der Fehler-Klasse die LINSE bauen. Die Klasse: rohe
-// `.toString()`-Quelltext-Zitate im Playtest brechen bei jeder Kern-Wanderung
-// trotz identischem Verhalten UND umgehen den __codeOf-Kommentar-Stripper
-// (ein zitierender Kommentar hält sie stumm grün — falsch-positiv). U1 hat den
-// Bestand auf den legitimen Rest gesenkt (der Node-seitige Stream-Chunk);
-// diese Linse friert ihn ein — der Bestand darf nur SINKEN (Ratchet).
+// Gesetz #0: nach der Fehler-Klasse die LINSE bauen. Rohe `.toString()`-Quelltext-Zitate wacht seit D3d die
+// Quelltext-Wand (gate:source-probes); hier steht der typeof-Ratchet — der Bestand darf nur SINKEN.
 //
 // Zweite Aufgabe: der ANKER-KATALOG (window.__anker in playtest.cjs) ist nur
 // wahr, wenn jedes katalogisierte Symbol im lebenden Stamm-CODE existiert —
@@ -20,8 +16,7 @@
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
 //
 // Selbst-Test: --selftest beweist alle sechs Klingen (kein vakuöses Grün):
-// (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
-//     ein bloßer Kommentar hebt ihn NICHT; (2) ein erfundenes Katalog-Symbol
+// (1) eine injizierte typeof-Probe hebt den Zähler über den Ratchet, ein Kommentar nicht; (2) ein erfundenes Katalog-Symbol
 // feuert die Katalog-Prüfung; (3) ein Regex- und ein Text-Anker mit Parameter-Liste
 // werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
 // (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen;
@@ -34,19 +29,8 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-// Der eingefrorene Bestand (die U1-Nachher-Zahl, kommentar-bereinigt gezählt).
-// Der EINE legitime Rest: `chunk.toString()` am Node-Stream (kein Quelltext-
-// Zitat einer Realm-Methode). Sinkt der Bestand, wird diese Zahl GESENKT —
-// nie erhöht (eine Erhöhung wäre ein begründeter Vertrags-Akt im Commit).
-const FROZEN_TOSTRING = 1;
-
-// Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
-// zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
+// Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
-
-function countToString(src) {
-    return (stripComments(src).match(/\.toString\(\)/g) || []).length;
-}
 
 // V18.462 — DER typeof-RATCHET (ultraguss U1-Folge, die Voll-Wanderung ist
 // tabellen-getrieben offen): 878 namens-verankerte `typeof … === "function"`-
@@ -63,14 +47,7 @@ function countTypeof(src) {
 }
 
 function scanRatchet(playtestSrc) {
-    const n = countToString(playtestSrc);
     const errs = [];
-    if (n > FROZEN_TOSTRING)
-        errs.push(
-            `Ratchet: ${n} rohe .toString()-Quelltext-Zitate in scripts/playtest.cjs (eingefroren: ${FROZEN_TOSTRING}). ` +
-                `Neue Proben lesen window.__codeOf (kommentar-gestrippt), beweisen KONSUM via window.__consumes ` +
-                `oder proben Katalog-Existenz via window.__anker — nie rohes .toString().`
-        );
     const nT = countTypeof(playtestSrc);
     if (nT > FROZEN_TYPEOF)
         errs.push(
@@ -78,7 +55,7 @@ function scanRatchet(playtestSrc) {
                 `(eingefroren: ${FROZEN_TYPEOF}). Neue Proben lesen window.__anker/__consumes — der Bestand darf nur sinken ` +
                 `(sinkt er, FROZEN_TYPEOF mitsenken: der Ratchet klemmt nach unten nach).`
         );
-    return { n, nT, errs };
+    return { nT, errs };
 }
 
 // Den ANKER-KATALOG aus playtest.cjs lesen (die EINE frozen Tabelle).
@@ -472,13 +449,7 @@ function selftest() {
         if (parameterAnker(datei, q, stammFake).length) fails.push(`Klinge 4 feuert ohne Kopf-Muster: ${datei} ${q}`);
     if (!parameterAnker("probe.cjs", `const r = /${frei[1]}/;`, stammFake).some((x) => /Klinge 4/.test(x)))
         fails.push("Klinge 4: die freie Stelle schweigt auch in fremder Datei");
-    // Klinge 1a: eine injizierte Probe hebt den Zähler über den Ratchet.
-    const inject = "const x = 1;\n" + "y.toString();\n".repeat(FROZEN_TOSTRING + 1);
-    if (scanRatchet(inject).errs.length !== 1) fails.push("Ratchet feuert nicht bei Injektion");
-    // Klinge 1b: ein bloßer Kommentar zählt NICHT (die __codeOf-Disziplin).
-    const comment = "const x = 1;\n" + "// y.toString() im Kommentar\n".repeat(FROZEN_TOSTRING + 5);
-    if (countToString(comment) !== 0) fails.push("Ratchet zählt Kommentare mit (soll: 0)");
-    // Klinge 1c (V18.462): der typeof-Ratchet feuert bei Injektion über den Bestand.
+    // Klinge 1 (V18.462): der typeof-Ratchet feuert bei Injektion über den Bestand.
     const injectT = 'typeof r.probe === "function";\n'.repeat(FROZEN_TYPEOF + 1);
     if (!scanRatchet(injectT).errs.some((e) => /typeof-Ratchet/.test(e)))
         fails.push("typeof-Ratchet feuert nicht bei Injektion");
@@ -577,17 +548,12 @@ function main() {
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
-    if (ratchet.n < FROZEN_TOSTRING)
-        console.log(
-            `ℹ️  Der Bestand sank (${ratchet.n} < ${FROZEN_TOSTRING}) — FROZEN_TOSTRING in scripts/diag-apparat.cjs nachziehen (der Ratchet darf enger).`
-        );
     if (ratchet.nT < FROZEN_TYPEOF)
         console.log(
             `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
         );
     console.log(
-        `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate + ` +
-            `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
+        `✅ DIE APPARAT-LINSE steht — ${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (Ratchet nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
             `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster), ` +
             `keine hält eine Taste nach der Wanduhr und keine zählt Klammern selbst oder zielt auf den ersten Treffer im ganzen Stamm (0 von ${tasten.n}).`

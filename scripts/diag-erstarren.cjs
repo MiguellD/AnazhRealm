@@ -62,24 +62,11 @@ function check(name, ok, detail) {
 
             // ── Settle: die Welt plateau-pumpen (V18.273-Lehre) ──
             {
-                let lastSize = -1,
-                    stable = 0,
-                    ticks = 0;
-                while (ticks < 3000) {
+                res.settleTicks = await window.__weltStehtNach(() => {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}
-                    ticks++;
-                    const sz = s.voxelChunks ? s.voxelChunks.size : 0;
-                    if (sz === lastSize) stable++;
-                    else {
-                        stable = 0;
-                        lastSize = sz;
-                    }
-                    if (sz > 20 && stable > 40) break;
-                    if (ticks % 10 === 0) await new Promise((res2) => setTimeout(res2, 0));
-                }
-                res.settleTicks = ticks;
+                }); // die Welt steht (welt-boot)
             }
 
             // ── Phasen-Shim: die UNGATED-Ticks + Streaming wall-clock attribuieren ──

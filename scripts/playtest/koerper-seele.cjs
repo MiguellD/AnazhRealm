@@ -1280,7 +1280,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.auraTickGone = typeof r.tickPlayerAura !== "function";
         out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
         out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
-        out.auraLoopGone = !/tickPlayerAura/.test(window.__codeOf(r.startEternalLoop));
+        out.auraLoopGone = window.__fehlt(r.startEternalLoop, /tickPlayerAura/);
         out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
         // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
         // Nachricht ist ein UNBEKANNTER Typ und wird vom Dispatcher generisch

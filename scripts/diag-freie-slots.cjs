@@ -35,32 +35,22 @@
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);
-const root = path.resolve(__dirname, "..");
 
-// ── Q: die Quelle. Kommentare fallen, dann zählt jede `<x>.count =`-Zuweisung, deren Empfänger keine bekannte
-//      Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange). Erlaubt ist genau die eine im Chokepoint `_instanzZahl`.
-const ERLAUBT = /^(slot|targetSlot|inv\[existingIdx\]|z\.drawRange)$/;
-// Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
-const ohneKommentare = stammLib.ohneKommentare;
-function quellBefunde(src) {
+// ── Q: die Quelle über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentarfrei): keine `<x>.count =`-Zuweisung, deren
+//      Empfänger keine bekannte Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange); `mesh.count =` NUR im Chokepoint
+//      `_instanzZahl`. `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
+const FREMD_COUNT = /(?<![\w$.[\]])(?!(?:slot|targetSlot|inv\[existingIdx\]|z\.drawRange|mesh)\.count\s*=)[A-Za-z_$][\w$.[\]]*\.count\s*=(?!=)/;
+function quellBefunde(q) {
     const b = [];
-    const code = ohneKommentare(src);
-    const zeilen = code.split("\n");
-    const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\([^)]*\) \{/.test(z));
-    zeilen.forEach((z, i) => {
-        for (const m of z.matchAll(/([A-Za-z_$][\w$.[\]]*)\.count\s*=(?!=)/g)) {
-            if (ERLAUBT.test(m[1])) continue;
-            if (m[1] === "mesh" && kopf >= 0 && i > kopf && i <= kopf + 3) continue;
-            b.push(`Zeile ${i + 1}: \`${m[0].trim()}\` schreibt count an _instanzZahl vorbei`);
-        }
-    });
-    if (/\b_lebt\b/.test(code)) b.push("der Shader-Riegel `_lebt` (tote Karten-Slots) lebt noch");
-    if (/\.free\.(push|pop)\(/.test(code)) b.push("eine Free-Liste (`.free.push/pop`) lebt noch");
+    const nein = (g, re, was) => stammLib.fehlt(g, re, q) || b.push(`${stammLib.fehlt.wo}: ${was}`);
+    nein(null, FREMD_COUNT, "schreibt count an _instanzZahl vorbei");
+    nein({ ausser: "_instanzZahl" }, /(?<![\w$.[\]])mesh\.count\s*=(?!=)/, "`mesh.count =` außerhalb von _instanzZahl schreibt count an ihr vorbei");
+    nein(null, /\b_lebt\b/, "der Shader-Riegel `_lebt` (tote Karten-Slots) lebt noch");
+    nein(null, /\.free\.(push|pop)\(/, "eine Free-Liste (`.free.push/pop`) lebt noch");
     return b;
 }
 
@@ -430,16 +420,15 @@ async function welt() {
 (async () => {
     const fails = [];
     // ── Q (Quelle) + ihr Selbsttest ──
-    const src = stammLib.text(root);
-    const q = quellBefunde(src);
+    const q = quellBefunde();
     console.log("=== Q — die Quelle (kommentar-frei) ===");
     console.log(q.length ? q.map((x) => "  ❌ " + x).join("\n") : "  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`");
     for (const x of q) fails.push("Q: " + x);
     if (process.argv.includes("--selftest")) {
-        const schmuggel = quellBefunde(
-            stammLib.ersetze(src, null, /\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(")
+        const schmuggel = quellBefunde((t) =>
+            stammLib.ersetze(t, null, /\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n        mesh.count = 0;\n    }\n    static _instanzZahl(")
         );
-        const ok = schmuggel.some((x) => /`g\.mesh\.count =`/.test(x));
+        const ok = schmuggel.length === 2 && schmuggel.every((x) => /an _instanzZahl vorbei|an ihr vorbei/.test(x));
         console.log(`  ${ok ? "✅" : "❌"} SELBSTTEST Q: eine eingeschmuggelte count-Zeile wird genannt (${schmuggel.length} Befund)`);
         if (!ok) fails.push("Q-SELBSTTEST: die eingeschmuggelte count-Zeile blieb ungesehen");
     }

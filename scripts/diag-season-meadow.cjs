@@ -10,15 +10,13 @@
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
-const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const stammLib = require("./lib/stamm.cjs");
-const STAMM = stammLib.text(root);
-const SHELL = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
 const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(root);
-const strip = stammLib.ohneKommentare;
+// die Absenzen über den EINEN Helfer (stammLib.fehlt, kommentarfrei); `o.shell` die Wandlung der Shell im Selbsttest
+const SHELL = "worlds/terrain/phytogenesis.js";
 
 // o.welt(phase) → {r,g,b} (die Methode der Klasse), o.mul: der Leser, den `_tickSeason` ruft (Selbsttest: gebrochen)
 function pruefe(o) {
@@ -45,8 +43,12 @@ function pruefe(o) {
             .map(([n, c]) => `${n} (${c.r.toFixed(2)},${c.g.toFixed(2)},${c.b.toFixed(2)})`)
             .join(" · ")
     );
-    pruef("F2a die Shell trägt keine Paletten-Literale (Stützstellen nur im SAISON_GESETZ)", !/0x6a9a3e|0xb0702a|0x6e6650/.test(strip(o.shell)));
-    pruef("F2b keine dritte Palette im Stamm (_seasonTint fort, keine Keyframe-Tabelle)", !/_seasonTint\b/.test(strip(STAMM)));
+    pruef(
+        "F2a die Shell trägt keine Paletten-Literale (Stützstellen nur im SAISON_GESETZ)",
+        stammLib.fehlt(null, /0x6a9a3e|0xb0702a|0x6e6650/, { datei: SHELL, wandel: o.shell }),
+        stammLib.fehlt.wo
+    );
+    pruef("F2b keine dritte Palette im Stamm (_seasonTint fort, keine Keyframe-Tabelle)", stammLib.fehlt(null, /_seasonTint\b/), stammLib.fehlt.wo);
     const w = Object.create(A.prototype);
     w.state = { seasonPhase: 0.625, autoSeason: false };
     const u = { uSeasonMul: { value: { r: 1, g: 1, b: 1 } } };
@@ -69,12 +71,12 @@ const check = (name, ok, detail) => {
 };
 if (process.argv.includes("--selftest")) {
     console.log("=== SAISON-FARBE — SELBST-TEST: die Linse feuert auf injizierte Brüche ===");
-    const roh = (o, wer) => pruefe(Object.assign({ welt: WELT, shell: SHELL }, o)).find((g) => g[0].startsWith(wer))[1] === false;
+    const roh = (o, wer) => pruefe(Object.assign({ welt: WELT }, o)).find((g) => g[0].startsWith(wer))[1] === false;
     check("Selbst-Test 1: Welt ohne Phasen-Versatz (+0,125) → F1 rot", roh({ welt: (ph) => WELT(ph + 0.125) }, "F1"));
     check("Selbst-Test 2: die Welt mit eigenem Gesetz (folgt der Kern-Stützstelle nicht) → F0 rot", roh({ welt: (ph) => (ph === 0.625 ? { r: 1.2, g: 0.9, b: 0.7 } : WELT(ph)) }, "F0"));
     check(
         "Selbst-Test 3: eine Paletten-Kopie zurück in die Shell → F2a rot",
-        roh({ shell: SHELL.replace("const seq = SAISON_GESETZ.stuetzen;", "const seq = [{ ti: 0x6a9a3e }];") }, "F2a")
+        roh({ shell: (t) => t.replace("const seq = SAISON_GESETZ.stuetzen;", "const seq = [{ ti: 0x6a9a3e }];") }, "F2a")
     );
     check("Selbst-Test 5: _tickSeason ohne Leser (der Mul schreibt nicht) → F3 rot", roh({ mul: () => null }, "F3"));
     if (errs.length) {
@@ -85,7 +87,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 console.log("=== DIE SAISON IST EINE FARBE — uSeasonMul nach dem Studio-Gesetz (Node, die geladene Klasse) ===");
-for (const [n, ok, d] of pruefe({ welt: WELT, shell: SHELL })) check(n, ok, d);
+for (const [n, ok, d] of pruefe({ welt: WELT })) check(n, ok, d);
 if (errs.length) {
     console.error(`\n❌ ROT — ${errs.length} Gesetz(e) verletzt.`);
     process.exit(1);

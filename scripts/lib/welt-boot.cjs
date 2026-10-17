@@ -31,8 +31,44 @@ const { ohneKommentare } = require("./stamm.cjs");
 // Code einer Funktion oder eines Quelltexts ohne Kommentare: der EINE Stripper aus stamm.cjs, als Text übertragen) und
 // `window.__dokuOf` (ungestrippt, für Marker, die per Definition im Kommentar wohnen — nie rohes .toString(), gate:apparat).
 // Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
-// `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3c): true = das Muster fehlt im Code ohne Kommentare.
-const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => !re.test(window.__codeOf(f));`;
+// `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
+// Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
+// DAS EINE EINSCHWINGEN jeder Linse (`await window.__weltStehtNach(takt, max)`): Takt um Takt, bis die Welt steht (A9
+// `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (CI 39016311220: die Ring-Zahl stand, die
+// Nah-Wiese wartete auf ihr Gras). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
+// ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Headless hält der Regler, solange sie schwingt (der PID
+// atmet ohne Bildrate, die Welt stünde nie). Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
+async function weltStehtNach(takt, max) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const W = () => r._weltStand || {};
+    const steht = () => r._weltSteht() && !r._bepflanzungWartet();
+    const seite = async () => {
+        const vor = W().takte;
+        await new Promise((ok) => requestAnimationFrame(ok));
+        if (W().takte === vor) r._gameLoopTick(performance.now());
+    };
+    const regler = st.perfRegulator;
+    if (st.renderer && st.renderer._isHeadlessNull) st.perfRegulator = false;
+    let n = 0;
+    try {
+        for (let k = 0, o; !(n && steht()) && k < (max || 1800); n++) {
+            await (takt || seite)(n);
+            o = r._weltOffen();
+            if (!(o.foundry + o.chunks + o.wald) && !r._bepflanzungWartet()) k++;
+            if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
+        }
+    } finally {
+        st.perfRegulator = regler;
+    }
+    if (!steht())
+        throw new Error(
+            `DIE WELT STEHT NICHT nach ${n} Takten: ` +
+                (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`)
+        );
+    return n;
+}
+const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); window.__weltStehtNach = ${weltStehtNach};`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -257,6 +293,8 @@ function pulsSeite() {
         if (st) {
             t.push(`renderer ${st.rendererReady === true ? "bereit" : "—"}`, `weltbild ${st._weltbildDa ? "da" : "—"}`);
             if (st.flightRecorder) t.push(`frames ${st.flightRecorder.frames}`);
+            const W = window.anazhRealm._weltStand; // worauf das Einschwingen wartet (`__weltStehtNach`), beim Namen
+            if (W) t.push(`welt ${W.takte} Takte · Ruhe ${W.ruhe} · zuletzt ${W.grund}`);
         } else t.push("anazhRealm —");
         t.push(`programme ${Z.programme}`, `gl-sync ${Z.sync}`);
         if (Z.letzt) t.push(`zuletzt ${Z.letzt}`);
@@ -659,6 +697,7 @@ module.exports = {
     REZEPTE,
     GPU_REZEPTE,
     CODE_OF_SEITE,
+    weltStehtNach,
     statikServer,
     starteBrowser,
     oeffneWelt,

@@ -235,18 +235,7 @@ async function welt() {
         const [x, z] = window.__messWiese;
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
-        let stabil = 0,
-            last = -1,
-            takte = 0;
-        while (performance.now() < dl && takte < 3000) {
-            takt();
-            takte++;
-            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-            stabil = sz === last && offen() === 0 ? stabil + 1 : 0;
-            last = sz;
-            if (takte >= 120 && stabil >= 40) break;
-            await sleep(15);
-        }
+        const takte = await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
         window.__tiereHalten();
         // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ pxMin·(1+hyst)) und
@@ -316,7 +305,7 @@ async function welt() {
             takte,
             stillTakte,
             still: still >= 3,
-            chunks: last,
+            chunks: st.voxelChunks ? st.voxelChunks.size : 0,
             foundryOffen: offen(),
             dStern: +dStern.toFixed(2),
             dWolf: +cam.position.distanceTo(w.position).toFixed(2),

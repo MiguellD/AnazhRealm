@@ -38,11 +38,9 @@
 //   node scripts/diag-render-diaet.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
-const root = path.resolve(__dirname, "..");
 // Der nur-sinkende ANKER: die 6-Farben-Fixture darf höchstens SO viele Material-Familien
 // erzeugen (heute 1 — EIN geteiltes Material; er darf nie steigen).
 const RD_FAMILIEN_ANKER = 1;
@@ -55,19 +53,12 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── Q: die Quell-Proben (Chokepoint-Disziplin, kein Parallelpfad) ──
-    const src = stammLib.text(root);
-    // Kein dritter setColorAt-Pfad in den zwei Slot-Schreibern (die alte
-    // useInstanceTint-Direktklammer ist gefallen).
-    const fnBody = (name) => stammLib.rumpf(src, name) || ""; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
-    const addBody = fnBody("_archInstanceAdd");
-    const scatBody = fnBody("_scatterInstanceAdd");
+    // ── Q: die Quell-Absenz über den EINEN Helfer (Chokepoint-Disziplin, kein Parallelpfad): kein dritter setColorAt-Pfad
+    // in den zwei Slot-Schreibern (die alte useInstanceTint-Direktklammer ist gefallen; ein totes Glied wirft).
     check(
         "Q: kein zweiter Farb-Pfad — die Slot-Schreiber setzen Farben NUR über die Naht (kein useInstanceTint-gegatetes setColorAt mehr)",
-        addBody.length > 0 &&
-            scatBody.length > 0 &&
-            !/userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/.test(addBody) &&
-            !/userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/.test(scatBody)
+        stammLib.fehlt(["_archInstanceAdd", "_scatterInstanceAdd"], /userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/),
+        stammLib.fehlt.wo
     );
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });

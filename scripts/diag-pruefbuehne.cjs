@@ -245,7 +245,6 @@ async function s0Probe(page, station, schein) {
                     await new Promise((res) => setTimeout(res, 16));
                 }
             };
-            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             const P = Object.getPrototypeOf(r);
             if (schein) {
                 r._lichtDatum = () => null;
@@ -266,14 +265,12 @@ async function s0Probe(page, station, schein) {
             // Rufer der BRDF eines Punktlichts (das EINE Gesetz)
             // je Bau eines beleuchteten Stoffs, unter jedem Namen der Bibliothek (`THREE`, `T` …): ein Stoff ohne Knoten trägt
             // den Pool nie (`_leuchtStoff` wirft), ein Knoten-Stoff nur, wo die Methode ihn in den Pool legt
-            const LIT = /new\s+[A-Za-z_$][\w$]*\.Mesh(Standard|Physical|Lambert|Phong|Toon)(Node)?Material\(/g;
+            const LIT = /new\s+[A-Za-z_$][\w$]*\.Mesh(Standard|Physical|Lambert|Phong|Toon)Material\(/;
             for (const n of Object.getOwnPropertyNames(P)) {
                 if (n === "constructor" || typeof P[n] !== "function") continue;
-                const c = code(P[n]);
-                if (/new THREE\.PointLight\(/.test(c)) out.bauer.push(n);
-                const bau = [...c.matchAll(LIT)];
-                if (bau.some((b) => !b[2])) out.ohnePool.push(n);
-                if (/this\._punktLichtBrdf\(/.test(c)) out.brdf.push(n);
+                if (!window.__fehlt(P[n], /new THREE\.PointLight\(/)) out.bauer.push(n);
+                if (!window.__fehlt(P[n], LIT)) out.ohnePool.push(n);
+                if (!window.__fehlt(P[n], /this\._punktLichtBrdf\(/)) out.brdf.push(n);
             }
             if (schein) delete P._scheinRueckfall;
             // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)

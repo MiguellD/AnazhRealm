@@ -211,10 +211,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.hasSenseFold = typeof r._perfSenseFoldFrame === "function";
         out.hasEstimate = typeof r._estimatePerfCost === "function";
         if (!out.hasGovernor || !out.hasRegulate || !out.hasActuate) return out;
-        const saStr = window.__codeOf(r.selfAwarenessAnalyze);
-        out.noGravityPflaster = !/gravity\s*\*=/.test(saStr);
+        out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
-        out.noParallelGovernor = !/_nexusAdaptiveQuality/.test(saStr);
+        out.noParallelGovernor = window.__fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
 
         const st = r.state;
         const snap = {
@@ -1190,19 +1189,13 @@ async function checkBandRauschGesetz(ctx) {
                 "_applySubstanceResponse",
                 "_buildPbrNodeMaterial",
             ];
-            out.absenz = stoffe.filter((n) => /mx_noise_float/.test(window.__codeOf(r[n])));
+            out.absenz = stoffe.filter((n) => !window.__fehlt(r[n], /mx_noise_float/));
             // das Rechenwerk des Fels-Gesetzes (gelaende-core): Fein-Term und Schutt-Korn laufen im Fragment — ein Rauschen
             // lesen sie nur über `o.rausch` (EINE Probe im Rausch-Atlas), nie ein Gitter-Rauschen aus Ziehungen (`wert3`)
-            const GK = window.__gelaendeCore;
             // (die Welle rechnet `felsWelle`, K17-3: der Shader liest sie außerhalb der Fels-Funktion und reicht sie hinein)
-            const feinSrc =
-                GK && GK.felsFein && GK.felsWelle ? window.__codeOf(GK.felsFein) + window.__codeOf(GK.felsWelle) : "";
-            const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
-            for (const [n, src] of [
-                ["felsFein", feinSrc],
-                ["schuttKorn", kornSrc],
-            ])
-                if (/wert3|mx_noise/.test(src)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
+            const GK = window.__gelaendeCore || {};
+            for (const n of ["felsFein", "felsWelle", "schuttKorn"])
+                if (!window.__fehlt(GK[n], /wert3|mx_noise/)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken

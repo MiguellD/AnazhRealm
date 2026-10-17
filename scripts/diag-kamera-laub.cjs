@@ -115,21 +115,16 @@ function urteil(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei): die Proben durch die Bildmitte treffen nur, was das Bild zeigt ──
-const ohneKommentare = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
+// ── DIE STATISCHE WAND (Node, der EINE Absenz-Helfer): die Proben durch die Bildmitte treffen nur, was das Bild zeigt ──
 // (D3c: W1 und der Kern-Block stehen am Ruf im Leib, die Kugel und das Studio misst der Leib und NP-03 am Verhalten; hier
-// bleiben die Absenzen)
+// bleiben die Absenzen; `quelle` ist der Stamm-Text, seine Wandlung oder leer = der Arbeitsbaum)
 function wand(quelle, studio) {
-    const nc = ohneKommentare(quelle);
-    const kam = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
-    const lab = ohneKommentare(studio || "");
     return [
-        ["W2 die 3rd-Kamera: kein 0,85-Rückzug, kein KAMERA_ARM_RUHE", !/0\.85 \*/.test(kam) && !/KAMERA_ARM_RUHE/.test(nc)],
-        ["W3 das Körper-Studio: camG ist gefallen", !/camG/.test(lab)],
+        [
+            "W2 die 3rd-Kamera: kein 0,85-Rückzug, kein KAMERA_ARM_RUHE",
+            stammLib.fehlt("_loopCamera", /0\.85 \*/, quelle) && stammLib.fehlt(null, /KAMERA_ARM_RUHE/, quelle),
+        ],
+        ["W3 das Körper-Studio: camG ist gefallen", stammLib.fehlt(null, /camG/, studio)],
     ];
 }
 
@@ -1116,7 +1111,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = STAMM_TEXT || stammLib.text(root);
+    const quelle = STAMM_TEXT || undefined;
     const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
@@ -1185,7 +1180,7 @@ async function probe(arg) {
         const gruen = wand(quelle, studioQuelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         // der Vor-Stand: der Wurf mit dem 0,85-Rückzug, das Studio mit camG
-        const vorStand = stammLib.ersetze(quelle, "_loopCamera", "const t = wurf.t;", "const t = 0.85 * wurf.t;");
+        const vorStand = (t) => stammLib.ersetze(quelle || t, "_loopCamera", "const t = wurf.t;", "const t = 0.85 * wurf.t;");
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
         check("Selbst-Test W: der Vor-Stand (0,85-Rückzug · Studio mit camG) → W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));

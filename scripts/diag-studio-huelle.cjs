@@ -123,12 +123,10 @@ function baum() {
         }
     }
     for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
-    karte["index.html"] = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
     if (fs.existsSync(path.join(ROOT, TOR_ZIELE))) karte[TOR_ZIELE] = fs.readFileSync(path.join(ROOT, TOR_ZIELE), "utf8");
     return karte;
 }
 
-const zaehl = (t, rx) => (t.match(rx) || []).length;
 
 function pruefe(karte) {
     const rot = [];
@@ -136,35 +134,34 @@ function pruefe(karte) {
     // „veraltet“, bis jemand backt (`--panorama`) — sonst sperrte jede Welle an einer Studio-Quelle, der Hülle oder einem Kern check:statik
     const veraltet = [];
     const zahl = { handRegler: 0, bruecken: [], elementAdapter: 0 };
-    for (const [rel, t] of Object.entries(karte)) {
+    // H1/H2/H4 sind Absenzen über den EINEN Helfer (stammLib.fehlt, kommentarfrei): der Text der Karte, der Täter mit Datei und
+    // Zeile; ein eingespielter Täter des Selbsttests liest dieselbe Karte.
+    const fehltIn = (rel, rx) => stammLib.fehlt(null, rx, { datei: rel, wandel: karte[rel] });
+    for (const rel of Object.keys(karte)) {
         const m = /^worlds\/([^/]+)\//.exec(rel);
         const welt = m ? m[1] : null;
-        if (welt === "huelle") continue;
+        if (welt === "huelle" || !/\.(html|js)$/.test(rel)) continue;
         const ausgenommen = welt && AUSGENOMMEN[welt];
         // H1 — Hand-Regler
-        const nH = /\.html$/.test(rel) ? zaehl(t, HAND_RANGE_HTML) : zaehl(t, HAND_RANGE_JS);
-        if (nH && rel !== "index.html") {
-            zahl.handRegler += nH;
-            rot.push(`H1 ${rel}: ${nH} Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
+        if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) {
+            zahl.handRegler++;
+            rot.push(`H1 ${stammLib.fehlt.wo}: ein Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
         }
         if (!welt) continue;
         // H2 — Brücken-Kopie
-        const nR = zaehl(t, READY_LITERAL);
-        if (nR) zahl.bruecken.push(`${welt}${ausgenommen ? " (" + ausgenommen.split(/[:(,]/)[0].trim() + ")" : ""}`);
-        if (nR && !ausgenommen) rot.push(`H2 ${rel}: ${nR}× eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
-        const nE = zaehl(t, ELEMENT_ADAPTER);
-        zahl.elementAdapter += nE;
-        if (nE) rot.push(`H2 ${rel}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
+        if (!fehltIn(rel, READY_LITERAL)) {
+            zahl.bruecken.push(`${welt}${ausgenommen ? " (" + ausgenommen.split(/[:(,]/)[0].trim() + ")" : ""}`);
+            if (!ausgenommen) rot.push(`H2 ${stammLib.fehlt.wo}: eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
+        }
+        if (!fehltIn(rel, ELEMENT_ADAPTER)) {
+            zahl.elementAdapter++;
+            rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
+        }
     }
     // H4 — Labor = Welt (Absenz): kein Ofen-Studio baut einen eigenen Leib; den Ofen-Körper zeigt die Kosten-Leiste im Bild (--bild).
-    for (const [id, o] of Object.entries(OFEN_STUDIOS)) {
-        const js = Object.entries(karte)
-            .filter(([r]) => r.startsWith(`worlds/${id}/`) && r.endsWith(".js"))
-            .map(([, t]) => t)
-            .join("\n");
-        const eigen = js.match(o.eigenbau) || [];
-        if (eigen.length) rot.push(`H4 ${id}: baut einen eigenen Leib (${[...new Set(eigen.map((x) => x.replace(/\s+/g, "")))].join(" · ")}) — ein Zwilling des Ofen-Körpers`);
-    }
+    for (const [id, o] of Object.entries(OFEN_STUDIOS))
+        for (const r of Object.keys(karte).filter((x) => x.startsWith(`worlds/${id}/`) && x.endsWith(".js")))
+            if (!fehltIn(r, o.eigenbau)) rot.push(`H4 ${id}: baut einen eigenen Leib (${stammLib.fehlt.wo}) — ein Zwilling des Ofen-Körpers`);
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -224,56 +221,56 @@ function selbsttest() {
             rel: "worlds/garage/index.html",
             vor: '<div id="sliders"></div>',
             nach: '<div id="sliders"><input type="range" id="sTaeter" min="0" max="1"></div>',
-            soll: /^H1 worlds\/garage\/index\.html: 1 Hand-Regler/,
+            soll: /^H1 worlds\/garage\/index\.html:\d+ .*: ein Hand-Regler/,
         },
         {
             name: "H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)",
             rel: stammLib.dateiVon(ROOT, REGLER_GLIED),
             vor: /(_workshopRenderStudioParams\([^)]*\) \{)/,
             nach: '$1\n        const _t = document.createElement("input");\n        _t.type = "range";',
-            soll: new RegExp(`^H1 ${stammLib.dateiVon(ROOT, REGLER_GLIED)}: 1 Hand-Regler`),
+            soll: new RegExp(`^H1 ${stammLib.dateiVon(ROOT, REGLER_GLIED)}:\\d+ .*: ein Hand-Regler`),
         },
         {
             name: "H2 eine eigene ready in der schmiede",
             rel: "worlds/schmiede/schmiede.js",
             vor: "AnazhHuelle.bruecke(",
             nach: 'window.parent.postMessage({ type: "ready", world: "schmiede" }, "*");\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/schmiede\/schmiede\.js: 1× eine eigene ready/,
+            soll: /^H2 worlds\/schmiede\/schmiede\.js:\d+ .*: eine eigene ready/,
         },
         {
             name: "H2 der Element-Adapter in der klang (op[0] je Element)",
             rel: "worlds/klang/klang.js",
             vor: "AnazhHuelle.bruecke(",
             nach: 'var __t = function (op) { return String((op && op[0]) || op || ""); };\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/klang\/klang\.js: Element-Adapter/,
+            soll: /^H2 worlds\/klang\/klang\.js:\d+ .*: Element-Adapter/,
         },
         {
             name: "H4 das tetrapoda-Labor baut seinen eigenen Leib (bauTier + Fell-Streu)",
             rel: "worlds/tetrapoda/tetrapoda.js",
             vor: "BAKERS_BY_KIND.kreatur(",
             nach: "__tetrapodaCore.fellStreu(P, B.masse, B.fellOrt);__tetrapodaCore.bauTier(F, dials);BAKERS_BY_KIND.kreatur(",
-            soll: /^H4 tetrapoda: baut einen eigenen Leib \((?:fellStreu\( · bauTier\(|bauTier\( · fellStreu\()\)/,
+            soll: /^H4 tetrapoda: baut einen eigenen Leib \(worlds\/tetrapoda\/tetrapoda\.js:\d+ `(?:fellStreu|bauTier)\(`\)/,
         },
         {
             name: "H4 das koerperstudio-Labor baut seinen eigenen Menschen (bauMensch + Haar-Streu)",
             rel: "worlds/koerperstudio/koerperstudio.js",
             vor: "BAKERS_BY_KIND.koerper(",
             nach: "KC.bauMensch(F);KC.haarStreu(params);BAKERS_BY_KIND.koerper(",
-            soll: /^H4 koerperstudio: baut einen eigenen Leib \((?:bauMensch\( · haarStreu\(|haarStreu\( · bauMensch\()\)/,
+            soll: /^H4 koerperstudio: baut einen eigenen Leib \(worlds\/koerperstudio\/koerperstudio\.js:\d+ `(?:bauMensch|haarStreu)\(`\)/,
         },
         {
             name: "H1 ein Hand-Regler im Gelände-Studio",
             rel: GELAENDE,
             vor: "AnazhHuelle.regler(",
             nach: 'd.innerHTML = `<input type="range">`;\nAnazhHuelle.regler(',
-            soll: /^H1 worlds\/gelaende\/studio\.js: \d+ Hand-Regler/,
+            soll: /^H1 worlds\/gelaende\/studio\.js:\d+ .*: ein Hand-Regler/,
         },
         {
             name: "H2 eine eigene ready im terrain-Labor",
             rel: "worlds/terrain/phytogenesis.js",
             vor: "AnazhHuelle.bruecke(",
             nach: 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/terrain\/phytogenesis\.js: 1× eine eigene ready/,
+            soll: /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/,
         },
         {
             name: "H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)",

@@ -367,17 +367,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
     }
 
-    // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
-    try {
-        const srvSrc = fs.readFileSync(path.join(SKRIPTE, "..", "signaling-server.js"), "utf8");
-        check(
-            "W13 P3: signaling-server relayt den vibe-Nachrichtentyp mit peerId-Stempel",
-            /msg\.type === "vibe"/.test(srvSrc) &&
-                /broadcastToRoom\([^)]*type: "vibe", peerId: ws\.anazh\.peerId/.test(srvSrc)
-        );
-    } catch (err) {
-        check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
-    }
+    // W13 P3 — den Relay des signaling-servers (vibe mit peerId-Stempel) urteilt gate:mp-sync am echten Broker.
 
     // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
     const w14Results = await safeEvaluate(page, () => {

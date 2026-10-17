@@ -26,7 +26,6 @@
 //
 //   node scripts/diag-reconnect.cjs
 "use strict";
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -615,47 +614,26 @@ function makeRealmA(env, initSrcOverride) {
     }
 
     // ══ ABSENZ: kein Math.random im Reconnect-Pfad (den Konsum tragen die Fixturen A–C am Verhalten) ══
-    console.log("\n── Absenz-Probe (kein Zufall im Reconnect-Pfad) ──");
+    console.log("\n── Absenz-Probe (kein Zufall im Reconnect-Pfad, über den EINEN Helfer stammLib.fehlt) ──");
     {
-        check(
-            "kein Math.random im Reconnect-Pfad (seeded Jitter, Lehre 7)",
-            !["_p2pReconnectJitterMs", "_p2pReconnectDelayMs", "_p2pScheduleReconnect", "_p2pHealRtcPeer"].some((n) => {
-                const s = extractMethod(n);
-                return !s || s.includes("Math.random");
-            })
-        );
+        const pfad = ["_p2pReconnectJitterMs", "_p2pReconnectDelayMs", "_p2pScheduleReconnect", "_p2pHealRtcPeer"];
+        check("kein Math.random im Reconnect-Pfad (seeded Jitter, Lehre 7)", stammLib.fehlt(pfad, /Math\.random/), stammLib.fehlt.wo);
     }
 
     // ── D  DIE TÜR TRÄGT DIE ABSICHT (K04): `initP2PSync` setzt `p2p.enabled` als erste Tat, kein Aufrufer setzt sie von
     // Hand davor (Knopf, Boot, die Zwei-Seiten-Smokes) — sonst plant der close-Zweig nach einem gescheiterten
     // Erst-Aufbau des nackten Aufrufs keinen Rejoin. Der Laufzeit-Beweis ist gate:mp-sync (b); hier die Absenz.
     {
-        const tuerSetzer = (src) => {
-            const k = stammLib.kopf(src, "initP2PSync");
-            const kopf = k < 0 ? null : { index: k };
-            const ende = kopf ? src.indexOf("\n    }\n", kopf.index) : -1;
-            const re = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/g;
-            const fremd = [];
-            let inTuer = 0;
-            for (let m; (m = re.exec(src)); ) {
-                if (kopf && m.index > kopf.index && m.index < ende) inTuer++;
-                else fremd.push(src.slice(0, m.index).split("\n").length);
-            }
-            return { inTuer, fremd };
-        };
-        const t = tuerSetzer(stammSrc);
-        check(
-            "D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)",
-            t.fremd.length === 0,
-            t.fremd.length ? t.fremd.map((z) => stammLib.ort(root, z)).join(", ") : ""
-        );
-        const smokes = ["smoke-copresence.cjs", "smoke-lockstep.cjs", "smoke-webrtc.cjs"].filter((f) =>
-            /p2p\.enabled\s*=\s*true/.test(fs.readFileSync(path.join(root, "scripts", f), "utf8"))
+        const HAND = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/;
+        const tuer = (q) => [stammLib.fehlt({ ausser: "initP2PSync" }, HAND, q), stammLib.fehlt.wo];
+        check("D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)", ...tuer());
+        const smokes = ["smoke-copresence.cjs", "smoke-lockstep.cjs", "smoke-webrtc.cjs"].filter(
+            (f) => !stammLib.fehlt(null, /p2p\.enabled\s*=\s*true/, { datei: "scripts/" + f })
         );
         check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
         // Selbsttest: der Hand-Setzer zurück → ROT (die Tür trägt die Absicht: gate:mp-sync (b) am Verhalten)
-        const mitHand = tuerSetzer(stammSrc + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
-        check("D Selbsttest: ein Hand-Setzer sieht ROT", mitHand.fremd.length === 1);
+        const mitHand = tuer((t) => t + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
+        check("D Selbsttest: ein Hand-Setzer sieht ROT", !mitHand[0], mitHand[1]);
     }
 
     if (errs.length) {

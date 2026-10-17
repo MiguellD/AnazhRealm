@@ -981,8 +981,49 @@ function stripperTafel(root) {
     return rot;
 }
 
+// DER EINE ABSENZ-HELFER in Node (PFLICHT-OFFEN D3d), der Zwilling von `window.__fehlt` (welt-boot.cjs): true = `re` fehlt
+// im Code ohne Kommentare. `glied` ein Name (das Klassen-Glied wie `rumpf`), ein Kopf-Regex, eine Liste davon oder null (der
+// ganze Text); `quelle` der Text — ohne ihn der virtuelle Stamm der Wurzel, als Funktion gewandelt (der Vor-Stand eines
+// Selbsttests), als `{ datei, wandel, wurzel }` eine Datei (Kern, Studio, Worker, index.html) oder der Stamm einer anderen
+// Wurzel. Ein Glied ohne Definition wirft: eine Absenz an einem Toten misst nichts (gate:source-probes, Quelltext-Wand).
+const fehltMerk = { basis: new Map(), roh: null, nc: null };
+function fehlt(glied, re, quelle) {
+    const q = quelle != null && typeof quelle === "object" ? quelle : { wandel: quelle };
+    const wurzel = q.wurzel || path.resolve(__dirname, "..", "..");
+    const basis = (k = path.join(wurzel, q.datei || "")) => {
+        if (!fehltMerk.basis.has(k)) fehltMerk.basis.set(k, q.datei ? fs.readFileSync(k, "utf8") : text(wurzel));
+        return fehltMerk.basis.get(k);
+    };
+    const roh = typeof q.wandel === "string" ? q.wandel : typeof q.wandel === "function" ? q.wandel(basis()) : basis();
+    if (fehltMerk.roh !== roh) Object.assign(fehltMerk, { roh, nc: ohneKommentare(roh) });
+    const nc = fehltMerk.nc;
+    // der Leib eines Glieds und seine Lage im Text (die Zeile des Täters bleibt die der Quelle)
+    const leib = (t, g) => {
+        const b = rumpf(t, g);
+        if (b == null) throw new Error(`stammLib.fehlt: das Glied ${g} hat keine Definition — die Absenz misst nichts`);
+        return [b, t.indexOf(b, Math.max(0, typeof g === "string" ? kopf(t, g) : t.search(g)))];
+    };
+    // `{ ausser }`: der ganze Text, der Leib der Engstelle(n) geleert — die Invariante lebt NUR im Chokepoint (Lehre 2)
+    const ohne = (t, a) => {
+        const [b, i] = leib(t, a);
+        return t.slice(0, i) + b.replace(/[^\n]/g, " ") + t.slice(i + b.length);
+    };
+    fehlt.wo = null;
+    return [].concat(glied).every((g) => {
+        const [b, at] = g == null ? [nc, 0] : g.ausser ? [[].concat(g.ausser).reduce(ohne, nc), 0] : leib(nc, g);
+        re.lastIndex = 0;
+        const m = re.exec(b);
+        if (!m) return true;
+        // der Täter beim Namen: `fehlt.wo` = Datei:Zeile und der Treffer
+        const z = nc.slice(0, at + m.index).split("\n").length;
+        fehlt.wo = `${q.datei ? `${q.datei}:${z}` : q.wandel == null ? ort(wurzel, z) : `Zeile ${z}`} \`${m[0].slice(0, 60)}\``;
+        return false;
+    });
+}
+
 module.exports = {
     ohneKommentare,
+    fehlt,
     stripperTafel,
     ALT,
     DIR,
@@ -1067,6 +1108,13 @@ if (require.main === module && process.argv.includes("--selftest")) {
         pruef("ersetze: im Glied, als Kette", R2 === R.replace('x: "}"', 'x: "{"') && treffer(R2, "_p", "x:").index === R2.indexOf("x:"));
         pruef("treffer: zwei Treffer werfen, keiner ist null", wirft(() => treffer(R, "_a", "this._p(e)"), /2×/) && treffer(R, "_p", "fehlt") === null);
         pruef("ersetze: vakuös und mehrdeutig werfen", wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/));
+        // R3) der EINE Absenz-Helfer (D3d): im Glied, außerhalb der Engstelle, gewandelt; ein Toter wirft, nie still wahr
+        const F = (g, re, q) => fehlt(g, re, q === undefined ? R : q);
+        pruef(
+            "fehlt: im Glied mit dem Täter beim Namen · ausser der Engstelle · gewandelt · ein Toter wirft",
+            !F("_p", /x:/) && fehlt.wo === "Zeile 8 `x:`" && F("_a", /x:/) && fehlt.wo === null && F({ ausser: "_p" }, /x:/) && !F({ ausser: "_a" }, /x:/) && !F(null, /y:/, R.replace("x:", "y:")) &&
+                wirft(() => F("_q", /x/), /keine Definition/) && wirft(() => F({ ausser: "_q" }, /x/), /keine Definition/)
+        );
         // 0) die Glieder am AST: ein Kopf mit Default-Parameter, ein umbrochener, ein Getter und ein async-Kopf behalten
         // ihren Aufruf; ein zusammengesetztes Argument ist EIN Argument (die Täter der Kopf- und Argument-Muster, K38-N2).
         const G = [

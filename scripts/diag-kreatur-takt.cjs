@@ -86,26 +86,15 @@ async function headless(laeufe) {
         window.__anazhHeadlessNullRenderer = true;
     });
     const aus = [];
-    // Einschwingen (plateau-basiert, die V18.273-Lehre): der Ring steht, die Boden-Funktion trägt.
+    // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), die Boden-Funktion trägt.
     const einschwingen = () =>
-        page.evaluate(async () => {
-            const r = window.anazhRealm;
-            let last = -1,
-                stabil = 0;
-            for (let t = 0; t < 3000; t++) {
+        page.evaluate(() =>
+            window.__weltStehtNach(() => {
                 try {
-                    r._gameLoopTick(performance.now());
+                    window.anazhRealm._gameLoopTick(performance.now());
                 } catch (_e) {}
-                const n = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (n === last) stabil++;
-                else {
-                    stabil = 0;
-                    last = n;
-                }
-                if (n > 20 && stabil > 40) break;
-                if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
-            }
-        });
+            })
+        );
     const lauf = (o) =>
         page.evaluate(
             (src, o) => {
@@ -176,7 +165,7 @@ async function imFenster(laeufe) {
     const aus = [];
     for (const l of laeufe) {
         const o = await rufeWerkbank(
-            `if (!window.__codeOf) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
+            `if (!window.__fehlt) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
         );
         if (o.fehler) throw new Error(o.fehler);
         aus.push(o.ergebnis);

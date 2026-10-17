@@ -338,7 +338,7 @@ function staticLaws(manifestSrc) {
                     if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
                         return "err:kern fehlt";
                     const tisch = typeof BAKERS_BY_KIND !== "undefined" && typeof BAKERS_BY_KIND.koerper === "function";
-                    return tisch && !/humanSkeleton/.test(window.__codeOf(r._buildHumanoidRig));
+                    return tisch && window.__fehlt(r._buildHumanoidRig, /humanSkeleton/);
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }

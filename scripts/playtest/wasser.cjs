@@ -22,13 +22,11 @@ async function checkBandHydrosphere(ctx) {
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
-        const ensureSrc = window.__codeOf(r._ensureVoxelChunkAt || function () {});
-        const disposeSrc = window.__codeOf(r._disposeVoxelChunk || function () {});
         return {
             buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
             disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
-            ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
-            disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
+            ensureNoHook: window.__fehlt(r._ensureVoxelChunkAt, /_buildVoxelChunkWaterfalls/),
+            disposeNoHook: window.__fehlt(r._disposeVoxelChunk, /_disposeVoxelChunkWaterfalls/),
             stateMapGone: !("voxelChunkWaterfalls" in r.state),
             materialKept: typeof r._ensureWaterfallMaterial === "undefined" && !("waterfallUniforms" in r.state),
         };
@@ -1375,8 +1373,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
-        const helperSrc = window.__codeOf(r._creatureWaterContextAt);
-        out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
+        out.ohneZweiteWahrheit = window.__fehlt(r._creatureWaterContextAt, /_waterLevelAt\(|_isAboveWaterAt\(/);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
@@ -1697,10 +1694,9 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
 
         // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer), die
         // Prominenz über einer Basis (V17.105) ist gefallen, die alte ss(12,42,y) fehlt.
-        const attachSrc = window.__codeOf(r._bodenFarbeAt);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
-        out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
+        out.snowOldAbsoluteGone = window.__fehlt(r._bodenFarbeAt, /mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/);
 
         // Die Probe misst am Gesetz (gelaende-core `schnee`), nie an einer Kopie.
         const schneeAt = (y, x, z) => window.__gelaendeCore.schnee(r._gelaende(), y, x, z); // der Ort trägt die Zungen der Grenze

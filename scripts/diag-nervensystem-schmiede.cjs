@@ -28,12 +28,10 @@
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 // ── H-F (W5 Gegenstände, 05.10.) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
@@ -57,41 +55,36 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-// Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
-const stripComments = stammLib.ohneKommentare;
-// Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
-
-// ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc) {
-    const anazhNC = stripComments(anazhSrc);
-    const out = [];
-    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — Policy, Substanz und donorTool beweist Teil D.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
-    out.push([
-        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8)",
-        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
-    ]);
-    // S6 (Absenz): die Donor-Zeile geraet_schwert trägt keinen Blueprint-Namen, kein portalMeta/roleManual; Teile und Klon prüft Teil D.
-    const swRow = ksRow(anazhNC, "geraet_schwert");
-    out.push([
-        "S6: die Donor-SUBSTANZ geraet_schwert trägt kein portalMeta/roleManual — der Alt-Blueprint-Block ist GEFALLEN",
-        !!swRow && !/name:\s*"geraet_schwert"/.test(swRow) && !/portalMeta/.test(swRow) && !/roleManual/.test(swRow),
-    ]);
-    // S8 (Absenz): die Hand wärmt keine Pipeline vor — die Erst-Zeichnung trägt; die Hand-Quelle beweist Teil H am Verhalten.
-    const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\([^)]*\)\s*\{/);
-    out.push(["S8: die Hand wärmt keine Pipeline vor", refreshBody !== null && !/compileAsync|_warmCompilePipeline/.test(refreshBody)]);
-    return out;
+/// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
+// Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
+// constitution N1 wörtlich; Policy, Substanz und donorTool beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der
+// Arbeitsbaum.
+function staticLaws(q) {
+    return [
+        // S6 (Absenz): die Donor-Zeile geraet_schwert trägt keinen Blueprint-Namen, kein portalMeta/roleManual; Teile und
+        // Klon prüft Teil D.
+        [
+            "S6: die Donor-SUBSTANZ geraet_schwert trägt kein portalMeta/roleManual — der Alt-Blueprint-Block ist GEFALLEN",
+            stammLib.fehlt(/\n {4}geraet_schwert: [^{\n]*\{/, /name:\s*"geraet_schwert"|portalMeta|roleManual/, q),
+            stammLib.fehlt.wo,
+        ],
+        // S8 (Absenz): die Hand wärmt keine Pipeline vor — die Erst-Zeichnung trägt; die Hand-Quelle beweist Teil H am Verhalten.
+        ["S8: die Hand wärmt keine Pipeline vor", stammLib.fehlt("_refreshHeldMesh", /compileAsync|_warmCompilePipeline/, q), stammLib.fehlt.wo],
+    ];
 }
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
+        // V6/V8: portalMeta in der Donor-Zeile, ein Vorwärmen in der Hand -> S6 und S8 feuern beim Namen
+        const rot = staticLaws((t) =>
+            stammLib.ersetze(t, [
+                [null, /(\n {4}geraet_schwert: \{)/, "$1\n        portalMeta: {},"],
+                [null, /(\n {4}_refreshHeldMesh\([^)]*\) \{)/, "$1\n        this._warmCompilePipeline();"],
+            ])
+        ).filter((l) => !l[1]);
+        check("Selbst-Test 6/8: portalMeta in geraet_schwert, Vorwärmen in der Hand -> S6 S8 feuern", rot.length === 2, rot.map((l) => l[2]).join(" · "));
+
         // V4 (H-F, W5): das Faust-Verdikt feuert auf jeden der drei gemessenen Täter des Vor-Stands.
         const gesund = { laenge: 1.0, versatzM: 0.012, winkel: 88 };
         check("Selbst-Test 4 (H-F): gesunde Faust == 0 Verstoesse", faustVerdict(gesund).length === 0);
@@ -113,7 +106,7 @@ function staticLaws(anazhSrc) {
     }
 
     console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Absenzen (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -614,10 +607,3 @@ function staticLaws(anazhSrc) {
     console.error("ε-Schmiede-Diag-Fehler:", (e && e.stack) || e);
     process.exit(2);
 });
-
-// ERFINDER-WELLE — die Zeile der KIND_SUBSTANCE: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher.
-function ksRow(src, name) {
-    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
-    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
-    return (tafel && stammLib.rumpf(tafel, zeile, { zitate: true })) || "";
-}

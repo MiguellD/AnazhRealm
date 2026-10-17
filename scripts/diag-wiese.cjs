@@ -110,7 +110,7 @@ const RENDER_FN = async (kam, W, H, png) => {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
-    // Umstellen: der Spieler steht an der Stelle, die Welt schwingt ein (Chunks ruhig).
+    // Umstellen: der Spieler steht an der Stelle, die Welt schwingt ein.
     const umstellen = (x, z) =>
         page.evaluate(
             async (x, z) => {
@@ -124,34 +124,15 @@ const RENDER_FN = async (kam, W, H, png) => {
                 const r = window.anazhRealm;
                 if (!r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-                let stabil = 0,
-                    last = -1,
-                    takte = 0;
-                const dl = performance.now() + 150000;
-                while (performance.now() < dl) {
+                // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`): das Studio-Buch ist da (ohne Buch fiele die
+                // Aufnahme in die KERN-PFLICHT, W7) und die Nah-Wiese trägt ihre Vorlagen (ohne sie zeigte ein Schuss 0 Büschel, S3 08.10.)
+                const takte = await window.__weltStehtNach(() => {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}
-                    takte++;
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    if (sz === last) stabil++;
-                    else {
-                        stabil = 0;
-                        last = sz;
-                    }
-                    // die Nah-Wiese liest das Studio-Buch (Budget, Gras-Vorlagen): ohne Buch fiele die Aufnahme in die
-                    // KERN-PFLICHT — die Linse wartet darauf (W7: unter Last kam das Buch nach den 40 Takten)
-                    const buch = !!(r._foundry && r._foundry.recipes && r.constructor._studioRenderConfig);
-                    // ... und auf die Nah-Wiese selbst: ihre Studio-Vorlagen kommen aus der Foundry (das Profil der Linse
-                    // ist frisch, die Platte kalt) — ohne sie zeigte ein Schuss 0 Büschel und die Linse druckte einen
-                    // Kontrast des nackten Bodens (S3 08.10., mit `--stelle` ohne die Zeit der Kandidaten-Suche).
-                    const nw = r.state.nahWiese;
-                    const wiese = !!(nw && nw.offen === 0 && nw.vorlagen.size > 0);
-                    if (takte >= 40 && stabil >= 15 && buch && wiese) break;
-                    await sleep(50);
-                }
-                return { takte, chunks: last };
+                });
+                return { takte, chunks: r.state.voxelChunks.size };
             },
             x,
             z

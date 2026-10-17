@@ -1435,8 +1435,7 @@ async function kreaturProben(r, T, opts) {
                         return Math.random() < 2 ? alt.apply(this, a) : null;
                     }
             );
-        const code = window.__codeOf;
-        if (typeof code !== "function") return { fehler: "window.__codeOf fehlt (der Kommentar-Stripper der Linse)" };
+        if (typeof window.__fehlt !== "function") return { fehler: "window.__fehlt fehlt (der Absenz-Helfer der Linse)" };
         const namen = new Set(BENANNT);
         for (const n of Object.getOwnPropertyNames(A.prototype))
             if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
@@ -1445,7 +1444,7 @@ async function kreaturProben(r, T, opts) {
         for (const n of namen) {
             const f = r[n];
             if (typeof f !== "function") fehlt.push(n);
-            else if (/Math\.random\s*\(/.test(code(f))) treffer.push(n);
+            else if (!window.__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
         }
         return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
     });

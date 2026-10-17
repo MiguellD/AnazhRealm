@@ -36,17 +36,9 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-// Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
-const stripComments = stammLib.ohneKommentare;
-// Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
-
-// ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc, manifestSrc) {
-    const anazhNC = stripComments(anazhSrc);
+/// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
+// Glied wirft beim Namen). `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
+function staticLaws(q, manifestSrc) {
     const out = [];
     let manifest = null;
     try {
@@ -61,38 +53,30 @@ function staticLaws(anazhSrc, manifestSrc) {
             fachwerk.vertrag === "fachwerk-core.js" &&
             fachwerk.ns === "__fachwerkCore",
     ]);
-    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — die Wirkung der Policy beweist Block D.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
-    out.push([
-        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8 — s. a. gate:constitution N1)",
-        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
-    ]);
-    // S6 (Absenz): die Donor-Zeile haus_basis trägt kein portalMeta/roleManual und keinen Alt-Namen; Teile und Klon prüft Block D.
-    const hausRow = ksRow(anazhNC, "haus_basis");
+    // (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-constitution N1 wörtlich; die
+    // Wirkung der Policy beweist Block D.)
+    // S6 (Absenz): die Donor-Zeile haus_basis (KIND_SUBSTANCE) trägt kein portalMeta/roleManual und keinen Alt-Namen; Teile
+    // und Klon prüft Block D.
     out.push([
         "S6: die Donor-SUBSTANZ haus_basis trägt kein portalMeta/roleManual — der Alt-Blueprint-Block ist GEFALLEN",
-        !!hausRow && !/portalMeta/.test(hausRow) && !/roleManual/.test(hausRow) && !/name:\s*"haus_basis"/.test(hausRow),
+        stammLib.fehlt(/\n {4}haus_basis: [^{\n]*\{/, /portalMeta|roleManual|name:\s*"haus_basis"/, q),
+        stammLib.fehlt.wo,
     ]);
     return out;
 }
 
-// ERFINDER-WELLE — die Zeile der KIND_SUBSTANCE: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher.
-function ksRow(src, name) {
-    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
-    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
-    return (tafel && stammLib.rumpf(tafel, zeile, { zitate: true })) || "";
-}
-
 (async () => {
-    const anazhSrc = stammLib.text(root);
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: die fachwerk-Manifest-Zeile entfernt -> S1 muss rot werden.
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "fachwerk"));
-        const s1 = staticLaws(anazhSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
+        const s1 = staticLaws(undefined, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: fachwerk-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
+        // V2: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
+        const rot = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}haus_basis: \{)/, "$1\n        portalMeta: {},"), manifestSrc).filter((l) => !l[1]);
+        check("Selbst-Test 2: portalMeta in haus_basis -> S6 feuert", rot.length === 1 && rot[0][0].startsWith("S6"), rot.map((l) => l[2]).join(" · "));
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -102,7 +86,7 @@ function ksRow(src, name) {
     }
 
     console.log("=== ε-BEWEIS FACHWERK — TEIL S: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, manifestSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(undefined, manifestSrc)) check(name, ok, detail);
 
     // Die Kern-Wahrheit fuer die Dial-Drift-Wand (Buch == Kern): PRESETS in Node ableiten.
     global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));

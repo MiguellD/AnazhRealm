@@ -31,21 +31,14 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
-const root = path.resolve(__dirname, "..");
 
 const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
-}
-const ohneKommentare = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
@@ -341,19 +334,17 @@ function dorfVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
-function wand(src) {
-    const nc = ohneKommentare(src);
-    const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\([^)]*\) \{/) || "";
-    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\([^)]*\) \{/) || "";
+// ── DIE STATISCHE WAND (Node, der EINE Absenz-Helfer; `quelle` wandelt den Stamm im Selbsttest). Liefert [name, ok]. ──
+function wand(quelle) {
+    const fehlt = (g, re) => stammLib.fehlt(g, re, quelle);
     // die Proben durch die Bildmitte ohne Verhaltens-Band rechnen keine eigene Richtung ab der Kamera
-    const kreuzEigen = ["_pickScatterAtCrosshair()", "_hasMagnifyingInSight()", "_kampfKlingenAchse(sw, out)"].filter((sig) =>
-        /getWorldDirection\(/.test(fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "")
+    const kreuzEigen = ["_pickScatterAtCrosshair", "_hasMagnifyingInSight", "_kampfKlingenAchse"].filter(
+        (n) => !fehlt(n, /getWorldDirection\(/)
     );
     return [
-        ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", !/'Setze Wetter rainy'/.test(fallback)],
-        ["W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)", !/_structureSpawnPos/.test(autoDorf)],
-        ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", !/JSON\.stringify\(reply\.program\)/.test(nc)],
+        ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", fehlt("_chatHandleConversationalFallback", /'Setze Wetter rainy'/)],
+        ["W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)", fehlt("_autoSettlementSpawnCell", /_structureSpawnPos/)],
+        ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", fehlt(null, /JSON\.stringify\(reply\.program\)/)],
         [
             `W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`,
             kreuzEigen.length === 0,
@@ -1562,7 +1553,6 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
@@ -1885,10 +1875,10 @@ async function probe(arg) {
                 check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
             }
         }
-        const gruen = wand(quelle);
+        const gruen = wand();
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
-        const vorStand = stammLib.ersetze(quelle, [
+        const vorStand = (t) => stammLib.ersetze(t, [
             kopfMit("_chatHandleConversationalFallback", `"'Setze Wetter rainy'"`),
             kopfMit("_autoSettlementSpawnCell", "this._structureSpawnPos"),
             ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
@@ -1909,7 +1899,7 @@ async function probe(arg) {
     }
 
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
+    for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 600000 });

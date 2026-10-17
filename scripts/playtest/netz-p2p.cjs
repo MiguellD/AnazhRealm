@@ -2949,7 +2949,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             r.state.fps = 0;
             for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
             out.fpsRollingAvg = r.state.fps === 60;
-            out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(window.__codeOf(r.updateFps));
+            out.fpsNotSingleFrame = window.__fehlt(r.updateFps, /Math\.round\(1 \/ delta\)/);
             r.state._fpsFrames = 5;
             r.state._fpsElapsed = 0.3;
             r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
