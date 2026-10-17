@@ -275,7 +275,7 @@ class AnazhRealm_gelaende_fern {
             )
         );
         // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
-        // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render, der Uniform-Wächter nennt keinen Bruch.
+        // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
         this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
         // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste

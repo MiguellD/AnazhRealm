@@ -1444,8 +1444,8 @@ class AnazhRealm_bild_sicht {
             envOben: TSL.uniform(new THREE.Vector3()),
         };
         // DIE HEIMAT DES TAKTS (Pflicht-Paar der Diät, E1): jeder Wert des Satzes wechselt je Takt (Kamera, Licht) und gilt
-        // dem EINEN Pass — als geteilte renderGroup lädt er EINMAL je Render statt einer Objekt-Gruppe, die je Wechsel voll
-        // auffrischt (der Uniform-Wächter nannte `camPos` · `invVP` · `l0d` 17.10. je Bild).
+        // dem EINEN Pass — als geteilte renderGroup lädt er EINMAL je Render statt einer Objekt-Gruppe, die je Wechsel
+        // lädt (der Uniform-Wächter fand `camPos` · `invVP` · `l0d` 17.10. je Bild).
         this._uniformHeimatTeilen(U);
         // Das kompakte Teil der Gesetz-Streu (ein Stein, ein Blütenkopf) als rauer Ellipsoid: Noise-Term im GRÖSSEN-
         // normierten Raum ((p−c)/hn) — Amplitude UND Frequenz skalieren mit dem Teil, der Gradient ist größen-invariant

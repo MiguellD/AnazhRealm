@@ -3465,10 +3465,11 @@ AnazhRealm._diaetVerweisAnders = function (obs, ro, k) {
 };
 // (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
 // Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
-// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt folgt
-// jedem Wechsel EIN Refresh, und der EINE Melder nennt den Stoff und die Uniform ohne Heimat beim Namen (das Pflicht-Paar
-// `_uniformHeimatTeilen` spart den Refresh). Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben
-// hoch); liefert die gewechselte Uniform, sonst null.
+// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt lädt
+// jeder Wechsel die eigene Gruppe im Objekt-Gang (11) — seit jeder Welt-Stoff die Diät trägt (E1), ist die Objekt-Uniform
+// ein Wert des Stoffs, kein Bruch (der Melder nannte bis E1-n1 die Insel der Welt-Sprache); `_uniformHeimatTeilen` lädt sie EINMAL
+// je Render statt je Objekt. Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben hoch); liefert
+// die gewechselte Uniform, sonst null.
 AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
     if (k.frei.length === 0) return null;
     const d = obs.getRenderObjectData(ro);
@@ -3666,19 +3667,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const gang = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
     // (10) ein Objekt-Verweis wechselte seinen Wert (der Stoff-Wert eines atmenden Stoffs): der Objekt-Gang (11) stellt ihn
     const verweis = AnazhRealm._diaetVerweisAnders(obs, ro, gang);
-    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
-    const frei = AnazhRealm._diaetFreiAnders(obs, ro, gang);
-    if (frei) {
-        if (obs._anazhWelt) {
-            const n = frei.nodeUniform.node;
-            obs._anazhWelt._bruchMelden(
-                `DIÄT: ${(obj && obj.name) || (ro.material && ro.material.type)} — die Objekt-Uniform ${
-                    n.name || frei.name
-                } wechselte ohne geteilte Heimat (Pflicht-Paar _uniformHeimatTeilen): der Uniform-Wächter frischt je Wechsel voll auf`
-            );
-        }
-        return true;
-    }
+    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`): ein Objekt-Wert wie die Lage —
+    // der Objekt-Gang (11) lädt die eigene Gruppe, die ihn trägt (bis E1-n1 ein Voll-Refresh und ein Bruch je Wechsel)
+    const frei = AnazhRealm._diaetFreiAnders(obs, ro, gang) !== null;
     // (11) DIE LAGE vor equals(): eine neue Welt-Matrix ist ein Objekt-Wert (der Objekt-Gang), kein Grund für den vollen
     // Gang; jede andere Änderung (Stoff · Geometrie · Morph · Lichter), die equals() danach sieht, bleibt einer.
     const od = obs.getRenderObjectData(ro);
@@ -3688,6 +3679,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         lage = true;
     }
     if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
-    if (lage || verweis || textur || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
+    if (lage || verweis || textur || frei || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
     return false;
 };
