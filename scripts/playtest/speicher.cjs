@@ -2322,21 +2322,37 @@ async function checkBandV18151Idb(ctx) {
         }
         const lsJson = localStorage.getItem(r.worldStorageKey(worldId));
         out.saveMirrors = !!mirrored && !!lsJson && mirrored.json.length === lsJson.length;
-        // (4) die QUOTA-Wand fällt WEICH: localStorage wirft → kein Wurf nach
-        // außen, das Log sagt „lebt in IndexedDB weiter" (Quelle).
+        // (4) die QUOTA-Wand fällt WEICH: localStorage wirft → kein Wurf nach außen, ein ehrliches WARN, und DIESER
+        // Speicher-Akt landet in IndexedDB (der Stempel at ≥ dem Akt).
         const origSet = Storage.prototype.setItem;
         let threw = false;
+        const warn = [];
+        const eigenLog = Object.prototype.hasOwnProperty.call(r, "log");
+        const altLog = r.log;
+        r.log = function (m, lv) {
+            if (lv === "WARN") warn.push(String(m));
+            return altLog.apply(this, arguments);
+        };
         Storage.prototype.setItem = function () {
             throw new Error("QuotaExceededError (Band-Probe)");
         };
+        const tVor = Date.now();
+        let ret;
         try {
-            r.saveState();
+            ret = r.saveState();
         } catch {
             threw = true;
         } finally {
             Storage.prototype.setItem = origSet;
+            if (eigenLog) r.log = altLog;
+            else delete r.log;
         }
-        out.quotaSoft = !threw && /lebt in IndexedDB weiter/.test(window.__codeOf(r.saveState));
+        let idb = null;
+        for (let i = 0; i < 20 && !(idb && idb.at >= tVor); i++) {
+            await new Promise((res2) => setTimeout(res2, 100));
+            idb = await r._idbGetWorld(worldId);
+        }
+        out.quotaSoft = !threw && ret === true && warn.some((m) => /lebt in IndexedDB weiter/.test(m)) && !!idb && idb.at >= tVor;
         r.saveState(); // den echten Spiegel wiederherstellen
         // (5) der Boot-Vorzug: ein ECHT frischerer IDB-Stand gewinnt das Lesen
         // (Welt-Guard inklusive — der Preload trägt die worldId).
@@ -2365,7 +2381,7 @@ async function checkBandV18151Idb(ctx) {
         res.opens && res.roundTrip && res.deleteWorks
     );
     check("V18.151 IndexedDB: saveState spiegelt die Welt (LS + IDB, gleiche Länge)", res.saveMirrors);
-    check("V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN)", res.quotaSoft);
+    check("V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)", res.quotaSoft);
     check(
         "V18.151 IndexedDB: der ECHT frischere IDB-Stand gewinnt das Boot-Lesen (+ wird konsumiert)",
         res.preloadWins && res.readPrefersFresh && res.preloadConsumed

@@ -89,18 +89,18 @@
                             "band": [2, 5],
                             "belichtung": 0.9874,
                             "kacheln": [
-                                ["-139,        -517", 3654, -1734.808, 3172.684, 3654],
-                                ["-140,        -517", 4617, -2018.639, 4060.507, 4617],
-                                ["-138,        -517", 666, -320.61, 576.741, 666],
-                                ["-138,        -518", 20415, -9821.305, 17326.582, 20415],
-                                ["-141,        -517", 1165, -604.044, 980.687, 1165],
-                                ["-139,        -518", 29721, -14330.385, 24849.496, 29721],
-                                ["-140,        -518", 33968, -15988.925, 29183.561, 33968],
-                                ["-141,        -518", 16130, -8609.968, 13446.103, 16130],
-                                ["-137,        -518", 1930, -774.104, 1706.257, 1930],
-                                ["-137,        -519", 66, -32.408, 56.966, 66],
-                                ["-138,        -519", 10230, -4251.688, 8875.618, 10230],
-                                ["-139,        -519", 4758, -2411.505, 4043.996, 4758]
+                                ["-139,         -517", 3654, -1734.808, 3172.684, 3654],
+                                ["-140,         -517", 4617, -2018.639, 4060.507, 4617],
+                                ["-138,         -517", 666, -320.61, 576.741, 666],
+                                ["-138,         -518", 20415, -9821.305, 17326.582, 20415],
+                                ["-141,         -517", 1165, -604.044, 980.687, 1165],
+                                ["-139,         -518", 29721, -14330.385, 24849.496, 29721],
+                                ["-140,         -518", 33968, -15988.925, 29183.561, 33968],
+                                ["-141,         -518", 16130, -8609.968, 13446.103, 16130],
+                                ["-137,         -518", 1930, -774.104, 1706.257, 1930],
+                                ["-137,         -519", 66, -32.408, 56.966, 66],
+                                ["-138,         -519", 10230, -4251.688, 8875.618, 10230],
+                                ["-139,         -519", 4758, -2411.505, 4043.996, 4758]
                             ]
                         }
                     },
@@ -1158,10 +1158,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -278 +0 -1044.82 --fov 46.7 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55, die Geometrie des Soll-Bilds: Auge 1,7 m, 13,9° abwärts, hfov 75°; Leinwand 1920 × 1080 — headless nach `werkbank fenster 1920 1080`)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T01:13:41.322Z",
+                    "datum": "2026-10-17T02:53:08.824Z",
                     "stand": {
-                        "version": "18.546.9",
-                        "sha": "cbc222cc8629c4bc02983e44c8a808b7daa2d2fa+geaendert"
+                        "version": "18.546.10",
+                        "sha": "b127dcf782d886cf8d4beae91aa6701fcfbb6acc"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -1176,37 +1176,37 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 62366,
+                    "misch": 71530,
                     "klassen": {
-                        "bodenSatz": {"objekte":1,"spiegelTreue":-0.1534,"sp":[1290,0,0,1373365.5,1373365.5,-210636.82],"zweiton":0,"zt":0,"weiss":0.0007,"wt":165,"wtZiel":null,"bunt":35.31,"pixel":247010,"deckung":0.1191,"deckungUnten":0.1065,"luma":115.54,"kontrast":0.3848,"detail":0.0539,"nyquist":0.0548,"ek":136047.9,"eg":2346374.9,"silhouette":131.6416,"kante":0.5342,"kr":14183},
-                        "nahWiese:L1": {"objekte":2,"spiegelTreue":-0.0149,"sp":[4796,0,0,5785752.92,5785752.92,-86111.79],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":38.96,"pixel":772464,"deckung":0.3725,"deckungUnten":0.8407,"luma":77.95,"kontrast":0.2748,"detail":0.0636,"nyquist":0.0875,"ek":661107.9,"eg":6893252.9,"silhouette":133.9903,"kante":0.3358,"kr":58542},
-                        "nahWiese:L2": {"objekte":2,"spiegelTreue":0.1189,"sp":[2522,0,0,2606905.11,2606905.11,310089.21],"zweiton":0.0002,"zt":64,"weiss":0,"wt":0,"wtZiel":null,"bunt":38.53,"pixel":409592,"deckung":0.1975,"deckungUnten":0.0015,"luma":78.62,"kontrast":0.3128,"detail":0.0949,"nyquist":0.1214,"ek":792871.5,"eg":5736277.6,"silhouette":119.0809,"kante":0.264,"kr":28222},
-                        "streuSatz": {"objekte":5,"spiegelTreue":0.1959,"sp":[24,0,0,6298.48,6298.48,1233.81],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":27.17,"pixel":13855,"deckung":0.0067,"deckungUnten":0.001,"luma":86.7,"kontrast":0.3537,"detail":0.0678,"nyquist":0.1432,"ek":11122.7,"eg":66552.4,"silhouette":48.3403,"kante":0.3244,"kr":536}
+                        "bodenSatz": {"objekte":1,"spiegelTreue":-0.1461,"sp":[1446,0,0,1579650.8,1579650.8,-230736.45],"zweiton":0.0002,"zt":45,"weiss":0.0005,"wt":130,"wtZiel":null,"bunt":35.62,"pixel":244220,"deckung":0.1178,"deckungUnten":0.106,"luma":115.86,"kontrast":0.378,"detail":0.0555,"nyquist":0.0572,"ek":146845.3,"eg":2421822.1,"silhouette":121.4967,"kante":0.4618,"kr":9011},
+                        "nahWiese:L1": {"objekte":2,"spiegelTreue":0.007,"sp":[6112,0,0,5670558.76,5670558.76,39693.94],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":40.71,"pixel":891691,"deckung":0.43,"deckungUnten":0.8548,"luma":78.69,"kontrast":0.2508,"detail":0.0636,"nyquist":0.0866,"ek":701135.5,"eg":7394324,"silhouette":117.3544,"kante":0.3442,"kr":45876},
+                        "nahWiese:L2": {"objekte":2,"spiegelTreue":0.1274,"sp":[2255,0,0,2507562.36,2507562.36,319409.18],"zweiton":0.0001,"zt":19,"weiss":0,"wt":1,"wtZiel":null,"bunt":41.38,"pixel":312207,"deckung":0.1506,"deckungUnten":0,"luma":85.63,"kontrast":0.3055,"detail":0.1043,"nyquist":0.1219,"ek":735270.4,"eg":5294966.4,"silhouette":106.2219,"kante":0.3776,"kr":11484},
+                        "streuSatz": {"objekte":4,"spiegelTreue":0.3253,"sp":[42,0,0,14104.92,14104.92,4588.27],"zweiton":0,"zt":0,"weiss":0,"wt":1,"wtZiel":null,"bunt":27.35,"pixel":22483,"deckung":0.0108,"deckungUnten":0.001,"luma":99.23,"kontrast":0.3751,"detail":0.0818,"nyquist":0.1458,"ek":38941.8,"eg":228137.7,"silhouette":60.2828,"kante":0.2198,"kr":418}
                     },
                     "abstand": {
                         "baender": [0, 2, 5, 10, 14, 30, 80, 200],
                         "ring": 14,
                         "augeUeberBoden": 1.71,
-                        "cos": [null, 0.4493, 0.2484, 0.1549, 0.1056, 0.0593, 0.031],
+                        "cos": [null, 0.4488, 0.2489, 0.1549, 0.1056, 0.0594, 0.0326],
                         "klassen": {
-                            "bodenSatz": [0, 76242, 9315, 275, 73855, 72587, 13778],
-                            "streuSatz": [0, 681, 6187, 4568, 2299, 120, 0],
-                            "nahWiese:L2": [0, 1347, 225435, 104230, 78444, 136, 0],
-                            "nahWiese:L1": [0, 642646, 129302, 516, 0, 0, 0]
+                            "bodenSatz": [0, 75635, 6351, 250, 68254, 83818, 9422],
+                            "streuSatz": [0, 685, 6558, 5822, 7618, 1800, 0],
+                            "nahWiese:L2": [0, 0, 130259, 102800, 79016, 132, 0],
+                            "nahWiese:L1": [0, 656215, 233509, 1967, 0, 0, 0]
                         },
                         "farbton": {
                             "kachel": 2,
                             "band": [2, 5],
-                            "belichtung": 0.9937,
+                            "belichtung": 0.9935,
                             "kacheln": [
-                                ["-140,   -522", 10899, -5648.394, 9224.807, 10899],
-                                ["-139,   -522", 10725, -5075.427, 9317.586, 10725],
-                                ["-141,   -522", 2325, -1148.853, 1996.133, 2325],
-                                ["-138,   -522", 2231, -908.94, 1867.591, 2231],
-                                ["-141,   -521", 15181, -7251.846, 13095.349, 15181],
-                                ["-140,   -521", 66011, -32348.328, 56536.172, 66011],
-                                ["-139,   -521", 63886, -30840.838, 55090.776, 63886],
-                                ["-138,   -521", 14875, -7242.409, 12688.073, 14875]
+                                ["-140, -522", 11022, -4539.572, 9878.093, 11022],
+                                ["-139, -522", 10859, -3774.752, 9990.202, 10859],
+                                ["-141, -522", 2330, -951.734, 2090.695, 2330],
+                                ["-138, -522", 2232, -753.872, 1925.474, 2232],
+                                ["-141, -521", 15248, -6297.827, 13652.953, 15248],
+                                ["-140, -521", 66153, -30764.848, 57304.67, 66153],
+                                ["-139, -521", 63973, -26600.389, 56621.114, 63973],
+                                ["-138, -521", 14909, -7758.462, 12415.322, 14909]
                             ]
                         }
                     },
@@ -1215,29 +1215,29 @@
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
                         "phyto-core.js": "c:6cf8df94e3dac37e",
-                        "foundry-core.js": "c:3b21a4161089ec4f",
-                        "stamm/dirigent-kern.js": "c:2fda5eca42ceb226",
+                        "foundry-core.js": "c:6e8cf71a446dd765",
+                        "stamm/dirigent-kern.js": "c:3606a2b106691a12",
                         "stamm/dienst.js": "c:9dbb35631827895a",
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
-                        "stamm/gelaende-fern.js": "c:b57891f2ec398270",
+                        "stamm/gelaende-fern.js": "c:76311fd1ed42bae5",
                         "stamm/wasser-hydro.js": "c:9b0735136e4c2146",
-                        "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                        "stamm/stoff-material.js": "c:d13f1ee108ed0513",
-                        "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                        "stamm/studio-bruecke.js": "c:c02ee558d706f68f",
+                        "stamm/wasser-zellen.js": "c:56c61979ee32c817",
+                        "stamm/stoff-material.js": "c:6992769997fc2f78",
+                        "stamm/stoff-instanz.js": "c:60a4fbdb979312c7",
+                        "stamm/studio-bruecke.js": "c:a8ef10018f8b2589",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
                         "stamm/bau-vorlagen.js": "c:834379bf703ce162",
                         "stamm/bau-buch.js": "c:4f39e33d31169f7e",
                         "stamm/bau-teile.js": "c:2f57496634336443",
-                        "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
-                        "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
+                        "stamm/siedlung-ort.js": "c:01a8c9f5f4ca0e5d",
+                        "stamm/siedlung-bauten.js": "c:ce252bcd0a4e5154",
                         "stamm/siedlung-satz.js": "c:f7655acae82a9127",
                         "stamm/vegetation-wiese.js": "c:afd98ffd6cd3bd30",
                         "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
                         "stamm/vegetation-streu.js": "c:b77b8f83325fc77e",
-                        "stamm/bild-kosten.js": "c:f0f700bdda342ece",
-                        "stamm/bild-sicht.js": "c:4816280621f673f8",
+                        "stamm/bild-kosten.js": "c:3e83972abb23f01d",
+                        "stamm/bild-sicht.js": "c:fc3e1e7e2b933036",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/klang.js": "c:e09e27396a488bfc",
                         "stamm/koerper-leib.js": "c:e31475ed5f2228e1",
@@ -1259,7 +1259,7 @@
                         "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
                         "stamm/werkstatt-sozial.js": "c:5050d651d5fa8fe4",
                         "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
-                        "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
+                        "stamm/dirigent-ankunft.js": "c:8582924a3a670618"
                     }
                 }
             },

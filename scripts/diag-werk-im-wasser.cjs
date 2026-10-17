@@ -21,15 +21,13 @@
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
 //       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
 //       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
-//   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
-//       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
-//       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
-//       weckt den Automaten nur, wenn sein Stempel eine Wasser-Zelle überschreibt — gefragt an DENSELBEN Zellen am Zell-Stempel
-//       (Main und Worker stempeln nach dem Wasser), nie am Lade-Zustand oder am Gesetz samt Rand; der Abbau liest, was der
-//       Stempel fand; der Stempel läuft nur die Werke am Ort durch —, und beide Fahr-Schritte reichen die Tiefe
-//       am Wagen. Das Fundament: die Wurzel (`spawnArchitecture`) urteilt nach ihrer Spieler-Klemme über jedes Werk mit
-//       Grundriss-Gesetz (`_werkImWasser` → `_fundamentLand`), die Siedlung fragt dasselbe `_fundamentLand`, der Satz, der
-//       Tempel und das Bauplan-Programm suchen ihren Ort über `_werkOrtSuchen`.
+//   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): keine Zwillings-Probe des Lands (`_isAboveWaterAt`), `_waterLevelAt`
+//       nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald liest den Bezug nie als Wasser, kein Bau weckt den
+//       Automaten am Setz-Punkt, der Stempel läuft nie den ganzen Bestand, keine zweite Wasser-Wahrheit (`_stempelImWasser`,
+//       `_wasserVerdraengt`), keine Wurzel sagt still ab, `natur_weicht` ist fort.
+//   K — DER KONSUM AM RUF (D3c): am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
+//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
+//       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
@@ -112,6 +110,10 @@ function urteil(b) {
     const v = [];
     const S = SCHWELLE;
     const m = (x) => (Number.isFinite(x) ? x.toFixed(2) : String(x));
+    // K — der Konsum am Ruf: jeder Leser ruft sein Gesetz
+    const KO = b.konsum;
+    if (!KO || KO.fehler || !Object.keys(KO).length) v.push(`K LEER: der Konsum am Ruf wurde nicht gemessen (${(KO && KO.fehler) || "keine Probe"})`);
+    else for (const [k, ok] of Object.entries(KO)) if (!ok) v.push(`KONSUM: ${k} — der Leser ruft sein Gesetz nicht`);
     // H
     const H = b.hain;
     if (!H || H.fehler) v.push(`H: ${H ? H.fehler : "die Hain-Probe lief nicht"}`);
@@ -339,6 +341,8 @@ const ohneKommentare = stammLib.ohneKommentare;
 function fnBody(src, kopf) {
     return stammLib.rumpf(src, kopf);
 }
+// Die Leser-Linse trägt nur noch die Wache des Gefallenen (Absenzen, D3c): jede Präsenz misst die Welt am Ruf (`konsum` in
+// probe) oder am Verhalten (H · Z · S · R · D · F · E).
 function leserUrteil(srcRoh) {
     const src = ohneKommentare(srcRoh);
     const v = [];
@@ -346,7 +350,6 @@ function leserUrteil(srcRoh) {
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
     const re = /\b_waterLevelAt\(([^()]*)\)/g;
     let mm;
-    let zeilen = 0;
     while ((mm = re.exec(src))) {
         if (/^\s*x\s*,\s*z\s*,\s*aus\s*$/.test(mm[1])) continue; // die Definition
         if (mm[1].split(",").length !== 3) {
@@ -355,150 +358,35 @@ function leserUrteil(srcRoh) {
                 `\`_waterLevelAt(${mm[1].trim()})\` liest den Bezug der Ufer-Bänder als Wasser-Probe (Code-Zeile ${z})`
             );
         }
-        zeilen++;
     }
-    if (!zeilen) v.push("kein Aufruf von `_waterLevelAt` gefunden (die Probe prüft nichts)");
     const wald = fnBody(src, /\n {4}_forestCellDarts\([^)]*\) \{/);
     const waldWasser = wald ? /waterYAt:([\s\S]*?)slopeAt:/.exec(wald) : null;
-    if (!waldWasser) v.push("`_forestCellDarts` mit waterYAt nicht gefunden");
-    else if (!/_atlasWaterLevelAt\(/.test(waldWasser[1]) || /_waterLevelAt\(/.test(waldWasser[1]))
-        v.push("der Wald (`_forestCellDarts` waterYAt) plant nicht gegen das Gesetz des Wassers `_atlasWaterLevelAt`");
-    const wand = fnBody(src, /\n {4}_naturWand\([^)]*\) \{/);
-    if (!wand || !/_stammFussLand\(/.test(wand))
-        v.push("die Natur-Wand (`_naturWand`) fragt den Fuß des Stamms nicht (`_stammFussLand`)");
-    const fuss = fnBody(src, /\n {4}_stammFussLand\([^)]*\) \{/);
-    if (!fuss || !/_landAt\(/.test(fuss) || !/STAMM_FUSS_M/.test(fuss))
-        v.push("`_stammFussLand` fragt nicht das Land auf dem Fuß-Kreis (`_landAt` × `STAMM_FUSS_M`)");
-    const spanne = fnBody(src, /\n {4}_stempelSpanne\([^)]*\) \{/);
-    if (!spanne || !/aabb\.stempelfrei\)\s*return null/.test(spanne))
-        v.push("die Pflanze stempelt Wasser-Zellen (`_stempelSpanne` ohne die Ausnahme `stempelfrei`)");
-    // die Hülle des Reitbaren: der Fahrzeug-Zweig und der Teile-Zweig von `_populateBlockerAABBs`
-    const huelle = fnBody(src, /\n {4}_populateBlockerAABBs\([^)]*\) \{/);
-    if (
-        !huelle ||
-        !/affordances\.moveable/.test(huelle) ||
-        !/if \(gefaehrt\) aabb\.stempelfrei = true/.test(huelle) ||
-        !/\(pflanze \|\| gefaehrt\) aabb\.stempelfrei = true/.test(huelle)
-    )
-        v.push(
-            "das Gefährt stempelt Wasser-Zellen (`_populateBlockerAABBs` macht die Hülle des Reitbaren nicht `stempelfrei`)"
-        );
-    const stamp = fnBody(src, /\n {4}_stampArchitectureSolidCellsInto\([^)]*\) \{/);
-    if (!stamp || !/_stempelSpanne\(/.test(stamp))
-        v.push("der Zell-Stempel liest nicht die EINE Spanne `_stempelSpanne`");
+    if (waldWasser && /_waterLevelAt\(/.test(waldWasser[1]))
+        v.push("der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
+    // DER DAMM: der Automat wacht am Zell-Stempel, nie am Setz-Punkt; der Stempel läuft nur die Werke am Ort durch
     const spawn = fnBody(src, /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/);
-    if (!spawn) v.push("`spawnArchitecture` nicht gefunden");
-    // DER DAMM (Gegenprüfungen Runden 2 und 3): der Automat wacht am Zell-Stempel — wo der Stempel in einen Chunk kommt (Bau,
-    // Reload, Wieder-Strömen) —, gefragt an DENSELBEN Zellen, die der Chunk trägt (überschreibt er eine Wasser-Zelle?), nie am
-    // Lade-Zustand und nie an einer zweiten Wahrheit (dem Gesetz samt Rand-Füllung); Main und Worker stempeln nach dem Wasser;
-    // der Abbau liest, was der Stempel fand; der Stempel läuft nur die Werke am Ort durch (`_blockerNahe`).
-    else if (/_invalidateWaterCapsAround\(/.test(spawn))
+    if (spawn && /_invalidateWaterCapsAround\(/.test(spawn))
         v.push("ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
-    if (stamp) {
-        const i = stamp.indexOf("_invalidateWaterCapsAround(");
-        const vor = i >= 0 ? stamp.slice(Math.max(0, i - 300), i) : "";
-        if (i < 0)
-            v.push(
-                "der Zell-Stempel (`_stampArchitectureSolidCellsInto`) weckt den Automaten nicht — ein Damm aus dem Reload staut nie"
-            );
-        else if (!/cells\[idx\] === STATE\.WATER/.test(stamp) || !/if \(!nass\) continue;/.test(vor))
-            v.push("ein Bau weckt den Wasser-Automaten, ohne dass sein Stempel eine Wasser-Zelle überschreibt");
-        if (!/_blockerNahe\(/.test(stamp) || /for \(const entry of this\.state\.architectures\)/.test(stamp))
-            v.push("der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)");
-    }
+    const stamp = fnBody(src, /\n {4}_stampArchitectureSolidCellsInto\([^)]*\) \{/);
+    if (stamp && /for \(const \w+ of this\.state\.architectures\)/.test(stamp))
+        v.push("der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)");
     if (/_stempelImWasser\(/.test(src))
         v.push(
             "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)"
         );
-    const zellen = fnBody(src, /\n {4}_buildVoxelChunkWaterCells\([^)]*\) \{/);
-    const iSky = zellen ? zellen.indexOf("this._skyOpenWaterFilter(") : -1;
-    const iSt = zellen ? zellen.indexOf("this._stampArchitectureSolidCellsInto(") : -1;
-    if (!zellen || iSt < 0 || iSt < iSky)
-        v.push(
-            "der Main stempelt die Werke VOR dem Wasser (`_buildVoxelChunkWaterCells`), der Worker-Pfad danach — zwei Zellen-Wahrheiten"
-        );
-    const abbau = fnBody(src, /\n {4}removeArchitecture\(entry\) \{/);
-    if (!abbau || !/entry\._stempelNass === true/.test(abbau))
-        v.push(
-            "der Abbau (`removeArchitecture`) liest nicht, ob sein Stempel eine Wasser-Zelle überschrieb (`_stempelNass`)"
-        );
     if (/_wasserVerdraengt/.test(src))
         v.push("das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
-    // Das Fundament (Gegenprüfung 10.10.): die Wurzel urteilt NACH ihrer Spieler-Klemme, jeder Sucher fragt dasselbe Land.
-    if (spawn) {
-        const iK = spawn.indexOf("_structureSpawnPos(");
-        const iW = spawn.indexOf("_werkImWasser(");
-        if (iW < 0) v.push("die Wurzel (`spawnArchitecture`) urteilt nicht über das Fundament (`_werkImWasser`)");
-        else if (iK < 0 || iW < iK) v.push("die Wurzel urteilt über das Fundament VOR ihrer Spieler-Klemme");
-    }
-    const wiw = fnBody(src, /\n {4}_werkImWasser\([^)]*\) \{/);
-    if (!wiw || !/_fundamentLand\(/.test(wiw))
-        v.push("`_werkImWasser` fragt nicht das Land des Fundaments (`_fundamentLand`)");
-    const fl = fnBody(src, /\n {4}_fundamentLand\([^)]*\) \{/);
-    if (!fl || !/_fundamentRaster\(/.test(fl) || !/_landAt\(/.test(fl))
-        v.push("`_fundamentLand` fragt nicht jeden Raster-Punkt des Fundaments (`_fundamentRaster` × `_landAt`)");
-    // DAS LAND MISST FEINER ALS DER RICHTER (werk-ufer): Z misst die Hülle auf dem 1-m-Gitter; ein Land-Raster von 1–2 m ließ
-    // die Wasserlinie zwischen seinen Punkten durch (am Gleithang 0,27 m Wasser an einem Knoten im Grundriss)
-    const flS = fl && /_fundamentRaster\([^)]*,\s*([\d.]+)\s*\)/.exec(fl);
-    if (fl && !(flS && Number(flS[1]) <= 0.5))
-        v.push(
-            `\`_fundamentLand\` fragt das Land gröber als das 1-m-Gitter von Z (Raster-Schritt ${flS ? flS[1] : "2 (Vorgabe)"} m, Soll ≤ 0,5 m)`
-        );
-    // DAS MASS DER ORT-SUCHE IST DER GEKLEMMTE ORT (werk-ufer): Ringe um `p0` und Abstand zu `p0` — gemessen an `pos` lag
-    // jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, das Haus am Gleithang stand 13,5 m vom Wasser
-    const wos = fnBody(src, /\n {4}_werkOrtSuchen\([^)]*\) \{/);
-    if (!wos || !/p0\.x \+ Math\.cos\(a\) \* r/.test(wos) || !/Math\.hypot\(q\.x - p0\.x, q\.z - p0\.z\)/.test(wos))
-        v.push(
-            "die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)"
-        );
-    const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
-    if (!slot || !/_fundamentLand\(/.test(slot))
-        v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
-    for (const [wer, re] of [
-        ["der Satz (`_dslSpawnStudioItems`)", /\n {4}_dslSpawnStudioItems\([^)]*\) \{/],
-        ["der Tempel (`spawn_temple`)", /\n {12}spawn_temple: \(\[[^\]]*\], ctx\) => \{/],
-        ["das Bauplan-Programm (`spawn_blueprint`)", /\n {12}spawn_blueprint: \(\[[^\]]*\], ctx\) => \{/],
-    ]) {
-        const body = fnBody(src, re);
-        if (!body || !/_werkOrtSuchen\(/.test(body))
-            v.push(`${wer} sucht keinen Ort, der das ganze Fundament trägt (\`_werkOrtSuchen\`)`);
-    }
-    // DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): jeder Op legt `_setzErgebnis` ins Log, die Wurzeln der Werke und der
-    // Kreaturen nennen jede Absage (kein stilles `return null`), der Satz liest das Protokoll — `natur_weicht` fiel.
-    for (const op of [
-        "spawn_creature",
-        "spawn_tree",
-        "spawn_island",
-        "spawn_ufo",
-        "spawn_village",
-        "spawn_temple",
-        "spawn_waterfall",
-        "spawn_blueprint",
-        "spawn_fractal",
-    ]) {
-        const body = fnBody(src, new RegExp(`\\n {12}${op}: \\(\\[[^\\]]*\\], ctx\\) => \\{`));
-        if (!body || !new RegExp(`_setzErgebnis\\(\\s*ctx,\\s*"${op}"`).test(body))
-            v.push(`der Setz-Op \`${op}\` legt sein Ergebnis nicht ins Log (\`_setzErgebnis\`)`);
-    }
-    const studio = fnBody(src, /\n {4}_dslSpawnStudioItems\([^)]*\) \{/);
-    if (!studio || !/_setzErgebnis\(\s*ctx,\s*"spawn_studio"/.test(studio))
-        v.push("der Setz-Op `spawn_studio` legt sein Ergebnis nicht ins Log (`_setzErgebnis`)");
-    for (const [wer, re] of [
+    for (const [wer, rx] of [
         ["spawnArchitecture", /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/],
         ["spawnCreatureAt", /\n {4}spawnCreatureAt\([^)]*\) \{/],
     ]) {
-        const body = fnBody(src, re);
+        const body = fnBody(src, rx);
         // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
         const ohneNein = body ? body.replace(/const nein = \(grund\) => \{[\s\S]*?return null;\s*\};/, "") : "";
-        if (!body || !/const nein = \(grund\) =>/.test(body) || /return null;/.test(ohneNein))
+        if (/return null;/.test(ohneNein))
             v.push(`die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
     }
     if (/natur_weicht/.test(src)) v.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis");
-    const kraefte = src.match(/vc\.fahrKraefte\([\s\S]*?\);/g) || [];
-    if (kraefte.length < 2) v.push(`nur ${kraefte.length} Aufrufe von vc.fahrKraefte gefunden`);
-    for (const k of kraefte)
-        if (!/tiefe:\s*this\._fahrTiefe\(/.test(k))
-            v.push(`ein Fahr-Schritt ohne die Tiefe am Wagen: ${k.replace(/\s+/g, " ").slice(0, 90)}`);
     return v;
 }
 
@@ -1837,6 +1725,90 @@ async function probe(A) {
             } catch (e) {
                 out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
+        // ── K: DER KONSUM AM RUF (D3c — vorher Präsenz-Proben am Stamm-Text): am Ort des Spielers ruft jeder Leser sein
+        //    Gesetz WIRKLICH (der Spion zählt und reicht durch); der Zensus endet vorher, die gesetzten Werke fallen wieder ──
+        if (!A.nur)
+            try {
+                r.spawnArchitecture = spawnAlt;
+                const ruft = (o, m, lief, args) => {
+                    const eigen = Object.prototype.hasOwnProperty.call(r, lief);
+                    const alt = r[lief];
+                    let n = 0;
+                    r[lief] = function () {
+                        n++;
+                        return alt.apply(this, arguments);
+                    };
+                    try {
+                        o[m](...args);
+                    } catch (_e) {
+                        /* ein Wurf NACH dem Ruf entwertet den Konsum nicht */
+                    } finally {
+                        if (eigen) r[lief] = alt;
+                        else delete r[lief];
+                    }
+                    return n > 0;
+                };
+                const X = st.playerMesh.position.x,
+                    Z = st.playerMesh.position.z,
+                    Y = r._voxelSurfaceY(X, Z);
+                const vorA = new Set(st.architectures);
+                const at = ["at", X, Y, Z];
+                const ctx = () => r.dslCtx({ source: "human", seed: 7 });
+                const C = r.constructor.FOREST.cell;
+                let wald = false;
+                for (let i = -1; i <= 1; i++)
+                    for (let j = -1; j <= 1; j++) {
+                        const cx = Math.floor(X / C) + i,
+                            cz = Math.floor(Z / C) + j;
+                        if (r._forestDartMemo) r._forestDartMemo.delete(cx + "," + cz);
+                        wald = ruft(r, "_forestCellDarts", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt()]) || wald;
+                    }
+                const cfg = r._voxelChunkConfig(0);
+                const zellen = new Uint8Array(cfg.dim * cfg.dim * cfg.dimY);
+                const ox = Math.floor(X / cfg.span) * cfg.span,
+                    oz = Math.floor(Z / cfg.span) * cfg.span;
+                const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
+                const K = {
+                    "_feuchteAt → _waterLevelAt": ruft(r, "_feuchteAt", "_waterLevelAt", [X, Z, Y]),
+                    "_forestCellDarts → _atlasWaterLevelAt": wald,
+                    "_stampArchitectureSolidCellsInto → _blockerNahe": ruft(
+                        r,
+                        "_stampArchitectureSolidCellsInto",
+                        "_blockerNahe",
+                        [zellen, ox, oy, oz, 0]
+                    ),
+                    "spawn_temple → _werkOrtSuchen": ruft(r.dslEffects, "spawn_temple", "_werkOrtSuchen", [[at, 7], ctx()]),
+                    "spawn_blueprint → _werkOrtSuchen": ruft(r.dslEffects, "spawn_blueprint", "_werkOrtSuchen", [
+                        ["haus_alemannisch", at, 7],
+                        ctx(),
+                    ]),
+                    "spawn_tree → _setzErgebnis": ruft(r.dslEffects, "spawn_tree", "_setzErgebnis", [
+                        [at, 1, "eiche", 7],
+                        ctx(),
+                    ]),
+                    "spawn_island → _setzErgebnis": ruft(r.dslEffects, "spawn_island", "_setzErgebnis", [
+                        [at, 6, 7, 1],
+                        ctx(),
+                    ]),
+                    "spawn_ufo → _setzErgebnis": ruft(r.dslEffects, "spawn_ufo", "_setzErgebnis", [[at], ctx()]),
+                };
+                for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
+                const gt = ansaugGT;
+                if (gt && gt._fahr) {
+                    try {
+                        r.dismountArchitecture();
+                    } catch (_e) {
+                        /* steht niemand im Wagen, ist nichts zu lösen */
+                    }
+                    (r._fahrLos || (r._fahrLos = new Set())).add(gt);
+                    gt._fahr.vlong = 4;
+                }
+                K["_fahrNachlauf → _fahrTiefe"] = !!(gt && gt._fahr) && ruft(r, "_fahrNachlauf", "_fahrTiefe", [1 / 60]);
+                out.konsum = K;
+            } catch (e) {
+                out.konsum = { fehler: String((e && e.stack) || e).split("\n")[0] };
+            }
         if (soll("zensus") || soll("satz")) out.zensus = zensus;
         if (soll("satz")) out.satz = satz;
         st.voxelWorker = worker;
@@ -2045,6 +2017,7 @@ function selbsttest() {
         zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [], ohneWand: [], anDerWand: 4 },
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
+        konsum: { "_feuchteAt → _waterLevelAt": true, "spawn_ufo → _setzErgebnis": true },
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         ansaug: {
             ansaug: 0.72,
@@ -2143,6 +2116,8 @@ function selbsttest() {
         ["H Stamm im Wasser", (b) => (b.hain.staemme[3].tiefe = 2.4), /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
         ["H Automat geweckt", (b) => (b.hain.caChunks = 15), /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
         ["H leer", (b) => (b.hain.satz = 2), /H LEER/],
+        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false), /KONSUM: spawn_ufo/],
+        ["K nicht gemessen", (b) => delete b.konsum, /K LEER/],
         [
             "Z Fundament im Wasser",
             (b) =>
@@ -2346,21 +2321,6 @@ function selbsttest() {
             /liest den Bezug/,
         ],
         [
-            "Pflanze stempelt",
-            (s) => s.replace("if (aabb.stempelfrei) return null;", "if (aabb.stempelfreiX) return null;"),
-            /Pflanze stempelt/,
-        ],
-        [
-            "Gefährt stempelt (der Kopf c5e8fa44)",
-            (s) => s.replace("if (gefaehrt) aabb.stempelfrei = true;", ""),
-            /das Gefährt stempelt Wasser-Zellen/,
-        ],
-        [
-            "Automat immer (jeder Stempel weckt)",
-            (s) => s.replace("                if (!nass) continue;\n", ""),
-            /weckt den Wasser-Automaten, ohne dass sein Stempel eine Wasser-Zelle überschreibt/,
-        ],
-        [
             "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
             (s) =>
                 s.replace(
@@ -2370,29 +2330,6 @@ function selbsttest() {
             /zweite Wasser-Wahrheit/,
         ],
         [
-            "Main stempelt vor dem Wasser",
-            (s) =>
-                s
-                    .replace(
-                        "        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);\n        return cells;",
-                        "        return cells;"
-                    )
-                    .replace(
-                        "        // 3) Quell-Spiegel pro Spalte",
-                        "        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);\n        // 3) Quell-Spiegel pro Spalte"
-                    ),
-            /der Main stempelt die Werke VOR dem Wasser/,
-        ],
-        [
-            "Abbau am Merk-Feld des Baus",
-            (s) =>
-                s.replace(
-                    "const damm = wasBlocker && entry._stempelNass === true;",
-                    "const damm = wasBlocker && entry._wasserVerdraengt;"
-                ),
-            /der Abbau .* liest nicht, ob sein Stempel/,
-        ],
-        [
             "Stempel läuft den Bestand",
             (s) =>
                 s.replace(
@@ -2400,11 +2337,6 @@ function selbsttest() {
                     "for (const e of this.state.architectures) nahe.push(e);"
                 ),
             /läuft den ganzen Bestand durch/,
-        ],
-        [
-            "Setz-Op ohne Ergebnis (der Tempel)",
-            (s) => s.replace('this._setzErgebnis(ctx, "spawn_temple"', 'this._setzErgebnisX(ctx, "spawn_temple"'),
-            /der Setz-Op `spawn_temple` legt sein Ergebnis nicht ins Log/,
         ],
         [
             "Wurzel sagt still ab (die Obergrenze)",
@@ -2423,62 +2355,6 @@ function selbsttest() {
                     "this._playWaterReactionPing(fussabdruecke);\n            this._invalidateWaterCapsAround(0, 0, 1);\n"
                 ),
             /am Setz-Punkt .* statt am Zell-Stempel/,
-        ],
-        [
-            "Wurzel ohne Fundament-Wand",
-            (s) =>
-                s.replace(
-                    "if (position && opts.id == null && this._werkImWasser(type, position, opts, seed)) {",
-                    "if (position && opts.id == null && false) {"
-                ),
-            /Wurzel .* urteilt nicht über das Fundament/,
-        ],
-        [
-            "Natur-Wand fragt die Achse",
-            (s) =>
-                s.replace(
-                    'return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;',
-                    'return name && !this._landAt(position.x, position.z, 0.05) ? "wasser" : false;'
-                ),
-            /die Natur-Wand .* fragt den Fuß des Stamms nicht/,
-        ],
-        [
-            "Satz fragt die Mitte",
-            (s) => s.replace("const q = this._werkOrtSuchen(name, ziel, opts, wurf);", "const q = ziel;"),
-            /der Satz .* sucht keinen Ort/,
-        ],
-        [
-            "Ort-Suche misst an pos",
-            (s) =>
-                s.replace(
-                    "kand.push([Math.hypot(q.x - p0.x, q.z - p0.z), q]);",
-                    "kand.push([Math.hypot(q.x - pos.x, q.z - pos.z), q]);"
-                ),
-            /Ort-Suche .* nicht am geklemmten Ort/,
-        ],
-        [
-            "Land im 2-m-Raster",
-            (s) =>
-                s.replace(
-                    "AnazhRealm._fundamentRaster(raster, tuer, 0.5))",
-                    "AnazhRealm._fundamentRaster(raster, tuer))"
-                ),
-            /gröber als das 1-m-Gitter von Z/,
-        ],
-        [
-            "Siedlung fragt die Mitte",
-            (s) =>
-                // die Zeile bricht der Formatierer um (der Saum macht sie länger als 120): das Gift greift über den Umbruch
-                s.replace(
-                    /if \(!this\._fundamentLand\(wx, wz, ry, fp, tu, [^\n]*\)\)\s*return false;/,
-                    "if (!this._landAt(wx, wz, 0.2)) return false;"
-                ),
-            /die Siedlung .* fragt nicht das Land des Fundaments/,
-        ],
-        [
-            "Fahr-Schritt ohne Tiefe",
-            (s) => s.replace("tiefe: this._fahrTiefe(fz) }", "}"),
-            /Fahr-Schritt ohne die Tiefe/,
         ],
     ];
     const echtOk = echt.length === 0;

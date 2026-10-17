@@ -1511,6 +1511,14 @@ class AnazhRealm_stoff_instanz {
                 this.__schl = schl;
                 this.__instanzQuelle = { isInstancedMesh: true, instanceMatrix: null, instanceColor: null, count: 0 };
                 this.__instanzQuelle.matrixWorld = this.matrixWorld;
+                // DIE INSTANZ-FARBE (A11): r184 multipliziert `vInstanceColor` nur in die Farbe eines Objekts, das selbst
+                // `instanceColor` trägt (NodeMaterial.setupDiffuseColor, vendor gelesen) — die Arena trägt die Farben ihrer
+                // Glieder in `instanzFarbe`, hielt aber keinen Halter: seit G1 fiel der Tint jeder Senke (Büschel der
+                // Nah-Wiese, Kronen-Karten, Sterne), Mess-Wiese Ego farbtonStreuung 11,06 → 8,91.
+                Object.defineProperty(this, "instanceColor", {
+                    get: () => this.geometry.attributes.instanzFarbe || null,
+                    configurable: true,
+                });
                 this.layers.mask = m.layers.mask;
                 this.castShadow = m.castShadow;
                 this.receiveShadow = m.receiveShadow;
