@@ -2794,7 +2794,7 @@ async function checkBandTodZensus(ctx) {
 // nach 4 Minuten KEINE Bewegung möglich". `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause (K21): nach 10 s ohne Takt springt kein Wolf weiter
-// als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot.
+// als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async (selftest) => {
@@ -2804,6 +2804,11 @@ async function checkBandBewegungUnterLast(ctx) {
         if (!mesh || !s.playerVel) return { error: "kein Spieler" };
         if (typeof r._loopFixedStep !== "function") return { error: "Fixed-Timestep fehlt" };
         const span = r._voxelChunkConfig(0).span;
+        const tick = (t) => {
+            try {
+                r._gameLoopTick(t);
+            } catch (_e) {}
+        };
     
         // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)
         const findLand = (x0, x1, zJit) => {
@@ -2849,19 +2854,14 @@ async function checkBandBewegungUnterLast(ctx) {
         const heavyRun = (spot, ticks, pin) => {
             resetSim(spot);
             let t = performance.now();
-            try {
-                r._gameLoopTick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
-            } catch (_e) {}
+            tick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
             resetSim(spot); // der Baseline-Tick darf die Messung nicht verschieben
             const start = simPos();
             let minY = start.y,
                 clipTicks = 0,
                 overBudgetSeen = false;
             for (let i = 0; i < ticks; i++) {
-                t += 330;
-                try {
-                    r._gameLoopTick(t);
-                } catch (_e) {}
+                tick((t += 330));
                 if (pin) {
                     mesh.position.set(spot.x, spot.y, spot.z);
                     if (s._fixedSimPos) s._fixedSimPos.set(spot.x, spot.y, spot.z);
@@ -2919,33 +2919,29 @@ async function checkBandBewegungUnterLast(ctx) {
             s.keys = {};
             const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
             const W = [];
+            const absage = [];
+            const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
+            const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
+            s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
             for (let i = 0; i < 24 && W.length < 4; i++) {
                 const a = (i * 2.399963) % (2 * Math.PI);
                 const x = nearSpot.x + Math.sin(a) * 22;
                 const z = nearSpot.z + Math.cos(a) * 22;
                 if (!r._landAt(x, z)) continue;
-                const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", {
-                    precise: true,
-                    bodySize: 1,
-                });
+                const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", opt);
                 if (!c) continue;
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            const ruhig = () => {
-                for (const c of W) {
-                    c.userData._verhaltenAktion = null;
-                    c.userData._hopV = 0;
-                    c.userData._hopH = 0;
-                }
-            };
+            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`), statt dass der
+            // 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0) — der stehende Wolf
+            // machte den Selbsttest blind (CI 39011585355: 0/4; lokal an der Kreatur-Uhr 109,99 dasselbe, über 40 Uhren 58 %)
+            const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
+            const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
             let t = performance.now();
             for (let k = 0; k < 40; k++) {
                 ruhig();
-                t += 1000 / 60;
-                try {
-                    r._gameLoopTick(t);
-                } catch (_e) {}
+                tick((t += 1000 / 60));
             }
             const vor = W.map((c) => [c.position.x, c.position.z]);
             const vVor = W.map((c) => (c.userData._steuer ? c.userData._steuer.v : 0));
@@ -2953,20 +2949,23 @@ async function checkBandBewegungUnterLast(ctx) {
             const alt = K.TAKT_DECKEL_S;
             if (deckelAus) K.TAKT_DECKEL_S = Infinity;
             ruhig();
-            t += 10000; // DIE PAUSE: 10 s Wanduhr ohne Takt
-            try {
-                r._gameLoopTick(t);
-            } catch (_e) {}
+            tick((t += 10000)); // DIE PAUSE: 10 s Wanduhr ohne Takt
             if (deckelAus) K.TAKT_DECKEL_S = alt;
             const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
+            // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
+            // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
+            const halt = W.map((c, i) => {
+                const u = c.userData;
+                if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
+                return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
+            }).filter(Boolean).concat(absage);
             for (const c of W) r.removeCreature(c);
+            s.maxCreatures = maxAlt;
             const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
-            return { n: W.length, deckel, weg, grenze, vVor, ueber, max: Math.max(0, ...weg) };
+            return { n: W.length, deckel, weg, grenze, vVor, ueber, halt, max: Math.max(0, ...weg) };
         };
         o.d = pauseLauf(false);
         if (selftest) o.dAus = pauseLauf(true);
-    
-        o.walkSpeed = s.speed || null;
         return o;
     }, true);
     if (!out || out.error) return check("Bewegung unter Last: die Bühne steht (Land für NAH und FERN)", false, out ? out.error : "keine Antwort der Seite");
@@ -2978,12 +2977,13 @@ async function checkBandBewegungUnterLast(ctx) {
     );
     check(
         `Bewegung unter Last (d) DIE PAUSE: kein Wolf springt im ersten Takt weiter als Sprint × Takt-Deckel (max ${d.max.toFixed(2)} m, ${d.ueber}/${d.n} drüber)`,
-        d.n >= 3 && d.ueber === 0,
-        d.ueber ? "Täter: startEternalLoop, ungedeckeltes delta → updateCreatures" : ""
+        d.n >= 3 && d.ueber === 0 && !d.halt.length,
+        d.halt.length ? `Vorbedingung: ${d.halt.join(" · ")}` : d.ueber ? "Täter: startEternalLoop, ungedeckeltes delta → updateCreatures" : ""
     );
     check(
-        `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springen die Wölfe (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
-        !!p && p.movedXZ <= 1.0 && !!da && da.n >= 3 && da.ueber > 0
+        `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springt JEDER Wolf (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
+        !!p && p.movedXZ <= 1.0 && !!da && da.n >= 3 && da.ueber === da.n && !da.halt.length,
+        da && da.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
     );
 }
 
