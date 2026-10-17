@@ -1140,7 +1140,13 @@ class AnazhRealm_studio_bruecke {
             [werkFrei, werkZiel] = freiste(werke, im);
             [baeckerFrei, baeckerZiel] = freiste(baecker, im);
         };
-        const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
+        // DER BLICK ZUERST (B3d): vor dem ersten Weltbild geht ein Auftrag außer Blick (sein Rang, `_blickRang`) nur in eine
+        // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
+        // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
+        const frei = (a) => {
+            const n = this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei;
+            return n > 0 && (n === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.wo)));
+        };
         for (plaetze(); q.length; plaetze()) {
             if (!f.baecker && q.some((a) => this._foundryBahn(a.msg) === "baecker")) this._foundryBaecker(f);
             let i = -1;
