@@ -418,7 +418,21 @@ async function probe(arg) {
     const tippe = async (key, code) => (taste("keydown", key, code), taste("keyup", key, code), tick(2));
     // DAS BILD aus dem Ausgabe-Pfad (Satz „messung": der Schuss zeigt, was jetzt steht), der Loop ruht um den Schuss
     const [W, H] = [640, 360];
-    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn des
+    // Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel neu, ein Leser
+    // band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach dem Schuss beim
+    // nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs beginnt wie nach der Größe
+    // mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben Pose im Laub: Rauschen 0,011)
+    const schuss = async () => {
+        const z = st.traaNode && st.traaNode._historyRenderTarget;
+        if (z) z.setSize = (w, h) => (w === 1 && h === 1 ? z : Object.getPrototypeOf(z).setSize.call(z, w, h));
+        if (z) st.traaNode._versatzIndex = -1;
+        try {
+            return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        } finally {
+            if (z) delete z.setSize;
+        }
+    };
     const png = (u8) => {
         const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
         const ctx = cv.getContext("2d");
@@ -458,8 +472,7 @@ async function probe(arg) {
         t.nachBlur = st.keys.w === true;
         taste("keyup", "w", "KeyW");
         // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete Bilder):
-        // eine Aufnahme mitten im Gleiten zählte ihre Bilder mit, und 24 Takte danach band ein Bündel das alte Ziel der
-        // zeitlichen Auflösung („Destroyed texture TRAANode.resolve", Spielgang 17.10.)
+        // eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
         for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++) await tick(1);
         await angehalten(async () => {
             out.bilder.ankunft = png(await schuss());
@@ -780,8 +793,14 @@ async function probe(arg) {
         const licht = platz && r._grundrissVon(platz);
         const frei = (x, z) =>
             !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
+        // ...und der Satz pflanzt dort (der Gang endet die Fahrt an jedem Ort, auch im Dorf: die Wand der Natur `_naturWand`
+        // — Grundriss, Weg, Platz, Acker — schweigt im 12-m-Kreis, sonst wuchs „vor dir" keine Birke)
+        const pflanzbar = (x, z) =>
+            [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12], [8, 8], [-8, 8], [8, -8], [-8, -8]].every(
+                ([dx, dz]) => !r._naturWand("baum_birke", { x: x + dx, y: r._voxelSurfaceY(x + dx, z + dz), z: z + dz })
+            );
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z)) {
+            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z) && pflanzbar(x, z)) {
                 ort = { x, z };
                 break;
             }
