@@ -1,0 +1,536 @@
+{
+ "start": "2026-10-17T15:49:16.064Z",
+ "zustaende": [
+  {
+   "versuch": 0,
+   "k0": 0.63,
+   "k0p95": 0.8,
+   "k0Bilder": 587,
+   "frames": 1172,
+   "fps": 78.1,
+   "durchsatz": 12.5,
+   "zustand": "oben",
+   "arena": {
+    "lager": 9,
+    "summe": {
+     "haupt": {
+      "inst": 1178,
+      "tris": 141736
+     },
+     "k0": {
+      "inst": 40,
+      "tris": 16902
+     },
+     "k1": {
+      "inst": 6,
+      "tris": 2732
+     }
+    },
+    "lagerListe": [
+     {
+      "glieder": 4,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 4,
+        "aktiv": 4,
+        "inst": 406,
+        "tris": 77440,
+        "triFeld": 77440
+       },
+       "buendel": null
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 0,
+        "aktiv": 0,
+        "inst": 0,
+        "tris": 0,
+        "triFeld": 0
+       },
+       "buendel": null
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 21,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 16,
+        "zuege": 16,
+        "aktiv": 13,
+        "inst": 24,
+        "tris": 31576,
+        "triFeld": 31576
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 23,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 17,
+        "zuege": 17,
+        "aktiv": 14,
+        "inst": 25,
+        "tris": 29228,
+        "triFeld": 29228
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 15,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 13,
+        "aktiv": 13,
+        "inst": 32,
+        "tris": 12822,
+        "triFeld": 12822
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 5,
+        "aktiv": 5,
+        "inst": 6,
+        "tris": 2732,
+        "triFeld": 2732
+       },
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 4,
+        "tris": 2944,
+        "triFeld": 2944
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 4,
+        "tris": 1136,
+        "triFeld": 1136
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 2,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 1,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 1,
+        "tris": 2048,
+        "triFeld": 2048
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 1,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 722,
+        "tris": 1444,
+        "triFeld": 1444
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     }
+    ]
+   },
+   "bild": "C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1710k0w/arena-B-oben.png"
+  },
+  {
+   "versuch": 1,
+   "k0": 0.26,
+   "k0p95": 0.78,
+   "k0Bilder": 595,
+   "frames": 1189,
+   "fps": 79.3,
+   "durchsatz": 12.4,
+   "zustand": "unten",
+   "arena": {
+    "lager": 10,
+    "summe": {
+     "haupt": {
+      "inst": 1178,
+      "tris": 141736
+     },
+     "k0": {
+      "inst": 40,
+      "tris": 16902
+     },
+     "k1": {
+      "inst": 6,
+      "tris": 2732
+     }
+    },
+    "lagerListe": [
+     {
+      "glieder": 4,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 4,
+        "aktiv": 4,
+        "inst": 406,
+        "tris": 77440,
+        "triFeld": 77440
+       },
+       "buendel": null
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 0,
+        "aktiv": 0,
+        "inst": 0,
+        "tris": 0,
+        "triFeld": 0
+       },
+       "buendel": null
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 21,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 16,
+        "zuege": 16,
+        "aktiv": 13,
+        "inst": 24,
+        "tris": 31576,
+        "triFeld": 31576
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 23,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 17,
+        "zuege": 17,
+        "aktiv": 14,
+        "inst": 25,
+        "tris": 29228,
+        "triFeld": 29228
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 15,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 13,
+        "aktiv": 13,
+        "inst": 32,
+        "tris": 12822,
+        "triFeld": 12822
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 5,
+        "aktiv": 5,
+        "inst": 6,
+        "tris": 2732,
+        "triFeld": 2732
+       },
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 2,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 1,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 1,
+        "tris": 2048,
+        "triFeld": 2048
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 0,
+        "aktiv": 0,
+        "inst": 0,
+        "tris": 0,
+        "triFeld": 0
+       },
+       "buendel": null
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 4,
+        "tris": 2944,
+        "triFeld": 2944
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": false,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": null
+      },
+      "k0": {
+       "lose": {
+        "plaetze": 0,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 4,
+        "tris": 1136,
+        "triFeld": 1136
+       },
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     },
+     {
+      "glieder": 1,
+      "fest": true,
+      "name": "geometrie-arena",
+      "haupt": {
+       "lose": null,
+       "buendel": {
+        "plaetze": 1,
+        "zuege": 1,
+        "aktiv": 1,
+        "inst": 722,
+        "tris": 1444,
+        "triFeld": 1444
+       }
+      },
+      "k0": {
+       "lose": null,
+       "buendel": null
+      },
+      "k1": {
+       "lose": null,
+       "buendel": null
+      }
+     }
+    ]
+   },
+   "bild": "C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1710k0w/arena-B-unten.png"
+  }
+ ],
+ "version": "18.546.17"
+}

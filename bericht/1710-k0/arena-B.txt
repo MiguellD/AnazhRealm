@@ -1,0 +1,2 @@
+15:50:40 versuch 0: k0 0.63 (p95 0.8, 587 k0-Bilder von 1172) → oben · Arena 9 Lager · Summe {"haupt":{"inst":1178,"tris":141736},"k0":{"inst":40,"tris":16902},"k1":{"inst":6,"tris":2732}}
+15:52:35 versuch 1: k0 0.26 (p95 0.78, 595 k0-Bilder von 1189) → unten · Arena 10 Lager · Summe {"haupt":{"inst":1178,"tris":141736},"k0":{"inst":40,"tris":16902},"k1":{"inst":6,"tris":2732}}
