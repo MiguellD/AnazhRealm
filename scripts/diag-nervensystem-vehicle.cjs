@@ -2,12 +2,10 @@
 // Die Schwester zu diag-nervensystem.cjs fuer die ERSTE Nicht-Pflanzen-Domaene: beweist, dass
 // ein kind:"vehicle"-Preset im Zweit-Kern (vehicle-core.js, __vehicleCore — v1.1 N7.2) OHNE
 // eine Zeile AnazhRealm-Edit durch die EINE Pipeline fliesst:
-//   A (statisch, Node — N2-migriert, V9.56-i): der Worker-Boot + der Platten-Stempel sind MANIFEST-
-//     getrieben (cores.manifest.json traegt den Kern-Satz; die Drift-Wand hasht Manifest-Text +
-//     alle Kern-Skripte); die Bruecke merged Kern-Rezepte + exportiert zusatzKindStages je Kern
-//     GENERISCH (Schleife ueber self.__anazhCores, KEIN Kern-spezifisches ns-Literal); der
-//     N7.5-Merge lebt NUR in _foundryIngestRenderConfig (Chokepoint-Gesetz); der Clamp traegt
-//     das Fail-Closed-[0]. --selftest injiziert 2 Verletzungen und beweist: die Linse feuert.
+//   A (statisch, Node — Absenzen): der Stamm nennt die Zusatz-Felder nie selbst und ruft kerneVereinen genau
+//     einmal (kein zweiter Ingest-Pfad); die Bruecke kennt kein self.__vehicleCore-Literal; der Auto-Register-
+//     Chokepoint kennt kein kind-if (M8). Den manifest-getriebenen Boot und Stempel beweist gate:fluss (W4/W5)
+//     am echten Faden. --selftest injiziert einen zweiten Ingest-Pfad und beweist: die Linse feuert.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Fahrzeug-Presets (der
 //     Draht lebt end-to-end durch den echten Worker); kindStages.vehicle == [0] gemerged,
 //     die foundry-core-kinds UNANGETASTET (kein Overwrite).
@@ -56,136 +54,52 @@ function countOcc(src, needle) {
     }
 }
 
-// ===== TEIL A: die statischen Gesetze =====
-function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
+// ===== TEIL A: die statischen Absenzen (die Präsenzen beweist der lebende Draht B-F) =====
+function staticLaws(anazhSrc, phytoSrc) {
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
-    // A1 (N2-migriert): die rel-Liste ist keine Hardcode-Zeile mehr — das MANIFEST traegt die
-    // Kerne (vehicle-core + foundry-core als scripts-Eintraege), und der Worker-Boot in
-    // _ensureAssetFoundry liest cores.manifest.json (?v=-Buster) + baut rel aus core.scripts.
-    out.push([
-        "A1: der Worker-Boot ist manifest-getrieben (Manifest traegt vehicle-core, _ensureAssetFoundry liest cores.manifest.json)",
-        /"vehicle-core\.js"/.test(manifestSrc) &&
-            /"foundry-core\.js"/.test(manifestSrc) &&
-            /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) &&
-            /core\.scripts/.test(anazhNC),
-    ]);
-    // A2 (N2-migriert, V18.511 in der Transport-Schale): der Platten-Stempel hasht MANIFEST-getrieben —
-    // den Manifest-TEXT selbst (Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem
-    // Manifest (deckt vehicle-core weiter, ohne harte Zeile — die Drift-Wand bleibt).
-    out.push([
-        "A2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + alle Kern-Skripte)",
-        /\.then\(\(res\) => res\.text\(\)\)/.test(anazhNC) &&
-            /stempelUrls\.push\(/.test(anazhNC) &&
-            /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC),
-    ]);
-    // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): die Zweit-Kern-Blöcke (zusatzKindStages · zusatzBudget mit den
-    // Gestalten je Rezept) mergt NUR phyto-core `kerneVereinen`, gerufen EINMAL im Stamm — in
-    // _foundryIngestRenderConfig; der Stamm nennt keines der Zusatz-Felder selbst (ein zweiter Ingest-Pfad wird rot).
-    const ingest = fnBody(anazhNC, /_foundryIngestRenderConfig\(config\)\s*/);
+    // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): der Stamm nennt keines der Zusatz-Felder selbst und ruft kerneVereinen
+    // genau einmal (ein zweiter Ingest-Pfad wird rot); dass der Chokepoint das Gesetz ruft, beweist Teil C per Spion.
     const zusatz = ["zusatzKindStages", "zusatzBudget"];
     const imStamm = zusatz.reduce((s, z) => s + countOcc(anazhNC, z), 0);
     const rufe = countOcc(anazhNC, "kerneVereinen(");
-    const imIngest = ingest ? countOcc(ingest, "kerneVereinen(config)") : 0;
-    const vereinen = fnBody(stripComments(pcSrc), /function kerneVereinen\(cfg\)\s*/) || "";
     out.push([
-        "A3: der Zweit-Kern-Merge lebt NUR in _foundryIngestRenderConfig (phyto-core kerneVereinen, kein zweiter Ingest-Pfad)",
-        ingest !== null &&
-            imIngest === 1 &&
-            rufe === 1 &&
-            imStamm === 0 &&
-            zusatz.every((z) => vereinen.includes(z)) &&
-            vereinen.includes('kind === "gestalten"'),
-        `Zusatz-Felder im Stamm=${imStamm} · kerneVereinen-Rufe=${rufe} (im Chokepoint ${imIngest})`,
+        "A3: kein zweiter Ingest-Pfad für den Zweit-Kern-Merge (Zusatz-Felder im Stamm 0, kerneVereinen genau ein Ruf)",
+        rufe === 1 && imStamm === 0,
+        `Zusatz-Felder im Stamm=${imStamm} · kerneVereinen-Rufe=${rufe}`,
     ]);
-    out.push([
-        "A4: der kindStages-Clamp traegt das Fail-Closed-[0] (bekanntes Rezept ohne Eintrag)",
-        // V18.512: die EINE Stufen-Klammer (`_foundryDeclaredStage`) liest kindStages; seit der gedockten Stufe
-        // (0df5344) serviert `_foundryServierStufe` sie, und ein BEKANNTES Rezept ohne Eintrag fällt dort fail-closed
-        // auf [0] (die Probe wandert mit dem Chokepoint).
-        /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);[\s\S]{0,200}?if \(f && f\.recipes && f\.recipes\[preset\]\) lod = 0;/.test(
-            anazhNC
-        ),
-    ]);
-    // A5–A7 (N2-migriert): die drei Bruecken-Sites sind EINE generische Schleife ueber
-    // self.__anazhCores (ns-Kerne aus dem Manifest) — KEIN self.__vehicleCore-Literal mehr
-    // in der Bruecke (Kommentare gestrippt; ein Kern-spezifischer Zugriff wuerde hier rot).
-    out.push([
-        "A5: die Bruecke merged Kern-Rezepte generisch (Schleife ueber __anazhCores, kein ns-Literal)",
-        /self\.__anazhCores/.test(phytoNC) &&
-            /__zweitKerne\(\)/.test(phytoNC) &&
-            /zk\.kern\.PRESETS/.test(phytoNC) &&
-            !/self\.__vehicleCore/.test(phytoNC),
-    ]);
-    out.push([
-        "A6: die Bruecke exportiert Stufen, Budget und Gestalten je Kern generisch (zusatz…[zk.id])",
-        /zusatzKindStages\[zk\.id\]/.test(phytoNC) && /zusatzBudget\[zk\.id\]/.test(phytoNC),
-    ]);
-    out.push([
-        "A7: build-asset dispatcht an den ERSTEN Kern, dessen PRESETS das Preset traegt",
-        /zweit\.kern\.buildInstance\(msg\.presetId/.test(phytoNC),
-    ]);
-    out.push([
-        "A8: vehicle-core deklariert kindStages.vehicle == [0, 1] (B2-Vertrags-Daten; die Stufe 1 seit K43-2)",
-        /kindStages:\s*\{\s*vehicle:\s*\[0,\s*1\]\s*\}/.test(vcSrc),
-    ]);
-    // A9 (N1-migriert, V9.56-i): der kind:vehicle-ZWEIG ist der KIND_POLICY-Zeile gewichen —
-    // die Probe prueft jetzt die Tabellen-Realitaet: die vehicle-Policy-Zeile traegt Praefix+Donor,
-    // und der Auto-Register-Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich (M8).
-    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
-    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
-    // im File VOR der Definition und schnitte sonst den falschen Body.
+    // A5: die Brücke greift auf keinen Kern per ns-Literal zu (Kommentare gestrippt).
+    out.push(["A5: die Bruecke kennt kein self.__vehicleCore-Literal", !/self\.__vehicleCore/.test(phytoNC)]);
+    // A10 (M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich.
     const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
-    out.push([
-        "A9: KIND_POLICY traegt die vehicle-Zeile (prefix fahrzeug_, donor fahrzeug_wagen)",
-        /vehicle:\s*Object\.freeze\(\{\s*prefix:\s*"fahrzeug_",\s*donor:\s*"fahrzeug_wagen"/.test(anazhNC),
-    ]);
-    out.push([
-        "A10: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-if, M8)",
-        autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
-    ]);
+    out.push(["A10: der Auto-Register-Chokepoint kennt kein kind-if (M8)", autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg)]);
     return out;
 }
 
 (async () => {
     const anazhSrc = stammLib.text(root);
     const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
-    const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
-    const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
-        // V1: das Fail-Closed-[0] entfernt -> A4 muss rot werden.
-        const broken1 = stammLib.ersetze(anazhSrc, "_foundryServierStufe",
-            "if (f && f.recipes && f.recipes[preset]) lod = 0;",
-            "if (f && f.recipes && f.recipes[preset]) lod = lod;"
-        );
-        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A4"));
-        const a4Echt = staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A4"));
-        // Die Injektion MUSS den Quelltext ändern (sonst prüfte der Selbsttest nichts) und A4 kippen.
-        check(
-            "Selbst-Test 1: Fail-Closed entfernt -> A4 feuert",
-            broken1 !== anazhSrc && a4Echt && a4Echt[1] === true && a4 && a4[1] === false
-        );
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = stammLib.ersetze(anazhSrc, "_foundryRequestSettlement",
             /(_foundryRequestSettlement\([^)]*\) \{)/,
             "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
-        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A3"));
+        const a3 = staticLaws(broken2, phytoSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf beide Verletzungs-Klassen.");
+        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf den zweiten Ingest-Pfad.");
         process.exit(0);
     }
 
-    console.log("=== ZWEIT-KERN — TEIL A: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc)) check(name, ok, detail);
+    console.log("=== ZWEIT-KERN — TEIL A: die statischen Absenzen (Node) ===");
+    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -232,12 +146,17 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         try {
             const orig = A._studioRenderConfig;
             const origState = r.state.studioRenderConfig;
+            // KONSUM: der Chokepoint mergt über das Gesetz (phyto-core kerneVereinen), nie über einen Inline-Zwilling.
+            const PC = window.__phytoCore, kv = PC.kerneVereinen;
+            res.c.gesetz = 0;
+            PC.kerneVereinen = (...a) => (res.c.gesetz++, kv.apply(PC, a));
             r._foundryIngestRenderConfig({
                 lod: {
                     kindStages: { tree: [7, 8] },
                     zusatzKindStages: { "probe-core": { tree: [9], tor: [1] } },
                 },
             });
+            PC.kerneVereinen = kv;
             const pks = A._studioRenderConfig.lod.kindStages;
             res.c.treeKept = JSON.stringify(pks.tree); // erwartet [7,8] — der Erst-Kern fuehrt
             res.c.torMerged = JSON.stringify(pks.tor); // erwartet [1] — disjunkt kommt an
@@ -372,6 +291,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         out.c.err || String(out.c.treeKept)
     );
     check("C: disjunkter kind kommt an (tor == [1])", out.c.torMerged === "[1]", String(out.c.torMerged));
+    check("C: der Chokepoint mergt über das Gesetz kerneVereinen (Konsum)", out.c.gesetz === 1, String(out.c.gesetz));
     check(
         "D: Auto-Blueprint fahrzeug_gt registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 4,

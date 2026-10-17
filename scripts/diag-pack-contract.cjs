@@ -1,12 +1,9 @@
 // diag-pack-contract.cjs — DIE PACK-KANON-LINSE (N3, `npm run gate:pack-contract`).
 //
-// Vier Prüfungen, Node-pur wo möglich (a–c statisch, d der eine Browser-Beweis):
+// Drei Prüfungen (a–b statisch, d der eine Browser-Beweis):
 //   (a) `spec/pack/v0/CONTRACT.md` existiert + trägt die Pflicht-Abschnitte (v0-Ist-Kanon ·
 //       v1-Schema · must-ignore · Ship-Hook · Ü1/Ü2-Chokepoint).
-//   (b) der Platten-Stempel hasht MANIFEST + alle Manifest-Skripte (Transport-Schale `_foundrySchale`,
-//       kommentar-gestrippter Source-Grep — die V18.267-Disziplin) — die Drift-Wand steht.
-//   (c) der Ship-Hook `window.__anazhLiveBake === false` lebt im Request-Pfad (`_foundryRequest`) und reist
-//       als `nurPlatte` zur Schale, die dann nur die Platte fragt und nie baut (Source-Probe).
+//   (b) Absenz: keine Labor-Shell reist in den Platten-Stempel (K42); die Stempel-Formel beweist gate:fluss.
 //   (d) Browser: EIN Preset (eiche, lod 2) live minten → Artefakt zurücklesen → byte-gleich
 //       zum Live-Reply (sha256 je Puffer, UNABHÄNGIG vor der b64-Kodierung gerechnet) + der
 //       Hook VERHALTENS-bewiesen (false → null trotz ready-Worker; weg → Meshes).
@@ -134,56 +131,10 @@ async function main() {
             check(md.includes(marker), `CONTRACT.md trägt den Anker „${marker}"`);
     }
 
-    // (b) + (c) Source-Proben am kommentar-gestrippten Code (V18.267: der Kommentar darf das
-    // Wort tragen, der CODE muss es tragen — hier PRÄSENZ-Proben, also gestrippt gegen die
-    // Möglichkeit, dass NUR ein Kommentar das Muster trägt).
-    const anazh = stammLib.text(PK.ROOT);
-    // V18.511: die Platte lebt in der Transport-Schale IM Worker — der Boot reicht ihr den Manifest-TEXT und die
-    // core.scripts-URLs, die Schale hasht sie (SHA-256) und hängt das Transport-Format an (`|f<n>`).
-    const boot = stammLib.rumpf(anazh, "_ensureAssetFoundry");
-    const schale = stammLib.rumpf(anazh, "_foundrySchale");
-    check(!!boot && !!schale, "_ensureAssetFoundry + _foundrySchale im Stamm gefunden");
-    if (boot && schale) {
-        const b = PK.stripComments(boot);
-        const sc = PK.stripComments(schale);
-        check(
-            /cores\.manifest\.json/.test(b) && /manifestText/.test(b),
-            "Stempel: der MANIFEST-Text reist in die Schale"
-        );
-        check(
-            /core\.scripts/.test(b) && /stempelUrls/.test(b),
-            "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
-        );
-        check(
-            /stempelUrls\.push\(new URL\(core\.bruecke \+ v, base\)\.href\)/.test(b) && !/core\.shell/.test(b),
-            "Stempel: die Foundry-Brücke (core.bruecke — Mesh-Extraktion + Karten-Bäcker) reist mit, keine Labor-Shell (K42)"
-        );
-        check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
-        check(
-            /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(sc),
-            "Stempel: Manifest-Text vor den Skripten (die Formel)"
-        );
-        check(/"\|f" \+\s*cfg\.format/.test(sc), "Stempel: das Transport-Format reist mit (|f<n>)");
-        // Im Körper-Platten-Zweig (nach dem Lesen) antwortet nurPlatte VOR dem Weiterreichen ans Studio (`studio()`).
-        const iThen = sc.indexOf("const hit = wert && Array.isArray(wert.meshes)");
-        const iNur = iThen >= 0 ? sc.indexOf("m.nurPlatte", iThen) : -1;
-        const iStudio = iThen >= 0 ? sc.indexOf("studio()", iThen) : -1;
-        check(
-            iThen >= 0 && iNur > iThen && iStudio > iNur && /W\.onmessage\(/.test(sc),
-            "Ship-Hook in der Schale: nurPlatte antwortet VOR dem Studio-Bau"
-        );
-    }
-    const req = stammLib.rumpf(anazh, "_foundryRequest");
-    check(!!req, "_foundryRequest im Stamm gefunden");
-    if (req) {
-        const code = PK.stripComments(req);
-        check(/__anazhLiveBake/.test(code), "Ship-Hook: __anazhLiveBake lebt im Request-Pfad (CODE, nicht Kommentar)");
-        check(/__anazhLiveBake\s*===\s*false/.test(code), "Ship-Hook: striktes === false (kein truthy-Raten)");
-        const iHook = code.indexOf("__anazhLiveBake");
-        const iWorker = code.indexOf("_foundryWorkerRequest");
-        check(iWorker > iHook, "Ordnung: der Hook VOR dem Worker-Auftrag");
-        check(/_foundryWorkerRequest\([^)]*\bplatte, nurPlatte\b/.test(code), "Der Hook reist als nurPlatte zur Schale");
-    }
+    // (b) die Absenz am kommentar-gestrippten Boot: keine Labor-Shell reist in den Stempel (K42). Stempel-Formel und
+    // Schale beweisen gate:fluss (W5, Stempel-Probe) und gate:warm-start am Verhalten, den Ship-Hook beweist (d).
+    const boot = stammLib.rumpf(stammLib.text(PK.ROOT), "_ensureAssetFoundry");
+    check(!!boot && !/core\.shell/.test(PK.stripComments(boot)), "Stempel: keine Labor-Shell im Boot (K42)");
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);

@@ -234,19 +234,6 @@ function startSaveServer() {
                         matUnknownSurvives: !!(mat && mat.xZukunft && mat.xZukunft.b === 2),
                         matForeignTagSurvives: !!(mat && mat.tags && mat.tags["x:fremd"] === 0.7),
                     };
-                    // Riss 3: prüft der Import irgendwas? (Ω3: die Wände leben im
-                    // EINEN Eingang _admitForeignArtifact — der Import ruft ihn.)
-                    const importSrc = r.importRecipesFromWorld.toString();
-                    const admitSrc =
-                        typeof r._admitForeignArtifact === "function" ? r._admitForeignArtifact.toString() : "";
-                    const src = importSrc + admitSrc;
-                    M.rt1_importChecks = {
-                        importUsesAdmit: /_admitForeignArtifact/.test(importSrc),
-                        verifiesSignature: /verifyBlueprintSignature/.test(src),
-                        sievesTainted: /_artifactProvenanceTainted/.test(src),
-                        appendsProvenance: /_appendProvenance/.test(src),
-                        rederivesRole: /_refreshBlueprintRoleEmergent|computeBlueprintRole/.test(src),
-                    };
                     localStorage.removeItem(r.worldStorageKey("taille-rt1-src"));
                     delete r.state.blueprints["rt1_bp"];
                     delete r.state.materials["rt1_mat"];
@@ -305,11 +292,18 @@ function startSaveServer() {
                 {
                     const obj = { type: "probe", xZukunft: { e: 5 } };
                     r.p2pSend(obj);
-                    const fromChannel = r._p2pHandleChannelMessage.toString();
+                    // Der Kanal-Empfang am Verhalten: das Original reist mit jedem Feld weiter, gestempelt mit der peerId.
+                    const fang = [];
+                    r.p2pHandleMessage = (s) => fang.push(JSON.parse(s));
+                    try {
+                        r._p2pHandleChannelMessage("peer-t", JSON.stringify({ type: "pos", x: 1, y: 2, z: 3, ry: 0, xZukunft: { e: 5 } }));
+                    } finally {
+                        delete r.p2pHandleMessage;
+                    }
                     M.rt4_p2p = {
                         stampKeepsUnknown:
                             obj.xZukunft && obj.xZukunft.e === 5 && obj.pv === r.constructor.PROTO_VERSION,
-                        channelPassesOriginal: /msg\.peerId = peerId;[\s\S]*JSON\.stringify\(msg\)/.test(fromChannel),
+                        channelPassesOriginal: !!fang[0] && !!fang[0].xZukunft && fang[0].xZukunft.e === 5 && fang[0].peerId === "peer-t",
                     };
                 }
 
@@ -369,6 +363,20 @@ function startSaveServer() {
                 const deser = r._deserializeBlueprint(g.blueprint);
                 out.blueprintReadable = !!deser;
                 out.blueprintSig = deser ? await r.verifyBlueprintSignature(deser) : "unreadable";
+                // KONSUM am EINEN Eingang: _admitForeignArtifact prüft die Signatur und hängt das eigene Glied an die Kette.
+                const ruft = (k, bp) => {
+                    let n = 0;
+                    const f = r[k];
+                    r[k] = (...a) => (n++, f.apply(r, a));
+                    try {
+                        r._admitForeignArtifact(bp);
+                    } finally {
+                        delete r[k];
+                    }
+                    return n > 0;
+                };
+                out.admitPrueftSignatur = ruft("verifyBlueprintSignature", g.blueprint);
+                out.admitHaengtGlied = ruft("_appendProvenance", Object.assign({}, g.blueprint, { provenance: [{ by: "ab".repeat(32), at: 1 }] }));
                 const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-konformanz" });
                 out.manifestReadable = !!man;
                 out.manifestSig =
@@ -389,7 +397,9 @@ function startSaveServer() {
                 !conf.blueprintReadable ||
                 conf.blueprintSig !== "valid" ||
                 !conf.manifestReadable ||
-                conf.manifestSig !== "valid"
+                conf.manifestSig !== "valid" ||
+                !conf.admitPrueftSignatur ||
+                !conf.admitHaengtGlied
             ) {
                 console.error("KONFORMANZ-BRUCH: die Taille wurde verletzt (golden nicht mehr lesbar/valid).");
                 fail = true;
@@ -422,8 +432,7 @@ function startSaveServer() {
             if (!m.rt2_snapshot.deserializeKeepsUnknown)
                 findings.push("LÜCKE: _deserializeBlueprint strippt Unbekanntes");
             if (!m.rt3_manifest.unknownSurvives) findings.push("LÜCKE: _sanitizeImportedManifest strippt Unbekanntes");
-            if (!m.rt1_importChecks.importUsesAdmit || !m.rt1_importChecks.sievesTainted)
-                findings.push("RISS 3: importRecipesFromWorld prüft nichts (kein Admit-Eingang, kein Tainted-Sieb)");
+            if (!m.rt4_p2p.channelPassesOriginal) findings.push("LÜCKE: der Kanal-Empfang reicht das Original nicht weiter");
             if (m.riss2_gottmauer.unbreakable)
                 findings.push(`RISS 2: Gott-Mauer ungeklemmt (mineResist=${m.riss2_gottmauer.mineResist}, fit→0)`);
             console.log("\n── BEFUNDE ──");
