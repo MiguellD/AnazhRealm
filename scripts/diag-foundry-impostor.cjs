@@ -25,6 +25,8 @@ async function bootPage(browser, nullRenderer) {
     }, nullRenderer);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    const konsole = [];
+    page.on("console", (m) => m.type() === "error" && konsole.push(m.text().slice(0, 240)));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
@@ -37,7 +39,7 @@ async function bootPage(browser, nullRenderer) {
         )
             await new Promise((r) => setTimeout(r, 100));
     });
-    return { page, pageErrors };
+    return { page, pageErrors, konsole };
 }
 
 // DIE PROBE-GESTALTEN (Teil C): Dreiecke in Ansichts-Koordinaten (u, v ∈ 0..1, v = 0 Unterkante) im Rahmen 4 × 8 der
@@ -392,6 +394,38 @@ async function kleberProbe(page, fmtWunsch) {
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
+            // DER BEFUND (WebGL2): trägt die Schicht ihre Karte (Deckung der Stufe 0 und 3 je Probe-Karte), steht das Programm,
+            // zeichnet das Quad ohne Wind — die blinde Wand nennt so Bake, Programm oder Bühne beim Namen
+            if (ren.backend.gl) {
+                const gl = ren.backend.gl;
+                const deckung = (idx, s) => {
+                    const fb = gl.createFramebuffer(),
+                        vor = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING),
+                        w = at.masse.w >> s,
+                        h = at.masse.h >> s,
+                        px = new Uint8Array(w * h * 4);
+                    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
+                    gl.framebufferTextureLayer(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, ren.backend.get(at.map).textureGPU, s, idx);
+                    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+                    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, vor);
+                    gl.deleteFramebuffer(fb);
+                    return px.filter((a, i) => i % 4 === 3 && a > 0).length;
+                };
+                const ro = (mesh.__renderObjekte || [])[0];
+                const prog = ro && ro.pipeline ? ren.backend.get(ro.pipeline).programGPU : null;
+                const wu = r.state.windUniforms && r.state.windUniforms.uWindStrength;
+                const wind = wu ? wu.value : null;
+                if (wu) wu.value = 0;
+                const still = await zaehle();
+                if (wu) wu.value = wind;
+                out.befund = {
+                    schicht: [z, zV].map((zz) => `${zz.idx}: ${deckung(zz.idx, 0)}/${deckung(zz.idx, 3)}`),
+                    gelinkt: prog ? gl.getProgramParameter(prog, gl.LINK_STATUS) : null,
+                    glFehler: gl.getError(),
+                    wind,
+                    ohneWind: still.links,
+                };
+            }
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
@@ -805,7 +839,7 @@ async function windProbe(page) {
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
-    const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
+    const { page: pageA, pageErrors: errA, konsole: konsoleA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
     const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
@@ -926,7 +960,9 @@ async function windProbe(page) {
             );
         if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
         if (!(C.lebtPx > 40))
-            errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
+            errs.push(
+                `${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind; Befund ${JSON.stringify(C.befund)} · Konsole ${JSON.stringify(konsoleA.slice(0, 3))}`
+            );
         if (!(C.totPx <= 8))
             errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
