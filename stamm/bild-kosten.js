@@ -1210,7 +1210,11 @@ class AnazhRealm_bild_kosten {
                             .div(float(1).sub(nahD).max(1e-6))
                             .greaterThan(this._flacker.kante)
                             .select(float(1), float(0));
-                        const phiAlt = flackerAlt.sample(gUV).r;
+                        // EIN NEUBEGINN (Größe, Aufnahme) startet das Gedächtnis offen: die Geschichte danach ist frisch (das Mittel
+                        // seit dem Neubeginn, `_anlauf`), die Klemme verwürfe nur gültige Frames; an Flächen ohne Kante klingt es in
+                        // ~8 Frames ab, ein laufender Blick klemmt wie immer (`ruhe`). Bis G7 trug ein eigenes Ziel das Gedächtnis
+                        // über den Neubeginn (das des Blicks davor); beim Jetzt (0 | 1) begonnen hielt die Tafel-Pose 49 px Raster.
+                        const phiAlt = this._neustart.equal(0).select(flackerAlt.sample(gUV).r, float(1));
                         flackerNeu.assign(ort.select(mix(phiAlt, deckKante, this._flacker.rate), float(0)));
                         const ruhe = float(1)
                             .sub(uvA.sub(gUV).mul(ausGr).length().div(this._flacker.ruhePx))
