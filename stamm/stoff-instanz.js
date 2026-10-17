@@ -896,7 +896,7 @@ class AnazhRealm_stoff_instanz {
             const a = ablage(1, j, wj, hj, 16);
             zug(
                 "bc5",
-                Object.assign({}, base, { w: wj, h: hj, ziel: no, aus: a.aus, zeile: a.zeile }),
+                Object.assign({}, base, { w: wj, h: hj, hA: hA >> (j + 1), ziel: no, aus: a.aus, zeile: a.zeile }),
                 Math.ceil(wj / 32),
                 Math.ceil(hj / 32)
             );
@@ -3408,9 +3408,12 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
     aus[o2 + 1u] = bits;
 }
 
-// Die Normale: die volle Bühne um eine Stufe gemittelt (Karten-Gesetz „normalTeiler" 2), ein leerer Texel trägt (0, 0, 1)
+// Die Normale: die volle Bühne um eine Stufe gemittelt (Karten-Gesetz „normalTeiler" 2) — es zählen nur deckende Texel, jede
+// Stufe hält die SUMME (ihr Betrag ist die Deckung), erst die Ablage normiert. Bis S2b trug ein leerer Texel (0, 0, 1) in das
+// Mittel jeder Stufe: die Normale der lichten Krone kippte zum Auge, ihre Sonne fiel (Radeon, Genesis Ego, Sonne 74°: das
+// Sonnen-Licht der Karte 33–54 % ihrer L1, das des Himmels 96–97 %)
 fn nDek(x: u32, y: u32) -> vec3<f32> {
-    if (!deckt(x, y)) { return vec3<f32>(0.0, 0.0, 1.0); }
+    if (!deckt(x, y)) { return vec3<f32>(0.0); }
     let n = textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0).xy * 2.0 - 1.0;
     return vec3<f32>(n, sqrt(max(0.0, 1.0 - dot(n, n))));
 }
@@ -3426,8 +3429,26 @@ fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
         let q = p.quelle + (g.y * 2u) * wq + g.x * 2u;
         s = nsum[q].xyz + nsum[q + 1u].xyz + nsum[q + wq].xyz + nsum[q + wq + 1u].xyz;
     }
+    nsum[p.ziel + g.y * p.w + g.x] = vec4<f32>(s, 0.0);
+}
+
+// Die Normale eines Texels der Stufe für die Ablage: die Richtung seiner Summe; ein leerer trägt die seiner deckenden
+// Nachbarn in der eigenen Ansicht (3×3) — der Filter der Welt mischt an der Silhouette keine fremde Normale hinein —, erst
+// ohne sie (0, 0, 1)
+fn nAblage(x: u32, y: u32) -> vec2<f32> {
+    var s = nsum[p.ziel + y * p.w + x].xyz;
+    if (dot(s, s) < 1e-12) {
+        let y0 = (y / p.hA) * p.hA;
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dx = -1; dx <= 1; dx++) {
+                let xx = u32(clamp(i32(x) + dx, 0, i32(p.w) - 1));
+                let yy = y0 + u32(clamp(i32(y - y0) + dy, 0, i32(p.hA) - 1));
+                s += nsum[p.ziel + yy * p.w + xx].xyz;
+            }
+        }
+    }
     let l = length(s);
-    nsum[p.ziel + g.y * p.w + g.x] = vec4<f32>(select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-9), 0.0);
+    return select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-6).xy;
 }
 
 // BC4 eines Kanals (0..1): Endpunkte min/max im 8-Werte-Modus, der nächste Schritt je Texel
@@ -3463,7 +3484,7 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
     var rx: array<f32, 16>;
     var ry: array<f32, 16>;
     for (var t = 0u; t < 16u; t++) {
-        let n = nsum[p.ziel + (g.y * 4u + (t >> 2u)) * p.w + g.x * 4u + (t & 3u)].xy * 0.5 + 0.5;
+        let n = nAblage(g.x * 4u + (t & 3u), g.y * 4u + (t >> 2u)) * 0.5 + 0.5;
         rx[t] = n.x;
         ry[t] = n.y;
     }
