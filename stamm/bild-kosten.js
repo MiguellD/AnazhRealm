@@ -991,10 +991,10 @@ class AnazhRealm_bild_kosten {
                 // (`updateBefore`), keines wird kopiert. Bis G7 kopierte r184s Weg das Bild in die Geschichte und A3b das
                 // Gedächtnis in seine — jede Kopie ein eigener Befehls-Puffer mit Submit außerhalb jedes Pass-Stempels (Radeon,
                 // Mess-Wiese, gpu-bank in EINER Welt, 120 Paare: die zwei Kopien 0,69 ± 0,25 ms je Frame, die eine von main
-                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. JEDE BINDUNG STEHT: r184 bindet
-                // eine getauschte Textur nur neu, wenn ihre Generation eine andere ist (`Bindings._update`) — getauschte Werte
-                // ließen den Resolve das Ziel lesen, in das er schreibt (WebGPU-Validierung). Darum je Ziel EIN Resolve-Stoff, der
-                // fest das andere liest, und die Kette liest das Ziel der Lage `_lage` (`ausgabe`).
+                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. Je Ziel EIN Resolve-Stoff, der fest
+                // das andere liest (seine Bindung steht); die Kette liest das Ziel der Lage über EINE Textur, deren Wert wechselt
+                // (`updateBefore`, DIE LAGE IST DIE GENERATION). Ein Zweig je Abtastung der Kette kostete den Post-Pass 1,67 → 3,14
+                // ms (Radeon, Genesis, Pass-Stempel).
                 const zielBau = () => {
                     const z = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
                     z.name = "TRAANode.resolve";
@@ -1009,11 +1009,10 @@ class AnazhRealm_bild_kosten {
                 this._ziele = [zielBau(), zielBau()];
                 // die Lage: das Ziel des letzten Resolve (die Geschichte des nächsten); `setSize` des Vendors und der Neubeginn
                 // lesen die zwei Rollen-Namen
-                this._lage = uniform(0);
+                this._lage = 0;
                 this._historyRenderTarget = this._ziele[0];
                 this._resolveRenderTarget = this._ziele[1];
                 this._textureNode = T.passTexture(this, this._ziele[0].texture);
-                this._zweitesBild = T.passTexture(this, this._ziele[1].texture);
                 const zweiter = new this._resolveMaterial.constructor(); // r184 NodeMaterial (der Stoff des Vendors)
                 zweiter.name = this._resolveMaterial.name;
                 this._resolveStoffe = [this._resolveMaterial, zweiter]; // Stoff k schreibt in Ziel k
@@ -1027,21 +1026,6 @@ class AnazhRealm_bild_kosten {
                 this._versatzIndex = 0;
                 this._quads = this._resolveStoffe.map((m) => Object.assign(new Quad(m), { name: "TRAA" }));
                 this._gr = new THREE.Vector2();
-            }
-            // DAS BILD DER AUFLÖSUNG an uv: das Ziel der Lage, in EINEM Zweig gelesen (die Kette tastet es vielfach ab)
-            ausgabe(uv) {
-                if (!this._ausgabeFn)
-                    this._ausgabeFn = Fn(([p]) => {
-                        const c = vec4(0).toVar();
-                        If(this._lage.equal(0), () => c.assign(this._textureNode.sample(p))).Else(() =>
-                            c.assign(this._zweitesBild.sample(p))
-                        );
-                        return c;
-                    });
-                return this._ausgabeFn(uv);
-            }
-            getTextureNode() {
-                return this.ausgabe(uv());
             }
             dispose() {
                 super.dispose();
@@ -1107,17 +1091,26 @@ class AnazhRealm_bild_kosten {
                 r.setMRT(null);
                 r.setRenderObjectFunction(null);
                 r.autoClear = true;
-                if (neu) for (const z of this._ziele) r.initRenderTarget(z);
+                if (neu)
+                    this._ziele.forEach((z, i) => {
+                        r.initRenderTarget(z);
+                        // DIE LAGE IST DIE GENERATION: r184 bindet eine getauschte Textur nur neu, wenn die Generation ihrer
+                        // Renderer-Daten (beim Anlegen ihre `version`) nicht die gebundene ist (`Bindings._update`,
+                        // gate:vendor-anker) — gleiche Versionen hielten die Kette auf dem alten Ziel; je Ziel eine eigene,
+                        // gesetzt nach jedem Anlegen (Größen-Wechsel und Neubeginn laufen hier durch)
+                        r._textures.get(z.texture).generation = "zeit:" + i;
+                    });
                 this._neustart.value = neu ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
                 this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
-                const k = 1 - this._lage.value;
+                const k = 1 - this._lage;
                 r.setRenderTarget(this._ziele[k]);
                 this._quads[k].render(r);
                 r.setRenderTarget(null);
-                this._lage.value = k;
+                this._lage = k;
+                this._textureNode.value = this._ziele[k].texture;
                 this._historyRenderTarget = this._ziele[k];
                 this._resolveRenderTarget = this._ziele[1 - k];
                 r.setRenderTarget(ziel);
@@ -1417,7 +1410,7 @@ class AnazhRealm_bild_kosten {
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
-            const sceneColor = scenePass.getTextureNode();
+            let sceneColor = scenePass.getTextureNode();
             // DIE ZEITLICHE AUFLÖSUNG (TRAA, vendor/TRAANode.js = r184 verbatim) statt FXAA am Ende: die Kamera
             // springt je Frame um einen Halton-Subpixel, die Geschichte wird reprojiziert und gegen die Varianz der
             // 3×3-Nachbarschaft geklemmt — Kanten sind echt übersampelt, und die rotierende LOD-Dither-Blende
@@ -1452,6 +1445,7 @@ class AnazhRealm_bild_kosten {
                       this.state.camera
                   )
                 : null;
+            if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
                 // Bloom-Schwelle 0.86: nur sehr helle Spitzen (Sonnen-Disc, Wasser-Glitzer) bloomen, nicht der
@@ -1517,9 +1511,8 @@ class AnazhRealm_bild_kosten {
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
             // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
-            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float); mit der
-            // zeitlichen Auflösung ist das Bild das Ziel ihrer Lage (`ausgabe`, G7).
-            const bild = (uv) => (traa ? traa.ausgabe(uv) : sceneColor.sample(uv)).rgb.mul(u.ausgabeAusgleich);
+            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
+            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
             // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
             // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
             // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf

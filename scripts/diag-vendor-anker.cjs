@@ -233,11 +233,11 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
     { file: "vendor/three.webgpu.min.js", sub: '"NodeBuffer_"+', organ: "Instanz-Puffer-Name (der id-Name, den setName ersetzt)" },
     // Die zeitliche Hochskalierung (`_zeitAufloesung`, K50) erbt von r184s TRAANode (verbatim): Bau der Ziele (die
-    // Geschichte verliert ihre Tiefe vor dem ersten Anlegen), `setViewOffset` legt den Halton-Versatz in der Größe an, die der
+    // Geschichte ist das Ziel des letzten Resolve, G7), `setViewOffset` legt den Halton-Versatz in der Größe an, die der
     // Knoten ihm reicht (die Eingangs-Größe), `setSize` stellt `_invSize` (die Ausgabe), `clearViewOffset` schaltet die
     // Folge; das Quad nimmt die Klasse des Quads der Post-Kette; die Reprojektion steht VOR dem Post-Render (der Versatz lebt
     // nur zwischen den Pipeline-Haken); die Aufnahme rendert eine Halton-Runde (31 Versätze) und schaltet den Node-Frame
-    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "_zeitAufloesung (die Geschichte ohne Tiefe — die Vortiefe lebt in ihrem Kanal a)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.generation!==l.generation&&(t.generation=l.generation,s=!0)", organ: "_zeitAufloesung (die Lage ist die Generation: eine getauschte Textur bindet nur bei anderer Generation neu)" },
     { file: "vendor/TRAANode.js", sub: "viewOffset.offsetX + jitterOffset[ 0 ] - 0.5, viewOffset.offsetY + jitterOffset[ 1 ] - 0.5,", organ: "_zeitAufloesung (der Versatz in Pixeln der gereichten Größe, gelesen aus camera.view)" },
     { file: "vendor/TRAANode.js", sub: "this._invSize.value.set( 1 / width, 1 / height );", organ: "_zeitAufloesung (setSize stellt die Ausgabe-Größe des Resolve)" },
     { file: "vendor/three.webgpu.min.js", sub: 'this._quadMesh=new gx(r),this._quadMesh.name="Render Pipeline"', organ: "_zeitAufloesung (das Quad der Post-Kette — seine Klasse zeichnet den Resolve)" },
