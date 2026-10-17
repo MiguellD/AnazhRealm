@@ -668,8 +668,6 @@ async function checkBandM6ErnteSpawn(ctx) {
             // (2) die TERRAIN-Mühe (pfad): der erste Hieb gräbt NICHT (Fortschritt),
             // erst die Schlag-Zahl vollendet; die Stamina ist ANTEILIG (Σ ≈ alter
             // Ein-Hieb-Preis — die Faust KANN weiter graben); frieden bleibt instant.
-            const src = window.__codeOf(r.tryMouseBreak);
-            out.musyntax = /_dig/.test(src) && /dig\.progress \+= digFit\.progress/.test(src) && /perStrike/.test(src);
             r.setGameMode("pfad");
             r.state.player.stamina = 100;
             const digFit = r._harvestFitnessFromResist({
@@ -679,6 +677,32 @@ async function checkBandM6ErnteSpawn(ctx) {
             out.terrainBrauchtSchlaege = digFit.progress < 1; // die Faust ein-hiebt NICHT
             const perStrike = digFit.stamina * Math.min(1, digFit.progress);
             out.staminaAnteilig = perStrike < digFit.stamina - 1e-9 && perStrike * (1 / digFit.progress) < 30;
+            // …am echten Hieb (Ziel gestubbt, das Loch gefangen am EINEN Broadcast-Anker voxel_carve): der erste Hieb
+            // gräbt nicht und zahlt anteilig, erst die Schlag-Zahl (dieselbe Summen-Folge) vollendet das Loch.
+            const ziel = { hit: true, x: pm.x + 3, y: r._voxelSurfaceY(pm.x + 3, pm.z) ?? pm.y, z: pm.z };
+            const loecher = [];
+            const nix = () => null;
+            const buehne = { _heldBogenRecipe: nix, _pickArchitectureAtCrosshair: nix, _pickCreatureAtCrosshair: nix,
+                _pickScatterAtCrosshair: nix, _kampfKegelZiel: nix, _geraetGraebt: () => true, _raycastWorldHit: () => ziel,
+                dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog), true) };
+            Object.assign(r, buehne);
+            const mausVerb = r.state.player._mausVerb;
+            try {
+                r.state.player._dig = null;
+                r.tryMouseBreak();
+                const ersterHieb = loecher.length === 0 && Math.abs(r.state.player.stamina - (100 - perStrike)) < 1e-9;
+                let acc = digFit.progress,
+                    n = 1;
+                while (acc < 1) (acc += digFit.progress), n++;
+                for (let i = 2; i < n; i++) r.tryMouseBreak();
+                const vorLetztem = loecher.length;
+                r.tryMouseBreak();
+                out.musyntax = ersterHieb && vorLetztem === 0 && loecher.length === 1 && loecher[0][1] === ziel.x;
+            } finally {
+                for (const k in buehne) delete r[k];
+                if (mausVerb === undefined) delete r.state.player._mausVerb;
+                else r.state.player._mausVerb = mausVerb;
+            }
 
             // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out) weicht aus; precise/silent/
             // string-id bleiben EXAKT. Test-Blueprint: haus_basis-Substanz (KIND_SUBSTANCE, Footprint ≥ MIN).
@@ -701,8 +725,6 @@ async function checkBandM6ErnteSpawn(ctx) {
             if (clampSpawn) r.removeArchitecture(clampSpawn);
             clampSpawn = null;
             delete r.state.blueprints._t_m6_haus;
-            // KONSUM: die Klemme sitzt in spawnArchitecture (die Wurzel — kein Pfad daran vorbei).
-            out.klemmeKonsum = /_structureSpawnPos/.test(window.__codeOf(r.spawnArchitecture));
             return out;
         } finally {
             if (baum) r.removeArchitecture(baum);
@@ -723,7 +745,7 @@ async function checkBandM6ErnteSpawn(ctx) {
     );
     check(
         "M6 Spawn: die Spieler-Klemme sitzt an der WURZEL (großer Spawn weicht aus; precise/string-id bleiben bit-treu)",
-        res.wurzelKlemmt && res.preciseExakt && res.idExakt && res.klemmeKonsum
+        res.wurzelKlemmt && res.preciseExakt && res.idExakt
     );
 }
 

@@ -1960,8 +1960,16 @@ async function checkBandNutzerBlickNachbau(ctx) {
                 connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
-            // (4) das Rezeptbuch kennt die Fahrzeug-Gruppe.
-            out.rezeptGruppe = /vehicle: "Fahrzeug"/.test(window.__codeOf(r.renderRecipeBook));
+            // (4) das Rezeptbuch führt den nachgebauten Wagen sichtbar unter der Gruppe „Fahrzeug".
+            r._recipeBookSig = null;
+            r.renderRecipeBook();
+            const kids = [...document.getElementById("inventory-recipes").children];
+            const gi = kids.findIndex((e) => e.classList.contains("recipe-group") && e.textContent === "Fahrzeug");
+            const nach = gi >= 0 ? kids.slice(gi + 1) : [];
+            const bis = nach.findIndex((e) => e.classList.contains("recipe-group"));
+            out.rezeptGruppe = (bis < 0 ? nach : nach.slice(0, bis)).some(
+                (z) => (z.querySelector(".recipe-name") || {}).textContent === "NB-Wagen"
+            );
             // (5) der Kachel-Klick ERSETZT (ein Paar = eine Verbindung).
             const ov2 = document.getElementById("workshop-connect-overlay");
             if (ov2) r._workshopCloseConnectPopover();
@@ -2054,12 +2062,30 @@ async function checkBandWGGelenke(ctx) {
                 if (o.userData && o.userData.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
             });
             out.axisGhosts = axes >= 1;
+            // KONSUM: der RAF-Tick der Werkstatt wackelt die Gelenk-Probe über den EINEN Animator (der Tick gefangen)
+            const ws = r._ensureWorkshopState(),
+                altPrev = ws.preview,
+                altRaf = window.requestAnimationFrame;
+            let tick = null;
+            window.requestAnimationFrame = (cb) => ((tick = tick || cb), 0);
+            r._workshopSyncCanvasSize = () => {};
+            r._workshopRender = () => {};
+            try {
+                const roles = r.computeMotionRoles(wagen.parts, wagen.connections);
+                ws.preview = { active: true, rafId: null, dirty: false, currentMesh: grp, probe: { start: performance.now(), dur: 2200, roles } };
+                r._workshopStartRAF();
+                out.probeInRAF = !!tick && window.__consumes({ t: tick }, "t", r, "_animateCompoundMotion", []);
+            } finally {
+                window.requestAnimationFrame = altRaf;
+                ws.preview = altPrev;
+                delete r._workshopSyncCanvasSize;
+                delete r._workshopRender;
+            }
         }
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
-        out.probeInRAF = /p\.probe/.test(window.__codeOf(r._workshopStartRAF));
         return out;
     });
     check(

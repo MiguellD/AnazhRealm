@@ -14,13 +14,20 @@ async function checkBandV1725FieldReaders(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
-        // KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen auraAt WIRKLICH (Spy-Swap __consumes, überlebt
-        // Kern-Wanderungen); das glut-Token bleibt __codeOf-Probe, faunaDiffers misst die glut-Dämpfung.
-        out.faunaReadsAura =
-            window.__consumes(r, "_currentFaunaTarget", r, "auraAt") &&
-            /glut/.test(window.__codeOf(r._currentFaunaTarget));
-        out.faunaMaxReadsAura =
-            window.__consumes(r, "_currentFaunaMax", r, "auraAt") && /glut/.test(window.__codeOf(r._currentFaunaMax));
+        // KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen auraAt WIRKLICH (Spy-Swap __consumes), und eine glühende
+        // Aura senkt Ziel und Deckel der Fauna (dieselbe Lebendigkeit, nur die glut-Achse wechselt).
+        const glutWirkt = (fn) => {
+            try {
+                r.auraAt = () => ({ lebendig: 0.5, glut: 0 });
+                const kalt = r[fn]();
+                r.auraAt = () => ({ lebendig: 0.5, glut: 1 });
+                return r[fn]() < kalt;
+            } finally {
+                delete r.auraAt;
+            }
+        };
+        out.faunaReadsAura = window.__consumes(r, "_currentFaunaTarget", r, "auraAt") && glutWirkt("_currentFaunaTarget");
+        out.faunaMaxReadsAura = window.__consumes(r, "_currentFaunaMax", r, "auraAt") && glutWirkt("_currentFaunaMax");
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
@@ -112,24 +119,14 @@ async function checkBandV1751CombatStats(ctx) {
         const cs = r.computeCreatureStats(c).stats;
         out.creatureComputes =
             Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
-        r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
-
-
-        // (6) V18.312 (Gesetz #0) — die KANONISCHE Stat-Pipeline: beide Spezies LESEN dieselben drei
-        //     Post-Tag-Quellen (Boosts falten · Tags→Stats+Floor · Größen-Skalierung), kein Parallelpfad mehr
-        //     (§1.3 fraktal: eine Berechnung, zwei Anwendungen). __codeOf-bereinigt (die V18.267-Disziplin).
-        const psPipe = window.__codeOf(r.computePlayerStats);
-        const csPipe = window.__codeOf(r.computeCreatureStats);
-        const readsTrio = (s) =>
-            s.includes("_applyBoostsToStatTags") &&
-            s.includes("_statsFromTags") &&
-            s.includes("_applySizeMultipliersToStats");
+        // (6) V18.312 (Gesetz #0) — die KANONISCHE Stat-Pipeline: beide Spezies RUFEN dieselben drei Post-Tag-Quellen
+        //     (Boosts falten · Tags→Stats+Floor · Größen-Skalierung), kein Parallelpfad (KONSUM am Ruf).
+        const TRIO = ["_applyBoostsToStatTags", "_statsFromTags", "_applySizeMultipliersToStats"];
         out.pipelineShared =
-            readsTrio(psPipe) &&
-            readsTrio(csPipe) &&
-            typeof r._applyBoostsToStatTags === "function" &&
-            typeof r._statsFromTags === "function" &&
-            typeof r._applySizeMultipliersToStats === "function";
+            TRIO.every((k) => window.__consumes(r, "computePlayerStats", r, k)) &&
+            !!c &&
+            TRIO.every((k) => window.__consumes(r, "computeCreatureStats", r, k, [c]));
+        r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
 
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
@@ -164,7 +161,7 @@ async function checkBandV1751CombatStats(ctx) {
         res.creatureComputes
     );
     check(
-        "V18.312 (Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur lesen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
+        "V18.312 (Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur rufen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
         res.pipelineShared
     );
 }
@@ -1932,11 +1929,7 @@ async function checkBandWDRittSpawn(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-        // (1) die Hüft-Konstante + der EINE Konsument (Source-KONSUM).
-        out.hipKonstante = A.SITZ_HIP_OFFSET === 0.45;
-        const mountSrc = window.__codeOf(r.mountArchitecture);
-        out.hipKonsum = /SITZ_HIP_OFFSET/.test(mountSrc) && !/\+ 0\.9\b/.test(mountSrc);
-        // (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
+        // (1) die Sitz-Hüfte beweist gate:vehicle-drive am Aufsitzen (sitzKern); (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
         const pm = r.state.playerMesh.position;
         const saveMax = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 2;
@@ -1954,10 +1947,6 @@ async function checkBandWDRittSpawn(ctx) {
         r.state.maxCreatures = saveMax;
         return out;
     });
-    check(
-        "W-D(R-010) Sitz-Hüfte: SITZ_HIP_OFFSET 0.45 ersetzt die Steh-Anatomie (+0.9) im EINEN Mount-Pfad",
-        res.hipKonstante && res.hipKonsum
-    );
     check(
         `W-D(R-017) Spieler-Klemme: frischer Spawn IM Spieler landet auf ≥3 m (gemessen ${res.klemmeWirkt}), precise bleibt bit-treu (${res.preciseUnberuehrt})`,
         res.klemmeWirkt && res.preciseUnberuehrt

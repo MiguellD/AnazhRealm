@@ -2251,8 +2251,6 @@ async function checkBandV17118WorkerEngaged(ctx) {
             // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
             workerSpawned: !!r.state.voxelWorker,
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
-            // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
-            bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
             // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
             // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
             // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
@@ -2290,10 +2288,6 @@ async function checkBandV17118WorkerEngaged(ctx) {
     check(
         "V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)",
         res.worldgenSynced === true
-    );
-    check(
-        "V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)",
-        res.bootstrapSrc === true
     );
     const sn = res.spielerNeubau;
     check(
@@ -2378,13 +2372,13 @@ async function checkBandPhaseAFundament(ctx) {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
             const L = r.constructor.LUFT;
+            // (dass die Extinktion der Szene dem Wetter folgt, misst gate:luft-sicht am Uniform der Szene: Sonne · Regen · Sturm)
             const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(r.constructor.WEATHER_FIELD.sunny);
             out.a5 = {
                 sichtKlar,
                 ringEdge,
                 knoten: !!r.state.scene.fogNode && !r.state.scene.fog,
                 kanteKlar: Math.exp((-ringEdge * -Math.log(L.kontrast)) / sichtKlar) >= 0.9,
-                src: /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)),
             };
         }
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
@@ -2446,10 +2440,6 @@ async function checkBandPhaseAFundament(ctx) {
         "A5: die Luft trägt — scene.fogNode statt Nebel, klarer Tag ≥ 5 km Sicht, die Ring-Kante liegt klar",
         res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
         res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
-    );
-    check(
-        "A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)",
-        res.a5 && res.a5.src === true
     );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
