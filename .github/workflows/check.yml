@@ -1291,9 +1291,10 @@ jobs:
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 12
-              # DER SPIELGANG (SG1): EIN Boot mit leerer Platte auf dem echten Renderer (swiftshader), Stationen wie ein
-              # Spieler - Ankunft, Lichtung, Fahrt (GT 100 m in Third, der Aufbau faehrt mit), Wort, Werkstatt - je
-              # Spieler-Gesetz ein Urteil beim Namen; der Selbsttest im Lauf spielt den alten Mount-Follow ein.
+              # DER SPIELGANG (SG1): EIN Boot mit leerer Platte, Stationen wie ein Spieler - Ankunft, Lichtung, Fahrt (GT
+              # 100 m in Third, der Arm, der Aufbau faehrt mit), Wort, Werkstatt - je Spieler-Gesetz ein Urteil beim Namen;
+              # der Selbsttest im Lauf spielt den alten Mount-Follow ein. Hier auf dem Null-Renderer (die Weiche gibt keine
+              # Karte; swiftshader kostete 11 min), das Bild jeder Station urteilt derselbe Schritt im Job echt.
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
@@ -1573,3 +1574,7 @@ jobs:
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}
               run: npm run gate:gpu-fehler
+
+            - name: Der Spielgang auf der Karte (Ankunft, Lichtung, Fahrt, Wort, Werkstatt - je Station das Bild aus dem Ausgabe-Pfad)
+              if: ${{ !cancelled() }}
+              run: npm run gate:v1-pfad

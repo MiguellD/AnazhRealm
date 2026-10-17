@@ -3,10 +3,14 @@
 // Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen Wagen, Arm 0,30) — kein Gate
 // fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang fand die zweite Hälfte derselben
 // Klasse: der Band-Partner des Wagens (L1) blieb am Ort des Aufstiegs, am Wagen blendete die L0 aus (geheilt mit SG1).
-// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer (lokal der Hardware-Adapter, die CI swiftshader:
-// die EINE Weiche `linsenWebGpuArgs`); der Loop treibt die Welt selbst, die Proben warten in seinen Takten (`__gang.takte`), die
-// Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station Spieler-Gesetze als Urteil und ein
-// Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne · Sommer):
+// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer, wo die EINE Weiche (`linsenGpu`) die Karte
+// gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe (die Batterie der CI), auf dem Null-Renderer: swiftshader
+// kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s je Programm), und sein Holz änderte die Welt, die er prüfte (der
+// Deckel der Ankunft, unter dem Frame-Budget stand die Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort urteilt
+// der Gang die Mechanik jeder Station, das Bild urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten in seinen
+// Takten (`__gang.takte`), die Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station
+// Spieler-Gesetze als Urteil und auf der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne
+// Mittag · Sonne · Sommer):
 //   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das Gesetz
 //             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den Spieler;
 //             V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft immer.
@@ -104,9 +108,10 @@ function fahrtVerdict(m) {
             `kamera-arm p50 ${m.armP50} (min ${m.armMin}) < ${SOLL.armMin} — ${m.imWagen} von ${m.armN} Proben enden am gerittenen Werk ${m.typ}: der Strahl der Kamera trifft den eigenen Wagen`
         );
     if (m.stufeWeg > 4) out.push(`aufbau ${m.stufeWeg} m neben dem Wagen: die Stufe ${m.stufeTaeter} zieht nicht mit (_archInstanceUpdate)`);
-    if (!(m.anteil >= SOLL.wagenMin && m.anteil <= SOLL.wagenMax))
+    // das Bild urteilt die Karte; der Null-Renderer (die CI) hat keins (`bild: false`, die Linse prüft, dass die Karte eins hat)
+    if (m.bild !== false && !(m.anteil >= SOLL.wagenMin && m.anteil <= SOLL.wagenMax))
         out.push(`wagen im Bild ${pct(m.anteil)} außerhalb [${pct(SOLL.wagenMin)}; ${pct(SOLL.wagenMax)}]`);
-    if (!(m.rauschen <= SOLL.rauschenMax)) out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
+    if (m.bild !== false && !(m.rauschen <= SOLL.rauschenMax)) out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
     if (m.abgestiegen !== true) out.push("fahrt: E steigt nicht aus");
     else if (m.sichtNach !== m.sichtVor) out.push(`sicht: nach dem Abstieg ${m.sichtNach} statt ${m.sichtVor}`);
     return out;
@@ -394,7 +399,12 @@ function TAKT_ZAEHLER() {
             if (A.kontrolle == null && r.state._weltbildDa) A.kontrolle = A.takte;
             if (A.jeTakt) A.jeTakt();
         };
-        R.setAnimationLoop(A.loop);
+        // der Null-Renderer hat keinen Loop (sein setAnimationLoop ist leer): der Takt der Seite treibt ihn, ein Bild je Takt
+        if (R._isHeadlessNull) requestAnimationFrame(function f(t) {
+            A.loop(t);
+            requestAnimationFrame(f);
+        });
+        else R.setAnimationLoop(A.loop);
     }, 1);
 }
 
@@ -474,9 +484,10 @@ async function probe(arg) {
         // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete Bilder):
         // eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
         for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++) await tick(1);
-        await angehalten(async () => {
-            out.bilder.ankunft = png(await schuss());
-        });
+        if (!R._isHeadlessNull)
+            await angehalten(async () => {
+                out.bilder.ankunft = png(await schuss());
+            });
         t.gestartet = m.gestartet = true;
     } catch (e) {
         out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
@@ -523,7 +534,11 @@ async function probe(arg) {
         // `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1);
+            // gewartet in Läufen des Genesis-Takts (`_tickGenesisOrt`, je Sekunde einer), nie in einer Zahl von Takten
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 3 && i < 3000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
+                await tick(1);
+                if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
+            }
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -593,8 +608,8 @@ async function probe(arg) {
                 return n;
             };
             // DER WAGEN IM BILD (die Klassen-Teilung der Abnahme): dieselbe Pose mit und ohne Wagen, sein Wurf aus in beiden
-            const wagenBild = (name) =>
-                angehalten(async () => {
+            const wagenBild = async (name) =>
+                R._isHeadlessNull ? { bild: false } : angehalten(async () => {
                     const gr = new Set([...(e.instSlots || []), ...(e.instSlotsBand || [])].map((s) => (st.archInstanceGroups.get(s.key) || {}).mesh).filter(Boolean));
                     if (e.mesh) gr.add(e.mesh);
                     const alt = [...gr].map((o) => [o, o.visible, o.castShadow]);
@@ -1627,6 +1642,7 @@ async function probe(arg) {
                     ["nach dem Abstieg bleibt Third", { sichtNach: "third" }, "sicht: nach dem Abstieg third"],
                     ["kein Wagen vor dem Spieler", { gestartet: false, grund: "die Welt stellt fahrzeug_gt nicht hin" }, "fahrt start: die Welt"],
                     ["der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)", { stufeWeg: 20.1, stufeTaeter: "L1 (Band)" }, "aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band)"],
+                    ["auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter", { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" }, "aufbau 21.6 m"],
                 ],
             ],
         ]) {
@@ -1764,10 +1780,14 @@ async function probe(arg) {
     const bilderOrt = path.resolve(OPT("--bilder") || path.join(os.tmpdir(), "spielgang"));
     const platte = fs.mkdtempSync(path.join(os.tmpdir(), "spielgang-platte-")); // die leere Platte (IDB leer)
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 1800000, profil: platte });
+    // DIE KARTE oder der Null-Renderer: die EINE Weiche sagt, ob die Maschine eine Karte gibt (Kopf der Datei)
+    const karte = require("./lib/software-gpu.cjs").linsenGpu() === "hardware";
+    const browser = await starteBrowser({ art: karte ? "linse" : "null", frist: 1800000, profil: platte });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
+    // auf dem Null-Renderer lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
+    if (!karte) await page.evaluateOnNewDocument(() => Object.assign(window, { __anazhHeadlessNullRenderer: true, __anazhAutoSettlement: true }));
     await page.evaluateOnNewDocument(TAKT_ZAEHLER);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
@@ -1775,7 +1795,10 @@ async function probe(arg) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state._weltbildDa && window.__gang.loop, { timeout: 900000, polling: 250 });
     const bootS = ((Date.now() - t0) / 1000).toFixed(1);
-    await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
+    const nullR = await page.evaluate(() => !!window.anazhRealm.state.renderer._isHeadlessNull);
+    console.log(karte ? "  Renderer: die Karte — jede Station mit Bild" : "  Renderer: Null (die Weiche gibt keine Karte) — die Mechanik jeder Station, das Bild urteilt die Karte");
+    if (nullR === karte) check("der Renderer, den die Weiche wählt", false, `Karte ${karte}, Null-Renderer ${nullR}`);
+    if (karte) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
     // DER PULS DES GANGS je 30 s (die CI sieht, wo er steht): die Station, ihre Sekunden, die Takte
     const puls = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte]).then(([s, t, k]) => s && console.log(`  … ${s[0]} seit ${((t - s[1]) / 1000).toFixed(0)} s, ${k - s[2]} Takte`)).catch(() => {}), 30000);
@@ -1808,7 +1831,7 @@ async function probe(arg) {
                 `Plattform ${JSON.stringify(m.plattform)} · ${m.baeume} Bäume im 40-m-Kreis · nächster Stamm ${m.naechsterStamm} m (${m.naechsteArt}) · Kronen über der Scheibe ${m.kronen} · Ring ${m.ringPortale} Portale, Mitte ${m.ringMitteAbstand} m`);
         else if (n === "fahrt") {
             const zeile = (m) =>
-                `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen}) · Aufbau ≤ ${m.stufeWeg} m vom Wagen`;
+                `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · ${m.bild === false ? "Wagen ohne Bild (Null-Renderer)" : `Wagen ${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`} · Aufbau ≤ ${m.stufeWeg} m vom Wagen`;
             urteil(n, `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild, E steigt aus`, out.fahrt, fahrtVerdict, zeile);
             const alt = out.fahrtAlt ? fahrtVerdict(out.fahrtAlt) : [];
             check(
