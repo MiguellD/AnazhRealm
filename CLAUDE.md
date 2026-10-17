@@ -138,7 +138,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
    einordnet, fällt mit dem Schnitt, den sie bewacht — Zugehörigkeit gehört an eine Liste oder Laufzeit-Marke; eine Sonde ohne Messung ist ROT.
    Eine Linse, die abstürzt und Exit 0 meldet, ist still grün (`gate:nah-fern` seit K16, b0df2d93): jedes Werkbank-Tor bricht bei Linsen-Fehler ROT.
 7. **Gesetz statt Spiegel:** die Höhe ruft EIN Gesetzbuch (`gelaende-core.js`, Lage = Worker-`state` bzw. `_gelaende()`); ein Worker-Spiegel ist
-   bit-identisch (Sheet/Density in BEIDE, `diag-worker-watersheet` maxDiff 0, `gate:worker-dichte` auch über dem Band); Substanz aus
+   bit-identisch (Sheet/Density in BEIDE, der Band `checkBandWasserSheetSpiegel` maxDiff 0, `gate:worker-dichte` auch über dem Band); Substanz aus
    Γ5-Seed-Streams, nie `Math.random`; ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes Skript, nie ein Variablen-Name.
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; Tiere bewusst tag-identisch, Differenzierung über Größe/Gattung, nie über Tags).
 9. **Exit-Codes IMMER explizit** (`echo EXIT=$?`) — `gate | tail` maskiert sie; Backslash-Ersetzungen (Regex, WGSL) nur per Edit-Werkzeug.

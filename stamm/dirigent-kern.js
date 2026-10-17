@@ -129,14 +129,14 @@ class AnazhRealm {
             voxelRebuildAttempts: null,
             skybox: null,
             // Live-Uniforms der TSL-Skybox (time, himmelTint, cloudCover), init in createGalaxySkybox();
-            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopSkyboxZeit.
+            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopRender (time aus _bildZeit).
             skyboxUniforms: null,
             // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
             // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
-            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxZeit (time) +
+            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopRender (time aus _bildZeit) +
             // _dayNightApplyWaterMaterials (sunDir, light).
             hydroSurfaceUniforms: null,
             // Defer-Queue für GPU-Disposals. Ein Set, damit geteilte Materials (z. B. ein Compound mit EINEM
