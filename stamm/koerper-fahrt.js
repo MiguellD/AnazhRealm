@@ -1349,13 +1349,18 @@ class AnazhRealm_koerper_fahrt {
         entry.position.y = pm.y + 0.5 - sitz - (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         // DIE GIER IM BILD wie die Lage (F1): zwischen den zwei jüngsten Sim-Zuständen um den Rest des Akkumulators — die
         // Sim-Gier stand je Bild um 0, 1 oder 2 Schritte weiter, der Wagen drehte im Bild ruckweise (Spielgang, Radeon, Kreis
-        // 3 m/s: Ruck der Kamera gegen den Wagen p95 0,10 m je Bild). Die Chase-Cam liest dieselbe Gier (`_bildGier`).
-        const g0 = this.state._fixedPrevGier;
-        if (Number.isFinite(g0) && Number.isFinite(entry._rideYaw)) {
-            const a = Math.max(0, Math.min(1, this.state._fixedAlpha || 0));
-            entry._bildGier = g0 + Math.atan2(Math.sin(entry._rideYaw - g0), Math.cos(entry._rideYaw - g0)) * a;
-        } else entry._bildGier = entry._rideYaw;
-        if (Number.isFinite(entry._bildGier)) entry.rotationY = this._rittGier(entry, entry._bildGier);
+        // 3 m/s: Ruck der Kamera gegen den Wagen p95 0,10 m je Bild). Die Chase-Cam liest den gezeichneten Wagen. Ein Aufruf
+        // ohne Bild (eine Linse treibt den Ritt von Hand) zeichnet die Sim-Gier.
+        const a = this.state._bildAlpha;
+        this.state._bildAlpha = null;
+        const [g0, g1] = [entry._gierVor, entry._rideYaw];
+        if (Number.isFinite(g1))
+            entry.rotationY = this._rittGier(
+                entry,
+                Number.isFinite(a) && Number.isFinite(g0)
+                    ? g0 + Math.atan2(Math.sin(g1 - g0), Math.cos(g1 - g0)) * a
+                    : g1
+            );
         const v = this.state.playerVel;
         const sp = v ? Math.hypot(v.x(), v.z()) : 0;
         const fahrtGate = AnazhRealm._fahrGesetz().he.fahrtGate;

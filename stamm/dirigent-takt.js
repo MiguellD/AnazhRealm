@@ -706,6 +706,8 @@ class AnazhRealm_dirigent_takt {
     // Der EINE Sim-Schritt (deterministisch, fixed-dt). Physik LIEST die Velocity, die Bewegung
     // SETZT sie (dieselbe Ordnung wie der variable Loop: physics → movement → 1-Frame-Input-Latenz).
     _stepFixedSim(simTime, dt) {
+        // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
+        if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
         this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
@@ -755,8 +757,6 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
-            const rid = this._mountedEntry; // die Gier des gerittenen Werks gehört zum Bild-Zustand (`_tickMountedMovement`)
-            st._fixedPrevGier = rid && Number.isFinite(rid._rideYaw) ? rid._rideYaw : null;
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -779,10 +779,9 @@ class AnazhRealm_dirigent_takt {
         if (!mesh) return;
         if (!st._fixedSimPos) st._fixedSimPos = mesh.position.clone();
         else st._fixedSimPos.copy(mesh.position); // die authoritative Sim-Position (post-Rescue) festhalten
-        if (st._fixedPrevPos) {
-            const a = Math.max(0, Math.min(1, st._fixedAlpha || 0));
-            mesh.position.lerpVectors(st._fixedPrevPos, st._fixedSimPos, a);
-        }
+        const a = Math.max(0, Math.min(1, st._fixedAlpha || 0));
+        if (st._fixedPrevPos) mesh.position.lerpVectors(st._fixedPrevPos, st._fixedSimPos, a);
+        st._bildAlpha = a; // der Rest dieses Bilds — der Ritt im Bild liest ihn EINMAL (`_tickMountedMovement`)
         // V18.356 — merken, WAS wir mesh setzten → der nächste _loopFixedStep unterscheidet
         // „unangetastet" (Sim wiederherstellen) von „extern teleportiert" (übernehmen).
         if (!st._fixedRenderPos) st._fixedRenderPos = mesh.position.clone();
