@@ -210,8 +210,8 @@
     },
     "vramMB": {
         "buf:szene": 25,
-        "tex:TRAANode.history": 15.8,
-        "tex:TRAANode.resolve": 15.8,
+        "tex:TRAANode.history": 0,
+        "tex:TRAANode.resolve": 31.6,
         "tex:kaskade0": 8,
         "tex:kaskade1": 8,
         "tex:tor-ziel": 7,
