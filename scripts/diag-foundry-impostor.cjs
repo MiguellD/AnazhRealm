@@ -10,7 +10,8 @@
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
-//     Programms bindet die lebende (Selbsttest: das alte Wachsen).
+//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn keine Lieferung aus A mehr
+//     unterwegs ist (`lieferungenLanden`); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
