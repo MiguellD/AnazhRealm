@@ -1287,21 +1287,9 @@ class AnazhRealm_dirigent_takt {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
-            // der Versatz des Laubs (A3, `_laubVersatz`): die dritte und vierte Achse der Halton-Folge der zeitlichen Auflösung
-            // (Basis 5 und 7 am Index ihres Zitterns, `_jitterIndex`) im Quadrat ±LAUB_VERSATZ Eingangs-Pixel — Zittern und
-            // Versatz sind EINE Folge in vier Achsen, ihre Summe deckt den Fußabdruck gleichmäßig (eine R2-Folge daneben ballte
-            // sich mit dem Zittern: laub-kante 0,224–0,227 statt 0,219–0,222); ohne die Auflösung 0
-            if (_lu.uLaubVersatz) {
-                const _tn = this.state.traaNode;
-                const _o = [0, 0];
-                for (let a = 0; _tn && a < 2; a++) {
-                    const b = a ? 7 : 5;
-                    for (let i = (_tn._jitterIndex | 0) + 1, f = 1; i > 0; i = Math.floor(i / b))
-                        _o[a] += (f /= b) * (i % b);
-                    _o[a] = (_o[a] - 0.5) * 2 * AnazhRealm.LAUB_VERSATZ;
-                }
-                _lu.uLaubVersatz.value.set(_o[0], _o[1]);
-            }
+            // der Versatz des Laubs (A3, `_laubVersatz`) gehört der Folge der zeitlichen Auflösung (ihr `setViewOffset`, A3b);
+            // ohne die Auflösung 0
+            if (_lu.uLaubVersatz && !this.state.traaNode) _lu.uLaubVersatz.value.set(0, 0);
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
