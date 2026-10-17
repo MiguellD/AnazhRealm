@@ -346,12 +346,11 @@ async function weltStehtWarten(max) {
         if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
     }
-    if (st.timeOfDay !== uhr) {
-        st.timeOfDay = uhr;
-        if (st.world) st.world.timeOfDay = uhr;
-    }
+    if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt, ihre Lesung abgewartet — die
-    // Drift-Schwelle hielt sonst die Malung des Boots (Mess-Wiese: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904)
+    // Drift-Schwelle hielt sonst die Malung des Boots (Mess-Wiese: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904);
+    // das Gemüt steht ruhig wie in der Bühne (die Takte des Wartens trieben es)
+    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     r._applyDayNightToScene();
     await r._himmelFrisch();
     r._applyDayNightToScene();
@@ -375,6 +374,8 @@ function buehne() {
     // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
     window.__wetterSetzen("sunny");
     window.__uhrHalten();
+    // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
+    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
     // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
@@ -739,10 +740,10 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 r._loopRender();
             };
-            // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
-            // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
-            // Kachel je Takt, bis keine mehr fehlt).
-            if (typeof r._tickNahWiese === "function") for (let i = 0; i < 200 && r._tickNahWiese() > 0; i++);
+            // Die NAH-SÄTZE folgen der Kamera (Wiese und Streu, die Kachel-Ringe im scatterDeco-Takt). Bei ruhendem
+            // Loop standen die Ringe noch um die VORIGE Kamera — die Aufnahme schwingt sie für diese ein (Kachel um
+            // Kachel, bis keine mehr fehlt; A9-n2: die Streu trug die Armlänge des vorigen Schusses).
+            for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
             // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
             // erfüllt sich kein Versprechen (gemessen 07.10., Werkbank, Wiese: ein Bär, der eben ins Bild kam, fehlte im

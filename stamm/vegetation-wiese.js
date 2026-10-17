@@ -347,6 +347,8 @@ class AnazhRealm_vegetation_wiese {
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
         const ax = we[12];
         const az = we[14];
+        // die Stufen-Hysterese gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jedes Büschel aus dem Jetzt
+        if (this._augeSprung(nw, ax, we[13], az)) for (const k of nw.kacheln.values()) k.l1.fill(0);
         const H = NW.kachel * 0.5;
         for (const k of nw.kacheln.values()) {
             const n = k.bueschel.length;
@@ -754,6 +756,9 @@ class AnazhRealm_vegetation_wiese {
             return 0;
         let gefallen = 0;
         const cam = st.camera.position;
+        // die Armlänge gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jede Pflanze aus dem Jetzt
+        if (this._augeSprung(ns, cam.x, cam.y, cam.z))
+            for (const k of ns.kacheln.values()) for (const it of k.items) it.nah = false;
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
