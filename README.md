@@ -10,8 +10,9 @@ Assets.
 ## Was es ist
 
 AnazhRealm ist eine 3D-Browser-Welt (Vanilla JS, Three.js r184 / WebGPU). Ihr Kern ist EIN Stamm — EINE Klasse
-`AnazhRealm`, EIN Prototyp —, verteilt auf 48 Zonen-Dateien unter `stamm/` (`npm run atlas` zeigt die Karte, `--find <regex>`
-sucht darin). Getrennt wird nur an echten Laufzeit-Grenzen:
+`AnazhRealm`, EIN Prototyp —, verteilt auf je eine Datei je Modul unter `stamm/` (Wasser in `stamm/wasser-*.js`, die Bewegung
+in `stamm/koerper-bewegung.js`; die Karte ist `spec/stamm/modul-karte.json`, `npm run atlas` zeigt sie, `--find <regex>` sucht
+darin und in den Kernen). Getrennt wird nur an echten Laufzeit-Grenzen:
 
 - **Die Welt ist eine Funktion:** Höhe, Landform und Flussnetz rechnet EIN Gelände-Kern (`gelaende-core.js`) für Stamm,
   Worker (`voxel-worker.js`, bit-identisch) und Studio; Wasser ist EIN zellulärer Automat. Die Physik ist feld-nativ und

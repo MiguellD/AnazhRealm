@@ -16,7 +16,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const lies = (p) => fs.readFileSync(path.join(root, p), "utf8");
-const STAMM = require("./lib/stamm.cjs").text(root);
+const stammLib = require("./lib/stamm.cjs");
+const STAMM = stammLib.text(root);
 const KERN = lies("foundry-core.js");
 const SHELL = lies("worlds/terrain/phytogenesis.js");
 
@@ -149,7 +150,7 @@ if (process.argv.includes("--selftest")) {
     const roh = (a, b, c, wer) => pruefe(a, b, c).find((g) => g[0].startsWith(wer))[1] === false;
     check(
         "Selbst-Test 1: Welt ohne Phasen-Versatz (t = phase) → F1a rot",
-        roh(STAMM.replace("const t = (((phase - 0.125) % 1) + 1) % 1;", "const t = ((phase % 1) + 1) % 1;"), KERN, SHELL, "F1a")
+        roh(stammLib.ersetze(STAMM, "_saisonMul", "const t = (((phase - 0.125) % 1) + 1) % 1;", "const t = ((phase % 1) + 1) % 1;"), KERN, SHELL, "F1a")
     );
     check(
         "Selbst-Test 2: Studio-Herbst geändert (Kern-Stützstelle) → F1a bleibt grün, F1b misst neu (eine Quelle)",
@@ -161,11 +162,11 @@ if (process.argv.includes("--selftest")) {
     );
     check(
         "Selbst-Test 4: Foundry-Laub ohne Saison → F3b rot",
-        roh(STAMM.replace("vcol.mul(_suF.uSeasonMul)", "vcol"), KERN, SHELL, "F3b")
+        roh(stammLib.ersetze(STAMM, "_foundryTreeMaterial", "vcol.mul(_suF.uSeasonMul)", "vcol"), KERN, SHELL, "F3b")
     );
     check(
         "Selbst-Test 5: _tickSeason baut wieder neu (_foundrySeasonChanged) → F3a rot",
-        roh(STAMM.replace("st.season = this._seasonName(st.seasonPhase);", "st.season = this._seasonName(st.seasonPhase);\n        this._foundrySeasonChanged();"), KERN, SHELL, "F3a")
+        roh(stammLib.ersetze(STAMM, "_tickSeason", "st.season = this._seasonName(st.seasonPhase);", "st.season = this._seasonName(st.seasonPhase);\n        this._foundrySeasonChanged();"), KERN, SHELL, "F3a")
     );
     if (errs.length) {
         console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");

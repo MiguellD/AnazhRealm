@@ -34,7 +34,7 @@ const stripComments = stammLib.ohneKommentare;
         // (≥ V18.427 = geheilte Traces) + sein drawCalls-Feld liest die (bounded) sense-Zahl,
         // nie ein rohes info-Objekt. Anker = das eindeutige drawCalls-Feld, version davor.
         const nc = stripComments(stammLib.text(root));
-        const dcIdx = nc.search(/drawCalls:\s*Math\.round\(s\.renderCalls/);
+        const dcIdx = (stammLib.treffer(nc, "_flightRecorderBuildTrace", /drawCalls:\s*Math\.round\(s\.renderCalls/) || { index: -1 }).index;
         const before = dcIdx >= 0 ? nc.slice(Math.max(0, dcIdx - 2500), dcIdx) : "";
         staticChecks.push({
             name: "Flugschreiber: version-Feld im Perf-Payload (trennt vergiftete Alt-Traces) + drawCalls aus der sense-Zahl",

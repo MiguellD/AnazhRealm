@@ -58,7 +58,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     // Gesetz gilt dem KIND_POLICY-BLOCK selbst; ein `klang: Object.freeze(...)`
     // anderswo (WORLD_REGISTRY.klang, das Klang-Portal) ist legitim und darf die
     // Linse nicht auslösen.
-    const kpStart = anazhNC.indexOf("AnazhRealm.KIND_POLICY = Object.freeze({");
+    const kpStart = (stammLib.treffer(anazhNC, null, "AnazhRealm.KIND_POLICY = Object.freeze({") || { index: -1 }).index;
     const kpEnd = kpStart >= 0 ? anazhNC.indexOf("AnazhRealm.PLACE_MODES", kpStart) : -1;
     const kpBlock = kpStart >= 0 && kpEnd > kpStart ? anazhNC.slice(kpStart, kpEnd) : "";
     out.push([
@@ -134,13 +134,13 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             l[0].includes("klang-core.js deklariert")
         );
         check("Selbst-Test 2: MESHFREI=0 injiziert -> S2 feuert", s2 && s2[1] === false);
-        const brokenAnazh = anazhSrc.replace('KLANG_HOST_RECIPE = "lofi"', 'KLANG_HOST_RECIPE = "techno"');
+        const brokenAnazh = stammLib.ersetze(anazhSrc, null, 'KLANG_HOST_RECIPE = "lofi"', 'KLANG_HOST_RECIPE = "techno"');
         const s4 = staticLaws(brokenAnazh, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S4"));
         check("Selbst-Test 3: KLANG_HOST_RECIPE verstellt -> S4 feuert", s4 && s4[1] === false);
-        const brokenMotion = anazhSrc.replace('MOTION_HOST_RECIPE = "wolf"', 'MOTION_HOST_RECIPE = "bear"');
+        const brokenMotion = stammLib.ersetze(anazhSrc, null, 'MOTION_HOST_RECIPE = "wolf"', 'MOTION_HOST_RECIPE = "bear"');
         const s6 = staticLaws(brokenMotion, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S6"));
         check("Selbst-Test 4: MOTION_HOST_RECIPE verstellt -> S6 feuert", s6 && s6[1] === false);
-        const brokenKoerper = anazhSrc.replace('KOERPER_HOST_RECIPE = "mensch"', 'KOERPER_HOST_RECIPE = "roboter"');
+        const brokenKoerper = stammLib.ersetze(anazhSrc, null, 'KOERPER_HOST_RECIPE = "mensch"', 'KOERPER_HOST_RECIPE = "roboter"');
         const s7 = staticLaws(brokenKoerper, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S7"));
         check("Selbst-Test 5: KOERPER_HOST_RECIPE verstellt -> S7 feuert", s7 && s7[1] === false);
         const brokenBridge = anazhSrc.replace(/_motionProfileName\(moving, emotions, "koerper"/g, "_getrennteBruecke(");

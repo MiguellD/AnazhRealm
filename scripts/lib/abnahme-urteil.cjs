@@ -1679,7 +1679,7 @@ function eigenschaftBand(e, q, wo) {
     return { fehler: `${wo}: Verweis ${v.datei} ${v.feld} — kein lesbares Band (art toleranz)` };
 }
 
-// DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine Kommentarzeile in stamm/10.js machte jede Zeile der Albedo-Tafel veraltet
+// DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine Kommentarzeile in einer Stamm-Datei machte jede Zeile der Albedo-Tafel veraltet
 // und sperrte jeden folgenden Merge): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
 // Kommentare und Leerraum zwischen den Token; JSON kanonisch (geparst, neu geschrieben). Eine andere Dateiart trägt keinen
 // Stand (laut, nie still die Bytes); ein Token-Fehler bricht laut. Form `c:` + 16 Hex — eine Prüfsumme anderer Form (die
@@ -1730,7 +1730,7 @@ function standLeser(root) {
         gitStand,
         stammVersion: () => {
             const m = /AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8")
+                fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
             );
             return m ? m[1] : null;
         },
@@ -1743,7 +1743,7 @@ function standLeser(root) {
             const quellen = {};
             for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
             for (const d of require("./stamm.cjs").dateien(root)) quellen[d] = pruefsumme(d);
-            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8"));
+            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8"));
             return { version: v ? v[1] : null, sha: gitStand(), quellen };
         },
         // DIE QUELLE DES URTEILS (K63-n7, `sollTafelUrteil(tafel, q)`): Haushalt, Datei-Leser, Prüfsumme und die Symbole der Kerne
@@ -1754,7 +1754,7 @@ function standLeser(root) {
             const vm = require("vm");
             return {
                 version: (/AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                    fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8")
+                    fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
                 ) || [])[1],
                 pruefsumme,
                 haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),

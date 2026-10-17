@@ -48,15 +48,10 @@ function methodeAus(src, name) {
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
     const p = src.indexOf("(", i);
     const args = src.slice(p + 1, src.indexOf(")", p));
-    let j = src.indexOf("{", p + args.length + 1), tiefe = 0, k = j;
-    for (; k < src.length; k++) {
-        if (src[k] === "{") tiefe++;
-        else if (src[k] === "}" && --tiefe === 0) break;
-    }
-    return { args, rumpf: src.slice(j + 1, k) };
+    return { args, rumpf: stammLib.rumpf(src, name).slice(1, -1) }; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
 }
 const KEIL_TYP = (() => {
-    const m = STAMM.match(/AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
+    const m = stammLib.treffer(STAMM, null, /AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
     return m ? Function("return " + m[1])() : {};
 })();
 function leser(rumpf) {

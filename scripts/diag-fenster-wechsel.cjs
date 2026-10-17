@@ -44,7 +44,7 @@ const check = (name, cond, detail) => {
 
 // K: der Körper des resize-Handlers (kommentarfrei) — kein Leser der Szenen-Tiefe wird dort neu gebaut
 function resizeKoerper(src) {
-    const i = src.indexOf('window.addEventListener("resize"');
+    const i = (stammLib.treffer(src, "init", 'window.addEventListener("resize"') || { index: -1 }).index;
     if (i < 0) return null;
     const ende = src.indexOf("});", i);
     return stammLib.ohneKommentare(src.slice(i, ende));

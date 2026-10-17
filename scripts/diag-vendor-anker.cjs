@@ -449,11 +449,11 @@ const ANKER = [
 // über die Vendor-Bahn auf seine Kamera stellt — Gegenprüfung 07.10.).
 function diaetLaden(manipuliert) {
     const stamm = stammLib.text(root);
-    const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
+    const b = (stammLib.treffer(stamm, null, "AnazhRealm._diaetRefresh = function") || { index: -1 }).index;
     if (b < 0) return null;
     let a = b;
     for (const kopf of ["AnazhRealm._diaetGang = function", "AnazhRealm._diaetGeteiltSchreiben = function"]) {
-        const s0 = stamm.indexOf(kopf);
+        const s0 = (stammLib.treffer(stamm, null, kopf) || { index: -1 }).index;
         if (s0 >= 0 && s0 < a) a = s0;
     }
     const e = stamm.indexOf("\n};\n", b);
@@ -888,7 +888,7 @@ function diaetProbe(selftest) {
 function schattenStoffProbe(ohne) {
     const stamm = stammLib.text(root);
     const kopf = 'if (typeof renderer.renderObject !== "function")';
-    const a = stamm.indexOf(kopf);
+    const a = (stammLib.treffer(stamm, "_configureRenderer", kopf) || { index: -1 }).index;
     const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhSchattenStoff = true;", a);
     const zu = e < 0 ? -1 : stamm.indexOf("}", e);
     if (zu < 0) return { fehler: ["der Schatten-Stoff-Block fehlt in _configureRenderer"] };
@@ -951,7 +951,7 @@ function schattenStoffProbe(ohne) {
 function bundleWahrheitProbe(ohne) {
     const stamm = stammLib.text(root);
     const kopf = 'if (typeof renderer._renderScene !== "function" || !renderer.backend)';
-    const a = stamm.indexOf(kopf);
+    const a = (stammLib.treffer(stamm, "_configureRenderer", kopf) || { index: -1 }).index;
     const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhBundleWahrheit = true;", a);
     const zu = e < 0 ? -1 : stamm.indexOf("}", e);
     if (zu < 0) return { fehler: ["der Bundle-Wahrheits-Block fehlt in _configureRenderer"] };

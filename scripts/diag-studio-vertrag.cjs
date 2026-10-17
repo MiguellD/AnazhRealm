@@ -1009,12 +1009,12 @@ function validateManifest(m) {
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
     // gestrippt (die V18.267-Falle).
     const realm = stammLib.ohneKommentare(stammLib.text(root));
-    const reg = realm.match(/_foundryAutoRegisterSpecies\([^)]*\)\s*\{[\s\S]{0,2500}/);
+    const reg = stammLib.rumpf(realm, "_foundryAutoRegisterSpecies");
     check(
         // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
         // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
         "G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)",
-        !!reg && /KP\[rec\.kind\]/.test(reg[0]) && /if \(!pol\) continue/.test(reg[0])
+        !!reg && /KP\[rec\.kind\]/.test(reg) && /if \(!pol\) continue/.test(reg)
     );
 
     // W8 — JEDER Kern mit Gestalt trägt sein Budget (B2c), jeder Zweit-Kern seine Gestalten je Rezept: die
@@ -1083,7 +1083,7 @@ function validateManifest(m) {
     // oder gestuft wie seit K43-2 das Fahrzeug [0, 1] (die Karte aus der Stufe 1). Eine NUR-WURF-Stufe zählt nicht: sie
     // kommt nie ins Bild (das Tor [0, 3], 1110-9). Rot ist die Studio-Karte, die der Wirt nie zeigt.
     const kartenUrteil = (src, bud) => {
-        const kp = src.match(/AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
+        const kp = stammLib.treffer(src, null, /AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
         if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
         const f = [];
         for (const datei in bud) {
@@ -1108,7 +1108,7 @@ function validateManifest(m) {
         kU[0] || Object.keys(budgets).join(", ")
     );
     const kSelbst = kartenUrteil(
-        realm.replace(/\n(\s*)shrub: Object\.freeze\(\{ impostor: true \}\)/, "\n$1shrub: Object.freeze({})"),
+        stammLib.ersetze(realm, null, /\n(\s*)shrub: Object\.freeze\(\{ impostor: true \}\)/, "\n$1shrub: Object.freeze({})"),
         budgets
     );
     check(
@@ -1133,8 +1133,8 @@ function validateManifest(m) {
             )
         )
             f.push("Brücke: __replyBuildAsset faltet die Zweit-Kern-Gestalt nicht (budgetErzwingen)");
-        const ofen = realmSrc.match(/\n {4}_ofenBudget\([^)]*\) \{[\s\S]*?\n {4}\}/);
-        if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen[0])) f.push("Wirt: _ofenBudget faltet nicht");
+        const ofen = stammLib.rumpf(realmSrc, "_ofenBudget");
+        if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen)) f.push("Wirt: _ofenBudget faltet nicht");
         const ofenRufe = (
             realmSrc.match(/this\._ofenAssembleAsset\(this\._ofenBudget\(core, "(kreatur|koerper)"/g) || []
         ).length;
@@ -1147,25 +1147,25 @@ function validateManifest(m) {
         const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern(?:, basisInv)?\) \{[\s\S]*?\n {4}\}\n/);
         if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
             f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
-        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\([^)]*\) \{[\s\S]*?\n {4}\}/);
-        if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe[0]))
+        const oe = stammLib.rumpf(realmSrc, "_ofenMeshEintragAusThree");
+        if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe))
             f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
         // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
         // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
         // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\([^)]*\) \{[\s\S]*?\n {4}\}/);
-        if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
+        const bm = stammLib.rumpf(realmSrc, "_foundryBuildMesh");
+        if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm))
             f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
         if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))
             f.push("Wirt: der Flatten trägt die Sippe nicht aufs Leaf");
-        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\([^)]*\) \{[\s\S]*?\n {4}\}/);
-        if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv[0]) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv[0]))
+        const fv = stammLib.rumpf(realmSrc, "_foundryFlatVerschmelzen");
+        if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv))
             f.push("Wirt: _foundryFlatVerschmelzen gruppiert nicht nach der Sippe des Gesetzes");
-        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\([^)]*\) \{[\s\S]*?\n {4}\}/);
+        const sb = stammLib.rumpf(realmSrc, "_ofenStarrBinden");
         if (
             !sb ||
-            !/n\.userData \? n\.userData\.__sippe/.test(sb[0]) ||
-            /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(sb[0])
+            !/n\.userData \? n\.userData\.__sippe/.test(sb) ||
+            /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(sb)
         )
             f.push("Wirt: _ofenStarrBinden bindet nicht nach der Sippe des Gesetzes");
         return f;
@@ -1176,17 +1176,17 @@ function validateManifest(m) {
         lU.length === 0,
         lU[0] || ""
     );
-    const lSelbst = leserUrteil(realm.replace("budgetErzwingen(eintraege", "budgetSippen(eintraege"), phytoNC);
+    const lSelbst = leserUrteil(stammLib.ersetze(realm, "_ofenBudget", "budgetErzwingen(eintraege", "budgetSippen(eintraege"), phytoNC);
     check(
         "SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe",
         lSelbst.some((s) => s.includes("_ofenBudget"))
     );
-    const sehAus = realm.replace("out.mat.seh = mat.userData.__seh", "out.mat.sehX = mat.userData.__seh");
+    const sehAus = stammLib.ersetze(realm, "_ofenMeshEintragAusThree", "out.mat.seh = mat.userData.__seh", "out.mat.sehX = mat.userData.__seh");
     check(
         "SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe",
         sehAus !== realm && leserUrteil(sehAus, phytoNC).some((s) => s.includes("Seh-Klasse"))
     );
-    const sippeAus = realm.replace(
+    const sippeAus = stammLib.ersetze(realm, "_foundryBuildMesh",
         "mesh.userData.__sippe = globalThis.__phytoCore.budgetSippe(m)",
         "mesh.userData.__sippe = null"
     );
@@ -1314,8 +1314,7 @@ function validateManifest(m) {
             // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
             // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle — seit der Leben-Schau 2 je Gestalt (fx.huellen).
-            const pbaM =
-                src && src.match(/_populateBlockerAABBs\([^)]*\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
+            const pbaM = src && (stammLib.rumpf(src, "_populateBlockerAABBs") || "").match(/[\s\S]*?entry\.blockerAABBs = solidAABBs/);
             check(
                 "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad",
                 !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huellen: \[\n\s+\[-?\d/.test(fc)

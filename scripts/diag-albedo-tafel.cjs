@@ -255,7 +255,7 @@ async function selbsttest() {
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
-        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in stamm/10.js machte jede Zeile veraltet und
+        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in einer Stamm-Datei machte jede Zeile veraltet und
         // sperrte jeden folgenden Merge): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");

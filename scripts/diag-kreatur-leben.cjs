@@ -33,7 +33,7 @@ const V = (core && core.VERHALTEN) || null;
 
 // ── A) DECKUNG: Zustand-Tabelle → MOTION-Presets ──
 const stamm = stammLib.text(root);
-const ztMatch = stamm.match(/AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
+const ztMatch = stammLib.treffer(stamm, null, /AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
 check("MOTION_ZUSTAND_PROFILES existiert im Stamm", !!ztMatch);
 const kreaturTargets = [];
 if (ztMatch) {
@@ -185,7 +185,8 @@ probe(
 );
 probe(
     "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h)); der Ansprung eines Bisses springt den Grund-Hüpfer (K13)",
-    /Math\.sqrt\(2 \* this\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature, ansprung\)\)[\s\S]{0,1200}if \(ansprung\) return F\.hopBasisM;[\s\S]{0,300}return froh \? F\.hopHochM : F\.hopBasisM;/
+    // der Abflug (creatureJump) und die Höhe (_kreaturSprungHoehe) je an ihrem Ort — die Datei-Ordnung der Glieder zählt nicht (D2)
+    /^(?=[\s\S]*?Math\.sqrt\(2 \* this\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature, ansprung\)\))(?=[\s\S]*?if \(ansprung\) return F\.hopBasisM;[\s\S]{0,300}return froh \? F\.hopHochM : F\.hopBasisM;)/
 );
 probe("eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)", /def\.hop === true\) this\.creatureJump\(/);
 

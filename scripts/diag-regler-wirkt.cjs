@@ -425,14 +425,8 @@ function statischeMethode(src, name) {
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
     const p = src.indexOf("(", i);
     const args = src.slice(p + 1, src.indexOf(")", p));
-    const j = src.indexOf("{", p + args.length + 1);
-    let tiefe = 0,
-        k = j;
-    for (; k < src.length; k++) {
-        if (src[k] === "{") tiefe++;
-        else if (src[k] === "}" && --tiefe === 0) break;
-    }
-    return { rumpf: src.slice(j + 1, k), fn: new Function(args, src.slice(j + 1, k)) };
+    const rumpf = stammLib.rumpf(src, name).slice(1, -1); // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
+    return { rumpf, fn: new Function(args, rumpf) };
 }
 function stammRegel(src) {
     const s = src || stammLib.text(ROOT);
@@ -682,7 +676,7 @@ async function selbsttest() {
         wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
     });
     const quelle = stammLib.text(ROOT);
-    const taeterQ = quelle.replace('return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
+    const taeterQ = stammLib.ersetze(quelle, "_wurfVonBilligerer", 'return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
     const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
     const rotHeil = wurfUrteil(wHeil.zeilen);
     const rotTaeter = wurfUrteil(wTaeter);

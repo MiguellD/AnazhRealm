@@ -83,7 +83,7 @@ function klassenWand(src) {
         const brueche = [
             [
                 "S1 Bühnen-Wache im Bäcker",
-                stamm.replace(
+                stammLib.ersetze(stamm, "_tickImpostorBake",
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n",
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n        if (!this._buehneSteht()) return 0;\n"
                 ),
@@ -91,14 +91,14 @@ function klassenWand(src) {
             [
                 // derselbe Bruch im Gehilfen des Ticks: die Linse am Rumpf allein war hier blind (K60-3)
                 "S1 Bühnen-Wache im Gehilfen des Bäckers",
-                stamm.replace(
+                stammLib.ersetze(stamm, null,
                     "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n",
                     "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n        if (!this._buehneSteht()) return -1;\n"
                 ),
             ],
             [
                 "S2 Vorrats-Rang der Karte",
-                stamm.replace(/msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
+                stammLib.ersetze(stamm, "_foundryBakeImpostorRequest", /msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
             ],
         ];
         const roh = brueche.map(([n, s]) => [n, s !== stamm && !klassenWand(s).ok]);

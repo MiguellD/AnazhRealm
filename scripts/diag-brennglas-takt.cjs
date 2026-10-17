@@ -1106,7 +1106,7 @@ async function probe() {
 // (N) DIE NÄHE — läuft in der Seite (Teil von `probe`, über toString mitgereicht).
 function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
     const aus = { proben: 0, abw: 0, fehler: [], wirkung: {}, zeit: {}, menge: 0 };
-    // DAS ORAKEL: die vier Takte von main 9fb869a5 (stamm/15a.js) im Wortlaut — je Takt jeder Eintrag des Verzeichnisses
+    // DAS ORAKEL: die vier Takte von main 9fb869a5 (der Stamm dort) im Wortlaut — je Takt jeder Eintrag des Verzeichnisses
     const O = {
         _tickRadiatingAffordances(dt) {
             const radiating = this._blockerMit("radiating");

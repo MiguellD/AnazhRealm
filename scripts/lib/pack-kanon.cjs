@@ -33,21 +33,6 @@ function sha256Hex(buf) {
 // das als String-Literal im Code lebt).
 const stripComments = require("./stamm.cjs").ohneKommentare;
 
-// Den Quelltext einer Klassen-Methode grob herausschneiden: vom Methoden-Kopf bis zum
-// FRÜHESTEN der genannten Nachfolger-Anker (Source-Proben-Zweck, kein AST nötig).
-function methodSource(src, name, nextAnchors) {
-    const head = "\n    " + name + "(";
-    const start = src.indexOf(head);
-    if (start < 0) return null;
-    let end = src.length;
-    for (const a of nextAnchors || []) {
-        const p = src.indexOf("\n    " + a, start + head.length);
-        if (p > start && p < end) end = p;
-    }
-    if (end - start > 20000) end = start + 20000; // Sicherheits-Deckel, falls alle Anker fehlen
-    return src.slice(start, end);
-}
-
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
 // nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
@@ -303,7 +288,6 @@ module.exports = {
     ROOT,
     sha256Hex,
     stripComments,
-    methodSource,
     computeStamp,
     readManifest,
     coreIdFor,

@@ -221,7 +221,7 @@ ok(
 // jeder Schritt des Wuchses, der einen Vektor-Helfer der Shell liest, bricht dort (baum_totholz warf „vlen is not
 // defined", gate:brennglas-takt fand ihn im Brennpunkt der Kern-Landform). Der Scope wird wie im Haupt-Thread gebaut
 // (three → phyto-core → foundry-core, KEINE Shell-Globale), jede Baum- und Strauch-Art je Gestalt und Stufe gewachsen.
-// Konsum-Leser: `_growTreeBlueprintRich` (stamm/15b.js) — der Stamm liest das Skelett für die Kollision.
+// Konsum-Leser: `_growTreeBlueprintRich` (Stamm) — der Stamm liest das Skelett für die Kollision.
 const hsb = { console, performance: { now: () => 0 } };
 hsb.self = hsb;
 hsb.globalThis = hsb;

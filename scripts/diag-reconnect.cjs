@@ -664,7 +664,8 @@ function makeRealmA(env, initSrcOverride) {
     // Erst-Aufbau des nackten Aufrufs keinen Rejoin. Der Laufzeit-Beweis ist gate:mp-sync (b); hier die Absenz.
     {
         const tuerSetzer = (src) => {
-            const kopf = /^ {4}initP2PSync\(/m.exec(src);
+            const k = stammLib.kopf(src, "initP2PSync");
+            const kopf = k < 0 ? null : { index: k };
             const ende = kopf ? src.indexOf("\n    }\n", kopf.index) : -1;
             const re = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/g;
             const fremd = [];
@@ -688,7 +689,7 @@ function makeRealmA(env, initSrcOverride) {
         check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
         // Selbsttest: der Hand-Setzer zurück → ROT; die Tür ohne Absicht → ROT.
         const mitHand = tuerSetzer(stammSrc + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
-        const ohneTuer = tuerSetzer(stammSrc.replace(/(\n {4}initP2PSync\([^]*?)\n {8}p2p\.enabled = true;/, "$1"));
+        const ohneTuer = tuerSetzer(stammLib.ersetze(stammSrc, null, /(\n {4}initP2PSync\([^]*?)\n {8}p2p\.enabled = true;/, "$1"));
         check(
             "D Selbsttest: ein Hand-Setzer und die Tür ohne Absicht sehen ROT",
             mitHand.fremd.length === 1 && ohneTuer.inTuer === 0

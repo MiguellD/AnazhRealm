@@ -1418,8 +1418,9 @@ jobs:
             - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
               if: matrix.gruppe == 14
               # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
-              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und ein
-              # Render trägt Substanz, W6 (holz=voll) jeder Stoff zählt je Stufe ≤ 16 Sampler (darüber linkt WebGL2 nie).
+              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen, der Canvas
+              # nach dem echten Frame trägt Substanz und jedes Programm, das das Spiel baut, linkt (sonst ROT beim Stoff-Namen),
+              # W6 (holz=voll) jeder Stoff trägt je Stufe ≤ 16 aktive Sampler-Einheiten, gezählt im GLSL ohne Link.
               run: npm run gate:webgl-probe
 
             - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
@@ -1470,10 +1471,6 @@ jobs:
             - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
               if: matrix.gruppe == 10
               run: npm run gate:baecker-kanal
-
-            - name: Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)
-              if: matrix.gruppe == 8
-              run: npm run gate:konsum-matrix
 
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 11

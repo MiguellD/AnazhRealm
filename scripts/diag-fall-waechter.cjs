@@ -434,7 +434,7 @@ function selbsttest() {
     const amStamm = quellenWand(stamm);
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
-    const kopie = stamm.replace(
+    const kopie = stammLib.ersetze(stamm, null,
         /(\n {4}_werkBoden\([^)]*\) \{)/,
         "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
     );
@@ -446,7 +446,7 @@ function selbsttest() {
     if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
     // der Leser der Gegenprüfung 10.10.: die Tod-Lage liest die Oberkante der Säule als Boden des sterbenden Leibs
     {
-        const k2 = stamm.replace(
+        const k2 = stammLib.ersetze(stamm, "_todHebeTafel",
             /const g0 = this\._koerperBodenUnter\(px, py - \(creature\.userData\._hopH \|\| 0\), pz\);/,
             "const g0 = this.getTerrainHeightAt(px, pz);"
         );
@@ -459,7 +459,7 @@ function selbsttest() {
     }
     // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
     {
-        const k3 = stamm.replace(
+        const k3 = stammLib.ersetze(stamm, null,
             /(\n {4}_todHebeTafel\([^)]*\) \{)/,
             "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
         );

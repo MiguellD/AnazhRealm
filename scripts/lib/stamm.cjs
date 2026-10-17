@@ -2,40 +2,48 @@
 /* global process, console, __dirname, Buffer, TextEncoder, TextDecoder, URL */
 // scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung, plan 13.10. §3).
 //
-// Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — vor dem Schnitt
-// (14.10.) die eine Datei `ALT`, seither die Umkehrung der Zonen-Dateien stamm/NN[x].js, sha-gleich zum Vorgänger. Die
-// Layout-Weiche ist laut: liegen beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind").
-// Der Name der alten Datei steht als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
+// Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
+// Dateien unter stamm/ (ein Stand vor der Zerlegung 14.10.: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
+// beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht
+// als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
 //
 // Der Schnitt S ist eine REINE Funktion des Texts an den ATLAS-Markern (`schneide`), seine Umkehrung `fuege`; beide
-// leben in dieser Datei, damit es EIN Gesetz gibt:
-//   stamm/01.js   Kopf + `class AnazhRealm {` + §01 + `}` + die Naht-Funktion `_stammZonen`
-//   stamm/NN.js   `class AnazhRealm_ZNN {` + die Zone ab ihrem Marker, Byte für Byte + `}` (Unter-Marker §NNb → NNa/NNb)
-//   stamm/26.js   der Naht-Ruf `_stammZonen(AnazhRealm, [...])` + §26 ab dem Marker (Unter-Marker §26b → 26a/26b …)
+// leben in dieser Datei, damit es EIN Gesetz gibt. Die DOMÄNE (D2, `ordne` nach spec/stamm/modul-karte.json):
+//   stamm/<kern>.js     Kopf + `class AnazhRealm {` + die erste Zone (Konstruktor) + `}` + die Naht-Funktion `_stammZonen`
+//   stamm/<modul>.js    `class AnazhRealm_<modul> {` + die Zone `ATLAS · Modul[/teil]` + `}` + ihr Naht-Ruf, dahinter ihre
+//                       Außen-Anweisungen (`AnazhRealm.X = …`) ab ihrem Außen-Marker; Datei-Name = Modul[-teil]
+// Die LAGE (Zerlegung 13.10., ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
 // Die Leerzeile vor jedem Marker trägt die Umkehrung; S verlangt sie (sonst wirft S).
 //
-//   node scripts/lib/stamm.cjs --selftest     beweist Umkehrung, Layout-Weiche, 5-MB-Wand, Kanon-Prüfung, ort, liefere
+//   node scripts/lib/stamm.cjs --selftest     beweist Umkehrung, Ordnung, Layout-Weiche, 5-MB-Wand, Kanon, ort, liefere
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
 const ALT = "anazhRealm.js";
 const DIR = "stamm";
+const KARTE = "spec/stamm/modul-karte.json";
 const MIN_BYTES = 5 * 1024 * 1024;
 const KLASSE_AUF = "class AnazhRealm {";
 const MARKER_RX = /^( {4})?\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+?) — (.+?) =====\s*$/;
-const ZONEN_DATEI_RX = /^stamm\/\d\d[a-z]?\.js$/;
+const DOMAENE_RX = /^( {4})?\/\/ ===== ATLAS · ([A-Z][a-z]+(?:\/[a-z][a-z0-9]*)?) — (.+?) =====\s*$/;
+const ZONEN_DATEI_RX = /^stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js$/;
 const STAMM_TAG_RX =
-    /^([ \t]*)<script src="((?:anazhRealm\.js|stamm\/\d\d[a-z]?\.js))(\?v=[^"]*)?" defer><\/script>[ \t]*$/;
+    /^([ \t]*)<script src="((?:anazhRealm\.js|stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js))(\?v=[^"]*)?" defer><\/script>[ \t]*$/;
+// die Domäne „Modul/teil" heißt in der Datei modul-teil, ihre Klasse AnazhRealm_modul_teil
+const stammName = (s) => s.toLowerCase().replace("/", "-");
+const pfadVon = (s) => `${DIR}/${stammName(s)}.js`;
+const klasseVon = (s) => `AnazhRealm_${stammName(s).replace("-", "_")}`;
+const zonenRuf = (k) => `_stammZonen(AnazhRealm, [${k}]);\n`;
 
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
-// Die Naht (Kern-Ende in stamm/01.js). S schreibt sie, die Umkehrung verlangt sie Zeile für Zeile.
+// Die Naht (Kern-Ende in der ersten Stamm-Datei). S schreibt sie, die Umkehrung verlangt sie Zeile für Zeile.
 const NAHT_FN = [
     "",
-    "// DIE NAHT (scripts/stamm-umzug.cjs schreibt sie, scripts/lib/stamm.cjs liest sie zurück): die Zonen-Klassen",
-    "// stamm/NN.js tragen ihre Glieder auf AnazhRealm — in Datei-Ordnung, je Glied sein Deskriptor; erst alle Methoden",
-    "// und Accessoren, dann die statischen Felder (wie die Klassen-Auswertung). Ein Zwilling bricht laut.",
+    "// DIE NAHT (scripts/lib/stamm.cjs schreibt und liest sie): jede Datei unter stamm/ trägt mit ihrem Naht-Ruf die Glieder",
+    "// ihrer Zonen-Klasse auf AnazhRealm — je Glied sein Deskriptor; erst die Methoden und Accessoren, dann die statischen",
+    "// Felder (wie die Klassen-Auswertung). Ein Zwilling bricht laut.",
     "/* exported _stammZonen */",
     "function _stammZonen(Ziel, zonen) {",
     "    const tragen = (quelle, ziel, aus, felder) => {",
@@ -56,6 +64,14 @@ const NAHT_FN = [
     "    for (const Z of zonen) tragen(Z, Ziel, statisch, true);",
     "}",
 ];
+// die Naht der LAGE (ein Stand vor D2: EIN Ruf am Kopf von 26a über alle Zonen) — S⁻¹ liest sie weiter
+const NAHT_LAGE = [
+    "",
+    "// DIE NAHT (scripts/stamm-umzug.cjs schreibt sie, scripts/lib/stamm.cjs liest sie zurück): die Zonen-Klassen",
+    "// stamm/NN.js tragen ihre Glieder auf AnazhRealm — in Datei-Ordnung, je Glied sein Deskriptor; erst alle Methoden",
+    "// und Accessoren, dann die statischen Felder (wie die Klassen-Auswertung). Ein Zwilling bricht laut.",
+    ...NAHT_FN.slice(4),
+];
 const nahtRuf = (klassen) => ["_stammZonen(AnazhRealm, [", ...klassen.map((k) => `    ${k},`), "]);", ""];
 
 // ── S: der Schnitt ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -66,17 +82,22 @@ const zeilenIn = (s) => {
     return n;
 };
 
+// Beide Marker-Formen: die LAGE (`§NN[x] · NAME — themen`) und die DOMÄNE (`· Modul[/teil] — themen`, `schluessel`).
 function marker(t) {
     const out = [];
-    const nadel = "// ===== ATLAS §";
+    const nadel = "// ===== ATLAS ";
     for (let i = t.indexOf(nadel); i >= 0; i = t.indexOf(nadel, i + nadel.length)) {
         const a = t.lastIndexOf("\n", i) + 1;
         const e = t.indexOf("\n", i);
-        const m = MARKER_RX.exec(t.slice(a, e < 0 ? t.length : e));
+        const z = t.slice(a, e < 0 ? t.length : e);
+        const m = MARKER_RX.exec(z);
         if (m) out.push({ at: a, eingerueckt: !!m[1], nn: m[2], x: m[3], name: m[4].trim(), themen: m[5].trim() });
+        const d = m ? null : DOMAENE_RX.exec(z);
+        if (d) out.push({ at: a, eingerueckt: !!d[1], schluessel: d[2], themen: d[3].trim() });
     }
     return out;
 }
+const istMarker = (z) => MARKER_RX.test(z) || DOMAENE_RX.test(z);
 
 // S(text) → [{ pfad, text, klasse? }] in Lade-Ordnung. Wirft bei jedem Text, den die Umkehrung nicht trüge.
 function schneide(t) {
@@ -96,7 +117,33 @@ function schneide(t) {
         throw new Error("S: vor dem §26-Marker stehen nicht `}` und eine Leerzeile");
     if (innen.some((m) => m.at > zu) || aussen.some((m) => m.at < zu))
         throw new Error("S: Marker-Ordnung innen/außen bricht");
-    // Namen: eine Zone mit Unter-Markern heißt NNa, NNb, …; die Nummern steigen streng, die Buchstaben ebenso.
+    for (const m of mk.slice(1))
+        if (t.slice(m.at - 2, m.at) !== "\n\n")
+            throw new Error(`S: vor dem Marker in Zeile ${zeilenIn(t.slice(0, m.at)) + 1} fehlt die Leerzeile`);
+    const nI = innen.length;
+    const ende01 = nI > 1 ? innen[1].at - 1 : zu;
+    const zone = (L, j, ende) => t.slice(L[j].at, j + 1 < L.length ? L[j + 1].at - 1 : ende);
+    const domaene = mk.filter((m) => m.schluessel).length;
+    if (domaene && domaene < mk.length) throw new Error("S: Marker der Lage und der Domäne gemischt");
+    if (domaene) {
+        // DIE DOMÄNE: je Schlüssel eine Datei — die Zone samt Naht-Ruf, dahinter die Außen-Zone desselben Schlüssels
+        const si = innen.map((m) => m.schluessel);
+        const sa = aussen.map((m) => m.schluessel);
+        const doppelt = [si, sa].map((l) => l.find((s, i) => l.indexOf(s) !== i)).find(Boolean);
+        if (doppelt) throw new Error(`S: die Zone ${doppelt} steht zweimal`);
+        const reihe = si.concat(sa.filter((s) => !si.includes(s)));
+        if (reihe.filter((s) => sa.includes(s)).join() !== sa.join())
+            throw new Error("S: die Außen-Zonen stehen nicht in der Datei-Ordnung der Zonen");
+        return reihe.map((s) => {
+            const i = si.indexOf(s);
+            const a = sa.indexOf(s);
+            const aus = a < 0 ? "" : (i < 0 ? "" : "\n") + zone(aussen, a, t.length);
+            if (i <= 0) return { pfad: pfadVon(s), text: i < 0 ? aus : t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" + aus };
+            const klasse = klasseVon(s);
+            return { pfad: pfadVon(s), klasse, text: `class ${klasse} {\n${zone(innen, i, zu)}}\n${zonenRuf(klasse)}${aus}` };
+        });
+    }
+    // DIE LAGE: eine Zone mit Unter-Markern heißt NNa, NNb, …; die Nummern steigen streng, die Buchstaben ebenso.
     const ids = [];
     for (let j = 0; j < mk.length; j++) {
         const m = mk[j];
@@ -104,36 +151,18 @@ function schneide(t) {
         if (m.x && (j === 0 || mk[j - 1].nn !== m.nn))
             throw new Error(`S: Unter-Marker §${m.nn}${m.x} ohne seine Zone davor`);
         const id = m.nn + (m.x || (teilt ? "a" : ""));
-        if (j > 0) {
-            const v = mk[j - 1];
-            if (v.nn === m.nn ? !(m.x && (v.x || "a") < m.x) : !(Number(m.nn) > Number(v.nn)))
-                throw new Error(`S: Marker-Ordnung bricht bei §${id} (Zeile ${zeilenIn(t.slice(0, m.at)) + 1})`);
-            if (t.slice(m.at - 2, m.at) !== "\n\n")
-                throw new Error(
-                    `S: vor dem Marker §${id} (Zeile ${zeilenIn(t.slice(0, m.at)) + 1}) fehlt die Leerzeile`
-                );
-        }
+        const v = mk[j - 1];
+        if (j > 0 && (v.nn === m.nn ? !(m.x && (v.x || "a") < m.x) : !(Number(m.nn) > Number(v.nn))))
+            throw new Error(`S: Marker-Ordnung bricht bei §${id} (Zeile ${zeilenIn(t.slice(0, m.at)) + 1})`);
         ids.push(id);
     }
-    const nI = innen.length;
-    const teile = [];
-    const klassen = [];
-    const ende01 = nI > 1 ? innen[1].at - 1 : zu;
-    teile.push({ pfad: `${DIR}/${ids[0]}.js`, text: t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" });
-    for (let j = 1; j < nI; j++) {
-        const b = j + 1 < nI ? innen[j + 1].at - 1 : zu;
-        const klasse = `AnazhRealm_Z${ids[j]}`;
-        klassen.push(klasse);
-        teile.push({
-            pfad: `${DIR}/${ids[j]}.js`,
-            klasse,
-            text: `class ${klasse} {\n` + t.slice(innen[j].at, b) + "}\n",
-        });
-    }
+    const klassen = ids.slice(1, nI).map((id) => `AnazhRealm_Z${id}`);
+    const teile = [{ pfad: `${DIR}/${ids[0]}.js`, text: t.slice(0, ende01) + "}\n" + NAHT_LAGE.join("\n") + "\n" }];
+    for (let j = 1; j < nI; j++)
+        teile.push({ pfad: `${DIR}/${ids[j]}.js`, klasse: klassen[j - 1], text: `class ${klassen[j - 1]} {\n${zone(innen, j, zu)}}\n` });
     for (let j = 0; j < aussen.length; j++) {
-        const b = j + 1 < aussen.length ? aussen[j + 1].at - 1 : t.length;
         const kopf = j === 0 ? nahtRuf(klassen).join("\n") + "\n" : "";
-        teile.push({ pfad: `${DIR}/${ids[nI + j]}.js`, text: kopf + t.slice(aussen[j].at, b) });
+        teile.push({ pfad: `${DIR}/${ids[nI + j]}.js`, text: kopf + zone(aussen, j, t.length) });
     }
     return teile;
 }
@@ -149,11 +178,11 @@ function fuege(teile, stuecke) {
     };
     for (const x of teile)
         if (!x.text.endsWith("\n")) throw new Error(`S⁻¹: ${x.pfad} endet nicht mit einem Zeilenumbruch`);
-    if (!teile.length || !/\/01\.js$/.test(teile[0].pfad))
-        throw new Error("S⁻¹: die erste Datei ist nicht stamm/01.js");
+    if (!teile.length) throw new Error("S⁻¹: keine Stamm-Datei");
     const kern = teile[0].text;
-    const naht = "}\n" + NAHT_FN.join("\n") + "\n";
-    if (!kern.endsWith("\n" + naht)) throw new Error("S⁻¹: stamm/01.js endet nicht mit `}` und der Naht");
+    const naht = "}\n" + NAHT_LAGE.join("\n") + "\n";
+    if (!kern.endsWith("\n" + naht)) return fuegeDomaene(teile, nimm, out);
+    if (!/\/01\.js$/.test(teile[0].pfad)) throw new Error("S⁻¹: die erste Datei der Lage ist nicht stamm/01.js");
     nimm(teile[0].pfad, kern.slice(0, kern.length - naht.length), 1);
     const klassen = [];
     let j = 1;
@@ -185,14 +214,155 @@ function fuege(teile, stuecke) {
     }
     return out.join("");
 }
+// S⁻¹ der DOMÄNE: der Kern bis zur Naht, je Zonen-Datei die Klasse bis zu ihrem Naht-Ruf, danach alle Außen-Zonen in
+// Datei-Ordnung (je nach einer Leerzeile).
+function fuegeDomaene(teile, nimm, out) {
+    const kern = teile[0].text;
+    const naht = "\n}\n" + NAHT_FN.join("\n") + "\n";
+    const n = kern.indexOf(naht);
+    if (n < 0) throw new Error(`S⁻¹: ${teile[0].pfad} trägt nicht \`}\` und die Naht`);
+    const aussen = [];
+    const rest = (p, z, nach) => {
+        const r = z.slice(nach.length);
+        if (r && !r.startsWith("\n")) throw new Error(`S⁻¹: ${p}: vor der Außen-Zone fehlt die Leerzeile`);
+        if (r) aussen.push([p, r.slice(1), zeilenIn(nach) + 2]);
+    };
+    nimm(teile[0].pfad, kern.slice(0, n + 1), 1);
+    rest(teile[0].pfad, kern, kern.slice(0, n + naht.length));
+    let zu = [teile[0].pfad, zeilenIn(kern.slice(0, n + 1)) + 1];
+    for (const x of teile.slice(1)) {
+        const z = x.text;
+        const m = /^class (AnazhRealm_\w+) \{\n/.exec(z);
+        if (!m) {
+            aussen.push([x.pfad, z, 1]);
+            continue;
+        }
+        const e = z.indexOf("\n}\n" + zonenRuf(m[1]));
+        if (e < 0) throw new Error(`S⁻¹: ${x.pfad} schließt nicht mit \`}\` und dem Naht-Ruf ihrer Klasse`);
+        nimm(x.pfad, "\n", 1);
+        nimm(x.pfad, z.slice(m[0].length, e + 1), 2);
+        rest(x.pfad, z, z.slice(0, e + 3 + zonenRuf(m[1]).length));
+        zu = [x.pfad, zeilenIn(z.slice(0, e + 1)) + 1];
+    }
+    nimm(zu[0], "}\n", zu[1]);
+    for (const [p, z, ab] of aussen) {
+        nimm(p, "\n", Math.max(1, ab - 1));
+        nimm(p, z, ab);
+    }
+    return out.join("");
+}
+
+// ── DIE ORDNUNG NACH DOMÄNE (D2) ──────────────────────────────────────────────────────────────────────────────────────
+// `ordne(T, karte)` stellt jedes Glied der Klasse und jede Außen-Anweisung in die Zone ihres Schlüssels aus der Karte
+// (spec/stamm/modul-karte.json: `mod` Name → „Modul[/teil]", ein Außen-Ziel als „AnazhRealm.X"; `ordnung` [[Schlüssel,
+// Themen], …] die Datei-Ordnung, ihr erster trägt den Konstruktor). Rein und ein Fixpunkt: gleiche Karte und gleicher Text
+// geben denselben Text, ordne(ordne(T)) = ordne(T). In der Zone bleibt die Ordnung des Texts; Rumpf und Vorlauf-Kommentar
+// wandern Byte für Byte, die Marker-Zeilen fallen und entstehen neu. Ein Name ohne Karte und eine Anweisung ohne Namen
+// (`_bootAnazhRealm();`) folgen ihrem Vorgänger (`neu`); `fremd` nennt jedes Glied außerhalb seiner Zone, `tot` jeden
+// Karten-Namen ohne Glied.
+// Die Karte auf der Platte: je Datei-Schlüssel EINE Zeile mit seinen Namen (sortiert, `karteText`); im Speicher `mod`
+// Name → Schlüssel. Ein Name in zwei Modulen wirft.
+function karteAus(text) {
+    const j = JSON.parse(text);
+    const mod = {};
+    for (const [s, namen] of Object.entries(j.module))
+        for (const n of namen) {
+            if (Object.hasOwn(mod, n)) throw new Error(`Karte: ${n} steht in ${mod[n]} und ${s}`);
+            mod[n] = s;
+        }
+    return { quelle: j.quelle, ordnung: j.ordnung, mod };
+}
+const karteVon = (root) => karteAus(fs.readFileSync(path.join(root, KARTE), "utf8"));
+function aussenName(s) {
+    const e = s.type === "ExpressionStatement" ? s.expression : null;
+    const an = (n) => n && n.type === "MemberExpression" && n.object.type === "Identifier" && n.object.name === "AnazhRealm";
+    const feld = (n) => (n.computed ? n.property.value : n.property.name);
+    if (e && e.type === "AssignmentExpression" && an(e.left)) return `AnazhRealm.${feld(e.left)}`;
+    // Object.defineProperty(AnazhRealm, "X", …) und Object.defineProperties(AnazhRealm, { X: …, … }) heißen nach ihrem ersten Ziel
+    const [z, o] = e && e.type === "CallExpression" && e.callee.type === "MemberExpression" ? e.arguments : [];
+    if (z && z.type === "Identifier" && z.name === "AnazhRealm" && o && (o.type === "Literal" || o.type === "ObjectExpression"))
+        return `AnazhRealm.${o.type === "Literal" ? o.value : o.properties[0].key.name || o.properties[0].key.value}`;
+    return s.type === "FunctionDeclaration" || s.type === "ClassDeclaration" ? s.id.name : null;
+}
+function ordne(T, karte) {
+    const baum = require("acorn").parse(T, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true });
+    const cls = baum.body.find((n) => n.type === "ClassDeclaration" && n.id && n.id.name === "AnazhRealm");
+    if (!cls) throw new Error("ordne: `class AnazhRealm` fehlt");
+    const reihe = karte.ordnung.map((o) => o[0]);
+    const zonen = new Map(reihe.map((s) => [s, { innen: [], aussen: [] }]));
+    const ende = (i) => (T.indexOf("\n", i) < 0 ? T.length : T.indexOf("\n", i) + 1);
+    const anfang = (i) => T.lastIndexOf("\n", i - 1) + 1;
+    const r = { neu: [], fremd: [], namen: new Set() };
+    let ist = null;
+    let vor = reihe[0];
+    const stueck = (a, n, name, seite) => {
+        const b = anfang(n.start);
+        const vorlauf = T.slice(a, b).split("\n").filter((z) => {
+            const d = DOMAENE_RX.exec(z);
+            const l = d ? null : MARKER_RX.exec(z);
+            if (d || l) ist = d ? d[2] : `§${l[2]}${l[3]}`;
+            return !(d || l);
+        });
+        const bekannt = name != null && Object.hasOwn(karte.mod, name);
+        const soll = bekannt ? karte.mod[name] : vor;
+        if (!zonen.has(soll)) throw new Error(`ordne: ${name} → „${soll}" steht nicht in der Ordnung der Karte`);
+        if (name != null) r.namen.add(name);
+        if (name != null && !bekannt) r.neu.push({ name, soll });
+        if (name != null && ist !== soll) r.fremd.push({ name, ist, soll });
+        zonen.get(soll)[seite].push(vorlauf.join("\n") + T.slice(b, ende(n.end - 1)));
+        vor = soll;
+        return ende(n.end - 1);
+    };
+    let a = ende(cls.body.start);
+    const kopf = T.slice(0, a);
+    for (const g of cls.body.body) a = stueck(a, g, g.computed ? null : g.key.name ?? String(g.key.value), "innen");
+    const schwanz = T.slice(a, anfang(cls.end - 1));
+    a = ende(cls.end - 1);
+    for (const s of baum.body.filter((n) => n.start >= cls.end)) a = stueck(a, s, aussenName(s), "aussen");
+    const block = (einzug, s, th, liste) =>
+        `${einzug}// ===== ATLAS · ${s} — ${th} =====\n` + liste.map((x, i) => (i ? x : x.replace(/^\n+/, ""))).join("");
+    const mitInnen = reihe.filter((s) => zonen.get(s).innen.length);
+    if (mitInnen[0] !== karte.mod.constructor || mitInnen[0] !== reihe[0])
+        throw new Error(`ordne: der Konstruktor gehört in die erste Zone der Ordnung (${reihe[0]})`);
+    const innen = mitInnen.map((s) => block("    ", s, karte.ordnung[reihe.indexOf(s)][1], zonen.get(s).innen));
+    const aussen = mitInnen
+        .concat(reihe.filter((s) => !zonen.get(s).innen.length))
+        .filter((s) => zonen.get(s).aussen.length)
+        .map((s) => "\n" + block("", s, "Außen-Konstanten", zonen.get(s).aussen));
+    r.text = kopf + innen.join("\n") + schwanz + "}\n" + aussen.join("") + T.slice(a);
+    r.tot = Object.keys(karte.mod).filter((n) => !r.namen.has(n));
+    return r;
+}
+// Die Karte heilt benannt (stamm-umzug --nach-karte, stamm-rehome): ein Name ohne Karte nimmt die Zone seines Vorgängers,
+// ein toter Name fällt; die Namen stehen sortiert — gleiche Eingabe, gleiche Datei (`karteText`).
+function heileKarte(T, K) {
+    const r = ordne(T, K);
+    const mod = Object.assign({}, K.mod);
+    for (const n of r.neu) mod[n.name] = n.soll;
+    for (const n of r.tot) delete mod[n];
+    const sortiert = {};
+    for (const n of Object.keys(mod).sort()) sortiert[n] = mod[n];
+    return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot };
+}
+function karteText(K) {
+    const je = new Map(K.ordnung.map(([s]) => [s, []]));
+    for (const n of Object.keys(K.mod).sort()) {
+        if (!je.has(K.mod[n])) throw new Error(`Karte: ${n} → „${K.mod[n]}" steht nicht in der Ordnung`);
+        je.get(K.mod[n]).push(n);
+    }
+    const reihe = (x) => JSON.stringify(x).replace(/","/g, '", "');
+    const ordnung = K.ordnung.map((o) => `  ${reihe(o)}`).join(",\n");
+    const module = [...je].map(([s, ns]) => `  ${JSON.stringify(s)}: ${reihe(ns)}`).join(",\n");
+    return `{\n "quelle": ${JSON.stringify(K.quelle)},\n "ordnung": [\n${ordnung}\n ],\n "module": {\n${module}\n }\n}\n`;
+}
 
 // ── der Baum ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function layout(root) {
     const datei = fs.existsSync(path.join(root, ALT));
-    const zonen = fs.existsSync(path.join(root, DIR, "01.js"));
+    const zonen = fs.existsSync(path.join(root, DIR)) && fs.readdirSync(path.join(root, DIR)).some((f) => /\.js$/.test(f));
     if (datei && zonen)
         throw new Error(`Stamm-Layout: ${root} trägt ${ALT} UND ${DIR}/ — beide Formen, keine Wahrheit`);
-    if (!datei && !zonen) throw new Error(`Stamm-Layout: ${root} trägt weder ${ALT} noch ${DIR}/01.js`);
+    if (!datei && !zonen) throw new Error(`Stamm-Layout: ${root} trägt weder ${ALT} noch ${DIR}/*.js`);
     return datei ? "datei" : "zonen";
 }
 
@@ -262,16 +432,16 @@ function text(pfad) {
 function textAusRev(root, rev) {
     const { execFileSync } = require("child_process");
     const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", maxBuffer: 1 << 30 });
-    // ls-tree mit `stamm/` nennt die Dateien darin (stamm/01.js …), nie das Verzeichnis
+    // ls-tree mit `stamm/` nennt die Dateien darin, nie das Verzeichnis
     const namen = git(["ls-tree", "--name-only", rev, "--", ALT, `${DIR}/`])
         .split("\n")
         .filter(Boolean);
-    const zonen = namen.includes(`${DIR}/01.js`);
+    const zonen = namen.some((n) => n.startsWith(`${DIR}/`));
     if (namen.includes(ALT)) {
         if (zonen) throw new Error(`Stamm-Layout an ${rev}: ${ALT} UND ${DIR}/`);
         return blind(git(["show", `${rev}:${ALT}`]), rev);
     }
-    if (!zonen) throw new Error(`Stamm-Layout an ${rev}: weder ${ALT} noch ${DIR}/01.js`);
+    if (!zonen) throw new Error(`Stamm-Layout an ${rev}: weder ${ALT} noch ${DIR}/*.js`);
     const liste = tagsVon(git(["show", `${rev}:index.html`])).map((t) => t.pfad);
     return blind(ausZonen(liste.map((p) => ({ pfad: p, text: git(["show", `${rev}:${p}`]) }))), rev);
 }
@@ -296,12 +466,59 @@ function dateiVon(root, methode) {
 // Der Kopf einer Klassen-Methode am NAMEN: der Index des Zeilenumbruchs vor `    [static ][async ][get |set ]name(`, ab
 // `ab`; -1 ohne Treffer. Eine Linse findet eine Methode an ihrem Namen, nie an ihrer Parameter-Liste — ein neuer Parameter
 // bricht keine Linse, die ihn nicht prüft (gate:apparat, Klinge 3).
+const kopfRx = (methode) =>
+    new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${methode.replace(/[$]/g, "\\$")}\\(`, "g");
 function kopf(t, methode, ab = 0) {
-    const name = methode.replace(/[$]/g, "\\$");
-    const rx = new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${name}\\(`, "g");
+    const rx = kopfRx(methode);
     rx.lastIndex = ab;
     const m = rx.exec(t);
     return m ? m.index : -1;
+}
+
+// DER RUMPF AM KOPF (D2-N1) — der EINE Rumpf-Schneider jeder Linse: `rumpf(t, kopf)` gibt den Block `{…}`, der DIREKT an
+// einem Kopf hängt (ein Name sucht das Klassen-Glied wie `kopf`, ein Regex jeden Kopf): nach dem Treffer höchstens die
+// Parameter-Liste, ein `=>` und Leerraum, dann `{`. Ein Aufruf (`this._x(a);`, `if (this._x(a)) {`) trägt keinen eigenen
+// Block und zählt nie — der erste TEXT-Treffer hing an der Datei-Reihenfolge: gate:vehicle-drive A5 schnitt nach dem Umzug
+// am Aufruf in siedlung-ort.js statt an der Definition in koerper-fahrt.js (Zweig-CI 38894453753, voll 11/18). null ohne
+// Definition; der Zähler liest Klammern blind wie jeder Schneider vor ihm (Linsen lesen kommentar-gestrippten Text), mit
+// `{ zitate: true }` überspringt er "…" und '…' (die Zeilen eines Daten-Literals tragen Klammern in Zeichenketten).
+function blockAm(t, a, e) {
+    if (t[e - 1] === "{") return e - 1;
+    let tiefe = 0,
+        i = e;
+    for (let j = a; j < e; j++) tiefe += t[j] === "(" ? 1 : t[j] === ")" ? -1 : 0;
+    const leer = () => {
+        while (i < t.length && /\s/.test(t[i])) i++;
+    };
+    if (tiefe < 0) return -1;
+    if (tiefe === 0) leer();
+    if (tiefe === 0 && t[i] === "(") (tiefe = 1), i++;
+    for (; tiefe > 0 && i < t.length; i++) tiefe += t[i] === "(" ? 1 : t[i] === ")" ? -1 : 0;
+    leer();
+    if (t.startsWith("=>", i)) (i += 2), leer();
+    return t[i] === "{" ? i : -1;
+}
+function rumpf(t, k, { zitate = false } = {}) {
+    const rx = typeof k === "string" ? kopfRx(k) : new RegExp(k.source, k.flags.replace("g", "") + "g");
+    for (let m; (m = rx.exec(t)); ) {
+        if (!m[0]) {
+            rx.lastIndex++;
+            continue;
+        }
+        const b = blockAm(t, m.index, m.index + m[0].length);
+        if (b < 0) continue;
+        for (let i = b, tiefe = 0, zitat = null; i < t.length; i++) {
+            const c = t[i];
+            if (zitat) {
+                if (c === "\\") i++;
+                else if (c === zitat) zitat = null;
+            } else if (zitate && (c === '"' || c === "'")) zitat = c;
+            else if (c === "{") tiefe++;
+            else if (c === "}" && --tiefe === 0) return t.slice(b, i + 1);
+        }
+        return null;
+    }
+    return null;
 }
 
 // DIE GLIEDER AM AST (K38-N2, Prüfer Runde 3) — eine Linse, die Code einer Methode zuordnet, liest die Glieder der Klassen
@@ -414,6 +631,53 @@ function rufe(t) {
         return true;
     });
     return (astMerk.rufe = out);
+}
+
+// DIE STELLE IM STAMM (D2-N2) — die EINE Engstelle jeder Probe und jeder Mutation am Stamm-Text: `x` (Text oder Regex)
+// steht höchstens EINMAL im benannten Glied (`glied` = Name einer Methode, eines Getters oder Felds, am AST) oder — `null`
+// — im ganzen Stamm; mehrere wirft, keiner gibt der Probe null und wirft der Mutation (sie wäre vakuös). Der erste TEXT-
+// Treffer im ganzen Stamm hing an der Datei-Reihenfolge: gate:werkstatt-weg mutierte nach dem Umzug `this._bauSame("insel")`
+// in spawnIslandAt statt in chatDslPatterns, der Selbsttest wurde vakuös (Zweig-CI 38908372005, voll 14/18); gate:apparat
+// Klinge 6 nennt jeden rohen ersten Treffer.
+// `treffer` gibt den Treffer wie `exec` (Index im ganzen Text), `ersetze` den ganzen Text mit der EINEN Stelle ersetzt
+// (`neu` wie bei `replace`); die Glieder-Tafel des Ergebnisses wandert verschoben mit (eine Kette parst den Stamm einmal).
+const tafeln = new Map();
+function merkeTafel(t, tafel) {
+    tafeln.set(t, tafel);
+    while (tafeln.size > 8) tafeln.delete(tafeln.keys().next().value);
+    return tafel;
+}
+const gliedTafel = (t) => tafeln.get(t) || merkeTafel(t, glieder(t).map(({ name, start, ende }) => ({ name, start, ende })));
+function stelleIm(t, glied, x, muss) {
+    const g = glied == null ? [{ start: 0, ende: t.length }] : gliedTafel(t).filter((e) => e.name === glied);
+    if (g.length > 1 || (muss && !g.length)) throw new Error(`stammLib.treffer: Glied „${glied}" steht ${g.length}× im Stamm`);
+    if (!g.length) return null;
+    const b = t.slice(g[0].start, g[0].ende);
+    const rx = typeof x === "string" ? null : new RegExp(x.source, x.flags.replace(/[gy]/g, "") + "g");
+    const alle = [];
+    if (rx) for (const m of b.matchAll(rx)) alle.push(m);
+    else for (let i = b.indexOf(x); i >= 0 && alle.length < 2; i = b.indexOf(x, i + 1)) alle.push(Object.assign([x], { index: i }));
+    if (alle.length > 1 || (muss && !alle.length))
+        throw new Error(
+            `stammLib.treffer: „${String(x).slice(0, 70)}" steht ${alle.length}× in ${glied == null ? "dem ganzen Stamm" : glied} — ` +
+                (alle.length ? "der erste Treffer hinge an der Reihenfolge" : "die Mutation wäre vakuös")
+        );
+    return alle.length ? { a: g[0].start, b, rx, m: alle[0] } : null;
+}
+function treffer(t, glied, x) {
+    const s = stelleIm(t, glied, x, false);
+    return s && Object.assign(s.m, { index: s.m.index + s.a });
+}
+function ersetze(t, glied, x, neu) {
+    if (Array.isArray(glied)) return glied.reduce((r, [g, x2, n2]) => ersetze(r, g, x2, n2), t); // die Kette: [[glied, x, neu], …]
+    const { a, b, rx, m } = stelleIm(t, glied, x, true);
+    const r = t.slice(0, a) + b.replace(rx ? new RegExp(rx.source, rx.flags.replace("g", "")) : x, neu) + t.slice(a + b.length);
+    if (tafeln.has(t)) {
+        const i = a + m.index;
+        const d = r.length - t.length;
+        merkeTafel(r, tafeln.get(t).map((e) => ({ name: e.name, start: e.start > i ? e.start + d : e.start, ende: e.ende > i ? e.ende + d : e.ende })));
+    }
+    return r;
 }
 
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
@@ -723,8 +987,18 @@ module.exports = {
     ALT,
     DIR,
     MARKER_RX,
+    KARTE,
     sha,
     marker,
+    istMarker,
+    pfadVon,
+    klasseVon,
+    karteVon,
+    karteAus,
+    aussenName,
+    ordne,
+    heileKarte,
+    karteText,
     schneide,
     fuege,
     layout,
@@ -736,6 +1010,9 @@ module.exports = {
     ort,
     dateiVon,
     kopf,
+    rumpf,
+    treffer,
+    ersetze,
     ast,
     zeileVon,
     wandere,
@@ -777,6 +1054,19 @@ if (require.main === module && process.argv.includes("--selftest")) {
         return d;
     };
     try {
+        // R) der Rumpf an der Definition: steht der Aufruf VOR der Definition (die Lage nach dem Umzug, gate:vehicle-drive A5),
+        // schneidet er die Definition — am Regex wie am Namen; ein Default-Parameter `{}` ist kein Block; zitate überspringt "{".
+        const R = 'class B {\n    _a() {\n        if (this._p(e)) return this._p(e);\n    }\n}\nclass C {\n    _p(e, o = {}) {\n        return { x: "}" };\n    }\n}\n';
+        const soll = '{\n        return { x: "}" };\n    }';
+        pruef("rumpf: die Definition, nie der Aufruf davor", rumpf(R, /_p\(/, { zitate: true }) === soll, JSON.stringify(rumpf(R, /_p\(/, { zitate: true })));
+        pruef("rumpf: am Namen die Definition, quote-sicher", rumpf(R, "_p", { zitate: true }) === soll);
+        pruef("rumpf: nur Aufrufe → null, nie der Block danach", rumpf(R, /_p\(e\)\s*/) === null && rumpf(R, /_q\(/) === null);
+        // R2) die Stelle im Stamm (D2-N2): im benannten Glied, nie am ersten Text-Treffer; zwei Treffer werfen, keiner gibt
+        // der Probe null und wirft der Mutation; die Kette trägt die Glieder-Tafel weiter
+        const R2 = ersetze(R, [["_p", 'x: "}"', 'x: "{"'], ["_a", /return (this)/, "return $1"]]);
+        pruef("ersetze: im Glied, als Kette", R2 === R.replace('x: "}"', 'x: "{"') && treffer(R2, "_p", "x:").index === R2.indexOf("x:"));
+        pruef("treffer: zwei Treffer werfen, keiner ist null", wirft(() => treffer(R, "_a", "this._p(e)"), /2×/) && treffer(R, "_p", "fehlt") === null);
+        pruef("ersetze: vakuös und mehrdeutig werfen", wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/));
         // 0) die Glieder am AST: ein Kopf mit Default-Parameter, ein umbrochener, ein Getter und ein async-Kopf behalten
         // ihren Aufruf; ein zusammengesetztes Argument ist EIN Argument (die Täter der Kopf- und Argument-Muster, K38-N2).
         const G = [

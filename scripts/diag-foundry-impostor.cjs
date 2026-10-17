@@ -1036,19 +1036,19 @@ function strichWand(src) {
         for (const [name, src] of [
             [
                 "Stichprobe ohne Gradienten",
-                quelle.replace(ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);"),
+                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);"),
             ],
             [
                 "Gradienten aus der springenden Koordinate",
-                quelle.replace("const _gX = _uvStetig.dFdx();", "const _gX = _uvA.dFdx();"),
+                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", "const _gX = _uvStetig.dFdx();", "const _gX = _uvA.dFdx();"),
             ],
             [
                 "kubische Zelle mit Hardware-Ableitung",
-                quelle.replace(".depth(_schicht).level(_Ta.float(0.0))", ".depth(_schicht)"),
+                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", ".depth(_schicht).level(_Ta.float(0.0))", ".depth(_schicht)"),
             ],
             [
                 "Normale direkt gesampelt",
-                quelle.replace("_probeA(_at.nmapNode, _uvA).xy", "_at.nmapNode.sample(_uvA).depth(_schicht).xy"),
+                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", "_probeA(_at.nmapNode, _uvA).xy", "_at.nmapNode.sample(_uvA).depth(_schicht).xy"),
             ],
         ]) {
             const f = strichWand(src);

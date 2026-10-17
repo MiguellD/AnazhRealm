@@ -438,7 +438,7 @@ async function welt() {
     for (const x of q) fails.push("Q: " + x);
     if (process.argv.includes("--selftest")) {
         const schmuggel = quellBefunde(
-            src.replace(/\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(")
+            stammLib.ersetze(src, null, /\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(")
         );
         const ok = schmuggel.some((x) => /`g\.mesh\.count =`/.test(x));
         console.log(`  ${ok ? "✅" : "❌"} SELBSTTEST Q: eine eingeschmuggelte count-Zeile wird genannt (${schmuggel.length} Befund)`);

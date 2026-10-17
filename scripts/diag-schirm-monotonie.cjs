@@ -484,7 +484,7 @@ function konsumBefunde(reihe) {
             sa.some((x) => /^VERKEHRT schirmProbe · haupt/.test(x)) ? [] : ["M blieb blind: " + (sa[0] || "kein Befund")]
         );
         for (const x of sa.filter((y) => /schirmProbe/.test(y)).slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
-        const eingeschmuggelt = src.replace(
+        const eingeschmuggelt = stammLib.ersetze(src, "_fellBildschirmGesetz",
             "const pxJeM = this._schirm().pxJeM;",
             "const pxJeM = this.state.renderer.domElement.height / 1.53;"
         );
@@ -497,7 +497,7 @@ function konsumBefunde(reihe) {
         );
         for (const x of sb.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
         // S(d) DER ALIAS-TÄTER: dieselbe Lesung über eine lokale Variable, der der Canvas des Renderers zugewiesen wird.
-        const aliasTaeter = src.replace(
+        const aliasTaeter = stammLib.ersetze(src, "_fellBildschirmGesetz",
             "const pxJeM = this._schirm().pxJeM;",
             "const leinwand = this.state.renderer && this.state.renderer.domElement;\n        const pxJeM = leinwand.height / 1.53;"
         );

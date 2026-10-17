@@ -1703,15 +1703,32 @@ async function kreaturProben(r, T, opts) {
             art[seele + "@" + bs] = probe(seele, bs);
         // DIE EINE MASSE (V18.536): Temperament und Beute lesen die Masse des Leibs, die auch der Stoß liest (`_leibMasse`,
         // Volumen der Gestalt × Dichte des Kerns) — nie eine zweite (die Dial-Masse size × Größe fiel mit der Vereinigung).
-        const code = window.__codeOf;
-        const masseQuelle =
-            typeof code === "function" &&
-            /_leibMasse\(/.test(code(r._creatureTemperament)) &&
-            /_leibMasse\(/.test(code(r._kreaturIstBeute)) &&
-            typeof r._kreaturMasse !== "function";
+        // Beweis am Ruf: `_leibMasse` zählt, was das Gemüt eines frischen Leibs und das Beute-Urteil lesen.
+        const leibRufe = (fn) => {
+            const alt = r._leibMasse;
+            let n = 0;
+            r._leibMasse = function (...a) {
+                n++;
+                return alt.apply(this, a);
+            };
+            try {
+                fn();
+            } finally {
+                delete r._leibMasse;
+            }
+            return n;
+        };
         const wolfB = tier(land(36, 30), "wolf", 1);
+        const hirschB = tier(land(36, 34), "wesen", 1);
+        r._creatureTemperament(hirschB); // sein Gemüt steht: das Beute-Urteil zählt nur die eigenen Masse-Rufe
+        const frisch = tier(land(30, 34), "wolf", 1);
+        delete frisch.userData._temperament;
+        const masseQuelle =
+            leibRufe(() => r._creatureTemperament(frisch)) > 0 &&
+            leibRufe(() => r._kreaturIstBeute(wolfB, hirschB)) >= 2 &&
+            typeof r._kreaturMasse !== "function";
         const beute = {
-            hirsch: r._kreaturIstBeute(wolfB, tier(land(36, 34), "wesen", 1)),
+            hirsch: r._kreaturIstBeute(wolfB, hirschB),
             kitz: r._kreaturIstBeute(wolfB, tier(land(36, 38), "wesen", 0.6)),
             baer: r._kreaturIstBeute(wolfB, tier(land(40, 30), "baer", 1)),
         };
