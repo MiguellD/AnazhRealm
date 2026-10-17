@@ -89,18 +89,18 @@
                             "band": [2, 5],
                             "belichtung": 0.999,
                             "kacheln": [
-                                ["-139,         -517", 3655, -1754.847, 3164.134, 3655],
-                                ["-140,         -517", 4614, -2034.172, 4047.913, 4614],
-                                ["-138,         -517", 670, -325.022, 578.848, 670],
-                                ["-138,         -518", 20448, -9866.567, 17345.147, 20448],
-                                ["-141,         -517", 1170, -613.16, 981.852, 1170],
-                                ["-139,         -518", 29666, -14411.361, 24743.523, 29666],
-                                ["-140,         -518", 33996, -16117.509, 29137.392, 33996],
-                                ["-141,         -518", 16173, -8645.37, 13470.512, 16173],
-                                ["-137,         -518", 1922, -782.632, 1694.151, 1922],
-                                ["-137,         -519", 66, -32.691, 56.815, 66],
-                                ["-138,         -519", 10174, -4264.22, 8815.514, 10174],
-                                ["-139,         -519", 4756, -2431.669, 4034.163, 4756]
+                                ["-139,          -517", 3655, -1754.847, 3164.134, 3655],
+                                ["-140,          -517", 4614, -2034.172, 4047.913, 4614],
+                                ["-138,          -517", 670, -325.022, 578.848, 670],
+                                ["-138,          -518", 20448, -9866.567, 17345.147, 20448],
+                                ["-141,          -517", 1170, -613.16, 981.852, 1170],
+                                ["-139,          -518", 29666, -14411.361, 24743.523, 29666],
+                                ["-140,          -518", 33996, -16117.509, 29137.392, 33996],
+                                ["-141,          -518", 16173, -8645.37, 13470.512, 16173],
+                                ["-137,          -518", 1922, -782.632, 1694.151, 1922],
+                                ["-137,          -519", 66, -32.691, 56.815, 66],
+                                ["-138,          -519", 10174, -4264.22, 8815.514, 10174],
+                                ["-139,          -519", 4756, -2431.669, 4034.163, 4756]
                             ]
                         }
                     },
@@ -252,9 +252,11 @@
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
                 "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
-                "mangel": {
+                "geheilt": {
                     "befund": "Laub-Karten mit Dither-Muster",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
+                    "warum": "zweiton 0,0002 → 0 (Radeon 890M, Tafel-Pose, A8-Bühne: integ-probe 6fbf4a6f 251 px im Raster; Kopf laub-zeit in drei Welten 0 px bei fester Uhr, bei vier Wanduhr-Zeiten 0–27 px): die Deckung jeder Laub-Karte wandert je Frame um ±1 Eingangs-Pixel (Halton 5/7 am Frame der Geschichte, je Pixel um sein IGN gedreht), und der Resolve mittelt sie, wo sein Deckungs-Gedächtnis eine stochastische Kante kennt, statt sie zu klemmen (A3b, `_zeitAufloesung`)",
+                    "bildPaar": ["artifacts/soll-tafel/laub-vorher.png", "artifacts/soll-tafel/laub.png"]
                 }
             },
             "referenz": [
@@ -288,10 +290,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-17T00:02:34.779Z",
+                    "datum": "2026-10-17T01:53:04.413Z",
                     "stand": {
                         "version": "18.546.9",
-                        "sha": "6fbf4a6fa96b5b1983e302e2c7e7e035bfb3b570"
+                        "sha": "ad298011e28e0d249b6782e128ae84b699e39bce"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -304,14 +306,14 @@
                     "rauschen": {
                         "anteil": 0,
                         "pixel": 0,
-                        "max": 0
+                        "max": 1
                     },
-                    "misch": 157385,
+                    "misch": 191309,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4532,"sp":[362,0,0,593602.35,593602.35,269050.22],"zweiton":0.0001,"zt":20,"weiss":0.0104,"wt":2586,"wtZiel":null,"bunt":25.23,"pixel":248380,"deckung":0.1198,"deckungUnten":0.004,"luma":73.54,"kontrast":0.5686,"detail":0.1139,"nyquist":0.1451,"ek":848946,"eg":5000947.6,"silhouette":140.8651,"kante":0.1842,"kr":26885},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0005,"zt":33,"weiss":0.1228,"wt":8506,"wtZiel":null,"bunt":15.29,"pixel":69270,"deckung":0.0334,"deckungUnten":0,"luma":83.66,"kontrast":0.6107,"detail":0.1799,"nyquist":0.1641,"ek":754403.4,"eg":3843663.2,"silhouette":68.1442,"kante":0.1492,"kr":10716},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1547,"sp":[525,0,0,759322.35,759322.35,117442.38],"zweiton":0.0004,"zt":126,"weiss":0.017,"wt":4996,"wtZiel":null,"bunt":24.46,"pixel":293194,"deckung":0.1414,"deckungUnten":0.0047,"luma":71.55,"kontrast":0.5824,"detail":0.1337,"nyquist":0.1585,"ek":1548859.3,"eg":8220986.4,"silhouette":101.1572,"kante":0.154,"kr":29876},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.1157,"sp":[4009,0,0,4498796.65,4498796.65,-520578.78],"zweiton":0.0001,"zt":72,"weiss":0.0005,"wt":249,"wtZiel":null,"bunt":30.14,"pixel":498244,"deckung":0.2403,"deckungUnten":0.1107,"luma":65.74,"kontrast":0.534,"detail":0.0835,"nyquist":0.1048,"ek":647313.8,"eg":5527548.5,"silhouette":80.5892,"kante":0.3652,"kr":17257}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4821,"sp":[426,0,0,703321.87,703321.87,339064.69],"zweiton":0,"zt":0,"weiss":0.0142,"wt":3545,"wtZiel":null,"bunt":24.79,"pixel":250493,"deckung":0.1208,"deckungUnten":0.0042,"luma":74.49,"kontrast":0.5632,"detail":0.1093,"nyquist":0.1288,"ek":551228.4,"eg":3729845.3,"silhouette":126.4194,"kante":0.1983,"kr":22753},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1582,"wt":11265,"wtZiel":null,"bunt":13.6,"pixel":71228,"deckung":0.0343,"deckungUnten":0,"luma":91.6,"kontrast":0.5995,"detail":0.1691,"nyquist":0.1264,"ek":413723.1,"eg":2860657.8,"silhouette":55.8629,"kante":0.1761,"kr":8490},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.1041,"sp":[658,0,0,914179.87,914179.87,95153.38],"zweiton":0,"zt":0,"weiss":0.0182,"wt":5363,"wtZiel":null,"bunt":23.72,"pixel":294113,"deckung":0.1418,"deckungUnten":0.0045,"luma":73.66,"kontrast":0.5735,"detail":0.1298,"nyquist":0.132,"ek":887252.5,"eg":5836028.1,"silhouette":88.4807,"kante":0.1655,"kr":23439},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0061,"sp":[3613,0,0,4196900.01,4196900.01,-25681.41],"zweiton":0,"zt":0,"weiss":0.0021,"wt":1100,"wtZiel":null,"bunt":29.56,"pixel":512314,"deckung":0.2471,"deckungUnten":0.1156,"luma":66.19,"kontrast":0.5143,"detail":0.0834,"nyquist":0.0977,"ek":477872.4,"eg":4414176.3,"silhouette":75.8745,"kante":0.3788,"kr":16378}
                     },
                     "abstand": null,
                     "gesicht": null,
@@ -324,21 +326,21 @@
                         "stamm/gelaende-boden.js": "c:fac1df70b2c3a80b",
                         "stamm/gelaende-chunks.js": "c:ee620a6b6d1daf24",
                         "stamm/wasser-zellen.js": "c:229c6d11d02319f3",
-                        "stamm/stoff-material.js": "c:d13f1ee108ed0513",
+                        "stamm/stoff-material.js": "c:34e30b2ba56af6c2",
                         "stamm/stoff-instanz.js": "c:c890ea558d2edf17",
-                        "stamm/studio-bruecke.js": "c:c02ee558d706f68f",
+                        "stamm/studio-bruecke.js": "c:842e9df2b4947b62",
                         "stamm/studio-gestalt.js": "c:af2ccabc8da9457d",
                         "stamm/siedlung-ort.js": "c:c59b0150de8fcb0e",
                         "stamm/siedlung-bauten.js": "c:0b9d21dea26d3828",
-                        "stamm/vegetation-baum.js": "c:c0cf157b530ce652",
-                        "stamm/bild-kosten.js": "c:f0f700bdda342ece",
+                        "stamm/vegetation-baum.js": "c:337b8bcd8e5fcc2e",
+                        "stamm/bild-kosten.js": "c:7b2fe3d00deee19e",
                         "stamm/bild-himmel.js": "c:72fba27abc4e08b3",
                         "stamm/koerper-bewegung.js": "c:a422cecde2a46427",
                         "stamm/kreatur-leben.js": "c:73690edbaf5c5a63",
                         "stamm/feld-leben.js": "c:1700a002085d75ae",
                         "stamm/werkstatt-hud.js": "c:5fb1e9c05c6b8111",
                         "stamm/werkstatt-bauen.js": "c:e287c74ea93ffab9",
-                        "stamm/dirigent-takt.js": "c:e593363b3ef485b0",
+                        "stamm/dirigent-takt.js": "c:5f44e427c1ac002d",
                         "stamm/dirigent-ankunft.js": "c:aa4ccb6bdb48cc40"
                     }
                 }
@@ -358,11 +360,9 @@
             "titel": "Laub-Silhouette (der Umriss der Kronen gegen Himmel, Boden und Holz: Karten L0/L1 und Karte L2)",
             "wirkung": {
                 "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig (geteilt aus laub, K68-n2)",
-                "geheilt": {
-                    "befund": "Nadelbaum-Karten groß und kantig",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
-                    "warum": "kante 0,333 → 0,210 (Radeon 890M, Tafel-Pose, umstellen · fenster 1920 × 1080 · bild --w/--h, je zwei Schüsse, Basis a9e21f17 und Kopf a501cbd1 in derselben Folge; Fichte L1 0,262 → 0,186 · Tanne L0 0,581 → 0,190 · Tanne L1 0,300 → 0,172 · Karte L2 0,364 → 0,338): die Wedel-Zelle ist ein Fichten-Zweig aus Fischgräten (9 Unter-Zweiglein, Nadel 9 px) mit Himmel dazwischen bis Mip 2, die Karte wird nie quer gestreckt (Spalten ab wedel.spalte 1,25/1,5 × Stück-Länge; vorher L0 2,3–6,5 × so breit wie lang) und das Kreuz öffnet auf ±40° (vorher ±10°/±5°: von unten standen die Karten auf der Kante)",
-                    "bildPaar": ["artifacts/soll-tafel/laub-kante-vorher.png", "artifacts/soll-tafel/laub-kante.png"]
+                "mangel": {
+                    "befund": "die Karte L2 mit gerader Kante: fimp:atlas:L2 kante 0,37–0,38 auf 23 % des Rands, ohne sie 0,18 (die Nadel-Karten L0/L1 halten seit a501cbd1)",
+                    "quelle": "A3b laub-zeit (Radeon 890M, Tafel-Pose, A8-Bühne, drei Welten, feste Uhr und vier Wanduhr-Zeiten) — der Bake der Karte gehört A7 karten-krone"
                 }
             },
             "referenz": [
@@ -1199,14 +1199,14 @@
                             "band": [2, 5],
                             "belichtung": 0.9931,
                             "kacheln": [
-                                ["-140,                    -522", 11011, -4535.486, 9863.897, 11011],
-                                ["-139,                    -522", 10873, -3787.868, 9994.591, 10873],
-                                ["-141,                    -522", 2330, -958.493, 2089.144, 2330],
-                                ["-138,                    -522", 2226, -728.789, 1934.33, 2226],
-                                ["-141,                    -521", 15260, -6198.645, 13712.956, 15260],
-                                ["-140,                    -521", 66102, -30790.984, 57287.066, 66102],
-                                ["-139,                    -521", 64274, -26561.49, 56939.267, 64274],
-                                ["-138,                    -521", 14928, -7783.769, 12425.975, 14928]
+                                ["-140,                     -522", 11011, -4535.486, 9863.897, 11011],
+                                ["-139,                     -522", 10873, -3787.868, 9994.591, 10873],
+                                ["-141,                     -522", 2330, -958.493, 2089.144, 2330],
+                                ["-138,                     -522", 2226, -728.789, 1934.33, 2226],
+                                ["-141,                     -521", 15260, -6198.645, 13712.956, 15260],
+                                ["-140,                     -521", 66102, -30790.984, 57287.066, 66102],
+                                ["-139,                     -521", 64274, -26561.49, 56939.267, 64274],
+                                ["-138,                     -521", 14928, -7783.769, 12425.975, 14928]
                             ]
                         }
                     },
