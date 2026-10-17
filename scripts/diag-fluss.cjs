@@ -945,9 +945,6 @@ function urteilWelt(d) {
         dreh > 0.3 && s.name === "autumn",
         `(${s.mul0.map((v) => v.toFixed(2)).join(",")}) → (${s.mul1.map((v) => v.toFixed(2)).join(",")}) · ${s.name}`
     );
-    // K42 — DER STUDIO-FADEN LÄDT KEIN LABOR (die Absenz über den Boot-Quelltext des echten Spiels): seine importScripts-
-    // Liste (W4) und die Stempel-Liste der Schale (W5) tragen die Foundry-Brücke und keine Labor-Datei — keine Shell
-    // unter worlds/<welt>/ (außer lib/), keine Labor-Szene (Orbit-/PointerLock-Steuerung, Composer, Bloom, FXAA).
     const wk = d.boot && d.boot.werk;
     const bahnen = (wk && wk.bahnen) || [];
     pruef(

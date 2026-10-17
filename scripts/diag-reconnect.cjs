@@ -49,11 +49,9 @@ function extractMethod(name) {
     return stammSrc.slice(m.index, end + "\n    }".length);
 }
 
-// Echte Konstanten aus dem Stamm lesen (die Linse prüft PRODUKTIONS-Werte).
-function numConst(name) {
-    const m = new RegExp(`AnazhRealm\\.${name} = (\\d+);`).exec(stammSrc);
-    return m ? Number(m[1]) : NaN;
-}
+// Echte Konstanten der Klasse (die Linse prüft PRODUKTIONS-Werte; die Klasse im vm, scripts/lib/stamm.cjs ladeKlasse)
+const KLASSE = stammLib.ladeKlasse(root).AnazhRealm;
+const numConst = (name) => (Number.isFinite(KLASSE[name]) ? KLASSE[name] : NaN);
 const AR = {
     P2P_DEFAULT_WS_URL: "ws://fixture-default:0",
     P2P_RECONNECT_BASE_MS: numConst("P2P_RECONNECT_BASE_MS"),
@@ -351,19 +349,14 @@ function makeRealmA(env, initSrcOverride) {
 
         // SELBST-TEST A: Rejoin-Aufruf im close-Handler künstlich gekappt ⇒
         // die Fixture MUSS den toten Zustand sehen (0 Timer nach Riss).
-        const initSrc = extractMethod("initP2PSync");
-        const marker = "this._p2pScheduleReconnect();";
-        if (!initSrc || !initSrc.includes(marker)) {
-            check("SELBST-TEST A: Rejoin-Marker im close-Handler vorhanden", false);
-        } else {
-            FakeWS.instances = [];
-            const Rdead = makeRealmA(env, initSrc.split(marker).join("void 0;"));
-            Rdead.initP2PSync("raum-fix");
-            const wsD = FakeWS.instances[0];
-            wsD.fire("open");
-            wsD.fire("close");
-            check("SELBST-TEST A: gekappter Rejoin ⇒ 0 Timer (die Fixture sähe den alten Bug)", timers.pending.length === 0);
-        }
+        FakeWS.instances = [];
+        const Rdead = makeRealmA(env);
+        Rdead._p2pScheduleReconnect = () => {};
+        Rdead.initP2PSync("raum-fix");
+        const wsD = FakeWS.instances[0];
+        wsD.fire("open");
+        wsD.fire("close");
+        check("SELBST-TEST A: gekappter Rejoin ⇒ 0 Timer (die Fixture sähe den alten Bug)", timers.pending.length === 0);
     }
 
     // ══ FIXTURE B — RTC-HEILUNG (restartIce + Re-Offer, Flanke + Backoff) ══
@@ -489,18 +482,13 @@ function makeRealmA(env, initSrcOverride) {
         await tick();
 
         // SELBST-TEST B: Heil-Aufruf im Zustands-Handler gekappt ⇒ 0 restartIce.
-        const createSrc = extractMethod("_p2pCreatePeerConnection");
-        const markerB = "this._p2pHealRtcPeer(peerId);";
-        if (!createSrc || !createSrc.includes(markerB)) {
-            check("SELBST-TEST B: Heil-Marker im onconnectionstatechange vorhanden", false);
-        } else {
-            const Rdead = makeRealmB("a-ich", createSrc.split(markerB).join("void peerId;"));
-            const rtcd = Rdead._p2pCreatePeerConnection("b-peer");
-            rtcd.pc.connectionState = "failed";
-            rtcd.pc.onconnectionstatechange();
-            await tick();
-            check("SELBST-TEST B: gekappte Heilung ⇒ 0 restartIce (die Fixture sähe den alten Bug)", rtcd.pc.restartIceCalls === 0);
-        }
+        const Rdead = makeRealmB("a-ich");
+        Rdead._p2pHealRtcPeer = () => {};
+        const rtcd = Rdead._p2pCreatePeerConnection("b-peer");
+        rtcd.pc.connectionState = "failed";
+        rtcd.pc.onconnectionstatechange();
+        await tick();
+        check("SELBST-TEST B: gekappte Heilung ⇒ 0 restartIce (die Fixture sähe den alten Bug)", rtcd.pc.restartIceCalls === 0);
     }
 
     // ══ FIXTURE C — SNAPSHOT-PUFFER (Interpolation im Nicht-Lockstep-Pfad) ══
@@ -621,35 +609,14 @@ function makeRealmA(env, initSrcOverride) {
 
         // SELBST-TEST C: Interpolations-Faktor gekappt (f ⇒ 0) ⇒ t=50 fiele
         // auf x=0 zurück — die 1,5-Probe MUSS das sehen.
-        const interpSrc = extractMethod("_p2pSnapInterpolate");
-        const markerC = "(renderT - a.t) / span";
-        if (!interpSrc || !interpSrc.includes(markerC)) {
-            check("SELBST-TEST C: Faktor-Marker im Interpolations-Kern vorhanden", false);
-        } else {
-            const dead = mk("_p2pSnapInterpolate", env, interpSrc.split(markerC).join("0 * span"));
-            const d = dead.call(self, buf, 50);
-            check("SELBST-TEST C: gekappter Faktor ⇒ x=0 statt 1,5 (die Fixture sähe den alten Bug)", d && d.x === 0);
-        }
+        const dead = mk("_p2pSnapInterpolate", env, extractMethod("_p2pSnapInterpolate").split("(renderT - a.t) / span").join("0 * span"));
+        const d = dead.call(self, buf, 50);
+        check("SELBST-TEST C: gekappter Faktor ⇒ x=0 statt 1,5 (die Fixture sähe den alten Bug)", d && d.x === 0);
     }
 
-    // ══ KONSUM-PROBEN (Lehre 5/6: verifiziere KONSUM, nicht Existenz) ══
-    console.log("\n── Konsum-Proben (der Stamm LIEST die neuen Teile) ──");
+    // ══ ABSENZ: kein Math.random im Reconnect-Pfad (den Konsum tragen die Fixturen A–C am Verhalten) ══
+    console.log("\n── Absenz-Probe (kein Zufall im Reconnect-Pfad) ──");
     {
-        const updatePeer = extractMethod("_p2pUpdatePeer");
-        check("_p2pUpdatePeer sampelt den Snap-Puffer vor dem Zeichnen", !!updatePeer && updatePeer.includes("_p2pSampleSnapBuf("));
-        const msgPos = extractMethod("_p2pMsgPos");
-        const sampler = extractMethod("_p2pSampleSnapBuf");
-        check(
-            "EINE Frische-Frage (_p2pLockstepDrives) — ZWEI Leser: _p2pMsgPos + Sampler",
-            !!msgPos && msgPos.includes("_p2pLockstepDrives(") && !!sampler && sampler.includes("_p2pLockstepDrives(")
-        );
-        const shutdown = extractMethod("shutdownP2PSync");
-        check(
-            "shutdownP2PSync stempelt intentionalClose + fällt den Rejoin-Timer",
-            !!shutdown && shutdown.includes("intentionalClose = true") && shutdown.includes("reconnectTimer")
-        );
-        const closeRtc = extractMethod("_p2pCloseRtcPeer");
-        check("_p2pCloseRtcPeer fällt den Heil-Timer", !!closeRtc && closeRtc.includes("healTimer"));
         check(
             "kein Math.random im Reconnect-Pfad (seeded Jitter, Lehre 7)",
             !["_p2pReconnectJitterMs", "_p2pReconnectDelayMs", "_p2pScheduleReconnect", "_p2pHealRtcPeer"].some((n) => {
@@ -677,7 +644,6 @@ function makeRealmA(env, initSrcOverride) {
             return { inTuer, fremd };
         };
         const t = tuerSetzer(stammSrc);
-        check("D Tür: initP2PSync setzt die Absicht selbst (ein Setzer in der Tür)", t.inTuer === 1, `${t.inTuer}`);
         check(
             "D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)",
             t.fremd.length === 0,
@@ -687,13 +653,9 @@ function makeRealmA(env, initSrcOverride) {
             /p2p\.enabled\s*=\s*true/.test(fs.readFileSync(path.join(root, "scripts", f), "utf8"))
         );
         check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
-        // Selbsttest: der Hand-Setzer zurück → ROT; die Tür ohne Absicht → ROT.
+        // Selbsttest: der Hand-Setzer zurück → ROT (die Tür trägt die Absicht: gate:mp-sync (b) am Verhalten)
         const mitHand = tuerSetzer(stammSrc + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
-        const ohneTuer = tuerSetzer(stammLib.ersetze(stammSrc, null, /(\n {4}initP2PSync\([^]*?)\n {8}p2p\.enabled = true;/, "$1"));
-        check(
-            "D Selbsttest: ein Hand-Setzer und die Tür ohne Absicht sehen ROT",
-            mitHand.fremd.length === 1 && ohneTuer.inTuer === 0
-        );
+        check("D Selbsttest: ein Hand-Setzer sieht ROT", mitHand.fremd.length === 1);
     }
 
     if (errs.length) {

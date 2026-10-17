@@ -17,7 +17,7 @@
 //   (4) W-A3.1: `cloneBlueprint` vererbt `studioGestalt` (donorOnly bewusst NICHT).
 // TEILE:
 //   N (Node, direkt): die fachwerk-Stufen-Wahrheit als Zahl (L2 ist die leichte Fernstufe).
-//   S (statisch, kommentar-gestrippt): die vier Struktur-Gesetze am Stamm.
+//   S (statisch, kommentar-gestrippt): die Absenz donorOnly im Klon; Kalt-Stempel und Clamp-Kurzschluss misst Teil B.
 //   B (Browser, foundry-ON, Null-Renderer): das Sticky-Experiment als Invariante —
 //     nah bauen → 120 m zuruecktreten → ALLE instanzierten Haeuser tragen die Fernstufe
 //     (Zahl: Haus-Tris ≤ Deckel) · Promotion beim Wieder-Annaehern · +500 m → alles
@@ -94,39 +94,13 @@ function kindSubstanceHash(row) {
     return crypto.createHash("sha256").update(JSON.stringify(row)).digest("hex");
 }
 
-// ── Teil S: die Struktur-Gesetze (Definitions-Form, kommentar-gestrippt) ──
+// ── Teil S: die Absenz am Stamm (kommentar-gestrippt) — die Präsenzen beweist Teil B am Verhalten ──
 function triasStaticLaws(anazhSrc) {
-    const nc = stripComments(anazhSrc);
-    const fnBody = (name) => stammLib.rumpf(nc, name) || ""; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
-    const tick = fnBody("_tickArchitectureLOD");
-    const sw = fnBody("_switchArchitectureLOD");
-    const clone = fnBody("cloneBlueprint");
+    const clone = stammLib.rumpf(stripComments(anazhSrc), "cloneBlueprint") || "";
     return [
         [
-            "T-S1: _tickArchitectureLOD nimmt instFoundry-Eintraege in die EINE LOD-Geschichte",
-            /treeLike && entry\.instFoundry !== true\) continue;/.test(tick),
-        ],
-        [
-            "T-S2: _switchArchitectureLOD traegt den Clamp-Kurzschluss (_servedLod) + die Grammatik-Wand (!treeLike)",
-            /fFlat\.lod === entry\._servedLod/.test(sw) && /if \(!treeLike\) return false;/.test(sw),
-        ],
-        [
-            "T-S3: der Kalt-Stempel gilt JEDEM Foundry-Eintrag (kein _lodVariantIndex-Gate) + _archInstanceAdd stempelt _servedLod",
-            /if \(!entry\.instanced && !entry\.mesh\) \{\s*const dlod = this\._foundryLodForEntry\(entry\);/.test(nc) &&
-                /entry\._servedLod =/.test(nc),
-        ],
-        [
-            "T-S4: cloneBlueprint vererbt studioGestalt (W-A3.1) und donorOnly NICHT",
-            /studioGestalt = source\.studioGestalt/.test(clone) &&
-                !/donorOnly/.test(clone.replace(/donorOnly` reist BEWUSST NICHT/g, "")),
-        ],
-        // ABSCHIEDS-WELLE (E) — der GEWICHTS-DECKEL des fCache: die Byte-Budget-Wand
-        // (FOUNDRY_CACHE_BYTES) + die Bilanz am EINEN Chokepoint (_foundryCacheSet).
-        [
-            "T-S6: _foundryCacheSet bilanziert Bytes (cacheBytes) und raeumt am Byte-Budget (FOUNDRY_CACHE_BYTES)",
-            /FOUNDRY_CACHE_BYTES\s*=/.test(nc) &&
-                /f\.cacheBytes > BYTES/.test(fnBody("_foundryCacheSet")) &&
-                /_foundryGroupBytes/.test(fnBody("_foundryCacheSet")),
+            "T-S4: cloneBlueprint fasst donorOnly NICHT an",
+            clone.length > 0 && !/donorOnly/.test(clone.replace(/donorOnly` reist BEWUSST NICHT/g, "")),
         ],
     ];
 }
@@ -137,22 +111,6 @@ function triasStaticLaws(anazhSrc) {
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Trias-Linse feuert ===");
-        check(
-            "Selbst-Test 0: die Gesetze sind am HEAD gruen (Vorbedingung)",
-            triasStaticLaws(anazhSrc).every((l) => l[1] === true)
-        );
-        const b1 = stammLib.ersetze(anazhSrc, "_tickArchitectureLOD", /treeLike && entry\.instFoundry !== true\) continue;/, "treeLike) continue;");
-        const l1 = triasStaticLaws(b1).find((l) => l[0].startsWith("T-S1"));
-        check("Selbst-Test 1: Eligibility zurueckgebaut -> T-S1 feuert", l1 && l1[1] === false);
-        const b2 = stammLib.ersetze(anazhSrc, "_switchArchitectureLOD", /fFlat\.lod === entry\._servedLod/, "false");
-        const l2 = triasStaticLaws(b2).find((l) => l[0].startsWith("T-S2"));
-        check("Selbst-Test 2: Clamp-Kurzschluss entfernt -> T-S2 feuert", l2 && l2[1] === false);
-        const b4 = stammLib.ersetze(anazhSrc, "cloneBlueprint", /studioGestalt = source\.studioGestalt/, "nixGestalt = source.nixGestalt");
-        const l4 = triasStaticLaws(b4).find((l) => l[0].startsWith("T-S4"));
-        check("Selbst-Test 3: Klon-Erbe entfernt -> T-S4 feuert", l4 && l4[1] === false);
-        const b6 = anazhSrc.replace(/f\.cacheBytes > BYTES/g, "false");
-        const l6 = triasStaticLaws(b6).find((l) => l[0].startsWith("T-S6"));
-        check("Selbst-Test 3c: Byte-Budget-Wand entfernt -> T-S6 feuert", l6 && l6[1] === false);
         // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
         // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die
         // leichte Flaechen-Stufe ~20k; ein fern klebendes L1 faengt B4 am Stufen-Schluessel).
@@ -253,7 +211,7 @@ function triasStaticLaws(anazhSrc) {
     }
 
     // ===== Teil S =====
-    console.log("\n=== TEIL S: die Struktur-Gesetze am Stamm ===");
+    console.log("\n=== TEIL S: die Absenz am Stamm ===");
     for (const [name, ok] of triasStaticLaws(anazhSrc)) check(name, ok);
 
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
@@ -352,6 +310,12 @@ function triasStaticLaws(anazhSrc) {
         if (!plan || !plan.slots) return Object.assign(res, { fatal: "kein Settlement-Export" });
         tp(anchor.x, anchor.z);
         res.placed = r._spawnSettlementFromExport(plan, anchor).placed;
+        // DER KALT-STEMPEL (vor dem ersten Tick): jeder kalte Foundry-Eintrag im Radius trägt seine Distanz-Stufe von Geburt an
+        const kalt = r.state.architectures.filter(
+            (e) => e && typeof e.type === "string" && e.type.indexOf("haus_") === 0 && !e.instanced && !e.mesh &&
+                Math.hypot(e.position.x - pm.position.x, e.position.z - pm.position.z) <= r.state.architectureCullingRadius
+        );
+        res.kaltStempel = kalt.length > 0 && kalt.every((e) => Number.isFinite(e._lodLevel) && e._lodLevel === r._foundryLodForEntry(e));
 
         // (2) An die 3 naechsten Haeuser herantreten -> sie bauen NAH (schwere Stufe).
         const haeuser = r.state.architectures.filter(
@@ -372,6 +336,24 @@ function triasStaticLaws(anazhSrc) {
         }
         res.nearBuilt = hausStats();
         res.nearHeavy = near3.every((h) => h.instanced); // die 3 stehen (Voraussetzung)
+        // KONSUM (Clamp-Kurzschluss): dieselbe servierte Stufe re-alloziert nicht (der Spion an _archInstanceRemove bleibt
+        // stumm, die Distanz-Autorität stempelt); eine andere Stufe ruft ihn (Selbsttest der Probe), danach zurück.
+        const hK = near3.find((e) => e.instanced && Number.isFinite(e._servedLod));
+        if (hK) {
+            const rm0 = r._archInstanceRemove, sK = hK._servedLod;
+            let nRm = 0;
+            r._archInstanceRemove = (...a) => (nRm++, rm0.apply(r, a));
+            try {
+                r._switchArchitectureLOD(hK, sK);
+                res.clamp = { gleich: nRm, stempel: hK._lodLevel === sK };
+                nRm = 0;
+                r._switchArchitectureLOD(hK, sK === 0 ? 1 : 0);
+                res.clamp.anders = nRm;
+                r._switchArchitectureLOD(hK, sK);
+            } finally {
+                delete r._archInstanceRemove;
+            }
+        }
 
         // (2b) FLAECHEN-STUFE (V18.500): im L1-RING stempelt die Distanz-Autoritaet 1 und
         // die Foundry SERVIERT die echte Stufe 1 (das Studio liefert sie, kein Host-Mapping).
@@ -556,6 +538,13 @@ function triasStaticLaws(anazhSrc) {
             "B6: PROMOTION lebt (wieder nah -> Stufe ≤ 1 kehrt zurueck)",
             Number.isFinite(out.promotedLod) && out.promotedLod <= 1,
             `lod=${out.promotedLod}`
+        );
+        check("B-KALT: jeder kalte Foundry-Eintrag im Radius trägt seine Distanz-Stufe vor dem ersten Tick", out.kaltStempel === true);
+        const c = out.clamp || {};
+        check(
+            "B-CLAMP: dieselbe servierte Stufe re-alloziert nicht (Konsum: kein _archInstanceRemove), eine andere ruft ihn (Selbsttest)",
+            c.gleich === 0 && c.stempel === true && c.anders > 0,
+            JSON.stringify(c)
         );
         check(
             "B7: +500 m -> das Dorf ist GECULLT (0 instanziert, 0 Haus-Gruppen — der Deckel ueber Churn)",

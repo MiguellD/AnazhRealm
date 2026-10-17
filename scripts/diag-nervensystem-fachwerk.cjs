@@ -7,15 +7,9 @@
 // diag-nervensystem-schmiede.cjs, PLUS die MEHR-STUFEN-PROBE (die erste Domaene mit
 // kindStages [0,1,2,3] (3 = NUR-WURF, S3 haus) ausserhalb der Baeume — der Flatten-Chokepoint muss die
 // Distanz-Wahl auf die DEKLARIERTEN Stufen klemmen statt fail-closed auf [0]):
-//   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · KIND_POLICY
-//     traegt die haus-Zeile (prefix haus_, donor haus_basis) · der Auto-Register-
-//     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · fachwerk-core
-//     deklariert kindStages.haus == [0,1,2,3] · die Rezepte tragen fx.place
-//     {mode:"settlement", siteTag:"haus"} als DATEN · die Donor-SUBSTANZ haus_basis
-//     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (kein portalMeta/roleManual —
-//     die Rolle EMERGIERT; zwei Front-Segmente = die TUER-LUECKE ist KEIN Part,
-//     begehbar per Konstruktion; der Alt-Blueprint ist PHYSISCH gefallen —
-//     AUSLÖSCHUNGS-WELLE). --selftest injiziert 3 Verletzungen.
+//   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · Absenzen: der Auto-Register-
+//     Chokepoint vergleicht keinen kind-String (M8), die Donor-Zeile haus_basis traegt kein
+//     portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH gefallen). --selftest streicht die Manifest-Zeile.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
 //     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
 //     [0,1,2,3] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
@@ -51,9 +45,8 @@ function fnBody(src, kopf) {
 }
 
 // ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc, fcSrc, manifestSrc) {
+function staticLaws(anazhSrc, manifestSrc) {
     const anazhNC = stripComments(anazhSrc);
-    const fcNC = stripComments(fcSrc);
     const out = [];
     let manifest = null;
     try {
@@ -68,39 +61,17 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
             fachwerk.vertrag === "fachwerk-core.js" &&
             fachwerk.ns === "__fachwerkCore",
     ]);
-    out.push([
-        "S2: KIND_POLICY traegt die haus-Zeile (prefix haus_, donor haus_basis — die EINE Daten-Zeile)",
-        /haus:\s*Object\.freeze\(\{\s*prefix:\s*"haus_",\s*donor:\s*"haus_basis"/.test(anazhNC),
-    ]);
-    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
-    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
-    // im File VOR der Definition und schnitte sonst den falschen Body.
+    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — die Wirkung der Policy beweist Block D.
     const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
-        "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
-        autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
+        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8 — s. a. gate:constitution N1)",
+        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
-    out.push([
-        "S4: fachwerk-core deklariert kindStages.haus == [0, 1, 2, 3] (B2-Vertrags-Daten — die Mehr-Stufen-Wahrheit; 3 = NUR-WURF, S3 haus)",
-        /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2,\s*3\]\s*[,}]/.test(fcSrc),
-    ]);
-    out.push([
-        'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
-        /place:\s*\{\s*mode:\s*"settlement",\s*siteTag:\s*"haus"\s*\}/.test(fcNC),
-    ]);
-    // AUSLÖSCHUNGS-WELLE: die Donor-Substanz lebt in KIND_SUBSTANCE. ERFINDER-WELLE
-    // (Linsen-Heilung, die Trias-Parser-Klasse): die Zeile ist seit einem Prettier-Lauf
-    // MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex griff ins Leere (vorbestehend
-    // rot, tail-maskiert). Klammer-bewusste Row-Extraktion + SEMANTIK-Pruefung.
+    // S6 (Absenz): die Donor-Zeile haus_basis trägt kein portalMeta/roleManual und keinen Alt-Namen; Teile und Klon prüft Block D.
     const hausRow = ksRow(anazhNC, "haus_basis");
     out.push([
-        "S6: die Donor-SUBSTANZ haus_basis lebt in KIND_SUBSTANCE (kein portalMeta/roleManual; >= 6 Parts — die Tuer-Luecke ist KEIN Part, begehbar per Konstruktion) — der Alt-Blueprint-Block ist GEFALLEN",
-        !!hausRow &&
-            /label:\s*"Haus"/.test(hausRow) &&
-            !/portalMeta/.test(hausRow) &&
-            !/roleManual/.test(hausRow) &&
-            (hausRow.match(/shape:\s*"box"/g) || []).length >= 6 &&
-            !/name:\s*"haus_basis"/.test(hausRow),
+        "S6: die Donor-SUBSTANZ haus_basis trägt kein portalMeta/roleManual — der Alt-Blueprint-Block ist GEFALLEN",
+        !!hausRow && !/portalMeta/.test(hausRow) && !/roleManual/.test(hausRow) && !/name:\s*"haus_basis"/.test(hausRow),
     ]);
     return out;
 }
@@ -114,33 +85,24 @@ function ksRow(src, name) {
 
 (async () => {
     const anazhSrc = stammLib.text(root);
-    const fcSrc = fs.readFileSync(path.join(root, "fachwerk-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: die fachwerk-Manifest-Zeile entfernt -> S1 muss rot werden.
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "fachwerk"));
-        const s1 = staticLaws(anazhSrc, fcSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
+        const s1 = staticLaws(anazhSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: fachwerk-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        // V2: die haus-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "haus_basis"', 'donor: "haus_kaputt"');
-        const s2 = staticLaws(brokenPolicy, fcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
-        check("Selbst-Test 2: haus-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
-        // V3: die Stufen-Deklaration kollabiert -> S4 muss rot werden (die Mehr-Stufen-Wand).
-        const brokenStages = fcSrc.replace("kindStages: { haus: [0, 1, 2, 3],", "kindStages: { haus: [0],");
-        const s4 = staticLaws(anazhSrc, brokenStages, manifestSrc).find((l) => l[0].startsWith("S4"));
-        check("Selbst-Test 3: kindStages.haus auf [0] kollabiert -> S4 feuert", s4 && s4[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle drei Verletzungs-Klassen.");
+        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf die gestrichene Manifest-Zeile.");
         process.exit(0);
     }
 
     console.log("=== ε-BEWEIS FACHWERK — TEIL S: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, fcSrc, manifestSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(anazhSrc, manifestSrc)) check(name, ok, detail);
 
     // Die Kern-Wahrheit fuer die Dial-Drift-Wand (Buch == Kern): PRESETS in Node ableiten.
     global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));

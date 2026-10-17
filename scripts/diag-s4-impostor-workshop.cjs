@@ -53,16 +53,18 @@ const server = statikServer();
         // der Bake-Pfad: der Tick und sein Sender (`_impostorBakeSende`, K60-2: je Bäcker-Bahn eine Karte)
         const bakeSrc = code(r._tickImpostorBake) + " " + code(r._impostorBakeSende);
         res.probes.bakeNoFrameBudgetGate = !/_frameOverBudget/.test(bakeSrc); // der Gate ist raus
-        res.probes.bakeOneAtATime = /_impostorBakeFlug/.test(bakeSrc) && /_foundryFaedenZahl/.test(bakeSrc); // je Bäcker-Bahn eine Karte (K60-2)
-        res.probes.bakeNullGuard = /_isHeadlessNull/.test(bakeSrc); // gate-treu
-
-        // ===== TEIL B — Werkstatt-L2 routet durch den Impostor =====
-        const wsSrc = code(r._workshopFoundryPreviewGroup);
-        res.probes.wsRoutesImpostor = /_foundryBuildImpostorFlat/.test(wsSrc);
-        res.probes.wsTreeGated = /_foundryPresetIsTree/.test(wsSrc);
-        // die Vorschau baut ihre InstancedMesh im EINEN Chokepoint der Welt (Instanz-Wand, gate:altlasten)
-        res.probes.wsInstanced = /AnazhRealm\._instanzMesh\(/.test(wsSrc);
-        res.probes.wsLod2 = /lod === 2/.test(wsSrc);
+        // je Bäcker-Bahn eine Karte (K60-2), auch über dem Frame-Budget: der Sender getauscht, der Deckel beobachtet
+        {
+            const q0 = r._impostorBakeQueue, f0 = r._impostorBakeFlug, ob0 = r.state._frameOverBudget;
+            r._impostorBakeQueue = Array.from({ length: 12 }, (_, i) => "fimp:probe|" + i);
+            r._impostorBakeFlug = new Map();
+            r.state._frameOverBudget = true;
+            r._impostorBakeSende = (at, flug) => (flug.set(r._impostorBakeQueue.shift(), { seit: performance.now(), tok: 0 }), 1);
+            const n = r._tickImpostorBake();
+            res.probes.bakeOneAtATime = n > 0 && n === r._foundryFaedenZahl() && r._impostorBakeFlug.size === n && r._impostorBakeQueue.length === 12 - n;
+            delete r._impostorBakeSende;
+            [r._impostorBakeQueue, r._impostorBakeFlug, r.state._frameOverBudget] = [q0, f0, ob0];
+        }
 
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
         try {
@@ -98,6 +100,33 @@ const server = statikServer();
                     res.behavior.hasKarte = !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4);
                     res.behavior.karte = ak ? Array.from(ak.array.slice(0, 4)) : null;
                 }
+                // ===== TEIL B — KONSUM: die Vorschau routet L2 eines Baums durch den Karten-Flatten (nur Bäume, nur Stufe 2)
+                // und baut ihn im EINEN Instanz-Chokepoint der Welt (Spion je Versorger, own-treu zurück) =====
+                const ruft = (ziel, k, bp, lod) => {
+                    const eigen = Object.prototype.hasOwnProperty.call(ziel, k), fn = ziel[k], lod0 = bps[bp]._recipeLod;
+                    let n = 0;
+                    ziel[k] = function (...a) {
+                        n++;
+                        return fn.apply(this, a);
+                    };
+                    bps[bp]._recipeLod = lod;
+                    try {
+                        r._workshopFoundryPreviewGroup(bp);
+                    } finally {
+                        if (eigen) ziel[k] = fn;
+                        else delete ziel[k];
+                        bps[bp]._recipeLod = lod0;
+                    }
+                    return n > 0;
+                };
+                const felsBp = Object.keys(bps).find((k) => {
+                    const p = r._foundryPresetForEntry({ type: k });
+                    return p && !r._foundryPresetIsTree(p);
+                });
+                res.probes.wsRoutesImpostor = ruft(r, "_foundryBuildImpostorFlat", treeBp, 2);
+                res.probes.wsTreeGated = ruft(r, "_foundryPresetIsTree", treeBp, 2) && !!felsBp && !ruft(r, "_foundryBuildImpostorFlat", felsBp, 2);
+                res.probes.wsInstanced = ruft(r.constructor, "_instanzMesh", treeBp, 2);
+                res.probes.wsLod2 = !ruft(r, "_foundryBuildImpostorFlat", treeBp, 1);
             }
         } catch (e) {
             res.behavior.err = (e && e.message) || String(e);
@@ -112,7 +141,6 @@ const server = statikServer();
     console.log("  TEIL A — Bake eager:");
     console.log(`    _frameOverBudget-Gate raus: ${out.probes.bakeNoFrameBudgetGate} (erw true)`);
     console.log(`    je Bäcker-Bahn eine Karte:  ${out.probes.bakeOneAtATime} (erw true)`);
-    console.log(`    Null-Renderer-Guard:        ${out.probes.bakeNullGuard} (erw true)`);
     console.log("  TEIL B — Werkstatt-L2 = Billboard:");
     console.log(`    routet durch Impostor:      ${out.probes.wsRoutesImpostor} (erw true)`);
     console.log(`    nur für BÄUME (gated):      ${out.probes.wsTreeGated} (erw true)`);
@@ -131,7 +159,6 @@ const server = statikServer();
         errs.push("A: `_tickImpostorBake` trägt noch den `_frameOverBudget`-Gate (nicht eager)");
     if (!out.probes.bakeOneAtATime)
         errs.push("A: der Bake ist nicht mehr je Bäcker-Bahn gedeckelt (`_impostorBakeFlug`/`_foundryFaedenZahl` fehlt)");
-    if (!out.probes.bakeNullGuard) errs.push("A: der Null-Renderer-Guard fehlt (nicht gate-treu)");
     if (!out.probes.wsRoutesImpostor)
         errs.push("B: die Werkstatt-Vorschau routet L2 NICHT durch `_foundryBuildImpostorFlat`");
     if (!out.probes.wsTreeGated)

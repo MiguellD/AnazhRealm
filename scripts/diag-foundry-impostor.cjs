@@ -12,11 +12,8 @@
 //     über den EINEN Abschied (`_texturAbschied`), die Vorlage des Programms bindet die lebende (Selbsttest: das alte Wachsen).
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 async function bootPage(browser, nullRenderer) {
@@ -131,19 +128,28 @@ async function driveImpostor(page) {
                     attribute: geo ? Object.keys(geo.attributes) : [],
                 };
             }
-            // BÄCKER-VEREINIGUNG: der Bake-Tick spricht den Studio-Kanal, der RTT-Nachbau ist weg.
-            const strip = window.__codeOf;
-            // der Tick MIT seinen Gehilfen (jede eigene Methode, die er ruft, eine Ebene tief): bis K60-3 las die Linse nur
-            // den Rumpf des Ticks und fiel, als K60-2 das Senden nach `_impostorBakeSende` zog (Lehre 6)
-            const mitGehilfen = (name) => {
-                const kern = typeof r[name] === "function" ? strip(r[name]) : "";
-                const teile = [kern];
-                for (const m of new Set([...kern.matchAll(/this\.(_[A-Za-z0-9_]+)\(/g)].map((x) => x[1])))
-                    if (m !== name && typeof r[m] === "function") teile.push(strip(r[m]));
-                return teile.join("\n");
+            // DIE STRICH-WAND am Graphen (Integration W6, Echt-GPU 05.10.): steht die Peilung auf einer Ansichts-Grenze, springt
+            // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
+            // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
+            // (Albedo und Normale je Ansicht A und B) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
+            // der den Atlas ohne beides liest, fällt beim Namen.
+            const atS = r._impostorAtlas();
+            const strich = (m) => {
+                const p = new Set();
+                for (const w of [m.colorNode, m.normalNode])
+                    if (w) w.traverse((n) => n.isTextureNode && n.referenceNode && [atS.mapNode, atS.nmapNode].includes(n.getBase()) && p.add(n));
+                const g = (b) => [...p].filter((n) => n.gradNode && n.getBase() === b).length;
+                // springend: die Ableitung kommt aus der eigenen (springenden) Stichproben-Koordinate statt aus der stetigen
+                const quelle = (d) => (d.isVarNode ? d.node : d).aNode; // dFdx reist in r184 als VarNode um den MathNode
+                const springend = [...p].filter((n) => n.gradNode && n.gradNode.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
+                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
             };
+            out.strich = strich(r._impostorAtlasMaterial());
+            const uS = THREE.TSL.uv();
+            out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
+            // die Absenz: keine Atlas-Stichprobe an _probeA vorbei (kein direktes _at.mapNode/_at.nmapNode.sample im Stoff-Bau)
+            out.strichDirekt = (window.__codeOf(r._buildPbrNodeMaterial).match(/_at\.(?:mapNode|nmapNode)\.sample\(/g) || []).length;
             out.vereinigung = {
-                kanalImTick: /bake-impostor|_foundryBakeImpostorRequest/.test(mitGehilfen("_tickImpostorBake")),
                 requestMethode: typeof r._foundryBakeImpostorRequest === "function",
                 payloadKonsument: typeof r._applyStudioImpostorPayload === "function",
                 rttNachbau: typeof r._bakeImpostorAtlasRTT,
@@ -785,41 +791,6 @@ async function windProbe(page) {
     }, WIND_FAELLE);
 }
 
-// ===== TEIL D — DIE STRICH-WAND (Integration W6, Echt-GPU 05.10.) =====
-// Die Karte liest die Peilung des ANKERS (für das ganze Quad dieselbe); steht sie genau auf einer Ansichts-Grenze, kippt
-// ihr Rundungs-Rauschen einzelne Pixel auf die Nachbar-Ansicht — die Atlas-Koordinate springt dort um 1/8 bis 7/8 der
-// Textur. Nahm die Hardware die Ableitung aus der springenden Koordinate, griff sie im 2×2-Block die gröbste Stufe, deren
-// Filter den Fuß der Nachbar-Ansicht als senkrechten Strich über die Krone zog (Höhen-Sonde, echte GPU: 30–40 px über der
-// L1-Spitze, Peilung auf einer Ansicht). swiftshader rechnet die Peilung ohne Rauschen und sieht den Strich nie — die Wand
-// liest darum die QUELLE: jede Atlas-Stichprobe (Albedo und Normale) läuft über `_probeA` mit den Gradienten der STETIGEN
-// Koordinate (die Ansichts-Höhe ohne Sprung). Den Strich am Bild misst die Höhen-Sonde der Werkbank (artifacts/profiband/
-// integ-stufe6, `hoehe-sonde.js`).
-function strichWand(src) {
-    const v = [];
-    const zahl = (t) => src.split(t).length - 1;
-    if (!src.includes("const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));"))
-        v.push("die stetige Koordinate (uv.x, uv.y / V) fehlt");
-    if (!src.includes("const _gX = _uvStetig.dFdx();") || !src.includes("const _gY = _uvStetig.dFdy();"))
-        v.push("die Gradienten kommen nicht aus der stetigen Koordinate");
-    if (!src.includes("const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);"))
-        v.push("die Atlas-Stichprobe trägt keine expliziten Gradienten");
-    const direkt = zahl("_at.mapNode.sample(") + zahl("_at.nmapNode.sample(");
-    if (direkt) v.push(direkt + " Atlas-Stichprobe(n) an _probeA vorbei (Ableitung aus der springenden Koordinate)");
-    // Die Albedo liest `_liesA` (K20): die Stichprobe über _probeA, vergrößert die kubische Zelle auf Stufe 0 — eine
-    // explizite Stufe trägt keine Ableitung, also auch keine aus der springenden Koordinate.
-    if (
-        !/const _liesA = \(tex, uv, vAns\) =>\s*_Ta\.mix\(_probeA\(tex, uv\), _kubisch\(tex, vAns\), _kubW\);/.test(src)
-    )
-        v.push("die Albedo-Lese-Naht _liesA läuft nicht über _probeA");
-    if (!src.includes(".depth(_schicht).level(_Ta.float(0.0))"))
-        v.push("die kubische Zelle liest nicht auf der expliziten Stufe 0");
-    const albedo = zahl("_liesA(_at.mapNode, _uvA, _v0)") + zahl("_liesA(_at.mapNode, _uvB, _v1)");
-    const normale = zahl("_probeA(_at.nmapNode, _uvA)") + zahl("_probeA(_at.nmapNode, _uvB)");
-    if (albedo !== 2 || normale !== 2)
-        v.push(`Albedo (${albedo}) und Normale (${normale}) laufen nicht je zweimal (Ansicht A und B) über _probeA`);
-    return v;
-}
-
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const errs = [];
@@ -886,8 +857,14 @@ function strichWand(src) {
         }
     }
     if (A.vereinigung) {
-        if (!A.vereinigung.kanalImTick)
-            errs.push("A: `_tickImpostorBake` (mit seinen Gehilfen) spricht NICHT den Studio-Kanal (bake-impostor)");
+        const s = A.strich || {};
+        console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
+        if (!(s.gradMap === 2 && s.gradNmap === 2 && s.ohne === 0 && s.springend === 0 && A.strichDirekt === 0))
+            errs.push(
+                `A: Strich-Wand — Albedo und Normale je Ansicht mit Gradienten der stetigen Koordinate (2/2), keine Stichprobe ohne, keine direkte (${JSON.stringify(s)}, direkt ${A.strichDirekt})`
+            );
+        if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
+            errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
         if (!A.vereinigung.requestMethode) errs.push("A: `_foundryBakeImpostorRequest` fehlt");
         if (!A.vereinigung.payloadKonsument) errs.push("A: `_applyStudioImpostorPayload` fehlt");
         if (A.vereinigung.rttNachbau !== "undefined")
@@ -1022,43 +999,6 @@ function strichWand(src) {
             );
         if (!(s.zeilen >= 40 && s.treppe > 0.6))
             errs.push(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
-    }
-
-    console.log(
-        "\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ==="
-    );
-    {
-        const quelle = stammLib.text(root);
-        const echt = strichWand(quelle);
-        console.log(`  echte Quelle: ${echt.length ? echt.join(" · ") : "hält"}`);
-        for (const f of echt) errs.push("D: " + f);
-        const ANKER = "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);";
-        for (const [name, src] of [
-            [
-                "Stichprobe ohne Gradienten",
-                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);"),
-            ],
-            [
-                "Gradienten aus der springenden Koordinate",
-                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", "const _gX = _uvStetig.dFdx();", "const _gX = _uvA.dFdx();"),
-            ],
-            [
-                "kubische Zelle mit Hardware-Ableitung",
-                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", ".depth(_schicht).level(_Ta.float(0.0))", ".depth(_schicht)"),
-            ],
-            [
-                "Normale direkt gesampelt",
-                stammLib.ersetze(quelle, "_buildPbrNodeMaterial", "_probeA(_at.nmapNode, _uvA).xy", "_at.nmapNode.sample(_uvA).depth(_schicht).xy"),
-            ],
-        ]) {
-            const f = strichWand(src);
-            const feuert = src !== quelle && f.length > 0;
-            console.log(
-                `  Selbsttest „${name}“ → ${feuert ? "feuert" : "BLIND"}${src === quelle ? " (ANKER FEHLT)" : ""}`
-            );
-            if (!feuert)
-                errs.push(`D-SELBSTTEST: „${name}“ → die Wand feuert nicht${src === quelle ? " (ANKER FEHLT)" : ""}`);
-        }
     }
 
     server.close();
