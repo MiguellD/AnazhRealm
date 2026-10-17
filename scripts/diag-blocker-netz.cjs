@@ -21,13 +21,12 @@
 //       Tier an (vorher den ganzen Bestand je Neubau);
 //   (K) KONSISTENZ: das Netz ist der Bestand — jeder Eintrag mit Boxen steht in den Zellen seiner Hülle, jeder Eintrag in der
 //       Zelle seines Platzes, keine Zelle trägt einen Eintrag außerhalb, die Ordnung des Bestands steigt mit dem Array;
-//   (Q) QUELLE: `_fieldRaycast` liest das Netz und keine Schleife über den Bestand; jeder Eintritt (push), Austritt (splice)
-//       und jedes Schreiben der Boxen (`_blockerStampReach`) stempelt; kein anderer Schreiber des Bestands im Stamm;
-//   (W) DIE BOX-WAND (AST, acorn): jeder Schreiber der Blocker-Boxen stempelt — eine Zuweisung an `.blockerAABBs` nur mit
-//       Stempel (`_blockerStampReach`) oder als Abriss (null mit `_blockerAustritt`), kein Schreiben IN die Boxen (Feld, Index,
+//   (Q) KONSUM am Ruf: `_fieldRaycast` fragt das Netz, der Tier-Leib die Plätze (`_blockerUmPlatz`), keine Schleife über den
+//       Bestand; den Stempel von Eintritt, Abriss, Kappe und Reiter-Schritt beweist (K) an ihren Runden;
+//   (W) DIE BOX-WAND (AST, acorn): kein Schreiben IN die Boxen (Feld, Index,
 //       ++/--, delete, push · pop · shift · unshift · splice · sort · reverse · fill · copyWithin, Object.assign);
 //   (P) kein Page-Error.
-// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): der Stamm ist sauber, fünf eingeschleuste Schreiber fallen rot
+// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): der Stamm ist sauber, drei eingeschleuste Schreiber fallen rot
 // beim Namen, ein gestempelter bleibt grün.
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
 // ─────────────────────────────────────────────────────────────────────────
@@ -40,9 +39,7 @@ const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 const root = path.resolve(__dirname, "..");
 
 // DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
-//   (a) eine Zuweisung an `….blockerAABBs` — erlaubt mit einem Wert in einer Methode, die `_blockerStampReach` ruft (der Stempel
-//       der Nachbarschaft), mit null in einer Methode, die `_blockerAustritt` ruft (der Abriss);
-//   (b) ein Schreiben IN die Boxen: Feld- oder Index-Zuweisung, ++/--, delete, eine mutierende Array-Methode oder Object.assign an
+//   ein Schreiben IN die Boxen: Feld- oder Index-Zuweisung, ++/--, delete, eine mutierende Array-Methode oder Object.assign an
 //       `….blockerAABBs`, an einem Element davon oder an einem Namen, der daran hängt (`const boxes = e.blockerAABBs`,
 //       `for (const b of boxes)`, `boxes[i]`, `boxes.find(…)`) — nie erlaubt: die Boxen schreibt `_populateBlockerAABBs` neu.
 // Grenze: ein Name, der als Parameter eine Box empfängt, hängt für die Wand an nichts (kein Datenfluss über Rufe).
@@ -87,8 +84,6 @@ function boxWand(quelle) {
                 return BOX_ELEMENT.has(name(n.callee)) && istBox(n.callee.object);
             return false;
         };
-        let ruftStempel = false,
-            ruftAustritt = false;
         for (let d = 0; d < 2; d++)
             lauf(body, (n) => {
                 if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && istBox(n.init))
@@ -96,10 +91,6 @@ function boxWand(quelle) {
                 if (n.type === "ForOfStatement" && istBox(n.right) && n.left.type === "VariableDeclaration") {
                     const id = n.left.declarations[0].id;
                     if (id.type === "Identifier") gebunden.add(id.name);
-                }
-                if (n.type === "CallExpression" && n.callee.type === "MemberExpression") {
-                    if (name(n.callee) === "_blockerStampReach") ruftStempel = true;
-                    if (name(n.callee) === "_blockerAustritt") ruftAustritt = true;
                 }
             });
         const meld = (n, art) =>
@@ -113,12 +104,6 @@ function boxWand(quelle) {
             if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") {
                 if (name(n.left) === "blockerAABBs") {
                     zuweisungen++;
-                    const nul = n.right.type === "Literal" && n.right.value === null;
-                    if (nul ? !ruftAustritt : !ruftStempel)
-                        meld(
-                            n,
-                            nul ? "Abriss der Boxen ohne `_blockerAustritt`" : "Boxen gesetzt ohne `_blockerStampReach`"
-                        );
                 } else if (istBox(n.left.object)) meld(n, "Schreiben in die Boxen");
             }
             if (n.type === "UpdateExpression" && n.argument.type === "MemberExpression" && istBox(n.argument.object))
@@ -162,8 +147,6 @@ if (process.argv.includes("--selftest")) {
     if (stamm.zuweisungen < 6) v.push(`STUMPF: die Wand sieht nur ${stamm.zuweisungen} Zuweisungen an .blockerAABBs`);
     const klasse = (rumpf) => `class X { ${rumpf} }`;
     const faelle = [
-        ["gesetzt ohne Stempel", "a(e) { e.blockerAABBs = []; }", "ohne `_blockerStampReach`"],
-        ["Abriss ohne Austritt", "a(e) { e.blockerAABBs = null; }", "ohne `_blockerAustritt`"],
         ["sortiert", "a(e) { const boxes = e.blockerAABBs; boxes.sort((p, q) => p.minX - q.minX); }", "(sort)"],
         ["Feld einer Box", "a(e) { for (const b of e.blockerAABBs) b.minX = 0; }", "Schreiben in die Boxen"],
         ["Index", "a(e) { const bx = e.blockerAABBs || []; bx[0] = null; }", "Schreiben in die Boxen"],
@@ -185,7 +168,7 @@ if (process.argv.includes("--selftest")) {
         process.exit(1);
     }
     console.log(
-        `✅ SELBSTTEST GRÜN — der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs, jede gestempelt), fünf eingeschleuste Schreiber rot, ein gestempelter grün.`
+        `✅ SELBSTTEST GRÜN — der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs gesehen), drei eingeschleuste Schreiber rot, ein gestempelter grün.`
     );
     process.exit(0);
 }
@@ -776,8 +759,17 @@ async function probe() {
         (e) => e && e.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 60
     );
     if (beweger) {
-        beweger.position.x += 25;
-        if (typeof r._blockerBewegt === "function") r._blockerBewegt(beweger);
+        // der Reiter-Schritt des Spiels trägt ihn 25 m weiter: der Schreiber der Lage meldet ihn selbst als Beweger
+        const sx = pm.position.x,
+            sz = pm.position.z;
+        st.player.mountedArch = beweger.id;
+        pm.position.x = beweger.position.x + 25;
+        pm.position.z = beweger.position.z;
+        r._tickMountedMovement(1 / 60);
+        st.player.mountedArch = null;
+        r._mountedEntry = null;
+        pm.position.x = sx;
+        pm.position.z = sz;
     }
     aus.runden.push(runde("Beweger", N));
     aus.loeser.push(loeserRunde("Beweger", 800));
@@ -789,29 +781,40 @@ async function probe() {
     aus.decke = { slabsJeStrahl: slabs / 50, beruehrt: 0 };
     const p0 = pm.position;
     aus.decke.beruehrt = beruehrt(p0.x, p0.y + 0.55, p0.z, p0.x, p0.y + 5.05, p0.z);
-    // (Q) die Quelle
+    // (Q) der Konsum am Ruf: der Strahl fragt das Netz, der Tier-Leib die Plätze (Spion am Ruf); die alten Schleifen bleiben tot
     const P = Object.getPrototypeOf(r);
     const code = (f) => (typeof P[f] === "function" ? window.__codeOf(P[f]) : "");
+    const ruft = (fn, nach, args) => {
+        const echt = r[nach];
+        let n = 0;
+        r[nach] = function (...x) {
+            n++;
+            return echt.apply(this, x);
+        };
+        try {
+            r[fn](...args);
+        } catch (_e) {
+            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
+        }
+        delete r[nach];
+        return n > 0;
+    };
+    const yq = r.getTerrainHeightAt(ox, oz) + 2;
+    if (tier) tier.userData._huellenNah = null;
     aus.quelle = {
-        strahlFragtNetz: /this\._blockerNetz\(\)/.test(code("_fieldRaycast")),
+        strahlFragtNetz: ruft("_fieldRaycast", "_blockerNetz", [ox, yq, oz, ox + 10, yq, oz]),
+        tierFragtPlatz:
+            !!tier &&
+            ruft("_kreaturHuellenKontakt", "_blockerUmPlatz", [tier, r._kreaturHueftL(tier), tier.position.x, tier.position.z]),
         strahlSchleife: /this\.state\.architectures/.test(
             code("_fieldRaycast").replace(/const arches = this\.state\.architectures;/, "")
         ),
-        stempel: /this\._blockerNetzSetzen\(entry\)/.test(code("_blockerStampReach")),
-        eintritt: /this\.state\.architectures\.push\(entry\);\s*this\._blockerEintritt\(entry\);/.test(
-            code("spawnArchitecture")
-        ),
-        abriss: /this\.state\.architectures\.splice\(idx, 1\);\s*this\._blockerAustritt\(entry\);/.test(
-            code("removeArchitecture")
-        ),
-        kappe: /arches\.splice\(idx, 1\);\s*this\._blockerAustritt\(entry\);/.test(code("_evictArchitecture")),
-        tierFragtPlatz: /this\._blockerUmPlatz\(/.test(code("_kreaturHuellenKontakt")),
         tierSchleife: /for \(let a = 0; a < arches\.length; a\+\+\)/.test(code("_kreaturHuellenKontakt")),
     };
     return aus;
 }
 
-function urteil(S, stamm, pageErrors) {
+function urteil(S, pageErrors) {
     const rot = [];
     for (const R of S.runden) {
         if (R.abweichungen)
@@ -874,54 +877,14 @@ function urteil(S, stamm, pageErrors) {
         rot.push(
             "(Q) QUELLE: `_fieldRaycast` läuft noch über den Bestand (`this.state.architectures` außer der Leer-Prüfung)"
         );
-    if (!q.stempel)
-        rot.push("(Q) QUELLE: `_blockerStampReach` stempelt die Nachbarschaft nicht (`_blockerNetzSetzen`)");
-    if (!q.eintritt)
-        rot.push("(Q) QUELLE: der Eintritt (`spawnArchitecture`, push) stempelt nicht (`_blockerEintritt`)");
-    if (!q.abriss) rot.push("(Q) QUELLE: der Abriss (`removeArchitecture`, splice) löst nicht (`_blockerAustritt`)");
-    if (!q.kappe) rot.push("(Q) QUELLE: die Kappe (`_evictArchitecture`, splice) löst nicht (`_blockerAustritt`)");
     if (!q.tierFragtPlatz)
         rot.push("(Q) QUELLE: der Tier-Leib (`_kreaturHuellenKontakt`) fragt die Plätze nicht (`_blockerUmPlatz`)");
     if (q.tierSchleife) rot.push("(Q) QUELLE: der Tier-Leib baut seine Nähe-Liste aus einer Schleife über den Bestand");
-    if (stamm.length) rot.push(`(Q) QUELLE: Schreiber des Bestands ohne Stempel: ${stamm.join(" · ")}`);
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
-// (Q) der Stamm: jeder Schreiber des Bestands — push/splice/pop/shift/unshift auf `this.state.architectures` oder einem Alias,
-// eine Zuweisung des Arrays — steht an einer gestempelten Stelle (Zuweisung: das neue Array baut das Netz neu)
-function stammSchreiber() {
-    const z = stammLib.ohneKommentare(stammLib.text(root)).split("\n");
-    const fremd = [];
-    const alias = new Map();
-    z.forEach((l, i) => {
-        const code = l;
-        const m = /(?:const|let)\s+(\w+)\s*=\s*this\.state\.architectures\b/.exec(code);
-        if (m) alias.set(m[1], (alias.get(m[1]) || []).concat(i));
-    });
-    z.forEach((l, i) => {
-        const code = l;
-        const namen = [
-            "this\\.state\\.architectures",
-            ...[...alias.keys()].filter((a) => alias.get(a).some((j) => j <= i && i - j < 80)),
-        ];
-        for (const n of namen) {
-            if (!new RegExp(`\\b${n}\\.(push|splice|pop|shift|unshift)\\(`).test(code)) continue;
-            const nach = z.slice(i + 1, i + 3).join("\n");
-            if (!/this\._blocker(Eintritt|Austritt)\(entry\)/.test(nach)) fremd.push(`Zeile ${i + 1}: ${code.trim()}`);
-        }
-        // ein Schreiber der Lage eines Eintrags in x/z (das gerittene Werk folgt seinem Reiter) meldet ihn als Beweger
-        if (/\bentry\.position\.[xz]\s*=[^=]/.test(code)) {
-            const nach = z.slice(i + 1, i + 4).join("\n");
-            if (!/this\._blockerBewegt\(entry\)/.test(nach))
-                fremd.push(`Zeile ${i + 1}: ${code.trim()} (Beweger ohne Meldung)`);
-        }
-    });
-    return fremd;
-}
-
 (async () => {
-    const stamm = stammSchreiber();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -978,7 +941,7 @@ function stammSchreiber() {
             `  Marken-Probe (Neues Array): ${S.marken.proben} Strahlen, ${S.marken.vorgezaehlt} bis vor die alte Marke vorgezählt, Abweichungen ${S.marken.abweichungen}`
         );
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
-    const rot = urteil(S, stamm, pageErrors);
+    const rot = urteil(S, pageErrors);
     const wand = boxWand(stammLib.text(root));
     console.log(
         `  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`

@@ -63,6 +63,8 @@ function fnBody(src, kopf) {
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SAETZE = ["hain", "insel", "fraktal", "ki ohne Seed"];
+// der Konsum am Ruf: jeder Eintrag {Leser → Gesetz: gerufen}; fehlt die Probe, ist sie rot
+const konsumTaeter = (k) => Object.entries(k || { "(keine Probe)": false }).filter(([, ok]) => ok !== true).map(([n]) => `Konsum: ${n} ruft sein Gesetz nicht`);
 function sameVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -75,6 +77,8 @@ function sameVerdict(m) {
     if (m.samenGleich !== true) out.push(`derselbe Satz, ein anderer Same (${m.samen && m.samen.join(" ≠ ")})`);
     if (!(m.ortAbweichung === 0)) out.push(`derselbe Same, andere Orte (${m.ortAbweichung} m)`);
     if (!(m.kiOrtAbweichung === 0)) out.push(`das KI-Programm ohne Seed streut anders (${m.kiOrtAbweichung} m)`);
+    if (!(m.streuAbweichung === 0)) out.push(`die Streuung eines Samens folgt dem Programm-Strom (${m.streuAbweichung} m)`);
+    out.push(...konsumTaeter(m.konsum));
     return out;
 }
 
@@ -128,7 +132,7 @@ const WEGE = ["werkstatt", "rezeptbuch", "hotbar", "hand"];
 const LAGEN = ["schöpfer", "frieden mit Material", "frieden ohne Material"];
 function wegVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
-    const out = [];
+    const out = konsumTaeter(m.konsum);
     const kosten = m.kosten || {};
     if (!Object.keys(kosten).length) out.push("die Eiche kostet nichts (Vorbedingung)");
     for (const lage of LAGEN)
@@ -226,7 +230,8 @@ function brennVerdict(m) {
 // empfang: {steht, key, dreh, tint}, reload: {erst, weiter, nachReload} }.
 function werkVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
-    const out = [];
+    const out = konsumTaeter(m.konsum);
+    if (!Array.isArray(m.stumm) || m.stumm.length) out.push(`eine Absage des Setzens schweigt: ${m.stumm ? m.stumm.join(", ") : "nicht gelaufen"}`);
     const gleich = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 1e-6;
     if (!(m.steht === 1)) out.push(`das Setzen stellt ${m.steht} Werk(e) (Vorbedingung)`);
     if (m.zuege > 0) out.push(`das Setzen würfelt ${m.zuege}× aus Math.random`);
@@ -273,146 +278,47 @@ function werkVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
+    const body = (sig) => fnBody(nc, new RegExp("\\n {4}" + sig + "\\([^)]*\\) \\{")) || "";
     const muster = fnBody(nc, /\n {4}get chatDslPatterns\(\) \{/) || "";
-    const ctx = fnBody(nc, /\n {4}dslCtx\(opts = \{\}\) \{/) || "";
-    const streu = fnBody(nc, /\n {4}_dslSpawnStudioItems\([^)]*\) \{/) || "";
+    const ctx = body("dslCtx");
+    const streu = body("_dslSpawnStudioItems");
     const zufall = [muster, ctx, streu].map((b) => (b.match(/Math\.random/g) || []).length);
+    const aufl = body("_studioBlueprintForWord");
+    const kat = body("_studioWortKatalog");
+    const wl = body("_studioWordsForPrompt");
+    const hand = (aufl + kat + wl).match(/"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/g) || [];
+    const brücke = (nc.match(/AnazhRealm\.STUDIO_WORT\b/g) || []).length;
+    const setzen = body("confirmBuild");
+    const logs = (setzen.match(/this\.log\(/g) || []).length;
+    const brenn = body("_tickFocusingAffordances");
+    const formel = (nc.match(/\* Math\.PI \* 2 - Math\.PI \/ 2/g) || []).length;
+    const wurzeln = ["spawnArchitecture", "spawnIslandAt", "spawnUfoAt", "_workshopRecipeSpec", "dslCompose", "generateEvolution", "confirmBuild"];
+    const fehlt = wurzeln.filter((n) => !body(n));
+    const zuege = wurzeln.filter((n) => /Math\.random/.test(body(n))).map((n) => `${n} ${body(n).match(/Math\.random/g).length}`);
+    const zaehler = (nc.match(/_bauSameZaehler/g) || []).length;
+    const hash = (nc.match(/Math\.imul\(\w+, 131\)/g) || []).length;
+    const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
     return [
+        ["W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)", muster.length > 0 && ctx.length > 0 && streu.length > 0 && zufall.every((n) => n === 0), `Math.random ${zufall.join("/")}`],
+        ["W2 die Streuung zieht nie aus dem Programm-Strom (kein `ctx.rng()` in `_dslSpawnStudioItems`)", streu.length > 0 && !/ctx\.rng\(\)/.test(streu)],
         [
-            "W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)",
-            muster.length > 0 && ctx.length > 0 && streu.length > 0 && zufall.every((n) => n === 0),
-            `Math.random ${zufall.join("/")}`,
+            "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
+            aufl.length > 0 && kat.length > 0 && wl.length > 0 && brücke === 0 && hand.length === 0,
+            `STUDIO_WORT ${brücke} · Wort-Literale ${hand.length}${hand.length ? " (" + hand.slice(0, 4).join(" ") + ")" : ""}`,
         ],
         [
-            "W2 der Programm-Strom ohne Seed ist der Welt-Strom (`dslCtx` → `_bauSame`), die Streuung der Strom des Samens",
-            /this\._bauSame\("dsl"\)/.test(ctx) &&
-                /this\._samenStrom\(baseSeed\)/.test(streu) &&
-                !/ctx\.rng\(\)/.test(streu),
+            "W4 das Rezeptbuch legt nie ins Inventar, FERTIGEN fragt kein zweites Tor, das Setzen sagt keine Absage nur ins Log",
+            !/addToInventory/.test(body("craftFromRecipe")) && !/this\._bauVorabTor\(/.test(body("fertigeBlueprint")) && setzen.length > 0 && logs <= 1,
+            `confirmBuild: ${logs}× Log`,
         ],
-        (() => {
-            const aufl = fnBody(nc, /\n {4}_studioBlueprintForWord\([^)]*\) \{/) || "";
-            const kat = fnBody(nc, /\n {4}_studioWortKatalog\([^)]*\) \{/) || "";
-            const wl = fnBody(nc, /\n {4}_studioWordsForPrompt\([^)]*\) \{/) || "";
-            const hand =
-                (aufl + kat + wl).match(
-                    /"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/g
-                ) || [];
-            const brücke = (nc.match(/AnazhRealm\.STUDIO_WORT\b/g) || []).length;
-            return [
-                "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
-                aufl.length > 0 && kat.length > 0 && wl.length > 0 && brücke === 0 && hand.length === 0,
-                `STUDIO_WORT ${brücke} · Wort-Literale ${hand.length}${hand.length ? " (" + hand.slice(0, 4).join(" ") + ")" : ""}`,
-            ];
-        })(),
-        (() => {
-            const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
-            const craft = fnBody(nc, /\n {4}craftFromRecipe\(name\) \{/) || "";
-            const fert = fnBody(nc, /\n {4}fertigeBlueprint\(name\) \{/) || "";
-            const modus = fnBody(nc, /\n {4}_bauModusFuer\([^)]*\) \{/) || "";
-            const logs = (setzen.match(/this\.log\(/g) || []).length;
-            const sagt = (setzen.match(/this\._spielerSagt\(/g) || []).length;
-            return [
-                "W4 EIN Weg jedes Bauwerks: das Rezeptbuch ruft `fertigeBlueprint` (kein Inventar), die Engstelle `_bauModusFuer` fragt `_bauVorabTor` (Werkstatt-Knopf, Rezeptbuch, das Werk in der Hand), das Setzen setzt durch die Natur-Wand und sagt jede Absage dem Spieler",
-                /kind === "place"\) return this\.fertigeBlueprint\(name\)/.test(craft) &&
-                    !/addToInventory/.test(craft) &&
-                    /this\._bauModusFuer\(name\)/.test(fert) &&
-                    !/this\._bauVorabTor\(/.test(fert) &&
-                    /this\._bauVorabTor\(name\)/.test(modus) &&
-                    /this\._naturSetzen\(/.test(setzen) &&
-                    logs <= 1 &&
-                    sagt >= 4,
-                `confirmBuild: ${sagt}× Spieler-Kanal, ${logs}× Log`,
-            ];
-        })(),
-        (() => {
-            const brenn = fnBody(nc, /\n {4}_tickFocusingAffordances\([^)]*\) \{/) || "";
-            const formel = (nc.match(/\* Math\.PI \* 2 - Math\.PI \/ 2/g) || []).length;
-            return [
-                "W5 das Brennglas bündelt die Sonne in den Brennpunkt (`_sonnenRichtung` · `_brennpunkte` · `_traegtPunkt`), die Zerstörung spricht der Spieler-Kanal, der Sonnen-Winkel ist EINE Formel",
-                /this\._sonnenRichtung\(\)/.test(brenn) &&
-                    /this\._brennpunkte\(/.test(brenn) &&
-                    /this\._traegtPunkt\(/.test(brenn) &&
-                    /this\._spielerSagt\(/.test(brenn) &&
-                    !/this\.log\(/.test(brenn) &&
-                    formel === 1,
-                `Sonnen-Winkel ausgeschrieben ${formel}×`,
-            ];
-        })(),
-        (() => {
-            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
-            // die Zahl regiert den Schnitt auch dort, wo ein Stoff einen Schwellen-Knoten trägt (K68-N1, Prüfer K68: der Klon
-            // erbte `alphaTestNode` 0,5, die gesenkte Zahl wirkte nicht — unter kienspan verwarf das Baum-Phantom jedes Blatt)
-            const knoten = (nc.match(/\.alphaTestNode = /g) || []).length;
-            const schwelle = fnBody(nc, /\n {4}_laubSchwelle\([^)]*\) \{/) || "";
-            const zahl = knoten === 0 || /materialAlphaTest/.test(schwelle);
-            return [
-                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft; der Schwellen-Knoten des Laubs liest die Zahl seines Stoffs, `_laubSchwelle`)",
-                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;") && zahl,
-                zahl ? "" : `${knoten} Schwellen-Knoten ohne die Zahl des Stoffs (_laubSchwelle liest materialAlphaTest nicht)`,
-            ];
-        })(),
-        (() => {
-            const wurzeln = {
-                spawnArchitecture: /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/,
-                spawnIslandAt: /\n {4}spawnIslandAt\(x, y, z, height = 6, opts = \{\}\) \{/,
-                spawnUfoAt: /\n {4}spawnUfoAt\(x, y, z\) \{/,
-                _workshopRecipeSpec: /\n {4}_workshopRecipeSpec\([^)]*\) \{/,
-                dslCompose: /\n {4}dslCompose\(opts = \{\}\) \{/,
-                generateEvolution: /\n {4}generateEvolution\(\) \{/,
-                confirmBuild: /\n {4}confirmBuild\(\) \{/,
-            };
-            const fehlt = [];
-            const zuege = [];
-            for (const [n, re] of Object.entries(wurzeln)) {
-                const b = fnBody(nc, re);
-                if (!b) fehlt.push(n);
-                else if (/Math\.random/.test(b)) zuege.push(`${n} ${b.match(/Math\.random/g).length}`);
-            }
-            const same = fnBody(nc, /\n {4}_bauSame\([^)]*\) \{/) || "";
-            const zaehler = (nc.match(/_bauSameZaehler/g) || []).length;
-            return [
-                "W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · Werkstatt-Würfel · dslCompose · generateEvolution · confirmBuild), der Zähler des Welt-Stroms reist im Welt-Gedächtnis",
-                !fehlt.length && !zuege.length && /this\.state\.worldMeta/.test(same) && zaehler === 0,
-                `${fehlt.length ? "fehlt " + fehlt.join(", ") + " · " : ""}Math.random ${zuege.join(", ") || "0"} · Sitzungs-Zähler ${zaehler}`,
-            ];
-        })(),
-        (() => {
-            const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
-            const hash = (nc.match(/Math\.imul\(\w+, 131\)/g) || []).length;
-            const leser = {
-                Vorschau: /\n {4}_workshopFoundryPreviewGroup\([^)]*\) \{/,
-                Hand: /\n {4}_heldFoundryGroup\([^)]*\) \{/,
-                // das Werk des Phantoms (K20: mit seinem Ort — die Gestalt des Orts); der Ghost liest es (unten)
-                Phantom: /\n {4}_phantomWerk\([^)]*\) \{/,
-                Setzen: /\n {4}confirmBuild\(\) \{/,
-            };
-            const ohne = Object.entries(leser)
-                .filter(([, re]) => !/this\._werkSame\(/.test(fnBody(nc, re) || ""))
-                .map(([n]) => n);
-            const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
-            const ghost = fnBody(nc, /\n {4}_buildStudioPlacementGhost\([^)]*\) \{/) || "";
-            if (!/this\._phantomWerk\(bp, wo\)/.test(ghost)) ohne.push("Phantom-Ghost (_phantomWerk)");
-            return [
-                "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
-                hash === 1 && !ohne.length && /rotationY: dreh/.test(setzen) && !null0,
-                `Same-Hash ${hash}× · ohne _werkSame: ${ohne.join(", ") || "keiner"} · Samen 0 im Broadcast ${null0 ? "ja" : "nein"}`,
-            ];
-        })(),
-        (() => {
-            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
-            const toen = fnBody(nc, /\n {4}_applyPhantomTint\([^)]*\) \{/) || "";
-            return [
-                "W10 die Tönung des Phantoms wirkt im Stoff: der Geist-Stoff mischt den EINEN Tönungs-Uniform in seinen colorNode (`_phantomTint`), `_applyPhantomTint` setzt ihn",
-                /this\._phantomTint\(\)/.test(geist) && /g\.colorNode = /.test(geist) && /\.value\.set\(/.test(toen),
-            ];
-        })(),
-        (() => {
-            const strom = fnBody(nc, /\n {4}_streamRng\([^)]*\) \{/) || "";
-            return [
-                "W9 EIN Strom-Gesetz: `_streamRng` ist der Strom seines Samens (`_samenStrom`), kein zweites LCG",
-                /this\._samenStrom\(/.test(strom) && !/1664525/.test(strom),
-            ];
-        })(),
+        ["W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel", brenn.length > 0 && !/this\.log\(/.test(brenn) && formel === 1, `Sonnen-Winkel ausgeschrieben ${formel}×`],
+        [
+            "W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · Werkstatt-Würfel · dslCompose · generateEvolution · confirmBuild), kein Sitzungs-Zähler des Welt-Stroms",
+            !fehlt.length && !zuege.length && zaehler === 0,
+            `${fehlt.length ? "fehlt " + fehlt.join(", ") + " · " : ""}Math.random ${zuege.join(", ") || "0"} · Sitzungs-Zähler ${zaehler}`,
+        ],
+        ["W8 EIN Same-Hash, die Nachricht an den Mitspieler trägt nie den Samen 0", hash === 1 && !null0, `Same-Hash ${hash}× · Samen 0 im Broadcast ${null0 ? "ja" : "nein"}`],
+        ["W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)", body("_streamRng").length > 0 && !/1664525/.test(body("_streamRng"))],
     ];
 }
 
@@ -491,6 +397,25 @@ async function probe(argW) {
             Math.random = orig;
         }
     };
+    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
+    const ruft = (wer, methode, lieferer, name, args) => {
+        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
+        const echt = lieferer[name];
+        let k = 0;
+        lieferer[name] = function (...x) {
+            k++;
+            return echt.apply(this, x);
+        };
+        try {
+            wer[methode](...args);
+        } catch (_e) {
+            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
+        } finally {
+            if (eigen) lieferer[name] = echt;
+            else delete lieferer[name];
+        }
+        return k > 0;
+    };
     // ── D10: der Same eines Satzes ──
     try {
         const m = { gestartet: false, zuege: {} };
@@ -552,6 +477,19 @@ async function probe(argW) {
         const k2 = ki();
         m.zuege["ki ohne Seed"] = k1.zz;
         m.kiOrtAbweichung = abweichung(k1.orte, k2.orte);
+        // Der Programm-Strom ohne Seed ist der Welt-Strom, das Strom-Gesetz der Strom seines Samens; die Streuung eines
+        // Samens ist sein eigener Strom, nie der des Programms (zwei Programm-Ströme, dieselben Orte — jeder Peer dieselbe).
+        const z0 = JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}));
+        m.konsum = { "dslCtx → _bauSame": ruft(r, "dslCtx", r, "_bauSame", [{ source: "human" }]), "_streamRng → _samenStrom": ruft(r, "_streamRng", r, "_samenStrom", ["zensur"]) };
+        st.worldMeta.bauSame = z0;
+        const streu = (k) => {
+            const vorher = new Set(st.architectures);
+            r._dslSpawnStudioItems(r._studioBlueprintForWord("birke"), { x: frei.x + 12, y: frei.y, z: frei.z }, 3, 4711, r.dslCtx({ seed: k, source: "human" }), 4);
+            const liste = neue(vorher);
+            for (const a of liste) r.removeArchitecture(a);
+            return relOrte(liste);
+        };
+        m.streuAbweichung = abweichung(streu(1), streu(2));
         m.gestartet = true;
     } catch (e) {
         out.same = Object.assign(out.same || {}, { err: (e && e.stack) || String(e) });
@@ -663,6 +601,8 @@ async function probe(argW) {
             }
             return false;
         };
+        // der Schwellen-Knoten des Laubs liest die Zahl seines Stoffs (das Phantom erbt nie 0,5, K68-N1)
+        m.konsum = { "_laubSchwelle → materialAlphaTest": liest(r._laubSchwelle(THREE.TSL), THREE.TSL.materialAlphaTest) };
         const toenung = (phantom) => {
             const t = r._phantomTintU || null;
             let stoffe = 0;
@@ -917,6 +857,42 @@ async function probe(argW) {
             }
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
+            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort (K20).
+            const Q = { x: frei.x + 3, y: frei.y, z: frei.z + 3 };
+            const pw = r._phantomWerk;
+            let woG = null;
+            r._phantomWerk = function (bp, wo) {
+                woG = wo;
+                return pw.call(this, bp, wo);
+            };
+            try {
+                r._buildStudioPlacementGhost(st.blueprints[NAME], Q);
+            } finally {
+                delete r._phantomWerk;
+            }
+            m.konsum = {
+                "_workshopFoundryPreviewGroup → _werkSame": ruft(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]),
+                "_heldFoundryGroup → _werkSame": ruft(r, "_heldFoundryGroup", r, "_werkSame", [NAME]),
+                "_buildStudioPlacementGhost → _phantomWerk am Ort": !!woG && woG.x === Q.x && woG.z === Q.z,
+            };
+            // Jede Absage des Setzens spricht im Spieler-Kanal (Material und Lichtung fährt L-Werkstatt): je ein Instanz-Feld.
+            const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+            m.stumm = [
+                ["_setzUrteil", () => ({ grund: "standort" }), "Standort trägt nicht"],
+                ["_setzUrteil", () => ({ grund: "werkstatt", domaene: "x" }), "Werkstatt der Domäne"],
+                ["spawnArchitecture", () => null, "hier steht es nicht"],
+            ]
+                .filter(([nm, fn, satz]) => {
+                    const z0 = zeilen().length;
+                    r[nm] = fn;
+                    r._spielerSagtLetzte = null;
+                    try {
+                        return !(r.confirmBuild() === false && zeilen().slice(z0).some((z) => z.includes(satz)));
+                    } finally {
+                        delete r[nm];
+                    }
+                })
+                .map(([, , satz]) => satz);
             // Wie nah das Phantom dem Spieler kommt, wenn er nach unten blickt (−0,45 … −1,4 rad: der Blick-Strahl trifft den
             // Boden immer näher), und wie weit sein Werk reicht (der Footprint der Spieler-Klemme). Danach der Blick der Probe.
             if (bm.phantomMesh) {
@@ -1204,6 +1180,8 @@ async function probe(argW) {
             samenGleich: true,
             ortAbweichung: 0,
             kiOrtAbweichung: 0,
+            streuAbweichung: 0,
+            konsum: { "dslCtx → _bauSame": true, "_streamRng → _samenStrom": true },
         };
         check("Selbst-Test D10: gesund == 0 Täter", sameVerdict(gesund).length === 0, sameVerdict(gesund).join(" · "));
         const mit = (o) => Object.assign({}, gesund, o);
@@ -1235,6 +1213,9 @@ async function probe(argW) {
             ],
             ["dieselben Samen, andere Orte", mit({ ortAbweichung: 3.2 }), "derselbe Same, andere Orte"],
             ["die KI streut anders", mit({ kiOrtAbweichung: 1.5 }), "das KI-Programm ohne Seed streut anders"],
+            ["die Streuung zieht aus dem Programm-Strom", mit({ streuAbweichung: 2.1 }), "die Streuung eines Samens folgt dem Programm-Strom"],
+            ["der Programm-Strom ohne Seed würfelt", mit({ konsum: { "dslCtx → _bauSame": false, "_streamRng → _samenStrom": true } }), "Konsum: dslCtx → _bauSame"],
+            ["ohne Konsum-Probe (vakuös)", mit({ konsum: undefined }), "Konsum: (keine Probe)"],
             ["kein Hain (vakuös)", mit({ hainBaeume: 0 }), "der Hain wuchs nicht"],
         ]) {
             const v = sameVerdict(bruch);
@@ -1254,43 +1235,24 @@ async function probe(argW) {
                 .map(([n]) => n)
                 .join(" · ")
         );
-        for (const [name, bruch, soll] of [
-            [
-                "die Insel würfelt wieder",
-                stammLib.ersetze(quelle, "chatDslPatterns", 'this._bauSame("insel")', "Math.floor(Math.random() * 0xffffffff)"),
-                "W1",
-            ],
-            ["der Programm-Strom fällt auf Math.random", stammLib.ersetze(quelle, "dslCtx", 'this._bauSame("dsl")', "Math.random()"), "W2"],
-            [
-                "die Streuung zieht aus dem Programm-Strom",
-                stammLib.ersetze(quelle, "_dslSpawnStudioItems", "x = pos.x + (wurf() - 0.5)", "x = pos.x + (ctx.rng() - 0.5)"),
-                "W2",
-            ],
-            [
-                "die Hand-Liste kehrt zurück",
-                stammLib.ersetze(quelle, null,
-                    "AnazhRealm._wortFalten = function",
-                    'AnazhRealm.STUDIO_WORT = Object.freeze({ haus: "haus_" });\nAnazhRealm._wortFalten = function'
-                ),
-                "W3",
-            ],
-            [
-                "ein Wort-Literal im Katalog",
-                stammLib.ersetze(quelle, "_studioWortKatalog",
-                    "const stufen = [new Map(), new Map(), new Map(), new Map()];",
-                    'const stufen = [new Map([["fels", "felsbrocken"]]), new Map(), new Map(), new Map()];'
-                ),
-                "W3",
-            ],
+        const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
+        for (const [name, gift, soll] of [
+            ["ein Satz würfelt (dslCtx)", kopfMit("dslCtx", "Math.random()"), "W1"],
+            ["die Streuung zieht aus dem Programm-Strom", kopfMit("_dslSpawnStudioItems", "ctx.rng()"), "W2"],
+            ["die Hand-Liste kehrt zurück", kopfMit("_studioWortKatalog", "AnazhRealm.STUDIO_WORT"), "W3"],
+            ["ein Wort-Literal im Katalog", kopfMit("_studioWortKatalog", '"fels"'), "W3"],
+            ["das Rezeptbuch legt wieder ins Inventar", kopfMit("craftFromRecipe", "this.addToInventory(name, 1)"), "W4"],
+            ["der Sonnen-Winkel ein zweites Mal ausgeschrieben", kopfMit("_dayNightApplyStarField", "t * Math.PI * 2 - Math.PI / 2"), "W5"],
+            ["die Wurzel würfelt wieder (Befund)", kopfMit("spawnArchitecture", "Math.random()"), "W7"],
+            ["der Zähler wird wieder Sitzungs-Feld", kopfMit("_bauSame", "this._bauSameZaehler"), "W7"],
+            ["der Broadcast schickt wieder den Samen 0 (Befund)", kopfMit("confirmBuild", '["spawn_blueprint", bm.blueprintName, posNode, 0]'), "W8"],
+            ["die Vorschau hasht ihren Samen selbst", kopfMit("_workshopFoundryPreviewGroup", "Math.imul(seedNum, 131)"), "W8"],
+            ["ein zweites LCG im Strom-Gesetz", kopfMit("_streamRng", "1664525"), "W9"],
         ]) {
-            const rot = wand(bruch)
+            const rot = wand(stammLib.ersetze(quelle, [gift]))
                 .filter(([, ok]) => !ok)
                 .map(([n]) => n);
-            check(
-                `Selbst-Test Wand: ‚${name}' → ${soll} rot`,
-                rot.some((n) => n.startsWith(soll)),
-                rot.join(" · ") || "alles grün"
-            );
+            check(`Selbst-Test Wand: ‚${name}' → ${soll} rot`, rot.some((n) => n.startsWith(soll)), rot.join(" · ") || "alles grün");
         }
         // L-Wortschatz: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const artVonSoll = Object.fromEntries(
@@ -1392,6 +1354,7 @@ async function probe(argW) {
                 },
             },
             werke: { Haus: 1, GT: 1 },
+            konsum: { "_laubSchwelle → materialAlphaTest": true },
             geraet: { name: "klinge_spitzhacke", zeile: "Spitzhacke: fehlt 12× eisen — sammeln", inHand: false },
             phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             phantomOhneMaterial: "rot",
@@ -1484,6 +1447,11 @@ async function probe(argW) {
                 "auf der Lichtung steht 1 Eiche",
             ],
             [
+                "der Schwellen-Knoten des Laubs ohne die Zahl des Stoffs (K68-N1)",
+                Object.assign({}, gesundG, { konsum: { "_laubSchwelle → materialAlphaTest": false } }),
+                "Konsum: _laubSchwelle → materialAlphaTest",
+            ],
+            [
                 "grün ohne Material (Auflage 2 der zweiten Gegenprüfung)",
                 Object.assign({}, gesundG, { phantomOhneMaterial: "grün" }),
                 "das Phantom ohne Material steht grün",
@@ -1515,6 +1483,8 @@ async function probe(argW) {
             mindest: 7.4,
             naechsterSame: 2034871155,
             huelleReicht: 1.1,
+            konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true },
+            stumm: [],
         };
         check(
             "Selbst-Test Werk-Same: gesund == 0 Täter",
@@ -1524,6 +1494,9 @@ async function probe(argW) {
         const mitK = (o) => Object.assign({}, gesundK, o);
         for (const [name, bruch, soll] of [
             ["das Setzen würfelt (Befund: der Standard-Same)", mitK({ zuege: 1 }), "das Setzen würfelt 1×"],
+            ["die Vorschau hasht ihren Samen selbst", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_workshopFoundryPreviewGroup → _werkSame": false }) }), "Konsum: _workshopFoundryPreviewGroup"],
+            ["der Ghost fragt das Werk ohne Ort (K20: eiche|3 statt eiche|2)", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_buildStudioPlacementGhost → _phantomWerk am Ort": false }) }), "Konsum: _buildStudioPlacementGhost"],
+            ["der Standort schweigt (Befund: nur im Log)", mitK({ stumm: ["Standort trägt nicht"] }), "eine Absage des Setzens schweigt: Standort"],
             [
                 "das Phantom zeigt eine andere Gestalt (Befund)",
                 mitK({ werkKey: "eiche|1|0" }),
@@ -1627,100 +1600,6 @@ async function probe(argW) {
                 `Selbst-Test Brennglas: ‚${name}' → die Linse nennt ${soll}`,
                 v.some((t) => t.startsWith(soll)),
                 v.join(" · ")
-            );
-        }
-        for (const [name, bruch, soll] of [
-            [
-                "das Rezeptbuch legt wieder ins Inventar",
-                stammLib.ersetze(quelle, "craftFromRecipe",
-                    'if (kind === "place") return this.fertigeBlueprint(name);',
-                    'if (kind === "place") { this.addToInventory(name, 1); return { ok: true }; }'
-                ),
-                "W4",
-            ],
-            [
-                "das Setzen fragt die Natur-Wand nicht",
-                stammLib.ersetze(quelle, "confirmBuild", "? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))", "? setzen()"),
-                "W4",
-            ],
-            [
-                "das Brennglas erhitzt wieder den ganzen 4-m-Kreis",
-                stammLib.ersetze(quelle, "_tickFocusingAffordances", "if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
-                "W5",
-            ],
-            [
-                "der Schwellen-Knoten des Laubs ohne die Zahl des Stoffs (das Phantom erbt 0,5)",
-                stammLib.ersetze(quelle, "_laubSchwelle", "T.materialAlphaTest.mul(", "T.float(0.5).mul("),
-                "W6",
-            ],
-            [
-                "das Phantom verwirft wieder jedes Fragment",
-                stammLib.ersetze(quelle, "_ghostMaterialFor", "g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;", ""),
-                "W6",
-            ],
-            [
-                "der Sonnen-Winkel ein zweites Mal ausgeschrieben",
-                stammLib.ersetze(quelle, "_dayNightApplyStarField", "const sa = this._sonnenWinkel(t);", "const sa = t * Math.PI * 2 - Math.PI / 2;"),
-                "W5",
-            ],
-            [
-                "die Wurzel würfelt wieder (Befund)",
-                stammLib.ersetze(quelle, "spawnArchitecture",
-                    'const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);',
-                    "const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);"
-                ),
-                "W7",
-            ],
-            [
-                "der Zähler wird wieder Sitzungs-Feld",
-                stammLib.ersetze(quelle, "_bauSame",
-                    'const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});',
-                    "const z = this._bauSameZaehler || (this._bauSameZaehler = {});"
-                ),
-                "W7",
-            ],
-            [
-                "der Broadcast schickt wieder den Samen 0 (Befund)",
-                stammLib.ersetze(quelle, "confirmBuild",
-                    '["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId,',
-                    '["spawn_blueprint", bm.blueprintName, posNode, 0, archId,'
-                ),
-                "W8",
-            ],
-            [
-                "die Vorschau hasht ihren Samen selbst",
-                stammLib.ersetze(quelle, "_workshopFoundryPreviewGroup",
-                    "        const seedNum = this._werkSame(bp, bpName);",
-                    "        let seedNum = 0;\n        for (const c of String(bpName)) seedNum = (Math.imul(seedNum, 131) + c.charCodeAt(0)) >>> 0;"
-                ),
-                "W8",
-            ],
-            [
-                "das Setzen vergisst die Drehung des Phantoms (Befund)",
-                stammLib.ersetze(quelle, "confirmBuild", "                rotationY: dreh,\n", ""),
-                "W8",
-            ],
-            [
-                "die Tönung schreibt wieder nur material.color (Gegenprüfung 08.10.)",
-                stammLib.ersetze(quelle, "_ghostMaterialFor", "g.colorNode = ", "g.colorNodeAlt = "),
-                "W10",
-            ],
-            [
-                "ein zweites LCG im Strom-Gesetz",
-                stammLib.ersetze(quelle, "_streamRng",
-                    "        return this._samenStrom(h >>> 0);",
-                    "        let st = h >>> 0 || 1;\n        return () => (st = (st * 1664525 + 1013904223) >>> 0) / 4294967296;"
-                ),
-                "W9",
-            ],
-        ]) {
-            const rot = wand(bruch)
-                .filter(([, ok]) => !ok)
-                .map(([n]) => n);
-            check(
-                `Selbst-Test Wand: ‚${name}' → ${soll} rot`,
-                rot.some((n) => n.startsWith(soll)),
-                rot.join(" · ") || "alles grün"
             );
         }
         if (errs.length) {

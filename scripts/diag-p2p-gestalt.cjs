@@ -24,11 +24,8 @@
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -38,30 +35,6 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── Quell-Proben (die Naht lebt im Stamm — Broadcast · Empfang · Konsum) ──
-    console.log("=== P2P-GESTALT — Quell-Proben (die Übergabe reist im soul-Kanal) ===");
-    const stamm = stammLib.text(root);
-    check(
-        "Q: der soul-Broadcast trägt die Avatar-Übergabe additiv (nur koerper, kein toter Kreatur-Kanal)",
-        /msg\.uebergabe = \{ koerper: su\.koerper \};/.test(stamm)
-    );
-    check(
-        "Q: der Empfänger validiert durch DENSELBEN Validator (_studioUebergabeValidate, EINE Quelle)",
-        /this\._studioUebergabeValidate\("koerper", uK\)/.test(stamm) && /entry\.uebergabe = cleanU;/.test(stamm)
-    );
-    check(
-        "Q: der Peer-Guss führt die Übergabe transient (try/finally räumt _activePeerUebergabe)",
-        /this\._activePeerUebergabe = peerU;\s*\n\s*try \{\s*\n\s*group = def\.build\(\);\s*\n\s*\} finally \{\s*\n\s*this\._activePeerUebergabe = savedActive;/.test(
-            stamm
-        )
-    );
-    check(
-        "Q: _koerperStudioDials führt _activePeerUebergabe vor der eigenen state-Übergabe (EIN Leser)",
-        /this\._activePeerUebergabe !== undefined && this\._activePeerUebergabe !== null\s*\n\s*\? this\._activePeerUebergabe/.test(
-            stamm
-        )
-    );
-
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -75,7 +48,7 @@ function check(name, ok, detail) {
 
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const res = { s: {}, n: {}, w: {}, m: {}, e: {} };
+        const res = { s: {}, n: {}, w: {}, m: {}, e: {}, k: {} };
         // Farb-Set eines Peer-Meshes (Vertex-color-Attribut, Render-Diät-Muster).
         const colorsOf = (g) => {
             const set = new Set();
@@ -239,6 +212,35 @@ function check(name, ok, detail) {
         const cLocalNach = colorsOf(r.state.playerMesh);
         res.e.eigenKeineFremdHaut = !cLocalNach.has(porzellanLin);
 
+        // ── (K) DIE NAHT AM VERHALTEN: der Broadcast trägt nur koerper, der Peer führt vor der eigenen Übergabe, der Empfang
+        // klemmt durch DENSELBEN Validator ──
+        const su0 = r.state.studioUebergabe,
+            p2pAn = r.state.p2p.enabled,
+            sent = [],
+            echtV = r._studioUebergabeValidate;
+        r.p2pSend = (m) => sent.push(m);
+        r.state.p2p.enabled = true;
+        r.state.studioUebergabe = { koerper: { s: { height: 1.1 } }, kreatur: { s: { x: 1 } } };
+        r._p2pBroadcastSoul();
+        delete r.p2pSend;
+        res.k.nurKoerper = !!sent[0] && JSON.stringify(sent[0].uebergabe) === '{"koerper":{"s":{"height":1.1}}}';
+        r._activePeerUebergabe = { s: { height: 1.3 } };
+        res.k.peerFuehrt = r._koerperStudioDials().height === 1.3;
+        r._activePeerUebergabe = null;
+        res.k.eigen = r._koerperStudioDials().height === 1.1;
+        r.state.studioUebergabe = su0;
+        r.state.p2p.enabled = p2pAn;
+        let validiert = 0;
+        r._studioUebergabeValidate = function (art, ...x) {
+            if (art === "koerper") validiert++;
+            return echtV.call(this, art, ...x);
+        };
+        try {
+            r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { s: { height: 1 } } } }, r.state.p2p);
+        } catch (_e) {}
+        delete r._studioUebergabeValidate;
+        res.k.einValidator = validiert > 0;
+
         return res;
     });
 
@@ -277,6 +279,9 @@ function check(name, ok, detail) {
     );
     check("(E) der transiente Peer-Kontext leckt nicht (_activePeerUebergabe leer)", out.e.activeLeer === true);
     check("(E) der eigene Neu-Guss trägt KEINE fremde Haut", out.e.eigenKeineFremdHaut === true);
+    check("(K) der soul-Broadcast trägt die Übergabe additiv, nur koerper", out.k.nurKoerper === true);
+    check("(K) beim Peer-Guss führt die Übergabe des Senders vor der eigenen", out.k.peerFuehrt === true && out.k.eigen === true);
+    check("(K) der Empfang klemmt durch DENSELBEN Validator (_studioUebergabeValidate)", out.k.einValidator === true);
     check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {
