@@ -30,8 +30,8 @@
 //       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
 //       ferne Menge derselben Namen (300–3 000 je Name) lässt ihre Zeit je Ruf stehen (WELTGRÖSSE rot ab 2× + 3 µs), die Gegenprobe
 //       (das Orakel mit der Menge) muss wachsen (sonst BLIND);
-//   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht im Spawn
-//       oder stempelt, die Hitze schreibt nur der Brennglas-Takt (oder ein Stempel); die Familie des Spiegel-Takts (D10,
+//   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
+//       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
 //       `_spiegel…`) gehört der Klasse;
 //   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab (D10-n1: die Kronen des Spiegels leiteten je
 //       Gestalt 4–39 ms ab, `_spiegelStreuGestaltNeu` → `_gestaltTeile`) — die Krone reist als Beipack aus dem Worker;
@@ -229,7 +229,6 @@ function quellWand(quelle) {
                 }
             }
         };
-        let stempelt = false;
         for (let d = 0; d < 3; d++)
             lauf(body, (n) => {
                 if (n.type === "VariableDeclarator") binde(n.id, n.init);
@@ -243,12 +242,6 @@ function quellWand(quelle) {
                     const id = n.left.declarations[0].id;
                     if (z && id.type === "Identifier") ziel.set(id.name, z);
                 }
-                if (
-                    n.type === "CallExpression" &&
-                    n.callee.type === "MemberExpression" &&
-                    feld(n.callee) === "_blockerNetzSetzen"
-                )
-                    stempelt = true;
             });
         const meld = (n, art) => befunde.push(`${name} Zeile ${n.loc.start.line}: ${art} — ${text(n).slice(0, 70)}`);
         if (istTakt(name)) {
@@ -280,8 +273,10 @@ function quellWand(quelle) {
                 if (n.type === "SpreadElement" && istBestand(n.argument)) meld(n, "läuft über den Bestand (Spread)");
             });
         }
-        const darfZiel = name === "spawnArchitecture" || stempelt;
-        const darfHitze = name === "_tickFocusingAffordances" || stempelt;
+        // die Schreiber beim Namen (D3c: der Freibrief „ruft _blockerNetzSetzen" am Rumpf fiel; dass das Tor das Verzeichnis
+        // nachzieht, beweist (V) am Aufruf)
+        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal";
+        const darfHitze = name === "_tickFocusingAffordances";
         const harmlosUserData = (links, rechts) => {
             if (rechts.type === "ObjectExpression")
                 return !rechts.properties.some(
@@ -463,7 +458,7 @@ if (process.argv.includes("--selftest")) {
     const gruen = [
         [
             "gestempelter Schreiber",
-            klasse("tor(e) { e.affordances = {}; e.affordances.focusing = true; this._blockerNetzSetzen(e); }"),
+            klasse("setBlueprintAsPortal(e) { e.affordances = {}; e.affordances.focusing = true; this._blockerNetzSetzen(e); }"),
         ],
         ["harmloses userData", klasse("m(mesh) { mesh.userData = { a: 1 }; mesh.userData = mesh.userData || {}; }")],
         [

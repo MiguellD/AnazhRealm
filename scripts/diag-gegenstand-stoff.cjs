@@ -15,17 +15,17 @@
 //   durchsicht   eine Scheibe ohne Durchsicht
 //   toenung      Vertex-Farben UND eine nicht-weiße Material-Farbe (das Labor tönt, die Welt nicht)
 //   lack-gestalt die Gestalten tragen nicht die acht Lacke des LACK_GESETZ (linear)
-//   transport    der Extraktor (foundry-bruecke) reicht Klarlack/Durchsicht nicht, der Wirt baut sie nicht
+//   transport    das Gesetz der Regler (phyto-core) macht aus Klarlack/Durchsicht nicht die Zahlen des Wirts
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
 "use strict";
-const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "vehicle-core.js"));
 require(path.join(root, "schmiede-core.js"));
+require(path.join(root, "phyto-core.js"));
+const PC = globalThis.__phytoCore;
 const VC = globalThis.__vehicleCore;
 const SC = globalThis.__schmiedeCore;
 
@@ -129,19 +129,13 @@ function lackGestalten() {
     return out;
 }
 
-// Der Transport: der Extraktor reicht Klarlack und Durchsicht, das Gesetz der Regler liest sie, der Wirt baut sie.
-function transport(phytoSrc, pcSrc, anazhSrc) {
-    const out = [];
-    if (!/out\.mat\.clearcoat\s*=/.test(phytoSrc) || !/out\.mat\.opacity\s*=/.test(phytoSrc))
-        out.push("transport: __extractAssetMesh reicht Klarlack/Durchsicht nicht");
-    if (!/\bcc:\s*mp\b/.test(pcSrc) || !/\bop:\s*mp\b/.test(pcSrc))
-        out.push("transport: budgetRegler liest Klarlack/Durchsicht nicht");
-    const k = stammLib.kopf(anazhSrc, "_foundryTreeMaterial"); // am Namen (gate:apparat Klinge 3)
-    const i = k < 0 ? -1 : k + 5;
-    const body = i >= 0 ? anazhSrc.slice(i, i + 6000) : "";
-    if (!/R\.cc\s*>\s*0/.test(body) || !/R\.op\s*<\s*1/.test(body))
-        out.push("transport: _foundryTreeMaterial baut Klarlack/Durchsicht nicht");
-    return out;
+
+// Der Transport am Gesetz der Regler (D3c, vorher am Quelltext von Extraktor, Kern und Wirt): Klarlack und Durchsicht eines
+// Stoffs werden die Material-Zahlen, aus denen der Wirt baut (phyto-core `budgetRegler`)
+const LACK_GLAS = { clearcoat: 1, clearcoatRoughness: 0.1, opacity: 0.4 };
+function transport(R) {
+    if (R && R.cc === 1 && R.ccr === 0.1 && R.op === 0.4) return [];
+    return [`transport: budgetRegler liest Klarlack/Durchsicht nicht (cc ${R && R.cc} · op ${R && R.op})`];
 }
 
 function alles() {
@@ -150,13 +144,7 @@ function alles() {
         for (let s = 1; s <= 8; s++) out.push(...urteil(`fahrzeug ${id} Same ${s}`, VC.buildInstance(id, s, 0)));
     for (const id of Object.keys(SC.PRESETS)) out.push(...urteil(`klinge ${id}`, SC.buildInstance(id, 1, 0)));
     out.push(...lackGestalten());
-    out.push(
-        ...transport(
-            fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"), // der Extraktor lebt in der Brücke (K42)
-            fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"),
-            stammLib.text(root)
-        )
-    );
+    out.push(...transport(PC.budgetRegler("unknown", LACK_GLAS)));
     return [...new Set(out)];
 }
 
@@ -197,7 +185,7 @@ function selbstTest() {
     if (!urteil("t", vc).some((s) => s.includes("toenung"))) fehl.push("getönte Vertex-Farben bleiben still");
     if (!urteil("t", (() => { const g = mk("gummi", 0x2a2c2f); delete g.children[0].material.userData.__stoff; return g; })()).some((s) => s.includes("ohne-stoff")))
         fehl.push("Stoff ohne Namen bleibt still");
-    if (!transport("", "", "").length) fehl.push("Transport ohne Quelle bleibt still");
+    if (!transport(PC.budgetRegler("unknown", {})).length) fehl.push("Transport ohne Klarlack bleibt still");
     return fehl;
 }
 
