@@ -28,7 +28,7 @@ class AnazhRealm_stoff_instanz {
     // IN DER WELT (S2, `_karteWeltBacken`): der Welt-Renderer zeichnet die L1-Gestalt, die GPU zieht die deckungstreuen Mips
     // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer, keine Rücklese,
     // keine Platte. Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
-    // Albedo + BC5-Normale auf 1/normalTeiler + r8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
+    // Albedo + BC5-Normale auf 1/normalTeiler + rg8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
     // Schicht), ohne es (WebGL2, WebGPU ohne BC) zeichnet die Karte direkt in die Schicht eines rgba8-Array-Ziels, die GPU
     // zieht die Mips (2,8 MiB je Schicht; `_impostorAtlasTexturen` meldet es EINMAL laut). Befund V18.528: je Karte zwei
     // CanvasTextures, ein Material, eine Gruppe und ein Programm — 31 MB, ~90 Pipelines.
@@ -135,7 +135,7 @@ class AnazhRealm_stoff_instanz {
                 at.nmap.name = "karte-normal:atlas";
                 at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
                 at.lmap.name = "karte-licht:atlas";
-                at.lmap.format = T.RedFormat;
+                at.lmap.format = T.RGFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6)
             }
             for (const t of [at.map, at.nmap, at.lmap]) {
                 t.generateMipmaps = false;
@@ -305,15 +305,21 @@ class AnazhRealm_stoff_instanz {
         const at = this._impostorAtlas();
         if (!at || !this._impostorAtlasTexturen(at)) return null;
         if (at.mat) return at.mat;
-        const laubMat = this.state.materials && this.state.materials.laub;
+        // DIE ZAHLEN DER GESTALT (F6, Lehre 19: die Karte ist dieselbe Krone in einer anderen Stufe): ihr Stoff trägt die Regler
+        // des Gesetzbuchs, aus dem ihre Gestalt baut (phyto-core `budgetRegler("foliageTex")`: Rauheit 0,62, Metall 0) — nie
+        // die Wirts-Herleitung aus den Substanz-Tags des Laubs (Rauheit 0,9, dazu die Mikro-Kavität des Antwort-Profils, ein
+        // Faktor 0,905 auf jedem Licht, den keine Gestalt trägt). Bis F6 stand die Karte der Fichte darum mittags bei 0,82,
+        // nachts bei 0,54 ihrer Gestalt (Radeon, Mess-Wiese, `werkbank licht --laub --karte --uhr`).
+        const R = globalThis.__phytoCore.budgetRegler("foliageTex");
         const matOpts = {
             vertexColors: true,
             useInstanceTint: true, // konstante Kronenfarbe je Baum über die LODs
             pflanzenStoff: true, // Vertex-Albedo im colorNode, echte Normale, keine Geologie; Wind: `windAusschlag` über uv.y
             impostorAtlas: true,
             side: THREE.DoubleSide,
+            roughness: R.r,
+            metalness: R.mt,
         };
-        if (laubMat && laubMat.tags) matOpts.tags = laubMat.tags;
         const mat = this._sharedFoliageMaterial(matOpts);
         at.mat = mat;
         return mat;
@@ -529,6 +535,12 @@ class AnazhRealm_stoff_instanz {
         // durchlässt — N·L-gewichtet über die Richtungen, im Baum-Raum (sie drehen mit jeder Ansicht), aus den Tiefen-
         // Kacheln derselben Krone (3×3 Abgriffe). Der Kartenstoff legt sie auf den EMPFANGENEN Schatten (`receivedShadowNode`),
         // nie auf die Albedo: der Himmel bleibt frei wie an der Gestalt.
+        // DIE HÖHE DES LICHTS (F6): die Sicht reist ZWEIFACH — die des Zenits (die erste Richtung) und das N·L-Mittel des
+        // 45°-Kranzes —, und der Kartenstoff liest sie nach der Höhe des aktiven Körpers (`uSunDir`, Sonne oder Mond). Das eine
+        // Mittel über alle Richtungen ließ die Mittagssonne durch die hohe Fichte wie durch ihre Flanke: ihr Sonnen-Licht stand
+        // 1,42 × über dem ihrer Gestalt (Radeon, Mess-Wiese, Mittag), die Sicht des Zenits allein 0,75 ×.
+        if (SZ.richtungen[0][0] !== 90 || SZ.richtungen.slice(1).some(([h]) => h !== 45))
+            throw this._stoffBruch("die Karte: KARTE_SONNEN_SICHT trägt den Zenit zuerst, dann den 45°-Kranz");
         B.uBaum = S.uniform(new T.Matrix4());
         B.uVP = SZ.richtungen.map(() => S.uniform(new T.Matrix4()));
         B.dirs = SZ.richtungen.map(([h, a]) => {
@@ -541,8 +553,10 @@ class AnazhRealm_stoff_instanz {
         const sicht = S.Fn(() => {
             const nB = S.normalize(B.uBaum.mul(S.vec4(S.normalWorld, 0.0)).xyz).toVar();
             const pB = B.uBaum.mul(S.vec4(S.positionWorld, 1.0)).xyz.add(nB.mul(SZ.normalBias)).toVar();
+            const zenit = S.float(1.0).toVar();
             const summe = S.float(0.0).toVar();
             const gew = S.float(0.0).toVar();
+            const roh = S.float(0.0).toVar();
             B.dirs.forEach((d, j) => {
                 const nl = S.max(S.dot(nB, S.vec3(d.x, d.y, d.z)), 0.0);
                 const q = B.uVP[j].mul(S.vec4(pB, 1.0));
@@ -556,16 +570,31 @@ class AnazhRealm_stoff_instanz {
                 let vis = S.float(0.0);
                 for (let dy = -1; dy <= 1; dy++)
                     for (let dx = -1; dx <= 1; dx++) vis = vis.add(S.step(ref, B.tiefe.load(px.add(S.ivec2(dx, dy)))));
-                summe.addAssign(vis.div(9.0).mul(nl));
-                gew.addAssign(nl);
+                if (j === 0) zenit.assign(vis.div(9.0));
+                else {
+                    summe.addAssign(vis.div(9.0).mul(nl));
+                    gew.addAssign(nl);
+                    roh.addAssign(vis.div(9.0));
+                }
             });
-            return S.select(gew.greaterThan(1e-4), summe.div(gew), S.float(1.0));
+            return S.vec2(zenit, S.select(gew.greaterThan(1e-4), summe.div(gew), roh.div(B.dirs.length - 1)));
         })();
+        // DIE GANZE NORMALE (F6): die Krone lichtet flip-frei (`_laubStoffNormale`) — durch ihre Lücken zeigt sie Nadeln der
+        // Rückseite, deren Normale vom Auge weg steht. Zwei Kanäle tragen die Kugel oktaedrisch (`oktZu`, gelesen in `oktAuf` und
+        // im Kartenstoff); bis F6 trugen sie nur xy, die Karte drehte jede Normale zum Bäcker, und das Licht der Rückseite fehlte
+        // ihr (Fichte nachts im Himmels-Licht 0,755 ihrer Gestalt, die Gestalt mit zum Auge gedrehten Normalen 0,88).
+        const nV = S.normalView;
+        const nO = nV.xy.div(nV.x.abs().add(nV.y.abs()).add(nV.z.abs()).max(1e-6));
+        const nS = S.vec2(
+            S.select(nO.x.greaterThanEqual(0.0), 1.0, -1.0),
+            S.select(nO.y.greaterThanEqual(0.0), 1.0, -1.0)
+        );
+        const nOkt = S.select(nV.z.lessThan(0.0), S.vec2(1.0).sub(nO.yx.abs()).mul(nS), nO);
         // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
-            [namen[1]]: S.vec4(S.normalView.xy.mul(0.5).add(0.5), 1.0, 1.0),
-            [namen[2]]: S.vec4(sicht, 1.0, 0.0, 1.0),
+            [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, 1.0),
+            [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
         });
         this._karteBuehneSatz = B;
         return B;
@@ -821,7 +850,7 @@ class AnazhRealm_stoff_instanz {
             zuege.push({ pipe, slot: slots.length - 1, x: Math.max(1, x), y: Math.max(1, y || 1) });
         };
         const ablage = (tex, mip, w, h, blockB, vonW) => {
-            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; r8: 4 Texel je Wort) — die Zeile auf 256 B gepolstert
+            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; rg8: 2 Texel je Wort) — die Zeile auf 256 B gepolstert
             const zeileB = pad((w / 4) * blockB);
             const zeilen = tex === 2 ? h : h / 4;
             const off = ausB;
@@ -909,12 +938,12 @@ class AnazhRealm_stoff_instanz {
             nq = no;
             no += wj * hj;
         }
-        // Sonnen-Sicht: r8, eine Stufe
-        const l = ablage(2, 0, M.lw, M.lh, 4);
+        // Sonnen-Sicht: rg8 (Zenit, 45°-Kranz), eine Stufe
+        const l = ablage(2, 0, M.lw, M.lh, 8);
         zug(
             "sicht",
             Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }),
-            Math.ceil((M.lw * M.lh) / 4 / 64),
+            Math.ceil((M.lw * M.lh) / 2 / 64),
             1
         );
         const U = GPUBufferUsage;
@@ -926,7 +955,7 @@ class AnazhRealm_stoff_instanz {
             nsum: mk("nsum", no * 16, U.STORAGE),
             dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
             dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
-            zahl: mk("zahl", (V + 2) * 4, U.STORAGE | U.COPY_DST),
+            zahl: mk("zahl", (V + 3) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 4, U.STORAGE),
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
         };
@@ -3189,15 +3218,17 @@ fn deckt(x: u32, y: u32) -> bool {
     return textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).a >= p.thr;
 }
 
-// Stufe 0: die Deckung je Ansicht und die Sonnen-Sicht über die deckenden Texel (zahl: [0, V) Deckung, V Summe, V+1 Zahl)
+// Stufe 0: die Deckung je Ansicht und die Sonnen-Sicht über die deckenden Texel (zahl: [0, V) Deckung, V Summe des Zenits,
+// V+1 Zahl, V+2 Summe des 45°-Kranzes)
 @compute @workgroup_size(16, 16)
 fn stufe0(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
     if (!deckt(g.x, g.y)) { return; }
     atomicAdd(&zahl[g.y / p.hA], 1u);
-    let s = textureLoad(tSicht, vec2<i32>(g.xy), 0).r;
-    atomicAdd(&zahl[p.V], u32(round(clamp(s, 0.0, 1.0) * 255.0)));
+    let s = textureLoad(tSicht, vec2<i32>(g.xy), 0);
+    atomicAdd(&zahl[p.V], u32(round(clamp(s.r, 0.0, 1.0) * 255.0)));
     atomicAdd(&zahl[p.V + 1u], 1u);
+    atomicAdd(&zahl[p.V + 2u], u32(round(clamp(s.b, 0.0, 1.0) * 255.0)));
 }
 
 // Stufe k aus k-1: die Summe (r·a, g·a, b·a, a) der vier Kinder — a zählt die deckenden Stufe-0-Texel des Fußabdrucks;
@@ -3418,10 +3449,23 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
 // Stufe hält die SUMME (ihr Betrag ist die Deckung), erst die Ablage normiert. Bis S2b trug ein leerer Texel (0, 0, 1) in das
 // Mittel jeder Stufe: die Normale der lichten Krone kippte zum Auge, ihre Sonne fiel (Radeon, Genesis Ego, Sonne 74°: das
 // Sonnen-Licht der Karte 33–54 % ihrer L1, das des Himmels 96–97 %)
+// Die Normale reist oktaedrisch (F6): zwei Kanäle tragen die ganze Kugel, auch die Rückseite der Krone (Bühne und Kartenstoff
+// rechnen dieselbe Abbildung)
+fn oktAuf(e: vec2<f32>) -> vec3<f32> {
+    var n = vec3<f32>(e, 1.0 - abs(e.x) - abs(e.y));
+    let t = max(-n.z, 0.0);
+    n.x += select(t, -t, n.x >= 0.0);
+    n.y += select(t, -t, n.y >= 0.0);
+    return normalize(n);
+}
+fn oktZu(n: vec3<f32>) -> vec2<f32> {
+    let o = n.xy / (abs(n.x) + abs(n.y) + abs(n.z));
+    let s = select(vec2<f32>(-1.0), vec2<f32>(1.0), o >= vec2<f32>(0.0));
+    return select(o, (1.0 - abs(o.yx)) * s, n.z < 0.0);
+}
 fn nDek(x: u32, y: u32) -> vec3<f32> {
     if (!deckt(x, y)) { return vec3<f32>(0.0); }
-    let n = textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0).xy * 2.0 - 1.0;
-    return vec3<f32>(n, sqrt(max(0.0, 1.0 - dot(n, n))));
+    return oktAuf(textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0).xy * 2.0 - 1.0);
 }
 @compute @workgroup_size(16, 16)
 fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
@@ -3454,7 +3498,7 @@ fn nAblage(x: u32, y: u32) -> vec2<f32> {
         }
     }
     let l = length(s);
-    return select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-6).xy;
+    return oktZu(select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-6));
 }
 
 // BC4 eines Kanals (0..1): Endpunkte min/max im 8-Werte-Modus, der nächste Schritt je Texel
@@ -3504,34 +3548,38 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne
-// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); 4 Texel je Wort
+// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rg8 (r der Zenit, g der
+// 45°-Kranz, F6), 2 Texel je Wort
 @compute @workgroup_size(64)
 fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
-    let je = p.w / 4u;
+    let je = p.w / 2u;
     let y = g.x / je;
     if (y >= p.h) { return; }
     let wx = g.x - y * je;
     let zz = atomicLoad(&zahl[p.V + 1u]);
-    var mittel = 1.0;
-    if (zz > 0u) { mittel = f32(atomicLoad(&zahl[p.V])) / f32(zz) / 255.0; }
+    var mittel = vec2<f32>(1.0);
+    if (zz > 0u) {
+        mittel = vec2<f32>(f32(atomicLoad(&zahl[p.V])), f32(atomicLoad(&zahl[p.V + 2u]))) / f32(zz) / 255.0;
+    }
     var wort = 0u;
-    for (var j = 0u; j < 4u; j++) {
-        let x = wx * 4u + j;
-        var s = 0.0;
+    for (var j = 0u; j < 2u; j++) {
+        let x = wx * 2u + j;
+        var s = vec2<f32>(0.0);
         var n = 0.0;
         for (var dy = 0u; dy < p.t; dy++) {
             for (var dx = 0u; dx < p.t; dx++) {
                 let sx = x * p.t + dx;
                 let sy = y * p.t + dy;
                 if (deckt(sx, sy)) {
-                    s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0).r;
+                    s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0).rb;
                     n += 1.0;
                 }
             }
         }
         var wert = mittel;
         if (n > 0.0) { wert = s / n; }
-        wort |= u32(round(clamp(wert, 0.0, 1.0) * 255.0)) << (8u * j);
+        let q = vec2<u32>(round(clamp(wert, vec2<f32>(0.0), vec2<f32>(1.0)) * 255.0));
+        wort |= (q.x | (q.y << 8u)) << (16u * j);
     }
     aus[p.aus + y * p.zeile + wx] = wort;
 }

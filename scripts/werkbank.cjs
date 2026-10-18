@@ -3348,6 +3348,10 @@ async function starte() {
                 [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
                 // die Karte in der Nacht (F6): an der Basis 25f53923 4,74 × so hell wie ihre Gestalt (Fichte, Mess-Wiese, Radeon) — ROT beim Namen der Stunde
                 [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 4.737, dL: 16.6, dC: 2.73 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 4\.737/],
+                // ohne das Band die Wirts-Zahlen (Rauheit 0,9, Mikro-Kavität): die Karte nachts 0,544 ihrer Gestalt — ROT nach unten
+                [LL.laubLichtUrteil({ welt: { "fichte@0": { stufe: "f:fichte:L1", karte: { verhaeltnis: 0.544, dL: -3.86, dC: -0.53 } } } }).befunde.join(), /KARTE fichte@0: Karte\/Gestalt \(f:fichte:L1\) Luma 0\.544/],
+                // die ganze Normale im zum Auge gekippten Rahmen: mittags 1,278 — ROT nach oben
+                [LL.laubLichtUrteil({ welt: { "fichte@0.5": { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.278, dL: 4.21, dC: -1.75 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({ welt: { eiche: { karte: { verhaeltnis: 1.02, dL: 0.3, dC: 4.2 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
                 // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo

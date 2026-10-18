@@ -967,23 +967,31 @@ class AnazhRealm_stoff_material {
                                     const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
-                                    const _nz = _Ta.sqrt(_Ta.float(1.0).sub(_nxy.dot(_nxy)).max(_Ta.float(0.0)));
+                                    // DIE GANZE NORMALE (F6): der Atlas trägt sie oktaedrisch (die Bühne `_karteBuehne`, der
+                                    // Rechner `oktAuf`/`oktZu`) — die Nadel der Rückseite bleibt vom Auge abgewandt wie an der
+                                    // Gestalt. Bis F6 hieß z = +√(1 − x² − y²): jede Normale stand zum Bäcker, die Karte der Fichte
+                                    // nahm nachts 0,755 des Himmels-Lichts ihrer Gestalt.
+                                    const _oz = _Ta.float(1.0).sub(_nxy.x.abs()).sub(_nxy.y.abs());
+                                    const _ot = _oz.negate().max(_Ta.float(0.0));
+                                    const _nO = _Ta.normalize(
+                                        _Ta.vec3(
+                                            _nxy.x.add(_Ta.select(_nxy.x.greaterThanEqual(0.0), _ot.negate(), _ot)),
+                                            _nxy.y.add(_Ta.select(_nxy.y.greaterThanEqual(0.0), _ot.negate(), _ot)),
+                                            _oz
+                                        )
+                                    );
                                     const _sinA = _Ta.sin(_ang);
                                     const _cosA = _Ta.cos(_ang);
-                                    // DER RAHMEN BLICKT AUFS AUGE (A7): der Bäcker sah die Krone waagrecht, das Auge sieht sie
-                                    // unter der Höhe φ (von unten: die Unterseiten, von oben: die Wipfel). Der Rahmen der
-                                    // Normale kippt darum um die Rechte, bis „zur Kamera" auf das Auge zeigt — wie die Gestalt
-                                    // die Flächen zeigt, die zum Auge stehen. Waagrecht gebacken stand die nahe Fichte im
-                                    // Himmels-Licht 1,44 × so hell wie ihre Gestalt (Werkbank, Radeon, Genesis, Auge 1,7 m).
-                                    const _hy = _Ta.positionWorld.y.sub(_Ta.cameraPosition.y);
-                                    const _lE = _Ta.sqrt(_dA.mul(_dA).add(_hy.mul(_hy))).max(_Ta.float(1e-4));
-                                    const _cosE = _dA.div(_lE);
-                                    const _sinE = _hy.negate().div(_lE);
-                                    const _look3 = _Ta.vec3(_sinA.mul(_cosE), _sinE, _cosA.mul(_cosE));
-                                    const _up3 = _Ta.vec3(_sinA.mul(_sinE).negate(), _cosE, _cosA.mul(_sinE).negate());
+                                    // DER RAHMEN DES BÄCKERS (F6): der Atlas trägt die Welt-Normale der gebackenen Nadel in der
+                                    // waagrechten Ansicht — rechts, oben, zum Bäcker —, und so steht sie in der Welt, aus welcher
+                                    // Höhe das Auge auch blickt. Der Rahmen, der seit A7 zum Auge kippte, glich die halbe Normale
+                                    // (z ≥ 0) und das gefallene Licht-Band aus; mit der ganzen Normale hob er die Fichte mittags
+                                    // auf 1,28 × ihrer Gestalt (waagrecht 1,19, die Sicht des Zenits 0,97).
+                                    const _look3 = _Ta.vec3(_sinA, _Ta.float(0.0), _cosA);
+                                    const _up3 = _Ta.vec3(_Ta.float(0.0), _Ta.float(1.0), _Ta.float(0.0));
                                     const _right3 = _Ta.vec3(_cosA, _Ta.float(0.0), _sinA.negate());
                                     const _nW = _Ta.normalize(
-                                        _right3.mul(_nxy.x).add(_up3.mul(_nxy.y)).add(_look3.mul(_nz))
+                                        _right3.mul(_nO.x).add(_up3.mul(_nO.y)).add(_look3.mul(_nO.z))
                                     );
                                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView):
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
@@ -994,9 +1002,26 @@ class AnazhRealm_stoff_material {
                                     //    Krone durchlässt (`_karteBuehne`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
                                     //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
                                     //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
-                                    //    BC: r8, leer = das Mittel der Schicht; rgba8: vormultipliziert mit der Deckung (g).
+                                    //    BC: rg8 (r der Zenit, g der 45°-Kranz), leer = das Mittel der Schicht; rgba8: r und b,
+                                    //    vormultipliziert mit der Deckung (g). DIE HÖHE DES LICHTS (F6): die Sicht folgt der Höhe
+                                    //    des aktiven Körpers (`uSunDir`, dieselbe Richtung wie das Richtlicht) — bis 45° der Kranz,
+                                    //    darüber zum Zenit, im Sinus der Höhe. Das eine Mittel aller Richtungen ließ die
+                                    //    Mittagssonne durch die hohe Fichte wie durch ihre Flanke (ihr Sonnen-Licht 1,42 × das der
+                                    //    Gestalt).
                                     const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
-                                    const _sicht = _vm ? _lP.r.div(_lP.g.max(_Ta.float(1e-3))).min(1.0) : _lP.r;
+                                    const _s2 = _vm
+                                        ? _Ta
+                                              .vec2(_lP.r, _lP.b)
+                                              .div(_lP.g.max(_Ta.float(1e-3)))
+                                              .min(_Ta.vec2(1.0))
+                                        : _lP.rg;
+                                    const _sk = Math.SQRT1_2;
+                                    const _hoch = _Ta
+                                        .normalize(this._windUniformsEnsure().uSunDir)
+                                        .y.sub(_sk)
+                                        .div(1 - _sk)
+                                        .clamp(0.0, 1.0);
+                                    const _sicht = _Ta.mix(_s2.y, _s2.x, _hoch);
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
