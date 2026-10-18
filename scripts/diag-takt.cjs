@@ -26,7 +26,8 @@
 //       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
 //       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
 //   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
-//       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`).
+//       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (keine eigene Uhr), Ring-Boden, Fern-Ring
+//       — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`); der Selbsttest nennt jeden Leser, der an ihr vorbeigeht (vakuös).
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (sein Name „buch"),
 //       nie als Nachricht — eine Nachricht vor dem Ende seines Start-Skripts reicht Chrome erst weiter, wenn der volle Haupt-Faden
 //       die Meldung „Skript gelaufen" liest (Radeon kalt 0,73–1,26 s); seine Helfer kommen mit ihm. Der Selbsttest fährt den alten Weg.
@@ -314,17 +315,19 @@ const SELBST = process.argv.includes("--selftest");
                     echt[k] = Object.prototype.hasOwnProperty.call(r, k) ? r[k] : undefined;
                     r[k] = v;
                 };
-                const aus9 = {};
+                const aus9 = { stromBau: 0 };
                 try {
                     if (selbst) {
                         setze("_ladeFrist", () => -Infinity);
                     }
                     // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser eine Aufgabe (`await`)
                     const stub = { _archIsRendered: (e) => !!e.t9, _rebuildArchitectureMesh: (e) => (e.t9 = !e.laedt), _populateVoxelChunkVegetation: () => aus9.laub++, _foundryPresetForEntry: (e) => e.dock || null }; // prettier-ignore
-                    for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit".split(" ")) stub[k] = () => true; // prettier-ignore
+                    Object.assign(stub, { _voxelChunkConfig: () => ({ span: 16, ringRadius: 12 }), _voxelChunkLodFor: () => 0, _stufenZelle: () => 0, _ensureVoxelChunkAt: () => aus9.stromBau++, _fernRingEinhaengen: () => 0, _fernRingPunkt: () => ({ x: 0, z: 0, fuss: { ht: 0, hr: 0 }, rad: 0, s: 1 }), _fernAuftrag: () => new Promise(() => {}) }); // prettier-ignore
+                    for (const k of "_setLastPlayerVoxelChunk _stufeAugeTakt _rebuildVoxelChunk _pruneDistantVoxelChunks".split(" ")) stub[k] = () => {}; // prettier-ignore
+                    for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit _nebenFaden".split(" ")) stub[k] = () => true; // prettier-ignore
                     for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
                     for (const k in stub) setze(k, stub[k]);
-                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0 }; // prettier-ignore
+                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
                     const [stAlt, qD, zwoelf] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()]];
                     let uhr = 0;
                     performance.now = () => ++uhr;
@@ -348,6 +351,15 @@ const SELBST = process.argv.includes("--selftest");
                         await null;
                         aus9.laub = 0;
                         r._tickFoliageGrowth();
+                        await null; // DER BODEN-STROM (Kappe 3 Stück): bis zur Frist darüber, im selben Frame danach nur die Kappe
+                        const strom = () => { const n0 = aus9.stromBau; st.voxelChunks = new Map(); r._tickVoxelChunkStreaming({ x: 0, y: 0, z: 0 }); return aus9.stromBau - n0; }; // prettier-ignore
+                        [aus9.strom, aus9.stromGleich] = [strom(), strom()];
+                        await null; // DER RING-BODEN (die Rampe, Kappe 0 Sprünge): ein Regler-Takt am eigenen Zustand, Rückstau hält die Rampe
+                        const zst = Object.assign(Object.create(st), { renderer: {}, atmosphere: {}, chunkRingRadius: 4, _activeRingRadius: null, voxelMeshPending: new Set([1]) }); // prettier-ignore
+                        r._nexusPerfActuate.call(Object.assign(Object.create(r), { state: zst, _applyEffectiveShadowRange: () => {}, _applyRenderScale: () => {} }), { loadScale: 1, phase: {}, frameMs: 1e3 }); // prettier-ignore
+                        await null; // DER FERN-RING (Kappe scheibenImFlug): bis zur Frist bestellt er mehr Scheiben, als im Spiel fliegen
+                        st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: r.constructor.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
+                        Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: r.constructor.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: r.constructor.FERN_RING.scheibenImFlug }); // prettier-ignore
                         // DER NAH-GANG außerhalb des Lade-Takts (bis G2-n2 am Rumpf-TEXT: analog-nah S3, arch-feld „Warten ohne
                         // Versuch"): 30 Ladende, die auf die Ankunfts-Generation warten, verbrauchen keinen Versuch, der Bau dahinter
                         // steht; 25 Ladende erschöpfen die Versuchs-Kappe, sie beendet nur das Bauen — die gedockte Stufe dahinter wird
@@ -456,13 +468,14 @@ const SELBST = process.argv.includes("--selftest");
         t8.helferGeist === true;
     const t9 = aus.t9;
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Ort-Wahl ein Vielfaches ihrer 3 Uhr-Fragen; die Frist gilt je Aufgabe
-    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
+    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, _nexusPerfActuate: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
     const gang = t9.gang.every(Boolean);
     const T9 = !Object.values(frist).includes(false) && gang;
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T9 && !t9.gang.some(Boolean) && !T10;
+        const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
@@ -470,39 +483,28 @@ const SELBST = process.argv.includes("--selftest");
                 `die FIFO-Pumpe sendet ${t5.folge.join("·")} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
                 `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
+    const zeile = (ok, text) => console.log(`  ${ok ? "✅" : "❌"} ${text}`); // EIN Drucker je Prüfzeile
     console.log("=== DIE TAKT-WAND — der Brennglas-Takt rechnet nur die Betroffenen ===");
-    console.log(
-        `  ${T1 ? "✅" : "❌"} T1 ${aus.n} Bauten, keiner in Reichweite: ${aus.t1} Tag-Rufe in 10 Takten (Soll 0)`
-    );
-    console.log(
-        `  ${T2 ? "✅" : "❌"} T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`
-    );
-    console.log(
-        `  ${T3 ? "✅" : "❌"} T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`
-    );
-    console.log(`  ${T4 ? "✅" : "❌"} T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
-    console.log(
-        `  ${T5 ? "✅" : "❌"} T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug}`
-    );
-    console.log(
-        `  ${T6 ? "✅" : "❌"} T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")}`
-    );
-    console.log(
-        `  ${T8 ? "✅" : "❌"} T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
+    zeile(T1, `T1 ${aus.n} Bauten, keiner in Reichweite: ${aus.t1} Tag-Rufe in 10 Takten (Soll 0)`);
+    zeile(T2, `T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`);
+    zeile(T3, `T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`);
+    zeile(T4, `T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
+    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug}`);
+    zeile(T6, `T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")}`);
+    zeile(T8, `T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
             `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +
             `${t8.helferErster} · zweiter ${t8.helferZweiter} · Geist ${t8.helferGeist}` +
             (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen"
                 ? ""
                 : " — Täter _foundryUhren: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden")
     );
-    console.log(
-        `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: ` +
-            `Pflanz ${t9.pflanz}/12 · Ort-Wahl ${t9.ort} Schritte (Kappe 3) · Dorf ${t9.dorf}/12 · Cull-Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · im selben Frame ${t9.gleicherFrame}/4 · Ort-Wahl in eigener Aufgabe ${t9.ortAufgabe} · ` +
+    zeile(T9, `T9 die Kappen des Lade-Takts: ` +
+            `Pflanz ${t9.pflanz}/12 · Ort-Wahl ${t9.ort} Schritte (Kappe 3) · Dorf ${t9.dorf}/12 · Cull-Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · im selben Frame ${t9.gleicherFrame}/4 · Ort-Wahl in eigener Aufgabe ${t9.ortAufgabe} · Boden-Strom ${t9.strom} (Kappe 3), danach im selben Frame ${t9.stromGleich}/3 · Ring-Boden ${t9.ring}/${t9.ringSoll} · Fern-Ring ${t9.fern} im Flug (Kappe ${t9.fernKappe}) · ` +
             `Nah-Gang (Bau hinter 30 Wartenden, Stufe hinter der Kappe) ${t9.gang.join(" · ")}` +
             (T9
                 ? ""
@@ -510,8 +512,7 @@ const SELBST = process.argv.includes("--selftest");
                     ? " — Täter tickArchitectureCulling: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab"
                     : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (_kappeOffen)`)
     );
-    console.log(
-        `  ${T10 ? "✅" : "❌"} T10 der Faden wartet nie auf den Haupt-Faden: das Werk heißt ${t10.name}, als Nachricht fragt ${t10.post.join(" · ") || "nichts"}, ` +
+    zeile(T10, `T10 der Faden wartet nie auf den Haupt-Faden: das Werk heißt ${t10.name}, als Nachricht fragt ${t10.post.join(" · ") || "nichts"}, ` +
             `Helfer ${t10.helfer}/${t10.helferSoll} geboren` +
             (T10
                 ? ""

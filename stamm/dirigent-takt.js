@@ -1088,7 +1088,8 @@ class AnazhRealm_dirigent_takt {
     // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
     // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
     // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
-    // Budget), Nachwuchs des Laubs — gate:takt T9 fährt jeden.
+    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms), Ring-Boden (die Rampe), Fern-Ring (Scheiben im Flug) —
+    // gate:takt T9 fährt jeden.
     _kappeOffen(n, kappe) {
         return n < kappe || performance.now() < this._ladeFrist();
     }

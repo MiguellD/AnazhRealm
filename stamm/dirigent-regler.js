@@ -419,11 +419,12 @@ class AnazhRealm_dirigent_regler {
             // ab Bild 1 über dem Totband liegt, entstünde die Welt sonst nie. Geordnet bleibt es (settled, kein
             // Rückstau, Wiese, Atem); darunter schrumpft nichts, der PID atmet nur darüber.
             const ringFloor = Math.min(ringTarget, AnazhRealm.RING_EXIST_FLOOR);
-            // DER BODEN DES ERSTEN WELTBILDS STEHT SOFORT (B4): unter dem Lade-Takt sieht keiner den Ring wachsen — der Existenz-
-            // Boden ist der Boden-Term des ersten Weltbilds (`_weltbildLuecken`), und die Rampe gab ihm je Schritt mehrere
-            // Lade-Frames (Radeon kalt am Kopf 130ba565: Ring 1 von 3 ab 2,9 s, ganz erst bei 9,9–10,3 s). Der Strom bestellt
-            // ihn nah zuerst in EINEM Gang (`_tickVoxelChunkStreaming`); darüber atmet die Rampe wie im Spiel.
-            if (this._ladeTakt() && st._activeRingRadius < ringFloor) st._activeRingRadius = ringFloor;
+            // DER RING-BODEN DES ERSTEN WELTBILDS (B4, ein Leser der Kappe `_kappeOffen`, K60-2): die Rampe ist eine Kappe je
+            // Takt — 0 Sprünge, sie steigt selbst einen Schritt je Atem, wenn der Ring steht. Unter dem Ladeschirm sieht keiner
+            // den Ring wachsen; der Existenz-Boden ist der Boden-Term des ersten Weltbilds (`_weltbildLuecken`), und die Rampe gab
+            // ihm je Schritt mehrere Lade-Frames (Radeon kalt am Kopf 130ba565: Ring 1 von 3 ab 2,9 s, ganz erst bei 9,9–10,3 s).
+            // Bis zur Frist springt er auf den Boden, der Strom bestellt ihn nah zuerst; darüber atmet die Rampe wie im Spiel.
+            for (let n = 0; st._activeRingRadius < ringFloor && this._kappeOffen(n, 0); n++) st._activeRingRadius++;
             // Der Ring atmet in beide Richtungen: bei ANHALTENDER Überlast schrumpft er (nur monoton wachsen
             // overshootet und klemmt fest). Geprunt wird NUR die äußerste Schale (`_pruneDistantVoxelChunks`
             // mit +1-Hysterese), NIE der Boden unter dem Spieler. EIN Aktuator, kein Parallel-Regler.
