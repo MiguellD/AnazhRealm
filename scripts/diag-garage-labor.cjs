@@ -15,17 +15,16 @@
 //   G7 kamera   — (F1, Prüfer 18.10.) Labor ≠ Welt: die Chase-Cam des Labors federte einstufig zur WELT, die Welt zur
 // Fahrbahn
 //                 (bergab am Hügel stand sie tief hinter dem Wagen)   Soll: über die Abfahrt im Mittel ≥ HOCH_MIN über
-// der Fahrbahn
-// Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite selbst.
+// der Fahrbahn Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite
+// selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 // G7 in Grad über die Abfahrt vom Hügel (x 70 → 92, steig bis −0,25), gemessen 18.10.: die alte Labor-Kamera 8,7°, das
-// Gesetz `chaseKamera`
-// 14,6° (seine Feder liegt am kurzen Hügel hinter der Fahrbahn, el 19,5°) — die Schwelle zwischen beiden (das p05
-// trennt schmaler: 4,4/9,1°)
+// Gesetz `chaseKamera` 14,6° (seine Feder liegt am kurzen Hügel hinter der Fahrbahn, el 19,5°) — die Schwelle zwischen
+// beiden (das p05 trennt schmaler: 4,4/9,1°)
 const HOCH_MIN = 12;
 
 const errs = [];
@@ -179,9 +178,8 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         )
     );
     // G7: der Wagen am Fuß des Hügels (x 50), W bleibt gedrückt: über die Kuppe und bergab — je Bild (nach dem Loop der
-    // Seite)
-    // die Kamera über der Fahrbahn: ihre Elevation am Blickpunkt + die Steigung des Kerns (die Kamera steht hinter dem
-    // Wagen)
+    // Seite) die Kamera über der Fahrbahn: ihre Elevation am Blickpunkt + die Steigung des Kerns (die Kamera steht
+    // hinter dem Wagen)
     /* eslint-disable no-undef */
     Object.assign(m, await page.evaluate(() => new Promise((res) => {
         [

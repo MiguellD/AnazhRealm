@@ -1,66 +1,47 @@
 // diag-v1-pfad.cjs — DER SPIELGANG (SG1, 17.10.; vorher die V1-Pfad-Linse der Welle L). Schöpfer 17.10.: „ein
-// effizienter,
-// schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird nur der
-// getestet."
-// Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen Wagen, Arm 0,30) —
-// kein Gate
-// fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang fand die zweite Hälfte
-// derselben
-// Klasse: der Band-Partner des Wagens (L1) blieb am Ort des Aufstiegs, am Wagen blendete die L0 aus (geheilt mit SG1).
-// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer, wo die EINE Weiche (`linsenGpu`) die
-// Karte
-// gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe (die Batterie der CI), auf dem Null-Renderer:
-// swiftshader
-// kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s je Programm), und sein Holz änderte die Welt, die er prüfte
-// (der
-// Deckel der Ankunft, unter dem Frame-Budget stand die Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort
-// urteilt
-// der Gang die Mechanik jeder Station, das Bild urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten
-// in seinen
-// Takten (`__gang.takte`), die Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station
-// Spieler-Gesetze als Urteil und auf der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne
-// Mittag · Sonne · Sommer; die Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine
-// Station ohne
-// Bild ist auf der Karte ROT; je Station eine Frist (Tafel STATIONEN), ihr Bruch ist ROT beim Namen der Station:
+// effizienter, schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird
+// nur der getestet." Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen
+// Wagen, Arm 0,30) — kein Gate fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang
+// fand die zweite Hälfte derselben Klasse: der Band-Partner des Wagens (L1) blieb am Ort des Aufstiegs, am Wagen
+// blendete die L0 aus (geheilt mit SG1). EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN
+// Renderer, wo die EINE Weiche (`linsenGpu`) die Karte gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe
+// (die Batterie der CI), auf dem Null-Renderer: swiftshader kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s
+// je Programm), und sein Holz änderte die Welt, die er prüfte (der Deckel der Ankunft, unter dem Frame-Budget stand die
+// Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort urteilt der Gang die Mechanik jeder Station, das Bild
+// urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten in seinen Takten (`__gang.takte`), die Tasten
+// sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station Spieler-Gesetze als Urteil und auf
+// der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne · Sommer; die
+// Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine Station ohne Bild ist auf der Karte
+// ROT; je Station eine Frist (Tafel STATIONEN), ihr Bruch ist ROT beim Namen der Station:
 //   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das
-// Gesetz
-//             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den
-// Spieler;
-//             V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft immer.
+//             Gesetz von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W
+//             trägt den Spieler; V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft
+//             immer.
 //   lichtung  V-D1 (Q15): keine Krone über der Genesis-Plattform, EINE Plattform, der Ring um sie auch über dem
-// Frame-Budget.
+//             Frame-Budget.
 //   fahrt     ein Studio-Wagen (`fahrzeug_gt`) vor dem Spieler (die Welt stellt ihn auf fahrbaren Grund); E steigt ein,
-// die
-//             Sicht springt auf Third, W fährt 100 m, der Spieler lenkt (A/D) in die freieste Richtung: der Kamera-Arm
-//             (`_kamArm`) endet nie am eigenen Wagen (p50 ≥ 0,9, sonst sein Täter), jede zeichnende Stufe (Primär und
-//             Band-Partner) steht am Wagen, und er füllt im Third-Bild sein Band (die Klassen-Teilung der Abnahme
-//             `__klassenTeilung`: das Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht kehrt
-// zurück.
-//             DER SELBSTTEST IM LAUF: die ersten 20 m fahren mit dem alten Mount-Follow (`_archInstanceUpdate` ohne den
-//             Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe beim Namen nennen. (Der alte Strahl
-// ohne
-//             `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel liegt über der Hülle, gemessen t 1,0 mit
-// und ohne.)
-//             DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein Stoß), E steigt wieder ein, das erste Bild ohne
-// Sim-Schritt
-//             zeichnet ihn in seiner Gier.
+//             die Sicht springt auf Third, W fährt 100 m, der Spieler lenkt (A/D) in die freieste Richtung: der
+//             Kamera-Arm (`_kamArm`) endet nie am eigenen Wagen (p50 ≥ 0,9, sonst sein Täter), jede zeichnende Stufe
+//             (Primär und Band-Partner) steht am Wagen, und er füllt im Third-Bild sein Band (die Klassen-Teilung der
+//             Abnahme `__klassenTeilung`: das Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht
+//             kehrt zurück. DER SELBSTTEST IM LAUF: die ersten 20 m fahren mit dem alten Mount-Follow
+//             (`_archInstanceUpdate` ohne den Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe
+//             beim Namen nennen. (Der alte Strahl ohne `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel
+//             liegt über der Hülle, gemessen t 1,0 mit und ohne.) DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein
+//             Stoß), E steigt wieder ein, das erste Bild ohne Sim-Schritt zeichnet ihn in seiner Gier.
 //   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne
-// ihren
-//             Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt trocken ≤
-// 8 je Ring.
+//             ihren Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt
+//             trocken ≤ 8 je Ring.
 //   werkstatt V-D5 das Rezeptbuch nach dem Spielmodus · V-D3 die Vorschau zeigt ihr Werk (Masken-Gesetz ≥ 99 %) · V-D3
 //             FREMDER ZUG jeder Wartende erwacht nach einem fremd gezogenen Körper (≤ 20 s) · V-D3 RAHMEN jede Gestalt
-// füllt
-//             die Vorschau [0,5; 0,9].
+//             füllt die Vorschau [0,5; 0,9].
 // Die Befunde jeder Probe trägt git (Lehre 15); die statische Wand W2–W7 (Text am AST) fiel mit SG1 (Richter-Macher
-// 16.10.:
-// Linsen urteilen Verhalten, nie Text) — ihr Verhalten tragen V-D3, V-D1 und V-k5.
-// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>:
-// eine
+// 16.10.: Linsen urteilen Verhalten, nie Text) — ihr Verhalten tragen V-D3, V-D1 und V-k5.
+// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>: eine
 // stamm-Datei ruft die Stationen ihres Moduls (spec/stamm/modul-karte.json, Tafel STATIONEN), was die Welt sonst lädt
 // (worlds/, Kerne, index.html, diese Linse), den ganzen Gang; Doku, Spec und andere Skripte nur die Ankunft.
-//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]   Port:
-// V1_PFAD_PORT (4421)
+//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]
+//   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -79,15 +60,11 @@ const ARGV = process.argv.slice(2);
 const OPT = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
 
 // ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft, und
-// ihre FRIST
-// in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.: ein Gang
-// hing 696 s
-// in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M und der Null-Renderer
-// der CI)
-// das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das Warten auf die Birken des
-// Bilds,
-// ≤ 900 Takte) · werkstatt 68,5 — die Frist liegt beim 3- bis 10-fachen.
-// Die Fahrt ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild
+// ihre FRIST in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.:
+// ein Gang hing 696 s in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M
+// und der Null-Renderer der CI) das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das
+// Warten auf die Birken des Bilds, ≤ 900 Takte) · werkstatt 68,5 — die Frist liegt beim 3- bis 10-fachen. Die Fahrt
+// ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild
 // (Dirigent/takt).
 const STATIONEN = [
     ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/, 60],
@@ -103,8 +80,7 @@ function fristBruch(station, sek, takte) {
         : null;
 }
 // Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen
-// Gang;
-// was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
+// Gang; was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
 const ALLE_MODULE = /^(Dirigent\/kern|Dienst|Daten)$/;
 const NIE_GELADEN =
     /^(docs|spec|artifacts|\.github|\.claude)\/|\.md$|^scripts\/(?!diag-v1-pfad\.cjs$|lib\/(welt-boot|ausgabe-aufnahme|abnahme-urteil|software-gpu)\.cjs$)/;
@@ -125,10 +101,9 @@ function stationenFuer(dateien, ordnung) {
     return { stationen: STATIONEN.map(([n]) => n).filter((n) => S.has(n)), grund };
 }
 
-// ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-// Das Band des Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet): gemessen 17.10. Radeon 1,3 % (GT nach
-// 100 m,
-// 9 m vor der Kamera, 640×360) — darunter steht er nicht im Bild, darüber steht die Kamera in ihm.
+// ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ── Das Band des
+// Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet): gemessen 17.10. Radeon 1,3 % (GT nach 100 m, 9 m vor
+// der Kamera, 640×360) — darunter steht er nicht im Bild, darüber steht die Kamera in ihm.
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
 Object.assign(SOLL, {
     kontrolleM: 2,
@@ -141,23 +116,15 @@ Object.assign(SOLL, {
     radMax: 0.05,
 });
 // Der Wechsel und der Hang (Befund des Schöpfers 17.10.): je Rückkehr nach Third die Kamera ≤ azGrad an der Gier nach
-// 10 Bildern,
-// die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche Ruck (die
-// zweite Differenz
-// der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der Abweichung des Bild-Tempos vom Tempo
-// um es)
-// ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab höchstens schnappMax Schnapper des Arms (ein Bild,
-// das ihn um
-// mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m,
-// nach F1 0,032;
-// Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°).
-// GRENZE: auf dem
-// Null-Renderer (die Batterie der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch
-// der
-// Gleichlauf (Prüfer R3 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die
-// Karte. Der
-// Schritt steht im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts
-// fährt, nie auf
+// 10 Bildern, die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche
+// Ruck (die zweite Differenz der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der
+// Abweichung des Bild-Tempos vom Tempo um es) ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab
+// höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um mehr als `schnapp` einzieht). Die Schwellen aus der
+// Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032; Gleichlauf am Kopf 0,91–0,96, nach F1 ≤
+// 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°). GRENZE: auf dem Null-Renderer (die Batterie
+// der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch der Gleichlauf (Prüfer R3
+// 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die Karte. Der Schritt steht
+// im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts fährt, nie auf
 // einem Zweig: der Merge-Beweis eines Zweigs ist der lokale Gang auf der Radeon (`--station fahrt`, die Karte der
 // Weiche).
 Object.assign(SOLL, {
@@ -176,22 +143,17 @@ Object.assign(SOLL, {
     hangMittel: 0.3,
 });
 // Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz:
-// 0, der
-// Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.: 4,3 %,
-// das leere Canvas 0).
+// 0, der Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.:
+// 4,3 %, das leere Canvas 0).
 Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
 // Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `GENESIS_PLATZ.bahn` breit jenseits ihrer Tiefe (zwei
-// Spuren je
-// eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im Tempo
-// `ringMs`, die
-// Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem Täter steigt der
-// Spieler
-// `ringSprung`° weiter ein.
+// Spuren je eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im
+// Tempo `ringMs`, die Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem
+// Täter steigt der Spieler `ringSprung`° weiter ein.
 Object.assign(SOLL, { ringMs: 5, ringSprung: 10, ringAblage: 1.2 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
 // ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich),
-// der
-// Ladeschirm ist weg, W trägt den Spieler.
+// der Ladeschirm ist weg, W trägt den Spieler.
 function ankunftVerdict(m) {
     if (!m || m.gestartet !== true) return ["ankunft start"];
     const out = [];
@@ -235,12 +197,11 @@ const HANG_GESUND = Object.assign(
 const RING_GESUND = {
     spuren: [17, 19].map((R) => ({ R, zu: true, grad: 360, sprung: 0, weg: 6.3 * R, ablage: 0.3 })),
     taeter: [],
+    vorschau: [4, 4],
 };
 // FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel
-// unter fester
-// Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der Hülle des
-// gerittenen
-// Werks (`imWagen`), trifft sein Strahl den eigenen Wagen.
+// unter fester Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der
+// Hülle des gerittenen Werks (`imWagen`), trifft sein Strahl den eigenen Wagen.
 function fahrtVerdict(m) {
     if (!m || m.gestartet !== true) return [`fahrt start${m && m.grund ? `: ${m.grund}` : ""}`];
     const out = [];
@@ -255,8 +216,7 @@ function fahrtVerdict(m) {
     const w = m.wechsel || {};
     const h = m.hang || {};
     // JEDE ZEICHNENDE STUFE je Bild am Wagen, in jedem Abschnitt; das Bild urteilt die Karte (der Null-Renderer der CI
-    // hat keins:
-    // `bild: false`, die Linse prüft, dass die Karte eins hat)
+    // hat keins: `bild: false`, die Linse prüft, dass die Karte eins hat)
     for (const [wo, a] of [["", m], [" im Wechsel", w], [" am Hang", h]]) {
         if (a.stufeWeg > SOLL.stufeM)
             out.push(
@@ -320,10 +280,11 @@ function fahrtVerdict(m) {
         else if (h.schnapp > SOLL.schnappMax) out.push(`kamera-arm pumpt bergab: ${h.schnapp} Schnapper auf ${h.weg} m (Arm-Weg ${h.armWeg}, min ${h.armMin}; Soll ≤ ${SOLL.schnappMax})`);
     }
     // DIE RUNDE UM DEN GENESIS-RING (F1d): die Fahrbahn um die Tore trägt kein Tor und keinen Bau — jeder Täter beim
-    // Namen;
-    // und keine Fahrt des Gangs geht durch ein Tor
+    // Namen; und keine Fahrt des Gangs geht durch ein Tor
     const g = m.ring || {};
     const sp = g.spuren || [];
+    const [vor, tore] = g.vorschau || [0, 1];
+    if (vor < tore) out.push(`ringbahn: ${vor} von ${tore} Vorschauen stehen, als die Runde fährt (vakuös)`);
     if (sp.length < 2 || !sp.every((s) => s.zu))
         out.push(
             `ringbahn: die Runde um den Genesis-Ring endet nach ${sp.map((s) => `${s.grad}°`).join(" · ") || "0°"} (vakuös)`
@@ -619,8 +580,7 @@ function sucheVerdict(m) {
 const server = statikServer();
 
 // DER ZÄHLER DER TAKTE (Seite, vor dem ersten Skript): sobald der Loop steht, läuft er über diese Hülle — sie zählt
-// jeden
-// Takt, merkt den Takt der Kontrolle (`_weltbildDa`) und ruft je Takt die Probe der Station (`jeTakt`).
+// jeden Takt, merkt den Takt der Kontrolle (`_weltbildDa`) und ruft je Takt die Probe der Station (`jeTakt`).
 function TAKT_ZAEHLER() {
     const A = (window.__gang = { takte: 0, kontrolle: null, jeTakt: null, loop: null });
     const iv = setInterval(() => {
@@ -668,14 +628,11 @@ async function probe(arg) {
     // DAS BILD aus dem Ausgabe-Pfad (Satz „messung": der Schuss zeigt, was jetzt steht), der Loop ruht um den Schuss
     const [W, H] = [640, 360];
     // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn
-    // des
-    // Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel neu,
-    // ein Leser
-    // band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach dem Schuss beim
-    // nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs beginnt wie nach der
-    // Größe
-    // mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben Pose im Laub: Rauschen
-    // 0,011)
+    // des Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel
+    // neu, ein Leser band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach
+    // dem Schuss beim nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs
+    // beginnt wie nach der Größe mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben
+    // Pose im Laub: Rauschen 0,011)
     const schuss = async () => {
         const z = st.traaNode && st.traaNode._historyRenderTarget;
         if (z) z.setSize = (w, h) => (w === 1 && h === 1 ? z : Object.getPrototypeOf(z).setSize.call(z, w, h));
@@ -695,9 +652,8 @@ async function probe(arg) {
         return cv.toDataURL("image/png");
     };
     // Je Schuss die Bühne (Mittag · Sonne · Sommer, die Bild-Uhr steht); danach spielt der Gang weiter: ihr Halt fällt
-    // — unter
-    // der gehaltenen Wetter-Uhr verweigert das Spiel jeden Welt-Akt (`dslEval`, der Satz der Station Wort pflanzte
-    // nichts)
+    // — unter der gehaltenen Wetter-Uhr verweigert das Spiel jeden Welt-Akt (`dslEval`, der Satz der Station Wort
+    // pflanzte nichts)
     const angehalten = async (fn) => {
         R.setAnimationLoop(null);
         try {
@@ -727,8 +683,7 @@ async function probe(arg) {
         t.nachBlur = st.keys.w === true;
         taste("keyup", "w", "KeyW");
         // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete
-        // Bilder):
-        // eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
+        // Bilder): eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
         for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++)
             await tick(1);
         if (!R._isHeadlessNull)
@@ -806,19 +761,25 @@ async function probe(arg) {
         out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
     }
     // ── FAHRT: ein Studio-Wagen vor dem Spieler, Aufstieg, der alte Mount-Follow, 100 m mit W, der Arm und das Bild;
-    // dann die
-    // Sicht im Wechsel unter fester Lenkung und ein zweiter Wagen am Steilhang bergab; Abstieg ──
+    // dann die Sicht im Wechsel unter fester Lenkung und ein zweiter Wagen am Steilhang bergab; Abstieg ──
     if (S.has("fahrt")) {
         marke("fahrt");
         const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
         try {
             // DIE WELT, WIE DER SPIELER SIE FINDET: der Genesis-Ring steht, bevor der Wagen kommt — ohne die Lichtung
-            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort. Die
-            // Vorschau eines
-            // Studio-Tors (`PORTAL_VORSCHAU`) entsteht, wann das Spiel sie stellt, auch erst in der Fahrt: ihr Platz
-            // liegt
-            // jenseits der Fahrbahn (`_portalVorschauOrt`), kein Warten der Linse verbirgt sie (SG1-F1d)
-            for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
+            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort —, und die
+            // Vorschau jedes Studio-Tors, dem der Spieler nah steht (`PORTAL_VORSCHAU`): sie steht, wenn die Runde um
+            // den Ring fährt (SG1-F1d: ihr Platz liegt jenseits der Fahrbahn, `_portalVorschauOrt`; ohne das Warten
+            // baute sie zwischen den zwei Schüssen des ersten Bilds, Radeon 18.10.: Rauschen 0,022)
+            const VS = r.constructor.PORTAL_VORSCHAU;
+            const offen = () =>
+                st.architectures.filter((a) => {
+                    const p = a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w) && st.playerMesh.position;
+                    const nah = p && Math.hypot(a.position.x - p.x, a.position.z - p.z) < VS.anflugM;
+                    return nah && !(r._portalPreviewFertig || {})[a.type.slice(5)];
+                });
+            const ringSteht = () => st.worldMeta && st.worldMeta.genesisPortalRing && !offen().length;
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !ringSteht(); i++) {
                 await tick(1);
                 if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
             }
@@ -832,10 +793,8 @@ async function probe(arg) {
             const fahrt = () => (Number.isFinite(e.rotationY) ? e.rotationY : 0) + Math.PI / 2; // Studio-Wagen: Bug +x
             const grad = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 180) / Math.PI);
             // DER WAGEN, und E STEIGT EIN: die Welt stellt ihn hin (vor dem Spieler auf fahrbaren Grund,
-            // `_fahrPlatzSuche`; am
-            // Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein Tor erreicht (der
-            // Genesis-Ring
-            // wächst, während der Gang fährt), und blickt in die Fahrt
+            // `_fahrPlatzSuche`; am Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein
+            // Tor erreicht (der Genesis-Ring wächst, während der Gang fährt), und blickt in die Fahrt
             const gebaut = []; // jeder Wagen, den der Gang hinstellt (die Runde räumt sie: kein eigener Wagen steht in ihrer Bahn)
             const steigEin = async (x, z, ry, precise) => {
                 const flanke = async (px, pz, f, seite) => {
@@ -885,19 +844,14 @@ async function probe(arg) {
             m.sichtRitt = st.cameraMode;
             // JE BILD IM RITT (die Probe nach dem Takt: der Wagen, wie er gezeichnet ist, und die Kamera, die ihn sah):
             //  · der Arm und wo er endet — am gerittenen Werk (seine Hülle im Fahrt-Rahmen um den Kugel-Radius der
-            // Kamera + 0,5 m;
-            //    der Befund 17.10. stand 2,72 m hinter der Mitte, 0,17 m hinter der Hülle);
+            //    Kamera + 0,5 m; der Befund 17.10. stand 2,72 m hinter der Mitte, 0,17 m hinter der Hülle);
             //  · jede zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`) im Rahmen des Wagens: ihr
-            // Slot weicht vom
-            //    ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau 0, das Rad federt
-            // um den Hub);
+            //    Slot weicht vom ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau
+            //    0, das Rad federt um den Hub);
             //  · in Third die Kamera im Rahmen des gezeichneten Wagens: ihr SEITLICHER RUCK ist die zweite Differenz
-            // ihrer Quer-Lage je
-            //    Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt in Bildern seit dem
-            // Wechsel nach
-            //    Third, ihre Höhe ist der Winkel über der Ebene der Räder; der GLEICHLAUF ist der Weg des gezeichneten
-            // Wagens je Bild
-            //    gegen das Tempo des Kerns.
+            //    ihrer Quer-Lage je Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt
+            //    in Bildern seit dem Wechsel nach Third, ihre Höhe ist der Winkel über der Ebene der Räder; der
+            //    GLEICHLAUF ist der Weg des gezeichneten Wagens je Bild gegen das Tempo des Kerns.
             const rr = r.constructor._bewegungsBlock("kamera", ["armRadiusM"]).armRadiusM;
             const [M, V, erst] = [new THREE.Matrix4(), new THREE.Vector3(), new WeakMap()];
             let L = null; // der Lauf eines Abschnitts
@@ -935,13 +889,10 @@ async function probe(arg) {
                 }
                 if (!L || !e || st.player.mountedArch !== e.id) return;
                 // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen
-                // sein Tempo über
-                // die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem bricht es), über 1
-                // m/s
-                // — eine Spur reißt nur, wo der Loop ruhte (ein Schuss: Sekunden); unter Last trägt ein Bild bis 0,25 s
-                // (18.10., die
-                // Maschine geteilt: der Hang 64 Bilder in 6 s, die Spur riss bei 100 ms in jedem zweiten Bild, 7 Proben
-                // statt ≥ 20)
+                // sein Tempo über die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem
+                // bricht es), über 1 m/s — eine Spur reißt nur, wo der Loop ruhte (ein Schuss: Sekunden); unter Last
+                // trägt ein Bild bis 0,25 s (18.10., die Maschine geteilt: der Hang 64 Bilder in 6 s, die Spur riss bei
+                // 100 ms in jedem zweiten Bild, 7 Proben statt ≥ 20)
                 const [p, t] = [[e.position.x, e.position.z, A.t], A.t];
                 const spur = (L.spur = L.spur || []);
                 if (spur.length && !(t - spur[spur.length - 1][2] > 0 && t - spur[spur.length - 1][2] < 250))
@@ -966,10 +917,8 @@ async function probe(arg) {
                         if (d > L.stufeWeg) [L.stufeWeg, L.stufeTaeter] = [d, wer];
                     }
                 // IM BAND ZEIGT JEDE STUFE DASSELBE RAD: je Ecke (Nabe im Vorlagen-Raum) die Drehung (Lenkung, Rolle)
-                // des ersten
-                // drehenden Teils in Primär und Partner — die größte Abweichung der Spalten (eine Stufe, die das Rad in
-                // der
-                // Ruhe-Lage zeigt, weicht um Lenk- und Roll-Winkel ab)
+                // des ersten drehenden Teils in Primär und Partner — die größte Abweichung der Spalten (eine Stufe, die
+                // das Rad in der Ruhe-Lage zeigt, weicht um Lenk- und Roll-Winkel ab)
                 if (e.instSlotsBand && e.instSlots) {
                     const pr = r._foundryPresetForEntry(e);
                     const f0 = r._foundryFlattenFor(e, pr, e._servedLod != null ? e._servedLod : e._lodLevel);
@@ -1010,9 +959,8 @@ async function probe(arg) {
                 const l = dx * Math.sin(f) + dz * Math.cos(f);
                 const q = dx * Math.cos(f) - dz * Math.sin(f);
                 // der Arm zählt in der Fahrt (`L.fest`): ein Wagen, der vor einem Hindernis steht oder zurücksetzt,
-                // klemmt seine Kamera
-                // zu Recht (18.10.: 100 m in 2637 Takten, der Arm am Hindernis 0,21 — kein Strahl auf den eigenen
-                // Wagen)
+                // klemmt seine Kamera zu Recht (18.10.: 100 m in 2637 Takten, der Arm am Hindernis 0,21 — kein Strahl
+                // auf den eigenen Wagen)
                 if (L.fest) {
                     L.arm.push(st._kamArm);
                     if (l >= k.heck - rr - 0.5 && l <= k.bug + rr + 0.5 && Math.abs(q) <= k.hw + rr + 0.5) L.imWagen++;
@@ -1084,12 +1032,19 @@ async function probe(arg) {
                     };
                     try {
                         for (const o of gr) o.castShadow = false;
-                        const [G1, G2, O] = [await auf(false), await auf(false), await auf(true)];
+                        // ein ruhiges Paar: liefert die Welt zwischen zwei Schüssen nach (der Loop ruht, die Foundry
+                        // nicht — Radeon 18.10.: 0 / 0,022 / 0,015 am ersten Bild), schießt der Gang bis zu dreimal
+                        // nach; ein Bild, das sich bei stehender Welt ändert, bleibt in jedem Paar und ROT
+                        let [G1, G2, nach] = [await auf(false), await auf(false), 0];
+                        const unruhig = () => window.__bildRauschen(G1, G2, W, H, 18).anteil > SOLL.rauschenMax;
+                        for (; nach < 3 && unruhig(); nach++) [G1, G2] = [G2, await auf(false)];
+                        const O = await auf(true);
                         const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
                         out.bilder[name] = png(G1);
                         return {
                             anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4),
                             rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil,
+                            nach,
                             teile: gr.size,
                         };
                     } finally {
@@ -1098,9 +1053,8 @@ async function probe(arg) {
                     }
                 });
             // DER SELBSTTEST IM LAUF: die ersten 20 m fährt der alte Mount-Follow (`_archInstanceUpdate` ohne den
-            // Band-Partner,
-            // der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT beim Namen
-            // werden
+            // Band-Partner, der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT
+            // beim Namen werden
             if (Object.prototype.hasOwnProperty.call(r, "_archInstanceUpdate"))
                 throw new Error("_archInstanceUpdate ist schon eingespielt");
             const folger = r._archInstanceUpdate;
@@ -1114,14 +1068,11 @@ async function probe(arg) {
                 }
             };
             // DIE FAHRT wie ein Spieler: W, und er lenkt (A/D) in die freieste Richtung vor dem Bug (am Hang um die
-            // Falllinie) —
-            // je 4 Takte die Boxen der Werke im 30-m-Kreis (lazy `_populateBlockerAABBs`), die unter dem Dach in das
-            // Band der halben
-            // Wagen-Breite + 0,4 m ragen, je Richtung ±40° die freie Strecke bis 25 m (eine Wende kostet). Welche Taste
-            // die Gier
-            // hebt, lernt er an der ersten Lenkung; steht der Wagen 40 Takte, setzt er 60 Takte mit S zurück. Um die
-            // Lichtung steht
-            // Wald: eine gerade Bahn fuhr am 17.10. nach 51–64 m in Kiefer und Birke.
+            // Falllinie) — je 4 Takte die Boxen der Werke im 30-m-Kreis (lazy `_populateBlockerAABBs`), die unter dem
+            // Dach in das Band der halben Wagen-Breite + 0,4 m ragen, je Richtung ±40° die freie Strecke bis 25 m (eine
+            // Wende kostet). Welche Taste die Gier hebt, lernt er an der ersten Lenkung; steht der Wagen 40 Takte,
+            // setzt er 60 Takte mit S zurück. Um die Lichtung steht Wald: eine gerade Bahn fuhr am 17.10. nach 51–64 m
+            // in Kiefer und Birke.
             let [pfad, lenk, hebt, ziel, boxen] = [0, null, "a", 0, []];
             const lenke = (soll) => {
                 if (lenk !== soll) {
@@ -1198,15 +1149,11 @@ async function probe(arg) {
                 }
             };
             // DER WECHSEL UNTER FESTER LENKUNG (Befund des Schöpfers 17.10.: Ego ↔ Third in der Fahrt — in Third der
-            // Wagen
-            // unsichtbar oder an alter Stelle, Third ruckelt quer): der Spieler hält die Lenkung bei Schritt-Tempo (W
-            // unter
-            // `kreisMs`, S über dem 1,5-fachen) und wechselt mit V je `wechselS` Spiel-Sekunden Third → Ego → Third →
-            // Ego → Third.
-            // DIE FÜHRUNG EINES STUDIOS (`kameraFuehren`) ist ein Rig wie Ego (Prüfer 18.10.: nach ihr nahm die
-            // Chase-Cam ihren
-            // alten Azimut wieder auf): nach dem vierten Wechsel hält eine Führung die Kamera, während der Wagen
-            // weiterkreist
+            // Wagen unsichtbar oder an alter Stelle, Third ruckelt quer): der Spieler hält die Lenkung bei
+            // Schritt-Tempo (W unter `kreisMs`, S über dem 1,5-fachen) und wechselt mit V je `wechselS` Spiel-Sekunden
+            // Third → Ego → Third → Ego → Third. DIE FÜHRUNG EINES STUDIOS (`kameraFuehren`) ist ein Rig wie Ego
+            // (Prüfer 18.10.: nach ihr nahm die Chase-Cam ihren alten Azimut wieder auf): nach dem vierten Wechsel hält
+            // eine Führung die Kamera, während der Wagen weiterkreist
             const sicht = () => (r._kameraFuehrung ? "fuehrung" : st.cameraMode);
             const kreise = async () => {
                 let pedal = null;
@@ -1214,16 +1161,16 @@ async function probe(arg) {
                     if (schritt === "v") await tippe("v", "KeyV");
                     else r.kameraFuehren(schritt === "fuehren" ? () => {} : null);
                     // in Ego dreht die Gier ≥ egoGrad, bevor Third zurückkehrt (Lauf 18.10. an [-73,82]: 71° · 22° in
-                    // je 2 s — der
-                    // Wechsel bewies nichts); höchstens die dreifache Zeit, dann urteilt der Wechsel vakuös
+                    // je 2 s — der Wechsel bewies nichts); höchstens die dreifache Zeit, dann urteilt der Wechsel
+                    // vakuös
                     const mehr = (t0) =>
                         sicht() !== "third" &&
                         L.egoAb != null &&
                         grad(fahrt() - L.egoAb) < SOLL.egoGrad + 5 &&
                         st._fixedSimTime - t0 < 3 * SOLL.wechselS;
                     // steht der Wagen im Kreis an einem Hindernis (ein Stamm des Walds ist kein Bau), setzt er mit
-                    // Gegen-Einschlag zurück
-                    // (18.10.: zwei Läufe, die Gier drehte in Ego 7° und 8° in 6 s — der Wagen stand)
+                    // Gegen-Einschlag zurück (18.10.: zwei Läufe, die Gier drehte in Ego 7° und 8° in 6 s — der Wagen
+                    // stand)
                     for (let t0 = st._fixedSimTime, i = 0, steht = 0, zurueckK = 0; i < 9000 && (st._fixedSimTime - t0 < SOLL.wechselS || mehr(t0)); i++) {
                         const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
                         steht = v < 0.3 && !zurueckK ? steht + 1 : 0;
@@ -1291,13 +1238,10 @@ async function probe(arg) {
             }
             [m.abgestiegen, m.sichtNach] = [st.player.mountedArch == null, st.cameraMode];
             // DIE ORTE DER ÜBERGÄNGE in Ringen um den Abstieg (je 10 m): ein freier Platz für den Kreis (kein Bau, kein
-            // Baum im
-            // Kreis von `kreisM`, eben auf ±1,5 m, Land) und der nächste STEILHANG (Befund 17.10.: „am Steilhang bergab
-            // folgt die
-            // Kamera komisch"), dessen Falllinie über `hangM` Meter je 5 m um ≥ `hangMin` fällt (im Mittel ≥
-            // `hangMittel`) und
-            // keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein Spieler hinstellt (der Hang genau,
-            // der Bug bergab).
+            // Baum im Kreis von `kreisM`, eben auf ±1,5 m, Land) und der nächste STEILHANG (Befund 17.10.: „am
+            // Steilhang bergab folgt die Kamera komisch"), dessen Falllinie über `hangM` Meter je 5 m um ≥ `hangMin`
+            // fällt (im Mittel ≥ `hangMittel`) und keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein
+            // Spieler hinstellt (der Hang genau, der Bug bergab).
             const [hx, hz] = [e.position.x, e.position.z];
             boxen = st.architectures.flatMap((a) =>
                 a && a.position && Math.hypot(a.position.x - hx, a.position.z - hz) < 400
@@ -1305,13 +1249,10 @@ async function probe(arg) {
                     : []
             );
             // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"), und wer in seine Apertur tritt, geht
-            // hindurch (die
-            // Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER (die Boxen des
-            // Gesetzes, ein
-            // Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der Hang-Wagen bei −79/106 stand
-            // außerhalb des
-            // Kreises um die Mitte, die Flanke in der Apertur — „Portal betreten: tor_drachentor")
-            // `weg`: wie weit der Wagen vom Ort fährt (der Kreis seinen Durchmesser).
+            // hindurch (die Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER
+            // (die Boxen des Gesetzes, ein Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der
+            // Hang-Wagen bei −79/106 stand außerhalb des Kreises um die Mitte, die Flanke in der Apertur — „Portal
+            // betreten: tor_drachentor") `weg`: wie weit der Wagen vom Ort fährt (der Kreis seinen Durchmesser).
             const torFrei = r.constructor.PORTAL_REACH_M + r.constructor.MOUNT_RANGE_M + 2;
             const ort = (wahl) => {
                 const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
@@ -1337,10 +1278,8 @@ async function probe(arg) {
                 return null;
             };
             // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von
-            // `kreisM` um ihn
-            // (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines tor_drachentor,
-            // dessen
-            // Pfosten außerhalb von `kreisM` standen)
+            // `kreisM` um ihn (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines
+            // tor_drachentor, dessen Pfosten außerhalb von `kreisM` standen)
             const kreisOrt = ort((x, z, y, torNah) =>
                 !torNah(x, z, SOLL.kreisM) &&
                 !boxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < SOLL.kreisM ** 2) &&
@@ -1358,11 +1297,9 @@ async function probe(arg) {
                     await halt();
                 }
                 // DER WIEDERAUFSTIEG (Randfall des Prüfers 18.10.): der Wagen dreht zwischen zwei Fahrten (ein Stoß,
-                // der Nachlauf),
-                // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es
-                // zeichnet den
-                // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt
-                // dort
+                // der Nachlauf), E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60
+                // fps oft) — es zeichnet den Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die
+                // Chase-Cam des neuen Rigs beginnt dort
                 if (st.player.mountedArch == null) {
                     [phase, e.rotationY] = ["Wiederaufstieg", (e.rotationY || 0) + 1]; // der Stoß: 1 rad (57°) im Stand
                     r._archInstanceUpdate(e);
@@ -1410,21 +1347,18 @@ async function probe(arg) {
                 }
             }
             // DIE RUNDE UM DEN GENESIS-RING (F1d, Prüfer R3 18.10.): der Spieler fährt um die Tore auf der Fahrbahn
-            // jenseits ihrer
-            // Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und 2/3 ihrer Breite)
-            // je
-            // Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`; die Lenkung hält die
-            // Spur (kein
-            // Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der Name — das Tor, durch das der
-            // Wagen geht
-            // („Portal betreten“: bis SG1-F1d stand das lebende tor_drachentor der Vorschau auf der Bahn), der Bau,
-            // an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt der Spieler `ringSprung`° weiter in
-            // einen neuen Wagen.
+            // jenseits ihrer Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und
+            // 2/3 ihrer Breite) je Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`;
+            // die Lenkung hält die Spur (kein Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der
+            // Name — das Tor, durch das der Wagen geht („Portal betreten“: bis SG1-F1d stand das lebende tor_drachentor
+            // der Vorschau auf der Bahn), der Bau, an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt
+            // der Spieler `ringSprung`° weiter in einen neuen Wagen.
             {
                 phase = "Ring";
                 L = null;
                 const [GP, Mg] = [r.constructor.GENESIS_PLATZ, r._genesisMitte()];
-                const g = (m.ring = { spuren: [], taeter: [] });
+                const vor = VS.tore.filter(([, , id]) => st.architectures.some((a) => a && a.id === id)).length;
+                const g = (m.ring = { spuren: [], taeter: [], vorschau: [vor, VS.tore.length] });
                 for (const w of gebaut.splice(0)) r.removeArchitecture(w); // die Wagen der Fahrten davor (Lauf 18.10.: einer stand bei 11/13)
                 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
                 const winkel = () => Math.atan2(e.position.z - Mg.z, e.position.x - Mg.x);
@@ -1434,8 +1368,7 @@ async function probe(arg) {
                     !g.taeter.some((u) => u.id != null && u.id === t.id && u.art === t.art && u.R === t.R) &&
                     g.taeter.push(t);
                 // der Bau vor dem Bug: die nächste Box eines Werks um ihn; in der Box zählt die Tiefe (negativ) — von
-                // zwei Boxen um
-                // den Bug nennt er die, in der er steckt
+                // zwei Boxen um den Bug nennt er die, in der er steckt
                 const amBug = () => {
                     const [bx, bz] = [
                         e.position.x + Math.sin(fahrt()) * k.bug,
@@ -1619,8 +1552,7 @@ async function probe(arg) {
         const frei = (x, z) =>
             !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
         // ...und der Satz pflanzt dort (der Gang endet die Fahrt an jedem Ort, auch im Dorf: die Wand der Natur
-        // `_naturWand`
-        // — Grundriss, Weg, Platz, Acker — schweigt im 12-m-Kreis, sonst wuchs „vor dir" keine Birke)
+        // `_naturWand` — Grundriss, Weg, Platz, Acker — schweigt im 12-m-Kreis, sonst wuchs „vor dir" keine Birke)
         const pflanzbar = (x, z) =>
             [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12], [8, 8], [-8, 8], [8, -8], [-8, -8]].every(
                 ([dx, dz]) => !r._naturWand("baum_birke", { x: x + dx, y: r._voxelSurfaceY(x + dx, z + dz), z: z + dz })
@@ -2067,10 +1999,9 @@ async function probe(arg) {
         m.maskeDanach = lu.uLodMaskOn.value;
         m.renders = rec.length;
         // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler
-        // sieht es).
-        // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und
-        // ohne Werk:
-        // der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im Bild der Fahrt)
+        // sieht es). Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt
+        // gelesen, mit und ohne Werk: der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im
+        // Bild der Fahrt)
         if (!st.renderer._isHeadlessNull) { // (R ist hier die letzte Probe des Beobachters)
             const [beob, c] = [p.renderer.render, p.canvas];
             delete p.renderer.render;
@@ -2533,6 +2464,11 @@ async function probe(arg) {
                         "ringbahn: Portal betreten: tor_drachentor (portal-preview-portale)",
                     ],
                     [
+                        "die Runde fährt, bevor die Vorschauen stehen (vakuös)",
+                        { ring: Object.assign({}, RING_GESUND, { vorschau: [1, 4] }) },
+                        "ringbahn: 1 von 4 Vorschauen stehen",
+                    ],
+                    [
                         "die Runde um den Ring bleibt offen (vakuös)",
                         {
                             ring: Object.assign({}, RING_GESUND, {
@@ -2856,8 +2792,7 @@ async function probe(arg) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     // die Karte baut mit der Foundry (`__anazhForceFoundry`); auf dem Null-Renderer (der EINE Schalter, welt-boot
-    // `nullRenderer`)
-    // lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
+    // `nullRenderer`) lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
     if (karte) await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
     else {
         await nullRenderer(page, { foundry: true });
@@ -2881,9 +2816,8 @@ async function probe(arg) {
     );
     if (nullR === karte) check("der Renderer, den die Weiche wählt", false, `Karte ${karte}, Null-Renderer ${nullR}`);
     if (karte) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
-    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    // DIE WACHE DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte)
-    // und die
+    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT). DIE WACHE
+    // DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
     // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
     let [bruch, schlag, zu] = [null, 0, null];
     const wache = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)]).then(([s, t, k, log]) => {
@@ -2941,7 +2875,7 @@ async function probe(arg) {
             const bild = (m) =>
                 m.bild === false
                     ? "ohne Bild (Null-Renderer)"
-                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`;
+                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen}, ${m.nach || 0} nachgeschossen)`;
             const zeile = (m) => {
                 const [w, h] = [m.wechsel || {}, m.hang || {}];
                 const wechsel = w.wechsel
