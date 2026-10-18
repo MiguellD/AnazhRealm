@@ -279,6 +279,33 @@ function pngLesen(buf) {
     return { W, H, u8: out };
 }
 
+// DER BILD-UNTERSCHIED (die EINE Regel: gate:weltbild-frost B, die Kontrolle der Kalt-Zeile): der Anteil der 16×16-Blöcke, deren
+// Mittel sich über die drei Kanäle um mehr als 12 ändert — die zeitliche Kantenglättung zittert über einem stehenden Bild Pixel
+// für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt 70–97 %. Rein, A/B = {w,h,d}.
+function blockAnteil(A, B) {
+    const K = 16,
+        bw = Math.floor(A.w / K),
+        bh = Math.floor(A.h / K);
+    let anders = 0;
+    for (let by = 0; by < bh; by++)
+        for (let bx = 0; bx < bw; bx++) {
+            let s = 0;
+            for (let c = 0; c < 3; c++) {
+                let ma = 0,
+                    mb = 0;
+                for (let y = 0; y < K; y++)
+                    for (let x = 0; x < K; x++) {
+                        const i = ((by * K + y) * A.w + bx * K + x) * 4 + c;
+                        ma += A.d[i];
+                        mb += B.d[i];
+                    }
+                s += Math.abs(ma - mb) / (K * K);
+            }
+            if (s > 12) anders++;
+        }
+    return anders / Math.max(1, bw * bh);
+}
+
 function pngSchreiben(u8, W, H) {
     const crcT = new Int32Array(256);
     for (let n = 0; n < 256; n++) {
@@ -2555,6 +2582,18 @@ function sollTafelSelbsttest(tafel, q) {
 // der Pose, gefiltert auf ihren Ausdruck); kann er die Pose nicht lesen (die Licht-Bilanz, das Gesicht), ist die Zelle ROT beim
 // Namen (ungemessen ist nie GRÜN); eine Klasse ohne Zeile (fahrzeug, tier, dorf-stadt) hat kein Soll und ist ROT. Der benannte
 // Mangel der Zeile gehört der Zeile (ihre Pose), nicht der Zelle. Rückgabe { zellen, gruen, gesamt, fehler }.
+// DIE AUSDRÜCKE DER MATRIX (G4, dieselben Pixel): misst eine Zeile ihre Klasse mit einer Teilung des Bilds (`werkbank bild
+// --klasse`, ohne Gesicht), liest die Matrix IHREN Ausdruck; `spawn.klassen` trägt nur, was keine Teilung misst
+function spawnTeilung(k) {
+    let m = k.mass && k.mass.messung;
+    if (m && typeof m === "object" && !m.werkzeug) m = Object.values(m).find((x) => x && x.werkzeug) || null;
+    return m && m.werkzeug === "bild" && !m.gesicht && m.ausdruck ? m.ausdruck : null;
+}
+function spawnAusdruecke(tafel) {
+    const aus = Object.assign({}, (tafel.spawn && tafel.spawn.klassen) || {});
+    for (const k of tafel.klassen || []) if (spawnTeilung(k)) aus[k.id] = spawnTeilung(k);
+    return aus;
+}
 function spawnZellen(tafel, q) {
     const sp = tafel && tafel.spawn;
     if (!sp || typeof sp !== "object")
@@ -2570,7 +2609,8 @@ function spawnZellen(tafel, q) {
         q = Object.assign({}, q, { pruefsumme: (d) => (abdruck.has(d) ? abdruck.get(d) : abdruck.set(d, p0(d)).get(d)) });
     }
     const r2 = (x) => +x.toFixed(2);
-    for (const [id, a] of Object.entries(sp.klassen || {}))
+    const aus = spawnAusdruecke(tafel);
+    for (const [id, a] of Object.entries(aus))
         try {
             new RegExp(a);
         } catch (e) {
@@ -2596,7 +2636,7 @@ function spawnZellen(tafel, q) {
         });
     const abwesend = [];
     for (const sicht of sp.sichten || [])
-        for (const [id, ausdruck] of Object.entries(sp.klassen || {}))
+        for (const [id, ausdruck] of Object.entries(aus))
             if (!zeichnetUm(sicht, new RegExp(ausdruck)).length && (sp.uhren || []).every((u) => posen[`${sicht}@${u}`].me))
                 abwesend.push(`${id} (${sicht})`);
     for (const sicht of sp.sichten || [])
@@ -2605,7 +2645,7 @@ function spawnZellen(tafel, q) {
             const { me, mf } = posen[pose];
             const alt = me && !mf ? messStand([me], Object.keys(me.quellen || {}), q || {}) : null;
             const ab = me && !mf && !alt ? abnahmeUrteil(me.abnahme, SCHWELLEN) : null;
-            for (const [id, ausdruck] of Object.entries(sp.klassen || {})) {
+            for (const [id, ausdruck] of Object.entries(aus)) {
                 const re = new RegExp(ausdruck);
                 const um = zeichnetUm(sicht, re);
                 if (me && !um.length && abwesend.includes(`${id} (${sicht})`)) continue;
@@ -2677,15 +2717,9 @@ function spawnZellen(tafel, q) {
                 z.taeter = zl.taeter;
             }
         }
-    // DIESELBEN PIXEL (G4): misst die Zeile ihre Klasse mit einer Teilung (`werkbank bild --klasse`, ohne Gesicht), liest die
-    // Matrix denselben Ausdruck — sonst urteilen Zeile und Zelle über verschiedene Dinge
-    for (const k of kl) {
-        const a = (sp.klassen || {})[k.id];
-        let m = k.mass && k.mass.messung;
-        if (m && typeof m === "object" && !m.werkzeug) m = Object.values(m).find((x) => x && x.werkzeug) || null;
-        if (a && m && m.werkzeug === "bild" && !m.gesicht && m.ausdruck && m.ausdruck !== a)
-            fehler.push(`die Klasse ${k.id}: die Matrix liest /${a}/, die Zeile misst /${m.ausdruck}/`);
-    }
+    for (const k of kl)
+        if (spawnTeilung(k) && (sp.klassen || {})[k.id] != null)
+            fehler.push(`die Klasse ${k.id}: die Matrix trägt einen eigenen Ausdruck neben der Teilung der Zeile (der Zwilling)`);
     const gruen = zellen.filter((z) => z.urteil === "GRÜN").length;
     return { zellen, gruen, gesamt: zellen.length, fehler, abwesend };
 }
@@ -2707,13 +2741,14 @@ function spawnSelbsttest(tafel, q) {
     if (!echt) return ["die Tafel trägt keine Posen-Matrix des Spawns (spawn)"];
     for (const s of ["ego", "third", "oben"]) if (!(echt.sichten || []).includes(s)) v.push(`die Sicht ${s} fehlt`);
     for (const u of [0.25, 0.5, 0.75, 0]) if (!(echt.uhren || []).includes(u)) v.push(`die Uhr ${u} fehlt`);
-    for (const k of tafel.klassen || []) if (!(k.id in (echt.klassen || {}))) v.push(`die Zeile ${k.id} fehlt in der Matrix`);
-    for (const id of ["fahrzeug", "tier", "dorf-stadt"]) if (!(id in (echt.klassen || {}))) v.push(`die Klasse ${id} fehlt in der Matrix`);
+    const echtAus = spawnAusdruecke(tafel);
+    for (const k of tafel.klassen || []) if (!(k.id in echtAus)) v.push(`die Zeile ${k.id} fehlt in der Matrix`);
+    for (const id of ["fahrzeug", "tier", "dorf-stadt"]) if (!(id in echtAus)) v.push(`die Klasse ${id} fehlt in der Matrix`);
     const ue = spawnZellen(tafel, q);
     for (const f of ue.fehler) v.push(`die echte Tafel: ${f}`);
     const kk = (tafel.klassen || []).find((k) => k.id === "laub-kante");
     if (!kk) return v.concat("die Zeile laub-kante fehlt (der Fall der Matrix)");
-    const aus = echt.klassen["laub-kante"];
+    const aus = echtAus["laub-kante"];
     const quellen = Object.fromEntries((kk.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     const teil = (kante, luma) => ({ pixel: 4000, luma, kante, kr: 300, detail: 0.1, weiss: 0, bunt: 20, zweiton: 0 });
     const block = (o) => ({
@@ -2776,12 +2811,12 @@ function spawnSelbsttest(tafel, q) {
     if (zelle("laub-kante", "oben@0.5").urteil || !u.abwesend.includes("laub-kante (oben)"))
         v.push("die Klasse, die in einer Sicht zu keiner Uhr zeichnet, steht als Zelle statt abwesend");
     if (u.gesamt !== 20 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/20`);
-    // ein Ausdruck neben dem der Zeile fällt beim Namen
-    const kz = (tafel.klassen || []).find((k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild" && !k.mass.messung.gesicht);
+    // ein eigener Ausdruck neben der Teilung einer Zeile fällt beim Namen
+    const kz = (tafel.klassen || []).find(spawnTeilung);
     if (kz) {
         const d = Object.assign({}, tafel, { spawn: Object.assign({}, echt, { klassen: Object.assign({}, echt.klassen, { [kz.id]: "^anders$" }) }) });
-        if (!spawnZellen(d, q).fehler.some((f) => f.includes(`die Klasse ${kz.id}: die Matrix liest /^anders$/`)))
-            v.push(`ein abweichender Ausdruck der Zeile ${kz.id} fällt nicht`);
+        if (!spawnZellen(d, q).fehler.some((f) => f.includes(`die Klasse ${kz.id}: die Matrix trägt einen eigenen Ausdruck`)))
+            v.push(`ein eigener Ausdruck neben der Teilung der Zeile ${kz.id} fällt nicht`);
     }
     return v;
 }
@@ -2815,11 +2850,13 @@ module.exports = {
     sollTafelZeile,
     sollTafelSelbsttest,
     spawnZellen,
+    spawnAusdruecke,
     spawnZelleText,
     sollIstAbweisung,
     abnahmeUrteil,
     bildMasse,
     pngLesen,
+    blockAnteil,
     verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,

@@ -1331,18 +1331,12 @@
         },
         "uhren": [0.25, 0.5, 0.75, 0],
         "klassen": {
-            "boden-nah": "^(nahWiese:.*|streuSatz|bodenSatz)$",
             "himmel-licht": "^(himmel|himmel-sonne)$",
-            "laub": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
-            "laub-kante": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
             "haus": "^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$",
-            "wasser": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
-            "tor-fern": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
             "tor-bunt": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
             "tor-ziel": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
             "fels": "^(formationenSatz|(f|fimp):(kristalle|zacken|fels[a-z_]*):L[0-9])$",
             "mensch-kopf": "^spieler$",
-            "boden-nah-farbe": "^(nahWiese:.*|streuSatz|bodenSatz)$",
             "fahrzeug": "^(f|fimp):gt:L[0-9]$",
             "tier": "^tier:",
             "dorf-stadt": "^((f|fimp):(alemannisch|feuerstelle|[a-z_]*(haus|hof|kirche|turm|stall|muehle|brunnen)[a-z_]*):L[0-9]|bau:(esse|haus_[a-z_]+)|dorf-rauch)$"

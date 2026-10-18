@@ -308,34 +308,11 @@ function pruefRaum(echt) {
         if (datei) fs.writeFileSync(datei, Buffer.from(b64, "base64"));
         return b64;
     };
-    // Der Vergleich zweier Bilder in der Seite: Block-Mittel 16×16 — die zeitliche Kantenglättung zittert über einem
-    // stehenden Bild Pixel für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt
-    // 70–97 % der Blöcke. Dazu das PNG eines Rücklese-Bilds für `--bilder`.
+    // Der Vergleich zweier Bilder in der Seite: die EINE Regel (`blockAnteil`, scripts/lib/abnahme-urteil.cjs); dazu das PNG eines
+    // Rücklese-Bilds für `--bilder`.
+    await page.evaluate(`window.__frostWand.blockAnteil = ${require("./lib/abnahme-urteil.cjs").blockAnteil.toString()};`);
     await page.evaluate(() => {
         const F = window.__frostWand;
-        F.blockAnteil = (A, B) => {
-            const K = 16,
-                bw = Math.floor(A.w / K),
-                bh = Math.floor(A.h / K);
-            let anders = 0;
-            for (let by = 0; by < bh; by++)
-                for (let bx = 0; bx < bw; bx++) {
-                    let s = 0;
-                    for (let c = 0; c < 3; c++) {
-                        let ma = 0,
-                            mb = 0;
-                        for (let y = 0; y < K; y++)
-                            for (let x = 0; x < K; x++) {
-                                const i = ((by * K + y) * A.w + bx * K + x) * 4 + c;
-                                ma += A.d[i];
-                                mb += B.d[i];
-                            }
-                        s += Math.abs(ma - mb) / (K * K);
-                    }
-                    if (s > 12) anders++;
-                }
-            return anders / Math.max(1, bw * bh);
-        };
         F.ladePng = async (s) => {
             const bin = atob(s);
             const u8 = new Uint8Array(bin.length);
