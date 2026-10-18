@@ -1,976 +1,977 @@
 {
   "quelle": "GitHub-API (s): je Schritt der Median der letzten je_schritt Läufe auf integ-probe, je Gruppe der Job-Dauer, die Vorbereitung je Job; kopf der neueste gemessene Lauf — erzeugt von scripts/ci-zeiten.cjs, gelesen von der Waage in gate:ci-deckung",
-  "erzeugt": "2026-10-17",
-  "kopf": "e47ad9f8d498d7519c0adba0f3f78e4f1b012e4c",
+  "erzeugt": "2026-10-18",
+  "kopf": "419efefcf8456415c4478df9dd8ba7fa8be4fcf1",
   "je_schritt": 7,
-  "vorbereitung_s": 15,
+  "vorbereitung_s": 14,
   "gruppen": {
-    "kopf": {"s": 5, "n": 7},
-    "puls 2": {"s": 77, "n": 7},
-    "puls 1": {"s": 137, "n": 7},
-    "voll 3": {"s": 379, "n": 3},
-    "voll 4": {"s": 368, "n": 3},
-    "voll 2": {"s": 215, "n": 3},
-    "voll 6": {"s": 620, "n": 2},
-    "voll 17": {"s": 272, "n": 3},
-    "voll 14": {"s": 390, "n": 3},
-    "voll 9": {"s": 292, "n": 3},
-    "voll 10": {"s": 262, "n": 3},
-    "voll 15": {"s": 322, "n": 1},
-    "voll 13": {"s": 361, "n": 1},
-    "voll 1": {"s": 266, "n": 1},
-    "voll 8": {"s": 350, "n": 3},
-    "voll 7": {"s": 397, "n": 1},
-    "voll 16": {"s": 386, "n": 2},
-    "voll 18": {"s": 493, "n": 1},
-    "voll 5": {"s": 255, "n": 2},
-    "voll 11": {"s": 338, "n": 2},
-    "voll 12": {"s": 449, "n": 2}
+    "puls 2": {"s": 84, "n": 7},
+    "puls 1": {"s": 123, "n": 7},
+    "kopf": {"s": 6, "n": 7},
+    "voll 11": {"s": 340, "n": 7},
+    "voll 6": {"s": 358, "n": 7},
+    "voll 5": {"s": 535, "n": 7},
+    "voll 9": {"s": 263, "n": 7},
+    "voll 1": {"s": 379, "n": 7},
+    "voll 8": {"s": 274, "n": 7},
+    "voll 10": {"s": 353, "n": 7},
+    "voll 4": {"s": 271, "n": 7},
+    "voll 2": {"s": 339, "n": 7},
+    "voll 7": {"s": 310, "n": 7},
+    "voll 18": {"s": 331, "n": 7},
+    "voll 3": {"s": 336, "n": 7},
+    "voll 14": {"s": 380, "n": 7},
+    "voll 15": {"s": 293, "n": 7},
+    "voll 12": {"s": 361, "n": 7},
+    "voll 16": {"s": 452, "n": 7},
+    "voll 13": {"s": 441, "n": 7},
+    "voll 17": {"s": 419, "n": 7}
   },
   "schritte": {
     "Prettier-Format-Check": {
-      "s": 9,
+      "s": 11,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run format:check",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "ESLint": {
-      "s": 5,
+      "s": 6,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run lint",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Syntax-Check JS-Dateien": {
-      "s": 3,
+      "s": 2,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "set -e for f in $(git ls-files '*.js'); do echo \"→ $f\" node --check \"$f\" done",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)": {
-      "s": 119,
+      "s": 110,
       "n": 7,
       "gruppe": "puls 1",
       "lauf": "npm run check:statik",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794", "39036331423"]
     },
     "Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)": {
       "s": 1,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:streu-wahrheit",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)": {
-      "s": 8,
+      "s": 10,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:mensch-anatomie",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)": {
       "s": 2,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:one-wuchs-parity",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Single-Quote-Template-Strings (B2-Pattern)": {
       "s": 0,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "# Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten # String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern # werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten). if grep -nE \"\\(\\s*'[^']*\\\\\\$\\{[^}]+\\}[^']*'\\s*[,)]\" stamm/*.js; then echo \"❌ Single-Quote-Template-String erkannt – Backticks verwenden\" exit 1 fi echo \"✅ Keine fehlgeschlagenen Template-Strings\"",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Verbotenes dynamisches Auswerten (eval / new Function)": {
       "s": 0,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "if grep -nE \"(eval\\(|new Function\\()\" stamm/*.js save-server.js; then echo \"❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function\" exit 1 fi echo \"✅ Kein dynamisches Code-Eval\"",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "innerHTML-Schreibzugriffe (Hinweis, kein Fail)": {
       "s": 0,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "grep -nE \"innerHTML\\s*\\+?=\" stamm/*.js || echo \"keine Treffer\"",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "TODO/FIXME-Übersicht (Hinweis, kein Fail)": {
       "s": 0,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "grep -nE \"(TODO|FIXME|XXX|HACK|TBD)\" stamm/*.js save-server.js || echo \"keine TODOs\"",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)": {
-      "s": 6,
+      "s": 7,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:vehicle-contract",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)": {
-      "s": 11,
+      "s": 14,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:porta-contract",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)": {
       "s": 2,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:schmiede-contract",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)": {
       "s": 0,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run gate:daten-contract",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)": {
-      "s": 10,
+      "s": 12,
       "n": 7,
       "gruppe": "puls 2",
       "lauf": "npm run playtest:fast",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)": {
       "s": 1,
       "n": 7,
       "gruppe": "kopf",
       "lauf": "node scripts/ci-kopf.cjs",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39089715029", "39071678447", "39040554053", "39037428794"]
     },
     "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")": {
-      "s": 76,
+      "s": 87,
       "n": 7,
       "gruppe": "voll 1",
       "lauf": "npm run playtest | tee playtest-voll.log grep -qx \"✅ Alle Invarianten OK\" playtest-voll.log",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)": {
-      "s": 92,
+      "s": 96,
       "n": 7,
-      "gruppe": "voll 7",
+      "gruppe": "voll 6",
       "lauf": "npm run gate:tier-anatomie",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Erst-Zeichnungs-Wand Teil 1 (echter Renderer — Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau)": {
-      "s": 63,
+      "s": 96,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 11",
       "lauf": "node scripts/diag-hitch-telemetrie.cjs --teil=1",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Erst-Zeichnungs-Wand Teil 2 (echter Renderer — Bundle ohne Anmeldung, hängender Fehler-Scope, Beweis-Aufnahme, Absage)": {
-      "s": 52,
+      "s": 125,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 13",
       "lauf": "node scripts/diag-hitch-telemetrie.cjs --teil=2",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {
-      "s": 81,
+      "s": 134,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:fenster-wechsel",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)": {
-      "s": 30,
+      "s": 26,
       "n": 7,
-      "gruppe": "voll 14",
+      "gruppe": "voll 15",
       "lauf": "npm run gate:schirm-monotonie",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)": {
-      "s": 10,
+      "s": 13,
       "n": 7,
-      "gruppe": "voll 1",
+      "gruppe": "voll 3",
       "lauf": "npm run gate:schatten-werfer",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Schatten-Bias (das Gesetz der Kaskade statt eines festen Meter-Werts)": {
       "s": 1,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 14",
       "lauf": "npm run gate:schatten-bias",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)": {
-      "s": 103,
-      "n": 7,
-      "gruppe": "voll 6",
-      "lauf": "npm run gate:schatten-terminator",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
-    },
-    "Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)": {
-      "s": 14,
-      "n": 7,
-      "gruppe": "voll 2",
-      "lauf": "npm run gate:persistence",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
-    },
-    "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
-      "s": 20,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:worker-dichte",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
-    },
-    "Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)": {
-      "s": 41,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:gelaende-realismus",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
-    },
-    "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)": {
-      "s": 34,
+      "s": 148,
       "n": 7,
       "gruppe": "voll 1",
+      "lauf": "npm run gate:schatten-terminator",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)": {
+      "s": 17,
+      "n": 7,
+      "gruppe": "voll 5",
+      "lauf": "npm run gate:persistence",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
+      "s": 26,
+      "n": 7,
+      "gruppe": "voll 2",
+      "lauf": "npm run gate:worker-dichte",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)": {
+      "s": 39,
+      "n": 7,
+      "gruppe": "voll 4",
+      "lauf": "npm run gate:gelaende-realismus",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)": {
+      "s": 42,
+      "n": 7,
+      "gruppe": "voll 6",
       "lauf": "npm run gate:gelaende-studio",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)": {
-      "s": 134,
+      "s": 136,
       "n": 7,
       "gruppe": "voll 14",
       "lauf": "npm run gate:pruefbuehne",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)": {
-      "s": 86,
+      "s": 69,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 18",
       "lauf": "npm run gate:pruefbuehne-licht",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
       "s": 119,
       "n": 7,
       "gruppe": "voll 6",
       "lauf": "npm run gate:weltgrenze",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)": {
-      "s": 82,
+      "s": 85,
       "n": 7,
-      "gruppe": "voll 4",
+      "gruppe": "voll 5",
       "lauf": "npm run gate:boot-rettung",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)": {
       "s": 11,
       "n": 7,
-      "gruppe": "voll 3",
+      "gruppe": "voll 5",
       "lauf": "npm run gate:grass-thin",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)": {
-      "s": 12,
+      "s": 11,
       "n": 7,
       "gruppe": "voll 6",
       "lauf": "npm run gate:render-tap",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)": {
-      "s": 32,
+      "s": 36,
       "n": 7,
       "gruppe": "voll 11",
       "lauf": "npm run gate:takt-atem",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)": {
-      "s": 14,
+      "s": 11,
       "n": 7,
-      "gruppe": "voll 8",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:boot-stage",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)": {
-      "s": 137,
+      "s": 139,
       "n": 7,
       "gruppe": "voll 13",
       "lauf": "npm run gate:streu-fern",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)": {
-      "s": 233,
+      "s": 171,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:asset-contract",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)": {
       "s": 11,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 10",
       "lauf": "npm run gate:pflanzen-nah",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)": {
-      "s": 54,
+      "s": 49,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:sippen-wirt",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)": {
-      "s": 10,
+      "s": 8,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:pack-contract",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fluss-Wand (V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau)": {
-      "s": 101,
+      "s": 183,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:fluss",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)": {
-      "s": 19,
+      "s": 18,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:takt",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)": {
-      "s": 15,
-      "n": 7,
-      "gruppe": "voll 4",
-      "lauf": "npm run gate:chunk-satz",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
-    },
-    "Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)": {
-      "s": 42,
+      "s": 12,
       "n": 7,
       "gruppe": "voll 1",
+      "lauf": "npm run gate:chunk-satz",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)": {
+      "s": 57,
+      "n": 7,
+      "gruppe": "voll 2",
       "lauf": "npm run gate:hoehlen-sicht",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)": {
       "s": 14,
       "n": 7,
-      "gruppe": "voll 7",
+      "gruppe": "voll 3",
       "lauf": "npm run gate:sicht-arbeit",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)": {
-      "s": 21,
+      "s": 25,
       "n": 7,
-      "gruppe": "voll 15",
+      "gruppe": "voll 11",
       "lauf": "npm run gate:wetter-wache",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)": {
-      "s": 13,
+      "s": 11,
       "n": 7,
-      "gruppe": "voll 8",
+      "gruppe": "voll 18",
       "lauf": "npm run gate:weltakt-wache",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)": {
-      "s": 19,
+      "s": 18,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 10",
       "lauf": "npm run gate:blocker-netz",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)": {
       "s": 21,
       "n": 7,
       "gruppe": "voll 3",
       "lauf": "npm run gate:kollision-bild",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)": {
-      "s": 60,
+      "s": 46,
       "n": 7,
-      "gruppe": "voll 3",
+      "gruppe": "voll 4",
       "lauf": "npm run gate:fall-waechter",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {
-      "s": 24,
+      "s": 22,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 8",
       "lauf": "npm run gate:brennglas-takt",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)": {
-      "s": 15,
+      "s": 14,
       "n": 7,
-      "gruppe": "voll 12",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:raum-tags",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)": {
-      "s": 37,
+      "s": 33,
       "n": 7,
       "gruppe": "voll 3",
       "lauf": "npm run gate:stand-takt",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)": {
-      "s": 10,
+      "s": 7,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 8",
       "lauf": "npm run gate:foundry-warm",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206", "38972755981"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)": {
       "s": 14,
       "n": 7,
-      "gruppe": "voll 9",
+      "gruppe": "voll 11",
       "lauf": "npm run gate:portal-boot",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)": {
-      "s": 14,
+      "s": 11,
       "n": 7,
       "gruppe": "voll 15",
       "lauf": "npm run gate:foundry-deadlock",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {
-      "s": 71,
+      "s": 64,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 13",
       "lauf": "npm run gate:fernwald",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)": {
       "s": 7,
       "n": 7,
-      "gruppe": "voll 14",
+      "gruppe": "voll 11",
       "lauf": "npm run gate:luft-sicht",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {
-      "s": 8,
+      "s": 9,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 11",
       "lauf": "npm run gate:weg-boden",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)": {
       "s": 14,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:boot-foliage-ring",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)": {
-      "s": 16,
-      "n": 7,
-      "gruppe": "voll 16",
-      "lauf": "npm run gate:foundry-impostor",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
-    },
-    "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {
-      "s": 18,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:asset-inventory",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
-    },
-    "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass": {
-      "s": 29,
-      "n": 7,
-      "gruppe": "voll 15",
-      "lauf": "npm run gate:freie-slots",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
-    },
-    "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau": {
-      "s": 2,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:season-meadow",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
-    },
-    "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)": {
-      "s": 10,
+      "s": 21,
       "n": 7,
       "gruppe": "voll 13",
-      "lauf": "npm run gate:s4-impostor-workshop",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "lauf": "npm run gate:foundry-impostor",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
-    "Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)": {
-      "s": 8,
+    "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {
+      "s": 14,
       "n": 7,
       "gruppe": "voll 15",
+      "lauf": "npm run gate:asset-inventory",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass": {
+      "s": 30,
+      "n": 7,
+      "gruppe": "voll 12",
+      "lauf": "npm run gate:freie-slots",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau": {
+      "s": 1,
+      "n": 7,
+      "gruppe": "voll 6",
+      "lauf": "npm run gate:season-meadow",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)": {
+      "s": 11,
+      "n": 7,
+      "gruppe": "voll 10",
+      "lauf": "npm run gate:s4-impostor-workshop",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)": {
+      "s": 7,
+      "n": 7,
+      "gruppe": "voll 16",
       "lauf": "npm run gate:nervensystem",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206", "38972755981"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)": {
       "s": 10,
       "n": 7,
-      "gruppe": "voll 14",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:nervensystem-vehicle",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)": {
-      "s": 7,
+      "s": 6,
       "n": 7,
       "gruppe": "voll 16",
       "lauf": "npm run gate:place-policy",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)": {
-      "s": 10,
+      "s": 9,
       "n": 7,
-      "gruppe": "voll 8",
+      "gruppe": "voll 13",
       "lauf": "npm run gate:vehicle-drive",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)": {
-      "s": 70,
+      "s": 88,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:fahr-leben",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)": {
-      "s": 12,
-      "geschaetzt": "S1 18.10.: die Garage ist ein Modus der Welt-Engine (Welt-Boot im Null-Renderer, Foundry an, keine GPU) — gemessen 9 s in voll 6 (Lauf 39129167351), mit Rad, Chat-Woertern und Spiegel alter Spielstaende geschaetzt 12 s; die alte r128-Seite mass 48 s",
-      "gruppe": "voll 6",
-      "lauf": "npm run gate:garage-labor"
+      "s": 39,
+      "n": 7,
+      "gruppe": "voll 15",
+      "lauf": "npm run gate:garage-labor",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
-      "s": 7,
+      "s": 9,
       "n": 7,
-      "gruppe": "voll 9",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:nervensystem-porta",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)": {
-      "s": 10,
+      "s": 9,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 14",
       "lauf": "npm run gate:nervensystem-schmiede",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)": {
-      "s": 27,
+      "s": 34,
       "n": 7,
-      "gruppe": "voll 2",
+      "gruppe": "voll 5",
       "lauf": "npm run gate:kampf-gefuehl",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)": {
       "s": 1,
       "n": 7,
-      "gruppe": "voll 6",
+      "gruppe": "voll 3",
       "lauf": "npm run gate:gegenstand-stoff",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)": {
       "s": 10,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 15",
       "lauf": "npm run gate:albedo-tafel",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)": {
-      "s": 53,
-      "n": 7,
-      "gruppe": "voll 6",
-      "lauf": "npm run gate:nah-fern",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
-    },
-    "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
-      "s": 8,
-      "n": 7,
-      "gruppe": "voll 17",
-      "lauf": "npm run gate:nervensystem-fachwerk",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
-    },
-    "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)": {
-      "s": 74,
+      "s": 205,
       "n": 7,
       "gruppe": "voll 5",
+      "lauf": "npm run gate:nah-fern",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
+      "s": 10,
+      "n": 7,
+      "gruppe": "voll 10",
+      "lauf": "npm run gate:nervensystem-fachwerk",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)": {
+      "s": 72,
+      "n": 7,
+      "gruppe": "voll 1",
       "lauf": "npm run gate:fachwerk-contract",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)": {
-      "s": 80,
+      "s": 77,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:settlement",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206", "38972755981"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)": {
-      "s": 272,
+      "s": 201,
       "n": 7,
       "gruppe": "voll 8",
       "lauf": "npm run gate:studio-begehen",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)": {
-      "s": 109,
+      "s": 116,
       "n": 7,
-      "gruppe": "voll 5",
+      "gruppe": "voll 7",
       "lauf": "npm run gate:koerper-stand",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)": {
-      "s": 248,
+      "s": 242,
       "n": 7,
       "gruppe": "voll 2",
       "lauf": "node scripts/diag-haus-welt.cjs --selftest --teil=1/2",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Das Haus der Welt Teil 2 (die übrigen Selbsttest-Welten — jede Basis-Zeile macht genau ihre Probe rot)": {
-      "s": 185,
+      "s": 152,
       "n": 7,
       "gruppe": "voll 4",
       "lauf": "node scripts/diag-haus-welt.cjs --selftest --teil=2/2",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)": {
-      "s": 44,
+      "s": 38,
       "n": 7,
-      "gruppe": "voll 4",
+      "gruppe": "voll 7",
       "lauf": "npm run gate:haus-fern",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)": {
-      "s": 11,
-      "n": 7,
-      "gruppe": "voll 2",
-      "lauf": "npm run gate:trias",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
-    },
-    "Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)": {
-      "s": 10,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:nervensystem-labs",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
-    },
-    "Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {
-      "s": 32,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:tier-gang",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
-    },
-    "Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)": {
-      "s": 47,
-      "n": 7,
-      "gruppe": "voll 7",
-      "lauf": "npm run gate:kreatur-takt",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
-    },
-    "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)": {
-      "s": 124,
-      "n": 7,
-      "gruppe": "voll 7",
-      "lauf": "npm run gate:ofen-contract",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
-    },
-    "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)": {
-      "s": 112,
+      "s": 12,
       "n": 7,
       "gruppe": "voll 1",
+      "lauf": "npm run gate:trias",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)": {
+      "s": 9,
+      "n": 7,
+      "gruppe": "voll 18",
+      "lauf": "npm run gate:nervensystem-labs",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {
+      "s": 31,
+      "n": 7,
+      "gruppe": "voll 17",
+      "lauf": "npm run gate:tier-gang",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)": {
+      "s": 62,
+      "n": 7,
+      "gruppe": "voll 6",
+      "lauf": "npm run gate:kreatur-takt",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)": {
+      "s": 167,
+      "n": 7,
+      "gruppe": "voll 5",
+      "lauf": "npm run gate:ofen-contract",
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
+    },
+    "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)": {
+      "s": 106,
+      "n": 7,
+      "gruppe": "voll 7",
       "lauf": "npm run gate:klang-zensus",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)": {
       "s": 8,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:portal-gestalt",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)": {
-      "s": 212,
+      "s": 228,
       "n": 7,
-      "gruppe": "voll 9",
+      "gruppe": "voll 10",
       "lauf": "npm run gate:portal-konformanz",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)": {
-      "s": 127,
+      "s": 98,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 15",
       "lauf": "npm run gate:regler-wirkt",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)": {
-      "s": 37,
+      "s": 31,
       "n": 7,
       "gruppe": "voll 10",
       "lauf": "npm run gate:foundry-crossfade",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)": {
       "s": 12,
       "n": 7,
-      "gruppe": "voll 14",
+      "gruppe": "voll 13",
       "lauf": "npm run gate:reload-treue",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)": {
-      "s": 11,
+      "s": 12,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:studio-uebergabe",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)": {
       "s": 11,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 14",
       "lauf": "npm run gate:p2p-gestalt",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)": {
       "s": 11,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:praegung-welt",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)": {
-      "s": 41,
+      "s": 42,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 18",
       "lauf": "npm run gate:scatter-lod",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)": {
-      "s": 24,
+      "s": 19,
       "n": 7,
-      "gruppe": "voll 6",
+      "gruppe": "voll 7",
       "lauf": "npm run gate:erstarren",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)": {
       "s": 5,
       "n": 7,
-      "gruppe": "voll 5",
+      "gruppe": "voll 4",
       "lauf": "npm run gate:gpu-zeit",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)": {
       "s": 7,
       "n": 7,
-      "gruppe": "voll 15",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:render-diaet",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)": {
-      "s": 38,
+      "s": 37,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:fern-ring",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206", "38972755981"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)": {
-      "s": 27,
+      "s": 49,
       "n": 7,
-      "gruppe": "voll 10",
+      "gruppe": "voll 13",
       "lauf": "npm run gate:webgl-probe",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)": {
       "s": 21,
       "n": 7,
-      "gruppe": "voll 4",
+      "gruppe": "voll 7",
       "lauf": "npm run gate:welt-boot",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)": {
-      "s": 18,
+      "s": 14,
       "n": 7,
-      "gruppe": "voll 1",
+      "gruppe": "voll 4",
       "lauf": "npm run gate:fern-wasser",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)": {
-      "s": 15,
+      "s": 16,
       "n": 7,
-      "gruppe": "voll 9",
+      "gruppe": "voll 8",
       "lauf": "npm run gate:warm-start",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)": {
-      "s": 4,
+      "s": 5,
       "n": 7,
-      "gruppe": "voll 5",
+      "gruppe": "voll 6",
       "lauf": "npm run gate:kopplung",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)": {
-      "s": 31,
+      "s": 32,
       "n": 7,
-      "gruppe": "voll 7",
+      "gruppe": "voll 1",
       "lauf": "npm run gate:tor-fern",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)": {
-      "s": 127,
+      "s": 190,
       "n": 7,
-      "gruppe": "voll 15",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:portal-membran",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
-      "s": 3,
+      "s": 2,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:fahrzeug-fern",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
-      "s": 25,
+      "s": 16,
       "n": 7,
-      "gruppe": "voll 16",
+      "gruppe": "voll 9",
       "lauf": "npm run gate:seam",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)": {
-      "s": 87,
+      "s": 67,
       "n": 7,
       "gruppe": "voll 18",
       "lauf": "npm run gate:mp-sync",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)": {
       "s": 48,
       "n": 7,
       "gruppe": "voll 12",
       "lauf": "npm run gate:v1-pfad",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)": {
-      "s": 21,
+      "s": 20,
       "n": 7,
-      "gruppe": "voll 18",
+      "gruppe": "voll 14",
       "lauf": "npm run gate:werkstatt-weg",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)": {
-      "s": 69,
+      "s": 63,
       "n": 7,
-      "gruppe": "voll 12",
+      "gruppe": "voll 17",
       "lauf": "npm run gate:kamera-laub",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)": {
-      "s": 35,
+      "s": 36,
       "n": 7,
-      "gruppe": "voll 9",
+      "gruppe": "voll 14",
       "lauf": "npm run gate:kamera-leib",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)": {
-      "s": 78,
+      "s": 109,
       "n": 7,
       "gruppe": "voll 14",
       "lauf": "npm run gate:ankunft",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)": {
       "s": 1,
       "n": 7,
-      "gruppe": "voll 8",
+      "gruppe": "voll 15",
       "lauf": "npm run gate:gpu-fehler",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)": {
       "s": 227,
       "n": 7,
       "gruppe": "voll 3",
       "lauf": "npm run gate:wasser-leben",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)": {
-      "s": 140,
+      "s": 142,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:werk-im-wasser",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)": {
-      "s": 39,
+      "s": 35,
       "n": 7,
-      "gruppe": "voll 15",
+      "gruppe": "voll 14",
       "lauf": "npm run gpu-lens",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)": {
-      "s": 32,
+      "s": 30,
       "n": 7,
-      "gruppe": "voll 17",
+      "gruppe": "voll 10",
       "lauf": "npm run gate:analog-nah",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Frost-Wand (echter Renderer — das Weltbild folgt der Kamera durch Werkstatt, Ich- und Hof-Buehne)": {
-      "s": 81,
+      "s": 79,
       "n": 7,
       "gruppe": "voll 15",
       "lauf": "npm run gate:weltbild-frost",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)": {
-      "s": 26,
+      "s": 22,
       "n": 7,
-      "gruppe": "voll 8",
+      "gruppe": "voll 16",
       "lauf": "npm run gate:post-kette",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {
-      "s": 8,
+      "s": 7,
       "n": 7,
-      "gruppe": "voll 13",
+      "gruppe": "voll 8",
       "lauf": "npm run gate:kamera-treue",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)": {
       "s": 17,
       "n": 7,
-      "gruppe": "voll 14",
+      "gruppe": "voll 12",
       "lauf": "npm run gate:ego-schatten",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {
-      "s": 183,
+      "s": 130,
       "n": 7,
-      "gruppe": "voll 12",
+      "gruppe": "voll 11",
       "lauf": "npm run gate:ziel-zensus",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {
-      "s": 70,
+      "s": 97,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 18",
       "lauf": "npm run gate:verdeckungs-abfrage",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38987049318"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)": {
-      "s": 22,
+      "s": 21,
       "n": 7,
-      "gruppe": "voll 11",
+      "gruppe": "voll 18",
       "lauf": "npm run gate:wasser-leben:bild",
-      "laeufe": ["39007430669", "39005494771", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     },
     "Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)": {
       "s": 0,
       "n": 7,
-      "gruppe": "voll 7",
+      "gruppe": "voll 2",
       "lauf": "npm run look-golden",
-      "laeufe": ["39007430669", "38999210601", "38996037938", "38989110481", "38987564279", "38984684581", "38979098206"]
+      "laeufe": ["39120508033", "39113754217", "39102311056", "39040554053", "39036331423", "39030869795", "39029069631"]
     }
   },
   "vorher": {
