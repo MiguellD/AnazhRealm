@@ -1041,7 +1041,7 @@ const server = statikServer();
                         for (const b of x.ordnung) {
                             if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(Lw, b.huelle, 0)) continue;
                             for (const z of b.zellen) {
-                                if (z.knoten !== undefined || z.huelle.isEmpty() || !r._passTrifftBox(Lw, z.huelle, 0))
+                                if (z.knoten !== undefined || z.huelle.isEmpty() || !r._satzZelleImBand(x, z) || !r._passTrifftBox(Lw, z.huelle, 0))
                                     continue;
                                 D.geprueft++;
                                 if (!gezeichnet.has(z)) loch(String(x.art).split("|")[0] + " Zelle");
