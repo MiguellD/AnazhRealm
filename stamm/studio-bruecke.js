@@ -758,7 +758,7 @@ class AnazhRealm_studio_bruecke {
         // passieren sofort; Konsumenten tragen null-bis-fertig.
         return this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, wo)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
-            .then((ergebnis) => this._foundryIngestTakt(ergebnis));
+            .then((ergebnis) => this._foundryIngestTakt(ergebnis, wo));
     }
     // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
     // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
@@ -796,14 +796,28 @@ class AnazhRealm_studio_bruecke {
         return zug;
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
-    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
-    _foundryIngestTakt(x) {
+    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `wo` = der Rang des Bestellers wie in der
+    // Worker-Schlange (`_foundryAuftrag`): die Freigabe geht NAH zuerst (`_ingestWahl`).
+    _foundryIngestTakt(x, wo) {
         if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
         const r = this.state.renderer;
         if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
         const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
-        return new Promise((res) => q.push(() => res(x)));
+        return new Promise((res) => q.push({ frei: () => res(x), wo, t: performance.now() }));
+    }
+    // DIE WAHL DER FREIGABE (B4-n1): nah zuerst — der Rang der Worker-Schlange (`_foundryAuftragD2`, vor dem ersten Weltbild
+    // der Blick zuerst), unter Gleichen FIFO, nie verhungert: wartet der Älteste länger als FOUNDRY_ALTER_MS, geht er. Bis
+    // B4-n1 ging sie FIFO: die Vorlagen des Leibs (am Ort des Spielers) warteten hinter 13–24 Ergebnissen der Bäume des
+    // Boden-Rings, je Lade-Frame 8 frei (Radeon kalt: der Leib 5,9 -> 7,1 s, gate:takt T5).
+    _ingestWahl(q) {
+        if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) return 0;
+        let k = 0;
+        for (let i = 1, best = this._foundryAuftragD2(q[0].wo); i < q.length; i++) {
+            const d = this._foundryAuftragD2(q[i].wo);
+            if (d < best) [k, best] = [i, d];
+        }
+        return k;
     }
     // Freigabe-Tick (EIN Aufruf je Frame), sekunden-normalisiert: n = round(INGEST_RATE_PER_S·dt),
     // gedeckelt durch INGEST_BURST_CAP — die Welt lädt mit der Wanduhr, nicht mit der Framerate. Über
@@ -823,7 +837,7 @@ class AnazhRealm_studio_bruecke {
             n = Math.max(1, Math.min(AnazhRealm.INGEST_BURST_CAP, Math.round(rate * dt)));
         }
         for (let i = 0; i < n && q.length; i++) {
-            const frei = q.shift();
+            const { frei } = q.splice(this._ingestWahl(q), 1)[0];
             this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
             // die Freigabe erfüllt nur ein Versprechen (`res(x)` wirft nie); der Bau des Aufrufers läuft danach in SEINER
             // Kette, deren Fang laut bricht (K22: kein toter catch um die Freigabe)

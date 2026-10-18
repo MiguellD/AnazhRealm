@@ -3,33 +3,26 @@
 // die ganze Welt (`werkbank takt` 02.10.: `_tickFocusingAffordances` rechnete die Compound-Tags aller ~120 Bauten vor der
 // Reichweite, Ø 20 ms; Reichweite zuerst: Spiel-Takt p50 31 → 13 ms). Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
 //   T1  steht kein Bau in seiner Reichweite → der Brennglas-Takt ruft computeCompoundTags 0-mal
-//   T2  stehen 3 Bauten in Reichweite → je Takt mindestens 1, höchstens 3 Rufe (genau die Betroffenen); das Brennglas ist ein
-//       Bauplan, der bündelt (am Mittag ≥ 1 Brennpunkt, sonst bricht die Linse ab — bis 0710-11 war sie mit einer Eiche vakuös)
-//   T3  der Feld-Bake-Takt (`_weltBakeErlaubt`) geht NAH zuerst über alle Verbraucher: wer im Vor-Fenster nah
-//       abgewiesen wurde, bekommt im nächsten zuerst (Befund: das Streu-Gesetz fragte im Frame vor den Bauten —
-//       eine gesetzte Eiche in 170 m blieb 200 Takte ohne Feld)
-//   T4  und nie verhungert: was in der zweiten Fenster-Hälfte übrig ist, bekommt auch der Ferne (V18.512 hielt die
-//       Schwelle das ganze Fenster: 415 Freigaben in 1 000 Takten, die ferne Eiche nie — gate:arch-feld mit echter
-//       Distanz, 03.10.)
-//   T5  DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`) geht NAH zuerst: hinter vollem Worker (FOUNDRY_IM_FLUG) und zehn
-//       Vorrats-Aufträgen in der Schlange geht der nahe Bau als nächster hinein, ein schon wartender Vorrats-Schlüssel,
-//       den ein naher Bau verlangt, wird nachpriorisiert, und die Request-Nummer entsteht beim Senden (die EINE Frist
-//       bleibt eine Arbeits-Uhr). Befund 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9 s.
+//   T2  stehen 3 Bauten in Reichweite → je Takt 1 bis 3 Rufe (genau die Betroffenen); am Mittag ≥ 1 Brennpunkt, sonst bricht sie ab
+//   T3  der Feld-Bake-Takt (`_weltBakeErlaubt`) geht NAH zuerst über alle Verbraucher: wer im Vor-Fenster nah abgewiesen
+//       wurde, bekommt im nächsten zuerst (eine gesetzte Eiche in 170 m blieb sonst 200 Takte ohne Feld)
+//   T4  und nie verhungert: was in der zweiten Fenster-Hälfte übrig ist, bekommt auch der Ferne (die Schwelle über das
+//       ganze Fenster gab der fernen Eiche nie, 415 Freigaben in 1 000 Takten)
+//   T5  DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`) geht NAH zuerst, ihre Freigabe auch (`_ingestWahl`): hinter vollem Worker
+//       und zehn Vorrats-Aufträgen geht der nahe Bau als nächster hinein, ein wartender Vorrats-Schlüssel, den ein naher Bau
+//       verlangt, wird nachpriorisiert, die Request-Nummer entsteht beim Senden; das Ergebnis am Ort des Spielers geht zuerst frei.
 //   T6  und nie verhungert: ist der älteste Wartende älter als FOUNDRY_ALTER_MS, geht er unter lauter Nahen spätestens
 //       als zweiter hinein.
-//   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und
-//       Uhr der Späteren, bis der Worker ihn fertig hat (Befund 05.10.: der Wiederholer einer Karte lief ab, während der
-//       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
-//       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
+//   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und Uhr
+//       der Späteren, bis der Worker ihn fertig hat (sonst lief der Wiederholer ab, und der dritte Ablauf macht die Zelle
+//       gescheitert); je FADEN, auch im Werk-Helfer (`w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (`_foundryUhren`)
 //   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (keine eigene Uhr) — bis zur EINEN Frist
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
-//   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (sein Name „buch"),
-//       nie als Nachricht — eine Nachricht vor dem Ende seines Start-Skripts reicht Chrome erst weiter, wenn der volle Haupt-Faden
-//       die Meldung „Skript gelaufen" liest (Radeon kalt 0,73–1,26 s); seine Helfer kommen mit ihm. Der Selbsttest fährt den alten Weg.
-// --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
-// Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
-// die Nur-der-Nächste-Pumpe T6, die löschende Frist T8, die Kappe allein T9.
+//   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name „buch"), nie als
+//       Nachricht (Chrome reicht sie erst weiter, wenn der volle Haupt-Faden „Skript gelaufen" liest); seine Helfer kommen mit ihm.
+// --selftest: der Takt mit den Tags ALLER Bauten macht T1 rot, der Wer-zuerst-fragt-Takt T3, die Schwelle über das ganze Fenster
+// T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Pumpe T6, die löschende Frist T8, die Kappe allein T9 (je Leser).
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -54,10 +47,8 @@ const SELBST = process.argv.includes("--selftest");
             const tags = r.computeCompoundTags(st.blueprints[typ]);
             if (!((tags.brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN))
                 return { fehler: typ + " ist nicht brennbar" };
-            // 300 brennbare Bauten weit vom Brennglas, das Brennglas selbst bei (2000, 2000) — alle `silent` (die Lage exakt,
-            // keine Spieler-Klemme). Das Brennglas ist ein Bauplan, der wirklich bündelt (durchsichtige Teile → Brennpunkte):
-            // bis 0710-11 war es eine Eiche mit nachgeschriebenem `focusing` — seit 773ed3a2 („EIN Brennpunkt") trägt sie keinen
-            // Brennpunkt, und ohne Stempel kennt das Verzeichnis sie nicht: der Takt rechnete nie, T1/T2 waren vakuös grün.
+            // 300 brennbare Bauten weit vom Brennglas bei (2000, 2000), alle `silent` (die Lage exakt); das Brennglas ist ein Bauplan,
+            // der wirklich bündelt (durchsichtige Teile → Brennpunkte; eine Eiche trägt seit 773ed3a2 keinen, T1/T2 waren vakuös).
             const bauten = [];
             for (let i = 0; i < 300; i++) {
                 const x = 400 + (i % 20) * 9,
@@ -251,11 +242,23 @@ const SELBST = process.argv.includes("--selftest");
                 antworte();
                 return { folge: gesendet.slice(K, K + 2).map((m) => m.presetId) };
             });
-            // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der
-            // erste ab, bekommt sein Besteller null — aber die Uhr des zweiten startet nicht, solange der Worker den ersten
-            // noch baut (sein Geist hält Platz und Uhr). Die alte Frist löschte ihn: der zweite lief eine Frist später ab.
-            // Die Uhr startet am Ereignis (K38-N2, `_foundryUhren`): der erste läuft bei 600 ms ab, sein Geist hält bis
-            // 600 + GEIST_FACH × 600 ms — gemessen wird dazwischen (2 s).
+            // DIE FREIGABE NAH ZUERST (B4-n1, `_ingestWahl`): hinter 10 fernen Ergebnissen geht das am Ort des Spielers zuerst frei
+            const t5i = await (async () => {
+                const [qE, frei, rE] = [r._foundryIngestQueue, [], st.renderer];
+                [st.renderer, r._foundryIngestQueue] = [{}, []]; // headless hält der Wächter nichts — ein Renderer, synchron bis zum Zählen
+                if (selbst) r._foundryAuftragD2 = () => 0; // der alte Weg: EIN Rang, die Freigabe FIFO
+                for (let i = 0; i < 11; i++) r._foundryIngestTakt("e" + i, i < 10 ? { x: pm.x + 900 + i, z: pm.z } : pm).then((x) => frei.push(x)); // prettier-ignore
+                st.renderer = rE;
+                const n = r._foundryIngestQueue.length;
+                r._tickFoundryIngest(1 / 60);
+                await null;
+                r._foundryIngestQueue = qE;
+                if (selbst) delete r._foundryAuftragD2;
+                return { n, erst: frei[0] };
+            })();
+            // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der erste ab,
+            // bekommt sein Besteller null, aber die Uhr des zweiten startet nicht, solange sein Geist Platz und Uhr hält (die alte
+            // Frist löschte ihn); die Uhr startet am Ereignis (`_foundryUhren`), gemessen wird vor 600 + GEIST_FACH × 600 ms (2 s).
             const fristEcht = Object.prototype.hasOwnProperty.call(r, "_foundryFrist") ? r._foundryFrist : null;
             const fristGeist = r._foundryFrist;
             // die löschende Frist auf derselben Uhr: der Abgelaufene fällt sofort aus dem Faden, statt als Geist zu halten
@@ -356,10 +359,9 @@ const SELBST = process.argv.includes("--selftest");
                         r._ladeTakt = () => !selbst;
                         st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: r.constructor.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
                         Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: r.constructor.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: r.constructor.FERN_RING.scheibenImFlug }); // prettier-ignore
-                        // DER NAH-GANG außerhalb des Lade-Takts (bis G2-n2 am Rumpf-TEXT: analog-nah S3, arch-feld „Warten ohne
-                        // Versuch"): 30 Ladende, die auf die Ankunfts-Generation warten, verbrauchen keinen Versuch, der Bau dahinter
-                        // steht; 25 Ladende erschöpfen die Versuchs-Kappe, sie beendet nur das Bauen — die gedockte Stufe dahinter wird
-                        // gesetzt. Der Selbsttest nimmt den 30 das Warten und der Stufe das Dock: beide stehen hinter der Kappe.
+                        // DER NAH-GANG außerhalb des Lade-Takts: 30 Ladende, die auf die Ankunfts-Generation warten, verbrauchen keinen Versuch,
+                        // der Bau dahinter steht; 25 Ladende erschöpfen die Versuchs-Kappe, sie beendet nur das Bauen — die gedockte Stufe
+                        // dahinter wird gesetzt. Der Selbsttest nimmt den 30 das Warten und der Stufe das Dock: beide stehen hinter der Kappe.
                         [r._ladeTakt, r._foundryEnabled] = [() => false, () => true];
                         st.architectures = [...Array(57).keys()].map((i) => ({ position: { x: i + 1, z: 0 }, _ziegelGebacken: true, _nahWartet: i < 30 && !selbst ? { a: 0, t: Infinity } : null, laedt: i !== 30 && i < 56, dock: i === 56 && !selbst })); // prettier-ignore
                         r.tickArchitectureCulling();
@@ -378,10 +380,8 @@ const SELBST = process.argv.includes("--selftest");
                     }
                 }
             })();
-            // T10 — DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name),
-            // seine Helfer kommen mit ihm. Ein Schein-Faden hält Namen und Nachrichten. Der Selbsttest fährt den alten Weg (das
-            // Werk wird ohne die Frage geboren, die Helfer kommen erst mit der Antwort auf „ready"; die Seite verbietet eval,
-            // darum am Faden und am Helfer-Ruf gestellt).
+            // T10 — die Buch-Frage reist IN der Geburt des Werks (Name), seine Helfer kommen mit ihm; ein Schein-Faden hält Namen und
+            // Nachrichten. Der Selbsttest fährt den alten Weg am Faden und am Helfer-Ruf (die Seite verbietet eval).
             const t10 = await (async () => {
                 const WorkerEcht = window.Worker;
                 const geboren = [];
@@ -397,9 +397,7 @@ const SELBST = process.argv.includes("--selftest");
                     geboren.push(w);
                     return w;
                 };
-                const helferEcht = Object.prototype.hasOwnProperty.call(r, "_foundryHelfer")
-                    ? r._foundryHelfer
-                    : undefined;
+                const helferEcht = Object.prototype.hasOwnProperty.call(r, "_foundryHelfer") ? r._foundryHelfer : undefined; // prettier-ignore
                 if (selbst) r._foundryHelfer = () => {};
                 const aus10 = { geboren: false, name: null, post: [], helfer: 0, helferSoll: r._foundryFaedenZahl() - 1 };
                 try {
@@ -426,6 +424,7 @@ const SELBST = process.argv.includes("--selftest");
                 t2,
                 t3,
                 t5,
+                t5i,
                 t6,
                 t8,
                 t9,
@@ -449,7 +448,8 @@ const SELBST = process.argv.includes("--selftest");
     const T4 = t3.fern3 === true;
     const t5 = aus.t5,
         t6 = aus.t6;
-    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K;
+    const T5i = aus.t5i.n === 11 && aus.t5i.erst === "e10"; // die Vorlagen des Leibs vor den Bäumen des Rings
+    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K && T5i;
     const T6 = t6.folge.includes("alt");
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
@@ -471,12 +471,12 @@ const SELBST = process.argv.includes("--selftest");
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
-                `die FIFO-Pumpe sendet ${t5.folge.join("·")} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
+                `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.erst} zuerst → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
@@ -490,7 +490,7 @@ const SELBST = process.argv.includes("--selftest");
     zeile(T2, `T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`);
     zeile(T3, `T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`);
     zeile(T4, `T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
-    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug}`);
+    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.erst} von ${aus.t5i.n} zuerst frei (Soll e10, am Ort des Spielers)`);
     zeile(T6, `T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")}`);
     zeile(T8, `T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
             `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +
