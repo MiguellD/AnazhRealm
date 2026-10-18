@@ -1,41 +1,13 @@
 class AnazhRealm_netz_portal {
     // ===== ATLAS · Netz/portal — Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server =====
-    // Ein Modus der Welt-Engine (worlds/<id>/studio.js trägt sich in `window.__studioModi` ein): das Tor ruft sein betreten.
-    // Fehlt der Modus, bricht das Tor laut beim Namen — nie still auf die Skelett-Welt.
-    _studioModusBetreten(id) {
-        const m = typeof window !== "undefined" && window.__studioModi ? window.__studioModi[id] : null;
-        if (!m || typeof m.betreten !== "function") {
-            this._bruchMelden(
-                `das Tor in den Studio-Modus „${id}" — kein Modus (worlds/${id}/studio.js trägt sich nicht ein)`
-            );
-            return null;
-        }
-        if (typeof document !== "undefined" && document.exitPointerLock) {
-            try {
-                document.exitPointerLock();
-            } catch (_e) {
-                /* Pointer-Lock war nicht aktiv */
-            }
-        }
-        m.betreten();
-        return null;
-    }
-
     // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
     // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
     // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
-    // frame-src 'self'). Ungültiges world fällt auf die Skelett-Welt zurück. Ein Modus der Welt-Engine
-    // (`index.html?studio=<id>`, S1) ist ein gültiges Ziel: er lädt nie in ein iframe (`_buildPortalOverlay`).
+    // frame-src 'self'). Ungültiges world fällt auf die Skelett-Welt zurück.
     _sanitizePortalMeta(portalMeta, fallbackLabel) {
         const src = portalMeta && typeof portalMeta === "object" ? portalMeta : {};
         let world = String(src.world || "").trim();
-        // DER SPIEGEL ALTER SPIELSTÄNDE: die Shell eines Studios, das ein Modus wurde (worlds/garage/index.html bis S1), zeigt
-        // auf seinen Modus — die Registry trägt das Ziel, nie ein 404 im iframe.
-        const alt = /^worlds\/([a-z]+)\/index\.html$/.exec(world);
-        const reg = alt && AnazhRealm.WORLD_REGISTRY[alt[1]];
-        if (reg && reg.world === `index.html?studio=${alt[1]}`) world = reg.world;
-        const modus = /^index\.html\?studio=[a-z]+$/.test(world);
-        if (!modus && (!/^worlds\/[\w./-]+$/.test(world) || world.includes(".."))) {
+        if (!/^worlds\/[\w./-]+$/.test(world) || world.includes("..")) {
             world = AnazhRealm.PORTAL_SKELETON_WORLD;
         }
         const label =
@@ -161,10 +133,6 @@ class AnazhRealm_netz_portal {
     _buildPortalOverlay(portalMeta, computeOpts) {
         if (this._portalOverlay) this._disposePortalOverlay();
         if (typeof document === "undefined") return null;
-        // EIN TOR IN EINEN MODUS DER WELT-ENGINE (S1): ein Ziel `index.html?studio=<id>` ist kein Dokument neben der Welt —
-        // kein iframe, keine zweite Engine; das Studio öffnet sich IN der Welt (`_studioModusBetreten`).
-        const modus = /^index\.html\?studio=([a-z]+)$/.exec(String((portalMeta && portalMeta.world) || ""));
-        if (modus) return this._studioModusBetreten(modus[1]);
         // Defense-in-Depth: das world-Ziel wird hier nochmals gesäubert —
         // selbst ein manipuliertes portalMeta kann kein fremdes Origin laden.
         const meta = this._sanitizePortalMeta(portalMeta, "Portal-Welt");

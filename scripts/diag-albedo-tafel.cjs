@@ -315,8 +315,8 @@ async function selbsttest() {
     t("eine stumme Labor-Zeile → ROT `stumm`", hatRot(AT.tafelUrteil(T0, m4), "stumm"));
     // S5 — die Karte: k·L 0,62 (der Belichtungs-Bias des Labors) über der Ratsche ROT.
     const m5 = messungZumTest(T0);
-    m5.karten.schmiede.kL = 0.62;
-    t("Karte schmiede k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
+    m5.karten.garage.kL = 0.62;
+    t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -542,7 +542,7 @@ async function neuMessen(t, ids) {
     const ld = path.join(ordner, "labor.json");
     fs.writeFileSync(ld, JSON.stringify(labor, null, 1));
     const u = AT.tafelUrteil(t, {
-        labor: AT.laborDerWelt(t, labor.labor, welt.welt),
+        labor: labor.labor,
         karten: labor.karten,
         welt: welt.welt,
         eichung: { welt: welt.eichung, labor: labor.eichung.labor },
@@ -601,7 +601,7 @@ async function main() {
         const welt = JSON.parse(fs.readFileSync(path.resolve(argv[i + 1]), "utf8"));
         const labor = JSON.parse(fs.readFileSync(path.resolve(argv[i + 2]), "utf8"));
         const m = {
-            labor: AT.laborDerWelt(t, labor.labor, welt.welt),
+            labor: labor.labor,
             karten: labor.karten,
             welt: welt.welt,
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },

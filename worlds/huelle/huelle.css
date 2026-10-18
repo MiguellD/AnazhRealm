@@ -232,13 +232,3 @@
     opacity: 1;
     transform: translate(-50%, 0);
 }
-/* DER OFFENE STUDIO-MODUS (S1, `studioModus` der Welt): das Spiel-HUD der Welt weicht der Werkstatt — EINE Regel für jeden Modus. */
-body.studio-modus-an #fadenkreuz,
-body.studio-modus-an #stats-hud,
-body.studio-modus-an #hotbar,
-body.studio-modus-an #dialogue-box,
-body.studio-modus-an #fps,
-body.studio-modus-an #topbar,
-body.studio-modus-an #statusbar {
-    display: none !important;
-}

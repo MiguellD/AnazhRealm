@@ -732,7 +732,7 @@ const FORBIDDEN = [
     {
         token: "sliderEls",
         fiel: "Studio-Hülle K41 — die Schieber hält der Generator (regler.eingabe / regler.sync)",
-        auch: ["worlds/garage/studio.js", "worlds/schmiede/schmiede.js"],
+        auch: ["worlds/garage/garage.js", "worlds/schmiede/schmiede.js"],
     },
     {
         token: "slMap",
@@ -771,7 +771,7 @@ const FORBIDDEN = [
     {
         token: "Spring.prototype.step",
         fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
-        auch: ["worlds/garage/studio.js"],
+        auch: ["worlds/garage/garage.js"],
     },
     { token: "zoneMulAt", fiel: "Welle L Q8 — die Zone trägt das Urteil (ARENA.zonen, tetrapoda trefferZone)" },
     { token: "zoneKindAt", fiel: "Welle L Q8" },
