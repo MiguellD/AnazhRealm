@@ -32,11 +32,7 @@ const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 const stammSrc = stammLib.text(root);
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Methoden-Extraktion: 4-Space-Klassen-Indent, schließende Zeile `    }` ──
 function extractMethod(name) {

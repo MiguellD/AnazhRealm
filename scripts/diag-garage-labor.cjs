@@ -9,11 +9,7 @@ const { statikServer, starteBrowser, nullRenderer, warteAufWelt } = require("./l
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const REGAL = /\/worlds\/[^/]+\/lib\//;
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── DAS LABOR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test): je Regel ihr Bruch (gegen GESUND nennt genau sie den Täter
 // zuerst — der Selbst-Test fährt jede), ob sie rot ist, und der Täter beim Namen (je G das erste Wort) ──

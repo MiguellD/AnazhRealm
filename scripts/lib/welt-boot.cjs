@@ -696,6 +696,17 @@ async function buehne(page) {
     await page.evaluate(() => window.__buehne());
 }
 
+// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`
+// (bis 18.10. stand derselbe Fünfzeiler in 43 Linsen).
+function pruefer() {
+    const errs = [];
+    const check = (name, ok, detail) => {
+        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) errs.push(name);
+    };
+    return { errs, check };
+}
+
 module.exports = {
     ROOT,
     MIME,
@@ -711,6 +722,7 @@ module.exports = {
     halteBis,
     buehne,
     uferStellen,
+    pruefer,
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
 

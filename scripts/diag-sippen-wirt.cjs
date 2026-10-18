@@ -18,11 +18,7 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.SIPPEN_PORT || 4413);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

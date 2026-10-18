@@ -74,11 +74,7 @@ const stammLib = require("./lib/stamm.cjs");
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 const root = path.resolve(__dirname, "..");
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 const ohneKommentare = stammLib.ohneKommentare;
 

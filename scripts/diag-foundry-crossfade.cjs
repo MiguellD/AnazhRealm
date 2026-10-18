@@ -36,11 +36,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
 const KLASSE = stammLib.ladeKlasse(root);
