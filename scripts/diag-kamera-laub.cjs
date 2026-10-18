@@ -1208,6 +1208,9 @@ async function probe(arg) {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
+        // DIE POSEN-MATRIX DES SPAWNS (S2): die Zahl A am Spawn, jede rote Zelle beim Namen (`werkbank spawn --urteil`)
+        const spawnU = AU.spawnZellen(sollTafel, sollQ);
+        console.log(`   POSEN-MATRIX DES SPAWNS: ${spawnU.gruen} von ${spawnU.gesamt} Zellen GRÜN (werkbank spawn --urteil nennt jede)`);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);

@@ -30,6 +30,34 @@ const OPT = (k, d) => {
 };
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
+
+// t(KONTROLLE) UND DAS HALBE WELTBILD aus der Rohdatei der Kalt-Zeile (rein). Heute: die Zeit, die der Stamm über sich selbst
+// schreibt (`_weltbildDa`), und „halb" aus seiner WARN-Zeile — der Richter liest das Gerichtete (S2, W9).
+function kontrolleZeit(out) {
+    return { t: out.weltbildDa != null ? out.weltbildDa : null, halb: out.ohne && out.ohne.length ? out.ohne[0] : null };
+}
+// DER SELBSTTEST DER KONTROLLE (S2, rein): der Richter steht außerhalb — t(Kontrolle) ist die erste Eingabe, die die Welt annimmt
+// (`eingabe`: ein Tasten-Ereignis kommt am Fänger des Ladeschirms vorbei, ms ab Navigation), zusammen mit dem ersten Ausgabe-Bild
+// danach (`frames`: die präsentierten Bilder der Leinwand); „halb" ist der Bild-Unterschied des ersten Bilds gegen das Rundum-
+// Bild derselben Kamera (`halbDiff`: Anteil der Blöcke, die sich ändern, über `HALB_ANTEIL`). Ein gefälschtes `_weltbildDa` und
+// eine WARN-Zeile ohne Bild-Befund ändern das Urteil nicht; ein halbes Bild ohne WARN-Zeile ist halb.
+const HALB_ANTEIL = 0.1;
+function kontrolleSelbsttest() {
+    const v = [];
+    const roh = { weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01 };
+    const fall = (was, aend, soll) => {
+        const k = kontrolleZeit(Object.assign({}, roh, aend));
+        const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
+        if (k.t !== soll.t) v.push(`${was}: t(Kontrolle) ${s(k.t)} statt ${s(soll.t)}`);
+        if (!!k.halb !== soll.halb) v.push(`${was}: halb ${k.halb ? `„${k.halb}"` : "nein"} statt ${soll.halb ? "ja" : "nein"}`);
+    };
+    fall("die echte Ankunft", {}, { t: 9016, halb: false });
+    fall("ein gefälschtes _weltbildDa (1 ms)", { weltbildDa: 1 }, { t: 9016, halb: false });
+    fall("die WARN-Zeile ohne Bild-Befund", { ohne: ["Das erste Weltbild steht ohne: Baum — die Arbeit ruhte"] }, { t: 9016, halb: false });
+    fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true });
+    fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false });
+    return v;
+}
 const server = statikServer();
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
@@ -271,8 +299,7 @@ async function kaltLauf() {
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
-    const t = out.weltbildDa;
-    const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
+    const { t, halb } = kontrolleZeit(out);
     console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);
     const gut = t != null && t <= ANKUNFT_SOLL_MS && !halb;
     if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
@@ -285,6 +312,16 @@ async function kaltLauf() {
 
 (async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
+    const kontrolle = kontrolleSelbsttest();
+    if (ARGV.includes("--selbsttest-kontrolle")) {
+        for (const b of kontrolle) console.log(`  ❌ ${b}`);
+        console.log(
+            kontrolle.length
+                ? `⛔ SELBSTTEST KONTROLLE ROT (${kontrolle.length} Brüche in 5 Fällen) — t(Kontrolle) liest das Gerichtete (kontrolleZeit: _weltbildDa + WARN-Zeile)`
+                : "✅ SELBSTTEST KONTROLLE GRÜN — t(Kontrolle) aus Eingabe + Ausgabe-Bild, halb aus dem Bild"
+        );
+        process.exit(kontrolle.length ? 1 : 0);
+    }
     const SELFTEST = process.argv.includes("--selftest");
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -451,6 +488,10 @@ async function kaltLauf() {
         { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!tl.stage },
     ];
     if (SELFTEST) {
+        checks.push({
+            name: `SELBST-TEST K: der Richter steht außerhalb — ein gefälschtes _weltbildDa und die WARN-Zeile ändern t(Kontrolle) und „halb" nicht${kontrolle.length ? ` (${kontrolle.join(" · ")})` : ""}`,
+            pass: kontrolle.length === 0,
+        });
         const s = out.selftest || {};
         checks.push({
             name:

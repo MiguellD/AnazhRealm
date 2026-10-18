@@ -1878,8 +1878,9 @@ function sollTafelUrteil(tafel, q) {
             urteil = "GRÜN";
             abstand = 0;
         }
-        // ein Maß, das nicht jede Stufe sah (milchweiss: eine Stufe des Kerns ohne Schuss), ist offen — ROT, nie GRÜN
-        if (ist != null && !stand && r.offen) {
+        // ein Maß, das nicht jede Stufe sah (milchweiss: eine Stufe des Kerns ohne Schuss), ist offen — ROT, nie GRÜN; die ZELLE
+        // der Posen-Matrix (`spawnZellen`, `mass.zelle`) urteilt über die Stufe, die ihre Pose zeigt — die Stufen-Kette trägt die Zeile
+        if (ist != null && !stand && r.offen && !ma.zelle) {
             if (urteil === "GRÜN") abstand = null;
             urteil = "ROT";
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
@@ -2539,6 +2540,249 @@ function sollTafelSelbsttest(tafel, q) {
         if (gleich.length) v.push(`Schreiber: die unveränderte Messung wird abgewiesen (${gleich.join(" · ")})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Mesh-Stufe (der Fall des Schreibers fehlt)");
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
+    for (const b of spawnSelbsttest(tafel, q)) v.push(`Posen-Matrix: ${b}`);
+    return v;
+}
+
+// DIE POSEN-MATRIX DES SPAWNS (S2, W9 „der Richter wohnt im Gerichteten"; PFLICHT-OFFEN A): bis S2 urteilte die Tafel jede Klasse
+// an EINER Pose, die das Spiel nicht hat (Mittag, Mess-Wiese, Werkbank-Kamera) — am Genesis-Platz 3 von 12 Klassen, an einer Uhr.
+// Die Matrix (`tafel.spawn`) urteilt je Klasse × Sicht (Ego, Third — die Kamera des Spiels nach `umstellen --ort genesis` — und
+// `oben`, 30 m über dem Spieler) × Uhr (0,25 · 0,5 · 0,75 · 0) EINE Zelle aus EINEM Schuss je Pose (`werkbank spawn`: die
+// Teilung über alle Klassen der Matrix, `--abstand`). Die Zelle ist GRÜN, wenn (1) die Pose gemessen und ihr Stand frisch ist,
+// (2) das Bild der Pose die Abnahme hält (K32 `abnahmeUrteil`, dieselben SCHWELLEN: das schwarze Bild um 6 Uhr ist ROT),
+// (3) die Klasse im Bild zeichnet, (4) ihre Pixel nicht absaufen oder ausbrennen (die Luma-Grenzen von K32 auf der Klasse) und
+// (5) ihre Zeile der Tafel an DIESER Pose ihr Soll hält — derselbe Rechner (`sollTafelUrteil` auf der Klasse mit der Messung
+// der Pose, gefiltert auf ihren Ausdruck); kann er die Pose nicht lesen (die Licht-Bilanz, das Gesicht), ist die Zelle ROT beim
+// Namen (ungemessen ist nie GRÜN); eine Klasse ohne Zeile (fahrzeug, tier, dorf-stadt) hat kein Soll und ist ROT. Der benannte
+// Mangel der Zeile gehört der Zeile (ihre Pose), nicht der Zelle. Rückgabe { zellen, gruen, gesamt, fehler }.
+function spawnZellen(tafel, q) {
+    const sp = tafel && tafel.spawn;
+    if (!sp || typeof sp !== "object")
+        return { zellen: [], gruen: 0, gesamt: 0, fehler: ["die Tafel trägt keine Posen-Matrix des Spawns (spawn)"] };
+    const fehler = [];
+    const kl = tafel.klassen || [];
+    const zellen = [];
+    const luma = SCHWELLEN.beweis.filter((s) => s.feld === "bild.mittel");
+    // der Abdruck jeder Quelle EINMAL je Urteil (jede Zelle prüft den Stand derselben Dateien: 136 Zellen × 23 Quellen)
+    if (q && q.pruefsumme) {
+        const abdruck = new Map(),
+            p0 = q.pruefsumme;
+        q = Object.assign({}, q, { pruefsumme: (d) => (abdruck.has(d) ? abdruck.get(d) : abdruck.set(d, p0(d)).get(d)) });
+    }
+    const r2 = (x) => +x.toFixed(2);
+    for (const [id, a] of Object.entries(sp.klassen || {}))
+        try {
+            new RegExp(a);
+        } catch (e) {
+            fehler.push(`die Klasse ${id}: Ausdruck /${a}/ bricht (${e.message})`);
+        }
+    if (fehler.length) return { zellen, gruen: 0, gesamt: 0, fehler };
+    // DIE SICHTBARE KLASSE: die Kamera einer Sicht steht zu jeder Uhr gleich — zeichnet eine Klasse zu einer Uhr der Sicht, gehört
+    // sie zu jeder (fehlt sie zu einer anderen, ist das ROT beim Namen); zeichnet sie zu keiner, ist sie in dieser Sicht keine
+    // Zelle (der Kopf in Ego), sondern steht in `abwesend`. Eine ungemessene Pose zählt jede Klasse.
+    const posen = {};
+    for (const sicht of sp.sichten || [])
+        for (const uhr of sp.uhren || []) {
+            const me = (sp.messung || {})[`${sicht}@${uhr}`] || null;
+            const mf = me ? bildMessungFehler(me) : null;
+            posen[`${sicht}@${uhr}`] = { me, mf };
+        }
+    const pixelVon = (me, re) =>
+        Object.entries(me.klassen).reduce((s, [n, k]) => s + (re.test(n) ? k.pixel || 0 : 0), 0);
+    const zeichnetUm = (sicht, re) =>
+        (sp.uhren || []).filter((u) => {
+            const p = posen[`${sicht}@${u}`];
+            return p.me && !p.mf && pixelVon(p.me, re) > 0;
+        });
+    const abwesend = [];
+    for (const sicht of sp.sichten || [])
+        for (const [id, ausdruck] of Object.entries(sp.klassen || {}))
+            if (!zeichnetUm(sicht, new RegExp(ausdruck)).length && (sp.uhren || []).every((u) => posen[`${sicht}@${u}`].me))
+                abwesend.push(`${id} (${sicht})`);
+    for (const sicht of sp.sichten || [])
+        for (const uhr of sp.uhren || []) {
+            const pose = `${sicht}@${uhr}`;
+            const { me, mf } = posen[pose];
+            const alt = me && !mf ? messStand([me], Object.keys(me.quellen || {}), q || {}) : null;
+            const ab = me && !mf && !alt ? abnahmeUrteil(me.abnahme, SCHWELLEN) : null;
+            for (const [id, ausdruck] of Object.entries(sp.klassen || {})) {
+                const re = new RegExp(ausdruck);
+                const um = zeichnetUm(sicht, re);
+                if (me && !um.length && abwesend.includes(`${id} (${sicht})`)) continue;
+                const z = { klasse: id, sicht, uhr, pose, urteil: "ROT", grund: null, taeter: null, ist: null, bild: me && me.bild };
+                zellen.push(z);
+                if (!me) z.grund = "ungemessen (werkbank spawn)";
+                else if (mf) z.grund = mf;
+                else if (alt) z.grund = alt;
+                else if (!ab.ok) {
+                    z.grund = `das Bild der Pose hält die Abnahme nicht: ${ab.rot.map((x) => x.grund).join(" · ")}`;
+                    z.taeter = `Ausgabe ${pose}`;
+                }
+                if (z.grund) continue;
+                const eigen = Object.fromEntries(Object.entries(me.klassen).filter(([n]) => re.test(n)));
+                const px = Object.values(eigen).reduce((s, k) => s + (k.pixel || 0), 0);
+                if (!px) {
+                    z.grund = um.length
+                        ? `${id} fehlt um ${uhr} (zeichnet in derselben Kamera um ${um.join(", ")})`
+                        : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
+                    continue;
+                }
+                const L = Object.values(eigen).reduce((s, k) => s + (k.luma || 0) * (k.pixel || 0), 0) / px;
+                const dunkel = Object.entries(eigen).sort((x, y) => (x[1].luma || 0) - (y[1].luma || 0));
+                const riss = luma.find((s) => (s.op === ">=" ? !(L >= s.wert) : !(L <= s.wert)));
+                if (riss) {
+                    z.grund = `die Klasse ${riss.op === ">=" ? "säuft ab" : "brennt aus"}: Luma ${r2(L)} ${riss.op === ">=" ? "<" : ">"} ${riss.wert}`;
+                    z.taeter = `${(riss.op === ">=" ? dunkel[0] : dunkel[dunkel.length - 1])[0]} (Luma ${(riss.op === ">=" ? dunkel[0] : dunkel[dunkel.length - 1])[1].luma})`;
+                    continue;
+                }
+                const k = kl.find((x) => x.id === id);
+                if (!k) {
+                    z.grund = `${id} hat kein Soll: die Klasse trägt keine Zeile der Tafel (Referenz, Budget, Maß — Lehre 18)`;
+                    continue;
+                }
+                // die Messung der Pose, gefiltert auf die Klasse; ein Stufen-Maß (rechnung.stufen) liest sie als Schuss der Stufe,
+                // die ihre Tore in dieser Pose zeigen
+                const block = Object.assign({}, me, { klassen: eigen });
+                const rc = (k.mass && k.mass.rechnung) || {};
+                let messung = block;
+                if (rc.stufen && rc.tor) {
+                    const tor = new RegExp(rc.tor);
+                    const je = {};
+                    for (const [n, t] of Object.entries(eigen)) {
+                        const m = tor.exec(n);
+                        if (m) je[m[m.length - 1]] = (je[m[m.length - 1]] || 0) + t.pixel;
+                    }
+                    const st = Object.entries(je).sort((x, y) => y[1] - x[1])[0];
+                    messung = { [`L${st ? st[0] : 3}`]: block };
+                }
+                const wi = Object.assign({}, k.wirkung);
+                delete wi.mangel;
+                delete wi.geheilt;
+                delete wi.messung;
+                const zk = Object.assign({}, k, { wirkung: wi, mass: Object.assign({}, k.mass, { messung, zelle: true }) });
+                const u = sollTafelUrteil({ klassen: [zk] }, q);
+                const zl = u.zeilen[0];
+                z.ist = zl.ist;
+                z.mass = zl.mass;
+                z.band = zl.band;
+                if (zl.urteil === "GRÜN") {
+                    z.urteil = "GRÜN";
+                    continue;
+                }
+                const vorn = `Klasse ${id}: `;
+                z.grund =
+                    zl.ist == null && u.fehler.length
+                        ? `der Rechner ${zl.mass} liest die Pose nicht: ${u.fehler.map((f) => (f.startsWith(vorn) ? f.slice(vorn.length) : f)).join(" · ")}`
+                        : zl.grund;
+                z.taeter = zl.taeter;
+            }
+        }
+    // DIESELBEN PIXEL (G4): misst die Zeile ihre Klasse mit einer Teilung (`werkbank bild --klasse`, ohne Gesicht), liest die
+    // Matrix denselben Ausdruck — sonst urteilen Zeile und Zelle über verschiedene Dinge
+    for (const k of kl) {
+        const a = (sp.klassen || {})[k.id];
+        let m = k.mass && k.mass.messung;
+        if (m && typeof m === "object" && !m.werkzeug) m = Object.values(m).find((x) => x && x.werkzeug) || null;
+        if (a && m && m.werkzeug === "bild" && !m.gesicht && m.ausdruck && m.ausdruck !== a)
+            fehler.push(`die Klasse ${k.id}: die Matrix liest /${a}/, die Zeile misst /${m.ausdruck}/`);
+    }
+    const gruen = zellen.filter((z) => z.urteil === "GRÜN").length;
+    return { zellen, gruen, gesamt: zellen.length, fehler, abwesend };
+}
+function spawnZelleText(z) {
+    return (
+        `${z.urteil === "GRÜN" ? "GRÜN" : "ROT "} ${z.klasse} · ${z.sicht} · Uhr ${z.uhr}` +
+        (z.urteil === "GRÜN" ? ` — ${z.mass} ${z.ist}` : ` — ${z.grund}${z.taeter ? ` · Täter ${z.taeter}` : ""}`) +
+        (z.bild ? ` · ${z.bild}` : "")
+    );
+}
+
+// DER SELBSTTEST der Posen-Matrix (rein): an einer gebauten Tafel (die Zeile laub-kante, dazu fahrzeug ohne Zeile) ist die gute
+// Pose GRÜN, das schwarze Bild um 6 Uhr (W7) ROT beim Feld der Abnahme, eine fehlende Klasse, eine absaufende Klasse, ein Ist
+// über dem Band, ein veralteter Stand und eine ungemessene Pose ROT beim Namen, die Klasse ohne Zeile ROT; an der echten Tafel
+// trägt die Matrix ihre Sichten, Uhren und die Klassen jeder Zeile, und ein abweichender Ausdruck fällt beim Namen.
+function spawnSelbsttest(tafel, q) {
+    const v = [];
+    const echt = tafel && tafel.spawn;
+    if (!echt) return ["die Tafel trägt keine Posen-Matrix des Spawns (spawn)"];
+    for (const s of ["ego", "third", "oben"]) if (!(echt.sichten || []).includes(s)) v.push(`die Sicht ${s} fehlt`);
+    for (const u of [0.25, 0.5, 0.75, 0]) if (!(echt.uhren || []).includes(u)) v.push(`die Uhr ${u} fehlt`);
+    for (const k of tafel.klassen || []) if (!(k.id in (echt.klassen || {}))) v.push(`die Zeile ${k.id} fehlt in der Matrix`);
+    for (const id of ["fahrzeug", "tier", "dorf-stadt"]) if (!(id in (echt.klassen || {}))) v.push(`die Klasse ${id} fehlt in der Matrix`);
+    const ue = spawnZellen(tafel, q);
+    for (const f of ue.fehler) v.push(`die echte Tafel: ${f}`);
+    const kk = (tafel.klassen || []).find((k) => k.id === "laub-kante");
+    if (!kk) return v.concat("die Zeile laub-kante fehlt (der Fall der Matrix)");
+    const aus = echt.klassen["laub-kante"];
+    const quellen = Object.fromEntries((kk.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
+    const teil = (kante, luma) => ({ pixel: 4000, luma, kante, kr: 300, detail: 0.1, weiss: 0, bunt: 20, zweiton: 0 });
+    const block = (o) => ({
+        werkzeug: "bild",
+        datum: "2026-10-18T00:00:00.000Z",
+        stand: { version: "selbsttest", sha: "5e1b5e1b" },
+        geraet: { backend: "WebGPU", adapter: "selbsttest" },
+        leinwand: [160, 90],
+        schwelle: 18,
+        rauschen: { anteil: 0, pixel: 0, max: 0 },
+        klassen: o.klassen || { "f:tanne:L1": teil(0.15, 80), "f:gt:L1": teil(0.5, 90) },
+        quellen: o.quellen || quellen,
+        bild: "artifacts/soll-tafel/spawn-selbsttest.png",
+        abnahme: {
+            stand: { version: "selbsttest", sha: "5e1b5e1b" },
+            buehne: { saison: "sommer", wetter: "klar", uhr: o.uhr },
+            geraet: { backend: "WebGPU" },
+            bild: o.bild || { w: 160, h: 90, mittel: 96, sigma: 30, schwarz: 0.01, weiss: 0 },
+            sicht: { radius: 2, deckung: 0 },
+        },
+    });
+    const t = {
+        klassen: [Object.assign({}, kk, { mass: Object.assign({}, kk.mass, { messung: null }) })],
+        spawn: {
+            sichten: ["ego", "third", "oben"],
+            uhren: [0.25, 0.5, 0.75, 0],
+            klassen: { "laub-kante": aus, fahrzeug: "^f:gt:L\\d$" },
+            messung: {
+                "ego@0.5": block({ uhr: 0.5 }),
+                "ego@0.25": block({ uhr: 0.25, bild: { w: 160, h: 90, mittel: 1.2, sigma: 0.8, schwarz: 0.97, weiss: 0 } }),
+                "ego@0.75": block({ uhr: 0.75, klassen: { "f:tanne:L1": teil(0.15, 2) } }),
+                "ego@0": block({ uhr: 0, klassen: { "f:tanne:L1": teil(0.31, 80) } }),
+                "third@0.5": block({ uhr: 0.5, klassen: { "f:gt:L1": teil(0.5, 90) } }),
+                "third@0.75": block({ uhr: 0.75 }),
+                "third@0.25": block({
+                    uhr: 0.25,
+                    quellen: Object.assign({}, quellen, { [kk.quellen[0]]: "c:0000000000000000" }),
+                }),
+            },
+        },
+    };
+    // oben zeigt zu jeder Uhr nur den Wagen: das Laub ist dort keine Zelle, sondern abwesend
+    for (const uhr of [0.25, 0.5, 0.75, 0]) t.spawn.messung[`oben@${uhr}`] = block({ uhr, klassen: { "f:gt:L1": teil(0.5, 90) } });
+    const u = spawnZellen(t, q);
+    const zelle = (k, p) => u.zellen.find((z) => z.klasse === k && z.pose === p) || {};
+    const soll = (k, p, urteil, re, was) => {
+        const z = zelle(k, p);
+        if (z.urteil !== urteil || (re && !re.test(z.grund || "")))
+            v.push(`${was}: ${k} ${p} ist ${z.urteil} (${z.grund || "ohne Grund"})`);
+    };
+    soll("laub-kante", "ego@0.5", "GRÜN", null, "die gute Pose");
+    soll("laub-kante", "ego@0.25", "ROT", /bild\.mittel 1\.2 < 6/, "das schwarze Bild um 6 Uhr (W7)");
+    soll("laub-kante", "ego@0.75", "ROT", /säuft ab: Luma 2 < 6/, "die absaufende Klasse");
+    soll("laub-kante", "ego@0", "ROT", /kante 0\.31 > 0\.22/, "das Ist über dem Band");
+    soll("laub-kante", "third@0.5", "ROT", /fehlt um 0\.5 \(zeichnet in derselben Kamera um 0\.25, 0\.75\)/, "die fehlende Klasse");
+    soll("laub-kante", "third@0.75", "GRÜN", null, "die gute Pose in Third");
+    soll("laub-kante", "third@0.25", "ROT", /^veraltet seit 5e1b5e1b/, "der veraltete Stand");
+    soll("laub-kante", "third@0", "ROT", /^ungemessen/, "die ungemessene Pose");
+    soll("fahrzeug", "ego@0.5", "ROT", /hat kein Soll/, "die Klasse ohne Zeile");
+    if (zelle("laub-kante", "oben@0.5").urteil || !u.abwesend.includes("laub-kante (oben)"))
+        v.push("die Klasse, die in einer Sicht zu keiner Uhr zeichnet, steht als Zelle statt abwesend");
+    if (u.gesamt !== 20 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/20`);
+    // ein Ausdruck neben dem der Zeile fällt beim Namen
+    const kz = (tafel.klassen || []).find((k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild" && !k.mass.messung.gesicht);
+    if (kz) {
+        const d = Object.assign({}, tafel, { spawn: Object.assign({}, echt, { klassen: Object.assign({}, echt.klassen, { [kz.id]: "^anders$" }) }) });
+        if (!spawnZellen(d, q).fehler.some((f) => f.includes(`die Klasse ${kz.id}: die Matrix liest /^anders$/`)))
+            v.push(`ein abweichender Ausdruck der Zeile ${kz.id} fällt nicht`);
+    }
     return v;
 }
 
@@ -2570,6 +2814,8 @@ module.exports = {
     messStand,
     sollTafelZeile,
     sollTafelSelbsttest,
+    spawnZellen,
+    spawnZelleText,
     sollIstAbweisung,
     abnahmeUrteil,
     bildMasse,

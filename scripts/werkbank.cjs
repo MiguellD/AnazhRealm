@@ -26,6 +26,12 @@
 //                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
 //                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
 //                                                           den Spieler-Leib im Bild
+//   node scripts/werkbank.cjs spawn [--sicht ego,third,oben] [--uhr 0.25,0.5] | spawn --urteil
+//                                                           DIE POSEN-MATRIX DES SPAWNS (S2, soll-tafel.json `spawn`): je
+//                                                           Sicht (die Kamera des Spiels am Genesis-Platz, `oben` 30 m) × Uhr
+//                                                           EIN Schuss mit der Teilung aller Klassen der Matrix als Messung
+//                                                           der Pose; `--urteil` (ohne Welt) nennt die Zellen GRÜN/gesamt,
+//                                                           jede rote beim Namen — Exit 1, solange eine ROT ist
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -258,6 +264,20 @@ function sollIstSchreiben(ziele, messung) {
         throw new Error(`--ist ${ziele}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
     fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
     return `${liste.join(", ")} → spec/abnahme/soll-tafel.json`;
+}
+// DIE POSE IN DIE MATRIX (S2, abnahme-urteil `spawnZellen`): der Abdruck JEDER Quelle der Tafel (jede Zelle liest dieselbe Pose),
+// eine Neumessung ersetzt ihre Pose; die Pose muss eine der Matrix sein
+function spawnSchreiben(pose, messung) {
+    const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
+    const sp = t.spawn;
+    const [sicht, uhr] = String(pose).split("@");
+    if (!sp || !sp.sichten.includes(sicht) || !sp.uhren.includes(Number(uhr)))
+        throw new Error(`spawn ${pose}: keine Pose der Matrix (${sp ? sp.sichten.join("|") + " @ " + sp.uhren.join("|") : "die Tafel trägt keine"})`);
+    messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
+    messung.quellen = Object.fromEntries([...new Set(t.klassen.flatMap((k) => k.quellen || []))].map((d) => [d, pruefsumme(d)]));
+    sp.messung = Object.assign({}, sp.messung, { [`${sicht}@${Number(uhr)}`]: messung });
+    fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
+    return `spawn ${sicht}@${Number(uhr)} → spec/abnahme/soll-tafel.json`;
 }
 // DIE TAFEL IN IHRER FORM (F1 + L2, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile, und jede Teil-Klasse einer Messung
 // (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
@@ -1937,6 +1957,38 @@ async function starte() {
                             fs.copyFileSync(kl.maske, sollAblage(ziele[0], ".maske.png"));
                         }
                     }
+                    // DIE POSE DER MATRIX (S2, `werkbank spawn`): derselbe Schuss als Messung der Pose `<sicht>@<uhr>` in
+                    // `tafel.spawn.messung`, die Abnahme des Bilds (K32) reist mit — die Zellen rechnet die Linse (`spawnZellen`)
+                    if (b.spawn) {
+                        const kl = o.klasse;
+                        if (!kl) throw new Error("spawn braucht --klasse (die Teilung des Bilds)");
+                        const name = `spawn-${String(b.spawn).replace("@", "-")}`;
+                        const ab = Object.assign({}, o.abnahme, { bild: Object.assign({}, o.abnahme.bild) });
+                        delete ab.klasse;
+                        delete ab.zeile;
+                        delete ab.bild.kanten;
+                        o.ist = spawnSchreiben(b.spawn, {
+                            werkzeug: "bild",
+                            datum: new Date().toISOString(),
+                            stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
+                            geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
+                            leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
+                            kamera: o.kamera,
+                            ausdruck: kl.ausdruck,
+                            schwelle: kl.schwelle,
+                            rauschen: kl.rauschen,
+                            misch: kl.misch,
+                            klassen: kl.klassen,
+                            abstand: kl.abstand,
+                            gesicht: null,
+                            bild: `artifacts/soll-tafel/${name}.png`,
+                            abnahme: ab,
+                        });
+                        if (path.resolve(sollAblage(name, ".png")) !== datei) {
+                            fs.copyFileSync(datei, sollAblage(name, ".png"));
+                            fs.copyFileSync(kl.maske, sollAblage(name, ".maske.png"));
+                        }
+                    }
                     const begleit = datei.replace(/\.png$/i, "") + ".abnahme.json";
                     fs.writeFileSync(begleit, JSON.stringify(o.abnahme, null, 1));
                     if (b.ist && sollAblage(String(b.ist).split(",")[0], ".png") !== datei)
@@ -3075,7 +3127,64 @@ async function starte() {
             ist: opt("--ist"),
             fov: opt("--fov"),
         });
-    else if (cmd === "methode")
+    else if (cmd === "spawn") {
+        // DIE POSEN-MATRIX DES SPAWNS (S2): je Sicht × Uhr EIN Schuss als Messung der Pose, danach das Urteil der Zellen
+        const AU = require("./lib/abnahme-urteil.cjs");
+        const urteil = () => {
+            const u = AU.spawnZellen(JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8")), sollQuelle());
+            for (const f of u.fehler) console.log(`BRUCH ${f}`);
+            for (const z of u.zellen) console.log(`  ${AU.spawnZelleText(z)}`);
+            if (u.abwesend.length) console.log(`  zeichnet zu keiner Uhr (keine Zelle): ${u.abwesend.join(" · ")}`);
+            console.log(`\nA AM SPAWN: ${u.gruen}/${u.gesamt} Zellen GRÜN (K5, Posen-Matrix spec/abnahme/soll-tafel.json spawn)`);
+            process.exit(u.fehler.length || u.gruen < u.gesamt ? 1 : 0);
+        };
+        if (argv.includes("--urteil")) return urteil();
+        const sp = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8")).spawn;
+        const sichten = opt("--sicht") ? opt("--sicht").split(",") : sp.sichten;
+        const uhren = opt("--uhr") != null ? opt("--uhr").split(",").map(Number) : sp.uhren;
+        const klasse = [...new Set(Object.values(sp.klassen))].map((a) => `(?:${a})`).join("|");
+        for (const sicht of sichten) {
+            await rufe("/umstellen", { ort: sp.ort, sicht: sicht === "oben" ? "third" : sicht });
+            const p = (
+                await rufe("/eval", {
+                    code: "const c = r.state.camera, d = c.getWorldDirection(new T.Vector3()); return { c: c.position.toArray(), d: d.toArray(), s: r.state.playerMesh.position.toArray() };",
+                })
+            ).ergebnis;
+            // Ego und Third: Ort und Blick der Kamera des Spiels (das Ziel auf dem Blick, am Spieler bzw. 8 m vor dem Auge);
+            // oben: 30 m über dem Spieler, 25 m hinter ihm auf seinem Blick, das Ziel der Spieler
+            let von = p.c,
+                nach;
+            if (sicht === "oben") {
+                const h = Math.hypot(p.d[0], p.d[2]) || 1;
+                von = [p.s[0] - (p.d[0] / h) * sp.oben.zurueck, p.s[1] + sp.oben.hoehe, p.s[2] - (p.d[2] / h) * sp.oben.zurueck];
+                nach = [p.s[0], p.s[1] + 1, p.s[2]];
+            } else {
+                const weit = sicht === "third" ? Math.hypot(...p.s.map((v, i) => v - p.c[i])) : 8;
+                nach = p.c.map((v, i) => v + p.d[i] * weit);
+            }
+            for (const uhr of uhren) {
+                const o = await rufe("/bild", {
+                    px: von[0],
+                    py: von[1],
+                    pz: von[2],
+                    lx: nach[0],
+                    ly: nach[1],
+                    lz: nach[2],
+                    uhr,
+                    klasse,
+                    abstand: true,
+                    spieler: sicht !== "ego",
+                    wahl: 0,
+                    ziel: sicht === "ego" ? "Blickziel" : "spieler",
+                    spawn: `${sicht}@${uhr}`,
+                    datei: path.join(root, "artifacts", "soll-tafel", `spawn-${sicht}-${uhr}.png`),
+                });
+                console.log(`${sicht}@${uhr}: ${o.abnahme || JSON.stringify(o).slice(0, 400)} (${o.gesamtMs} ms)`);
+                if (!o.ist) process.exit(1);
+            }
+        }
+        return urteil();
+    } else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {
