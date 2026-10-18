@@ -603,8 +603,8 @@ function standUrteil(b) {
 
 // DIE FAHRT (F5): geradeaus im Blick `weg` m mit `kmh` (die Lage aus der Zeit, `playerVel` trägt die Fahrt vor Takt und
 // Strom) durch den echten Takt (`raf`: der Loop mit Bild-Zeiten, `werkbank eval`; sonst 16,7-ms-Schritte). Je Bild IM BLICK
-// (`_imErstenBlick`): die Lücken des ersten Weltbilds (`_weltbildLuecken`), die Chunks des Rings bis 200 m ohne Netz, die
-// Kacheln der Nah-Wiese und Nah-Streu ohne Zustand; ein POP ist, was fehlte und im dichten Kern erscheint.
+// (`_imErstenBlick`): Lücken des ersten Weltbilds (`_weltbildLuecken`), Ring-Chunks bis 200 m ohne Netz, Kacheln der Nah-Wiese
+// ohne Zustand, der Nah-Streu ohne ihr Soll (`soll`: ein alter Rand-Anteil fehlt); ein POP: was fehlte und im Kern erscheint.
 function fahrtLauf(k) {
     return (async () => {
         const r = window.anazhRealm, st = r.state, pm = st.playerMesh.position, v = k.kmh / 3.6, f = r._blickVorn(st.yaw, 0);
@@ -652,7 +652,7 @@ function fahrtLauf(k) {
             zaehle("bau", bau, 100, "bau");
             p.chunk = zaehle("chunk", chunk, 200, "chunk");
             p.wiese = zaehle("wiese", kacheln(NW, st.nahWiese && st.nahWiese.kacheln, () => true), NW.radius - NW.rand, "kachel");
-            p.nahStreu = zaehle("streu", kacheln(NS, st.nahStreu && st.nahStreu.kacheln, (e) => e.zustand != null), NS.radius - NS.rand, "kachel");
+            p.nahStreu = zaehle("streu", kacheln(NS, st.nahStreu && st.nahStreu.kacheln, (e) => e.zustand != null && (e.soll === undefined || e.zustand === e.soll)), NS.radius - NS.rand, "kachel");
             p.summe = p.bauten + p.pflanzung + p.streu + p.karten + p.chunk + p.wiese + p.nahStreu;
             P.push(p);
         };
@@ -695,15 +695,15 @@ function fahrtLauf(k) {
         return aus;
     })();
 }
-// DAS URTEIL DER FAHRT (gate:scatter-lod V3): je Tempo im Mittel höchstens FAHRT.luecken Lücken je Bild im Blick — Befund F5
-// an der Basis 25f53923 (Null-Renderer, 90 km/h): 54,8, davon 48,5 Kacheln der Nah-Streu und 5,9 der Nah-Wiese.
-const FAHRT = { luecken: 4 };
+// DAS URTEIL DER FAHRT (gate:scatter-lod V3): je Tempo im Mittel höchstens FAHRT.luecken Lücken je Bild im Blick und je Fahrt höchstens
+// FAHRT.pops Kachel-Pops — Befund F5 an der Basis 25f53923 (90 km/h): 54,8 Lücken (48,5 Nah-Streu, 5,9 Nah-Wiese), 257 Kachel-Pops.
+const FAHRT = { luecken: 4, pops: 20 };
 function fahrtUrteil(laeufe) {
     if (!Array.isArray(laeufe) || !laeufe.length) return ["FAHRT: kein Lauf"];
     const zeile = (l) => ["nahStreu", "wiese", "chunk", "bauten", "streu", "pflanzung", "karten"].map((n) => `${n} ${l[n].mittel}`).join(" · ");
     return laeufe
-        .filter((l) => !(l && l.bilder > 0 && l.summe.mittel <= FAHRT.luecken))
-        .map((l) => (l && l.bilder > 0 ? `FAHRT ${l.kmh} km/h: ${l.summe.mittel} Lücken je Bild im Blick (Soll ≤ ${FAHRT.luecken}) — ${zeile(l)}` : `FAHRT ${l && l.kmh} km/h: keine Bilder`));
+        .filter((l) => !(l && l.bilder > 0 && l.summe.mittel <= FAHRT.luecken && l.pops.kachel <= FAHRT.pops))
+        .map((l) => (l && l.bilder > 0 ? `FAHRT ${l.kmh} km/h: ${l.summe.mittel} Lücken je Bild im Blick (Soll ≤ ${FAHRT.luecken}), ${l.pops.kachel} Kachel-Pops (Soll ≤ ${FAHRT.pops}) — ${zeile(l)}` : `FAHRT ${l && l.kmh} km/h: keine Bilder`));
 }
 
 module.exports = {

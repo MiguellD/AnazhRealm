@@ -100,7 +100,7 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Je Takt (nahFeld, prio 1): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
+    // Je Takt (der nahFeld-Job, der erste der Deko): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
     // ≤ kachelnJeTakt Neubauten),
     // außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
     // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
@@ -310,6 +310,13 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
+    // DAS RAND-BAND (das EINE Gesetz der Nah-Wiese und der Nah-Streu): der Anteil, der in Distanz `d` vor der Weite einer Art
+    // steht — eine Pflanze zeigt sich, wenn ihre Würfel-Ordnung darunter liegt (ein Präfix der zufälligen Ordnung dünnt
+    // gleichmäßig). Leser: der Sicht-Satz der Wiese, die Wahl des Streu-Satzes je Pass, die Ernte.
+    _randAnteil(weite, d, rand) {
+        return Math.max(0, Math.min(1, (weite - d) / rand + 0.5));
+    }
+
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
     // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
@@ -358,7 +365,7 @@ class AnazhRealm_vegetation_wiese {
             for (let i = 0; i < n; i++) {
                 const b = k.bueschel[i];
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                if (b.ordnung >= this._randAnteil(NW.radius, d, NW.rand)) continue;
                 const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
@@ -623,6 +630,7 @@ class AnazhRealm_vegetation_wiese {
                 wurf: !a.wiegt,
                 attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR,
                 kapazitaet: "streu",
+                duenn: AnazhRealm.NAH_STREU.rand, // das Rand-Band dünnt je Pass (`_chunkSatzAbschnitt`, `_randAnteil`)
                 userData: { streuSatz: "streuSatz" },
             });
         return art;
@@ -657,16 +665,18 @@ class AnazhRealm_vegetation_wiese {
         eltern.add(m);
     }
 
-    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
-    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich.
-    _streuNahEin(a, kachelKey, matrizen, farben, ids) {
+    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze, ihr Rand-Band
+    // n×4 — `duenn`, `_nahStreuBloecke`): die Senke merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich.
+    _streuNahEin(a, kachelKey, matrizen, farben, ids, duenn) {
         if (a.bloecke.has(kachelKey)) this._streuNahAus(a, kachelKey);
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
         if (!ids || ids.length !== n)
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze eine Ernte-Identität`);
-        const b = { n, ids, matrizen, farben: a.tint ? farben : null };
+        if (!duenn || duenn.length !== n * 4)
+            throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze ihr Rand-Band (Lage, Ordnung, Weite)`);
+        const b = { n, ids, matrizen, farben: a.tint ? farben : null, duenn };
         a.bloecke.set(kachelKey, b);
         a.anzahl += n;
         this._streuNahSatz(a, kachelKey, b);
@@ -692,10 +702,12 @@ class AnazhRealm_vegetation_wiese {
         }
         const span = this._voxelChunkConfig().span;
         const attr = this.state.satzStoffe.get(a.satz).attr;
+        const block = this._satzBlock(a.geo, b.matrizen, b.farben, b.n, attr, a.name + "@" + kachelKey);
+        block.duenn = b.duenn; // je Zelle ihr Rand-Band: die Wahl des Satzes dünnt je Pass (`_chunkSatzZellen`)
         this._chunkSatzEin(
             a.satz,
             key,
-            this._satzBlock(a.geo, b.matrizen, b.farben, b.n, attr, a.name + "@" + kachelKey),
+            block,
             Math.floor(b.matrizen[12] / span) + "," + Math.floor(b.matrizen[14] / span)
         );
     }
@@ -715,6 +727,10 @@ class AnazhRealm_vegetation_wiese {
             f.set(b.farben.subarray((i + n) * 3), i * 3);
             b.farben = f;
         }
+        const d = new Float32Array(rest * 4);
+        d.set(b.duenn.subarray(0, i * 4));
+        d.set(b.duenn.subarray((i + n) * 4), i * 4);
+        b.duenn = d;
         b.ids.splice(i, n);
         b.n = rest;
         a.anzahl -= n;
@@ -737,14 +753,15 @@ class AnazhRealm_vegetation_wiese {
         k.zustand = null;
     }
 
-    // Je Takt (nahFeld, prio 1): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
-    // ≤ kachelnJeTakt Neubauten),
-    // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
-    // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
-    // Würfel-Ordnung (Viertel-Stufen), außerhalb
-    // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte nimmt aus, das
-    // Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage läuft nah zuerst).
-    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    // Je Takt (der nahFeld-Job, der erste der Deko): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
+    // ≤ kachelnJeTakt Neubauten), die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst
+    // die leichteste deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), außerhalb fällt
+    // die Kachel. Das Rand-Band dünnt JE PASS (`_randAnteil` in der Wahl des Streu-Satzes, das Gesetz der Nah-Wiese): die
+    // Kachel trägt jede Pflanze und baut nie wegen der Distanz neu — bis F5-n1 trug sie den Anteil ihrer Mitte in
+    // Viertel-Stufen, und jede Stufe baute sie neu (Fahrt 30 km/h: je Bild 19 Kacheln im Blick mit altem Anteil, die
+    // Kappe von drei Neubauten je Takt hielt nie Schritt). Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine
+    // Ernte nimmt aus, das Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage
+    // läuft nah zuerst). Rückgabe: Zahl der Neubauten (0 = der Ring steht).
     _tickNahStreu(deadline) {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
@@ -807,25 +824,18 @@ class AnazhRealm_vegetation_wiese {
             ns.kacheln.delete(key);
             gefallen++;
         }
-        // ERST DIE LÜCKE (F5, wie das Wasser): eine Kachel ohne Zustand ist ein Loch im Bild, eine mit altem Zustand (Armlänge,
-        // Rand-Band) zeigt ihre Pflanzen weiter — je Gruppe nach der Ankunft. Bis F5 fraßen die Auffrischungen des Rand-Bands
-        // in Fahrt jede Kappe, die Lücken davor warteten.
-        const luecke = (w) => {
-            const k = ns.kacheln.get(w.key);
-            return k && k.zustand != null ? 1 : 0;
-        };
-        wunsch.sort((a, b) => luecke(a) - luecke(b) || a.rang - b.rang);
+        // Neubau und Auffrischung (Armlänge, Rand-Band) in EINER Reihe nach der Ankunft: was vor der Kamera näher kommt, zuerst.
+        // Bis F5-n1 gingen die Kacheln ohne Zustand vor — bei 90 km/h fraßen die Ränder voraus jede Kappe, und vor der Kamera
+        // fehlten Steine und Blüten, die Kachel stand mit dem Anteil vom Rand (Radeon, Beweisbild nach 200 m).
+        wunsch.sort((a, b) => a.rang - b.rang);
         const geerntet = st.scatterHarvested;
         let gebaut = 0;
         ns.offen = 0;
         for (const w of wunsch) {
             let k = ns.kacheln.get(w.key);
-            // Je Art ihr Rand-Band vor ihrer Weite (Viertel-Stufen der Würfel-Ordnung): kleine Arten dünnen früher aus.
-            const anteile = arten.map(
-                (A) => Math.ceil(Math.max(0, Math.min(1, (A.weite - w.d) / NS.rand + 0.5)) * 4) / 4
-            );
-            const rand = anteile.join(",");
-            if (k && k.zustand === this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand) continue;
+            // das SOLL der Kachel, ihre Armlänge (die Marke, die gate:scatter-lod V3 liest: steht ihr Zustand, oder ein alter?)
+            if (k) k.soll = this._nahStreuArmlaenge(k, cam, w.imKreis);
+            if (k && k.zustand === k.soll) continue;
             if (gebaut >= NS.kachelnJeTakt || (deadline && performance.now() > deadline)) {
                 ns.offen++;
                 continue;
@@ -847,7 +857,7 @@ class AnazhRealm_vegetation_wiese {
                 };
                 ns.kacheln.set(w.key, k);
             }
-            const zustand = this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand;
+            const zustand = this._nahStreuArmlaenge(k, cam, w.imKreis);
             // Je (Art, Gestalt, Stufe) die Studio-Teile — fehlt eines (Anfrage läuft), wartet die ganze Kachel; jede
             // fehlende Gruppe fragt im selben Lauf an (die Anfragen reisen parallel, nah zuerst).
             const gruppen = new Map();
@@ -855,7 +865,6 @@ class AnazhRealm_vegetation_wiese {
             const ernte = geerntet ? geerntet.get(w.key) : null;
             let bereit = true;
             for (const it of k.items) {
-                if (it.ordnung >= anteile[it.art]) continue;
                 if (ernte && ernte.has(it.id)) continue;
                 const art = arten[it.art];
                 const v = this._foundryVariantFor(it.same, art.id);
@@ -888,7 +897,7 @@ class AnazhRealm_vegetation_wiese {
             }
             this._nahStreuKachelEntsorgen(k);
             this._nahStreuBloecke(k, gruppen);
-            k.zustand = zustand;
+            k.zustand = k.soll = zustand;
             gebaut++;
         }
         this._standMeldet("nahStreu", 1, gebaut + gefallen > 0, ns.offen > 0);
@@ -952,6 +961,15 @@ class AnazhRealm_vegetation_wiese {
         for (const g of gruppen.values()) {
             const n = g.liste.length;
             const wiegt = g.flat.leaves.some(weich);
+            // je Pflanze ihr Rand-Band (die Wahl des Satzes dünnt je Pass, `_randAnteil`): Lage xz · Würfel-Ordnung · Weite der Art
+            const duenn = new Float32Array(n * 4);
+            for (let i = 0; i < n; i++) {
+                const it = g.liste[i];
+                duenn[i * 4] = it.x;
+                duenn[i * 4 + 1] = it.z;
+                duenn[i * 4 + 2] = it.ordnung;
+                duenn[i * 4 + 3] = g.art.weite;
+            }
             for (let p = 0; p < g.flat.leaves.length; p++) {
                 const lf = g.flat.leaves[p];
                 if (!lf || !lf.geom || !lf.mat || lf.shadowTwin) continue;
@@ -975,7 +993,7 @@ class AnazhRealm_vegetation_wiese {
                         farben[i * 3 + 2] = Math.min(1.08, Math.max(0, l - wk));
                     }
                 }
-                this._streuNahEin(a, k.key, matrizen, farben, ids);
+                this._streuNahEin(a, k.key, matrizen, farben, ids, duenn);
                 k.senken.add(a.key);
             }
         }
@@ -1046,13 +1064,18 @@ class AnazhRealm_vegetation_wiese {
         const P =
             this._streuPick || (this._streuPick = { mesh: new THREE.Mesh(), kugel: new THREE.Sphere(), hits: [] });
         let best = null;
+        // gepflückt wird, was das Auge sieht: das Rand-Band des Satzes (`_randAnteil`) gilt auch dem Pick
+        const auge = this.state.camera.position;
+        const R = AnazhRealm.NAH_STREU.rand;
         for (const a of ns.senken.values()) {
             if (a.anzahl === 0 || !a.ernte) continue;
             if (!a.geo.boundingSphere) a.geo.computeBoundingSphere();
             P.mesh.geometry = a.geo;
             P.mesh.material = a.mat;
             for (const [key, b] of a.bloecke)
-                for (let i = 0; i < b.n; i++) {
+                for (let i = 0, d = b.duenn; i < b.n; i++) {
+                    const ab = Math.hypot(d[i * 4] - auge.x, d[i * 4 + 1] - auge.z);
+                    if (d[i * 4 + 2] >= this._randAnteil(d[i * 4 + 3], ab, R)) continue;
                     P.mesh.matrixWorld.fromArray(b.matrizen, i * 16);
                     P.kugel.copy(a.geo.boundingSphere).applyMatrix4(P.mesh.matrixWorld);
                     if (!rc.ray.intersectsSphere(P.kugel)) continue;

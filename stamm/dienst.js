@@ -408,18 +408,26 @@ class AnazhRealm_dienst {
 
     // DIE ANKUNFT (F5) — der EINE Rang jeder Schlange der Welt (Foundry, Bake-Takt, Ring und Neubau der Chunks, Gras,
     // Wasser, Wald-Plan, Pflanzung, Laub, Streu-Regionen, Promotion, Nah-Wiese, Nah-Streu, Bauten, Karten): d² eines
-    // Welt-Punkts zum Ort, an dem der Spieler in VORAUSSCHAU.sek Sekunden steht — seine Lage plus seine Fahrt
-    // (`state.playerVel`, die EINE Geschwindigkeit, geritten die des Gefährts) mal die Zeit, der Vorlauf gedeckelt auf
-    // VORAUSSCHAU.maxM. Unter VORAUSSCHAU.minV ist es der Abstand (der Stand bleibt byte-alt). Bis F5 ordnete jede Schlange
-    // nach dem Abstand JETZT: bei Tempo kam, was voraus liegt, zu spät, und was hinten lag, fraß das Budget (Schöpfer
-    // 17.10.: „beim schnellen Fahren kommen Bäume, Wiese usw. nicht mehr fließend nach"). Ohne Spieler: vorne (0).
+    // Welt-Punkts zum Spieler, die Strecke längs seiner Fahrt gedehnt — der Vorlauf L (`_ankunftVorlauf`: VORAUSSCHAU.sek
+    // Sekunden der EINEN Geschwindigkeit `state.playerVel`, geritten die des Gefährts, gedeckelt auf VORAUSSCHAU.maxM)
+    // zieht jede Längs-Strecke a um VORAUSSCHAU.zug · min(|a|, L) nach hinten: voraus zählt der Weg bis L zu (1 − zug),
+    // zurück zu (1 + zug), quer wie jetzt. Die Reihe bleibt in jeder Richtung NAH zuerst — der Rang zum Punkt in L (bis
+    // F5-n1) zog bei 90 km/h die Kachel 24 m voraus vor die in 5 m, und die Nah-Streu vor der Kamera kam nie dran. Unter
+    // VORAUSSCHAU.minV ist es der Abstand (der Stand bleibt byte-alt). Bis F5 ordnete jede Schlange nach dem Abstand
+    // JETZT: bei Tempo kam, was voraus liegt, zu spät, und was hinten lag, fraß das Budget (Schöpfer 17.10.: „beim
+    // schnellen Fahren kommen Bäume, Wiese usw. nicht mehr fließend nach"). Ohne Spieler: vorne (0).
     _ankunftD2(x, z) {
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return 0;
-        const a = this._ankunftVorlauf();
-        const dx = x - pm.x - a.x,
-            dz = z - pm.z - a.z;
-        return dx * dx + dz * dz;
+        const v = this._ankunftVorlauf();
+        const dx = x - pm.x,
+            dz = z - pm.z,
+            d2 = dx * dx + dz * dz;
+        const L = Math.hypot(v.x, v.z);
+        if (!L) return d2;
+        const a = (dx * v.x + dz * v.z) / L;
+        const b = a - AnazhRealm.VORAUSSCHAU.zug * Math.min(Math.abs(a), L);
+        return Math.max(0, d2 - a * a) + b * b;
     }
     // Der Rang eines Chunks (cx, cz — oder sein Schlüssel "cx,cz"): seine Mitte.
     _ankunftChunkD2(cx, cz) {
@@ -1556,5 +1564,6 @@ AnazhRealm.WELT_MARCH = Object.freeze({
 // Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
 AnazhRealm.WELT_SCHWUND_MS = 500;
 // DIE VORAUSSCHAU (F5, `_ankunftD2`): so viele Sekunden voraus misst jede Schlange (die Zeit, die ein Auftrag bis ins Bild
-// braucht: Chunk 0,1–0,3 s, Region in Scheiben, Foundry 0,1–25 s), höchstens maxM Meter, ab minV m/s.
-AnazhRealm.VORAUSSCHAU = Object.freeze({ sek: 2, maxM: 60, minV: 0.5 });
+// braucht: Chunk 0,1–0,3 s, Region in Scheiben, Foundry 0,1–25 s), höchstens maxM Meter, ab minV m/s; `zug` dehnt die
+// Längs-Strecke bis dahin (voraus × 0,5, zurück × 1,5).
+AnazhRealm.VORAUSSCHAU = Object.freeze({ sek: 2, maxM: 60, minV: 0.5, zug: 0.5 });

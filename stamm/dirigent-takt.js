@@ -1137,11 +1137,12 @@ class AnazhRealm_dirigent_takt {
             },
             {
                 name: "nahFeld",
-                // DAS NAH-FELD (F5): Nah-Wiese und Nah-Streu tragen, was als Nächstes ankommt (14–24 m ums Auge) — Welt-Substanz
-                // wie das Wasser, jeden Frame mit dem Existenz-Boden, nie hinter dem Deko-Takt. Bis F5 liefen sie zuletzt im
-                // Deko-Job (prio 2: über Budget jeden 4. Frame, nach der fernen Streu, die die Scheibe oft schon leerte) —
-                // Fahrt 90 km/h an der Mess-Wiese (Null-Renderer): je Bild fehlten im Blick 5,9 Wiesen- und 48,5 Streu-Kacheln.
-                prio: 1,
+                // DAS NAH-FELD (F5): Nah-Wiese und Nah-Streu tragen, was als Nächstes ankommt (14–24 m ums Auge, in der Reihe der
+                // Ankunft `_ankunftD2`) — der erste Deko-Job, vor der fernen Streu und ohne die Terrain-zuerst-Regel. Bis F5 liefen
+                // sie zuletzt im Deko-Job, nach der fernen Streu, die die Scheibe oft schon leerte — Fahrt 90 km/h an der Mess-
+                // Wiese: je Bild fehlten im Blick 5,9 Wiesen- und 48,5 Streu-Kacheln. Als Substanz (prio 1, der Boden jeden Frame
+                // auch über Budget) riss es den Takt: Radeon 30 km/h Frame p95 in 2 von 4 Läufen 17 -> 25 ms.
+                prio: 2,
                 run: (ms) => {
                     const _nf = performance.now();
                     const dl = Number.isFinite(ms) ? _nf + ms : undefined;

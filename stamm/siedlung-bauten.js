@@ -1452,6 +1452,7 @@ class AnazhRealm_siedlung_bauten {
                 richtung: bau.mat.transparent === true ? -1 : 1, // ein durchscheinender Stoff fern → nah
                 userData: bau.userData || { bauSatz: bau.name },
                 kapazitaet: bau.kapazitaet || "bau",
+                duenn: bau.duenn || 0, // das Rand-Band je Pass (Meter, die Nah-Streu): jede Zelle zeigt sich nach `_randAnteil`
             };
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
@@ -1852,7 +1853,7 @@ class AnazhRealm_siedlung_bauten {
         this._chunkSatzViews(s, b);
         // Ein Boden-Chunk bringt seinen Höhlen-Graph (Welle 7): seine Zellen werden Knoten, verknüpft mit den Nachbarn
         if (geom.hoehle) this._hoehlenKnoten(s, b, geom.hoehle);
-        this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
+        this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null, geom.duenn || null);
         this._chunkSatzHuelle(s, b);
         if (b.hoehle) this._hoehlenVerknuepfe(s, b);
         // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
@@ -1871,8 +1872,11 @@ class AnazhRealm_siedlung_bauten {
     // legt sie als zusammenhängende Läufe hintereinander, je Zelle eine Hülle. Ein Bau-Bereich bringt seine Läufe mit
     // (`grenzen`: Index-Offsets, je Instanz einer — `_bauSatzBlock`; vorher zog die Kaskade den Lauf vom ersten bis zum letzten
     // Bereich im Frustum, k1 fast den ganzen Fels-Satz); ein Boden-/Wasser-Bereich zerfällt in VIERTEL (`_chunkSatzViertel`).
-    // Fail-closed: Grenzen, die den Index nicht lückenlos in ganzen Dreiecken teilen, sind ein lauter Bruch.
-    _chunkSatzZellen(b, li, vStart, grenzen, hoehle) {
+    // Fail-closed: Grenzen, die den Index nicht lückenlos in ganzen Dreiecken teilen, sind ein lauter Bruch. `duenn` (die
+    // Nah-Streu, n×4: Lage xz · Würfel-Ordnung · Weite der Art) gibt jeder Zelle ihr Rand-Band für die Wahl je Pass.
+    _chunkSatzZellen(b, li, vStart, grenzen, hoehle, duenn) {
+        if (duenn && (!grenzen || duenn.length !== (grenzen.length - 1) * 4))
+            throw new Error(`_chunkSatzZellen(${b.key}): das Rand-Band braucht je Zelle vier Zahlen`);
         if (!grenzen) return this._chunkSatzViertel(b, li, vStart, hoehle);
         const ende = grenzen.length - 1;
         if (ende < 1 || grenzen[0] !== 0 || grenzen[ende] !== li.length)
@@ -1887,7 +1891,15 @@ class AnazhRealm_siedlung_bauten {
                 e = grenzen[z + 1];
             if (e < a || a % 3 !== 0 || e % 3 !== 0)
                 throw new Error(`_chunkSatzZellen(${b.key}): Grenze ${z} [${a}, ${e}) teilt kein ganzes Dreieck`);
-            if (e > a) b.zellen.push({ bereich: b, idx: idx.subarray(a, e), huelle: new THREE.Box3() });
+            if (e <= a) continue;
+            const zelle = { bereich: b, idx: idx.subarray(a, e), huelle: new THREE.Box3() };
+            if (duenn) {
+                zelle.dx = duenn[z * 4];
+                zelle.dz = duenn[z * 4 + 1];
+                zelle.ord = duenn[z * 4 + 2];
+                zelle.weite = duenn[z * 4 + 3];
+            }
+            b.zellen.push(zelle);
         }
     }
 
@@ -2237,12 +2249,17 @@ class AnazhRealm_siedlung_bauten {
         let n = 0;
         // eine Höhlen-Zelle (Welle 7) zeichnet nur, wenn die Höhlen-Sicht dieses Passes sie erreicht hat
         const stempel = s.hoehle ? s.hoehle.stempel : 0;
+        // das Rand-Band (die Nah-Streu, `spec.duenn`): jede Zelle zeigt sich nach ihrer Distanz zum Auge des Spielers, in
+        // jedem Pass dieselbe Wahl (die Kaskade wirft, was das Auge sieht)
+        const R = s.spec.duenn;
+        const auge = R ? this.state.camera.position : null;
         for (const b of s.ordnung) {
             if (!b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(L, b.huelle, 0)) continue;
             for (const z of b.zellen)
                 if (
                     (z.knoten === undefined || z.knoten.sicht === stempel) &&
                     !z.huelle.isEmpty() &&
+                    (!auge || z.ord < this._randAnteil(z.weite, Math.hypot(z.dx - auge.x, z.dz - auge.z), R)) &&
                     this._passTrifftBox(L, z.huelle, 0)
                 ) {
                     liste.push(z);
