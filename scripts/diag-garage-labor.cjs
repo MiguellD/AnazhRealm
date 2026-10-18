@@ -12,12 +12,17 @@
 //                                                                                     Soll: zweiter Klick wählt ab
 //   G6 lehren   — (0710-2) die Probefahrt erbte die Werkstatt-Ebenen: RADSTAND, ÜH-H, FREI, RAD-Ø … schwebten als Schilder
 //                 über dem fahrenden Wagen                  Soll 0 Schilder in der Fahrt (die Sicht ERGEBNIS), > 0 in der Werkstatt
+//   G7 kamera   — (F1, Prüfer 18.10.) Labor ≠ Welt: die Chase-Cam des Labors federte einstufig zur WELT, die Welt zur Fahrbahn
+//                 (bergab am Hügel stand sie tief hinter dem Wagen)   Soll: über die Abfahrt im Mittel ≥ HOCH_MIN über der Fahrbahn
 // Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
+// G7 in Grad über die Abfahrt vom Hügel (x 70 → 92, steig bis −0,25), gemessen 18.10.: die alte Labor-Kamera 8,7°, das Gesetz `chaseKamera`
+// 14,6° (seine Feder liegt am kurzen Hügel hinter der Fahrbahn, el 19,5°) — die Schwelle zwischen beiden (das p05 trennt schmaler: 4,4/9,1°)
+const HOCH_MIN = 12;
 
 const errs = [];
 function check(name, ok, detail) {
@@ -33,15 +38,13 @@ function laborVerdict(m) {
     if (m.hudDisplay !== "flex") out.push(`hud display ${m.hudDisplay}`);
     if (!(m.hudAbstand >= 10)) out.push(`hud Einheit klebt (${Math.round(m.hudAbstand)} px)`);
     if (!(m.tachoV > 3)) out.push(`tacho keine Fahrt (${(m.tachoV || 0).toFixed(1)} m/s)`);
-    else if (!(Math.abs(m.tachoAnzeige - m.tachoV * 3.6) <= 1))
-        out.push(
-            `tacho ${m.tachoAnzeige} bei ${(m.tachoV * 3.6).toFixed(1)} km/h (×${(m.tachoAnzeige / m.tachoV).toFixed(2)})`
-        );
+    else if (!(Math.abs(m.tachoAnzeige - m.tachoV * 3.6) <= 1)) out.push(`tacho ${m.tachoAnzeige} bei ${(m.tachoV * 3.6).toFixed(1)} km/h (×${(m.tachoAnzeige / m.tachoV).toFixed(2)})`);
     if (m.presetLeck && m.presetLeck.length) out.push(`preset Leck ${m.presetLeck.join(",")}`);
     if (m.reglerLeck && m.reglerLeck.length) out.push(`regler ${m.reglerLeck.join(",")}`);
     if (m.kulturAb !== true) out.push("kultur nicht abwählbar");
-    if (m.schilderFahrt !== 0)
-        out.push(`lehren ${m.schilderFahrt} Schilder in der Probefahrt (${m.schilderNamen || ""})`);
+    if (!(m.hangN >= 10)) out.push(`kamera: bergab ${m.hangN || 0} Bilder (vakuös, Soll ≥ 10)`);
+    else if (!(m.hangMittel >= HOCH_MIN)) out.push(`kamera bergab im Mittel ${m.hangMittel}° über der Fahrbahn < ${HOCH_MIN}° — die Probefahrt folgt der Welt, nicht der Fahrbahn`);
+    if (m.schilderFahrt !== 0) out.push(`lehren ${m.schilderFahrt} Schilder in der Probefahrt (${m.schilderNamen || ""})`);
     else if (!(m.schilderWerkstatt > 0)) out.push("lehren fehlen in der Werkstatt (nach der Fahrt)");
     return out;
 }
@@ -51,19 +54,8 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
 (async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
-        const gesund = {
-            geladen: true,
-            mausFehler: 0,
-            hudDisplay: "flex",
-            hudAbstand: 22,
-            tachoV: 10.5,
-            tachoAnzeige: 38,
-            presetLeck: [],
-            reglerLeck: [],
-            kulturAb: true,
-            schilderFahrt: 0,
-            schilderWerkstatt: 6,
-        };
+        const gesund = { geladen: true, mausFehler: 0, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, presetLeck: [], reglerLeck: [] };
+        Object.assign(gesund, { kulturAb: true, schilderFahrt: 0, schilderWerkstatt: 6, hangN: 40, hangMittel: 14.6 });
         check("Selbst-Test 0: gesundes Labor == 0 Täter", laborVerdict(gesund).length === 0);
         for (const [name, bruch, soll] of [
             ["10 Seitenfehler je Orbit-Zug", { mausFehler: 10 }, "maus"],
@@ -74,21 +66,17 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
             ["Kultur nicht abwählbar", { kulturAb: false }, "kultur"],
             ["RADSTAND, ÜH-H … über dem fahrenden Wagen", { schilderFahrt: 6 }, "lehren"],
             ["die Lehren kommen nach der Fahrt nicht zurück", { schilderWerkstatt: 0 }, "lehren"],
+            ["die Kamera folgt bergab der Welt (8,7° über der Fahrbahn)", { hangMittel: 8.7 }, "kamera bergab"],
+            ["kein Bild bergab", { hangN: 0 }, "kamera: bergab"],
         ]) {
             const v = laborVerdict(Object.assign({}, gesund, bruch));
-            check(
-                `Selbst-Test: ‚${name}' → die Linse nennt ${soll}`,
-                v.length >= 1 && v[0].startsWith(soll),
-                v.join(" · ")
-            );
+            check(`Selbst-Test: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
         }
-        console.log(
-            "\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen."
-        );
+        console.log("\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren und Kamera beim Namen.");
         process.exit(0);
     }
 
@@ -99,9 +87,7 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/worlds/garage/index.html`, { waitUntil: "load", timeout: 60000 });
-    await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
-        timeout: 30000,
-    });
+    await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), { timeout: 30000 });
     await new Promise((r) => setTimeout(r, 500));
     const m = { geladen: true };
     const fehler0 = pageErrors.length;
@@ -129,25 +115,13 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
     await page.mouse.up();
     m.mausFehler = pageErrors.length - fehler0;
     // G2: der HUD im Fahr-Modus.
-    Object.assign(
-        m,
-        await page.evaluate(() => {
-            const hud = document.getElementById("hud");
-            const u = hud.querySelector(".u").getBoundingClientRect();
-            const k = hud.querySelector(".keys").getBoundingClientRect();
-            return { hudDisplay: getComputedStyle(hud).display, hudAbstand: k.left - u.right };
-        })
-    );
+    Object.assign(m, await page.evaluate(() => {
+        const [hud, b] = [document.getElementById("hud"), (s) => document.querySelector(`#hud ${s}`).getBoundingClientRect()];
+        return { hudDisplay: getComputedStyle(hud).display, hudAbstand: b(".keys").left - b(".u").right };
+    }));
     // G6: die Schilder (Sprites) am Wagen, die der Renderer zeichnet — in der Probefahrt keines.
-    const schilder = () =>
-        page.evaluate(() => {
-            const namen = [];
-            // eslint-disable-next-line no-undef
-            vehicle.traverseVisible((o) => {
-                if (o.isSprite) namen.push(o.name || "Schild");
-            });
-            return namen;
-        });
+    // eslint-disable-next-line no-undef
+    const schilder = () => page.evaluate(() => { const namen = []; vehicle.traverseVisible((o) => o.isSprite && namen.push(o.name || "Schild")); return namen; });
     const sf = await schilder();
     m.schilderFahrt = sf.length;
     m.schilderNamen = sf.slice(0, 4).join(", ");
@@ -159,21 +133,24 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         // eslint-disable-next-line no-undef
         .waitForFunction(() => Math.abs(car.speed) > 3, { timeout: 90000, polling: 100 })
         .catch(() => {});
-    Object.assign(
-        m,
-        await page.evaluate(
-            () =>
-                new Promise((res) =>
-                    requestAnimationFrame(() =>
-                        res({
-                            tachoAnzeige: parseInt(document.querySelector("#hud #spd").textContent, 10),
-                            // eslint-disable-next-line no-undef
-                            tachoV: Math.abs(car.speed),
-                        })
-                    )
-                )
-        )
-    );
+    // eslint-disable-next-line no-undef
+    Object.assign(m, await page.evaluate(() => new Promise((res) => requestAnimationFrame(() => res({ tachoAnzeige: parseInt(document.querySelector("#hud #spd").textContent, 10), tachoV: Math.abs(car.speed) })))));
+    // G7: der Wagen am Fuß des Hügels (x 50), W bleibt gedrückt: über die Kuppe und bergab — je Bild (nach dem Loop der Seite)
+    // die Kamera über der Fahrbahn: ihre Elevation am Blickpunkt + die Steigung des Kerns (die Kamera steht hinter dem Wagen)
+    /* eslint-disable no-undef */
+    Object.assign(m, await page.evaluate(() => new Promise((res) => {
+        [Object.assign(car, VC.fahrZustand(50, 0, 0)), VC.fahrStand(car, fahrGesetzLab(), bodenY, 0), updateChaseCam(0, true)];
+        const [hoch, t0] = [[], performance.now()];
+        const bild = () => {
+            const el = Math.atan2(cam.position.y - FAHR.kamera.blickHoehe - car.y, Math.hypot(cam.position.x - car.x, cam.position.z - car.z));
+            if (car.x > 70 && car.x < 92) hoch.push(((el + car.steig) * 180) / Math.PI);
+            if (car.x < 95 && performance.now() - t0 < 60000) return requestAnimationFrame(bild);
+            hoch.sort((a, b) => a - b);
+            res({ hangN: hoch.length, hangX: +car.x.toFixed(1), hangMittel: +(hoch.reduce((a, b) => a + b, 0) / (hoch.length || 1)).toFixed(1), hangP: [0.05, 0.25, 0.5, 0.75, 0.95].map((q) => +(hoch[Math.floor(hoch.length * q)] || 0).toFixed(1)) });
+        };
+        requestAnimationFrame(bild);
+    })));
+    /* eslint-enable no-undef */
     await page.keyboard.up("KeyW");
     await page.keyboard.press("Escape");
     await new Promise((r) => setTimeout(r, 200));
@@ -213,39 +190,18 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
 
     console.log("=== G — DIE GARAGE IM KOPFLOS-BROWSER (r128 WebGL, echte Seite) ===");
     const v = laborVerdict(m);
-    check(
-        "G1 Maus ziehen in Werkstatt und Probefahrt ohne Seitenfehler",
-        m.mausFehler === 0,
-        `${m.mausFehler} Fehler${m.seitenFehler.length ? " — " + m.seitenFehler[0] : ""}`
-    );
-    check(
-        "G2 der Fahr-HUD ist ein Flex-Band (Einheit getrennt von der Tastenhilfe)",
-        m.hudDisplay === "flex" && m.hudAbstand >= 10,
-        `display ${m.hudDisplay} · Abstand ${Math.round(m.hudAbstand)} px`
-    );
-    check(
-        "G3 der Tacho zeigt km/h (×3,6 aus FAHR.kmh)",
-        !v.some((t) => t.startsWith("tacho")),
-        `Anzeige ${m.tachoAnzeige} bei ${(m.tachoV || 0).toFixed(2)} m/s = ${((m.tachoV || 0) * 3.6).toFixed(1)} km/h`
-    );
-    check(
-        "G4 Preset-Wechsel und erstes Laden: P == DEFAULT_P + Preset + Kultur, Regler == Modell",
-        !m.presetLeck.length && !m.reglerLeck.length,
-        [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ") || "kein Leck"
-    );
+    check("G1 Maus ziehen in Werkstatt und Probefahrt ohne Seitenfehler", m.mausFehler === 0, `${m.mausFehler} Fehler${m.seitenFehler.length ? " — " + m.seitenFehler[0] : ""}`);
+    check("G2 der Fahr-HUD ist ein Flex-Band (Einheit getrennt von der Tastenhilfe)", m.hudDisplay === "flex" && m.hudAbstand >= 10, `display ${m.hudDisplay} · Abstand ${Math.round(m.hudAbstand)} px`);
+    check("G3 der Tacho zeigt km/h (×3,6 aus FAHR.kmh)", !v.some((t) => t.startsWith("tacho")), `Anzeige ${m.tachoAnzeige} bei ${(m.tachoV || 0).toFixed(2)} m/s = ${((m.tachoV || 0) * 3.6).toFixed(1)} km/h`);
+    check("G4 Preset-Wechsel und erstes Laden: P == DEFAULT_P + Preset + Kultur, Regler == Modell", !m.presetLeck.length && !m.reglerLeck.length, [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ") || "kein Leck");
     check("G5 die Kultur lässt sich abwählen (zweiter Klick)", m.kulturAb === true);
-    check(
-        "G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück",
-        m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
-        `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
-    );
+    check("G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück", m.schilderFahrt === 0 && m.schilderWerkstatt > 0, `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`);
+    check("G7 die Chase-Cam des Labors fährt das Gesetz der Welt: bergab steht sie über der Fahrbahn", !v.some((t) => t.startsWith("kamera")), `im Mittel ${m.hangMittel}° über der Fahrbahn (Soll ≥ ${HOCH_MIN}°) · ${m.hangN} Bilder bergab (Perzentile 5/25/50/75/95 ${(m.hangP || []).join("/")}°) · bis x ${m.hangX}`);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`);
         process.exit(1);
     }
-    console.log(
-        "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren."
-    );
+    console.log("\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren, ihre Kamera über der Fahrbahn.");
     process.exit(0);
 })().catch((e) => {
     console.error("Garage-Labor-Linse-Fehler:", (e && e.stack) || e);
