@@ -46,7 +46,7 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -309,15 +309,19 @@ async function proben(phasen) {
         const dz = z - e.position.z;
         return { x: dx * c - dz * sn, z: dx * sn + dz * c };
     };
+    // geht n Schritte (W-Taste) auf das Ziel zu; gibt den tiefsten Stand des Körpers auf dem Weg (W9 Keller)
     const geh = (n, zielX, zielZ) => {
         s.keys = s.keys || {};
+        let tief = Infinity;
         for (let k = 0; k < n; k++) {
             s.yaw = Math.atan2(zielX - pm.position.x, zielZ - pm.position.z);
             s.keys.w = true;
             r._stepFixedSim((t += DT), DT);
+            tief = Math.min(tief, pm.position.y);
         }
         s.keys.w = false;
         for (let k = 0; k < 10; k++) r._stepFixedSim((t += DT), DT);
+        return tief;
     };
     const stell = (x, y, z) => {
         pm.position.set(x, y, z);
@@ -549,6 +553,9 @@ async function proben(phasen) {
                         d = Math.max(d, so.max[1]);
                 return d;
             };
+            // trägt die Welt an (lx, ly, lz) haus-lokal Erde (Dichte > 0)? 1 oder 0
+            const erde = (lx, ly, lz, p = welt(e, lx * sc, lz * sc)) =>
+                +(r._terrainDensityAt(p.x, base + ly * sc, p.z) > 0);
             const frei = (lx, ly, lz, m) =>
                 !solids.some((so) => [lx, ly, lz].every((q, k) => so.min[k] - m < q && q < so.max[k] + m));
             const boxen = (Hh.masse || []).filter((m) => KOERPER.has(m.art) && Number.isFinite(m.x0) && m.x1 > m.x0);
@@ -564,10 +571,7 @@ async function proben(phasen) {
             const [mx0, mx1] = [Math.min(...ecken.map((p) => p.x)), Math.max(...ecken.map((p) => p.x))];
             const [mz0, mz1] = [Math.min(...ecken.map((p) => p.z)), Math.max(...ecken.map((p) => p.z))];
             const kartenDa = () => r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1);
-            const steht = () =>
-                e._hausHuelle &&
-                kartenDa() &&
-                (!BILD || (e._servedLod === 0 && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0));
+            const steht = () => e._hausHuelle && kartenDa() && (!BILD || (e._servedLod === 0 && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0)); // prettier-ignore
             stell(e.position.x, e.position.y + 1, e.position.z);
             for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
                 await pumpe(5);
@@ -587,10 +591,8 @@ async function proben(phasen) {
                 for (let lx = m.x0 + 0.2; lx <= m.x1 - 0.2; lx += 0.25)
                     for (let lz = m.z0 + 0.2; lz <= m.z1 - 0.2; lz += 0.25) {
                         const d = diele(lx, lz);
-                        if (!Number.isFinite(d)) continue;
-                        const p = welt(e, lx * sc, lz * sc);
-                        b.proben++;
-                        if (r._terrainDensityAt(p.x, base + (d + 0.05) * sc, p.z) > 0) b.dichte++;
+                        if (Number.isFinite(d))
+                            [b.proben, b.dichte] = [b.proben + 1, b.dichte + erde(lx, d + 0.05, lz)];
                     }
                 if (!BILD) continue;
                 // zwei Blicke je Box: über die Diagonalen (0,45 m vor der Wand), sonst aus der Mitte auf die Ecken; das Auge
@@ -621,11 +623,8 @@ async function proben(phasen) {
                     b.innen = Math.max(b.innen || 0, innen.length);
                     const ohne = innen.length ? await schuss([], innen) : G;
                     // DIE MASKE ohne die Nah-Wiese: der Boden-Satz zeichnet unbeleuchtet (grün: grüne Albedo, sonst Magenta)
-                    const TSL = THREE.TSL;
-                    const senken = [...s.nahWiese.senken.values()].map((x) => x.mesh).filter(Boolean);
-                    const stoff = s.chunkSaetze.get("boden").mesh.material;
-                    const alt = stoff.outputNode;
-                    const alb = stoff.colorNode.xyz;
+                    const [TSL, senken, stoff] = [THREE.TSL, [...s.nahWiese.senken.values()].map((x) => x.mesh).filter(Boolean), s.chunkSaetze.get("boden").mesh.material]; // prettier-ignore
+                    const [alt, alb] = [stoff.outputNode, stoff.colorNode.xyz];
                     const gruen = alb.y.sub(alb.x.add(alb.z).mul(0.5)).greaterThan(0.02);
                     [stoff.outputNode, stoff.needsUpdate] = [TSL.vec4(TSL.select(gruen, TSL.vec3(0, 1, 0), TSL.vec3(1, 0, 1)), 1), true]; // prettier-ignore
                     let Mk;
@@ -671,26 +670,14 @@ async function proben(phasen) {
                 const k = { boden: Math.round(ke.floorY * 100) / 100, erde: 0, proben: 0 };
                 for (let lx = ke.x0 + 0.25; lx < ke.x1; lx += 0.5)
                     for (let lz = ke.z0 + 0.25; lz < ke.z1; lz += 0.5)
-                        for (const dy of [0.3, 1.5]) {
-                            const p = welt(e, lx * sc, lz * sc);
-                            k.proben++;
-                            if (r._terrainDensityAt(p.x, base + (ke.floorY + dy) * sc, p.z) > 0) k.erde++;
-                        }
+                        for (const dy of [0.3, 1.5])
+                            [k.proben, k.erde] = [k.proben + 1, k.erde + erde(lx, ke.floorY + dy, lz)];
                 const xm = (fl.x0 + fl.x1) / 2;
                 const oben = welt(e, xm * sc, (fl.zFoot + fl.dir * (fl.N * fl.go + 0.3)) * sc);
                 const unten = welt(e, xm * sc, (fl.zFoot - fl.dir * 0.6) * sc);
                 stell(oben.x, base + (fl.base + fl.N * fl.rise + 0.1) * sc + FUSS, oben.z);
                 k.startM = Math.round(((pm.position.y - FUSS - base) / sc) * 100) / 100;
-                let tief = Infinity;
-                s.keys = s.keys || {};
-                for (let n = 0; n < 420; n++) {
-                    s.yaw = Math.atan2(unten.x - pm.position.x, unten.z - pm.position.z);
-                    s.keys.w = true;
-                    r._stepFixedSim((t += DT), DT);
-                    tief = Math.min(tief, pm.position.y - FUSS - base);
-                }
-                s.keys.w = false;
-                k.tiefM = Math.round((tief / sc) * 100) / 100;
+                k.tiefM = Math.round(((geh(420, unten.x, unten.z) - FUSS - base) / sc) * 100) / 100;
                 h.keller = k;
             }
         }
@@ -1858,44 +1845,23 @@ function urteil(o) {
     // W9 DAS GRUND-DATUM: Büschel, Erde über der Diele und Bild je Box des Körper-Satzes 0, der Leib erreicht den Kellerboden
     if (P.has("grund")) {
         const hs = ((o.w9 && o.w9.haeuser) || []).filter((h) => !h.fehler);
-        const boxen = hs.flatMap((h) => h.koerper);
+        const [boxen, mitK] = [hs.flatMap((h) => h.koerper), hs.filter((h) => h.keller)];
         const summe = (feld) => boxen.reduce((a, b) => a + (b[feld] || 0), 0);
-        const je = (wert) => {
-            const m = {};
-            for (const b of boxen) if (wert(b)) m[b.art] = (m[b.art] || 0) + wert(b);
-            return JSON.stringify(m);
-        };
-        const mit = (wert) => hs.filter((h) => h.koerper.some(wert)).length;
-        if (!boxen.length) f.push("W9 Aufbau: keine Box des Körper-Satzes geprüft");
-        else if (!hs.some((h) => h.ring > 0)) f.push("W9 Aufbau: blind — kein Büschel des Gesetzes um ein Haus");
-        if (summe("bueschel"))
-            f.push(
-                `W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes im Körper-Satz in ${mit((b) => b.bueschel)} von ${hs.length} Häusern (${je((b) => b.bueschel)})`
-            );
-        if (summe("dichte"))
-            f.push(
-                `W9 Dichte: ${summe("dichte")} von ${summe("proben")} Zellen über der Diele tragen Erde, in ${mit((b) => b.dichte)} von ${hs.length} Häusern (${je((b) => b.dichte)})`
-            );
-        const mitK = hs.filter((h) => h.keller);
+        const je = (w) => JSON.stringify(boxen.reduce((m, b) => (w(b) && (m[b.art] = (m[b.art] || 0) + w(b)), m), {}));
+        const mit = (w) => `in ${hs.filter((h) => h.koerper.some(w)).length} von ${hs.length} Häusern`;
         const oben = mitK.filter((h) => !(h.keller.tiefM <= h.keller.boden + 0.15));
+        const [gesehen, bildW] = [
+            boxen.filter((b) => b.blicke > 0),
+            (b) => (b.halm + b.boden > 20 ? b.halm + b.boden : 0),
+        ];
+        if (!boxen.length || !hs.some((h) => h.ring > 0)) f.push(`W9 Aufbau: blind — ${boxen.length} Boxen, kein Büschel des Gesetzes um ein Haus`); // prettier-ignore
+        if (summe("bueschel")) f.push(`W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes im Körper-Satz ${mit((b) => b.bueschel)} (${je((b) => b.bueschel)})`); // prettier-ignore
+        if (summe("dichte")) f.push(`W9 Dichte: ${summe("dichte")} von ${summe("proben")} Zellen über der Diele tragen Erde ${mit((b) => b.dichte)} (${je((b) => b.dichte)})`); // prettier-ignore
         if (!mitK.length) f.push("W9 Keller: blind — kein Haus mit Keller-Lauf im Gesetzbuch");
-        else if (oben.length)
-            f.push(
-                `W9 Keller: ${oben.length} von ${mitK.length} Leibern erreichen den Kellerboden nicht (tiefster Fuß ${[...new Set(oben.map((h) => h.keller.tiefM))].join("/")} m, Soll ${oben[0].keller.boden} m), Erde im Keller-Raum ${mitK.reduce((a, h) => a + h.keller.erde, 0)} von ${mitK.reduce((a, h) => a + h.keller.proben, 0)} Proben`
-            );
-        if (o.w9 && o.w9.bild) {
-            const gesehen = boxen.filter((b) => b.blicke > 0);
-            const rot = gesehen.filter((b) => b.halm + b.boden > 20);
-            if (!gesehen.length) f.push("W9 Bild: blind — kein freies Auge in einer Box");
-            if (gesehen.length && (!o.w9.spieler || !summe("innen")))
-                f.push(
-                    `W9 Bild: blind für den Halm — ${o.w9.spieler ? "kein gebauter Büschel in einer Box im Blick" : "kein Haus des Spielers auf der Wiese"}`
-                );
-            if (rot.length)
-                f.push(
-                    `W9 Bild: ${rot.length} von ${gesehen.length} Boxen in ${mit((b) => b.halm + b.boden > 20)} Häusern zeigen Halm oder Boden (Halm ${summe("halm")} + Boden ${summe("boden")} px, je Körper ${je((b) => b.halm + b.boden)})`
-                );
-        }
+        else if (oben.length) f.push(`W9 Keller: ${oben.length} von ${mitK.length} Leibern erreichen den Kellerboden nicht (tiefster Fuß ${[...new Set(oben.map((h) => h.keller.tiefM))].join("/")} m, Soll ${oben[0].keller.boden} m), Erde im Keller-Raum ${mitK.reduce((a, h) => a + h.keller.erde, 0)} von ${mitK.reduce((a, h) => a + h.keller.proben, 0)} Proben`); // prettier-ignore
+        if (o.w9 && o.w9.bild && !gesehen.length) f.push("W9 Bild: blind — kein freies Auge in einer Box");
+        else if (o.w9 && o.w9.bild && (!o.w9.spieler || !summe("innen"))) f.push(`W9 Bild: blind für den Halm — ${o.w9.spieler ? "kein gebauter Büschel in einer Box im Blick" : "kein Haus des Spielers auf der Wiese"}`); // prettier-ignore
+        if (o.w9 && o.w9.bild && gesehen.some(bildW)) f.push(`W9 Bild: ${gesehen.filter(bildW).length} von ${gesehen.length} Boxen ${mit(bildW)} zeigen Halm oder Boden (Halm ${summe("halm")} + Boden ${summe("boden")} px, je Körper ${je(bildW)})`); // prettier-ignore
     }
     return f;
 }
@@ -1943,17 +1909,9 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            if (!BILD)
-                await page.evaluateOnNewDocument(() => {
-                    window.__anazhHeadlessNullRenderer = true;
-                });
+            if (!BILD) await nullRenderer(page);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
-            await page.waitForFunction(
-                () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-                {
-                    timeout: 180000,
-                }
-            );
+            await warteAufWelt(page, 180000);
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
                     try {
