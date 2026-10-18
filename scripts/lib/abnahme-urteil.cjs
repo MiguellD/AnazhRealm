@@ -283,7 +283,8 @@ function pngLesen(buf) {
 // Mittel sich über die drei Kanäle um mehr als 12 ändert — die zeitliche Kantenglättung zittert über einem stehenden Bild Pixel
 // für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt 70–97 %. Rein, A/B = {w,h,d}.
 // `schritt` (je Block der größte Unterschied zweier Bilder in Folge zwischen A und B): es zählt nur, was in EINEM Schritt kam (das
-// Erscheinen: mindestens die Hälfte des Unterschieds), nie, was über viele Schritte driftet (Wolkenzug, Belichtung, Wind).
+// Erscheinen: mindestens die Hälfte des Unterschieds), nie, was über viele Schritte driftet (Wolkenzug, Belichtung, Wind);
+// `ohne` (je Block 1): was in der Ruhe schwingt, zählt weder im Anteil noch in seinem Nenner.
 function blockUnterschiede(A, B) {
     const K = 16,
         bw = Math.floor(A.w / K),
@@ -304,11 +305,13 @@ function blockUnterschiede(A, B) {
             }
     return out;
 }
-function blockAnteil(A, B, schritt) {
+function blockAnteil(A, B, schritt, ohne) {
     const s = blockUnterschiede(A, B);
-    let anders = 0;
-    for (let i = 0; i < s.length; i++) if (s[i] > 12 && !(schritt && schritt[i] < s[i] / 2)) anders++;
-    return anders / Math.max(1, s.length);
+    let anders = 0,
+        n = 0;
+    for (let i = 0; i < s.length; i++)
+        if (!(ohne && ohne[i]) && ++n && s[i] > 12 && !(schritt && schritt[i] < s[i] / 2)) anders++;
+    return anders / Math.max(1, n);
 }
 
 function pngSchreiben(u8, W, H) {
@@ -2624,12 +2627,17 @@ function spawnZellen(tafel, q) {
     if (fehler.length) return { zellen, gruen: 0, gesamt: 0, fehler };
     // DIE SICHTBARE KLASSE: die Kamera einer Sicht steht zu jeder Uhr gleich — zeichnet eine Klasse zu einer Uhr der Sicht, gehört
     // sie zu jeder (fehlt sie zu einer anderen, ist das ROT beim Namen); zeichnet sie zu keiner, ist sie in dieser Sicht keine
-    // Zelle (der Kopf in Ego), sondern steht in `abwesend`. Eine ungemessene Pose zählt jede Klasse.
+    // Zelle (der Kopf in Ego), sondern steht in `abwesend` — zeichnet sie in KEINER Sicht, ist jede ihrer Zellen ROT (ungemessen
+    // ist nie GRÜN: die Klasse braucht ihre Pose). Eine ungemessene Pose zählt jede Klasse; eine Pose, deren Ankunft noch gleitet
+    // (`_ankunftsFerne` ≠ 1, B2: jede Stufen-Wahl misst das Ding ferner), ist ungemessen.
     const posen = {};
     for (const sicht of sp.sichten || [])
         for (const uhr of sp.uhren || []) {
             const me = (sp.messung || {})[`${sicht}@${uhr}`] || null;
-            const mf = me ? bildMessungFehler(me) : null;
+            const mf = !me
+                ? null
+                : bildMessungFehler(me) ||
+                  (me.ferne === 1 ? null : `ungemessen — ${me.ferne == null ? "die Pose trägt keine Ankunfts-Ferne" : "die Ankunft gleitet"} (_ankunftsFerne ${me.ferne})`);
             posen[`${sicht}@${uhr}`] = { me, mf };
         }
     const pixelVon = (me, re) =>
@@ -2640,9 +2648,10 @@ function spawnZellen(tafel, q) {
             return p.me && !p.mf && pixelVon(p.me, re) > 0;
         });
     const abwesend = [];
+    const nirgends = new Set(Object.keys(aus).filter((id) => (sp.sichten || []).every((si) => !zeichnetUm(si, new RegExp(aus[id])).length)));
     for (const sicht of sp.sichten || [])
         for (const [id, ausdruck] of Object.entries(aus))
-            if (!zeichnetUm(sicht, new RegExp(ausdruck)).length && (sp.uhren || []).every((u) => posen[`${sicht}@${u}`].me))
+            if (!nirgends.has(id) && !zeichnetUm(sicht, new RegExp(ausdruck)).length && (sp.uhren || []).every((u) => posen[`${sicht}@${u}`].me))
                 abwesend.push(`${id} (${sicht})`);
     for (const sicht of sp.sichten || [])
         for (const uhr of sp.uhren || []) {
@@ -2669,7 +2678,9 @@ function spawnZellen(tafel, q) {
                 if (!px) {
                     z.grund = um.length
                         ? `${id} fehlt um ${uhr} (zeichnet in derselben Kamera um ${um.join(", ")})`
-                        : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
+                        : nirgends.has(id)
+                          ? `${id} zeichnet am Spawn in keiner Sicht zu keiner Uhr (/${ausdruck}/) — ungemessen, die Klasse braucht ihre Pose`
+                          : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
                     continue;
                 }
                 const L = Object.values(eigen).reduce((s, k) => s + (k.luma || 0) * (k.pixel || 0), 0) / px;
@@ -2766,6 +2777,7 @@ function spawnSelbsttest(tafel, q) {
         rauschen: { anteil: 0, pixel: 0, max: 0 },
         klassen: o.klassen || { "f:tanne:L1": teil(0.15, 80), "f:gt:L1": teil(0.5, 90) },
         quellen: o.quellen || quellen,
+        ferne: o.ferne || 1,
         bild: "artifacts/soll-tafel/spawn-selbsttest.png",
         abnahme: {
             stand: { version: "selbsttest", sha: "5e1b5e1b" },
@@ -2780,7 +2792,7 @@ function spawnSelbsttest(tafel, q) {
         spawn: {
             sichten: ["ego", "third", "oben"],
             uhren: [0.25, 0.5, 0.75, 0],
-            klassen: { "laub-kante": aus, fahrzeug: "^f:gt:L\\d$" },
+            klassen: { "laub-kante": aus, fahrzeug: "^f:gt:L\\d$", tier: "^tier:" },
             messung: {
                 "ego@0.5": block({ uhr: 0.5 }),
                 "ego@0.25": block({ uhr: 0.25, bild: { w: 160, h: 90, mittel: 1.2, sigma: 0.8, schwarz: 0.97, weiss: 0 } }),
@@ -2797,6 +2809,7 @@ function spawnSelbsttest(tafel, q) {
     };
     // oben zeigt zu jeder Uhr nur den Wagen: das Laub ist dort keine Zelle, sondern abwesend
     for (const uhr of [0.25, 0.5, 0.75, 0]) t.spawn.messung[`oben@${uhr}`] = block({ uhr, klassen: { "f:gt:L1": teil(0.5, 90) } });
+    t.spawn.messung["oben@0"].ferne = 12.3;
     const u = spawnZellen(t, q);
     const zelle = (k, p) => u.zellen.find((z) => z.klasse === k && z.pose === p) || {};
     const soll = (k, p, urteil, re, was) => {
@@ -2813,9 +2826,11 @@ function spawnSelbsttest(tafel, q) {
     soll("laub-kante", "third@0.25", "ROT", /^veraltet seit 5e1b5e1b/, "der veraltete Stand");
     soll("laub-kante", "third@0", "ROT", /^ungemessen/, "die ungemessene Pose");
     soll("fahrzeug", "ego@0.5", "ROT", /hat kein Soll/, "die Klasse ohne Zeile");
+    soll("fahrzeug", "oben@0", "ROT", /die Ankunft gleitet \(_ankunftsFerne 12\.3\)/, "die Pose, deren Ankunft gleitet (B2)");
+    soll("tier", "ego@0.5", "ROT", /in keiner Sicht zu keiner Uhr/, "die Klasse, die in keiner Sicht zeichnet");
     if (zelle("laub-kante", "oben@0.5").urteil || !u.abwesend.includes("laub-kante (oben)"))
         v.push("die Klasse, die in einer Sicht zu keiner Uhr zeichnet, steht als Zelle statt abwesend");
-    if (u.gesamt !== 20 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/20`);
+    if (u.gesamt !== 32 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/32`);
     // ein eigener Ausdruck neben der Teilung einer Zeile fällt beim Namen
     const kz = (tafel.klassen || []).find(spawnTeilung);
     if (kz) {

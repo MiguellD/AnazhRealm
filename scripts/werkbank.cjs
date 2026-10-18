@@ -1662,6 +1662,7 @@ async function starte() {
             ctx.putImageData(img, 0, 0);
             return {
                 kamera: auf.abnahme.pose.kamera.map((v) => +v.toFixed(2)),
+                ferne: r._ankunftsFerne(), // die Ankunft gleitet, bis sie 1 ist (B2) — die Matrix misst nur die angekommene Pose
                 abnahme: auf.abnahme,
                 hell: +(l / n).toFixed(1),
                 kontrast: +(k2 / (2 * n)).toFixed(2),
@@ -1897,6 +1898,7 @@ async function starte() {
                             geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
                             leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
                             kamera: o.kamera,
+                            ferne: o.ferne,
                             ausdruck: kl.ausdruck,
                             schwelle: kl.schwelle,
                             rauschen: kl.rauschen,

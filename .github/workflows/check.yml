@@ -1462,7 +1462,8 @@ jobs:
         # Karte (dem Messplatz, GTX 1060, Label omen-gpu) — swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17).
         # Die Liste unten ist der Fahrplan: die Auswahl nach Wert (Präzision fern · Schatten · Stufen-Wechsel · Bild-Urteil) aus
         # den Schritten von `voll`, je Schritt derselbe Befehl, auf der GTX zusammen 516 s (Takt-Lauf OMEN 16.10., alle 89 GPU-
-        # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s), Ego-Schatten und Verdeckung (echt-vier). ROT auf der
+        # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s), Ego-Schatten und Verdeckung (echt-vier), die Ankunft von außen
+        # (gate:ankunft:echt, S2: ROT, solange Pflicht-OFFEN B steht — der Richter der Ankunft, die Fall-Batterie L2a fiel). ROT auf der
         # Karte bleiben Albedo-Tafel und WebGL2-Rückfall (das Spiel, Bericht 1610-echt-vier) — sie kommen, wenn sie geheilt sind. Jeder
         # Schritt fährt auch nach einem roten (`!cancelled()`): ein Lauf zeigt jedes Rot beim Namen, der Job bleibt rot.
         # Bei JEDEM push auf integ-probe und nachts, hinter dem Kopf-Richter, aber nie hinter seiner Doppel-Sperre (die gilt der
@@ -1569,6 +1570,10 @@ jobs:
             - name: Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)
               if: ${{ !cancelled() }}
               run: npm run gate:weltbild-frost:echt
+
+            - name: Ankunft von aussen auf der Karte (t(Kontrolle) aus der ersten angenommenen Taste und dem ersten Bild, das halbe Weltbild aus dem Bild)
+              if: ${{ !cancelled() }}
+              run: npm run gate:ankunft:echt
 
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}

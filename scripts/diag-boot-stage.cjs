@@ -32,23 +32,30 @@ const ANKUNFT_SOLL_MS = 5000;
 // t(KONTROLLE) UND DAS HALBE WELTBILD — DER RICHTER STEHT AUSSEN (S2, W9; rein, aus der Rohdatei der Kalt-Zeile): t ist das
 // erste präsentierte Bild (`frames`, je `getCurrentTexture` der Leinwand) ab der ersten Eingabe, die die Welt annimmt (`eingabe`:
 // eine echte Taste des Browsers kommt am Fänger des Ladeschirms vorbei, ms ab Navigation); „halb" ist der Bild-Unterschied
-// (`blockAnteil`) des ersten Bilds nach der Kontrolle gegen das Rundum-Bild derselben Kamera (`halbDiff` über HALB_ANTEIL),
-// ungemessen ist halb. Die Zeit, die der Stamm über sich schreibt (`_weltbildDa`), und seine WARN-Zeile urteilen nie.
+// (`blockAnteil`) des ersten Schusses der Leinwand nach der Kontrolle gegen das Rundum-Bild derselben Kamera (`halbDiff` über
+// HALB_ANTEIL) ohne die Blöcke, die in der Ruhe schwingen; er gilt nur, wenn die GEGENPROBE an der stehenden Welt (`halbGegen`,
+// dieselbe Regel) unter GEGEN_ANTEIL bleibt, und nennt sein Fenster (der Schuss kommt `erstesMs` nach t). Ungemessen ist halb.
+// Die Zeit, die der Stamm über sich schreibt (`_weltbildDa`), und seine WARN-Zeile trägt die Rohdatei nicht (G4); der Selbsttest
+// K ist darum rein und belegt nur, dass die Rechnung sie nicht liest — in der Seite hängt `eingabe` am Fänger des Ladeschirms.
 const HALB_ANTEIL = 0.1;
+const GEGEN_ANTEIL = HALB_ANTEIL / 2;
 const RUHE_ANTEIL = 0.02; // zwei Schirme in Folge, die sich in höchstens so vielen Blöcken unterscheiden, sind das Rundum-Bild
 const AU = require("./lib/abnahme-urteil.cjs");
 function kontrolleZeit(out) {
     const t = out.eingabe != null ? (out.frames || []).find((f) => f >= out.eingabe) : undefined;
     if (t == null) return { t: null, halb: null };
-    const d = out.halbDiff;
-    if (d == null) return { t, halb: `ungemessen — ${out.halbOhne || "kein Rundum-Bild"}` };
-    return { t, halb: d > HALB_ANTEIL ? `${Math.round(d * 100)} % der Blöcke ändern sich bis zum Rundum-Bild` : null };
+    const [d, g, p] = [out.halbDiff, out.halbGegen, (x) => `${Math.round(x * 100)} %`];
+    const fenster = out.erstesMs != null ? `der Schuss ${((out.erstesMs - t) / 1000).toFixed(2)} s nach der Kontrolle` : "ohne Schuss";
+    if (d == null) return { t, fenster, halb: `ungemessen — ${out.halbOhne || "kein Rundum-Bild"}` };
+    if (g == null || !(g <= GEGEN_ANTEIL))
+        return { t, fenster, halb: `ungemessen — die Gegenprobe an der stehenden Welt zählt ${g == null ? "nichts" : p(g)} (≤ ${p(GEGEN_ANTEIL)})` };
+    return { t, fenster, halb: d > HALB_ANTEIL ? `${p(d)} der Blöcke ändern sich bis zum Rundum-Bild (${fenster}, Gegenprobe ${p(g)})` : null };
 }
 // DER SELBSTTEST DER KONTROLLE (rein): ein gefälschtes `_weltbildDa` und eine WARN-Zeile ohne Bild-Befund ändern das Urteil
-// nicht; ein halbes Bild ohne WARN-Zeile ist halb, ein fehlendes Rundum-Bild auch.
+// nicht; ein halbes Bild ohne WARN-Zeile ist halb, ein fehlendes Rundum-Bild und eine rauschende Gegenprobe auch.
 function kontrolleSelbsttest() {
     const v = [];
-    const roh = { weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01 };
+    const roh = { weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
     const fall = (was, aend, soll) => {
         const k = kontrolleZeit(Object.assign({}, roh, aend));
         const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
@@ -60,12 +67,18 @@ function kontrolleSelbsttest() {
     fall("die WARN-Zeile ohne Bild-Befund", { ohne: ["Das erste Weltbild steht ohne: Baum — die Arbeit ruhte"] }, { t: 9016, halb: false });
     fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true });
     fall("kein Rundum-Bild", { halbDiff: null }, { t: 9016, halb: true });
+    fall("die Gegenprobe rauscht (der Richter misst sein Rauschen)", { halbGegen: 0.08 }, { t: 9016, halb: true });
+    fall("keine Gegenprobe (null ist nie 0)", { halbGegen: null }, { t: 9016, halb: true });
     fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false });
+    if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 })).halb || ""))
+        v.push("das halbe Bild nennt sein Fenster nicht (der Schuss 0,38 s nach der Kontrolle)");
     // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
-    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80
+    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80; ein schwingender zählt nie
     const bild = (a, b) => ({ w: 32, h: 16, d: Uint8Array.from({ length: 32 * 16 * 4 }, (_, i) => (i % 128 < 64 ? a : b)) });
     const anteil = AU.blockAnteil(bild(0, 0), bild(80, 80), Float32Array.of(240, 24));
     if (anteil !== 0.5) v.push(`das Erscheinen gegen den Zug: ${anteil} der Blöcke statt 0,5`);
+    const schwingt = AU.blockAnteil(bild(0, 0), bild(80, 0), null, Uint8Array.of(1, 0));
+    if (schwingt !== 0) v.push(`der schwingende Block zählt: ${schwingt} der Blöcke statt 0`);
     return v;
 }
 const server = statikServer();
@@ -164,7 +177,6 @@ function KALT_PROBE() {
             // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
             const E = r._erstZeichnung;
             if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
-            o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
         }
         A.proben.push(o);
     }, 200);
@@ -210,42 +222,60 @@ async function kaltLauf() {
             .waitForFunction(() => window.__kalt.eingabe != null, { polling: 50, timeout: Math.max(1000, SEK * 1000 - (Date.now() - t0)) })
             .catch(() => {});
         tasten = false;
-        const roh = { halbDiff: null, halbOhne: ECHT ? "die Welt nahm keine Eingabe an" : "swiftshader: der Schirm-Schuss trägt die Leinwand nicht" };
-        if (ECHT && (await page.evaluate(() => window.__kalt.eingabe != null))) {
-            // er weicht schon (`.weg`, 0,7 s Blende) — sein Ausblenden ist kein Weltbild
-            await page.evaluate(() => (document.getElementById("ladeschirm") || {}).style = "display:none");
+        const roh = { halbDiff: null };
+        if (!ECHT) roh.halbOhne = "swiftshader: der Schirm-Schuss trägt die Leinwand nicht";
+        else if (!(await page.evaluate(() => window.__kalt.eingabe != null))) roh.halbOhne = "die Welt nahm keine Eingabe an";
+        else {
+            // DER SCHUSS SIEHT NUR DIE LEINWAND: jeder Geschwister-Knoten auf ihrem Weg zum body ruht unsichtbar — der Ladeschirm
+            // weicht schon (`.weg`, 0,7 s Blende: sein Ausblenden ist kein Weltbild), das HUD (die Uhr tickt) ist keines
+            await page.evaluate(() => {
+                for (let e = window.anazhRealm.state.renderer.domElement; e !== document.body; e = e.parentElement)
+                    for (const k of e.parentElement.children) if (k !== e) k.style.visibility = "hidden";
+            });
             const clip = { x: 0, y: 0, width: 1920, height: 1080, scale: 0.5 };
             const schuss = async () => {
                 const png = Buffer.from(await page.screenshot({ clip }));
                 const p = AU.pngLesen(png);
-                return { png, w: p.W, h: p.H, d: p.u8, t: Date.now() - t0 };
+                return { png, w: p.W, h: p.H, d: p.u8, t: await page.evaluate(() => Math.round(performance.now())) };
+            };
+            const ruhe = (ms) => new Promise((r) => setTimeout(r, ms));
+            // je Schritt die Block-Unterschiede in Folge, je Block ihr größter (`blockAnteil` schritt: was erscheint)
+            const folge = async (von, n, bis) => {
+                const S = { vor: von, schritte: [], reihe: [], max: null };
+                for (let i = 0; i < n && S.vor.t - von.t < 30000; i++) {
+                    await ruhe(300);
+                    const jetzt = await schuss();
+                    const d = AU.blockUnterschiede(S.vor, jetzt);
+                    S.schritte.push(d);
+                    S.max = S.max ? S.max.map((x, k) => Math.max(x, d[k])) : d;
+                    S.vor = jetzt;
+                    S.reihe.push(+(d.filter((y) => y > 12).length / d.length).toFixed(4));
+                    if (bis && bis(S.reihe)) break;
+                }
+                return S;
             };
             const erstes = await schuss();
             // DAS RUNDUM-BILD: zwei Schirme in Folge unter RUHE_ANTEIL — oder der Unterschied in Folge steht (drei Schritte in
-            // ±0,01: es lebt nur noch, was atmet oder zieht); je Block der größte Schritt (`blockAnteil` schritt: was erscheint)
-            let vor = erstes,
-                schritt = null;
-            roh.ruheReihe = [];
-            for (let i = 0; i < 100 && vor.t - erstes.t < 30000; i++) {
-                await new Promise((r) => setTimeout(r, 300));
-                const jetzt = await schuss();
-                const s = AU.blockUnterschiede(vor, jetzt);
-                schritt = schritt ? schritt.map((x, k) => Math.max(x, s[k])) : s;
-                const R = roh.ruheReihe;
-                R.push(+AU.blockAnteil(vor, jetzt).toFixed(4));
-                vor = jetzt;
-                if (R[R.length - 1] <= RUHE_ANTEIL || (R.length >= 4 && Math.max(...R.slice(-3)) - Math.min(...R.slice(-3)) <= 0.01)) {
-                    roh.halbDiff = +AU.blockAnteil(erstes, jetzt, schritt).toFixed(4);
-                    roh.rundumMs = jetzt.t - erstes.t;
-                    break;
-                }
-            }
-            if (roh.halbDiff == null) roh.halbOhne = `das Bild ruht 30 s nicht (in Folge ${roh.ruheReihe.slice(-3).join(" · ")} der Blöcke)`;
+            // ±0,01: es lebt nur noch, was atmet oder zieht); was in den letzten drei Schritten schwingt (je Block über 12: Membran-
+            // Atem, Wolkenkante), urteilt nie — weder im halben Bild noch in der Gegenprobe
+            const ruht = (r) => r[r.length - 1] <= RUHE_ANTEIL || (r.length >= 4 && Math.max(...r.slice(-3)) - Math.min(...r.slice(-3)) <= 0.01);
+            const F = await folge(erstes, 100, ruht);
+            const rundum = F.vor;
+            roh.ruheReihe = F.reihe;
+            if (ruht(F.reihe)) {
+                const schwingt = Uint8Array.from(F.max, (_, k) => +F.schritte.slice(-3).some((x) => x[k] > 12));
+                roh.schwingend = +(schwingt.reduce((x, y) => x + y, 0) / schwingt.length).toFixed(4);
+                roh.halbDiff = +AU.blockAnteil(erstes, rundum, F.max, schwingt).toFixed(4);
+                roh.rundumMs = rundum.t - erstes.t;
+                // DIE GEGENPROBE: die stehende Welt nach dem Rundum-Bild, drei Schritte, dieselbe Regel und Maske
+                const G = await folge(rundum, 3);
+                roh.halbGegen = +AU.blockAnteil(rundum, G.vor, G.max, schwingt).toFixed(4);
+            } else roh.halbOhne = `das Bild ruht 30 s nicht (in Folge ${roh.ruheReihe.slice(-3).join(" · ")} der Blöcke)`;
             roh.erstesMs = erstes.t;
             const bildDatei = OPT("--bild", null);
             if (bildDatei) {
                 fs.writeFileSync(path.resolve(bildDatei), erstes.png);
-                fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-rundum.png", vor.png);
+                fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-rundum.png", rundum.png);
                 roh.bild = { datei: path.resolve(bildDatei) };
             }
         }
@@ -261,11 +291,9 @@ async function kaltLauf() {
                 adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
             } catch (_e) {}
             return Object.assign({}, window.__kalt, {
-                weltbildDa: st._weltbildDa ? Math.round(st._weltbildDa) : null,
                 holz: st._holzProfil || null,
                 version: r && r.constructor && r.constructor.VERSION,
                 adapter,
-                ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             });
         });
         Object.assign(out, roh);
@@ -287,7 +315,8 @@ async function kaltLauf() {
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const proben = out.proben || [];
-    const ende = Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
+    const { t, halb, fenster } = kontrolleZeit(out);
+    const ende = Math.max(t || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
     const blockiert = new Array(S + 1).fill(0);
     for (const [s, d] of out.lang || []) {
@@ -312,7 +341,7 @@ async function kaltLauf() {
         const q = letzte || {};
         const erstMs = q.erst ? q.erst[1] - erstVor : 0;
         if (q.erst) erstVor = q.erst[1];
-        const gruende = q.da && q.da < (s + 1) * 1000 ? "— das Weltbild steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
+        const gruende = t != null && t < (s + 1) * 1000 ? "— die Kontrolle steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
         const kosten = Object.entries(out.kosten || {})
             .map(([k, z]) => [k, Math.round(z[s] || 0)])
             .concat([["Erst-Bau", Math.round(erstMs)]])
@@ -339,12 +368,14 @@ async function kaltLauf() {
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild) console.log(`  das erste Bild nach der Kontrolle: ${out.bild.datei} (dazu -rundum.png)`);
-    const { t, halb } = kontrolleZeit(out);
     const s2 = (x) => (x != null ? (x / 1000).toFixed(2) + " s" : "—");
     console.log(
         `\n  t(Kontrolle) ${t != null ? s2(t) : "— (nicht erreicht)"} ab Navigation — die erste angenommene Taste ${s2(out.eingabe)}, ` +
-            `das Bild danach; der Stamm über sich (\`_weltbildDa\`, urteilt nicht) ${s2(out.weltbildDa)}` +
-            (out.halbDiff != null ? ` · Bild-Unterschied zum Rundum-Bild ${(out.halbDiff * 100).toFixed(1)} % (ruht nach ${s2(out.rundumMs)})` : "")
+            "das Bild danach" +
+            (out.halbDiff != null
+                ? ` · Bild-Unterschied zum Rundum-Bild ${(out.halbDiff * 100).toFixed(1)} % (${fenster}, ruht nach ${s2(out.rundumMs)}, ` +
+                  `Gegenprobe ${out.halbGegen != null ? (out.halbGegen * 100).toFixed(1) + " %" : "—"}, ohne ${(out.schwingend * 100).toFixed(1)} % schwingend)`
+                : "")
     );
     const gut = t != null && t <= ANKUNFT_SOLL_MS && !halb;
     if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
@@ -358,16 +389,12 @@ async function kaltLauf() {
 (async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const kontrolle = kontrolleSelbsttest();
-    if (ARGV.includes("--selbsttest-kontrolle")) {
-        for (const b of kontrolle) console.log(`  ❌ ${b}`);
-        console.log(
-            kontrolle.length
-                ? `⛔ SELBSTTEST KONTROLLE ROT (${kontrolle.length} Brüche in 7 Fällen) — t(Kontrolle) liest das Gerichtete`
-                : "✅ SELBSTTEST KONTROLLE GRÜN — t(Kontrolle) aus Eingabe + Ausgabe-Bild, halb aus dem Bild"
-        );
-        process.exit(kontrolle.length ? 1 : 0);
-    }
     const SELFTEST = ARGV.includes("--selftest");
+    // der Selbsttest der Kontrolle zuerst (rein, < 1 s): ein Bruch hält vor dem Boot
+    if (SELFTEST && kontrolle.length) {
+        for (const b of kontrolle) console.log(`  ❌ SELBST-TEST K: ${b}`);
+        process.exit(1);
+    }
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();

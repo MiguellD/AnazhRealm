@@ -130,6 +130,7 @@
         "gate:v1-pfad": "node scripts/diag-v1-pfad.cjs --selftest && node scripts/diag-v1-pfad.cjs",
         "gate:werkstatt-weg": "node scripts/diag-werkstatt-weg.cjs --selftest && node scripts/diag-werkstatt-weg.cjs",
         "gate:ankunft": "node scripts/diag-ankunft.cjs --selftest && node scripts/diag-ankunft.cjs",
+        "gate:ankunft:echt": "node scripts/diag-boot-stage.cjs --kalt --echt",
         "gate:kamera-laub": "node scripts/diag-kamera-laub.cjs --selftest && node scripts/diag-kamera-laub.cjs --teile laub",
         "gate:kamera-leib": "node scripts/diag-kamera-laub.cjs --teile leib,ninja",
         "gate:gpu-fehler": "node scripts/diag-gpu-fehler.cjs --selftest",
