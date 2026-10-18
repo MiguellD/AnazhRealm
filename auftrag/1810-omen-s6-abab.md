@@ -5,7 +5,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Einschieben
 S6 ist vom Radeon-Prüfer merge-reif (Zweig rudel-verband, Kopf 0716fa0a): die Herde flieht im Verband (Kohäsion 0,19 → 0,98),
 EIN Verbands-Gesetz statt Einzel-Flucht. S6 ist TAKT-Arbeit (CPU je Tier), darum vor integ: echt + ABAB am exakten Kopf.
 
-A = origin/integ-probe ff88b82d (= main, V18.546.19), B = A + `git merge --no-ff origin/rudel-verband`.
+A = origin/integ-probe 5ae6bdfe (V18.546.19 + Kompass + isolierte Garage zurück), B = A + `git merge --no-ff origin/rudel-verband`.
 1. echt-Batterie an B auf dem CI-Weg (alle Schritte des Jobs echt, LINSE_GPU=karte) — jedes Rot mit Schritt und Meldung,
    und ob dasselbe Rot an A steht (analog-nah S2 war am 18.10. auch an main rot).
 2. Lauf-ABAB A gegen B: Wiese + Genesis, Ego + Third, stehend UND gehend, je 4 Welten im Wechsel; Frame p95, CPU-Takt p95,
