@@ -27,7 +27,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1053,9 +1053,7 @@ async function studioProbe() {
         pageErr = (err.stack || err.message).split("\n")[0];
         console.log("[PAGE-ERROR]", pageErr);
     });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const t0 = Date.now();
     const befunde = [];
     const out = { zweck: "K16b Studio-Probe (Gelände-Studio → Plan → Welt)", regler: [], befunde };
@@ -1632,9 +1630,7 @@ async function gebaut(page, fehler) {
         pageErr = (err.stack || err.message).split("\n")[0];
         console.log("[PAGE-ERROR]", pageErr);
     });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const url = `http://127.0.0.1:${PORT}/index.html`;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.

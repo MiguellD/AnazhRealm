@@ -35,7 +35,7 @@
 //     (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
 //     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -271,10 +271,7 @@ function staticLaws(garage) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));

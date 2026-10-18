@@ -41,7 +41,7 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -362,9 +362,7 @@ async function fahreWeg(browser, weg, schein) {
         gemeldet = x;
     });
     await page.evaluateOnNewDocument(startFang);
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     await page.evaluateOnNewDocument(seitenPruefer);
     const t0 = Date.now();
     const lege = async (fn, ...a) => (await page.evaluate(fn, ...a)) || [];

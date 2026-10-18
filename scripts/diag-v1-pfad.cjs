@@ -39,7 +39,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -2282,9 +2282,13 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: karte ? "linse" : "null", frist: 1800000, profil: platte });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
-    // auf dem Null-Renderer lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
-    if (!karte) await page.evaluateOnNewDocument(() => Object.assign(window, { __anazhHeadlessNullRenderer: true, __anazhAutoSettlement: true }));
+    // die Karte baut mit der Foundry (`__anazhForceFoundry`); auf dem Null-Renderer (der EINE Schalter, welt-boot `nullRenderer`)
+    // lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
+    if (karte) await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
+    else {
+        await nullRenderer(page, { foundry: true });
+        await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
+    }
     await page.evaluateOnNewDocument(TAKT_ZAEHLER);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));

@@ -1307,6 +1307,11 @@ class AnazhRealm_gelaende_chunks {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
+        // DIE NEUEN ZELLEN TRAGEN DAS GESETZ (F3): Kappe und Quellen des Automaten leiten sich aus ihnen neu ab, und mit der
+        // neuen Kappe legt `_ensureWaterCALevel` das Level auf das Gesetz. Bis F3 hielt der Automat die Kappe der alten Zellen,
+        // wenn der Neubau nach dem Edit kam (über Budget baut der Fußabdruck im Worker): der Graben zeichnete trocken.
+        if (this.state.waterCapJ) this.state.waterCapJ.delete(key);
+        if (this.state.waterSourceCols) this.state.waterSourceCols.delete(key);
         // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel); ein reiner Stufen-Wechsel (`stufe`,
         // K51-5) regt nur die Boden-Karte — die Menge steht, Wald, Streu und Sichthöhen lesen sie nicht
         this._weltRegt(true, stufe);
@@ -2662,17 +2667,16 @@ class AnazhRealm_gelaende_chunks {
         for (let fcx = fcx0; fcx <= fcx1; fcx++) {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
-        // W-B (V18.90) — die CA-Level der Edit-Region VOR dem Rebuild aus den PRE-Carve-
-        // Zellen seeden → das Nachfließen ist deterministisch sichtbar (s. Methoden-Doku).
-        this._preSeedWaterCAForEdit(x, z, radius);
         this._remeshVoxelChunksAround(x, z, radius);
         // Die direkt berührten FOOTPRINT-Chunks SYNCHRON im Edit-Frame heilen (nicht 1/Frame verteilt) —
         // sonst ~2 Frames sichtbare Abbau-Naht zwischen Nachbarn. Die Skirt-Nachbarn (nur das 1-Zell-Pad
         // sah die Kugel, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
         this._syncRebuildEditFootprint(x, z, radius);
         // NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan
-        // muss die FRISCHEN Zellen sehen (ein Fill kann Damm sein, ein Carve ihn öffnen). Der Pre-Seed
-        // löschte sie schon davor; dieser zweite Wurf macht den Lazy-Neubau wahrheits-frisch.
+        // muss die FRISCHEN Zellen sehen (ein Fill kann Damm sein, ein Carve ihn öffnen), und der Lazy-Neubau
+        // legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
+        // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
+        // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
         this._invalidateWaterCapsAround(x, z, radius);
         // Gebackene Region-Felder im Footprint dirty markieren (Region-Raster 256 m → 1–2 Regionen).
         // Lazy-Rebake im nächsten Tick; bis dahin gelten die stale Daten.
@@ -2695,28 +2699,6 @@ class AnazhRealm_gelaende_chunks {
         // in `worldMeta.voxelEdits`; World-Switch/Beforeunload/andere Saves flushen sofort.
         this._scheduleEditSave();
         return true;
-    }
-
-    // Pre-Carve-Seed: die CA-Level der Edit-Region VOR dem Rebuild aus den Pre-Carve-Zellen seeden. Der
-    // Re-Flood füllt die Zellen instant (statische Wahrheit), das LIVE-Level hält die Ruhe von davor →
-    // der CA füllt den neuen Raum sichtbar über Ticks (deterministisch, unabhängig von sync/async).
-    // Muss VOR `_remeshVoxelChunksAround`/`_syncRebuildEditFootprint` laufen.
-    _preSeedWaterCAForEdit(x, z, radius) {
-        if (!this.state.voxelChunks) return;
-        const { span } = this._voxelChunkConfig();
-        const minCX = Math.floor((x - radius) / span) - 1;
-        const maxCX = Math.floor((x + radius) / span) + 1;
-        const minCZ = Math.floor((z - radius) / span) - 1;
-        const maxCZ = Math.floor((z + radius) / span) + 1;
-        for (let cx = minCX; cx <= maxCX; cx++) {
-            for (let cz = minCZ; cz <= maxCZ; cz++) {
-                // V18.93 — die Spiegel-Kappe der Edit-Region REFRESHEN (ein Carve senkt
-                // den Boden → die Boden+Skin-Kappe jenseits des Atlas muss mitwandern).
-                if (this.state.waterCapJ) this.state.waterCapJ.delete(`${cx},${cz}`);
-                if (this.state.waterSourceCols) this.state.waterSourceCols.delete(`${cx},${cz}`);
-                this._ensureWaterCALevel(cx, cz);
-            }
-        }
     }
 
     carveVoxelSphere(x, y, z, r) {

@@ -125,12 +125,7 @@ class AnazhRealm_vegetation_wiese {
         // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
         // am alten Ufer).
         for (const [key, k] of nw.kacheln) {
-            let neu = !this._wasserKennungenGleich(k.wasser);
-            for (const ck of k.chunks) {
-                if (neu) break;
-                const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== k.chunkKarten.get(ck)) neu = true;
-            }
+            const neu = !this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten);
             if (neu && this._nahWieseKachelFaellt(key)) gefallen++;
         }
         const wunsch = [];
@@ -191,11 +186,10 @@ class AnazhRealm_vegetation_wiese {
             const x0 = w.tx * NW.kachel - 0.34;
             const z0 = w.tz * NW.kachel - 0.34;
             const chunkKarten = this._bodenSichtChunks(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
-            const chunks = new Set(chunkKarten.keys());
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunks, chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
@@ -766,13 +760,7 @@ class AnazhRealm_vegetation_wiese {
         // Boden, am alten Ufer).
         for (const [key, k] of ns.kacheln) {
             if (!k.chunks) continue;
-            let neu = !this._wasserKennungenGleich(k.wasser);
-            for (const [ck, karte] of k.chunks) {
-                if (neu) break;
-                const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== karte) neu = true;
-            }
-            if (neu) {
+            if (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunks)) {
                 this._nahStreuKachelEntsorgen(k);
                 ns.kacheln.delete(key);
                 gefallen++;

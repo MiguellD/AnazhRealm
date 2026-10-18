@@ -25,7 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -162,9 +162,7 @@ async function auditStateAndMethods() {
         // V18.274 — GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
         // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page);
         await page.goto("http://127.0.0.1:4312/", { waitUntil: "load" });
         await new Promise((r) => setTimeout(r, 12000));
 

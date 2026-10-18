@@ -77,13 +77,13 @@
 //                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
 //                                                           des Spiels), Drehen (1°/Frame), Gehen
 //                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
-//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s]
-//                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
-//                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
-//                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Befehle und
-//                                                           Dreiecke je Frame und Pass (Anteil der Frames je
-//                                                           Pass) · VRAM · Regler-Stand; „voll" hebt die
-//                                                           Regler-Decke (loadScale → 1, die volle Welt)
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s] | lauf --selbsttest
+//                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach `--ein` s
+//                                                           Einschwingen misst er `sek` s Frame-Zeit · GPU-Zeit (timestamp-
+//                                                           query; je Pass p50 · p95 · `rein` = p50 des unteren Gipfels,
+//                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
+//                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
+//                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
 //   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
 //                                                           DAS CPU-PROFIL des echten Laufs (Chrome-Profiler,
 //                                                           200 µs): Selbst- und Gesamtzeit je Funktion — wer
@@ -384,10 +384,7 @@ function lauf(k) {
         // Haken zählt je gerendertem Frame die Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false,
-            tVor = null,
-            tRenderVor = null,
-            gpuAm = r._gpuTsAtMs;
+        let messen = false, tVor = null, tRenderVor = null, gpuAm = r._gpuTsAtMs;
         rend.setAnimationLoop((t) => {
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
             window.__wetterHalten();
@@ -449,26 +446,18 @@ function lauf(k) {
                 return {
                     chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                     foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
-                    karten:
-                        (r._impostorBakeQueue || []).length + (z.wartend || 0),
-                    meshOffen: offen,
+                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: offen,
                 };
             };
             let ruhe = null;
             if (k.ruhe > 0) {
                 const t0 = performance.now();
-                let vor = ruheZustand(),
-                    ruhigSeit = performance.now(),
-                    offenSeit = performance.now(),
-                    ruhig = false;
+                let vor = ruheZustand(), ruhigSeit = performance.now(), offenSeit = performance.now(), ruhig = false;
                 while (performance.now() - t0 < k.ruhe * 1000) {
                     await sleep(250);
                     const z = ruheZustand();
                     if (z.meshOffen !== vor.meshOffen) offenSeit = performance.now();
-                    const still =
-                        z.chunks === vor.chunks &&
-                        z.foundry === 0 &&
-                        z.karten === 0 &&
+                    const still = z.chunks === vor.chunks && z.foundry === 0 && z.karten === 0 &&
                         (z.meshOffen === 0 || performance.now() - offenSeit > 10000);
                     if (!still) ruhigSeit = performance.now();
                     vor = z;
@@ -482,11 +471,9 @@ function lauf(k) {
             const v0 = Object.assign({}, window.__vram || {});
             const wache = () => (window.__stempelWache ? window.__stempelWache() : null);
             const s0 = wache();
-            messen = true;
-            uhr.messen = true;
+            messen = uhr.messen = true;
             await sleep(k.sek * 1000);
-            messen = false;
-            uhr.messen = false;
+            messen = uhr.messen = false;
             const s1 = wache();
             rend.setAnimationLoop(null);
             // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
@@ -498,10 +485,8 @@ function lauf(k) {
                 return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
-            const dt = spalte("dtRender"),
-                takt = spalte("dt"),
-                cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu),
-                gpu = spalte("gpu");
+            const dt = spalte("dtRender"), takt = spalte("dt"), gpu = spalte("gpu");
+            const cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu);
             const zahl = (a) => ({ p50: quant(a, 0.5), p95: quant(a, 0.95), p99: quant(a, 0.99), max: quant(a, 1) });
             // Je gerendertem Frame: die Summe (Mittel · p95 · max — ihr p50 springt zwischen den Pass-Moden) und je Pass
             // der Anteil der Frames, in denen er lief, und seine Zahl, WENN er lief.
@@ -513,25 +498,14 @@ function lauf(k) {
                 const jePass = {};
                 for (const ps of passe) {
                     const w = jeFrame.filter((p) => p.jePass[ps]).map((p) => p.jePass[ps][feld]);
-                    jePass[ps] = {
-                        anteil: n ? +(w.length / n).toFixed(2) : null,
-                        p50: quant(w, 0.5),
-                        max: quant(w, 1),
-                    };
+                    jePass[ps] = { anteil: n ? +(w.length / n).toFixed(2) : null, p50: quant(w, 0.5), max: quant(w, 1) };
                 }
-                return {
-                    frames: n,
-                    mittel: n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null,
-                    p95: quant(summe, 0.95),
-                    max: quant(summe, 1),
-                    jePass,
-                };
+                const mittel = n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null;
+                return { frames: n, mittel, p95: quant(summe, 0.95), max: quant(summe, 1), jePass };
             };
-            const s = st.perfSense || {};
-            const v = window.__vram || {};
+            const s = st.perfSense || {}, v = window.__vram || {};
             const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
-            const cam = st.camera;
-            const dir = new window.THREE.Vector3();
+            const cam = st.camera, dir = new window.THREE.Vector3();
             cam.getWorldDirection(dir);
             return {
                 regler: k.regler,
@@ -542,13 +516,8 @@ function lauf(k) {
                 cpuTaktMs: zahl(cpu),
                 taktMs: zahl(takt),
                 leine: r._gpuLeine
-                    ? {
-                          ausgesetztPct: +(
-                              (100 * proben.filter((p) => !p.gerendert).length) /
-                              Math.max(1, proben.length)
-                          ).toFixed(1),
-                          imFlug: r._gpuLeine.imFlug,
-                      }
+                    ? { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length))
+                        .toFixed(1), imFlug: r._gpuLeine.imFlug }
                     : null,
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
                 gpuDurchsatzMs: (() => {
@@ -556,35 +525,25 @@ function lauf(k) {
                     return zahl(g.slice(1).map((x, i) => x - g[i]));
                 })(),
                 gpuVerzugMs: zahl(spalte("verzug")),
+                // DIE PASS-ZAHL (Befund G8, OMEN 18.10.): die Pascal-Pass-Stempel tragen präsentations-gebundene
+                // Fremdzeit (GTX k0 +0,41 ms in 2–56 % der Pässe), der p50 kippt bei Anteil 0,5. ABAB-Urteile über
+                // Pass-Kosten lesen `rein` (unterer Gipfel; `__zweiGipfel`, scripts/lib/zerlege-linse.cjs) oder gpu-bank.
                 gpuJePassMs: Object.fromEntries(
-                    Object.entries(jePassFrame).map(([p, e]) => {
-                        const w = Object.values(e);
-                        return [p, { p50: quant(w, 0.5), p95: quant(w, 0.95), frames: w.length }];
-                    })
+                    Object.entries(jePassFrame).map(([p, e]) => [p, window.__zweiGipfel(Object.values(e))])
                 ),
                 // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
                 // seine Stempel in fremde Plätze — `__stempelWache`).
-                stempel:
-                    s0 && s1
-                        ? {
-                              imLauf: s1.ueberlauf - s0.ueberlauf,
-                              seitBoot: s1.ueberlauf,
-                              spitze: s1.spitze,
-                              pool: s1.pool,
-                              gueltig: s1.ueberlauf === s0.ueberlauf,
-                          }
-                        : null,
+                stempel: s0 && s1
+                    ? { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool,
+                        gueltig: s1.ueberlauf === s0.ueberlauf }
+                    : null,
                 befehle: passZahl("dc"),
                 dreiecke: passZahl("tri"),
                 ueber17: dt.length ? +((100 * dt.filter((x) => x > 17).length) / dt.length).toFixed(1) : null,
                 ueber33: dt.length ? +((100 * dt.filter((x) => x > 33.4).length) / dt.length).toFixed(1) : null,
                 vramMB: {
-                    jetzt: mb(v.puffer + v.texturen),
-                    puffer: mb(v.puffer),
-                    texturen: mb(v.texturen),
-                    spitze: mb(v.spitze),
-                    nPuffer: v.nPuffer,
-                    nTexturen: v.nTexturen,
+                    jetzt: mb(v.puffer + v.texturen), puffer: mb(v.puffer), texturen: mb(v.texturen), spitze: mb(v.spitze),
+                    nPuffer: v.nPuffer, nTexturen: v.nTexturen,
                     wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
                     gross: window.__vramBericht ? window.__vramBericht(14) : null,
                 },
@@ -611,8 +570,7 @@ function lauf(k) {
                 wetter: st.weather,
                 // das Rohe der Wetter-Wache — das Urteil spricht die Werkbank (`wetterUrteil`)
                 wetterHalt: {
-                    vorher: wetterVor.wetter,
-                    nachher: st.weather,
+                    vorher: wetterVor.wetter, nachher: st.weather,
                     uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
                     uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
                     buch: window.__wetterBuch(wetterVor.seq).buch,
@@ -3617,6 +3575,12 @@ async function starte() {
         );
         process.exit(0);
     } else if (cmd === "lauf") {
+        if (argv.includes("--selbsttest")) {
+            const f = ZL.zweiGipfelSelbsttest();
+            console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: die Pass-Teilung trennt zwei Gipfel " +
+                "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz");
+            process.exit(f.length ? 1 : 0);
+        }
         o = await rufe("/lauf", {
             sek: a[0],
             ein: opt("--ein"),

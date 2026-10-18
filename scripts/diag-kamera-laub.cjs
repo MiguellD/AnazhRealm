@@ -21,7 +21,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -1234,8 +1234,7 @@ async function probe(arg) {
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    const bereit = () =>
-        page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", { timeout: 90000 });
+    const bereit = () => warteAufWelt(page, 90000);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const zeiten = {};
     let m = null;
@@ -1426,7 +1425,7 @@ async function leibBilder(ordner) {
             window.__anazhAutoSettlement = false;
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", { timeout: 120000 });
+        await warteAufWelt(page, 120000);
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(leibInstall, { R: LEIB_R });
         const w = await page.evaluate(leibWiese, { x: WIESE.x, z: WIESE.z, quote: LEIB_WIESE, bilder: { ids: ["pose-00", "pose-01"], w: 1280, h: 720 } });

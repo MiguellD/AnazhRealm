@@ -57,7 +57,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -420,15 +420,11 @@ function check(name, ok, detail) {
     page.setDefaultTimeout(280000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
             const r = window.anazhRealm,
                 s = r.state;

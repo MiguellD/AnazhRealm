@@ -19,7 +19,7 @@
 //   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
@@ -493,20 +493,13 @@ const STUDIO = (k) => {
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
     try {
         if (!NUR_STUDIO) {
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-            await page.waitForFunction(
-                () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-                {
-                    timeout: 120000,
-                }
-            );
+            await warteAufWelt(page, 120000);
             await page.waitForFunction(
                 () => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function",
                 {

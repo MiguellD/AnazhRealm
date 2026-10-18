@@ -31,7 +31,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -885,9 +885,7 @@ function urteil(S, pageErrors) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });

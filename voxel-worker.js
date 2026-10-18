@@ -1116,6 +1116,17 @@ function hydroSpiegelQuer(x, z) {
     return spiegel;
 }
 
+// Mirror von `_schnittSpiegel` (bit-identisch, F3): der Fluss-Spiegel quer über einer Spalte, die ein Schnitt berührt.
+function schnittSpiegel(x, z, step) {
+    const span = voxelChunkConfig(0).span;
+    const ed = editsNah(Math.floor(x / span), Math.floor(z / span));
+    for (let e = 0; e < ed.length; e++) {
+        const s = ed[e];
+        if (s && s.mode === "carve" && Math.hypot(x - s.x, z - s.z) <= s.r + 0.71 * step) return hydroSpiegelQuer(x, z);
+    }
+    return -Infinity;
+}
+
 function hydroRiverAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready || !h.riverBuckets) return null;
@@ -1527,6 +1538,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 const le = atlasWaterLevelAt(ox + (ci + (e & 1)) * step, oz + (ck + (e >> 1)) * step, solidG[gi]);
                 if (le > L) L = le;
             }
+            if (L === -Infinity) L = schnittSpiegel(wx, wz, step); // die Flut des Schnitts (Mirror F3)
             // die Deck-Zelle (4b): bis zur Unterkante der Zelle unter dem Dach (Doku im Main)
             let top = L > -Infinity ? Math.max(faceY - 2 * step, Math.min(faceY + step, L)) : faceY;
             let ruht = L > -Infinity && top === L;
@@ -2732,6 +2744,8 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density, saat = null) {
         for (let i = 0; i < dim; i++) {
             const idx0 = i + k * dim;
             colL[idx0] = spalteL(i, k, colBoden[idx0]);
+            if (colL[idx0] === -Infinity)
+                colL[idx0] = schnittSpiegel(ox + (i + 0.5) * step, oz + (k + 0.5) * step, step);
             colSrc[idx0] = spalteL(i, k, Infinity) > -Infinity ? 1 : 0;
         }
     }

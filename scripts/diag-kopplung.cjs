@@ -27,7 +27,7 @@
 // (Strömung null, SLIDE_CLIP_PLANES 0, Hang-Grenze −1) — die Fixture MUSS dann
 // rot sehen. Exit 1 bei jedem Fail; alle Zahlen explizit.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
@@ -41,16 +41,11 @@ const server = statikServer();
         pageErr = (e.stack || e.message).split("\n")[0];
         console.log("[PAGE-ERROR]", pageErr);
     });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(
-            () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
-            { timeout: 120000 }
-        );
+        await warteAufWelt(page, 120000);
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const AR = r.constructor;

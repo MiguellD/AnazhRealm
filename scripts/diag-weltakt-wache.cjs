@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
@@ -365,9 +365,7 @@ function urteil(S, pageErrors) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });

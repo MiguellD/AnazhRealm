@@ -36,7 +36,7 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERN_RING_PORT || 4464);
 
@@ -53,9 +53,7 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 240000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

@@ -70,7 +70,7 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -2325,10 +2325,7 @@ function quellenAbgriff() {
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -2339,10 +2336,7 @@ function quellenAbgriff() {
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
-        await page2.evaluateOnNewDocument(() => {
-            window.__anazhForceFoundry = true;
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page2, { foundry: true });
         await page2.evaluateOnNewDocument(quellenAbgriff);
         page2.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
         await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

@@ -41,7 +41,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -1055,16 +1055,12 @@ async function probe(K) {
     page.setDefaultTimeout(880000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     let befund = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 180000,
-        });
+        await warteAufWelt(page, 180000);
         befund = await page.evaluate(probe, {
             FALL_M,
             DACH_M,
