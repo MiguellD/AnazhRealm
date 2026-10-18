@@ -30,7 +30,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const os = require("os");
@@ -246,16 +246,11 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-        window.__anazhForceFoundry = true;
-    });
+    await nullRenderer(page, { foundry: true });
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 60000,
-        });
+        await warteAufWelt(page, 60000);
         // (L) DIE LÖCHER NACH DEM RELOAD: 300 Kugeln über den Spielpfad, Save, echter Reload, zählen.
         // Die Welt steht (der Null-Renderer treibt den Takt nicht selbst: die Probe tickt ihn wie gate:worker-dichte).
         const weltSteht = async () => {
@@ -296,9 +291,7 @@ const server = statikServer();
         }, N_LOECHER);
         await sleep(1500); // der IDB-Put des Saves landet (ein Reload schneidet sonst den Schreiber ab)
         await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 60000,
-        });
+        await warteAufWelt(page, 60000);
         await weltSteht();
         const lNachher = await page.evaluate((orte) => {
             const r = window.anazhRealm;

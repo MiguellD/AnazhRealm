@@ -51,7 +51,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
 
@@ -884,9 +884,7 @@ async function quellTeil(browser, port, k, seitenFehler, orte) {
         pg.on("pageerror", (e) =>
             seitenFehler.push(`Teil ${k}: ` + (e.stack || e.message || String(e)).split("\n")[0])
         );
-        await pg.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(pg);
         await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         await pg.waitForFunction(
             () =>
@@ -928,9 +926,7 @@ async function lauf() {
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     if (!BILD)
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page);
     let befund = { seitenFehler, hashSin: hashSin() };
     let exit = 1;
     try {

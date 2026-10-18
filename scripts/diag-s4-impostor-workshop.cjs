@@ -13,7 +13,7 @@
 //       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.S4_PORT || 4596);
 const server = statikServer();
 
@@ -22,10 +22,7 @@ const server = statikServer();
     const errs = [];
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

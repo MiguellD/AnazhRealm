@@ -38,7 +38,7 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -1051,18 +1051,11 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await page.evaluateOnNewDocument(() => {
-                window.__anazhHeadlessNullRenderer = true;
-            });
+            await nullRenderer(page);
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
-            await page.waitForFunction(
-                () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-                {
-                    timeout: 180000,
-                }
-            );
+            await warteAufWelt(page, 180000);
             if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             await page.evaluate(() =>

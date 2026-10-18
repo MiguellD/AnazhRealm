@@ -13,7 +13,7 @@
 //     und der WALD-GENERATOR streut ihn in frische Zellen — ohne EINE Zeile AnazhRealm-Edit.
 //     (Die LODs fließen konstruktiv: buildInstance(id, seed, 0/1/2) ist die Studio-eigene Stufung.)
 //   node scripts/diag-nervensystem.cjs
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const { fehlt } = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4406);
@@ -37,10 +37,7 @@ function check(name, ok, detail) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

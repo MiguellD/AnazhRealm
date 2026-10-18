@@ -45,7 +45,7 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
@@ -55,9 +55,7 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
