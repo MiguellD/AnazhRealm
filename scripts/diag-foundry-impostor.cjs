@@ -113,7 +113,7 @@ async function installiereBacke(page) {
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const out = { ready: false, rec: null, err: null, hasIframe: null, cutMethods: null };
+        const out = { ready: false, rec: null, err: null };
         try {
             const f = r._ensureAssetFoundry();
             const dl = performance.now() + 60000;
@@ -216,22 +216,8 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            out.vereinigung = {
-                weltBake: typeof r._karteWeltBacken === "function",
-                rttNachbau: typeof r._bakeImpostorAtlasRTT,
-            };
-            // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
-            out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
-            // Die iframe-Methoden sind weg (der Karten-Zwilling W6 — Canvas-Atlas je Karte, Umdrehen, Silhouette,
-            // Re-Frame, Rahmen-Quad — steht in gate:altlasten).
-            out.cutMethods = {
-                requestImpostor: typeof r._foundryRequestImpostor,
-                ensureBakeIframe: typeof r._foundryEnsureBakeIframe,
-                buildImpostorRecord: typeof r._foundryBuildImpostorRecord,
-                bakeImpostorRequest: typeof r._foundryBakeImpostorRequest,
-                studioImpostorPayload: typeof r._applyStudioImpostorPayload,
-                baecker: typeof r._foundryBaecker,
-            };
+            // der Bake in der Welt; die gefallenen Wege (RTT-Nachbau, Bake-iframe, Bäcker-Kanal) hält die Verfassung (G3)
+            out.vereinigung = { weltBake: typeof r._karteWeltBacken === "function" };
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -408,6 +394,26 @@ async function kleberProbe(page, fmtWunsch) {
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
+            // (C6) DIE KARTE VON OBEN (F2b): eine Krone als waagrechte Scheibe über einem Stamm-Kreuz durch den ECHTEN Bake, aus 60°
+            // Hebung gegen dieselbe Gestalt als Mesh (Deckung K/G, IoU) — waagrecht gebacken stand die Scheibe als Strich.
+            const sch = new T.CircleGeometry(3.6, 48).rotateX(-Math.PI / 2).translate(0, 6.6, 0).toNonIndexed().attributes.position.array;
+            const st = [-1, 0, 1, 0, 1, 1, -1, 0, 1, 1, -1, 1].map((v, i) => (i % 2 ? v * 6.6 : v * 0.3));
+            const ob = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([...sch, ...[0, 1].flatMap((a) => st.flatMap((v, i) => (i % 2 ? [] : a ? [0, st[i + 1], v] : [v, st[i + 1], 0])))], 3));
+            const leafO = r._impostorLeaf(await window.__fimpBacke(ren, at, "fimp:gateKarte|3", 93, ob), new T.Matrix4(), H0);
+            const mO = new T.InstancedMesh(r._lodInstanceFacade(leafO.geom, 2), mat, 1);
+            const gO = { key: "gate:oben", mesh: mO, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] };
+            const sO = r._archGroupAlloc(gO, null).slot;
+            mO.setMatrixAt(sO, new T.Matrix4()), (mO.frustumCulled = false), r._lodSlotStamp({ mesh: mO }, sO, 1, false, leafO);
+            const camO = new T.PerspectiveCamera(35, W / H, 0.5, 500);
+            camO.position.set(0, 4 + 26 * Math.sin(Math.PI / 3), 26 * Math.cos(Math.PI / 3)), camO.lookAt(0, 4, 0), camO.updateMatrixWorld(true);
+            const deckt = async (o) => {
+                const s2 = new T.Scene().add(o, new T.AmbientLight(0xffffff, 3));
+                await ren.renderAsync(s2, camO);
+                return (await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H)).filter((v, i) => i % 4 === 3).map((a) => +(a > 0));
+            };
+            const kO = await deckt(mO), gG = await deckt(new T.Mesh(ob, new T.MeshBasicMaterial({ side: T.DoubleSide })));
+            const nK = kO.reduce((a, b) => a + b, 0), nG = gG.reduce((a, b) => a + b, 0), nI = kO.reduce((a, b, i) => a + (b & gG[i]), 0);
+            out.oben = { gestalt: nG, karte: nK, deckung: +(nK / Math.max(1, nG)).toFixed(3), iou: +(nI / Math.max(1, nG + nK - nI)).toFixed(3) };
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
@@ -837,8 +843,6 @@ async function windProbe(page) {
     console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
     console.log(`  Vereinigung (Kanal/Methoden/kein Nachbau): ${JSON.stringify(A.vereinigung)}`);
-    console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
-    console.log(`  gefallene Methoden (erwartet undefined): ${JSON.stringify(A.cutMethods)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
     if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
@@ -892,14 +896,7 @@ async function windProbe(page) {
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
         if (!A.vereinigung.weltBake) errs.push("A: `_karteWeltBacken` fehlt");
-        if (A.vereinigung.rttNachbau !== "undefined")
-            errs.push(`A: der RTT-Nachbau ` + "`_bakeImpostorAtlasRTT`" + ` lebt noch (${A.vereinigung.rttNachbau})`);
     } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
-    if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
-    if (A.cutMethods) {
-        for (const [k, v] of Object.entries(A.cutMethods))
-            if (v !== "undefined") errs.push(`A: die gefallene Methode ${k} existiert noch (${v})`);
-    }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
     console.log(`\n  RUHE VOR TEIL C: ${JSON.stringify(ruhe)} (Lieferungs-Wellen bis keine mehr unterwegs ist)`);
@@ -953,6 +950,9 @@ async function windProbe(page) {
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
         console.log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
         for (const f of C.wachsen || ["keine Messung"]) errs.push(`${F} C5: ${f}`);
+        const O = C.oben || {}; // C6 DIE KARTE VON OBEN (F2b)
+        console.log(`  C6 VON OBEN (60°): Gestalt ${O.gestalt} px · Karte ${O.karte} px · Deckung ${O.deckung} · IoU ${O.iou} (Soll 1 ± 0,25 · ≥ 0,6)`);
+        if (!(O.gestalt > 500 && O.iou >= 0.6 && Math.abs(O.deckung - 1) <= 0.25)) errs.push(`${F} C6: die Karte zeigt von oben nicht die Krone der Gestalt (Deckung ${O.deckung}, IoU ${O.iou})`);
     }
     {
         console.log(

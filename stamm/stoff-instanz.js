@@ -38,7 +38,9 @@ class AnazhRealm_stoff_instanz {
             fmt: null, // "bc" | "rgba8" — beim ersten Textur-Bau aus dem Renderer
             cw: 0,
             ch: 0,
-            V: 0,
+            V: 0, // alle Ansichten der Schicht: A Peilungen × die Ringe der Hebung
+            A: 0,
+            hoehen: null, // die Blick-Hebungen der Ringe (Grad, gleichmäßig ab 0)
             nt: 0,
             masse: null, // __phytoCore.karteMasse der Schicht
             cap: 0, // Schichten der Texturen
@@ -91,7 +93,15 @@ class AnazhRealm_stoff_instanz {
             // Karten-Gesetz (phyto-core): Zell-Maße, Blickwinkel, Normal- und Licht-Teiler.
             const ic = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.impostor) || null;
             if (!ic || !(ic.views > 0 && ic.cellW > 0 && ic.cellH > 0)) return null; // das Buch fehlt noch
-            at.V = ic.views;
+            // DIE RINGE DER HEBUNG (F2b): je Blick-Hebung des Rezepts ein Ring der Peilungen — gleichmäßig ab 0°, sonst
+            // bricht es laut (der Stoff rechnet den Ring aus Schritt und Zahl)
+            const hoe = Array.isArray(ic.hoehen) && ic.hoehen.length ? ic.hoehen : [0];
+            const schritt = hoe.length > 1 ? hoe[1] - hoe[0] : 0;
+            if (hoe[0] !== 0 || hoe.some((h, i) => !(Math.abs(h - i * schritt) < 1e-9)) || hoe[hoe.length - 1] > 90)
+                return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.impostor.hoehen (gleichmäßig ab 0°)");
+            at.A = ic.views; // die Peilungen je Ring
+            at.hoehen = hoe.slice();
+            at.V = ic.views * hoe.length; // alle Ansichten der Schicht
             at.cw = ic.cellW;
             at.ch = ic.cellH;
             at.nt = core.KARTEN_GESETZ.normalTeiler;
@@ -626,14 +636,24 @@ class AnazhRealm_stoff_instanz {
         const box = B.box.setFromObject(B.wurzel);
         const fr = core.impostorFrame(box.max.y, Math.sqrt(rad2));
         const cam = B.kamera;
-        cam.left = -fr.halfW;
-        cam.right = fr.halfW;
-        cam.top = fr.halfH;
-        cam.bottom = -fr.halfH;
-        cam.position.set(0, fr.halfH, Math.max(fr.halfW * 2.5, box.max.y) + 40);
-        cam.lookAt(0, fr.halfH, 0);
-        cam.updateProjectionMatrix();
-        cam.updateMatrixWorld(true);
+        const abst = Math.max(fr.halfW * 2.5, box.max.y) + 40;
+        // DER RING DER HEBUNG (F2b): die Kamera blickt aus der Hebung e (Grad) auf die Mitte des Rahmens (Stammachse, halfH);
+        // ihr Ausschnitt deckt den Zylinder des Rahmens — die halbe Höhe des Bilds ist `_karteRingHalbe` (dieselbe Formel
+        // liest der Stoff). Ring 0 ist der waagrechte Blick von bisher.
+        const ring = (eGrad) => {
+            const e = (eGrad * Math.PI) / 180;
+            const hh = AnazhRealm._karteRingHalbe(fr.halfH, fr.halfW, Math.cos(e), Math.sin(e));
+            cam.left = -fr.halfW;
+            cam.right = fr.halfW;
+            cam.top = hh;
+            cam.bottom = -hh;
+            cam.up.set(0, Math.cos(e), -Math.sin(e));
+            cam.position.set(0, fr.halfH + abst * Math.sin(e), abst * Math.cos(e));
+            cam.lookAt(0, fr.halfH, 0);
+            cam.updateProjectionMatrix();
+            cam.updateMatrixWorld(true);
+        };
+        ring(0);
         // Die Bühne hält still, was keine Gestalt ist: Wind, die zeitliche Laub-Kante, die Durchsicht (die Stufen-Maske hält
         // `_buehneRender`) — danach zurück auf den Welt-Stand.
         const lu = this.state.lodUniforms;
@@ -658,7 +678,8 @@ class AnazhRealm_stoff_instanz {
         }
         const K = SZ.karte;
         const V = at.V;
-        const dreh = (Math.PI * 2) / V;
+        const A = at.A;
+        const dreh = (Math.PI * 2) / A;
         // DIE PROGRAMME ENTSTEHEN IN DER ERST-ZEICHNUNG (`_configureRenderer`, der EINE Ort der Klasse): die Bühne zeichnet
         // wie die Welt — ein Bürger, dessen Knoten die Bau-Frist verschob oder dessen Pipeline noch im Bau steht, zeichnet
         // nicht. Dann ist die Karte nicht ganz: sie wird nicht abgelegt und backt im nächsten Takt neu (null) — der
@@ -693,11 +714,13 @@ class AnazhRealm_stoff_instanz {
             }
             B.tiefe.value = B.schatten.depthTexture;
             for (let v = 0; v < V; v++) {
-                // Ansicht v = die Gestalt aus Peilung v·360/V gesehen (Kamera fest, Gestalt gegengedreht); WebGPU zeichnet
-                // von oben — der Stoff liest gespiegelt
-                B.wurzel.rotation.y = -v * dreh;
+                // Ansicht v = r·A + a: die Gestalt aus Peilung a·360/A unter der Hebung des Rings r gesehen (die Kamera je
+                // Ring fest, die Gestalt gegengedreht); WebGPU zeichnet von oben — der Stoff liest gespiegelt
+                const a = v % A;
+                if (a === 0) ring(at.hoehen[(v / A) | 0]);
+                B.wurzel.rotation.y = -a * dreh;
                 B.wurzel.updateMatrixWorld(true);
-                B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
+                B.uBaum.value.makeRotationY(a * dreh); // Welt → Baum
                 rend.autoClear = v === 0; // die erste Ansicht leert die Schicht (Farbe 0 = leer, Tiefe)
                 if (bc) {
                     B.ziel.viewport.set(0, v * at.ch, at.cw, at.ch);
@@ -3147,6 +3170,9 @@ AnazhRealm._studioPlatzKern = function () {
 // Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht ~0,25 MB, das Wachsen kopiert nur beim
 // Einzug einer Art (BC1-Albedo 170 KB + RGTC2-Normale 85 KB je Schicht, 512 px samt Mips; Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// DIE HALBE BILD-HÖHE EINES RINGS (F2b): der Zylinder des Rahmens (Halbbreite hW, halbe Höhe hH um die Mitte der Achse) aus
+// der Hebung e gesehen — hH·cos e + hW·sin e. EINE Formel für die Bühne (Zahlen) und den Stoff (Knoten, `T` = TSL).
+AnazhRealm._karteRingHalbe = (hH, hW, c, s, T) => (T ? hH.mul(c).add(hW.mul(s)) : hH * c + hW * s);
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).

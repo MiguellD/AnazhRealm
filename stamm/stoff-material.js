@@ -844,7 +844,10 @@ class AnazhRealm_stoff_material {
                                         _at.nmapNode = _Ta.texture(_at.nmap);
                                         _at.lmapNode = _Ta.texture(_at.lmap);
                                     }
-                                    const _V = _Ta.float(_at.V);
+                                    const _V = _Ta.float(_at.V); // alle Ansichten der Schicht
+                                    const _Az = _Ta.float(_at.A); // die Peilungen je Ring
+                                    const _nE = _at.hoehen.length; // die Ringe der Hebung (F2b)
+                                    const _sE = _nE > 1 ? ((_at.hoehen[1] - _at.hoehen[0]) * Math.PI) / 180 : 1;
                                     const _uv = _Ta.attribute("uv", "vec2");
                                     const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
                                     // (Schicht, Halbbreite, Höhe, ±Sichthöhe)
@@ -869,35 +872,76 @@ class AnazhRealm_stoff_material {
                                     // darum durch EINEN Leser, der die Null als +0 reicht.
                                     const _peil = (y, x) => _Ta.atan(_Ta.select(y.equal(0.0), _Ta.float(0.0), y), x);
                                     const _aRot = _Ta.varying(_peil(_m0.z.negate(), _m0.x), "vKarteDreh");
-                                    // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
-                                    //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
-                                    //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
+                                    // ── DIE ANKER-PEILUNG (F2b): der Anker der Instanz reist als Varying (je Quad fest) — die Peilung und
+                                    //    der Abstand der Achse zum Auge gelten für jede Stelle der Karte, auch der gekippten (die Spur
+                                    //    posW = Anker + right·k trägt dort den Hub zum Auge). _dA ist der waagrechte Abstand der Stelle. ──
+                                    const _ankerF = _Ta.varying(_naht.anker, "vKarteAnker");
+                                    const _mX = _Ta.cameraPosition.x.sub(_ankerF.x);
+                                    const _mZ = _Ta.cameraPosition.z.sub(_ankerF.z);
+                                    const _dAnk = _Ta.sqrt(_mX.mul(_mX).add(_mZ.mul(_mZ))).max(_Ta.float(1e-4));
+                                    const _ang = _peil(_mX, _mZ);
                                     const _k = _ecke.mul(_rahmen.x).mul(_sInst);
                                     const _hx = _Ta.positionWorld.x.sub(_Ta.cameraPosition.x);
                                     const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
-                                    const _hl2 = _hx.mul(_hx).add(_hz.mul(_hz));
-                                    const _dA = _Ta.sqrt(_hl2.sub(_k.mul(_k)).max(_Ta.float(1e-4)));
-                                    const _ang = _peil(_hx.negate(), _hz.negate()).add(_peil(_k, _dA));
+                                    const _dA = _Ta.sqrt(
+                                        _hx.mul(_hx).add(_hz.mul(_hz)).sub(_k.mul(_k)).max(_Ta.float(1e-4))
+                                    );
                                     // ── View-Wahl + Blend (Vorlage: vView=fract((ang−aRot)/2π)); Studio-Layout: die Ansichten
                                     //    VERTIKAL gestapelt, Zeile 0 = Unterkante der Ansicht 0 (readPixels bottom-up) ──
                                     const _vView = _Ta.fract(
                                         _ang.sub(_aRot).div(_Ta.float(6.283185307179586)).add(_Ta.float(2.0))
                                     );
-                                    const _fV = _vView.mul(_V);
+                                    const _fV = _vView.mul(_Az);
                                     const _v0 = _Ta.floor(_fV);
                                     const _fb = _Ta.fract(_fV);
-                                    const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
+                                    const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _Az);
+                                    // ── DIE HEBUNG (F2b): das Auge blickt unter φ auf die Mitte der Karte (Anker + halfH × Skala, je
+                                    //    Instanz fest); die Karte steht im Ring r0 und r1 der Hebung (Mischung _fe). Ein Punkt b der
+                                    //    gekippten Karte (Höhe im Rahmen ±_hP) liegt im Ring der Hebung e bei b / cos(φ − e) — der
+                                    //    Strahl des Auges durch die Ebene des Rings. Unter dem Horizont kippt nichts (φ = 0). ──
+                                    const _hH = _rahmen.y.mul(0.5);
+                                    const _hW = _rahmen.x;
+                                    const _phi =
+                                        _nE > 1
+                                            ? _Ta.atan(
+                                                  _Ta.cameraPosition.y.sub(_ankerF.y.add(_hH.mul(_sInst))).max(0.0),
+                                                  _dAnk
+                                              )
+                                            : _Ta.float(0.0);
+                                    const _rF = _nE > 1 ? _phi.div(_sE).clamp(0.0, _nE - 1) : _Ta.float(0.0);
+                                    const _r0 = _nE > 1 ? _Ta.floor(_rF).min(_Ta.float(_nE - 2)) : _Ta.float(0.0);
+                                    const _fe = _rF.sub(_r0);
+                                    // DIE RINGE IM PIXEL-TAKT: je Pixel EIN Ring (r0 oder r1 nach _fe gegen das Rauschen der Blende,
+                                    // `_ditherIGN`, zeitlich über uDitherT — die Kante löst TAAU), so viele Abtastungen wie ohne Hebung
+                                    const _rWahl =
+                                        _nE > 1
+                                            ? _r0.add(_fe.greaterThan(this._ditherIGN(_Ta, 1)).select(1.0, 0.0))
+                                            : _r0;
+                                    const _hP = AnazhRealm._karteRingHalbe(_hH, _hW, _Ta.cos(_phi), _Ta.sin(_phi), _Ta);
+                                    const _bK = _uv.y.mul(2.0).sub(1.0).mul(_hP);
                                     // Die Ansichten liegen Kante an Kante: die Unterkante (Stammfuß) der Ansicht v+1 grenzt an die
                                     // Oberkante der Ansicht v. Die Klemme hält den Filter in SEINER Ansicht: einen halben Texel der
                                     // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
                                     const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
-                                    const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
                                     // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht v in
-                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt.
-                                    const _vZ = _Ta.float(1.0).sub(_vIn);
-                                    const _uvA = _Ta.vec2(_uv.x, _vZ.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _vZ.add(_v1).div(_V));
+                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt. Je Ring r die
+                                    // Zellen-Höhe des Punkts (`_karteRingHalbe` der Bühne) und ob er im Ring liegt.
+                                    const _ring = (r) => {
+                                        const e = r.mul(_sE);
+                                        const hR = AnazhRealm._karteRingHalbe(_hH, _hW, _Ta.cos(e), _Ta.sin(e), _Ta);
+                                        const roh = _bK
+                                            .div(hR.mul(_Ta.cos(_phi.sub(e))).max(_Ta.float(1e-4)))
+                                            .mul(0.5)
+                                            .add(0.5);
+                                        const vIn = roh.clamp(_halb, _Ta.float(1.0).sub(_halb));
+                                        const imRing = _Ta.step(0.0, roh).mul(_Ta.step(roh, 1.0));
+                                        return { r, vZ: _Ta.float(1.0).sub(vIn), imRing };
+                                    };
+                                    const _R = _ring(_rWahl);
+                                    const _ans = (R, a) => R.r.mul(_Az).add(a); // die Ansicht der Peilung a im Ring R
+                                    const _uvAn = (R, a) => _Ta.vec2(_uv.x, R.vZ.add(_ans(R, a)).div(_V));
+                                    const _uvN = (a) => _uvAn(_R, a); // Normale und Sonnen-Sicht: derselbe Ring
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -928,7 +972,7 @@ class AnazhRealm_stoff_material {
                                         .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
                                         .sub(_Ta.float(1.0))
                                         .clamp(0.0, 1.0);
-                                    const _kubisch = (tex, vAns) => {
+                                    const _kubisch = (tex, vAns, _vZ) => {
                                         const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
                                         const cy = _vZ.mul(_kubY).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
@@ -972,13 +1016,18 @@ class AnazhRealm_stoff_material {
                                                     .mul(wy.g1)
                                             );
                                     };
-                                    const _liesA = (tex, uv, vAns) =>
-                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns), _kubW);
-                                    const _samp = _Ta.mix(
-                                        _liesA(_at.mapNode, _uvA, _v0),
-                                        _liesA(_at.mapNode, _uvB, _v1),
-                                        _fb
-                                    );
+                                    const _liesA = (tex, uv, vAns, vZ) =>
+                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns, vZ), _kubW);
+                                    // je Ring die zwei Peilungen, außerhalb des Rings leer (vormultipliziert: 0 = durchsichtig)
+                                    const _imRing = (R) =>
+                                        _Ta
+                                            .mix(
+                                                _liesA(_at.mapNode, _uvAn(R, _v0), _ans(R, _v0), R.vZ),
+                                                _liesA(_at.mapNode, _uvAn(R, _v1), _ans(R, _v1), R.vZ),
+                                                _fb
+                                            )
+                                            .mul(R.imRing);
+                                    const _samp = _imRing(_R);
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
@@ -996,7 +1045,7 @@ class AnazhRealm_stoff_material {
                                             impostor: true,
                                             // die Distanz zur ACHSE der Instanz (der Anker, `_dA`), wie das Studio-
                                             // Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment des Quads
-                                            distNode: _dA,
+                                            distNode: _dAnk,
                                             visHeightNode: _karte.w.abs(),
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
@@ -1035,7 +1084,10 @@ class AnazhRealm_stoff_material {
                                     // nie — dieselbe Stelle des Quads trifft in zwei Ansichten 45° auseinander verschiedene Blätter,
                                     // ihr Mittel kippte die lichte Krone zum Auge (Radeon, Genesis Ego, Birke: Zenit-Sonne 54 %,
                                     // Seiten-Sonne 63–70 %, Front 111 % ihrer L1 — Karte/Gestalt 0,64 → 1,04)
-                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA, _uvB));
+                                    const _nP = _probeA(
+                                        _at.nmapNode,
+                                        _Ta.select(_fb.lessThan(0.5), _uvN(_v0), _uvN(_v1))
+                                    );
                                     const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
@@ -1067,7 +1119,11 @@ class AnazhRealm_stoff_material {
                                     //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
                                     //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
                                     //    BC: r8, leer = das Mittel der Schicht; rgba8: vormultipliziert mit der Deckung (g).
-                                    const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
+                                    const _lP = _Ta.mix(
+                                        _probeA(_at.lmapNode, _uvN(_v0)),
+                                        _probeA(_at.lmapNode, _uvN(_v1)),
+                                        _fb
+                                    );
                                     const _sicht = _vm ? _lP.r.div(_lP.g.max(_Ta.float(1e-3))).min(1.0) : _lP.r;
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
@@ -1077,9 +1133,6 @@ class AnazhRealm_stoff_material {
                                     //    Das Einheits-Quad steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala
                                     //    trägt die Matrix. ──
                                     const _axis = _Ta.positionLocal;
-                                    const _axisY = _axis.y.add(
-                                        _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
-                                    );
                                     const _dAuge = _naht.vorlage(_Ta.cameraPosition.sub(_naht.anker));
                                     const _lkX = _dAuge.x;
                                     const _lkZ = _dAuge.z;
@@ -1088,6 +1141,17 @@ class AnazhRealm_stoff_material {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x);
+                                    // DIE GEKIPPTE KARTE (F2b): über dem Horizont kippt die Karte um ihre Rechte zum Auge (up =
+                                    // (−sin φ·look, cos φ)), ihre Mitte bleibt auf der Achse in halfH, ihre halbe Höhe ist die des
+                                    // Zylinders aus φ (`_karteRingHalbe`); bei φ = 0 steht sie wie bisher von 0 bis zur Rahmen-Höhe.
+                                    const _hHv = _rahmen.y.mul(0.5);
+                                    const _phiV = _nE > 1 ? _Ta.atan(_dAuge.y.sub(_hHv).max(0.0), _ll) : _Ta.float(0.0);
+                                    const _cV = _Ta.cos(_phiV),
+                                        _sVk = _Ta.sin(_phiV);
+                                    const _bV = _Ta.positionGeometry.y
+                                        .mul(2.0)
+                                        .sub(1.0)
+                                        .mul(AnazhRealm._karteRingHalbe(_hHv, _rahmen.x, _cV, _sVk, _Ta));
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
@@ -1128,9 +1192,9 @@ class AnazhRealm_stoff_material {
                                     );
                                     const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_swayT.x),
-                                        _axisY.add(_swayT.y),
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayT.z)
+                                        _axis.x.add(_lz.mul(_off)).sub(_sVk.mul(_lx).mul(_bV)).add(_swayT.x),
+                                        _hHv.add(_cV.mul(_bV)).add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).sub(_sVk.mul(_lz).mul(_bV)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -2213,6 +2277,18 @@ class AnazhRealm_stoff_material {
         return e;
     }
 
+    // DAS RAUSCHEN DER BLENDE: Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN (52.9829189 · 0.06711056 ·
+    // 0.00583715; foundry-core.js Z.212), zeitlich über uDitherT. `versatz` n schiebt das Raster um n · 5,588 px (F2b: die
+    // Ring-Wahl der Karte, unkorreliert mit ihrer Blende).
+    _ditherIGN(T, versatz) {
+        const fc = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        return T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
+                .add(this._ensureLodUniforms().uDitherT)
+        );
+    }
+
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
     // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
     // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
@@ -2244,14 +2320,7 @@ class AnazhRealm_stoff_material {
             const _edge0 = _lu.uLodD0.sub(_lu.uLodFade0); // D0 − FADE0
             const _fadeW = _lu.uLodFade.max(T.float(1e-3));
             const _fadeW0 = _lu.uLodFade0.max(T.float(1e-3));
-            // _dh — Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN
-            // (52.9829189 · 0.06711056 · 0.00583715; foundry-core.js Z.212).
-            const _fc = T.screenCoordinate;
-            const _dh = T.fract(
-                T.float(52.9829189)
-                    .mul(T.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
-                    .add(_lu.uDitherT)
-            );
+            const _dh = this._ditherIGN(T, 0);
             if (opts && opts.impostor === true) {
                 // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).

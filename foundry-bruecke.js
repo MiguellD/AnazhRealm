@@ -561,7 +561,12 @@ const foundryKanal = (() => {
             // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel + Zell-Maße des Impostor-Atlas —
             // AnazhRealms RTT-Bäcker liest DIESELBEN Zahlen wie bakeImpostorAtlas hier.
             impostor: c.impostor
-                ? { views: c.impostor.views, cellW: c.impostor.cellW, cellH: c.impostor.cellH }
+                ? {
+                      views: c.impostor.views,
+                      cellW: c.impostor.cellW,
+                      cellH: c.impostor.cellH,
+                      hoehen: Array.isArray(c.impostor.hoehen) ? c.impostor.hoehen.slice() : undefined,
+                  }
                 : undefined,
             placement: c.placement
                 ? {
