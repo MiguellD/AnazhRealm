@@ -965,6 +965,7 @@ const FORBIDDEN = [
     },
     { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
     { token: "gpuScatter", fiel: "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter" },
+    { token: "uSeite", fiel: "18.10. — das Panorama faltet EINE CPU-Faltung je Engine, die GLSL-Faltung fiel", auch: ["worlds/huelle/huelle.js"] },
     // F6 — das additive Licht-Band der Host-Stoffe (Rim, Nacht-Boden, Mond-Rim, der sonnen-blinde Gegenlicht-Glow) leuchtete aus
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)

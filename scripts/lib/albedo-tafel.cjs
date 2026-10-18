@@ -377,6 +377,29 @@ function tafelTabelle(u) {
     return z.join("\n");
 }
 
+// DAS ZIEL DES LABORS (EINE Quelle für Albedo und Karte): ein Halbfloat-Ziel W × H und sein Leser. Die Engine der Welt (r184,
+// die Garage seit 18.10.) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
+// liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt). Die Kopie bucht beim Aufruf, das Ziel
+// wechselt sofort zurück.
+function laborZiel(R, W, H) {
+    const T = window.THREE,
+        gpu = !!R.isWebGPURenderer,
+        gl = gpu ? null : R.getContext();
+    if (gl) gl.getExtension("EXT_color_buffer_float");
+    const rt = new T[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: T.HalfFloatType, depthBuffer: true });
+    const lies = async () => {
+        let roh = gpu ? R.readRenderTargetPixelsAsync(rt, 0, 0, W, H) : new Float32Array(W * H * 4);
+        if (gl) gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, roh);
+        R.setRenderTarget(null);
+        if (gpu) roh = Float32Array.from(await roh, T.DataUtils.fromHalfFloat);
+        if (gpu && R.backend.isWebGPUBackend) return roh;
+        const out = new Float32Array(W * H * 4);
+        for (let y = 0; y < H; y++) out.set(roh.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
+        return out;
+    };
+    return { gpu, rt, lies };
+}
+
 // ── DIE LABOR-LINSE (r128, im Studio): dieselbe Rechnung wie die Welt-Tafel (`__albedoSicht({zeilen})`) ──────────────────
 // Der Stoff eines Labor-Materials: seine Art (der Spiegel der Brücken-Zuordnung `__assetMaterialKind`,
 // foundry-bruecke.js — die geteilten Pflanzen-Stoffe sind Globale der Brücke, das Labor liest sie; sonst die Look-Klasse des Bäckers
@@ -385,23 +408,23 @@ function tafelTabelle(u) {
 function laborAlbedo(o) {
     return (async () => {
         const T = window.THREE;
-        const g = (n) => (n ? new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)() : undefined);
+        // die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen, nie nach einem await: jeder Name EINMAL zuerst
+        const namen = new Map();
+        const g = (n) => (n ? (namen.has(n) ? namen.get(n) : namen.set(n, new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)()).get(n)) : undefined);
+        for (const L of (o.zeilen || []).map((z) => z.labor || {})) [L.wurzel, ...(L.nur || []), ...(L.ohne || [])].forEach(g);
+        [o.studio.wurzel, "camera"].forEach(g);
         const R = g(o.studio.renderer),
             sc = g(o.studio.szene);
-        const gl = R.getContext();
-        gl.getExtension("EXT_color_buffer_float");
         const W = o.w || 640,
             H = o.h || 400;
+        const { gpu, rt, lies } = window.__laborZiel(R, W, H);
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        const artOf = (m) => {
-            if (m && (m === g("barkMat") || m === g("barkMatBirch"))) return "bark";
-            if (m && m === g("foliageMatTex")) return "foliageTex";
-            if (m && (m === g("foliageMat") || m === g("foliageMatKrone"))) return "foliage";
-            if (m && m === g("grassMat")) return "grass";
-            if (m && m === g("stemMat")) return "stem";
-            const k = m && m.userData && m.userData.__klasse;
-            return typeof k === "string" ? k : "unknown";
-        };
+        const ARTEN = new Map(
+            Object.entries({ barkMat: "bark", barkMatBirch: "bark", foliageMatTex: "foliageTex", foliageMat: "foliage", foliageMatKrone: "foliage", grassMat: "grass", stemMat: "stem" })
+                .map(([n, a]) => [g(n), a])
+                .filter(([m]) => m)
+        );
+        const artOf = (m) => ARTEN.get(m) || (m && m.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
         const stoffOf = (m) => ({
             kind: artOf(m),
             r: m.roughness,
@@ -427,7 +450,6 @@ function laborAlbedo(o) {
                 side: T.DoubleSide,
             })
         );
-        const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
         const cam = new T.PerspectiveCamera(35, W / H, 0.01, 4000);
         const amb = new T.AmbientLight(0xffffff, 0);
         const lichter = [];
@@ -446,34 +468,27 @@ function laborAlbedo(o) {
         };
         // Lambert unter dem Umgebungslicht: r128 trägt π im Legacy-Modus selbst (Ausgabe = Farbe × Albedo), mit
         // physikalischen Lichtern ist die Stärke π nötig — die Karte prüft beides (0,180).
-        const AMB = R.physicallyCorrectLights ? Math.PI : 1;
-        // WebGL liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt aufrecht).
-        const lies = () => {
-            const roh = new Float32Array(W * H * 4);
-            gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, roh);
-            const out = new Float32Array(W * H * 4);
-            for (let y = 0; y < H; y++) out.set(roh.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
-            return out;
-        };
-        const schuss = (sicht) => {
+        const AMB = gpu || R.physicallyCorrectLights ? Math.PI : 1;
+        const schuss = async (sicht) => {
             for (const x of alleMeshes) x.visible = !!alt.vis.get(x) && sicht(x);
             for (const [l] of lichter) l.intensity = 0;
             sc.fog = null;
             sc.background = null;
             sc.environment = null;
             R.toneMapping = T.NoToneMapping;
-            const pass = (e) => {
+            // r184 schreibt die Licht-Stärke einmal je Bild (NodeUpdateType.FRAME): je Pass ein neues Bild, sonst trüge der
+            // dunkle Pass das Licht des hellen (gemessen: Tiefschwarz hell = dunkel = 0,0058)
+            const pass = async (e) => {
                 amb.intensity = e;
+                if (gpu) await new Promise((r) => requestAnimationFrame(r));
                 R.setRenderTarget(rt);
                 R.setClearColor(0x000000, 0);
                 R.clear();
                 R.render(sc, cam);
-                const px = lies();
-                R.setRenderTarget(null);
-                return px;
+                return lies();
             };
-            pass(AMB);
-            return { hell: pass(AMB), dunkel: pass(0) };
+            await pass(AMB);
+            return { hell: await pass(AMB), dunkel: await pass(0) };
         };
         // Die Stellungen der Kamera: wie in der Welt die TAFEL-BLICKE auf die Hülle der gewählten Züge, oder von oben.
         const stellungenFuer = (sel, blick) => {
@@ -536,14 +551,14 @@ function laborAlbedo(o) {
                     hell: new Float32Array(W * H * 4 * stellungen.length),
                     dunkel: new Float32Array(W * H * 4 * stellungen.length),
                 };
-                stellungen.forEach(([p, ziel], i) => {
+                for (const [i, [p, ziel]] of stellungen.entries()) {
                     cam.position.copy(p);
                     cam.lookAt(ziel);
                     cam.updateMatrixWorld(true);
-                    const t = schuss((x) => set.has(x));
+                    const t = await schuss((x) => set.has(x));
                     s.hell.set(t.hell, i * W * H * 4);
                     s.dunkel.set(t.dunkel, i * W * H * 4);
-                });
+                }
                 for (const [m, v] of alt.matVis) m.visible = v;
                 alt.matVis.clear();
                 for (const [m, v] of alt.metall) m.metalness = v;
@@ -575,7 +590,7 @@ function laborAlbedo(o) {
             cam.position.set(0, 50, 2.2);
             cam.lookAt(0, 50, 0);
             cam.updateMatrixWorld(true);
-            const sk = schuss((x) => x === karte);
+            const sk = await schuss((x) => x === karte);
             ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
         } finally {
             for (const [m, v] of alt.matVis) m.visible = v;
@@ -606,10 +621,9 @@ function laborKarte(o) {
         const g = (n) => (n ? new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)() : undefined);
         const R = g(o.studio.renderer),
             sc = g(o.studio.szene);
-        const gl = R.getContext();
-        gl.getExtension("EXT_color_buffer_float");
         const W = 64,
             H = 64;
+        const { rt, lies } = window.__laborZiel(R, W, H);
         const wurzel = g(o.studio.wurzel);
         const bb = new T.Box3();
         if (wurzel) bb.setFromObject(wurzel);
@@ -632,11 +646,9 @@ function laborKarte(o) {
         });
         const vis = new Map(alle.map((x) => [x, x.visible]));
         const alt = { fog: sc.fog, tm: R.toneMapping, rt: R.getRenderTarget() };
-        const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
         const out = {
             studio: o.studioId,
             belichtung: R.toneMappingExposure,
-            physikalisch: !!R.physicallyCorrectLights,
         };
         try {
             for (const x of alle) x.visible = false;
@@ -647,9 +659,7 @@ function laborKarte(o) {
             R.setClearColor(0x000000, 0);
             R.clear();
             R.render(sc, cam);
-            const px = new Float32Array(W * H * 4);
-            gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, px);
-            R.setRenderTarget(null);
+            const px = await lies(); // die Mitte (Zeilen H/2 ± 4) liest sich in beiden Richtungen gleich
             const s = [0, 0, 0];
             let n = 0;
             for (let y = H / 2 - 4; y < H / 2 + 4; y++)
@@ -664,26 +674,22 @@ function laborKarte(o) {
             R.toneMapping = alt.tm;
             const comp = o.studio.ausgabe ? g(o.studio.ausgabe) : null;
             const kams = [];
+            const groesse = R.getSize(new T.Vector2());
+            cam.aspect = groesse.x / groesse.y;
+            cam.updateProjectionMatrix();
             if (comp && comp.passes) {
                 for (const p of comp.passes)
                     if (p && p.camera) {
                         kams.push([p, p.camera]);
                         p.camera = cam;
                     }
-                const groesse = R.getSize(new T.Vector2());
-                cam.aspect = groesse.x / groesse.y;
-                cam.updateProjectionMatrix();
                 comp.render();
-            } else {
-                const groesse = R.getSize(new T.Vector2());
-                cam.aspect = groesse.x / groesse.y;
-                cam.updateProjectionMatrix();
-                R.render(sc, cam);
-            }
+            } else R.render(sc, cam);
             const db = R.getDrawingBufferSize(new T.Vector2());
-            const u8 = new Uint8Array(4);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.readPixels(Math.floor(db.x / 2), Math.floor(db.y / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, u8);
+            // der Schirm dieses Takts (WebGL wie WebGPU): eine 2D-Fläche liest seine Mitte
+            const k2 = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+            k2.drawImage(R.domElement, Math.floor(db.x / 2), db.y - 1 - Math.floor(db.y / 2), 1, 1, 0, 0, 1, 1); // die Zeile des GL-Lesens
+            const u8 = k2.getImageData(0, 0, 1, 1).data;
             out.ausgabe = [u8[0], u8[1], u8[2]];
             for (const [p, k] of kams) p.camera = k;
         } finally {
@@ -855,6 +861,7 @@ const LABOR_INSTALL =
     `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
     `window.__stoffPasst = ${stoffPasst.toString()};` +
     `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
+    `window.__laborZiel = ${laborZiel.toString()};` +
     `window.__laborAlbedo = ${laborAlbedo.toString()};` +
     `window.__laborKarte = ${laborKarte.toString()};`;
 

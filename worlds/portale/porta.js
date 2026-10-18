@@ -57,10 +57,10 @@ function buildMembrane(){
   var centerW=new THREE.Vector3(0,MU.centerY,0.0);
   // DAS ZIEL DES LABORS: die Welt des Labors selbst (ohne Membran), von der Tor-Mitte aus — dieselbe Funktion, die der Welt
   // das Panorama jedes Studios exportiert
-  if(laborPano)laborPano.rt.dispose();
+  if(laborPano)laborPano.textur.dispose();
   laborPano=AnazhHuelle.panorama(THREE,renderer,scene,[0,MU.centerY,0]);
   memMat=new THREE.ShaderMaterial({uniforms:{
-      uTime:{value:0},uCam:{value:new THREE.Vector3()},uPano:{value:laborPano.rt.texture},
+      uTime:{value:0},uCam:{value:new THREE.Vector3()},uPano:{value:laborPano.textur},
       uTopTex:{value:topTex},uLeft:{value:MU.left},uW:{value:MU.spanW},uBaseY:{value:MU.baseY},uHspan:{value:MU.height},uSpringX:{value:MU.springX},
       uWave:{value:MU.wave},uWaveDepth:{value:MU.waveDepth},uRimAx:{value:MU.rimAx},uRimAy:{value:MU.rimAy},uCenter:{value:centerW},
       uSwirl:{value:MU.swirl},uActivate:{value:doorAngle/DOOR_OPEN},uPulse:{value:1},

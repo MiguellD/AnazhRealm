@@ -5,53 +5,53 @@
     "welten": {
         "worlds/fachwerk/index.html": {
             "datei": "worlds/fachwerk/panorama.f16",
-            "stempel": "617e5759cafd6ff4ff3e338cc5fc2e1fa2d4a7daabb9ea433f53fd98516e9fa9",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "512d8f4f634c8fac9244bcdd56bdd46064c6ca647d2cc7851ca10e77714e61c5",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/fluid/index.html": {
             "datei": "worlds/fluid/panorama.f16",
-            "stempel": "46920211bfb7c158563337744f8fc274a594f2f7de47e532f980305189055221",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "0069cd88dc36ffb0323ed1f8106be1becd361ce09480ff7fc414b749faab6ac1",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/garage/index.html": {
             "datei": "worlds/garage/panorama.f16",
-            "stempel": "74748df47c0a062e8de000356cbf68cda2fd07ada7dd451d0d7d045ada4749c7",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "5e7a49df82b21f7702358378cf8df7ff895f6cead913ba4035663199ec5c1ba3",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/klang/index.html": {
             "datei": "worlds/klang/panorama.f16",
-            "stempel": "a818e38760a19a0af550d51a3065578ed428e92b2e96412af49fc289cf702369",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "ab131cb60330744bd0ec29f21d5a109d0442320d122bedab39975079788d08d2",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/koerperstudio/index.html": {
             "datei": "worlds/koerperstudio/panorama.f16",
-            "stempel": "c4b9428b460f7c394fa0c553407d0c54cc94d6df99e07b266fe95890755344ab",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "737e2f10c49f15c2479fe746863c8e1fb85696a0a3d4492167a01fb829b8ee0a",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/portale/index.html": {
             "datei": "worlds/portale/panorama.f16",
-            "stempel": "2a25d105e691e81c3a0b8519b0608c697bad5f6682f8c499c4eb51c5b799d933",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "ced575f89705afec7c1ef76f5ae8925d9c4f5e51b6d4d610d106580a9ea2dc75",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/schmiede/index.html": {
             "datei": "worlds/schmiede/panorama.f16",
-            "stempel": "543f66c15025ff54f8b1ce0fce33447a9dd8124cb59b94f81c2b5d6632f9f5f2",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "d12282432347f4aeece44bb4dd69355d5ee07de650f4d4bbe4c9ba93efd5107d",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/skeleton/index.html": {
             "datei": "worlds/skeleton/panorama.f16",
-            "stempel": "3a5b522d423ee993bb6f31bb4605d06626df8a6f854f77505a5c7926fc065e48",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "732cc310c3c44a1f2738d923cd019d80ae5262c28ea1722837b0375234ef8f44",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/terrain/index.html": {
             "datei": "worlds/terrain/panorama.f16",
-            "stempel": "5935d228b872d07628d47643025311a5dad3648c20d32c3b5dc2ce224b1b51d6",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "d77f1279e4f3bae5059d054e6256f641ceefdea5736a95c34cfa5e505dd0c7a3",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         },
         "worlds/tetrapoda/index.html": {
             "datei": "worlds/tetrapoda/panorama.f16",
-            "stempel": "9c8578d84cfc524ebba13c8820e090cd653d30f35f8133f003882e7322a167e6",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+            "stempel": "cbda30f5bc4f5f8996a24d3577a82834754c1d5ce10608bf82fddd0d75336dd0",
+            "adapter": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)"
         }
     },
     "ohne": {

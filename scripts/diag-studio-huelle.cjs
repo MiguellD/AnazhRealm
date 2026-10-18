@@ -8,33 +8,31 @@
 //                     oder in den Werkstatt-Dateien des Stamms (am Regler-Glied) — der EINE Generator ist AnazhHuelle.regler
 //   H2 Brücken-Kopie  eine eigene ready-Meldung (`type: "ready"`) oder ein Element-Adapter (`op[0]` je Element des
 //                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
-//   H3 Umstieg        (D3: die Text-Präsenz fiel) die Brücke beweist gate:portal-konformanz je Betreten (readyEcho), Regler,
-//                     Sitzung und Kosten-Leiste je Studio zählt das Bild (--bild: Schieber gesamt == Schieber der Hülle)
-//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) baut nie einen
-//                     eigenen Leib (bauTier · bauMensch · morphAuf · fellStreu · haarStreu · kleidZonen · surfaceNets in der
-//                     Shell — K45: das tetrapoda-Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das
-//                     koerperstudio-Labor 332 645 △ gegen 40 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT.
+//   H3 Umstieg        (D3: die Text-Präsenz fiel) die Brücke beweist gate:portal-konformanz je Betreten (readyEcho), die
+//                     Sitzung je Studio der Gang (--engine: Strg+Z nimmt den Schieber zurück)
+//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) zeigt den Ofen-Körper
+//                     (K45: das tetrapoda-Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das koerperstudio-Labor
+//                     332 645 △ gegen 40 000) — am Verhalten im Gang (--engine): L0 der Kosten-Leiste über der Welt-Zeile ist ROT.
 //   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
 //                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
 //                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
+//   H6 EINE ENGINE    (Netz, --engine) die Studio-SEITE worlds/<welt>/index.html im Browser, gezählt ihre Anfragen: eine
+//                     Engine-Kopie im Studio-Baum (worlds/*/lib/) oder das r160-UMD (vendor/three.min.js) ist ROT beim
+//                     Namen, wer three lädt, lädt die der Welt (vendor/three.webgpu, r184); lädt die Seite die Welt
+//                     (index.html, stamm/), ist die isolierte Bühne aufgelöst — ROT. Wer noch fremd lädt, steht in der Ratsche.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
 //
-//   node scripts/diag-studio-huelle.cjs --selftest   die Täter eingespielt (ein Hand-Regler in der garage, eine eigene
-//                                                    ready in der schmiede, der Element-Adapter in der klang, ein
-//                                                    Werkstatt-Schieber im Stamm, ein eigener Leib im Ofen-Labor, ein
-//                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor)
-//                                                    → jede Wand rot beim Namen
+//   node scripts/diag-studio-huelle.cjs --selftest   die Täter eingespielt (je Wand H1–H6 die Fälle in `selbsttest`) → rot beim Namen
 //   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H5
 //   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
-//                                                    der Stempel in worlds/tor-ziele.json); LINSE_GPU=software wie die CI
-//   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]
-//                                                    je Studio die Shell im echten Browser (Hardware-Adapter): ein
-//                                                    Schuss + die Seiten-Zählung (Schieber gesamt · davon Hülle · Undo
-//                                                    wirkt · Kosten-Leiste zeigt Zahlen); Port STUDIO_HUELLE_PORT (8742)
+//                                                    der Stempel in worlds/tor-ziele.json); auf der echten GPU (Lehre 17)
+//   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
+//                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -49,15 +47,44 @@ const AUSGENOMMEN = {
     begegnung: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
     schwarm: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
 };
-// H4 — die Ofen-Studios: kind = der BAKERS_BY_KIND-Schlüssel, eigenbau = der eigene Leib in der Shell (ein Ruf des Bau-Gesetzes).
-// Der eigene Leib = ein Ruf des Bau-Gesetzes in der Shell (Teile-Baum, Morph, Streu, Kleid-Zonen, Hüllen-Maschine) — nur der Ofen
-// ruft sie. Keine Ausnahme mehr (K45-2: das Körper-Labor baut über BAKERS_BY_KIND.koerper, die Kleid-Gewichte leben im Ofen).
-const EIGENBAU = /\b(?:bauTier|bauMensch|morphAuf|fellStreu|haarStreu|kleidZonen|surfaceNets)\s*\(/g;
-const OFEN_STUDIOS = { tetrapoda: { kind: "kreatur", eigenbau: EIGENBAU }, koerperstudio: { kind: "koerper", eigenbau: EIGENBAU } };
+// H4 — die Ofen-Studios: kind = der BAKERS_BY_KIND-Schlüssel; der Gang liest ihre L0 an der Kosten-Leiste (keine Ausnahme).
+const OFEN_STUDIOS = { tetrapoda: { kind: "kreatur" }, koerperstudio: { kind: "koerper" } };
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
+// H6 — EINE ENGINE: die Pfade der Anfragen einer Seite; die Ratsche nennt, wer noch fremd lädt (sie zieht nur an).
+const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
+const ENGINE_EINE = "/vendor/three.webgpu.min.js";
+const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
+const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// Der Spruch des Gangs (pure Funktion, Gang UND Selbsttest): `netz` je Seite die Pfade ihrer Anfragen (H6), `seiten` je Seite
+// ihre Sitzung (H3: der erste Hüllen-Schieber an seinen Rand, Strg+Z — der Wert kehrt zurück) und die gezeigte L0 eines
+// Ofen-Studios gegen seine Welt-Zeile (H4, die Kosten-Leiste „N / Deckel △").
+function pruefeGang(netz, seiten = {}) {
+    const rot = [];
+    for (const [id, pfade] of Object.entries(netz)) {
+        const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
+        const welt = pfade.filter((p) => WELT_GELADEN.test(p));
+        const ratsche = ENGINE_RATSCHE[id];
+        if (welt.length)
+            rot.push(`H6 ${id}: die Seite lädt die Welt (${welt.slice(0, 2).join(", ")}) — ein Studio bleibt die isolierte Bühne, nie ein Modus der offenen Welt`);
+        if (fremd.length && !ratsche)
+            rot.push(`H6 ${id}: die Seite lädt eine fremde Engine (${fremd.slice(0, 3).join(", ")}) statt der EINEN der Welt (${ENGINE_EINE}, r184)`);
+        else if (!fremd.length && ratsche)
+            rot.push(`H6 ${id}: lädt keine fremde Engine mehr (${ratsche} fiel) — die Ratsche zieht an, ${id} fällt aus ENGINE_RATSCHE`);
+        else if (!fremd.length && pfade.some((p) => /^\/vendor\/three/.test(p)) && !pfade.includes(ENGINE_EINE))
+            rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
+    }
+    for (const [id, { undo: u, l0, zeile }] of Object.entries(seiten)) {
+        if (!u && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
+        else if (u && !(u.nach === u.vor && u.mitte !== u.vor))
+            rot.push(`H3 ${id}: die Sitzung ist stumm (Schieber ${u.vor} → ${u.mitte}, Strg+Z → ${u.nach}) — das Rückgängig der Hülle wirkt nicht`);
+        if (OFEN_STUDIOS[id] && !(l0 <= zeile))
+            rot.push(`H4 ${id}: Labor L0 ${l0} △ über der Welt-Zeile ${zeile} — das Labor zeigt nicht den Ofen-Körper`);
+    }
+    return rot;
+}
 // H5 — DAS ZIEL-BILD (D8, „Das Tor als Fenster"): jede Welt der Hülle rendert ihr Panorama in IHRER Welt (die Brücke
 // `panorama-bitte` → `AnazhHuelle.panorama`, Labor = Welt), gebacken je SHA ihrer Quellen (`--panorama`) und geliefert als
 // Datei; die Heimat liest sie (stamm `_torZielBuendel`) und bootet nie eine Ziel-Welt. Die Karte `worlds/tor-ziele.json` nennt je
@@ -127,14 +154,13 @@ function baum() {
     return karte;
 }
 
-
 function pruefe(karte) {
     const rot = [];
     // VERALTET sperrt nicht (Koordinator 15.10., D8-Merge, wie K5): ein Panorama, dessen Quellen sich seither änderten, steht benannt
     // „veraltet“, bis jemand backt (`--panorama`) — sonst sperrte jede Welle an einer Studio-Quelle, der Hülle oder einem Kern check:statik
     const veraltet = [];
-    const zahl = { handRegler: 0, bruecken: [], elementAdapter: 0 };
-    // H1/H2/H4 sind Absenzen über den EINEN Helfer (stammLib.fehlt, kommentarfrei): der Text der Karte, der Täter mit Datei und
+    const zahl = { handRegler: 0, bruecken: [] };
+    // H1/H2 sind Absenzen über den EINEN Helfer (stammLib.fehlt, kommentarfrei): der Text der Karte, der Täter mit Datei und
     // Zeile; ein eingespielter Täter des Selbsttests liest dieselbe Karte.
     const fehltIn = (rel, rx) => stammLib.fehlt(null, rx, { datei: rel, wandel: karte[rel] });
     for (const rel of Object.keys(karte)) {
@@ -153,15 +179,9 @@ function pruefe(karte) {
             zahl.bruecken.push(`${welt}${ausgenommen ? " (" + ausgenommen.split(/[:(,]/)[0].trim() + ")" : ""}`);
             if (!ausgenommen) rot.push(`H2 ${stammLib.fehlt.wo}: eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
         }
-        if (!fehltIn(rel, ELEMENT_ADAPTER)) {
-            zahl.elementAdapter++;
+        if (!fehltIn(rel, ELEMENT_ADAPTER))
             rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
-        }
     }
-    // H4 — Labor = Welt (Absenz): kein Ofen-Studio baut einen eigenen Leib; den Ofen-Körper zeigt die Kosten-Leiste im Bild (--bild).
-    for (const [id, o] of Object.entries(OFEN_STUDIOS))
-        for (const r of Object.keys(karte).filter((x) => x.startsWith(`worlds/${id}/`) && x.endsWith(".js")))
-            if (!fehltIn(r, o.eigenbau)) rot.push(`H4 ${id}: baut einen eigenen Leib (${stammLib.fehlt.wo}) — ein Zwilling des Ofen-Körpers`);
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -208,7 +228,7 @@ function pruefe(karte) {
 function bericht(zahl) {
     console.log(`  Hand-Regler: ${zahl.handRegler} (die terrain-Familie ohne Ausnahme)`);
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
-    console.log(`  Labor = Welt (H4): ${Object.keys(OFEN_STUDIOS).join(", ")} zeigen den Ofen-Körper (keine Ausnahme)`);
+    console.log(`  Labor = Welt (H4): ${Object.keys(OFEN_STUDIOS).join(", ")} — die L0 der Kosten-Leiste urteilt der Gang (--engine)`);
     console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${STUDIOS.length + NEBENWELTEN.length - Object.keys(OHNE_PANORAMA).filter((id) => !AUSGENOMMEN[id]).length} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
 }
 
@@ -243,20 +263,6 @@ function selbsttest() {
             vor: "AnazhHuelle.bruecke(",
             nach: 'var __t = function (op) { return String((op && op[0]) || op || ""); };\nAnazhHuelle.bruecke(',
             soll: /^H2 worlds\/klang\/klang\.js:\d+ .*: Element-Adapter/,
-        },
-        {
-            name: "H4 das tetrapoda-Labor baut seinen eigenen Leib (bauTier + Fell-Streu)",
-            rel: "worlds/tetrapoda/tetrapoda.js",
-            vor: "BAKERS_BY_KIND.kreatur(",
-            nach: "__tetrapodaCore.fellStreu(P, B.masse, B.fellOrt);__tetrapodaCore.bauTier(F, dials);BAKERS_BY_KIND.kreatur(",
-            soll: /^H4 tetrapoda: baut einen eigenen Leib \(worlds\/tetrapoda\/tetrapoda\.js:\d+ `(?:fellStreu|bauTier)\(`\)/,
-        },
-        {
-            name: "H4 das koerperstudio-Labor baut seinen eigenen Menschen (bauMensch + Haar-Streu)",
-            rel: "worlds/koerperstudio/koerperstudio.js",
-            vor: "BAKERS_BY_KIND.koerper(",
-            nach: "KC.bauMensch(F);KC.haarStreu(params);BAKERS_BY_KIND.koerper(",
-            soll: /^H4 koerperstudio: baut einen eigenen Leib \(worlds\/koerperstudio\/koerperstudio\.js:\d+ `(?:bauMensch|haarStreu)\(`\)/,
         },
         {
             name: "H1 ein Hand-Regler im Gelände-Studio",
@@ -335,96 +341,93 @@ function selbsttest() {
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${f.name}${treffer ? " — " + treffer : " — nicht rot (" + (r.rot[0] || "grün") + ")"}`);
         if (!treffer) ok = false;
     }
-    return ok;
+    // H3/H4/H6 — der Spruch des Gangs (dieselbe pure Funktion): die Ratsche fremd, die garage auf der EINEN Engine
+    const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
+    const r128 = "/worlds/terrain/lib/three-r128.min.js";
+    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
+    const undo = { vor: "1", mitte: "2", nach: "1" }, ofen = { tetrapoda: { l0: 54894, zeile: 62000 }, koerperstudio: { l0: 30000, zeile: 40000 } };
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { undo, ...ofen[id] }])); // jedes Studio mit Sitzung, die Ofen-Labore unter der Zeile
+    const gangFaelle = [
+        ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
+        ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
+        ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
+        ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
+        ["H6 die schmiede lädt keine Kopie mehr (die Ratsche zieht an)", { schmiede: eine }, /^H6 schmiede: lädt keine fremde Engine mehr/],
+        ["H3 die Sitzung der garage bleibt stumm", {}, /^H3 garage: die Sitzung ist stumm/, { garage: { undo: { vor: "1", mitte: "2", nach: "2" } } }],
+        ["H3 die schmiede verliert ihre Sitzung ganz (nie still)", {}, /^H3 schmiede: das Studio trägt keine Sitzung/, { schmiede: {} }],
+        ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, { tetrapoda: { l0: 1299852, zeile: 62000 } }],
+        ["H4 die Kosten-Leiste des koerperstudio nennt keine L0 (nie grün auf der leeren Zeile)", {}, /^H4 koerperstudio: Labor L0 undefined/, { koerperstudio: {} }],
+    ];
+    const gangBasis = pruefeGang(netz, seiten);
+    if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
+    for (const [name, patch, soll, seitenPatch] of gangFaelle) {
+        const treffer = pruefeGang(Object.assign({}, netz, patch), Object.assign({}, seiten, seitenPatch)).find((x) => soll.test(x));
+        console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot"}`);
+        if (!treffer) ok = false;
+    }
+    return ok && !gangBasis.length;
 }
 
-// ── DAS BILD: je Studio die Shell im echten Browser, ein Schuss + die Zählung der Seite ──
-async function bild(ordner, name) {
+// ── DER GANG (`--engine`, Rezept linse: lokal die GPU, CI swiftshader): je Seite der Hülle EIN Besuch im echten Browser —
+// ihre Anfragen (H6), ihre Sitzung (H3) und bei einem Ofen-Studio die L0 der Kosten-Leiste (H4); Spruch: `pruefeGang`. Den
+// Schuss einer Seite macht `werkbank start --echt --seite <url>` + `werkbank schirm`; das Gelände-Panel über der Welt bedient
+// gate:gelaende-studio Regler für Regler.
+async function gang() {
     const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
     const s = statikServer();
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
-    fs.mkdirSync(ordner, { recursive: true });
-    const browser = await starteBrowser({ art: "echt", frist: 240000, zusatz: ["--use-angle=d3d11", "--window-size=1600,900"] });
-    const zeilen = [];
-    // je Studio seine Shell; das Gelände-Studio ist das Panel über der Welt-Engine (gezählt wird nur in ihm)
-    const ziele = STUDIOS.map((id) => ({ id, url: `/worlds/${id}/index.html`, wurzel: null, ms: id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 5000 }));
-    ziele.push({ id: "gelaende", url: "/index.html?studio=gelaende", wurzel: "#gelaende-studio", ms: 15000 });
-    const nur = process.argv.includes("--nur") ? process.argv[process.argv.indexOf("--nur") + 1].split(",") : null;
+    const browser = await starteBrowser({ art: "linse", frist: 120000 });
+    const netz = {},
+        seiten = {};
     try {
-        for (const { id, url, wurzel, ms } of ziele) {
-            if (nur && !nur.includes(id)) continue;
+        for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             const page = await browser.newPage();
-            await page.setViewport({ width: 1600, height: 900 });
-            const fehler = [];
-            page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 140)));
-            const t0 = Date.now();
-            await page.goto(`http://127.0.0.1:${PORT}${url}`, { waitUntil: "load", timeout: 180000 });
-            if (wurzel) await page.waitForSelector(wurzel, { timeout: 180000 }).catch(() => fehler.push(`${wurzel} erschien nicht in 180 s`));
-            // über der Welt-Engine: der Ladeschirm hält jede Taste (stamm _ladeschirmSteht) — die Probe wartet, bis die Welt steht
-            if (wurzel)
-                await page
-                    .waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._ladeschirmSteht === "function" && !window.anazhRealm._ladeschirmSteht(), { timeout: 240000, polling: 500 })
-                    .catch(() => fehler.push("der Ladeschirm stand nach 240 s noch"));
-            await new Promise((r) => setTimeout(r, ms));
-            const z = await page.evaluate(async (wurzel) => {
-                const W = (wurzel && document.querySelector(wurzel)) || document;
-                const alle = [...W.querySelectorAll('input[type="range"]')];
-                const huelle = alle.filter((i) => i.closest(".h-regler"));
-                const r = { schieber: alle.length, huelle: huelle.length, sitzung: !!W.querySelector(".h-sitzung"), kosten: null, undo: null, gl: null };
-                const k = [...W.querySelectorAll(".h-kosten-text, .h-kosten-zeile")].map((e) => e.textContent.trim()).filter(Boolean);
-                r.kosten = k.length ? k.slice(0, 4) : null;
-                const c = document.querySelector("canvas");
-                if (c) {
-                    const g = c.getContext("webgl2") || c.getContext("webgl");
-                    const d = g && g.getExtension("WEBGL_debug_renderer_info");
-                    r.gl = d ? g.getParameter(d.UNMASKED_RENDERER_WEBGL) : null;
-                }
-                // Undo wirkt: der erste Hüllen-Schieber an seinen Rand, dann Strg+Z — der Wert kehrt zurück.
-                const inp = huelle.find((i) => !i.disabled && i.closest("[data-sitzung]"));
-                if (inp) {
-                    const vor = inp.value;
-                    inp.value = String(+inp.value === +inp.max ? inp.min : inp.max);
-                    inp.dispatchEvent(new Event("input", { bubbles: true }));
-                    await new Promise((res) => setTimeout(res, 900));
-                    const mitte = inp.value;
-                    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
-                    await new Promise((res) => setTimeout(res, 900));
-                    r.undo = { vor, mitte, nach: inp.value, wirkt: inp.value === vor && mitte !== vor, marke: [...document.querySelectorAll("#presets .on, #presets .active")].map((b) => b.textContent).join("|") };
-                }
-                return r;
-            }, wurzel);
+            const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
+            page.on("request", (q) => pfade.push(new URL(q.url()).pathname));
+            await page.goto(`http://127.0.0.1:${PORT}/worlds/${id}/index.html`, { waitUntil: "load", timeout: 90000 });
             await new Promise((r) => setTimeout(r, 1500));
-            const datei = path.join(ordner, `${name}-${id}.png`);
-            await page.screenshot({ path: datei });
-            z.fehler = fehler;
-            z.ladeS = +((Date.now() - t0) / 1000).toFixed(1);
-            zeilen.push({ id, ...z });
-            // H4 im Bild: die gezeigte L0 eines Ofen-Studios liegt auf der Welt-Zeile (Kosten-Leiste „N / Deckel △")
-            const l0 = /([\d.]+) \/ ([\d.]+) △/.exec((z.kosten || []).find((k) => /△/.test(k)) || "");
-            if (OFEN_STUDIOS[id]) {
-                const n = l0 ? +l0[1].replace(/\./g, "") : NaN,
-                    deckel = l0 ? +l0[2].replace(/\./g, "") : NaN;
-                z.laborWelt = { l0: n, zeile: deckel };
-                if (!(n <= deckel)) {
-                    console.log(`❌ H4 ${id}: Labor L0 ${n} △ über der Welt-Zeile ${deckel} — das Labor zeigt nicht den Ofen-Körper`);
-                    process.exitCode = 1;
-                }
+            const z = (seiten[id] = await page.evaluate(async () => {
+                const inp = [...document.querySelectorAll(".h-regler input")].find((i) => !i.disabled && i.closest("[data-sitzung]"));
+                if (!inp) return { undo: null };
+                const vor = inp.value;
+                inp.value = String(+inp.value === +inp.max ? inp.min : inp.max);
+                inp.dispatchEvent(new Event("input", { bubbles: true }));
+                await new Promise((res) => setTimeout(res, 900));
+                const mitte = inp.value;
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+                await new Promise((res) => setTimeout(res, 900));
+                return { undo: { vor, mitte, nach: inp.value } };
+            }));
+            // H4: die Kosten-Leiste nennt die L0 erst, wenn der Ofen gebacken hat — bis 60 s, je 500 ms gefragt
+            const t0 = Date.now();
+            while (OFEN_STUDIOS[id] && !(z.l0 > 0) && Date.now() - t0 < 60000) {
+                const t = await page.evaluate(() => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => e.textContent).join(" "));
+                const m = /([\d.]+) \/ ([\d.]+) △/.exec(t);
+                if (m) Object.assign(z, { l0: +m[1].replace(/\./g, ""), zeile: +m[2].replace(/\./g, "") });
+                else await new Promise((r) => setTimeout(r, 500));
             }
-            console.log(`  ${id.padEnd(14)} Schieber ${z.schieber} (Hülle ${z.huelle}) · Sitzung ${z.sitzung ? "ja" : "nein"} · Undo ${z.undo ? (z.undo.wirkt ? "wirkt" : "STUMM") : "—"} · Kosten ${z.kosten ? z.kosten[0] : "—"} · Fehler ${fehler.length} · ${z.gl || "?"}`);
             await page.close();
+            const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
+            const engine = fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three";
+            const sitzung = z.undo ? `Schieber ${z.undo.vor} → ${z.undo.mitte}, Strg+Z → ${z.undo.nach}` : "ohne Sitzung"; // den Spruch fällt pruefeGang
+            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${OFEN_STUDIOS[id] ? ` · L0 ${z.l0} / ${z.zeile} △` : ""}`);
         }
     } finally {
         await browser.close();
         s.close();
     }
-    fs.writeFileSync(path.join(ordner, `${name}-zaehlung.json`), JSON.stringify(zeilen, null, 2));
+    const rot = pruefeGang(netz, seiten);
+    for (const x of rot) console.log("❌ " + x);
+    const sauber = Object.values(netz).filter((p) => !p.some((x) => ENGINE_FREMD.test(x))).length;
+    console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine (Ratsche ${Object.keys(ENGINE_RATSCHE).join(", ")}) · ${Object.values(seiten).filter((z) => z.undo).length} Sitzungen · ${Object.keys(OFEN_STUDIOS).length} Ofen-Labore`);
+    if (rot.length) process.exitCode = 1;
 }
 
 // ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
 // Seite derselben Herkunft), ihre Brücke meldet `ready`, die Welt wächst, dann `panorama-bitte` → `panorama` (Halbfloat-Texel aus
 // IHREM Renderer, `AnazhHuelle.panorama`). Die Datei `worlds/<welt>/panorama.f16` (rgba16float 512 × 256, Zeile 0 unten) und ihr
-// Stempel in `worlds/tor-ziele.json`. Der Adapter folgt der Weiche der WebGL-Linsen (LINSE_GPU=software: swiftshader wie die
-// CI, ohne GPU-Schloss). Port STUDIO_HUELLE_PORT (8742).
+// Stempel in `worlds/tor-ziele.json`. Das Ziel-Bild ist ein Bild-Urteil (Lehre 17): es backt die echte GPU unter dem GPU-Schloss,
+// ein Software-Adapter (swiftshader, LINSE_GPU=software) bricht laut. Port STUDIO_HUELLE_PORT (8742).
 async function panoramaBacken(nur) {
     const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
     const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
@@ -440,15 +443,9 @@ async function panoramaBacken(nur) {
     try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1400, height: 900 });
-        const fehler = [];
-        page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
         await page.goto(`http://127.0.0.1:${PORT}/__panorama.html`, { waitUntil: "load" });
-        const adapter = await page.evaluate(() => {
-            const g = document.createElement("canvas").getContext("webgl2");
-            const d = g && g.getExtension("WEBGL_debug_renderer_info");
-            return g ? String(d ? g.getParameter(d.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER)) : "kein webgl2";
-        });
-        console.log(`Panorama backen auf ${adapter}`);
+        const adapter = String(browser.adapter.renderer || browser.adapter.fehlt); // die Adapter-Zeile der Weiche ([linse-gpu])
+        if (!istHardwareAdapter(browser.adapter)) throw new Error(`Panorama auf ${adapter}: das Ziel-Bild backt die echte GPU (Lehre 17)`);
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             if (OHNE_PANORAMA[id] || (nur && !nur.includes(id))) continue;
             const t0 = Date.now();
@@ -502,9 +499,8 @@ async function panoramaBacken(nur) {
                 console.log(`  ✅ ${id.padEnd(14)} ${panoDatei(id)} · ${((Date.now() - t0) / 1000).toFixed(1)} s · ${hell} Texel mit Licht`);
             } catch (e) {
                 rot++;
-                console.log(`  ❌ ${id.padEnd(14)} ${(e && e.message) || e}${fehler.length ? " · Seite: " + fehler.slice(-2).join(" | ") : ""}`);
+                console.log(`  ❌ ${id.padEnd(14)} ${(e && e.message) || e} (die Seitenfehler nennt der Sammler der Weiche)`);
             }
-            fehler.length = 0;
         }
     } finally {
         await browser.close();
@@ -524,12 +520,7 @@ async function panoramaBacken(nur) {
         await panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
         return;
     }
-    if (a.includes("--bild")) {
-        const i = a.indexOf("--bild");
-        const n = a.includes("--name") ? a[a.indexOf("--name") + 1] : "nachher";
-        await bild(path.resolve(a[i + 1]), n);
-        return;
-    }
+    if (a.includes("--engine")) return gang();
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
     const { rot, zahl, veraltet } = pruefe(baum());
     console.log("Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: " + STUDIOS.join(", ") + "; Nebenwelten: " + NEBENWELTEN.join(", ") + ")");

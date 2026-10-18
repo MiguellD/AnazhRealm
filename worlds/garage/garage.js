@@ -10,16 +10,19 @@
 
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x070b10);scene.fog=new THREE.FogExp2(0x070b10,0.020);
 const cam=new THREE.PerspectiveCamera(34,innerWidth/innerHeight,0.1,200);cam.position.set(6.2,3.1,7.4);
-const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.04;
+// DIE EINE ENGINE (18.10.): die Werkstatt rendert auf der Engine der Welt — three r184 WebGPU (vendor/three-bootstrap.js),
+// Ausgabe sRGB mit der Tonkurve der Welt (BELICHTUNG.kurve, Khronos PBR Neutral); die Farben sind sRGB-Absichten
+// (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
+const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.toneMapping=THREE.NeutralToneMapping;R.toneMappingExposure=1.04;
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(R.domElement);
 
-// ── leichte Studio-Env (wie mkEnv in der Körperbasis) ──
+// ── leichte Studio-Env (wie mkEnv in der Körperbasis): die Leinwand ist ein sRGB-Bild, r184 faltet die equirekte Umgebung selbst ──
 (function(){const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d');
 const g=x.createLinearGradient(0,0,0,512);g.addColorStop(0,'#8497a8');g.addColorStop(.45,'#3c4a58');g.addColorStop(1,'#080c12');
 x.fillStyle=g;x.fillRect(0,0,1024,512);
 x.fillStyle='rgba(255,255,255,.32)';x.fillRect(120,40,160,70);x.fillRect(620,30,150,64);
-const t=new THREE.CanvasTexture(c);const p=new THREE.PMREMGenerator(R);scene.environment=p.fromEquirectangular(t).texture;t.dispose();})();
+const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.mapping=THREE.EquirectangularReflectionMapping;scene.environment=t;})();
 
 // ── Boden ──
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),
@@ -28,11 +31,12 @@ floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(60,60,0x1c3340,0x0f1820);grid.position.y=0.001;grid.material.opacity=0.5;grid.material.transparent=true;scene.add(grid);
 
 // ── Licht ──
-scene.add(new THREE.HemisphereLight(0x7a8da0,0x0c1016,0.55));
-const key=new THREE.DirectionalLight(0xffffff,2.6);key.position.set(5,9,4);key.castShadow=true;
+const PI=Math.PI;
+scene.add(new THREE.HemisphereLight(0x7a8da0,0x0c1016,0.55*PI));
+const key=new THREE.DirectionalLight(0xffffff,2.6*PI);key.position.set(5,9,4);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.bias=-0.0001;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(0x4f8fa6,0.8);fill.position.set(-6,4,-4);scene.add(fill);
-const rim=new THREE.DirectionalLight(0x6fd0e8,0.6);rim.position.set(-2,3,6);scene.add(rim);
+const fill=new THREE.DirectionalLight(0x4f8fa6,0.8*PI);fill.position.set(-6,4,-4);scene.add(fill);
+const rim=new THREE.DirectionalLight(0x6fd0e8,0.6*PI);rim.position.set(-2,3,6);scene.add(rim);
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -42,7 +46,7 @@ const rim=new THREE.DirectionalLight(0x6fd0e8,0.6);rim.position.set(-2,3,6);scen
 const VC=window.__vehicleCore;
 const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); der Lack-Wechsel wählt VC.lackStoff (W5)
 let bodyMat=M.clay; // umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,CULTURES,PRESETS}=VC;
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS}=VC;
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -57,7 +61,7 @@ function label(text,hex,scale){scale=scale||0.42;
   cx.moveTo(rr,0);cx.arcTo(cv.width,0,cv.width,cv.height,rr);cx.arcTo(cv.width,cv.height,0,cv.height,rr);
   cx.arcTo(0,cv.height,0,0,rr);cx.arcTo(0,0,cv.width,0,rr);cx.fill();
   cx.fillStyle=hex;cx.textBaseline='middle';cx.fillText(text,pad,cv.height/2+2);
-  const t=new THREE.CanvasTexture(cv);t.minFilter=THREE.LinearFilter;
+  const t=new THREE.CanvasTexture(cv);t.minFilter=THREE.LinearFilter;t.colorSpace=THREE.SRGBColorSpace;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
   sp.scale.set(cv.width/cv.height*scale,scale,1);sp.renderOrder=999;sp.name=text;return sp;}
 
@@ -142,16 +146,17 @@ function rebuild(){
   const H=hardpoints(P);const res=evalLehren(P);
   const ctx={M:M,bodyMat:bodyMat,doors:doors,corners:corners};   // der Kern baut MIT den Shell-Objekten (Tür-/Rad-Animation bleibt verdrahtet)
   const V=sicht();
-  gPackage=VC.buildPackage(H,P,ctx);gPackage.visible=V.pkg; gSprung.add(gPackage);
-  gBody=VC.buildSkin(H,P,ctx);   gBody.visible=V.body;     gSprung.add(gBody);
+  // LABOR = WELT (18.10.): der Wagen kommt vom Bauer der Welt (vehicle-core buildInstance — derselbe Bau wie der Foundry-Worker,
+  // Baukörper · Haut · Räder, verjüngt und plan-konvex), mit den Hörern der Werkstatt (Lack, Türen, Rad-Ecken); die Ebenen
+  // Rahmen · Gelenke · Lehren · Negativ legt die Werkstatt darüber.
+  [gPackage,gBody,gWheels]=VC.buildInstance(presetId,1,0,P,ctx).children.slice();
+  gPackage.visible=V.pkg;gSprung.add(gPackage);gBody.visible=V.body;gSprung.add(gBody);
+  gWheels.visible=V.wheels;vehicle.add(gWheels);  // ungefedert → bleibt am Boden geerdet
   gFrame=VC.buildFrame(H,P,ctx); gFrame.visible=V.frame;   gSprung.add(gFrame);
   gJoints=buildJoints(H,P);gJoints.visible=V.joints;gSprung.add(gJoints);
   gCal=buildCalipers(H,P,res);gCal.visible=V.cal;   gSprung.add(gCal);
   gNeg=buildNeg(H,P);     gNeg.visible=V.neg;        gSprung.add(gNeg);
-  gWheels=VC.buildWheels(H,P,ctx);gWheels.visible=V.wheels;vehicle.add(gWheels);  // ungefedert → bleibt am Boden geerdet
-  const S=scal(H,P);                                                          // Querschnitt-Verjüngung auf ALLE Aufbau-Gruppen:
-  taperBody(gBody,S,P); taperBody(gPackage,S,P); taperBody(gFrame,S,P);
-  bowEnds(gBody,S); bowEnds(gPackage,S);   // Plan-Konvexität Front/Heck       //   Karosserie + Bauraum + Frame folgen derselben Sektion
+  taperBody(gFrame,scal(H,P),P);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   renderTafel(res);
   kostenLeiste.neu();
@@ -292,7 +297,7 @@ for(let i=0;i<4;i++)track.wheel.push({px:0,pz:0,had:false});
 // ── REIFENRAUCH: weiche Sprite-Puffs an rutschenden Rädern ──
 const smokeTex=(function(){const cv=document.createElement('canvas');cv.width=cv.height=64;const cx=cv.getContext('2d');
   const gr=cx.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,0.92)');gr.addColorStop(0.45,'rgba(228,233,240,0.42)');gr.addColorStop(1,'rgba(215,222,230,0)');
-  cx.fillStyle=gr;cx.fillRect(0,0,64,64);const tx=new THREE.CanvasTexture(cv);return tx;})();
+  cx.fillStyle=gr;cx.fillRect(0,0,64,64);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;return tx;})();
 const smoke={pool:[],idx:0,N:140};
 for(let i=0;i<smoke.N;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTex,transparent:true,opacity:0,depthWrite:false,color:0xe2e7ee}));sp.scale.set(0.01,0.01,1);sp.visible=false;sp.frustumCulled=false;ground.add(sp);smoke.pool.push({sp:sp,life:0,max:1,vx:0,vy:0,vz:0,s0:0.2});}
 function puff(x,y,z,inten){const p=smoke.pool[smoke.idx];smoke.idx=(smoke.idx+1)%smoke.N;
@@ -367,10 +372,9 @@ function updateChaseCam(dt,snap){
 
 // Modus-Wechsel: Werkstatt ⇄ Fahren
 let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=document.getElementById('hud');
-const _savP=new THREE.Vector3(),_savT=new THREE.Vector3();
 function enterDrive(){mode='fahren';fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
   document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
-  ground.visible=true;_savP.copy(cam.position);_savT.copy(oc.target);oc.enabled=false;
+  ground.visible=true;oc.zug=-1;oc.vAz=oc.vEl=0;   // die Werkstatt-Kugel ruht, solange die Fahrt-Kamera führt
   Object.assign(car,VC.fahrZustand(0,0,0));VC.fahrStand(car,fahrGesetzLab(),bodenY,0);   // frischer Fahrzustand auf dem Boden
   input.throttle=input.brake=input.steer=input.hand=0;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
@@ -380,7 +384,7 @@ function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
   key.position.set(5,9,4);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
-  cam.position.copy(_savP);oc.target.copy(_savT);oc.enabled=true;oc.update();}
+  werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
 
 // Tastatur — Fahren liest Tasten kontinuierlich; Werkstatt-Hotkeys nur in der Werkstatt
 const keys={};
@@ -402,31 +406,51 @@ function readKeys(){
   input.steer=((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0);
   input.hand=keys['Space']?1:0;}
 const startB=document.getElementById('start');if(startB)startB.onclick=enterDrive;
-// Maus/Touch greifen → frei umsehen; loslassen → sanft zurück hinter das Auto
+// DIE WERKSTATT-KUGEL (18.10., r184): az · el · dist um ein Ziel wie die Fahrt-Kamera camOrb, gedämpft wie der alte Orbit
+// (Zug 2π je Bildhöhe, 5 % je Bild, Rad ×0,95 in 3,5–16 m, rechts schieben) — vendor/ trägt die Engine, kein Addon
+const oc={ziel:new THREE.Vector3(0,0.55,0),az:0,el:0,dist:1,vAz:0,vEl:0,zug:-1},_cr=new THREE.Vector3();
+{const d=cam.position.clone().sub(oc.ziel);oc.dist=d.length();oc.el=Math.asin(d.y/oc.dist);oc.az=Math.atan2(d.z,d.x);}
+function werkOrbit(){oc.az+=oc.vAz*0.05;oc.el=Math.max(-1.55,Math.min(1.55,oc.el+oc.vEl*0.05));oc.vAz*=0.95;oc.vEl*=0.95;
+  const ce=Math.cos(oc.el);cam.position.set(oc.ziel.x+Math.cos(oc.az)*ce*oc.dist,oc.ziel.y+Math.sin(oc.el)*oc.dist,oc.ziel.z+Math.sin(oc.az)*ce*oc.dist);
+  cam.lookAt(oc.ziel);}
+// Maus/Touch: in der Werkstatt die Kugel (links drehen, rechts schieben, Rad zoomen); in der Fahrt greifen → frei umsehen,
+// loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';
-R.domElement.addEventListener('pointerdown',e=>{if(mode!=='fahren')return;dragging=true;camOrb.follow=false;_lpx=e.clientX;_lpy=e.clientY;});
-addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-_lpx,dy=e.clientY-_lpy;_lpx=e.clientX;_lpy=e.clientY;
-  camOrb.az-=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));});
-addEventListener('pointerup',()=>{if(dragging){dragging=false;camOrb.follow=true;}});
+R.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+// Touch wie der alte Orbit: ein Finger dreht, zwei kneifen (zoomen) und schieben — der Zug folgt ihrer Mitte, nie einem Finger
+const finger=new Map(),_mitte=()=>{const [a,b]=[...finger.values()];return b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)}:a;};
+R.domElement.addEventListener('pointerdown',e=>{finger.set(e.pointerId,{x:e.clientX,y:e.clientY});const m=_mitte();_lpx=m.x;_lpy=m.y;oc.kneif=m.d;
+  if(mode==='fahren'){dragging=true;camOrb.follow=false;}else oc.zug=finger.size>1?2:e.button;});
+addEventListener('pointermove',e=>{if(finger.has(e.pointerId))finger.set(e.pointerId,{x:e.clientX,y:e.clientY});const m=finger.size?_mitte():{x:e.clientX,y:e.clientY};
+  const dx=m.x-_lpx,dy=m.y-_lpy;_lpx=m.x;_lpy=m.y;
+  if(m.d&&oc.kneif&&mode==='werkstatt')oc.dist=Math.max(3.5,Math.min(16,oc.dist*oc.kneif/m.d));oc.kneif=m.d;
+  if(dragging){camOrb.az-=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));}
+  else if(oc.zug===0){const k=2*Math.PI/R.domElement.clientHeight;oc.vAz+=dx*k;oc.vEl+=dy*k;}
+  else if(oc.zug===2){const k=2*oc.dist*Math.tan(cam.fov*Math.PI/360)/R.domElement.clientHeight;   // ein Pixel am Schirm = ein Pixel am Ziel
+    oc.ziel.addScaledVector(_cr.setFromMatrixColumn(cam.matrix,0),-dx*k).addScaledVector(_cr.setFromMatrixColumn(cam.matrix,1),dy*k);}});
+const _los=e=>{finger.delete(e.pointerId);if(finger.size){const m=_mitte();_lpx=m.x;_lpy=m.y;oc.kneif=m.d;oc.zug=0;return;}
+  oc.zug=-1;if(dragging){dragging=false;camOrb.follow=true;}};
+addEventListener('pointerup',_los);addEventListener('pointercancel',_los);
+R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.preventDefault();
+  oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
-// ── Loop ──
-const oc=new THREE.OrbitControls(cam,R.domElement);oc.enableDamping=true;oc.target.set(0,0.55,0);oc.minDistance=3.5;oc.maxDistance=16;oc.update();
-const clock=new THREE.Clock();let simT=0;
-function animate(){requestAnimationFrame(animate);const dt=Math.min(1/30,clock.getDelta());simT+=dt;const t=simT;
+// ── Loop (r184: setAnimationLoop wartet auf renderer.init(), die Zeit reicht der Takt herein) ──
+let simT=0,tAlt=0;
+function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit;simT+=dt;const t=simT;
   if(mode==='fahren'){readKeys();updateVehicle(dt,t);updateTrack(dt);updateSmoke(dt);updateChaseCam(dt,false);
     if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*FAHR.kmh);}  // Welle L: km/h aus der EINEN Kern-Zeile (×12 zeigte 3,33-fach)
-  }else{oc.update();}
+  }else{werkOrbit();}
   const open=kin?0.62:0;                                            // Türen — in beiden Modi animiert
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;});
   R.render(scene,cam);}
-presetSetzen('gt');animate();   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
+presetSetzen('gt');werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke für alle Welten (../huelle/huelle.js): ready einmal, die DSL spricht über die ECHTEN UI-Pfade (Button-click
    = eine Quelle), das Einzelwort der Heimat ganz (["gt"] → „gt", nie „g"); Esc meldet die Heimkehr — im Fahr-Modus
    gehört Esc dem Werkstatt-Exit (der Tasten-Hörer oben hält ihn an). */
-AnazhHuelle.bruecke({
+const heimat=AnazhHuelle.bruecke({
     welt: "garage",
     // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
     panorama: function () {
@@ -445,3 +469,6 @@ AnazhHuelle.bruecke({
         return mode !== "fahren";
     },
 });
+// IN DER WELT ANSEHEN (18.10.): die Heimkehr über die EINE Brücke — die Heimat (das Garage-Tor) schließt die Bühne, dort fahren
+// die Wagen aus demselben Bauer; die allein geöffnete Seite führt in die Welt. Kein Studio-Modus der Welt, kein Labor-Wagen in ihr.
+document.getElementById('welt').onclick=()=>{if(window.parent!==window)heimat.post({type:'exit',world:'garage'});else location.href='../../index.html';};
