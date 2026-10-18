@@ -1586,6 +1586,7 @@ class AnazhRealm_koerper_bewegung {
         // wo er ist, die Welt streamt um ihn wie immer.
         if (this._kameraFuehrung && player && camera) {
             this._kameraFuehrung(camera, currentTime, player.position);
+            this.state._kamRig = "fuehrung"; // die Führung ist ein eigenes Rig: danach beginnt die Kamera frei (das Gedächtnis unten)
             return;
         }
         if (player && camera) {

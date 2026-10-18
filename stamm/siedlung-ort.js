@@ -2162,19 +2162,14 @@ class AnazhRealm_siedlung_ort {
         } else if (absage === "platz") fertig[worldKey] = true;
     }
 
-    // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (~22 m), Previews über
+    // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (`PORTAL_VORSCHAU.anflugM`), Previews über
     // `_ensurePortalPreview` schärfen und bei kalter Foundry EIN Await-Book feuern.
     // koerperstudio/terrain/klang/tetrapoda haben keinen Preview-Typ.
     _portalApproachPrefetch(playerPos) {
         if (!playerPos) return;
-        const rows = [
-            ["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"],
-            ["garage", "fahrzeug_gt", "portal-preview-garage"],
-            ["schmiede", "esse", "portal-preview-schmiede"],
-            ["portale", "tor_drachentor", "portal-preview-portale"],
-        ];
+        const rows = AnazhRealm.PORTAL_VORSCHAU.tore;
         const arches = (this.state && this.state.architectures) || [];
-        const R2 = 22 * 22;
+        const R2 = AnazhRealm.PORTAL_VORSCHAU.anflugM ** 2;
         let nearAny = false;
         for (let i = 0; i < rows.length; i++) {
             const worldKey = rows[i][0];
@@ -2557,6 +2552,19 @@ AnazhRealm._fahrPlatzGesetz = function () {
 // kein Fels (`_grundrissVon` → `_imGrundriss`). Bis K52 trug die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit
 // außerhalb: ein Kristall stand 1,2 m vor dem Tor des Terrain-Studios, der Wald wuchs bis an die Tore.
 AnazhRealm.GENESIS_PLATZ = Object.freeze({ ringR: 11, rand: 4 });
+// DIE VORSCHAU DER STUDIO-TORE des Genesis-Rings: nähert sich der Spieler einem Tor auf `anflugM`, stellt
+// `_ensurePortalPreview` den Typ seiner Zeile [Welt, Typ, Id] ~8 m vor ihm hin (`_portalVorschauOrt`), auch Sekunden später (das
+// Buch kalt). Leser: der Anflug (`_portalApproachPrefetch`) und die Fahrt des Spielgangs — kein Weg des Wagens kommt einem dieser
+// Tore näher (Prüfer 18.10.: mitten in der Fahrt bei −15/15 „Portal betreten: tor_drachentor", die Vorschau stand noch nicht).
+AnazhRealm.PORTAL_VORSCHAU = Object.freeze({
+    anflugM: 22,
+    tore: Object.freeze([
+        Object.freeze(["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"]),
+        Object.freeze(["garage", "fahrzeug_gt", "portal-preview-garage"]),
+        Object.freeze(["schmiede", "esse", "portal-preview-schmiede"]),
+        Object.freeze(["portale", "tor_drachentor", "portal-preview-portale"]),
+    ]),
+});
 // DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
 // Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m,
 // `KRONE_MAX_M`: die größte Krone eines Darts; auch die Reichweite, in der ein Erdbau Darts fällt, `_forestDartsFallen`)
