@@ -35,7 +35,7 @@ ist der Versionslog mit der heiligen Lektion.
 > miteinander verwoben. Jede Änderung führte zu neuen Fehlern, weil die Grundlagen nicht stabil waren." (Versionslog)
 
 Die Sünde von 2025 war **Kopplung ohne Kohäsion**, nicht die Zahl der Dateien. Darum gilt: EINE Quelle je Domäne, Invarianten
-im Chokepoint, Gesetz statt Spiegel (`CLAUDE.md`, Lehren 1, 2 und 7); getrennt wird nur an echten Grenzen (Worker · Server ·
+im Chokepoint, Gesetz statt Spiegel (Lehren 1, 2 und 7, `.claude/skills/anazh-lehren/SKILL.md`); getrennt wird nur an echten Grenzen (Worker · Server ·
 die Studios auf der EINEN Hülle). Die 48 Zonen des Stamms sind Ordnung zum Lesen, keine neue Kopplung.
 
 ---
