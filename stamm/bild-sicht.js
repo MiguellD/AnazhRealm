@@ -2048,7 +2048,7 @@ class AnazhRealm_bild_sicht {
     // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt sichtbar, bis
     // das neue steht.
     _feldPassMal(fp, fr) {
-        if (fp.flug || !this._nebenFaden("feld")) return; // die Bahn des Panoramas (`_fernAuftrag`)
+        if (fp.flug || !this._nebenFaden("fern")) return;
         const P = AnazhRealm.FELD_PASS;
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;

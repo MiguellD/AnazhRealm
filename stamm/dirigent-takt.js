@@ -1059,8 +1059,7 @@ class AnazhRealm_dirigent_takt {
     // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
     // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
     // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
-    // Drossel-Takt, Gras 1 Chunk je Frame, die Ring-Rampe bis zum Existenz-Boden, drei Fern-Scheiben im Flug — gate:takt T9)
-    // schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
+    // Drossel-Takt, Gras 1 Chunk je Frame) schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
     // Welt fest: Radeon kalt rissen ALLE Frames das Budget, der Takt-Planer gab der Welt 2 ms je Frame, und jeder Leser
     // des ersten Weltbilds lief mit der Frame-Rate des Boots (4–8 Frames je Sekunde) statt mit der Arbeit. Jetzt trägt
     // jeder Lade-Frame LADE_TAKT_MS Arbeit, und keine Drossel des Spiels greift.
@@ -1089,7 +1088,7 @@ class AnazhRealm_dirigent_takt {
     // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
     // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
     // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
-    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden.
+    // Budget), Nachwuchs des Laubs — gate:takt T9 fährt jeden.
     _kappeOffen(n, kappe) {
         return n < kappe || performance.now() < this._ladeFrist();
     }
