@@ -10,7 +10,8 @@
 // der Gang die Mechanik jeder Station, das Bild urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten in seinen
 // Takten (`__gang.takte`), die Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station
 // Spieler-Gesetze als Urteil und auf der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne
-// Mittag · Sonne · Sommer):
+// Mittag · Sonne · Sommer; die Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine Station ohne
+// Bild ist auf der Karte ROT; je Station eine Frist (Tafel STATIONEN), ihr Bruch ist ROT beim Namen der Station:
 //   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das Gesetz
 //             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den Spieler;
 //             V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft immer.
@@ -23,6 +24,8 @@
 //             DER SELBSTTEST IM LAUF: die ersten 20 m fahren mit dem alten Mount-Follow (`_archInstanceUpdate` ohne den
 //             Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe beim Namen nennen. (Der alte Strahl ohne
 //             `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel liegt über der Hülle, gemessen t 1,0 mit und ohne.)
+//             DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein Stoß), E steigt wieder ein, das erste Bild ohne Sim-Schritt
+//             zeichnet ihn in seiner Gier.
 //   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne ihren
 //             Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt trocken ≤ 8 je Ring.
 //   werkstatt V-D5 das Rezeptbuch nach dem Spielmodus · V-D3 die Vorschau zeigt ihr Werk (Masken-Gesetz ≥ 99 %) · V-D3
@@ -628,6 +631,14 @@ async function probe(arg) {
         marke("fahrt");
         const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
         try {
+            // DIE WELT, WIE DER SPIELER SIE FINDET: der Genesis-Ring steht, bevor der Wagen kommt — ohne die Lichtung
+            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 3 && i < 3000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
+                await tick(1);
+                if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
+            }
+            m.ring = !!(st.worldMeta && st.worldMeta.genesisPortalRing);
+            let phase = "erste Fahrt"; // wo der Gang steht, wenn der Spieler durch ein Tor geht (`m.tor`)
             const pe = { type: m.typ, position: { x: 0, y: 0, z: 0 }, rotationY: 0, scale: 1, _fahrAchseX: true };
             const G = r._fahrSatz(pe, r._vehicleProfile(pe));
             if (!G) throw new Error(`kein Fahr-Gesetz für ${m.typ} (Buch kalt?)`);
@@ -656,10 +667,11 @@ async function probe(arg) {
                 if (!r._archIsRendered(e)) throw new Error(`${m.typ} bei ${Math.round(x)}/${Math.round(z)} nach 900 Takten ungezeichnet`);
                 const tor = (await flanke(e.position.x, e.position.z, fahrt(), 1)) && (await flanke(e.position.x, e.position.z, fahrt(), -1));
                 if (tor) throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
+                if (r._portalOverlay) throw new Error(`vor dem Aufstieg bei ${Math.round(x)}/${Math.round(z)} steht der Spieler in einer Tor-Welt: ${JSON.stringify(m.tor || null)}`);
                 const vor = st.cameraMode;
                 await tippe("e", "KeyE");
                 for (let i = 0; i < 30 && st.player.mountedArch !== e.id; i++) await tick(1);
-                if (st.player.mountedArch !== e.id) throw new Error(`E steigt nicht ein bei ${Math.round(x)}/${Math.round(z)} (${(st.logBuffer || []).slice(-2).join(" · ")})`);
+                if (st.player.mountedArch !== e.id) throw new Error(`E steigt nicht ein bei ${Math.round(x)}/${Math.round(z)} (${(st.logBuffer || []).slice(-2).join(" · ")}) · Tor ${JSON.stringify(m.tor || null)}`);
                 return vor;
             };
             const P = st.playerMesh.position.clone();
@@ -681,6 +693,11 @@ async function probe(arg) {
             let L = null; // der Lauf eines Abschnitts
             const lauf = () => (L = { arm: [], imWagen: 0, stufeWeg: 0, stufeTaeter: null, wechsel: [], c: [], ruck: [], hoch: [], gleich: [], sicht: st.cameraMode, fest: false });
             A.jeTakt = () => {
+                // DER SPIELER GEHT DURCH EIN TOR (die Membran, `_tickPortalMembranes`): der erste Takt beim Namen — Abschnitt, Ort, Ritt
+                if (r._portalOverlay && !m.tor) {
+                    const q = st.playerMesh.position;
+                    m.tor = { phase, takt: A.takte, ort: [Math.round(q.x), Math.round(q.z)], ritt: st.player.mountedArch != null, log: String((st.logBuffer || []).slice(-1)[0] || "") };
+                }
                 if (!L || !e || st.player.mountedArch !== e.id) return;
                 // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen sein Tempo über
                 // die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem bricht es), über 1 m/s
@@ -954,6 +971,7 @@ async function probe(arg) {
             );
             m.wechsel = { ort: kreisOrt && kreisOrt.ort };
             if (kreisOrt) {
+                phase = "Wechsel";
                 await steigEin(kreisOrt.x, kreisOrt.z, 0, true);
                 try {
                     lauf();
@@ -966,6 +984,7 @@ async function probe(arg) {
                 // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es zeichnet den
                 // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt dort
                 if (st.player.mountedArch == null) {
+                    phase = "Wiederaufstieg";
                     const stoss = 1; // rad, der Wagen dreht im Stand um 57°
                     e.rotationY = (Number.isFinite(e.rotationY) ? e.rotationY : 0) + stoss;
                     r._archInstanceUpdate(e);
@@ -995,6 +1014,7 @@ async function probe(arg) {
             });
             m.hang = { gefaelle: hang ? hang.gefaelle : 0, ort: hang && hang.ort };
             if (hang) {
+                phase = "Hang";
                 await steigEin(hang.x, hang.z, hang.d, true);
                 [pfad, ziel] = [0, hang.d];
                 taste("keydown", "w", "KeyW");
@@ -2128,13 +2148,13 @@ async function probe(arg) {
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
     // DIE WACHE DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
     // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
-    let [bruch, schlag] = [null, 0];
+    let [bruch, schlag, zu] = [null, 0, null];
     const wache = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)]).then(([s, t, k, log]) => {
         if (!s || bruch) return;
         const sek = (t - s[1]) / 1000;
         if (++schlag % 6 === 0) console.log(`  … ${s[0]} seit ${sek.toFixed(0)} s, ${k - s[2]} Takte`);
         const f = fristBruch(s[0], sek, k - s[2]);
-        if (f) [bruch] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
+        if (f) [bruch, zu] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
     }).catch(() => {}), 5000);
     let out = null;
     try {
@@ -2145,8 +2165,9 @@ async function probe(arg) {
     clearInterval(wache);
     server.close();
     if (bruch) {
-        fs.rmSync(platte, { recursive: true, force: true });
         check("jede Station in ihrer Frist (Tafel STATIONEN)", false, bruch);
+        await zu; // der Browser gibt die Platte frei, bevor sie fällt
+        fs.rmSync(platte, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
