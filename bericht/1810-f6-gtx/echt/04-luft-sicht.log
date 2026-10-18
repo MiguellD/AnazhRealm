@@ -1,0 +1,17 @@
+13:12:20 Schloss omen-1710-n, Schritt 4 gate:luft-sicht, Kopf e5db7566, gpu 139 MHz, 62, P8
+
+> anazhrealm@18.546.18 gate:luft-sicht
+> node scripts/diag-luft-sicht.cjs --selftest
+
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+=== DIE SICHTWEITE-PROBE (V18.530) — Sonne · Mittag · Sommer, Koschmieder 2 % ===
+  Luft-Knoten (scene.fogNode, kein THREE.Fog): true
+  Sichtweite in Augenhöhe: Sonne 22033 m · Regen 2790 m · Sturm 1652 m
+  aus 500 m höher: 36326 m · unter Wasser: 30 m
+  Ring-Kante 194 m: Transmission 0.966 · Fern-Ring-Kante 8 km: 0.2416
+  Selbsttest: 80-m-Wand → 2 SICHT: klarer Sommertag trägt nur 88 m (< 5000) — eine Nebel-Wand lebt
+  Selbsttest: THREE.Fog → 1 KNOTEN: scene.fogNode fehlt oder ein THREE.Fog/state.fog lebt daneben (linearer Zwilling)
+
+GRÜN — die Luft ist Physik: klare Sicht trägt Kilometer, die Ferne trägt die Funktion, keine Wand.
+13:12:28 Schloss geloest
+EXIT=0 DAUER=8s SCHRITT=4 GATE=gate:luft-sicht

@@ -1,0 +1,146 @@
+13:25:43 SERIE START A=f45ee994 B=e5db7566 Instrument=9b3acc1d PHASEN=stehen gehen ORTE=wiese genesis SICHTEN=ego third
+13:25:51 w-ego-A1 start gpu[65, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:29:34 w-ego-A1 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.9 fps · Frame p50/p95/max 8.7/16.8/41.8 ms · CPU p50/p95 3/4 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.93 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3, de
+13:29:35 w-ego-A1 rot NUR am Band-Urteil — Messung gilt
+13:30:49 w-ego-B1 start gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:34:02 w-ego-B1 exit=0 gpu[82, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.5 fps · Frame p50/p95/max 16.2/16.8/49.9 ms · CPU p50/p95 3.2/4.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.89 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+13:35:17 w-ego-A2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:38:29 w-ego-A2 exit=1 gpu[83, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 77.9 fps · Frame p50/p95/max 16.5/16.8/41.7 ms · CPU p50/p95 3.1/4.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.85 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+13:38:30 w-ego-A2 rot NUR am Band-Urteil — Messung gilt
+13:39:44 w-ego-B2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:42:58 w-ego-B2 exit=0 gpu[82, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.9 fps · Frame p50/p95/max 8.8/16.8/49.9 ms · CPU p50/p95 3.2/4.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.06 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+13:44:13 w-ego-A3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:47:30 w-ego-A3 exit=1 gpu[83, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 76.8 fps · Frame p50/p95/max 16.6/16.8/41.8 ms · CPU p50/p95 3.7/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.43 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox
+13:47:31 w-ego-A3 rot NUR am Band-Urteil — Messung gilt
+13:48:45 w-ego-B3 start gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:52:01 w-ego-B3 exit=0 gpu[83, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 78.6 fps · Frame p50/p95/max 16.5/16.7/66.8 ms · CPU p50/p95 3.5/5.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.38 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox
+13:53:16 w-ego-A4 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+13:57:00 w-ego-A4 exit=1 gpu[82, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 76.6 fps · Frame p50/p95/max 16.6/16.8/66.5 ms · CPU p50/p95 3.4/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.14 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+13:57:01 w-ego-A4 rot NUR am Band-Urteil — Messung gilt
+13:58:15 w-ego-B4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:01:29 w-ego-B4 exit=0 gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.6 fps · Frame p50/p95/max 14.9/16.8/41.8 ms · CPU p50/p95 3.2/4.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.08 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+14:02:43 w-third-A1 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:06:59 w-third-A1 exit=1 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 9.1/16.8/74.8 ms · CPU p50/p95 3.6/4.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.39 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3
+14:06:59 w-third-A1 rot NUR am Band-Urteil — Messung gilt
+14:08:13 w-third-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:12:28 w-third-B1 exit=0 gpu[80, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 84 fps · Frame p50/p95/max 8.4/16.8/41.7 ms · CPU p50/p95 3.4/4.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.24 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4,
+14:13:43 w-third-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:17:58 w-third-A2 exit=1 gpu[80, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 81.4 fps · Frame p50/p95/max 8.5/16.8/41.5 ms · CPU p50/p95 3.6/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.3 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3,
+14:17:58 w-third-A2 rot NUR am Band-Urteil — Messung gilt
+14:19:12 w-third-B2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:23:28 w-third-B2 exit=0 gpu[81, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 82.4 fps · Frame p50/p95/max 8.4/16.8/41.6 ms · CPU p50/p95 3.8/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.57 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3,
+14:24:43 w-third-A3 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:28:58 w-third-A3 exit=1 gpu[81, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 81 fps · Frame p50/p95/max 8.5/16.8/41.6 ms · CPU p50/p95 3.7/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.49 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4,
+14:28:58 w-third-A3 rot NUR am Band-Urteil — Messung gilt
+14:30:12 w-third-B3 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:34:28 w-third-B3 exit=0 gpu[80, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 82.5 fps · Frame p50/p95/max 8.4/16.8/50 ms · CPU p50/p95 3.6/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.4 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, 
+14:35:42 w-third-A4 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:39:57 w-third-A4 exit=1 gpu[80, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 81.1 fps · Frame p50/p95/max 8.5/16.8/42 ms · CPU p50/p95 3.6/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.41 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 3, 
+14:39:58 w-third-A4 rot NUR am Band-Urteil — Messung gilt
+14:41:12 w-third-B4 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:45:28 w-third-B4 exit=0 gpu[80, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 81 fps · Frame p50/p95/max 8.5/16.8/58.3 ms · CPU p50/p95 3.9/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.47 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4,
+14:46:43 g-ego-A1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:48:41 g-ego-A1 exit=1 gpu[80, 1771 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.7 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.6 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 2, 
+14:48:41 g-ego-A1 rot NUR am Band-Urteil — Messung gilt
+14:49:55 g-ego-B1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:51:54 g-ego-B1 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 85 fps · Frame p50/p95/max 8.4/16.8/25.2 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.35 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 2, d
+14:53:08 g-ego-A2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:55:08 g-ego-A2 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 80.3 fps · Frame p50/p95/max 8.6/16.8/41.6 ms · CPU p50/p95 4.4/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.17 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+14:55:08 g-ego-A2 rot NUR am Band-Urteil — Messung gilt
+14:56:22 g-ego-B2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+14:58:21 g-ego-B2 exit=0 gpu[80, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 84.9 fps · Frame p50/p95/max 8.4/16.8/25.3 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.3 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 2, 
+14:59:35 g-ego-A3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:01:33 g-ego-A3 exit=1 gpu[81, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 83.4 fps · Frame p50/p95/max 8.4/16.8/25.1 ms · CPU p50/p95 3.7/4.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.59 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+15:01:33 g-ego-A3 rot NUR am Band-Urteil — Messung gilt
+15:02:48 g-ego-B3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:04:46 g-ego-B3 exit=0 gpu[80, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 85.6 fps · Frame p50/p95/max 8.4/16.8/41.6 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.71 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+15:06:00 g-ego-A4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:07:59 g-ego-A4 exit=1 gpu[82, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 81.9 fps · Frame p50/p95/max 8.5/16.8/33.5 ms · CPU p50/p95 3.8/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.55 · Tiere 9 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4, 
+15:07:59 g-ego-A4 rot NUR am Band-Urteil — Messung gilt
+15:09:14 g-ego-B4 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:11:12 g-ego-B4 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 83.9 fps · Frame p50/p95/max 8.4/16.8/33.4 ms · CPU p50/p95 3.8/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.57 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+15:12:26 g-third-A1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:14:28 g-third-A1 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.6 fps · Frame p50/p95/max 15.9/16.7/41.6 ms · CPU p50/p95 4.5/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.37 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4
+15:14:28 g-third-A1 rot NUR am Band-Urteil — Messung gilt
+15:15:42 g-third-B1 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:17:43 g-third-B1 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.8 fps · Frame p50/p95/max 9.5/16.8/33.4 ms · CPU p50/p95 4.6/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.37 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+15:18:57 g-third-A2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:20:58 g-third-A2 exit=1 gpu[80, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.4 fps · Frame p50/p95/max 16.5/16.8/33.3 ms · CPU p50/p95 4.5/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.16 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4
+15:20:59 g-third-A2 rot NUR am Band-Urteil — Messung gilt
+15:22:13 g-third-B2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:24:15 g-third-B2 exit=0 gpu[81, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.5 fps · Frame p50/p95/max 15.5/16.8/41.6 ms · CPU p50/p95 5.2/6.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.91 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox
+15:25:29 g-third-A3 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:27:31 g-third-A3 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.6 fps · Frame p50/p95/max 16.1/16.8/25 ms · CPU p50/p95 4.6/6.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.64 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4
+15:27:31 g-third-A3 rot NUR am Band-Urteil — Messung gilt
+15:28:45 g-third-B3 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:30:47 g-third-B3 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 13.7/16.8/33.3 ms · CPU p50/p95 4.7/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.48 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox
+15:32:01 g-third-A4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:34:02 g-third-A4 exit=1 gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 79.3 fps · Frame p50/p95/max 16.4/16.8/33.4 ms · CPU p50/p95 4.6/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.06 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 4
+15:34:03 g-third-A4 rot NUR am Band-Urteil — Messung gilt
+15:35:17 g-third-B4 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:37:18 g-third-B4 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 80.2 fps · Frame p50/p95/max 8.6/16.8/33.3 ms · CPU p50/p95 4.4/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.57 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; fox 
+15:38:32 geh-w-ego-A1 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:41:05 geh-w-ego-A1 ende gpu[84, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+15:42:19 geh-w-ego-B1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:44:57 geh-w-ego-B1 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 2}
+15:46:12 geh-w-ego-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:48:45 geh-w-ego-A2 ende gpu[83, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 1}
+15:49:59 geh-w-ego-B2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:52:34 geh-w-ego-B2 ende gpu[83, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.1,  "wege": 4 }, "ms": 3}
+15:53:49 geh-w-ego-A3 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:56:22 geh-w-ego-A3 ende gpu[83, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.1,  "wege": 4 }, "ms": 1}
+15:57:36 geh-w-ego-B3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:00:08 geh-w-ego-B3 ende gpu[83, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 2}
+16:01:23 geh-w-ego-A4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:03:55 geh-w-ego-A4 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 1}
+16:05:10 geh-w-ego-B4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:07:46 geh-w-ego-B4 ende gpu[83, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.1,  "wege": 4 }, "ms": 2}
+16:09:00 geh-w-third-A1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:11:37 geh-w-third-A1 ende gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+16:12:51 geh-w-third-B1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:15:29 geh-w-third-B1 ende gpu[82, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+16:16:43 geh-w-third-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:19:20 geh-w-third-A2 ende gpu[82, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 1}
+16:20:34 geh-w-third-B2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:23:09 geh-w-third-B2 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 2}
+16:24:23 geh-w-third-A3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:27:00 geh-w-third-A3 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16.1,  "wege": 4 }, "ms": 1}
+16:28:15 geh-w-third-B3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:30:49 geh-w-third-B3 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.9,  "wege": 4 }, "ms": 2}
+16:32:04 geh-w-third-A4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:34:38 geh-w-third-A4 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 1}
+16:35:53 geh-w-third-B4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:38:27 geh-w-third-B4 ende gpu[83, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+16:39:42 geh-g-ego-A1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:42:19 geh-g-ego-A1 ende gpu[83, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.1,  "wege": 4 }, "ms": 2}
+16:43:33 geh-g-ego-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:46:10 geh-g-ego-B1 ende gpu[83, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -15.8,  "wege": 4 }, "ms": 2}
+16:47:24 geh-g-ego-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:50:01 geh-g-ego-A2 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.7,  "wege": 4 }, "ms": 3}
+16:51:16 geh-g-ego-B2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:53:53 geh-g-ego-B2 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.9,  "wege": 4 }, "ms": 3}
+16:55:07 geh-g-ego-A3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:57:45 geh-g-ego-A3 ende gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+16:59:00 geh-g-ego-B3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:01:37 geh-g-ego-B3 ende gpu[83, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.3,  "wege": 4 }, "ms": 2}
+17:02:51 geh-g-ego-A4 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:05:28 geh-g-ego-A4 ende gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -15.8,  "wege": 4 }, "ms": 2}
+17:23:44 geh-g-ego-B4 start gpu[63, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:26:22 geh-g-ego-B4 ende gpu[83, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+17:27:36 geh-g-third-A1 start gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:30:16 geh-g-third-A1 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.6,  "wege": 4 }, "ms": 2}
+17:31:30 geh-g-third-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:34:09 geh-g-third-B1 ende gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 1}
+17:35:24 geh-g-third-A2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:38:03 geh-g-third-A2 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.7,  "wege": 4 }, "ms": 1}
+17:39:18 geh-g-third-B2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:41:58 geh-g-third-B2 ende gpu[83, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16.2,  "wege": 4 }, "ms": 2}
+17:43:12 geh-g-third-A3 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:45:51 geh-g-third-A3 ende gpu[83, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -16,  "wege": 4 }, "ms": 2}
+17:47:06 geh-g-third-B3 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:49:46 geh-g-third-B3 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -16.3,  "wege": 4 }, "ms": 2}
+17:51:00 geh-g-third-A4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:53:40 geh-g-third-A4 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] { "ergebnis": {  "s": -15.5,  "wege": 4 }, "ms": 2}
+17:54:54 geh-g-third-B4 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:57:34 geh-g-third-B4 ende gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] { "ergebnis": {  "s": -15.5,  "wege": 4 }, "ms": 1}
+17:58:47 SERIE ENDE

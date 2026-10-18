@@ -1,0 +1,14 @@
+13:21:27 Schloss omen-1710-n, Schritt 21 gate:gpu-fehler, Kopf e5db7566, gpu 1835 MHz, 73, P0
+
+> anazhrealm@18.546.18 gate:gpu-fehler
+> node scripts/diag-gpu-fehler.cjs --selftest
+
+=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===
+[linse-gpu] nvidia/pascal
+  ✅ der Draw ohne Slot 1 steht mit Pipeline und Pass im Protokoll — {"art":"drawIndexed","n":3,"fehlt":[1],"pipeline":"probe_zwei_puffer","pass":"probe_pass_luecke","objekt":null,"t":613}
+  ✅ der Draw mit beiden Slots bleibt still — Einträge 1
+  ✅ die Device-Meldung (uncapturederror) kommt an, mit dem Pass — {"msg":"Vertex buffer slot 1 required by [RenderPipeline \"probe_zwei_puffer\"] was not set.\n - While encoding [RenderPassEncoder \"probe_pass_luecke\"].DrawIndexed(3, 1, 0, 0, 0).\n - While finishing [CommandEncoder \"probe_encoder\"].\n"
+
+✅ SELBST-TEST GRÜN — die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.
+13:21:31 Schloss geloest
+EXIT=0 DAUER=4s SCHRITT=21 GATE=gate:gpu-fehler

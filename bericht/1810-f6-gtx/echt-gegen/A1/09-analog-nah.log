@@ -1,0 +1,19 @@
+13:22:03 Schloss omen-1710-n, Schritt 9 gate:analog-nah, Kopf f45ee994, gpu 822 MHz, 69, P3
+
+> anazhrealm@18.546.17 gate:analog-nah
+> node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs
+
+[linse-gpu] nvidia/pascal
+   Backend: WebGPU
+✅ SELBST-TEST S: heil {"S1":true,"S2":true} · Takt ohne Bäcker und Karte ohne Rang {"S1":false,"S2":false}
+✅ SELBST-TEST: erzwungener Kapsel-Satz in 20 m gesetzt → rot und genannt (unbekannt:Feld 1 19.4 m seit 1 ms (ohne Träger)); nach dem Abbau fort
+[linse-gpu] nvidia/pascal
+   Backend: WebGPU
+❌ S  am Ruf: der feste Takt ruft den Karten-Bäcker true · die Karte reist im Rang des Wartenden false
+✅ E  eingeschwungen ohne Analog-Satz < 64 m ab Takt 46 (Grenze 1500) · Spitze 9 · längste: bau:glutbrunnen@-305,-1043 4 Takte 23.4 m (Studio-Stufe L1 lädt (Foundry)) | bau:glutbrunnen@-309,-1039 4 Takte 28.4 m (Studio-Stufe L2 lädt (Foundry)) | bau:glutbrunnen@-248,-1048 4 Takte 31.4 m (Studio-Stufe L2 lädt (Foundry)) | bau:glutbrunnen@-244,-1052 4 Takte 36.1 m (Studio-Stufe L2 lädt (Foundry)) | bau:glutbrunnen@-318,-1056 4 Takte 37.7 m (Studio-Stufe L2 lädt (Foundry)) | bau:glutbrunnen@-309,-1091 4 Takte 52.3 m (Studio-Stufe L2 lädt (Foundry))
+✅ R  Ruhe 100 Takte: höchstens 0 Sätze < 64 m · Brücken < 64 m höchstens 0, am Ende 0
+✅ T  Rampe (400 m fort und zurück): satzfrei ab Takt 2 (Grenze 120) · Spitze 7 — bau:glutbrunnen@-313,-1086 51.3 m seit 3475 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:glutbrunnen@-309,-1091 52.3 m seit 3475 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:glutbrunnen@-330,-1069 54.4 m seit 3474 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:felsbogen@-227,-1061 54.9 m seit 3474 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:felsbogen@-227,-1065 56 m seit 3474 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:felsbogen@-339,-1039 58.3 m seit 3474 ms (Studio-Stufe L2 gedockt, noch nicht platziert) | bau:glutbrunnen@-339,-1069 62.4 m seit 3474 ms (Studio-Stufe L2 gedockt, noch nicht platziert)
+✅ X  keine Ausnahme im Spiel-Takt
+❌ ROT
+13:22:32 Schloss geloest
+EXIT=1 DAUER=29s SCHRITT=9 GATE=gate:analog-nah

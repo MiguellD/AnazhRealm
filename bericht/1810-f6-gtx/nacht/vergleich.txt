@@ -1,0 +1,31 @@
+Blick      Paar         MSSIM ganz  MSSIM Boden  |ΔLuma| Boden  Pixel >8 (%)  Farbton-Blöcke >6 (%)
+blick      Rauschen A        0.999       0.9985           0.22          0.03                      0
+blick      Rauschen B       0.9992        0.999           0.18          0.01                      0
+blick      A1↔B1            0.6636       0.6636          18.41         87.23                  47.73
+blick      A2↔B2            0.6638        0.664          18.39         87.32                  47.48
+blick      A1↔B2             0.664       0.6643           18.4         87.28                  47.69
+blick      A2↔B1            0.6642       0.6646           18.4         87.27                  47.31
+gegen      Rauschen A       0.9995       0.9993           0.12          0.01                      0
+gegen      Rauschen B       0.9996       0.9995            0.1             0                      0
+gegen      A1↔B1            0.6405       0.6551          17.45         84.57                  49.81
+gegen      A2↔B2            0.6406       0.6552          17.44         84.57                  49.71
+gegen      A1↔B2            0.6407       0.6553          17.44         84.56                   49.9
+gegen      A2↔B1            0.6408       0.6555          17.44         84.56                  49.71
+ROT blick.png A1↔B1: MSSIM Boden 0.6636 unter dem Rausch-Boden 0.9985
+ROT blick.png A2↔B2: MSSIM Boden 0.664 unter dem Rausch-Boden 0.9985
+ROT blick.png A1↔B2: MSSIM Boden 0.6643 unter dem Rausch-Boden 0.9985
+ROT blick.png A2↔B1: MSSIM Boden 0.6646 unter dem Rausch-Boden 0.9985
+ROT blick.png A1↔B1: 47.73 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT blick.png A2↔B2: 47.48 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT blick.png A1↔B2: 47.69 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT blick.png A2↔B1: 47.31 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT gegen.png A1↔B1: MSSIM Boden 0.6551 unter dem Rausch-Boden 0.9993
+ROT gegen.png A2↔B2: MSSIM Boden 0.6552 unter dem Rausch-Boden 0.9993
+ROT gegen.png A1↔B2: MSSIM Boden 0.6553 unter dem Rausch-Boden 0.9993
+ROT gegen.png A2↔B1: MSSIM Boden 0.6555 unter dem Rausch-Boden 0.9993
+ROT gegen.png A1↔B1: 49.81 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT gegen.png A2↔B2: 49.71 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT gegen.png A1↔B2: 49.9 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+ROT gegen.png A2↔B1: 49.71 % Farbton-Blöcke verschoben, Rausch-Boden 0 %
+
+16 Paare unter dem Rausch-Boden

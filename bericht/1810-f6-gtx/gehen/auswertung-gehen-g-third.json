@@ -1,0 +1,140 @@
+{
+ "boots": [
+  "g-third-A1",
+  "g-third-A2",
+  "g-third-A3",
+  "g-third-A4",
+  "g-third-B1",
+  "g-third-B2",
+  "g-third-B3",
+  "g-third-B4"
+ ],
+ "urteile": [
+  {
+   "gang": "steht",
+   "titel": "fps",
+   "ma": 79.6,
+   "mb": 80.1,
+   "d": 0.5,
+   "sig": 0.14142135623730817,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p50 ms",
+   "ma": 15.3,
+   "mb": 8.625,
+   "d": -6.675000000000001,
+   "sig": 1.2333896383544012,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p95 ms",
+   "ma": 16.75,
+   "mb": 16.75,
+   "d": 0,
+   "sig": 0.0577350269189634,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p99 ms",
+   "ma": 17.025,
+   "mb": 16.975,
+   "d": -0.04999999999999716,
+   "sig": 0.05000000000000071,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "CPU-Takt p50 ms",
+   "ma": 4.45,
+   "mb": 4.45,
+   "d": 0,
+   "sig": 0.057735026918962366,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "CPU-Takt p95 ms",
+   "ma": 6.000000000000001,
+   "mb": 6.1,
+   "d": 0.09999999999999876,
+   "sig": 0.22360679774997883,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "steht",
+   "titel": "GPU-Durchsatz p50 ms",
+   "ma": 12.525,
+   "mb": 12.475,
+   "d": -0.05000000000000071,
+   "sig": 0.04999999999999982,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "fps",
+   "ma": 64.725,
+   "mb": 65.21249999999999,
+   "d": 0.48749999999999716,
+   "sig": 0.8102854435320911,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p50 ms",
+   "ma": 16.6,
+   "mb": 16.6,
+   "d": 0,
+   "sig": 0,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p95 ms",
+   "ma": 25.025,
+   "mb": 25.05,
+   "d": 0.02500000000000213,
+   "sig": 0.02041241452319344,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p99 ms",
+   "ma": 41.675,
+   "mb": 41.6875,
+   "d": 0.012500000000002842,
+   "sig": 2.3672901174127357,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "CPU-Takt p50 ms",
+   "ma": 10.9125,
+   "mb": 11.1375,
+   "d": 0.22499999999999964,
+   "sig": 0.1796988221070652,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "CPU-Takt p95 ms",
+   "ma": 18.325,
+   "mb": 18.6875,
+   "d": 0.3625000000000007,
+   "sig": 0.6594663246393504,
+   "u": "nicht langsamer"
+  },
+  {
+   "gang": "geht",
+   "titel": "GPU-Durchsatz p50 ms",
+   "ma": 14.5375,
+   "mb": 14.350000000000001,
+   "d": -0.18749999999999822,
+   "sig": 0.13956778520370205,
+   "u": "nicht langsamer"
+  }
+ ]
+}

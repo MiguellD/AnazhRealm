@@ -1,0 +1,25 @@
+12:47:56 ECHT START baum=/c/Users/micha/Desktop/AnazhRealm-OMEN/n1810-f6b kopf=e5db7566 node=v22.23.3
+13:04:29 01-fern-ring EXIT=0 DAUER=46s
+13:06:37 02-fernwald EXIT=0 DAUER=122s
+13:09:41 WEITER (Koordinator): 01/02 an e5db7566 gelten fuer B 018945d5 (Baum 8e54c6c7 = e5db7566), Kopien aus alt-seiten/echt; Fortsetzung ab Schritt 03
+13:09:56 ECHT START baum=/c/Users/micha/Desktop/AnazhRealm-OMEN/n1810-f6b kopf=e5db7566 node=v22.23.3
+13:12:14 03-streu-fern EXIT=0 DAUER=138s
+13:12:28 04-luft-sicht EXIT=0 DAUER=8s
+13:12:53 05-seam EXIT=0 DAUER=19s
+13:13:02 06-schatten-bias EXIT=0 DAUER=3s
+13:13:31 07-ziel-zensus EXIT=0 DAUER=24s
+13:14:19 08-scatter-lod EXIT=0 DAUER=42s
+13:14:32 09-analog-nah EXIT=1 DAUER=6s
+13:15:22 10-foundry-crossfade EXIT=0 DAUER=45s
+13:15:37 11-s4-impostor-workshop EXIT=0 DAUER=10s
+13:15:57 12-foundry-impostor EXIT=0 DAUER=14s
+13:16:41 13-freie-slots EXIT=0 DAUER=38s
+13:17:06 14-pruefbuehne-licht EXIT=0 DAUER=19s
+13:17:27 15-wasser-leben_bild EXIT=0 DAUER=14s
+13:17:47 16-post-kette EXIT=0 DAUER=15s
+13:18:44 17-portal-membran EXIT=0 DAUER=50s
+13:19:08 18-ego-schatten EXIT=0 DAUER=19s
+13:19:41 19-verdeckungs-abfrage EXIT=0 DAUER=27s
+13:21:21 20-weltbild-frost_echt EXIT=0 DAUER=94s
+13:21:31 21-gpu-fehler EXIT=0 DAUER=4s
+13:21:36 ECHT ENDE

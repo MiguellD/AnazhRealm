@@ -1,0 +1,11 @@
+13:22:51 Schloss omen-1710-n, Schritt 9 gate:analog-nah, Kopf f45ee994, gpu 810 MHz, 69, P3
+
+> anazhrealm@18.546.17 gate:analog-nah
+> node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs
+
+[linse-gpu] nvidia/pascal
+   Backend: WebGPU
+❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne Bäcker und Karte ohne Rang {"S1":false,"S2":false}
+❌ SELBST-TEST: erzwungener Kapsel-Satz in 20 m gesetzt → rot und genannt (unbekannt:Feld 1 19.4 m seit 1 ms (ohne Träger)); nach dem Abbau fort
+13:22:57 Schloss geloest
+EXIT=1 DAUER=6s SCHRITT=9 GATE=gate:analog-nah

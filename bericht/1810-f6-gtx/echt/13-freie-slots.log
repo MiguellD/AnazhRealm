@@ -1,0 +1,35 @@
+13:16:03 Schloss omen-1710-n, Schritt 13 gate:freie-slots, Kopf e5db7566, gpu 253 MHz, 65, P8
+
+> anazhrealm@18.546.18 gate:freie-slots
+> node scripts/diag-freie-slots.cjs --selftest
+
+=== Q — die Quelle (kommentar-frei) ===
+  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`
+  ✅ SELBSTTEST Q: eine eingeschmuggelte count-Zeile wird genannt (2 Befund)
+[linse-gpu] nvidia/pascal
+
+=== G/F/S — die Wander-Sequenz (Null-Renderer, Foundry an) ===
+  Umzug → 600 0 (Spieler 600 0): 19 Gruppen · 577 Instanzen · 23 Senken · 0 Eintrags-Marken treu geprüft · 95 Senken mit Abschied gefallen (118 verfolgt) · Nah-Wiese (Auge 600 0) 4 Senken, 1755 Büschel im Ring, 176 gelegt (je Senke ≥ 40; Soll im Blick 80 in 4 Senken) · 0 Befunde
+  Umzug → 0 0 (Spieler 0 0): 80 Gruppen · 2000 Instanzen · 84 Senken · 1320 Eintrags-Marken treu geprüft · 96 Senken mit Abschied gefallen (85 verfolgt) · Nah-Wiese (Auge 0 0) 4 Senken, 86 Büschel im Ring, 10 gelegt (je Senke ≥ 0; Soll im Blick 10 in 2 Senken) · 0 Befunde
+  Umzug → 0 600 (Spieler 0 600): 24 Gruppen · 777 Instanzen · 28 Senken · 5 Eintrags-Marken treu geprüft · 155 Senken mit Abschied gefallen (87 verfolgt) · Nah-Wiese (Auge 0 600) 4 Senken, 2211 Büschel im Ring, 474 gelegt (je Senke ≥ 37; Soll im Blick 400 in 4 Senken) · 0 Befunde
+  Umzug → 0 0 (Spieler 0 0): 82 Gruppen · 2140 Instanzen · 86 Senken · 1288 Eintrags-Marken treu geprüft · 160 Senken mit Abschied gefallen (91 verfolgt) · Nah-Wiese (Auge 0 0) 4 Senken, 86 Büschel im Ring, 10 gelegt (je Senke ≥ 0; Soll im Blick 10 in 2 Senken) · 0 Befunde
+  Umzug → -450 -450 (Spieler -450 -450): 24 Gruppen · 827 Instanzen · 28 Senken · 0 Eintrags-Marken treu geprüft · 239 Senken mit Abschied gefallen (107 verfolgt) · Nah-Wiese (Auge -450 -450) 4 Senken, 849 Büschel im Ring, 356 gelegt (je Senke ≥ 10; Soll im Blick 331 in 4 Senken) · 0 Befunde
+  Umzug → 150 0 (Spieler 150 0): 111 Gruppen · 2479 Instanzen · 115 Senken · 1557 Eintrags-Marken treu geprüft · 258 Senken mit Abschied gefallen (134 verfolgt) · Nah-Wiese (Auge 150 0) 4 Senken, 1116 Büschel im Ring, 140 gelegt (je Senke ≥ 5; Soll im Blick 116 in 4 Senken) · 0 Befunde
+  Umzug → 0 0 (Spieler 0 0): 79 Gruppen · 1998 Instanzen · 83 Senken · 1268 Eintrags-Marken treu geprüft · 326 Senken mit Abschied gefallen (151 verfolgt) · Nah-Wiese (Auge 0 0) 4 Senken, 86 Büschel im Ring, 10 gelegt (je Senke ≥ 0; Soll im Blick 10 in 2 Senken) · 0 Befunde
+  Nah-Wiese: 7 von 7 Umzügen mit Soll im Blick (Soll ≥ 4)
+  ✅ SELBSTTEST G: der eingeschmuggelte freie Slot wird genannt · ✅ die sichtbare leere Hülle wird genannt · ✅ die vertauschte Matrix wird genannt
+    (Selbsttest) impostor#fimp:atlas · haupt · 2 Dreiecke — 1 freie Slots (count 1732 · lebend 1731)
+    (Selbsttest) impostor#fimp:atlas · haupt · 2 Dreiecke — 1 Null-3×3-Slots in [0, count)
+    (Selbsttest) gate:leere-huelle · haupt+schatten · 8 Dreiecke — 4 freie Slots (count 4 · lebend 0)
+    (Selbsttest) gate:leere-huelle · haupt+schatten · 8 Dreiecke — leere Hülle zeichnet
+    (Selbsttest) f:zacken|1|0:0 · haupt+schatten · 320 Dreiecke — Slot 1 trägt nicht die Instanz von felsturm#2 (Abstand 60.480)
+    (Selbsttest) gate:ohne-abschied · haupt · 0 Dreiecke — fiel ohne Abschied — r184 hält ihre Instanz-Puffer (buf:verwaist)
+    (Selbsttest) gate:lebend-abschied · haupt · 0 Dreiecke — Abschied einer Senke im Graphen — ihr Speicher-Puffer ist tot
+    (Selbsttest) nahWiese:L2:0:0 · haupt · 0 Dreiecke — blind: 2 leere Senken mit Soll genannt, Himmel ohne Soll: 0 Befunde
+    (Selbsttest) nahWiese · haupt · 0 Dreiecke — 1 gelegte Instanzen außerhalb des Rings um das Auge
+  ✅ SELBSTTEST A: die Senke ohne Abschied wird genannt · ✅ der Abschied einer Senke im Graphen wird genannt
+  ✅ SELBSTTEST W: der blinde Sicht-Satz — jede leere Senke mit Soll genannt (2), der Himmel ohne Soll still (0) · ✅ eine gelegte Null-3×3 genannt · ✅ eine Instanz fort aus dem Ring genannt · ✅ veraltete Instanzen im leeren Ring genannt
+
+✅ gate:freie-slots GRÜN — nach 7 Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; 326 Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese trug in 7 Ringen jedes Soll seines Blicks (10–474 Instanzen), ein Ring ohne Wiese stand leer.
+13:16:41 Schloss geloest
+EXIT=0 DAUER=38s SCHRITT=13 GATE=gate:freie-slots

@@ -1,0 +1,71 @@
+{
+ "schwelle": 8,
+ "A": {
+  "rauschPixel": 0,
+  "karte": {
+   "pixel": 445337,
+   "anteil": 21.48,
+   "luma": 32.31,
+   "rgb": [
+    29.5,
+    33.9,
+    24.8
+   ]
+  },
+  "laub": {
+   "pixel": 355972,
+   "anteil": 17.17,
+   "luma": 14.82,
+   "rgb": [
+    12.3,
+    15.4,
+    16.2
+   ]
+  },
+  "beide": {
+   "pixel": 117313,
+   "anteil": 5.66,
+   "luma": 28.57,
+   "rgb": [
+    26.3,
+    29.7,
+    23.9
+   ]
+  },
+  "verhaeltnisKarteZuLaub": 2.18
+ },
+ "B": {
+  "rauschPixel": 0,
+  "karte": {
+   "pixel": 511090,
+   "anteil": 24.65,
+   "luma": 22.49,
+   "rgb": [
+    17.1,
+    24.7,
+    17
+   ]
+  },
+  "laub": {
+   "pixel": 319065,
+   "anteil": 15.39,
+   "luma": 20.22,
+   "rgb": [
+    15.7,
+    21.6,
+    19.4
+   ]
+  },
+  "beide": {
+   "pixel": 26547,
+   "anteil": 1.28,
+   "luma": 24.85,
+   "rgb": [
+    18.8,
+    26.9,
+    22.4
+   ]
+  },
+  "verhaeltnisKarteZuLaub": 1.112
+ }
+}

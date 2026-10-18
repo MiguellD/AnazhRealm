@@ -1,0 +1,10 @@
+A1 EXIT=1 DAUER ✅ SELBST-TEST S: heil {"S1":true,"S2":true} · Takt ohne B 
+B1 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+A2 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+B2 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+A3 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+B3 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+A4 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+B4 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+A5 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  
+B5 EXIT=1 DAUER ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne  

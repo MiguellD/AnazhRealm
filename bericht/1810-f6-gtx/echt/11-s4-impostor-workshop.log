@@ -1,0 +1,20 @@
+13:15:27 Schloss omen-1710-n, Schritt 11 gate:s4-impostor-workshop, Kopf e5db7566, gpu 253 MHz, 65, P8
+
+> anazhrealm@18.546.18 gate:s4-impostor-workshop
+> node scripts/diag-s4-impostor-workshop.cjs
+
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+=== WELLE S4 — IMPOSTOR EAGER + WERKSTATT-L2-BILLBOARD ===
+
+  TEIL B — Werkstatt-L2 = Billboard:
+    routet durch Impostor:      true (erw true)
+    nur für BÄUME (gated):      true (erw true)
+    InstancedMesh (Chokepoint): true (erw true)
+    L2-Zweig (lod === 2):       true (erw true)
+  BEHAVIORAL:
+    Foundry ready: true · Baum-Bauplan: baum_eiche
+    Vorschau-Gruppe: true · InstancedMesh: true · Verts: 6 · Karten-Signatur(aKarte): true [0,3.3726019859313965,4.14474630355835,17.321666717529297]
+
+✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken).
+13:15:37 Schloss geloest
+EXIT=0 DAUER=10s SCHRITT=11 GATE=gate:s4-impostor-workshop

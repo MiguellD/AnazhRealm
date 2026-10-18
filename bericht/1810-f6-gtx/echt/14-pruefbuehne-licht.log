@@ -1,0 +1,56 @@
+13:16:47 Schloss omen-1710-n, Schritt 14 gate:pruefbuehne-licht, Kopf e5db7566, gpu 139 MHz, 64, P8
+
+> anazhrealm@18.546.18 gate:pruefbuehne-licht
+> node scripts/diag-pruefbuehne.cjs --licht --selftest
+
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+    · die Bühne importiert nach 4 s
+    · die Bühne gebootet nach 9 s
+    · der Himmel nach dem Sprung gemessen nach 10 s
+    · der Himmel des tauben Malers gemessen nach 10 s
+    · der Abend gemessen nach 10 s
+    · der Abend gemessen (tafel) nach 10 s
+    · der Abend gemessen (deckel) nach 10 s
+    · der Abend gemessen (uhr) nach 10 s
+    · der Satz steht nach 11 s
+    · die Gestalt steht nach 11 s
+    · das Feuer aufgenommen nach 14 s
+    · der Schuss (nacht) aufgenommen nach 14 s
+    · der Schuss (daemmerung) aufgenommen nach 15 s
+    · der Schuss (farbe) aufgenommen nach 16 s
+    · der Schuss (sterne) aufgenommen nach 17 s
+    · der Schuss (tag) aufgenommen nach 17 s
+  S0 BILD       : Uhr 0 · Feuerkreis aus 2 m Luma 0.7119 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 140.4 abgesoffen 0 Farbton 30.5° Sättigung 0.471 sRGB [175,135,93] (Soll 28–45°, ≤ 0.75) · Himmel 0.2902 Sternen-Licht 0.0948 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1.4 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":58,"verworfen":19110,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 BILD NACHT (ohne das Feuer): Uhr 0 · Feuerkreis aus 2 m Luma 0.1099 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 30.3 abgesoffen 0 Farbton 102.7° Sättigung 0.358 sRGB [25,33,21] (Soll 28–45°, ≤ 0.75) · Himmel 0.2894 Sternen-Licht 0.0948 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1.4 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":57,"verworfen":0,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 BILD DÄMMERUNG (ohne das Feuer): Uhr 0.78 · Feuerkreis aus 2 m Luma 0.0934 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 26.1 abgesoffen 0 Farbton 101.2° Sättigung 0.332 sRGB [22,28,19] (Soll 28–45°, ≤ 0.75) · Himmel 0.2033 Sternen-Licht 0.0705 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1.702 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":57,"verworfen":0,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 BILD SCHEIN (das Feuer bis K11b): Uhr 0 · Feuerkreis aus 2 m Luma 0.4484 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 81.2 abgesoffen 0 Farbton 29.8° Sättigung 0.447 sRGB [101,78,56] (Soll 28–45°, ≤ 0.75) · Himmel 0.2894 Sternen-Licht 0.0948 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1.4 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":57,"verworfen":0,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 BILD SCHEIN (die Nacht ohne Sternen-Licht): Uhr 0 · Feuerkreis aus 2 m Luma 0.0653 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 18.4 abgesoffen 0 Farbton 87° Sättigung 0.506 sRGB [16,20,10] (Soll 28–45°, ≤ 0.75) · Himmel 0.0288 Sternen-Licht 0 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 0.994 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":57,"verworfen":0,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 BILD SCHEIN (das Auge des Tages): Uhr 0 · Feuerkreis aus 2 m Luma 0.6935 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Luma 139 abgesoffen 0 Farbton 37.6° Sättigung 0.805 sRGB [191,134,37] (Soll 28–45°, ≤ 0.75) · Himmel 0.2894 Sternen-Licht 0.0948 · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1.4 · Feuer ["glutbrunnen",15.92,10.21,2.83] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":8.63,"d":7.9},{"q":"esse","I":357.86,"d":35}] · Befehle 4 · Nah-Bühne {"nah":14,"fern":57,"verworfen":0,"fremd":{},"fremdOhneLesen":{"bauSatz(feuerstelle)":2,"bodenSatz":1},"jenseits":{},"versetzt":{"bodenSatz":2,"bauSatz":2}} · Programme/Pipelines [13,15,16]
+  S0 HIMMEL: nach dem Sprung auf Mittag Bestrahlung 7.4917 · frisch gemalt 7.4917 · gemalt
+  S0 HIMMEL: nach dem Sprung auf Mitternacht Bestrahlung 0.6748 · frisch gemalt 0.6747 · gemalt
+  S0 HIMMEL SCHEIN (der Maler taub): nach dem Sprung auf Mittag Bestrahlung 6.7728 · frisch gemalt 7.4916 · UNGEMALT
+  S0 HIMMEL SCHEIN (der Maler taub): nach dem Sprung auf Mitternacht Bestrahlung 1.8699 · frisch gemalt 0.6747 · UNGEMALT
+  S0 ABEND: Uhr 0.7204 · Licht 1 der Atmosphäre · E 2.327 · Belichtung 3.218 · Karte -0.04 EV · Mitternacht Belichtung 1.4
+  S0 ABEND SCHEIN (tafel): Uhr 0.7204 · Licht 0.68 der Atmosphäre · E 1.604 · Belichtung 4.544 · Karte -0.08 EV · Mitternacht Belichtung 1.4
+  S0 ABEND SCHEIN (deckel): Uhr 0.7204 · Licht 1 der Atmosphäre · E 2.327 · Belichtung 1 · Karte -1.72 EV · Mitternacht Belichtung 1
+  S0 ABEND SCHEIN (uhr): Uhr 0.7224 · Licht 1 der Atmosphäre · E 2.154 · Belichtung 3.431 · Karte -0.06 EV · Mitternacht Belichtung 1.4
+  S0 TON (Farbton netto: mit minus ohne Feuer · Sättigung brutto): {"hue":29.6,"sat":0.471,"netto":{"hue":29.6,"sat":0.481,"rgb":[173,131,90]}}
+  S0 BODEN-PROGRAMM 1/1: 84808 Zeichen WGSL (Decke 100000)
+  SELBSTTEST S0 BILD (der Pool leer): getroffen — der Kreis fällt 0.7119 → 0.1099 (unter 0.15): der Licht-Pool trägt ihn
+  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): getroffen — das Licht des Feuers fällt netto auf Farbton 25.1°: die Farbtemperatur trägt ihn
+  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): getroffen — der Boden 1–3 m reißt an der Sättigung 0.805 (Soll ≤ 0.75) bei Farbton 38° netto im Band: das Auge der Nacht trägt ihn
+  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): getroffen — S0 Boden-Programm: 84808 Zeichen WGSL im Programm (Budget ≤ 84807)
+  SELBSTTEST S0 NAH-BÜHNE (die Kugel 1 km versetzt): getroffen — jenseits bodenSatz 2 · bauSatz 2
+  SELBSTTEST S0 NAH-BÜHNE (der Feuerkreis liest nichts): getroffen — fremd bauSatz(feuerstelle) 2 · bodenSatz 1
+  SELBSTTEST S0 WACHE (ein Werk fällt durch einen benannten Rufer): getroffen — das Urteil nennt selbstScheinRaeumt
+  SELBSTTEST S0 HIMMEL (der Maler taub): getroffen — S0 Himmel: nach dem Sprung auf Mitternacht trägt die Umgebung die Bestrahlung 1.870 (ungemalt), der geltende Himmel 0.675
+  SELBSTTEST S0 ABEND (die Tafel dimmt die Sonne): getroffen — S0 Abend: die Sonne 10° hoch trägt 0.680 des Durchlasses der EINEN Atmosphäre (E0 · `_atmoSonne` · Horizont-Fade)
+  SELBSTTEST S0 ABEND (der Deckel deckelt den Abend): getroffen — S0 Abend: die 18-%-Karte steht bei Sonne 10° -1.72 EV unter Mittelgrau + 1 (Belichtung 1.000, E 2.327; Soll ≥ −0.5)
+  SELBSTTEST S0 NACHT (der Himmel ohne Sternen-Licht): getroffen — S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt Luma 18.4, abgesoffen 0.0 % (Soll ≥ 22 und ≤ 5.0 %, die Nacht der EINEN Licht-Kette) — der Himmel der Nacht trägt kein eigenes Licht (Sternen-Licht
+  SELBSTTEST S0 ABEND (die Uhr läuft im Lauf 0,002 Tag weiter): hält — Licht 1 der Atmosphäre: das Soll liest die Sonne der Welt-Uhr
+
+✅ S0 BILD GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe (18 s, nvidia/pascal · Holz kienspan)
+
+13:17:06 Schloss geloest
+EXIT=0 DAUER=19s SCHRITT=14 GATE=gate:pruefbuehne-licht

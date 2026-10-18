@@ -1,0 +1,48 @@
+13:03:43 Schloss omen-1710-n, Schritt 1 gate:fern-ring, Kopf e5db7566, gpu 139 MHz, 62, P8
+
+> anazhrealm@18.546.18 gate:fern-ring
+> node scripts/diag-fern-ring.cjs
+
+=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===
+[linse-gpu] nvidia/pascal
+  ✅ 4: HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht)
+  ✅ 1: genau 4 Ring-Meshes in der Szene — 3 Schalen und die Naht der Schale 0 (Draw-Calls gedeckelt) — meshes=4 szene=4
+  ✅ 1: Vertex-Zahlen wie deklariert (winkel×reihen je Schale) — counts=7680/3072/2304
+  ✅ 1: ZWEI Stoffe — frei (ohne Maske und Weiche) für die Schalen und Schale 0 frei, Maske + Weiche nur auf dem Naht-Mesh
+  ✅ 1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)
+  ✅ 1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone
+  ✅ Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, mehrere Takte, Cursor voll) — ticks=261 maxDelta=1024
+  ✅ 2: HÖHEN == GESETZ — 60 Proben |mesh − _terrainMacroSurfaceY(snap,false)| < 0.01 (inkl. Wasser-Klemme/Saum) — bad=0 worst=0.0000
+  ✅ SELBSTTEST: die verfälschte Erwartung (law + 0.5) fällt rot (60/60)
+  ✅ 2c: DAS EINE WASSER — unter dem Fern-Wasser liegt jeder nasse Ring-Punkt unter dessen tiefstem Tal (keine Klumpen) — 1305 nasse Punkte, Klumpen 0, tiefstes Tal 17.54 m, höchster Ring-Punkt 17.44 m, Spiegel Welt -3 m / Probe 22.3 m
+  ✅ 2c SELBSTTEST: die alte Regel (Spiegel − wasserDrop) fällt rot beim Namen — alt: 1278 von 1305 nassen Punkten über dem tiefsten Tal (17.54 m), höchster 21.9 m
+  ✅ 2c: DER HUB liest Wind-Zeile und Treiber des Gesetzes (beide doppelt: doppelter Hub; jede allein hebt ihn) — Hub 4.416 m (Wind 0.7,0.9, Treiber 0.7,0.9), beide doppelt ×2.0000, nur Wind 6.368 m, nur Treiber 6.880 m
+  ✅ 3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport
+  ✅ 3: der Re-Anker hängt in Scheiben voll ein (Zähler == totalVerts) — ticks=108
+  ✅ 3b: DER HAUPT-FADEN RECHNET KEIN FERN-GESETZ (B2) — während ein Re-Anker einhängt, ruft der Takt des Rings weder das Höhen-Gesetz noch die Boden-Farbe; Selbsttest: EIN Ruf im Fenster zählt — Rufe im Takt 0, Selbsttest 1
+  ✅ 3: die Proben stimmen am NEUEN Ort (Höhen schwimmen nicht) — bad=0 worst=0.0000
+  ✅ 6: KAMERA-WEITUNG — far = Schale-3-aussen + 500, alter Wert gemerkt — far=8500 soll=8500 alt=1000
+  ✅ 6: DIE LUFT TRÄGT — scene.fogNode statt Nebel, Sichtweite am Boden ≥ 5 km, aus 300 m weiter (Höhen-Dunst) — boden=22561 hoch=30427 zurueck=22565 knoten=true
+  ✅ 6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt
+  ✅ 7: nach dem Dispose entsteht der Ring aus dem Fern-Faden wieder ganz (Cursor voll, sichtbar)
+  ✅ 8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz) — laeufe=1 pano=1
+  ✅ 8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl) — worst=0.0002
+  ✅ 8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel — treffer=1632
+  ✅ 8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln fehlt jedem Treffer die In-Streuung — von der Luft gehoben=1632 von 1632 Treffern
+  ✅ 8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort — start=1 mitte=0.4731999933719635 ende=0 aus=true sofort=0
+  ✅ 8: der Pass fällt mit dem Ring (Dispose)
+  ✅ 9: DIE NAHT — der Ring trägt den Boden-Stoff des Chunks (Wege-Karte + Geologie bauen ihn, dieselben Licht-Knoten) — geologie=2 wege=2 ring=[colorNode,normalNode,roughnessNode] chunk=[colorNode,normalNode,roughnessNode]
+  ✅ 9: DIE NAHT — dieselbe Höhe: die Stufe Ring (0,3 m draußen) gegen Chunk (drinnen), je gegen das volle Gesetz — keine Kante (Bias ≤ 0,15 m), p95 ≤ √(Sehne des Rings im Freien² + Abweichung des Chunks²) + 0,1 m (zwei unabhängige Fehler); Selbsttest: das alte 2-m-Tauchen fällt rot — chunks=49 proben=188 chunk-eigen-p95=1.353 ring-sehne-p95=2.194 bias=-0.101 p50=0.277 p95=1.194 max=3.206 selbsttest-p95=3.023
+  ✅ 9: DIE NAHT — kein Loch: wo der maskNode verwirft (`_fernRingRegel` 2), trifft der senkrechte Strahl ein Deck (Chunk oder Stich-Band), an allen vier Kanten innen und außen und im Inneren; Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) zeigt Löcher — regel=true verworfen=16445 loch=0 seiten={} orte=[] geomorph=1 selbsttest-zelle=332/22785
+  ✅ 9: DIE NAHT — kein Durchstich: wo der Ring zeichnet, liegt er nicht über dem Deck (im Saum um die Weiche gesenkt — er weicht dem Chunk in die Tiefe); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %) — proben=22438 anteil=0.0000 seiten={} weiche=6 stufen={"0":6,"1":30,"2":13} zeit=3476+21659ms maskNode=true karte=49/49 selbsttest-ohne-karte=0.3457
+  ✅ 9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet, und die Weiche des Saums den Fehler der Masche (`_fernRingWeiche`: Steigung × Durchmesser); Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein — einschnitt=0/0 orte=[] luecke=272 (davon unter der Weiche 238 ["(518.3|-5.4) Deck 116.3 Ring 117.6 Weiche 13.9","(518.5|-5.4) Deck 116.3 Ring 117.7 Weiche 14.0","(517.8|-5.4) Deck 116.3 Ring 117.6 Weiche 13.9","(519.0|-5.4) Deck 116.4 Ring 117.7 Weiche 14.0"]) weiche-max=71.3 m feld: takte=550 offen=0 ohne-flaeche=0 spalte=4 µs (100 Rand-Punkte) selbsttest-2d-hoehe=25
+  ✅ 10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5 — reihen=24 median=0.373 p90=0.584 selbsttest zufall=0.99 glatt=0.25
+  ✅ 11: DAS DACH IST DER BESTAND — die Deckung des Kronendachs trifft die Kronen-Deckung des gepflanzten Waldes (192 × 192 m, je 32-m-Land-Kachel) im Verhältnis 0,8–1,25; Selbsttest: das alte Dach (die Geburt als Deckung) fällt rot — kacheln=36 gepflanzt=0.163 dach=0.176 verhaeltnis=0.931 selbsttest-alt=0.886 (0.184)
+  ✅ 12: DIE WEICHE KOSTET NUR AN DER NAHT — kein gezeichnetes Dreieck mit depthNode ohne Rand-Zelle des Gebauten in Reichweite (1½ s_max); Selbsttest: die Weiche über den ganzen Ring findet Dreiecke ohne Naht — weiche=2661 ohne-naht=0 {} ring=18621 rand-zellen=49 selbsttest-weiche-überall=15960
+  ✅ 13: DIE TEILUNG IST TREU — ein freies Dreieck trägt nur Regel 0, ein getragenes nur Regel 2 (die Punkte der Loch-Probe und Ecken, Kanten-Mitten, Schwerpunkte); Selbsttest: die Naht als frei zeigt Stiche, verworfen Löcher — proben=94034 stich=0 loch=0 klassen(frei/naht/getragen)=[5976,2661,6339] orte=[] selbsttest stich=12235 loch=7908
+  ✅ 14: DAS WASSER DES RINGS IST DAS WASSER DES BODENS — ein See liegt über dem Ring; ein Fluss trägt seinen Anteil der Masche als Wasser-Anteil aNass (≤ 0,05, gezeichnet mit dem Blick des Wassers), seine Boden-Farbe ohne Fern-Blau (≤ 0,01) und seine Höhe als Mittel aus Boden und Spiegel (≤ 0,05 m); Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt den Fluss — see=0 verdeckt=0 fluss=532 deutlich(>=0,25)=18 abweichung=0 zwilling=0 hoehe=0/481 offen=0 orte=[] selbsttest-alt=532 alt-hoehe=101 hub-max=0.253 m karte(mitte/fehl/daneben)=95/0/0
+  ✅ 5: kein pageerror
+
+✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz (Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, quantisiertes Re-Zentrieren, headless-default ruhig.
+13:04:29 Schloss geloest
+EXIT=0 DAUER=46s SCHRITT=1 GATE=gate:fern-ring

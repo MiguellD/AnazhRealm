@@ -1,0 +1,21 @@
+01-fern-ring.log | EXIT=0 DAUER=46s SCHRITT=1 GATE=gate:fern-ring | ✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz (Fern-Wahrheit 
+02-fernwald.log | EXIT=0 DAUER=122s SCHRITT=2 GATE=gate:fernwald | ✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (1095 Bäume), kein Satz, kein Pop am R
+03-streu-fern.log | EXIT=0 DAUER=138s SCHRITT=3 GATE=gate:streu-fern | ✅ GRÜN — die Klein-Streu liest ihre Fernform aus dem Studio-Budget jenseits der EINEN Nah-Grenze: dort ke
+04-luft-sicht.log | EXIT=0 DAUER=8s SCHRITT=4 GATE=gate:luft-sicht | GRÜN — die Luft ist Physik: klare Sicht trägt Kilometer, die Ferne trägt die Funktion, keine Wand.
+05-seam.log | EXIT=0 DAUER=19s SCHRITT=5 GATE=gate:seam | 
+06-schatten-bias.log | EXIT=0 DAUER=3s SCHRITT=6 GATE=gate:schatten-bias | 
+07-ziel-zensus.log | EXIT=0 DAUER=24s SCHRITT=7 GATE=gate:ziel-zensus | 
+08-scatter-lod.log | EXIT=0 DAUER=42s SCHRITT=8 GATE=gate:scatter-lod | ✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hys
+09-analog-nah.log | EXIT=1 DAUER=6s SCHRITT=9 GATE=gate:analog-nah | ❌ SELBST-TEST: erzwungener Kapsel-Satz in 20 m gesetzt → rot und genannt (unbekannt:Feld 1 19.4 m seit 1 m
+10-foundry-crossfade.log | EXIT=0 DAUER=45s SCHRITT=10 GATE=gate:foundry-crossfade | ✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (R
+11-s4-impostor-workshop.log | EXIT=0 DAUER=10s SCHRITT=11 GATE=gate:s4-impostor-workshop | ✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf de
+12-foundry-impostor.log | EXIT=0 DAUER=14s SCHRITT=12 GATE=gate:foundry-impostor | ✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gru
+13-freie-slots.log | EXIT=0 DAUER=38s SCHRITT=13 GATE=gate:freie-slots | ✅ gate:freie-slots GRÜN — nach 7 Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare
+14-pruefbuehne-licht.log | EXIT=0 DAUER=19s SCHRITT=14 GATE=gate:pruefbuehne-licht | ✅ S0 BILD GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe (18 s, nvidia/pascal · Holz k
+15-wasser-leben_bild.log | EXIT=0 DAUER=14s SCHRITT=15 GATE=gate:wasser-leben:bild | WASSER-LEBEN GRÜN
+16-post-kette.log | EXIT=0 DAUER=15s SCHRITT=16 GATE=gate:post-kette | ✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeic
+17-portal-membran.log | EXIT=0 DAUER=50s SCHRITT=17 GATE=gate:portal-membran | ✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung fr
+18-ego-schatten.log | EXIT=0 DAUER=19s SCHRITT=18 GATE=gate:ego-schatten | ✅ GRÜN — in der Ego-Sicht wirft der Leib 754 px Schatten am Boden, IoU 0.9895 gegen dieselbe Pose in der 
+19-verdeckungs-abfrage.log | EXIT=0 DAUER=27s SCHRITT=19 GATE=gate:verdeckungs-abfrage | ✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach
+20-weltbild-frost_echt.log | EXIT=0 DAUER=94s SCHRITT=20 GATE=gate:weltbild-frost:echt | 
+21-gpu-fehler.log | EXIT=0 DAUER=4s SCHRITT=21 GATE=gate:gpu-fehler | ✅ SELBST-TEST GRÜN — die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.

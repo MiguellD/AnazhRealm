@@ -1,0 +1,71 @@
+13:17:12 Schloss omen-1710-n, Schritt 15 gate:wasser-leben:bild, Kopf e5db7566, gpu 139 MHz, 65, P8
+
+> anazhrealm@18.546.18 gate:wasser-leben:bild
+> node scripts/diag-wasser-leben.cjs --bild
+
+[linse-gpu] nvidia/pascal
+{
+ "seitenFehler": [],
+ "hashSin": null,
+ "bild": {
+  "uhr60": {
+   "ruhig": {
+    "kantenDichte": 0.155,
+    "weissAnteil": 0,
+    "hellAnteil": 0,
+    "mittel": 5.6,
+    "pixel": 22164
+   },
+   "schnelle": {
+    "kantenDichte": 2.076,
+    "weissAnteil": 0.9721,
+    "hellAnteil": 0.995,
+    "mittel": 103.6,
+    "pixel": 22820
+   }
+  },
+  "uhr3600": {
+   "ruhig": {
+    "kantenDichte": 0.153,
+    "weissAnteil": 0,
+    "hellAnteil": 0,
+    "mittel": 5.8,
+    "pixel": 22164
+   },
+   "schnelle": {
+    "kantenDichte": 2.394,
+    "weissAnteil": 0.9674,
+    "hellAnteil": 0.9947,
+    "mittel": 105.1,
+    "pixel": 22820
+   }
+  },
+  "kantenVerhaeltnis": 1.153,
+  "sturmVerhaeltnis": 2.22
+ },
+ "regen": {
+  "litAnteil": 0.01595,
+  "schlieren": 279,
+  "neigung": 0.221
+ },
+ "licht": {
+  "nachtOben": 0.0435,
+  "nachtUnten": 0.0205,
+  "mittagOben": 0.3018,
+  "mittagUnten": 0.1427,
+  "himmelVor": [
+   0.35156,
+   0.41382,
+   0.36182
+  ],
+  "himmelGetaucht": [
+   0.35132,
+   0.41333,
+   0.36084
+  ]
+ }
+}
+
+WASSER-LEBEN GRÜN
+13:17:27 Schloss geloest
+EXIT=0 DAUER=14s SCHRITT=15 GATE=gate:wasser-leben:bild
