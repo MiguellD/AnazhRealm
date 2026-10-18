@@ -51,14 +51,23 @@ function check(name, ok, detail) {
 const ARGV = process.argv.slice(2);
 const OPT = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
 
-// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft. ──
+// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft, und ihre FRIST
+// in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.: ein Gang hing 696 s
+// in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M und der Null-Renderer der CI)
+// das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das Warten auf die Birken des Bilds,
+// ≤ 900 Takte) · werkstatt 68,5 — die Frist liegt beim 3- bis 10-fachen.
+// Die Fahrt ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild (Dirigent/takt).
 const STATIONEN = [
-    ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/],
-    ["lichtung", /^(Gelaende\/boden|Vegetation\/baum|Siedlung\/(ort|satz))$/],
-    ["fahrt", /^(Koerper\/(fahrt|bewegung)|Gelaende\/(chunks|kollision))$/],
-    ["wort", /^(Feld\/|Wasser\/hydro$|Netz\/p2p$)/],
-    ["werkstatt", /^(Werkstatt|Studio|Bau)\//],
+    ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/, 60],
+    ["lichtung", /^(Gelaende\/boden|Vegetation\/baum|Siedlung\/(ort|satz))$/, 120],
+    ["fahrt", /^(Koerper\/(fahrt|bewegung)|Gelaende\/(chunks|kollision)|Siedlung\/(satz|ort)|Dirigent\/takt)$/, 300],
+    ["wort", /^(Feld\/|Wasser\/hydro$|Netz\/p2p$)/, 60],
+    ["werkstatt", /^(Werkstatt|Studio|Bau)\//, 300],
 ];
+function fristBruch(station, sek, takte) {
+    const f = (STATIONEN.find(([n]) => n === station) || [])[2];
+    return f && sek > f ? `station ${station} steht ${Math.round(sek)} s (${takte} Takte) über ihrer Frist von ${f} s` : null;
+}
 // Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen Gang;
 // was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
 const ALLE_MODULE = /^(Dirigent\/kern|Dienst|Daten)$/;
@@ -89,6 +98,9 @@ Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.005, w
 // mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032;
 // Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°).
 Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
+// Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz: 0, der
+// Rest des Grads ist die Rundung). Das Werk in der Vorschau der Werkstatt deckt ≥ vorschauBildMin ihres Canvas.
+Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
 // ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
 // Ladeschirm ist weg, W trägt den Spieler.
@@ -103,7 +115,7 @@ function ankunftVerdict(m) {
 }
 // Die gesunden Abschnitte des Selbst-Tests (Wechsel und Hang)
 const GLATT = { ruckN: 120, ruckP95: 0.02, gleichN: 200, gleichP95: 0.04, hochP05: 19, radN: 400, radWeg: 0 };
-const WECHSEL_GESUND = Object.assign({ wechsel: [[74, 4], [70, 4]], stufeWeg: 0.1, anteil: 0.02, rauschen: 0 }, GLATT);
+const WECHSEL_GESUND = Object.assign({ wechsel: [[74, 4], [70, 4]], wiederauf: 0, stufeWeg: 0.1, anteil: 0.02, rauschen: 0 }, GLATT);
 const HANG_GESUND = Object.assign({ gefaelle: 0.42, weg: 60, armN: 200, armMin: 0.6, schnapp: 0, armWeg: 0.4, stufeWeg: 0.1, anteil: 0.02, rauschen: 0 }, GLATT);
 // FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel unter fester
 // Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der Hülle des gerittenen
@@ -136,6 +148,9 @@ function fahrtVerdict(m) {
         out.push(`wechsel: ${nach.length} Rückkehr nach Third, die Gier drehte in Ego ${nach.map(([g]) => `${g}°`).join(" · ") || "—"} (vakuös: Soll 2 je ≥ ${SOLL.egoGrad}°)`);
     for (const [ego, n10] of nach)
         if (!(n10 <= SOLL.azGrad)) out.push(`kamera nach dem Wechsel ${n10}° neben der Gier nach 10 Bildern (in Ego drehte sie ${ego}°, Soll ≤ ${SOLL.azGrad}°): die Chase-Cam beginnt aus der alten Richtung`);
+    if (nach.length && w.wiederauf == null) out.push("wiederaufstieg: nicht gemessen (vakuös)");
+    else if (nach.length && !(w.wiederauf <= SOLL.wiederaufGrad))
+        out.push(`wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ${w.wiederauf}° neben seiner Gier (Soll ≤ ${SOLL.wiederaufGrad}°): die Gier im Bild beginnt aus der letzten Fahrt (mountArchitecture, _gierVor)`);
     // DER RUCK, DER GLEICHLAUF, DIE HÖHE über der Fahrbahn: im Kreis (feste Lenkung) und am Hang
     for (const [wo, a] of [["im Wechsel", w], ["am Hang", h]]) {
         if (a === h && !(h.gefaelle >= SOLL.hangMittel)) continue;
@@ -232,6 +247,9 @@ function vorschauVerdict(m) {
     if (!(m.anteil >= SOLL.vorschauAnteil))
         out.push(`vorschau ${(100 * (m.anteil || 0)).toFixed(1)} % im Bild (Maske ${m.maskeImRender}, Auge ${m.augeAbstand} m)`);
     if (m.maskeDanach !== m.maskeWelt) out.push(`welt-maske nach dem Vorschau-Render ${m.maskeDanach} statt ${m.maskeWelt}`);
+    // das Bild der Karte (der Null-Renderer zeichnet keins): das Werk deckt sein Canvas, gemessen mit gegen ohne Werk
+    if (m.bildAnteil != null && !(m.bildAnteil >= SOLL.vorschauBildMin))
+        out.push(`vorschau-bild: das Werk deckt ${(100 * m.bildAnteil).toFixed(1)} % des Canvas (Soll ≥ ${100 * SOLL.vorschauBildMin} %)`);
     return out;
 }
 
@@ -595,6 +613,11 @@ async function probe(arg) {
             const cz = ring.reduce((s2, a) => s2 + a.position.z, 0) / ring.length;
             m.ringMitteAbstand = +Math.hypot(cx - P.x, cz - P.z).toFixed(2);
         }
+        // DAS BILD DER LICHTUNG: der Spieler auf der Plattform, sein Blick über die Lichtung, wenn der Wald steht
+        if (!R._isHeadlessNull)
+            await angehalten(async () => {
+                out.bilder.lichtung = png(await schuss());
+            });
         m.gestartet = true;
     } catch (e) {
         out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
@@ -939,6 +962,22 @@ async function probe(arg) {
                 } finally {
                     await halt();
                 }
+                // DER WIEDERAUFSTIEG (Randfall des Prüfers 18.10.): der Wagen dreht zwischen zwei Fahrten (ein Stoß, der Nachlauf),
+                // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es zeichnet den
+                // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt dort
+                if (st.player.mountedArch == null) {
+                    const stoss = 1; // rad, der Wagen dreht im Stand um 57°
+                    e.rotationY = (Number.isFinite(e.rotationY) ? e.rotationY : 0) + stoss;
+                    r._archInstanceUpdate(e);
+                    r.mountArchitecture(e);
+                    try {
+                        st._bildAlpha = 0;
+                        r._tickMountedMovement(0);
+                        m.wechsel.wiederauf = grad(e.rotationY - r._rittGier(e, e._rideYaw));
+                    } finally {
+                        r.dismountArchitecture();
+                    }
+                }
             }
             const hang = ort((x, z, y, torNah) => {
                 for (let j = 0; j < 16; j++) {
@@ -1083,6 +1122,17 @@ async function probe(arg) {
         const msg = gesendet.find((o) => o && o.type === "dsl");
         m.gesendet = !!msg;
         m.ortKnoten = msg && Array.isArray(msg.program) ? JSON.stringify(msg.program[2]) : null;
+        // DAS BILD DES WORTS: der Spieler blickt auf die Birken seines Satzes, wenn sie gezeichnet sind
+        if (!R._isHeadlessNull && nB.length) {
+            for (let i = 0; i < 900 && !nB.every((a) => r._archIsRendered(a)); i++) await tick(1);
+            m.birkenGezeichnet = nB.filter((a) => r._archIsRendered(a)).length;
+            const [cx, cz] = [nB.reduce((s2, a) => s2 + a.position.x, 0) / nB.length, nB.reduce((s2, a) => s2 + a.position.z, 0) / nB.length];
+            st.yaw = Math.atan2(cx - pm.x, cz - pm.z); // vor dem Spieler liegt (sin Gier, cos Gier)
+            await tick(12);
+            await angehalten(async () => {
+                out.bilder.wort = png(await schuss());
+            });
+        }
         for (const a of nB.slice().reverse()) r.removeArchitecture(a);
         // Der Empfänger steht 200 m weiter: seine Birken stehen dort, wo der Absender sie wollte.
         if (msg) {
@@ -1463,6 +1513,35 @@ async function probe(arg) {
         r._workshopRender();
         m.maskeDanach = lu.uLodMaskOn.value;
         m.renders = rec.length;
+        // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler sieht es).
+        // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und ohne Werk:
+        // der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im Bild der Fahrt)
+        if (!R._isHeadlessNull) {
+            const beob = ws.preview.renderer.render;
+            delete ws.preview.renderer.render;
+            try {
+                await ws.preview.renderer.init();
+                const c = ws.preview.canvas;
+                const [w2, h2] = [c.width, c.height];
+                const cv = Object.assign(document.createElement("canvas"), { width: w2, height: h2 });
+                const ctx = cv.getContext("2d", { willReadFrequently: true });
+                const zeichne = (sichtbar) => {
+                    ws.preview.currentMesh.visible = sichtbar;
+                    r._workshopRender();
+                    ctx.clearRect(0, 0, w2, h2);
+                    ctx.drawImage(c, 0, 0);
+                    return ctx.getImageData(0, 0, w2, h2).data;
+                };
+                const ohne = zeichne(false);
+                const mit = zeichne(true);
+                const { teil } = window.__klassenTeilung(mit, [ohne], w2, h2, 18);
+                m.bildAnteil = +(teil.reduce((s2, x) => s2 + (x === 1), 0) / (w2 * h2)).toFixed(4);
+                out.bilder.werkstatt = cv.toDataURL("image/png");
+            } finally {
+                ws.preview.currentMesh.visible = true;
+                ws.preview.renderer.render = beob;
+            }
+        }
         m.gestartet = true;
         const R = rec[rec.length - 1];
         if (R) {
@@ -1739,6 +1818,7 @@ async function probe(arg) {
             ["leere Vorschau (21 108 Dreiecke, 0 im Bild)", { anteil: 0, maskeImRender: 1, augeAbstand: 36 }, "vorschau 0.0 %"],
             ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
             ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
+            ["das Canvas der Vorschau bleibt leer (die Karte las kein Bild)", { bildAnteil: 0 }, "vorschau-bild: das Werk deckt 0.0 %"],
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
@@ -1865,6 +1945,8 @@ async function probe(arg) {
                     ["der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)", { stufeWeg: 20.1, stufeTaeter: "L1 (Band)" }, "aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band)"],
                     ["auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter", { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" }, "aufbau 21.6 m"],
                     ["Third beginnt aus der alten Richtung (Befund 17.10., `_kamYaw` nur in Third)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[74, 31], [70, 4]] }) }, "kamera nach dem Wechsel 31°"],
+                    ["der Wiederaufstieg zeichnet die Gier der letzten Fahrt (Randfall 18.10., `_gierVor`)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: 57 }) }, "wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen 57°"],
+                    ["kein Wiederaufstieg (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: null }) }, "wiederaufstieg: nicht gemessen"],
                     ["Ego dreht nicht (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[3, 1], [80, 4]] }) }, "wechsel: 2 Rückkehr"],
                     ["die Kamera springt je Bild quer gegen den Wagen", { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) }, "kamera-ruck seitlich p95 0.31"],
                     ["das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) }, "gleichlauf im Wechsel p95 0.56"],
@@ -1969,11 +2051,23 @@ async function probe(arg) {
         }
         const vorWelt = fahrtVerdict({ gestartet: true, typ: "fahrzeug_gt", sichtVor: "first", sichtRitt: "third", sichtNach: "first", weg: 100, armN: 300, armP50: 0.68, armMin: 0.46, imWagen: 0, anteil: 0.013, rauschen: 0, abgestiegen: true, stufeWeg: 1.7, wechsel: WECHSEL_GESUND, hang: HANG_GESUND });
         check("Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter", vorWelt.length === 0, vorWelt.join(" · "));
+        // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der längste Gang nicht
+        for (const [name, [st0, sek, takte], soll] of [
+            ["der Hänger der Werkstatt", ["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"],
+            ["die längste Fahrt (91,4 s)", ["fahrt", 91.4, 5400], null],
+            ["die längste Werkstatt (68,5 s)", ["werkstatt", 68.5, 900], null],
+        ]) {
+            const ist = fristBruch(st0, sek, takte);
+            check(`Selbst-Test Frist: ‚${name}' → ${soll || "kein Bruch"}`, ist === soll, String(ist));
+        }
+        check("Selbst-Test Frist: jede Station trägt ihre Frist", STATIONEN.every(([, , f]) => f > 0), STATIONEN.map(([n, , f]) => `${n} ${f}`).join(" · "));
         // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang, Doku nur die Ankunft
         const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
         for (const [dateien, soll] of [
             [["stamm/koerper-fahrt.js"], "ankunft,fahrt"],
             [["stamm/bild-kosten.js"], "ankunft"],
+            [["stamm/siedlung-satz.js"], "ankunft,lichtung,fahrt"],
+            [["stamm/dirigent-takt.js"], "ankunft,fahrt"],
             [["docs/PFLICHT-OFFEN.md", "scripts/diag-ankunft.cjs"], "ankunft"],
             [["stamm/werkstatt-vorschau.js", "stamm/feld-dsl.js"], "ankunft,wort,werkstatt"],
             [["stamm/dienst.js"], "ankunft,lichtung,fahrt,wort,werkstatt"],
@@ -2032,12 +2126,31 @@ async function probe(arg) {
     if (nullR === karte) check("der Renderer, den die Weiche wählt", false, `Karte ${karte}, Null-Renderer ${nullR}`);
     if (karte) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    // DER PULS DES GANGS je 30 s (die CI sieht, wo er steht): die Station, ihre Sekunden, die Takte
-    const puls = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte]).then(([s, t, k]) => s && console.log(`  … ${s[0]} seit ${((t - s[1]) / 1000).toFixed(0)} s, ${k - s[2]} Takte`)).catch(() => {}), 30000);
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
-    clearInterval(puls);
-    await browser.close();
+    // DIE WACHE DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
+    // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
+    let [bruch, schlag] = [null, 0];
+    const wache = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)]).then(([s, t, k, log]) => {
+        if (!s || bruch) return;
+        const sek = (t - s[1]) / 1000;
+        if (++schlag % 6 === 0) console.log(`  … ${s[0]} seit ${sek.toFixed(0)} s, ${k - s[2]} Takte`);
+        const f = fristBruch(s[0], sek, k - s[2]);
+        if (f) [bruch] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
+    }).catch(() => {}), 5000);
+    let out = null;
+    try {
+        out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    } catch (e) {
+        if (!bruch) throw e;
+    }
+    clearInterval(wache);
     server.close();
+    if (bruch) {
+        fs.rmSync(platte, { recursive: true, force: true });
+        check("jede Station in ihrer Frist (Tafel STATIONEN)", false, bruch);
+        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
+        process.exit(1);
+    }
+    await browser.close();
     fs.rmSync(platte, { recursive: true, force: true });
     fs.mkdirSync(bilderOrt, { recursive: true });
     for (const [name, url] of Object.entries(out.bilder)) fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
@@ -2065,7 +2178,7 @@ async function probe(arg) {
             const bild = (m) => (m.bild === false ? "ohne Bild (Null-Renderer)" : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`);
             const zeile = (m) => {
                 const [w, h] = [m.wechsel || {}, m.hang || {}];
-                const wechsel = w.wechsel ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego/Abstand nach 10 Bildern ${w.wechsel.map(([g, a]) => `${g}°/${a}°`).join(" · ")} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}` : "";
+                const wechsel = w.wechsel ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego/Abstand nach 10 Bildern ${w.wechsel.map(([g, a]) => `${g}°/${a}°`).join(" · ")} · Wiederaufstieg ${w.wiederauf == null ? "—" : w.wiederauf + "°"} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}` : "";
                 const hang = h.armN != null ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck seitlich p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}` : "";
                 return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${wechsel}${hang}`;
             };
@@ -2102,7 +2215,7 @@ async function probe(arg) {
         } else if (n === "werkstatt") {
             urteil(n, "V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)", out.rezept, rezeptVerdict, (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`);
             urteil(n, "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)", out.vorschau, vorschauVerdict, (m) =>
-                `${m.vertices || 0} Proben · ${pct(m.anteil)} behalten · Maske im Render ${m.maskeImRender} · Welt-Auge ${m.augeAbstand} m`);
+                `${m.vertices || 0} Proben · ${pct(m.anteil)} behalten · Maske im Render ${m.maskeImRender} · Welt-Auge ${m.augeAbstand} m${m.bildAnteil != null ? ` · im Canvas ${pct(m.bildAnteil)}` : ""}`);
             const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}` : `${wer} —`);
             urteil(n, `V-D3 Fremder Zug jeder Wartende erwacht nach einem fremd gezogenen Körper, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`, out.zug, zugVerdict, (m) =>
                 `${zZ("vorschau", m.vorschau)} · ${zZ("hand", m.hand)} · Stufen ${(m.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")} · Vorrat ${m.vorrat ? `${m.vorrat.key} ${m.vorrat.auftraege}× bestellt` : "—"}`);
@@ -2111,6 +2224,11 @@ async function probe(arg) {
                 return `${s.length} gemessen (min ${s[0]} · median ${s[s.length >> 1]} · max ${s[s.length - 1]}) · ${(m.eintraege || []).filter((q) => q.leer).length} ehrlich leer · ${m.waffenImBuch} Waffen · ${m.ms} ms`;
             });
         }
+    }
+    // JE STATION EIN BILD auf der Karte (Sage a, tue a: der Kopf dieser Datei und der Schritt der CI versprechen es)
+    if (karte) {
+        const ohne = stationen.filter((s) => !out.bilder[s]);
+        check(`je Station ein Bild (${stationen.length})`, ohne.length === 0, ohne.length ? `ohne Bild: ${ohne.join(", ")}` : stationen.join(" · "));
     }
     console.log(`  Bilder: ${Object.keys(out.bilder).map((b) => path.join(bilderOrt, b + ".png")).join(" · ")}`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
