@@ -6,7 +6,7 @@ Führe eine umfassende Prüfung des Projekts durch. Arbeite die folgenden Schrit
 
 ## 1. Repo-Hygiene
 - `git status` und `git log -5 --oneline`
-- Zweig: welcher, und ist er vom Kopf von `integ-probe` abgezweigt (CLAUDE.md, Lehre 12)?
+- Zweig: welcher, und ist er vom Kopf von `integ-probe` abgezweigt (Lehre 12, `.claude/skills/anazh-lehren/SKILL.md`)?
 - Ungestagte Änderungen vorhanden?
 
 ## 2. Syntax & Statik
