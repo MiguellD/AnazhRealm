@@ -2049,9 +2049,12 @@ function urteil(o) {
         // im Innenraum weder Halm noch Boden (Wiese oder Erde über der Diele), und über keiner Probe Erde über Diele eine Fläche
         const rot = b.filter((x) => x.halm || x.boden || x.erdeOffen);
         if (rot.length) f.push(`Bild Halm: ${rot.length} von ${b.length} Häusern zeigen Halme oder Boden im Innenraum (${rot.map((x) => `${x.typ}${x.spieler ? "*" : ""} ${x.halm}+${x.boden}/${x.erdeOffen}`).join(" · ")})`); // prettier-ignore
-        // von außen ändert der Schnitt nichts vor der Wand (Befund 2 der Prüfung 18.10.); ohne Außenblick ist die Probe blind
-        const aussen = b.filter((x) => x.aussen || x.aussen == null);
-        if (aussen.length) f.push(`Bild außen: ${aussen.length} von ${b.length} Häusern — der Schnitt ändert Boden vor der Wand (${aussen.map((x) => `${x.typ}${x.spieler ? "*" : ""} ${x.aussen == null ? "kein Blick" : x.aussen}`).join(" · ")}; Soll 0 Pixel aus 8 m und 45 m)`); // prettier-ignore
+        // von außen ändert der Schnitt nichts vor der Wand (Befund 2 der Prüfung 18.10.); ohne Außenblick ist die Probe blind.
+        // Das Rauschen der Probe (der Neueintritt der Bereiche ordnet den Boden-Satz neu): am Kopf 1–11 px in je einem anderen
+        // Haus je Lauf, nie dasselbe zweimal; ein Streifen vor der Wand zeigt sich in jedem Haus (Selbsttest traufe: 22 von 22,
+        // Median ~190 px)
+        const aussen = b.filter((x) => x.aussen > 20 || x.aussen == null);
+        if (aussen.length) f.push(`Bild außen: ${aussen.length} von ${b.length} Häusern — der Schnitt ändert Boden vor der Wand (${aussen.map((x) => `${x.typ}${x.spieler ? "*" : ""} ${x.aussen == null ? "kein Blick" : x.aussen}`).join(" · ")}; Soll ≤ 20 Pixel je Haus aus 8 m und 45 m)`); // prettier-ignore
     }
     // der Blick ins Haus (`--bild`) fährt W4b in der Welt mit echtem Renderer und warmer Foundry: dort lebt keine Promotion und
     // keine Streu unter dem Dorf (18.10. an Basis und Kopf gleich) — er urteilt über F4 (Wiese, Halm-Schicht, Bild), die
