@@ -97,6 +97,7 @@ async function installiereBacke(page) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
+                        if (e === 0) continue; // ein Ring der Hebung steht, der nächste folgt (F2b)
                     }
                     if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
                     await new Promise((ok) => setTimeout(ok, 50));
@@ -406,14 +407,42 @@ async function kleberProbe(page, fmtWunsch) {
             mO.setMatrixAt(sO, new T.Matrix4()), (mO.frustumCulled = false), r._lodSlotStamp({ mesh: mO }, sO, 1, false, leafO);
             const camO = new T.PerspectiveCamera(35, W / H, 0.5, 500);
             camO.position.set(0, 4 + 26 * Math.sin(Math.PI / 3), 26 * Math.cos(Math.PI / 3)), camO.lookAt(0, 4, 0), camO.updateMatrixWorld(true);
+            // ein neuer Stoff zeichnet erst, wenn sein Programm steht (die Bau-Frist der Erst-Zeichnung): gezählt wird das
+            // ruhige Bild — zweimal dieselbe Pixel-Zahl, nicht null (höchstens 40 Bilder)
             const deckt = async (o) => {
                 const s2 = new T.Scene().add(o, new T.AmbientLight(0xffffff, 3));
-                await ren.renderAsync(s2, camO);
-                return (await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H)).filter((v, i) => i % 4 === 3).map((a) => +(a > 0));
+                let px = null;
+                for (let i = 0, vor = -1; i < 40; i++) {
+                    await ren.renderAsync(s2, camO);
+                    px = (await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H)).filter((v, j) => j % 4 === 3).map((a) => +(a > 0));
+                    const n = px.reduce((a, b) => a + b, 0);
+                    if (n > 0 && n === vor) break;
+                    vor = n;
+                    await new Promise((ok) => setTimeout(ok, 25));
+                }
+                return px;
             };
             const kO = await deckt(mO), gG = await deckt(new T.Mesh(ob, new T.MeshBasicMaterial({ side: T.DoubleSide })));
             const nK = kO.reduce((a, b) => a + b, 0), nG = gG.reduce((a, b) => a + b, 0), nI = kO.reduce((a, b, i) => a + (b & gG[i]), 0);
             out.oben = { gestalt: nG, karte: nK, deckung: +(nK / Math.max(1, nG)).toFixed(3), iou: +(nI / Math.max(1, nG + nK - nI)).toFixed(3) };
+            // SELBSTTEST C6: dieselbe Scheibe in derselben Karte, ihre Ringe aber aus der Hebung 0 gebacken (das Gesetz bis F2b:
+            // jede Ansicht waagrecht) — die Karte MUSS von oben durchfallen; danach backt der Atlas wieder seine Ringe
+            const hoeVor = at.hoehen;
+            let zW = null;
+            try {
+                at.hoehen = hoeVor.map(() => 0);
+                zW = await window.__fimpBacke(ren, at, "fimp:gateKarte|4", 93, ob);
+            } finally {
+                at.hoehen = hoeVor;
+            }
+            const leafW = r._impostorLeaf(zW, new T.Matrix4(), H0);
+            const mW = new T.InstancedMesh(r._lodInstanceFacade(leafW.geom, 2), mat, 1);
+            const gW = { key: "gate:oben-waagrecht", mesh: mW, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] };
+            const sW = r._archGroupAlloc(gW, null).slot;
+            mW.setMatrixAt(sW, new T.Matrix4()), (mW.frustumCulled = false), r._lodSlotStamp({ mesh: mW }, sW, 1, false, leafW);
+            const kW = await deckt(mW);
+            const nW = kW.reduce((a, b) => a + b, 0), iW = kW.reduce((a, b, i) => a + (b & gG[i]), 0);
+            out.obenSelbst = { ringe: hoeVor.length, karte: nW, deckung: +(nW / Math.max(1, nG)).toFixed(3), iou: +(iW / Math.max(1, nG + nW - iW)).toFixed(3) };
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
@@ -953,6 +982,10 @@ async function windProbe(page) {
         const O = C.oben || {}; // C6 DIE KARTE VON OBEN (F2b)
         console.log(`  C6 VON OBEN (60°): Gestalt ${O.gestalt} px · Karte ${O.karte} px · Deckung ${O.deckung} · IoU ${O.iou} (Soll 1 ± 0,25 · ≥ 0,6)`);
         if (!(O.gestalt > 500 && O.iou >= 0.6 && Math.abs(O.deckung - 1) <= 0.25)) errs.push(`${F} C6: die Karte zeigt von oben nicht die Krone der Gestalt (Deckung ${O.deckung}, IoU ${O.iou})`);
+        const OS = C.obenSelbst || {};
+        console.log(`  C6 SELBSTTEST (${OS.ringe} Ringe, jeder waagrecht gebacken): Deckung ${OS.deckung} · IoU ${OS.iou} — MUSS durchfallen`);
+        if (!(OS.ringe > 1 && (OS.iou < 0.6 || Math.abs(OS.deckung - 1) > 0.25)))
+            errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben (Deckung ${OS.deckung}, IoU ${OS.iou}) — die Linse ist blind`);
     }
     {
         console.log(

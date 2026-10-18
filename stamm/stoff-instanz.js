@@ -41,6 +41,7 @@ class AnazhRealm_stoff_instanz {
             V: 0, // alle Ansichten der Schicht: A Peilungen × die Ringe der Hebung
             A: 0,
             hoehen: null, // die Blick-Hebungen der Ringe (Grad, gleichmäßig ab 0)
+            offen: null, // die halb gebackene Karte {z, B, r: ihr nächster Ring, ms}: ihr gehört die Bühne B
             nt: 0,
             masse: null, // __phytoCore.karteMasse der Schicht
             cap: 0, // Schichten der Texturen
@@ -382,6 +383,7 @@ class AnazhRealm_stoff_instanz {
                   ? +(((M.aBytes + M.nBytes + M.lBytes) * at.cap) / 1048576).toFixed(2)
                   : +((M.w * M.h * 4 * 3 * (4 / 3) * at.cap) / 1048576).toFixed(2),
             weltMs: at.weltMs ? at.weltMs.slice() : null,
+            schrittMs: at.schrittMs ? at.schrittMs.slice() : null, // je Ring-Schritt (F2b): die Last EINES Takts
             gescheitertArten,
         };
     }
@@ -444,6 +446,12 @@ class AnazhRealm_stoff_instanz {
             return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
         };
         q.sort((a, b) => d2(a) - d2(b));
+        // die halbe Karte zuerst (`at.offen`: ihr nächster Ring); fiel ihre Zelle, ist die Bühne frei
+        if (at.offen) {
+            const o = at.offen.z;
+            if (o.gescheitert || at.zellen.get(o.key) !== o) at.offen = null;
+            else if (q.includes(o.key)) q.unshift(...q.splice(q.indexOf(o.key), 1));
+        }
         const t0 = performance.now();
         let n = 0;
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
@@ -454,8 +462,14 @@ class AnazhRealm_stoff_instanz {
                 q.splice(i, 1);
                 continue;
             }
-            if (this._karteWeltBacken(at, z) === null) {
+            const e = this._karteWeltBacken(at, z);
+            if (e === null) {
                 i++; // die L1 reist oder ein Bürger der Bühne wartet auf seine Pipeline
+                if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
+                continue;
+            }
+            if (e === 0) {
+                // ein Ring steht: im Budget backt derselbe Takt den nächsten
                 if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
                 continue;
             }
@@ -581,8 +595,10 @@ class AnazhRealm_stoff_instanz {
         return B;
     }
 
-    // Eine Karte im Welt-Renderer backen: null = die L1 reist (bestellt) oder ihre Programme kompilieren, false =
-    // gescheitert, true = gebacken.
+    // Eine Karte im Welt-Renderer backen, JE AUFRUF EIN RING DER HEBUNG (F2b): null = die L1 reist (bestellt), ihre Programme
+    // kompilieren oder die Bühne hält die halbe Karte einer anderen Zelle (`at.offen`), false = gescheitert, 0 = ein Ring steht,
+    // die Karte noch nicht (der nächste Aufruf backt den nächsten), true = gebacken. Der Ring 0 trägt die Sonnen-Kacheln — so
+    // kostet ein Schritt so viel wie die Karte mit einem Ring, nie das Vielfache (`schrittMs`).
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const lod = this._foundryServierStufe(z.preset, 1);
@@ -598,10 +614,14 @@ class AnazhRealm_stoff_instanz {
             this._stoffBruch(`die Karte ${z.key}: keine L1-Gestalt ${key} — die Fernstufe bleibt leer`);
             return false;
         }
+        if (at.offen && at.offen.z !== z) return null; // die Bühne hält die halbe Karte einer anderen Zelle
         const T = THREE;
         const core = globalThis.__phytoCore;
         const SZ = AnazhRealm.KARTE_SONNEN_SICHT;
         const B = this._karteBuehne(at);
+        // fiel die Bühne zwischen zwei Ringen (Ruhe, ein anderer Renderer), beginnt die Karte beim Ring 0
+        if (at.offen && (at.offen.B !== B || !B.bereit)) at.offen = null;
+        const rS = at.offen ? at.offen.r : 0; // der Ring dieses Schritts
         const bc = at.fmt === "bc";
         const t0 = performance.now();
         // die Gestalt auf die Bühne: dieselben Geometrien und Stoffe, die die Welt zeichnet
@@ -691,14 +711,15 @@ class AnazhRealm_stoff_instanz {
         try {
             rend.setMRT(B.mrt);
             rend.setClearColor(0x000000, 0);
-            // die Sonnen-Kacheln: die Krone aus jeder Richtung (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht
+            // die Sonnen-Kacheln: die Krone aus jeder Richtung (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht —
+            // im Ring 0; die Ringe danach lesen dieselben Kacheln (die Bühne gehört der Zelle bis zum letzten Ring)
             B.tiefe.value = B.leer.depthTexture;
             const R = Math.max(fr.halfW, fr.halfH) * 1.15;
             B.mitte.set(0, fr.halfH, 0);
             const L = B.licht;
             Object.assign(L, { left: -R, right: R, top: R, bottom: -R, near: 0.1, far: R * 6 });
             L.coordinateSystem = rend.coordinateSystem;
-            for (let j = 0; j < B.dirs.length; j++) {
+            for (let j = 0; rS === 0 && j < B.dirs.length; j++) {
                 const d = B.dirs[j];
                 L.position.copy(B.mitte).addScaledVector(d, R * 3);
                 if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
@@ -713,7 +734,7 @@ class AnazhRealm_stoff_instanz {
                 this._buehneRender(rend, B.szene, L, "Karten-Sonne");
             }
             B.tiefe.value = B.schatten.depthTexture;
-            for (let v = 0; v < V; v++) {
+            for (let v = rS * A; v < (rS + 1) * A; v++) {
                 // Ansicht v = r·A + a: die Gestalt aus Peilung a·360/A unter der Hebung des Rings r gesehen (die Kamera je
                 // Ring fest, die Gestalt gegengedreht); WebGPU zeichnet von oben — der Stoff liest gespiegelt
                 const a = v % A;
@@ -747,9 +768,17 @@ class AnazhRealm_stoff_instanz {
             B.wurzel.clear();
         }
         if (!ganz) return null;
+        const summe = at.offen ? at.offen.ms : 0;
+        if (rS + 1 < at.hoehen.length) {
+            at.offen = { z, B, r: rS + 1, ms: summe + performance.now() - t0 };
+            (at.schrittMs || (at.schrittMs = [])).push(+(performance.now() - t0).toFixed(2));
+            return 0;
+        }
+        at.offen = null;
         if (bc) this._karteAblage(at, z.idx, B);
         B.zuletzt = performance.now();
-        (at.weltMs || (at.weltMs = [])).push(+(B.zuletzt - t0).toFixed(2));
+        (at.schrittMs || (at.schrittMs = [])).push(+(B.zuletzt - t0).toFixed(2));
+        (at.weltMs || (at.weltMs = [])).push(+(summe + B.zuletzt - t0).toFixed(2));
         z._weltNeu = false;
         if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
