@@ -1463,7 +1463,7 @@ jobs:
         # Die Liste unten ist der Fahrplan: die Auswahl nach Wert (Präzision fern · Schatten · Stufen-Wechsel · Bild-Urteil) aus
         # den Schritten von `voll`, je Schritt derselbe Befehl, auf der GTX zusammen 516 s (Takt-Lauf OMEN 16.10., alle 89 GPU-
         # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s), Ego-Schatten und Verdeckung (echt-vier), die Ankunft von außen
-        # (gate:ankunft:echt, S2: ROT, solange Pflicht-OFFEN B steht — der Richter der Ankunft, die Fall-Batterie L2a fiel). ROT auf der
+        # (gate:ankunft:echt, S2: die Ratsche je Gerät — ROT über dem Stand und ohne Stand, das Soll 5 s offen in der Zeile). ROT auf der
         # Karte bleiben Albedo-Tafel und WebGL2-Rückfall (das Spiel, Bericht 1610-echt-vier) — sie kommen, wenn sie geheilt sind. Jeder
         # Schritt fährt auch nach einem roten (`!cancelled()`): ein Lauf zeigt jedes Rot beim Namen, der Job bleibt rot.
         # Bei JEDEM push auf integ-probe und nachts, hinter dem Kopf-Richter, aber nie hinter seiner Doppel-Sperre (die gilt der

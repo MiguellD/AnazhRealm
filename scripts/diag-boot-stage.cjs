@@ -4,8 +4,10 @@
 //
 // DIE BÜHNE (Null-Renderer, `--selftest` = gate:boot-stage): der Takt pumpt, bis die EINE Bühnen-Wahrheit der Welt steht
 // (`_buehneSteht`, mit Renderer gefragt: Ring · Gras · Wasser · Streu `_streuWartet` 0) — die Linse rechnet kein eigenes
-// Prädikat (S2: der Zwilling fiel); die wartende Spieler-Region und die fehlende Regionen-Karte machen sie rot, der Deckel
-// öffnet laut, dazu der Selbsttest der Kontrolle (rein).   node scripts/diag-boot-stage.cjs [--selftest]
+// Prädikat (S2: der Zwilling fiel, mit ihm benannt seine drei Terme über der Wahrheit — BIBLIO: der Vorrat ist kein Bühnen-Term,
+// die Kalt-Zeile nennt seine Phasen; IMPOST: die Bühne wartet bewusst nie auf Karten, im Null-Renderer war er immer wahr; LUFT:
+// gate:luft-sicht); die wartende Spieler-Region und die fehlende Regionen-Karte machen sie rot, der Deckel öffnet laut, dazu der
+// Selbsttest der Kontrolle (rein).   node scripts/diag-boot-stage.cjs [--selftest]
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
@@ -28,12 +30,19 @@ const OPT = (k, d) => {
 };
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
+// DIE RATSCHE DER ANKUNFT (`--echt`, gate:ankunft:echt): ein Dauer-Rot sieht keine Verschlechterung — ROT ist, was schlechter
+// wird als der gemessene Stand des Geräts (spec/profiband/haushalt.json `geraete`: t über `tMs`, halb über `halb`, halb
+// ungemessen) und ein Gerät ohne Stand; das Soll steht offen in der Zeile, bis B fällt. Gesenkt nur aus Kalt-Läufen des Geräts.
+const ANKUNFT_STAND = {
+    radeon: { tMs: 13500, halb: 0.25, quelle: "Radeon 890M kalt 18.10., 4 Läufe: t 11,45–12,68 s, halb 18,6–22,1 %, Gegenprobe 2,3–3,0 %" },
+    gtx: null, // ungemessen: der erste Lauf auf dem OMEN setzt ihn
+};
 
 // t(KONTROLLE) UND DAS HALBE WELTBILD — DER RICHTER STEHT AUSSEN (S2, W9; rein, aus der Rohdatei der Kalt-Zeile): t ist das
 // erste präsentierte Bild (`frames`, je `getCurrentTexture` der Leinwand) ab der ersten Eingabe, die die Welt annimmt (`eingabe`:
 // eine echte Taste des Browsers kommt am Fänger des Ladeschirms vorbei, ms ab Navigation); „halb" ist der Bild-Unterschied
 // (`blockAnteil`) des ersten Schusses der Leinwand nach der Kontrolle gegen das Rundum-Bild derselben Kamera (`halbDiff` über
-// HALB_ANTEIL) ohne die Blöcke, die in der Ruhe schwingen; er gilt nur, wenn die GEGENPROBE an der stehenden Welt (`halbGegen`,
+// HALB_ANTEIL) gegen die Hülle der Ruhe; er gilt nur, wenn die GEGENPROBE an der stehenden Welt (`halbGegen`,
 // dieselbe Regel) unter GEGEN_ANTEIL bleibt, und nennt sein Fenster (der Schuss kommt `erstesMs` nach t). Ungemessen ist halb.
 // Die Zeit, die der Stamm über sich schreibt (`_weltbildDa`), und seine WARN-Zeile trägt die Rohdatei nicht (G4); der Selbsttest
 // K ist darum rein und belegt nur, dass die Rechnung sie nicht liest — in der Seite hängt `eingabe` am Fänger des Ladeschirms.
@@ -42,6 +51,20 @@ const GEGEN_ANTEIL = HALB_ANTEIL / 2;
 const RUHE_ANTEIL = 0.02; // zwei Schirme in Folge, die sich in höchstens so vielen Blöcken unterscheiden, sind das Rundum-Bild
 const AU = require("./lib/abnahme-urteil.cjs");
 function kontrolleZeit(out) {
+    const k = kontrolleHalb(out);
+    const G = require("../spec/profiband/haushalt.json").geraete;
+    k.geraet = Object.keys(G).find((g) => new RegExp(G[g].muster, "i").test(out.adapter || ""));
+    const st = (k.stand = ANKUNFT_STAND[k.geraet]);
+    k.rueck = !st
+        ? `ungemessen — kein Stand für ${k.geraet || out.adapter || "das Gerät"} (ANKUNFT_STAND, aus Kalt-Läufen des Geräts)`
+        : k.t == null || k.t > st.tMs
+          ? `t(Kontrolle) ${k.t == null ? "—" : (k.t / 1000).toFixed(2) + " s"} über dem Stand ${st.tMs / 1000} s`
+          : out.halbDiff == null || out.halbDiff > st.halb || /^ungemessen/.test(k.halb || "")
+            ? `halb ${k.halb || "—"} über dem Stand ${Math.round(st.halb * 100)} % der Blöcke`
+            : null;
+    return k;
+}
+function kontrolleHalb(out) {
     const t = out.eingabe != null ? (out.frames || []).find((f) => f >= out.eingabe) : undefined;
     if (t == null) return { t: null, halb: null };
     const [d, g, p] = [out.halbDiff, out.halbGegen, (x) => `${Math.round(x * 100)} %`];
@@ -52,33 +75,41 @@ function kontrolleZeit(out) {
     return { t, fenster, halb: d > HALB_ANTEIL ? `${p(d)} der Blöcke ändern sich bis zum Rundum-Bild (${fenster}, Gegenprobe ${p(g)})` : null };
 }
 // DER SELBSTTEST DER KONTROLLE (rein): ein gefälschtes `_weltbildDa` und eine WARN-Zeile ohne Bild-Befund ändern das Urteil
-// nicht; ein halbes Bild ohne WARN-Zeile ist halb, ein fehlendes Rundum-Bild und eine rauschende Gegenprobe auch.
+// nicht; ein halbes Bild ohne WARN-Zeile ist halb, ein fehlendes Rundum-Bild und eine rauschende Gegenprobe auch; die Ratsche
+// hält den Stand und ist ROT darüber und ohne Stand.
 function kontrolleSelbsttest() {
     const v = [];
-    const roh = { weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
+    const roh = { adapter: "amd rdna-3", weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
     const fall = (was, aend, soll) => {
         const k = kontrolleZeit(Object.assign({}, roh, aend));
         const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
         if (k.t !== soll.t) v.push(`${was}: t(Kontrolle) ${s(k.t)} statt ${s(soll.t)}`);
         if (!!k.halb !== soll.halb) v.push(`${was}: halb ${k.halb ? `„${k.halb}"` : "nein"} statt ${soll.halb ? "ja" : "nein"}`);
+        if (!!k.rueck !== !!soll.rueck) v.push(`${was}: die Ratsche ${k.rueck ? `ROT „${k.rueck}"` : "GRÜN"} statt ${soll.rueck ? "ROT" : "GRÜN"}`);
     };
     fall("die echte Ankunft", {}, { t: 9016, halb: false });
     fall("ein gefälschtes _weltbildDa (1 ms)", { weltbildDa: 1 }, { t: 9016, halb: false });
     fall("die WARN-Zeile ohne Bild-Befund", { ohne: ["Das erste Weltbild steht ohne: Baum — die Arbeit ruhte"] }, { t: 9016, halb: false });
-    fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true });
-    fall("kein Rundum-Bild", { halbDiff: null }, { t: 9016, halb: true });
-    fall("die Gegenprobe rauscht (der Richter misst sein Rauschen)", { halbGegen: 0.08 }, { t: 9016, halb: true });
-    fall("keine Gegenprobe (null ist nie 0)", { halbGegen: null }, { t: 9016, halb: true });
-    fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false });
+    fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true, rueck: true });
+    fall("kein Rundum-Bild", { halbDiff: null }, { t: 9016, halb: true, rueck: true });
+    fall("die Gegenprobe rauscht (der Richter misst sein Rauschen)", { halbGegen: 0.08 }, { t: 9016, halb: true, rueck: true });
+    fall("keine Gegenprobe (null ist nie 0)", { halbGegen: null }, { t: 9016, halb: true, rueck: true });
+    fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false, rueck: true });
+    fall("die Ankunft über dem Stand (die Ratsche)", { eingabe: 20000, frames: [20016] }, { t: 20016, halb: false, rueck: true });
+    fall("ein Gerät ohne Stand (ungemessen)", { adapter: "intel xe-lpg" }, { t: 9016, halb: false, rueck: true });
     if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 })).halb || ""))
         v.push("das halbe Bild nennt sein Fenster nicht (der Schuss 0,38 s nach der Kontrolle)");
     // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
-    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80; ein schwingender zählt nie
+    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80; vor der atmenden Membran (die
+    // Hülle der Ruhe 100…140) ist das leere Fenster (0) anders, die Membran in ihrem Atem (110) nicht
     const bild = (a, b) => ({ w: 32, h: 16, d: Uint8Array.from({ length: 32 * 16 * 4 }, (_, i) => (i % 128 < 64 ? a : b)) });
     const anteil = AU.blockAnteil(bild(0, 0), bild(80, 80), Float32Array.of(240, 24));
     if (anteil !== 0.5) v.push(`das Erscheinen gegen den Zug: ${anteil} der Blöcke statt 0,5`);
-    const schwingt = AU.blockAnteil(bild(0, 0), bild(80, 0), null, Uint8Array.of(1, 0));
-    if (schwingt !== 0) v.push(`der schwingende Block zählt: ${schwingt} der Blöcke statt 0`);
+    const atem = [bild(100, 0), bild(140, 0)];
+    const leer = AU.blockAnteil(bild(0, 0), bild(120, 0), Float32Array.of(240, 0), atem);
+    if (leer !== 0.5) v.push(`das leere Fenster vor der atmenden Membran: ${leer} der Blöcke statt 0,5 (halb)`);
+    const imAtem = AU.blockAnteil(bild(110, 0), bild(120, 0), Float32Array.of(60, 0), atem);
+    if (imAtem !== 0) v.push(`die Membran in ihrem Atem zählt: ${imAtem} der Blöcke statt 0`);
     return v;
 }
 const server = statikServer();
@@ -241,14 +272,14 @@ async function kaltLauf() {
             const ruhe = (ms) => new Promise((r) => setTimeout(r, ms));
             // je Schritt die Block-Unterschiede in Folge, je Block ihr größter (`blockAnteil` schritt: was erscheint)
             const folge = async (von, n, bis) => {
-                const S = { vor: von, schritte: [], reihe: [], max: null };
+                const S = { vor: von, bilder: [], reihe: [], max: null };
                 for (let i = 0; i < n && S.vor.t - von.t < 30000; i++) {
                     await ruhe(300);
                     const jetzt = await schuss();
                     const d = AU.blockUnterschiede(S.vor, jetzt);
-                    S.schritte.push(d);
                     S.max = S.max ? S.max.map((x, k) => Math.max(x, d[k])) : d;
                     S.vor = jetzt;
+                    S.bilder = S.bilder.concat(jetzt).slice(-4);
                     S.reihe.push(+(d.filter((y) => y > 12).length / d.length).toFixed(4));
                     if (bis && bis(S.reihe)) break;
                 }
@@ -256,26 +287,31 @@ async function kaltLauf() {
             };
             const erstes = await schuss();
             // DAS RUNDUM-BILD: zwei Schirme in Folge unter RUHE_ANTEIL — oder der Unterschied in Folge steht (drei Schritte in
-            // ±0,01: es lebt nur noch, was atmet oder zieht); was in den letzten drei Schritten schwingt (je Block über 12: Membran-
-            // Atem, Wolkenkante), urteilt nie — weder im halben Bild noch in der Gegenprobe
+            // ±0,01: es lebt nur noch, was atmet oder zieht); die Bilder dieser drei Schritte sind die HÜLLE der Ruhe — was atmet
+            // (Membran, Wolkenkante), ist im ersten Bild nur anders, wenn es außerhalb seines Atems liegt (das leere Tor-Fenster)
             const ruht = (r) => r[r.length - 1] <= RUHE_ANTEIL || (r.length >= 4 && Math.max(...r.slice(-3)) - Math.min(...r.slice(-3)) <= 0.01);
             const F = await folge(erstes, 100, ruht);
             const rundum = F.vor;
             roh.ruheReihe = F.reihe;
+            const marke = new Uint8Array(F.max.length);
             if (ruht(F.reihe)) {
-                const schwingt = Uint8Array.from(F.max, (_, k) => +F.schritte.slice(-3).some((x) => x[k] > 12));
-                roh.schwingend = +(schwingt.reduce((x, y) => x + y, 0) / schwingt.length).toFixed(4);
-                roh.halbDiff = +AU.blockAnteil(erstes, rundum, F.max, schwingt).toFixed(4);
+                const huelle = F.bilder.slice(0, -1);
+                roh.halbDiff = +AU.blockAnteil(erstes, rundum, F.max, huelle, marke).toFixed(4);
                 roh.rundumMs = rundum.t - erstes.t;
-                // DIE GEGENPROBE: die stehende Welt nach dem Rundum-Bild, drei Schritte, dieselbe Regel und Maske
+                // DIE GEGENPROBE: die stehende Welt drei Schritte nach dem Rundum-Bild gegen dieselbe Hülle, dieselbe Regel
                 const G = await folge(rundum, 3);
-                roh.halbGegen = +AU.blockAnteil(rundum, G.vor, G.max, schwingt).toFixed(4);
+                roh.halbGegen = +AU.blockAnteil(G.vor, rundum, G.max, huelle).toFixed(4);
             } else roh.halbOhne = `das Bild ruht 30 s nicht (in Folge ${roh.ruheReihe.slice(-3).join(" · ")} der Blöcke)`;
             roh.erstesMs = erstes.t;
             const bildDatei = OPT("--bild", null);
             if (bildDatei) {
                 fs.writeFileSync(path.resolve(bildDatei), erstes.png);
                 fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-rundum.png", rundum.png);
+                // die Karte des Urteils: rot, was als halb zählt (je Block 16×16 des ersten Bilds)
+                const bw = erstes.w >> 4;
+                const blk = (i) => (((i >> 2) % erstes.w) >> 4 < bw ? Math.floor(i / 64 / erstes.w) * bw + (((i >> 2) % erstes.w) >> 4) : -1);
+                const d = Uint8Array.from(erstes.d, (x, i) => (i % 4 === 0 && marke[blk(i)] ? 255 : x));
+                fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-karte.png", AU.pngSchreiben(d, erstes.w, erstes.h));
                 roh.bild = { datei: path.resolve(bildDatei) };
             }
         }
@@ -315,7 +351,7 @@ async function kaltLauf() {
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const proben = out.proben || [];
-    const { t, halb, fenster } = kontrolleZeit(out);
+    const { t, halb, fenster, geraet, rueck, stand } = kontrolleZeit(out);
     const ende = Math.max(t || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
     const blockiert = new Array(S + 1).fill(0);
@@ -374,16 +410,18 @@ async function kaltLauf() {
             "das Bild danach" +
             (out.halbDiff != null
                 ? ` · Bild-Unterschied zum Rundum-Bild ${(out.halbDiff * 100).toFixed(1)} % (${fenster}, ruht nach ${s2(out.rundumMs)}, ` +
-                  `Gegenprobe ${out.halbGegen != null ? (out.halbGegen * 100).toFixed(1) + " %" : "—"}, ohne ${(out.schwingend * 100).toFixed(1)} % schwingend)`
+                  `Gegenprobe ${out.halbGegen != null ? (out.halbGegen * 100).toFixed(1) + " %" : "—"})`
                 : "")
     );
-    const gut = t != null && t <= ANKUNFT_SOLL_MS && !halb;
-    if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
+    const soll = t != null && t <= ANKUNFT_SOLL_MS && !halb;
+    if (halb) console.log(`  ${ECHT ? "·" : "❌"} das halbe Weltbild: ${halb}`);
     console.log(
-        `  ${gut ? "✅" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
+        `  ${soll ? "✅" : ECHT ? "· offen:" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
             `${t != null ? (t / 1000).toFixed(2) + " s" : "nicht erreicht"}`
     );
-    process.exit(gut ? 0 : 1);
+    if (!ECHT) process.exit(soll ? 0 : 1);
+    console.log(`  ${rueck ? "❌" : "✅"} die Ratsche der Ankunft (${geraet || "?"}${stand ? `: ${stand.quelle}` : ""}) — ${rueck || "nicht schlechter"}`);
+    process.exit(rueck ? 1 : 0);
 }
 
 (async () => {
@@ -469,7 +507,7 @@ async function kaltLauf() {
     if (SELFTEST)
         checks.push(
             {
-                name: `SELBST-TEST K: der Richter steht außerhalb — ein gefälschtes _weltbildDa und die WARN-Zeile ändern t(Kontrolle) und „halb" nicht${kontrolle.length ? ` (${kontrolle.join(" · ")})` : ""}`,
+                name: `SELBST-TEST K: der Richter steht außerhalb — ein gefälschtes _weltbildDa und die WARN-Zeile ändern t(Kontrolle) und „halb" nicht, das leere Fenster vor der atmenden Membran ist halb, die Ratsche hält den Stand${kontrolle.length ? ` (${kontrolle.join(" · ")})` : ""}`,
                 pass: kontrolle.length === 0,
             },
             {

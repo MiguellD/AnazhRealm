@@ -280,38 +280,42 @@ function pngLesen(buf) {
 }
 
 // DER BILD-UNTERSCHIED (die EINE Regel: gate:weltbild-frost B, die Kontrolle der Kalt-Zeile): der Anteil der 16×16-Blöcke, deren
-// Mittel sich über die drei Kanäle um mehr als 12 ändert — die zeitliche Kantenglättung zittert über einem stehenden Bild Pixel
-// für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt 70–97 %. Rein, A/B = {w,h,d}.
-// `schritt` (je Block der größte Unterschied zweier Bilder in Folge zwischen A und B): es zählt nur, was in EINEM Schritt kam (das
-// Erscheinen: mindestens die Hälfte des Unterschieds), nie, was über viele Schritte driftet (Wolkenzug, Belichtung, Wind);
-// `ohne` (je Block 1): was in der Ruhe schwingt, zählt weder im Anteil noch in seinem Nenner.
-function blockUnterschiede(A, B) {
+// Mittel (die drei Kanäle summiert) um mehr als 12 außerhalb der HÜLLE der Vergleichs-Bilder liegt — die zeitliche Kantenglättung
+// zittert über einem stehenden Bild Pixel für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine
+// Drehung bewegt 70–97 %. Rein, A/B = {w,h,d}. Die Hülle ist B allein (der Unterschied A↔B), mit `huelle` (die Bilder der Ruhe
+// vor B) je Block und Kanal min…max über sie: was atmet (Membran, Wolkenkante), zählt, sobald A außerhalb seines Atems liegt —
+// das leere Tor-Fenster vor der atmenden Membran ist anders, nie maskiert (S2). `schritt` (je Block der größte Unterschied zweier
+// Bilder in Folge zwischen A und B): es zählt nur, was in EINEM Schritt kam (das Erscheinen: mindestens die Hälfte des
+// Unterschieds), nie, was über viele Schritte driftet (Wolkenzug, Belichtung, Wind). `marke` (je Block) hält, was zählt.
+function blockMittel(A) {
     const K = 16,
         bw = Math.floor(A.w / K),
         bh = Math.floor(A.h / K);
-    const out = new Float32Array(bw * bh);
-    for (let by = 0; by < bh; by++)
-        for (let bx = 0; bx < bw; bx++)
-            for (let c = 0; c < 3; c++) {
-                let ma = 0,
-                    mb = 0;
-                for (let y = 0; y < K; y++)
-                    for (let x = 0; x < K; x++) {
-                        const i = ((by * K + y) * A.w + bx * K + x) * 4 + c;
-                        ma += A.d[i];
-                        mb += B.d[i];
-                    }
-                out[by * bw + bx] += Math.abs(ma - mb) / (K * K);
-            }
-    return out;
+    const m = new Float32Array(bw * bh * 3);
+    for (let y = 0; y < bh * K; y++)
+        for (let x = 0; x < bw * K; x++) {
+            const o = (Math.floor(y / K) * bw + Math.floor(x / K)) * 3;
+            for (let c = 0; c < 3; c++) m[o + c] += A.d[(y * A.w + x) * 4 + c] / (K * K);
+        }
+    return m;
 }
-function blockAnteil(A, B, schritt, ohne) {
-    const s = blockUnterschiede(A, B);
-    let anders = 0,
-        n = 0;
-    for (let i = 0; i < s.length; i++)
-        if (!(ohne && ohne[i]) && ++n && s[i] > 12 && !(schritt && schritt[i] < s[i] / 2)) anders++;
-    return anders / Math.max(1, n);
+function blockUnterschiede(A, B, huelle) {
+    const a = blockMittel(A),
+        H = [B].concat(huelle || []).map(blockMittel);
+    return Float32Array.from({ length: a.length / 3 }, (_, k) => {
+        let s = 0;
+        for (let c = k * 3; c < k * 3 + 3; c++) {
+            const w = H.map((h) => h[c]);
+            s += Math.max(0, Math.min(...w) - a[c], a[c] - Math.max(...w));
+        }
+        return s;
+    });
+}
+function blockAnteil(A, B, schritt, huelle, marke) {
+    const s = blockUnterschiede(A, B, huelle);
+    let anders = 0;
+    for (let i = 0; i < s.length; i++) if (s[i] > 12 && !(schritt && schritt[i] < s[i] / 2) && ++anders && marke) marke[i] = 1;
+    return anders / Math.max(1, s.length);
 }
 
 function pngSchreiben(u8, W, H) {
@@ -2675,12 +2679,18 @@ function spawnZellen(tafel, q) {
                 if (z.grund) continue;
                 const eigen = Object.fromEntries(Object.entries(me.klassen).filter(([n]) => re.test(n)));
                 const px = Object.values(eigen).reduce((s, k) => s + (k.pixel || 0), 0);
+                // eine Klasse, die als Karte zeichnen kann (`fimp:`), ist in einer Pose mit dem EINEN Atlas unteilbar: alle Karten
+                // heißen `fimp:atlas:L2` (`_taeterKlasse`), die Teilung trennt seine Schichten nicht — der Täter ist die Teilung
+                const atlas = nirgends.has(id) && /fimp/.test(ausdruck) ? pixelVon(me, /^fimp:atlas:/) : 0;
                 if (!px) {
                     z.grund = um.length
                         ? `${id} fehlt um ${uhr} (zeichnet in derselben Kamera um ${um.join(", ")})`
-                        : nirgends.has(id)
-                          ? `${id} zeichnet am Spawn in keiner Sicht zu keiner Uhr (/${ausdruck}/) — ungemessen, die Klasse braucht ihre Pose`
-                          : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
+                        : atlas
+                          ? `unteilbar: Atlas-Schicht — die Pose zeichnet den EINEN Atlas (${atlas} px), die Teilung trennt seine Karten nicht; als eigene Klasse zeichnet ${id} in keiner Sicht (/${ausdruck}/)`
+                          : nirgends.has(id)
+                            ? `${id} zeichnet am Spawn in keiner Sicht zu keiner Uhr (/${ausdruck}/) — ungemessen, die Klasse braucht ihre Pose`
+                            : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
+                    if (atlas) z.taeter = "fimp:atlas:L2 (die Teilung)";
                     continue;
                 }
                 const L = Object.values(eigen).reduce((s, k) => s + (k.luma || 0) * (k.pixel || 0), 0) / px;
@@ -2749,7 +2759,8 @@ function spawnZelleText(z) {
 
 // DER SELBSTTEST der Posen-Matrix (rein): an einer gebauten Tafel (die Zeile laub-kante, dazu fahrzeug ohne Zeile) ist die gute
 // Pose GRÜN, das schwarze Bild um 6 Uhr (W7) ROT beim Feld der Abnahme, eine fehlende Klasse, eine absaufende Klasse, ein Ist
-// über dem Band, ein veralteter Stand und eine ungemessene Pose ROT beim Namen, die Klasse ohne Zeile ROT; an der echten Tafel
+// über dem Band, ein veralteter Stand und eine ungemessene Pose ROT beim Namen, die Klasse ohne Zeile ROT, die Karten-Klasse im
+// EINEN Atlas unteilbar; an der echten Tafel
 // trägt die Matrix ihre Sichten, Uhren und die Klassen jeder Zeile, und ein abweichender Ausdruck fällt beim Namen.
 function spawnSelbsttest(tafel, q) {
     const v = [];
@@ -2831,6 +2842,11 @@ function spawnSelbsttest(tafel, q) {
     if (zelle("laub-kante", "oben@0.5").urteil || !u.abwesend.includes("laub-kante (oben)"))
         v.push("die Klasse, die in einer Sicht zu keiner Uhr zeichnet, steht als Zelle statt abwesend");
     if (u.gesamt !== 32 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/32`);
+    // die Karten-Klasse, die nur als Schicht des EINEN Atlas zeichnet (der GT von oben): unteilbar, nie „in keiner Sicht"
+    const atlas = { "ego@0.5": block({ uhr: 0.5, klassen: { "fimp:atlas:L2": teil(0.2, 90) } }) };
+    const ta = Object.assign({}, t, { spawn: Object.assign({}, t.spawn, { klassen: { wagen: "^(f|fimp):wagen:L[0-9]$" }, messung: Object.assign({}, t.spawn.messung, atlas) }) });
+    const za = spawnZellen(ta, q).zellen.find((z) => z.klasse === "wagen" && z.pose === "ego@0.5") || {};
+    if (!/^unteilbar: Atlas-Schicht/.test(za.grund || "")) v.push(`die Karten-Klasse im EINEN Atlas: ${za.grund || "keine Zelle"} statt „unteilbar: Atlas-Schicht"`);
     // ein eigener Ausdruck neben der Teilung einer Zeile fällt beim Namen
     const kz = (tafel.klassen || []).find(spawnTeilung);
     if (kz) {
@@ -2876,6 +2892,8 @@ module.exports = {
     abnahmeUrteil,
     bildMasse,
     pngLesen,
+    pngSchreiben,
+    blockMittel,
     blockUnterschiede,
     blockAnteil,
     verkleinern,
