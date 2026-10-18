@@ -45,7 +45,7 @@ const SCHWELLE = {
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
-    grabenRuhe: 60, // Takte nach dem Graben, bis der Automat ruht (F3: an der Basis 617–620)
+    grabenBauten: 300, // Sheet-Bauten bis zur Ruhe (F3; Bau-Ereignisse, nie Takte — die warten auf den Worker; Basis 2353–2609)
 };
 
 // B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
@@ -493,7 +493,7 @@ function urteil(b) {
                 v.push(`G2 ÜBER DEM SPIEGEL: ${wo}: ${g.ueber} Punkte Wasser > 10 cm über dem Spiegel (bis ${g.ueberM} m)`);
             if (g.abseits > 0)
                 v.push(`G3 ZWEITE FLÄCHE: ${wo}: in Ruhe ${g.abseits} Punkte > 10 cm unter dem Spiegel (bis ${g.abseitsM} m)`);
-            if (!(g.ruhe >= 0 && g.ruhe <= SCHWELLE.grabenRuhe))
+            if (!(g.ruhe >= 0 && g.sheets <= SCHWELLE.grabenBauten))
                 v.push(`G4 UNRUHE: ${wo}: der Automat ruht ${g.ruhe < 0 ? "nie" : "nach " + g.ruhe + " Takten"} (${g.sheets} Sheet-Bauten)`);
             if (g.wieseFaelle > 0 || g.bueschel[0] !== g.bueschel[1])
                 v.push(`G5 FLACKERN: ${wo}: die Wiese daneben fiel ${g.wieseFaelle}-mal, Büschel je Takt ${g.bueschel.join("–")}`);
@@ -609,7 +609,7 @@ function selbsttest() {
         },
         regen: { litAnteil: 0.13, schlieren: 800, neigung: 0.56 },
         graben: {
-            graeben: [1, 3].map((abstand) => ({ abstand, ort: [-256, -1130], vor: 378, nass: 524, bueschel: [9, 9], ruhe: 4 })),
+            graeben: [1, 3].map((abstand) => ({ abstand, ort: [-256, -1130], vor: 378, nass: 524, bueschel: [9, 9], ruhe: 4, sheets: 110 })),
         },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
@@ -742,7 +742,7 @@ function selbsttest() {
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", (b) => Object.assign(b.graben.graeben[0], { ueber: 720, ueberM: 0.76 })],
         ["G3 ZWEITE FLÄCHE", (b) => Object.assign(b.graben.graeben[1], { abseits: 397, abseitsM: 0.79 })],
-        ["G4 UNRUHE", (b) => Object.assign(b.graben.graeben[0], { ruhe: 620, sheets: 2406 })],
+        ["G4 UNRUHE", (b) => Object.assign(b.graben.graeben[0], { ruhe: 594, sheets: 2609 })],
         ["G5 FLACKERN", (b) => Object.assign(b.graben.graeben[1], { wieseFaelle: 3, bueschel: [640, 900] })],
         ["G1 ZWEI FLÄCHEN", (b) => (b.graben.graeben[0].doppelt = 2)],
         ["G LEER", (b) => (b.graben.graeben[1].nass = 378)],
