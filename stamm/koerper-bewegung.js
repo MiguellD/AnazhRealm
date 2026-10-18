@@ -1620,12 +1620,7 @@ class AnazhRealm_koerper_bewegung {
             const rig = `${this.state.cameraMode}:${_fahrRitt ? _fahrRitt.ent.id : ""}`;
             if (this.state._kamRig !== rig) {
                 this.state._kamRig = rig;
-                this.state._kamArm =
-                    this.state._kamAz =
-                    this.state._kamEl =
-                    this.state._kamElF =
-                    this.state._kamT =
-                        undefined;
+                this.state._kamArm = this.state._kamChase = this.state._kamT = undefined;
             }
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
@@ -1633,8 +1628,9 @@ class AnazhRealm_koerper_bewegung {
                 this.state._kamT = currentTime;
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
-                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: hinter dem Wagen (Kern-Azimut-Ease auf die Gier,
-                // Kern-Elevation über der Fahrbahn, feste Distanz, Blick auf blickHoehe); Boden-Clamp + Kollision unten gelten gleich.
+                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: das EINE Gesetz des Kerns (`chaseKamera`, die Probefahrt der Garage
+                // liest es auch) — hinter dem Wagen, Azimut-Ease auf die Gier, Elevation über der Fahrbahn, feste Distanz; Boden-Clamp
+                // + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
@@ -1645,31 +1641,23 @@ class AnazhRealm_koerper_bewegung {
                         : Number.isFinite(ent._rideYaw)
                           ? ent._rideYaw
                           : this.state.yaw;
-                    let az = Number.isFinite(this.state._kamAz) ? this.state._kamAz : yawF;
-                    let d = yawF - az;
-                    while (d > Math.PI) d -= 2 * Math.PI;
-                    while (d < -Math.PI) d += 2 * Math.PI;
-                    const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
-                    az += d * (1 - Math.pow(K.azEase, kDt));
-                    this.state._kamAz = az;
                     // DIE ELEVATION ZUR FAHRBAHN (F1, Befund des Schöpfers 17.10.: „am Steilhang bergab folgt die Kamera komisch"):
-                    // der Arm steht `el` über der Ebene der Räder, nie über der Welt — bergab stand die Welt-Elevation unter dem
-                    // Hang hinter dem Wagen, der Boden-Deckel schob die Kamera über jede Welle (Spielgang, Null-Renderer, Hang 0,49:
-                    // p05 4,7° UNTER der Fahrbahn, Ruck p95 0,31 m je Bild). Sie folgt der Steigung des Kerns (`steig`, Bug höher
-                    // > 0) als FEDER mit Dämpfer: zwei Stufen mit der Ease-Basis des Labors (`elEase`) — die Ebene der Räder springt
-                    // je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter (Hang 0,34: p95 0,15 m je Bild).
-                    const elZ = K.el - (ent._fahr && Number.isFinite(ent._fahr.steig) ? ent._fahr.steig : 0);
-                    const elK = 1 - Math.pow(K.elEase, kDt);
-                    let elF = Number.isFinite(this.state._kamElF) ? this.state._kamElF : elZ;
-                    let el = Number.isFinite(this.state._kamEl) ? this.state._kamEl : elZ;
-                    elF += (elZ - elF) * elK;
-                    el += (elF - el) * elK;
-                    [this.state._kamElF, this.state._kamEl] = [elF, el];
-                    const ce = Math.cos(el);
-                    const se = Math.sin(el);
-                    camX = ent.position.x - Math.sin(az) * ce * K.dist;
-                    camZ = ent.position.z - Math.cos(az) * ce * K.dist;
-                    camY = ent.position.y + K.blickHoehe + se * K.dist;
+                    // der Arm steht `el` über der Ebene der Räder (die Steigung des Kerns `steig`), nie über der Welt — bergab stand
+                    // die Welt-Elevation unter dem Hang hinter dem Wagen, der Boden-Deckel schob die Kamera über jede Welle
+                    // (Spielgang, Null-Renderer, Hang 0,49: p05 4,7° UNTER der Fahrbahn, Ruck p95 0,31 m je Bild); die Feder mit
+                    // Dämpfer (zwei Stufen) trägt der Kern. Gier des Kerns = Fahrt − π/2 (Studio-Wagen: Bug +x).
+                    const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
+                    const c = (this.state._kamChase = this.state._kamChase || {});
+                    const v = AnazhRealm._fahrSchrittGesetz().vc.chaseKamera(
+                        c,
+                        yawF - Math.PI / 2,
+                        ent._fahr ? ent._fahr.steig : 0,
+                        kDt,
+                        K
+                    );
+                    camX = ent.position.x + v.x;
+                    camZ = ent.position.z + v.z;
+                    camY = ent.position.y + v.y;
                 } else {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;

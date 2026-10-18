@@ -399,7 +399,7 @@ function leibInstall(cfg) {
         gt.position.z = z;
         gt.rotationY = gier - Math.PI / 2;
         gt._rideYaw = gier;
-        st._kamAz = gier;
+        st._kamChase = undefined; // das nächste Bild springt hinter den Wagen in seiner Gier (`chaseKamera`)
         st.yaw = gier;
         st.pitch = 0;
         st.playerMesh.position.set(x, y + 1.0, z);
@@ -1086,7 +1086,7 @@ async function probe(arg) {
                         gt.position.z = zz;
                         gt.rotationY = gier - Math.PI / 2;
                         gt._rideYaw = gier;
-                        st._kamAz = gier;
+                        st._kamChase = undefined; // das nächste Bild springt hinter den Wagen in seiner Gier (`chaseKamera`)
                         st.yaw = gier;
                         st.playerMesh.position.set(x, y + 1.0, zz);
                         // der Wagen steht im Bild, wo er steht (Instanz-Matrizen bzw. Mesh)
