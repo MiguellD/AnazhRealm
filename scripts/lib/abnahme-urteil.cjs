@@ -282,14 +282,15 @@ function pngLesen(buf) {
 // DER BILD-UNTERSCHIED (die EINE Regel: gate:weltbild-frost B, die Kontrolle der Kalt-Zeile): der Anteil der 16×16-Blöcke, deren
 // Mittel sich über die drei Kanäle um mehr als 12 ändert — die zeitliche Kantenglättung zittert über einem stehenden Bild Pixel
 // für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt 70–97 %. Rein, A/B = {w,h,d}.
-function blockAnteil(A, B) {
+// `schritt` (je Block der größte Unterschied zweier Bilder in Folge zwischen A und B): es zählt nur, was in EINEM Schritt kam (das
+// Erscheinen: mindestens die Hälfte des Unterschieds), nie, was über viele Schritte driftet (Wolkenzug, Belichtung, Wind).
+function blockUnterschiede(A, B) {
     const K = 16,
         bw = Math.floor(A.w / K),
         bh = Math.floor(A.h / K);
-    let anders = 0;
+    const out = new Float32Array(bw * bh);
     for (let by = 0; by < bh; by++)
-        for (let bx = 0; bx < bw; bx++) {
-            let s = 0;
+        for (let bx = 0; bx < bw; bx++)
             for (let c = 0; c < 3; c++) {
                 let ma = 0,
                     mb = 0;
@@ -299,11 +300,15 @@ function blockAnteil(A, B) {
                         ma += A.d[i];
                         mb += B.d[i];
                     }
-                s += Math.abs(ma - mb) / (K * K);
+                out[by * bw + bx] += Math.abs(ma - mb) / (K * K);
             }
-            if (s > 12) anders++;
-        }
-    return anders / Math.max(1, bw * bh);
+    return out;
+}
+function blockAnteil(A, B, schritt) {
+    const s = blockUnterschiede(A, B);
+    let anders = 0;
+    for (let i = 0; i < s.length; i++) if (s[i] > 12 && !(schritt && schritt[i] < s[i] / 2)) anders++;
+    return anders / Math.max(1, s.length);
 }
 
 function pngSchreiben(u8, W, H) {
@@ -2856,6 +2861,7 @@ module.exports = {
     abnahmeUrteil,
     bildMasse,
     pngLesen,
+    blockUnterschiede,
     blockAnteil,
     verkleinern,
     fixtureMessung,

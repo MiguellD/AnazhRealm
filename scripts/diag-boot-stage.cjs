@@ -61,6 +61,11 @@ function kontrolleSelbsttest() {
     fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true });
     fall("kein Rundum-Bild", { halbDiff: null }, { t: 9016, halb: true });
     fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false });
+    // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
+    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80
+    const bild = (a, b) => ({ w: 32, h: 16, d: Uint8Array.from({ length: 32 * 16 * 4 }, (_, i) => (i % 128 < 64 ? a : b)) });
+    const anteil = AU.blockAnteil(bild(0, 0), bild(80, 80), Float32Array.of(240, 24));
+    if (anteil !== 0.5) v.push(`das Erscheinen gegen den Zug: ${anteil} der Blöcke statt 0,5`);
     return v;
 }
 const server = statikServer();
@@ -205,33 +210,37 @@ async function kaltLauf() {
             .waitForFunction(() => window.__kalt.eingabe != null, { polling: 50, timeout: Math.max(1000, SEK * 1000 - (Date.now() - t0)) })
             .catch(() => {});
         tasten = false;
-        await tastenLauf;
         const roh = { halbDiff: null, halbOhne: ECHT ? "die Welt nahm keine Eingabe an" : "swiftshader: der Schirm-Schuss trägt die Leinwand nicht" };
         if (ECHT && (await page.evaluate(() => window.__kalt.eingabe != null))) {
-            await page.addStyleTag({ content: "#ladeschirm{display:none!important}" }); // er weicht schon (`.weg`), sein Ausblenden ist kein Weltbild
-            const clip = await page.evaluate(() => {
-                const b = window.anazhRealm.state.renderer.domElement.getBoundingClientRect();
-                return { x: b.x, y: b.y, width: b.width, height: b.height, scale: 0.5 };
-            });
+            // er weicht schon (`.weg`, 0,7 s Blende) — sein Ausblenden ist kein Weltbild
+            await page.evaluate(() => (document.getElementById("ladeschirm") || {}).style = "display:none");
+            const clip = { x: 0, y: 0, width: 1920, height: 1080, scale: 0.5 };
             const schuss = async () => {
                 const png = Buffer.from(await page.screenshot({ clip }));
                 const p = AU.pngLesen(png);
                 return { png, w: p.W, h: p.H, d: p.u8, t: Date.now() - t0 };
             };
             const erstes = await schuss();
-            let vor = erstes;
+            // DAS RUNDUM-BILD: zwei Schirme in Folge unter RUHE_ANTEIL — oder der Unterschied in Folge steht (drei Schritte in
+            // ±0,01: es lebt nur noch, was atmet oder zieht); je Block der größte Schritt (`blockAnteil` schritt: was erscheint)
+            let vor = erstes,
+                schritt = null;
+            roh.ruheReihe = [];
             for (let i = 0; i < 100 && vor.t - erstes.t < 30000; i++) {
                 await new Promise((r) => setTimeout(r, 300));
                 const jetzt = await schuss();
-                roh.ruheZuletzt = +AU.blockAnteil(vor, jetzt).toFixed(4);
+                const s = AU.blockUnterschiede(vor, jetzt);
+                schritt = schritt ? schritt.map((x, k) => Math.max(x, s[k])) : s;
+                const R = roh.ruheReihe;
+                R.push(+AU.blockAnteil(vor, jetzt).toFixed(4));
                 vor = jetzt;
-                if (roh.ruheZuletzt <= RUHE_ANTEIL) {
-                    roh.halbDiff = +AU.blockAnteil(erstes, jetzt).toFixed(4);
+                if (R[R.length - 1] <= RUHE_ANTEIL || (R.length >= 4 && Math.max(...R.slice(-3)) - Math.min(...R.slice(-3)) <= 0.01)) {
+                    roh.halbDiff = +AU.blockAnteil(erstes, jetzt, schritt).toFixed(4);
                     roh.rundumMs = jetzt.t - erstes.t;
                     break;
                 }
             }
-            if (roh.halbDiff == null) roh.halbOhne = `das Bild ruht 30 s nicht (zuletzt ${roh.ruheZuletzt} der Blöcke)`;
+            if (roh.halbDiff == null) roh.halbOhne = `das Bild ruht 30 s nicht (in Folge ${roh.ruheReihe.slice(-3).join(" · ")} der Blöcke)`;
             roh.erstesMs = erstes.t;
             const bildDatei = OPT("--bild", null);
             if (bildDatei) {
@@ -240,6 +249,7 @@ async function kaltLauf() {
                 roh.bild = { datei: path.resolve(bildDatei) };
             }
         }
+        await tastenLauf;
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
@@ -352,7 +362,7 @@ async function kaltLauf() {
         for (const b of kontrolle) console.log(`  ❌ ${b}`);
         console.log(
             kontrolle.length
-                ? `⛔ SELBSTTEST KONTROLLE ROT (${kontrolle.length} Brüche in 6 Fällen) — t(Kontrolle) liest das Gerichtete`
+                ? `⛔ SELBSTTEST KONTROLLE ROT (${kontrolle.length} Brüche in 7 Fällen) — t(Kontrolle) liest das Gerichtete`
                 : "✅ SELBSTTEST KONTROLLE GRÜN — t(Kontrolle) aus Eingabe + Ausgabe-Bild, halb aus dem Bild"
         );
         process.exit(kontrolle.length ? 1 : 0);

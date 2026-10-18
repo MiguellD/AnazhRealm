@@ -310,7 +310,8 @@ function pruefRaum(echt) {
     };
     // Der Vergleich zweier Bilder in der Seite: die EINE Regel (`blockAnteil`, scripts/lib/abnahme-urteil.cjs); dazu das PNG eines
     // Rücklese-Bilds für `--bilder`.
-    await page.evaluate(`window.__frostWand.blockAnteil = ${require("./lib/abnahme-urteil.cjs").blockAnteil.toString()};`);
+    const AU = require("./lib/abnahme-urteil.cjs");
+    await page.evaluate(`window.__frostWand.blockAnteil = (() => { ${AU.blockUnterschiede}; return ${AU.blockAnteil}; })();`);
     await page.evaluate(() => {
         const F = window.__frostWand;
         F.ladePng = async (s) => {
