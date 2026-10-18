@@ -2105,8 +2105,14 @@ class AnazhRealm_siedlung_ort {
                 });
             return;
         }
+        // DIE ABSAGE BEIM NAMEN, einmal (die Suche liefe sonst in jedem Takt neu): kein Ort jenseits der Fahrbahn, kein
+        // fahrbarer Grund für den Wagen, eine Absage der Wurzel — dieses Tor steht ohne Vorschau, laut (`_bruchMelden`)
+        const absagen = (grund) => {
+            fertig[worldKey] = true;
+            this._bruchMelden(`die Portal-Vorschau ${worldKey}: ${type} steht nicht hinter ${portalType} — ${grund}`);
+        };
         const ort = this._portalVorschauOrt(portal);
-        if (!ort) return;
+        if (!ort) return absagen("das Platz-Gesetz (GENESIS_PLATZ) fand jenseits der Fahrbahn keinen freien Grund");
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
         const seed =
             worldKey === "fachwerk"
@@ -2152,16 +2158,11 @@ class AnazhRealm_siedlung_ort {
             }
             if (job.ende === null) return;
             delete wege[worldKey];
-            if (!job.ende) {
-                fertig[worldKey] = true;
-                return;
-            }
+            if (!job.ende) return absagen("die Platz-Suche der Fahrt (`_fahrPlatzWege`) fand keinen fahrbaren Grund");
             ort.x = job.probe.position.x;
             ort.z = job.probe.position.z;
             opts.rotationY = job.probe.rotationY;
         }
-        // die Absage der Wurzel beim Namen: findet das Platz-Gesetz keinen fahrbaren Grund, steht dieses Tor ohne Vorschau —
-        // einmal (die Suche liefe sonst in jedem Takt neu)
         let absage = null;
         opts.absage = (g) => (absage = g);
         const entry = this.spawnArchitecture(type, { x: ort.x, y: ort.y, z: ort.z }, opts);
@@ -2169,7 +2170,7 @@ class AnazhRealm_siedlung_ort {
             wm[metaKey] = true;
             fertig[worldKey] = true;
             this.log(`Portal-Preview ${worldKey}: ${type} hinter ${portalType}, jenseits der Fahrbahn.`, "INFO");
-        } else if (absage === "platz") fertig[worldKey] = true;
+        } else if (absage === "platz") absagen("die Wurzel (`spawnArchitecture`) sagte den Platz ab");
     }
 
     // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (`PORTAL_VORSCHAU.anflugM`), Previews über
@@ -2561,7 +2562,8 @@ AnazhRealm._fahrPlatzGesetz = function () {
 // (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus, `bahn` die Fahrbahn um die Tore (SG1-F1d: der Spieler
 // fährt um sie, zwei Spuren), `lichtung` ihre Summe; über dem Platz steht keine Krone, auf ihm kein Busch, kein Fels und keine
 // Vorschau (`_grundrissVon` → `_imGrundriss`). `vorschau` ist die Tiefe einer Vorschau jenseits der Lichtung: der Radius des
-// größten Grundrisses der Reihe (`PORTAL_VORSCHAU`; haus_alemannisch 4,75 × 4,15 m halb → 6,3 m, gemessen 18.10.). Bis K52 trug
+// größten Grundrisses der Reihe (`PORTAL_VORSCHAU`; haus_alemannisch 4,75 × 4,15 m halb → 6,3 m, gemessen 18.10.; die Runde des
+// Spielgangs misst den Grund jeder stehenden Vorschau gegen die Lichtung, `ringbahn`). Bis K52 trug
 // die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit außerhalb: ein Kristall stand 1,2 m vor dem Tor des
 // Terrain-Studios. Bis SG1-F1d endete der Platz an den Toren (15 m): alle vier Vorschauen (r 19) und ein Felsturm (r 16,5) standen
 // auf der Fahrbahn, die Runde stieß an Esse, Haus und Drachentor (Radeon 18.10.: 13 Täter, 270° von 360°).

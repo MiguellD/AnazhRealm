@@ -198,6 +198,8 @@ const RING_GESUND = {
     spuren: [17, 19].map((R) => ({ R, zu: true, grad: 360, sprung: 0, weg: 6.3 * R, ablage: 0.3 })),
     taeter: [],
     vorschau: [4, 4],
+    grund: [{ typ: "haus_alemannisch", r: 22.1 }],
+    lichtung: 21,
 };
 // FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel
 // unter fester Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der
@@ -285,6 +287,9 @@ function fahrtVerdict(m) {
     const sp = g.spuren || [];
     const [vor, tore] = g.vorschau || [0, 1];
     if (vor < tore) out.push(`ringbahn: ${vor} von ${tore} Vorschauen stehen, als die Runde fährt (vakuös)`);
+    for (const v of g.grund || [])
+        if (!(v.r >= g.lichtung))
+            out.push(`ringbahn: die Vorschau ${v.typ} reicht bis r ${v.r ?? "? ohne Boxen"} m, Platz ${g.lichtung} m`);
     if (sp.length < 2 || !sp.every((s) => s.zu))
         out.push(
             `ringbahn: die Runde um den Genesis-Ring endet nach ${sp.map((s) => `${s.grad}°`).join(" · ") || "0°"} (vakuös)`
@@ -1032,19 +1037,23 @@ async function probe(arg) {
                     };
                     try {
                         for (const o of gr) o.castShadow = false;
-                        // ein ruhiges Paar: liefert die Welt zwischen zwei Schüssen nach (der Loop ruht, die Foundry
-                        // nicht — Radeon 18.10.: 0 / 0,022 / 0,015 am ersten Bild), schießt der Gang bis zu dreimal
-                        // nach; ein Bild, das sich bei stehender Welt ändert, bleibt in jedem Paar und ROT
-                        let [G1, G2, nach] = [await auf(false), await auf(false), 0];
-                        const unruhig = () => window.__bildRauschen(G1, G2, W, H, 18).anteil > SOLL.rauschenMax;
-                        for (; nach < 3 && unruhig(); nach++) [G1, G2] = [G2, await auf(false)];
+                        // das Paar in der Fahrt bei ruhendem Loop — die Foundry ruht nicht: ihre freigegebenen Bauten
+                        // docken noch an (Radeon 18.10.: Rauschen 0 / 0,022 / 0,015 am ersten Bild). Der Gang wartet,
+                        // bis die Regungen des Stamms (Welt · Bau · Karte, die Live-Hälfte von `_weltSteht`) zehn
+                        // Bilder stehen; jedes Rauschen danach ist ROT, kein Nachschuss
+                        const regung = () => [r._weltRegung | 0, r._bauRegung | 0, r._karteRegung | 0].join();
+                        for (let [v, still, i] = ["", 0, 0]; still < 10; i++) {
+                            if (i > 600) throw new Error(`die Welt regt sich vor dem Bild ${name} (${regung()})`);
+                            await new Promise((ok) => requestAnimationFrame(ok));
+                            still = regung() === v ? still + 1 : ((v = regung()), 0);
+                        }
+                        const [G1, G2] = [await auf(false), await auf(false)];
                         const O = await auf(true);
                         const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
                         out.bilder[name] = png(G1);
                         return {
                             anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4),
                             rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil,
-                            nach,
                             teile: gr.size,
                         };
                     } finally {
@@ -1357,8 +1366,20 @@ async function probe(arg) {
                 phase = "Ring";
                 L = null;
                 const [GP, Mg] = [r.constructor.GENESIS_PLATZ, r._genesisMitte()];
-                const vor = VS.tore.filter(([, , id]) => st.architectures.some((a) => a && a.id === id)).length;
-                const g = (m.ring = { spuren: [], taeter: [], vorschau: [vor, VS.tore.length] });
+                // DER GRUND JEDER VORSCHAU: der Punkt ihrer Boxen, der der Mitte am nächsten liegt — jenseits der
+                // Lichtung, sonst trägt die Tiefe `GENESIS_PLATZ.vorschau` ihren Grundriss nicht (null: ohne Boxen)
+                const grund = VS.tore.flatMap(([, typ, id]) => {
+                    const a = st.architectures.find((x) => x && x.id === id);
+                    const bx = a ? a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || [] : [];
+                    const nah = (b) =>
+                        Math.hypot(
+                            Math.max(b.minX - Mg.x, 0, Mg.x - b.maxX),
+                            Math.max(b.minZ - Mg.z, 0, Mg.z - b.maxZ)
+                        );
+                    return a ? [{ typ, r: bx.length ? +Math.min(...bx.map(nah)).toFixed(2) : null }] : [];
+                });
+                const g = (m.ring = { spuren: [], taeter: [], vorschau: [grund.length, VS.tore.length] });
+                Object.assign(g, { grund, lichtung: GP.lichtung });
                 for (const w of gebaut.splice(0)) r.removeArchitecture(w); // die Wagen der Fahrten davor (Lauf 18.10.: einer stand bei 11/13)
                 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
                 const winkel = () => Math.atan2(e.position.z - Mg.z, e.position.x - Mg.x);
@@ -2469,6 +2490,11 @@ async function probe(arg) {
                         "ringbahn: 1 von 4 Vorschauen stehen",
                     ],
                     [
+                        "ein Grundriss übersteigt die Tiefe der Vorschau (die Zahl des Platzes ist stale)",
+                        { ring: Object.assign({}, RING_GESUND, { grund: [{ typ: "haus_alemannisch", r: 19.4 }] }) },
+                        "ringbahn: die Vorschau haus_alemannisch reicht bis r 19.4 m",
+                    ],
+                    [
                         "die Runde um den Ring bleibt offen (vakuös)",
                         {
                             ring: Object.assign({}, RING_GESUND, {
@@ -2875,7 +2901,7 @@ async function probe(arg) {
             const bild = (m) =>
                 m.bild === false
                     ? "ohne Bild (Null-Renderer)"
-                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen}, ${m.nach || 0} nachgeschossen)`;
+                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`;
             const zeile = (m) => {
                 const [w, h] = [m.wechsel || {}, m.hang || {}];
                 const wechsel = w.wechsel
@@ -2889,7 +2915,9 @@ async function probe(arg) {
                 const ring = g.spuren
                     ? ` · RING ${g.spuren.map((s) => `Spur ${s.R} m: ${s.grad}° gefahren, ${s.sprung}° übersprungen, ${s.weg} m, Ablage ≤ ${s.ablage} m`).join(" · ")}, ${(g.taeter || []).length} Täter${(g.taeter || []).length ? ` (${g.taeter.map((t) => `${t.art} ${t.type || ""}@${t.ort}`).join(" · ")})` : ""}`
                     : "";
-                return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${(m.vorschauOffen || []).length ? ` · Vorschau offen ${m.vorschauOffen.join(",")}` : ""}${wechsel}${hang}${ring}`;
+                const fern = (g.grund || []).map((v) => `${v.typ} r ${v.r}`).join(" · ");
+                const grund = fern ? ` · Vorschau-Grund ab ${fern} (Platz ${g.lichtung} m)` : "";
+                return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${wechsel}${hang}${ring}${grund}`;
             };
             urteil(
                 n,

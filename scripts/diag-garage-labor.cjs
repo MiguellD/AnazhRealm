@@ -13,10 +13,9 @@
 //   G6 lehren   — (0710-2) die Probefahrt erbte die Werkstatt-Ebenen: RADSTAND, ÜH-H, FREI, RAD-Ø … schwebten als Schilder
 //                 über dem fahrenden Wagen                  Soll 0 Schilder in der Fahrt (die Sicht ERGEBNIS), > 0 in der Werkstatt
 //   G7 kamera   — (F1, Prüfer 18.10.) Labor ≠ Welt: die Chase-Cam des Labors federte einstufig zur WELT, die Welt zur
-// Fahrbahn
-//                 (bergab am Hügel stand sie tief hinter dem Wagen)   Soll: über die Abfahrt im Mittel ≥ HOCH_MIN über
-// der Fahrbahn Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite
-// selbst.
+//                 Fahrbahn (bergab am Hügel stand sie tief hinter dem Wagen)   Soll: über die Abfahrt im Mittel ≥ HOCH_MIN
+//                 über der Fahrbahn
+// Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
