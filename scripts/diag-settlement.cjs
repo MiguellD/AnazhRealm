@@ -67,6 +67,7 @@ const AUTO_DORF_PFAD = [
     "_tickGenesisOrt",
     "_dorfTaktLebt",
     "_startDorfFaellig",
+    "_startDorfBestellen",
     "_tickAutoSettlement",
 ];
 function autoStaticLaws(q) {

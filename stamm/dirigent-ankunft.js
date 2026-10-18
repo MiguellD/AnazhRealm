@@ -854,6 +854,16 @@ class AnazhRealm_dirigent_ankunft {
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
     }
+    // DIE KÖPFE DER ANKUNFTS-KETTEN gehen mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
+    // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
+    // zwölf Bäumen) und der Export des fälligen Start-Dorfs (`_startDorfBestellen` — bis B5 bestellte ihn der Takt im Leerlauf
+    // des Streamings, GTX kalt 1,7 s nach dem Buch). Die Reihe ist die Bestell-Reihe: der Leib wartet im Werk hinter dem
+    // Blatt-Atlas, der Export geht in einen Helfer.
+    _buchKoepfe() {
+        const st = this.state;
+        if (st._deferredAvatarSoul) this._ofenSpielerVorlagen();
+        if (st.playerMesh) this._startDorfBestellen(st.playerMesh.position);
+    }
 
     // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl
     // jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die Höhen-Stufe L1 und
@@ -944,13 +954,11 @@ class AnazhRealm_dirigent_ankunft {
     _rangImErstenBlick(rang) {
         return !!this.state._weltbildDa || rang < AnazhRealm.ERSTER_BLICK.ausserD2;
     }
-    // Steht das Bild, fällt der Blick-Schlüssel aus jedem wartenden Rang: die Zahl einer Karte (ihr Bedarf) und jedes
-    // Auftrags, der sie trägt — ab jetzt gilt nah zuerst rundum.
+    // Steht das Bild, fällt der Blick-Schlüssel aus dem Bedarf jeder Karte — ab jetzt gilt nah zuerst rundum. Der Rang eines
+    // Auftrags, der eine solche Zahl trägt, misst sie frisch (`_foundryAuftragD2`, B5: in Schlange, Flug und Wächter derselbe).
     _ersterBlickAus() {
         const A = AnazhRealm.ERSTER_BLICK.ausserD2;
         const ab = (v) => (Number.isFinite(v) && v >= A ? v - A : v);
-        const f = this._foundry;
-        for (const a of (f && f.warte) || []) if (typeof a.wo === "number") a.wo = ab(a.wo);
         for (const z of this._impostorAtlas().zellen.values()) z._bedarfD2 = ab(z._bedarfD2);
     }
 
