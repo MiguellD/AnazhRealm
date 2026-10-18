@@ -138,7 +138,7 @@ async function probe(page, anfragen) {
     });
     Object.assign(m, await ev(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => {
         const [r, e] = [window.anazhRealm, window.__studioModi.garage.werk()];
-        const c = e && e._kamChase;
+        const c = r.state._kamChase; // das Gedächtnis der Chase-Cam lebt mit ihrem Rig (F1 Wurzel 2)
         res({
             tachoAnzeige: parseInt(document.querySelector("#garage-spd").textContent, 10),
             tachoV: e && e._fahr ? Math.abs(e._fahr.speed) : 0,

@@ -1,75 +1,52 @@
-// diag-v1-pfad.cjs — DIE V1-PFAD-LINSE (Welle L, Familie auge-v1): die Defekte, die die Leben-Prüfung am 06.10. auf dem
-// gespielten v1.0-Pfad fand (artifacts/profiband/leben/befund-v1-pfad.md,
-// artifacts/profiband/leben/synthese.md Q14/Q15), je beim NAMEN. Jede
-// Probe ruft den Chokepoint selbst (die Methode, in der der Defekt saß) im echten Boot (headless, foundry-ON,
-// Null-Renderer der Welt) und misst seine Wirkung — keine Probe ersetzt die Stelle, an der der Defekt sitzt (Q0).
-//
-//   V-D3 (Q14) — DIE VORSCHAU ZEIGT IHR WERK: die Werkstatt öffnet, die Eiche wird gewählt, die Vorschau zeichnet über
-//     `_workshopRender`. Die Linse liest am Vorschau-Renderer, mit welchem Masken-Stand er gerufen wird (der
-//     Neben-Renderer ist der Beobachtungs-Punkt — er bekommt den Stand, die GPU-Arbeit bleibt aus), und rechnet mit dem
-//     EINEN Masken-Gesetz (`__phytoCore.lodCrossfadeMask`) über die Vertices der Vorschau, welcher Anteil der Eiche
-//     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
-//     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
-//
-//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
-//     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
-//     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
-//     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
-//     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
-//     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
-//     Dazu die Wand W7: der Foundry-Pfad pollt nicht — EIN Zeit-Graph über jedes Glied, das die Familie erreicht (Kreise
-//     mit Zeit-Kante, Schleifen mit Schlaf, setInterval, Warten auf ein pollendes Glied); frei nur die Frist-Kette.
-//
-//   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
-//     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
-//     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
-//     Waffe des Buchs gemessen. Befund 32027dc2: Messer 0,059, Waffen-Median 0,146, 71 von 232 unter 0,5 (der
-//     3-m-Mindestabstand in `_workshopCenterPreviewOn`).                                          Soll [0,5; 0,9]
-//
-//   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
-//     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
-//     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
-//     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
-//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
-//     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
-//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
-//
-//   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
-//     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
-//     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
-//     V-D6 — `llmCall` gegen einen lokalen Endpunkt ohne Dienst: der Fehler nennt den Host, nie CORS.
-//     V-k5 — „pflanz mir einen eichenhain am wasser" an einem Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster):
-//       0 Eichen, die Absage im Chat (Befund: 6 Eichen um den Spieler, „am Wasser gewachsen").
-//     V-k6 — „pflanz mir zwei birken" mit P2P an: das gesendete Programm trägt den Ort aufgelöst (["at", …]), der
-//       Empfänger 200 m weiter pflanzt beim Absender (Befund: 203/206 m vom Absender). Der Sende-Punkt `p2pSend` ist
-//       der Beobachtungs-Punkt (das Netz), der Chokepoint `dslRun` → `_dslMitOrten` läuft echt.
-//     V-D8 — das Label der Art im Chat („Birke", nie „baum_birke"), die Dorf-Zählung nur im Log.
-//     V-k5-KLASSE — an demselben trockenen Ort läuft JEDE Op mit ["near_water", 60] (spawn_creature · tree · studio ·
-//       island · ufo · village · temple · waterfall · blueprint · fractal · deposit_life · deposit_emotion) und eine chain
-//       durch `dslRun`: jede scheitert benannt an der Engstelle `dslEvalPos` („kein Wasser im Umkreis von 60 m", die Op im
-//       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
-//       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
-//       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
-//     V-k5-KLASSE, DER REST (Gegenprüfung pruef3) — jeder UNGÜLTIGE Ort scheitert benannt an derselben Engstelle: ein
-//       Text, eine Zahl, ein Objekt oder [] statt Knoten (die KI schreibt "near_water" ohne Klammern), `at` mit fehlendem
-//       oder nicht-numerischem x/y/z (Number(null) === 0), jeder Auflöser mit einem Text statt seiner Zahl (Radius,
-//       Abstand, Spanne), `far_player` ohne Abstände, die Koordinaten von voxel_carve/voxel_fill, jeder spieler-relative
-//       Ort ohne Spieler (auch der Feld-Akt ohne Knoten, die nächste Kreatur, der Mess-Ort einer Regel). Dazu die Defaults:
-//       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
-//       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
-//       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
-//     R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` (mit den Fels-Beweisen `_felsUeber`) gegen den vollen Spalten-Scan,
-//       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
-//       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
-//       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
-//
-//   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
+// diag-v1-pfad.cjs — DER SPIELGANG (SG1, 17.10.; vorher die V1-Pfad-Linse der Welle L). Schöpfer 17.10.: „ein
+// effizienter, schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird
+// nur der getestet." Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen
+// Wagen, Arm 0,30) — kein Gate fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang
+// fand die zweite Hälfte derselben Klasse: der Band-Partner des Wagens (L1) blieb am Ort des Aufstiegs, am Wagen
+// blendete die L0 aus (geheilt mit SG1). EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN
+// Renderer, wo die EINE Weiche (`linsenGpu`) die Karte gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe
+// (die Batterie der CI), auf dem Null-Renderer: swiftshader kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s
+// je Programm), und sein Holz änderte die Welt, die er prüfte (der Deckel der Ankunft, unter dem Frame-Budget stand die
+// Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort urteilt der Gang die Mechanik jeder Station, das Bild
+// urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten in seinen Takten (`__gang.takte`), die Tasten
+// sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station Spieler-Gesetze als Urteil und auf
+// der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne · Sommer; die
+// Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine Station ohne Bild ist auf der Karte
+// ROT; je Station eine Frist (Tafel STATIONEN), ihr Bruch ist ROT beim Namen der Station:
+//   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das
+//             Gesetz von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W
+//             trägt den Spieler; V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft
+//             immer.
+//   lichtung  V-D1 (Q15): keine Krone über der Genesis-Plattform, EINE Plattform, der Ring um sie auch über dem
+//             Frame-Budget.
+//   fahrt     ein Studio-Wagen (`fahrzeug_gt`) vor dem Spieler (die Welt stellt ihn auf fahrbaren Grund); E steigt ein,
+//             die Sicht springt auf Third, W fährt 100 m, der Spieler lenkt (A/D) in die freieste Richtung: der
+//             Kamera-Arm (`_kamArm`) endet nie am eigenen Wagen (p50 ≥ 0,9, sonst sein Täter), jede zeichnende Stufe
+//             (Primär und Band-Partner) steht am Wagen, und er füllt im Third-Bild sein Band (die Klassen-Teilung der
+//             Abnahme `__klassenTeilung`: das Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht
+//             kehrt zurück. DER SELBSTTEST IM LAUF: die ersten 20 m fahren mit dem alten Mount-Follow
+//             (`_archInstanceUpdate` ohne den Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe
+//             beim Namen nennen. (Der alte Strahl ohne `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel
+//             liegt über der Hülle, gemessen t 1,0 mit und ohne.) DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein
+//             Stoß), E steigt wieder ein, das erste Bild ohne Sim-Schritt zeichnet ihn in seiner Gier.
+//   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne
+//             ihren Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt
+//             trocken ≤ 8 je Ring.
+//   werkstatt V-D5 das Rezeptbuch nach dem Spielmodus · V-D3 die Vorschau zeigt ihr Werk (Masken-Gesetz ≥ 99 %) · V-D3
+//             FREMDER ZUG jeder Wartende erwacht nach einem fremd gezogenen Körper (≤ 20 s) · V-D3 RAHMEN jede Gestalt
+//             füllt die Vorschau [0,5; 0,9].
+// Die Befunde jeder Probe trägt git (Lehre 15); die statische Wand W2–W7 (Text am AST) fiel mit SG1 (Richter-Macher
+// 16.10.: Linsen urteilen Verhalten, nie Text) — ihr Verhalten tragen V-D3, V-D1 und V-k5.
+// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>: eine
+// stamm-Datei ruft die Stationen ihres Moduls (spec/stamm/modul-karte.json, Tafel STATIONEN), was die Welt sonst lädt
+// (worlds/, Kerne, index.html, diese Linse), den ganzen Gang; Doku, Spec und andere Skripte nur die Ankunft.
+//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]
+//   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 const root = path.resolve(__dirname, "..");
@@ -79,14 +56,262 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
+const ARGV = process.argv.slice(2);
+const OPT = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
 
-const ohneKommentare = stammLib.ohneKommentare;
+// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft, und
+// ihre FRIST in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.:
+// ein Gang hing 696 s in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M
+// und der Null-Renderer der CI) das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das
+// Warten auf die Birken des Bilds, ≤ 900 Takte) · werkstatt 68,5 — die Frist liegt beim 3- bis 10-fachen. Die Fahrt
+// ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild
+// (Dirigent/takt).
+const STATIONEN = [
+    ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/, 60],
+    ["lichtung", /^(Gelaende\/boden|Vegetation\/baum|Siedlung\/(ort|satz))$/, 120],
+    ["fahrt", /^(Koerper\/(fahrt|bewegung)|Gelaende\/(chunks|kollision)|Siedlung\/(satz|ort)|Dirigent\/takt)$/, 300],
+    ["wort", /^(Feld\/|Wasser\/hydro$|Netz\/p2p$)/, 60],
+    ["werkstatt", /^(Werkstatt|Studio|Bau)\//, 300],
+];
+function fristBruch(station, sek, takte) {
+    const f = (STATIONEN.find(([n]) => n === station) || [])[2];
+    return f && sek > f
+        ? `station ${station} steht ${Math.round(sek)} s (${takte} Takte) über ihrer Frist von ${f} s`
+        : null;
+}
+// Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen
+// Gang; was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
+const ALLE_MODULE = /^(Dirigent\/kern|Dienst|Daten)$/;
+const NIE_GELADEN =
+    /^(docs|spec|artifacts|\.github|\.claude)\/|\.md$|^scripts\/(?!diag-v1-pfad\.cjs$|lib\/(welt-boot|ausgabe-aufnahme|abnahme-urteil|software-gpu)\.cjs$)/;
+function stationenFuer(dateien, ordnung) {
+    const modulVon = new Map(ordnung.map(([m]) => [`stamm/${m.toLowerCase().replace("/", "-")}.js`, m]));
+    const S = new Set(["ankunft"]);
+    const grund = [];
+    for (const d of dateien) {
+        if (NIE_GELADEN.test(d)) continue;
+        const m = modulVon.get(d);
+        const s =
+            m && !ALLE_MODULE.test(m)
+                ? STATIONEN.filter(([, re]) => re.test(m)).map(([n]) => n)
+                : STATIONEN.map(([n]) => n);
+        s.forEach((n) => S.add(n));
+        grund.push(`${d}${m ? ` (${m})` : ""} → ${s.join(",") || "ankunft"}`);
+    }
+    return { stationen: STATIONEN.map(([n]) => n).filter((n) => S.has(n)), grund };
+}
 
-// ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
+// ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ── Das Band des
+// Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet): gemessen 17.10. Radeon 1,3 % (GT nach 100 m, 9 m vor
+// der Kamera, 640×360) — darunter steht er nicht im Bild, darüber steht die Kamera in ihm.
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
-// W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
-// die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
-const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
+Object.assign(SOLL, {
+    kontrolleM: 2,
+    fahrM: 100,
+    armMin: 0.9,
+    wagenMin: 0.005,
+    wagenMax: 0.2,
+    rauschenMax: 0.002,
+    stufeM: 2,
+    radMax: 0.05,
+});
+// Der Wechsel und der Hang (Befund des Schöpfers 17.10.): je Rückkehr nach Third die Kamera ≤ azGrad an der Gier nach
+// 10 Bildern, die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche
+// Ruck (die zweite Differenz der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der
+// Abweichung des Bild-Tempos vom Tempo um es) ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab
+// höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um mehr als `schnapp` einzieht). Die Schwellen aus der
+// Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032; Gleichlauf am Kopf 0,91–0,96, nach F1 ≤
+// 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°). GRENZE: auf dem Null-Renderer (die Batterie
+// der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch der Gleichlauf (Prüfer R3
+// 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die Karte. Der Schritt steht
+// im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts fährt, nie auf
+// einem Zweig: der Merge-Beweis eines Zweigs ist der lokale Gang auf der Radeon (`--station fahrt`, die Karte der
+// Weiche).
+Object.assign(SOLL, {
+    wechselS: 2,
+    kreisMs: 3,
+    kreisM: 10,
+    egoGrad: 30,
+    azGrad: 10,
+    ruckM: 0.07,
+    gleichMax: 0.2,
+    hochMin: 10,
+    schnapp: 0.05,
+    schnappMax: 3,
+    hangM: 60,
+    hangMin: 0.2,
+    hangMittel: 0.3,
+});
+// Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz:
+// 0, der Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.:
+// 4,3 %, das leere Canvas 0).
+Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
+// Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `GENESIS_PLATZ.bahn` breit jenseits ihrer Tiefe (zwei
+// Spuren je eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im
+// Tempo `ringMs`, die Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem
+// Täter steigt der Spieler `ringSprung`° weiter ein.
+Object.assign(SOLL, { ringMs: 5, ringSprung: 10, ringAblage: 1.2 });
+const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
+// ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich),
+// der Ladeschirm ist weg, W trägt den Spieler.
+function ankunftVerdict(m) {
+    if (!m || m.gestartet !== true) return ["ankunft start"];
+    const out = [];
+    if (!(m.ms > 0)) out.push("ankunft: kein erstes Weltbild (`_weltbildDa` fehlt)");
+    if ((m.ohne || []).length) out.push(`ankunft halb: ${m.ohne[0]}`);
+    if (m.ladeschirm) out.push("ankunft: der Ladeschirm steht nach dem Weltbild");
+    if (!(m.weg >= SOLL.kontrolleM))
+        out.push(`kontrolle: W trug den Spieler ${m.weg} m in ${m.wegTakte} Takten (Soll ≥ ${SOLL.kontrolleM} m)`);
+    return out;
+}
+// Die gesunden Abschnitte des Selbst-Tests (Wechsel und Hang)
+const GLATT = { ruckN: 120, ruckP95: 0.02, gleichN: 200, gleichP95: 0.04, hochP05: 19, radN: 400, radWeg: 0 };
+const WECHSEL_GESUND = Object.assign(
+    {
+        wechsel: [
+            [74, 4, "first"],
+            [70, 4, "first"],
+            [80, 3, "fuehrung"],
+        ],
+        wiederauf: 0,
+        stufeWeg: 0.1,
+        anteil: 0.02,
+        rauschen: 0,
+    },
+    GLATT
+);
+const HANG_GESUND = Object.assign(
+    {
+        gefaelle: 0.42,
+        weg: 60,
+        armN: 200,
+        armMin: 0.6,
+        schnapp: 0,
+        armWeg: 0.4,
+        stufeWeg: 0.1,
+        anteil: 0.02,
+        rauschen: 0,
+    },
+    GLATT
+);
+const RING_GESUND = {
+    spuren: [17, 19].map((R) => ({ R, zu: true, grad: 360, sprung: 0, weg: 6.3 * R, ablage: 0.3 })),
+    taeter: [],
+    vorschau: [4, 4],
+    grund: [{ typ: "haus_alemannisch", r: 22.1 }],
+    lichtung: 21,
+};
+// FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel
+// unter fester Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der
+// Hülle des gerittenen Werks (`imWagen`), trifft sein Strahl den eigenen Wagen.
+function fahrtVerdict(m) {
+    if (!m || m.gestartet !== true) return [`fahrt start${m && m.grund ? `: ${m.grund}` : ""}`];
+    const out = [];
+    if (m.sichtRitt !== "third") out.push(`sicht: im Ritt ${m.sichtRitt}, nicht third`);
+    if (!(m.weg >= SOLL.fahrM)) out.push(`fahrt: ${m.weg} m statt ${SOLL.fahrM} m`);
+    if (!(m.armN > 0)) out.push("kamera-arm: keine Probe im Ritt (vakuös)");
+    // ein Arm vor Boden und Bau ist das Gesetz des gleitenden Arms; ROT ist der Arm, der am eigenen Wagen endet
+    else if (!(m.armP50 >= SOLL.armMin) && m.imWagen > m.armN / 2)
+        out.push(
+            `kamera-arm p50 ${m.armP50} (min ${m.armMin}) < ${SOLL.armMin} — ${m.imWagen} von ${m.armN} Proben enden am gerittenen Werk ${m.typ}: der Strahl der Kamera trifft den eigenen Wagen`
+        );
+    const w = m.wechsel || {};
+    const h = m.hang || {};
+    // JEDE ZEICHNENDE STUFE je Bild am Wagen, in jedem Abschnitt; das Bild urteilt die Karte (der Null-Renderer der CI
+    // hat keins: `bild: false`, die Linse prüft, dass die Karte eins hat)
+    for (const [wo, a] of [["", m], [" im Wechsel", w], [" am Hang", h]]) {
+        if (a.stufeWeg > SOLL.stufeM)
+            out.push(
+                `aufbau${wo} ${a.stufeWeg} m neben dem Wagen: die Stufe ${a.stufeTaeter} zieht nicht mit (_archInstanceUpdate)`
+            );
+        if (a.radWeg > SOLL.radMax)
+            out.push(
+                `rad${wo}: die Stufen im Band zeigen das Rad verschieden (Drehung um ${a.radWeg}, ${a.radN} Proben) — eine Stufe steht in der Ruhe-Lage (_archInstanceAdd)`
+            );
+        if (a.bild !== false && (a === m || a.anteil != null) && !(a.anteil >= SOLL.wagenMin && a.anteil <= SOLL.wagenMax))
+            out.push(`wagen${wo} im Bild ${pct(a.anteil)} außerhalb [${pct(SOLL.wagenMin)}; ${pct(SOLL.wagenMax)}]`);
+    }
+    if (m.bild !== false && !(m.rauschen <= SOLL.rauschenMax))
+        out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht; Regung Welt,Bau,Karte vor · zwischen · nach den Schüssen: ${(m.regungen || []).join(" · ")})`);
+    // DER WECHSEL: je Rückkehr nach Third steht die Kamera nach 10 Bildern an der Gier; der Ruck bei fester Lenkung
+    const nach = w.wechsel || [];
+    const ausEgo = nach.filter(([, , von]) => von !== "fuehrung").length;
+    if (ausEgo < 2 || nach.length - ausEgo < 1 || !nach.every(([ego]) => ego >= SOLL.egoGrad))
+        out.push(
+            `wechsel: ${ausEgo} Rückkehr nach Third aus Ego, ${nach.length - ausEgo} aus einer Führung, die Gier drehte ${nach.map(([g]) => `${g}°`).join(" · ") || "—"} (vakuös: Soll 2 + 1 je ≥ ${SOLL.egoGrad}°)`
+        );
+    for (const [ego, n10, von] of nach) {
+        const wo = von === "fuehrung" ? "der Führung eines Studios (kameraFuehren)" : "dem Wechsel";
+        if (!(n10 <= SOLL.azGrad))
+            out.push(
+                `kamera nach ${wo} ${n10}° neben der Gier nach 10 Bildern (${von === "fuehrung" ? "in ihr" : "in Ego"} drehte sie ${ego}°, Soll ≤ ${SOLL.azGrad}°): die Chase-Cam beginnt aus der alten Richtung`
+            );
+    }
+    if (nach.length && w.wiederauf == null) out.push("wiederaufstieg: nicht gemessen (vakuös)");
+    else if (nach.length && !(w.wiederauf <= SOLL.wiederaufGrad))
+        out.push(
+            `wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ${w.wiederauf}° neben seiner Gier (Soll ≤ ${SOLL.wiederaufGrad}°): die Gier im Bild beginnt aus der letzten Fahrt (mountArchitecture, _gierVor)`
+        );
+    // DER RUCK, DER GLEICHLAUF, DIE HÖHE über der Fahrbahn: im Kreis (feste Lenkung) und am Hang
+    for (const [wo, a] of [["im Wechsel", w], ["am Hang", h]]) {
+        if (a === h && !(h.gefaelle >= SOLL.hangMittel)) continue;
+        if (!(a.ruckN >= 20 && a.gleichN >= 20))
+            out.push(
+                `kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 20)`
+            );
+        else {
+            if (a === w && !(a.ruckP95 <= SOLL.ruckM))
+                out.push(
+                    `kamera-ruck seitlich p95 ${a.ruckP95} m je Bild bei fester Lenkung (Soll ≤ ${SOLL.ruckM}): die Kamera springt quer gegen den Wagen`
+                );
+            if (!(a.gleichP95 <= SOLL.gleichMax))
+                out.push(
+                    `gleichlauf ${wo} p95 ${a.gleichP95} (Soll ≤ ${SOLL.gleichMax}): das Bild zeigt den Wagen nicht, wo die Physik ihn zu seiner Zeit hat (_applyFixedInterpolation)`
+                );
+            if (!(a.hochP05 >= SOLL.hochMin))
+                out.push(
+                    `kamera ${wo} p05 ${a.hochP05}° über der Fahrbahn (Soll ≥ ${SOLL.hochMin}°): die Elevation steht zur Welt, nicht zur Fahrbahn`
+                );
+        }
+    }
+    // DER HANG: ein Steilhang, der Wagen fährt ihn bergab, der Arm pumpt nicht
+    if (!(h.gefaelle >= SOLL.hangMittel)) out.push(`hang: kein Steilhang ≥ ${SOLL.hangMittel} im Umkreis (vakuös)`);
+    else {
+        if (!(h.weg >= SOLL.hangM * 0.8)) out.push(`hang: ${h.weg} m bergab statt ${SOLL.hangM} m`);
+        if (!(h.armN > 0)) out.push("hang: keine Probe des Arms (vakuös)");
+        else if (h.schnapp > SOLL.schnappMax) out.push(`kamera-arm pumpt bergab: ${h.schnapp} Schnapper auf ${h.weg} m (Arm-Weg ${h.armWeg}, min ${h.armMin}; Soll ≤ ${SOLL.schnappMax})`);
+    }
+    // DIE RUNDE UM DEN GENESIS-RING (F1d): die Fahrbahn um die Tore trägt kein Tor und keinen Bau — jeder Täter beim
+    // Namen; und keine Fahrt des Gangs geht durch ein Tor
+    const g = m.ring || {};
+    const sp = g.spuren || [];
+    const [vor, tore] = g.vorschau || [0, 1];
+    if (vor < tore) out.push(`ringbahn: ${vor} von ${tore} Vorschauen stehen, als die Runde fährt (vakuös)`);
+    for (const v of g.grund || [])
+        if (!(v.r >= g.lichtung))
+            out.push(`ringbahn: die Vorschau ${v.typ} reicht bis r ${v.r ?? "? ohne Boxen"} m, Platz ${g.lichtung} m`);
+    if (sp.length < 2 || !sp.every((s) => s.zu))
+        out.push(
+            `ringbahn: die Runde um den Genesis-Ring endet nach ${sp.map((s) => `${s.grad}°`).join(" · ") || "0°"} (vakuös)`
+        );
+    else if (!(g.taeter || []).length && !sp.every((s) => s.ablage <= SOLL.ringAblage))
+        out.push(
+            `ringbahn: die Lenkung hält die Spur nicht (Ablage ${sp.map((s) => s.ablage).join(" · ")} m, Soll ≤ ${SOLL.ringAblage} m — vakuös)`
+        );
+    for (const t of g.taeter || [])
+        out.push(
+            t.art === "tor"
+                ? `ringbahn: Portal betreten: ${t.type} (${t.id}) bei ${t.ort} (${t.grad}°, Spur ${t.R} m) — ein lebendes Tor auf der Fahrbahn um den Genesis-Ring`
+                : t.art === "steht"
+                  ? `ringbahn: der Wagen steht bei ${t.ort} (${t.grad}°, Spur ${t.R} m) an ${t.type}${t.id != null ? ` (${t.id})` : ""} auf der Fahrbahn um den Genesis-Ring`
+                  : `ringbahn: bei ${t.ort} steigt E nicht ein: ${t.grund}`
+        );
+    if (m.tor && m.tor.phase !== "Ring")
+        out.push(`portal betreten in der Fahrt (${m.tor.phase}) bei ${(m.tor.ort || []).join("/")}: ${m.tor.log}`);
+    if (m.abgestiegen !== true) out.push("fahrt: E steigt nicht aus");
+    else if (m.sichtNach !== m.sichtVor) out.push(`sicht: nach dem Abstieg ${m.sichtNach} statt ${m.sichtVor}`);
+    return out;
+}
 // V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
@@ -161,10 +386,15 @@ function vorschauVerdict(m) {
     if (!(m.anteil >= SOLL.vorschauAnteil))
         out.push(`vorschau ${(100 * (m.anteil || 0)).toFixed(1)} % im Bild (Maske ${m.maskeImRender}, Auge ${m.augeAbstand} m)`);
     if (m.maskeDanach !== m.maskeWelt) out.push(`welt-maske nach dem Vorschau-Render ${m.maskeDanach} statt ${m.maskeWelt}`);
+    // das Bild der Karte (der Null-Renderer zeichnet keins): das Werk deckt sein Canvas, gemessen mit gegen ohne Werk
+    if (m.bildAnteil != null && !(m.bildAnteil >= SOLL.vorschauBildMin))
+        out.push(
+            `vorschau-bild: das Werk deckt ${(100 * m.bildAnteil).toFixed(1)} % des Canvas (Soll ≥ ${100 * SOLL.vorschauBildMin} %)`
+        );
     return out;
 }
 
-function ankunftVerdict(m) {
+function lichtungVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!(m.baeume > 0)) out.push("kein Wald um die Plattform gewachsen");
@@ -352,535 +582,126 @@ function sucheVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, am AST). Liefert [name, ok, detail]. ──
-const FN_ART = /^(?:FunctionExpression|ArrowFunctionExpression|FunctionDeclaration)$/;
-const SCHLEIFE_ART = /^(?:WhileStatement|DoWhileStatement|ForStatement|ForInStatement|ForOfStatement)$/;
-const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame|requestIdleCallback)$/;
-const RENDER = /^render(?:Async)?$/;
-// der Name eines Zugriffs: `a.b`, `a["b"]`, a[`b`]
-const eigenName = (m) =>
-    !m.computed
-        ? m.property.name
-        : m.property.type === "Literal"
-          ? String(m.property.value)
-          : m.property.type === "TemplateLiteral" && !m.property.expressions.length
-            ? m.property.quasis[0].value.cooked
-            : null;
-const gerufenName = (c) => (c.type === "Identifier" ? c.name : c.type === "MemberExpression" ? eigenName(c) : null);
-const umfasst = (a, i) => a.start <= i && i < a.end;
-// ein Bezug, der einen Namen nur DEKLARIERT oder als Schlüssel trägt (kein Lesen des Werts)
-const nurName = (n, p) =>
-    p &&
-    ((p.type === "MemberExpression" && p.property === n && !p.computed) ||
-        (p.type === "Property" && p.key === n && !p.computed) ||
-        ((p.type === "MethodDefinition" || p.type === "PropertyDefinition") && p.key === n) ||
-        (p.type === "VariableDeclarator" && p.id === n) ||
-        (p.type === "AssignmentExpression" && p.left === n) ||
-        (FN_ART.test(p.type) && (p.id === n || p.params.includes(n))) ||
-        (p.type === "AssignmentPattern" && p.left === n));
-
-// W2 — DER RENDER-FLUSS: wo die Render-Funktion eines Renderers GERUFEN wird. Gefolgt wird dem WERT `x.render` /
-// `x.renderAsync` (auch `x["render"]`, ein Destrukturieren `{ render }`) durch `||`, `?:`, Klammern und `?.`, durch `.bind`
-// (gebundene Argumente zählen mit), in einen Bezeichner, ein Feld (`this.z = …`, `{ z: … }`), einen Parameter eines Glieds
-// (`this.g(x.render)`), die Rückgabe eines Glieds oder einer Closure — bis zum Ruf: direkt mit ≥ 2 Argumenten (Szene,
-// Kamera), `.call` mit ≥ 3, `.apply`, `Reflect.apply`, ein Zeitgeber mit Szene und Kamera hinter der Frist. Ein Feld der
-// Info (`info.render.calls`) und ein Wert im Test (`ri && ri.render`) sind kein Ruf. Bis Runde 4 las W2 die Ruf-FORMEN
-// `render(…)` · `.call` · `.apply` — `const z = r.render.bind(r); z(s, c)` blieb still grün (Prüfer K38-N2 Runde 4, mut-bind).
-function renderFluss(src) {
-    const baum = stammLib.ast(src);
-    const gl = stammLib.glieder(src);
-    const gliedVon = (i) => {
-        const g = stammLib.gliedAn(gl, i);
-        return g ? g.name : null;
-    };
-    const treffer = new Map(); // Start des Rufs → { glied, wie, i, text }
-    const lokal = new Map(); // "glied|bezeichner" → [gebundene Argumente, Weg]
-    const feld = new Map(); // feldname → [gebundene Argumente, Weg]
-    const rueck = new Map(); // "glied" oder "glied|closure" → [gebundene Argumente, Weg] (die Rückgabe trägt die Funktion)
-    let neu = false;
-    const merke = (karte, k, gebunden, weg) => {
-        if (!karte.has(k)) karte.set(k, [gebunden, weg]), (neu = true);
-    };
-    const trifft = (ruf, wie) => {
-        if (!treffer.has(ruf.start))
-            treffer.set(ruf.start, { glied: gliedVon(ruf.start), wie, i: ruf.start, text: src.slice(ruf.start, Math.min(ruf.end, ruf.start + 90)).replace(/\s+/g, " ") });
-    };
-    const fliesse = (kette, n, gebunden, weg) => {
-        const triff = (ruf, wie) => trifft(ruf, `${weg}${wie}`);
-        let cur = n;
-        for (let k = kette.length - 1; k >= 0; k--) {
-            const p = kette[k];
-            const t = p.type;
-            if (
-                t === "ChainExpression" ||
-                t === "ParenthesizedExpression" ||
-                t === "LogicalExpression" ||
-                (t === "ConditionalExpression" && p.test !== cur) ||
-                (t === "SequenceExpression" && p.expressions[p.expressions.length - 1] === cur)
-            ) {
-                cur = p;
-                continue;
-            }
-            if (t === "MemberExpression" && p.object === cur) {
-                const was = eigenName(p);
-                const pp = kette[k - 1];
-                if (!pp || pp.type !== "CallExpression" || pp.callee !== p) return; // ein Feld des Werts (info.render.calls)
-                if (was === "bind") {
-                    gebunden += Math.max(0, pp.arguments.length - 1);
-                    weg += ".bind → ";
-                    cur = pp;
-                    k--;
-                    continue;
-                }
-                if (was === "call" && gebunden + pp.arguments.length - 1 >= 2) triff(pp, ".call");
-                if (was === "apply") triff(pp, ".apply");
-                return;
-            }
-            if (t === "CallExpression" && p.callee === cur) {
-                if (gebunden + p.arguments.length >= 2) triff(p, "Ruf");
-                return;
-            }
-            if (t === "CallExpression") {
-                const idx = p.arguments.indexOf(cur);
-                const nm = gerufenName(p.callee);
-                if (idx === 0 && nm === "apply" && p.callee.type === "MemberExpression" && gerufenName(p.callee.object) === "Reflect") triff(p, "Reflect.apply");
-                else if (idx === 0 && ZEITGEBER.test(nm || "") && gebunden + p.arguments.length - 2 >= 2) triff(p, nm);
-                else if (idx >= 0 && p.callee.type === "MemberExpression") {
-                    // ein Parameter eines Glieds trägt die Funktion weiter
-                    const g = gl.find((x) => x.name === nm);
-                    const fn = g && (g.knoten.value || null);
-                    const par = fn && FN_ART.test(fn.type) ? fn.params[idx] : null;
-                    const id = par && (par.type === "AssignmentPattern" ? par.left : par);
-                    if (id && id.type === "Identifier") merke(lokal, `${nm}|${id.name}`, gebunden, `${weg}Parameter ${nm}(${id.name}) → `);
-                }
-                return;
-            }
-            if (t === "VariableDeclarator" && p.init === cur) {
-                if (p.id.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.id.name}`, gebunden, `${weg}${p.id.name} → `);
-                return;
-            }
-            if (t === "AssignmentExpression" && p.right === cur) {
-                if (p.left.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.left.name}`, gebunden, `${weg}${p.left.name} → `);
-                else if (p.left.type === "MemberExpression" && eigenName(p.left)) merke(feld, eigenName(p.left), gebunden, `${weg}Feld .${eigenName(p.left)} → `);
-                return;
-            }
-            if (t === "Property" && p.value === cur) {
-                const nm = !p.computed && p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? String(p.key.value) : null;
-                if (nm) merke(feld, nm, gebunden, `${weg}Feld .${nm} → `);
-                return;
-            }
-            if (t === "ReturnStatement" || (t === "ArrowFunctionExpression" && p.body === cur)) {
-                // die Funktion, die zurückgibt: das Glied selbst oder eine benannte Closure
-                let j = t === "ReturnStatement" ? k - 1 : k;
-                while (j >= 0 && !FN_ART.test(kette[j].type)) j--;
-                const f = kette[j];
-                const fp = kette[j - 1];
-                const glied = gliedVon(p.start);
-                if (f && fp && (fp.type === "MethodDefinition" || fp.type === "PropertyDefinition")) merke(rueck, glied, gebunden, `${weg}Rückgabe ${glied}() → `);
-                else if (f && fp && fp.type === "VariableDeclarator" && fp.id.type === "Identifier") merke(rueck, `${glied}|${fp.id.name}`, gebunden, `${weg}Rückgabe ${fp.id.name}() → `);
-                else if (f && f.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
-                return;
-            }
-            return;
-        }
-    };
-    for (let runde = 0; runde === 0 || neu; runde++) {
-        neu = false;
-        stammLib.wandere(baum, (n, ahnen) => {
-            const p = ahnen[ahnen.length - 1];
-            if (n.type === "MemberExpression") {
-                const nm = eigenName(n);
-                if (!nm || (p && p.type === "AssignmentExpression" && p.left === n)) return true;
-                if (RENDER.test(nm)) fliesse(ahnen, n, 0, "");
-                else if (feld.has(nm)) fliesse(ahnen, n, ...feld.get(nm));
-            } else if (n.type === "Property" && p && p.type === "ObjectPattern") {
-                const nm = !n.computed && n.key.type === "Identifier" ? n.key.name : n.key.type === "Literal" ? String(n.key.value) : null;
-                const v = n.value.type === "AssignmentPattern" ? n.value.left : n.value;
-                if (nm && RENDER.test(nm) && v.type === "Identifier") merke(lokal, `${gliedVon(n.start)}|${v.name}`, 0, `{ ${nm} } → ${v.name} → `);
-            } else if (n.type === "Identifier" && lokal.size && !nurName(n, p)) {
-                const k = `${gliedVon(n.start)}|${n.name}`;
-                if (lokal.has(k)) fliesse(ahnen, n, ...lokal.get(k));
-            } else if (n.type === "CallExpression" && rueck.size) {
-                const c = n.callee;
-                const k = c.type === "Identifier" ? `${gliedVon(n.start)}|${c.name}` : c.type === "MemberExpression" ? eigenName(c) : null;
-                if (k && rueck.has(k)) fliesse(ahnen, n, ...rueck.get(k));
-            }
-            return true;
-        });
-        if (runde > 12) throw new Error("renderFluss: kein Fixpunkt nach 12 Runden");
-    }
-    return [...treffer.values()];
-}
-
-// W7 — DER ZEIT-GRAPH: Knoten sind die Glieder der Klasse und jede benannte Closure darin (const/let/Zuweisung = Funktion,
-// function-Deklaration, benannter Funktions-Ausdruck); eine Kante führt zu jedem Knoten, den ein Knoten beim Namen nennt
-// (`this.g`, ein Alias von this, ein Glied der Familie über jedes Objekt; die Closure beim Bezeichner). Eine Kante ist ZEIT,
-// wenn die Nennung erst nach Zeit läuft: im Rückruf eines Zeitgebers (setTimeout · setInterval · requestAnimationFrame ·
-// requestIdleCallback, auch `window.` und `["…"]`) oder eines Zeitgeber-Glieds (es ruft einen Parameter im Zeitgeber), im
-// Rückruf von then/catch/finally auf einem zeitigen Versprechen, in einer Funktion, die auf Zeit wartet (`await` auf einen
-// Zeitgeber oder auf einen Schlaf — ein Knoten, dessen Rückgabe ein Zeitgeber einlöst). Ein POLL ist ein Kreis mit einer
-// Zeit-Kante (über beliebig viele Glieder und Closures), eine Schleife, die in ihrem Rumpf auf Zeit wartet, ein setInterval —
-// oder ein Wartender der Familie, der auf ein pollendes Glied wartet (await · then · return · ein Rückruf als Argument).
-// Gelesen werden die Glieder, die die Familie erreicht. Bis Runde 4 las W7 je Glied einen eigenen Graphen ohne Schleifen:
-// `while (!f.buchDa) await new Promise((r) => setTimeout(r, 50))` (mut-schlaf) und `_foundryHorch` ⇄ `_foundryHorchNochmal`
-// (mut-kreuz) blieben still grün (Prüfer K38-N2 Runde 4).
-// Die EINE Kette mit Zeit-Kanten, die kein Poll ist — die Frist am Ereignis je Auftrag: `_foundryUhren` stellt je Auftrag,
-// der vorn in seinem Faden steht, EINE Uhr auf `_foundryAblauf`; dessen Geist-Fall stellt EINMAL die Uhr, die den Geist
-// fallen lässt und Pumpe und Uhr des nächsten Auftrags anstößt. Jede Uhr feuert je Auftrag höchstens einmal. Frei sind
-// genau diese Zeit-Kanten (die Frist selbst fährt gate:takt T8).
-const FRIST_KETTE = [
-    ["_foundryUhren", "_foundryAblauf"],
-    ["_foundryAblauf", "_foundryPumpe"],
-    ["_foundryAblauf", "_foundryUhren"],
-];
-const FOUNDRY_FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
-function zeitGraph(src) {
-    const gl = stammLib.glieder(src);
-    const gliedNamen = new Set(gl.map((g) => g.name));
-    const wurzel = (g) => g.knoten.value || g.knoten;
-    const istSelbst = (a, o) => o.type === "ThisExpression" || (o.type === "Identifier" && a.selbst.has(o.name));
-    // ein Bezug auf ein Glied: this.g und ein Alias von this für jedes Glied, jedes Objekt für ein Glied der Familie
-    const gliedZiel = (a, n) => {
-        const nm = eigenName(n);
-        return nm && gliedNamen.has(nm) && (istSelbst(a, n.object) || FOUNDRY_FAMILIE.test(nm)) ? nm : null;
-    };
-    // 1) je Glied die Glied-Bezüge → die Glieder, die die Familie erreicht
-    const akte = new Map();
-    for (const g of gl) {
-        const a = { g, selbst: new Set(), zugriffe: [] };
-        stammLib.wandere(wurzel(g), (n) => {
-            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && n.init.type === "ThisExpression") a.selbst.add(n.id.name);
-            else if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && n.right.type === "ThisExpression") a.selbst.add(n.left.name);
-            else if (n.type === "MemberExpression") a.zugriffe.push(n);
-            return true;
-        });
-        a.glieder = new Set(a.zugriffe.map((n) => gliedZiel(a, n)).filter(Boolean));
-        a.zugriffe = null;
-        if (!akte.has(g.name)) akte.set(g.name, []);
-        akte.get(g.name).push(a);
-    }
-    const erreicht = new Set(gl.filter((g) => FOUNDRY_FAMILIE.test(g.name)).map((g) => g.name));
-    const familie = new Set(erreicht);
-    for (const offen = [...erreicht]; offen.length; )
-        for (const a of akte.get(offen.pop()) || []) for (const y of a.glieder) if (!erreicht.has(y)) erreicht.add(y), offen.push(y);
-    // 2) die erreichten Glieder voll: Funktionen, Closures, Rufe, awaits, Schleifen, Bezüge
-    const akten = [];
-    for (const name of erreicht)
-        for (const a of akte.get(name) || []) {
-            Object.assign(a, { fns: [], closures: [], rufe: [], awaits: [], schleifen: [], bezuege: [] });
-            stammLib.wandere(wurzel(a.g), (n, ahnen) => {
-                const p = ahnen[ahnen.length - 1];
-                if (FN_ART.test(n.type)) {
-                    a.fns.push(n);
-                    if (n.id && n.type !== "ArrowFunctionExpression") a.closures.push({ name: n.id.name, fn: n, id: n.id });
-                }
-                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && FN_ART.test(n.init.type)) a.closures.push({ name: n.id.name, fn: n.init, id: n.id });
-                if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && FN_ART.test(n.right.type)) a.closures.push({ name: n.left.name, fn: n.right, id: n.left });
-                if (n.type === "CallExpression") a.rufe.push({ n, p, nm: gerufenName(n.callee) });
-                if (n.type === "AwaitExpression") a.awaits.push(n);
-                if (SCHLEIFE_ART.test(n.type)) a.schleifen.push(n);
-                if (n.type === "MemberExpression" || n.type === "Identifier") a.bezuege.push({ n, p });
-                return true;
-            });
-            a.closureNamen = new Set(a.closures.map((c) => c.name));
-            akten.push(a);
-        }
-    const ziel = (a, n, p) => {
-        if (n.type === "MemberExpression") return gliedZiel(a, n);
-        if (n.type !== "Identifier" || !a.closureNamen.has(n.name) || nurName(n, p)) return null;
-        return `${a.g.name}/${n.name}`;
-    };
-    const knotenAn = (a, i) => {
-        let k = null;
-        for (const c of a.closures) if (umfasst(c.fn, i) && (!k || c.fn.start >= k.fn.start)) k = c;
-        return k ? `${a.g.name}/${k.name}` : a.g.name;
-    };
-    const fnAn = (a, i) => {
-        let f = null;
-        for (const x of a.fns) if (umfasst(x, i) && (!f || x.start >= f.start)) f = x;
-        return f;
-    };
-    // Schlaf (die Rückgabe löst ein Zeitgeber ein) und Zeitgeber-Glied (ein Parameter wird im Zeitgeber gerufen): Fixpunkt
-    const schlaf = new Set();
-    const geber = new Set();
-    const rufZiel = (a, c) => ziel(a, c.callee, c);
-    const zeitig = (a, e) => {
-        let z = false;
-        stammLib.wandere(e, (n) => {
-            if (z) return false;
-            if (n.type === "CallExpression" && (ZEITGEBER.test(gerufenName(n.callee) || "") || schlaf.has(rufZiel(a, n) || ""))) z = true;
-            return true;
-        });
-        return z;
-    };
-    const istZeitRuf = (a, r) => ZEITGEBER.test(r.nm || "") || geber.has(rufZiel(a, r.n) || "");
-    const rueckrufe = (r) =>
-        ZEITGEBER.test(r.nm || "")
-            ? r.n.arguments.slice(0, 1)
-            : r.n.arguments.filter((x) => FN_ART.test(x.type) || x.type === "ObjectExpression" || x.type === "Identifier" || x.type === "MemberExpression");
-    for (let neu = true; neu; ) {
-        neu = false;
-        for (const a of akten)
-            for (const k of [{ name: a.g.name, fn: wurzel(a.g) }, ...a.closures.map((c) => ({ name: `${a.g.name}/${c.name}`, fn: c.fn }))]) {
-                if (!FN_ART.test(k.fn.type)) continue;
-                if (!schlaf.has(k.name)) {
-                    let z = k.fn.type === "ArrowFunctionExpression" && k.fn.expression && zeitig(a, k.fn.body);
-                    if (!z)
-                        stammLib.wandere(k.fn.body, (n) => {
-                            if (z || (n !== k.fn.body && FN_ART.test(n.type))) return false;
-                            if (n.type === "ReturnStatement" && n.argument && zeitig(a, n.argument)) z = true;
-                            return true;
-                        });
-                    if (z) schlaf.add(k.name), (neu = true);
-                }
-                if (!geber.has(k.name)) {
-                    const params = new Set(
-                        k.fn.params
-                            .map((x) => (x.type === "AssignmentPattern" ? x.left : x))
-                            .filter((x) => x.type === "Identifier")
-                            .map((x) => x.name)
-                    );
-                    const istParam = (x) => x && x.type === "Identifier" && params.has(x.name);
-                    let z = false;
-                    for (const r of a.rufe) {
-                        if (z || !params.size || !umfasst(k.fn, r.n.start) || !istZeitRuf(a, r)) continue;
-                        for (const arg of rueckrufe(r))
-                            if (istParam(arg)) z = true;
-                            else
-                                stammLib.wandere(arg, (n) => {
-                                    if (n.type === "CallExpression" && (istParam(n.callee) || (n.callee.type === "MemberExpression" && istParam(n.callee.object)))) z = true;
-                                    return !z;
-                                });
-                    }
-                    if (z) geber.add(k.name), (neu = true);
-                }
-            }
-    }
-    // die Kanten
-    const kanten = new Map(); // von → Map(zu → { zeit, i })
-    const schleifen = [];
-    const intervalle = [];
-    for (const a of akten) {
-        const bereiche = [];
-        for (const r of a.rufe) {
-            if (r.nm === "setInterval") intervalle.push({ knoten: knotenAn(a, r.n.start), i: r.n.start });
-            if (istZeitRuf(a, r)) bereiche.push(...rueckrufe(r));
-            else if (/^(?:then|catch|finally)$/.test(r.nm || "") && r.n.callee.type === "MemberExpression" && zeitig(a, r.n.callee.object)) bereiche.push(...r.n.arguments);
-        }
-        const zeitAwaits = a.awaits.filter((w) => zeitig(a, w.argument));
-        const wartet = new Set(zeitAwaits.map((w) => fnAn(a, w.start)));
-        for (const { n, p } of a.bezuege) {
-            const zu = ziel(a, n, p);
-            if (!zu) continue;
-            const von = knotenAn(a, n.start);
-            const zeit = bereiche.some((x) => umfasst(x, n.start)) || wartet.has(fnAn(a, n.start));
-            if (!kanten.has(von)) kanten.set(von, new Map());
-            const alt = kanten.get(von).get(zu);
-            if (!alt || (zeit && !alt.zeit)) kanten.get(von).set(zu, { zeit, i: n.start });
-        }
-        // die innerste Schleife um ein zeitiges await derselben Funktion
-        for (const w of zeitAwaits) {
-            const f = fnAn(a, w.start);
-            let s = null;
-            for (const x of a.schleifen) if (umfasst(x, w.start) && fnAn(a, x.start) === f && (!s || x.start >= s.start)) s = x;
-            if (s && !schleifen.some((y) => y.i === s.start)) schleifen.push({ knoten: knotenAn(a, s.start), i: s.start });
-        }
-    }
-    // die starken Komponenten (Tarjan, iterativ)
-    const komp = new Map();
-    {
-        const index = new Map();
-        const low = new Map();
-        const auf = new Set();
-        const stapel = [];
-        let zaehler = 0;
-        let nr = 0;
-        const nach = (v) => [...(kanten.get(v) || new Map()).keys()][Symbol.iterator]();
-        const knoten = new Set();
-        for (const [v, m] of kanten) {
-            knoten.add(v);
-            for (const w of m.keys()) knoten.add(w);
-        }
-        const betrete = (v) => {
-            index.set(v, zaehler), low.set(v, zaehler++), stapel.push(v), auf.add(v);
-        };
-        for (const v0 of knoten) {
-            if (index.has(v0)) continue;
-            betrete(v0);
-            const rahmen = [[v0, nach(v0)]];
-            while (rahmen.length) {
-                const [v, it] = rahmen[rahmen.length - 1];
-                const nx = it.next();
-                if (!nx.done) {
-                    const w = nx.value;
-                    if (!index.has(w)) betrete(w), rahmen.push([w, nach(w)]);
-                    else if (auf.has(w)) low.set(v, Math.min(low.get(v), index.get(w)));
-                    continue;
-                }
-                rahmen.pop();
-                if (rahmen.length) {
-                    const u = rahmen[rahmen.length - 1][0];
-                    low.set(u, Math.min(low.get(u), low.get(v)));
-                }
-                if (low.get(v) === index.get(v)) {
-                    let w;
-                    do {
-                        w = stapel.pop();
-                        auf.delete(w);
-                        komp.set(w, nr);
-                    } while (w !== v);
-                    nr++;
-                }
-            }
-        }
-    }
-    const gliedVonKnoten = (k) => k.split("/")[0];
-    const frei = (von, zu) => FRIST_KETTE.some(([x, y]) => gliedVonKnoten(von) === x && gliedVonKnoten(zu) === y);
-    const mitglieder = new Map();
-    for (const [k, c] of komp) {
-        if (!mitglieder.has(c)) mitglieder.set(c, []);
-        mitglieder.get(c).push(k);
-    }
-    const kreise = []; // { von, zu, i, familie }
-    for (const [von, m] of kanten)
-        for (const [zu, e] of m) {
-            if (!e.zeit || komp.get(von) !== komp.get(zu) || frei(von, zu)) continue;
-            kreise.push({ von, zu, i: e.i, familie: mitglieder.get(komp.get(von)).some((k) => familie.has(gliedVonKnoten(k))) });
-        }
-    // ein pollendes Glied: in einem Zeit-Kreis, mit einer wartenden Schleife oder einem setInterval
-    const pollend = new Set([...kreise.flatMap((k) => mitglieder.get(komp.get(k.von))), ...schleifen.map((s) => s.knoten), ...intervalle.map((s) => s.knoten)].map(gliedVonKnoten));
-    const ueber = [];
-    for (const a of akten) {
-        if (!familie.has(a.g.name)) continue;
-        for (const r of a.rufe) {
-            const P = r.n.callee.type === "MemberExpression" ? gliedZiel(a, r.n.callee) : null;
-            if (!P || familie.has(P) || !pollend.has(P)) continue;
-            const p = r.p;
-            const wartet =
-                (p && (p.type === "AwaitExpression" || p.type === "ReturnStatement" || (p.type === "ArrowFunctionExpression" && p.body === r.n))) ||
-                (p && p.type === "MemberExpression" && p.object === r.n && /^(?:then|catch|finally)$/.test(eigenName(p) || "")) ||
-                r.n.arguments.some((x) => FN_ART.test(x.type) || (x.type === "Identifier" && a.closureNamen.has(x.name)));
-            if (wartet) ueber.push({ knoten: knotenAn(a, r.n.start), P, i: r.n.start });
-        }
-    }
-    const ort = (i) => stammLib.ort(root, stammLib.zeileVon(src, i));
-    const polls = [
-        ...kreise.filter((k) => k.familie).map((k) => `${k.von} → ${k.zu} Zeit-Kreis ${ort(k.i)}`),
-        ...schleifen.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} wartet in einer Schleife auf Zeit ${ort(s.i)}`),
-        ...intervalle.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} setInterval ${ort(s.i)}`),
-        ...ueber.map((u) => `${u.knoten} wartet über das pollende ${u.P} ${ort(u.i)}`),
-    ];
-    return { familie, polls };
-}
-
-function wand(src) {
-    const nc = ohneKommentare(src);
-    // Die Rümpfe am AST beim Namen (kommentarfrei); ein fehlendes Glied macht seine Prüfung ROT, nie still leer.
-    const gl = stammLib.glieder(src);
-    const fehlt = [];
-    const rumpf = (name) => {
-        const gs = gl.filter((g) => g.name === name);
-        if (!gs.length) {
-            fehlt.push(name);
-            return null;
-        }
-        return gs.map((g) => ohneKommentare(src.slice(g.start, g.ende))).join("\n");
-    };
-    const da = (...rs) => rs.every((r) => r !== null);
-    const ohne = (...namen) => (namen.some((n) => fehlt.includes(n)) ? ` · Glied fehlt: ${namen.filter((n) => fehlt.includes(n)).join(", ")}` : "");
-    // Zeichnen darf nur die Bühne und der Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im
-    // Render-Fluss (oben). Dass die Vorschau über die Bühne ungemaskt zeichnet, misst V-D3 im Render.
-    const renderRufe = renderFluss(src);
-    const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
-    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
-    const direkt = direktOrte.length;
-    // die Absenzen über den EINEN Helfer (ein Glied ohne Definition wirft: ROT mit Namen, nie still leer)
-    const fehltIn = (name, re) => {
-        try {
-            return stammLib.fehlt(name, re, src);
-        } catch (_e) {
-            return !fehlt.push(name);
-        }
-    };
-    // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie; V-D1 fährt es).
-    const plattform = rumpf("_genesisPlattform");
-    const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length - ((plattform || "").match(/\.type === "start_plattform"/g) || []).length;
-    // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
-    // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
-    // Ort an der Engstelle.
-    const ersatz = [
-        fehltIn("dslPositions", /_defaultSpawnPos\(\)|dslClamp\(|\bNumber\(/),
-        fehltIn("dslEffects", /const c[xyz] = Number\(|playerMesh\.position : \{ x: 0/),
-        fehltIn("_dslRulePos", /Array\.isArray/),
-    ];
-    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
-    // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
-    // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
-    const zg = zeitGraph(src);
-    const polls = zg.polls;
-    const foundryNamen = zg.familie;
-    return [
-        [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`)",
-            direkt === 0,
-            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""}`,
-        ],
-        [
-            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` liefert nie null; den benannten Grund und den Default-Spawn ohne Knoten fährt V-k5)",
-            fehltIn("dslEvalPos", /return null/),
-            ohne("dslEvalPos").slice(3),
-        ],
-        [
-            "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
-            fehltIn("dslEffects", /if \(!pos\)/),
-            ohne("dslEffects").slice(3),
-        ],
-        [
-            "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            da(plattform) && plattSuchen === 0,
-            `${plattSuchen} Suche(n) nach start_plattform neben _genesisPlattform${ohne("_genesisPlattform")}`,
-        ],
-        [
-            "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz)",
-            ersatz.every(Boolean),
-            `ohne Ersatz dslPositions/dslEffects/_dslRulePos ${ersatz.join("/")}`,
-        ],
-        [
-            "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
-            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
-        ],
-    ];
-}
-
 const server = statikServer();
 
-// ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
+// DER ZÄHLER DER TAKTE (Seite, vor dem ersten Skript): sobald der Loop steht, läuft er über diese Hülle — sie zählt
+// jeden Takt, merkt den Takt der Kontrolle (`_weltbildDa`) und ruft je Takt die Probe der Station (`jeTakt`).
+function TAKT_ZAEHLER() {
+    const A = (window.__gang = { takte: 0, kontrolle: null, jeTakt: null, loop: null });
+    const iv = setInterval(() => {
+        const r = window.anazhRealm;
+        const R = r && r.state && r.state.renderer;
+        if (!R || typeof r._gameLoopTick !== "function" || typeof R.setAnimationLoop !== "function") return;
+        clearInterval(iv);
+        const loop = r._gameLoopTick;
+        A.loop = (t) => {
+            A.takte++;
+            A.t = t; // die Zeit des Bilds (der Takt der Seite)
+            loop(t);
+            if (A.kontrolle == null && r.state._weltbildDa) A.kontrolle = A.takte;
+            if (A.jeTakt) A.jeTakt();
+        };
+        // der Null-Renderer hat keinen Loop (sein setAnimationLoop ist leer): der Takt der Seite treibt ihn, ein Bild
+        // je Takt
+        if (R._isHeadlessNull) requestAnimationFrame(function f(t) {
+            A.loop(t);
+            requestAnimationFrame(f);
+        });
+        else R.setAnimationLoop(A.loop);
+    }, 1);
+}
+
+// ── DIE STATIONEN IN DER SEITE (Funktionsrumpf; r = die Welt, der Loop treibt sie, `tick(n)` wartet n seiner Takte).
+// ──
 async function probe(arg) {
-    const kiPort = arg && arg.kiPort;
-    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
+    const { kiPort, soll: SOLL } = arg;
+    const S = new Set(arg.stationen);
+    const zugFrist = SOLL.zugMs + 2000; // die Frist des fremden Zugs, 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-    const out = {};
-    const dl0 = performance.now() + 90000;
-    while (
-        (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-        performance.now() < dl0
-    )
-        await sleep(100);
+    const out = { zeit: [], bilder: {} };
     const r = window.anazhRealm;
     const st = r.state;
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {}
-            await sleep(ms || 30);
+    const R = st.renderer;
+    const A = window.__gang;
+    const marke = (n) => out.zeit.push((A.station = [n, Math.round(performance.now()), A.takte]));
+    const tick = async (n) => {
+        const z = A.takte + (n || 1);
+        for (const dl = performance.now() + 120000; A.takte < z && performance.now() < dl; ) await sleep(4);
+    };
+    const taste = (art, key, code) => window.dispatchEvent(new KeyboardEvent(art, { key, code, bubbles: true }));
+    const tippe = async (key, code) => (taste("keydown", key, code), taste("keyup", key, code), tick(2));
+    // DAS BILD aus dem Ausgabe-Pfad (Satz „messung": der Schuss zeigt, was jetzt steht), der Loop ruht um den Schuss
+    const [W, H] = [640, 360];
+    // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn
+    // des Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel
+    // neu, ein Leser band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach
+    // dem Schuss beim nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist; der Versatz des Laubs beginnt mit
+    // der Geschichte am Sprung (`_traaR.neu`, der Stamm)
+    const schuss = async () => {
+        const z = st.traaNode && st.traaNode._historyRenderTarget;
+        if (z) z.setSize = (w, h) => (w === 1 && h === 1 ? z : Object.getPrototypeOf(z).setSize.call(z, w, h));
+        try {
+            return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        } finally {
+            if (z) delete z.setSize;
         }
     };
-    // ── V-D1: die Ankunft ──
+    const png = (u8) => {
+        const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+        const ctx = cv.getContext("2d");
+        const img = ctx.createImageData(W, H);
+        img.data.set(u8.subarray(0, W * H * 4));
+        ctx.putImageData(img, 0, 0);
+        return cv.toDataURL("image/png");
+    };
+    // Je Schuss die Bühne (Mittag · Sonne · Sommer, die Bild-Uhr steht); danach spielt der Gang weiter: ihr Halt fällt
+    // — unter der gehaltenen Wetter-Uhr verweigert das Spiel jeden Welt-Akt (`dslEval`, der Satz der Station Wort
+    // pflanzte nichts)
+    const angehalten = async (fn) => {
+        R.setAnimationLoop(null);
+        try {
+            window.__buehne();
+            return await fn();
+        } finally {
+            st.weatherEffectTime = 0;
+            const uhr = Object.getOwnPropertyDescriptor(r, "_bildZeit");
+            if (uhr && uhr.get && uhr.get.__buehne) delete r._bildZeit;
+            R.setAnimationLoop(A.loop);
+        }
+    };
+    // ── ANKUNFT: Start → Kontrolle, das erste Bild, W trägt den Spieler; V-k4 der Fensterwechsel löst W ──
+    marke("ankunft");
     try {
+        const m = (out.ankunft = { gestartet: false, ms: Math.round(st._weltbildDa || 0), takte: A.kontrolle });
+        m.ohne = (st.logBuffer || []).map(String).filter((z) => /Das erste Weltbild steht ohne/.test(z));
+        m.ladeschirm = r._ladeschirmSteht();
+        const p0 = st.playerMesh.position.clone();
+        const weg = () => Math.hypot(st.playerMesh.position.x - p0.x, st.playerMesh.position.z - p0.z);
+        const k0 = A.takte;
+        taste("keydown", "w", "KeyW");
+        for (let i = 0; i < 600 && weg() < SOLL.kontrolleM; i++) await tick(1);
+        [m.weg, m.wegTakte] = [+weg().toFixed(2), A.takte - k0];
+        const t = (out.taste = { gestartet: false, gedrueckt: st.keys.w === true });
+        window.dispatchEvent(new Event("blur"));
+        t.nachBlur = st.keys.w === true;
+        taste("keyup", "w", "KeyW");
+        // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete
+        // Bilder): eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
+        for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++)
+            await tick(1);
+        if (!R._isHeadlessNull)
+            await angehalten(async () => {
+                out.bilder.ankunft = png(await schuss());
+            });
+        t.gestartet = m.gestartet = true;
+    } catch (e) {
+        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+    }
+    if (S.has("lichtung")) marke("lichtung");
+    // ── V-D1: die Ankunft ──
+    if (S.has("lichtung")) try {
         const m = { gestartet: false };
-        out.ankunft = m;
+        out.lichtung = m;
         const dl0b = performance.now() + 60000;
         while (performance.now() < dl0b && !st.architectures.some((a) => a && a.type === "start_plattform")) await tick(1, 100);
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
@@ -914,18 +735,18 @@ async function probe(arg) {
         m.naechsterStamm = Number.isFinite(naechster) ? +naechster.toFixed(2) : null;
         m.naechsteArt = art;
         // Der Genesis-Ring: der Kreis der Kern-Portale um den Genesis-Ort — im ECHTEN Spiel-Takt auf einem Gerät, dessen
-        // Frame-Budget immer überschritten ist (die Radeon 890M der Werkbank: 160 von 160 Proben über 40 s). Headless ruht
-        // der Auto-Zug; der Hook öffnet ihn wie im Spiel, `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
-        const hookAlt = window.__anazhAutoSettlement;
-        window.__anazhAutoSettlement = true;
+        // Frame-Budget immer überschritten ist (die Radeon 890M der Werkbank: 160 von 160 Proben über 40 s):
+        // `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1, 60);
+            // gewartet in Läufen des Genesis-Takts (`_tickGenesisOrt`, je Sekunde einer), nie in einer Zahl von Takten
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 3 && i < 3000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
+                await tick(1);
+                if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
+            }
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
-            if (hookAlt === undefined) delete window.__anazhAutoSettlement;
-            else window.__anazhAutoSettlement = hookAlt;
         }
         const ring = st.architectures.filter(
             (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 80
@@ -936,54 +757,829 @@ async function probe(arg) {
             const cz = ring.reduce((s2, a) => s2 + a.position.z, 0) / ring.length;
             m.ringMitteAbstand = +Math.hypot(cx - P.x, cz - P.z).toFixed(2);
         }
+        // DAS BILD DER LICHTUNG: der Spieler auf der Plattform, sein Blick über die Lichtung, wenn der Wald steht
+        if (!R._isHeadlessNull) await angehalten(async () => (out.bilder.lichtung = png(await schuss())));
         m.gestartet = true;
     } catch (e) {
-        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+        out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
-    try {
-        const m = { gestartet: false };
-        out.rezept = m;
-        const host = document.getElementById("inventory-recipes");
-        if (!host) throw new Error("kein #inventory-recipes");
-        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
-        const knopf = () => {
-            for (const row of host.querySelectorAll(".recipe-row")) {
-                const nm = row.querySelector(".recipe-name");
-                if (nm && nm.textContent === lbl) return row.querySelector("button");
+    // ── FAHRT: ein Studio-Wagen vor dem Spieler, Aufstieg, der alte Mount-Follow, 100 m mit W, der Arm und das Bild;
+    // dann die Sicht im Wechsel unter fester Lenkung und ein zweiter Wagen am Steilhang bergab; Abstieg ──
+    if (S.has("fahrt")) {
+        marke("fahrt");
+        const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
+        try {
+            // DIE WELT, WIE DER SPIELER SIE FINDET: der Genesis-Ring steht, bevor der Wagen kommt — ohne die Lichtung
+            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort —, und die
+            // Vorschau jedes Studio-Tors, dem der Spieler nah steht (`PORTAL_VORSCHAU`): sie steht, wenn die Runde um
+            // den Ring fährt (SG1-F1d: ihr Platz liegt jenseits der Fahrbahn, `_portalVorschauOrt`; ohne das Warten
+            // baute sie zwischen den zwei Schüssen des ersten Bilds, Radeon 18.10.: Rauschen 0,022)
+            const VS = r.constructor.PORTAL_VORSCHAU;
+            const studioTore = () =>
+                st.architectures.filter((a) => a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w));
+            const offen = () =>
+                studioTore().filter((a) => {
+                    const p = st.playerMesh.position;
+                    const nah = Math.hypot(a.position.x - p.x, a.position.z - p.z) < VS.anflugM;
+                    return nah && !(r._portalPreviewFertig || {})[a.type.slice(5)];
+                });
+            const ringSteht = () => st.worldMeta && st.worldMeta.genesisPortalRing && !offen().length;
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !ringSteht(); i++) {
+                await tick(1);
+                if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
             }
-            return null;
-        };
-        const modusAlt = r.getGameMode();
-        r.setGameMode("frieden");
-        r.renderRecipeBook();
-        const k0 = knopf();
-        m.friedenGesperrt = !!k0 && k0.disabled === true;
-        r.setGameMode("schöpfer");
-        r.renderRecipeBook();
-        const k1 = knopf();
-        m.schoepferFrei = !!k1 && k1.disabled === false;
-        m.titel = k1 ? k1.title || "" : "kein Knopf";
-        r.setGameMode(modusAlt);
-        m.gestartet = true;
-    } catch (e) {
-        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
+            m.ring = !!(st.worldMeta && st.worldMeta.genesisPortalRing);
+            let phase = "erste Fahrt"; // wo der Gang steht, wenn der Spieler durch ein Tor geht (`m.tor`)
+            const pe = { type: m.typ, position: { x: 0, y: 0, z: 0 }, rotationY: 0, scale: 1, _fahrAchseX: true };
+            const G = r._fahrSatz(pe, r._vehicleProfile(pe));
+            if (!G) throw new Error(`kein Fahr-Gesetz für ${m.typ} (Buch kalt?)`);
+            const k = r._fahrHuelleBau(pe, G);
+            let e = null;
+            const fahrt = () => (Number.isFinite(e.rotationY) ? e.rotationY : 0) + Math.PI / 2; // Studio-Wagen: Bug +x
+            const grad = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 180) / Math.PI);
+            // DER WAGEN, und E STEIGT EIN: die Welt stellt ihn hin (vor dem Spieler auf fahrbaren Grund,
+            // `_fahrPlatzSuche`; am Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein
+            // Tor erreicht (der Genesis-Ring wächst, während der Gang fährt), und blickt in die Fahrt
+            const gebaut = []; // jeder Wagen, den der Gang hinstellt (die Runde räumt sie: kein eigener Wagen steht in ihrer Bahn)
+            const steigEin = async (x, z, ry, precise) => {
+                const flanke = async (px, pz, f, seite) => {
+                    const [sx, sz] = [px + Math.cos(f) * 1.5 * seite, pz - Math.sin(f) * 1.5 * seite];
+                    st.playerMesh.position.set(sx, r.getTerrainHeightAt(sx, sz) + 1.8, sz);
+                    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                    st._fieldVy = 0;
+                    st.yaw = f;
+                    await tick(12);
+                    return r._findNearestAffordanceEntry("isPortal", r.constructor.PORTAL_REACH_M + 0.5);
+                };
+                if (precise) await flanke(x, z, ry, 1); // der Spieler geht hin: gezeichnet wird, was um ihn steht
+                // ein Wagen späterer Orte trägt die Saat des ersten (derselbe Körper, kein neuer Bau im Faden des
+                // Studios)
+                e = r.spawnArchitecture(
+                    m.typ,
+                    { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
+                    { rotationY: ry - Math.PI / 2, precise, seed: m.saat }
+                );
+                if (!e) throw new Error(`die Welt stellt ${m.typ} bei ${Math.round(x)}/${Math.round(z)} nicht hin`);
+                gebaut.push(e);
+                for (let i = 0; i < 900 && !r._archIsRendered(e); i++) await tick(1);
+                if (!r._archIsRendered(e))
+                    throw new Error(`${m.typ} bei ${Math.round(x)}/${Math.round(z)} nach 900 Takten ungezeichnet`);
+                const tor =
+                    (await flanke(e.position.x, e.position.z, fahrt(), 1)) &&
+                    (await flanke(e.position.x, e.position.z, fahrt(), -1));
+                if (tor)
+                    throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
+                if (r._portalOverlay)
+                    throw new Error(
+                        `vor dem Aufstieg bei ${Math.round(x)}/${Math.round(z)} steht der Spieler in einer Tor-Welt: ${JSON.stringify(m.tor || null)} · Abstieg ${JSON.stringify(m.abstiegFehl || null)}`
+                    );
+                const vor = st.cameraMode;
+                await tippe("e", "KeyE");
+                for (let i = 0; i < 30 && st.player.mountedArch !== e.id; i++) await tick(1);
+                if (st.player.mountedArch !== e.id)
+                    throw new Error(
+                        `E steigt nicht ein bei ${Math.round(x)}/${Math.round(z)} (${(st.logBuffer || []).slice(-2).join(" · ")}) · Tor ${JSON.stringify(m.tor || null)}`
+                    );
+                return vor;
+            };
+            const P = st.playerMesh.position.clone();
+            m.sichtVor = await steigEin(P.x + Math.sin(st.yaw) * 8, P.z + Math.cos(st.yaw) * 8, st.yaw);
+            m.saat = e.seed;
+            m.bahn = [Math.round(e.position.x), Math.round(e.position.z), +fahrt().toFixed(2)];
+            m.sichtRitt = st.cameraMode;
+            // JE BILD IM RITT (die Probe nach dem Takt: der Wagen, wie er gezeichnet ist, und die Kamera, die ihn sah):
+            //  · der Arm und wo er endet — am gerittenen Werk (seine Hülle im Fahrt-Rahmen um den Kugel-Radius der
+            //    Kamera + 0,5 m; der Befund 17.10. stand 2,72 m hinter der Mitte, 0,17 m hinter der Hülle);
+            //  · jede zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`) im Rahmen des Wagens: ihr
+            //    Slot weicht vom ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau
+            //    0, das Rad federt um den Hub);
+            //  · in Third die Kamera im Rahmen des gezeichneten Wagens: ihr SEITLICHER RUCK ist die zweite Differenz
+            //    ihrer Quer-Lage je Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt
+            //    in Bildern seit dem Wechsel nach Third, ihre Höhe ist der Winkel über der Ebene der Räder; der
+            //    GLEICHLAUF ist der Weg des gezeichneten Wagens je Bild gegen das Tempo des Kerns.
+            const rr = r.constructor._bewegungsBlock("kamera", ["armRadiusM"]).armRadiusM;
+            const [M, V, erst] = [new THREE.Matrix4(), new THREE.Vector3(), new WeakMap()];
+            let L = null; // der Lauf eines Abschnitts
+            const lauf = () =>
+                (L = {
+                    arm: [],
+                    imWagen: 0,
+                    stufeWeg: 0,
+                    stufeTaeter: null,
+                    wechsel: [],
+                    c: [],
+                    ruck: [],
+                    hoch: [],
+                    gleich: [],
+                    sicht: st.cameraMode,
+                    fest: false,
+                });
+            A.jeTakt = () => {
+                // DER SPIELER GEHT DURCH EIN TOR (die Membran, `_tickPortalMembranes`): der erste Takt beim Namen —
+                // Abschnitt, Ort, Ritt
+                if (r._portalOverlay && !m.tor) {
+                    const q = st.playerMesh.position;
+                    m.tor = {
+                        phase,
+                        takt: A.takte,
+                        ort: [Math.round(q.x), Math.round(q.z)],
+                        ritt: st.player.mountedArch != null,
+                        wagen: e ? [Math.round(e.position.x), Math.round(e.position.z)] : null,
+                        wechselOrt: m.wechsel ? m.wechsel.ort : null,
+                        studioTore: studioTore().map(
+                            (a) => `${a.type}@${Math.round(a.position.x)}/${Math.round(a.position.z)}`
+                        ),
+                        log: String((st.logBuffer || []).slice(-1)[0] || ""),
+                    };
+                }
+                if (!L || !e || st.player.mountedArch !== e.id) return;
+                // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen
+                // sein Tempo über die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem
+                // bricht es), über 1 m/s — eine Spur reißt nur, wo der Loop ruhte (ein Schuss: Sekunden); unter Last
+                // trägt ein Bild bis 0,25 s (18.10., die Maschine geteilt: der Hang 64 Bilder in 6 s, die Spur riss bei
+                // 100 ms in jedem zweiten Bild, 7 Proben statt ≥ 20)
+                const [p, t] = [[e.position.x, e.position.z, A.t], A.t];
+                const spur = (L.spur = L.spur || []);
+                if (spur.length && !(t - spur[spur.length - 1][2] > 0 && t - spur[spur.length - 1][2] < 250))
+                    spur.length = 0;
+                spur.push(p);
+                if (spur.length > 11) spur.shift();
+                const tempo = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) / ((b[2] - a[2]) / 1000);
+                if (L.fest && spur.length === 11 && tempo(spur[0], p) > 1)
+                    L.gleich.push(tempo(spur[4], spur[5]) / tempo(spur[0], p));
+                const f = fahrt();
+                r._archEntryWorldMatrix(e, M);
+                const oben = V.setFromMatrixColumn(M, 1).normalize().toArray();
+                M.invert();
+                for (const [liste, wer] of [[e.instSlots, `L${e._servedLod != null ? e._servedLod : e._lodLevel}`], [e.instSlotsBand, `L${e._lodBandLevel} (Band)`]])
+                    for (const s of liste || []) {
+                        const g = st.archInstanceGroups.get(s.key);
+                        if (!g || !(s.slot >= 0)) continue;
+                        const a = g.mesh.instanceMatrix.array;
+                        V.set(a[s.slot * 16 + 12], a[s.slot * 16 + 13], a[s.slot * 16 + 14]).applyMatrix4(M);
+                        if (!erst.has(s)) erst.set(s, V.clone());
+                        const d = V.distanceTo(erst.get(s));
+                        if (d > L.stufeWeg) [L.stufeWeg, L.stufeTaeter] = [d, wer];
+                    }
+                // IM BAND ZEIGT JEDE STUFE DASSELBE RAD: je Ecke (Nabe im Vorlagen-Raum) die Drehung (Lenkung, Rolle)
+                // des ersten drehenden Teils in Primär und Partner — die größte Abweichung der Spalten (eine Stufe, die
+                // das Rad in der Ruhe-Lage zeigt, weicht um Lenk- und Roll-Winkel ab)
+                if (e.instSlotsBand && e.instSlots) {
+                    const pr = r._foundryPresetForEntry(e);
+                    const f0 = r._foundryFlattenFor(e, pr, e._servedLod != null ? e._servedLod : e._lodLevel);
+                    const f1 = f0 && r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0);
+                    const ecken = (f, liste) => {
+                        const k = new Map();
+                        (f ? f.leaves : []).forEach((lf, i) => {
+                            const s = liste[i];
+                            const g = s && lf.rad && lf.rad.dreht && st.archInstanceGroups.get(s.key);
+                            const ecke = g && `${Math.round(lf.rad.hx * 20)}:${Math.round(lf.rad.hz * 20)}`;
+                            if (ecke && !k.has(ecke))
+                                k.set(
+                                    ecke,
+                                    new THREE.Matrix4().extractRotation(
+                                        new THREE.Matrix4().fromArray(g.mesh.instanceMatrix.array, s.slot * 16)
+                                    )
+                                );
+                        });
+                        return k;
+                    };
+                    const [k0, k1] = [ecken(f0, e.instSlots), ecken(f1, e.instSlotsBand)];
+                    for (const [ecke, a] of k0) {
+                        const b = k1.get(ecke);
+                        if (!b) continue;
+                        const d = Math.max(...a.elements.map((x, i) => Math.abs(x - b.elements[i])));
+                        [L.radN, L.radWeg] = [(L.radN || 0) + 1, Math.max(L.radWeg || 0, d)];
+                    }
+                }
+                const third = sicht() === "third";
+                if (third !== (L.sicht === "third")) {
+                    if (third) L.wechsel.push({ n: 0, ego: grad(f - L.egoAb), von: L.sicht });
+                    else L.egoAb = f;
+                    [L.sicht, L.c.length] = [sicht(), 0];
+                }
+                if (!third || !(st._kamArm >= 0)) return;
+                const c = st.camera.position;
+                const [dx, dz] = [c.x - e.position.x, c.z - e.position.z];
+                const l = dx * Math.sin(f) + dz * Math.cos(f);
+                const q = dx * Math.cos(f) - dz * Math.sin(f);
+                // der Arm zählt in der Fahrt (`L.fest`): ein Wagen, der vor einem Hindernis steht oder zurücksetzt,
+                // klemmt seine Kamera zu Recht (18.10.: 100 m in 2637 Takten, der Arm am Hindernis 0,21 — kein Strahl
+                // auf den eigenen Wagen)
+                if (L.fest) {
+                    L.arm.push(st._kamArm);
+                    if (l >= k.heck - rr - 0.5 && l <= k.bug + rr + 0.5 && Math.abs(q) <= k.hw + rr + 0.5) L.imWagen++;
+                }
+                const w = L.wechsel[L.wechsel.length - 1];
+                const n = w ? ++w.n : Infinity;
+                if (n === 10) w.nach10 = grad(Math.atan2(-dx, -dz) - f);
+                L.c.push(q);
+                // die Höhe der Kamera über der Fahrbahn: ihr Winkel über der Ebene des Wagens (Gesetz: die Elevation
+                // der Chase-Cam)
+                const ab = Math.hypot(dx, c.y - e.position.y, dz);
+                if (L.fest)
+                    L.hoch.push(
+                        (Math.asin((dx * oben[0] + (c.y - e.position.y) * oben[1] + dz * oben[2]) / ab) * 180) / Math.PI
+                    );
+                const [q0, q1, q2] = L.c.slice(-3);
+                if (L.c.length > 2 && L.fest && n > 15) L.ruck.push(Math.abs(q2 - 2 * q1 + q0));
+            };
+            const schluss = () => {
+                const a = L.arm.slice().sort((x, y) => x - y);
+                const s = L.ruck.slice().sort((x, y) => x - y);
+                let [schnapp, armWeg] = [0, 0];
+                for (let i = 1; i < L.arm.length; i++)
+                    [schnapp, armWeg] = [
+                        schnapp + (L.arm[i] - L.arm[i - 1] < -SOLL.schnapp),
+                        armWeg + Math.abs(L.arm[i] - L.arm[i - 1]),
+                    ];
+                const n = {
+                    armN: a.length,
+                    armP50: +(a[a.length >> 1] || 0).toFixed(3),
+                    armMin: +(a[0] || 0).toFixed(3),
+                    imWagen: L.imWagen,
+                    stufeWeg: +L.stufeWeg.toFixed(1),
+                    stufeTaeter: L.stufeTaeter,
+                };
+                Object.assign(n, {
+                    wechsel: L.wechsel.map((w) => [w.ego, w.nach10, w.von]),
+                    steck: L.kreisSteck || 0,
+                    ruckN: s.length,
+                    ruckP95: +(s[Math.floor(s.length * 0.95)] || 0).toFixed(3),
+                    schnapp,
+                    armWeg: +armWeg.toFixed(2),
+                });
+                const h = L.hoch.slice().sort((x, y) => x - y);
+                n.hochP05 = +(h[Math.floor(h.length * 0.05)] || 0).toFixed(1);
+                const g = L.gleich.map((x) => Math.abs(x - 1)).sort((x, y) => x - y);
+                [n.gleichN, n.gleichP95] = [g.length, +(g[Math.floor(g.length * 0.95)] || 0).toFixed(3)];
+                [n.radN, n.radWeg] = [L.radN || 0, +(L.radWeg || 0).toFixed(3)];
+                L = null;
+                return n;
+            };
+            // DER WAGEN IM BILD (die Klassen-Teilung der Abnahme): dieselbe Pose mit und ohne Wagen, sein Wurf aus in
+            // beiden
+            const wagenBild = async (name) =>
+                R._isHeadlessNull ? { bild: false } : angehalten(async () => {
+                    const gr = new Set(
+                        [...(e.instSlots || []), ...(e.instSlotsBand || [])]
+                            .map((s) => (st.archInstanceGroups.get(s.key) || {}).mesh)
+                            .filter(Boolean)
+                    );
+                    if (e.mesh) gr.add(e.mesh);
+                    const alt = [...gr].map((o) => [o, o.visible, o.castShadow]);
+                    const bundles = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+                    const auf = async (ohne) => {
+                        for (const [o, v] of alt) o.visible = ohne ? false : v;
+                        bundles();
+                        r._schattenAlleNeu();
+                        return schuss();
+                    };
+                    try {
+                        for (const o of gr) o.castShadow = false;
+                        // das Paar in der Fahrt bei ruhendem Loop — die Foundry ruht nicht: ihre freigegebenen Bauten
+                        // docken noch an (Radeon 18.10.: Rauschen 0 / 0,022 / 0,015 am ersten Bild). Der Gang wartet,
+                        // bis die Regungen des Stamms (Welt · Bau · Karte, die Live-Hälfte von `_weltSteht`) zehn
+                        // Bilder stehen; jedes Rauschen danach ist ROT, kein Nachschuss
+                        const regung = () => [r._weltRegung | 0, r._bauRegung | 0, r._karteRegung | 0].join();
+                        for (let [v, still, i] = ["", 0, 0]; still < 10; i++) {
+                            if (i > 600) throw new Error(`die Welt regt sich vor dem Bild ${name} (${regung()})`);
+                            await new Promise((ok) => requestAnimationFrame(ok));
+                            still = regung() === v ? still + 1 : ((v = regung()), 0);
+                        }
+                        // die Regungen vor, zwischen und nach den Schüssen: ein Rauschen nennt, ob die Welt sich regte. Der
+                        // erste Schuss nach der Fahrt zeichnet in der Erst-Zeichnung mehr Frames als der zweite (Radeon
+                        // 18.10.: Rauschen 0,012–0,027 im Laub in 3 von 16 Läufen, die Folge des Laubs lief vom Schuss an
+                        // weiter) — er zeichnet hier stets 5 mehr: die Folge beginnt mit der Geschichte (`_versatzIndex`
+                        // am Sprung), sonst ROT in jedem Lauf (Mutant am Stamm 8678ec4a: 0,006–0,018 an 4 von 4 Bildern)
+                        const regungen = [regung()];
+                        const ruhe = window.__erstRuhe;
+                        window.__erstRuhe = async (frame, ...x) => {
+                            for (let i = 0; i < 5; i++) frame();
+                            return ruhe(frame, ...x);
+                        };
+                        const G1 = await auf(false).finally(() => (window.__erstRuhe = ruhe));
+                        regungen.push(regung());
+                        const G2 = await auf(false);
+                        regungen.push(regung());
+                        const O = await auf(true);
+                        const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
+                        out.bilder[name] = png(G1);
+                        const rauschen = window.__bildRauschen(G1, G2, W, H, 18).anteil;
+                        return {
+                            anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4),
+                            rauschen,
+                            regungen,
+                            teile: gr.size,
+                        };
+                    } finally {
+                        for (const [o, v, c] of alt) [o.visible, o.castShadow] = [v, c];
+                        bundles();
+                    }
+                });
+            // DER SELBSTTEST IM LAUF: die ersten 20 m fährt der alte Mount-Follow (`_archInstanceUpdate` ohne den
+            // Band-Partner, der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT
+            // beim Namen werden
+            if (Object.prototype.hasOwnProperty.call(r, "_archInstanceUpdate"))
+                throw new Error("_archInstanceUpdate ist schon eingespielt");
+            const folger = r._archInstanceUpdate;
+            r._archInstanceUpdate = function (entry, ...rest) {
+                const band = entry.instSlotsBand;
+                entry.instSlotsBand = null;
+                try {
+                    return folger.call(this, entry, ...rest);
+                } finally {
+                    entry.instSlotsBand = band;
+                }
+            };
+            // DIE FAHRT wie ein Spieler: W, und er lenkt (A/D) in die freieste Richtung vor dem Bug (am Hang um die
+            // Falllinie) — je 4 Takte die Boxen der Werke im 30-m-Kreis (lazy `_populateBlockerAABBs`), die unter dem
+            // Dach in das Band der halben Wagen-Breite + 0,4 m ragen, je Richtung ±40° die freie Strecke bis 25 m (eine
+            // Wende kostet). Welche Taste die Gier hebt, lernt er an der ersten Lenkung; steht der Wagen 40 Takte,
+            // setzt er 60 Takte mit S zurück. Um die Lichtung steht Wald: eine gerade Bahn fuhr am 17.10. nach 51–64 m
+            // in Kiefer und Birke.
+            let [pfad, lenk, hebt, ziel, boxen] = [0, null, "a", 0, []];
+            const lenke = (soll) => {
+                if (lenk !== soll) {
+                    if (lenk) taste("keyup", lenk, `Key${lenk.toUpperCase()}`);
+                    if (soll) taste("keydown", soll, `Key${soll.toUpperCase()}`);
+                    lenk = soll;
+                }
+            };
+            const sammle = () =>
+                st.architectures.flatMap((a) => {
+                    if (
+                        !a ||
+                        a === e ||
+                        !a.position ||
+                        Math.hypot(a.position.x - e.position.x, a.position.z - e.position.z) > 30
+                    )
+                        return [];
+                    if (!a.blockerAABBs) r._populateBlockerAABBs(a);
+                    return (a.blockerAABBs || []).filter(
+                        (b) =>
+                            !(b.botY > r.getTerrainHeightAt((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2) + 1.6) &&
+                            !(b.dick < 0.12)
+                    );
+                });
+            const freiBis = (h, [x0, z0] = [e.position.x, e.position.z], weit = 25) => {
+                const [fx, fz] = [Math.sin(h), Math.cos(h)];
+                let frei = weit;
+                for (const b of boxen) {
+                    const ec = [
+                        [b.minX, b.minZ],
+                        [b.minX, b.maxZ],
+                        [b.maxX, b.minZ],
+                        [b.maxX, b.maxZ],
+                    ].map(([px, pz]) => [(px - x0) * fx + (pz - z0) * fz, (px - x0) * fz - (pz - z0) * fx]);
+                    const [t0, t1] = [Math.min(...ec.map((c) => c[0])), Math.max(...ec.map((c) => c[0]))];
+                    const [q0, q1] = [Math.min(...ec.map((c) => c[1])), Math.max(...ec.map((c) => c[1]))];
+                    if (t1 > 0 && q1 > -k.hw - 0.4 && q0 < k.hw + 0.4) frei = Math.min(frei, Math.max(0, t0));
+                }
+                return frei;
+            };
+            let [still, zurueck, lernt] = [0, 0, null];
+            const fahre = async (bis, um) => {
+                for (let i = 0; i < 6000 && pfad < bis; i++) {
+                    if (i % 4 === 0 && !zurueck) {
+                        boxen = sammle();
+                        let best = -Infinity;
+                        for (let dh = -40; dh <= 40; dh += 10) {
+                            const h = (um != null ? um : fahrt()) + (dh * Math.PI) / 180;
+                            const wert = freiBis(h) - Math.abs(dh) * 0.05;
+                            if (wert > best) [best, ziel] = [wert, h];
+                        }
+                    }
+                    const [x0, z0, g0] = [e.position.x, e.position.z, fahrt()];
+                    L.fest = !zurueck && i > 10 && still < 5;
+                    await tick(1);
+                    const d = Math.hypot(e.position.x - x0, e.position.z - z0);
+                    pfad += d;
+                    still = d < 0.005 ? still + 1 : 0;
+                    const dg = Math.atan2(Math.sin(fahrt() - g0), Math.cos(fahrt() - g0));
+                    if (lenk && !zurueck && Math.abs(dg) > 0.002) lernt = (lernt || 0) + (lenk === hebt ? dg : -dg);
+                    if (lernt !== null && lernt < -0.05) [hebt, lernt] = [hebt === "a" ? "d" : "a", 0];
+                    if (still > 40 && !zurueck) {
+                        [zurueck, still] = [60, 0];
+                        lenke(hebt); // zurück mit Einschlag: der Bug dreht aus der Sackgasse (18.10.: 75 m in 6189 Takten vor demselben Hindernis)
+                        taste("keyup", "w", "KeyW");
+                        taste("keydown", "s", "KeyS");
+                    } else if (zurueck && --zurueck === 0) {
+                        taste("keyup", "s", "KeyS");
+                        taste("keydown", "w", "KeyW");
+                    }
+                    if (zurueck) continue;
+                    const fehl = Math.atan2(Math.sin(fahrt() - ziel), Math.cos(fahrt() - ziel)); // positiv: die Gier muss fallen
+                    lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
+                }
+            };
+            // DER WECHSEL UNTER FESTER LENKUNG (Befund des Schöpfers 17.10.: Ego ↔ Third in der Fahrt — in Third der
+            // Wagen unsichtbar oder an alter Stelle, Third ruckelt quer): der Spieler hält die Lenkung bei
+            // Schritt-Tempo (W unter `kreisMs`, S über dem 1,5-fachen) und wechselt mit V je `wechselS` Spiel-Sekunden
+            // Third → Ego → Third → Ego → Third. DIE FÜHRUNG EINES STUDIOS (`kameraFuehren`) ist ein Rig wie Ego
+            // (Prüfer 18.10.: nach ihr nahm die Chase-Cam ihren alten Azimut wieder auf): nach dem vierten Wechsel hält
+            // eine Führung die Kamera, während der Wagen weiterkreist
+            const sicht = () => (r._kameraFuehrung ? "fuehrung" : st.cameraMode);
+            const kreise = async () => {
+                let pedal = null;
+                for (const schritt of ["v", "v", "v", "v", "fuehren", "frei"]) {
+                    if (schritt === "v") await tippe("v", "KeyV");
+                    else r.kameraFuehren(schritt === "fuehren" ? () => {} : null);
+                    // in Ego dreht die Gier ≥ egoGrad, bevor Third zurückkehrt (Lauf 18.10. an [-73,82]: 71° · 22° in
+                    // je 2 s — der Wechsel bewies nichts); höchstens die dreifache Zeit, dann urteilt der Wechsel
+                    // vakuös
+                    const mehr = (t0) =>
+                        sicht() !== "third" &&
+                        L.egoAb != null &&
+                        grad(fahrt() - L.egoAb) < SOLL.egoGrad + 5 &&
+                        st._fixedSimTime - t0 < 3 * SOLL.wechselS;
+                    // steht der Wagen im Kreis an einem Hindernis (ein Stamm des Walds ist kein Bau), setzt er mit
+                    // Gegen-Einschlag zurück (18.10.: zwei Läufe, die Gier drehte in Ego 7° und 8° in 6 s — der Wagen
+                    // stand)
+                    for (let t0 = st._fixedSimTime, i = 0, steht = 0, zurueckK = 0; i < 9000 && (st._fixedSimTime - t0 < SOLL.wechselS || mehr(t0)); i++) {
+                        const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
+                        steht = v < 0.3 && !zurueckK ? steht + 1 : 0;
+                        if (steht > 40) [zurueckK, steht, L.kreisSteck] = [60, 0, (L.kreisSteck || 0) + 1];
+                        const soll = zurueckK ? "s" : v < SOLL.kreisMs ? "w" : v > 1.5 * SOLL.kreisMs ? "s" : null;
+                        if (soll !== pedal)
+                            [
+                                pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`),
+                                soll && taste("keydown", soll, `Key${soll.toUpperCase()}`),
+                                (pedal = soll),
+                            ];
+                        lenke(zurueckK ? (hebt === "a" ? "d" : "a") : hebt);
+                        if (zurueckK) zurueckK--;
+                        L.fest = !zurueckK && st._fixedSimTime - t0 > 0.5;
+                        await tick(1);
+                    }
+                }
+                if (pedal) taste("keyup", pedal, `Key${pedal.toUpperCase()}`);
+                r.kameraFuehren(null);
+                L.fest = false;
+            };
+            const halt = async () => {
+                lenke(null);
+                taste("keyup", "w", "KeyW");
+                taste("keydown", "s", "KeyS"); // die Bremse bis zum Stand
+                for (let i = 0, still = 0; i < 900 && still < 20; i++) {
+                    const [x0, z0] = [e.position.x, e.position.z];
+                    await tick(1);
+                    still = Math.hypot(e.position.x - x0, e.position.z - z0) < 0.002 ? still + 1 : 0;
+                }
+                taste("keyup", "s", "KeyS");
+                await tippe("e", "KeyE");
+                for (let i = 0; i < 30 && st.player.mountedArch === e.id; i++) await tick(1);
+                // ein Abstieg, den E nicht trägt (ein Tor in Reichweite nimmt die Taste), steht beim Namen im Urteil
+                // des nächsten Aufstiegs
+                if (st.player.mountedArch != null && !m.abstiegFehl)
+                    m.abstiegFehl = {
+                        phase,
+                        wagen: [Math.round(e.position.x), Math.round(e.position.z)],
+                        tor: !!r._portalOverlay,
+                    };
+            };
+            const k0 = A.takte;
+            taste("keydown", "w", "KeyW");
+            try {
+                try {
+                    lauf();
+                    await fahre(20);
+                    out.fahrtAlt = Object.assign(
+                        {},
+                        m,
+                        { gestartet: true, weg: +pfad.toFixed(1) },
+                        schluss(),
+                        await wagenBild("fahrt-alter-folger")
+                    );
+                } finally {
+                    delete r._archInstanceUpdate;
+                }
+                lauf();
+                await fahre(SOLL.fahrM);
+                [m.weg, m.fahrTakte] = [+pfad.toFixed(1), A.takte - k0];
+                Object.assign(m, schluss(), await wagenBild("fahrt"));
+            } finally {
+                await halt();
+            }
+            [m.abgestiegen, m.sichtNach] = [st.player.mountedArch == null, st.cameraMode];
+            // DIE ORTE DER ÜBERGÄNGE in Ringen um den Abstieg (je 10 m): ein freier Platz für den Kreis (kein Bau, kein
+            // Baum im Kreis von `kreisM`, eben auf ±1,5 m, Land) und der nächste STEILHANG (Befund 17.10.: „am
+            // Steilhang bergab folgt die Kamera komisch"), dessen Falllinie über `hangM` Meter je 5 m um ≥ `hangMin`
+            // fällt (im Mittel ≥ `hangMittel`) und keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein
+            // Spieler hinstellt (der Hang genau, der Bug bergab).
+            const [hx, hz] = [e.position.x, e.position.z];
+            boxen = st.architectures.flatMap((a) =>
+                a && a.position && Math.hypot(a.position.x - hx, a.position.z - hz) < 400
+                    ? a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []
+                    : []
+            );
+            // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"), und wer in seine Apertur tritt, geht
+            // hindurch (die Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER
+            // (die Boxen des Gesetzes, ein Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der
+            // Hang-Wagen bei −79/106 stand außerhalb des Kreises um die Mitte, die Flanke in der Apertur — „Portal
+            // betreten: tor_drachentor") `weg`: wie weit der Wagen vom Ort fährt (der Kreis seinen Durchmesser).
+            const torFrei = r.constructor.PORTAL_REACH_M + r.constructor.MOUNT_RANGE_M + 2;
+            const ort = (wahl) => {
+                const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
+                const torBoxen = tore.flatMap(
+                    (a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []
+                );
+                const torNah = (x, z, weg = 0) =>
+                    tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < weg + torFrei) ||
+                    torBoxen.some(
+                        (b) =>
+                            Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 <
+                            (weg + torFrei) ** 2
+                    );
+                for (let rad = 10; rad <= 300; rad += 10)
+                    for (let i = 0, n = Math.round((2 * Math.PI * rad) / 10); i < n; i++) {
+                        const [x, z] = [
+                            hx + Math.sin((i / n) * 2 * Math.PI) * rad,
+                            hz + Math.cos((i / n) * 2 * Math.PI) * rad,
+                        ];
+                        const o = r._landAt(x, z, 0) && !torNah(x, z) && wahl(x, z, r.getTerrainHeightAt(x, z), torNah);
+                        if (o) return Object.assign(o, { x, z, ort: [Math.round(x), Math.round(z)] });
+                    }
+                return null;
+            };
+            // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von
+            // `kreisM` um ihn (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines
+            // tor_drachentor, dessen Pfosten außerhalb von `kreisM` standen)
+            const kreisOrt = ort((x, z, y, torNah) => {
+                const K = SOLL.kreisM;
+                const baut = boxen.some(
+                    (b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < K ** 2
+                );
+                const eben = [0, 1, 2, 3, 4, 5, 6, 7].every((j) => {
+                    const [sx, sz] = [x + Math.sin((j * Math.PI) / 4) * K, z + Math.cos((j * Math.PI) / 4) * K];
+                    return Math.abs(r.getTerrainHeightAt(sx, sz) - y) < 1.5;
+                });
+                return !torNah(x, z, K) && !baut && eben && { d: 0 };
+            });
+            m.wechsel = { ort: kreisOrt && kreisOrt.ort };
+            if (kreisOrt) {
+                phase = "Wechsel";
+                await steigEin(kreisOrt.x, kreisOrt.z, 0, true);
+                try {
+                    lauf();
+                    await kreise();
+                    Object.assign(m.wechsel, schluss(), await wagenBild("fahrt-wechsel"));
+                } finally {
+                    await halt();
+                }
+                // DER WIEDERAUFSTIEG (Randfall des Prüfers 18.10.): der Wagen dreht zwischen zwei Fahrten (ein Stoß,
+                // der Nachlauf), E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60
+                // fps oft) — es zeichnet den Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die
+                // Chase-Cam des neuen Rigs beginnt dort
+                if (st.player.mountedArch == null) {
+                    [phase, e.rotationY] = ["Wiederaufstieg", (e.rotationY || 0) + 1]; // der Stoß: 1 rad (57°) im Stand
+                    r._archInstanceUpdate(e);
+                    r.mountArchitecture(e);
+                    try {
+                        st._bildAlpha = 0;
+                        r._tickMountedMovement(0);
+                        m.wechsel.wiederauf = grad(e.rotationY - r._rittGier(e, e._rideYaw));
+                    } finally {
+                        r.dismountArchitecture();
+                    }
+                }
+            }
+            const hang = ort((x, z, y, torNah) => {
+                for (let j = 0; j < 16; j++) {
+                    const d = (j / 16) * 2 * Math.PI;
+                    let [min, alt] = [Infinity, y];
+                    for (let s = 5; s <= SOLL.hangM && min >= SOLL.hangMin; s += 5) {
+                        if (torNah(x + Math.sin(d) * s, z + Math.cos(d) * s)) min = -Infinity; // die Falllinie führt durch kein Tor
+                        const h = r.getTerrainHeightAt(x + Math.sin(d) * s, z + Math.cos(d) * s);
+                        [min, alt] = [Math.min(min, (alt - h) / 5), h];
+                    }
+                    const g = (y - alt) / SOLL.hangM;
+                    if (
+                        min >= SOLL.hangMin &&
+                        g >= SOLL.hangMittel &&
+                        freiBis(d, [x - Math.sin(d) * 6, z - Math.cos(d) * 6], SOLL.hangM + 6) >= SOLL.hangM + 6
+                    )
+                        return { d, gefaelle: +g.toFixed(2) };
+                }
+                return null;
+            });
+            m.hang = { gefaelle: hang ? hang.gefaelle : 0, ort: hang && hang.ort };
+            if (hang) {
+                phase = "Hang";
+                await steigEin(hang.x, hang.z, hang.d, true);
+                [pfad, ziel] = [0, hang.d];
+                taste("keydown", "w", "KeyW");
+                try {
+                    lauf();
+                    await fahre(SOLL.hangM, hang.d);
+                    Object.assign(m.hang, { weg: +pfad.toFixed(1) }, schluss(), await wagenBild("fahrt-hang"));
+                } finally {
+                    await halt();
+                }
+            }
+            // DIE RUNDE UM DEN GENESIS-RING (F1d, Prüfer R3 18.10.): der Spieler fährt um die Tore auf der Fahrbahn
+            // jenseits ihrer Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und
+            // 2/3 ihrer Breite) je Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`;
+            // die Lenkung hält die Spur (kein Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der
+            // Name — das Tor, durch das der Wagen geht („Portal betreten“: bis SG1-F1d stand das lebende tor_drachentor
+            // der Vorschau auf der Bahn), der Bau, an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt
+            // der Spieler `ringSprung`° weiter in einen neuen Wagen.
+            {
+                phase = "Ring";
+                L = null;
+                const [GP, Mg] = [r.constructor.GENESIS_PLATZ, r._genesisMitte()];
+                // DER GRUND JEDER VORSCHAU: der Punkt ihrer Boxen, der der Mitte am nächsten liegt — jenseits der
+                // Lichtung, sonst trägt die Tiefe `GENESIS_PLATZ.vorschau` ihren Grundriss nicht (null: ohne Boxen)
+                const grund = VS.tore.flatMap(([, typ, id]) => {
+                    const a = st.architectures.find((x) => x && x.id === id);
+                    const bx = a ? a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || [] : [];
+                    const nah = (b) =>
+                        Math.hypot(
+                            Math.max(b.minX - Mg.x, 0, Mg.x - b.maxX),
+                            Math.max(b.minZ - Mg.z, 0, Mg.z - b.maxZ)
+                        );
+                    return a ? [{ typ, r: bx.length ? +Math.min(...bx.map(nah)).toFixed(2) : null }] : [];
+                });
+                const g = (m.ring = { spuren: [], taeter: [], vorschau: [grund.length, VS.tore.length] });
+                Object.assign(g, { grund, lichtung: GP.lichtung });
+                for (const w of gebaut.splice(0)) r.removeArchitecture(w); // die Wagen der Fahrten davor (Lauf 18.10.: einer stand bei 11/13)
+                const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+                const winkel = () => Math.atan2(e.position.z - Mg.z, e.position.x - Mg.x);
+                const sprung = (SOLL.ringSprung * Math.PI) / 180;
+                const taeter = (t) =>
+                    g.taeter.length < 16 &&
+                    !g.taeter.some((u) => u.id != null && u.id === t.id && u.art === t.art && u.R === t.R) &&
+                    g.taeter.push(t);
+                // der Bau vor dem Bug: die nächste Box eines Werks um ihn; in der Box zählt die Tiefe (negativ) — von
+                // zwei Boxen um den Bug nennt er die, in der er steckt
+                const amBug = () => {
+                    const [bx, bz] = [
+                        e.position.x + Math.sin(fahrt()) * k.bug,
+                        e.position.z + Math.cos(fahrt()) * k.bug,
+                    ];
+                    let [best, wer] = [9, null];
+                    for (const a of st.architectures) {
+                        if (!a || a === e || !a.position || Math.hypot(a.position.x - bx, a.position.z - bz) > 30) continue;
+                        if (!a.blockerAABBs) r._populateBlockerAABBs(a);
+                        for (const b of a.blockerAABBs || []) {
+                            const innen = Math.min(bx - b.minX, b.maxX - bx, bz - b.minZ, b.maxZ - bz);
+                            const d2 =
+                                innen > 0
+                                    ? -innen
+                                    : Math.max(b.minX - bx, 0, bx - b.maxX) ** 2 +
+                                      Math.max(b.minZ - bz, 0, bz - b.maxZ) ** 2;
+                            if (d2 < best) [best, wer] = [d2, a];
+                        }
+                    }
+                    return wer;
+                };
+                for (const anteil of [1 / 3, 2 / 3]) {
+                    const R = +(GP.ringR + GP.rand + anteil * GP.bahn).toFixed(2);
+                    const s = { R, grad: 0, sprung: 0, weg: 0, ablage: 0 };
+                    g.spuren.push(s);
+                    const tat = (t) => taeter(Object.assign(t, { R, grad: Math.round((at * 180) / Math.PI) }));
+                    let at = 0; // die Runde in rad ab der Achse +x (gefahren und übersprungen)
+                    for (let versuch = 0; at < 2 * Math.PI && versuch < 36; versuch++) {
+                        const [x, z] = [Mg.x + Math.cos(at) * R, Mg.z + Math.sin(at) * R];
+                        try {
+                            await steigEin(x, z, Math.atan2(-Math.sin(at), Math.cos(at)), true);
+                        } catch (err) {
+                            // E nahm statt des Wagens ein Tor in Reichweite: der Spieler steht in der Tor-Welt — das
+                            // Tor beim Namen
+                            if (r._portalOverlay) {
+                                const id = r._portalOverlay.entryId;
+                                tat({
+                                    art: "tor",
+                                    type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
+                                    id,
+                                    ort: `${Math.round(x)}/${Math.round(z)}`,
+                                    mitE: true,
+                                });
+                                r.exitPortal();
+                            }
+                            if (st.player.mountedArch != null) r.dismountArchitecture();
+                            for (const w of gebaut.splice(0)) r.removeArchitecture(w);
+                            tat({
+                                art: "einstieg",
+                                ort: `${Math.round(x)}/${Math.round(z)}`,
+                                grund: String((err && err.message) || err).slice(0, 160),
+                            });
+                            [at, s.sprung] = [at + sprung, s.sprung + sprung];
+                            continue;
+                        }
+                        let [w0, still, pedal] = [winkel(), 0, null];
+                        const fuss = (soll) =>
+                            soll !== pedal && [
+                                pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`),
+                                soll && taste("keydown", soll, `Key${soll.toUpperCase()}`),
+                                (pedal = soll),
+                            ];
+                        try {
+                            for (let i = 0; i < 9000 && at < 2 * Math.PI; i++) {
+                                const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
+                                fuss(v < SOLL.ringMs ? "w" : v > 1.5 * SOLL.ringMs ? "s" : null);
+                                // die Lenkung hält die Spur: die Tangente plus 0,3 je Meter Ablage zur Mitte hin (Lauf
+                                // 18.10.: ein Ziel 7 m
+                                // voraus auf dem Kreis zog den Wagen 1,9 m nach innen an die Tore)
+                                const [f, ab] = [winkel(), Math.hypot(e.position.x - Mg.x, e.position.z - Mg.z) - R];
+                                const soll = Math.atan2(
+                                    -Math.sin(f) - 0.3 * ab * Math.cos(f),
+                                    Math.cos(f) - 0.3 * ab * Math.sin(f)
+                                );
+                                const fehl = wrap(fahrt() - soll);
+                                lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
+                                if (i > 120) s.ablage = Math.max(s.ablage, +Math.abs(ab).toFixed(2)); // nach dem Anfahren
+                                const [x0, z0] = [e.position.x, e.position.z];
+                                await tick(1);
+                                const ort = `${Math.round(e.position.x)}/${Math.round(e.position.z)}`;
+                                if (r._portalOverlay) {
+                                    const id = r._portalOverlay.entryId;
+                                    tat({
+                                        art: "tor",
+                                        type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
+                                        id,
+                                        ort,
+                                    });
+                                    break;
+                                }
+                                const d = Math.hypot(e.position.x - x0, e.position.z - z0);
+                                [s.weg, still] = [s.weg + d, d < 0.005 ? still + 1 : 0];
+                                const w1 = winkel();
+                                if (wrap(w1 - w0) > 0) [at, s.grad] = [at + wrap(w1 - w0), s.grad + wrap(w1 - w0)];
+                                w0 = w1;
+                                if (still > 60) {
+                                    const a = amBug();
+                                    tat({ art: "steht", type: a ? a.type : "Gelände", id: a ? a.id : null, ort });
+                                    break;
+                                }
+                            }
+                        } finally {
+                            fuss(null);
+                            lenke(null);
+                            if (r._portalOverlay) r.exitPortal();
+                            await halt();
+                            if (r._portalOverlay) r.exitPortal(); // E am Tor nimmt den Abstieg (`_fahrStandFrei` „tor")
+                            if (st.player.mountedArch != null) r.dismountArchitecture();
+                            for (const w of gebaut.splice(0)) r.removeArchitecture(w); // kein Wagen der Runde steht in der nächsten Spur
+                        }
+                        if (at < 2 * Math.PI) [at, s.sprung] = [at + sprung, s.sprung + sprung];
+                    }
+                    [s.zu, s.grad, s.sprung, s.weg] = [
+                        at >= 2 * Math.PI,
+                        Math.round((s.grad * 180) / Math.PI),
+                        Math.round((s.sprung * 180) / Math.PI),
+                        +s.weg.toFixed(1),
+                    ];
+                }
+                // DER SELBSTTEST IM LAUF (Prüfer 18.10.: der Leser des Tors warf in jedem Takt, das Urteil „portal
+                // betreten in der Fahrt" fiel nie): ein Wagen fährt von der Fahrbahn auf der Achse seiner Membran
+                // (`_tickPortalMembranes`: die Kreuzung in der Apertur) in das Tor des Rings, dessen Achse radial liegt
+                // (die Tore stehen in Gier 0: auf jeder anderen Achse streift der Wagen ein Nachbar-Tor) — der Takt nennt es
+                // beim Namen (`m.tor`), das Urteil wird ROT
+                const radial = (a) =>
+                    Math.abs(Math.sin(a.rotationY || 0) * (a.position.x - Mg.x) + Math.cos(a.rotationY || 0) * (a.position.z - Mg.z));
+                const torZiel = [...(r._portalMembranes || new Map()).values()]
+                    .map((rec) => rec.entry)
+                    .filter((a) => Math.abs(Math.hypot(a.position.x - Mg.x, a.position.z - Mg.z) - GP.ringR) < 1)
+                    .sort((a, b) => radial(b) - radial(a))[0];
+                const [vorher, phaseVor, T] = [m.tor, phase, {}];
+                [m.tor, phase] = [null, "Selbsttest Tor"];
+                if (torZiel)
+                    try {
+                        const [p, ry] = [torZiel.position, torZiel.rotationY || 0];
+                        const aus = Math.sign(Math.sin(ry) * (p.x - Mg.x) + Math.cos(ry) * (p.z - Mg.z)) || 1;
+                        const [nx, nz] = [Math.sin(ry) * aus, Math.cos(ry) * aus]; // die Normale der Membran, vom Platz fort
+                        const h = Math.atan2(-nx, -nz);
+                        T.von = [Math.round(p.x + nx * 8), Math.round(p.z + nz * 8)];
+                        await steigEin(p.x + nx * 8, p.z + nz * 8, h, true);
+                        taste("keydown", "w", "KeyW");
+                        for (let i = 0; i < 600 && !m.tor; i++) {
+                            const fehl = wrap(fahrt() - h);
+                            lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
+                            await tick(1);
+                        }
+                    } catch (err) {
+                        T.fehler = String((err && err.message) || err).slice(0, 200);
+                    } finally {
+                        T.bis = e ? [Math.round(e.position.x), Math.round(e.position.z)] : null;
+                        lenke(null);
+                        taste("keyup", "w", "KeyW");
+                        if (r._portalOverlay) r.exitPortal();
+                        if (st.player.mountedArch != null) r.dismountArchitecture();
+                        for (const w of gebaut.splice(0)) r.removeArchitecture(w);
+                    }
+                [out.fahrtTor, m.tor, phase] = [Object.assign(T, { ziel: torZiel && torZiel.type, tor: m.tor }), vorher, phaseVor];
+            }
+            m.gestartet = true;
+        } catch (e) {
+            Object.assign(m, { err: (e && e.stack) || String(e), grund: String((e && e.message) || e) });
+        } finally {
+            A.jeTakt = null;
+        }
     }
-    // ── V-k4: der Fensterwechsel löst die Tasten ──
-    try {
-        const m = { gestartet: false };
-        out.taste = m;
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
-        m.gedrueckt = st.keys.w === true;
-        window.dispatchEvent(new Event("blur"));
-        m.nachBlur = st.keys.w === true;
-        window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
-        m.gestartet = true;
-    } catch (e) {
-        out.taste = Object.assign(out.taste || {}, { err: (e && e.stack) || String(e) });
-    }
+    if (S.has("wort")) marke("wort");
     // ── V-D6: der KI-Fehler nennt die Ursache ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false };
         out.ki = m;
         const llm = st.llm;
@@ -1016,10 +1612,9 @@ async function probe(arg) {
         out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-k5 · V-k6 · V-D8: der Satz trifft die Welt ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false };
         out.satz = m;
-        const archs = st.architectures;
         const pm = st.playerMesh.position;
         const ausgabe = document.getElementById("chat-output");
         const letzteZeile = () => (ausgabe && ausgabe.lastElementChild ? ausgabe.lastElementChild.textContent : "");
@@ -1037,8 +1632,14 @@ async function probe(arg) {
         const licht = platz && r._grundrissVon(platz);
         const frei = (x, z) =>
             !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
+        // ...und der Satz pflanzt dort (der Gang endet die Fahrt an jedem Ort, auch im Dorf: die Wand der Natur
+        // `_naturWand` — Grundriss, Weg, Platz, Acker — schweigt im 12-m-Kreis, sonst wuchs „vor dir" keine Birke)
+        const pflanzbar = (x, z) =>
+            [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12], [8, 8], [-8, 8], [8, -8], [-8, -8]].every(
+                ([dx, dz]) => !r._naturWand("baum_birke", { x: x + dx, y: r._voxelSurfaceY(x + dx, z + dz), z: z + dz })
+            );
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z)) {
+            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z) && pflanzbar(x, z)) {
                 ort = { x, z };
                 break;
             }
@@ -1048,10 +1649,12 @@ async function probe(arg) {
             pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
             st.yaw = 0;
         };
-        const neue = (vorher, typ) => archs.slice(vorher).filter((a) => a && a.type === typ);
+        // neu ist, was vorher nicht stand (der laufende Loop pflanzt und räumt den Wald: ein neues Werk füllt eine
+        // Lücke)
+        const neue = (vorher, typ) => st.architectures.filter((a) => a && a.type === typ && !vorher.has(a));
         if (ort) {
             setze(ort.x, ort.z);
-            const v0 = archs.length;
+            const v0 = new Set(st.architectures);
             r.processChatCommand("pflanz mir einen eichenhain am wasser");
             const n0 = neue(v0, "baum_eiche");
             m.amWasserOhneWasser = n0.length;
@@ -1069,7 +1672,7 @@ async function probe(arg) {
         const sx = ort ? ort.x : pm.x,
             sz = ort ? ort.z : pm.z;
         setze(sx, sz);
-        const v1 = archs.length;
+        const v1 = new Set(st.architectures);
         try {
             r.processChatCommand("pflanz mir zwei birken");
         } finally {
@@ -1084,11 +1687,23 @@ async function probe(arg) {
         const msg = gesendet.find((o) => o && o.type === "dsl");
         m.gesendet = !!msg;
         m.ortKnoten = msg && Array.isArray(msg.program) ? JSON.stringify(msg.program[2]) : null;
+        // DAS BILD DES WORTS: der Spieler blickt auf die Birken seines Satzes, wenn sie gezeichnet sind
+        if (!R._isHeadlessNull && nB.length) {
+            for (let i = 0; i < 900 && !nB.every((a) => r._archIsRendered(a)); i++) await tick(1);
+            m.birkenGezeichnet = nB.filter((a) => r._archIsRendered(a)).length;
+            const c = nB.reduce(
+                (s2, a) => [s2[0] + a.position.x / nB.length, s2[1] + a.position.z / nB.length],
+                [0, 0]
+            );
+            st.yaw = Math.atan2(c[0] - pm.x, c[1] - pm.z); // vor dem Spieler liegt (sin Gier, cos Gier)
+            await tick(12);
+            await angehalten(async () => (out.bilder.wort = png(await schuss())));
+        }
         for (const a of nB.slice().reverse()) r.removeArchitecture(a);
         // Der Empfänger steht 200 m weiter: seine Birken stehen dort, wo der Absender sie wollte.
         if (msg) {
             setze(sx + 200, sz);
-            const v2 = archs.length;
+            const v2 = new Set(st.architectures);
             r._p2pMsgDsl({ type: "dsl", peerId: "peer-empfaenger-probe", program: msg.program }, { peerId: "self" });
             const nE = neue(v2, "baum_birke");
             m.birkenEmpfaenger = nE.length;
@@ -1109,7 +1724,7 @@ async function probe(arg) {
         out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-k5-KLASSE: jede Op, deren verlangter Ort fehlt, scheitert benannt — an dem trockenen Ort der Satz-Probe ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false, ops: {} };
         out.ort = m;
         const ort = out.satz && out.satz.trockenOrt;
@@ -1246,7 +1861,7 @@ async function probe(arg) {
         out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
     }
     // ── R2: DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN — gezählt werden Spalten-Scans (`_voxelSurfaceY`) ──
-    try {
+    if (S.has("wort")) try {
         const m = { gestartet: false, zaehlung: {} };
         out.suche = m;
         const ort = out.satz && out.satz.trockenOrt;
@@ -1385,8 +2000,38 @@ async function probe(arg) {
     } catch (e) {
         out.suche = Object.assign(out.suche || {}, { err: (e && e.stack) || String(e) });
     }
+    if (S.has("werkstatt")) marke("werkstatt");
+    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
+    if (S.has("werkstatt")) try {
+        const m = { gestartet: false };
+        out.rezept = m;
+        const host = document.getElementById("inventory-recipes");
+        if (!host) throw new Error("kein #inventory-recipes");
+        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
+        const knopf = () => {
+            for (const row of host.querySelectorAll(".recipe-row")) {
+                const nm = row.querySelector(".recipe-name");
+                if (nm && nm.textContent === lbl) return row.querySelector("button");
+            }
+            return null;
+        };
+        const modusAlt = r.getGameMode();
+        r.setGameMode("frieden");
+        r.renderRecipeBook();
+        const k0 = knopf();
+        m.friedenGesperrt = !!k0 && k0.disabled === true;
+        r.setGameMode("schöpfer");
+        r.renderRecipeBook();
+        const k1 = knopf();
+        m.schoepferFrei = !!k1 && k1.disabled === false;
+        m.titel = k1 ? k1.title || "" : "kein Knopf";
+        r.setGameMode(modusAlt);
+        m.gestartet = true;
+    } catch (e) {
+        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
+    }
     // ── V-D3: die Werkstatt-Vorschau ──
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false };
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
@@ -1434,6 +2079,32 @@ async function probe(arg) {
         r._workshopRender();
         m.maskeDanach = lu.uLodMaskOn.value;
         m.renders = rec.length;
+        // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler
+        // sieht es). Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt
+        // gelesen, mit und ohne Werk: der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im
+        // Bild der Fahrt)
+        if (!st.renderer._isHeadlessNull) { // (R ist hier die letzte Probe des Beobachters)
+            const [beob, c] = [p.renderer.render, p.canvas];
+            delete p.renderer.render;
+            try {
+                await p.renderer.init();
+                const cv = Object.assign(document.createElement("canvas"), { width: c.width, height: c.height });
+                const ctx = cv.getContext("2d", { willReadFrequently: true });
+                const zeichne = (an) => (
+                    (p.currentMesh.visible = an),
+                    r._workshopRender(),
+                    ctx.clearRect(0, 0, c.width, c.height),
+                    ctx.drawImage(c, 0, 0),
+                    ctx.getImageData(0, 0, c.width, c.height).data
+                );
+                const [ohne, mit] = [zeichne(false), zeichne(true)]; // zuletzt mit Werk: das Bild der Station
+                const { teil } = window.__klassenTeilung(mit, [ohne], c.width, c.height, 18);
+                m.bildAnteil = +(teil.reduce((s2, x) => s2 + (x === 1), 0) / (c.width * c.height)).toFixed(4);
+                out.bilder.werkstatt = cv.toDataURL("image/png");
+            } finally {
+                [p.currentMesh.visible, p.renderer.render] = [true, beob];
+            }
+        }
         m.gestartet = true;
         const R = rec[rec.length - 1];
         if (R) {
@@ -1485,7 +2156,7 @@ async function probe(arg) {
     // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
     // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
     // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false };
         out.zug = m;
         const ws = r._ensureWorkshopState();
@@ -1625,7 +2296,7 @@ async function probe(arg) {
     // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
     // stellt `_workshopRender` (der Vorschau-Renderer ist oben der Beobachtungs-Punkt, keine GPU-Arbeit); gemessen wird
     // die projizierte Box3 der Gestalt: größere Kante je Bildkante (NDC, auf das Bild geklemmt) — das Maß des Runners.
-    try {
+    if (S.has("werkstatt")) try {
         const m = { gestartet: false, eintraege: [] };
         out.rahmen = m;
         const ws = r._ensureWorkshopState();
@@ -1697,11 +2368,11 @@ async function probe(arg) {
     } catch (e) {
         out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
     }
+    marke("ende");
     return out;
 }
 
 (async () => {
-    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesund = { gestartet: true, renders: 1, vertices: 1200, anteil: 1, maskeImRender: 0, maskeWelt: 1, maskeDanach: 1 };
@@ -1710,6 +2381,11 @@ async function probe(arg) {
             ["leere Vorschau (21 108 Dreiecke, 0 im Bild)", { anteil: 0, maskeImRender: 1, augeAbstand: 36 }, "vorschau 0.0 %"],
             ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
             ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
+            [
+                "das Canvas der Vorschau bleibt leer (die Karte las kein Bild)",
+                { bildAnteil: 0 },
+                "vorschau-bild: das Werk deckt 0.0 %",
+            ],
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
@@ -1760,7 +2436,7 @@ async function probe(arg) {
             check(`Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true, plattformen: 1 };
-        check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
+        check("Selbst-Test V-D1: gesunde Lichtung == 0 Täter", lichtungVerdict(gesundA).length === 0);
         for (const [name, bruch, soll] of [
             ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
             ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
@@ -1769,7 +2445,7 @@ async function probe(arg) {
             ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
             ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
         ]) {
-            const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
+            const v = lichtungVerdict(Object.assign({}, gesundA, bruch));
             check(`Selbst-Test V-D1: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         // Die Einzelschnitte: je ein gesunder Zustand ohne Täter, je der Befund-Zustand mit Täter beim Namen.
@@ -1788,7 +2464,12 @@ async function probe(arg) {
             telemetrieImChat: false,
         };
         for (const [kurz, urteil, gesund, brueche] of [
-            ["V-D5", rezeptVerdict, { gestartet: true, friedenGesperrt: true, schoepferFrei: true }, [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]]],
+            [
+                "V-D5",
+                rezeptVerdict,
+                { gestartet: true, friedenGesperrt: true, schoepferFrei: true },
+                [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]],
+            ],
             ["V-k4", tasteVerdict, { gestartet: true, gedrueckt: true, nachBlur: false }, [["Klebetaste (V-k4)", { nachBlur: true }, "W bleibt"]]],
             [
                 "V-D6",
@@ -1808,6 +2489,217 @@ async function probe(arg) {
                     ["Telemetrie im Chat (V-D8)", { telemetrieImChat: true }, "Dorf-Telemetrie"],
                 ],
             ],
+            [
+                "Ankunft",
+                ankunftVerdict,
+                { gestartet: true, ms: 9000, takte: 120, ohne: [], ladeschirm: false, weg: 2.4, wegTakte: 40 },
+                [
+                    [
+                        "halbes Weltbild über den Deckel (L2a)",
+                        { ohne: ["Das erste Weltbild steht ohne: Horizont — der Deckel von 60000 ms ist erreicht."] },
+                        "ankunft halb",
+                    ],
+                    ["der Ladeschirm bleibt", { ladeschirm: true }, "ankunft: der Ladeschirm"],
+                    ["W trägt den Spieler nicht", { weg: 0, wegTakte: 600 }, "kontrolle: W trug den Spieler 0 m"],
+                ],
+            ],
+            [
+                "Fahrt",
+                fahrtVerdict,
+                {
+                    gestartet: true,
+                    typ: "fahrzeug_gt",
+                    sichtVor: "first",
+                    sichtRitt: "third",
+                    sichtNach: "first",
+                    weg: 100.4,
+                    armN: 300,
+                    armP50: 1,
+                    armMin: 0.6,
+                    imWagen: 0,
+                    anteil: 0.12,
+                    rauschen: 0,
+                    abgestiegen: true,
+                    wechsel: WECHSEL_GESUND,
+                    hang: HANG_GESUND,
+                    ring: RING_GESUND,
+                },
+                [
+                    [
+                        "der Arm trifft den eigenen Wagen (Befund 17.10., Arm 0,30)",
+                        { armP50: 0.3, armMin: 0.28, imWagen: 280 },
+                        "kamera-arm p50 0.3 (min 0.28) < 0.9 — 280 von 300 Proben enden am gerittenen Werk fahrzeug_gt: der Strahl der Kamera trifft den eigenen Wagen",
+                    ],
+                    ["im Ritt bleibt die Sicht", { sichtRitt: "first" }, "sicht: im Ritt first"],
+                    [
+                        "die Vorschau stellt ein lebendes Tor auf die Fahrbahn um den Ring (F1d, Prüfer R3 18.10.)",
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                taeter: [
+                                    {
+                                        art: "tor",
+                                        type: "tor_drachentor",
+                                        id: "portal-preview-portale",
+                                        ort: "-15/11",
+                                        grad: 144,
+                                        R: 18.5,
+                                    },
+                                ],
+                            }),
+                        },
+                        "ringbahn: Portal betreten: tor_drachentor (portal-preview-portale)",
+                    ],
+                    [
+                        "die Runde fährt, bevor die Vorschauen stehen (vakuös)",
+                        { ring: Object.assign({}, RING_GESUND, { vorschau: [1, 4] }) },
+                        "ringbahn: 1 von 4 Vorschauen stehen",
+                    ],
+                    [
+                        "ein Grundriss übersteigt die Tiefe der Vorschau (die Zahl des Platzes ist stale)",
+                        { ring: Object.assign({}, RING_GESUND, { grund: [{ typ: "haus_alemannisch", r: 19.4 }] }) },
+                        "ringbahn: die Vorschau haus_alemannisch reicht bis r 19.4 m",
+                    ],
+                    [
+                        "die Runde um den Ring bleibt offen (vakuös)",
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                spuren: [Object.assign({}, RING_GESUND.spuren[0], { zu: false, grad: 40 })],
+                            }),
+                        },
+                        "ringbahn: die Runde um den Genesis-Ring endet nach 40°",
+                    ],
+                    [
+                        "die Lenkung verlässt die Spur (vakuös)",
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                spuren: RING_GESUND.spuren.map((s) => Object.assign({}, s, { ablage: 2.4 })),
+                            }),
+                        },
+                        "ringbahn: die Lenkung hält die Spur nicht",
+                    ],
+                    [
+                        "eine Fahrt geht durch ein Tor",
+                        { tor: { phase: "Wechsel", ort: [-16, 14], log: "Portal betreten: „tor_drachentor“" } },
+                        "portal betreten in der Fahrt (Wechsel) bei -16/14",
+                    ],
+                    ["der Wagen verschwindet im Bild", { anteil: 0.001 }, "wagen im Bild 0.1 %"],
+                    ["die Fahrt bleibt stecken", { weg: 12 }, "fahrt: 12 m"],
+                    ["nach dem Abstieg bleibt Third", { sichtNach: "third" }, "sicht: nach dem Abstieg third"],
+                    [
+                        "kein Wagen vor dem Spieler",
+                        { gestartet: false, grund: "die Welt stellt fahrzeug_gt nicht hin" },
+                        "fahrt start: die Welt",
+                    ],
+                    [
+                        "der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)",
+                        { stufeWeg: 20.1, stufeTaeter: "L1 (Band)" },
+                        "aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band)",
+                    ],
+                    [
+                        "auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter",
+                        { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" },
+                        "aufbau 21.6 m",
+                    ],
+                    [
+                        "Third beginnt aus der alten Richtung (Befund 17.10., `_kamYaw` nur in Third)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 31, "first"],
+                                    [70, 4, "first"],
+                                    [80, 3, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "kamera nach dem Wechsel 31°",
+                    ],
+                    [
+                        "nach der Führung eines Studios die alte Richtung (Prüfer 18.10., `_kameraFuehrung` vor dem Rig)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 4, "first"],
+                                    [70, 4, "first"],
+                                    [80, 79, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "kamera nach der Führung eines Studios (kameraFuehren) 79°",
+                    ],
+                    [
+                        "der Wiederaufstieg zeichnet die Gier der letzten Fahrt (Randfall 18.10., `_gierVor`)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: 57 }) },
+                        "wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen 57°",
+                    ],
+                    [
+                        "kein Wiederaufstieg (vakuös)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: null }) },
+                        "wiederaufstieg: nicht gemessen",
+                    ],
+                    [
+                        "Ego dreht nicht (vakuös)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [3, 1, "first"],
+                                    [80, 4, "first"],
+                                    [80, 3, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "wechsel: 2 Rückkehr",
+                    ],
+                    [
+                        "keine Führung (vakuös)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 4, "first"],
+                                    [70, 4, "first"],
+                                ],
+                            }),
+                        },
+                        "wechsel: 2 Rückkehr nach Third aus Ego, 0 aus einer Führung",
+                    ],
+                    [
+                        "die Kamera springt je Bild quer gegen den Wagen",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) },
+                        "kamera-ruck seitlich p95 0.31",
+                    ],
+                    [
+                        "das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) },
+                        "gleichlauf im Wechsel p95 0.56",
+                    ],
+                    [
+                        "die Kamera steht bergab unter der Fahrbahn (Elevation zur Welt)",
+                        { hang: Object.assign({}, HANG_GESUND, { hochP05: -4.7, ruckP95: 0.31 }) },
+                        "kamera am Hang p05 -4.7°",
+                    ],
+                    ["der Band-Partner zeigt das Rad in Ruhe", { radN: 768, radWeg: 1.998 }, "rad: die Stufen im Band"],
+                    [
+                        "Wechsel ohne Gleichlauf-Proben (vakuös)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) },
+                        "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf (vakuös, Soll ≥ 20)",
+                    ],
+                    [
+                        "der Band-Partner bleibt im Wechsel zurück",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { stufeWeg: 9.4, stufeTaeter: "L1 (Band)" }) },
+                        "aufbau im Wechsel 9.4 m",
+                    ],
+                    [
+                        "der Wagen fehlt nach dem Wechsel im Bild",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { anteil: 0 }) },
+                        "wagen im Wechsel im Bild 0.0 %",
+                    ],
+                    [
+                        "der Arm pumpt bergab",
+                        { hang: Object.assign({}, HANG_GESUND, { schnapp: 14, armWeg: 6.2 }) },
+                        "kamera-arm pumpt bergab: 14",
+                    ],
+                    ["kein Steilhang (vakuös)", { hang: { gefaelle: 0 } }, "hang: kein Steilhang"],
+                ],
+            ],
         ]) {
             check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
             for (const [name, bruch, soll] of brueche) {
@@ -1815,244 +2707,6 @@ async function probe(arg) {
                 check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
             }
         }
-        const gruen = wand(quelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
-        const vorStand = stammLib.ersetze(quelle, [
-            ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
-            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
-            ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
-            // der Rest der Klasse beim Vorher (c52089c7): der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
-            ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
-                'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
-            ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
-                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"],
-            // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
-            ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
-                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
-            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
-            ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
-                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
-        ]);
-        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
-        const weniger = wand(stammLib.ersetze(quelle, "_hofStartRAF", 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
-        check(
-            "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
-            quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
-            weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
-        );
-        // DIE TÄTER DER RUNDEN 3 UND 4 (Prüfer K38-N2: mut-w2b, mut-bind, mut-schlaf, mut-kreuz) und ihre Klassen in EINEM
-        // Text. W2: jeder Weg der Render-Funktion zu ihrem Ruf — zusammengesetzte Argumente (||, ?:, ein Aufruf im Argument),
-        // renderAsync, .call, .apply über Reflect, .bind (auch mit vorgebundener Szene), Alias, Destrukturieren, Feld,
-        // Parameter, Rückgabe, Zeitgeber; ein Feld der Info und ein UI-Raum schweigen. W7: jede Form des Polls — die Closure,
-        // die sich neu stellt (Block-Rumpf, zwei Closures), das Glied per Zeitgeber, die Schleife mit Schlaf (inline und über
-        // eine Schlaf-Closure), der Kreis über zwei Glieder, die async-Rekursion nach dem Schlaf, then auf einem Schlaf, das
-        // Zeitgeber-Glied, ein Alias von this, setInterval über `window["…"]`, das Warten auf ein pollendes Glied; die
-        // einmalige Frist und ein Render-Takt, den die Familie nur startet, schweigen.
-        const bue = stammLib.glieder(quelle).find((g) => g.name === "_buehneRender");
-        const ichRuf = 'this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");';
-        const klasse = (quelle.slice(0, bue.ende) +
-            [
-                "",
-                "    _fremdeBuehne(s, k = f(1)) {",
-                "        s.renderer.render(s.scene, s.cam ? s.cam : s.camera);",
-                "    }",
-                "    _bauBuehne(s) {",
-                "        s.renderer.render(this._szeneVon(s, 1), s.camera);",
-                "        s.renderer.renderAsync(s.scene, s.camera);",
-                "        s.renderer.render.call(s.renderer, s.scene, s.camera);",
-                "    }",
-                "    _bindBuehne(s) {",
-                "        const zeichne = s.renderer.render.bind(s.renderer);",
-                "        zeichne(s.scene, s.camera);",
-                "    }",
-                "    _vorgebunden(s) {",
-                "        s.renderer.render.bind(s.renderer, s.scene)(s.camera);",
-                "    }",
-                "    _zerlegt(s) {",
-                "        const { render: male } = s.renderer;",
-                "        male.call(s.renderer, s.scene, s.camera);",
-                "    }",
-                "    _reflektiert(s) {",
-                '        Reflect.apply(s.renderer["render"], s.renderer, [s.scene, s.camera]);',
-                "    }",
-                "    _merkeZeichner(s) {",
-                "        this._zeichner = s.renderer.renderAsync.bind(s.renderer);",
-                "    }",
-                "    _nutzeZeichner(s) {",
-                "        this._zeichner(s.scene, s.camera);",
-                "    }",
-                "    _reiche(s) {",
-                "        this._zeichneMit(s.renderer.render.bind(s.renderer), s);",
-                "    }",
-                "    _zeichneMit(f, s) {",
-                "        f(s.scene, s.camera);",
-                "    }",
-                "    _gibZeichner(s) {",
-                "        return s.renderer.render.bind(s.renderer);",
-                "    }",
-                "    _holeZeichner(s) {",
-                "        this._gibZeichner(s)(s.scene, s.camera);",
-                "    }",
-                "    _spaeter(s) {",
-                "        setTimeout(s.renderer.render.bind(s.renderer), 0, s.scene, s.camera);",
-                "    }",
-                "    _zaehle(s, room) {",
-                "        room.render();",
-                "        return s.renderer.info.render.calls + (s.perf.render || 0);",
-                "    }",
-                "    _foundryLauscher(k, o = f(1)) {",
-                "        const warte = () => {",
-                "            if (!this._foundry) {",
-                "                window.setTimeout(() => {",
-                "                    warte();",
-                "                }, 150);",
-                "            }",
-                "        };",
-                "        warte();",
-                "    }",
-                "    async _foundryNachfrage(k) {",
-                "        if (!this._foundry) setTimeout(() => this._foundryNachfrage(k), 150);",
-                "    }",
-                "    _foundryPingPong() {",
-                "        const ping = () => pong();",
-                "        function pong() {",
-                "            requestAnimationFrame(ping);",
-                "        }",
-                "        ping();",
-                "    }",
-                "    async _foundryWarteBuch() {",
-                "        while (!this._foundry.buchDa) await new Promise((r) => setTimeout(r, 50));",
-                "    }",
-                "    async _foundryDoeset() {",
-                "        const schlafe = (ms) => new Promise((r) => setTimeout(r, ms));",
-                "        for (;;) {",
-                "            if (this._foundry) break;",
-                "            await schlafe(30);",
-                "        }",
-                "    }",
-                "    _foundryHorch() {",
-                "        if (!this._foundry) setTimeout(() => this._foundryHorchNochmal(), 150);",
-                "    }",
-                "    _foundryHorchNochmal() {",
-                "        this._foundryHorch();",
-                "    }",
-                "    async _foundryErneut(k) {",
-                "        await new Promise((r) => setTimeout(r, 100));",
-                "        if (!this._foundry) return this._foundryErneut(k);",
-                "    }",
-                "    _foundryKette() {",
-                "        this._schlummer(80).then(() => this._foundryKette());",
-                "    }",
-                "    _schlummer(ms) {",
-                "        return new Promise((r) => setTimeout(r, ms));",
-                "    }",
-                "    _naechsterTakt(cb) {",
-                "        requestAnimationFrame(() => cb());",
-                "    }",
-                "    _foundryTakt() {",
-                "        if (!this._foundry) this._naechsterTakt(() => this._foundryTakt());",
-                "    }",
-                "    _warteBis(pruef) {",
-                "        return new Promise((ok) => {",
-                "            const sieh = () => (pruef() ? ok() : setTimeout(sieh, 40));",
-                "            sieh();",
-                "        });",
-                "    }",
-                "    async _foundryWarteBis() {",
-                "        await this._warteBis(() => this._foundry);",
-                "    }",
-                "    _foundryIntervall() {",
-                '        window["setInterval"](() => this._foundryEinmal(1), 500);',
-                "    }",
-                "    _foundryAlias() {",
-                "        const selbst = this;",
-                "        setTimeout(() => selbst._foundryAlias(), 99);",
-                "    }",
-                "    _foundryEinmal(k) {",
-                "        const ab = () => this._foundryAblauf(k);",
-                "        setTimeout(ab, 5000);",
-                "    }",
-                "    _vorschauTakt() {",
-                "        const tick = () => requestAnimationFrame(tick);",
-                "        tick();",
-                "    }",
-                "    _foundryStarteTakt() {",
-                "        this._vorschauTakt();",
-                "    }",
-            ].join("\n") +
-            quelle.slice(bue.ende)).replace(ichRuf, "s.renderer.render(s.scene, s.cam || s.camera);");
-        const wk = wand(klasse);
-        const w2 = wk.find((w) => w[0].startsWith("W2"));
-        const w7 = wk.find((w) => w[0].startsWith("W7"));
-        // je Stelle EIN Eintrag — die Zahl der genannten Orte ist die Zahl der Einträge, keine feste Zahl
-        const w2Soll = [
-            "_ichStartRAF: s.renderer.render(s.scene, s.cam || s.camera)",
-            "_fremdeBuehne:",
-            "_bauBuehne: s.renderer.render(this",
-            "_bauBuehne: s.renderer.renderAsync(",
-            "[.call]",
-            "_bindBuehne: zeichne(s.scene, s.camera) [.bind → zeichne → Ruf]",
-            "_vorgebunden: s.renderer.render.bind(s.renderer, s.scene)(s.camera) [.bind → Ruf]",
-            "_zerlegt: male.call(s.renderer, s.scene, s.camera) [{ render } → male → .call]",
-            "_reflektiert: Reflect.apply(",
-            "_nutzeZeichner: this._zeichner(s.scene, s.camera) [.bind → Feld ._zeichner → Ruf]",
-            "_zeichneMit: f(s.scene, s.camera) [.bind → Parameter _zeichneMit(f) → Ruf]",
-            "_holeZeichner: this._gibZeichner(s)(s.scene, s.camera) [.bind → Rückgabe _gibZeichner() → Ruf]",
-            "_spaeter: setTimeout(",
-        ];
-        const w2Still = ["_zaehle", "_merkeZeichner", "_reiche:", "_gibZeichner:"];
-        const w7Soll = [
-            "_foundryLauscher/warte → _foundryLauscher/warte",
-            "_foundryNachfrage → _foundryNachfrage",
-            "_foundryPingPong/pong → _foundryPingPong/ping",
-            "_foundryWarteBuch wartet in einer Schleife",
-            "_foundryDoeset wartet in einer Schleife",
-            "_foundryHorch → _foundryHorchNochmal",
-            "_foundryErneut → _foundryErneut",
-            "_foundryKette → _foundryKette",
-            "_foundryTakt → _foundryTakt",
-            "_foundryWarteBis wartet über das pollende _warteBis",
-            "_foundryIntervall setInterval",
-            "_foundryAlias → _foundryAlias",
-        ];
-        const w7Still = ["_foundryEinmal", "_foundryStarteTakt", "_vorschauTakt", "_foundryUhren", "_foundryAblauf", "_foundryPumpe"];
-        check(
-            "Selbst-Test W: die Täter der Runden 3 und 4 (s.cam || s.camera, .bind) und ihre Klasse (?:, Aufruf im Argument, renderAsync, .call, Reflect.apply, vorgebunden, Alias, Destrukturieren, Feld, Parameter, Rückgabe, Zeitgeber) → W2 nennt jeden, Info und UI-Raum schweigen",
-            quelle.includes(ichRuf) &&
-                !w2[1] &&
-                w2Soll.every((n) => w2[2].includes(n)) &&
-                !w2Still.some((n) => w2[2].includes(n)) &&
-                (w2[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w2Soll.length,
-            `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
-        );
-        check(
-            "Selbst-Test W: die Täter der Runde 4 (Schleife mit Schlaf, Kreis über zwei Glieder) und jede Form des Polls → W7 nennt jeden, die einmalige Frist, der gestartete Render-Takt und die Frist-Kette schweigen",
-            !w7[1] &&
-                w7Soll.every((n) => w7[2].includes(n)) &&
-                !w7Still.some((n) => w7[2].includes(n)) &&
-                (w7[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w7Soll.length,
-            `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
-        );
-        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim Namen.
-        const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
-        const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
-        const inDerKette = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
-        check(
-            "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
-            quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
-            inDerKette[2]
-        );
-        // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
-        const effekteGlied = stammLib.glieder(quelle).find((g) => g.name === "dslEffects");
-        const umbenannt = quelle.slice(0, effekteGlied.start) + quelle.slice(effekteGlied.start).replace("dslEffects", "dslWirkungen");
-        const w4 = wand(umbenannt).find((w) => w[0].startsWith("W4"));
-        check("Selbst-Test W: dslEffects umbenannt → W4 nennt das fehlende Glied", !w4[1] && w4[2].includes("Glied fehlt: dslEffects"), w4[2]);
-        const rot = wand(vorStand);
-        check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W2–W7 feuern",
-            rot.filter((w) => !w[1]).length === 6,
-            rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
-        );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const opGesund = (op) => ({ ok: false, grund: "kein Wasser im Umkreis von 60 m", effekt: op, fehler: null, kalt: false, akte: [] });
         const gesundO = {
@@ -2136,6 +2790,64 @@ async function probe(arg) {
             const v = sucheVerdict(bruch);
             check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        const vorWelt = fahrtVerdict({
+            gestartet: true,
+            typ: "fahrzeug_gt",
+            sichtVor: "first",
+            sichtRitt: "third",
+            sichtNach: "first",
+            weg: 100,
+            armN: 300,
+            armP50: 0.68,
+            armMin: 0.46,
+            imWagen: 0,
+            anteil: 0.013,
+            rauschen: 0,
+            abgestiegen: true,
+            stufeWeg: 1.7,
+            wechsel: WECHSEL_GESUND,
+            hang: HANG_GESUND,
+            ring: RING_GESUND,
+        });
+        check(
+            "Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter",
+            vorWelt.length === 0,
+            vorWelt.join(" · ")
+        );
+        // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der
+        // längste Gang nicht
+        for (const [a, soll] of [
+            [["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"],
+            [["fahrt", 91.4, 5400], null],
+            [["werkstatt", 68.5, 900], null],
+        ])
+            check(
+                `Selbst-Test Frist: ${a.join(" · ")} → ${soll || "kein Bruch"}`,
+                fristBruch(...a) === soll,
+                String(fristBruch(...a))
+            );
+        check(
+            "Selbst-Test Frist: jede Station trägt ihre Frist",
+            STATIONEN.every(([, , f]) => f > 0),
+            STATIONEN.map(([n, , f]) => `${n} ${f}`).join(" · ")
+        );
+        // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang,
+        // Doku nur die Ankunft
+        const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
+        for (const [dateien, soll] of [
+            [["stamm/koerper-fahrt.js"], "ankunft,fahrt"],
+            [["stamm/bild-kosten.js"], "ankunft"],
+            [["stamm/siedlung-satz.js"], "ankunft,lichtung,fahrt"],
+            [["stamm/dirigent-takt.js"], "ankunft,fahrt"],
+            [["docs/PFLICHT-OFFEN.md", "scripts/diag-ankunft.cjs"], "ankunft"],
+            [["stamm/werkstatt-vorschau.js", "stamm/feld-dsl.js"], "ankunft,wort,werkstatt"],
+            [["stamm/dienst.js"], "ankunft,lichtung,fahrt,wort,werkstatt"],
+            [["worlds/garage/vehicle-core.js"], "ankunft,lichtung,fahrt,wort,werkstatt"],
+            [["scripts/diag-v1-pfad.cjs"], "ankunft,lichtung,fahrt,wort,werkstatt"],
+        ]) {
+            const ist = stationenFuer(dateien, ordnung).stationen.join(",");
+            check(`Selbst-Test Wahl: ${dateien.join(" + ")} → ${soll}`, ist === soll, ist);
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -2144,152 +2856,248 @@ async function probe(arg) {
         process.exit(0);
     }
 
-    console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
+    // DIE WAHL DER STATIONEN: `--station` nennt sie, `--nach-diff` liest sie aus den Dateien seit <rev>, sonst der
+    // ganze Gang
+    const alle = STATIONEN.map(([n]) => n);
+    let stationen = alle;
+    if (OPT("--station")) {
+        const w = OPT("--station").split(",");
+        const fremd = w.filter((n) => !alle.includes(n));
+        if (fremd.length) throw new Error(`unbekannte Station ${fremd.join(",")} — es gibt ${alle.join(" · ")}`);
+        stationen = alle.filter((n) => n === "ankunft" || w.includes(n));
+    } else if (OPT("--nach-diff")) {
+        const diff = require("child_process").execFileSync("git", ["diff", "--name-only", OPT("--nach-diff")], {
+            cwd: root,
+            encoding: "utf8",
+        });
+        const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
+        const w = stationenFuer(diff.split("\n").filter(Boolean), ordnung);
+        w.grund.forEach((g) => console.log(`  ${g}`));
+        stationen = w.stationen;
+    }
+    console.log(`=== DER SPIELGANG: ${stationen.join(" → ")} ===`);
+    const os = require("os");
+    const bilderOrt = path.resolve(OPT("--bilder") || path.join(os.tmpdir(), "spielgang"));
+    const platte = fs.mkdtempSync(path.join(os.tmpdir(), "spielgang-platte-")); // die leere Platte (IDB leer)
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    // DIE KARTE oder der Null-Renderer: die EINE Weiche sagt, ob die Maschine eine Karte gibt (Kopf der Datei)
+    const karte = require("./lib/software-gpu.cjs").linsenGpu() === "hardware";
+    const browser = await starteBrowser({ art: karte ? "linse" : "null", frist: 1800000, profil: platte });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page, { foundry: true });
+    // die Karte baut mit der Foundry (`__anazhForceFoundry`); auf dem Null-Renderer (der EINE Schalter, welt-boot
+    // `nullRenderer`) lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
+    if (karte) await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
+    else {
+        await nullRenderer(page, { foundry: true });
+        await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
+    }
+    await page.evaluateOnNewDocument(TAKT_ZAEHLER);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
-    await browser.close();
+    const t0 = Date.now();
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state._weltbildDa && window.__gang.loop, {
+        timeout: 900000,
+        polling: 250,
+    });
+    const bootS = ((Date.now() - t0) / 1000).toFixed(1);
+    const nullR = await page.evaluate(() => !!window.anazhRealm.state.renderer._isHeadlessNull);
+    console.log(
+        karte
+            ? "  Renderer: die Karte — jede Station mit Bild"
+            : "  Renderer: Null (die Weiche gibt keine Karte) — die Mechanik jeder Station, das Bild urteilt die Karte"
+    );
+    if (nullR === karte) check("der Renderer, den die Weiche wählt", false, `Karte ${karte}, Null-Renderer ${nullR}`);
+    if (karte) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
+    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT). DIE WACHE
+    // DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
+    // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
+    let [bruch, schlag, zu] = [null, 0, null];
+    const puls = () => {
+        const g = window.__gang;
+        return [g.station, Math.round(performance.now()), g.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)];
+    };
+    const wache = setInterval(
+        () =>
+            page
+                .evaluate(puls)
+                .then(([s, t, k, log]) => {
+                    if (!s || bruch) return;
+                    const sek = (t - s[1]) / 1000;
+                    if (++schlag % 6 === 0) console.log(`  … ${s[0]} seit ${sek.toFixed(0)} s, ${k - s[2]} Takte`);
+                    const f = fristBruch(s[0], sek, k - s[2]);
+                    if (f) [bruch, zu] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
+                })
+                .catch(() => {}),
+        5000
+    );
+    const knoten = KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]);
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten }).catch((e) => {
+        if (!bruch) throw e;
+    });
+    clearInterval(wache);
     server.close();
+    if (bruch) check("jede Station in ihrer Frist (Tafel STATIONEN)", false, bruch);
+    await (zu || browser.close()); // der Browser gibt die Platte frei, bevor sie fällt
+    fs.rmSync(platte, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    if (bruch) process.exit((console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`), 1));
+    fs.mkdirSync(bilderOrt, { recursive: true });
+    for (const [name, url] of Object.entries(out.bilder))
+        fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
 
-    console.log("=== V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG ===");
-    const am = out.ankunft || {};
-    if (am.err) check("V-D1 Probe ohne Ausnahme", false, am.err.split("\n")[0]);
-    const vA = ankunftVerdict(am);
-    check(
-        "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
-        vA.length === 0,
-        `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
-    );
-    console.log("=== V-D5 · V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
-    for (const [kurz, name, m, urteil, zeile] of [
-        [
-            "V-D5",
-            "das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
-            out.rezept,
-            rezeptVerdict,
-            (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`,
-        ],
-        [
-            "V-k4",
-            "der Fensterwechsel löst die gehaltene Taste",
-            out.taste,
-            tasteVerdict,
-            (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`,
-        ],
-        [
-            "V-D6",
-            "der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)",
-            out.ki,
-            kiVerdict,
-            (m) => `„${(m.fehler || "").slice(0, 90)}"`,
-        ],
-        [
-            "V-k5 V-k6 V-D8",
-            "der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie",
-            out.satz,
-            satzVerdict,
-            (m) =>
-                `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`,
-        ],
-    ]) {
+    // DAS URTEIL je Station: die Probe ohne Ausnahme, die Täter beim Namen; die Laufzeit aus den Marken der Seite
+    const urteil = (station, name, m, verdikt, zeile) => {
+        if (!stationen.includes(station)) return [];
         const mm = m || {};
-        if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
-        const v = urteil(mm);
-        check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+        if (mm.err) check(`${name.split(" ")[0]} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
+        const v = verdikt(mm);
+        check(
+            name,
+            v.length === 0,
+            `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
+        );
+        return v;
+    };
+    for (const [i, [n, ms, takte]] of out.zeit.slice(0, -1).entries()) {
+        const [, ms2, takte2] = out.zeit[i + 1];
+        console.log(
+            `=== ${n.toUpperCase()} — ${((ms2 - ms) / 1000).toFixed(1)} s · ${takte2 - takte} Takte${n === "ankunft" ? ` (Boot bis Kontrolle ${bootS} s)` : ""} ===`
+        );
+        if (n === "ankunft") {
+            urteil(n, "Ankunft das erste Weltbild ist ganz, der Ladeschirm weicht, W trägt den Spieler", out.ankunft, ankunftVerdict, (m) =>
+                `Kontrolle nach ${m.takte} Takten · ${(m.ms / 1000).toFixed(1)} s ab Navigation · ${m.ohne.length}× halb · W ${m.weg} m in ${m.wegTakte} Takten`);
+            urteil(
+                n,
+                "V-k4 der Fensterwechsel löst die gehaltene Taste",
+                out.taste,
+                tasteVerdict,
+                (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`
+            );
+        } else if (n === "lichtung")
+            urteil(n, "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie", out.lichtung, lichtungVerdict, (m) =>
+                `Plattform ${JSON.stringify(m.plattform)} · ${m.baeume} Bäume im 40-m-Kreis · nächster Stamm ${m.naechsterStamm} m (${m.naechsteArt}) · Kronen über der Scheibe ${m.kronen} · Ring ${m.ringPortale} Portale, Mitte ${m.ringMitteAbstand} m`);
+        else if (n === "fahrt") {
+            const bild = (m) =>
+                m.bild === false
+                    ? "ohne Bild (Null-Renderer)"
+                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`;
+            const zeile = (m) => {
+                const [w, h] = [m.wechsel || {}, m.hang || {}];
+                const wechsel = w.wechsel
+                    ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego (bzw. Führung)/Abstand nach 10 Bildern ${w.wechsel.map(([g, a, von]) => `${von === "fuehrung" ? "F " : ""}${g}°/${a}°`).join(" · ")} · Wiederaufstieg ${w.wiederauf == null ? "—" : w.wiederauf + "°"}${w.steck ? ` · ${w.steck}× am Hindernis zurück` : ""} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}`
+                    : "";
+                const hang =
+                    h.armN != null
+                        ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck seitlich p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}`
+                        : "";
+                const g = m.ring || {};
+                const ring = g.spuren
+                    ? ` · RING ${g.spuren.map((s) => `Spur ${s.R} m: ${s.grad}° gefahren, ${s.sprung}° übersprungen, ${s.weg} m, Ablage ≤ ${s.ablage} m`).join(" · ")}, ${(g.taeter || []).length} Täter${(g.taeter || []).length ? ` (${g.taeter.map((t) => `${t.art} ${t.type || ""}@${t.ort}`).join(" · ")})` : ""}`
+                    : "";
+                const fern = (g.grund || []).map((v) => `${v.typ} r ${v.r}`).join(" · ");
+                const grund = fern ? ` · Vorschau-Grund ab ${fern} (Platz ${g.lichtung} m)` : "";
+                return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${wechsel}${hang}${ring}${grund}`;
+            };
+            urteil(
+                n,
+                `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild; Ego ↔ Third in der Fahrt; bergab am Steilhang; E steigt aus`,
+                out.fahrt,
+                fahrtVerdict,
+                zeile
+            );
+            const T = out.fahrtTor || {};
+            const tor = T.tor ? fahrtVerdict({ ...out.fahrt, tor: T.tor }) : [];
+            check(
+                "Selbst-Test im Lauf: der Wagen fährt in ein Tor des Rings — die Fahrt wird ROT beim Namen (portal betreten)",
+                tor.some((t) => t.startsWith("portal betreten in der Fahrt (Selbsttest Tor)")),
+                `Ziel ${T.ziel} von ${T.von} bis ${T.bis} · ${T.tor ? `${T.tor.ort} ${T.tor.log}` : `kein Tor betreten ${T.fehler || ""}`}`
+            );
+            const alt = out.fahrtAlt ? fahrtVerdict(out.fahrtAlt) : [];
+            check(
+                "Selbst-Test im Lauf: der alte Mount-Follow (`_archInstanceUpdate` ohne den Band-Partner) macht die Fahrt ROT beim Namen",
+                alt.some((t) => t.startsWith("aufbau")),
+                out.fahrtAlt ? `${zeile(out.fahrtAlt)} — ${alt.join(" · ")}` : "nicht gefahren"
+            );
+        } else if (n === "wort") {
+            urteil(
+                n,
+                "V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)",
+                out.ki,
+                kiVerdict,
+                (m) => `„${(m.fehler || "").slice(0, 90)}"`
+            );
+            urteil(n, "V-k5 V-k6 V-D8 der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie", out.satz, satzVerdict, (m) =>
+                `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`);
+            const opZeile = (om, op) => {
+                const e = (om.ops || {})[op] || {};
+                return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
+            };
+            urteil(n, "V-k5-Klasse jede Op mit near_water in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)", out.ort, ortVerdict, (m) =>
+                `${m.radius} m: ${ORT_OPS.map((op) => opZeile(m, op)).join(" · ")} · chain ${m.chain && m.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${m.dorfAuftraege}`);
+            urteil(n, `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme), die Defaults der Auflöser gelten`, out.knoten, knotenVerdict, (m) => {
+                const kl = m.laeufe || {};
+                const kd = m.defaults || {};
+                const benannt = KNOTEN.filter(([name, , soll, effekt]) =>
+                    knotenEintragOk(kl[name], soll, effekt)
+                ).length;
+                const akte = KNOTEN.reduce((s, [name]) => s + ((kl[name] && kl[name].akte) || []).length, 0);
+                return `${benannt}/${KNOTEN.length} benannt · ${akte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(m.messOrtOhneSpieler)}`;
+            });
+            urteil(n, "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche", out.suche, sucheVerdict, (m) => {
+                const zz = m.zaehlung || {};
+                const z = (k) =>
+                    zz[k]
+                        ? `${k} ${zz[k].R} m: ${zz[k].proben} Proben/${zz[k].scans} Scans${zz[k].hoch != null ? ` (hochgerechnet ${zz[k].hoch})` : ""}`
+                        : `${k} —`;
+                const ex = m.exakt
+                    ? `${m.exakt.falsch} von ${m.exakt.n} Urteilen abweichend (${m.exakt.nass} nass)`
+                    : "—";
+                return [
+                    ex,
+                    ...["trinken", "chat", "ki"].flatMap((p) => [z(`${p}@trocken`), z(`${p}@plattform`)]),
+                    z("ki@trocken-voll"),
+                ].join(" · ");
+            });
+        } else if (n === "werkstatt") {
+            urteil(
+                n,
+                "V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
+                out.rezept,
+                rezeptVerdict,
+                (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`
+            );
+            urteil(n, "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)", out.vorschau, vorschauVerdict, (m) =>
+                `${m.vertices || 0} Proben · ${pct(m.anteil)} behalten · Maske im Render ${m.maskeImRender} · Welt-Auge ${m.augeAbstand} m${m.bildAnteil != null ? ` · im Canvas ${pct(m.bildAnteil)}` : ""}`);
+            const zZ = (wer, z) =>
+                z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}` : `${wer} —`;
+            urteil(n, `V-D3 Fremder Zug jeder Wartende erwacht nach einem fremd gezogenen Körper, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`, out.zug, zugVerdict, (m) =>
+                `${zZ("vorschau", m.vorschau)} · ${zZ("hand", m.hand)} · Stufen ${(m.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")} · Vorrat ${m.vorrat ? `${m.vorrat.key} ${m.vorrat.auftraege}× bestellt` : "—"}`);
+            urteil(n, `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`, out.rahmen, rahmenVerdict, (m) => {
+                const s = (m.eintraege || []).map((q) => q.fuell).filter(Number.isFinite).sort((a, b) => a - b);
+                return `${s.length} gemessen (min ${s[0]} · median ${s[s.length >> 1]} · max ${s[s.length - 1]}) · ${(m.eintraege || []).filter((q) => q.leer).length} ehrlich leer · ${m.waffenImBuch} Waffen · ${m.ms} ms`;
+            });
+        }
     }
-    console.log("=== V-k5-KLASSE (Q15) — DER VERLANGTE ORT, DEN ES NICHT GIBT ===");
-    const om = out.ort || {};
-    if (om.err) check("V-k5-Klasse Probe ohne Ausnahme", false, om.err.split("\n")[0]);
-    const vO = ortVerdict(om);
-    const opZeile = (op) => {
-        const e = (om.ops || {})[op] || {};
-        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
-    };
-    check(
-        `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
-        vO.length === 0,
-        `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
-    );
-    console.log("=== V-k5-KLASSE, DER REST — JEDER UNGÜLTIGE ORT SCHEITERT BENANNT ===");
-    const km = out.knoten || {};
-    if (km.err) check("V-k5-Klasse (Rest) Probe ohne Ausnahme", false, km.err.split("\n")[0]);
-    const vK = knotenVerdict(km);
-    const kl = km.laeufe || {};
-    const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
-    const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
-    const kd = km.defaults || {};
-    check(
-        `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten`,
-        vK.length === 0,
-        `${km.gestartet ? `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
-    );
-    console.log("=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===");
-    const sm = out.suche || {};
-    if (sm.err) check("R2 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
-    const vS = sucheVerdict(sm);
-    const zz = sm.zaehlung || {};
-    const zZeile = (k) =>
-        zz[k]
-            ? `${k} ${zz[k].R} m: ${zz[k].proben} ${zz[k].nass != null ? "trockene " : ""}Proben/${zz[k].scans} Scans${zz[k].gefunden ? " (Wasser)" : ""}${zz[k].nass != null ? ` (${zz[k].nass} nasse ohne Zählung; ganz trocken hochgerechnet ${zz[k].hoch})` : ""}`
-            : `${k} —`;
-    check(
-        "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche",
-        vS.length === 0,
-        `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${["trinken", "chat", "ki"]
-            .flatMap((p) => [zZeile(`${p}@trocken`), zZeile(`${p}@plattform`)])
-            .concat([zZeile("ki@trocken-voll")])
-            .join(" · ")}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
-    );
-    console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
-    const vm = out.vorschau || {};
-    if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
-    const vV = vorschauVerdict(vm);
-    check(
-        "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
-        vV.length === 0,
-        `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
-    );
-    const zm = out.zug || {};
-    if (zm.err) check("V-D3 Fremder Zug Probe ohne Ausnahme", false, zm.err.split("\n")[0]);
-    const vZ = zugVerdict(zm);
-    const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
-    check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
-        vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
-    );
-    const rm = out.rahmen || {};
-    if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
-    const vR = rahmenVerdict(rm);
-    const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
-    const stat = (xs) => {
-        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
-        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
-    };
-    const rw = re.filter((q) => q.kind === "weapon");
-    check(
-        `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
-        vR.length === 0,
-        `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
-    );
-    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
+    // JE STATION EIN BILD auf der Karte (Sage a, tue a: der Kopf dieser Datei und der Schritt der CI versprechen es)
+    if (karte) {
+        const ohne = stationen.filter((s) => !out.bilder[s]);
+        check(
+            `je Station ein Bild (${stationen.length})`,
+            ohne.length === 0,
+            ohne.length ? `ohne Bild: ${ohne.join(", ")}` : stationen.join(" · ")
+        );
+    }
+    console.log(`  Bilder: ${Object.keys(out.bilder).map((b) => path.join(bilderOrt, b + ".png")).join(" · ")}`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
+    console.log("\n✅ GRÜN — der Spielgang trägt seine Spieler-Gesetze.");
     process.exit(0);
 })().catch((e) => {
-    console.error("V1-Pfad-Linse-Fehler:", (e && e.stack) || e);
+    console.error("Spielgang-Fehler:", (e && e.stack) || e);
     process.exit(2);
 });

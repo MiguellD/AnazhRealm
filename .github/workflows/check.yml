@@ -1293,9 +1293,11 @@ jobs:
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 17
-              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
-              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
-              # bricht jede Stelle einzeln.
+              # DER SPIELGANG (SG1): EIN Boot mit leerer Platte, Stationen wie ein Spieler - Ankunft, Lichtung, Fahrt (GT
+              # 100 m in Third, der Arm, der Aufbau faehrt mit; Ego-Third-Wechsel im Kreis, Steilhang bergab: Azimut, seitlicher
+              # Ruck, Gleichlauf, Hoehe ueber der Fahrbahn), Wort, Werkstatt - je Spieler-Gesetz ein Urteil beim Namen;
+              # der Selbsttest im Lauf spielt den alten Mount-Follow ein. Hier auf dem Null-Renderer (die Weiche gibt keine
+              # Karte; swiftshader kostete 11 min), das Bild jeder Station urteilt derselbe Schritt im Job echt.
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
@@ -1575,3 +1577,7 @@ jobs:
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}
               run: npm run gate:gpu-fehler
+
+            - name: Der Spielgang auf der Karte (Ankunft, Lichtung, Fahrt, Wort, Werkstatt - je Station das Bild aus dem Ausgabe-Pfad)
+              if: ${{ !cancelled() }}
+              run: npm run gate:v1-pfad

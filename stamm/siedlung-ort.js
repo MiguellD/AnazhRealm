@@ -824,68 +824,71 @@ class AnazhRealm_siedlung_ort {
         rec.u = u;
     }
 
-    // Flügel drehen im Template-Raum VOR der Welt-Scale auf den gebackenen Geschlossen-Vertices:
-    // M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h); Vorzeichen = seite·sign(zf) (leafL −a · leafR +a,
-    // hinten gespiegelt). Flügel-Marken je Eintrag EINMAL aus entry.instSlots, neu bei Slot-Wechsel; der Slot wird je
-    // Tick frisch aus der Marke gelesen (das Verdichten der Gruppe zieht ihn um, `_archGroupFree`).
+    // DER FLÜGEL SCHWENKT ÜBER DEN EINEN SETZER (SG1-F1 Klasse): der Tick führt nur den Winkel des Eintrags
+    // (`entry._fluegelWinkel`, transient wie `instSlots`) und schreibt über `_archInstanceUpdate(entry, true)` — die Blätter mit
+    // Scharnier in JEDER zeichnenden Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`); eine neue Stufe wird im Winkel
+    // geboren (`_archInstanceAdd`). Bis SG1-F1 schrieb der Tick die Slots der Primär-Stufe selbst, neben dem Setzer: dessen
+    // Schreibung stellte den Flügel in die gebackene Pose zurück (eingeschwungen schrieb der Tick nie nach), ein Band-Partner
+    // stand gebacken, und jeder Stufen-Wechsel setzte den Winkel auf den Start zurück (die Haustür schwang je Wechsel neu zu).
     _tickTorFluegel(rec, entry, act) {
         const slots = entry.instSlots;
         if (!Array.isArray(slots) || !slots.length) return;
-        if (rec._fluegelSrc !== slots) {
+        if (rec._fluegelSrc !== slots || rec._fluegelBand !== entry.instSlotsBand) {
             rec._fluegelSrc = slots;
-            rec._fluegel = [];
+            rec._fluegelBand = entry.instSlotsBand;
             const groups = this.state.archInstanceGroups;
-            if (groups) {
-                for (const s of slots) {
-                    const g = groups.get(s.key);
-                    const t = s.tuer || (g && g.tuer);
-                    if (g && t) rec._fluegel.push({ g, ref: s, tuer: t });
-                }
-            }
-            // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
-            // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
-            // Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel (K43-2): ihre
-            // Flügel kommen mit dem Wechsel aus der Stufe 1, die die Fern-Pose trägt — ein weicher Start bei 0 schlösse sie.
-            rec._fluegelWinkel = Number.isFinite(rec._fluegelStart) ? rec._fluegelStart : null;
+            rec._fluegelN = 0;
+            for (const list of [slots, entry.instSlotsBand])
+                if (groups && Array.isArray(list))
+                    for (const s of list) {
+                        const g = groups.get(s.key);
+                        if (g && (s.tuer || g.tuer)) rec._fluegelN++;
+                    }
+            // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose (rec._fluegelStart = Gesetz-Winkel): die Tür
+            // schliesst beim ersten Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel
+            // (K43-2): ihre Flügel kommen mit dem Wechsel aus der Stufe 1, die die Fern-Pose trägt. Der Start gilt EINMAL je
+            // Eintrag — ein Stufen-Wechsel behält den Winkel (die neue Stufe wird in ihm geboren).
+            if (entry._fluegelWinkel === undefined)
+                entry._fluegelWinkel = Number.isFinite(rec._fluegelStart) ? rec._fluegelStart : null;
         }
-        if (!rec._fluegel || !rec._fluegel.length) return;
-        // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
-        // (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling fiel 19.07.,
-        // der Leser ist fail-closed).
+        if (!rec._fluegelN) return;
+        // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling
+        // fiel 19.07., der Leser ist fail-closed).
         const ziel = act * AnazhRealm._tuerOffenRad();
-        const alt = rec._fluegelWinkel;
+        const alt = entry._fluegelWinkel;
         const neu = alt == null ? ziel : alt + (ziel - alt) * 0.12;
         if (alt != null && Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
-        rec._fluegelWinkel = neu;
+        entry._fluegelWinkel = neu;
+        this._archInstanceUpdate(entry, true);
+    }
+    // Trägt das Blatt ein Scharnier und sein Eintrag einen Winkel? → der Schwenk-Träger (`ref.tuer` des Blatts, sonst der
+    // der Gruppe, DIE FLÜGEL-INSTANZ 1310-4), sonst null: das Blatt steht in seiner gebackenen Matrix.
+    _fluegelVon(entry, leaf, g) {
+        if (!Number.isFinite(entry._fluegelWinkel)) return null;
+        return (leaf && leaf.tuer) || (g && g.tuer) || null;
+    }
+    // DIE POSE EINES FLÜGELS: im Template-Raum VOR der Welt-Skala auf den gebackenen Geschlossen-Vertices,
+    // M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h) [· Basis]; Vorzeichen = seite·sign(zf) (leafL −a · leafR +a, hinten
+    // gespiegelt). Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu: fern um
+    // −offen zu, nah auf die Offen-Pose; porta-Tore (gebacken zu, kein offen) drehen absolut. Zeichnet der Flügel die Gestalt
+    // eines anderen, setzt seine Basis sie an ihren Platz (1310-4).
+    _fluegelPose(entry, t, ew, preset, out) {
         const T = THREE;
-        const ew = this._archEntryWorldMatrix(entry, this._torTmpEw || (this._torTmpEw = new T.Matrix4()));
+        const neu = entry._fluegelWinkel;
+        const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+        const gz = AnazhRealm._tuerOffenRad() || 1;
+        const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
         const mA = this._torTmpA || (this._torTmpA = new T.Matrix4());
         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
-        for (const f of rec._fluegel) {
-            const t = f.tuer;
-            // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
-            // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
-            const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
-            const gz = AnazhRealm._tuerOffenRad() || 1;
-            const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
-            // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
-            mA.makeRotationY(winkel);
-            mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
-            mB.multiply(mA); // T(h)·R
-            mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
-            mB.multiply(mA); // T(h)·R·T(−h)
-            // EntryWorld enthält bereits die Welt-Skala/Rotation des Eintrags;
-            // die Flügel-Leaves tragen localMatrix = WorldScale — die steckt in
-            // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
-            mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
-            mA.multiply(mB);
-            // DIE FLÜGEL-INSTANZ (1310-4): zeichnet der Flügel die Gestalt eines anderen, setzt seine Basis sie an ihren Platz
-            if (t.basis) mA.multiply(t.basis);
-            if (!(f.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): der nächste Slot-Wechsel sammelt neu
-            f.g.mesh.setMatrixAt(f.ref.slot, mA);
-            f.g.mesh.instanceMatrix.needsUpdate = true;
-            f.g.mesh.boundingSphere = null;
-        }
+        mA.makeRotationY(winkel);
+        mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
+        mB.multiply(mA); // T(h)·R
+        mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
+        mB.multiply(mA); // T(h)·R·T(−h)
+        out.multiplyMatrices(ew, this._foundryWorldScaleMatrix(preset));
+        out.multiply(mB);
+        if (t.basis) out.multiply(t.basis);
+        return out;
     }
 
     // ═══ KAMIN-RAUCH ═══
@@ -1076,7 +1079,6 @@ class AnazhRealm_siedlung_ort {
             const rec =
                 e._tuerRec ||
                 (e._tuerRec = {
-                    tor: { gestalt: this._foundryPresetForEntry(e) || "haus" },
                     _fluegelStart: gz, // Start = gebackene Offen-Pose (weiches Erst-Schliessen)
                 });
             this._tickTorFluegel(rec, e, act);
@@ -1100,8 +1102,8 @@ class AnazhRealm_siedlung_ort {
     }
 
     // Der Weg der Platz-Suche: je Ort ein Schritt (yield), am Ende true (der Wagen steht dort, Lage und Gier am Eintrag) oder
-    // false (kein Platz im Radius).
-    *_fahrPlatzWege(entry) {
+    // false (kein Platz im Radius). `meide(x, z)`: ein Ort, den der Aufrufer nie nimmt (die Vorschau: der Genesis-Platz).
+    *_fahrPlatzWege(entry, meide = null) {
         const fzg = this._fahrzeugGesetzFor(entry);
         if (!fzg || !fzg.drive || !fzg.drive.huelle) return true;
         entry._fahrAchseX = true; // Studio-Wagen: Bug +x (die Aufstandspunkte lesen das Gesetz)
@@ -1122,6 +1124,7 @@ class AnazhRealm_siedlung_ort {
                 const a = ry + (i / n) * 2 * Math.PI;
                 const x = x0 + Math.sin(a) * r;
                 const z = z0 + Math.cos(a) * r;
+                if (meide && meide(x, z)) continue;
                 for (let j = r === 0 ? 1 : 0; j < P.richtungen; j++) {
                     const rj = ry + (j / P.richtungen) * 2 * Math.PI;
                     const g = this._fahrPlatzFrei(entry, G, k, x, z, rj);
@@ -2033,23 +2036,30 @@ class AnazhRealm_siedlung_ort {
             this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
         }
     }
-    // DER WUNSCH-ORT DER VORSCHAU vor einem Tor des Genesis-Rings: ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der
-    // Ring steht um ihn); `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das
-    // Platz-Gesetz (`_fahrPlatzSuche`). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor).
-    // → { x, y, z, blick } oder null (kein Boden).
+    // DER ORT DER VORSCHAU eines Tors des Genesis-Rings — das Platz-Gesetz (SG1-F1d): radial hinter dem Tor, vom Genesis-Ort
+    // aus gesehen, jenseits der Lichtung samt Fahrbahn um die Tiefe einer Vorschau (`GENESIS_PLATZ` lichtung + vorschau), nie in
+    // einem Grundriss (`_imGrundriss`: Lichtung · Bau · Weg — liegt dort einer, rückt sie je 1 m hinaus, höchstens um die Tiefe);
+    // `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das Platz-Gesetz der Fahrt
+    // (`_fahrPlatzWege` mit derselben Wand). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben F1: an jedem Tor).
+    // Bis SG1-F1d standen sie 8 m vor dem Tor (r 19) auf der Fahrbahn. → { x, y, z, blick } oder null (kein Boden, kein Platz).
     _portalVorschauOrt(portal) {
         const M = this._genesisMitte();
+        const P = AnazhRealm.GENESIS_PLATZ;
         const px = portal.position.x || 0;
         const pz = portal.position.z || 0;
         const len = Math.hypot(px - M.x, pz - M.z) || 1;
-        const ox = px + ((px - M.x) / len) * 8;
-        const oz = pz + ((pz - M.z) / len) * 8;
-        const y = this.getTerrainHeightAt(ox, oz);
-        if (!Number.isFinite(y)) return null;
-        return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(px - M.x, pz - M.z) };
+        const [dx, dz] = [(px - M.x) / len, (pz - M.z) / len];
+        for (let r = P.lichtung + P.vorschau + 0.5; r <= P.lichtung + 2 * P.vorschau + 0.5; r += 1) {
+            const [ox, oz] = [M.x + dx * r, M.z + dz * r];
+            if (this._imGrundriss(ox, oz, P.vorschau)) continue;
+            const y = this.getTerrainHeightAt(ox, oz);
+            if (!Number.isFinite(y)) return null;
+            return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(dx, dz) };
+        }
+        return null;
     }
 
-    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (~8 m radial vor welt_<worldKey>), sichtbar vorm iframe.
+    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (radial hinter welt_<worldKey>, jenseits der Fahrbahn), sichtbar vorm iframe.
     // Doppelt idempotent (worldMeta.portalPreview<Key> + Existenz-Probe auf id); Foundry kalt → Skip + EIN
     // Await-Book je worldKey, nächster Tick retry. Typen: fachwerk→haus_alemannisch, garage→fahrzeug_gt,
     // schmiede→esse, portale→tor_drachentor (spawnArchitecture silent/autonomous).
@@ -2095,8 +2105,14 @@ class AnazhRealm_siedlung_ort {
                 });
             return;
         }
+        // DIE ABSAGE BEIM NAMEN, einmal (die Suche liefe sonst in jedem Takt neu): kein Ort jenseits der Fahrbahn, kein
+        // fahrbarer Grund für den Wagen, eine Absage der Wurzel — dieses Tor steht ohne Vorschau, laut (`_bruchMelden`)
+        const absagen = (grund) => {
+            fertig[worldKey] = true;
+            this._bruchMelden(`die Portal-Vorschau ${worldKey}: ${type} steht nicht hinter ${portalType} — ${grund}`);
+        };
         const ort = this._portalVorschauOrt(portal);
-        if (!ort) return;
+        if (!ort) return absagen("das Platz-Gesetz (GENESIS_PLATZ) fand jenseits der Fahrbahn keinen freien Grund");
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
         const seed =
             worldKey === "fachwerk"
@@ -2132,7 +2148,9 @@ class AnazhRealm_siedlung_ort {
             let job = wege[worldKey];
             if (!job) {
                 const probe = { type, position: { x: ort.x, y: ort.y, z: ort.z }, rotationY: opts.rotationY, scale: 1 };
-                job = wege[worldKey] = { probe, weg: this._fahrPlatzWege(probe), ende: null };
+                const P = AnazhRealm.GENESIS_PLATZ; // der Wagen sucht nie zurück auf den Platz (dieselbe Wand wie sein Ort)
+                const weg = this._fahrPlatzWege(probe, (x, z) => !!this._imGrundriss(x, z, P.vorschau));
+                job = wege[worldKey] = { probe, weg, ende: null };
             }
             for (let i = 0; i < AnazhRealm.FAHR_PLATZ_JE_TAKT && job.ende === null; i++) {
                 const r = job.weg.next();
@@ -2140,39 +2158,29 @@ class AnazhRealm_siedlung_ort {
             }
             if (job.ende === null) return;
             delete wege[worldKey];
-            if (!job.ende) {
-                fertig[worldKey] = true;
-                return;
-            }
+            if (!job.ende) return absagen("die Platz-Suche der Fahrt (`_fahrPlatzWege`) fand keinen fahrbaren Grund");
             ort.x = job.probe.position.x;
             ort.z = job.probe.position.z;
             opts.rotationY = job.probe.rotationY;
         }
-        // die Absage der Wurzel beim Namen: findet das Platz-Gesetz keinen fahrbaren Grund, steht dieses Tor ohne Vorschau —
-        // einmal (die Suche liefe sonst in jedem Takt neu)
         let absage = null;
         opts.absage = (g) => (absage = g);
         const entry = this.spawnArchitecture(type, { x: ort.x, y: ort.y, z: ort.z }, opts);
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
-            this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
-        } else if (absage === "platz") fertig[worldKey] = true;
+            this.log(`Portal-Preview ${worldKey}: ${type} hinter ${portalType}, jenseits der Fahrbahn.`, "INFO");
+        } else if (absage === "platz") absagen("die Wurzel (`spawnArchitecture`) sagte den Platz ab");
     }
 
-    // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (~22 m), Previews über
+    // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (`PORTAL_VORSCHAU.anflugM`), Previews über
     // `_ensurePortalPreview` schärfen und bei kalter Foundry EIN Await-Book feuern.
     // koerperstudio/terrain/klang/tetrapoda haben keinen Preview-Typ.
     _portalApproachPrefetch(playerPos) {
         if (!playerPos) return;
-        const rows = [
-            ["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"],
-            ["garage", "fahrzeug_gt", "portal-preview-garage"],
-            ["schmiede", "esse", "portal-preview-schmiede"],
-            ["portale", "tor_drachentor", "portal-preview-portale"],
-        ];
+        const rows = AnazhRealm.PORTAL_VORSCHAU.tore;
         const arches = (this.state && this.state.architectures) || [];
-        const R2 = 22 * 22;
+        const R2 = AnazhRealm.PORTAL_VORSCHAU.anflugM ** 2;
         let nearAny = false;
         for (let i = 0; i < rows.length; i++) {
             const worldKey = rows[i][0];
@@ -2551,10 +2559,31 @@ AnazhRealm._fahrPlatzGesetz = function () {
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.platz/fahrPlatz");
 };
 // DER GENESIS-PLATZ (K52): die Lichtung der Start-Plattform trägt den Ring der Kern-Portale — `ringR` ist der Kreis der Tore
-// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus; über dem Platz steht keine Krone, auf ihm kein Busch und
-// kein Fels (`_grundrissVon` → `_imGrundriss`). Bis K52 trug die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit
-// außerhalb: ein Kristall stand 1,2 m vor dem Tor des Terrain-Studios, der Wald wuchs bis an die Tore.
-AnazhRealm.GENESIS_PLATZ = Object.freeze({ ringR: 11, rand: 4 });
+// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus, `bahn` die Fahrbahn um die Tore (SG1-F1d: der Spieler
+// fährt um sie, zwei Spuren), `lichtung` ihre Summe; über dem Platz steht keine Krone, auf ihm kein Busch, kein Fels und keine
+// Vorschau (`_grundrissVon` → `_imGrundriss`). `vorschau` ist die Tiefe einer Vorschau jenseits der Lichtung: der Radius des
+// größten Grundrisses der Reihe (`PORTAL_VORSCHAU`; haus_alemannisch 4,75 × 4,15 m halb → 6,3 m, gemessen 18.10.; die Runde des
+// Spielgangs misst den Grund jeder stehenden Vorschau gegen die Lichtung, `ringbahn`). Bis K52 trug
+// die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit außerhalb: ein Kristall stand 1,2 m vor dem Tor des
+// Terrain-Studios. Bis SG1-F1d endete der Platz an den Toren (15 m): alle vier Vorschauen (r 19) und ein Felsturm (r 16,5) standen
+// auf der Fahrbahn, die Runde stieß an Esse, Haus und Drachentor (Radeon 18.10.: 13 Täter, 270° von 360°).
+AnazhRealm.GENESIS_PLATZ = (() => {
+    const [ringR, rand, bahn] = [11, 4, 6];
+    return Object.freeze({ ringR, rand, bahn, lichtung: ringR + rand + bahn, vorschau: 7 });
+})();
+// DIE VORSCHAU DER STUDIO-TORE des Genesis-Rings: nähert sich der Spieler einem Tor auf `anflugM`, stellt
+// `_ensurePortalPreview` den Typ seiner Zeile [Welt, Typ, Id] hinter ihm hin (`_portalVorschauOrt`), auch Sekunden später (das
+// Buch kalt). Leser: der Anflug (`_portalApproachPrefetch`) und die Fahrt des Spielgangs — kein Weg des Wagens kommt einem dieser
+// Tore näher (Prüfer 18.10.: mitten in der Fahrt bei −15/15 „Portal betreten: tor_drachentor", die Vorschau stand noch nicht).
+AnazhRealm.PORTAL_VORSCHAU = Object.freeze({
+    anflugM: 22,
+    tore: Object.freeze([
+        Object.freeze(["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"]),
+        Object.freeze(["garage", "fahrzeug_gt", "portal-preview-garage"]),
+        Object.freeze(["schmiede", "esse", "portal-preview-schmiede"]),
+        Object.freeze(["portale", "tor_drachentor", "portal-preview-portale"]),
+    ]),
+});
 // DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
 // Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m,
 // `KRONE_MAX_M`: die größte Krone eines Darts; auch die Reichweite, in der ein Erdbau Darts fällt, `_forestDartsFallen`)

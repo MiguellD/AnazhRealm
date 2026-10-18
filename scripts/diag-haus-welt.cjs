@@ -114,7 +114,7 @@ const BASIS = {
     // DER PLATZ IST NUR DIE SCHEIBE (K52): die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
     platz: [
         [
-            "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
+            "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.lichtung);",
             "const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;",
         ],
     ],

@@ -1114,13 +1114,17 @@ class AnazhRealm_bild_kosten {
                 // der Stoff je Pixel dreht (`_laubVersatz`), z die Weite ±LAUB_VERSATZ Eingangs-Pixel. Bis A3b lief er am Index
                 // des Zitterns: jedes Ausgabe-Pixel wiegt die Frames nach der Nähe seines Abtastpunkts (`wNah`), so sah jede Phase
                 // des Gitters immer dieselben Versätze — ein Raster im Takt des Gitters (Radeon, Tafel-Pose, 256 Frames ohne
-                // Klemme: zweiton locker 58 135 → 20 452 px).
+                // Klemme: zweiton locker 58 135 → 20 452 px). Die Geschichte beginnt auch am SPRUNG (`_traaReprojektion`, vor
+                // diesem Frame: das Auge springt, die Aufnahme beginnt sie, K68) — dort beginnt die Folge mit ihr (`_anlauf`);
+                // bis SG1 lief sie weiter, zwei Schüsse derselben Pose zeigten das Laub in verschiedener Phase, je nachdem,
+                // wie viele Frames die Erst-Zeichnung vor dem Schuss zeichnete (Radeon 18.10., Spielgang: Rauschen 0,012–0,027)
                 const lu = realm.state.lodUniforms;
                 if (lu && lu.uLaubVersatz) {
                     const sch = realm._schirm();
                     const g = this._historyRenderTarget;
-                    this._versatzIndex =
-                        g.width !== sch.breite || g.height !== sch.hoehe ? 0 : (this._versatzIndex + 1) % 1e6;
+                    const zr = realm.state._traaR;
+                    const neu = g.width !== sch.breite || g.height !== sch.hoehe || !!(zr && zr.sprung === true);
+                    this._versatzIndex = neu ? 0 : (this._versatzIndex + 1) % 1e6;
                     const o = lu.uLaubVersatz.value;
                     for (let a = 0; a < 2; a++) {
                         const b = a ? 7 : 5;

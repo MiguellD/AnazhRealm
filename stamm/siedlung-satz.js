@@ -2191,7 +2191,11 @@ class AnazhRealm_siedlung_satz {
             // Flügels (Scharnier, Lage der Gestalt) — `g.tuer` ist nur der des ersten
             if (leaf.tuer) ref.tuer = leaf.tuer;
             const slot = ref.slot;
-            m.multiplyMatrices(ew, leaf.localMatrix);
+            // der Flügel wird in der Pose geboren, die sein Eintrag gerade trägt (`_fluegelPose`): die neue Stufe und der
+            // Band-Partner stehen ab dem ersten Bild, wo die alte Stufe den Flügel zeigte
+            const fl = flat.foundry ? this._fluegelVon(entry, leaf, g) : null;
+            if (fl) this._fluegelPose(entry, fl, ew, this._foundryPresetForEntry(entry), m);
+            else m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             // V18.181-merge-Λ Sub 3d / V18.475: die EINE Slot-Farbe (leaf.tint ×
             // Entry-Tint, _archSlotColor) — lazy Allocation des Color-Buffers.
@@ -2243,17 +2247,27 @@ class AnazhRealm_siedlung_satz {
     // (instanziert, entry.mesh = null). Flat-Quelle wie `_rebuildArchitectureMesh`: instFoundry →
     // `_foundryFlattenFor` auf der SERVIERTEN Stufe (Cache-Treffer: die Slots stammen aus exakt diesem
     // Flat), sonst der Bauplan-Flat. STEER_VIS.instance = "entry-yaw": nur ew * leaf.localMatrix — die
-    // geteilte localMatrix nie mutieren.
-    _archInstanceUpdate(entry) {
+    // geteilte localMatrix nie mutieren. JEDE ZEICHNENDE STUFE ZIEHT MIT: die Primär-Stufe (`instSlots`) und ihr Partner im
+    // Stufen-Band (`instSlotsBand`, die Stufe `_lodBandLevel`). Befund Spielgang 17.10. (Radeon, GT nach 20 m in Third): nur die
+    // Primär-Stufe fuhr, der L1-Partner des Bands stand mit 19 Slots am Ort des Aufstiegs — dort zeichnete der Aufbau, am
+    // Wagen blendete die L0 im Band aus: in Third verschwand das Fahrzeug.
+    // DER EINE SETZER BEWEGTER INSTANZEN schwenkt auch den Flügel eines Tors und die Tür eines Hauses (`_tickTorFluegel`):
+    // `nurFluegel` schreibt nur die Blätter mit Scharnier, in JEDER zeichnenden Stufe, in der Pose ihres Eintrags
+    // (`_fluegelPose`) — kein zweiter Schreiber derselben Slots, dessen Pose der Setzer mit der gebackenen überschriebe.
+    _archInstanceUpdate(entry, nurFluegel) {
         if (!entry.instanced || !entry.instSlots) return;
         const fPreset = entry.instFoundry && this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
-        const flat = fPreset
-            ? this._foundryFlattenFor(
-                  entry,
-                  fPreset,
-                  Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel
-              )
-            : this._archFlattenBlueprint(entry.type);
+        const lod = Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel;
+        this._archInstanzSlotsSetzen(entry, entry.instSlots, fPreset, lod, nurFluegel);
+        if (entry.instSlotsBand && fPreset && Number.isFinite(entry._lodBandLevel))
+            this._archInstanzSlotsSetzen(entry, entry.instSlotsBand, fPreset, entry._lodBandLevel, nurFluegel, true);
+    }
+    // `band`: die Slots des Partners paaren mit dem Flat seiner GEBURT — ohne die Zwillinge, die die Primär-Stufe wirft
+    // (`_bandOhneZwilling`, `_updateFoundryLodBand`); der ungefilterte Flat verschöbe jedes Blatt hinter einem Zwilling um eins.
+    _archInstanzSlotsSetzen(entry, slots, fPreset, lod, nurFluegel, band) {
+        let flat = fPreset ? this._foundryFlattenFor(entry, fPreset, lod) : this._archFlattenBlueprint(entry.type);
+        if (band && flat)
+            flat = this._bandOhneZwilling(flat, this._foundryFlattenFor(entry, fPreset, entry._lodLevel | 0));
         if (!flat || !flat.instanceable) return;
         const ew = this._archEntryWorldMatrix(
             entry,
@@ -2261,12 +2275,15 @@ class AnazhRealm_siedlung_satz {
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
         let ewU = null; // die ungefederte Lage der Räder (erst beim ersten Rad-Leaf)
-        for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
-            const { key, slot } = entry.instSlots[i];
+        for (let i = 0; i < slots.length && i < flat.leaves.length; i++) {
+            const { key, slot } = slots[i];
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (!g) continue;
             const lf = flat.leaves[i];
-            if (lf.rad && entry._fahr) {
+            const fl = fPreset ? this._fluegelVon(entry, lf, g) : null;
+            if (nurFluegel && !fl) continue;
+            if (fl) this._fluegelPose(entry, fl, ew, fPreset, m);
+            else if (lf.rad && entry._fahr) {
                 if (!ewU)
                     ewU = this._archEntryWorldMatrix(
                         entry,

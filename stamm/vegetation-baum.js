@@ -1821,10 +1821,10 @@ class AnazhRealm_vegetation_baum {
 
     // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
     // dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1): der GENESIS-PLATZ, die Scheibe des Bauplans
-    // (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore um sie (`GENESIS_PLATZ`: Kreis plus
-    // Tiefe eines Tors), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder, für jeden anderen Bau, die Hülle
-    // seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was fährt (der Wagen urteilt über
-    // `_imWagen`, er räumt nichts) und für einen Bau ohne Boxen.
+    // (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore um sie (`GENESIS_PLATZ.lichtung`: Kreis,
+    // Tiefe eines Tors und die Fahrbahn um sie), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder, für jeden
+    // anderen Bau, die Hülle seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was fährt
+    // (der Wagen urteilt über `_imWagen`, er räumt nichts) und für einen Bau ohne Boxen.
     _grundrissVon(e) {
         if (!e || !e.position) return null;
         const f = e.fundament;
@@ -1869,7 +1869,7 @@ class AnazhRealm_vegetation_baum {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
             const g = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             const P = AnazhRealm.GENESIS_PLATZ;
-            const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);
+            const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.lichtung);
             return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
         }
         // DER GRUNDRISS JEDES BAUS (K52): ein Tor, eine Esse, ein Brunnen, ein Marktstand, der Würfel des Spielers trugen

@@ -294,7 +294,8 @@ async function s0Probe(page, station, schein) {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
             // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
-            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
+            // der Tore um sie): 2 m jenseits der Tore auf der Fahrbahn (`GENESIS_PLATZ`), zwischen zwei Toren (18°), der
+            // Blick des Schusses weg vom Ring
             const A0 = r.constructor.GENESIS_PLATZ;
             const w0 = Math.PI / 10;
             const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);

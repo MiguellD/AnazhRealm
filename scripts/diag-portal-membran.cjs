@@ -605,45 +605,79 @@ async function blickStufe(check) {
         res.fInstanced = entry.instanced === true;
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
-        res.f = {
-            fluegelGefunden: !!(recF && recF._fluegel && recF._fluegel.length > 0),
-            anzahl: recF && recF._fluegel ? recF._fluegel.length : 0,
-            geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
-            winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
+        // DIE FLÜGEL JEDER ZEICHNENDEN STUFE (SG1-F1): die Blätter mit Scharnier in den Primär- und den Band-Slots des Eintrags,
+        // der Winkel ist der des Eintrags (`_fluegelWinkel`, `_tickTorFluegel` führt ihn, der EINE Setzer schreibt ihn)
+        const T = window.THREE;
+        const fluegel = () => {
+            const aus = [];
+            const groups = r.state.archInstanceGroups;
+            for (const list of [entry.instSlots, entry.instSlotsBand])
+                if (groups && Array.isArray(list))
+                    for (const s of list) {
+                        const g = groups.get(s.key);
+                        const t = s.tuer || (g && g.tuer);
+                        if (g && t) aus.push({ g, ref: s, tuer: t });
+                    }
+            return aus;
         };
+        const M = new T.Matrix4();
+        const lage = (fl) =>
+            fl.map((x) => {
+                const geo = x.g.mesh.geometry;
+                if (!geo.boundingBox) geo.computeBoundingBox();
+                x.g.mesh.getMatrixAt(x.ref.slot, M);
+                return geo.boundingBox.getCenter(new T.Vector3()).applyMatrix4(M);
+            });
+        const weg = (a, b) => (a.length !== b.length ? Infinity : a.reduce((mx, v, i) => Math.max(mx, v.distanceTo(b[i])), 0));
+        const fl = fluegel();
+        const w = entry._fluegelWinkel;
+        res.f = { fluegelGefunden: fl.length > 0, anzahl: fl.length, geoeffnet: w > 0.2, winkel: +(w || 0).toFixed(3) };
         // DIE FLÜGEL-INSTANZ (1310-4): gleiche Gestalten teilen ihren Zug, und jeder Flügel steht, wo SEINE Gestalt um SEIN
         // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
         // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
-        if (recF && recF._fluegel && recF._fluegel.length) {
-            const T = window.THREE;
+        if (fl.length) {
             const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
             const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
-            const M = new T.Matrix4();
             const Y = new T.Vector3(0, 1, 0);
             let abweichung = 0;
             let basis = 0;
-            for (const fl of recF._fluegel) {
-                const t = fl.tuer;
-                const geo = fl.g.mesh.geometry;
-                if (!geo.boundingBox) geo.computeBoundingBox();
-                const c = geo.boundingBox.getCenter(new T.Vector3());
-                fl.g.mesh.getMatrixAt(fl.ref.slot, M);
-                const ist = c.clone().applyMatrix4(M);
-                const q = c.clone();
+            const ist = lage(fl);
+            fl.forEach((x, i) => {
+                const t = x.tuer;
+                const q = x.g.mesh.geometry.boundingBox.getCenter(new T.Vector3());
                 if (t.basis) {
                     q.applyMatrix4(t.basis);
                     basis++;
                 }
                 q.x -= t.hx || 0;
                 q.z -= t.zf || 0;
-                q.applyAxisAngle(Y, (t.seite || 1) * (t.zf >= 0 ? 1 : -1) * recF._fluegelWinkel);
+                q.applyAxisAngle(Y, (t.seite || 1) * (t.zf >= 0 ? 1 : -1) * w);
                 q.x += t.hx || 0;
                 q.z += t.zf || 0;
-                abweichung = Math.max(abweichung, ist.distanceTo(q.applyMatrix4(ws).applyMatrix4(ew)));
-            }
-            res.f.zuege = new Set(recF._fluegel.map((x) => x.g)).size;
+                abweichung = Math.max(abweichung, ist[i].distanceTo(q.applyMatrix4(ws).applyMatrix4(ew)));
+            });
+            res.f.zuege = new Set(fl.map((x) => x.g)).size;
             res.f.basis = basis;
             res.f.abweichung = +abweichung.toFixed(4);
+            // DER EINE SETZER (SG1-F1, die Klasse der Schreiber bewegter Instanzen): schreibt ein Mover die Slots des Tors
+            // (`_archInstanceUpdate`, der Weg des Mount-Follow), bleibt jeder Flügel, wo sein Winkel ihn hat; und eine neu geborene
+            // Stufe (Abschied + Bau, wie ein Stufen-Wechsel) steht VOR jedem Tick im Winkel — nie in der gebackenen Pose.
+            r._archInstanceUpdate(entry);
+            res.f.setzer = +weg(ist, lage(fluegel())).toFixed(4);
+            r._archInstanceRemove(entry);
+            for (let i = 0; i < 20 && !entry.instanced; i++) {
+                r._rebuildArchitectureMesh(entry);
+                if (!entry.instanced) await new Promise((r2) => setTimeout(r2, 300));
+            }
+            const neu = fluegel();
+            res.f.geburt = entry.instanced ? +weg(ist, lage(neu)).toFixed(4) : null;
+            res.f.geburtN = neu.length;
+            // SELBSTTEST IM LAUF: der Flügel in der gebackenen Pose (Winkel 0, was der Setzer vor SG1-F1 schrieb) — das Maß sieht ihn
+            entry._fluegelWinkel = 0;
+            r._archInstanceUpdate(entry, true);
+            res.f.selbst = +weg(ist, lage(fluegel())).toFixed(4);
+            entry._fluegelWinkel = w;
+            r._archInstanceUpdate(entry, true);
         }
 
         // ── W: Hindurchgehen (Ebenen-Kreuzung in der Apertur → enterPortal) ──
@@ -805,8 +839,23 @@ async function blickStufe(check) {
         );
         check(
             `F: jeder Flügel steht, wo seine Gestalt um sein Scharnier schwenkt (größte Abweichung ${out.f.abweichung} m)`,
-            out.f.abweichung < 0.01,
+            out.f.abweichung != null && out.f.abweichung < 0.01,
             `abweichung=${out.f.abweichung}`
+        );
+        check(
+            `F: der EINE Setzer bewegter Instanzen hält den Flügel in seinem Winkel (Weg ${out.f.setzer} m; ein zweiter Schreiber neben ihm — der Tick an den Slots — fiele in die gebackene Pose: _tickTorFluegel)`,
+            out.f.setzer < 0.01,
+            `setzer=${out.f.setzer}`
+        );
+        check(
+            `F: die neu geborene Stufe steht vor jedem Tick im Winkel (Weg ${out.f.geburt} m, ${out.f.geburtN} Flügel; gebacken geboren: _archInstanceAdd)`,
+            out.f.geburt != null && out.f.geburt < 0.01 && out.f.geburtN === out.f.anzahl,
+            `geburt=${out.f.geburt}`
+        );
+        check(
+            `F Selbsttest: der Flügel in der gebackenen Pose (Winkel 0, der Setzer vor SG1-F1) misst ${out.f.selbst} m Weg — das Maß sieht ihn`,
+            out.f.selbst > 0.1,
+            `selbst=${out.f.selbst}`
         );
     } else check("F: Flügel-Block erreicht", false);
     if (out.w) {

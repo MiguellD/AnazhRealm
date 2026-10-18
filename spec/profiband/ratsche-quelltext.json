@@ -87,10 +87,6 @@
             "zweck": "Messung: führt _huelleVon aus der Quelle aus (die Fernform liest, was er liest)",
             "stamm": 1
         },
-        "scripts/diag-v1-pfad.cjs": {
-            "zweck": "Struktur: Render-Fluss (W2) und Zeit-Graph (W7) am AST, Absenzen W3–W6 über den Helfer",
-            "stamm": 1
-        },
         "scripts/diag-vendor-anker.cjs": {
             "zweck": "Messung: führt _diaetRefresh aus dem Stamm gegen r184 aus (Konsum statt Zitat)",
             "stamm": 1

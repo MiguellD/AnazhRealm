@@ -1,6 +1,7 @@
 // ESLint Flat-Config für AnazhRealm.
 // Der Stamm läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
 import js from "@eslint/js";
+import globals from "globals";
 import { createRequire } from "module";
 import { readFileSync } from "fs";
 import { dirname } from "path";
@@ -23,7 +24,7 @@ const ZONEN_GLOBALE = Object.fromEntries(
 );
 
 export default [
-    js.configs.recommended,
+    { ...js.configs.recommended, ignores: ["scripts/**"] },
     {
         files: STAMM,
         languageOptions: {
@@ -184,4 +185,35 @@ export default [
             },
         },
     },
+    {
+        // DIE LINSEN (scripts/): Node-Skripte, deren page.evaluate im Fenster der Welt oder eines Studios läuft — sie prüft
+        // EIN Gesetz, no-undef: ein Leser auf ein gestrichenes Symbol (830a436a strich `ruft`, sein Leser warf in jedem
+        // Takt der Fahrt) bricht ROT beim Namen, nie erst im Lauf. Globale: Node, Browser, WebGPU und was die Seite trägt
+        files: ["scripts/**/*.cjs", "scripts/**/*.js", "scripts/**/*.mjs"],
+        linterOptions: { reportUnusedDisableDirectives: "off" },
+        languageOptions: {
+            ecmaVersion: 2024,
+            sourceType: "commonjs",
+            globals: {
+                ...globals.node,
+                ...globals.browser,
+                ...Object.fromEntries(
+                    [
+                        ...["Adapter", "Device", "Queue", "Buffer", "BufferUsage", "MapMode", "Texture", "TextureUsage"],
+                        ...["CommandEncoder", "RenderPassEncoder", "RenderBundleEncoder", "ComputePassEncoder", "CanvasContext"],
+                    ].map((n) => ["GPU" + n, "readonly"])
+                ),
+                Float16Array: "readonly",
+                // die Seite: der Stamm, die CDN-Libs, Foundry (BAKERS_BY_KIND) und die Vorgaben eines Studios (PRESETS)
+                AnazhRealm: "readonly",
+                THREE: "readonly",
+                SimplexNoise: "readonly",
+                BAKERS_BY_KIND: "readonly",
+                PRESETS: "readonly",
+            },
+        },
+        rules: { "no-undef": "error" },
+    },
+    // das Fenster der Garage (worlds/garage/garage.js): der Wagen und sein Fahr-Zustand
+    { files: ["scripts/diag-garage-labor.cjs"], languageOptions: { globals: { vehicle: "readonly", car: "readonly" } } },
 ];
