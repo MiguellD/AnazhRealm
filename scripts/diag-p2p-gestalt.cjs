@@ -28,11 +28,7 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

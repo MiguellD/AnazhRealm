@@ -49,11 +49,7 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));

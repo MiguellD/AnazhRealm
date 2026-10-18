@@ -53,11 +53,7 @@ const KERN = path.join(root, "fachwerk-core.js");
 require(KERN);
 const FC = globalThis.__fachwerkCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {

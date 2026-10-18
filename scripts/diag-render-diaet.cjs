@@ -46,11 +46,7 @@ const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const RD_FAMILIEN_ANKER = 1;
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     // ── Q: die Quell-Absenz über den EINEN Helfer (Chokepoint-Disziplin, kein Parallelpfad): kein dritter setColorAt-Pfad

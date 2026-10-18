@@ -34,11 +34,7 @@ const stammLib = require("./lib/stamm.cjs");
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     // ── F (Absenz über den EINEN Helfer): kein zweiter Keying-Ort — die Konstante lesen NUR der Key (`_archFernRegionKey`)

@@ -38,11 +38,7 @@ const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random

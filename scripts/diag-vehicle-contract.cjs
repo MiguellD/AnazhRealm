@@ -35,11 +35,7 @@ const KERN = path.join(root, "vehicle-core.js");
 require(KERN);
 const VC = globalThis.__vehicleCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
 const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];

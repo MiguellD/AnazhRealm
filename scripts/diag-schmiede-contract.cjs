@@ -43,11 +43,7 @@ const KERN = path.join(root, "schmiede-core.js");
 require(KERN);
 const SC = globalThis.__schmiedeCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 21 (Waffen UND Werkzeuge)

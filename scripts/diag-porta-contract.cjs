@@ -37,11 +37,7 @@ const KERN = path.join(root, "porta-core.js");
 require(KERN);
 const PC = globalThis.__portaCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];

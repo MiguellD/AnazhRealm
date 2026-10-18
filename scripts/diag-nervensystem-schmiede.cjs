@@ -50,11 +50,7 @@ function faustVerdict(h) {
     if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
     return out;
 }
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; Policy, Substanz und donorTool beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der

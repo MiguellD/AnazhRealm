@@ -10,11 +10,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 async function probe() {
     const F = window.__gpuFehler;

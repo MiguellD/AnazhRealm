@@ -48,11 +48,7 @@ const QUELLEN = [
 ];
 const SAME = 1;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // Die Welt des Ofens: three r128 und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
 // Plattform-Probe erreicht so den Guss).

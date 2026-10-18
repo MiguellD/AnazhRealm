@@ -35,11 +35,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 function ladeschirmVerdict(m) {
