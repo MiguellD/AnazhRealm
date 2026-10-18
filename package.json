@@ -10,7 +10,7 @@
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
         "leuchtturm": "node scripts/leuchtturm.cjs",
-        "lint": "eslint stamm phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js worlds/gelaende",
+        "lint": "eslint stamm phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js worlds/gelaende scripts",
         "lint:fix": "eslint --fix stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",

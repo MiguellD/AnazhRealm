@@ -777,10 +777,12 @@ async function probe(arg) {
             // den Ring fährt (SG1-F1d: ihr Platz liegt jenseits der Fahrbahn, `_portalVorschauOrt`; ohne das Warten
             // baute sie zwischen den zwei Schüssen des ersten Bilds, Radeon 18.10.: Rauschen 0,022)
             const VS = r.constructor.PORTAL_VORSCHAU;
+            const studioTore = () =>
+                st.architectures.filter((a) => a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w));
             const offen = () =>
-                st.architectures.filter((a) => {
-                    const p = a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w) && st.playerMesh.position;
-                    const nah = p && Math.hypot(a.position.x - p.x, a.position.z - p.z) < VS.anflugM;
+                studioTore().filter((a) => {
+                    const p = st.playerMesh.position;
+                    const nah = Math.hypot(a.position.x - p.x, a.position.z - p.z) < VS.anflugM;
                     return nah && !(r._portalPreviewFertig || {})[a.type.slice(5)];
                 });
             const ringSteht = () => st.worldMeta && st.worldMeta.genesisPortalRing && !offen().length;
@@ -886,7 +888,7 @@ async function probe(arg) {
                         ritt: st.player.mountedArch != null,
                         wagen: e ? [Math.round(e.position.x), Math.round(e.position.z)] : null,
                         wechselOrt: m.wechsel ? m.wechsel.ort : null,
-                        studioTore: ruft().map(
+                        studioTore: studioTore().map(
                             (a) => `${a.type}@${Math.round(a.position.x)}/${Math.round(a.position.z)}`
                         ),
                         log: String((st.logBuffer || []).slice(-1)[0] || ""),
