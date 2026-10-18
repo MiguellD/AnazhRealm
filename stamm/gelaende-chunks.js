@@ -397,10 +397,13 @@ class AnazhRealm_gelaende_chunks {
     // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im
     // Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
     // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
+    // DIE BAHN DES PANORAMAS (B4): das Feld („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der
+    // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
+    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %).
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            "fern",
+            art === "feld" ? "feld" : "fern",
             Object.assign(
                 { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
                 msg
@@ -2514,19 +2517,14 @@ class AnazhRealm_gelaende_chunks {
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
         // Frame → kleinerer Spike. `?? 4/6` = sicherer Default (alte Welten/Tests).
-        // Im Lade-Takt (`_ladeTakt`) trägt der Strom das Budget des Lade-Frames, ohne Stück-Deckel: der Boden des ersten
-        // Weltbilds (RING_EXIST_FLOOR) wuchs sonst mit einem Chunk je Lade-Frame.
-        const lade = this._ladeTakt();
-        const FRAME_BUDGET_MS = lade
-            ? AnazhRealm.LADE_TAKT_MS
-            : Number.isFinite(this.state._voxelStreamBudgetMs)
-              ? this.state._voxelStreamBudgetMs
-              : 4;
-        const MAX_PER_FRAME = lade
-            ? Infinity
-            : Number.isFinite(this.state._voxelStreamMaxPerFrame)
-              ? this.state._voxelStreamMaxPerFrame
-              : 6;
+        // Beide sind Kappen je Takt (`_kappeOffen`, K60-2): im Lade-Takt baut der Strom bis zur EINEN Frist des Lade-Frames,
+        // die er mit jedem Leser des ersten Weltbilds teilt — keine eigene Uhr (bis B4-n1 trug er eigene LADE_TAKT_MS, ein
+        // zweiter Lade-Frame im Frame), kein Boden ohne Frist (B4: der Ring-Boden in EINEM Zug, ein Block von 1,4–1,8 s hielt
+        // Buch und Leib auf, Radeon kalt Leib 6,3 -> 8,3 s); läuft sie ab, gehört der Takt den Antworten von Buch und Leib.
+        const FRAME_BUDGET_MS = Number.isFinite(this.state._voxelStreamBudgetMs) ? this.state._voxelStreamBudgetMs : 4;
+        const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
+            ? this.state._voxelStreamMaxPerFrame
+            : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
@@ -2535,6 +2533,8 @@ class AnazhRealm_gelaende_chunks {
             return 0;
         }
         const tStart = performance.now();
+        const weiter = () =>
+            this._kappeOffen(built, MAX_PER_FRAME) && this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS);
         // DIE ANKUNFT (F5): der Ring baut nach `_ankunftChunkD2` — in Fahrt zuerst, was voraus liegt. Bis F5 ging er in Ringen
         // um den Spieler (dz/dx-Folge), daneben griff ein zweiter Weg die 1–2 Chunks in Laufrichtung vor. Je Zelle die Stufe
         // aus dem Abstand (Hysterese am Grat, N3: die jetzige Stufe fließt in die Wahl); eine Zelle mit ANDERER Stufe baut neu,
@@ -2556,7 +2556,8 @@ class AnazhRealm_gelaende_chunks {
             if (c.neu) this._ensureVoxelChunkAt(c.cx, c.cz, c.lod);
             else this._rebuildVoxelChunk(c.cx, c.cz, c.lod);
             // Soft-Budget nach jedem Bau-Ruf: mindestens einer je Frame auch über Budget — sonst friert der Strom ein.
-            if (++built >= MAX_PER_FRAME || performance.now() - tStart > FRAME_BUDGET_MS) break;
+            built++;
+            if (!weiter()) break;
         }
         reihe.length = 0;
         this._pruneDistantVoxelChunks(playerPos);
