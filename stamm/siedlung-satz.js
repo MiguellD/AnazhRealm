@@ -2253,10 +2253,14 @@ class AnazhRealm_siedlung_satz {
         const lod = Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel;
         this._archInstanzSlotsSetzen(entry, entry.instSlots, fPreset, lod);
         if (entry.instSlotsBand && fPreset && Number.isFinite(entry._lodBandLevel))
-            this._archInstanzSlotsSetzen(entry, entry.instSlotsBand, fPreset, entry._lodBandLevel);
+            this._archInstanzSlotsSetzen(entry, entry.instSlotsBand, fPreset, entry._lodBandLevel, true);
     }
-    _archInstanzSlotsSetzen(entry, slots, fPreset, lod) {
-        const flat = fPreset ? this._foundryFlattenFor(entry, fPreset, lod) : this._archFlattenBlueprint(entry.type);
+    // `band`: die Slots des Partners paaren mit dem Flat seiner GEBURT — ohne die Zwillinge, die die Primär-Stufe wirft
+    // (`_bandOhneZwilling`, `_updateFoundryLodBand`); der ungefilterte Flat verschöbe jedes Blatt hinter einem Zwilling um eins.
+    _archInstanzSlotsSetzen(entry, slots, fPreset, lod, band) {
+        let flat = fPreset ? this._foundryFlattenFor(entry, fPreset, lod) : this._archFlattenBlueprint(entry.type);
+        if (band && flat)
+            flat = this._bandOhneZwilling(flat, this._foundryFlattenFor(entry, fPreset, entry._lodLevel | 0));
         if (!flat || !flat.instanceable) return;
         const ew = this._archEntryWorldMatrix(
             entry,
