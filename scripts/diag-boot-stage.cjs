@@ -31,12 +31,23 @@ const OPT = (k, d) => {
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
 // DIE RATSCHE DER ANKUNFT (`--echt`, gate:ankunft:echt): ein Dauer-Rot sieht keine Verschlechterung — ROT ist, was schlechter
-// wird als der gemessene Stand des Geräts (spec/profiband/haushalt.json `geraete`: t über `tMs`, halb über `halb`, halb
-// ungemessen) und ein Gerät ohne Stand; das Soll steht offen in der Zeile, bis B fällt. Gesenkt nur aus Kalt-Läufen des Geräts.
-const ANKUNFT_STAND = {
-    radeon: { tMs: 13500, halb: 0.25, quelle: "Radeon 890M kalt 18.10., 4 Läufe: t 11,45–12,68 s, halb 18,6–22,1 %, Gegenprobe 2,3–3,0 %" },
-    gtx: null, // ungemessen: der erste Lauf auf dem OMEN setzt ihn
-};
+// wird als der GEMESSENE Stand des Geräts (spec/profiband/haushalt.json `geraete`): die Kalt-Läufe der Stand-Datei
+// (spec/profiband/ankunft-stand.json, je Gerät `laeufe` [{ t, halb }], geschrieben von `--kalt --echt --stand`: ein Lauf, der
+// nicht schlechter ist, ersetzt den ältesten der letzten STAND_LAEUFE), Stand = der schlechteste Lauf × bzw. + STAND_RAND; t
+// darüber, halb darüber oder ungemessen ist ROT. Ein Gerät des Haushalts ohne Lauf steht benannt offen (`offen`), ein fremdes
+// Gerät ROT; das Soll steht offen in der Zeile, bis B fällt. Bis 18.10. stand der Stand als getipptes Literal im Skript.
+const STAND_DATEI = path.join(__dirname, "../spec/profiband/ankunft-stand.json");
+const [STAND_LAEUFE, STAND_RAND] = [4, { t: 1.1, halb: 0.03 }];
+function standVon(laeufe) {
+    if (!Array.isArray(laeufe) || !laeufe.length) return null;
+    const [ts, hs] = [laeufe.map((l) => l.t), laeufe.map((l) => l.halb)];
+    const v = (x) => (x / 1000).toFixed(2).replace(".", ",");
+    return {
+        tMs: Math.round(Math.max(...ts) * STAND_RAND.t),
+        halb: Math.max(...hs) + STAND_RAND.halb,
+        quelle: `${laeufe.length} Kalt-Läufe: t ${v(Math.min(...ts))}–${v(Math.max(...ts))} s, halb ${Math.round(Math.min(...hs) * 100)}–${Math.round(Math.max(...hs) * 100)} %`,
+    };
+}
 
 // t(KONTROLLE) UND DAS HALBE WELTBILD — DER RICHTER STEHT AUSSEN (S2, W9; rein, aus der Rohdatei der Kalt-Zeile): t ist das
 // erste präsentierte Bild (`frames`, je `getCurrentTexture` der Leinwand) ab der ersten Eingabe, die die Welt annimmt (`eingabe`:
@@ -50,13 +61,16 @@ const HALB_ANTEIL = 0.1;
 const GEGEN_ANTEIL = HALB_ANTEIL / 2;
 const RUHE_ANTEIL = 0.02; // zwei Schirme in Folge, die sich in höchstens so vielen Blöcken unterscheiden, sind das Rundum-Bild
 const AU = require("./lib/abnahme-urteil.cjs");
-function kontrolleZeit(out) {
+function kontrolleZeit(out, stand = JSON.parse(fs.readFileSync(STAND_DATEI, "utf8"))) {
     const k = kontrolleHalb(out);
     const G = require("../spec/profiband/haushalt.json").geraete;
     k.geraet = Object.keys(G).find((g) => new RegExp(G[g].muster, "i").test(out.adapter || ""));
-    const st = (k.stand = ANKUNFT_STAND[k.geraet]);
-    k.rueck = !st
-        ? `ungemessen — kein Stand für ${k.geraet || out.adapter || "das Gerät"} (ANKUNFT_STAND, aus Kalt-Läufen des Geräts)`
+    const st = (k.stand = standVon(k.geraet && stand[k.geraet] && stand[k.geraet].laeufe));
+    k.offen = k.geraet && !st ? `ungemessen — ${k.geraet} trägt keinen Kalt-Lauf (${path.basename(STAND_DATEI)}, --kalt --echt --stand)` : null;
+    k.rueck = k.offen
+        ? null
+        : !st
+        ? `ungemessen — ${out.adapter || "das Gerät"} ist kein Gerät des Haushalts (spec/profiband/haushalt.json)`
         : k.t == null || k.t > st.tMs
           ? `t(Kontrolle) ${k.t == null ? "—" : (k.t / 1000).toFixed(2) + " s"} über dem Stand ${st.tMs / 1000} s`
           : out.halbDiff == null || out.halbDiff > st.halb || /^ungemessen/.test(k.halb || "")
@@ -80,8 +94,10 @@ function kontrolleHalb(out) {
 function kontrolleSelbsttest() {
     const v = [];
     const roh = { adapter: "amd rdna-3", weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
+    // der Stand der Probe: zwei Kalt-Läufe der Radeon (t 11,45 / 12,68 s, halb 18,6 / 22,1 %) → Stand 13,95 s, 25 %
+    const probe = { radeon: { laeufe: [{ t: 11450, halb: 0.186 }, { t: 12680, halb: 0.221 }] } };
     const fall = (was, aend, soll, stand) => {
-        const k = kontrolleZeit(Object.assign({}, roh, aend), stand);
+        const k = kontrolleZeit(Object.assign({}, roh, aend), stand || probe);
         const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
         if (k.t !== soll.t) v.push(`${was}: t(Kontrolle) ${s(k.t)} statt ${s(soll.t)}`);
         if (!!k.halb !== soll.halb) v.push(`${was}: halb ${k.halb ? `„${k.halb}"` : "nein"} statt ${soll.halb ? "ja" : "nein"}`);
@@ -103,7 +119,7 @@ function kontrolleSelbsttest() {
     const gemessen = { radeon: { laeufe: [{ t: 6000, halb: 0.05 }, { t: 6500, halb: 0.06 }] } };
     fall("der Stand aus den Kalt-Läufen der Stand-Datei", {}, { t: 9016, halb: false, rueck: true }, gemessen);
     fall("die GTX ohne Kalt-Lauf (benannt offen)", { adapter: "nvidia geforce gtx 1060" }, { t: 9016, halb: false, rueck: false, offen: true }, gemessen);
-    if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 })).halb || ""))
+    if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 }), probe).halb || ""))
         v.push("das halbe Bild nennt sein Fenster nicht (der Schuss 0,38 s nach der Kontrolle)");
     // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
     // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80; vor der atmenden Membran (die
@@ -357,7 +373,8 @@ async function kaltLauf() {
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const proben = out.proben || [];
-    const { t, halb, fenster, geraet, rueck, stand } = kontrolleZeit(out);
+    const stand = JSON.parse(fs.readFileSync(STAND_DATEI, "utf8"));
+    const { t, halb, fenster, geraet, rueck, offen, stand: st } = kontrolleZeit(out, stand);
     const ende = Math.max(t || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
     const blockiert = new Array(S + 1).fill(0);
@@ -426,7 +443,18 @@ async function kaltLauf() {
             `${t != null ? (t / 1000).toFixed(2) + " s" : "nicht erreicht"}`
     );
     if (!ECHT) process.exit(soll ? 0 : 1);
-    console.log(`  ${rueck ? "❌" : "✅"} die Ratsche der Ankunft (${geraet || "?"}${stand ? `: ${stand.quelle}` : ""}) — ${rueck || "nicht schlechter"}`);
+    console.log(
+        `  ${rueck ? "❌" : offen ? "· OFFEN:" : "✅"} die Ratsche der Ankunft (${geraet || "?"}${st ? `: ${st.quelle}` : ""}) — ${rueck || offen || "nicht schlechter"}`
+    );
+    // DER STAND WÄCHST NUR AUS LÄUFEN (`--stand`): ein Lauf, der nicht schlechter ist, tritt in die Stand-Datei
+    if (ARGV.includes("--stand") && !rueck && geraet && t != null && out.halbDiff != null) {
+        const l = ((stand[geraet] = stand[geraet] || {}).laeufe = (stand[geraet].laeufe || []).concat([
+            { t, halb: +out.halbDiff.toFixed(3), version: out.version, tag: new Date().toISOString().slice(0, 10) },
+        ]));
+        stand[geraet].laeufe = l.slice(-STAND_LAEUFE);
+        fs.writeFileSync(STAND_DATEI, JSON.stringify(stand, null, 4) + "\n");
+        console.log(`  der Lauf tritt in den Stand (${path.relative(process.cwd(), STAND_DATEI)}: ${standVon(stand[geraet].laeufe).quelle})`);
+    }
     process.exit(rueck ? 1 : 0);
 }
 

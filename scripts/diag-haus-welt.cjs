@@ -1346,10 +1346,12 @@ async function proben(phasen) {
             };
             const vorSlot = new Set(s.architectures);
             // K10: der Slot geht den Weg des Plans v2 — `_ortPlanSetzen` legt seinen Boden y und den Erdbau, bevor das Haus
-            // steht (je Haus ein eigener Ort: der Samen trägt die Kultur)
-            const v2 = r._ortPlanSetzen({ seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] }, { x: 0, z: 0 });
+            // steht (je Haus ein eigener Ort: der Samen trägt die Kultur); rückt die Ort-Wahl den Plan (die Wand zu einem früheren
+            // Ort), steht das Haus dort, wo sein Erdbau liegt — der Ursprung trägt die Verschiebung (`_ortWahl`)
+            const o0 = { x: 0, z: 0 };
+            const v2 = r._ortPlanSetzen({ seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] }, o0);
             const slotV2 = v2 && Array.isArray(v2.slots) ? v2.slots[0] : null;
-            if (slotV2) r._spawnSettlementSlot(slotV2, { x: 0, z: 0 }, r._foundry);
+            if (slotV2) r._spawnSettlementSlot(slotV2, o0, r._foundry);
             const e = s.architectures.find((q) => !vorSlot.has(q) && q.type === "haus_" + k);
             if (!e) {
                 w.fehler = "Slot fiel";

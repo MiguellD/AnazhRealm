@@ -2680,17 +2680,24 @@ function spawnZellen(tafel, q) {
                 const eigen = Object.fromEntries(Object.entries(me.klassen).filter(([n]) => re.test(n)));
                 const px = Object.values(eigen).reduce((s, k) => s + (k.pixel || 0), 0);
                 // eine Klasse, die als Karte zeichnen kann (`fimp:`), ist in einer Pose mit dem EINEN Atlas unteilbar: alle Karten
-                // heißen `fimp:atlas:L2` (`_taeterKlasse`), die Teilung trennt seine Schichten nicht — der Täter ist die Teilung
+                // heißen `fimp:atlas:L2` (`_taeterKlasse`), die Teilung trennt seine Schichten nicht — der Täter ist die Teilung, nur
+                // mit ZEUGEN: die Pose hat die Klasse im Blick (`blick` je Klasse, werkbank spawn: Instanzen im Kegel der Kamera); ohne
+                // ihn ist der Täter die Pose (Prüfer S2 R3: in Ego/Third steht der GT außerhalb des Bilds, 8 von 12 Zellen nannten die Teilung)
                 const atlas = nirgends.has(id) && /fimp/.test(ausdruck) ? pixelVon(me, /^fimp:atlas:/) : 0;
+                const blick = me.blick ? me.blick[id] : undefined;
                 if (!px) {
                     z.grund = um.length
                         ? `${id} fehlt um ${uhr} (zeichnet in derselben Kamera um ${um.join(", ")})`
-                        : atlas
+                        : atlas && blick > 0
                           ? `unteilbar: Atlas-Schicht — die Pose zeichnet den EINEN Atlas (${atlas} px), die Teilung trennt seine Karten nicht; als eigene Klasse zeichnet ${id} in keiner Sicht (/${ausdruck}/)`
+                          : atlas
+                            ? blick == null
+                                ? "ungemessen — die Pose trägt keinen Blick je Klasse (werkbank spawn schreibt blick)"
+                                : `${id} nicht im Blick der Pose — keine Instanz im Kegel der Kamera (/${ausdruck}/)`
                           : nirgends.has(id)
                             ? `${id} zeichnet am Spawn in keiner Sicht zu keiner Uhr (/${ausdruck}/) — ungemessen, die Klasse braucht ihre Pose`
                             : `${id} zeichnet nicht im Bild (/${ausdruck}/) — die Sicht ${sicht} ist nicht zu jeder Uhr gemessen`;
-                    if (atlas) z.taeter = "fimp:atlas:L2 (die Teilung)";
+                    if (atlas) z.taeter = blick > 0 ? "fimp:atlas:L2 (die Teilung)" : `die Pose ${pose}`;
                     continue;
                 }
                 const L = Object.values(eigen).reduce((s, k) => s + (k.luma || 0) * (k.pixel || 0), 0) / px;
@@ -2773,12 +2780,6 @@ function spawnSelbsttest(tafel, q) {
     for (const id of ["fahrzeug", "tier", "dorf-stadt"]) if (!(id in echtAus)) v.push(`die Klasse ${id} fehlt in der Matrix`);
     const ue = spawnZellen(tafel, q);
     for (const f of ue.fehler) v.push(`die echte Tafel: ${f}`);
-    // DER TÄTER BRAUCHT SEINEN ZEUGEN (Prüfer S2 R3): eine Zelle, die die Teilung des Atlas nennt, ohne dass die Pose die Klasse im
-    // Blick hat (`blick` je Klasse, werkbank spawn), nennt die falsche Ursache — in Ego/Third steht der GT außerhalb des Bilds
-    const zeuge = (z) => ((((echt.messung || {})[z.pose] || {}).blick || {})[z.klasse] || 0) > 0;
-    const ohneZeuge = ue.zellen.filter((z) => /die Teilung/.test(z.taeter || "") && !zeuge(z));
-    if (ohneZeuge.length)
-        v.push(`die echte Tafel: ${ohneZeuge.length} Zellen nennen die Teilung des Atlas ohne Blick-Zeugen (${[...new Set(ohneZeuge.map((z) => z.klasse + " " + z.pose))].join(" · ")})`);
     const kk = (tafel.klassen || []).find((k) => k.id === "laub-kante");
     if (!kk) return v.concat("die Zeile laub-kante fehlt (der Fall der Matrix)");
     const aus = echtAus["laub-kante"];

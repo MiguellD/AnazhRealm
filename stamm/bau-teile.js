@@ -337,8 +337,10 @@ class AnazhRealm_bau_teile {
     _isMoveable(bp, t) {
         // Ein GEWACHSENER Baum/Busch (_grownSpecies) ist verwurzelt, nie Fahrzeug: gesetz-wahre Kronen
         // spreizen die tiefen Äste über die supportSpreadMin-Schwelle (0.35), die Heuristik allein reicht
-        // nicht. Der Marker ist die definitive Wahrheit (Fahrzeuge tragen ihn nie).
-        if (bp && bp._grownSpecies) return false;
+        // nicht. Der Marker ist die definitive Wahrheit (Fahrzeuge tragen ihn nie). Ebenso verwurzelt: die Welt-Werkstatt
+        // (role "workshop-station": Esse, Brennkolben, Webstuhl, Altar) — ihre Beine und ihr Feuer lasen als Fahrzeug, am
+        // Schmiede-Tor nahm E die stehende Esse statt des Wagens 2 m daneben (gate:fahr-leben F1, 18.10.).
+        if (bp && (bp._grownSpecies || bp.role === "workshop-station")) return false;
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
         const support = this._partsBelowMidline(bp, T.midlineFactor);
         if (support.length < T.minSupportParts) return false;

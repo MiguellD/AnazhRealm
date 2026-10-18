@@ -1906,6 +1906,7 @@ async function starte() {
                             klassen: kl.klassen,
                             abstand: kl.abstand,
                             gesicht: kl.gesicht || null,
+                            blick: b.spawn ? b.blick || null : undefined,
                             bild: path.relative(root, ablage).split(path.sep).join("/"),
                         };
                         if (b.spawn) {
@@ -3093,8 +3094,25 @@ async function starte() {
                 const weit = sicht === "third" ? Math.hypot(...p.s.map((v, i) => v - p.c[i])) : 8;
                 nach = p.c.map((v, i) => v + p.d[i] * weit);
             }
+            // DER BLICK JE KLASSE (Prüfer S2 R3, der Zeuge des Täters `spawnZellen`): die Werke jeder Klasse im Kegel der Kamera der
+            // Pose (Name `f:<preset>:L0` bzw. `fimp:<preset>:L2` unter dem Ausdruck der Klasse, Kugel 3 m × Größe um den Fuß + 1 m)
+            const blick = (
+                await rufe("/eval", {
+                    code: `const C = r.state.camera, k = new T.PerspectiveCamera(C.fov, C.aspect, C.near, C.far);
+k.position.set(${von.join(",")}); k.lookAt(${nach.join(",")}); k.updateMatrixWorld();
+const F = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(k.projectionMatrix, k.matrixWorldInverse));
+const aus = ${JSON.stringify(AU.spawnAusdruecke(tafel))}, b = {};
+for (const id in aus) { const re = new RegExp(aus[id]); b[id] = 0;
+  for (const e of r.state.architectures || []) { const pr = e && e.position && r._foundryPresetForEntry(e);
+    if (!pr || !(re.test("f:" + pr + ":L0") || re.test("fimp:" + pr + ":L2"))) continue;
+    const g = Number.isFinite(e.scale) ? e.scale : 1;
+    if (F.intersectsSphere(new T.Sphere(new T.Vector3(e.position.x, e.position.y + 1, e.position.z), 3 * g))) b[id]++; } }
+return b;`,
+                })
+            ).ergebnis;
             for (const uhr of uhren) {
                 const o = await rufe("/bild", {
+                    blick,
                     px: von[0],
                     py: von[1],
                     pz: von[2],

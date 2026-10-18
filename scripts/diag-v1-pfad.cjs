@@ -622,6 +622,19 @@ async function probe(arg) {
     const r = window.anazhRealm;
     const st = r.state;
     const R = st.renderer;
+    // DER ZEUGE DES TORS: der Spieler steht in einer Tor-Welt (`_portalOverlay`) ODER in einem offenen Studio-Modus der Welt
+    // (S1 `studioModus`: das Garage-Tor öffnet die Werkstatt ohne Overlay — der Zeuge war dort blind); `torRaus` verlässt beide
+    const imTor = () => !!(r._portalOverlay || r._studioModus);
+    const torRaus = () => {
+        if (r._portalOverlay) r.exitPortal();
+        const mo = r._studioModus && window.__studioModi && window.__studioModi[r._studioModus];
+        if (mo) mo.verlassen();
+    };
+    const torName = () => {
+        const id = r._portalOverlay ? r._portalOverlay.entryId : null;
+        const a = id ? st.architectures.find((q) => q && q.id === id) : null;
+        return { id, type: a ? a.type : r._studioModus ? "studio " + r._studioModus : "?" };
+    };
     const A = window.__gang;
     const marke = (n) => out.zeit.push((A.station = [n, Math.round(performance.now()), A.takte]));
     const tick = async (n) => {
@@ -838,7 +851,7 @@ async function probe(arg) {
                     (await flanke(e.position.x, e.position.z, fahrt(), -1));
                 if (tor)
                     throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
-                if (r._portalOverlay)
+                if (imTor())
                     throw new Error(
                         `vor dem Aufstieg bei ${Math.round(x)}/${Math.round(z)} steht der Spieler in einer Tor-Welt: ${JSON.stringify(m.tor || null)} · Abstieg ${JSON.stringify(m.abstiegFehl || null)}`
                     );
@@ -886,7 +899,7 @@ async function probe(arg) {
             A.jeTakt = () => {
                 // DER SPIELER GEHT DURCH EIN TOR (die Membran, `_tickPortalMembranes`): der erste Takt beim Namen —
                 // Abschnitt, Ort, Ritt
-                if (r._portalOverlay && !m.tor) {
+                if (imTor() && !m.tor) {
                     const q = st.playerMesh.position;
                     m.tor = {
                         phase,
@@ -1244,7 +1257,7 @@ async function probe(arg) {
                     m.abstiegFehl = {
                         phase,
                         wagen: [Math.round(e.position.x), Math.round(e.position.z)],
-                        tor: !!r._portalOverlay,
+                        tor: imTor(),
                     };
             };
             const k0 = A.takte;
@@ -1455,16 +1468,9 @@ async function probe(arg) {
                         } catch (err) {
                             // E nahm statt des Wagens ein Tor in Reichweite: der Spieler steht in der Tor-Welt — das
                             // Tor beim Namen
-                            if (r._portalOverlay) {
-                                const id = r._portalOverlay.entryId;
-                                tat({
-                                    art: "tor",
-                                    type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
-                                    id,
-                                    ort: `${Math.round(x)}/${Math.round(z)}`,
-                                    mitE: true,
-                                });
-                                r.exitPortal();
+                            if (imTor()) {
+                                tat({ art: "tor", ...torName(), ort: `${Math.round(x)}/${Math.round(z)}`, mitE: true });
+                                torRaus();
                             }
                             if (st.player.mountedArch != null) r.dismountArchitecture();
                             for (const w of gebaut.splice(0)) r.removeArchitecture(w);
@@ -1501,14 +1507,8 @@ async function probe(arg) {
                                 const [x0, z0] = [e.position.x, e.position.z];
                                 await tick(1);
                                 const ort = `${Math.round(e.position.x)}/${Math.round(e.position.z)}`;
-                                if (r._portalOverlay) {
-                                    const id = r._portalOverlay.entryId;
-                                    tat({
-                                        art: "tor",
-                                        type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
-                                        id,
-                                        ort,
-                                    });
+                                if (imTor()) {
+                                    tat({ art: "tor", ...torName(), ort });
                                     break;
                                 }
                                 const d = Math.hypot(e.position.x - x0, e.position.z - z0);
@@ -1525,9 +1525,9 @@ async function probe(arg) {
                         } finally {
                             fuss(null);
                             lenke(null);
-                            if (r._portalOverlay) r.exitPortal();
+                            if (imTor()) torRaus();
                             await halt();
-                            if (r._portalOverlay) r.exitPortal(); // E am Tor nimmt den Abstieg (`_fahrStandFrei` „tor")
+                            if (imTor()) torRaus(); // E am Tor nimmt den Abstieg (`_fahrStandFrei` „tor")
                             if (st.player.mountedArch != null) r.dismountArchitecture();
                             for (const w of gebaut.splice(0)) r.removeArchitecture(w); // kein Wagen der Runde steht in der nächsten Spur
                         }
@@ -1573,7 +1573,7 @@ async function probe(arg) {
                         T.bis = e ? [Math.round(e.position.x), Math.round(e.position.z)] : null;
                         lenke(null);
                         taste("keyup", "w", "KeyW");
-                        if (r._portalOverlay) r.exitPortal();
+                        if (imTor()) torRaus();
                         if (st.player.mountedArch != null) r.dismountArchitecture();
                         for (const w of gebaut.splice(0)) r.removeArchitecture(w);
                     }

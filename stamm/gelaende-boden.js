@@ -782,6 +782,14 @@ class AnazhRealm_gelaende_boden {
         // der Boden, den der Erdbau des Plans baut (gelaende-core `erdbauY` über dem Gesetz samt dem Erdbau früherer Orte)
         const G = globalThis.__gelaendeCore;
         const E = G.erdbauNormal(k.erdbau);
+        // DIE WAND ZWISCHEN ZWEI ORTEN (W6, 18.10.): jede Fläche des Plans liegt im Kegel der Böschung jedes früheren Orts (der
+        // alte Erdbau `erdbauY` hält ihre Höhe binnen wandM / 2) — sonst stünde zwischen dem Weg des alten und dem Vorplatz des
+        // neuen eine Wand: vor der Tür des alemannischen Hauses lief ein Dorfweg 2,6 m höher, 0,45 m vom Vorplatz
+        const alt = this._erdbauLage();
+        const mauer = (x, z) => {
+            const y = alt && E ? G.erdbauFlaeche(E, x, z) : null;
+            return y != null && Math.abs(G.erdbauY(alt, x, z, y) - y) > G.ERDBAU.wandM / 2;
+        };
         // und die Gestalt des Gewässers darüber — DIESELBE Formel wie die Dichte (`_gewaesserForm`: der Damm füllt tieferes
         // Gelände zur Krone, der Fluss-Kanal schneidet höheres zur Böschung, das See-Becken blendet zu seinem Bett; eine Dichte
         // ist Höhe − y, in y = 0 also die Höhe selbst): die Platte im Kanal liegt so tief, wie die Welt sie baut
@@ -812,7 +820,7 @@ class AnazhRealm_gelaende_boden {
             for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, sl.tuer, schritt)) {
                 const px = wx + lx * c + lz * sn;
                 const pz = wz - lx * sn + lz * c;
-                if (nass(px, pz)) return false;
+                if (nass(px, pz) || mauer(px, pz)) return false;
                 if (++punkte % 128 === 0) yield;
             }
             if (wand && !this._bauFrei(wx, wz, ry, fp, sl.tuer, sl.y)) return false;

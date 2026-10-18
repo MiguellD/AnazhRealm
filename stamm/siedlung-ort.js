@@ -2042,16 +2042,20 @@ class AnazhRealm_siedlung_ort {
     // `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das Platz-Gesetz der Fahrt
     // (`_fahrPlatzWege` mit derselben Wand). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben F1: an jedem Tor).
     // Bis SG1-F1d standen sie 8 m vor dem Tor (r 19) auf der Fahrbahn. → { x, y, z, blick } oder null (kein Boden, kein Platz).
+    // IDEMPOTENT: die EIGENE stehende Vorschau des Tors (die Id seiner Zeile in `PORTAL_VORSCHAU`) ist nie ihr eigener
+    // Grundriss — bis 18.10. sah der Ort nach dem Bau sich selbst und rückte hinaus oder fand keinen (F1: 8/10 Tore).
     _portalVorschauOrt(portal) {
         const M = this._genesisMitte();
         const P = AnazhRealm.GENESIS_PLATZ;
+        const zeile = AnazhRealm.PORTAL_VORSCHAU.tore.find((t) => "welt_" + t[0] === portal.type);
+        const eigen = zeile ? (this.state.architectures || []).find((e) => e && e.id === zeile[2]) || null : null;
         const px = portal.position.x || 0;
         const pz = portal.position.z || 0;
         const len = Math.hypot(px - M.x, pz - M.z) || 1;
         const [dx, dz] = [(px - M.x) / len, (pz - M.z) / len];
         for (let r = P.lichtung + P.vorschau + 0.5; r <= P.lichtung + 2 * P.vorschau + 0.5; r += 1) {
             const [ox, oz] = [M.x + dx * r, M.z + dz * r];
-            if (this._imGrundriss(ox, oz, P.vorschau)) continue;
+            if (this._imGrundriss(ox, oz, P.vorschau, 0, eigen)) continue;
             const y = this.getTerrainHeightAt(ox, oz);
             if (!Number.isFinite(y)) return null;
             return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(dx, dz) };
