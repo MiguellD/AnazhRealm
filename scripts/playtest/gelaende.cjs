@@ -2317,7 +2317,8 @@ async function checkBandPhaseAFundament(ctx) {
                     r.carveVoxel(ex, surf - 0.5, ez, 1.5);
                     if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
                     const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
-                    const rInf = 1.5 + 4 * 1.8;
+                    const zelle = r._voxelChunkConfig(entry.lod).step * Math.sqrt(3); // ein Vertex mittelt seine Zelle
+                    const rInf = r.constructor._editReich({ r: 1.5 }) + zelle; // die Reichweite des Gesetzes (F2a)
                     let changedOutside = 0,
                         totalOutside = 0;
                     for (const k of before) {
@@ -2326,7 +2327,7 @@ async function checkBandPhaseAFundament(ctx) {
                         totalOutside++;
                         if (!after.has(k)) changedOutside++;
                     }
-                    out.a2 = { totalOutside, changedOutside };
+                    out.a2 = { totalOutside, changedOutside, rInf };
                 }
             }
         }
@@ -2398,7 +2399,7 @@ async function checkBandPhaseAFundament(ctx) {
     check(
         "A2: Edit-Vertex-Delta ist LOKAL — 0 geänderte Vertices außerhalb des Einflusses (kein sichtbarer Ganz-Chunk-Reset)",
         res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
-        res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
+        res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside} rInf=${res.a2.rInf.toFixed(2)}` : "kein Chunk"
     );
     check(
         "A5: die Luft trägt — scene.fogNode statt Nebel, klarer Tag ≥ 5 km Sicht, die Ring-Kante liegt klar",
