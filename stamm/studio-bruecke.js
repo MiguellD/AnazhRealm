@@ -209,12 +209,11 @@ class AnazhRealm_studio_bruecke {
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
         this._foundryIngestRecipes(m.book, m.paramsByKind);
-        // der Leib des Spielers zuerst (K60-2): seine zwei Vorlagen gehen vor jedem Baum ins Werk (`_ofenSpielerVorlagen`) —
-        // bestellte erst der nächste Takt, stand der Guss im Faden hinter zwölf Bäumen (Radeon kalt: Leib 7,5 s nach dem Buch)
-        if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
+        // die Köpfe der Ankunfts-Ketten zuerst (`_buchKoepfe`: der Leib, das Start-Dorf mit seinem Gesetz) — vor jedem Baum
+        this._buchKoepfe();
         // (Die Fracht des EINEN Blatt-Atlas reist nach dem Buch, `_foundryBlattAtlas`.)
         // das Ereignis für jeden, der auf das Buch wartet (`buchDa`); ein Buch ohne Rezepte bricht laut, die Wartenden
         // sehen es (der Vorrat: FOUNDRY WARM je kritischem Preset, der Dorf-Spawn: FOUNDRY KALT)

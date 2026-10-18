@@ -160,9 +160,11 @@ class AnazhRealm_vegetation_wiese {
         // Vorlage steht: eine Vorlage gibt es erst mit dem Buch (Buch kalt → `_foundryFlattenFor` null), das Budget
         // dockt in derselben Nachricht. Befund 0710-2: die Zusicherung las VOR der Vorlage — kam das Buch nach dem Ring,
         // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
+        // Der Rang der Vorlage ist der Ort ihres Lesers, das Auge (`wo`, B5): ohne Ort stand sie auf ∞ und wartete vor dem
+        // ersten Bild auf eine leere Bahn (GTX kalt 8,5 s), während die Streu-Lücke im Blick auf sie wartete.
         for (const stufe of [1, 2]) {
             for (let v = 0; v < 2; v++) {
-                const fl = this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe);
+                const fl = this._foundryFlattenFor({ seed: v + 1, wo: cam }, "gras", stufe);
                 if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
                     nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
                     continue;

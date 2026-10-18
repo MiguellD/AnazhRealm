@@ -2343,6 +2343,23 @@ class AnazhRealm_siedlung_ort {
         return (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= n * n;
     }
 
+    // DAS START-DORF BESTELLEN (EIN Weg für das Buch und den Takt, B5): ist es fällig, geht sein Export hinaus — nur nahe des
+    // Genesis-Orts (kein Fern-Spawn hinter dem Rücken), fail-closed + session-gemerkt (eine Welt ohne Fleck urteilt immer
+    // gleich). Der Kopf der Dorf-Kette geht mit dem Buch (`_buchKoepfe`): Befund OMEN 1810 B5 (GTX kalt) — der Takt im
+    // Leerlauf des Streamings bestellte ihn 1,7 s nach dem Buch, die Kette (Export 3,4–5,4 s, Ort-Wahl, 33 Häuser) hielt
+    // „bauten" bis 16,07 s. true = bestellt.
+    _startDorfBestellen(p) {
+        if (!p || !this._dorfTaktLebt() || this._autoSettlementQueue || this._autoSettlementPendingKey) return false;
+        if (!this._autoSettlementChannelLive() || !this._startDorfFaellig(p)) return false;
+        const si = this._autoSettlementStartInfo();
+        if (!si) {
+            this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)
+            return false;
+        }
+        this._autoSettlementSpawnCell(0, 0, si);
+        return true;
+    }
+
     _tickAutoSettlement(playerPos) {
         const st = this.state;
         if (!playerPos || !this._dorfTaktLebt()) return;
@@ -2404,17 +2421,8 @@ class AnazhRealm_siedlung_ort {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
-        // Start-Dorf zuerst (einmalig je Welt): nur nahe des Genesis-Orts materialisieren (kein Fern-Spawn hinter
-        // dem Rücken). Fail-closed + session-gemerkt: eine Welt ohne Fleck urteilt immer gleich.
-        if (this._startDorfFaellig(playerPos)) {
-            const si = this._autoSettlementStartInfo();
-            if (!si)
-                this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)
-            else {
-                this._autoSettlementSpawnCell(0, 0, si);
-                return; // EIN Dorf-Akt pro Tick
-            }
-        }
+        // Start-Dorf zuerst (einmalig je Welt) — bestellt schon das Buch (`_startDorfBestellen`), der Takt fängt den Rest
+        if (this._startDorfBestellen(playerPos)) return; // EIN Dorf-Akt pro Tick
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         // ZENSUS 17.07. — DASSELBE Zell-Raster wie die Zell-Wahrheit
         // (_autoSettlementCellInfo): SIEDLUNG.cellM, das fachwerk-Gesetz.

@@ -691,9 +691,10 @@ class AnazhRealm_dienst {
     // Die PASSUNG der Fernform aus der Studio-Gestalt (die geometrische Stufe ≤ 1, die das Studio liefert): die
     // Primitive kommen aus den UNVERSCHMOLZENEN Teilen der Cache-Gruppe — der Fels-Haufen sind seine einzelnen Steine,
     // nicht das EINE verschmolzene Leaf (dessen Hülle passte als liegende 3,6-m-Kapsel). `_gestaltKapselFit` nimmt die
-    // 6 volumen-größten (Ellipsoid wo kompakt, sonst Kapsel). null = die Stufe lädt noch.
-    _streuGesetzFit(preset, fseed) {
-        const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
+    // 6 volumen-größten (Ellipsoid wo kompakt, sonst Kapsel). null = die Stufe lädt noch. x/z: der Platz, der sie liest — der
+    // Rang ihres Auftrags (`wo`, B5: ohne Ort wartete die Gestalt vor dem ersten Bild auf eine leere Bahn).
+    _streuGesetzFit(preset, fseed, x, z) {
+        const bf = this._foundryFlattenFor({ seed: fseed, wo: Number.isFinite(x) ? { x, z } : undefined }, preset, 1);
         if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null;
         const I = this._foundryWorldScaleMatrix(preset);
         const teile = [];
@@ -710,7 +711,7 @@ class AnazhRealm_dienst {
         const key = "agesetz:" + preset + ":" + gestalt;
         // Fit-Takt (Treffer frei); die volle Liste verbrennt keinen (`kapselVoll`, die Zelle wartet billig).
         if (!wm.kapselCache.has(key) && (wm.kapselVoll || !this._weltBakeErlaubt(this._spielerD2(x, z)))) return null;
-        const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed));
+        const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed, x, z));
         if (!satz) return null;
         const W = AnazhRealm.WELT_MARCH;
         const kachel = Math.floor(x / W.gesetzKachelM) + "," + Math.floor(z / W.gesetzKachelM);

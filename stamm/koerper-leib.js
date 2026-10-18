@@ -70,7 +70,17 @@ class AnazhRealm_koerper_leib {
         }
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : anker.skin;
         const hairCol = typeof g.hairColor === "number" ? g.hairColor : anker.hair;
-        const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, 0, g.eigen === true);
+        // DIE GROBSTUFE TRÄGT DEN LEIB VOR DEM BILD (B5): liegt vor dem ersten Weltbild nur die Grobstufe im Memo (die feine
+        // bestellt `_ofenSpielerVorlagen` erst nach dem Bild), ist sie die Nah-Gestalt — nie ein Haupt-Faden-Guss der feinen
+        // (K60-2: 2,4 s); die feine tauscht nach ihrer Ankunft ein (`_leibFeinTausch`)
+        const memo = AnazhRealm._tierOfenMemo;
+        const grob =
+            g.eigen !== true &&
+            !this.state._weltbildDa &&
+            !!memo &&
+            memo.has(this._ofenMenschKey(dials, skinCol, hairCol, 1)) &&
+            !memo.has(this._ofenMenschKey(dials, skinCol, hairCol, 0));
+        const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, grob ? 1 : 0, g.eigen === true);
         if (!t0 || !t0.teile || !t0.teile.mensch) {
             this.log("Mensch-Ofen fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.", "ERROR");
             return null;
@@ -97,6 +107,7 @@ class AnazhRealm_koerper_leib {
             this.log("Mensch: ohne gelenkige Grobstufe kein Körper (fail-closed).", "ERROR");
             return null;
         }
+        gelenk.nahStufe = grob ? 1 : 0; // die Stufe, die nah trägt — die Grobstufe wartet auf den Tausch
         wrap.userData._gelenk = gelenk;
         this._gelenkStufe(wrap, 0);
         // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
@@ -1332,13 +1343,18 @@ class AnazhRealm_koerper_leib {
     // Spielers trifft danach das Memo (Klon ~1 ms). Bis K60-2 goss der Haupt-Faden den Leib im sechsten Frame (Radeon kalt
     // 2,36 s bis zum ersten Weltbild, K602/p2.cpuprofile) und nach dem Buch ein zweites Mal mit den Dials des Studios. Der
     // Auftrag geht NAH zuerst (am Ort des Spielers); der Vorrat (`_ofenPrefetchKreaturen`) wartet auf denselben Zug.
-    // `{ steht, da }`: steht = beide Vorlagen liegen im Memo — oder ihr Guss fiel LAUT (`OFEN-PREFETCH LEER`), dann gießt
-    // der Bau sie hier wie ohne Faden.
+    // DER LEIB WÜNSCHT, WAS SEIN ERSTES BILD ZEIGT (B5): zeigt es nur seinen Wurf (`_leibGrobVorBild`), geht vor dem Bild die
+    // Grobstufe allein — die feine bestellt das Ereignis des Bilds (`_weltbildKommt`) und tauscht nach ihrer Ankunft ein
+    // (`_leibFeinTausch`). Befund OMEN 1810 B5 (GTX kalt): die feine wartete in w0 hinter dem Blatt-Atlas, baute 4,4 s und
+    // hielt den Leib bis 10,46 s, die Grobstufe lag bei 4,23 s. Die Grobstufe zuerst: die erste Bestellung nach dem Buch
+    // wartet im Werk hinter dem Atlas. `{ steht, da }`: steht = jede Vorlage des ersten Bilds liegt im Memo — oder ihr Guss
+    // fiel LAUT (`OFEN-PREFETCH LEER`), dann gießt der Bau sie hier wie ohne Faden; da = alle Vorlagen.
     _ofenSpielerVorlagen() {
         if (this._spielerVorlagen) return this._spielerVorlagen;
         const z = { steht: false, da: null };
         this._spielerVorlagen = z;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        const vorBild = [];
         const auftraege = [];
         // Prefetch münzt aus den LEBENDEN Quellen — derselbe Dial-Merge (START_PARAMS + _koerperStudioDials)
         // und Farb-Münzer (_menschGussFarben) wie der Rig-Guss, durch den EINEN Key-Münzer → warmes Memo.
@@ -1348,10 +1364,11 @@ class AnazhRealm_koerper_leib {
             const dM = Object.assign({}, kc.START_PARAMS, bmD || {});
             const fM = this._menschGussFarben(bmD);
             const pm = this.state.playerMesh;
+            const grob = this._leibGrobVorBild();
             // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
             // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gelenkige
             // Grobstufe (`_gelenkGestalt`). Warm = Spawn ~1 ms.
-            for (const lodM of [0, 1]) {
+            for (const lodM of [1, 0]) {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
                 // die Spieler-Vorlage ist fest (`_ofenVorlage`) — auch wenn ein Sync-Guss sie schon legte
@@ -1359,41 +1376,68 @@ class AnazhRealm_koerper_leib {
                     this._ofenVorlage(keyM, false, () => null, true);
                     continue;
                 }
-                const auftrag = this._foundryRequest(
-                    "mensch",
-                    0,
-                    lodM,
-                    { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
-                    pm ? pm.position : undefined
-                ).then((meshes) => {
-                    // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
-                    // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
-                    if (!meshes || !meshes.length) {
-                        if (!memo.has(keyM))
-                            this.log(`OFEN-PREFETCH LEER: mensch lod${lodM} (Buch kalt/Timeout)`, "WARN");
-                        return;
-                    }
-                    this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
-                });
+                const bestellen = () =>
+                    this._foundryRequest(
+                        "mensch",
+                        0,
+                        lodM,
+                        { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
+                        pm ? pm.position : undefined
+                    ).then((meshes) => {
+                        // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
+                        // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
+                        if (!meshes || !meshes.length) {
+                            if (!memo.has(keyM))
+                                this.log(`OFEN-PREFETCH LEER: mensch lod${lodM} (Buch kalt/Timeout)`, "WARN");
+                            return;
+                        }
+                        this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
+                    });
+                const nachBild = lodM === 0 && grob;
+                const auftrag = nachBild
+                    ? this._weltbildKommt()
+                          .then(bestellen)
+                          .then(() => this._leibFeinTausch())
+                    : bestellen();
+                if (!nachBild) vorBild.push(auftrag);
                 auftraege.push(auftrag);
             }
         }
         const steht = () => {
             z.steht = true;
         };
-        z.da = Promise.all(auftraege).then(steht, (e) => {
-            steht();
-            this._stoffBruch("die Spieler-Vorlagen (Mensch-Ofen im Faden)", e);
-        });
+        Promise.all(vorBild).then(steht, steht);
+        z.da = Promise.all(auftraege).then(
+            () => {},
+            (e) => this._stoffBruch("die Spieler-Vorlagen (Mensch-Ofen im Faden)", e)
+        );
         return z;
     }
     // Ist der Leib des Spielers gießbar, ohne den Haupt-Faden zu halten? Ohne Studio-Faden (`_foundryEnabled`: kein Worker,
-    // die Grammatik-Bänder) gießt ihn der Bau hier; sonst wartet er auf das Buch und seine zwei Vorlagen im Memo.
+    // die Grammatik-Bänder) gießt ihn der Bau hier; sonst wartet er auf das Buch und die Vorlagen seines ersten Bilds im Memo.
     _leibBereit() {
         if (!this._foundryEnabled()) return true;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) return false;
         return this._ofenSpielerVorlagen().steht;
+    }
+    // Was das erste Bild vom Leib zeigt (B5): in der Ego-Sicht nur seinen Wurf — die Grobstufe wirft für beide Stufen
+    // (`_gelenkGestalt`, Kern-Zeile `schatten`), die feine trägt dort kein Pixel (`_applyEgoSicht`). Die 3rd-Sicht zeigt die
+    // Gestalt (die Grenze `ab` 40 m), ein Gerät in der Hand liest die Hand-Mitte der feinen (`handMitte`, nur lod 0 gegossen):
+    // dort wünscht das Bild beide Stufen.
+    _leibGrobVorBild() {
+        const st = this.state;
+        const p = st.player;
+        return st.cameraMode !== "third" && !(p && p.equipped && p.equipped.held);
+    }
+    // DER TAUSCH DER FEINEN STUFE (B5): kam sie nach dem Bild, trägt der Leib des Spielers sie ab jetzt — derselbe Bau
+    // (`applyPlayerSoul`, die Lage reist mit), die Grobstufe fällt mit dem alten Leib. Nur ein Leib, der nah die Grobstufe
+    // trägt (`nahStufe`), tauscht; ein deferierter Bau trifft die feine selbst.
+    _leibFeinTausch() {
+        const st = this.state;
+        const g = st.playerMesh && st.playerMesh.userData._gelenk;
+        if (!g || g.nahStufe !== 1 || st._deferredAvatarSoul) return;
+        this.applyPlayerSoul(st.player.soul);
     }
     // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
     // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).

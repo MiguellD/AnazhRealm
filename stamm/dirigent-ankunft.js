@@ -854,6 +854,16 @@ class AnazhRealm_dirigent_ankunft {
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
     }
+    // DIE KÖPFE DER ANKUNFTS-KETTEN gehen mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
+    // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
+    // zwölf Bäumen) und der Export des fälligen Start-Dorfs (`_startDorfBestellen` — bis B5 bestellte ihn der Takt im Leerlauf
+    // des Streamings, GTX kalt 1,7 s nach dem Buch). Die Reihe ist die Bestell-Reihe: der Leib wartet im Werk hinter dem
+    // Blatt-Atlas, der Export geht in einen Helfer.
+    _buchKoepfe() {
+        const st = this.state;
+        if (st._deferredAvatarSoul) this._ofenSpielerVorlagen();
+        if (st.playerMesh) this._startDorfBestellen(st.playerMesh.position);
+    }
 
     // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl
     // jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die Höhen-Stufe L1 und
