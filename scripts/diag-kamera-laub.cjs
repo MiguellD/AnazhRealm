@@ -553,11 +553,10 @@ async function leibWiese(arg) {
             out.w2Kern = L.ruft(() => L.ruhig(1), r.constructor, "_bewegungsBlock", (n) => n === "kamera");
         }
         const T3 = window.THREE;
-        const senke = [...(st.nahStreu ? st.nahStreu.senken.values() : [])].find((a) => a.ernte && a.anzahl > 0);
-        const blk = senke && [...senke.bloecke.values()].find((b) => b.n > 0);
+        const cam = st.camera.position, sicht = (b, i) => b.duenn[i * 4 + 2] < r._randAnteil(b.duenn[i * 4 + 3], Math.hypot(b.duenn[i * 4] - cam.x, b.duenn[i * 4 + 1] - cam.z), r.constructor.NAH_STREU.rand), [senke, blk, iz] = [...(st.nahStreu ? st.nahStreu.senken.values() : [])].filter((a) => a.ernte && a.anzahl > 0).flatMap((a) => [...a.bloecke.values()].flatMap((b) => [...Array(b.n).keys()].filter((i) => sicht(b, i)).map((i) => [a, b, i])))[0] || []; // eine pflückbare Pflanze, die das Bild zeigt (ihr Rand-Band, `_randAnteil`): eine ausgedünnte prüft der Pick nie
         if (blk) {
             if (!senke.geo.boundingSphere) senke.geo.computeBoundingSphere();
-            const ku = senke.geo.boundingSphere.clone().applyMatrix4(new T3.Matrix4().fromArray(blk.matrizen, 0));
+            const ku = senke.geo.boundingSphere.clone().applyMatrix4(new T3.Matrix4().fromArray(blk.matrizen, iz * 16));
             for (const d of [[1, 0, 0], [0, 0, 1], [-1, 0, 0], [0, 0, -1], [0, -1, 0]]) {
                 const D = new T3.Vector3(...d);
                 r._fadenkreuzStrahl = () => ({ o: ku.center.clone().addScaledVector(D, -2 * ku.radius - 0.1), d: D });

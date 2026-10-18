@@ -1785,6 +1785,8 @@ class AnazhRealm_siedlung_bauten {
     // mit seiner Breite vorliegen, ein Index muss da sein — ein fehlender Wert ist ein lauter Bruch.
     _chunkSatzEin(art, key, geom, chunkKey) {
         const s = this._chunkSatz(art);
+        if (s.spec.duenn && !(geom && geom.duenn))
+            throw new Error(`_chunkSatzEin(${art}, ${key}): der Satz dünnt je Pass, der Bereich trägt kein Rand-Band`);
         const alt = s.bloecke.get(key);
         if (alt) this._chunkSatzAus(art, key);
         const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
@@ -2249,17 +2251,13 @@ class AnazhRealm_siedlung_bauten {
         let n = 0;
         // eine Höhlen-Zelle (Welle 7) zeichnet nur, wenn die Höhlen-Sicht dieses Passes sie erreicht hat
         const stempel = s.hoehle ? s.hoehle.stempel : 0;
-        // das Rand-Band (die Nah-Streu, `spec.duenn`): jede Zelle zeigt sich nach ihrer Distanz zum Auge des Spielers, in
-        // jedem Pass dieselbe Wahl (die Kaskade wirft, was das Auge sieht)
-        const R = s.spec.duenn;
-        const auge = R ? this.state.camera.position : null;
         for (const b of s.ordnung) {
             if (!b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(L, b.huelle, 0)) continue;
             for (const z of b.zellen)
                 if (
                     (z.knoten === undefined || z.knoten.sicht === stempel) &&
                     !z.huelle.isEmpty() &&
-                    (!auge || z.ord < this._randAnteil(z.weite, Math.hypot(z.dx - auge.x, z.dz - auge.z), R)) &&
+                    this._satzZelleImBand(s, z) &&
                     this._passTrifftBox(L, z.huelle, 0)
                 ) {
                     liste.push(z);
@@ -2303,6 +2301,16 @@ class AnazhRealm_siedlung_bauten {
         } else if (s.spec.richtung < 0 || a.liste.length === 0) this._chunkSatzDicht(s, a, liste, n, key, true);
         else this._chunkSatzTausch(s, a, liste, n, key);
         return a;
+    }
+
+    // DAS RAND-BAND EINER ZELLE (die Nah-Streu, `spec.duenn` Meter): zeigt sie sich nach ihrer Distanz zum Auge des Spielers
+    // (`_randAnteil`, das Gesetz der Nah-Wiese)? In jedem Pass dieselbe Antwort — die Kaskade wirft, was das Auge sieht. Ohne
+    // Rand-Band jede Zelle. Leser: die Wahl je Pass (`_chunkSatzAbschnitt`), gate:schatten-werfer.
+    _satzZelleImBand(s, z) {
+        const R = s.spec.duenn;
+        if (!R) return true;
+        const auge = this.state.camera.position;
+        return z.ord < this._randAnteil(z.weite, Math.hypot(z.dx - auge.x, z.dz - auge.z), R);
     }
 
     _satzListeGleich(x, y) {

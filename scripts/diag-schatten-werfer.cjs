@@ -414,7 +414,7 @@ function probe(selbsttest) {
                     for (const b of s.ordnung) {
                         if (!b.huelle || b.huelle.isEmpty() || !P._passTrifftBox.call(r, L, b.huelle, 0)) continue;
                         for (const z of b.zellen) {
-                            if (z.knoten !== undefined || z.huelle.isEmpty() || !P._passTrifftBox.call(r, L, z.huelle, 0))
+                            if (z.knoten !== undefined || z.huelle.isEmpty() || !r._satzZelleImBand(s, z) || !P._passTrifftBox.call(r, L, z.huelle, 0))
                                 continue;
                             res.geprueft++;
                             if (!gehalten.has(z)) loch(`k${k}: ${s.spec.name}`);
@@ -801,7 +801,7 @@ function probe(selbsttest) {
                 for (const z of b.zellen)
                     if (
                         (z.knoten === undefined || z.knoten.sicht === stempel) &&
-                        !z.huelle.isEmpty() &&
+                        !z.huelle.isEmpty() && r._satzZelleImBand(s, z) &&
                         r._passTrifftBox(L, z.huelle, 0)
                     )
                         liste.push(z);
@@ -1185,7 +1185,7 @@ function probe(selbsttest) {
                         const bGesetz = r._passTrifftBox(L, b.huelle, 0);
                         const bBox = ohneKapsel(L, () => r._passTrifftBox(L, b.huelle, 0));
                         for (const zl of b.zellen) {
-                            if (zl.huelle.isEmpty()) continue;
+                            if (zl.huelle.isEmpty() || !r._satzZelleImBand(sz, zl)) continue;
                             const g = bGesetz && r._passTrifftBox(L, zl.huelle, 0);
                             if (g) menge.add(zl);
                             else if (bBox && ohneKapsel(L, () => r._passTrifftBox(L, zl.huelle, 0))) res.kapselSchnitt++;
