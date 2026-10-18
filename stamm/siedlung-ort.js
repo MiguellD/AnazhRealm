@@ -1102,8 +1102,8 @@ class AnazhRealm_siedlung_ort {
     }
 
     // Der Weg der Platz-Suche: je Ort ein Schritt (yield), am Ende true (der Wagen steht dort, Lage und Gier am Eintrag) oder
-    // false (kein Platz im Radius).
-    *_fahrPlatzWege(entry) {
+    // false (kein Platz im Radius). `meide(x, z)`: ein Ort, den der Aufrufer nie nimmt (die Vorschau: der Genesis-Platz).
+    *_fahrPlatzWege(entry, meide = null) {
         const fzg = this._fahrzeugGesetzFor(entry);
         if (!fzg || !fzg.drive || !fzg.drive.huelle) return true;
         entry._fahrAchseX = true; // Studio-Wagen: Bug +x (die Aufstandspunkte lesen das Gesetz)
@@ -1124,6 +1124,7 @@ class AnazhRealm_siedlung_ort {
                 const a = ry + (i / n) * 2 * Math.PI;
                 const x = x0 + Math.sin(a) * r;
                 const z = z0 + Math.cos(a) * r;
+                if (meide && meide(x, z)) continue;
                 for (let j = r === 0 ? 1 : 0; j < P.richtungen; j++) {
                     const rj = ry + (j / P.richtungen) * 2 * Math.PI;
                     const g = this._fahrPlatzFrei(entry, G, k, x, z, rj);
@@ -2035,23 +2036,30 @@ class AnazhRealm_siedlung_ort {
             this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
         }
     }
-    // DER WUNSCH-ORT DER VORSCHAU vor einem Tor des Genesis-Rings: ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der
-    // Ring steht um ihn); `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das
-    // Platz-Gesetz (`_fahrPlatzSuche`). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor).
-    // → { x, y, z, blick } oder null (kein Boden).
+    // DER ORT DER VORSCHAU eines Tors des Genesis-Rings — das Platz-Gesetz (SG1-F1d): radial hinter dem Tor, vom Genesis-Ort
+    // aus gesehen, jenseits der Lichtung samt Fahrbahn um die Tiefe einer Vorschau (`GENESIS_PLATZ` lichtung + vorschau), nie in
+    // einem Grundriss (`_imGrundriss`: Lichtung · Bau · Weg — liegt dort einer, rückt sie je 1 m hinaus, höchstens um die Tiefe);
+    // `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das Platz-Gesetz der Fahrt
+    // (`_fahrPlatzWege` mit derselben Wand). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben F1: an jedem Tor).
+    // Bis SG1-F1d standen sie 8 m vor dem Tor (r 19) auf der Fahrbahn. → { x, y, z, blick } oder null (kein Boden, kein Platz).
     _portalVorschauOrt(portal) {
         const M = this._genesisMitte();
+        const P = AnazhRealm.GENESIS_PLATZ;
         const px = portal.position.x || 0;
         const pz = portal.position.z || 0;
         const len = Math.hypot(px - M.x, pz - M.z) || 1;
-        const ox = px + ((px - M.x) / len) * 8;
-        const oz = pz + ((pz - M.z) / len) * 8;
-        const y = this.getTerrainHeightAt(ox, oz);
-        if (!Number.isFinite(y)) return null;
-        return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(px - M.x, pz - M.z) };
+        const [dx, dz] = [(px - M.x) / len, (pz - M.z) / len];
+        for (let r = P.lichtung + P.vorschau + 0.5; r <= P.lichtung + 2 * P.vorschau + 0.5; r += 1) {
+            const [ox, oz] = [M.x + dx * r, M.z + dz * r];
+            if (this._imGrundriss(ox, oz, P.vorschau)) continue;
+            const y = this.getTerrainHeightAt(ox, oz);
+            if (!Number.isFinite(y)) return null;
+            return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(dx, dz) };
+        }
+        return null;
     }
 
-    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (~8 m radial vor welt_<worldKey>), sichtbar vorm iframe.
+    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (radial hinter welt_<worldKey>, jenseits der Fahrbahn), sichtbar vorm iframe.
     // Doppelt idempotent (worldMeta.portalPreview<Key> + Existenz-Probe auf id); Foundry kalt → Skip + EIN
     // Await-Book je worldKey, nächster Tick retry. Typen: fachwerk→haus_alemannisch, garage→fahrzeug_gt,
     // schmiede→esse, portale→tor_drachentor (spawnArchitecture silent/autonomous).
@@ -2134,7 +2142,9 @@ class AnazhRealm_siedlung_ort {
             let job = wege[worldKey];
             if (!job) {
                 const probe = { type, position: { x: ort.x, y: ort.y, z: ort.z }, rotationY: opts.rotationY, scale: 1 };
-                job = wege[worldKey] = { probe, weg: this._fahrPlatzWege(probe), ende: null };
+                const P = AnazhRealm.GENESIS_PLATZ; // der Wagen sucht nie zurück auf den Platz (dieselbe Wand wie sein Ort)
+                const weg = this._fahrPlatzWege(probe, (x, z) => !!this._imGrundriss(x, z, P.vorschau));
+                job = wege[worldKey] = { probe, weg, ende: null };
             }
             for (let i = 0; i < AnazhRealm.FAHR_PLATZ_JE_TAKT && job.ende === null; i++) {
                 const r = job.weg.next();
@@ -2158,7 +2168,7 @@ class AnazhRealm_siedlung_ort {
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
-            this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
+            this.log(`Portal-Preview ${worldKey}: ${type} hinter ${portalType}, jenseits der Fahrbahn.`, "INFO");
         } else if (absage === "platz") fertig[worldKey] = true;
     }
 
@@ -2548,12 +2558,19 @@ AnazhRealm._fahrPlatzGesetz = function () {
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.platz/fahrPlatz");
 };
 // DER GENESIS-PLATZ (K52): die Lichtung der Start-Plattform trägt den Ring der Kern-Portale — `ringR` ist der Kreis der Tore
-// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus; über dem Platz steht keine Krone, auf ihm kein Busch und
-// kein Fels (`_grundrissVon` → `_imGrundriss`). Bis K52 trug die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit
-// außerhalb: ein Kristall stand 1,2 m vor dem Tor des Terrain-Studios, der Wald wuchs bis an die Tore.
-AnazhRealm.GENESIS_PLATZ = Object.freeze({ ringR: 11, rand: 4 });
+// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus, `bahn` die Fahrbahn um die Tore (SG1-F1d: der Spieler
+// fährt um sie, zwei Spuren), `lichtung` ihre Summe; über dem Platz steht keine Krone, auf ihm kein Busch, kein Fels und keine
+// Vorschau (`_grundrissVon` → `_imGrundriss`). `vorschau` ist die Tiefe einer Vorschau jenseits der Lichtung: der Radius des
+// größten Grundrisses der Reihe (`PORTAL_VORSCHAU`; haus_alemannisch 4,75 × 4,15 m halb → 6,3 m, gemessen 18.10.). Bis K52 trug
+// die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit außerhalb: ein Kristall stand 1,2 m vor dem Tor des
+// Terrain-Studios. Bis SG1-F1d endete der Platz an den Toren (15 m): alle vier Vorschauen (r 19) und ein Felsturm (r 16,5) standen
+// auf der Fahrbahn, die Runde stieß an Esse, Haus und Drachentor (Radeon 18.10.: 13 Täter, 270° von 360°).
+AnazhRealm.GENESIS_PLATZ = (() => {
+    const [ringR, rand, bahn] = [11, 4, 6];
+    return Object.freeze({ ringR, rand, bahn, lichtung: ringR + rand + bahn, vorschau: 7 });
+})();
 // DIE VORSCHAU DER STUDIO-TORE des Genesis-Rings: nähert sich der Spieler einem Tor auf `anflugM`, stellt
-// `_ensurePortalPreview` den Typ seiner Zeile [Welt, Typ, Id] ~8 m vor ihm hin (`_portalVorschauOrt`), auch Sekunden später (das
+// `_ensurePortalPreview` den Typ seiner Zeile [Welt, Typ, Id] hinter ihm hin (`_portalVorschauOrt`), auch Sekunden später (das
 // Buch kalt). Leser: der Anflug (`_portalApproachPrefetch`) und die Fahrt des Spielgangs — kein Weg des Wagens kommt einem dieser
 // Tore näher (Prüfer 18.10.: mitten in der Fahrt bei −15/15 „Portal betreten: tor_drachentor", die Vorschau stand noch nicht).
 AnazhRealm.PORTAL_VORSCHAU = Object.freeze({

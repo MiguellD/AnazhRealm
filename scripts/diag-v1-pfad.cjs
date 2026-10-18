@@ -100,17 +100,19 @@ Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.005, w
 // ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um
 // mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032;
 // Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°). GRENZE: auf dem
-// Null-Renderer (die Batterie der CI) trennt der Ruck nicht (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) — dort fällt
-// Verdacht 3 (Lage und Blick aus zwei Quellen) über den Gleichlauf (Basis 0,93/1,32, Kopf ≤ 0,04); der Ruck urteilt auf der Karte.
+// Null-Renderer (die Batterie der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch der
+// Gleichlauf (Prüfer R3 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die Karte. Der
+// Schritt steht im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts fährt, nie auf
+// einem Zweig: der Merge-Beweis eines Zweigs ist der lokale Gang auf der Radeon (`--station fahrt`, die Karte der Weiche).
 Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
 // Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz: 0, der
 // Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.: 4,3 %, das leere Canvas 0).
 Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
-// Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `ringBahnM` breit jenseits ihrer Tiefe (zwei Spuren je eine
-// Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im Tempo `ringMs`, die
+// Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `GENESIS_PLATZ.bahn` breit jenseits ihrer Tiefe (zwei Spuren je
+// eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im Tempo `ringMs`, die
 // Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem Täter steigt der Spieler
 // `ringSprung`° weiter ein.
-Object.assign(SOLL, { ringBahnM: 6, ringMs: 5, ringSprung: 10, ringAblage: 1.2 });
+Object.assign(SOLL, { ringMs: 5, ringSprung: 10, ringAblage: 1.2 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
 // ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
 // Ladeschirm ist weg, W trägt den Spieler.
@@ -656,18 +658,14 @@ async function probe(arg) {
         const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
         try {
             // DIE WELT, WIE DER SPIELER SIE FINDET: der Genesis-Ring steht, bevor der Wagen kommt — ohne die Lichtung
-            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort —, und die Vorschau
-            // jedes Studio-Tors, dem der Spieler nah steht (`PORTAL_VORSCHAU`: sie entsteht, wenn das Buch warm ist, auch erst
-            // in der Bahn des Wagens)
-            const VS = r.constructor.PORTAL_VORSCHAU;
-            const ruft = () => st.architectures.filter((a) => a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w));
-            const vorschauOffen = () =>
-                ruft().filter((a) => !(r._portalPreviewFertig || {})[a.type.slice(5)] && Math.hypot(a.position.x - st.playerMesh.position.x, a.position.z - st.playerMesh.position.z) < VS.anflugM).map((a) => a.type);
-            for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !(st.worldMeta && st.worldMeta.genesisPortalRing && !vorschauOffen().length); i++) {
+            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort. Die Vorschau eines
+            // Studio-Tors (`PORTAL_VORSCHAU`) entsteht, wann das Spiel sie stellt, auch erst in der Fahrt: ihr Platz liegt
+            // jenseits der Fahrbahn (`_portalVorschauOrt`), kein Warten der Linse verbirgt sie (SG1-F1d)
+            for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
                 await tick(1);
                 if (r._genesisOrtT !== t) [t, n] = [r._genesisOrtT, n + 1];
             }
-            [m.ring, m.vorschauOffen] = [!!(st.worldMeta && st.worldMeta.genesisPortalRing), vorschauOffen()];
+            m.ring = !!(st.worldMeta && st.worldMeta.genesisPortalRing);
             let phase = "erste Fahrt"; // wo der Gang steht, wenn der Spieler durch ein Tor geht (`m.tor`)
             const pe = { type: m.typ, position: { x: 0, y: 0, z: 0 }, rotationY: 0, scale: 1, _fahrAchseX: true };
             const G = r._fahrSatz(pe, r._vehicleProfile(pe));
@@ -1000,17 +998,12 @@ async function probe(arg) {
             // Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER (die Boxen des Gesetzes, ein
             // Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der Hang-Wagen bei −79/106 stand außerhalb des
             // Kreises um die Mitte, die Flanke in der Apertur — „Portal betreten: tor_drachentor")
-            // Und kein Weg kommt einem Studio-Tor des Rings näher als seine ANNÄHERUNG (`PORTAL_VORSCHAU.anflugM` + 2 m): sie ruft
-            // seine Vorschau ~8 m vor es, auch Sekunden später (Prüfer 18.10., Basis f45ee994: der Kreis bei −15/15 rief das
-            // tor_drachentor vor welt_portale in seine Bahn, „Portal betreten"; Wechsel-Orte am Ring auch bei −24/33 und 49/−3).
             // `weg`: wie weit der Wagen vom Ort fährt (der Kreis seinen Durchmesser).
             const torFrei = r.constructor.PORTAL_REACH_M + r.constructor.MOUNT_RANGE_M + 2;
             const ort = (wahl) => {
                 const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
                 const torBoxen = tore.flatMap((a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []);
-                const ring = ruft();
                 const torNah = (x, z, weg = 0) =>
-                    ring.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < weg + VS.anflugM + 2) ||
                     tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < weg + torFrei) ||
                     torBoxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < (weg + torFrei) ** 2);
                 for (let rad = 10; rad <= 300; rad += 10)
@@ -1085,10 +1078,10 @@ async function probe(arg) {
                 }
             }
             // DIE RUNDE UM DEN GENESIS-RING (F1d, Prüfer R3 18.10.): der Spieler fährt um die Tore auf der Fahrbahn jenseits ihrer
-            // Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `ringBahnM` breit, zwei Spuren: bei 1/3 und 2/3 ihrer Breite) je
+            // Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und 2/3 ihrer Breite) je
             // Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`; die Lenkung hält die Spur (kein
             // Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der Name — das Tor, durch das der Wagen geht
-            // („Portal betreten“: `_ensurePortalPreview` stellt ein lebendes tor_drachentor ~8 m radial vor welt_portale), der Bau,
+            // („Portal betreten“: bis SG1-F1d stand das lebende tor_drachentor der Vorschau auf der Bahn), der Bau,
             // an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt der Spieler `ringSprung`° weiter in einen neuen Wagen.
             {
                 phase = "Ring";
@@ -1117,7 +1110,7 @@ async function probe(arg) {
                     return wer;
                 };
                 for (const anteil of [1 / 3, 2 / 3]) {
-                    const R = +(GP.ringR + GP.rand + anteil * SOLL.ringBahnM).toFixed(2);
+                    const R = +(GP.ringR + GP.rand + anteil * GP.bahn).toFixed(2);
                     const s = { R, grad: 0, sprung: 0, weg: 0, ablage: 0 };
                     g.spuren.push(s);
                     const tat = (t) => taeter(Object.assign(t, { R, grad: Math.round((at * 180) / Math.PI) }));
