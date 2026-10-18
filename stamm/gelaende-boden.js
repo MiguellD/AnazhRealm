@@ -1184,7 +1184,7 @@ class AnazhRealm_gelaende_boden {
     // DIE EDITS IM GITTER (`_editForm` je Ecke, Spiegel `editsImGitter` in voxel-worker.js — byte-gleich, gate:worker-dichte):
     // jede Ecke in der Reichweite eines Edits (Kasten, `_editReich`) beginnt bei ihrer gekappten Basis und nimmt die Edits in
     // Setz-Reihenfolge; sie trägt n (dieselbe Fläche wie das Gesetz max(1, |Basis|/tiefeM) · n, ohne dessen Maß — die Kanten
-    // des Gitters sehen das Abstandsfeld der Säule). Float32 wie das Gitter.
+    // des Gitters sehen das Abstandsfeld der Säule), wo kein Edit sie änderte, ihre Basis. Float32 wie das Gitter.
     static _editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
         const out = new Float32Array(basis);
         const beruehrt = new Uint8Array(out.length);
@@ -1216,6 +1216,11 @@ class AnazhRealm_gelaende_boden {
                     }
                 }
             }
+        }
+        // Wo kein Edit die Kappe änderte, trägt die Ecke wieder ihre Basis: unberührter Boden bleibt byte-alt (die Kappe
+        // allein verschob die Interpolation steiler Kanten bis an den Rand der Reichweite — A2 changed 9 von 507).
+        for (let idx = 0; idx < out.length; idx++) {
+            if (beruehrt[idx] && out[idx] === AnazhRealm._editKappe(basis[idx])) out[idx] = basis[idx];
         }
         return out;
     }

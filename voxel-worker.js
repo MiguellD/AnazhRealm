@@ -607,7 +607,8 @@ function bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits) {
 }
 
 // Spiegel von `_editsImGitter` (Stamm, F2a 17.10.): je Ecke in der Reichweite eines Edits die Form (`editForm`) in Setz-
-// Reihenfolge auf der gekappten Basis, die Ecke trägt n — dieselben Kästen, dieselbe Reihenfolge, Float32.
+// Reihenfolge auf der gekappten Basis, die Ecke trägt n (wo kein Edit sie änderte, die Basis) — dieselben Kästen, dieselbe
+// Reihenfolge, Float32.
 // MUSS bit-identisch zur Main (gate:worker-dichte).
 function editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
     const out = new Float32Array(basis);
@@ -640,6 +641,10 @@ function editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
                 }
             }
         }
+    }
+    // wo kein Edit die Kappe änderte, wieder die Basis (unberührter Boden byte-alt)
+    for (let idx = 0; idx < out.length; idx++) {
+        if (beruehrt[idx] && out[idx] === editKappe(basis[idx])) out[idx] = basis[idx];
     }
     return out;
 }
