@@ -27,7 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über ERSTARREN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4427.
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
@@ -44,15 +44,11 @@ function check(name, ok, detail) {
     page.setDefaultTimeout(280000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true; // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
-    });
+    await nullRenderer(page); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
 
         out = await page.evaluate(async () => {
             const r = window.anazhRealm,

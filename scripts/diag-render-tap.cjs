@@ -14,7 +14,7 @@
 // und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const server = statikServer();
@@ -34,9 +34,7 @@ const server = statikServer();
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         if (REAL) {
             // Der echte-Vendor-Pfad: der rAF-Loop rendert selbst — nur beobachten.
             const real = await page.evaluate(async () => {

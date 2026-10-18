@@ -30,7 +30,7 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -149,9 +149,7 @@ async function welt() {
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)

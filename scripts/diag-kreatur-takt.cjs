@@ -14,7 +14,7 @@
 //   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
 //               dem Grund, der den Täter beim Namen nennt
 "use strict";
-const { statikServer, starteBrowser, CODE_OF_SEITE } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -82,9 +82,7 @@ async function headless(laeufe) {
     page.setDefaultTimeout(880000);
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.stack || e.message).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const aus = [];
     // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), die Boden-Funktion trägt.
     const einschwingen = () =>

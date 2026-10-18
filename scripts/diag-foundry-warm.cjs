@@ -7,7 +7,7 @@
 // iframe-Produktionsweg ist ersetzt, der Gate testet den echten Pfad.
 //   node scripts/diag-foundry-warm.cjs
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WARM_PORT || 4551);
 const server = statikServer();
 
@@ -15,10 +15,7 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true; // der GATE-Kontext (kein GPU) — genau hier muss die Pipeline lesen
-        window.__anazhForceFoundry = true; // den Worker im Null-Renderer ERZWINGEN (W1-Beweis: liest die Pipeline headless?)
-    });
+    await nullRenderer(page, { foundry: true }); // der GATE-Kontext (kein GPU) — genau hier muss die Pipeline lesen · den Worker im Null-Renderer ERZWINGEN (W1-Beweis: liest die Pipeline headless?)
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

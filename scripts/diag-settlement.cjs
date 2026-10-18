@@ -28,7 +28,7 @@
 // Re-Mint 30.09.2026 (V18.492, begründet): der Export trägt je Slot additiv `chimney`
 //   (die Schornstein-Position, die der Rauch des fachwerk-Gesetzes liest); das Layout
 //   (Kulturen · Anker · Drehung · ov) blieb gegen das alte Golden feld-für-feld gleich.
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -704,10 +704,7 @@ const FIXTURES = [
         for (const datei of dateien) {
             const save = JSON.parse(fs.readFileSync(datei, "utf8"));
             const page = await browser.newPage();
-            await page.evaluateOnNewDocument(() => {
-                window.__anazhForceFoundry = true;
-                window.__anazhHeadlessNullRenderer = true;
-            });
+            await nullRenderer(page, { foundry: true });
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
             const z = await page.evaluate(async (s) => {
                 const dl = performance.now() + 90000;
@@ -1406,10 +1403,7 @@ const FIXTURES = [
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

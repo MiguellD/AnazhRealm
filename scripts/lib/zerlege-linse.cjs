@@ -50,7 +50,7 @@
 // seine Kosten allein treffen (±max(1 ms, 35 %)), und ohne ihn verschwindet der Posten.
 //
 //   Seite:     window.__passUhr() · __bankRunde(n) · __stempelWache() · __frameAnatomie(uhr, n) · __zerlegeInventur(k) · __zerlegeMessen(k)
-//              · __zerlegeLast(k) · __zerlegeZustand() · __zerlegeVergleich(a, b) · __ketteKante(uniform)
+//              · __zerlegeLast(k) · __zerlegeZustand() · __zerlegeVergleich(a, b) · __ketteKante(uniform) · __zweiGipfel(w)
 //   Werkbank:  node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder ordner]
 //                                                 [--selbsttest [--last iter]]
 "use strict";
@@ -83,18 +83,8 @@ function passUhr() {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
     const be = rend.backend;
-    const uhr = {
-        messen: false,
-        aus: new Set(),
-        stapel: [],
-        idStapel: [],
-        lauf: 0,
-        baum: null,
-        zaehl: {},
-        uidPass: new Map(),
-        frameZ: null,
-        zStapel: [],
-    };
+    const uhr = { messen: false, aus: new Set(), stapel: [], idStapel: [], lauf: 0, baum: null, zaehl: {},
+        uidPass: new Map(), frameZ: null, zStapel: [] };
     const rohSzene = rend._renderScene;
     const rohUid = be.updateTimeStampUID;
     const ab = [];
@@ -158,13 +148,54 @@ function passUhr() {
         uhr.uidPass.clear();
         return je;
     };
-    uhr.nullen = () => {
-        for (const z of Object.values(uhr.zaehl)) z.an = z.aus = 0;
-    };
-    uhr.ab = () => {
-        while (ab.length) ab.pop()();
-    };
+    uhr.nullen = () => Object.values(uhr.zaehl).forEach((z) => (z.an = z.aus = 0));
+    uhr.ab = () => { while (ab.length) ab.pop()(); };
     return uhr;
+}
+
+// DIE ZWEI GIPFEL JE PASS (Befund G8, OMEN 18.10.; Leser: `lauf` → `gpuJePassMs`): die Frame-Werte eines Passes, an der
+// größten Lücke in zwei Gipfel geteilt — `rein` p50 des unteren, `anteilOben` Anteil des oberen, `versatz` Abstand der
+// Gipfel-Mediane; p50 · p95 · frames wie zuvor. Die Lücke ist die weiteste Spanne, die höchstens 2 % der Werte überbrückt
+// (an der GTX liegen einzelne k0-Werte mitten in der Lücke — eine Einzel-Lücke teilte dort nicht), geteilt an ihrer Mitte
+// nur, wenn (a) beide Seiten ≥ 2 % der Werte tragen (der kleinste gemessene Anteil oben), (b) die Spanne ≥ 0,1 ms misst und
+// (c) ≥ das Doppelte der Breite des unteren Gipfels (p5 → p95). GTX k0 (unten 0,227–0,232, oben 0,63–0,65): Spanne 0,33–
+// 0,34 bei Breite 0,03–0,04; ein einhöckriger Pass überbrückt mit 2 % seiner Werte ~0,4 σ, gefordert wären ≥ 2 σ — er
+// bleibt ganz (rein = p50, anteilOben 0, versatz 0).
+function zweiGipfel(w) {
+    const a = w.filter(Number.isFinite).sort((x, y) => x - y);
+    const q = (b, f) => (b.length ? +b[Math.min(b.length - 1, Math.floor(f * b.length))].toFixed(2) : null);
+    const n = a.length, m = Math.max(1, Math.ceil(n / 50)), k = Math.floor(n / 50);
+    let j = 0;
+    for (let s = m; s + k <= n - m; s++) if (!j || a[s + k] - a[s - 1] > a[j + k] - a[j - 1]) j = s;
+    const d = j ? a[j + k] - a[j - 1] : 0;
+    let i = j;
+    while (i < j + k && a[i] < (a[j - 1] + a[j + k]) / 2) i++;
+    if (!(d >= 0.1 && d >= 2 * (a[Math.floor(0.95 * i)] - a[Math.floor(i / 20)]))) i = n;
+    const [u, o] = [a.slice(0, i), a.slice(i)];
+    const versatz = o.length ? +(q(o, 0.5) - q(u, 0.5)).toFixed(2) : 0;
+    return { p50: q(a, 0.5), p95: q(a, 0.95), frames: w.length, rein: q(u, 0.5),
+        anteilOben: n ? +(o.length / n).toFixed(2) : 0, versatz };
+}
+// Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): synthetische Pässe — zwei Gipfel in der GTX-Lage teilen (rein der
+// untere, anteilOben genau, auch wo der p50 schon oben steht oder Werte in der Lücke liegen), einhöckrige, breite, kleine und
+// ein Ausreißer bleiben ganz; jedes Kriterium (a)–(c) und die Brücke hat einen Fall, der ohne es ROT wird.
+function zweiGipfelSelbsttest() {
+    const reihe = (n, a, b) => Array.from({ length: n }, (_, i) => a + ((b - a) * i) / (n - 1));
+    const unten = (n) => reihe(n, 0.2, 0.26);
+    return [ // [Name, Werte, p50, rein (null = p50), anteilOben, versatz]
+        ["zwei Gipfel, oben 0,45", [...unten(330), ...reihe(270, 0.6, 0.7)], 0.25, 0.23, 0.45, 0.42],
+        ["zwei Gipfel, oben 0,55 (p50 kippt)", [...unten(270), ...reihe(330, 0.6, 0.7)], 0.61, 0.23, 0.55, 0.42],
+        ["zwei Gipfel, oben 0,02", [...unten(588), ...reihe(12, 0.6, 0.7)], 0.23, 0.23, 0.02, 0.42],
+        ["zwei Gipfel, 5 Werte in der Lücke", [...unten(329), ...reihe(5, 0.3, 0.5), ...reihe(266, 0.6, 0.7)], 0.25, 0.23, 0.45, 0.42],
+        ["einhöckrig mit Schwanz", [...reihe(540, 0.43, 0.57), ...reihe(12, 0.6, 1.1)], 0.5, null, 0, 0],
+        ["breit, Lücke 0,15 ms", [...reihe(500, 2, 6), ...reihe(100, 6.15, 8)], 4.4, null, 0, 0],
+        ["ein Ausreißer", [...unten(599), 3], 0.23, null, 0, 0],
+        ["klein, zweiter Modus +0,03 ms", [...reihe(540, 0.017, 0.02), ...reihe(60, 0.05, 0.06)], 0.02, null, 0, 0],
+    ].flatMap(([name, w, p50, rein, anteilOben, versatz]) => {
+        const t = zweiGipfel(w);
+        const ok = t.p50 === p50 && t.rein === (rein == null ? t.p50 : rein) && t.anteilOben === anteilOben;
+        return ok && t.versatz === versatz && t.frames === w.length ? [] : [`${name}: ${JSON.stringify(t)}`];
+    });
 }
 
 // DIE EINE BANK-RUNDE (gpu-bank · zerlegen): n Frames direkt hintereinander (ohne rAF, ohne VSync) — je Frame der
@@ -1581,8 +1612,11 @@ module.exports = {
     zerlegeSchalter,
     zerlegeAuswerten,
     zerlegeTabelle,
+    zweiGipfel,
+    zweiGipfelSelbsttest,
     ZERLEGE_INSTALL:
         `window.__passUhr = (function(){ const haken = ${haken.toString()}; return ${passUhr.toString()}; })();` +
+        `window.__zweiGipfel = ${zweiGipfel.toString()};` +
         `window.__bankRunde = ${bankRunde.toString()};` +
         `window.__stempelWache = ${stempelWache.toString()};` +
         `window.__frameAnatomie = (function(){ const haken = ${haken.toString()}; return ${frameAnatomie.toString()}; })();` +

@@ -913,15 +913,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 8) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
         // (NICHT eigener Shader).
         if (sampleMeshKey) {
-            // Deterministisch die STATISCHE Wasser-Form prüfen (flach auf L, kein Bank-Klettern): nach einem
-            // Carve darf Wasser dynamisch bis +4 m über L fließen (surfY = L + caDelta, _caWaterTopDelta),
-            // und ein früheres Band hinterlässt caDelta in waterLevelCells. Darum das CA leeren + die
-            // sampleMesh frisch bauen (caDelta=0) — geprüft wird die ruhende Form, nicht der Live-Fluss.
-            if (r.state.waterLevelCells && r.state.waterLevelCells.size > 0) {
-                r.state.waterLevelCells.clear();
-                const _sc = sampleMeshKey.split(",");
-                r._buildVoxelChunkWaterIsoSurface(Number(_sc[0]), Number(_sc[1]));
-            }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             // Der EINE Render-Pfad ist das Zell-Oberkanten-Sheet ("chunk-water-cellsheet"); der Debug-Zwilling
@@ -1857,8 +1848,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
 
 // Die Wasser-Wahrheits-Linse (V18.475) — eingefaltet aus gate:wasser-wahrheit (D3b): die stehende Linse der Schöpfer-Browser-Symptome
 // vom 14.07. — F1 „Wasser kriecht Wände hoch" (das Höhen-Gate der Zell-Dächer) · F2 „spiegelnder Filter über Terrain" (die Rim-Wand
-// bei −Infinity) · F3 die Verdunstung · F4 die Stau-Qualifikation · F5 der Ruhe-Fixpunkt · F6 die geleerte Spalte · F7 das Netz
-// trägt seine Bytes; der Selbsttest an der Naht der Welt (F3 · F4 · F5 · F7), nie am Quelltext.
+// bei −Infinity) · F4 die Stau-Qualifikation · F5 der Ruhe-Fixpunkt (auch nach dem Schnitt, F3 Graben am Fluss) · F6 die
+// geleerte Spalte · F7 das Netz trägt seine Bytes; der Selbsttest an der Naht der Welt (F4 · F5 · F7), nie am Quelltext.
 async function checkBandWasserWahrheit(ctx) {
     const { page, check } = ctx;
     await safeEvaluate(page, async () => {
@@ -1870,7 +1861,7 @@ async function checkBandWasserWahrheit(ctx) {
         const AR = r.constructor;
         const o = { fails: [] };
         const fail = (msg) => o.fails.push(msg);
-        // DER WELT-TICK AM SCHEIN-CHUNK (Konsum am Ruf, F3 + F5): ein ruhender Chunk 0,0 ohne Bewegung; der Spion zählt, ob
+        // DER WELT-TICK AM SCHEIN-CHUNK (Konsum am Ruf, F5): ein ruhender Chunk 0,0 ohne Bewegung; der Spion zählt, ob
         // `_tickWorldWaterCA` den benannten Versorger ruft, der Automat merkt sich die Kappe, die er bekommt.
         const capS = new Int16Array(64).fill(6);
         const eS = { lod: 0, waterCells: new Uint8Array(1024) };
@@ -1881,7 +1872,6 @@ async function checkBandWasserWahrheit(ctx) {
         ws._tickWaterCA = (...a) => ((kappe = a[7]), 0);
         const weltTick = (versorger) => {
             ws.state = { waterCAActive: new Set(["0,0"]), voxelChunks: new Map([["0,0", eS]]), waterCapJ: new Map([["0,0", capS]]) };
-            eS._caStillTicks = AR.CA_EVAP.QUIET_TICKS;
             return window.__consumes(ws, "_tickWorldWaterCA", ws, versorger, []);
         };
 
@@ -2054,58 +2044,6 @@ async function checkBandWasserWahrheit(ctx) {
         if (!bank && !core)
             o.riverNote = "kein isolierter Fluss-Punkt gefunden — Fluss-Wand unmessbar (Rim-Kern grün)";
 
-        // ── FIXTURE 3 (F3) — DIE VERDUNSTUNG: settled Zunge fällt, Quell-Zelle bleibt ──
-        const runEvap = (evapFn, ticks) => {
-            const SOLID = AR.CELL_STATE.SOLID;
-            const WATER = AR.CELL_STATE.WATER;
-            const d = 8,
-                dy = 16,
-                dSq = d * d;
-            const cells = new Uint8Array(dSq * dy);
-            for (let c = 0; c < dSq; c++) cells[c] = SOLID; // Boden j=0
-            const src = new Uint8Array(dSq);
-            cells[10 + 1 * dSq] = WATER; // Quell-Spalte: Flood-Wasser
-            src[10] = 1;
-            const level = new Float64Array(dSq * dy);
-            level[10 + 1 * dSq] = 1.0;
-            level[30 + 1 * dSq] = 0.6; // die abgeklungene Zunge: AIR-Zelle über trockenem Grund
-            const band = { jMin: 0, jMax: 3 };
-            const at = [];
-            for (let t = 0; t < ticks; t++) {
-                evapFn.call(r, level, cells, src, d, dy, band);
-                at.push(level[30 + 1 * dSq]);
-            }
-            return { tongue: level[30 + 1 * dSq], src: level[10 + 1 * dSq], at10: at[9] };
-        };
-        const RENDER = 0.5; // die Render-Schwelle (`_caColumnScan`: level > 0.5)
-        const RATE = AR.CA_EVAP ? AR.CA_EVAP.RATE : NaN;
-        const N3 = Math.ceil((0.6 - RENDER) / RATE) + 1; // Ticks bis unter die Schwelle
-        const evapOk = typeof r._caEvaporateSettled === "function";
-        if (!evapOk) fail("F3: _caEvaporateSettled existiert nicht");
-        else {
-            const e1 = runEvap(r._caEvaporateSettled, N3);
-            const e2 = runEvap(r._caEvaporateSettled, 120);
-            o.evap = { N3, afterN: e1.tongue, srcAfterN: e1.src, after120: e2.tongue, srcAfter120: e2.src };
-            if (!(e1.tongue < RENDER))
-                fail(
-                    `F3: Zunge nach ${N3} Ticks nicht unter der Render-Schwelle (${e1.tongue.toFixed(3)} ≥ ${RENDER})`
-                );
-            if (e2.tongue !== 0) fail(`F3: Zunge verdunstete nicht auf 0 (${e2.tongue})`);
-            if (e1.src !== 1 || e2.src !== 1)
-                fail(`F3: QUELL-Zelle verdunstete (${e2.src} ≠ 1) — der Pin-Vertrag!`);
-            // KONSUM (Lehre 5): der Welt-Tick ruft den Chokepoint am ruhenden Chunk.
-            if (!weltTick("_caEvaporateSettled")) fail("F3: _tickWorldWaterCA ruft die Verdunstung _caEvaporateSettled nicht");
-            // Selbst-Test F3: RATE genullt (die Naht AnazhRealm.CA_EVAP) → die Zunge MUSS stehenbleiben.
-            const evapAlt = AR.CA_EVAP;
-            AR.CA_EVAP = Object.freeze(Object.assign({}, evapAlt, { RATE: 0 }));
-            try {
-                o.evapBroken = runEvap(r._caEvaporateSettled, 120).tongue;
-            } finally {
-                AR.CA_EVAP = evapAlt;
-            }
-            if (o.evapBroken !== 0.6) fail(`F3-Selbsttest: deaktivierte Verdunstung bewegte die Zunge (${o.evapBroken})`);
-        }
-    
         // ── FIXTURE 4 (F4) — DIE STAU-QUALIFIKATION: geerdet + geschlossen ──
         const runStau = (clusterFn, naht) => {
             const shim = Object.create(r);
@@ -2153,6 +2091,9 @@ async function checkBandWasserWahrheit(ctx) {
         // der Ruhe, die Deck-Zelle (4b) floss in die Zeile über dem See und aufs Land, die flache Ufer-Spalte leerte sich.
         // Bühne: See (i ≤ 3, Flut j 4..6, Quelle), Deck-Spalte (i = 4, Boden j ≤ 6, Deck-Zelle j 7), Land (i ≥ 5, Boden
         // j ≤ 6). Gezählt: Spalten, deren Live-Dach nach 200 Takten vom Flut-Dach abweicht (> 0,6 Zelle oder leer/fremd).
+        // F3 (Graben am Fluss, 17.10.): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge
+        // auf dem Land, j 7) — die Kappe des Gesetzes öffnet dem Land keine Haut (bis F3: Boden + 2 Zellen, die Zunge stand
+        // und floss), über ihr steht kein Wasser mehr.
         const runRuhe = (capFn, kappeHoch) => {
             const SOLID = AR.CELL_STATE.SOLID;
             const WATER = AR.CELL_STATE.WATER;
@@ -2179,7 +2120,11 @@ async function checkBandWasserWahrheit(ctx) {
                 return -Infinity;
             };
             shim._stauFieldsNear = () => null;
-            shim._chunkRegionHasCarve = () => false;
+            const vorher = new Float64Array(dSq * dy);
+            for (let c = 0; c < cells.length; c++) if (cells[c] === WATER) vorher[c] = 1;
+            vorher[6 + 7 * dSq] = 0.9; // die Zunge auf dem Land
+            shim.state.waterLevelCells = new Map([["0,0", vorher]]);
+            shim._chunkRegionHasCarve = () => true;
             const level = capFn.call(shim, 0, 0);
             const cap = shim.state.waterCapJ.get("0,0");
             if (kappeHoch) for (let c = 0; c < cap.length; c++) if (cap[c] >= 0) cap[c]++; // der K37-Täter: eine Zeile über der Ruhe
@@ -2310,7 +2255,7 @@ async function checkBandWasserWahrheit(ctx) {
         }
         return o;
     })) || { fails: ["keine Antwort der Seite"] };
-    check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F3 Verdunstung · F4 Stau · F5 Ruhe-Fixpunkt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F3 · F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
+    check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
 }
 
 // Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab (D3b): das Wasser-Verdikt der Streu liest das

@@ -569,7 +569,15 @@ async function starteBrowser(opts = {}) {
     return browser;
 }
 
-// Auf die Welt warten: anazhRealm steht mit seinem Takt.
+// Der Null-Renderer (die Seite zeichnet nichts: `__anazhHeadlessNullRenderer`, der Schalter des Stamms; `foundry`: die
+// Foundry baut auch ohne Bild, `__anazhForceFoundry`) — EINMAL hier, jede Linse ohne Bild ruft ihn vor dem Laden;
+// `warteAufWelt` wartet, bis die Welt ihren Takt trägt — die EINE Warte jeder Linse.
+async function nullRenderer(page, { foundry = false } = {}) {
+    await page.evaluateOnNewDocument((mitFoundry) => {
+        if (mitFoundry) window.__anazhForceFoundry = true;
+        window.__anazhHeadlessNullRenderer = true;
+    }, foundry);
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
@@ -579,14 +587,11 @@ async function warteAufWelt(page, frist = 120000) {
 // Die Seite der Welt: Null-Renderer wahlweise, laden, auf die Welt warten.
 async function oeffneWelt(
     browser,
-    { port, pfad = "/index.html", nullRenderer = false, viewport, frist = 120000, warteBis = "networkidle0", warten = true } = {}
+    { port, pfad = "/index.html", nullRenderer: ohneBild = false, viewport, frist = 120000, warteBis = "networkidle0", warten = true } = {}
 ) {
     const page = await browser.newPage();
     if (viewport) await page.setViewport(viewport);
-    if (nullRenderer)
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+    if (ohneBild) await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${port}${pfad}`, { waitUntil: warteBis, timeout: frist });
     if (warten) await warteAufWelt(page, frist);
     return page;
@@ -701,6 +706,8 @@ module.exports = {
     statikServer,
     starteBrowser,
     oeffneWelt,
+    warteAufWelt,
+    nullRenderer,
     halteBis,
     buehne,
     uferStellen,

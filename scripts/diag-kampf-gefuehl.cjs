@@ -73,7 +73,7 @@
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
@@ -567,16 +567,12 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         if (!pageErr) pageErr = m;
         console.log("[PAGE-ERROR]", m);
     });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true; // GPU-frei, Produktions-Boot
-    });
+    await nullRenderer(page); // GPU-frei, Produktions-Boot
     let out = null;
     let welle = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         // Warmup: die Welt settled pumpen (plateau-basiert, die V18.273-Lehre).
         await page.evaluate(async () => {
             const r = window.anazhRealm;

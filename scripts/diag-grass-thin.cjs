@@ -21,7 +21,7 @@
 // Die Boden-Wiese selbst (Parallax-Halme) beweist das Bild (PFLICHT-OFFEN D); der volle
 // Playtest prüft ihren Konsum (Boden-Grün → Halm-Gewicht). GPU-frei.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 // Port über GRASS_THIN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4331.
@@ -44,9 +44,7 @@ const server = statikServer();
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 60000,
-        });
+        await warteAufWelt(page, 60000);
         await page.evaluate(async () => {
             const r = window.anazhRealm;
             const old = r.state.voxelWorker;

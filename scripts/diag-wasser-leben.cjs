@@ -1,47 +1,23 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7). Befund 06.10. (sichtbares
-// Fenster, echte Radeon, artifacts/profiband/leben/befund-wasser-fluss.md), jede Zahl hier zuerst ROT am Vorher gemessen:
-//   F (Q7-Gestalt)  der Fluss-Spiegel steigt längs der Mitte (14,2 % der 2-m-Schritte, 133 m Anstieg) und wölbt sich quer
-//                   (Spanne der Lauf-Fläche über die Kanal-Breite p90 9,7 m) — ein Fluss fließt nie bergauf, quer liegt
-//                   er waagrecht; ein Wasserfall steht EINMAL je Ort (19 Einträge, 13 Orte).
-//   K (Q6-Körper)   wer vom Ostufer in den See (Spiegel 22,93, 8 m tief) geht, geht am Grund (966 Frames Brustkorb unter
-//                   dem Spiegel UND geerdet, bis 4,68 m tief); in Ruhe treibt der Körper auf dem Zell-Dach (Füße 0,35 m
-//                   unter dem Spiegel statt der Brustkorb-Linie 1,22 m); Kraulen 0,141 m/s = 14,4 % des Gesetzes; das
-//                   Eintauchen aus 6 m ist stumm (0 Landungen).
-//   B (Q7-Bild)     das Wasser-Material auf einem Fluss-Bogen: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s =
-//                   5,5 × der bei 60 s, der ruhige Fluss 59,9 gegen 10,5 (der Phasen-Zerfall, das weiße Zebra); 46 % des
-//                   ruhigen Flusses schaumbedeckt (Strähnen-Schaum ohne Gesetz). Der Sturm-Regen allein auf Schwarz:
-//                   0 Schlieren (eine Punktwolke, WebGPU zeichnet Punkte 1 Pixel groß), lit 0,2 % der Pixel.
-//   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss: 34 Sprünge (Luma bis 0,223 je 2 cm) — der Bezug der Ufer-Bänder
-//                   sprang am Ende des Fluss-Spiegels auf den Meeresspiegel; der Worker färbte 2137 von 7578 Ufer-
-//                   Vertices anders als der Main (die Feuchte las eine Halbbreite, die kein Segment trägt).
-//   Gegenprüfung 07.10. (jede Zahl rot am Vorher 8f09227d bzw. cf9a07ba):
-//   K10 (D11)       die Decke: in trockenen Höhlen unter und neben dem See las der Körper Wasser (3511 von 3511 Proben),
-//                   Spieler schwamm, Kamera tauchte, Tier schwamm. Dazu (Schau-2 wasser-wahrheit, 10.10.) der Wagen: die
-//                   Tiefe des Fahr-Schritts (`_fahrTiefe`) an jedem Höhlen-Boden — sie las das Wasser über der obersten Fläche.
-//   K11 (D10)       der Straßenwagen trieb im See mit der Dichte des Holzkarren-Spenders; treibend nickte das Boot mit dem
-//                   Seegrund (Wank-Ziel 29,5°). W2: der Rand-Streifen des Sees war für das Gefährt blind (0 von 13).
-//   F5              jede Quelle der Welt im Mess-Ring (64, ohne Filter): bricht sie aus dem Nichts (breiter oder tiefer als die
-//                   Hülle des Gesetzes — das Rinnsal plus quellWeitung je Meter, 5040e8f7: 43 von 43, die Quelle −456/872
-//                   11,75 m / 1,62 m), ist sie trocken, liest der Körper auf ihrem Lauf Wasser, das die Welt nicht zeichnet
-//                   (5040e8f7: 487 von 1322 Querschnitten), oder zeichnet die Welt Wasser, in dem der Körper trocken steht.
-//   F8              der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3/4): gezeichnet gegen den Körper je PUNKT (0,25 m),
-//                   Breite gegen Breite (5040e8f7: 177,5 m unsichtbar; d9f39b4f: 64,25 m Phantom in 41 von 104 Querschnitten —
-//                   das Urteil je Querschnitt mit Nachbar-Toleranz meldete 0).
-//   F9              die Pflanzen im gezeichneten Wasser (Runde 4): Nah-Streu ohne Ufer-Band und Nah-Wiese am Bach und im
-//                   See-Fenster (d9f39b4f: 11 Pflanzen und 21 Büschel am Bach, bis 1,32 m Wasser über dem Fuß).
-//   F10             das See-Fenster der Mess-Wiese (±40 m um −890/−650, je 0,5 m): Körper gegen Bild je Punkt (d9f39b4f: 80,25 m²
-//                   Phantom, 7,25 m² unsichtbar).
-//   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
-//   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
-//   K12             die Leser der EINEN Wahrheit: Klang-Nässe (`_nassAt`) und Tier-Scheu (`_creatureWaterContextAt`) lasen das
-//                   3×3-gedehnte `_waterLevelAt` (am See der Mess-Wiese und an der Küste anders als der Körper); an der
-//                   Küste zeichnete das Sheet den Küsten-Aquifer über dem Boden, der Körper stand dort trocken. K6 BAUMLOS:
-//                   ein Wesen ohne Gestalt-Baum stand mit der Wasserlinie 0 AUF dem Spiegel.
-//   U3              der Schilf-Bezug der Nah-Streu sprang an der Krone auf den See-/Meeres-Spiegel.
-//   B6 (K40)        der Wasser-Hash rechnete mit sin: auf dem Radeon B2 1,434 (swiftshader 1,027) — die Quelle trägt kein sin
-//                   (Wand im Selbsttest); die Probe hält Mittag und das Gefühl der Welt (uEmotion 0), beide Adapter urteilen gleich.
+// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7; Befund 06.10., Gegenprüfung 07.10.,
+// Schau-2, K16, K40, F3 — jede Zahl zuerst ROT am Vorher, die Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
+//   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
+//   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
+//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel (K5); ein Tier liegt an seiner
+//                   Wasserlinie, auch ohne Gestalt-Baum (K6); ein Mitspieler lehnt sich ins Wasser (K7).
+//   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
+//                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
+//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht (K9).
+//   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
+//   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
+//                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
+//   F5 · F8 · F10   jede Quelle ein Rinnsal aus der Hülle des Gesetzes; Körper und Bild je Punkt gleich nass (Quelle, Bach,
+//                   See-Fenster) — Breite gegen Breite, nie je Querschnitt. F9: keine Pflanze im gezeichneten Wasser.
+//   F7 · FP · K12   die Bank nie steiler als der Fels; der Kanal Main = Worker (NaN = Probe kaputt); Klang, Tier-Scheu,
+//                   Küsten-Sheet und Trink-Ziel lesen die EINE Wahrheit. K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
+//                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -51,7 +27,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
 
@@ -69,6 +45,7 @@ const SCHWELLE = {
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
+    grabenBauten: 300, // Sheet-Bauten bis zur Ruhe (F3; Bau-Ereignisse, nie Takte — die warten auf den Worker; Basis 2353–2609)
 };
 
 // B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
@@ -505,6 +482,23 @@ function urteil(b) {
             }
         }
     }
+    // G — DER GRABEN AM FLUSS (F3): EINE Fläche, auf dem Spiegel, die Ruhe bald, die Wiese daneben steht
+    for (const g of b.graben ? b.graben.graeben || [b.graben] : []) {
+        const wo = `der Graben ${g.abstand} m jenseits der Krone (${g.ort})`;
+        if (g.fehler || !(g.nass > g.vor) || !(g.bueschel[1] > 0))
+            v.push(g.fehler ? `G: ${g.fehler}` : `G LEER: ${wo} zeichnet kein neues Wasser oder trägt keine Wiese daneben`);
+        if (!g.fehler) {
+            if (g.doppelt > 0) v.push(`G1 ZWEI FLÄCHEN: ${wo}: an ${g.doppelt} Punkten zwei Wasser-Flächen übereinander`);
+            if (g.ueber > 0)
+                v.push(`G2 ÜBER DEM SPIEGEL: ${wo}: ${g.ueber} Punkte Wasser > 10 cm über dem Spiegel (bis ${g.ueberM} m)`);
+            if (g.abseits > 0)
+                v.push(`G3 ZWEITE FLÄCHE: ${wo}: in Ruhe ${g.abseits} Punkte > 10 cm unter dem Spiegel (bis ${g.abseitsM} m)`);
+            if (!(g.ruhe >= 0 && g.sheets <= SCHWELLE.grabenBauten))
+                v.push(`G4 UNRUHE: ${wo}: der Automat ruht ${g.ruhe < 0 ? "nie" : "nach " + g.ruhe + " Takten"} (${g.sheets} Sheet-Bauten)`);
+            if (g.wieseFaelle > 0 || g.bueschel[0] !== g.bueschel[1])
+                v.push(`G5 FLACKERN: ${wo}: die Wiese daneben fiel ${g.wieseFaelle}-mal, Büschel je Takt ${g.bueschel.join("–")}`);
+        }
+    }
     if (b.seitenFehler && b.seitenFehler.length) v.push(`SEITE: ${b.seitenFehler[0]}`);
     return v;
 }
@@ -614,6 +608,9 @@ function selbsttest() {
             schilf: { art: "schilf", schritte: 48000, spruenge: 0, maxSprung: 0.04, beispiele: [] },
         },
         regen: { litAnteil: 0.13, schlieren: 800, neigung: 0.56 },
+        graben: {
+            graeben: [1, 3].map((abstand) => ({ abstand, ort: [-256, -1130], vor: 378, nass: 524, bueschel: [9, 9], ruhe: 4, sheets: 110 })),
+        },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
@@ -742,6 +739,14 @@ function selbsttest() {
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
+        // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
+        ["G2 ÜBER DEM SPIEGEL", (b) => Object.assign(b.graben.graeben[0], { ueber: 720, ueberM: 0.76 })],
+        ["G3 ZWEITE FLÄCHE", (b) => Object.assign(b.graben.graeben[1], { abseits: 397, abseitsM: 0.79 })],
+        ["G4 UNRUHE", (b) => Object.assign(b.graben.graeben[0], { ruhe: 594, sheets: 2609 })],
+        ["G5 FLACKERN", (b) => Object.assign(b.graben.graeben[1], { wieseFaelle: 3, bueschel: [640, 900] })],
+        ["G1 ZWEI FLÄCHEN", (b) => (b.graben.graeben[0].doppelt = 2)],
+        ["G LEER", (b) => (b.graben.graeben[1].nass = 378)],
+        ["G: kein Fluss", (b) => (b.graben = { fehler: "kein Fluss am Ort" })],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
         // DIE TEILE (K61): die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
         // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
@@ -840,37 +845,6 @@ function selbsttest() {
 if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
-// Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest): die Wasser-Zellen der Chunks
-// sind ein Leser der Körper-Wahrheit von gestern. EINE Funktion für die Seite der Wand und jeden Teil der Quell-Probe.
-async function STROM_ANS_UFER(ufer) {
-    const r = window.anazhRealm;
-    const st = r.state;
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    st.playerMesh.position.set(ufer[0], r._voxelSurfaceY(ufer[0], ufer[1]) + 0.6, ufer[1]);
-    const worker = st.voxelWorker;
-    st.voxelWorker = null;
-    const start = performance.now();
-    let last = -1,
-        still = performance.now();
-    for (;;) {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch (_e) {}
-        const n = st.voxelChunks ? st.voxelChunks.size : 0;
-        if (n !== last) {
-            last = n;
-            still = performance.now();
-        }
-        if ((n >= 9 && performance.now() - still > 1500) || performance.now() - start > 90000) break;
-        await new Promise((res) => setTimeout(res, 0));
-    }
-    st.voxelWorker = worker;
-}
-
 // DIE TEILE DER QUELL-PROBE (K61): so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die
 // Seite der Wand rechnet daneben ihre übrigen Proben); 1 = alles in einer Seite. Jeder Teil k ≥ 1 in einem EIGENEN Kontext:
 // die Welt laden, der Strom ans Ufer der Orte der Wand (EINE Quelle der Orte für jede Seite), dann die Quellen seines Teils in
@@ -884,9 +858,7 @@ async function quellTeil(browser, port, k, seitenFehler, orte) {
         pg.on("pageerror", (e) =>
             seitenFehler.push(`Teil ${k}: ` + (e.stack || e.message || String(e)).split("\n")[0])
         );
-        await pg.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(pg);
         await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         await pg.waitForFunction(
             () =>
@@ -897,7 +869,7 @@ async function quellTeil(browser, port, k, seitenFehler, orte) {
             { timeout: 600000, polling: 250 }
         );
         await pg.evaluate(WASSER_INSTALL);
-        await pg.evaluate(STROM_ANS_UFER, orte.see.ufer);
+        await pg.evaluate((u) => window.__wasserStrom(u, 0.6), orte.see.ufer);
         return await pg.evaluate(
             (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
             orte,
@@ -928,9 +900,7 @@ async function lauf() {
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     if (!BILD)
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page);
     let befund = { seitenFehler, hashSin: hashSin() };
     let exit = 1;
     try {
@@ -977,9 +947,9 @@ async function lauf() {
             console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
             if (!ORTE.see || !ORTE.fluss || !ORTE.bach || !ORTE.kueste)
                 throw new Error("die Welt trägt keinen See, Fluss, Bach oder keine Küste nächst der Mess-Wiese");
-            // Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
+            // Die Welt an das Ostufer des Sees streamen (`__wasserStrom`, Sync-Bau, Worker ausgehängt — wie der Playtest):
             // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
-            await page.evaluate(STROM_ANS_UFER, ORTE.see.ufer);
+            await page.evaluate((u) => window.__wasserStrom(u, 0.6), ORTE.see.ufer);
             // DIE QUELL-PROBE IN TEILEN (K61 CI-Diät): sie trägt 87 % der Wand (328 Quellen in den 12 Kacheln der Probe, je
             // Quelle der Ring ihrer Chunks synchron gebaut, CI-Median 299 s der ganzen Wand) auf EINEM Faden. Die Teile 1..n-1
             // fahren in eigenen Kontexten nebeneinander (je eine Welt, dieselben Orte, derselbe Strom ans Ufer), Teil 0 in
@@ -1034,6 +1004,11 @@ async function lauf() {
                 befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
             if (soll("see"))
                 befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
+            // ganz zuletzt (er schneidet die Welt): der Graben am Fluss (F3)
+            if (soll("graben")) {
+                await page.evaluate((f) => window.__wasserStrom([f.x, f.z], 0.6), ORTE.fluss);
+                befund.graben = await page.evaluate((f) => window.__wasserGraben({ fluss: f }), ORTE.fluss);
+            }
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));

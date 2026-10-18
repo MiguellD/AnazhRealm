@@ -26,7 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -119,9 +119,7 @@ async function fahreForm(browser, form, schein) {
                 .join(" | ");
     });
     page.on("dialog", (d) => d.accept().catch(() => {}));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     if (schein) await page.evaluateOnNewDocument(scheinNurPlatz);
     const t0 = Date.now();
     const befund = (s) => rep.befunde.push(s);
