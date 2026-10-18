@@ -60,7 +60,7 @@
 //    KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1350,15 +1350,11 @@ function drucke(zeilen, offline, kostenErg, lab) {
         const page = await browser.newPage();
         page.setDefaultTimeout(590000);
         page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page);
         await page.evaluateOnNewDocument(quellenAbgriff);
         const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 180000,
-        });
+        await warteAufWelt(page, 180000);
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(`window.__klangW = (${werkzeug.toString()})();`);
         // Symphonie an, die Musik ruht (die Linse misst die WELT), die Tiere halten still.

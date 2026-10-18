@@ -73,7 +73,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2566,10 +2566,7 @@ async function lauf() {
     try {
         const page = await browser.newPage();
         page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhForceFoundry = true;
-            window.__anazhHeadlessNullRenderer = true;
-        });
+        await nullRenderer(page, { foundry: true });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt (K16): Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
         const ORTE = await page.evaluate(weltOrte, {
@@ -2626,10 +2623,7 @@ async function lauf() {
                 p2.on("pageerror", (e) =>
                     seitenFehler.push("D: " + (e.stack || e.message || String(e)).split("\n")[0])
                 );
-                await p2.evaluateOnNewDocument(() => {
-                    window.__anazhForceFoundry = true;
-                    window.__anazhHeadlessNullRenderer = true;
-                });
+                await nullRenderer(p2, { foundry: true });
                 await p2.goto(`http://127.0.0.1:${PORT}/index.html`, {
                     waitUntil: "domcontentloaded",
                     timeout: 120000,

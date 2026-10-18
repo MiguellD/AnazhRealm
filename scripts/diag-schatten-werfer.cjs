@@ -90,7 +90,7 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
@@ -1459,9 +1459,7 @@ function probe(selbsttest) {
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.message || String(e)).split("\n")[0]));
     let ok = true;
@@ -1473,9 +1471,7 @@ function probe(selbsttest) {
         // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)
         const z2 = bildZiele();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         // Die Welt pumpen, bis sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`; der Null-Renderer hat keinen Loop).
         const welt = await page.evaluate(async () => {
             const r = window.anazhRealm;

@@ -10,7 +10,7 @@
 // der Studio-Regime-Default-AUS-Term ist gefallen; die Linse prüfte bis dahin NUR die
 // gefallene Weiche = Verifikation von Existenz statt Konsum).
 // (Das ältere `diag-far-water.cjs` ist die H3-Region-Gate-Diagnose — ein ANDERES Werkzeug.)
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FERN_WASSER_PORT || 4404);
 const server = statikServer();
 async function runOnce(browser, noFoundry) {
@@ -24,12 +24,7 @@ async function runOnce(browser, noFoundry) {
     }, noFoundry);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-    await page.waitForFunction(
-        () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
-        {
-            timeout: 120000,
-        }
-    );
+    await warteAufWelt(page, 120000);
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
     await page.evaluate(async () => {
         const r = window.anazhRealm;

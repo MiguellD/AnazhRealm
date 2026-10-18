@@ -34,7 +34,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
@@ -51,15 +51,11 @@ function check(name, ok, detail) {
     page.setDefaultTimeout(280000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true; // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
-    });
+    await nullRenderer(page); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const res = {};

@@ -21,7 +21,7 @@
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WEG_PORT || 4596);
 const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
@@ -320,9 +320,7 @@ function urteil(S) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

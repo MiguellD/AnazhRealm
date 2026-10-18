@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -99,10 +99,7 @@ function staticLaws(q, manifestSrc) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

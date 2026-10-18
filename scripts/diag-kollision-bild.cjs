@@ -220,7 +220,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
@@ -603,15 +603,11 @@ async function probe(K) {
     page.setDefaultTimeout(880000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     let befund = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 180000,
-        });
+        await warteAufWelt(page, 180000);
         befund = await page.evaluate(probe, {
             mess: messort("wiese"),
             R: 150,

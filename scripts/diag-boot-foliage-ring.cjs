@@ -7,7 +7,7 @@
 // erzwungen → perf-headroom auf ~0-frameMs, genau die Boot-Situation) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FOLIRING_PORT || 4615);
 const server = statikServer();
 (async () => {
@@ -16,7 +16,7 @@ const server = statikServer();
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
     const browser = await starteBrowser({ art: "webgl", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => (window.__anazhHeadlessNullRenderer = true));
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;

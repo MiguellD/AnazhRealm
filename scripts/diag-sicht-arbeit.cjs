@@ -43,7 +43,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -840,15 +840,11 @@ const server = statikServer();
     page.setDefaultTimeout(580000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page);
     let befund = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
+        await warteAufWelt(page, 120000);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
             const r = window.anazhRealm,

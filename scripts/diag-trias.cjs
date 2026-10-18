@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
@@ -167,10 +167,7 @@ const triasStaticLaws = () => [
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
+    await nullRenderer(page, { foundry: true });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
