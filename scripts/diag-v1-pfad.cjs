@@ -635,13 +635,11 @@ async function probe(arg) {
     // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn
     // des Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel
     // neu, ein Leser band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach
-    // dem Schuss beim nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs
-    // beginnt wie nach der Größe mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben
-    // Pose im Laub: Rauschen 0,011)
+    // dem Schuss beim nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist; der Versatz des Laubs beginnt mit
+    // der Geschichte am Sprung (`_traaR.neu`, der Stamm)
     const schuss = async () => {
         const z = st.traaNode && st.traaNode._historyRenderTarget;
         if (z) z.setSize = (w, h) => (w === 1 && h === 1 ? z : Object.getPrototypeOf(z).setSize.call(z, w, h));
-        if (z) st.traaNode._versatzIndex = -1;
         try {
             return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
         } finally {
@@ -1049,9 +1047,18 @@ async function probe(arg) {
                             await new Promise((ok) => requestAnimationFrame(ok));
                             still = regung() === v ? still + 1 : ((v = regung()), 0);
                         }
-                        // die Regungen vor, zwischen und nach den Schüssen: ein Rauschen nennt, ob die Welt sich regte
+                        // die Regungen vor, zwischen und nach den Schüssen: ein Rauschen nennt, ob die Welt sich regte. Der
+                        // erste Schuss nach der Fahrt zeichnet in der Erst-Zeichnung mehr Frames als der zweite (Radeon
+                        // 18.10.: Rauschen 0,012–0,027 im Laub in 3 von 16 Läufen, die Folge des Laubs lief vom Schuss an
+                        // weiter) — er zeichnet hier stets 5 mehr: die Folge beginnt mit der Geschichte (`_versatzIndex`
+                        // am Sprung), sonst ROT in jedem Lauf (Mutant am Stamm 8678ec4a: 0,006–0,018 an 4 von 4 Bildern)
                         const regungen = [regung()];
-                        const G1 = await auf(false);
+                        const ruhe = window.__erstRuhe;
+                        window.__erstRuhe = async (frame, ...x) => {
+                            for (let i = 0; i < 5; i++) frame();
+                            return ruhe(frame, ...x);
+                        };
+                        const G1 = await auf(false).finally(() => (window.__erstRuhe = ruhe));
                         regungen.push(regung());
                         const G2 = await auf(false);
                         regungen.push(regung());
