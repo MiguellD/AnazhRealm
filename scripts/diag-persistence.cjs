@@ -20,7 +20,7 @@
 // desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
 //
 // (L) DIE LÖCHER NACH DEM RELOAD (K23, 12.10.): 300 Schnitz-Kugeln über den Spielpfad (`carveVoxel`), Save,
-// echter Reload — jedes Loch steht wieder (die Dichte am Kugel-Zentrum liegt genau 48 unter der Basis). Bis K23
+// echter Reload — jedes Loch steht wieder (das Zentrum der Säule liegt r m in der Luft, `_editForm` F2a). Bis K23
 // verdrängte der FIFO-Deckel in `_addVoxelEdit` still die ersten 44: 256/300.
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -290,7 +290,7 @@ const server = statikServer();
                 orte.push({ x, y, z });
                 r.carveVoxel(x, y, z, 3);
             }
-            const loch = (o) => Math.abs(r._terrainBaseDensityAt(o.x, o.y, o.z) - r._terrainDensityAt(o.x, o.y, o.z) - 48) < 0.01;
+            const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) < -3 + 0.01; // das Zentrum liegt r m in der Luft (`_editForm`)
             r.saveState();
             return { orte, loecher: orte.filter(loch).length, imMain: r.state.worldMeta.voxelEdits.length };
         }, N_LOECHER);
@@ -302,7 +302,7 @@ const server = statikServer();
         await weltSteht();
         const lNachher = await page.evaluate((orte) => {
             const r = window.anazhRealm;
-            const loch = (o) => Math.abs(r._terrainBaseDensityAt(o.x, o.y, o.z) - r._terrainDensityAt(o.x, o.y, o.z) - 48) < 0.01;
+            const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) < -3 + 0.01; // das Zentrum liegt r m in der Luft (`_editForm`)
             const n = orte.filter(loch).length;
             const edits = (r.state.worldMeta.voxelEdits || []).length;
             r.state.worldMeta.voxelEdits = [];
