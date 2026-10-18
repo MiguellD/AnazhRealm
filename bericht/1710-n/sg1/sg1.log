@@ -1,0 +1,30 @@
+02:01:18 Schloss omen-1710-n, Kopf 72676562, gpu 139 MHz, 66, P8
+=== DER SPIELGANG: ankunft → lichtung → fahrt → wort → werkstatt ===
+[linse-gpu] nvidia/pascal
+  Renderer: die Karte — jede Station mit Bild
+  … fahrt seit 18 s, 1050 Takte
+  … werkstatt seit 26 s, 2019 Takte
+=== ANKUNFT — 4.4 s · 86 Takte (Boot bis Kontrolle 16.1 s) ===
+  ✅ Ankunft das erste Weltbild ist ganz, der Ladeschirm weicht, W trägt den Spieler — Kontrolle nach 46 Takten · 15.8 s ab Navigation · 0× halb · W 2 m in 48 Takten
+  ✅ V-k4 der Fensterwechsel löst die gehaltene Taste — W gedrückt true · nach blur false
+=== LICHTUNG — 8.1 s · 837 Takte ===
+  ✅ V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie — Plattform [0,0] · 27 Bäume im 40-m-Kreis · nächster Stamm 20.9 m (baum_tanne) · Kronen über der Scheibe 0 · Ring 10 Portale, Mitte 0 m
+=== FAHRT — 21.4 s · 1341 Takte ===
+  ✅ Fahrt E steigt ein in Third, W fährt 100 m, der Arm hält ≥ 0.9, der Wagen steht im Bild, E steigt aus — fahrzeug_gt an [0,22,0] · Sicht first → third → first · 100.1 m in 895 Takten · Arm p50 1 min 1 (386 Takte, 0 am Wagen) · Wagen 1.5 % des Bilds (22 Teile, Rauschen 0) · Aufbau ≤ 1.7 m vom Wagen
+  ✅ Selbst-Test im Lauf: der alte Mount-Follow (`_archInstanceUpdate` ohne den Band-Partner) macht die Fahrt ROT beim Namen — fahrzeug_gt an [0,22,0] · Sicht first → third → undefined · 20 m in undefined Takten · Arm p50 1 min 1 (509 Takte, 0 am Wagen) · Wagen 0.9 % des Bilds (22 Teile, Rauschen 0) · Aufbau ≤ 14.2 m vom Wagen — fahrt: 20 m statt 100 m · aufbau 14.2 m neben dem Wagen: die Stufe L1 (Band) zieht nicht mit (_archInstanceUpdate) · fahrt: E steigt nicht aus
+=== WORT — 0.1 s · 0 Takte ===
+  ✅ V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS) — „Keine Antwort von 127.0.0.1:7906 — der lokale Dienst läuft nicht (starte ihn: `ollama serv"
+  ✅ V-k5 V-k6 V-D8 der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie — ohne Wasser 0 Eichen („Kein Wasser im Umkreis von 80 m — am Wasser wächst hier nichts. Geh näher an ein Ufer.") · Absender 2 Birken („2× Birke aus dem Studio vor dir gewachsen") · Ort ["at",400,116.88333573625428,10] · Empfänger 2 Birken 8.6 m vom Absender · Telemetrie false
+  ✅ V-k5-Klasse jede Op mit near_water in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler) — 60 m: spawn_creature benannt · spawn_tree benannt · spawn_studio benannt · spawn_island benannt · spawn_ufo benannt · spawn_village benannt · spawn_temple benannt · spawn_waterfall benannt · spawn_blueprint benannt · spawn_fractal benannt · deposit_life benannt · deposit_emotion benannt · chain abgesagt · Dorf-Aufträge 0
+  ✅ V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (23 Programme), die Defaults der Auflöser gelten — 23/23 benannt · 0 Welt-Akte ohne Ort · near_water ohne Radius „kein Wasser im Umkreis von 60 m“ · vorn ohne Abstand 5 m · Bedarf ohne Radius 50 m · Mess-Ort ohne Spieler null
+  ✅ R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche — 0 von 4500 Urteilen abweichend (54 nass) · trinken@trocken 40 m: 351 Proben/0 Scans · trinken@plattform 40 m: 351 Proben/0 Scans · chat@trocken 80 m: 1330 Proben/0 Scans · chat@plattform 80 m: 1330 Proben/0 Scans · ki@trocken 200 m: 2243 Proben/1 Scans · ki@plattform 200 m: 8037 Proben/0 Scans · ki@trocken-voll 200 m: 7981 Proben/0 Scans (hochgerechnet 0)
+=== WERKSTATT — 31.2 s · 2311 Takte ===
+  ✅ V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei) — frieden gesperrt true · schöpfer frei true
+  ✅ V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %) — 1537 Proben · 100.0 % behalten · Maske im Render 0 · Welt-Auge 400 m
+  ✅ V-D3 Fremder Zug jeder Wartende erwacht nach einem fremd gezogenen Körper, jede Stufe der Vorschau nach ihrem Stoff (≤ 20000 ms) — vorschau eiche|3|0 fremd true · 208 ms · hand beil|1|0 fremd true · 129 ms · Stufen L0 230 ms · L1 874 ms · L2 264 ms · Vorrat findling|1|0 1× bestellt
+  ✅ V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [0.5; 0.9] der Bildkante) — 236 gemessen (min 0.7 · median 0.7 · max 0.79) · 22 ehrlich leer · 21 Waffen · 27033 ms
+  Bilder: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n1710\sg1\bilder\ankunft.png · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n1710\sg1\bilder\fahrt-alter-folger.png · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n1710\sg1\bilder\fahrt.png
+
+✅ GRÜN — der Spielgang trägt seine Spieler-Gesetze.
+02:02:47 Schloss geloest, Dauer 89 s
+EXIT=0

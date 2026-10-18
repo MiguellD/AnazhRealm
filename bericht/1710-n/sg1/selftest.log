@@ -1,0 +1,93 @@
+=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===
+  ✅ Selbst-Test V-D3: gesunde Vorschau == 0 Täter
+  ✅ Selbst-Test V-D3: ‚leere Vorschau (21 108 Dreiecke, 0 im Bild)' → die Linse nennt vorschau 0.0 % — vorschau 0.0 % im Bild (Maske 1, Auge 36 m)
+  ✅ Selbst-Test V-D3: ‚Vorschau zeichnet nie' → die Linse nennt vorschau zeichnete nie — vorschau zeichnete nie
+  ✅ Selbst-Test V-D3: ‚Welt-Maske bleibt aus' → die Linse nennt welt-maske — welt-maske nach dem Vorschau-Render 0 statt 1
+  ✅ Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)' → die Linse nennt zug vorschau schläft — zug vorschau schläft: eiche|2|0 liegt im Cache, die Vorschau wartet weiter
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚der fremde Zug im Rang der Ferne' → die Linse nennt zug vorschau: eiche|2|0 nach — zug vorschau: eiche|2|0 nach 20000 ms nicht angekommen (der fremde Zug im Rang der Ferne)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚die Hand schläft nach der Ankunft' → die Linse nennt zug hand schläft — zug hand schläft: klinge|1|0 liegt im Cache, die Hand wartet weiter
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚kein fremder Zug (vakuös)' → die Linse nennt zug vorschau: kein fremder Zug — zug vorschau: kein fremder Zug im Flug (vakuös)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚keine Klinge im Buch (vakuös)' → die Linse nennt zug hand: keine Probe — zug hand: keine Probe (vakuös)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)' → die Linse nennt zug stufe L2 schläft — zug stufe L2 schläft: fimp:eiche|2 ist da, die Vorschau wartet weiter
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚keine Stufen gemessen (vakuös)' → die Linse nennt zug stufen: 0 von 3 — zug stufen: 0 von 3 Stufen gemessen (vakuös)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚der Leser bestellt im Flug des Vorrats neu (bis 15.10.)' → die Linse nennt zug vorrat: gras|1|1 2× — zug vorrat: gras|1|1 2× bestellt — Täter _foundryPrefetchLibrary bestellt an _foundryZug vorbei
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚der Vorrat zieht nicht (vakuös)' → die Linse nennt zug vorrat: gras|1|1 nicht im Flug — zug vorrat: gras|1|1 nicht im Flug des Vorrats (vakuös: 1 Aufträge, Cache undefined, Phase undefined)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚keine Vorrats-Probe (vakuös)' → die Linse nennt zug vorrat: keine Probe — zug vorrat: keine Probe (vakuös)
+  ✅ Selbst-Test V-D3 Fremder Zug: ‚die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)' → die Linse nennt zug stufe L2 rahmen — zug stufe L2 rahmen: die Box der Karte misst 1.1 m, ihre Höhen-Stufe 21 m — Täter die Box der Karten-Instanz (Einheits-Quad)
+  ✅ Selbst-Test V-D3 Rahmen: gesunde Vorschau == 0 Täter
+  ✅ Selbst-Test V-D3 Rahmen: ‚Messer 0,059 (3-m-Mindestabstand, Runner WS-01)' → die Linse nennt rahmen 1 außerhalb — rahmen 1 außerhalb [0.5; 0.9]: messer 0.059 (0.4 m, Abstand 3 m) — Täter _workshopCenterPreviewOn
+  ✅ Selbst-Test V-D3 Rahmen: ‚ein Bauplan sprengt das Bild (0,97)' → die Linse nennt rahmen 1 außerhalb — rahmen 1 außerhalb [0.5; 0.9]: haus 0.97 (undefined m, Abstand undefined m) — Täter _workshopCenterPreviewOn
+  ✅ Selbst-Test V-D3 Rahmen: ‚eine Waffe ungemessen' → die Linse nennt rahmen waffen 1 von 2 — rahmen waffen 1 von 2 gemessen
+  ✅ Selbst-Test V-D3 Rahmen: ‚eine Gestalt bleibt pending' → die Linse nennt rahmen 1 ohne Gestalt — rahmen 1 ohne Gestalt nach Frist (eiche)
+  ✅ Selbst-Test V-D1: gesunde Lichtung == 0 Täter
+  ✅ Selbst-Test V-D1: ‚Tanne 2,0 m vom Mittelpunkt (V-D1)' → die Linse nennt 2 Krone — 2 Krone(n) über der Scheibe (nächster Stamm 1.97 m, baum_tanne)
+  ✅ Selbst-Test V-D1: ‚Ring um den Ursprung, 36 m daneben' → die Linse nennt ring-mitte — ring-mitte 36 m neben der Plattform
+  ✅ Selbst-Test V-D1: ‚kein Ring über dem Frame-Budget' → die Linse nennt kein Genesis-Ring — kein Genesis-Ring (über dem Frame-Budget)
+  ✅ Selbst-Test V-D1: ‚Plattform im See' → die Linse nennt plattform im wasser — plattform im wasser
+  ✅ Selbst-Test V-D1: ‚der zweite Leger sucht nicht (Zwilling)' → die Linse nennt 2 Plattformen — 2 Plattformen nach dem zweiten Leger
+  ✅ Selbst-Test V-D1: ‚kein Wald gewachsen (vakuös)' → die Linse nennt kein Wald — kein Wald um die Plattform gewachsen
+  ✅ Selbst-Test V-D5: gesund == 0 Täter
+  ✅ Selbst-Test V-D5: ‚schöpfer gesperrt (V-D5)' → die Linse nennt schöpfer — schöpfer: der Knopf bleibt gesperrt („Es fehlt: 44× holz")
+  ✅ Selbst-Test V-k4: gesund == 0 Täter
+  ✅ Selbst-Test V-k4: ‚Klebetaste (V-k4)' → die Linse nennt W bleibt — W bleibt nach dem Fensterwechsel gedrückt
+  ✅ Selbst-Test V-D6: gesund == 0 Täter
+  ✅ Selbst-Test V-D6: ‚CORS-Märchen (V-D6)' → die Linse nennt lokaler Endpunkt — lokaler Endpunkt als CORS gemeldet („Cloud blockt Browser-Direct-Call (CORS). Optionen: ……") · der Fehler nennt den Host nicht
+  ✅ Selbst-Test V-k5 V-k6 V-D8: gesund == 0 Täter
+  ✅ Selbst-Test V-k5 V-k6 V-D8: ‚6 Eichen am Spieler (V-k5)' → die Linse nennt 6 Eichen — 6 Eichen „am Wasser" ohne Wasser
+  ✅ Selbst-Test V-k5 V-k6 V-D8: ‚interne id im Chat (V-D8)' → die Linse nennt der Chat nennt — der Chat nennt die interne id („2× baum_birke aus dem Studio vor dir gewachsen")
+  ✅ Selbst-Test V-k5 V-k6 V-D8: ‚Ort reist relativ (V-k6)' → die Linse nennt der Ort reist — der Ort reist spieler-relativ: ["at_player_forward",10]
+  ✅ Selbst-Test V-k5 V-k6 V-D8: ‚Empfänger pflanzt bei sich (V-k6)' → die Linse nennt der Empfänger pflanzt — der Empfänger pflanzt 203 m vom Absender
+  ✅ Selbst-Test V-k5 V-k6 V-D8: ‚Telemetrie im Chat (V-D8)' → die Linse nennt Dorf-Telemetrie — Dorf-Telemetrie im Spieler-Chat
+  ✅ Selbst-Test Ankunft: gesund == 0 Täter
+  ✅ Selbst-Test Ankunft: ‚halbes Weltbild über den Deckel (L2a)' → die Linse nennt ankunft halb — ankunft halb: Das erste Weltbild steht ohne: Horizont — der Deckel von 60000 ms ist erreicht.
+  ✅ Selbst-Test Ankunft: ‚der Ladeschirm bleibt' → die Linse nennt ankunft: der Ladeschirm — ankunft: der Ladeschirm steht nach dem Weltbild
+  ✅ Selbst-Test Ankunft: ‚W trägt den Spieler nicht' → die Linse nennt kontrolle: W trug den Spieler 0 m — kontrolle: W trug den Spieler 0 m in 600 Takten (Soll ≥ 2 m)
+  ✅ Selbst-Test Fahrt: gesund == 0 Täter
+  ✅ Selbst-Test Fahrt: ‚der Arm trifft den eigenen Wagen (Befund 17.10., Arm 0,30)' → die Linse nennt kamera-arm p50 0.3 (min 0.28) < 0.9 — 280 von 300 Proben enden am gerittenen Werk fahrzeug_gt: der Strahl der Kamera trifft den eigenen Wagen — kamera-arm p50 0.3 (min 0.28) < 0.9 — 280 von 300 Proben enden am gerittenen Werk fahrzeug_gt: der Strahl der Kamera trifft den eigenen Wagen
+  ✅ Selbst-Test Fahrt: ‚im Ritt bleibt die Sicht' → die Linse nennt sicht: im Ritt first — sicht: im Ritt first, nicht third
+  ✅ Selbst-Test Fahrt: ‚der Wagen verschwindet im Bild' → die Linse nennt wagen im Bild 0.1 % — wagen im Bild 0.1 % außerhalb [0.5 %; 20.0 %]
+  ✅ Selbst-Test Fahrt: ‚die Fahrt bleibt stecken' → die Linse nennt fahrt: 12 m — fahrt: 12 m statt 100 m
+  ✅ Selbst-Test Fahrt: ‚nach dem Abstieg bleibt Third' → die Linse nennt sicht: nach dem Abstieg third — sicht: nach dem Abstieg third statt first
+  ✅ Selbst-Test Fahrt: ‚kein Wagen vor dem Spieler' → die Linse nennt fahrt start: die Welt — fahrt start: die Welt stellt fahrzeug_gt nicht hin
+  ✅ Selbst-Test Fahrt: ‚der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)' → die Linse nennt aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band) — aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band) zieht nicht mit (_archInstanceUpdate)
+  ✅ Selbst-Test Fahrt: ‚auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter' → die Linse nennt aufbau 21.6 m — aufbau 21.6 m neben dem Wagen: die Stufe L1 (Band) zieht nicht mit (_archInstanceUpdate)
+  ✅ Selbst-Test V-k5-Klasse: gesund == 0 Täter
+  ✅ Selbst-Test V-k5-Klasse: ‚TypeError (6b988a07)' → die Linse nennt spawn_creature: wirft — spawn_creature: wirft (op_exception: Cannot read properties of null (reading 'x')) · spawn_creature: scheitert nicht benannt
+  ✅ Selbst-Test V-k5-Klasse: ‚Dorf am Spieler-Ort über die Op (6b988a07)' → die Linse nennt spawn_village: wirkt ohne Ort — spawn_village: wirkt ohne Ort (spawnSettlement ohne Ort)
+  ✅ Selbst-Test V-k5-Klasse: ‚still am Spieler-Ort (cf9a07ba)' → die Linse nennt spawn_studio: wirkt ohne Ort — spawn_studio: wirkt ohne Ort (spawnArchitecture 4.1 m vom Spieler) · spawn_studio: scheitert nicht benannt · spawn_studio: meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse: ‚Absage ohne Grund' → die Linse nennt deposit_life: scheitert nicht benannt — deposit_life: scheitert nicht benannt
+  ✅ Selbst-Test V-k5-Klasse: ‚chain meldet Erfolg' → die Linse nennt chain: meldet Erfolg — chain: meldet Erfolg ohne Ort
+  ✅ Selbst-Test V-k5-Klasse: ‚chain bricht ganz ab' → die Linse nennt chain: bricht ganz ab — chain: bricht ganz ab (der Feld-Akt beim Spieler fehlt)
+  ✅ Selbst-Test V-k5-Klasse: ‚spawnSettlement ohne Ort gründet beim Spieler' → die Linse nennt dorf ohne Ort gründet — dorf ohne Ort gründet beim Spieler (1 Worker-Auftrag)
+  ✅ Selbst-Test V-k5-Klasse (Rest): gesund == 0 Täter
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚der Text wird der Ursprung' → die Linse nennt Text statt Knoten (die KI ohne Klammern): wirkt ohne Ort — Text statt Knoten (die KI ohne Klammern): wirkt ohne Ort (spawnArchitecture 412.6 m vom Spieler) · Text statt Knoten (die KI ohne Klammern): scheitert nicht benannt (kein Grund) · Text statt Knoten (die KI ohne Klammern): meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚at(null) wird die 0 (Lehre 17)' → die Linse nennt at mit null (Number(null) === 0): wirkt ohne Ort — at mit null (Number(null) === 0): wirkt ohne Ort (spawnCreatureAt 300.2 m vom Spieler) · at mit null (Number(null) === 0): scheitert nicht benannt (kein Grund) · at mit null (Number(null) === 0): meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚das Dorf ohne Abstände beim Spieler' → die Linse nennt far_player ohne Abstände (das Dorf): wirkt ohne Ort — far_player ohne Abstände (das Dorf): wirkt ohne Ort (spawnSettlement 9.6 m vom Spieler) · far_player ohne Abstände (das Dorf): scheitert nicht benannt (kein Grund) · far_player ohne Abstände (das Dorf): meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚voxel_carve gräbt bei 0' → die Linse nennt voxel_carve mit null-Koordinaten: wirkt ohne Ort — voxel_carve mit null-Koordinaten: wirkt ohne Ort (carveVoxelSphere 300.2 m vom Spieler) · voxel_carve mit null-Koordinaten: scheitert nicht benannt (kein Grund) · voxel_carve mit null-Koordinaten: meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚ohne Spieler am Ursprung' → die Linse nennt at_player ohne Spieler: wirkt ohne Ort — at_player ohne Spieler: wirkt ohne Ort (spawnArchitecture 300.2 m vom Spieler) · at_player ohne Spieler: scheitert nicht benannt (kein Grund) · at_player ohne Spieler: meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚die nächste Kreatur am Ursprung' → die Linse nennt die nächste Kreatur ohne Spieler: wirkt ohne Ort — die nächste Kreatur ohne Spieler: wirkt ohne Ort (assignTaskToNearestCreature 300.2 m vom Spieler) · die nächste Kreatur ohne Spieler: scheitert nicht benannt (kein Grund) · die nächste Kreatur ohne Spieler: meldet Erfolg
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚Absage ohne die Op' → die Linse nennt leerer Knoten: scheitert nicht benannt — leerer Knoten: scheitert nicht benannt („leerer Ort-Knoten“ an null)
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚near_water ohne Radius sucht 8 m' → die Linse nennt near_water ohne Radius — near_water ohne Radius: „kein Wasser im Umkreis von 8 m“ (Soll 60 m)
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚vorn ohne Abstand 1 m' → die Linse nennt at_player_forward ohne Zahl — at_player_forward ohne Zahl: 1 m vom Spieler (Soll 5 m)
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚Bedarf ohne Radius 10 m' → die Linse nennt at_field_need ohne Zahl — at_field_need ohne Zahl: 10 m vom Spieler (Soll 50 m)
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚der Mess-Ort ohne Spieler ist der Ursprung' → die Linse nennt der Mess-Ort — der Mess-Ort einer Regel ohne Spieler ist {"x":0,"z":0}
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚ohne Knoten scheitert der Spawn' → die Linse nennt ohne Knoten kein Default-Ort — ohne Knoten kein Default-Ort: nicht verlangt
+  ✅ Selbst-Test V-k5-Klasse (Rest): ‚ein gültiger Knoten wirkt nicht (vakuös)' → die Linse nennt ein gültiger at-Knoten — ein gültiger at-Knoten wirkt nicht (Vorbedingung: {"ok":false,"akte":0,"grund":"at: x fehlt"})
+  ✅ Selbst-Test R2: gesund == 0 Täter
+  ✅ Selbst-Test R2: ‚Spalten-Scan je Probe (6b988a07)' → die Linse nennt ki 200 m: 1954 Spalten-Scans — ki 200 m: 1954 Spalten-Scans bei 1954 Proben (Soll ≤ 400)
+  ✅ Selbst-Test R2: ‚ohne Wasser alle 8037 Proben gescannt' → die Linse nennt ki@trocken-voll 200 m: 8037 — ki@trocken-voll 200 m: 8037 Spalten-Scans bei 8037 Proben (Soll ≤ 400)
+  ✅ Selbst-Test R2: ‚Trinken scannt je Probe' → die Linse nennt trinken 40 m — trinken 40 m: 351 Spalten-Scans bei 351 Proben (Soll ≤ 80)
+  ✅ Selbst-Test R2: ‚der Fels-Beweis lügt' → die Linse nennt das Urteil weicht — das Urteil weicht vom vollen Scan ab: 3 von 3600 ((1, 2, 0.2))
+  ✅ Selbst-Test R2: ‚kein nasser Punkt (vakuös)' → die Linse nennt kein nasser Punkt — kein nasser Punkt in der Stichprobe (Vorbedingung)
+  ✅ Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter
+  ✅ Selbst-Test Wahl: stamm/koerper-fahrt.js → ankunft,fahrt — ankunft,fahrt
+  ✅ Selbst-Test Wahl: stamm/bild-kosten.js → ankunft — ankunft
+  ✅ Selbst-Test Wahl: docs/PFLICHT-OFFEN.md + scripts/diag-ankunft.cjs → ankunft — ankunft
+  ✅ Selbst-Test Wahl: stamm/werkstatt-vorschau.js + stamm/feld-dsl.js → ankunft,wort,werkstatt — ankunft,wort,werkstatt
+  ✅ Selbst-Test Wahl: stamm/dienst.js → ankunft,lichtung,fahrt,wort,werkstatt — ankunft,lichtung,fahrt,wort,werkstatt
+  ✅ Selbst-Test Wahl: worlds/garage/vehicle-core.js → ankunft,lichtung,fahrt,wort,werkstatt — ankunft,lichtung,fahrt,wort,werkstatt
+  ✅ Selbst-Test Wahl: scripts/diag-v1-pfad.cjs → ankunft,lichtung,fahrt,wort,werkstatt — ankunft,lichtung,fahrt,wort,werkstatt
+
+✅ SELBST-TEST GRÜN — die V1-Pfad-Linse nennt ihre Täter beim Namen.
+EXIT=0
