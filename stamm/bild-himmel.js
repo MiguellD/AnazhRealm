@@ -2190,10 +2190,14 @@ class AnazhRealm_bild_himmel {
     // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden (0.04) mit Hemi (0.10) die
     // Nacht-Kalibrierung Mond/(amb+hemi) ≥ 1.5. Er blendet mit `_nachtAnteil` (dieselbe Tag-Achse wie der
     // Nebel). joy/awe/sorrow modulieren wie bisher.
+    // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
+    // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
+    // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
+    // Ferne bleichten, fallen. Mond/(amb+hemi) sinkt damit unter 1,5 (Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3).
     _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = 0.04 * this._nachtAnteil(angle);
+        const baseAmb = (0.04 + 0.06 * Math.PI) * this._nachtAnteil(angle);
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).

@@ -993,11 +993,14 @@ const S0_ABEND_EV = 0.5;
 // ist ein Himmel mit Mond und Sternen-Licht in derselben Eichung (Lehre 21): ohne das Sternen-Licht (`_atmoSternenLicht`,
 // `ATMO_GESETZ.nacht.himmel`) trägt der Himmel der Nacht nur die Streuung des Mondes (Bühne: Umgebung 0,03 statt 0,29, Boden
 // Luma 25). Der Schein „sterne" (Selbsttest) nimmt es, die Probe MUSS ihn nennen. Den Kontrast der Post-Kette in der Nacht
-// wacht gate:post-kette (h).
+// wacht gate:post-kette (h). DIE NACHT DER EINEN KETTE (F6): die 30 von integ-probe trugen das gefallene Licht-Band (Nacht-Boden
+// und Mond-Saum nur auf Host-Stoffen, Bühne Mitternacht 36,1, Dämmerung 38,6). Sein Boden ist Ambient der EINEN Kette, die
+// Säume fallen: Mitternacht 30,3, Dämmerung 26,1, ohne Sternen-Licht 18,4 (Radeon) — die Schwelle 22 trennt die Nacht mit ihrem
+// Himmels-Licht von der ohne es.
 const S0_NACHT = {
     daemmerGrad: -10,
-    nacht: { luma: 30, schwarz: 0.05 },
-    daemmerung: { luma: 30, schwarz: 0.05 },
+    nacht: { luma: 22, schwarz: 0.05 },
+    daemmerung: { luma: 22, schwarz: 0.05 },
 };
 function s0NachtUrteil(k, e, soll) {
     const b = [];
@@ -1013,7 +1016,7 @@ function s0NachtUrteil(k, e, soll) {
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
     b.push(
         `S0 Nacht: der Boden 1–3 m ohne das Feuer ${wann} trägt Luma ${g.luma}, abgesoffen ${(100 * g.schwarz).toFixed(1)} % ` +
-            `(Soll ≥ ${soll.luma} und ≤ ${(100 * soll.schwarz).toFixed(1)} %, die Nacht von integ-probe an der Wiese) — ${taeter}`
+            `(Soll ≥ ${soll.luma} und ≤ ${(100 * soll.schwarz).toFixed(1)} %, die Nacht der EINEN Licht-Kette) — ${taeter}`
     );
     return b;
 }
