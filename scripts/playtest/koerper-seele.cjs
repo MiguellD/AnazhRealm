@@ -2825,10 +2825,9 @@ async function checkBandPhasenBF(ctx) {
                 const we = wk && r.state.voxelChunks.get(wk);
                 let tickRuft = false;
                 if (we) {
-                    const sv = { act: r.state.waterCAActive, tick: we._caRemeshTick, still: we._caStillTicks };
+                    const sv = { act: r.state.waterCAActive, tick: we._caRemeshTick };
                     r.state.waterCAActive = new Set([wk]);
                     delete we._caRemeshTick;
-                    we._caStillTicks = 0;
                     r._tickWaterCA = () => 1;
                     try {
                         tickRuft = window.__consumes(r, "_tickWorldWaterCA", r, "_caRoofChanged", []);
@@ -2837,7 +2836,6 @@ async function checkBandPhasenBF(ctx) {
                         r.state.waterCAActive = sv.act;
                         if (sv.tick !== undefined) we._caRemeshTick = sv.tick;
                         else delete we._caRemeshTick;
-                        we._caStillTicks = sv.still;
                     }
                 }
                 const dachOk =

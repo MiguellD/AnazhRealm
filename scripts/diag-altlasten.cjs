@@ -158,6 +158,8 @@ const FORBIDDEN = [
     { token: "waterRunSurfaceAt", fiel: "Welle L Q7 — die geglättete Lauf-Fläche; der Spiegel selbst ist monoton" },
     { token: "_tickWaterCANearWake", fiel: "Welle L Q6 — die Annäherungs-Weckung (Ufer-Flut W-W1)" },
     { token: "_wakeWaterCAOnce", fiel: "Welle L Q6 — die Einstream-Weckung" },
+    { token: "_caEvaporateSettled", fiel: "F3 — die Verdunstung der Zungen über dem Spiegel (die Haut fiel)" },
+    { token: "_preSeedWaterCAForEdit", fiel: "F3 — die Vor-Saat des Grabens aus den alten Zellen (sein Dach war die zweite Fläche)" },
     { token: "WAKE_CA_RADIUS", fiel: "Welle L Q6" },
     { token: "_voxelChunkNearPlayer", fiel: "Welle L Q6 — der Nah-Test der Weckung" },
     { token: "_caWoken", fiel: "Welle L Q6" },

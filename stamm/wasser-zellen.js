@@ -127,6 +127,23 @@ class AnazhRealm_wasser_zellen {
         return n ? saat : null;
     }
 
+    // DER SCHNITT ÖFFNET DAS GESETZ (F3, Graben am Fluss): der Spiegel einer Spalte (Mitte x/z, Kante `step`), die der Atlas
+    // trocken nennt, ein Schnitt aber berührt (eine Kugel der EINEN Edit-Karte reicht waagrecht an sie heran): der Fluss-
+    // Spiegel quer (`_hydroSpiegelQuer`). Den Raum, den der Graben am Fluss öffnet, flutet so das Gesetz selbst bis zum
+    // Spiegel des Flusses — nur, wo er durch freie Zellen mit einer Quelle verbunden ist (die Flut unten), und das Sheet
+    // zeichnet dort denselben Spiegel (`_computeWaterSheetData`): EINE Fläche mit dem Fluss. −Infinity ohne Schnitt (die
+    // Welt ohne Graben bleibt Bit für Bit). Worker bit-identisch (`schnittSpiegel`).
+    _schnittSpiegel(x, z, step) {
+        const span = this._voxelChunkConfig(0).span;
+        const ed = this._voxelEditsNah(Math.floor(x / span), Math.floor(z / span));
+        for (let e = 0; e < ed.length; e++) {
+            const s = ed[e];
+            if (s && s.mode === "carve" && Math.hypot(x - s.x, z - s.z) <= s.r + 0.71 * step)
+                return this._hydroSpiegelQuer(x, z);
+        }
+        return -Infinity;
+    }
+
     // `preDensity` = das Grid des Boden-Meshers ((dim+4)·(dimY+1)·(dim+4), Origin `ox-step, oy,
     // oz-step`); Cell-Center-Density = 8-Corner-Avg (spart ~71k Dichte-Calls). Ohne preDensity sampelt es
     // selbst — IDENTISCHE Klassifikation. `lod` wählt dim/dimY wie der Boden-Mesher.
@@ -258,6 +275,8 @@ class AnazhRealm_wasser_zellen {
             for (let i = 0; i < dim; i++) {
                 const idx0 = i + k * dim;
                 colL[idx0] = spalteL(i, k, colBoden[idx0]);
+                if (colL[idx0] === -Infinity)
+                    colL[idx0] = this._schnittSpiegel(ox + (i + 0.5) * step, oz + (k + 0.5) * step, step);
                 colSrc[idx0] = spalteL(i, k, Infinity) > -Infinity ? 1 : 0;
             }
         }
@@ -813,21 +832,60 @@ class AnazhRealm_wasser_zellen {
         return best;
     }
 
-    // Die Kennungen des gezeichneten Wassers über einem Rechteck (eine Kachel der Nah-Streu/Nah-Wiese): je Chunk, dessen Sheet
-    // ein Punkt des Rechtecks lesen kann, sein Netz. Eine Kachel baut neu, sobald eines sich ändert (`_wasserKennungenGleich`).
+    // Die Kennungen des gezeichneten Wassers über einem Rechteck (eine Kachel der Nah-Streu/Nah-Wiese): das Rechteck, dann je
+    // Chunk, dessen Sheet ein Punkt des Rechtecks lesen kann, sein Netz. Eine Kachel baut neu, sobald sich das Wasser IM
+    // RECHTECK ändert (`_wasserKennungenGleich`).
     _wasserKennungen(x0, z0, x1, z1) {
         const span = this._voxelChunkConfig(0).span;
         const R = AnazhRealm.WASSER_BILD_RAND;
-        const aus = [];
+        const aus = [x0, z0, x1, z1];
         for (let cz = Math.floor((z0 - R) / span); cz <= Math.floor((z1 + R) / span); cz++)
             for (let cx = Math.floor((x0 - R) / span); cx <= Math.floor((x1 + R) / span); cx++)
                 aus.push(cx, cz, this._wasserNetz(cx, cz));
         return aus;
     }
 
+    // DIE KACHEL LIEST IHR WASSER (F3): ein neues Netz eines Chunks fällt die Kachel nur, wenn sich seine Dreiecke über ihrem
+    // Rechteck ändern (`_wasserNetzGleichIn`); sonst liest sie ab jetzt das neue Netz. Bis F3 fiel sie mit jedem neuen Netz —
+    // der Automat baute am Graben das Sheet alle vier Takte neu, und die Wiese um den Graben fiel 557-mal in 600 Takten
+    // (eine Kachel wächst je Takt neu: das Flackern).
     _wasserKennungenGleich(k) {
         if (!k) return false;
-        for (let i = 0; i < k.length; i += 3) if (this._wasserNetz(k[i], k[i + 1]) !== k[i + 2]) return false;
+        for (let i = 4; i < k.length; i += 3) {
+            const n = this._wasserNetz(k[i], k[i + 1]);
+            if (n === k[i + 2]) continue;
+            if (!AnazhRealm._wasserNetzGleichIn(k[i + 2], n, k[0], k[1], k[2], k[3])) return false;
+            k[i + 2] = n;
+        }
+        return true;
+    }
+
+    // Tragen zwei Netze desselben Chunks über dem Rechteck dieselben Dreiecke (je Zelle des Netzes, die das Rechteck berührt,
+    // dieselben Ecken in derselben Folge)? Dann liest jeder Punkt des Rechtecks dieselbe Höhe (`_wasserNetzHoehe`).
+    static _wasserNetzGleichIn(a, b, x0, z0, x1, z1) {
+        const n = a || b;
+        if (!n) return true;
+        const i0 = Math.max(0, Math.floor((x0 - n.gx0) / n.step));
+        const i1 = Math.min(n.nb - 1, Math.floor((x1 - n.gx0) / n.step));
+        const k0 = Math.max(0, Math.floor((z0 - n.gz0) / n.step));
+        const k1 = Math.min(n.nb - 1, Math.floor((z1 - n.gz0) / n.step));
+        for (let k = k0; k <= k1; k++)
+            for (let i = i0; i <= i1; i++) {
+                const f = i + k * n.nb;
+                const la = a ? a.start[f + 1] - a.start[f] : 0;
+                if (la !== (b ? b.start[f + 1] - b.start[f] : 0)) return false;
+                for (let q = 0; q < la; q++)
+                    for (let e = 0; e < 3; e++) {
+                        const pa = 3 * a.idx[3 * a.liste[a.start[f] + q] + e];
+                        const pb = 3 * b.idx[3 * b.liste[b.start[f] + q] + e];
+                        if (
+                            a.pos[pa] !== b.pos[pb] ||
+                            a.pos[pa + 1] !== b.pos[pb + 1] ||
+                            a.pos[pa + 2] !== b.pos[pb + 2]
+                        )
+                            return false;
+                    }
+            }
         return true;
     }
 
@@ -1004,6 +1062,7 @@ class AnazhRealm_wasser_zellen {
                     );
                     if (le > L) L = le;
                 }
+                if (L === -Infinity) L = this._schnittSpiegel(wx, wz, step); // die Flut des Schnitts (F3), wie die Zellen
                 let top = L > -Infinity ? Math.max(faceY - 2 * step, Math.min(faceY + step, L)) : faceY;
                 let ruht = L > -Infinity && top === L;
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
@@ -1732,37 +1791,6 @@ class AnazhRealm_wasser_zellen {
         return moved;
     }
 
-    // Verdunstungs-Boden: Wasser, das der CA in flood-trockene Spalten trug, settled sonst 0.5–0.9 über
-    // der Render-Schwelle und friert als Blob ein. Ist ein Chunk ruhig (Bewegung < SETTLE über
-    // CA_EVAP.QUIET_TICKS), verdunstet Live-Wasser in flood-trockenen Zellen auf 0 (RATE/Tick, Rest < SNAP
-    // fällt) — bewusste Nicht-Erhaltung (Gegenstück zum Quellen-Pin). NIE: Quell-Spalten (src) und Flood-
-    // WATER-Zellen (Ruhe-Wahrheit). Pur über die Arrays; Linse `gate:wasser-wahrheit` Fixture 3.
-    _caEvaporateSettled(level, cells, src, dim, dimY, band) {
-        const WATER = AnazhRealm.CELL_STATE.WATER;
-        const SOLID = AnazhRealm.CELL_STATE.SOLID;
-        const CFG = AnazhRealm.CA_EVAP;
-        const dimSq = dim * dim;
-        const jHi = band ? Math.min(dimY - 1, band.jMax) : dimY - 1;
-        const jLo = band ? Math.max(0, band.jMin) : 0;
-        let evap = 0;
-        for (let j = jLo; j <= jHi; j++) {
-            const baseJ = j * dimSq;
-            for (let c = 0; c < dimSq; c++) {
-                if (src && src[c]) continue; // Quell-Spalten: NIE verdunsten
-                const idx = baseJ + c;
-                const lv = level[idx];
-                if (lv <= 0) continue;
-                const cs = cells[idx];
-                if (cs === WATER || cs === SOLID) continue; // nur LIVE-Zungen über trockenem Grund
-                const nv = lv - CFG.RATE;
-                const next = nv < CFG.SNAP ? 0 : nv;
-                evap += lv - next;
-                level[idx] = next;
-            }
-        }
-        return evap;
-    }
-
     // Reaktive Wasser-Level-Schicht: `state.waterLevelCells` ("cx,cz" → Float32Array) lebt SEPARAT von
     // den Chunk-Entries (überlebt Carve-Rebuilds), lokal, nicht persistiert, kein Worker-Mirror. Seed aus
     // der statischen Flood; danach autonom (Level + SOLID-Maske).
@@ -2109,8 +2137,7 @@ class AnazhRealm_wasser_zellen {
     }
 
     // EIN Seed-Eingang der CA-Level-Schicht: seedet aus den AKTUELLEN Zellen, markiert einmalig die
-    // Quell-Spalten (Atlas-Wasser), legt das y-Band an (voll → der erste Tick misst). Der Edit-Pfad ruft
-    // das VOR dem Carve-Rebuild → der Eintrag hält die Pre-Carve-Ruhe, das Nachfließen ist sichtbar.
+    // Quell-Spalten (Atlas-Wasser), legt das y-Band an (voll → der erste Tick misst).
     _ensureWaterCALevel(cx, cz) {
         const key = `${cx},${cz}`;
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
@@ -2139,9 +2166,13 @@ class AnazhRealm_wasser_zellen {
         // volle Zelle über dem Spiegel ihrer Nachbarn) floss in die Zeile über dem See und aufs Land, die flachen
         // Ufer-Spalten leerten sich, und das Sheet zeichnete sie 14 m unter dem Spiegel — das weiße Treppen-Band am
         // See der Solitär-Eiche (nach dem Wecken 424 von 1594 Spalten gerissen, Wildwasser 105 → 1944 Vertices).
-        // Eine trockene Spalte nimmt nur Wasser, wo ein Schnitt Raum öffnete (`_chunkRegionHasCarve`, das Gate der
-        // reaktiven Flut): im Atlas-Gebiet bis Spiegel + 0,5 m, jenseits Boden + 2 Zellen (die fließende Haut);
-        // sonst nie. Ein Stau hebt die Kappe (unten).
+        // EINE FLÄCHE (F3, Graben am Fluss): eine trockene Spalte nimmt kein Wasser des Automaten — den Raum, den ein Schnitt
+        // am Wasser öffnet, flutet das Gesetz selbst (`_buildVoxelChunkWaterCells`: über der geschnittenen Spalte der Fluss-
+        // Spiegel quer), und das Level hält mindestens das Gesetz (unten). Bis F3 nahm sie, wo ein Schnitt in der Region lag,
+        // im Atlas-Gebiet bis Spiegel + 0,5 m, jenseits Boden + 2 Zellen (die „fließende Haut“): ein Graben 1 m neben dem
+        // Fluss der Mess-Wiese flutete die Aue über dem Spiegel (700 Punkte zu 0,25 m², bis 0,76 m über dem Boden), das Sheet
+        // zeichnete das Dach des Automaten als zweite, zackige Fläche neben dem Spiegel (414 Punkte bis 0,77 m daneben), und
+        // der Automat ruhte erst nach 600 Takten (2 554 Sheet-Bauten). Ein Stau hebt die Kappe (unten).
         if (!this.state.waterSourceCols) this.state.waterSourceCols = new Map();
         if (!this.state.waterCapJ) this.state.waterCapJ = new Map();
         if (!this.state.waterSourceCols.has(key) || !this.state.waterCapJ.has(key)) {
@@ -2160,15 +2191,13 @@ class AnazhRealm_wasser_zellen {
             const stauFields = this._stauFieldsNear(cx, cz);
             const stauMax = AnazhRealm.CA_STAU.MAX_CELLS;
             const WATER = AnazhRealm.CELL_STATE.WATER;
-            const raumOffen = this._chunkRegionHasCarve(cx, cz); // ein Schnitt öffnete Raum (s. o.)
             for (let k = 0; k < dim; k++) {
                 for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
                     const wx = ox + (i + 0.5) * cfg.step;
                     const wz = oz + (k + 0.5) * cfg.step;
                     if (this._atlasWaterLevelAt(wx, wz, Infinity) > -Infinity) src[c] = 1;
-                    // Spalten-Boden ZUERST (höchste SOLID-Zelle), die Rim-Frage trägt das echte Bett: Boden unter dem
-                    // Spiegel ⇒ rim-Kappe (der See speist bis zu SEINEM Niveau), darüber ⇒ Boden+Skin-Kappe (2 Zellen).
+                    // Spalten-Boden (höchste SOLID-Zelle) und oberste Flut-Zelle.
                     let gj = -1;
                     let flutJ = -1; // die oberste Flut-Zelle: die Ruhe des Gesetzes in dieser Spalte
                     for (let j = dimY - 1; j >= 0 && (gj < 0 || flutJ < 0); j--) {
@@ -2176,14 +2205,7 @@ class AnazhRealm_wasser_zellen {
                         if (zs === SOLID && gj < 0) gj = j;
                         else if (zs === WATER && flutJ < 0) flutJ = j;
                     }
-                    const bedTop = oy + (gj + 1) * cfg.step; // Boden-OBERFLÄCHE (gj=-1 → oy)
-                    const rim = this._atlasWaterLevelAt(wx, wz, bedTop);
-                    // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
-                    const capRaum =
-                        rim > -Infinity
-                            ? Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)))
-                            : Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
-                    cap[c] = flutJ >= 0 ? flutJ : raumOffen ? capRaum : -1;
+                    cap[c] = flutJ; // die Ruhe des Gesetzes; trocken: -1
                     // Stau-Spiegel: liegt die Spalte in einem Werk-Feld, hebt sich die Kappe auf den gehaltenen Pegel
                     // (Spill-Wahrheit, gedeckelt MAX_CELLS); eine gehobene Quell-Spalte wird STAU-Quelle (src=2), der Pin
                     // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA). Gehoben wird nur, wo der Pegel eine Zelle
@@ -2191,6 +2213,12 @@ class AnazhRealm_wasser_zellen {
                     // auf ihrem Boden liegt, halten kein Wasser und werden nie Quelle (am Kopf a0d6a81b 21 solche Quellen
                     // am Damm des Tals 26/−120, an der Furt −937/−1064 20).
                     if (stauFields) {
+                        // der Deckel des Staus: MAX_CELLS über dem Spiegel + 0,5 m, jenseits des Atlas über Boden + 2 Zellen
+                        const rim = this._atlasWaterLevelAt(wx, wz, oy + (gj + 1) * cfg.step);
+                        const deckel =
+                            (rim > -Infinity
+                                ? Math.max(0, Math.floor((rim + 0.5 - oy) / cfg.step))
+                                : (gj >= 0 ? gj : 0) + 2) + stauMax;
                         const gx = cx * dim + i;
                         const gz = cz * dim + k;
                         for (const f of stauFields) {
@@ -2198,11 +2226,7 @@ class AnazhRealm_wasser_zellen {
                             const fk = gz - f.gz0;
                             if (fi < 0 || fk < 0 || fi >= f.w || fk >= f.h) continue;
                             const fillY = f.fillY[fi + fk * f.w];
-                            const stauJ = Math.min(
-                                Math.floor((fillY - oy) / cfg.step) - 1,
-                                capRaum + stauMax,
-                                dimY - 1
-                            );
+                            const stauJ = Math.min(Math.floor((fillY - oy) / cfg.step) - 1, deckel, dimY - 1);
                             if (stauJ > cap[c] && stauJ > gj) {
                                 cap[c] = stauJ;
                                 if (src[c] === 1) src[c] = 2;
@@ -2211,6 +2235,19 @@ class AnazhRealm_wasser_zellen {
                     }
                 }
             }
+            // DAS LEVEL HÄLT DAS GESETZ (F3): mit jeder neuen Kappe (nach jedem Schnitt) trägt jede Flut-Zelle ihr Wasser, und
+            // über der Kappe steht keins — das Level aus dem Stand vor dem Schnitt (die Deck-Zelle der Fluss-Spalte, über deren
+            // Bett jetzt der Graben liegt; der trockene Graben vor der Flut) ist kein Wasser der Welt mehr. Die Ruhe ist der
+            // Fixpunkt: der Automat bewegt danach nichts, was das Gesetz trägt. Bis F3 trug die Verdunstung (`CA_EVAP`) die
+            // Zungen des Automaten über trockenem Grund ab; seit nur das Gesetz und ein Stau Wasser halten, träfe sie nur
+            // Gehaltenes — sie fiel mit der Haut.
+            for (let c = 0; c < dimSq; c++)
+                for (let j = 0; j < dimY; j++) {
+                    const idx = c + j * dimSq;
+                    if (j > cap[c]) lv[idx] = 0;
+                    else if (cells[idx] === WATER) lv[idx] = 1;
+                }
+            this.state.waterCABand.set(key, { jMin: 0, jMax: dimY - 1 }); // der erste Takt misst das Band neu
             this.state.waterSourceCols.set(key, src);
             this.state.waterCapJ.set(key, cap);
         }
@@ -2403,35 +2440,6 @@ class AnazhRealm_wasser_zellen {
                 }
             }
         }
-        // Verdunstung (Chokepoint `_caEvaporateSettled`): NACH Pin/Tick/Naht-Tausch führt `a.moved` die
-        // Ruhe-Zählung (`entry._caStillTicks`, lifecycle-gebunden). Erst nach QUIET_TICKS beginnt sie; das
-        // MAX_TICKS-Fenster je Ruhe-Episode garantiert Terminierung. Die verdunstete Magnitude zählt in
-        // `a.moved` → das Re-Mesh zeigt das Schwinden.
-        {
-            const EVAP = AnazhRealm.CA_EVAP;
-            for (const a of active) {
-                const e = this.state.voxelChunks.get(a.key);
-                if (!e) continue;
-                if (a.moved < SETTLE) e._caStillTicks = (e._caStillTicks || 0) + 1;
-                else e._caStillTicks = 0;
-                a.evap = 0;
-                if (e._caStillTicks >= EVAP.QUIET_TICKS && e._caStillTicks < EVAP.QUIET_TICKS + EVAP.MAX_TICKS) {
-                    const ev = this._caEvaporateSettled(
-                        a.level,
-                        a.cells,
-                        srcMap ? srcMap.get(a.key) : null,
-                        dim,
-                        dimY,
-                        a.band
-                    );
-                    if (ev > 0) {
-                        a.evap = ev;
-                        a.moved += ev;
-                        total += ev;
-                    }
-                }
-            }
-        }
         // Bewegte Chunks neu rendern (die Entscheidung legt das Dach als Wunsch ab, `_caRoofChanged`), budgetiert
         // über `pendingWaterIso` (4/Frame), nur bei echter Bewegung. Eingereiht wird der Chunk SELBST: sein Bau
         // zeichnet das neue Dach und reiht dann die 8 Nachbarn ein, die es über ±3 Spalten lesen
@@ -2463,9 +2471,6 @@ class AnazhRealm_wasser_zellen {
         }
         for (const a of active) {
             if (a.moved < SETTLE) {
-                // Solange die Verdunstung arbeitet (a.evap > 0), bleibt der Chunk aktiv — sonst fröre eine halb-
-                // verdunstete Zunge über der Render-Schwelle ein. Terminierung über das MAX_TICKS-Fenster.
-                if (a.evap > 0) continue;
                 // Der Settle-Final-Mesh teilt den Fluss-Throttle: ein perpetueller Fluss ping-pongt zwischen moved >
                 // 0.5 und < SETTLE — ohne Throttle re-meshte dieser Zweig jeden Zyklus. Solange das Intervall nicht um
                 // ist, BLEIBT die Region aktiv (kein delete) → der Final-Mesh kommt binnen ≤ INT Frames.
@@ -2485,9 +2490,11 @@ class AnazhRealm_wasser_zellen {
         return total;
     }
 
-    // Dach-Fingerprint: je Spalte (dim²) oberste nasse Zeile + Füllgrad (j + frac) — exakt was das
-    // Zell-Sheet rendert. Vergleicht gegen `entry._caMeshFp` und schreibt bei Überschreiten (oder
-    // force=true, Settle) fort. Scratch wiederverwendet (alloc-frei), band-beschränkt.
+    // Dach-Fingerprint: je Spalte (dim²) das Live-Dach, das das Zell-Sheet zeichnet (`_caColumnScan`: oberste nicht-feste
+    // Zeile mit Pegel > 0,5, j + Füllgrad). Bis F3 zählte er jede Zeile über 0,05 — ein Film, der am Rand eines Grabens um
+    // 0,05 pendelte, sprang den Fingerprint um 89 Zeilen und baute das Sheet samt acht Nachbarn neu, ohne dass sich ein
+    // Dreieck änderte. Vergleicht gegen `entry._caMeshFp` und schreibt bei Überschreiten (oder force=true, Settle) fort.
+    // Scratch wiederverwendet (alloc-frei), band-beschränkt (außerhalb des Bands kein Wasser).
     _caRoofChanged(a, dim, dimY) {
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(a.key) : null;
         if (!entry) return true;
@@ -2497,11 +2504,12 @@ class AnazhRealm_wasser_zellen {
         const jHi = a.band ? Math.min(dimY - 1, a.band.jMax) : dimY - 1;
         const jLo = a.band ? Math.max(0, a.band.jMin) : 0;
         const level = a.level;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
         for (let c = 0; c < dimSq; c++) {
             let v = 0;
             for (let j = jHi; j >= jLo; j--) {
                 const lv = level[j * dimSq + c];
-                if (lv > 0.05) {
+                if (lv > 0.5 && a.cells[j * dimSq + c] !== SOLID) {
                     v = j + lv;
                     break;
                 }
@@ -2658,17 +2666,6 @@ AnazhRealm.CA_FLOW_KEEP = 0.95;
 // Tick (4 = 15 Hz; jeder Frame kostete ~4 ms im Stand) — die sichtbare Strömung trägt der
 // Schaum-Shader (aFlow). Gilt NUR dem Dauerfluss: der Settle-Final-Mesh bleibt unbedingt.
 AnazhRealm.CA_REMESH_TICK_INTERVAL = 4;
-
-// Verdunstung abgeklungener Zungen (fünfter Gleichgewichts-Term neben Decay · Kappe · Fixpunkt ·
-// Stau): settled Live-Wasser in flood-trockenen Zellen verdunstet langsam auf 0, statt am
-// KEEP-Fixpunkt (über der Render-Schwelle) ewig als Blob zu stehen. Chokepoint `_caEvaporateSettled`;
-// RATE = Tempo, MAX_TICKS deckt 1.0 → 0 pro Episode.
-AnazhRealm.CA_EVAP = Object.freeze({
-    QUIET_TICKS: 12, // Ruhe-Ticks (Roh-Bewegung < SETTLE), bevor die Verdunstung beginnt
-    RATE: 0.01, // Level-Schwund pro Tick — 0.9 → 0 in ~90 Ticks: sichtbar sanft, kein Pop
-    SNAP: 0.05, // Rest unter der Sichtbarkeit fällt ganz (kein ewiger Sub-Film)
-    MAX_TICKS: 130, // Verdunstungs-Fenster pro Ruhe-Episode — quell-genährte Säume frieren danach ein (kein Dauer-Pump)
-});
 
 AnazhRealm.CA_STAU = Object.freeze({
     REACH: 16, // Spalten (×1.8 m ≈ 29 m) Fenster-Pad um das Werk — die Spieler-Aufmerksamkeits-Grenze
