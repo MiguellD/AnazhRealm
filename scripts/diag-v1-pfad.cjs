@@ -1,42 +1,66 @@
-// diag-v1-pfad.cjs — DER SPIELGANG (SG1, 17.10.; vorher die V1-Pfad-Linse der Welle L). Schöpfer 17.10.: „ein effizienter,
-// schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird nur der getestet."
-// Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen Wagen, Arm 0,30) — kein Gate
-// fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang fand die zweite Hälfte derselben
+// diag-v1-pfad.cjs — DER SPIELGANG (SG1, 17.10.; vorher die V1-Pfad-Linse der Welle L). Schöpfer 17.10.: „ein
+// effizienter,
+// schneller Test müsste einen Durchgang machen wie ein Spieler … ändert man nur den Fahrzeug-Bereich, wird nur der
+// getestet."
+// Anlass: in Third verschwand im Auto das Fahrzeug (der gleitende Arm der Kamera traf den eigenen Wagen, Arm 0,30) —
+// kein Gate
+// fand es, 2 min Fahren fanden es (geheilt in 1215d560, `_gerittenesWerk`). Der erste Gang fand die zweite Hälfte
+// derselben
 // Klasse: der Band-Partner des Wagens (L1) blieb am Ort des Aufstiegs, am Wagen blendete die L0 aus (geheilt mit SG1).
-// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer, wo die EINE Weiche (`linsenGpu`) die Karte
-// gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe (die Batterie der CI), auf dem Null-Renderer: swiftshader
-// kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s je Programm), und sein Holz änderte die Welt, die er prüfte (der
-// Deckel der Ankunft, unter dem Frame-Budget stand die Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort urteilt
-// der Gang die Mechanik jeder Station, das Bild urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten in seinen
+// EIN Boot mit leerer Platte (frisches Profil, IDB leer) auf dem ECHTEN Renderer, wo die EINE Weiche (`linsenGpu`) die
+// Karte
+// gibt (lokal, der Job echt auf der GTX); wo sie swiftshader gäbe (die Batterie der CI), auf dem Null-Renderer:
+// swiftshader
+// kostete den Gang 11 min statt 51 s (Pipeline-Bau 42–292 s je Programm), und sein Holz änderte die Welt, die er prüfte
+// (der
+// Deckel der Ankunft, unter dem Frame-Budget stand die Welt nie, der GT ohne Studio-Stufen, CI 39045669231) — dort
+// urteilt
+// der Gang die Mechanik jeder Station, das Bild urteilt die Karte. Der Loop treibt die Welt selbst, die Proben warten
+// in seinen
 // Takten (`__gang.takte`), die Tasten sind KeyboardEvents. Die Stationen in der Reihenfolge eines Spielers, je Station
 // Spieler-Gesetze als Urteil und auf der Karte ein Bild aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne
-// Mittag · Sonne · Sommer; die Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine Station ohne
+// Mittag · Sonne · Sommer; die Werkstatt aus dem Canvas ihrer Vorschau, dem Ausgabe-Pfad ihres Renderers) — eine
+// Station ohne
 // Bild ist auf der Karte ROT; je Station eine Frist (Tafel STATIONEN), ihr Bruch ist ROT beim Namen der Station:
-//   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das Gesetz
-//             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den Spieler;
+//   ankunft   Start → Kontrolle in Takten und ms (`_weltbildDa`); das erste Bild ist GANZ: der Ladeschirm wich über das
+// Gesetz
+//             von gate:ankunft L2a (`_ankunftsBild`: keine Lücke, nie über Ruhe oder Deckel), er ist weg, W trägt den
+// Spieler;
 //             V-k4 der Fensterwechsel löst W. Die Ankunft ist der Boot jeder Station: sie läuft immer.
-//   lichtung  V-D1 (Q15): keine Krone über der Genesis-Plattform, EINE Plattform, der Ring um sie auch über dem Frame-Budget.
-//   fahrt     ein Studio-Wagen (`fahrzeug_gt`) vor dem Spieler (die Welt stellt ihn auf fahrbaren Grund); E steigt ein, die
+//   lichtung  V-D1 (Q15): keine Krone über der Genesis-Plattform, EINE Plattform, der Ring um sie auch über dem
+// Frame-Budget.
+//   fahrt     ein Studio-Wagen (`fahrzeug_gt`) vor dem Spieler (die Welt stellt ihn auf fahrbaren Grund); E steigt ein,
+// die
 //             Sicht springt auf Third, W fährt 100 m, der Spieler lenkt (A/D) in die freieste Richtung: der Kamera-Arm
 //             (`_kamArm`) endet nie am eigenen Wagen (p50 ≥ 0,9, sonst sein Täter), jede zeichnende Stufe (Primär und
 //             Band-Partner) steht am Wagen, und er füllt im Third-Bild sein Band (die Klassen-Teilung der Abnahme
-//             `__klassenTeilung`: das Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht kehrt zurück.
+//             `__klassenTeilung`: das Bild mit gegen ohne Wagen, Rauschen gemessen); E steigt aus, die Sicht kehrt
+// zurück.
 //             DER SELBSTTEST IM LAUF: die ersten 20 m fahren mit dem alten Mount-Follow (`_archInstanceUpdate` ohne den
-//             Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe beim Namen nennen. (Der alte Strahl ohne
-//             `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel liegt über der Hülle, gemessen t 1,0 mit und ohne.)
-//             DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein Stoß), E steigt wieder ein, das erste Bild ohne Sim-Schritt
+//             Band-Partner, eingespielt) — das Urteil muss ROT werden und die Stufe beim Namen nennen. (Der alte Strahl
+// ohne
+//             `_gerittenesWerk` trifft den Wagen heute nicht mehr: sein Ziel liegt über der Hülle, gemessen t 1,0 mit
+// und ohne.)
+//             DER WIEDERAUFSTIEG: der Wagen dreht im Stand (ein Stoß), E steigt wieder ein, das erste Bild ohne
+// Sim-Schritt
 //             zeichnet ihn in seiner Gier.
-//   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne ihren
-//             Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt trocken ≤ 8 je Ring.
+//   wort      V-D6 der KI-Fehler nennt den Host · V-k5/V-k6/V-D8 der Satz trifft die Welt · V-k5-KLASSE jede Op ohne
+// ihren
+//             Ort scheitert benannt an `dslEvalPos` · R2 die Wasser-Suche ist bit-gleich zum Scan und scannt trocken ≤
+// 8 je Ring.
 //   werkstatt V-D5 das Rezeptbuch nach dem Spielmodus · V-D3 die Vorschau zeigt ihr Werk (Masken-Gesetz ≥ 99 %) · V-D3
-//             FREMDER ZUG jeder Wartende erwacht nach einem fremd gezogenen Körper (≤ 20 s) · V-D3 RAHMEN jede Gestalt füllt
+//             FREMDER ZUG jeder Wartende erwacht nach einem fremd gezogenen Körper (≤ 20 s) · V-D3 RAHMEN jede Gestalt
+// füllt
 //             die Vorschau [0,5; 0,9].
-// Die Befunde jeder Probe trägt git (Lehre 15); die statische Wand W2–W7 (Text am AST) fiel mit SG1 (Richter-Macher 16.10.:
+// Die Befunde jeder Probe trägt git (Lehre 15); die statische Wand W2–W7 (Text am AST) fiel mit SG1 (Richter-Macher
+// 16.10.:
 // Linsen urteilen Verhalten, nie Text) — ihr Verhalten tragen V-D3, V-D1 und V-k5.
-// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>: eine
+// DIE WAHL: `--station ankunft,fahrt` fährt nur diese; `--nach-diff <rev>` liest die geänderten Dateien seit <rev>:
+// eine
 // stamm-Datei ruft die Stationen ihres Moduls (spec/stamm/modul-karte.json, Tafel STATIONEN), was die Welt sonst lädt
 // (worlds/, Kerne, index.html, diese Linse), den ganzen Gang; Doku, Spec und andere Skripte nur die Ankunft.
-//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]   Port: V1_PFAD_PORT (4421)
+//   node scripts/diag-v1-pfad.cjs [--selftest] [--station a,b] [--nach-diff <rev>] [--bilder <ordner>]   Port:
+// V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -54,12 +78,17 @@ function check(name, ok, detail) {
 const ARGV = process.argv.slice(2);
 const OPT = (k) => (ARGV.includes(k) ? ARGV[ARGV.indexOf(k) + 1] : null);
 
-// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft, und ihre FRIST
-// in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.: ein Gang hing 696 s
-// in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M und der Null-Renderer der CI)
-// das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das Warten auf die Birken des Bilds,
+// ── DIE STATIONEN in der Reihenfolge eines Spielers: je Station die Module des Stamms, deren Änderung sie ruft, und
+// ihre FRIST
+// in Sekunden: steht der Gang länger in ihr, ist er ROT beim Namen der Station (Befund des Prüfers 18.10.: ein Gang
+// hing 696 s
+// in der Werkstatt, der Puls lief weiter, kein Täter). Gemessen 18.10. in 87 Gängen (Radeon 890M und der Null-Renderer
+// der CI)
+// das Maximum je Station: ankunft 6,6 s · lichtung 12,0 · fahrt 91,4 · wort 0,1 (dazu das Warten auf die Birken des
+// Bilds,
 // ≤ 900 Takte) · werkstatt 68,5 — die Frist liegt beim 3- bis 10-fachen.
-// Die Fahrt ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild (Dirigent/takt).
+// Die Fahrt ruft auch der Setzer bewegter Instanzen und der Fahr-Platz (Siedlung/satz · ort) und der Ritt im Bild
+// (Dirigent/takt).
 const STATIONEN = [
     ["ankunft", /^Dirigent\/(ankunft|takt|regler)$/, 60],
     ["lichtung", /^(Gelaende\/boden|Vegetation\/baum|Siedlung\/(ort|satz))$/, 120],
@@ -69,12 +98,16 @@ const STATIONEN = [
 ];
 function fristBruch(station, sek, takte) {
     const f = (STATIONEN.find(([n]) => n === station) || [])[2];
-    return f && sek > f ? `station ${station} steht ${Math.round(sek)} s (${takte} Takte) über ihrer Frist von ${f} s` : null;
+    return f && sek > f
+        ? `station ${station} steht ${Math.round(sek)} s (${takte} Takte) über ihrer Frist von ${f} s`
+        : null;
 }
-// Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen Gang;
+// Was jede Station trägt (Konstruktor, Dienste, Tafeln) und was die Welt außerhalb des Stamms lädt, ruft den ganzen
+// Gang;
 // was sie nie lädt (Doku, Spec, andere Skripte), nur die Ankunft — sie ist der Boot jeder Station.
 const ALLE_MODULE = /^(Dirigent\/kern|Dienst|Daten)$/;
-const NIE_GELADEN = /^(docs|spec|artifacts|\.github|\.claude)\/|\.md$|^scripts\/(?!diag-v1-pfad\.cjs$|lib\/(welt-boot|ausgabe-aufnahme|abnahme-urteil|software-gpu)\.cjs$)/;
+const NIE_GELADEN =
+    /^(docs|spec|artifacts|\.github|\.claude)\/|\.md$|^scripts\/(?!diag-v1-pfad\.cjs$|lib\/(welt-boot|ausgabe-aufnahme|abnahme-urteil|software-gpu)\.cjs$)/;
 function stationenFuer(dateien, ordnung) {
     const modulVon = new Map(ordnung.map(([m]) => [`stamm/${m.toLowerCase().replace("/", "-")}.js`, m]));
     const S = new Set(["ankunft"]);
@@ -82,7 +115,10 @@ function stationenFuer(dateien, ordnung) {
     for (const d of dateien) {
         if (NIE_GELADEN.test(d)) continue;
         const m = modulVon.get(d);
-        const s = m && !ALLE_MODULE.test(m) ? STATIONEN.filter(([, re]) => re.test(m)).map(([n]) => n) : STATIONEN.map(([n]) => n);
+        const s =
+            m && !ALLE_MODULE.test(m)
+                ? STATIONEN.filter(([, re]) => re.test(m)).map(([n]) => n)
+                : STATIONEN.map(([n]) => n);
         s.forEach((n) => S.add(n));
         grund.push(`${d}${m ? ` (${m})` : ""} → ${s.join(",") || "ankunft"}`);
     }
@@ -90,31 +126,71 @@ function stationenFuer(dateien, ordnung) {
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-// Das Band des Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet): gemessen 17.10. Radeon 1,3 % (GT nach 100 m,
+// Das Band des Wagens im Third-Bild (Anteil der Pixel, die der Wagen zeichnet): gemessen 17.10. Radeon 1,3 % (GT nach
+// 100 m,
 // 9 m vor der Kamera, 640×360) — darunter steht er nicht im Bild, darüber steht die Kamera in ihm.
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
-Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.005, wagenMax: 0.2, rauschenMax: 0.002, stufeM: 2, radMax: 0.05 });
-// Der Wechsel und der Hang (Befund des Schöpfers 17.10.): je Rückkehr nach Third die Kamera ≤ azGrad an der Gier nach 10 Bildern,
-// die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche Ruck (die zweite Differenz
-// der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der Abweichung des Bild-Tempos vom Tempo um es)
-// ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab höchstens schnappMax Schnapper des Arms (ein Bild, das ihn um
-// mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m, nach F1 0,032;
-// Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°). GRENZE: auf dem
-// Null-Renderer (die Batterie der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch der
-// Gleichlauf (Prüfer R3 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die Karte. Der
-// Schritt steht im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts fährt, nie auf
-// einem Zweig: der Merge-Beweis eines Zweigs ist der lokale Gang auf der Radeon (`--station fahrt`, die Karte der Weiche).
-Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
-// Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz: 0, der
-// Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.: 4,3 %, das leere Canvas 0).
+Object.assign(SOLL, {
+    kontrolleM: 2,
+    fahrM: 100,
+    armMin: 0.9,
+    wagenMin: 0.005,
+    wagenMax: 0.2,
+    rauschenMax: 0.002,
+    stufeM: 2,
+    radMax: 0.05,
+});
+// Der Wechsel und der Hang (Befund des Schöpfers 17.10.): je Rückkehr nach Third die Kamera ≤ azGrad an der Gier nach
+// 10 Bildern,
+// die Gier drehte in Ego ≥ egoGrad (sonst beweist der Wechsel nichts); bei fester Lenkung der seitliche Ruck (die
+// zweite Differenz
+// der Quer-Lage der Kamera am Wagen je Bild, p95) ≤ ruckM; der Gleichlauf (p95 der Abweichung des Bild-Tempos vom Tempo
+// um es)
+// ≤ gleichMax; die Kamera über der Fahrbahn (p05) ≥ hochMin; bergab höchstens schnappMax Schnapper des Arms (ein Bild,
+// das ihn um
+// mehr als `schnapp` einzieht). Die Schwellen aus der Messung (Radeon 890M, 18.10.): Ruck am Kopf 72676562 0,144 m,
+// nach F1 0,032;
+// Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°).
+// GRENZE: auf dem
+// Null-Renderer (die Batterie der CI) trennt weder der Ruck (Basis f45ee994 dort 0,012 m, auf der Radeon 0,138 m) noch
+// der
+// Gleichlauf (Prüfer R3 18.10.: die Basis dort grün) — Verdacht 3 (Lage und Blick aus zwei Quellen) urteilt NUR die
+// Karte. Der
+// Schritt steht im Job echt (.github/workflows/check.yml, die GTX des Messplatzes), der auf integ-probe und nachts
+// fährt, nie auf
+// einem Zweig: der Merge-Beweis eines Zweigs ist der lokale Gang auf der Radeon (`--station fahrt`, die Karte der
+// Weiche).
+Object.assign(SOLL, {
+    wechselS: 2,
+    kreisMs: 3,
+    kreisM: 10,
+    egoGrad: 30,
+    azGrad: 10,
+    ruckM: 0.07,
+    gleichMax: 0.2,
+    hochMin: 10,
+    schnapp: 0.05,
+    schnappMax: 3,
+    hangM: 60,
+    hangMin: 0.2,
+    hangMittel: 0.3,
+});
+// Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz:
+// 0, der
+// Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.: 4,3 %,
+// das leere Canvas 0).
 Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
-// Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `GENESIS_PLATZ.bahn` breit jenseits ihrer Tiefe (zwei Spuren je
-// eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im Tempo `ringMs`, die
-// Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem Täter steigt der Spieler
+// Die Runde um den Genesis-Ring (F1d): die Fahrbahn um die Tore, `GENESIS_PLATZ.bahn` breit jenseits ihrer Tiefe (zwei
+// Spuren je
+// eine Wagen-Breite und die Ablage der Lenkung; 5 m streifte die innere Spur die Boxen der Tore), gefahren im Tempo
+// `ringMs`, die
+// Spur gehalten auf `ringAblage` (die freie Bahn 18.10.: 0,82 m innen, 0,14 m außen); nach jedem Täter steigt der
+// Spieler
 // `ringSprung`° weiter ein.
 Object.assign(SOLL, { ringMs: 5, ringSprung: 10, ringAblage: 1.2 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
-// ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
+// ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich),
+// der
 // Ladeschirm ist weg, W trägt den Spieler.
 function ankunftVerdict(m) {
     if (!m || m.gestartet !== true) return ["ankunft start"];
@@ -122,16 +198,48 @@ function ankunftVerdict(m) {
     if (!(m.ms > 0)) out.push("ankunft: kein erstes Weltbild (`_weltbildDa` fehlt)");
     if ((m.ohne || []).length) out.push(`ankunft halb: ${m.ohne[0]}`);
     if (m.ladeschirm) out.push("ankunft: der Ladeschirm steht nach dem Weltbild");
-    if (!(m.weg >= SOLL.kontrolleM)) out.push(`kontrolle: W trug den Spieler ${m.weg} m in ${m.wegTakte} Takten (Soll ≥ ${SOLL.kontrolleM} m)`);
+    if (!(m.weg >= SOLL.kontrolleM))
+        out.push(`kontrolle: W trug den Spieler ${m.weg} m in ${m.wegTakte} Takten (Soll ≥ ${SOLL.kontrolleM} m)`);
     return out;
 }
 // Die gesunden Abschnitte des Selbst-Tests (Wechsel und Hang)
 const GLATT = { ruckN: 120, ruckP95: 0.02, gleichN: 200, gleichP95: 0.04, hochP05: 19, radN: 400, radWeg: 0 };
-const WECHSEL_GESUND = Object.assign({ wechsel: [[74, 4, "first"], [70, 4, "first"], [80, 3, "fuehrung"]], wiederauf: 0, stufeWeg: 0.1, anteil: 0.02, rauschen: 0 }, GLATT);
-const HANG_GESUND = Object.assign({ gefaelle: 0.42, weg: 60, armN: 200, armMin: 0.6, schnapp: 0, armWeg: 0.4, stufeWeg: 0.1, anteil: 0.02, rauschen: 0 }, GLATT);
-const RING_GESUND = { spuren: [17, 19].map((R) => ({ R, zu: true, grad: 360, sprung: 0, weg: 6.3 * R, ablage: 0.3 })), taeter: [] };
-// FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel unter fester
-// Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der Hülle des gerittenen
+const WECHSEL_GESUND = Object.assign(
+    {
+        wechsel: [
+            [74, 4, "first"],
+            [70, 4, "first"],
+            [80, 3, "fuehrung"],
+        ],
+        wiederauf: 0,
+        stufeWeg: 0.1,
+        anteil: 0.02,
+        rauschen: 0,
+    },
+    GLATT
+);
+const HANG_GESUND = Object.assign(
+    {
+        gefaelle: 0.42,
+        weg: 60,
+        armN: 200,
+        armMin: 0.6,
+        schnapp: 0,
+        armWeg: 0.4,
+        stufeWeg: 0.1,
+        anteil: 0.02,
+        rauschen: 0,
+    },
+    GLATT
+);
+const RING_GESUND = {
+    spuren: [17, 19].map((R) => ({ R, zu: true, grad: 360, sprung: 0, weg: 6.3 * R, ablage: 0.3 })),
+    taeter: [],
+};
+// FAHRT: Aufstieg in Third, 100 m mit W, der Arm hält, der Wagen steht in seinem Band im Bild; die Sicht im Wechsel
+// unter fester
+// Lenkung; ein Steilhang bergab; Abstieg in die alte Sicht. Der Täter des Arms beim Namen: endet er in der Hülle des
+// gerittenen
 // Werks (`imWagen`), trifft sein Strahl den eigenen Wagen.
 function fahrtVerdict(m) {
     if (!m || m.gestartet !== true) return [`fahrt start${m && m.grund ? `: ${m.grund}` : ""}`];
@@ -146,36 +254,62 @@ function fahrtVerdict(m) {
         );
     const w = m.wechsel || {};
     const h = m.hang || {};
-    // JEDE ZEICHNENDE STUFE je Bild am Wagen, in jedem Abschnitt; das Bild urteilt die Karte (der Null-Renderer der CI hat keins:
+    // JEDE ZEICHNENDE STUFE je Bild am Wagen, in jedem Abschnitt; das Bild urteilt die Karte (der Null-Renderer der CI
+    // hat keins:
     // `bild: false`, die Linse prüft, dass die Karte eins hat)
     for (const [wo, a] of [["", m], [" im Wechsel", w], [" am Hang", h]]) {
-        if (a.stufeWeg > SOLL.stufeM) out.push(`aufbau${wo} ${a.stufeWeg} m neben dem Wagen: die Stufe ${a.stufeTaeter} zieht nicht mit (_archInstanceUpdate)`);
-        if (a.radWeg > SOLL.radMax) out.push(`rad${wo}: die Stufen im Band zeigen das Rad verschieden (Drehung um ${a.radWeg}, ${a.radN} Proben) — eine Stufe steht in der Ruhe-Lage (_archInstanceAdd)`);
+        if (a.stufeWeg > SOLL.stufeM)
+            out.push(
+                `aufbau${wo} ${a.stufeWeg} m neben dem Wagen: die Stufe ${a.stufeTaeter} zieht nicht mit (_archInstanceUpdate)`
+            );
+        if (a.radWeg > SOLL.radMax)
+            out.push(
+                `rad${wo}: die Stufen im Band zeigen das Rad verschieden (Drehung um ${a.radWeg}, ${a.radN} Proben) — eine Stufe steht in der Ruhe-Lage (_archInstanceAdd)`
+            );
         if (a.bild !== false && (a === m || a.anteil != null) && !(a.anteil >= SOLL.wagenMin && a.anteil <= SOLL.wagenMax))
             out.push(`wagen${wo} im Bild ${pct(a.anteil)} außerhalb [${pct(SOLL.wagenMin)}; ${pct(SOLL.wagenMax)}]`);
     }
-    if (m.bild !== false && !(m.rauschen <= SOLL.rauschenMax)) out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
+    if (m.bild !== false && !(m.rauschen <= SOLL.rauschenMax))
+        out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
     // DER WECHSEL: je Rückkehr nach Third steht die Kamera nach 10 Bildern an der Gier; der Ruck bei fester Lenkung
     const nach = w.wechsel || [];
     const ausEgo = nach.filter(([, , von]) => von !== "fuehrung").length;
     if (ausEgo < 2 || nach.length - ausEgo < 1 || !nach.every(([ego]) => ego >= SOLL.egoGrad))
-        out.push(`wechsel: ${ausEgo} Rückkehr nach Third aus Ego, ${nach.length - ausEgo} aus einer Führung, die Gier drehte ${nach.map(([g]) => `${g}°`).join(" · ") || "—"} (vakuös: Soll 2 + 1 je ≥ ${SOLL.egoGrad}°)`);
+        out.push(
+            `wechsel: ${ausEgo} Rückkehr nach Third aus Ego, ${nach.length - ausEgo} aus einer Führung, die Gier drehte ${nach.map(([g]) => `${g}°`).join(" · ") || "—"} (vakuös: Soll 2 + 1 je ≥ ${SOLL.egoGrad}°)`
+        );
     for (const [ego, n10, von] of nach) {
         const wo = von === "fuehrung" ? "der Führung eines Studios (kameraFuehren)" : "dem Wechsel";
-        if (!(n10 <= SOLL.azGrad)) out.push(`kamera nach ${wo} ${n10}° neben der Gier nach 10 Bildern (${von === "fuehrung" ? "in ihr" : "in Ego"} drehte sie ${ego}°, Soll ≤ ${SOLL.azGrad}°): die Chase-Cam beginnt aus der alten Richtung`);
+        if (!(n10 <= SOLL.azGrad))
+            out.push(
+                `kamera nach ${wo} ${n10}° neben der Gier nach 10 Bildern (${von === "fuehrung" ? "in ihr" : "in Ego"} drehte sie ${ego}°, Soll ≤ ${SOLL.azGrad}°): die Chase-Cam beginnt aus der alten Richtung`
+            );
     }
     if (nach.length && w.wiederauf == null) out.push("wiederaufstieg: nicht gemessen (vakuös)");
     else if (nach.length && !(w.wiederauf <= SOLL.wiederaufGrad))
-        out.push(`wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ${w.wiederauf}° neben seiner Gier (Soll ≤ ${SOLL.wiederaufGrad}°): die Gier im Bild beginnt aus der letzten Fahrt (mountArchitecture, _gierVor)`);
+        out.push(
+            `wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ${w.wiederauf}° neben seiner Gier (Soll ≤ ${SOLL.wiederaufGrad}°): die Gier im Bild beginnt aus der letzten Fahrt (mountArchitecture, _gierVor)`
+        );
     // DER RUCK, DER GLEICHLAUF, DIE HÖHE über der Fahrbahn: im Kreis (feste Lenkung) und am Hang
     for (const [wo, a] of [["im Wechsel", w], ["am Hang", h]]) {
         if (a === h && !(h.gefaelle >= SOLL.hangMittel)) continue;
-        if (!(a.ruckN >= 20 && a.gleichN >= 20)) out.push(`kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 20)`);
+        if (!(a.ruckN >= 20 && a.gleichN >= 20))
+            out.push(
+                `kamera ${wo}: ${a.ruckN || 0} Bilder Ruck, ${a.gleichN || 0} Bilder Gleichlauf (vakuös, Soll ≥ 20)`
+            );
         else {
-            if (a === w && !(a.ruckP95 <= SOLL.ruckM)) out.push(`kamera-ruck seitlich p95 ${a.ruckP95} m je Bild bei fester Lenkung (Soll ≤ ${SOLL.ruckM}): die Kamera springt quer gegen den Wagen`);
+            if (a === w && !(a.ruckP95 <= SOLL.ruckM))
+                out.push(
+                    `kamera-ruck seitlich p95 ${a.ruckP95} m je Bild bei fester Lenkung (Soll ≤ ${SOLL.ruckM}): die Kamera springt quer gegen den Wagen`
+                );
             if (!(a.gleichP95 <= SOLL.gleichMax))
-                out.push(`gleichlauf ${wo} p95 ${a.gleichP95} (Soll ≤ ${SOLL.gleichMax}): das Bild zeigt den Wagen nicht, wo die Physik ihn zu seiner Zeit hat (_applyFixedInterpolation)`);
-            if (!(a.hochP05 >= SOLL.hochMin)) out.push(`kamera ${wo} p05 ${a.hochP05}° über der Fahrbahn (Soll ≥ ${SOLL.hochMin}°): die Elevation steht zur Welt, nicht zur Fahrbahn`);
+                out.push(
+                    `gleichlauf ${wo} p95 ${a.gleichP95} (Soll ≤ ${SOLL.gleichMax}): das Bild zeigt den Wagen nicht, wo die Physik ihn zu seiner Zeit hat (_applyFixedInterpolation)`
+                );
+            if (!(a.hochP05 >= SOLL.hochMin))
+                out.push(
+                    `kamera ${wo} p05 ${a.hochP05}° über der Fahrbahn (Soll ≥ ${SOLL.hochMin}°): die Elevation steht zur Welt, nicht zur Fahrbahn`
+                );
         }
     }
     // DER HANG: ein Steilhang, der Wagen fährt ihn bergab, der Arm pumpt nicht
@@ -185,13 +319,19 @@ function fahrtVerdict(m) {
         if (!(h.armN > 0)) out.push("hang: keine Probe des Arms (vakuös)");
         else if (h.schnapp > SOLL.schnappMax) out.push(`kamera-arm pumpt bergab: ${h.schnapp} Schnapper auf ${h.weg} m (Arm-Weg ${h.armWeg}, min ${h.armMin}; Soll ≤ ${SOLL.schnappMax})`);
     }
-    // DIE RUNDE UM DEN GENESIS-RING (F1d): die Fahrbahn um die Tore trägt kein Tor und keinen Bau — jeder Täter beim Namen;
+    // DIE RUNDE UM DEN GENESIS-RING (F1d): die Fahrbahn um die Tore trägt kein Tor und keinen Bau — jeder Täter beim
+    // Namen;
     // und keine Fahrt des Gangs geht durch ein Tor
     const g = m.ring || {};
     const sp = g.spuren || [];
-    if (sp.length < 2 || !sp.every((s) => s.zu)) out.push(`ringbahn: die Runde um den Genesis-Ring endet nach ${sp.map((s) => `${s.grad}°`).join(" · ") || "0°"} (vakuös)`);
+    if (sp.length < 2 || !sp.every((s) => s.zu))
+        out.push(
+            `ringbahn: die Runde um den Genesis-Ring endet nach ${sp.map((s) => `${s.grad}°`).join(" · ") || "0°"} (vakuös)`
+        );
     else if (!(g.taeter || []).length && !sp.every((s) => s.ablage <= SOLL.ringAblage))
-        out.push(`ringbahn: die Lenkung hält die Spur nicht (Ablage ${sp.map((s) => s.ablage).join(" · ")} m, Soll ≤ ${SOLL.ringAblage} m — vakuös)`);
+        out.push(
+            `ringbahn: die Lenkung hält die Spur nicht (Ablage ${sp.map((s) => s.ablage).join(" · ")} m, Soll ≤ ${SOLL.ringAblage} m — vakuös)`
+        );
     for (const t of g.taeter || [])
         out.push(
             t.art === "tor"
@@ -200,7 +340,8 @@ function fahrtVerdict(m) {
                   ? `ringbahn: der Wagen steht bei ${t.ort} (${t.grad}°, Spur ${t.R} m) an ${t.type}${t.id != null ? ` (${t.id})` : ""} auf der Fahrbahn um den Genesis-Ring`
                   : `ringbahn: bei ${t.ort} steigt E nicht ein: ${t.grund}`
         );
-    if (m.tor && m.tor.phase !== "Ring") out.push(`portal betreten in der Fahrt (${m.tor.phase}) bei ${(m.tor.ort || []).join("/")}: ${m.tor.log}`);
+    if (m.tor && m.tor.phase !== "Ring")
+        out.push(`portal betreten in der Fahrt (${m.tor.phase}) bei ${(m.tor.ort || []).join("/")}: ${m.tor.log}`);
     if (m.abgestiegen !== true) out.push("fahrt: E steigt nicht aus");
     else if (m.sichtNach !== m.sichtVor) out.push(`sicht: nach dem Abstieg ${m.sichtNach} statt ${m.sichtVor}`);
     return out;
@@ -281,7 +422,9 @@ function vorschauVerdict(m) {
     if (m.maskeDanach !== m.maskeWelt) out.push(`welt-maske nach dem Vorschau-Render ${m.maskeDanach} statt ${m.maskeWelt}`);
     // das Bild der Karte (der Null-Renderer zeichnet keins): das Werk deckt sein Canvas, gemessen mit gegen ohne Werk
     if (m.bildAnteil != null && !(m.bildAnteil >= SOLL.vorschauBildMin))
-        out.push(`vorschau-bild: das Werk deckt ${(100 * m.bildAnteil).toFixed(1)} % des Canvas (Soll ≥ ${100 * SOLL.vorschauBildMin} %)`);
+        out.push(
+            `vorschau-bild: das Werk deckt ${(100 * m.bildAnteil).toFixed(1)} % des Canvas (Soll ≥ ${100 * SOLL.vorschauBildMin} %)`
+        );
     return out;
 }
 
@@ -475,7 +618,8 @@ function sucheVerdict(m) {
 
 const server = statikServer();
 
-// DER ZÄHLER DER TAKTE (Seite, vor dem ersten Skript): sobald der Loop steht, läuft er über diese Hülle — sie zählt jeden
+// DER ZÄHLER DER TAKTE (Seite, vor dem ersten Skript): sobald der Loop steht, läuft er über diese Hülle — sie zählt
+// jeden
 // Takt, merkt den Takt der Kontrolle (`_weltbildDa`) und ruft je Takt die Probe der Station (`jeTakt`).
 function TAKT_ZAEHLER() {
     const A = (window.__gang = { takte: 0, kontrolle: null, jeTakt: null, loop: null });
@@ -492,7 +636,8 @@ function TAKT_ZAEHLER() {
             if (A.kontrolle == null && r.state._weltbildDa) A.kontrolle = A.takte;
             if (A.jeTakt) A.jeTakt();
         };
-        // der Null-Renderer hat keinen Loop (sein setAnimationLoop ist leer): der Takt der Seite treibt ihn, ein Bild je Takt
+        // der Null-Renderer hat keinen Loop (sein setAnimationLoop ist leer): der Takt der Seite treibt ihn, ein Bild
+        // je Takt
         if (R._isHeadlessNull) requestAnimationFrame(function f(t) {
             A.loop(t);
             requestAnimationFrame(f);
@@ -501,7 +646,8 @@ function TAKT_ZAEHLER() {
     }, 1);
 }
 
-// ── DIE STATIONEN IN DER SEITE (Funktionsrumpf; r = die Welt, der Loop treibt sie, `tick(n)` wartet n seiner Takte). ──
+// ── DIE STATIONEN IN DER SEITE (Funktionsrumpf; r = die Welt, der Loop treibt sie, `tick(n)` wartet n seiner Takte).
+// ──
 async function probe(arg) {
     const { kiPort, soll: SOLL } = arg;
     const S = new Set(arg.stationen);
@@ -521,11 +667,15 @@ async function probe(arg) {
     const tippe = async (key, code) => (taste("keydown", key, code), taste("keyup", key, code), tick(2));
     // DAS BILD aus dem Ausgabe-Pfad (Satz „messung": der Schuss zeigt, was jetzt steht), der Loop ruht um den Schuss
     const [W, H] = [640, 360];
-    // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn des
-    // Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel neu, ein Leser
+    // Die Aufnahme beginnt die Geschichte der zeitlichen Auflösung auch über eine 1×1-Größe ihres Ziels (der Neubeginn
+    // des
+    // Vendor-TRAANode); der Zeit-Knoten des Stamms beginnt sie über `_traaR.neu` — die 1×1-Größe schuf das Ziel neu,
+    // ein Leser
     // band danach das zerstörte („Destroyed texture TRAANode.resolve", Spielgang 17.10., ~17 Takte nach dem Schuss beim
-    // nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs beginnt wie nach der Größe
-    // mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben Pose im Laub: Rauschen 0,011)
+    // nächsten Sprung des Auges): im Gang bleibt das Ziel, wie es ist, und der Versatz des Laubs beginnt wie nach der
+    // Größe
+    // mit dem ersten Frame (`_versatzIndex`, sonst unterschieden sich zwei Schüsse derselben Pose im Laub: Rauschen
+    // 0,011)
     const schuss = async () => {
         const z = st.traaNode && st.traaNode._historyRenderTarget;
         if (z) z.setSize = (w, h) => (w === 1 && h === 1 ? z : Object.getPrototypeOf(z).setSize.call(z, w, h));
@@ -544,8 +694,10 @@ async function probe(arg) {
         ctx.putImageData(img, 0, 0);
         return cv.toDataURL("image/png");
     };
-    // Je Schuss die Bühne (Mittag · Sonne · Sommer, die Bild-Uhr steht); danach spielt der Gang weiter: ihr Halt fällt — unter
-    // der gehaltenen Wetter-Uhr verweigert das Spiel jeden Welt-Akt (`dslEval`, der Satz der Station Wort pflanzte nichts)
+    // Je Schuss die Bühne (Mittag · Sonne · Sommer, die Bild-Uhr steht); danach spielt der Gang weiter: ihr Halt fällt
+    // — unter
+    // der gehaltenen Wetter-Uhr verweigert das Spiel jeden Welt-Akt (`dslEval`, der Satz der Station Wort pflanzte
+    // nichts)
     const angehalten = async (fn) => {
         R.setAnimationLoop(null);
         try {
@@ -574,9 +726,11 @@ async function probe(arg) {
         window.dispatchEvent(new Event("blur"));
         t.nachBlur = st.keys.w === true;
         taste("keyup", "w", "KeyW");
-        // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete Bilder):
+        // DAS BILD DER ANKUNFT, wenn sie aus der Ferne geglitten ist (`_ankunftGleit`, ANKUNFT_GLEIT_BILDER gezeichnete
+        // Bilder):
         // eine Aufnahme mitten im Gleiten zählte ihre Frames als Bilder des Gleitens mit
-        for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++) await tick(1);
+        for (let i = 0; i < 900 && st._ankunftGleit >= 0 && st._ankunftGleit < r.constructor.ANKUNFT_GLEIT_BILDER; i++)
+            await tick(1);
         if (!R._isHeadlessNull)
             await angehalten(async () => {
                 out.bilder.ankunft = png(await schuss());
@@ -651,15 +805,18 @@ async function probe(arg) {
     } catch (e) {
         out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── FAHRT: ein Studio-Wagen vor dem Spieler, Aufstieg, der alte Mount-Follow, 100 m mit W, der Arm und das Bild; dann die
+    // ── FAHRT: ein Studio-Wagen vor dem Spieler, Aufstieg, der alte Mount-Follow, 100 m mit W, der Arm und das Bild;
+    // dann die
     // Sicht im Wechsel unter fester Lenkung und ein zweiter Wagen am Steilhang bergab; Abstieg ──
     if (S.has("fahrt")) {
         marke("fahrt");
         const m = (out.fahrt = { gestartet: false, typ: "fahrzeug_gt" });
         try {
             // DIE WELT, WIE DER SPIELER SIE FINDET: der Genesis-Ring steht, bevor der Wagen kommt — ohne die Lichtung
-            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort. Die Vorschau eines
-            // Studio-Tors (`PORTAL_VORSCHAU`) entsteht, wann das Spiel sie stellt, auch erst in der Fahrt: ihr Platz liegt
+            // (`--station fahrt`) wuchs er während der Fahrt, gewartet in Läufen des Genesis-Takts wie dort. Die
+            // Vorschau eines
+            // Studio-Tors (`PORTAL_VORSCHAU`) entsteht, wann das Spiel sie stellt, auch erst in der Fahrt: ihr Platz
+            // liegt
             // jenseits der Fahrbahn (`_portalVorschauOrt`), kein Warten der Linse verbirgt sie (SG1-F1d)
             for (let n = 0, t = r._genesisOrtT, i = 0; n < 10 && i < 6000 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) {
                 await tick(1);
@@ -674,8 +831,10 @@ async function probe(arg) {
             let e = null;
             const fahrt = () => (Number.isFinite(e.rotationY) ? e.rotationY : 0) + Math.PI / 2; // Studio-Wagen: Bug +x
             const grad = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 180) / Math.PI);
-            // DER WAGEN, und E STEIGT EIN: die Welt stellt ihn hin (vor dem Spieler auf fahrbaren Grund, `_fahrPlatzSuche`; am
-            // Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein Tor erreicht (der Genesis-Ring
+            // DER WAGEN, und E STEIGT EIN: die Welt stellt ihn hin (vor dem Spieler auf fahrbaren Grund,
+            // `_fahrPlatzSuche`; am
+            // Hang genau), der Spieler tritt 1,5 m neben die Mitte an eine Flanke, an der E kein Tor erreicht (der
+            // Genesis-Ring
             // wächst, während der Gang fährt), und blickt in die Fahrt
             const gebaut = []; // jeder Wagen, den der Gang hinstellt (die Runde räumt sie: kein eigener Wagen steht in ihrer Bahn)
             const steigEin = async (x, z, ry, precise) => {
@@ -689,19 +848,34 @@ async function probe(arg) {
                     return r._findNearestAffordanceEntry("isPortal", r.constructor.PORTAL_REACH_M + 0.5);
                 };
                 if (precise) await flanke(x, z, ry, 1); // der Spieler geht hin: gezeichnet wird, was um ihn steht
-                // ein Wagen späterer Orte trägt die Saat des ersten (derselbe Körper, kein neuer Bau im Faden des Studios)
-                e = r.spawnArchitecture(m.typ, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { rotationY: ry - Math.PI / 2, precise, seed: m.saat });
+                // ein Wagen späterer Orte trägt die Saat des ersten (derselbe Körper, kein neuer Bau im Faden des
+                // Studios)
+                e = r.spawnArchitecture(
+                    m.typ,
+                    { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
+                    { rotationY: ry - Math.PI / 2, precise, seed: m.saat }
+                );
                 if (!e) throw new Error(`die Welt stellt ${m.typ} bei ${Math.round(x)}/${Math.round(z)} nicht hin`);
                 gebaut.push(e);
                 for (let i = 0; i < 900 && !r._archIsRendered(e); i++) await tick(1);
-                if (!r._archIsRendered(e)) throw new Error(`${m.typ} bei ${Math.round(x)}/${Math.round(z)} nach 900 Takten ungezeichnet`);
-                const tor = (await flanke(e.position.x, e.position.z, fahrt(), 1)) && (await flanke(e.position.x, e.position.z, fahrt(), -1));
-                if (tor) throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
-                if (r._portalOverlay) throw new Error(`vor dem Aufstieg bei ${Math.round(x)}/${Math.round(z)} steht der Spieler in einer Tor-Welt: ${JSON.stringify(m.tor || null)} · Abstieg ${JSON.stringify(m.abstiegFehl || null)}`);
+                if (!r._archIsRendered(e))
+                    throw new Error(`${m.typ} bei ${Math.round(x)}/${Math.round(z)} nach 900 Takten ungezeichnet`);
+                const tor =
+                    (await flanke(e.position.x, e.position.z, fahrt(), 1)) &&
+                    (await flanke(e.position.x, e.position.z, fahrt(), -1));
+                if (tor)
+                    throw new Error(`an ${m.typ} bei ${Math.round(x)}/${Math.round(z)} erreicht E das Tor ${tor.type}`);
+                if (r._portalOverlay)
+                    throw new Error(
+                        `vor dem Aufstieg bei ${Math.round(x)}/${Math.round(z)} steht der Spieler in einer Tor-Welt: ${JSON.stringify(m.tor || null)} · Abstieg ${JSON.stringify(m.abstiegFehl || null)}`
+                    );
                 const vor = st.cameraMode;
                 await tippe("e", "KeyE");
                 for (let i = 0; i < 30 && st.player.mountedArch !== e.id; i++) await tick(1);
-                if (st.player.mountedArch !== e.id) throw new Error(`E steigt nicht ein bei ${Math.round(x)}/${Math.round(z)} (${(st.logBuffer || []).slice(-2).join(" · ")}) · Tor ${JSON.stringify(m.tor || null)}`);
+                if (st.player.mountedArch !== e.id)
+                    throw new Error(
+                        `E steigt nicht ein bei ${Math.round(x)}/${Math.round(z)} (${(st.logBuffer || []).slice(-2).join(" · ")}) · Tor ${JSON.stringify(m.tor || null)}`
+                    );
                 return vor;
             };
             const P = st.playerMesh.position.clone();
@@ -710,36 +884,73 @@ async function probe(arg) {
             m.bahn = [Math.round(e.position.x), Math.round(e.position.z), +fahrt().toFixed(2)];
             m.sichtRitt = st.cameraMode;
             // JE BILD IM RITT (die Probe nach dem Takt: der Wagen, wie er gezeichnet ist, und die Kamera, die ihn sah):
-            //  · der Arm und wo er endet — am gerittenen Werk (seine Hülle im Fahrt-Rahmen um den Kugel-Radius der Kamera + 0,5 m;
+            //  · der Arm und wo er endet — am gerittenen Werk (seine Hülle im Fahrt-Rahmen um den Kugel-Radius der
+            // Kamera + 0,5 m;
             //    der Befund 17.10. stand 2,72 m hinter der Mitte, 0,17 m hinter der Hülle);
-            //  · jede zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`) im Rahmen des Wagens: ihr Slot weicht vom
-            //    ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau 0, das Rad federt um den Hub);
-            //  · in Third die Kamera im Rahmen des gezeichneten Wagens: ihr SEITLICHER RUCK ist die zweite Differenz ihrer Quer-Lage je
-            //    Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt in Bildern seit dem Wechsel nach
-            //    Third, ihre Höhe ist der Winkel über der Ebene der Räder; der GLEICHLAUF ist der Weg des gezeichneten Wagens je Bild
+            //  · jede zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`) im Rahmen des Wagens: ihr
+            // Slot weicht vom
+            //    ersten Blick auf ihn ab, wenn der Wagen fährt und die Stufe nicht (der starre Aufbau 0, das Rad federt
+            // um den Hub);
+            //  · in Third die Kamera im Rahmen des gezeichneten Wagens: ihr SEITLICHER RUCK ist die zweite Differenz
+            // ihrer Quer-Lage je
+            //    Bild (ein Folgen mit festem Nachlauf hat keinen), ihr Azimut gegen die Gier zählt in Bildern seit dem
+            // Wechsel nach
+            //    Third, ihre Höhe ist der Winkel über der Ebene der Räder; der GLEICHLAUF ist der Weg des gezeichneten
+            // Wagens je Bild
             //    gegen das Tempo des Kerns.
             const rr = r.constructor._bewegungsBlock("kamera", ["armRadiusM"]).armRadiusM;
             const [M, V, erst] = [new THREE.Matrix4(), new THREE.Vector3(), new WeakMap()];
             let L = null; // der Lauf eines Abschnitts
-            const lauf = () => (L = { arm: [], imWagen: 0, stufeWeg: 0, stufeTaeter: null, wechsel: [], c: [], ruck: [], hoch: [], gleich: [], sicht: st.cameraMode, fest: false });
+            const lauf = () =>
+                (L = {
+                    arm: [],
+                    imWagen: 0,
+                    stufeWeg: 0,
+                    stufeTaeter: null,
+                    wechsel: [],
+                    c: [],
+                    ruck: [],
+                    hoch: [],
+                    gleich: [],
+                    sicht: st.cameraMode,
+                    fest: false,
+                });
             A.jeTakt = () => {
-                // DER SPIELER GEHT DURCH EIN TOR (die Membran, `_tickPortalMembranes`): der erste Takt beim Namen — Abschnitt, Ort, Ritt
+                // DER SPIELER GEHT DURCH EIN TOR (die Membran, `_tickPortalMembranes`): der erste Takt beim Namen —
+                // Abschnitt, Ort, Ritt
                 if (r._portalOverlay && !m.tor) {
                     const q = st.playerMesh.position;
-                    m.tor = { phase, takt: A.takte, ort: [Math.round(q.x), Math.round(q.z)], ritt: st.player.mountedArch != null, wagen: e ? [Math.round(e.position.x), Math.round(e.position.z)] : null, wechselOrt: m.wechsel ? m.wechsel.ort : null, studioTore: ruft().map((a) => `${a.type}@${Math.round(a.position.x)}/${Math.round(a.position.z)}`), log: String((st.logBuffer || []).slice(-1)[0] || "") };
+                    m.tor = {
+                        phase,
+                        takt: A.takte,
+                        ort: [Math.round(q.x), Math.round(q.z)],
+                        ritt: st.player.mountedArch != null,
+                        wagen: e ? [Math.round(e.position.x), Math.round(e.position.z)] : null,
+                        wechselOrt: m.wechsel ? m.wechsel.ort : null,
+                        studioTore: ruft().map(
+                            (a) => `${a.type}@${Math.round(a.position.x)}/${Math.round(a.position.z)}`
+                        ),
+                        log: String((st.logBuffer || []).slice(-1)[0] || ""),
+                    };
                 }
                 if (!L || !e || st.player.mountedArch !== e.id) return;
-                // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen sein Tempo über
-                // die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem bricht es), über 1 m/s
-                // — eine Spur reißt nur, wo der Loop ruhte (ein Schuss: Sekunden); unter Last trägt ein Bild bis 0,25 s (18.10., die
-                // Maschine geteilt: der Hang 64 Bilder in 6 s, die Spur riss bei 100 ms in jedem zweiten Bild, 7 Proben statt ≥ 20)
+                // DER GLEICHLAUF des gezeichneten Wagens: sein Tempo in einem Bild (Weg durch die Zeit des Bilds) gegen
+                // sein Tempo über
+                // die 10 Bilder um es (1 = er gleitet; ein Bild mit zwei Sim-Schritten oder keinem bricht es), über 1
+                // m/s
+                // — eine Spur reißt nur, wo der Loop ruhte (ein Schuss: Sekunden); unter Last trägt ein Bild bis 0,25 s
+                // (18.10., die
+                // Maschine geteilt: der Hang 64 Bilder in 6 s, die Spur riss bei 100 ms in jedem zweiten Bild, 7 Proben
+                // statt ≥ 20)
                 const [p, t] = [[e.position.x, e.position.z, A.t], A.t];
                 const spur = (L.spur = L.spur || []);
-                if (spur.length && !(t - spur[spur.length - 1][2] > 0 && t - spur[spur.length - 1][2] < 250)) spur.length = 0;
+                if (spur.length && !(t - spur[spur.length - 1][2] > 0 && t - spur[spur.length - 1][2] < 250))
+                    spur.length = 0;
                 spur.push(p);
                 if (spur.length > 11) spur.shift();
                 const tempo = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) / ((b[2] - a[2]) / 1000);
-                if (L.fest && spur.length === 11 && tempo(spur[0], p) > 1) L.gleich.push(tempo(spur[4], spur[5]) / tempo(spur[0], p));
+                if (L.fest && spur.length === 11 && tempo(spur[0], p) > 1)
+                    L.gleich.push(tempo(spur[4], spur[5]) / tempo(spur[0], p));
                 const f = fahrt();
                 r._archEntryWorldMatrix(e, M);
                 const oben = V.setFromMatrixColumn(M, 1).normalize().toArray();
@@ -754,8 +965,10 @@ async function probe(arg) {
                         const d = V.distanceTo(erst.get(s));
                         if (d > L.stufeWeg) [L.stufeWeg, L.stufeTaeter] = [d, wer];
                     }
-                // IM BAND ZEIGT JEDE STUFE DASSELBE RAD: je Ecke (Nabe im Vorlagen-Raum) die Drehung (Lenkung, Rolle) des ersten
-                // drehenden Teils in Primär und Partner — die größte Abweichung der Spalten (eine Stufe, die das Rad in der
+                // IM BAND ZEIGT JEDE STUFE DASSELBE RAD: je Ecke (Nabe im Vorlagen-Raum) die Drehung (Lenkung, Rolle)
+                // des ersten
+                // drehenden Teils in Primär und Partner — die größte Abweichung der Spalten (eine Stufe, die das Rad in
+                // der
                 // Ruhe-Lage zeigt, weicht um Lenk- und Roll-Winkel ab)
                 if (e.instSlotsBand && e.instSlots) {
                     const pr = r._foundryPresetForEntry(e);
@@ -767,7 +980,13 @@ async function probe(arg) {
                             const s = liste[i];
                             const g = s && lf.rad && lf.rad.dreht && st.archInstanceGroups.get(s.key);
                             const ecke = g && `${Math.round(lf.rad.hx * 20)}:${Math.round(lf.rad.hz * 20)}`;
-                            if (ecke && !k.has(ecke)) k.set(ecke, new THREE.Matrix4().extractRotation(new THREE.Matrix4().fromArray(g.mesh.instanceMatrix.array, s.slot * 16)));
+                            if (ecke && !k.has(ecke))
+                                k.set(
+                                    ecke,
+                                    new THREE.Matrix4().extractRotation(
+                                        new THREE.Matrix4().fromArray(g.mesh.instanceMatrix.array, s.slot * 16)
+                                    )
+                                );
                         });
                         return k;
                     };
@@ -790,8 +1009,10 @@ async function probe(arg) {
                 const [dx, dz] = [c.x - e.position.x, c.z - e.position.z];
                 const l = dx * Math.sin(f) + dz * Math.cos(f);
                 const q = dx * Math.cos(f) - dz * Math.sin(f);
-                // der Arm zählt in der Fahrt (`L.fest`): ein Wagen, der vor einem Hindernis steht oder zurücksetzt, klemmt seine Kamera
-                // zu Recht (18.10.: 100 m in 2637 Takten, der Arm am Hindernis 0,21 — kein Strahl auf den eigenen Wagen)
+                // der Arm zählt in der Fahrt (`L.fest`): ein Wagen, der vor einem Hindernis steht oder zurücksetzt,
+                // klemmt seine Kamera
+                // zu Recht (18.10.: 100 m in 2637 Takten, der Arm am Hindernis 0,21 — kein Strahl auf den eigenen
+                // Wagen)
                 if (L.fest) {
                     L.arm.push(st._kamArm);
                     if (l >= k.heck - rr - 0.5 && l <= k.bug + rr + 0.5 && Math.abs(q) <= k.hw + rr + 0.5) L.imWagen++;
@@ -800,9 +1021,13 @@ async function probe(arg) {
                 const n = w ? ++w.n : Infinity;
                 if (n === 10) w.nach10 = grad(Math.atan2(-dx, -dz) - f);
                 L.c.push(q);
-                // die Höhe der Kamera über der Fahrbahn: ihr Winkel über der Ebene des Wagens (Gesetz: die Elevation der Chase-Cam)
+                // die Höhe der Kamera über der Fahrbahn: ihr Winkel über der Ebene des Wagens (Gesetz: die Elevation
+                // der Chase-Cam)
                 const ab = Math.hypot(dx, c.y - e.position.y, dz);
-                if (L.fest) L.hoch.push((Math.asin((dx * oben[0] + (c.y - e.position.y) * oben[1] + dz * oben[2]) / ab) * 180) / Math.PI);
+                if (L.fest)
+                    L.hoch.push(
+                        (Math.asin((dx * oben[0] + (c.y - e.position.y) * oben[1] + dz * oben[2]) / ab) * 180) / Math.PI
+                    );
                 const [q0, q1, q2] = L.c.slice(-3);
                 if (L.c.length > 2 && L.fest && n > 15) L.ruck.push(Math.abs(q2 - 2 * q1 + q0));
             };
@@ -810,9 +1035,27 @@ async function probe(arg) {
                 const a = L.arm.slice().sort((x, y) => x - y);
                 const s = L.ruck.slice().sort((x, y) => x - y);
                 let [schnapp, armWeg] = [0, 0];
-                for (let i = 1; i < L.arm.length; i++) [schnapp, armWeg] = [schnapp + (L.arm[i] - L.arm[i - 1] < -SOLL.schnapp), armWeg + Math.abs(L.arm[i] - L.arm[i - 1])];
-                const n = { armN: a.length, armP50: +(a[a.length >> 1] || 0).toFixed(3), armMin: +(a[0] || 0).toFixed(3), imWagen: L.imWagen, stufeWeg: +L.stufeWeg.toFixed(1), stufeTaeter: L.stufeTaeter };
-                Object.assign(n, { wechsel: L.wechsel.map((w) => [w.ego, w.nach10, w.von]), steck: L.kreisSteck || 0, ruckN: s.length, ruckP95: +(s[Math.floor(s.length * 0.95)] || 0).toFixed(3), schnapp, armWeg: +armWeg.toFixed(2) });
+                for (let i = 1; i < L.arm.length; i++)
+                    [schnapp, armWeg] = [
+                        schnapp + (L.arm[i] - L.arm[i - 1] < -SOLL.schnapp),
+                        armWeg + Math.abs(L.arm[i] - L.arm[i - 1]),
+                    ];
+                const n = {
+                    armN: a.length,
+                    armP50: +(a[a.length >> 1] || 0).toFixed(3),
+                    armMin: +(a[0] || 0).toFixed(3),
+                    imWagen: L.imWagen,
+                    stufeWeg: +L.stufeWeg.toFixed(1),
+                    stufeTaeter: L.stufeTaeter,
+                };
+                Object.assign(n, {
+                    wechsel: L.wechsel.map((w) => [w.ego, w.nach10, w.von]),
+                    steck: L.kreisSteck || 0,
+                    ruckN: s.length,
+                    ruckP95: +(s[Math.floor(s.length * 0.95)] || 0).toFixed(3),
+                    schnapp,
+                    armWeg: +armWeg.toFixed(2),
+                });
                 const h = L.hoch.slice().sort((x, y) => x - y);
                 n.hochP05 = +(h[Math.floor(h.length * 0.05)] || 0).toFixed(1);
                 const g = L.gleich.map((x) => Math.abs(x - 1)).sort((x, y) => x - y);
@@ -821,10 +1064,15 @@ async function probe(arg) {
                 L = null;
                 return n;
             };
-            // DER WAGEN IM BILD (die Klassen-Teilung der Abnahme): dieselbe Pose mit und ohne Wagen, sein Wurf aus in beiden
+            // DER WAGEN IM BILD (die Klassen-Teilung der Abnahme): dieselbe Pose mit und ohne Wagen, sein Wurf aus in
+            // beiden
             const wagenBild = async (name) =>
                 R._isHeadlessNull ? { bild: false } : angehalten(async () => {
-                    const gr = new Set([...(e.instSlots || []), ...(e.instSlotsBand || [])].map((s) => (st.archInstanceGroups.get(s.key) || {}).mesh).filter(Boolean));
+                    const gr = new Set(
+                        [...(e.instSlots || []), ...(e.instSlotsBand || [])]
+                            .map((s) => (st.archInstanceGroups.get(s.key) || {}).mesh)
+                            .filter(Boolean)
+                    );
                     if (e.mesh) gr.add(e.mesh);
                     const alt = [...gr].map((o) => [o, o.visible, o.castShadow]);
                     const bundles = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
@@ -839,15 +1087,22 @@ async function probe(arg) {
                         const [G1, G2, O] = [await auf(false), await auf(false), await auf(true)];
                         const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
                         out.bilder[name] = png(G1);
-                        return { anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4), rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil, teile: gr.size };
+                        return {
+                            anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4),
+                            rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil,
+                            teile: gr.size,
+                        };
                     } finally {
                         for (const [o, v, c] of alt) [o.visible, o.castShadow] = [v, c];
                         bundles();
                     }
                 });
-            // DER SELBSTTEST IM LAUF: die ersten 20 m fährt der alte Mount-Follow (`_archInstanceUpdate` ohne den Band-Partner,
-            // der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT beim Namen werden
-            if (Object.prototype.hasOwnProperty.call(r, "_archInstanceUpdate")) throw new Error("_archInstanceUpdate ist schon eingespielt");
+            // DER SELBSTTEST IM LAUF: die ersten 20 m fährt der alte Mount-Follow (`_archInstanceUpdate` ohne den
+            // Band-Partner,
+            // der Stand vor SG1) — der Aufbau muss am Ort des Aufstiegs stehen bleiben und das Urteil ROT beim Namen
+            // werden
+            if (Object.prototype.hasOwnProperty.call(r, "_archInstanceUpdate"))
+                throw new Error("_archInstanceUpdate ist schon eingespielt");
             const folger = r._archInstanceUpdate;
             r._archInstanceUpdate = function (entry, ...rest) {
                 const band = entry.instSlotsBand;
@@ -858,10 +1113,14 @@ async function probe(arg) {
                     entry.instSlotsBand = band;
                 }
             };
-            // DIE FAHRT wie ein Spieler: W, und er lenkt (A/D) in die freieste Richtung vor dem Bug (am Hang um die Falllinie) —
-            // je 4 Takte die Boxen der Werke im 30-m-Kreis (lazy `_populateBlockerAABBs`), die unter dem Dach in das Band der halben
-            // Wagen-Breite + 0,4 m ragen, je Richtung ±40° die freie Strecke bis 25 m (eine Wende kostet). Welche Taste die Gier
-            // hebt, lernt er an der ersten Lenkung; steht der Wagen 40 Takte, setzt er 60 Takte mit S zurück. Um die Lichtung steht
+            // DIE FAHRT wie ein Spieler: W, und er lenkt (A/D) in die freieste Richtung vor dem Bug (am Hang um die
+            // Falllinie) —
+            // je 4 Takte die Boxen der Werke im 30-m-Kreis (lazy `_populateBlockerAABBs`), die unter dem Dach in das
+            // Band der halben
+            // Wagen-Breite + 0,4 m ragen, je Richtung ±40° die freie Strecke bis 25 m (eine Wende kostet). Welche Taste
+            // die Gier
+            // hebt, lernt er an der ersten Lenkung; steht der Wagen 40 Takte, setzt er 60 Takte mit S zurück. Um die
+            // Lichtung steht
             // Wald: eine gerade Bahn fuhr am 17.10. nach 51–64 m in Kiefer und Birke.
             let [pfad, lenk, hebt, ziel, boxen] = [0, null, "a", 0, []];
             const lenke = (soll) => {
@@ -873,15 +1132,30 @@ async function probe(arg) {
             };
             const sammle = () =>
                 st.architectures.flatMap((a) => {
-                    if (!a || a === e || !a.position || Math.hypot(a.position.x - e.position.x, a.position.z - e.position.z) > 30) return [];
+                    if (
+                        !a ||
+                        a === e ||
+                        !a.position ||
+                        Math.hypot(a.position.x - e.position.x, a.position.z - e.position.z) > 30
+                    )
+                        return [];
                     if (!a.blockerAABBs) r._populateBlockerAABBs(a);
-                    return (a.blockerAABBs || []).filter((b) => !(b.botY > r.getTerrainHeightAt((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2) + 1.6) && !(b.dick < 0.12));
+                    return (a.blockerAABBs || []).filter(
+                        (b) =>
+                            !(b.botY > r.getTerrainHeightAt((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2) + 1.6) &&
+                            !(b.dick < 0.12)
+                    );
                 });
             const freiBis = (h, [x0, z0] = [e.position.x, e.position.z], weit = 25) => {
                 const [fx, fz] = [Math.sin(h), Math.cos(h)];
                 let frei = weit;
                 for (const b of boxen) {
-                    const ec = [[b.minX, b.minZ], [b.minX, b.maxZ], [b.maxX, b.minZ], [b.maxX, b.maxZ]].map(([px, pz]) => [(px - x0) * fx + (pz - z0) * fz, (px - x0) * fz - (pz - z0) * fx]);
+                    const ec = [
+                        [b.minX, b.minZ],
+                        [b.minX, b.maxZ],
+                        [b.maxX, b.minZ],
+                        [b.maxX, b.maxZ],
+                    ].map(([px, pz]) => [(px - x0) * fx + (pz - z0) * fz, (px - x0) * fz - (pz - z0) * fx]);
                     const [t0, t1] = [Math.min(...ec.map((c) => c[0])), Math.max(...ec.map((c) => c[0]))];
                     const [q0, q1] = [Math.min(...ec.map((c) => c[1])), Math.max(...ec.map((c) => c[1]))];
                     if (t1 > 0 && q1 > -k.hw - 0.4 && q0 < k.hw + 0.4) frei = Math.min(frei, Math.max(0, t0));
@@ -923,28 +1197,44 @@ async function probe(arg) {
                     lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
                 }
             };
-            // DER WECHSEL UNTER FESTER LENKUNG (Befund des Schöpfers 17.10.: Ego ↔ Third in der Fahrt — in Third der Wagen
-            // unsichtbar oder an alter Stelle, Third ruckelt quer): der Spieler hält die Lenkung bei Schritt-Tempo (W unter
-            // `kreisMs`, S über dem 1,5-fachen) und wechselt mit V je `wechselS` Spiel-Sekunden Third → Ego → Third → Ego → Third.
-            // DIE FÜHRUNG EINES STUDIOS (`kameraFuehren`) ist ein Rig wie Ego (Prüfer 18.10.: nach ihr nahm die Chase-Cam ihren
-            // alten Azimut wieder auf): nach dem vierten Wechsel hält eine Führung die Kamera, während der Wagen weiterkreist
+            // DER WECHSEL UNTER FESTER LENKUNG (Befund des Schöpfers 17.10.: Ego ↔ Third in der Fahrt — in Third der
+            // Wagen
+            // unsichtbar oder an alter Stelle, Third ruckelt quer): der Spieler hält die Lenkung bei Schritt-Tempo (W
+            // unter
+            // `kreisMs`, S über dem 1,5-fachen) und wechselt mit V je `wechselS` Spiel-Sekunden Third → Ego → Third →
+            // Ego → Third.
+            // DIE FÜHRUNG EINES STUDIOS (`kameraFuehren`) ist ein Rig wie Ego (Prüfer 18.10.: nach ihr nahm die
+            // Chase-Cam ihren
+            // alten Azimut wieder auf): nach dem vierten Wechsel hält eine Führung die Kamera, während der Wagen
+            // weiterkreist
             const sicht = () => (r._kameraFuehrung ? "fuehrung" : st.cameraMode);
             const kreise = async () => {
                 let pedal = null;
                 for (const schritt of ["v", "v", "v", "v", "fuehren", "frei"]) {
                     if (schritt === "v") await tippe("v", "KeyV");
                     else r.kameraFuehren(schritt === "fuehren" ? () => {} : null);
-                    // in Ego dreht die Gier ≥ egoGrad, bevor Third zurückkehrt (Lauf 18.10. an [-73,82]: 71° · 22° in je 2 s — der
+                    // in Ego dreht die Gier ≥ egoGrad, bevor Third zurückkehrt (Lauf 18.10. an [-73,82]: 71° · 22° in
+                    // je 2 s — der
                     // Wechsel bewies nichts); höchstens die dreifache Zeit, dann urteilt der Wechsel vakuös
-                    const mehr = (t0) => sicht() !== "third" && L.egoAb != null && grad(fahrt() - L.egoAb) < SOLL.egoGrad + 5 && st._fixedSimTime - t0 < 3 * SOLL.wechselS;
-                    // steht der Wagen im Kreis an einem Hindernis (ein Stamm des Walds ist kein Bau), setzt er mit Gegen-Einschlag zurück
+                    const mehr = (t0) =>
+                        sicht() !== "third" &&
+                        L.egoAb != null &&
+                        grad(fahrt() - L.egoAb) < SOLL.egoGrad + 5 &&
+                        st._fixedSimTime - t0 < 3 * SOLL.wechselS;
+                    // steht der Wagen im Kreis an einem Hindernis (ein Stamm des Walds ist kein Bau), setzt er mit
+                    // Gegen-Einschlag zurück
                     // (18.10.: zwei Läufe, die Gier drehte in Ego 7° und 8° in 6 s — der Wagen stand)
                     for (let t0 = st._fixedSimTime, i = 0, steht = 0, zurueckK = 0; i < 9000 && (st._fixedSimTime - t0 < SOLL.wechselS || mehr(t0)); i++) {
                         const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
                         steht = v < 0.3 && !zurueckK ? steht + 1 : 0;
                         if (steht > 40) [zurueckK, steht, L.kreisSteck] = [60, 0, (L.kreisSteck || 0) + 1];
                         const soll = zurueckK ? "s" : v < SOLL.kreisMs ? "w" : v > 1.5 * SOLL.kreisMs ? "s" : null;
-                        if (soll !== pedal) [pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`), soll && taste("keydown", soll, `Key${soll.toUpperCase()}`), (pedal = soll)];
+                        if (soll !== pedal)
+                            [
+                                pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`),
+                                soll && taste("keydown", soll, `Key${soll.toUpperCase()}`),
+                                (pedal = soll),
+                            ];
                         lenke(zurueckK ? (hebt === "a" ? "d" : "a") : hebt);
                         if (zurueckK) zurueckK--;
                         L.fest = !zurueckK && st._fixedSimTime - t0 > 0.5;
@@ -967,8 +1257,14 @@ async function probe(arg) {
                 taste("keyup", "s", "KeyS");
                 await tippe("e", "KeyE");
                 for (let i = 0; i < 30 && st.player.mountedArch === e.id; i++) await tick(1);
-                // ein Abstieg, den E nicht trägt (ein Tor in Reichweite nimmt die Taste), steht beim Namen im Urteil des nächsten Aufstiegs
-                if (st.player.mountedArch != null && !m.abstiegFehl) m.abstiegFehl = { phase, wagen: [Math.round(e.position.x), Math.round(e.position.z)], tor: !!r._portalOverlay };
+                // ein Abstieg, den E nicht trägt (ein Tor in Reichweite nimmt die Taste), steht beim Namen im Urteil
+                // des nächsten Aufstiegs
+                if (st.player.mountedArch != null && !m.abstiegFehl)
+                    m.abstiegFehl = {
+                        phase,
+                        wagen: [Math.round(e.position.x), Math.round(e.position.z)],
+                        tor: !!r._portalOverlay,
+                    };
             };
             const k0 = A.takte;
             taste("keydown", "w", "KeyW");
@@ -976,7 +1272,13 @@ async function probe(arg) {
                 try {
                     lauf();
                     await fahre(20);
-                    out.fahrtAlt = Object.assign({}, m, { gestartet: true, weg: +pfad.toFixed(1) }, schluss(), await wagenBild("fahrt-alter-folger"));
+                    out.fahrtAlt = Object.assign(
+                        {},
+                        m,
+                        { gestartet: true, weg: +pfad.toFixed(1) },
+                        schluss(),
+                        await wagenBild("fahrt-alter-folger")
+                    );
                 } finally {
                     delete r._archInstanceUpdate;
                 }
@@ -988,34 +1290,56 @@ async function probe(arg) {
                 await halt();
             }
             [m.abgestiegen, m.sichtNach] = [st.player.mountedArch == null, st.cameraMode];
-            // DIE ORTE DER ÜBERGÄNGE in Ringen um den Abstieg (je 10 m): ein freier Platz für den Kreis (kein Bau, kein Baum im
-            // Kreis von `kreisM`, eben auf ±1,5 m, Land) und der nächste STEILHANG (Befund 17.10.: „am Steilhang bergab folgt die
-            // Kamera komisch"), dessen Falllinie über `hangM` Meter je 5 m um ≥ `hangMin` fällt (im Mittel ≥ `hangMittel`) und
-            // keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein Spieler hinstellt (der Hang genau, der Bug bergab).
+            // DIE ORTE DER ÜBERGÄNGE in Ringen um den Abstieg (je 10 m): ein freier Platz für den Kreis (kein Bau, kein
+            // Baum im
+            // Kreis von `kreisM`, eben auf ±1,5 m, Land) und der nächste STEILHANG (Befund 17.10.: „am Steilhang bergab
+            // folgt die
+            // Kamera komisch"), dessen Falllinie über `hangM` Meter je 5 m um ≥ `hangMin` fällt (im Mittel ≥
+            // `hangMittel`) und
+            // keinen Bau im Band des Wagens kreuzt. Je Ort ein Wagen, wie ihn ein Spieler hinstellt (der Hang genau,
+            // der Bug bergab).
             const [hx, hz] = [e.position.x, e.position.z];
-            boxen = st.architectures.flatMap((a) => (a && a.position && Math.hypot(a.position.x - hx, a.position.z - hz) < 400 ? (a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []) : []));
-            // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"), und wer in seine Apertur tritt, geht hindurch (die
-            // Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER (die Boxen des Gesetzes, ein
-            // Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der Hang-Wagen bei −79/106 stand außerhalb des
+            boxen = st.architectures.flatMap((a) =>
+                a && a.position && Math.hypot(a.position.x - hx, a.position.z - hz) < 400
+                    ? a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []
+                    : []
+            );
+            // E betritt ein Tor in seiner Reichweite (`_fahrStandFrei` „tor"), und wer in seine Apertur tritt, geht
+            // hindurch (die
+            // Membran, `_tickPortalMembranes`): kein Ort im Kreis eines Tors — gemessen an seinem KÖRPER (die Boxen des
+            // Gesetzes, ein
+            // Drachentor trägt seine Pfosten Meter neben der Mitte; Falle 18.10.: der Hang-Wagen bei −79/106 stand
+            // außerhalb des
             // Kreises um die Mitte, die Flanke in der Apertur — „Portal betreten: tor_drachentor")
             // `weg`: wie weit der Wagen vom Ort fährt (der Kreis seinen Durchmesser).
             const torFrei = r.constructor.PORTAL_REACH_M + r.constructor.MOUNT_RANGE_M + 2;
             const ort = (wahl) => {
                 const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
-                const torBoxen = tore.flatMap((a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []);
+                const torBoxen = tore.flatMap(
+                    (a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []
+                );
                 const torNah = (x, z, weg = 0) =>
                     tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < weg + torFrei) ||
-                    torBoxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < (weg + torFrei) ** 2);
+                    torBoxen.some(
+                        (b) =>
+                            Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 <
+                            (weg + torFrei) ** 2
+                    );
                 for (let rad = 10; rad <= 300; rad += 10)
                     for (let i = 0, n = Math.round((2 * Math.PI * rad) / 10); i < n; i++) {
-                        const [x, z] = [hx + Math.sin((i / n) * 2 * Math.PI) * rad, hz + Math.cos((i / n) * 2 * Math.PI) * rad];
+                        const [x, z] = [
+                            hx + Math.sin((i / n) * 2 * Math.PI) * rad,
+                            hz + Math.cos((i / n) * 2 * Math.PI) * rad,
+                        ];
                         const o = r._landAt(x, z, 0) && !torNah(x, z) && wahl(x, z, r.getTerrainHeightAt(x, z), torNah);
                         if (o) return Object.assign(o, { x, z, ort: [Math.round(x), Math.round(z)] });
                     }
                 return null;
             };
-            // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von `kreisM` um ihn
-            // (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines tor_drachentor, dessen
+            // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von
+            // `kreisM` um ihn
+            // (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines tor_drachentor,
+            // dessen
             // Pfosten außerhalb von `kreisM` standen)
             const kreisOrt = ort((x, z, y, torNah) =>
                 !torNah(x, z, SOLL.kreisM) &&
@@ -1033,9 +1357,12 @@ async function probe(arg) {
                 } finally {
                     await halt();
                 }
-                // DER WIEDERAUFSTIEG (Randfall des Prüfers 18.10.): der Wagen dreht zwischen zwei Fahrten (ein Stoß, der Nachlauf),
-                // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es zeichnet den
-                // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt dort
+                // DER WIEDERAUFSTIEG (Randfall des Prüfers 18.10.): der Wagen dreht zwischen zwei Fahrten (ein Stoß,
+                // der Nachlauf),
+                // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es
+                // zeichnet den
+                // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt
+                // dort
                 if (st.player.mountedArch == null) {
                     [phase, e.rotationY] = ["Wiederaufstieg", (e.rotationY || 0) + 1]; // der Stoß: 1 rad (57°) im Stand
                     r._archInstanceUpdate(e);
@@ -1059,7 +1386,12 @@ async function probe(arg) {
                         [min, alt] = [Math.min(min, (alt - h) / 5), h];
                     }
                     const g = (y - alt) / SOLL.hangM;
-                    if (min >= SOLL.hangMin && g >= SOLL.hangMittel && freiBis(d, [x - Math.sin(d) * 6, z - Math.cos(d) * 6], SOLL.hangM + 6) >= SOLL.hangM + 6) return { d, gefaelle: +g.toFixed(2) };
+                    if (
+                        min >= SOLL.hangMin &&
+                        g >= SOLL.hangMittel &&
+                        freiBis(d, [x - Math.sin(d) * 6, z - Math.cos(d) * 6], SOLL.hangM + 6) >= SOLL.hangM + 6
+                    )
+                        return { d, gefaelle: +g.toFixed(2) };
                 }
                 return null;
             });
@@ -1077,12 +1409,17 @@ async function probe(arg) {
                     await halt();
                 }
             }
-            // DIE RUNDE UM DEN GENESIS-RING (F1d, Prüfer R3 18.10.): der Spieler fährt um die Tore auf der Fahrbahn jenseits ihrer
-            // Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und 2/3 ihrer Breite) je
-            // Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`; die Lenkung hält die Spur (kein
-            // Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der Name — das Tor, durch das der Wagen geht
+            // DIE RUNDE UM DEN GENESIS-RING (F1d, Prüfer R3 18.10.): der Spieler fährt um die Tore auf der Fahrbahn
+            // jenseits ihrer
+            // Tiefe (`GENESIS_PLATZ`: ringR + rand, die Straße `bahn` breit, zwei Spuren: bei 1/3 und 2/3 ihrer Breite)
+            // je
+            // Spur eine ganze Runde gegen den Uhrzeigersinn ab der Achse +x, im Tempo `ringMs`; die Lenkung hält die
+            // Spur (kein
+            // Ausweichen: die Bahn ist frei, oder sie trägt einen Täter). Je Täter der Name — das Tor, durch das der
+            // Wagen geht
             // („Portal betreten“: bis SG1-F1d stand das lebende tor_drachentor der Vorschau auf der Bahn), der Bau,
-            // an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt der Spieler `ringSprung`° weiter in einen neuen Wagen.
+            // an dem er steht, der Ort, an dem E nicht einsteigt —, dann steigt der Spieler `ringSprung`° weiter in
+            // einen neuen Wagen.
             {
                 phase = "Ring";
                 L = null;
@@ -1092,18 +1429,29 @@ async function probe(arg) {
                 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
                 const winkel = () => Math.atan2(e.position.z - Mg.z, e.position.x - Mg.x);
                 const sprung = (SOLL.ringSprung * Math.PI) / 180;
-                const taeter = (t) => g.taeter.length < 16 && !g.taeter.some((u) => u.id != null && u.id === t.id && u.art === t.art && u.R === t.R) && g.taeter.push(t);
-                // der Bau vor dem Bug: die nächste Box eines Werks um ihn; in der Box zählt die Tiefe (negativ) — von zwei Boxen um
+                const taeter = (t) =>
+                    g.taeter.length < 16 &&
+                    !g.taeter.some((u) => u.id != null && u.id === t.id && u.art === t.art && u.R === t.R) &&
+                    g.taeter.push(t);
+                // der Bau vor dem Bug: die nächste Box eines Werks um ihn; in der Box zählt die Tiefe (negativ) — von
+                // zwei Boxen um
                 // den Bug nennt er die, in der er steckt
                 const amBug = () => {
-                    const [bx, bz] = [e.position.x + Math.sin(fahrt()) * k.bug, e.position.z + Math.cos(fahrt()) * k.bug];
+                    const [bx, bz] = [
+                        e.position.x + Math.sin(fahrt()) * k.bug,
+                        e.position.z + Math.cos(fahrt()) * k.bug,
+                    ];
                     let [best, wer] = [9, null];
                     for (const a of st.architectures) {
                         if (!a || a === e || !a.position || Math.hypot(a.position.x - bx, a.position.z - bz) > 30) continue;
                         if (!a.blockerAABBs) r._populateBlockerAABBs(a);
                         for (const b of a.blockerAABBs || []) {
                             const innen = Math.min(bx - b.minX, b.maxX - bx, bz - b.minZ, b.maxZ - bz);
-                            const d2 = innen > 0 ? -innen : Math.max(b.minX - bx, 0, bx - b.maxX) ** 2 + Math.max(b.minZ - bz, 0, bz - b.maxZ) ** 2;
+                            const d2 =
+                                innen > 0
+                                    ? -innen
+                                    : Math.max(b.minX - bx, 0, bx - b.maxX) ** 2 +
+                                      Math.max(b.minZ - bz, 0, bz - b.maxZ) ** 2;
                             if (d2 < best) [best, wer] = [d2, a];
                         }
                     }
@@ -1120,28 +1468,48 @@ async function probe(arg) {
                         try {
                             await steigEin(x, z, Math.atan2(-Math.sin(at), Math.cos(at)), true);
                         } catch (err) {
-                            // E nahm statt des Wagens ein Tor in Reichweite: der Spieler steht in der Tor-Welt — das Tor beim Namen
+                            // E nahm statt des Wagens ein Tor in Reichweite: der Spieler steht in der Tor-Welt — das
+                            // Tor beim Namen
                             if (r._portalOverlay) {
                                 const id = r._portalOverlay.entryId;
-                                tat({ art: "tor", type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?", id, ort: `${Math.round(x)}/${Math.round(z)}`, mitE: true });
+                                tat({
+                                    art: "tor",
+                                    type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
+                                    id,
+                                    ort: `${Math.round(x)}/${Math.round(z)}`,
+                                    mitE: true,
+                                });
                                 r.exitPortal();
                             }
                             if (st.player.mountedArch != null) r.dismountArchitecture();
                             for (const w of gebaut.splice(0)) r.removeArchitecture(w);
-                            tat({ art: "einstieg", ort: `${Math.round(x)}/${Math.round(z)}`, grund: String((err && err.message) || err).slice(0, 160) });
+                            tat({
+                                art: "einstieg",
+                                ort: `${Math.round(x)}/${Math.round(z)}`,
+                                grund: String((err && err.message) || err).slice(0, 160),
+                            });
                             [at, s.sprung] = [at + sprung, s.sprung + sprung];
                             continue;
                         }
                         let [w0, still, pedal] = [winkel(), 0, null];
-                        const fuss = (soll) => soll !== pedal && [pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`), soll && taste("keydown", soll, `Key${soll.toUpperCase()}`), (pedal = soll)];
+                        const fuss = (soll) =>
+                            soll !== pedal && [
+                                pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`),
+                                soll && taste("keydown", soll, `Key${soll.toUpperCase()}`),
+                                (pedal = soll),
+                            ];
                         try {
                             for (let i = 0; i < 9000 && at < 2 * Math.PI; i++) {
                                 const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
                                 fuss(v < SOLL.ringMs ? "w" : v > 1.5 * SOLL.ringMs ? "s" : null);
-                                // die Lenkung hält die Spur: die Tangente plus 0,3 je Meter Ablage zur Mitte hin (Lauf 18.10.: ein Ziel 7 m
+                                // die Lenkung hält die Spur: die Tangente plus 0,3 je Meter Ablage zur Mitte hin (Lauf
+                                // 18.10.: ein Ziel 7 m
                                 // voraus auf dem Kreis zog den Wagen 1,9 m nach innen an die Tore)
                                 const [f, ab] = [winkel(), Math.hypot(e.position.x - Mg.x, e.position.z - Mg.z) - R];
-                                const soll = Math.atan2(-Math.sin(f) - 0.3 * ab * Math.cos(f), Math.cos(f) - 0.3 * ab * Math.sin(f));
+                                const soll = Math.atan2(
+                                    -Math.sin(f) - 0.3 * ab * Math.cos(f),
+                                    Math.cos(f) - 0.3 * ab * Math.sin(f)
+                                );
                                 const fehl = wrap(fahrt() - soll);
                                 lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
                                 if (i > 120) s.ablage = Math.max(s.ablage, +Math.abs(ab).toFixed(2)); // nach dem Anfahren
@@ -1150,7 +1518,12 @@ async function probe(arg) {
                                 const ort = `${Math.round(e.position.x)}/${Math.round(e.position.z)}`;
                                 if (r._portalOverlay) {
                                     const id = r._portalOverlay.entryId;
-                                    tat({ art: "tor", type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?", id, ort });
+                                    tat({
+                                        art: "tor",
+                                        type: (st.architectures.find((a) => a && a.id === id) || {}).type || "?",
+                                        id,
+                                        ort,
+                                    });
                                     break;
                                 }
                                 const d = Math.hypot(e.position.x - x0, e.position.z - z0);
@@ -1175,7 +1548,12 @@ async function probe(arg) {
                         }
                         if (at < 2 * Math.PI) [at, s.sprung] = [at + sprung, s.sprung + sprung];
                     }
-                    [s.zu, s.grad, s.sprung, s.weg] = [at >= 2 * Math.PI, Math.round((s.grad * 180) / Math.PI), Math.round((s.sprung * 180) / Math.PI), +s.weg.toFixed(1)];
+                    [s.zu, s.grad, s.sprung, s.weg] = [
+                        at >= 2 * Math.PI,
+                        Math.round((s.grad * 180) / Math.PI),
+                        Math.round((s.sprung * 180) / Math.PI),
+                        +s.weg.toFixed(1),
+                    ];
                 }
             }
             m.gestartet = true;
@@ -1240,7 +1618,8 @@ async function probe(arg) {
         const licht = platz && r._grundrissVon(platz);
         const frei = (x, z) =>
             !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
-        // ...und der Satz pflanzt dort (der Gang endet die Fahrt an jedem Ort, auch im Dorf: die Wand der Natur `_naturWand`
+        // ...und der Satz pflanzt dort (der Gang endet die Fahrt an jedem Ort, auch im Dorf: die Wand der Natur
+        // `_naturWand`
         // — Grundriss, Weg, Platz, Acker — schweigt im 12-m-Kreis, sonst wuchs „vor dir" keine Birke)
         const pflanzbar = (x, z) =>
             [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12], [8, 8], [-8, 8], [8, -8], [-8, -8]].every(
@@ -1257,7 +1636,8 @@ async function probe(arg) {
             pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
             st.yaw = 0;
         };
-        // neu ist, was vorher nicht stand (der laufende Loop pflanzt und räumt den Wald: ein neues Werk füllt eine Lücke)
+        // neu ist, was vorher nicht stand (der laufende Loop pflanzt und räumt den Wald: ein neues Werk füllt eine
+        // Lücke)
         const neue = (vorher, typ) => st.architectures.filter((a) => a && a.type === typ && !vorher.has(a));
         if (ort) {
             setze(ort.x, ort.z);
@@ -1298,7 +1678,10 @@ async function probe(arg) {
         if (!R._isHeadlessNull && nB.length) {
             for (let i = 0; i < 900 && !nB.every((a) => r._archIsRendered(a)); i++) await tick(1);
             m.birkenGezeichnet = nB.filter((a) => r._archIsRendered(a)).length;
-            const c = nB.reduce((s2, a) => [s2[0] + a.position.x / nB.length, s2[1] + a.position.z / nB.length], [0, 0]);
+            const c = nB.reduce(
+                (s2, a) => [s2[0] + a.position.x / nB.length, s2[1] + a.position.z / nB.length],
+                [0, 0]
+            );
             st.yaw = Math.atan2(c[0] - pm.x, c[1] - pm.z); // vor dem Spieler liegt (sin Gier, cos Gier)
             await tick(12);
             await angehalten(async () => (out.bilder.wort = png(await schuss())));
@@ -1683,8 +2066,10 @@ async function probe(arg) {
         r._workshopRender();
         m.maskeDanach = lu.uLodMaskOn.value;
         m.renders = rec.length;
-        // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler sieht es).
-        // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und ohne Werk:
+        // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler
+        // sieht es).
+        // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und
+        // ohne Werk:
         // der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im Bild der Fahrt)
         if (!st.renderer._isHeadlessNull) { // (R ist hier die letzte Probe des Beobachters)
             const [beob, c] = [p.renderer.render, p.canvas];
@@ -1693,7 +2078,13 @@ async function probe(arg) {
                 await p.renderer.init();
                 const cv = Object.assign(document.createElement("canvas"), { width: c.width, height: c.height });
                 const ctx = cv.getContext("2d", { willReadFrequently: true });
-                const zeichne = (an) => ((p.currentMesh.visible = an), r._workshopRender(), ctx.clearRect(0, 0, c.width, c.height), ctx.drawImage(c, 0, 0), ctx.getImageData(0, 0, c.width, c.height).data);
+                const zeichne = (an) => (
+                    (p.currentMesh.visible = an),
+                    r._workshopRender(),
+                    ctx.clearRect(0, 0, c.width, c.height),
+                    ctx.drawImage(c, 0, 0),
+                    ctx.getImageData(0, 0, c.width, c.height).data
+                );
                 const [ohne, mit] = [zeichne(false), zeichne(true)]; // zuletzt mit Werk: das Bild der Station
                 const { teil } = window.__klassenTeilung(mit, [ohne], c.width, c.height, 18);
                 m.bildAnteil = +(teil.reduce((s2, x) => s2 + (x === 1), 0) / (c.width * c.height)).toFixed(4);
@@ -1978,7 +2369,11 @@ async function probe(arg) {
             ["leere Vorschau (21 108 Dreiecke, 0 im Bild)", { anteil: 0, maskeImRender: 1, augeAbstand: 36 }, "vorschau 0.0 %"],
             ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
             ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
-            ["das Canvas der Vorschau bleibt leer (die Karte las kein Bild)", { bildAnteil: 0 }, "vorschau-bild: das Werk deckt 0.0 %"],
+            [
+                "das Canvas der Vorschau bleibt leer (die Karte las kein Bild)",
+                { bildAnteil: 0 },
+                "vorschau-bild: das Werk deckt 0.0 %",
+            ],
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
@@ -2082,7 +2477,11 @@ async function probe(arg) {
                 ankunftVerdict,
                 { gestartet: true, ms: 9000, takte: 120, ohne: [], ladeschirm: false, weg: 2.4, wegTakte: 40 },
                 [
-                    ["halbes Weltbild über den Deckel (L2a)", { ohne: ["Das erste Weltbild steht ohne: Horizont — der Deckel von 60000 ms ist erreicht."] }, "ankunft halb"],
+                    [
+                        "halbes Weltbild über den Deckel (L2a)",
+                        { ohne: ["Das erste Weltbild steht ohne: Horizont — der Deckel von 60000 ms ist erreicht."] },
+                        "ankunft halb",
+                    ],
                     ["der Ladeschirm bleibt", { ladeschirm: true }, "ankunft: der Ladeschirm"],
                     ["W trägt den Spieler nicht", { weg: 0, wegTakte: 600 }, "kontrolle: W trug den Spieler 0 m"],
                 ],
@@ -2090,7 +2489,24 @@ async function probe(arg) {
             [
                 "Fahrt",
                 fahrtVerdict,
-                { gestartet: true, typ: "fahrzeug_gt", sichtVor: "first", sichtRitt: "third", sichtNach: "first", weg: 100.4, armN: 300, armP50: 1, armMin: 0.6, imWagen: 0, anteil: 0.12, rauschen: 0, abgestiegen: true, wechsel: WECHSEL_GESUND, hang: HANG_GESUND, ring: RING_GESUND },
+                {
+                    gestartet: true,
+                    typ: "fahrzeug_gt",
+                    sichtVor: "first",
+                    sichtRitt: "third",
+                    sichtNach: "first",
+                    weg: 100.4,
+                    armN: 300,
+                    armP50: 1,
+                    armMin: 0.6,
+                    imWagen: 0,
+                    anteil: 0.12,
+                    rauschen: 0,
+                    abgestiegen: true,
+                    wechsel: WECHSEL_GESUND,
+                    hang: HANG_GESUND,
+                    ring: RING_GESUND,
+                },
                 [
                     [
                         "der Arm trifft den eigenen Wagen (Befund 17.10., Arm 0,30)",
@@ -2100,32 +2516,160 @@ async function probe(arg) {
                     ["im Ritt bleibt die Sicht", { sichtRitt: "first" }, "sicht: im Ritt first"],
                     [
                         "die Vorschau stellt ein lebendes Tor auf die Fahrbahn um den Ring (F1d, Prüfer R3 18.10.)",
-                        { ring: Object.assign({}, RING_GESUND, { taeter: [{ art: "tor", type: "tor_drachentor", id: "portal-preview-portale", ort: "-15/11", grad: 144, R: 18.5 }] }) },
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                taeter: [
+                                    {
+                                        art: "tor",
+                                        type: "tor_drachentor",
+                                        id: "portal-preview-portale",
+                                        ort: "-15/11",
+                                        grad: 144,
+                                        R: 18.5,
+                                    },
+                                ],
+                            }),
+                        },
                         "ringbahn: Portal betreten: tor_drachentor (portal-preview-portale)",
                     ],
-                    ["die Runde um den Ring bleibt offen (vakuös)", { ring: Object.assign({}, RING_GESUND, { spuren: [Object.assign({}, RING_GESUND.spuren[0], { zu: false, grad: 40 })] }) }, "ringbahn: die Runde um den Genesis-Ring endet nach 40°"],
-                    ["die Lenkung verlässt die Spur (vakuös)", { ring: Object.assign({}, RING_GESUND, { spuren: RING_GESUND.spuren.map((s) => Object.assign({}, s, { ablage: 2.4 })) }) }, "ringbahn: die Lenkung hält die Spur nicht"],
-                    ["eine Fahrt geht durch ein Tor", { tor: { phase: "Wechsel", ort: [-16, 14], log: "Portal betreten: „tor_drachentor“" } }, "portal betreten in der Fahrt (Wechsel) bei -16/14"],
+                    [
+                        "die Runde um den Ring bleibt offen (vakuös)",
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                spuren: [Object.assign({}, RING_GESUND.spuren[0], { zu: false, grad: 40 })],
+                            }),
+                        },
+                        "ringbahn: die Runde um den Genesis-Ring endet nach 40°",
+                    ],
+                    [
+                        "die Lenkung verlässt die Spur (vakuös)",
+                        {
+                            ring: Object.assign({}, RING_GESUND, {
+                                spuren: RING_GESUND.spuren.map((s) => Object.assign({}, s, { ablage: 2.4 })),
+                            }),
+                        },
+                        "ringbahn: die Lenkung hält die Spur nicht",
+                    ],
+                    [
+                        "eine Fahrt geht durch ein Tor",
+                        { tor: { phase: "Wechsel", ort: [-16, 14], log: "Portal betreten: „tor_drachentor“" } },
+                        "portal betreten in der Fahrt (Wechsel) bei -16/14",
+                    ],
                     ["der Wagen verschwindet im Bild", { anteil: 0.001 }, "wagen im Bild 0.1 %"],
                     ["die Fahrt bleibt stecken", { weg: 12 }, "fahrt: 12 m"],
                     ["nach dem Abstieg bleibt Third", { sichtNach: "third" }, "sicht: nach dem Abstieg third"],
-                    ["kein Wagen vor dem Spieler", { gestartet: false, grund: "die Welt stellt fahrzeug_gt nicht hin" }, "fahrt start: die Welt"],
-                    ["der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)", { stufeWeg: 20.1, stufeTaeter: "L1 (Band)" }, "aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band)"],
-                    ["auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter", { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" }, "aufbau 21.6 m"],
-                    ["Third beginnt aus der alten Richtung (Befund 17.10., `_kamYaw` nur in Third)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[74, 31, "first"], [70, 4, "first"], [80, 3, "fuehrung"]] }) }, "kamera nach dem Wechsel 31°"],
-                    ["nach der Führung eines Studios die alte Richtung (Prüfer 18.10., `_kameraFuehrung` vor dem Rig)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[74, 4, "first"], [70, 4, "first"], [80, 79, "fuehrung"]] }) }, "kamera nach der Führung eines Studios (kameraFuehren) 79°"],
-                    ["der Wiederaufstieg zeichnet die Gier der letzten Fahrt (Randfall 18.10., `_gierVor`)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: 57 }) }, "wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen 57°"],
-                    ["kein Wiederaufstieg (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: null }) }, "wiederaufstieg: nicht gemessen"],
-                    ["Ego dreht nicht (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[3, 1, "first"], [80, 4, "first"], [80, 3, "fuehrung"]] }) }, "wechsel: 2 Rückkehr"],
-                    ["keine Führung (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { wechsel: [[74, 4, "first"], [70, 4, "first"]] }) }, "wechsel: 2 Rückkehr nach Third aus Ego, 0 aus einer Führung"],
-                    ["die Kamera springt je Bild quer gegen den Wagen", { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) }, "kamera-ruck seitlich p95 0.31"],
-                    ["das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) }, "gleichlauf im Wechsel p95 0.56"],
-                    ["die Kamera steht bergab unter der Fahrbahn (Elevation zur Welt)", { hang: Object.assign({}, HANG_GESUND, { hochP05: -4.7, ruckP95: 0.31 }) }, "kamera am Hang p05 -4.7°"],
+                    [
+                        "kein Wagen vor dem Spieler",
+                        { gestartet: false, grund: "die Welt stellt fahrzeug_gt nicht hin" },
+                        "fahrt start: die Welt",
+                    ],
+                    [
+                        "der Aufbau bleibt am Ort des Aufstiegs (Befund SG1, L1 im Band)",
+                        { stufeWeg: 20.1, stufeTaeter: "L1 (Band)" },
+                        "aufbau 20.1 m neben dem Wagen: die Stufe L1 (Band)",
+                    ],
+                    [
+                        "auf dem Null-Renderer (kein Bild) urteilt die Mechanik weiter",
+                        { bild: false, anteil: null, stufeWeg: 21.6, stufeTaeter: "L1 (Band)" },
+                        "aufbau 21.6 m",
+                    ],
+                    [
+                        "Third beginnt aus der alten Richtung (Befund 17.10., `_kamYaw` nur in Third)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 31, "first"],
+                                    [70, 4, "first"],
+                                    [80, 3, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "kamera nach dem Wechsel 31°",
+                    ],
+                    [
+                        "nach der Führung eines Studios die alte Richtung (Prüfer 18.10., `_kameraFuehrung` vor dem Rig)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 4, "first"],
+                                    [70, 4, "first"],
+                                    [80, 79, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "kamera nach der Führung eines Studios (kameraFuehren) 79°",
+                    ],
+                    [
+                        "der Wiederaufstieg zeichnet die Gier der letzten Fahrt (Randfall 18.10., `_gierVor`)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: 57 }) },
+                        "wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen 57°",
+                    ],
+                    [
+                        "kein Wiederaufstieg (vakuös)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { wiederauf: null }) },
+                        "wiederaufstieg: nicht gemessen",
+                    ],
+                    [
+                        "Ego dreht nicht (vakuös)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [3, 1, "first"],
+                                    [80, 4, "first"],
+                                    [80, 3, "fuehrung"],
+                                ],
+                            }),
+                        },
+                        "wechsel: 2 Rückkehr",
+                    ],
+                    [
+                        "keine Führung (vakuös)",
+                        {
+                            wechsel: Object.assign({}, WECHSEL_GESUND, {
+                                wechsel: [
+                                    [74, 4, "first"],
+                                    [70, 4, "first"],
+                                ],
+                            }),
+                        },
+                        "wechsel: 2 Rückkehr nach Third aus Ego, 0 aus einer Führung",
+                    ],
+                    [
+                        "die Kamera springt je Bild quer gegen den Wagen",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { ruckP95: 0.31 }) },
+                        "kamera-ruck seitlich p95 0.31",
+                    ],
+                    [
+                        "das Bild liegt um die Schritte des Bilds zurück (prev vor dem Bild)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichP95: 0.56 }) },
+                        "gleichlauf im Wechsel p95 0.56",
+                    ],
+                    [
+                        "die Kamera steht bergab unter der Fahrbahn (Elevation zur Welt)",
+                        { hang: Object.assign({}, HANG_GESUND, { hochP05: -4.7, ruckP95: 0.31 }) },
+                        "kamera am Hang p05 -4.7°",
+                    ],
                     ["der Band-Partner zeigt das Rad in Ruhe", { radN: 768, radWeg: 1.998 }, "rad: die Stufen im Band"],
-                    ["Wechsel ohne Gleichlauf-Proben (vakuös)", { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) }, "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf (vakuös, Soll ≥ 20)"],
-                    ["der Band-Partner bleibt im Wechsel zurück", { wechsel: Object.assign({}, WECHSEL_GESUND, { stufeWeg: 9.4, stufeTaeter: "L1 (Band)" }) }, "aufbau im Wechsel 9.4 m"],
-                    ["der Wagen fehlt nach dem Wechsel im Bild", { wechsel: Object.assign({}, WECHSEL_GESUND, { anteil: 0 }) }, "wagen im Wechsel im Bild 0.0 %"],
-                    ["der Arm pumpt bergab", { hang: Object.assign({}, HANG_GESUND, { schnapp: 14, armWeg: 6.2 }) }, "kamera-arm pumpt bergab: 14"],
+                    [
+                        "Wechsel ohne Gleichlauf-Proben (vakuös)",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { gleichN: 0 }) },
+                        "kamera im Wechsel: 120 Bilder Ruck, 0 Bilder Gleichlauf (vakuös, Soll ≥ 20)",
+                    ],
+                    [
+                        "der Band-Partner bleibt im Wechsel zurück",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { stufeWeg: 9.4, stufeTaeter: "L1 (Band)" }) },
+                        "aufbau im Wechsel 9.4 m",
+                    ],
+                    [
+                        "der Wagen fehlt nach dem Wechsel im Bild",
+                        { wechsel: Object.assign({}, WECHSEL_GESUND, { anteil: 0 }) },
+                        "wagen im Wechsel im Bild 0.0 %",
+                    ],
+                    [
+                        "der Arm pumpt bergab",
+                        { hang: Object.assign({}, HANG_GESUND, { schnapp: 14, armWeg: 6.2 }) },
+                        "kamera-arm pumpt bergab: 14",
+                    ],
                     ["kein Steilhang (vakuös)", { hang: { gefaelle: 0 } }, "hang: kein Steilhang"],
                 ],
             ],
@@ -2219,13 +2763,45 @@ async function probe(arg) {
             const v = sucheVerdict(bruch);
             check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        const vorWelt = fahrtVerdict({ gestartet: true, typ: "fahrzeug_gt", sichtVor: "first", sichtRitt: "third", sichtNach: "first", weg: 100, armN: 300, armP50: 0.68, armMin: 0.46, imWagen: 0, anteil: 0.013, rauschen: 0, abgestiegen: true, stufeWeg: 1.7, wechsel: WECHSEL_GESUND, hang: HANG_GESUND, ring: RING_GESUND });
-        check("Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter", vorWelt.length === 0, vorWelt.join(" · "));
-        // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der längste Gang nicht
+        const vorWelt = fahrtVerdict({
+            gestartet: true,
+            typ: "fahrzeug_gt",
+            sichtVor: "first",
+            sichtRitt: "third",
+            sichtNach: "first",
+            weg: 100,
+            armN: 300,
+            armP50: 0.68,
+            armMin: 0.46,
+            imWagen: 0,
+            anteil: 0.013,
+            rauschen: 0,
+            abgestiegen: true,
+            stufeWeg: 1.7,
+            wechsel: WECHSEL_GESUND,
+            hang: HANG_GESUND,
+            ring: RING_GESUND,
+        });
+        check(
+            "Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter",
+            vorWelt.length === 0,
+            vorWelt.join(" · ")
+        );
+        // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der
+        // längste Gang nicht
         for (const [a, soll] of [[["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"], [["fahrt", 91.4, 5400], null], [["werkstatt", 68.5, 900], null]])
-            check(`Selbst-Test Frist: ${a.join(" · ")} → ${soll || "kein Bruch"}`, fristBruch(...a) === soll, String(fristBruch(...a)));
-        check("Selbst-Test Frist: jede Station trägt ihre Frist", STATIONEN.every(([, , f]) => f > 0), STATIONEN.map(([n, , f]) => `${n} ${f}`).join(" · "));
-        // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang, Doku nur die Ankunft
+            check(
+                `Selbst-Test Frist: ${a.join(" · ")} → ${soll || "kein Bruch"}`,
+                fristBruch(...a) === soll,
+                String(fristBruch(...a))
+            );
+        check(
+            "Selbst-Test Frist: jede Station trägt ihre Frist",
+            STATIONEN.every(([, , f]) => f > 0),
+            STATIONEN.map(([n, , f]) => `${n} ${f}`).join(" · ")
+        );
+        // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang,
+        // Doku nur die Ankunft
         const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
         for (const [dateien, soll] of [
             [["stamm/koerper-fahrt.js"], "ankunft,fahrt"],
@@ -2250,7 +2826,8 @@ async function probe(arg) {
     }
 
 
-    // DIE WAHL DER STATIONEN: `--station` nennt sie, `--nach-diff` liest sie aus den Dateien seit <rev>, sonst der ganze Gang
+    // DIE WAHL DER STATIONEN: `--station` nennt sie, `--nach-diff` liest sie aus den Dateien seit <rev>, sonst der
+    // ganze Gang
     const alle = STATIONEN.map(([n]) => n);
     let stationen = alle;
     if (OPT("--station")) {
@@ -2259,7 +2836,10 @@ async function probe(arg) {
         if (fremd.length) throw new Error(`unbekannte Station ${fremd.join(",")} — es gibt ${alle.join(" · ")}`);
         stationen = alle.filter((n) => n === "ankunft" || w.includes(n));
     } else if (OPT("--nach-diff")) {
-        const diff = require("child_process").execFileSync("git", ["diff", "--name-only", OPT("--nach-diff")], { cwd: root, encoding: "utf8" });
+        const diff = require("child_process").execFileSync("git", ["diff", "--name-only", OPT("--nach-diff")], {
+            cwd: root,
+            encoding: "utf8",
+        });
         const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
         const w = stationenFuer(diff.split("\n").filter(Boolean), ordnung);
         w.grund.forEach((g) => console.log(`  ${g}`));
@@ -2275,7 +2855,8 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: karte ? "linse" : "null", frist: 1800000, profil: platte });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    // die Karte baut mit der Foundry (`__anazhForceFoundry`); auf dem Null-Renderer (der EINE Schalter, welt-boot `nullRenderer`)
+    // die Karte baut mit der Foundry (`__anazhForceFoundry`); auf dem Null-Renderer (der EINE Schalter, welt-boot
+    // `nullRenderer`)
     // lebt der Dorf-Takt wie im Spiel (Ring, Start-Dorf; sein Hook ruht ihn sonst headless)
     if (karte) await page.evaluateOnNewDocument(() => (window.__anazhForceFoundry = true));
     else {
@@ -2287,14 +2868,22 @@ async function probe(arg) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     const t0 = Date.now();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state._weltbildDa && window.__gang.loop, { timeout: 900000, polling: 250 });
+    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state._weltbildDa && window.__gang.loop, {
+        timeout: 900000,
+        polling: 250,
+    });
     const bootS = ((Date.now() - t0) / 1000).toFixed(1);
     const nullR = await page.evaluate(() => !!window.anazhRealm.state.renderer._isHeadlessNull);
-    console.log(karte ? "  Renderer: die Karte — jede Station mit Bild" : "  Renderer: Null (die Weiche gibt keine Karte) — die Mechanik jeder Station, das Bild urteilt die Karte");
+    console.log(
+        karte
+            ? "  Renderer: die Karte — jede Station mit Bild"
+            : "  Renderer: Null (die Weiche gibt keine Karte) — die Mechanik jeder Station, das Bild urteilt die Karte"
+    );
     if (nullR === karte) check("der Renderer, den die Weiche wählt", false, `Karte ${karte}, Null-Renderer ${nullR}`);
     if (karte) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    // DIE WACHE DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
+    // DIE WACHE DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte)
+    // und die
     // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
     let [bruch, schlag, zu] = [null, 0, null];
     const wache = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)]).then(([s, t, k, log]) => {
@@ -2314,7 +2903,8 @@ async function probe(arg) {
     fs.rmSync(platte, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     if (bruch) process.exit((console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`), 1));
     fs.mkdirSync(bilderOrt, { recursive: true });
-    for (const [name, url] of Object.entries(out.bilder)) fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
+    for (const [name, url] of Object.entries(out.bilder))
+        fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
 
     // DAS URTEIL je Station: die Probe ohne Ausnahme, die Täter beim Namen; die Laufzeit aus den Marken der Seite
     const urteil = (station, name, m, verdikt, zeile) => {
@@ -2322,30 +2912,58 @@ async function probe(arg) {
         const mm = m || {};
         if (mm.err) check(`${name.split(" ")[0]} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
         const v = verdikt(mm);
-        check(name, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+        check(
+            name,
+            v.length === 0,
+            `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
+        );
         return v;
     };
     for (const [i, [n, ms, takte]] of out.zeit.slice(0, -1).entries()) {
         const [, ms2, takte2] = out.zeit[i + 1];
-        console.log(`=== ${n.toUpperCase()} — ${((ms2 - ms) / 1000).toFixed(1)} s · ${takte2 - takte} Takte${n === "ankunft" ? ` (Boot bis Kontrolle ${bootS} s)` : ""} ===`);
+        console.log(
+            `=== ${n.toUpperCase()} — ${((ms2 - ms) / 1000).toFixed(1)} s · ${takte2 - takte} Takte${n === "ankunft" ? ` (Boot bis Kontrolle ${bootS} s)` : ""} ===`
+        );
         if (n === "ankunft") {
             urteil(n, "Ankunft das erste Weltbild ist ganz, der Ladeschirm weicht, W trägt den Spieler", out.ankunft, ankunftVerdict, (m) =>
                 `Kontrolle nach ${m.takte} Takten · ${(m.ms / 1000).toFixed(1)} s ab Navigation · ${m.ohne.length}× halb · W ${m.weg} m in ${m.wegTakte} Takten`);
-            urteil(n, "V-k4 der Fensterwechsel löst die gehaltene Taste", out.taste, tasteVerdict, (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`);
+            urteil(
+                n,
+                "V-k4 der Fensterwechsel löst die gehaltene Taste",
+                out.taste,
+                tasteVerdict,
+                (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`
+            );
         } else if (n === "lichtung")
             urteil(n, "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie", out.lichtung, lichtungVerdict, (m) =>
                 `Plattform ${JSON.stringify(m.plattform)} · ${m.baeume} Bäume im 40-m-Kreis · nächster Stamm ${m.naechsterStamm} m (${m.naechsteArt}) · Kronen über der Scheibe ${m.kronen} · Ring ${m.ringPortale} Portale, Mitte ${m.ringMitteAbstand} m`);
         else if (n === "fahrt") {
-            const bild = (m) => (m.bild === false ? "ohne Bild (Null-Renderer)" : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`);
+            const bild = (m) =>
+                m.bild === false
+                    ? "ohne Bild (Null-Renderer)"
+                    : `${pct(m.anteil)} des Bilds (${m.teile} Teile, Rauschen ${m.rauschen})`;
             const zeile = (m) => {
                 const [w, h] = [m.wechsel || {}, m.hang || {}];
-                const wechsel = w.wechsel ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego (bzw. Führung)/Abstand nach 10 Bildern ${w.wechsel.map(([g, a, von]) => `${von === "fuehrung" ? "F " : ""}${g}°/${a}°`).join(" · ")} · Wiederaufstieg ${w.wiederauf == null ? "—" : w.wiederauf + "°"}${w.steck ? ` · ${w.steck}× am Hindernis zurück` : ""} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}` : "";
-                const hang = h.armN != null ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck seitlich p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}` : "";
+                const wechsel = w.wechsel
+                    ? ` · WECHSEL an ${JSON.stringify(w.ort)}: Gier in Ego (bzw. Führung)/Abstand nach 10 Bildern ${w.wechsel.map(([g, a, von]) => `${von === "fuehrung" ? "F " : ""}${g}°/${a}°`).join(" · ")} · Wiederaufstieg ${w.wiederauf == null ? "—" : w.wiederauf + "°"}${w.steck ? ` · ${w.steck}× am Hindernis zurück` : ""} · Ruck seitlich p95 ${w.ruckP95} m (${w.ruckN} Bilder) · über der Fahrbahn p05 ${w.hochP05}° · Gleichlauf p95 ${w.gleichP95} (${w.gleichN}) · Rad zwischen den Stufen ≤ ${w.radWeg} (${w.radN}) · Aufbau ≤ ${w.stufeWeg} m · Wagen ${bild(w)}`
+                    : "";
+                const hang =
+                    h.armN != null
+                        ? ` · HANG ${h.gefaelle} an ${JSON.stringify(h.ort)}: ${h.weg} m · Arm p50 ${h.armP50} min ${h.armMin} · ${h.schnapp} Schnapper, Arm-Weg ${h.armWeg} · Ruck seitlich p95 ${h.ruckP95} m (${h.ruckN} Bilder) · über der Fahrbahn p05 ${h.hochP05}° · Gleichlauf p95 ${h.gleichP95} (${h.gleichN}) · Rad zwischen den Stufen ≤ ${h.radWeg} (${h.radN}) · Aufbau ≤ ${h.stufeWeg} m · Wagen ${bild(h)}`
+                        : "";
                 const g = m.ring || {};
-                const ring = g.spuren ? ` · RING ${g.spuren.map((s) => `Spur ${s.R} m: ${s.grad}° gefahren, ${s.sprung}° übersprungen, ${s.weg} m, Ablage ≤ ${s.ablage} m`).join(" · ")}, ${(g.taeter || []).length} Täter${(g.taeter || []).length ? ` (${g.taeter.map((t) => `${t.art} ${t.type || ""}@${t.ort}`).join(" · ")})` : ""}` : "";
+                const ring = g.spuren
+                    ? ` · RING ${g.spuren.map((s) => `Spur ${s.R} m: ${s.grad}° gefahren, ${s.sprung}° übersprungen, ${s.weg} m, Ablage ≤ ${s.ablage} m`).join(" · ")}, ${(g.taeter || []).length} Täter${(g.taeter || []).length ? ` (${g.taeter.map((t) => `${t.art} ${t.type || ""}@${t.ort}`).join(" · ")})` : ""}`
+                    : "";
                 return `${m.typ} an ${JSON.stringify(m.bahn)} · Sicht ${m.sichtVor} → ${m.sichtRitt} → ${m.sichtNach} · ${m.weg} m in ${m.fahrTakte} Takten · Arm p50 ${m.armP50} min ${m.armMin} (${m.armN} Takte, ${m.imWagen} am Wagen) · Wagen ${bild(m)} · Aufbau ≤ ${m.stufeWeg} m · Rad zwischen den Stufen ≤ ${m.radWeg} (${m.radN})${(m.vorschauOffen || []).length ? ` · Vorschau offen ${m.vorschauOffen.join(",")}` : ""}${wechsel}${hang}${ring}`;
             };
-            urteil(n, `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild; Ego ↔ Third in der Fahrt; bergab am Steilhang; E steigt aus`, out.fahrt, fahrtVerdict, zeile);
+            urteil(
+                n,
+                `Fahrt E steigt ein in Third, W fährt ${SOLL.fahrM} m, der Arm hält ≥ ${SOLL.armMin}, der Wagen steht im Bild; Ego ↔ Third in der Fahrt; bergab am Steilhang; E steigt aus`,
+                out.fahrt,
+                fahrtVerdict,
+                zeile
+            );
             const alt = out.fahrtAlt ? fahrtVerdict(out.fahrtAlt) : [];
             check(
                 "Selbst-Test im Lauf: der alte Mount-Follow (`_archInstanceUpdate` ohne den Band-Partner) macht die Fahrt ROT beim Namen",
@@ -2353,7 +2971,13 @@ async function probe(arg) {
                 out.fahrtAlt ? `${zeile(out.fahrtAlt)} — ${alt.join(" · ")}` : "nicht gefahren"
             );
         } else if (n === "wort") {
-            urteil(n, "V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)", out.ki, kiVerdict, (m) => `„${(m.fehler || "").slice(0, 90)}"`);
+            urteil(
+                n,
+                "V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)",
+                out.ki,
+                kiVerdict,
+                (m) => `„${(m.fehler || "").slice(0, 90)}"`
+            );
             urteil(n, "V-k5 V-k6 V-D8 der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie", out.satz, satzVerdict, (m) =>
                 `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`);
             const opZeile = (om, op) => {
@@ -2365,21 +2989,39 @@ async function probe(arg) {
             urteil(n, `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme), die Defaults der Auflöser gelten`, out.knoten, knotenVerdict, (m) => {
                 const kl = m.laeufe || {};
                 const kd = m.defaults || {};
-                const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
+                const benannt = KNOTEN.filter(([name, , soll, effekt]) =>
+                    knotenEintragOk(kl[name], soll, effekt)
+                ).length;
                 const akte = KNOTEN.reduce((s, [name]) => s + ((kl[name] && kl[name].akte) || []).length, 0);
                 return `${benannt}/${KNOTEN.length} benannt · ${akte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(m.messOrtOhneSpieler)}`;
             });
             urteil(n, "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche", out.suche, sucheVerdict, (m) => {
                 const zz = m.zaehlung || {};
-                const z = (k) => (zz[k] ? `${k} ${zz[k].R} m: ${zz[k].proben} Proben/${zz[k].scans} Scans${zz[k].hoch != null ? ` (hochgerechnet ${zz[k].hoch})` : ""}` : `${k} —`);
-                const ex = m.exakt ? `${m.exakt.falsch} von ${m.exakt.n} Urteilen abweichend (${m.exakt.nass} nass)` : "—";
-                return [ex, ...["trinken", "chat", "ki"].flatMap((p) => [z(`${p}@trocken`), z(`${p}@plattform`)]), z("ki@trocken-voll")].join(" · ");
+                const z = (k) =>
+                    zz[k]
+                        ? `${k} ${zz[k].R} m: ${zz[k].proben} Proben/${zz[k].scans} Scans${zz[k].hoch != null ? ` (hochgerechnet ${zz[k].hoch})` : ""}`
+                        : `${k} —`;
+                const ex = m.exakt
+                    ? `${m.exakt.falsch} von ${m.exakt.n} Urteilen abweichend (${m.exakt.nass} nass)`
+                    : "—";
+                return [
+                    ex,
+                    ...["trinken", "chat", "ki"].flatMap((p) => [z(`${p}@trocken`), z(`${p}@plattform`)]),
+                    z("ki@trocken-voll"),
+                ].join(" · ");
             });
         } else if (n === "werkstatt") {
-            urteil(n, "V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)", out.rezept, rezeptVerdict, (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`);
+            urteil(
+                n,
+                "V-D5 das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
+                out.rezept,
+                rezeptVerdict,
+                (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`
+            );
             urteil(n, "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)", out.vorschau, vorschauVerdict, (m) =>
                 `${m.vertices || 0} Proben · ${pct(m.anteil)} behalten · Maske im Render ${m.maskeImRender} · Welt-Auge ${m.augeAbstand} m${m.bildAnteil != null ? ` · im Canvas ${pct(m.bildAnteil)}` : ""}`);
-            const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}` : `${wer} —`);
+            const zZ = (wer, z) =>
+                z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}` : `${wer} —`;
             urteil(n, `V-D3 Fremder Zug jeder Wartende erwacht nach einem fremd gezogenen Körper, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`, out.zug, zugVerdict, (m) =>
                 `${zZ("vorschau", m.vorschau)} · ${zZ("hand", m.hand)} · Stufen ${(m.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")} · Vorrat ${m.vorrat ? `${m.vorrat.key} ${m.vorrat.auftraege}× bestellt` : "—"}`);
             urteil(n, `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`, out.rahmen, rahmenVerdict, (m) => {
@@ -2391,7 +3033,11 @@ async function probe(arg) {
     // JE STATION EIN BILD auf der Karte (Sage a, tue a: der Kopf dieser Datei und der Schritt der CI versprechen es)
     if (karte) {
         const ohne = stationen.filter((s) => !out.bilder[s]);
-        check(`je Station ein Bild (${stationen.length})`, ohne.length === 0, ohne.length ? `ohne Bild: ${ohne.join(", ")}` : stationen.join(" · "));
+        check(
+            `je Station ein Bild (${stationen.length})`,
+            ohne.length === 0,
+            ohne.length ? `ohne Bild: ${ohne.join(", ")}` : stationen.join(" · ")
+        );
     }
     console.log(`  Bilder: ${Object.keys(out.bilder).map((b) => path.join(bilderOrt, b + ".png")).join(" · ")}`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
