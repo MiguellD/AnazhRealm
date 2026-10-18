@@ -2348,7 +2348,7 @@ class AnazhRealm_siedlung_ort {
 
     // DAS START-DORF BESTELLEN (EIN Weg für das Buch und den Takt, B5): ist es fällig, geht sein Export hinaus — nur nahe des
     // Genesis-Orts (kein Fern-Spawn hinter dem Rücken), fail-closed + session-gemerkt (eine Welt ohne Fleck urteilt immer
-    // gleich). Der Kopf der Dorf-Kette geht mit dem Buch (`_buchKoepfe`): Befund OMEN 1810 B5 (GTX kalt) — der Takt im
+    // gleich). Der Kopf der Dorf-Kette geht mit dem Buch (`_buchKoepfe`): Befund B5 (OMEN 18.10., GTX kalt) — der Takt im
     // Leerlauf des Streamings bestellte ihn 1,7 s nach dem Buch, die Kette (Export 3,4–5,4 s, Ort-Wahl, 33 Häuser) hielt
     // „bauten" bis 16,07 s. true = bestellt.
     _startDorfBestellen(p) {

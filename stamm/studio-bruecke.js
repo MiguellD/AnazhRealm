@@ -1019,7 +1019,7 @@ class AnazhRealm_studio_bruecke {
     // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
     // DER BILD-RANG DER BAHN (B5): nach dem Buch malt das Werk den Blatt-Atlas (bis seine Fracht ankommt, `f.blattAtlas`) — es
     // ist belegt, auch ohne Auftrag im Flug. Ein Kopf der Ankunft (`rang.kopf`: der Leib, das Start-Dorf) geht in eine Bahn ohne
-    // Arbeit, und keiner stellt sich hinter ihn, solange eine Bahn ohne Kopf Platz hat. Befund OMEN 1810 B5 (GTX kalt): die
+    // Arbeit, und keiner stellt sich hinter ihn, solange eine Bahn ohne Kopf Platz hat. Befund B5 (OMEN 18.10., GTX kalt): die
     // Leib-Stufe wartete im Werk hinter dem Atlas, hinter dem Dorf-Export (3,4–5,4 s) wartete jeder Auftrag seiner Bahn.
     _foundryPumpe(f) {
         const q = f && f.warte;

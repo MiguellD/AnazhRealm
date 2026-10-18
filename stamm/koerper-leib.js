@@ -1345,7 +1345,7 @@ class AnazhRealm_koerper_leib {
     // Auftrag geht NAH zuerst (am Ort des Spielers); der Vorrat (`_ofenPrefetchKreaturen`) wartet auf denselben Zug.
     // DER LEIB WÜNSCHT, WAS SEIN ERSTES BILD ZEIGT (B5): zeigt es nur seinen Wurf (`_leibGrobVorBild`), geht vor dem Bild die
     // Grobstufe allein — die feine bestellt das Ereignis des Bilds (`_weltbildKommt`) und tauscht nach ihrer Ankunft ein
-    // (`_leibFeinTausch`). Befund OMEN 1810 B5 (GTX kalt): die feine wartete in w0 hinter dem Blatt-Atlas, baute 4,4 s und
+    // (`_leibFeinTausch`). Befund B5 (OMEN 18.10., GTX kalt): die feine wartete in w0 hinter dem Blatt-Atlas, baute 4,4 s und
     // hielt den Leib bis 10,46 s, die Grobstufe lag bei 4,23 s. Die Grobstufe zuerst: die erste Bestellung nach dem Buch
     // wartet im Werk hinter dem Atlas. `{ steht, da }`: steht = jede Vorlage des ersten Bilds liegt im Memo — oder ihr Guss
     // fiel LAUT (`OFEN-PREFETCH LEER`), dann gießt der Bau sie hier wie ohne Faden; da = alle Vorlagen.
