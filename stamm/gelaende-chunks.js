@@ -1631,35 +1631,45 @@ class AnazhRealm_gelaende_chunks {
             }
             return v.neu;
         };
+        // der Kasten aller Rechtecke: ein Dreieck außerhalb geht ohne Frage an jedem vorbei (der heiße Weg, ohne Zuteilung)
+        let [kx0, kx1, kz0, kz1] = [Infinity, -Infinity, Infinity, -Infinity];
+        for (const r of R) [kx0, kx1, kz0, kz1] = [Math.min(kx0, r.x0), Math.max(kx1, r.x1), Math.min(kz0, r.z0), Math.max(kz1, r.z1)]; // prettier-ignore
         for (let t = 0, i = 0; i < I.length; t++, i += 3) {
-            const [ia, ib, ic] = [I[i], I[i + 1], I[i + 2]];
-            const [a, b, c] = [ia * 3, ib * 3, ic * 3];
+            const ia = I[i],
+                ib = I[i + 1],
+                ic = I[i + 2];
+            const a = ia * 3,
+                b = ib * 3,
+                c = ic * 3;
+            const tx0 = Math.min(P[a], P[b], P[c]),
+                tx1 = Math.max(P[a], P[b], P[c]),
+                tz0 = Math.min(P[a + 2], P[b + 2], P[c + 2]),
+                tz1 = Math.max(P[a + 2], P[b + 2], P[c + 2]);
             let stuecke = null; // die Dreiecke des Stücks (Ecken-Objekte), sobald ein Rechteck es berührt
-            for (const r of R) {
-                if (Math.max(P[a], P[b], P[c]) < r.x0 || Math.min(P[a], P[b], P[c]) > r.x1) continue;
-                if (Math.max(P[a + 2], P[b + 2], P[c + 2]) < r.z0 || Math.min(P[a + 2], P[b + 2], P[c + 2]) > r.z1)
-                    continue;
-                stuecke = stuecke || [
-                    [
-                        { x: P[a], y: P[a + 1], z: P[a + 2], wa: 1, wb: 0, wc: 0, src: ia },
-                        { x: P[b], y: P[b + 1], z: P[b + 2], wa: 0, wb: 1, wc: 0, src: ib },
-                        { x: P[c], y: P[c + 1], z: P[c + 2], wa: 0, wb: 0, wc: 1, src: ic },
-                    ],
-                ];
-                const neu = [];
-                for (const d of stuecke) {
-                    const teil = AnazhRealm._schnittTeile(d, r.q);
-                    if (!teil) {
-                        neu.push(d);
-                        continue;
+            if (tx1 >= kx0 && tx0 <= kx1 && tz1 >= kz0 && tz0 <= kz1)
+                for (const r of R) {
+                    if (tx1 < r.x0 || tx0 > r.x1 || tz1 < r.z0 || tz0 > r.z1) continue;
+                    stuecke = stuecke || [
+                        [
+                            { x: P[a], y: P[a + 1], z: P[a + 2], wa: 1, wb: 0, wc: 0, src: ia },
+                            { x: P[b], y: P[b + 1], z: P[b + 2], wa: 0, wb: 1, wc: 0, src: ib },
+                            { x: P[c], y: P[c + 1], z: P[c + 2], wa: 0, wb: 0, wc: 1, src: ic },
+                        ],
+                    ];
+                    const neu = [];
+                    for (const d of stuecke) {
+                        const teil = AnazhRealm._schnittTeile(d, r.q);
+                        if (!teil) {
+                            neu.push(d);
+                            continue;
+                        }
+                        neu.push(...teil.aussen);
+                        // das Innere fällt, wo es über die Unterkante reicht; bündig bleibt es (es liegt unter dem Sockel)
+                        const J = teil.innen;
+                        if (!J.some((p) => p.y > r.q.y0 + 0.02)) for (let k = 1; k + 1 < J.length; k++) neu.push([J[0], J[k], J[k + 1]]); // prettier-ignore
                     }
-                    neu.push(...teil.aussen);
-                    // das Innere fällt, wo es über die Unterkante reicht; bündig bleibt es (es liegt unter dem Sockel)
-                    const J = teil.innen;
-                    if (!J.some((p) => p.y > r.q.y0 + 0.02)) for (let k = 1; k + 1 < J.length; k++) neu.push([J[0], J[k], J[k + 1]]); // prettier-ignore
+                    stuecke = neu;
                 }
-                stuecke = neu;
-            }
             if (!stuecke) {
                 aus.push(ia, ib, ic);
                 tri.push(H ? H[t] : -1);
@@ -3098,6 +3108,23 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // Dreieck (ein Dreieck der Fernstufe größer als das Haus), bleibt das Dreieck (kein Loch-Vieleck; ein Innenraum zeigt sich
 // so fern nicht).
 AnazhRealm._schnittTeile = (tri, q) => {
+    // der schnelle Weg (die meisten Dreiecke am Haus): ganz drin, oder ganz jenseits EINER Wand-Linie
+    let uMin = Infinity,
+        uMax = -Infinity,
+        vMin = Infinity,
+        vMax = -Infinity;
+    for (let k = 0; k < 3; k++) {
+        const dx = tri[k].x - q.cx,
+            dz = tri[k].z - q.cz;
+        const u = dx * q.c - dz * q.s,
+            v = dx * q.s + dz * q.c;
+        if (u < uMin) uMin = u;
+        if (u > uMax) uMax = u;
+        if (v < vMin) vMin = v;
+        if (v > vMax) vMax = v;
+    }
+    if (uMin >= q.ex || uMax <= -q.ex || vMin >= q.ez || vMax <= -q.ez) return null;
+    if (uMin >= -q.ex && uMax <= q.ex && vMin >= -q.ez && vMax <= q.ez) return { innen: tri, aussen: [] };
     const uv = (p) => {
         const [dx, dz] = [p.x - q.cx, p.z - q.cz];
         return [dx * q.c - dz * q.s, dx * q.s + dz * q.c];

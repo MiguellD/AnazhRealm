@@ -19,9 +19,10 @@
 //       warme Foundry, dem einzigen, in dem sie lebt), nie auf eine feste Takt-Zahl. DIE WIESE IM HAUS (F4, 17.10.): über jedem
 //       Haus und einem Haus des Spielers baut das Gesetz der Nah-Wiese (`_nahWieseKachelBueschel`) keinen Büschel, dessen Kreis
 //       die WÄNDE des Gesetzbuchs berührt; der Boden-Satz, wie die GPU ihn zeichnet, trägt keine Fläche über einer Probe, an
-//       der der Boden über der Diele liegt (Treppenloch, Hang — Erde über Diele), und jede 2 cm bis 1,5 m vor der Wand. `--bild` (echter Renderer, lokal unter dem GPU-Schloss, am Ende von W4b): je Haus der Blick aus einem
-//       freien Auge auf den Boden — Tür, Mitte, Wand-Fuß —, Halm-Pixel der Büschel und Boden-Pixel (jeder Boden, unbeleuchtete
-//       Maske) innerhalb der Wände 0 (artifacts/haus-welt/bild-*.png); dazu der Blick von außen aus 8 m und 45 m auf die
+//       der der Boden über der Diele liegt (Treppenloch, Hang — Erde über Diele), und jede 2 cm bis 1,5 m vor der Wand.
+//       `--bild` (echter Renderer, lokal unter dem GPU-Schloss, am Ende von W4b): je Haus der Blick aus einem freien Auge
+//       auf den Boden — Tür, Mitte, Wand-Fuß —, Halm-Pixel der Büschel und Boden-Pixel (jeder Boden, unbeleuchtete Maske)
+//       innerhalb der Wände 0 (artifacts/haus-welt/bild-*.png); dazu der Blick von außen aus 8 m und 45 m auf die
 //       Traufseite, geschnitten gegen ungeschnitten: 0 geänderte Pixel, deren Strahl den Boden vor der Wand trifft.
 //   W5  KOLLISION == OPTIK: an jedem Punkt eines 0,5-m-Rasters im Kern-Grundriss urteilt die Welt-Kapsel (der echte
 //       Löser `_resolveCapsuleVsAABB` gegen die Boxen des Hauses) wie das Gesetzbuch (dieselbe Wand-Regel gegen die Solids des Hauses): frei
@@ -380,19 +381,29 @@ async function proben(phasen) {
                 }
         return weite;
     };
-    // DIE WÄNDE DES GESETZBUCHS (F4): je Körper auf seinem Sockel das Rechteck seiner Wand-Achsen, haus-lokal — der
-    // Hauptkörper (jede Einheit des Doppelhauses) und jeder Flügel — aus dem Bau des Gesetzbuchs selbst (`gesetz`, je Haus
-    // einmal), nie aus der Welt; `diele(lx, lz)` die Oberkante der Solids bis 1,2 m dort (Boden, Sockel, Treppen-Tritt)
+    // DAS GEBAUTE HAUS (F4): was das Gesetzbuch für GENAU dieses Haus baute und mit der Hülle reiste — die Solids (`fest`) und
+    // je Körper auf dem Sockel das Rechteck seiner Wand-Achsen (`__huelle.grund` ohne den Keller), haus-lokal in Metern
+    // (Skala × k wie die Blocker, `_hausObb`); `diele(lx, lz)` die Oberkante der Solids bis 1,2 m dort (Boden, Sockel,
+    // Treppen-Tritt). Ein Neubau des Gesetzbuchs hier (`gesetz`) kennt die Rolle des Slots nicht (Kirche, Scheune: andere Maße)
+    // — er trägt die Tür eines Hauses ohne Tür-Zeile und die Wände, wo die Hülle keinen Grund trägt (die Basis vor F4). Ohne
+    // Hülle leer (nicht gemerkt).
     const lage = new WeakMap();
     const gesetzLage = (e) => {
         if (lage.has(e)) return lage.get(e);
-        const Hh = gesetz(e);
-        const fest = (Hh && Hh.solids) || [];
+        const hu = e._hausHuelle;
+        if (!hu) return { Hh: null, fest: [], waende: [], diele: () => -Infinity };
+        const sc = (e.scale > 0 ? e.scale : 1) * (e._hausHuelleSkala > 0 ? e._hausHuelleSkala : 1);
+        const fest = (A._huelleVon(hu, "fest", "fachwerk:__huelle") || []).filter((q) => q.art === "box").map((q) => ({ min: [0, 1, 2].map((k) => (q.c[k] - q.h[k]) * sc), max: [0, 1, 2].map((k) => (q.c[k] + q.h[k]) * sc) })); // prettier-ignore
+        const z = Array.isArray(hu.grund) ? hu.grund : [];
+        const waende = [];
+        for (let i = 0; i + 4 < z.length; i += 5) if (z[i + 4] >= 0) waende.push([z[i] * sc, z[i + 2] * sc, z[i + 1] * sc, z[i + 3] * sc]); // prettier-ignore
+        const Hh = e.tuer && waende.length ? null : gesetz(e);
+        if (!Array.isArray(hu.grund) && Hh) for (const m of [...(Hh.masse || []).filter((x) => x.art === "haupt"), ...(Hh.wings || [])]) waende.push([m.x0 * sc, m.x1 * sc, m.z0 * sc, m.z1 * sc]); // prettier-ignore
         const L = {
             Hh,
             fest,
-            waende: Hh ? [...(Hh.masse || []).filter((m) => m.art === "haupt"), ...(Hh.wings || [])].map((m) => [m.x0, m.x1, m.z0, m.z1]) : [], // prettier-ignore
-            diele: (lx, lz) => Math.max(-Infinity, ...fest.filter((so) => so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2).map((so) => so.max[1])), // prettier-ignore
+            waende,
+            diele: (lx, lz) => Math.max(-Infinity, ...fest.filter((so) => so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2 * sc).map((so) => so.max[1])), // prettier-ignore
         };
         lage.set(e, L);
         return L;
@@ -478,8 +489,10 @@ async function proben(phasen) {
                 s.scene.traverse((q) => q.isBundleGroup && (q.needsUpdate = true));
             }
         };
-        // der erste Schnitt des Pixel-Strahls (px, py) mit dem gezeichneten Boden (`_bodenSichtAt`) bis `bis` m, Schritt `schritt`
-        const bodenTreffer = (px, py, bis, schritt) => {
+        // der erste Schnitt des Pixel-Strahls (px, py) mit dem gezeichneten Boden (`_bodenSichtAt`) bis `bis` m, Schritt `schritt`;
+        // "haus", wenn der Strahl vorher über dem Boden in die Wände eines der Häuser `hs` tritt (Wand oder Fenster: was er dort
+        // sieht, gehört dem Haus)
+        const bodenTreffer = (px, py, bis, schritt, hs = null) => {
             const v = new THREE.Vector3(((px + 0.5) / W) * 2 - 1, 1 - ((py + 0.5) / Hb) * 2, 0.5).unproject(cam).sub(cam.position).normalize(); // prettier-ignore
             for (let t = 0, ueber = false; t < bis; t += schritt) {
                 const [x, y, z] = [cam.position.x + v.x * t, cam.position.y + v.y * t, cam.position.z + v.z * t];
@@ -487,6 +500,7 @@ async function proben(phasen) {
                 if (g == null) continue;
                 if (ueber && y <= g) return [x, z];
                 ueber = y > g;
+                if (ueber && hs && hs.some((e) => abWand(e, x, z) < 0)) return "haus";
             }
             return null;
         };
@@ -609,7 +623,7 @@ async function proben(phasen) {
             // DER BLICK VON AUSSEN (Befund 2 der Prüfung 18.10.): aus 8 m und 45 m vor der Traufseite des Hauptkörpers (die lange
             // Wand), 1,7 m über dem Boden, auf die Wand-Mitte — der Boden-Satz geschnitten (wie im Spiel) gegen ungeschnitten
             // (jeder geschnittene Bereich betritt ihn mit seiner Quelle, danach schneidet `_grundSchnittNeu` neu): geändert darf
-            // nur sein, was in den Wänden liegt (durch Tür und Fenster). `aussen` = geänderte Pixel, deren Strahl den Boden vor der
+            // nur sein, was in den Wänden eines Hauses liegt (durch Tür und Fenster). `aussen` = geänderte Pixel, deren Strahl den Boden vor der
             // Wand trifft (Soll 0), `durch` = in den Wänden
             if (r._grundSchnittNeu) {
                 const S = s.chunkSaetze.get("boden");
@@ -630,14 +644,18 @@ async function proben(phasen) {
                     } finally {
                         r._grundSchnittNeu();
                     }
+                    // ein Pixel zählt, wenn es geschnitten ruht (dasselbe Bild davor und danach) und ungeschnitten anders ist —
+                    // was die Welt zwischen den Aufnahmen bewegt (Wind, ein Kachel-Bau um das Auge), ändert sich auch ohne Schnitt
+                    const mit2 = await schuss([], []);
+                    const anders = (X, Y, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(X[i + c] - Y[i + c]))) > 18;
                     const ix = [];
-                    for (let i = 0; i < mit.length; i += 4)
-                        if (Math.max(...[0, 1, 2].map((c) => Math.abs(mit[i + c] - ohne[i + c]))) > 18) ix.push(i / 4);
+                    for (let i = 0; i < mit.length; i += 4) if (anders(mit, ohne, i) && !anders(mit, mit2, i)) ix.push(i / 4);
+                    const nah = haeuser.filter((x) => Math.hypot(x.position.x - p.x, x.position.z - p.z) < dist + 40);
                     // je geändertes Pixel der Boden-Treffer (bis 3 000 je Blick, gleichmäßig gezogen, hochgerechnet)
                     const zug = Math.max(1, Math.ceil(ix.length / 3000));
                     for (let j = 0; j < ix.length; j += zug) {
-                        const h = bodenTreffer(ix[j] % W, Math.floor(ix[j] / W), dist + 20, 0.05);
-                        if (h && abWand(e, h[0], h[1]) > 0.02) b.aussen += zug;
+                        const h = bodenTreffer(ix[j] % W, Math.floor(ix[j] / W), dist + 20, 0.05, nah);
+                        if (Array.isArray(h) && nah.every((x) => abWand(x, h[0], h[1]) > 0.02)) b.aussen += zug;
                         else b.durch += zug;
                     }
                     if (dist === 8) {
@@ -1486,19 +1504,23 @@ async function proben(phasen) {
         // Diele liegt (Erde über Diele: Treppenloch, Hang), und jede Fläche 2 cm bis 1,5 m vor der Wand. Das Band draußen zählt
         // die Büschel je 0,5 m bis 1,5 m vor der Wand (gemessen, kein Urteil). Basis 18.10. (Radeon): 5 012 von 16 302 Büscheln im Grundriss; im Bild 23 von 25 Häusern mit Halmen.
         const sb = await spielerHaus(mx, mz);
-        const w = { haeuser: FH.length + (sb ? 1 : 0), spieler: !!sb, reich: grasWeite(), bueschel: 0, imHaus: 0, offen: 0, ohneHuelle: 0, erde: 0, erdeOffen: 0, aussen: 0, draussen: 0, band: [0, 0, 0], je: {} }; // prettier-ignore
+        const w = { haeuser: FH.length + (sb ? 1 : 0), spieler: !!sb, reich: grasWeite(), bueschel: 0, imHaus: 0, offen: 0, ohneHuelle: 0, ohneGrund: 0, erde: 0, erdeOffen: 0, aussen: 0, draussen: 0, band: [0, 0, 0], je: {} }; // prettier-ignore
         const K = A.NAH_WIESE.kachel;
         const HS = [...FH, ...(sb ? [sb] : [])];
         // jede Kachel um ein Haus einmal (nach dem EINEN Bau des Rings), wenn seine Hülle steht (sie trägt den Grund); fehlt ihr
         // Boden (kein Chunk um ein fernes Haus — das Dorf der Probe trägt bis zu 45 Häuser in zwei Orten), steht der Spieler am
         // Haus, bis er steht
-        const kacheln = new Map();
+        // erst stehen alle Hüllen (eine Kachel trägt auch die Nachbarn: im Spiel baut die Ankunft einer Hülle sie neu)
         for (const hs of HS) {
             for (let k = 0; k < 60 && !hs._hausHuelle; k++) {
                 if (!k) stell(hs.position.x, hs.position.y + 1, hs.position.z);
                 await pumpe(5);
             }
             if (!hs._hausHuelle) w.ohneHuelle++;
+            else if (!Array.isArray(hs._hausHuelle.grund) && !((gesetz(hs) || {}).P || {}).pilotis) w.ohneGrund++; // ein Haus auf dem Sockel ohne Grund
+        }
+        const kacheln = new Map();
+        for (const hs of HS) {
             const R = Math.max(4, ...gesetzLage(hs).waende.flat().map(Math.abs)) * 1.42 + 2;
             const [x0, x1] = [Math.floor((hs.position.x - R) / K), Math.floor((hs.position.x + R) / K)];
             const [z0, z1] = [Math.floor((hs.position.z - R) / K), Math.floor((hs.position.z + R) / K)];
@@ -2007,8 +2029,8 @@ function urteil(o) {
                     `W4b Rest-Streu: nach dem Hinlaufen ${o.w4b.nahStreu.imHaus} Streu-Zellen im Grundriss (${JSON.stringify(o.w4b.nahStreu.je)})`
                 );
             const wi = o.w4b.wiese;
-            if (!wi || !(wi.bueschel >= 500) || wi.offen || !wi.spieler || !(wi.reich > 0.1) || wi.ohneHuelle)
-                f.push(`W4b Aufbau Wiese: ${JSON.stringify(wi || null).slice(0, 160)} (Soll ≥ 500 Büschel, 0 offen, Spieler-Haus, Weite, jede Hülle da)`); // prettier-ignore
+            if (!wi || !(wi.bueschel >= 500) || wi.offen || !wi.spieler || !(wi.reich > 0.1) || wi.ohneHuelle || wi.ohneGrund)
+                f.push(`W4b Aufbau Wiese: ${JSON.stringify(wi || null).slice(0, 160)} (Soll ≥ 500 Büschel, 0 offen, Spieler-Haus, Weite, jede Hülle da und trägt den Grund)`); // prettier-ignore
             else if (wi.imHaus) f.push(`W4b Wiese: ${wi.imHaus} von ${wi.bueschel} Büscheln berühren die Wände (${JSON.stringify(wi.je)})`); // prettier-ignore
             if (wi && (wi.erdeOffen || !(wi.erde > 0))) f.push(`W4b Halm-Schicht: über ${wi.erdeOffen} von ${wi.erde} Proben Erde über der Diele zeichnet der Boden-Satz eine Fläche (Soll 0 von > 0)`); // prettier-ignore
             if (wi && (wi.draussen || !(wi.aussen > 100))) f.push(`W4b Grund draußen: an ${wi.draussen} von ${wi.aussen} Orten 2 cm–1,5 m vor der Wand fehlt die gezeichnete Fläche (Soll 0 von > 100)`); // prettier-ignore
