@@ -165,7 +165,6 @@ const ANKER = [
     // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
     // zieht die Nachbildung nach), baut den Stoff im Pass je Render-Aufruf (`info.calls`) höchstens einmal und lässt die
     // Pipeline asynchron entstehen (`getForRender(ro, promises)`); der Record droppt unfertige Draws und versiegelt danach.
-    { file: "vendor/three.webgpu.min.js", sub: "isReady(u)&&", organ: null, weich: true },
     { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_erstWartet (2): die Marke des Knoten-Baus fällt nach der Versiegelung" },
     {
         file: "vendor/three.webgpu.min.js",
@@ -206,10 +205,7 @@ const ANKER = [
     // in neuer Größe) die alte GPU-Textur; die Diät liest die Texturen der Vorher-Knoten am NodeBuilderState.
     { file: "vendor/three.webgpu.min.js", sub: "const s=e.isRenderTargetTexture||e.isDepthTexture||e.isFramebufferTexture,i=this.backend;if(s&&!0===r.initialized&&i.destroyTexture(e)", organ: "Diät (6) Vorher-Textur-Wächter (updateTexture zerstört die alte Ziel-Textur)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
-    // DIE EIGENEN FELDER der Diät (9, B4): der Gang sucht gespeiste Uniforms nur in `Object.keys` je Knoten — das Geerbte, das
-    // TSL aufzählbar an den Knoten-Prototyp hängt, sind die Ketten-METHODEN (gemessen 18.10. am Vendor: 122 Knoten-Klassen,
-    // 2 324 aufzählbare geerbte Felder, alle Funktionen, 0 Uniform, 0 Knoten, 0 Accessor). Ein Bump beweist das neu.
-    { file: "vendor/three.webgpu.min.js", sub: '"assign"!==e&&(ci.prototype[e]=function(...e){', organ: "Diät (9) die eigenen Felder (das Geerbte am Knoten-Prototyp sind nur Ketten-Methoden)" },
+    { file: "vendor/three.webgpu.min.js", sub: '"assign"!==e&&(ci.prototype[e]=function(...e){', organ: "Diät (9) die eigenen Felder: das Geerbte am Knoten-Prototyp sind nur Ketten-Methoden (B4, 18.10.: 122 Klassen, 2 324 Felder, 0 Uniform/Knoten/Accessor)" },
     // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
     // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
     // eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.
@@ -857,7 +853,6 @@ function main() {
     // (2) Anker:
     let geprueft = 0;
     for (const a of ANKER) {
-        if (a.weich) continue; // dokumentarisch, kein harter Substring (minifier-variabel)
         geprueft++;
         const src = les(a.file).toString("latin1");
         const sub = selftest && a.organ && a.organ.startsWith("_materialObserverDiaet (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
