@@ -43,9 +43,7 @@
 //                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
-//                                                           `--karte --uhr 0.5,0.25,0` die Ferne je Stunde (F6): die
-//                                                           Karte gegen ihre Gestalt, dazu die Namen `ring` (Boden nah
-//                                                           gegen den Fern-Ring) und `haus` (L2 gegen L0, Messort dorf)
+//                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
@@ -3326,7 +3324,7 @@ async function starte() {
         const LL = require("./lib/licht-linsen.cjs");
         if (argv.includes("--selbsttest")) {
             const m = (v) => ({ verhaeltnis: v, gegen: { Y: v }, auf: { Y: 1 }, stoffe: "laub" });
-            const fz = (v, dL, dC) => ({ paar: "fern/nah", stufe: "fern-ring 400 m / 6 m", karte: { verhaeltnis: v, dL, dC } });
+            const fz = (v, dL, dC) => ({ paar: "fern/nah", stufe: "bodenSatz → fern-ring", karte: { verhaeltnis: v, dL, dC } });
             const f = [
                 [LL.laubLichtUrteil({ welt: { eiche: m(1.4) } }).urteil, "GRUEN"],
                 [
@@ -3358,12 +3356,9 @@ async function starte() {
                 [LL.laubLichtUrteil({ welt: { "fichte@0.5": { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.278, dL: 4.21, dC: -1.75 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({ welt: { eiche: { karte: { verhaeltnis: 1.02, dL: 0.3, dC: 4.2 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
-                // DIE FERNE JE STUNDE (F6): der Fern-Ring gegen den Boden-Satz an der Basis 12997549 (Radeon, Messort dorf) —
-                // Mittag 1,155, Nacht 2,007: nachts 1,738 × über seinem Mittag, ROT beim Namen; am Kopf 1,169 / 1,210 GRUEN
-                [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.155, 4.03, -4.99), "ring@0": fz(2.007, 10.09, -5.43) } }).befunde.join(), /FERN ring@0: fern\/nah gegen Mittag \(fern-ring 400 m \/ 6 m\) Luma 1\.738/],
-                [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.169, 4.37, -4.98), "ring@0": fz(1.21, 2.33, -3.37) } }).urteil, "GRUEN"],
-                // das Haus: L2 gegen L0 mittags 0,788 (der Gleichstand der Stufen bei Tag reist als `mittag`), nachts 0,763 GRUEN
-                [LL.laubLichtUrteil({ welt: { "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) } }).urteil, "GRUEN"],
+                // DIE FERNE JE STUNDE (F6): Fern-Ring gegen Boden-Satz, Basis 12997549 nachts 1,496 x ueber Mittag ROT beim Namen, Kopf GRUEN
+                [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.072, 1.97, -7.21), "ring@0": fz(1.604, 7.04, -4.17) } }).befunde.join(), /FERN ring@0: fern\/nah gegen Mittag \(bodenSatz → fern-ring\) Luma 1\.496/],
+                [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.038, 0.96, -5.6), "ring@0": fz(1.047, 0.45, -2.82) } }).urteil, "GRUEN"],
                 [JSON.stringify(LL.laubLichtUrteil({ welt: { "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) } }).zeilen[1]), /"karte":0\.968.*"mittag":0\.788/],
                 [LL.laubLichtUrteil({ welt: { "haus@0": fz(0.763, -4.17, 1.04) } }).befunde.join(), /FERN haus@0: ohne die Zeile zu Mittag/],
                 // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
@@ -3394,32 +3389,15 @@ async function starte() {
         // DIE STUNDEN (F6): `--uhr 0.5,0.25,0` misst jede Art je Stunde (Mittag · Dämmerung · Nacht) — die Karte antwortet dem
         // Licht der Uhr wie ihre Gestalt; die Zeile heißt `<art>@<uhr>`
         const uhren = opt("--uhr") === undefined ? [null] : String(opt("--uhr")).split(",").map(Number);
-        // DIE FERNE JE STUNDE (F6): neben den Arten zwei Namen der Liste — `ring` der Boden nah gegen den Fern-Ring an derselben
-        // Stelle (`__ringLicht`, am Anker des Messorts), `haus` das Haus des Dorfs (Messort dorf) in L0 gegen L2 aus demselben
-        // Auge im Spiel-Abstand (der Weg der Karte, `haus: true`); die Zeilen heißen `ring@<uhr>` und `haus@<uhr>`
+        // DIE FERNE JE STUNDE (F6): zwei Namen der Liste gehen den Weg der Karte (dasselbe Auge, zwei Stufen) — `ring` Boden-Satz
+        // gegen Fern-Ring am Messort, `haus` L0 gegen L2 im Spiel-Abstand am Messort dorf (der Dorf-Zug baut es beim Spieler)
         const dorf = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "dorf");
-        let imDorf = false;
-        const bilder = (zeile, w) => {
-            if (w && w.karte && opt("--ordner"))
-                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${(w.karte.namen || ["gestalt", "karte"])[i]}.png`), Buffer.from(p.split(",")[1], "base64")));
-            if (w && w.karte) delete w.karte.png;
-        };
         for (const art of String(arten).split(",")) for (const uhr of uhren) {
             const zeile = uhr == null ? art : `${art}@${uhr}`;
-            // das Dorf baut der Dorf-Zug, wenn der Spieler dort steht: der Messort schwingt es ein (einmal je Besuch); der Ring misst
-            // dort auch — der Grund des Dorfs ist eben (die Mess-Wiese ist ein Hang)
-            const haus = art === "haus";
-            const anker = haus || art === "ring" ? dorf.spieler : wiese.spieler;
-            if ((haus || art === "ring") && !imDorf) (await rufe("/umstellen", { ort: "dorf" })), (imDorf = true);
-            if (!(haus || art === "ring")) imDorf = false;
-            if (art === "ring") {
-                await rufe("/umstellen", { x: anker[0], z: anker[1] });
-                const w = (await rufe("/eval", { code: `return await window.__ringLicht({ anker: ${JSON.stringify(anker)}, uhr: ${uhr}, augeH: ${Number(opt("--auge", 1.6)) || 1.6} });` })).ergebnis;
-                bilder(zeile, w);
-                welt[zeile] = w;
-                continue;
-            }
-            const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}`;
+            const [haus, boden] = [art === "haus", art === "ring"];
+            const anker = haus || boden ? dorf.spieler : wiese.spieler;
+            if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await rufe("/umstellen", { ort: "dorf" });
+            const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
             await rufe("/umstellen", { x: anker[0], z: anker[1] });
@@ -3437,13 +3415,10 @@ async function starte() {
             }
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
             await ein();
-            // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann jede Krone auf ihrer Karte (die Schwellen der
-            // Stufen kurz auf 0,3/0,6 m, der Lauf schwingt ein), danach die Schwellen zurück
-            // das Haus: Schuss 1 in L0, Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
-            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
-            // die Schwelle der Karte: `plan.l1` hält das Exemplar im Spiel-Abstand auf L1 (die Gestalt), 0,6 m stellt jede Krone auf
-            // die Karte, null stellt zurück
-            // `t01` (das Haus in L0): beide Schwellen über dem Auge
+            // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
+            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden && n === 2 ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}` });
+            // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
+            // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
             const stufen = async (t12, t01) => {
                 const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
                 await rufe("/eval", { code: t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 == null ? `Math.min(window.__karteD[0], ${t12} / 2)` : t01}; D.thresh12 = ${t12}; return 1;` });
@@ -3451,16 +3426,18 @@ async function starte() {
             };
             if (argv.includes("--karte")) {
                 if (haus) await stufen(plan.l1, plan.l1);
-                else if (opt("--wechsel")) await stufen(plan.l1);
+                else if (opt("--wechsel") && !boden) await stufen(plan.l1);
                 // die Gestalt des Exemplars kann noch reisen (L1 im Bau): bis zu drei Läufe mehr, sonst urteilt die Linse laut
                 for (let i = 0; i < 4 && ((await k(1)).ergebnis || {}).fehler; i++) await ein();
-                await stufen(0.6);
+                if (!boden) await stufen(0.6);
             }
             const w = argv.includes("--karte")
                 ? (await k(2)).ergebnis
                 : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
-            if (argv.includes("--karte")) await stufen(null);
-            bilder(zeile, w);
+            if (argv.includes("--karte") && !boden) await stufen(null);
+            if (w && w.karte && opt("--ordner"))
+                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
+            if (w && w.karte) delete w.karte.png;
             const ordner = opt("--ordner");
             if (w && w.oben && w.oben.png) {
                 if (ordner)
