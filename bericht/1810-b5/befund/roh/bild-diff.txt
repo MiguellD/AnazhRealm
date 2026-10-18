@@ -1,0 +1,5 @@
+B1.png ↔ E1.png: 52825 von 518400 Pixeln (10.19 %) über Schwelle 24, Hülle x 5–959 · y 0–380
+B2.png ↔ E2.png: 58711 von 518400 Pixeln (11.33 %) über Schwelle 24, Hülle x 0–959 · y 0–461
+B3.png ↔ E3.png: 54791 von 518400 Pixeln (10.57 %) über Schwelle 24, Hülle x 0–959 · y 0–380
+B1.png ↔ B2.png: 7257 von 518400 Pixeln (1.40 %) über Schwelle 24, Hülle x 0–686 · y 0–380
+B1.png ↔ K2.png: 10862 von 518400 Pixeln (2.10 %) über Schwelle 24, Hülle x 0–686 · y 0–380

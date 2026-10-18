@@ -1,0 +1,5 @@
+kalt: Erst-Bau bis Bild 50 Programme (48–54) · 3307 ms (3140–3437) · longtask-Summe bis Bild 13944 ms
+zweit: Erst-Bau bis Bild 56 Programme (56–56) · 2412 ms (2403–2461) · longtask-Summe bis Bild 10088 ms
+stufe: Erst-Bau bis Bild 55 Programme (53–56) · 2348 ms (2247–2350) · longtask-Summe bis Bild 10447 ms
+ohneOrt: Erst-Bau bis Bild 30 Programme (30–30) · 1842 ms (1841–1883) · longtask-Summe bis Bild 9329 ms
+ohneStartDorf: Erst-Bau bis Bild 47 Programme · 2895 ms

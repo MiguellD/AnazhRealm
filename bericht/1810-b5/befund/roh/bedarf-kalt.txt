@@ -1,0 +1,31 @@
+Studio-Bau vor dem Bild je Lauf (Mittel über 5 Läufe: K0 K1 K2 K3 P1a)
+  Haus/Tor · im Blick · 61–150 m               n  19.0 · Faden   6968 ms
+  Leib · im Blick · ≤30 m                      n   2.0 · Faden   5580 ms
+  Karte(L1) · außer Blick · 61–150 m           n   6.8 · Faden   2520 ms
+  Haus/Tor L3 (Wurf) · im Blick · 61–150 m     n  22.0 · Faden   2480 ms
+  Karte(L1) · im Blick · ≤30 m                 n   2.0 · Faden   1019 ms
+  Haus/Tor L3 (Wurf) · im Blick · ≤30 m        n   7.0 · Faden    950 ms
+  Karte(L1) · im Blick · ≤60 m                 n   2.8 · Faden    812 ms
+  Baum · im Blick · ≤30 m                      n   2.0 · Faden    660 ms
+  Haus/Tor · im Blick · ≤30 m                  n   8.0 · Faden    609 ms
+  Haus/Tor · außer Blick · ≤30 m               n   1.0 · Faden    510 ms
+  Haus/Tor L3 (Wurf) · außer Blick · ≤30 m     n   1.0 · Faden    236 ms
+  Karte(L1) · außer Blick · ≤60 m              n   1.2 · Faden    201 ms
+  Baum · außer Blick · 61–150 m                n   0.8 · Faden    174 ms
+  Karte(L1) · im Blick · 61–150 m              n   1.2 · Faden    160 ms
+  Baum · im Blick · ≤60 m                      n   1.0 · Faden    154 ms
+  Streu · außer Blick · ohne Ort               n   7.0 · Faden    131 ms
+  Fels · außer Blick · ≤60 m                   n   3.0 · Faden     95 ms
+  Fels · im Blick · ≤60 m                      n   3.0 · Faden     82 ms
+  Fels · außer Blick · 61–150 m                n   7.0 · Faden     72 ms
+  Baum · im Blick · 61–150 m                   n   0.2 · Faden     44 ms
+  Fels · im Blick · ≤30 m                      n   1.0 · Faden     28 ms
+  Streu · im Blick · ≤30 m                     n   4.6 · Faden     13 ms
+  Haus/Tor · außer Blick · ≤60 m               n   1.0 · Faden     10 ms
+  Fels · im Blick · 61–150 m                   n   1.0 · Faden      9 ms
+  Haus/Tor · außer Blick · 61–150 m            n   1.0 · Faden      9 ms
+  Haus/Tor L3 (Wurf) · außer Blick · ≤60 m     n   1.0 · Faden      3 ms
+  Streu · außer Blick · ≤30 m                  n   0.8 · Faden      2 ms
+  Haus/Tor L3 (Wurf) · außer Blick · 61–150 m  n   1.0 · Faden      1 ms
+  Dorf-Export · im Blick · ≤30 m               n   1.0 · Faden      0 ms
+  Σ 23531 ms Faden-Arbeit je Lauf

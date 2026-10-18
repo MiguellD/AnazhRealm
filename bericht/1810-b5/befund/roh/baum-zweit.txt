@@ -1,0 +1,44 @@
+(anonym) dirigent-ankunft.js  317
+  _bootAnazhRealm dirigent-ankunft.js  315
+(anonym) siedlung-ort.js  166
+(anonym) studio-bruecke.js  173
+  (anonym)  171
+    P.<computed>  168
+      _foundryBuildGroup studio-gestalt.js  165
+(garbage collector)  248
+(idle)  194
+(program)  829
+e three.webgpu.min.js  8438
+  loop dirigent-takt.js  8436
+    _loopRender dirigent-takt.js  2893
+      render three.webgpu.min.js  2750
+        render three.webgpu.min.js  2746
+          render three.webgpu.min.js  2746
+    _loopVoxelStreaming dirigent-takt.js  4695
+      _runFrameScheduler dirigent-takt.js  4693
+        _dispatchFrameJobs dirigent-takt.js  2171
+          run dirigent-takt.js  2168
+        _tickDirtyVoxelChunks gelaende-chunks.js  354
+          _rebuildVoxelChunk gelaende-chunks.js  354
+        _tickFernRing bild-sicht.js  422
+          _fernRingTeilung gelaende-fern.js  274
+        _tickImpostorBake stoff-instanz.js  1006
+          _tickKarteWelt stoff-instanz.js  1006
+        _tickPendingVegSpawns vegetation-baum.js  305
+          _naturSetzen vegetation-baum.js  302
+    tickArchitectureCulling vegetation-baum.js  559
+      P.<computed>  195
+        _rebuildArchitectureMesh siedlung-satz.js  194
+          _foundryLodForEntry stoff-instanz.js  177
+      _foundryPlatzBereit studio-gestalt.js  168
+        _foundryEntryReady studio-gestalt.js  156
+    tickDayNight bild-himmel.js  181
+      _applyDayNightToScene bild-himmel.js  181
+init dirigent-ankunft.js  670
+  _chatEcho feld-leben.js  163
+  generateNewWorld gelaende-chunks.js  391
+    generateTerrainWithParameters gelaende-chunks.js  391
+      _worldgenSpawnFloatingIslands gelaende-boden.js  246
+        spawnIslandAt siedlung-satz.js  216
+nach studio-gestalt.js  254
+  _foundryRewarmColdTrees studio-gestalt.js  248

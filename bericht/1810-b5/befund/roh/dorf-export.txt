@@ -1,0 +1,11 @@
+K0: Export gesendet 4.19 · Bahn w1 frei ab 4.53 · nächster Auftrag der Bahn im Studio ab 7.93 → Export-Lauf ≈ 3.40 s · an 8.68
+K1: Export gesendet 4.50 · Bahn w1 frei ab 4.88 · nächster Auftrag der Bahn im Studio ab 10.27 → Export-Lauf ≈ 5.39 s · an 10.51
+K2: Export gesendet 4.16 · Bahn w1 frei ab 4.48 · nächster Auftrag der Bahn im Studio ab 8.38 → Export-Lauf ≈ 3.90 s · an 8.66
+K3: Export gesendet 4.45 · Bahn w1 frei ab 4.78 · nächster Auftrag der Bahn im Studio ab 8.96 → Export-Lauf ≈ 4.19 s · an 9.26
+P1a: Export gesendet 4.30 · Bahn w1 frei ab 4.66 · nächster Auftrag der Bahn im Studio ab 8.23 → Export-Lauf ≈ 3.57 s · an 8.78
+P2a: Export gesendet 4.48 · Bahn w1 frei ab 4.83 · nächster Auftrag der Bahn im Studio ab 9.55 → Export-Lauf ≈ 4.71 s · an 9.66
+P3a: Export gesendet 4.44 · Bahn w1 frei ab 4.75 · nächster Auftrag der Bahn im Studio ab 10.09 → Export-Lauf ≈ 5.34 s · an 10.51
+P4a: Export gesendet 4.45 · Bahn w1 frei ab 4.71 · nächster Auftrag der Bahn im Studio ab 8.06 → Export-Lauf ≈ 3.36 s · an 8.12
+B1: Export gesendet 4.35 · Bahn w1 frei ab 4.68 · nächster Auftrag der Bahn im Studio ab 9.73 → Export-Lauf ≈ 5.06 s · an 9.99
+B2: Export gesendet 4.36 · Bahn w1 frei ab 4.65 · nächster Auftrag der Bahn im Studio ab 8.41 → Export-Lauf ≈ 3.76 s · an 8.86
+B3: Export gesendet 4.52 · Bahn w1 frei ab 4.84 · nächster Auftrag der Bahn im Studio ab 9.74 → Export-Lauf ≈ 4.90 s · an 9.92

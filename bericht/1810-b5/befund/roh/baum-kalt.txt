@@ -1,0 +1,53 @@
+(anonym) dirigent-ankunft.js  331
+  _bootAnazhRealm dirigent-ankunft.js  330
+    AnazhRealm dirigent-kern.js  182
+      _defaultBlueprints bau-vorlagen.js  178
+        _growTreeBlueprintRich vegetation-streu.js  154
+(anonym) siedlung-ort.js  190
+(anonym) studio-bruecke.js  249
+  (anonym)  248
+    P.<computed>  242
+      _foundryBuildGroup studio-gestalt.js  235
+(garbage collector)  343
+(idle)  340
+(program)  1539
+e three.webgpu.min.js  11829
+  loop dirigent-takt.js  11826
+    _loopRender dirigent-takt.js  4141
+      _tickChunkSatz siedlung-bauten.js  163
+        _tickBauSatz siedlung-satz.js  159
+      render three.webgpu.min.js  3932
+        render three.webgpu.min.js  3930
+          render three.webgpu.min.js  3930
+    _loopVoxelStreaming dirigent-takt.js  6473
+      _runFrameScheduler dirigent-takt.js  6473
+        _dispatchFrameJobs dirigent-takt.js  2981
+          run dirigent-takt.js  2980
+        _tickDirtyVoxelChunks gelaende-chunks.js  193
+          _rebuildVoxelChunk gelaende-chunks.js  192
+        _tickFernRing bild-sicht.js  665
+          _fernRingRefresh gelaende-fern.js  152
+          _fernRingTeilung gelaende-fern.js  431
+        _tickImpostorBake stoff-instanz.js  1417
+          _tickKarteWelt stoff-instanz.js  1416
+        _tickPendingVegSpawns vegetation-baum.js  589
+          _naturSetzen vegetation-baum.js  583
+        _tickScatterLod vegetation-streu.js  293
+    tickArchitectureCulling vegetation-baum.js  675
+      P.<computed>  156
+        _rebuildArchitectureMesh siedlung-satz.js  152
+      _foundryPlatzBereit studio-gestalt.js  306
+        _foundryEntryReady studio-gestalt.js  295
+          _foundryLodForEntry stoff-instanz.js  287
+    tickDayNight bild-himmel.js  276
+      _applyDayNightToScene bild-himmel.js  274
+        _atmoTakt bild-himmel.js  152
+init dirigent-ankunft.js  626
+  generateNewWorld gelaende-chunks.js  405
+    generateTerrainWithParameters gelaende-chunks.js  405
+      _worldgenComputeAndBuildHydrosphere gelaende-boden.js  169
+        _computeHydrosphere wasser-hydro.js  159
+      _worldgenSpawnFloatingIslands gelaende-boden.js  210
+        spawnIslandAt siedlung-satz.js  177
+nach studio-gestalt.js  307
+  _foundryRewarmColdTrees studio-gestalt.js  302

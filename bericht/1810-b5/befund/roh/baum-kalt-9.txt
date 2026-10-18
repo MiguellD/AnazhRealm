@@ -1,0 +1,115 @@
+(anonym) dirigent-ankunft.js  331
+  _bootAnazhRealm dirigent-ankunft.js  330
+    AnazhRealm dirigent-kern.js  182
+      _defaultBlueprints bau-vorlagen.js  178
+        _growTreeBlueprintRich vegetation-streu.js  154
+          _phytoGrowSkeleton vegetation-streu.js  142
+            growSkeleton phyto-core.js  137
+              grow phyto-core.js  115
+                grow phyto-core.js  113
+    init dirigent-ankunft.js  146
+(anonym) koerper-leib.js  110
+  _ofenVorlage koerper-leib.js  109
+    (anonym) koerper-leib.js  109
+      (anonym)  109
+        _ofenAssembleAsset koerper-leib.js  109
+(anonym) siedlung-ort.js  190
+  _ortPlanWarten siedlung-ort.js  129
+    (anonym) siedlung-ort.js  128
+      takt siedlung-ort.js  128
+        P.<computed>  128
+          _ortWahlScheibe siedlung-ort.js  128
+            _ortWahl gelaende-boden.js  125
+(anonym) studio-bruecke.js  249
+  (anonym)  248
+    P.<computed>  242
+      _foundryBuildGroup studio-gestalt.js  235
+        _foundryBuildMesh studio-gestalt.js  146
+(garbage collector)  343
+(idle)  340
+(program)  1539
+e three.webgpu.min.js  11829
+  loop dirigent-takt.js  11826
+    _loopRender dirigent-takt.js  4141
+      _tickChunkSatz siedlung-bauten.js  163
+        _tickBauSatz siedlung-satz.js  159
+          _chunkSatzEin siedlung-bauten.js  100
+      render three.webgpu.min.js  3932
+        render three.webgpu.min.js  3930
+          render three.webgpu.min.js  3930
+            renderer._renderScene bild-kosten.js  3930
+              _renderScene three.webgpu.min.js  3930
+                _renderObjects three.webgpu.min.js  3924
+    _loopVoxelStreaming dirigent-takt.js  6473
+      _runFrameScheduler dirigent-takt.js  6473
+        _dispatchFrameJobs dirigent-takt.js  2981
+          run dirigent-takt.js  2980
+            _tickScatterStreaming vegetation-streu.js  1361
+              P.<computed>  1254
+                _scatterRegion vegetation-streu.js  1254
+            _tickVoxelChunkStreaming gelaende-chunks.js  1354
+              _ensureVoxelChunkAt gelaende-chunks.js  1324
+                _acquireVoxelChunkBuild gelaende-chunks.js  448
+                _finalizeVoxelChunkBuild gelaende-chunks.js  889
+            _tickWaldPlan vegetation-wiese.js  128
+              _forestPlantChunk vegetation-baum.js  119
+        _tickArchitectureLOD siedlung-bauten.js  133
+        _tickDirtyVoxelChunks gelaende-chunks.js  193
+          _rebuildVoxelChunk gelaende-chunks.js  192
+            _completeVoxelRebuild gelaende-chunks.js  142
+              _finalizeVoxelChunkBuild gelaende-chunks.js  132
+        _tickFernRing bild-sicht.js  665
+          _fernRingRefresh gelaende-fern.js  152
+            _fernRingEinhaengen gelaende-fern.js  126
+          _fernRingTeilung gelaende-fern.js  431
+            _fernRingKlassen gelaende-fern.js  357
+              S gelaende-fern.js  116
+        _tickImpostorBake stoff-instanz.js  1417
+          _tickKarteWelt stoff-instanz.js  1416
+            _karteWeltBacken stoff-instanz.js  1411
+              _buehneRender werkstatt-vorschau.js  1383
+                render three.webgpu.min.js  1383
+        _tickPendingVegSpawns vegetation-baum.js  589
+          _naturSetzen vegetation-baum.js  583
+            spawnArchitecture siedlung-satz.js  563
+              _populateBlockerAABBs gelaende-kollision.js  359
+                _baumGestaltTeile studio-gestalt.js  309
+        _tickScatterLod vegetation-streu.js  293
+    tickArchitectureCulling vegetation-baum.js  675
+      P.<computed>  156
+        _rebuildArchitectureMesh siedlung-satz.js  152
+          _foundryLodForEntry stoff-instanz.js  112
+            _lodTreeVisHeight vegetation-streu.js  109
+              _foundrySichtHoehe vegetation-streu.js  105
+                _foundryBaumHoehe vegetation-streu.js  105
+      _foundryPlatzBereit studio-gestalt.js  306
+        _foundryEntryReady studio-gestalt.js  295
+          _foundryLodForEntry stoff-instanz.js  287
+            _lodTreeVisHeight vegetation-streu.js  283
+              _foundrySichtHoehe vegetation-streu.js  282
+                _foundryBaumHoehe vegetation-streu.js  281
+    tickDayNight bild-himmel.js  276
+      _applyDayNightToScene bild-himmel.js  274
+        _atmoTakt bild-himmel.js  152
+          _atmoZeichne bild-himmel.js  144
+            _buehneRender werkstatt-vorschau.js  144
+              render three.webgpu.min.js  144
+                renderer._renderScene bild-kosten.js  144
+init dirigent-ankunft.js  626
+  _chatEcho feld-leben.js  111
+  generateNewWorld gelaende-chunks.js  405
+    generateTerrainWithParameters gelaende-chunks.js  405
+      _worldgenComputeAndBuildHydrosphere gelaende-boden.js  169
+        _computeHydrosphere wasser-hydro.js  159
+      _worldgenSpawnFloatingIslands gelaende-boden.js  210
+        spawnIslandAt siedlung-satz.js  177
+nach studio-gestalt.js  307
+  _foundryRewarmColdTrees studio-gestalt.js  302
+    P.<computed>  137
+      _rebuildArchitectureMesh siedlung-satz.js  133
+    _foundryEntryReady studio-gestalt.js  139
+takt siedlung-ort.js  126
+  P.<computed>  126
+    _ortWahlScheibe siedlung-ort.js  126
+      _ortWahl gelaende-boden.js  125
+        _ortTraegt gelaende-boden.js  111

@@ -1,0 +1,14 @@
+K0 33 Dorf-Haus-Aufträge >60 m, erster 9.99 letzter 15.22
+K1 33 Dorf-Haus-Aufträge >60 m, erster 11.22 letzter 15.62
+K2 33 Dorf-Haus-Aufträge >60 m, erster 10.67 letzter 15.00
+K3 33 Dorf-Haus-Aufträge >60 m, erster 10.43 letzter 15.19
+P1a 33 Dorf-Haus-Aufträge >60 m, erster 10.64 letzter 15.37
+P2a 33 Dorf-Haus-Aufträge >60 m, erster 11.03 letzter 15.02
+P3a 33 Dorf-Haus-Aufträge >60 m, erster 11.66 letzter 15.01
+P4a 33 Dorf-Haus-Aufträge >60 m, erster 9.81 letzter 12.42
+B1 33 Dorf-Haus-Aufträge >60 m, erster 11.25 letzter 11.39
+B2 33 Dorf-Haus-Aufträge >60 m, erster 10.75 letzter 11.71
+B3 33 Dorf-Haus-Aufträge >60 m, erster 11.27 letzter 12.20
+P2b 32 Dorf-Haus-Aufträge >60 m, erster 7.34 letzter 7.42
+P3b 33 Dorf-Haus-Aufträge >60 m, erster 7.29 letzter 10.75
+P4b 32 Dorf-Haus-Aufträge >60 m, erster 7.26 letzter 7.36
