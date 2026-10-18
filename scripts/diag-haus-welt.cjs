@@ -493,20 +493,33 @@ async function proben(phasen) {
         const HS = [...H];
         let sbE = null;
         if (BILD) {
-            const typ = ["haus_skandinavisch", "haus_alemannisch", "haus_schwarzwald", "haus_alpenchalet", "haus_gotisch"].find((ty) => ((gesetz({ type: ty, seed: 7, studioOv: null }) || {}).masse || []).some((m) => m.art === "anbau")); // prettier-ignore
-            const kand = [48, 96, 144].flatMap((rr) => Array.from({ length: 8 }, (_, a) => [start.x + Math.cos((a * Math.PI) / 4) * rr, start.z + Math.sin((a * Math.PI) / 4) * rr])); // prettier-ignore
+            // das Rezept eines Dorf-Hauses mit Anbau (Kultur, Same, Stempel): sein Körper-Satz, frei gesetzt
+            const vor = H.find((v) => ((gesetz(v) || {}).masse || []).some((m) => m.art === "anbau"));
+            const typ = vor ? vor.type : null;
+            const kand = [48, 96, 144, 300].flatMap((rr) => Array.from({ length: 8 }, (_, a) => [start.x + Math.cos((a * Math.PI) / 4) * rr, start.z + Math.sin((a * Math.PI) / 4) * rr])); // prettier-ignore
             kand.push([-278, -1038]);
+            o.w9.suche = { typ: typ || null, orte: [] };
             for (const [x, z] of typ ? kand : []) {
-                if (!r._landAt(x, z, 0.5) || !r._ortFrei(x, z, 14)) continue;
+                const ort = [Math.round(x), Math.round(z)];
+                o.w9.suche.orte.push(ort);
+                if (!r._landAt(x, z, 0.5) || !r._ortFrei(x, z, 14)) {
+                    ort.push("kein Grund");
+                    continue;
+                }
                 stell(x, r.getTerrainHeightAt(x, z) + 2, z);
-                for (let k = 0; k < 60 && !r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8); k++) await pumpe(5);
+                for (let k = 0; k < 200 && !r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8); k++) await pumpe(5);
                 let n = 0;
                 for (let tx = Math.floor((x - 8) / KW); tx <= Math.floor((x + 8) / KW); tx++)
                     for (let tz = Math.floor((z - 8) / KW); tz <= Math.floor((z + 8) / KW); tz++)
                         n += (r._nahWieseKachelBueschel(tx, tz) || []).length;
+                ort.push(n);
                 if (n < 60) continue;
                 const y = r.getTerrainHeightAt(x, z) + 0.5;
-                const e = r.spawnArchitecture(typ, { x, y, z }, { id: "s4-spieler", seed: 7, rotationY: 0.6 });
+                const e = r.spawnArchitecture(
+                    typ,
+                    { x, y, z },
+                    { id: "s4-spieler", seed: vor.seed, studioOv: vor.studioOv || undefined, rotationY: 0.6 }
+                );
                 for (let k = 0; k < 300 && e && !e._hausHuelle; k++) await pumpe(4);
                 if (e && e._hausHuelle) {
                     HS.push((sbE = e));
@@ -1874,11 +1887,11 @@ function urteil(o) {
             const gesehen = boxen.filter((b) => b.blicke > 0);
             const rot = gesehen.filter((b) => b.halm + b.boden > 20);
             if (!gesehen.length) f.push("W9 Bild: blind — kein freies Auge in einer Box");
-            else if (!o.w9.spieler || !summe("innen"))
+            if (gesehen.length && (!o.w9.spieler || !summe("innen")))
                 f.push(
                     `W9 Bild: blind für den Halm — ${o.w9.spieler ? "kein gebauter Büschel in einer Box im Blick" : "kein Haus des Spielers auf der Wiese"}`
                 );
-            else if (rot.length)
+            if (rot.length)
                 f.push(
                     `W9 Bild: ${rot.length} von ${gesehen.length} Boxen in ${mit((b) => b.halm + b.boden > 20)} Häusern zeigen Halm oder Boden (Halm ${summe("halm")} + Boden ${summe("boden")} px, je Körper ${je((b) => b.halm + b.boden)})`
                 );
