@@ -1181,6 +1181,14 @@ class AnazhRealm {
     kameraFuehren(fn) {
         this._kameraFuehrung = typeof fn === "function" ? fn : null;
     }
+    // DER OFFENE STUDIO-MODUS (S1, worlds/<id>/studio.js): solange einer offen ist, gehört ihm das Spiel-HUD (die Hülle blendet
+    // Fadenkreuz · Hotbar · Werte aus, `body.studio-modus-an`), das Mausrad (der Hotbar-Hörer der Welt gibt es ab) und das
+    // Wort des Chats (`_chatTryPortalRoute` → `__studioModi[id].wort`). null schließt ihn.
+    studioModus(id) {
+        this._studioModus = typeof id === "string" && id ? id : null;
+        if (typeof document !== "undefined" && document.body)
+            document.body.classList.toggle("studio-modus-an", !!this._studioModus);
+    }
 
     setCameraMode(mode) {
         const next = mode === "third" ? "third" : "first";

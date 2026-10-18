@@ -508,13 +508,10 @@
         {
             "id": "lack",
             "gruppe": "Metall/Lack",
-            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
+            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste der Garage); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
             "labor": {
-                "studio": "garage",
-                "aktion": {
-                    "klick": "#paintrow .sw",
-                    "index": 4
-                },
+                "welt": true,
+                "grund": "die Garage ist ein Modus der Welt-Engine (S1, worlds/garage/studio.js): ihr Werk ist ein Wagen der Welt, Labor = Welt durch Bau",
                 "stoff": {
                     "seh": "metall",
                     "cc": [
@@ -800,17 +797,6 @@
                 ]
             },
             "ratsche": 0.7612
-        },
-        "garage": {
-            "ist": {
-                "kL": 0.6468,
-                "ausgabe": [
-                    207,
-                    210,
-                    212
-                ]
-            },
-            "ratsche": 0.717
         },
         "portale": {
             "ist": {

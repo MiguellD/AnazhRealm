@@ -1,5 +1,5 @@
 // AnazhRealm — vehicle-core.js: DER FAHRZEUG-STUDIO-KERN (Studio-Vertrag Phase 1, W7a).
-// Die generative Substanz des Garage-Labors (worlds/garage/garage.js — ANATOMIE ·
+// Die generative Substanz des Garage-Labors (worlds/garage/studio.js, ein Modus der Welt — ANATOMIE ·
 // FAHRZEUG): Lehren · Rahmen/Hardpoints · Gelenk-Räder · Karosserie-Haut ·
 // Baukörper · Presets/Params/Kulturen. Byte-treu aus dem Schöpfer-Werk extrahiert
 // (Zeilen-Slices, Paritäts-Hash-bewiesen) — die Shell UND AnazhRealm lesen DIESE
@@ -13,8 +13,8 @@
 // namens- und formgleich; der Validator (gate:studio-vertrag) mappt per CORES-ns.
 //
 // DETERMINISMUS (G2.3): der Bau ist eine reine Funktion der Parameter — das
-// Garage-Studio trägt KEINEN stochastischen Term (Math.random lebt nur in der
-// Shell-Deko: Reifenrauch/Pylonen). Die GEOMETRIE ist seed-invariant; seit W5
+// Garage-Studio trägt KEINEN stochastischen Term (die Shell-Deko mit Math.random,
+// Reifenrauch und Pylonen, fiel mit der r128-Shell in S1). Die GEOMETRIE ist seed-invariant; seit W5
 // (05.10.) wählt der Same den Lack der Gestalt aus dem LACK_GESETZ (`lackIndex`) —
 // der bewusste Golden-Re-Mint von spec/asset-contract/v3 (cv:3), kein Drift.
 //
@@ -2164,7 +2164,7 @@
     const A_PITCH_MAX = 13,
         A_LAT_MAX = 11; // Laengs-/Quer-Beschl.-Klammern (g-equiv.) — EINZIGE Quelle: updateVehicle UND Radkasten-Huellkurve
     // ── N6.1 (Nervensystem Phase δ) — DIE FAHR-KONSTANTEN: Formel-UMZUG aus der Shell
-    // (worlds/garage/garage.js, byte-gleiche Werte). Die Antriebs-/Reifen-Konstanten der
+    // (der r128-Garage bis S1, byte-gleiche Werte). Die Antriebs-/Reifen-Konstanten der
     // Probefahrt tragen KEINEN Geometrie-Bezug (Lenkanschlag · Brems-/Roll-/Handbrems-
     // Verzoegerung · Reifen-Steifigkeiten · Reibkreis · Gier-Traegheits-Faktor). Die Shell
     // LIEST sie von hier (VC.FAHR) — EINE Quelle fuer Probefahrt UND exportDrive (M1/M9:
@@ -3037,6 +3037,39 @@
         const ok = grenze > 0 && neigung <= grenze;
         return { ok: ok, grund: ok ? null : "steil", eb: eb, neigung: neigung, grenze: grenze };
     }
+    // F1 (18.10., rein additiv — Praezedenz: kamera) — DIE CHASE-CAM ALS GESETZ: Azimut und Elevation der Kamera hinter dem
+    // Wagen, EINE Funktion fuer die Probefahrt (updateChaseCam) UND den Welt-Ritt (_loopCamera). Vorher zwei Kopien, die
+    // auseinanderliefen: das Lab federte einstufig auf FAHR.kamera.el zur WELT, die Welt zweistufig zur Fahrbahn (bergab stand
+    // die Welt-Elevation unter dem Hang hinter dem Wagen — Befund des Schoepfers 17.10., Spielgang p05 −3,3° ueber der Fahrbahn).
+    //   chaseKamera(c, gier, steig, dt, K) — c der Zustand {az, el, elF}: ohne az (frisch) oder dt <= 0 springt die Kamera
+    //     hinter den Wagen; gier die Fahrt-Gier (Konvention fahrZustand: der Bug +x nach (cos, −sin)), nicht-finit = sie folgt
+    //     nicht (das Lab, solange die Maus sie greift); steig die Steigung des Kerns (Bug hoeher > 0); K = FAHR.kamera bzw.
+    //     fahrprofil.kamera. Der Azimut folgt der Gier mit dem Rest 1 − azEase^dt; die Elevation steht K.el ueber der FAHRBAHN
+    //     (zur Welt K.el − steig) und folgt ihr als Feder mit Daempfer, zwei Stufen mit dem Rest 1 − elEase^dt (die Ebene der
+    //     Raeder springt je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter).
+    //     → der Ort der Kamera um die Lage des Wagens {x, y, z} (y traegt K.blickHoehe). REIN + THREE-frei.
+    function chaseKamera(c, gier, steig, dt, K) {
+        K = K || FAHR.kamera;
+        const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
+        if (Number.isFinite(gier)) {
+            if (!Number.isFinite(c.az) || !(dt > 0)) {
+                c.az = gier;
+                c.el = c.elF = elZ;
+            } else {
+                let d = gier - c.az;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                c.az += d * (1 - Math.pow(K.azEase, dt));
+                const k = 1 - Math.pow(K.elEase, dt);
+                if (!Number.isFinite(c.el)) c.el = elZ;
+                if (!Number.isFinite(c.elF)) c.elF = c.el;
+                c.elF += (elZ - c.elF) * k;
+                c.el += (c.elF - c.el) * k;
+            }
+        }
+        const ce = Math.cos(c.el);
+        return { x: -Math.cos(c.az) * ce * K.dist, y: K.blickHoehe + Math.sin(c.el) * K.dist, z: Math.sin(c.az) * ce * K.dist };
+    }
 
     const PARAMS = [
         {
@@ -3355,7 +3388,7 @@
             fx: { sig: "brow", heck: "steil" },
         },
     };
-    // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
+    // Der Regler-Grundzustand (Original der r128-Garage Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
         radstand: 2.9,
@@ -3394,12 +3427,32 @@
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
-        _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
-        try {
-            return baueFahrzeug(rezeptId, seed, P, st);
-        } finally {
-            _vd = FAHRZEUG_DETAIL;
+        // DAS BUDGET HÄLT JEDE PRÄGUNG (Lehre 19, S1): die Hülle über alle Rezepte ist das Soll der Stufe; reißt ein geprägter
+        // Bau sie (Regler, Kultur: suv+cavallo L1 12 296 > 10 600), baut die Stufe neu mit dem Faktor, der sie hält. Unter der
+        // Hülle bleibt der Bau byte-gleich (der erste Versuch ist der alte).
+        const deckel = PORTAL_RENDER_CONFIG.lod.budget.vehicle[st].tris;
+        let vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
+        for (let versuch = 0; ; versuch++) {
+            _vd = vd;
+            let g;
+            try {
+                g = baueFahrzeug(rezeptId, seed, P, st);
+            } finally {
+                _vd = FAHRZEUG_DETAIL;
+            }
+            const n = dreieckeVon(g);
+            if (n <= deckel || versuch >= 5) return g;
+            g.traverse((o) => o.geometry && o.geometry.dispose());
+            vd = { k: vd.k * Math.sqrt(deckel / n) * 0.97 };
         }
+    }
+    function dreieckeVon(g) {
+        let n = 0;
+        g.traverse((o) => {
+            const ge = o.isMesh && o.geometry;
+            if (ge) n += (ge.index ? ge.index.count : ge.attributes.position.count) / 3;
+        });
+        return n;
     }
     function baueFahrzeug(rezeptId, seed, P, st) {
         const mats = materials();
@@ -3463,6 +3516,8 @@
         fahrStand: fahrStand,
         fahrKraefte: fahrKraefte,
         fahrSchritt: fahrSchritt,
+        // F1 (rein additiv) — die EINE Chase-Cam (Probefahrt UND Welt-Ritt)
+        chaseKamera: chaseKamera,
         // SCHAU 2 (rein additiv) — der Platz eines Wagens, den die Welt hinstellt (FAHR.platz)
         fahrPlatz: fahrPlatz,
         fahrPlatzGrenze: fahrPlatzGrenze,
