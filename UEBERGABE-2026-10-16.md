@@ -296,3 +296,5 @@ Die Klasse hinter allen: die Linsen prüfen Ruhe-Zustände am Boden bei Mittag; 
   * K-TOR-BAHN (Spieler-Defekt): `_ensurePortalPreview` stellt ein lebendes tor_drachentor ~8 m vor welt_portale, sobald der Spieler auf 22 m herankommt — wer fährt, fährt hindurch („Portal betreten“).
   * K-DECKE-INHALT (Linse, Gebot 10): gate:betriebsgesetz zählt Zeilen; Packen auf 250–618 Zeichen umgeht sie (SG1, auch G8 zerlege-linse). Die Wand zählt Inhalt (Bytes oder prettier-normalisierte Zeilen), Selbsttest: ein gepackter Mutant ist ROT.
   * K-GARAGE-BLICK: Labor ≠ Welt beim Blickpunkt (Sitz + 1,0 m gegen Lage + 0,78 m), Kommentar koerper-bewegung.js:1746 veraltet.
+- 08:45: echt ROT an integ 4d5f1c0c (Lauf 39102311056), grün an 9b3acc1d → der B4-Merge brach gate:ego-schatten auf der GTX: Ego wirft 0 px (3rd 762 px), das Auge sieht 1071 px Leib bei 0 Leib-Meshes auf Ebene 0 (Verdacht: Bündel spielt alte Aufnahme ab). Ein champion bisectet B4 auf der Radeon (Zweig ego-schatten-b4). main bleibt f45ee994, bis echt an integ wieder grün ist.
+- F5 übernommen (befund in .claude/worktrees/fahrt-vorausschau/befund.md); F3 schneidet.
