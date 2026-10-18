@@ -769,6 +769,9 @@ class AnazhRealm_koerper_fahrt {
         entry._fahrAchseX = !!(fzgM && fzgM.drive && fzgM.drive.huelle);
         entry._rideYaw =
             (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + (entry._fahrAchseX ? Math.PI / 2 : 0);
+        // ...und die Gier im Bild beginnt ohne Schweif (wie die Lage nach einem Teleport): das erste Bild ohne Sim-Schritt
+        // zeichnete sonst zwischen der Gier der letzten Fahrt und dieser (Spielgang 18.10., der Wiederaufstieg nach einem Stoß)
+        entry._gierVor = entry._rideYaw;
         if (fzgSitz && Number.isFinite(fzgSitz.y)) {
             entry._sitzHeight = Math.max(0.45, fzgSitz.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
         } else if (bp) {
