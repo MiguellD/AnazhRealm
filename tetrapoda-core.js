@@ -1579,36 +1579,104 @@
     function ankunftTempo(rest, vMax) {
         return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
     }
-    // DIE HERDEN-FORM (Welle L, additiv): der Zug der Kohaesion auf ein Tier an (x, z) — er zaehlt nur Nachbarn DERSELBEN
-    // Gattung (die Art unterscheidet die Gestalt, nie ein Tag; Lehre 8) und haengt nie am Blick des Spielers (der Wirt
-    // ruft ihn fuer jedes Tier). Die Leben-Pruefung 06.10. sah artfremde Nachbarn (Fuchs zieht Hirsch) und eine Kohaesion
-    // nur im Frustum. Das Herden-VERHALTEN (Verband, Anker, Ausrichtung) ist nach v1.0 — dies ist die Form, die es traegt.
-    // DER PERSOENLICHE RAUM (Welle LF 08.10.): raum = der Raum dieses Tiers (m), nb.raum der des Nachbarn — im Paar-Raum
-    // (Summe) zieht niemand, bis fensterRaum × Paar-Raum zieht die Schar; der Zug ist das MITTEL der Richtungen × H.gewicht
-    // (der Wirt multipliziert das Tempo) — nie die Summe: sechs Nachbarn zogen sechsfach und drueckten die Schar durch die
-    // Separation hindurch zusammen. nachbarn: [{x, z, gattung, raum}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde.
-    // Liefert {x, z, n}.
-    function herdeZug(x, z, gattung, nachbarn, H, out, raum) {
+    // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
+    // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
+    // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
+    // Flucht lief je Tier strahlenfoermig fort (Linse herde 18.10.: auf der Flucht im Mittel 0,186 der Glieder beisammen).
+    // VERBAND_GESETZ: die Zahlen des Verbands, die nicht in VERHALTEN wohnen (VERHALTEN reist in PRESETS, der v7-Fingerabdruck
+    // bleibt) — ausrichtung = der Anteil, um den sich der Wunsch eines Glieds zum Mittel der Glieder-Wuensche neigt (die
+    // Herde laeuft, wohin sie laeuft; Reynolds 1987 alignment), leitGewicht = das Gewicht des Leittiers im Mittel (die
+    // Leitkuh fuehrt das Kahlwild, Clutton-Brock et al. 1982).
+    var VERBAND_GESETZ = Object.freeze({ ausrichtung: 0.5, leitGewicht: 3 });
+    // verbandZug: der Zug des Verbands auf ein Glied an (x, z) mit dem Wunsch (vx, vz) (Welt-XZ, m/s) im Tempo `tempo` (m/s).
+    // glieder: [{x, z, vx, vz, raum, leit}] die ANDEREN Glieder DESSELBEN Verbands (der Wirt waehlt sie nach dem Verband, nie
+    // nach Gattung oder Tag — Lehre 8; Fremd-Verbaende verschmelzen nicht), raum = der persoenliche Raum dieses Glieds (m),
+    // H = VERHALTEN.herde. AUSRICHTUNG: der Wunsch neigt sich um ausrichtung zum Mittel der Glieder-Wuensche. KOHAESION:
+    // jenseits des Paar-Raums (raum + der mittlere Raum der Glieder) zieht das Mittel der Glieder, bis fensterRaum ×
+    // Paar-Raum anwachsend auf H.gewicht × tempo, dahinter voll — ein Glied gehoert zum Verband, wie weit es auch steht.
+    // Das Leittier (leit) wiegt leitGewicht-fach; gezaehlt werden hoechstens H.maxNachbarn Glieder (das Budget je Wesen).
+    // Liefert {x, z, n}: den neuen Wunsch (m/s) und die Zahl der gezaehlten Glieder (n = 0: der Wunsch bleibt).
+    function verbandZug(x, z, vx, vz, tempo, raum, glieder, H, out) {
         var o = out || { x: 0, z: 0, n: 0 };
-        o.x = 0;
-        o.z = 0;
-        o.n = 0;
-        for (var i = 0; i < nachbarn.length && o.n < H.maxNachbarn; i++) {
-            var nb = nachbarn[i];
-            if (!nb || nb.gattung !== gattung) continue;
-            var dx = nb.x - x,
-                dz = nb.z - z;
-            var d = Math.sqrt(dx * dx + dz * dz);
-            var paar = (raum > 0 ? raum : 0) + (nb.raum > 0 ? nb.raum : 0);
-            if (!(d > paar && d < paar * H.fensterRaum)) continue;
-            o.x += (dx / d) * H.gewicht;
-            o.z += (dz / d) * H.gewicht;
-            o.n++;
+        var V = VERBAND_GESETZ;
+        var w = 0,
+            mx = 0,
+            mz = 0,
+            ax = 0,
+            az = 0,
+            mr = 0,
+            n = 0;
+        for (var i = 0; i < glieder.length && n < H.maxNachbarn; i++) {
+            var g = glieder[i];
+            if (!g) continue;
+            var gw = g.leit ? V.leitGewicht : 1;
+            mx += g.x * gw;
+            mz += g.z * gw;
+            ax += g.vx * gw;
+            az += g.vz * gw;
+            mr += (g.raum > 0 ? g.raum : 0) * gw;
+            w += gw;
+            n++;
         }
-        if (o.n > 1) {
-            o.x /= o.n;
-            o.z /= o.n;
+        o.x = vx;
+        o.z = vz;
+        o.n = n;
+        if (!n) return o;
+        o.x += (ax / w - vx) * V.ausrichtung;
+        o.z += (az / w - vz) * V.ausrichtung;
+        var dx = mx / w - x,
+            dz = mz / w - z;
+        var d = Math.sqrt(dx * dx + dz * dz);
+        var paar = (raum > 0 ? raum : 0) + mr / w;
+        if (d > paar && d > 1e-9) {
+            var weit = paar * (H.fensterRaum - 1);
+            var zug = H.gewicht * (tempo > 0 ? tempo : 0) * (weit > 0 ? Math.min(1, (d - paar) / weit) : 1);
+            o.x += (dx / d) * zug;
+            o.z += (dz / d) * zug;
         }
+        return o;
+    }
+    // DER PLATZ IM RUDEL (S6, aus dem Wirt `_kreaturJagdZug` heimgekehrt, Welle LF): eigen = der Winkel des Jaegers um das
+    // Ziel (rad, atan2 vom Ziel aus), winkel = die Winkel der uebrigen Jaeger seines Rudels auf dasselbe Ziel (der Wirt
+    // reicht sie, die Liste wird um eigen ergaenzt und an Ort sortiert). Das Rudel verteilt sich gleich um das Mittel seiner
+    // Winkel, jeder auf dem Platz seines Rangs; umstellt = die groesste Winkel-Luecke ist hoechstens anderthalb Plaetze
+    // breit (allein ist man immer umstellt). Liefert {platz, n, umstellt}.
+    function rudelPlatz(eigen, winkel, out) {
+        var o = out || { platz: 0, n: 1, umstellt: true };
+        var TAU = Math.PI * 2;
+        var sx = Math.sin(eigen),
+            sz = Math.cos(eigen),
+            n = 1,
+            i;
+        for (i = 0; i < winkel.length; i++) {
+            sx += Math.sin(winkel[i]);
+            sz += Math.cos(winkel[i]);
+            n++;
+        }
+        o.platz = eigen;
+        o.n = n;
+        o.umstellt = true;
+        if (n < 2) return o;
+        var mittel = Math.atan2(sx, sz);
+        var re = eigen - mittel;
+        re -= TAU * Math.round(re / TAU);
+        var rang = 0;
+        for (i = 0; i < winkel.length; i++) {
+            var r = winkel[i] - mittel;
+            r -= TAU * Math.round(r / TAU);
+            if (r < re) rang++;
+        }
+        o.platz = mittel + (rang - (n - 1) / 2) * (TAU / n);
+        winkel.push(eigen);
+        winkel.sort(function (a, b) {
+            return a - b;
+        });
+        var luecke = 0;
+        for (i = 0; i < winkel.length; i++) {
+            var nx = i + 1 < winkel.length ? winkel[i + 1] : winkel[0] + TAU;
+            if (nx - winkel[i] > luecke) luecke = nx - winkel[i];
+        }
+        o.umstellt = luecke <= 1.5 * (TAU / n);
         return o;
     }
 
@@ -3032,7 +3100,9 @@
         sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
-        herdeZug: herdeZug,
+        VERBAND_GESETZ: VERBAND_GESETZ,
+        verbandZug: verbandZug,
+        rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,

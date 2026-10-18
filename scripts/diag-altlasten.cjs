@@ -498,6 +498,8 @@ const FORBIDDEN = [
         auch: ["tetrapoda-core.js"],
     },
     { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: ["tetrapoda-core.js"] },
+    { token: "_flockGrid", fiel: "S6 — die Glieder je Verband statt der Gattungs-Zellen (_verbaende)" },
     { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
     {
         token: "scentProbeM",

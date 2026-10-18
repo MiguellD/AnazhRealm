@@ -568,8 +568,8 @@ matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   Werte seiner Substanz). Der Snapshot eines Tiers trägt seine Wunde als
   `hpAnteil` (hp/hpMax); ein Stand mit absolutem `hp` (vor der Nachbesserung 2 der Welle LF kampf) gilt gegen
   das Leben vor dem Massen-Gesetz.
-- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
-  `herdeZug` (Welle L, tetrapoda-core, Namensraum-Export, rein
+- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` (Welle L) ·
+  `VERBAND_GESETZ` + `verbandZug` · `rudelPlatz` (S6; tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
   mit):** der EINE Steuer-Schritt je Tier und Takt. `STEUER_GESETZ { tempo
 wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
@@ -581,13 +581,21 @@ wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
   folgt mit Anfahr- (beschl·g) und Brems-Grenze (brems·g) ·
   `ankunftTempo(rest, vMax)` = min(vMax, √(2·brems·g·rest)) — das
   Ankunfts-Gesetz (wer `rest` m vor seinem Halt steht, wünscht nur das
-  Tempo, aus dem er dort steht) · `herdeZug(x, z, gattung, nachbarn, H,
-out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
-  derselben Gattung im Fenster `H = VERHALTEN.herde`, nie am Blick; das
-  Herden-Verhalten ist nach v1.0). Rein, THREE-frei. Leser:
+  Tempo, aus dem er dort steht) · `verbandZug(x, z, vx, vz, tempo, raum,
+  glieder, H, out?)` → `{ x, z, n }` — DER VERBAND (S6: der Wurf bindet Rudel
+  und Herde, `userData.verband`; die Glieder wählt der Wirt nach dem Verband,
+  nie nach Gattung oder Tag): der Wunsch neigt sich um
+  `VERBAND_GESETZ.ausrichtung` zum Mittel der Glieder-Wünsche, jenseits des
+  Paar-Raums zieht das Glieder-Mittel bis `H.gewicht` × tempo (H =
+  VERHALTEN.herde), das Leittier wiegt `leitGewicht`-fach; `VERBAND_GESETZ`
+  lebt außerhalb von VERHALTEN (PRESETS und der v7-Fingerabdruck bleiben) ·
+  `rudelPlatz(eigen, winkel, out?)` → `{ platz, n, umstellt }` — der Platz
+  des Jägers im Rudel auf dem Ring um das Ziel. Rein, THREE-frei. Leser:
   `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
   `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
-  (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
+  (Ankunft), `_kreaturVerbandZug` (jeder wilde Zweig außer der Jagd) und
+  `_kreaturJagdZug` (das Rudel); Linse `gate:kreatur-takt` (gier · herde ·
+  abstand · rudel).
 - **`GANG_GESETZ.hubForm` (Welle LF, tetrapoda-core, VERTRAGS-AKT an
   `gangFuss` — die Ausgabe `hub` ändert sich für jede Phase im Schwung außer
   dem Scheitel; PRESETS/PARAMS byte-gleich, der v7-Fingerabdruck wandert
