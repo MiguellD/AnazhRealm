@@ -1,0 +1,31 @@
+02:20:51 SITZUNG s1: Schloss genommen (f45ee994)
+02:23:36 save-server PID 10644
+02:23:46 s1 abgebrochen (Start-Process hielt die Pipe), Schloss gelöst
+02:24:26 SITZUNG s1: Schloss genommen (f45ee994)
+02:24:26 save-server PID 18348
+02:24:29 SITZUNG s1 probe exit=127
+02:24:32 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+02:24:40 SITZUNG s1 Ende, Schloss gelöst
+02:25:51 Schloss neu genommen (eine Rest-Instanz von s1-alt hatte es gelöst; die Probe s1 läuft)
+02:31:53 SITZUNG s1 probe exit=0
+02:32:00 SITZUNG s1 Ende, Schloss gelöst
+02:33:08 SITZUNG s2: Schloss genommen (f45ee994)
+02:33:08 save-server PID 19016
+02:33:14 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+02:39:05 SITZUNG s2 probe exit=0
+02:39:12 SITZUNG s2 Ende, Schloss gelöst
+02:39:37 SITZUNG s3: Schloss genommen (f45ee994)
+02:39:37 save-server PID 8828
+02:39:43 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+02:44:09 SITZUNG s3 probe exit=0
+02:44:16 SITZUNG s3 Ende, Schloss gelöst
+02:44:29 SITZUNG s4: Schloss genommen (f45ee994)
+02:44:29 save-server PID 2444
+02:44:40 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+02:50:33 SITZUNG s4 probe exit=0
+02:50:40 SITZUNG s4 Ende, Schloss gelöst
+02:53:05 SITZUNG s5: Schloss genommen (f45ee994)
+02:53:05 save-server PID 12468
+02:53:10 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+02:55:35 SITZUNG s5 probe exit=0
+02:55:42 SITZUNG s5 Ende, Schloss gelöst

@@ -1,0 +1,142 @@
+03:18:30 SITZUNG b1: Schloss genommen (HEAD f45ee994, werkbank d8cd8908, zerlege-linse 79239203)
+03:18:31 save-server PID 15544 · werkbank PID 4084
+03:18:36 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:18:37 eval exit=0
+03:18:37 fenster exit=0
+03:19:22 umstellen wiese exit=0
+03:20:13 lauf anfang exit=0
+03:20:17 gpu-bank anfang exit=0
+03:21:01 umstellen genesis exit=0
+03:21:35 umstellen wiese zurueck exit=0
+03:22:25 lauf nach Genesis exit=0
+03:22:30 gpu-bank nach Genesis exit=0
+03:22:30 stop exit=0
+03:22:37 SITZUNG b1 Ende, Schloss gelöst
+03:23:02 SITZUNG b2: Schloss genommen (HEAD f45ee994, werkbank d8cd8908, zerlege-linse 79239203)
+03:23:03 save-server PID 8636 · werkbank PID 10104
+03:23:08 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:23:09 eval exit=0
+03:23:09 fenster exit=0
+03:23:55 umstellen wiese exit=0
+03:24:45 lauf anfang exit=0
+03:24:50 gpu-bank anfang exit=0
+03:25:33 umstellen genesis exit=0
+03:26:08 umstellen wiese zurueck exit=0
+03:26:58 lauf nach Genesis exit=0
+03:27:03 gpu-bank nach Genesis exit=0
+03:27:03 stop exit=0
+03:27:10 SITZUNG b2 Ende, Schloss gelöst
+03:27:11 SITZUNG b3: Schloss genommen (HEAD f45ee994, werkbank d8cd8908, zerlege-linse 79239203)
+03:27:12 save-server PID 10788 · werkbank PID 14164
+03:27:22 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:27:23 eval exit=0
+03:27:23 fenster exit=0
+03:28:09 umstellen wiese exit=0
+03:28:59 lauf anfang exit=0
+03:29:04 gpu-bank anfang exit=0
+03:29:47 umstellen genesis exit=0
+03:30:22 umstellen wiese zurueck exit=0
+03:31:12 lauf nach Genesis exit=0
+03:31:17 gpu-bank nach Genesis exit=0
+03:31:17 stop exit=0
+03:31:24 SITZUNG b3 Ende, Schloss gelöst
+03:31:25 SITZUNG b4: Schloss genommen (HEAD f45ee994, werkbank d8cd8908, zerlege-linse 79239203)
+03:31:25 save-server PID 18132 · werkbank PID 16168
+03:31:31 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:31:31 eval exit=0
+03:31:31 fenster exit=0
+03:32:18 umstellen wiese exit=0
+03:33:09 lauf anfang exit=0
+03:33:13 gpu-bank anfang exit=0
+03:33:57 umstellen genesis exit=0
+03:34:32 umstellen wiese zurueck exit=0
+03:35:22 lauf nach Genesis exit=0
+03:35:27 gpu-bank nach Genesis exit=0
+03:35:27 stop exit=0
+03:35:34 SITZUNG b4 Ende, Schloss gelöst
+03:35:35 SITZUNG b5: Schloss genommen (HEAD f45ee994, werkbank d8cd8908, zerlege-linse 79239203)
+03:35:36 save-server PID 16052 · werkbank PID 7172
+03:35:41 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:35:42 eval exit=0
+03:35:42 fenster exit=0
+03:36:28 umstellen wiese exit=0
+03:37:19 lauf anfang exit=0
+03:37:23 gpu-bank anfang exit=0
+03:38:07 umstellen genesis exit=0
+03:38:41 umstellen wiese zurueck exit=0
+03:39:31 lauf nach Genesis exit=0
+03:39:36 gpu-bank nach Genesis exit=0
+03:39:37 stop exit=0
+03:39:43 SITZUNG b5 Ende, Schloss gelöst
+03:44:22 SITZUNG c1: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+03:44:23 save-server PID 7732 · werkbank PID 9124
+03:44:28 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:44:29 eval exit=0
+03:44:29 fenster exit=0
+03:45:14 umstellen wiese exit=0
+03:46:04 lauf anfang exit=0
+03:46:09 gpu-bank anfang exit=0
+03:46:53 umstellen genesis exit=0
+03:47:27 umstellen wiese zurueck exit=0
+03:48:17 lauf nach Genesis exit=0
+03:48:22 gpu-bank nach Genesis exit=0
+03:48:22 stop exit=0
+03:48:30 SITZUNG c1 Ende, Schloss gelöst
+03:48:30 SITZUNG c2: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+03:48:31 save-server PID 8396 · werkbank PID 20196
+03:48:41 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:48:42 eval exit=0
+03:48:42 fenster exit=0
+03:49:26 umstellen wiese exit=0
+03:50:17 lauf anfang exit=0
+03:50:21 gpu-bank anfang exit=0
+03:51:04 umstellen genesis exit=0
+03:51:39 umstellen wiese zurueck exit=0
+03:52:29 lauf nach Genesis exit=0
+03:52:34 gpu-bank nach Genesis exit=0
+03:52:34 stop exit=0
+03:52:41 SITZUNG c2 Ende, Schloss gelöst
+03:52:42 SITZUNG c3: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+03:52:42 save-server PID 9912 · werkbank PID 3928
+03:52:48 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:52:48 eval exit=0
+03:52:49 fenster exit=0
+03:53:36 umstellen wiese exit=0
+03:54:27 lauf anfang exit=0
+03:54:31 gpu-bank anfang exit=0
+03:55:15 umstellen genesis exit=0
+03:55:50 umstellen wiese zurueck exit=0
+03:56:40 lauf nach Genesis exit=0
+03:56:45 gpu-bank nach Genesis exit=0
+03:56:45 stop exit=0
+03:56:52 SITZUNG c3 Ende, Schloss gelöst
+03:56:53 SITZUNG c4: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+03:56:54 save-server PID 9636 · werkbank PID 10788
+03:56:59 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+03:56:59 eval exit=0
+03:57:00 fenster exit=0
+03:57:46 umstellen wiese exit=0
+03:58:37 lauf anfang exit=0
+03:58:42 gpu-bank anfang exit=0
+03:59:25 umstellen genesis exit=0
+04:00:00 umstellen wiese zurueck exit=0
+04:00:50 lauf nach Genesis exit=0
+04:00:55 gpu-bank nach Genesis exit=0
+04:00:55 stop exit=0
+04:01:02 SITZUNG c4 Ende, Schloss gelöst
+04:01:03 SITZUNG c5: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+04:01:03 save-server PID 2504 · werkbank PID 2068
+04:01:14 werkbank: WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489
+04:01:14 eval exit=0
+04:01:15 fenster exit=0
+04:01:59 umstellen wiese exit=0
+04:02:49 lauf anfang exit=0
+04:02:54 gpu-bank anfang exit=0
+04:03:36 umstellen genesis exit=0
+04:04:11 umstellen wiese zurueck exit=0
+04:05:01 lauf nach Genesis exit=0
+04:05:06 gpu-bank nach Genesis exit=0
+04:05:06 stop exit=0
+04:05:13 SITZUNG c5 Ende, Schloss gelöst
+04:06:11 WÄNDE: Schloss genommen (HEAD f45ee994, werkbank eb92ba47, zerlege-linse 94da65a8)
+04:09:20 WÄNDE Ende (selbsttest EXIT=0 npm run check EXIT=0 npm run playtest:fast EXIT=0 ), Schloss gelöst

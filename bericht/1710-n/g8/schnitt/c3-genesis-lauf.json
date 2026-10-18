@@ -1,0 +1,515 @@
+{
+ "regler": "voll",
+ "sekunden": 30,
+ "frames": 2324,
+ "fps": 77.4,
+ "frameMs": {
+  "p50": 16.5,
+  "p95": 16.8,
+  "p99": 17,
+  "max": 66.6
+ },
+ "cpuTaktMs": {
+  "p50": 3.4,
+  "p95": 4.6,
+  "p99": 6.3,
+  "max": 69.1
+ },
+ "taktMs": {
+  "p50": 8.3,
+  "p95": 8.5,
+  "p99": 8.7,
+  "max": 66.6
+ },
+ "leine": {
+  "ausgesetztPct": 34.9,
+  "imFlug": 0
+ },
+ "gpuMs": {
+  "p50": 2.01,
+  "p95": 2.61,
+  "p99": 2.81,
+  "max": 4.61,
+  "n": 1159,
+  "quelle": "echt"
+ },
+ "gpuDurchsatzMs": {
+  "p50": 12.8,
+  "p95": 15.9,
+  "p99": 17.8,
+  "max": 108.5
+ },
+ "gpuVerzugMs": {
+  "p50": 17.6,
+  "p95": 23.5,
+  "p99": 25.1,
+  "max": 114.4
+ },
+ "gpuJePassMs": {
+  "post": {
+   "p50": 0.42,
+   "p95": 0.62,
+   "frames": 2324,
+   "rein": 0.42,
+   "anteilOben": 0.07,
+   "versatz": 0.24
+  },
+  "TRAA": {
+   "p50": 0.82,
+   "p95": 1,
+   "frames": 2324,
+   "rein": 0.82,
+   "anteilOben": 0.05,
+   "versatz": 0.28
+  },
+  "haupt": {
+   "p50": 0.51,
+   "p95": 0.54,
+   "frames": 2324,
+   "rein": 0.51,
+   "anteilOben": 0.02,
+   "versatz": 0.28
+  },
+  "k0": {
+   "p50": 0.26,
+   "p95": 0.8,
+   "frames": 1164,
+   "rein": 0.25,
+   "anteilOben": 0.4,
+   "versatz": 0.42
+  },
+  "spiegel:strahl": {
+   "p50": 0.04,
+   "p95": 0.04,
+   "frames": 60,
+   "rein": 0.04,
+   "anteilOben": 0,
+   "versatz": 0
+  },
+  "k1": {
+   "p50": 0.03,
+   "p95": 0.04,
+   "frames": 390,
+   "rein": 0.03,
+   "anteilOben": 0.04,
+   "versatz": 0.41
+  },
+  "atmo-himmel": {
+   "p50": 0.07,
+   "p95": 0.08,
+   "frames": 119,
+   "rein": 0.07,
+   "anteilOben": 0,
+   "versatz": 0
+  },
+  "horizont-karte": {
+   "p50": 0.02,
+   "p95": 0.41,
+   "frames": 12,
+   "rein": 0.02,
+   "anteilOben": 0.08,
+   "versatz": 0.39
+  },
+  "atmo-umgebung": {
+   "p50": 0.01,
+   "p95": 0.01,
+   "frames": 5,
+   "rein": 0.01,
+   "anteilOben": 0,
+   "versatz": 0
+  },
+  "OrthographicCamera": {
+   "p50": 2.41,
+   "p95": 2.44,
+   "frames": 5,
+   "rein": 2.41,
+   "anteilOben": 0,
+   "versatz": 0
+  }
+ },
+ "stempel": {
+  "imLauf": 0,
+  "seitBoot": 0,
+  "spitze": 882,
+  "pool": {
+   "stand": 8,
+   "max": 2048
+  },
+  "gueltig": true,
+  "warnung": 0
+ },
+ "befehle": {
+  "frames": 2324,
+  "mittel": 38,
+  "p95": 49,
+  "max": 65,
+  "jePass": {
+   "haupt": {
+    "anteil": 1,
+    "p50": 22,
+    "max": 22
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k0": {
+    "anteil": 0.5,
+    "p50": 25,
+    "max": 25
+   },
+   "spiegel:strahl": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 8,
+    "max": 8
+   },
+   "atmo-himmel": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 6,
+    "max": 6
+   },
+   "atmo-umgebung": {
+    "anteil": 0,
+    "p50": 1,
+    "max": 1
+   },
+   "OrthographicCamera": {
+    "anteil": 0,
+    "p50": 15,
+    "max": 15
+   }
+  }
+ },
+ "dreiecke": {
+  "frames": 2324,
+  "mittel": 297804,
+  "p95": 324601,
+  "max": 374317,
+  "jePass": {
+   "haupt": {
+    "anteil": 1,
+    "p50": 266430,
+    "max": 266430
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k0": {
+    "anteil": 0.5,
+    "p50": 58097,
+    "max": 58169
+   },
+   "spiegel:strahl": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 14031,
+    "max": 14792
+   },
+   "atmo-himmel": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 49920,
+    "max": 49920
+   },
+   "atmo-umgebung": {
+    "anteil": 0,
+    "p50": 1,
+    "max": 1
+   },
+   "OrthographicCamera": {
+    "anteil": 0,
+    "p50": 180,
+    "max": 180
+   }
+  }
+ },
+ "ueber17": 0.9,
+ "ueber33": 0.2,
+ "vramMB": {
+  "jetzt": 105.8,
+  "puffer": 15,
+  "texturen": 90.8,
+  "spitze": 132.5,
+  "nPuffer": 446,
+  "nTexturen": 40,
+  "wuchsImFenster": 0,
+  "gross": [
+   {
+    "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+    "mb": 31.641,
+    "n": 2
+   },
+   {
+    "k": "buf:?",
+    "mb": 14.773,
+    "n": 224
+   },
+   {
+    "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:tor-ziel rgba16float 512x1792x1",
+    "mb": 7,
+    "n": 1
+   },
+   {
+    "k": "tex:output rg11b10ufloat 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:depth depth24plus 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte rg8unorm 1024x1024x2",
+    "mb": 4,
+    "n": 1
+   },
+   {
+    "k": "tex:TRAANode.flacker r8unorm 1920x1080x1",
+    "mb": 3.955,
+    "n": 2
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x20",
+    "mb": 3.333,
+    "n": 1
+   },
+   {
+    "k": "tex:szene:tiefenabbild r32float 720x810x1",
+    "mb": 2.225,
+    "n": 1
+   },
+   {
+    "k": "tex:fluss-karte r8unorm 1024x1024x2",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+    "mb": 1.875,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x20",
+    "mb": 1.665,
+    "n": 1
+   }
+  ]
+ },
+ "stellgroessen": {
+  "loadScale": 1,
+  "szeneSkala": 0.75,
+  "pixelRatio": 1,
+  "foliageRadius": 216,
+  "foliageDichte": 1,
+  "archRadius": 150,
+  "ring": 4,
+  "schattenIntervall": 1,
+  "holz": "voll"
+ },
+ "phasenEwmaMs": {
+  "streaming": 0.26,
+  "waterIso": 0.01,
+  "archCulling": 0.01,
+  "creatures": 0.37,
+  "physics": 0.12,
+  "render": 2.09,
+  "gpuMs": 2.37
+ },
+ "kamera": {
+  "pos": [
+   -280.4,
+   29.7,
+   -1045.6
+  ],
+  "blick": [
+   -0.92,
+   0,
+   -0.39
+  ]
+ },
+ "chunks": 81,
+ "ruhe": null,
+ "wetter": "sunny",
+ "wetterHalt": {
+  "vorher": "sunny",
+  "nachher": "sunny",
+  "uhrVorher": -999999841.5,
+  "uhrNachher": -999999791.4,
+  "buch": [
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 35,
+    "t": 188354,
+    "uhr": -999999839.1
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 36,
+    "t": 193063,
+    "uhr": -999999834.4
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "nexus",
+    "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+    "seq": 37,
+    "t": 193605,
+    "uhr": -999999833.8
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 38,
+    "t": 197771,
+    "uhr": -999999829.6
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 39,
+    "t": 202479,
+    "uhr": -999999824.9
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 40,
+    "t": 207179,
+    "uhr": -999999820.2
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 41,
+    "t": 211887,
+    "uhr": -999999815.5
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 42,
+    "t": 216588,
+    "uhr": -999999810.8
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 43,
+    "t": 221296,
+    "uhr": -999999806.1
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 44,
+    "t": 226004,
+    "uhr": -999999801.4
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 45,
+    "t": 230712,
+    "uhr": -999999796.7
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "rule:nexus",
+    "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+    "seq": 46,
+    "t": 235420,
+    "uhr": -999999792
+   }
+  ],
+  "urteil": "GRUEN",
+  "taeter": [],
+  "verweigert": {
+   "rule:nexus → rainy": 11,
+   "nexus → rainy": 1
+  }
+ },
+ "saison": "summer",
+ "fehler": [
+  "[konsole] [AnazhRealm V18.546.17] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+  "[konsole] [AnazhRealm V18.546.17] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+ ],
+ "ms": 50129
+}

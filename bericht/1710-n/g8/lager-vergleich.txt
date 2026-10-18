@@ -1,0 +1,41 @@
+-- s1 oben (Anfang) lagerBau 34 folgen 9
+  L0 vCap 2880 liegt 2648 iCap 5828 (tris 1942.6666666666667) iLiegt 5304 gestalten 4 liegend 4 arenen [2242]
+  L1 vCap 72 liegt 6 iCap 200 (tris 66.66666666666667) iLiegt 6 gestalten 2 liegend 1 arenen [1957,2805]
+  L2 vCap 57308 liegt 51898 iCap 138816 (tris 46272) iLiegt 125724 gestalten 40 liegend 24 arenen [2648,2649,2651,2652,2695]
+  L3 vCap 6704 liegt 6248 iCap 11784 (tris 3928) iLiegt 10908 gestalten 12 liegend 10 arenen [2650]
+  k0-Arena #2650 L3 side 2 glieder 15 kind 67/71 nCap 172 nBelegt 132 k0-Zuege 13 inst 32
+  k0-Arena #2648 L2 side 0 glieder 1 kind 65/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+  k0-Arena #2649 L2 side 2 glieder 1 kind 66/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+-- s1 nach kipp lager lagerBau 40 folgen 9
+  L0 vCap 2880 liegt 2648 iCap 5828 (tris 1942.6666666666667) iLiegt 5304 gestalten 4 liegend 4 arenen [2242]
+  L1 vCap 72 liegt 6 iCap 200 (tris 66.66666666666667) iLiegt 6 gestalten 2 liegend 1 arenen [1957,2805]
+  L2 vCap 55208 liegt 51898 iCap 133776 (tris 44592) iLiegt 125724 gestalten 40 liegend 24 arenen [2648,2649,2651,2652,2695]
+  L3 vCap 6704 liegt 6248 iCap 11784 (tris 3928) iLiegt 10908 gestalten 12 liegend 10 arenen [2650]
+  k0-Arena #2650 L3 side 2 glieder 15 kind 67/71 nCap 172 nBelegt 132 k0-Zuege 13 inst 32
+  k0-Arena #2648 L2 side 0 glieder 1 kind 65/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+  k0-Arena #2649 L2 side 2 glieder 1 kind 66/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+-- s2 Anfang lagerBau 31 folgen 5
+  L0 vCap 2880 liegt 2648 iCap 5828 (tris 1942.6666666666667) iLiegt 5304 gestalten 4 liegend 4 arenen [651]
+  L1 vCap 72 liegt 6 iCap 200 (tris 66.66666666666667) iLiegt 6 gestalten 2 liegend 1 arenen [718,2586]
+  L2 vCap 57308 liegt 51898 iCap 138816 (tris 46272) iLiegt 125724 gestalten 40 liegend 24 arenen [2301,2302,2381,2382,2435]
+  L3 vCap 6704 liegt 6248 iCap 11784 (tris 3928) iLiegt 10908 gestalten 12 liegend 10 arenen [2369]
+  k0-Arena #2369 L3 side 2 glieder 15 kind 67/71 nCap 164 nBelegt 128 k0-Zuege 13 inst 32
+  k0-Arena #2301 L2 side 0 glieder 1 kind 65/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+  k0-Arena #2302 L2 side 2 glieder 1 kind 66/71 nCap 76 nBelegt 8 k0-Zuege 1 inst 4
+-- s2 nach Genesis lagerBau 57 folgen 14
+  L0 vCap 2880 liegt 2648 iCap 5828 (tris 1942.6666666666667) iLiegt 5304 gestalten 4 liegend 4 arenen [6071]
+  L1 vCap 72 liegt 6 iCap 200 (tris 66.66666666666667) iLiegt 6 gestalten 3 liegend 1 arenen [718,5602,6065]
+  L2 vCap 52336 liegt 51898 iCap 127872 (tris 42624) iLiegt 125724 gestalten 40 liegend 24 arenen [2381,2382,2435,5850,5851]
+  L3 vCap 6704 liegt 6248 iCap 11784 (tris 3928) iLiegt 10908 gestalten 12 liegend 10 arenen [5854]
+  k0-Arena #5854 L3 side 2 glieder 15 kind 65/71 nCap 248 nBelegt 140 k0-Zuege 13 inst 32
+  k0-Arena #5850 L2 side 0 glieder 1 kind 63/71 nCap 80 nBelegt 12 k0-Zuege 1 inst 4
+  k0-Arena #5851 L2 side 2 glieder 1 kind 64/71 nCap 80 nBelegt 12 k0-Zuege 1 inst 4
+-- s2 nach LAUB_VERSATZ 0/1 lagerBau 57 folgen 14
+  L0 vCap 2880 liegt 2648 iCap 5828 (tris 1942.6666666666667) iLiegt 5304 gestalten 4 liegend 4 arenen [6071]
+  L1 vCap 72 liegt 6 iCap 200 (tris 66.66666666666667) iLiegt 6 gestalten 3 liegend 1 arenen [718,5602,6065]
+  L2 vCap 52336 liegt 51898 iCap 127872 (tris 42624) iLiegt 125724 gestalten 40 liegend 24 arenen [2381,2382,2435,5850,5851]
+  L3 vCap 6704 liegt 6248 iCap 11784 (tris 3928) iLiegt 10908 gestalten 12 liegend 10 arenen [5854]
+  k0-Arena #5854 L3 side 2 glieder 15 kind 65/71 nCap 248 nBelegt 140 k0-Zuege 13 inst 32
+  k0-Arena #5850 L2 side 0 glieder 1 kind 63/71 nCap 80 nBelegt 12 k0-Zuege 1 inst 4
+  k0-Arena #5851 L2 side 2 glieder 1 kind 64/71 nCap 80 nBelegt 12 k0-Zuege 1 inst 4
+Brache L2 Erstbau gegen Neubau (s2): Vertices 4972 x 48 B = 238656 B, Indizes 10944 x 2 B = 21888 B, zusammen 0.25 MB (Attribute position3 normal3 color3 uv2 aLodLevel1 Float32, Index Uint16)

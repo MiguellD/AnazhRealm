@@ -1,0 +1,3 @@
+selbsttest EXIT=0
+npm run check EXIT=0
+npm run playtest:fast EXIT=0
