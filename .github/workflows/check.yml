@@ -906,12 +906,13 @@ jobs:
               # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
               run: npm run gate:garage-labor
 
-            - name: Die EINE Engine der Studio-Seiten (Studio-Huelle H6 — Netz je Seite)
+            - name: Der Gang der Studio-Seiten (Studio-Huelle H3 H4 H6 — je Seite Netz, Sitzung, Ofen-L0)
               if: matrix.gruppe == 15
-              # JE SEITE DER HUELLE IHRE ANFRAGEN (worlds/<welt>/index.html, Rezept linse): eine Engine-Kopie im Studio-Baum
+              # JE SEITE DER HUELLE EIN BESUCH (worlds/<welt>/index.html, Rezept linse). H6 ihre Anfragen: eine Engine-Kopie im Studio-Baum
               # (worlds/*/lib/, r128 · r130 · r183) oder das r160-UMD ist ROT beim Namen, wer three laedt, laedt vendor/three.webgpu
               # (r184); laedt eine Seite die Welt (index.html, stamm/), ist die isolierte Buehne aufgeloest. Die Ratsche nennt,
               # wer noch fremd laedt. Befund 18.10. an 5ae6bdfe: die garage laedt terrain/lib/three-r128 (2 von 11 Seiten sauber).
+              # H3 die Sitzung (Strg+Z nimmt den Schieber zurueck), H4 die L0 eines Ofen-Labors auf seiner Welt-Zeile (Kosten-Leiste).
               run: node scripts/diag-studio-huelle.cjs --engine
 
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
@@ -1305,7 +1306,7 @@ jobs:
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 16
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
               # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
               # und Wand je einzeln.
