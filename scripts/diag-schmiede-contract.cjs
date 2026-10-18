@@ -44,11 +44,7 @@ const KERN = path.join(root, "schmiede-core.js");
 require(KERN);
 const SC = globalThis.__schmiedeCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Der kanonische Fingerabdruck einer gebauten Gruppe (exakt die v3/v4-Form) ──
 function fingerprint(group) {

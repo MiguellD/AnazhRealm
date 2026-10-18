@@ -945,7 +945,7 @@ class AnazhRealm_studio_bruecke {
     // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
     // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge je Studio-Faden (Werk · Helfer, `_foundryPumpe`; so viele,
     // dass er ohne Rundlauf-Lücke arbeitet:
-    // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
+    // der Vorrat läuft so schnell leer wie FIFO), der nächste geht nach seiner ANKUNFT (`_ankunftD2`, F5,
     // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
     // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
     // beim SENDEN: die EINE Frist (`_foundryFrist`) bleibt eine Arbeits-Uhr in Worker-Reihenfolge.
@@ -960,10 +960,9 @@ class AnazhRealm_studio_bruecke {
         if (typeof wo === "number") return Number.isFinite(wo) ? wo : Infinity;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
-        const dx = wo.x - pm.x,
-            dz = wo.z - pm.z;
-        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — `_blickRang`
-        return dx * dx + dz * dz + this._blickRang(wo.x, wo.z);
+        // DIE ANKUNFT (F5, `_ankunftD2`) — und DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick,
+        // d²) — `_blickRang`
+        return this._ankunftD2(wo.x, wo.z) + this._blickRang(wo.x, wo.z);
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
@@ -2394,7 +2393,7 @@ class AnazhRealm_studio_bruecke {
             const u = cr && cr.userData;
             if (!u || !u._tierBaum || u._trefferGlieder !== undefined) continue;
             if (namen && namen.has(this._kreaturGattung(cr))) continue;
-            const d2 = this._spielerD2(cr.position.x, cr.position.z);
+            const d2 = this._ankunftD2(cr.position.x, cr.position.z);
             if (d2 < naechstD2) {
                 naechstD2 = d2;
                 naechstes = cr;

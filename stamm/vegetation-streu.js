@@ -1504,22 +1504,22 @@ class AnazhRealm_vegetation_streu {
         // schob jede Zelle auf, und die Region streute ganz, nur um nach dem Buch neu zu streuen (Radeon kalt bis 8 s ab Navigation).
         const _fb = this._foundryEnabled() ? this._foundry : null;
         const _buchKalt = this._foundryEnabled() && !(_fb && _fb.ready && _fb.recipes);
-        for (
-            let dz = -SC.ringRegions;
-            dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull && !_buchKalt;
-            dz++
-        ) {
-            for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
-                const rk = `${pRegX + dx},${pRegZ + dz}`;
-                if (!map.has(rk) && this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos)) {
-                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
-                    work++;
-                    if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
-                        _sliceFull = true;
-                        break;
-                    }
+        // DIE ANKUNFT (F5): die fehlenden Regionen nach `_ankunftD2` ihrer Mitte — bis F5 in dz/dx-Folge.
+        const fehlen = [];
+        if (!_sliceFull && !_buchKalt)
+            for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+                for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                    const rx = pRegX + dx,
+                        rz = pRegZ + dz;
+                    if (!map.has(`${rx},${rz}`) && this._streuRegionInReichweite(rx, rz, playerPos))
+                        fehlen.push({ rx, rz, d: this._ankunftD2((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM) });
                 }
-            }
+        fehlen.sort((a, b) => a.d - b.d);
+        for (const g of fehlen) {
+            if (work >= SC.maxRegionsPerFrame) break;
+            this._scatterRegion(g.rx, g.rz, playerPos, deadlineMs);
+            work++;
+            if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) break;
         }
         // (2) ferne Regionen disposen (außerhalb ringRegions+1)
         const disposeR = SC.ringRegions + 1;
@@ -1557,21 +1557,25 @@ class AnazhRealm_vegetation_streu {
         const rx1 = Math.floor((playerPos.x + pr) / regM);
         const rz0 = Math.floor((playerPos.z - pr) / regM);
         const rz1 = Math.floor((playerPos.z + pr) / regM);
-        for (let rX = rx0; rX <= rx1 && promotions < 3; rX++) {
-            for (let rZ = rz0; rZ <= rz1 && promotions < 3; rZ++) {
+        // DIE ANKUNFT (F5): die Kandidaten im Kreis nach `_ankunftD2` — bis F5 in Regionen- und Zellen-Folge.
+        const kand = [];
+        for (let rX = rx0; rX <= rx1; rX++) {
+            for (let rZ = rz0; rZ <= rz1; rZ++) {
                 const region = map.get(`${rX},${rZ}`);
                 if (!region || !Array.isArray(region.cells)) continue;
-                for (let i = 0; i < region.cells.length && promotions < 3; i++) {
-                    const cell = region.cells[i];
+                for (const cell of region.cells) {
                     if (!cell.slots) continue; // schon promoted/freigegeben
                     if (!cell.promotable) continue; // V18.225 — nur die Baum-Schicht kristallisiert
                     const dx = cell.x - playerPos.x;
                     const dz = cell.z - playerPos.z;
-                    if (dx * dx + dz * dz <= pr2) {
-                        if (this._promoteScatterCell(cell)) promotions++;
-                    }
+                    if (dx * dx + dz * dz <= pr2) kand.push({ cell, d: this._ankunftD2(cell.x, cell.z) });
                 }
             }
+        }
+        kand.sort((a, b) => a.d - b.d);
+        for (const k of kand) {
+            if (promotions >= 3) break;
+            if (this._promoteScatterCell(k.cell)) promotions++;
         }
         // Nach-Dünnen: eine Region, gebaut bei höherer Dichte als jetzt gilt, wird dünner re-gestreamt —
         // auch beim reinen Drehen ohne Re-Stream.

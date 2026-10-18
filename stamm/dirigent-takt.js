@@ -1135,6 +1135,21 @@ class AnazhRealm_dirigent_takt {
                 },
             },
             {
+                name: "nahFeld",
+                // DAS NAH-FELD (F5): Nah-Wiese und Nah-Streu tragen, was als Nächstes ankommt (14–24 m ums Auge) — Welt-Substanz
+                // wie das Wasser, jeden Frame mit dem Existenz-Boden, nie hinter dem Deko-Takt. Bis F5 liefen sie zuletzt im
+                // Deko-Job (prio 2: über Budget jeden 4. Frame, nach der fernen Streu, die die Scheibe oft schon leerte) —
+                // Fahrt 90 km/h an der Mess-Wiese (Null-Renderer): je Bild fehlten im Blick 5,9 Wiesen- und 48,5 Streu-Kacheln.
+                prio: 1,
+                run: (ms) => {
+                    const _nf = performance.now();
+                    const dl = Number.isFinite(ms) ? _nf + ms : undefined;
+                    this._tickNahWiese(dl);
+                    this._tickNahStreu(dl);
+                    this._perfSenseLap("scatter", _nf);
+                },
+            },
+            {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
@@ -1154,8 +1169,6 @@ class AnazhRealm_dirigent_takt {
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(performance.now());
-                    this._tickNahWiese(_dl);
-                    this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
                     const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;

@@ -2040,6 +2040,11 @@ class AnazhRealm_vegetation_baum {
     _tickPendingVegSpawns(maxPerFrame = 4) {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
+        // nach der Ankunft (`_ankunftD2`, F5): das Früheste zuerst — bis F5 in der Folge der Pflanzung
+        if (queue.length > 1) {
+            for (const t of queue) if (t) t.rang = t.position ? this._ankunftD2(t.position.x, t.position.z) : 0;
+            queue.sort((a, b) => (a ? a.rang : 0) - (b ? b.rang : 0));
+        }
         let spawned = 0;
         for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
             const task = queue.shift();
@@ -2259,7 +2264,7 @@ class AnazhRealm_vegetation_baum {
                 const h = distSq <= saumSq ? Infinity : this._archKartenHorizont(entry);
                 if (distSq <= h * h) {
                     if (!this._archIsRendered(entry)) {
-                        entry._nahD2 = distSq;
+                        entry._nahD2 = this._ankunftD2(entry.position.x, entry.position.z);
                         nahOffen.push(entry);
                     }
                 } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry)) {
@@ -2285,11 +2290,12 @@ class AnazhRealm_vegetation_baum {
                 } else {
                     // Steht das Mesh schon, braucht der Bau keine Brücke: sein Satz bäckt NACH allen Bedürftigen
                     // vor (für den Rand der Mesh-Zone) und stiehlt ihnen nie den Takt.
-                    entry._ziegelD2 = echt ? distSq + AnazhRealm.ZIEGEL_VORBACK_D2 : distSq;
+                    entry._ziegelD2 =
+                        this._ankunftD2(entry.position.x, entry.position.z) + (echt ? AnazhRealm.ZIEGEL_VORBACK_D2 : 0);
                     ziegelOffen.push(entry);
                 }
                 if (!echt) {
-                    entry._nahD2 = distSq;
+                    entry._nahD2 = this._ankunftD2(entry.position.x, entry.position.z);
                     nahOffen.push(entry);
                 }
                 if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
@@ -2308,7 +2314,7 @@ class AnazhRealm_vegetation_baum {
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
                 } else {
-                    entry._ziegelD2 = distSq;
+                    entry._ziegelD2 = this._ankunftD2(entry.position.x, entry.position.z);
                     ziegelOffen.push(entry);
                 }
             }

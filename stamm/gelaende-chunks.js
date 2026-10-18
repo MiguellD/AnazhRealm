@@ -866,46 +866,30 @@ class AnazhRealm_gelaende_chunks {
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0 || this._bepflanzungWartet()) return;
-        if (this.state._frameOverBudget) {
-            const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
-            if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
-            const pm = this.state.playerMesh;
-            const { span } = this._voxelChunkConfig();
-            let naechster = null;
-            let naechsterD = Infinity;
-            for (const key of pending) {
-                const ci = key.indexOf(",");
-                const cx = parseInt(key.slice(0, ci), 10),
-                    cz = parseInt(key.slice(ci + 1), 10);
-                if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
-                const d = pm
-                    ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
-                    : 0;
-                if (d < naechsterD) {
-                    naechsterD = d;
-                    naechster = { key, cx, cz };
-                }
-            }
-            if (!naechster) return;
-            this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
-            pending.delete(naechster.key);
-            if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
-                this._populateVoxelChunkVegetation(naechster.cx, naechster.cz);
-            return;
-        }
-        // zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
-        let n = 0;
+        const ueber = this.state._frameOverBudget;
+        const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (ueber && this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
+        // die Wartenden im Radius nach ihrer Ankunft (`_ankunftChunkD2`, F5); was noch zu fern ist, wartet
+        const reihe = [];
         for (const key of pending) {
-            if (!this._kappeOffen(n, 2)) break;
             const ci = key.indexOf(",");
             const cx = parseInt(key.slice(0, ci), 10),
                 cz = parseInt(key.slice(ci + 1), 10);
-            if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
-            pending.delete(key);
-            if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
-                this._populateVoxelChunkVegetation(cx, cz);
+            if (this._foliageChunkInRadius(cx, cz)) reihe.push({ key, cx, cz, d: this._ankunftChunkD2(cx, cz) });
+        }
+        if (!reihe.length) return;
+        reihe.sort((a, b) => a.d - b.d);
+        // über Budget der früheste je WUCHS_DROSSEL_MS; sonst zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem
+        // Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
+        if (ueber) this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
+        let n = 0;
+        for (const c of reihe) {
+            if (ueber ? n > 0 : !this._kappeOffen(n, 2)) break;
+            pending.delete(c.key);
+            if (this.state.voxelChunks && this.state.voxelChunks.has(c.key)) {
+                this._populateVoxelChunkVegetation(c.cx, c.cz);
                 n++;
-            }
+            } else if (ueber) break;
         }
     }
 
@@ -1278,11 +1262,11 @@ class AnazhRealm_gelaende_chunks {
             this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
             return null;
         }
-        // DER EINBAU DES FRAMES (K69-2): die nächste Ring-Distanz, in der dieser Frame einen Chunk einbaut — der Neubau-Takt
-        // (`_tickDirtyVoxelChunks`) baut danach nur Näheres ein (Lehre 25: NAH zuerst); der Frame-Planer setzt sie zurück.
+        // DER EINBAU DES FRAMES (K69-2): die nächste Ankunft (`_ankunftChunkD2`, F5), in der dieser Frame einen Chunk
+        // einbaut — der Neubau-Takt (`_tickDirtyVoxelChunks`) baut danach nur Früheres ein (Lehre 25: NAH zuerst); der
+        // Frame-Planer setzt sie zurück.
         {
-            const lpc = this.state.lastPlayerVoxelChunk;
-            const d = lpc ? Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz)) : 0;
+            const d = this._ankunftChunkD2(cx, cz);
             const b = this.state._bodenEinbau;
             if (b == null || d < b) this.state._bodenEinbau = d;
         }
@@ -2526,31 +2510,6 @@ class AnazhRealm_gelaende_chunks {
         const pcz = Math.floor(playerPos.z / span);
         // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
         this._stufeAugeTakt(playerPos);
-        // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
-        // fester dz/dx-Reihenfolge, der kommende Chunk käme sonst ~5.) → der Boden steht, bevor der Spieler
-        // ankommt. Billige Async-Anfrage (der Ring re-fragt als no-op); nur bei > 1 m/s.
-        if (this.state.playerVel) {
-            const v = this.state.playerVel;
-            const vx = v.x(),
-                vz = v.z();
-            const speedSq = vx * vx + vz * vz;
-            if (speedSq > 1) {
-                const inv = 1 / Math.sqrt(speedSq);
-                const dirX = vx * inv,
-                    dirZ = vz * inv;
-                for (let ahead = 1; ahead <= 2; ahead++) {
-                    const acx = pcx + Math.round(dirX * ahead);
-                    const acz = pcz + Math.round(dirZ * ahead);
-                    if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
-                        this._ensureVoxelChunkAt(
-                            acx,
-                            acz,
-                            this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null)
-                        );
-                    }
-                }
-            }
-        }
         let built = 0;
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
@@ -2576,38 +2535,30 @@ class AnazhRealm_gelaende_chunks {
             return 0;
         }
         const tStart = performance.now();
-        outer: for (let r = 0; r <= ringRadius; r++) {
-            for (let dz = -r; dz <= r; dz++) {
-                for (let dx = -r; dx <= r; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const cx = pcx + dx;
-                    const cz = pcz + dz;
-                    const key = `${cx},${cz}`;
-                    // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
-                    // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
-                    const existing = this.state.voxelChunks.get(key);
-                    // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
-                    // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
-                    // `existing`) bekommt die reine Band-LOD.
-                    const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-                    const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
-                    if (existing) {
-                        const currentLod = existingLod !== null ? existingLod : 0;
-                        if (currentLod !== desiredLod && !existing.empty) {
-                            this._rebuildVoxelChunk(cx, cz, desiredLod);
-                            if (++built >= MAX_PER_FRAME) break outer;
-                            if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
-                        }
-                        continue;
-                    }
-                    this._ensureVoxelChunkAt(cx, cz, desiredLod);
-                    if (++built >= MAX_PER_FRAME) break outer;
-                    // Soft-Budget nach jedem Build (inkl. des letzten `_ensureVoxelChunkAt`): mindestens ein Chunk je
-                    // Frame auch über Budget — sonst friert das Streaming ein.
-                    if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
-                }
+        // DIE ANKUNFT (F5): der Ring baut nach `_ankunftChunkD2` — in Fahrt zuerst, was voraus liegt. Bis F5 ging er in Ringen
+        // um den Spieler (dz/dx-Folge), daneben griff ein zweiter Weg die 1–2 Chunks in Laufrichtung vor. Je Zelle die Stufe
+        // aus dem Abstand (Hysterese am Grat, N3: die jetzige Stufe fließt in die Wahl); eine Zelle mit ANDERER Stufe baut neu,
+        // eine ohne Chunk entsteht — im Stand kein Bau, keine Re-Allokation.
+        const reihe = this._ringReihe || (this._ringReihe = []);
+        reihe.length = 0;
+        for (let dz = -ringRadius; dz <= ringRadius; dz++)
+            for (let dx = -ringRadius; dx <= ringRadius; dx++) {
+                const cx = pcx + dx;
+                const cz = pcz + dz;
+                const existing = this.state.voxelChunks.get(`${cx},${cz}`);
+                const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
+                const lod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
+                if (existing && (existing.empty || (existingLod !== null ? existingLod : 0) === lod)) continue;
+                reihe.push({ cx, cz, lod, neu: !existing, d: this._ankunftChunkD2(cx, cz) });
             }
+        reihe.sort((a, b) => a.d - b.d);
+        for (const c of reihe) {
+            if (c.neu) this._ensureVoxelChunkAt(c.cx, c.cz, c.lod);
+            else this._rebuildVoxelChunk(c.cx, c.cz, c.lod);
+            // Soft-Budget nach jedem Bau-Ruf: mindestens einer je Frame auch über Budget — sonst friert der Strom ein.
+            if (++built >= MAX_PER_FRAME || performance.now() - tStart > FRAME_BUDGET_MS) break;
         }
+        reihe.length = 0;
         this._pruneDistantVoxelChunks(playerPos);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
         this._standMeldet("strom", 1, false, built > 0);
@@ -2829,10 +2780,11 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST (Lehre 25). Je Takt gehen die Aufträge der
-    // nächsten `DIRTY_IM_FLUG` voraus (billig, der Worker baut sie nacheinander), eingebaut wird höchstens EINER — der
-    // nächste fertige (`_finalizeVoxelChunkBuild`, am Dorf 15–60 ms je Chunk). Hat der Strom-Takt in diesem Frame schon
-    // einen Chunk eingebaut (`state._bodenEinbau`, seine Ring-Distanz), wartet ein fertiger, der nicht näher liegt, auf
+    // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST nach der Ankunft (Lehre 25, `_ankunftChunkD2`,
+    // F5). Je Takt gehen die Aufträge der nächsten `DIRTY_IM_FLUG` voraus (billig, der Worker baut sie nacheinander),
+    // eingebaut wird höchstens EINER — der nächste fertige (`_finalizeVoxelChunkBuild`, am Dorf 15–60 ms je Chunk). Hat der
+    // Strom-Takt in diesem Frame schon einen Chunk eingebaut (`state._bodenEinbau`, seine Ankunft), wartet ein fertiger, der
+    // nicht früher kommt, auf
     // den nächsten Frame: zwei Einbauten trägt ein Frame nur für den nächsten Chunk. Bis K69-2 kam je Frame EIN Chunk
     // dran (Manhattan), sein Auftrag allein im Flug, und der Spieler-Chunk baute synchron. Pending/Fail re-dirtyt
     // `_rebuildVoxelChunk` selbst; ohne Worker baut jeder Neubau synchron — dann einer je Frame.
@@ -2840,9 +2792,6 @@ class AnazhRealm_gelaende_chunks {
         const dirty = this.state.dirtyVoxelChunks;
         if (!dirty || dirty.size === 0) return;
         if (!this.state.voxelChunks || !playerPos) return;
-        const { span } = this._voxelChunkConfig();
-        const pcx = Math.floor(playerPos.x / span);
-        const pcz = Math.floor(playerPos.z / span);
         const reihe = [];
         for (const key of dirty) {
             // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt haben (Spieler ging weg) — Marker stumm verwerfen.
@@ -2853,13 +2802,13 @@ class AnazhRealm_gelaende_chunks {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) });
+            reihe.push({ key, cx, cz, d: this._ankunftChunkD2(cx, cz) });
         }
         reihe.sort((a, b) => a.d - b.d);
         const st = this.state;
         const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
         const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;
-        const strom = st._bodenEinbau; // die Ring-Distanz des Einbaus, den der Strom in diesem Frame schon tat
+        const strom = st._bodenEinbau; // die Ankunft des Einbaus, den der Strom in diesem Frame schon tat
         let einbau = false;
         for (let i = 0; i < reihe.length && i < imFlug; i++) {
             const c = reihe[i];

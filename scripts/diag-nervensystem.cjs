@@ -19,11 +19,7 @@ const { fehlt } = require("./lib/stamm.cjs");
 const PORT = Number(process.env.NERV_PORT || 4406);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     // TEIL A: die Platzierungs-Quelle beweisen B und C am lebenden Draht; hier wacht nur die Absenz des alten Wald-Literals.

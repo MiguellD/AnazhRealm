@@ -173,6 +173,39 @@ class AnazhRealm_gelaende_boden {
         }
         return out;
     }
+    // TRÄGT DER BODEN DES RECHTECKS NOCH DASSELBE? (F5) — die Karten `karten` (aus `_bodenSichtChunks` über demselben
+    // Rechteck) gegen die jetzigen: eine neue Karte, die in den Zellen, die der Boden-Leser dort liest, Bit für Bit gleich
+    // ist, ersetzt die alte (true); sonst false (ein Chunk fehlt, seine Stufe oder sein Boden dort sind andere). Bis F5 fiel
+    // jede Kachel der Nah-Wiese und Nah-Streu, sobald IRGENDEINE Zelle ihres Chunks neu war — ein Naht-Morph am Rand des
+    // Chunks (der Nachbar wechselt die Stufe) warf alle Kacheln darauf weg (Null-Renderer, Fahrt 30 km/h über 400 m an der
+    // Mess-Wiese: 8 473 Nah-Streu-Kacheln fielen, 1 300 verließen den Ring).
+    _bodenSichtGleich(karten, x0, z0, x1, z1) {
+        const vc = this.state.voxelChunks;
+        if (!vc) return false;
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        for (const [k, alt] of karten) {
+            const e = vc.get(k);
+            if (!e) return false;
+            if (e.surfMap === alt) continue;
+            if (!e.surfMap || !alt || e.surfMap.length !== alt.length) return false;
+            const cfg = this._voxelChunkConfig(e.lod || 0);
+            const h = cfg.step / T;
+            const M = T * (cfg.dim + 3) + 1;
+            const ci = k.indexOf(",");
+            const ax = parseInt(k.slice(0, ci), 10) * cfg.dim * T - T;
+            const az = parseInt(k.slice(ci + 1), 10) * cfg.dim * T - T;
+            const i0 = Math.max(0, Math.floor(x0 / h) - ax),
+                i1 = Math.min(M - 1, Math.floor(x1 / h) - ax + 1);
+            const j0 = Math.max(0, Math.floor(z0 / h) - az),
+                j1 = Math.min(M - 1, Math.floor(z1 / h) - az + 1);
+            const m = e.surfMap;
+            for (let j = j0; j <= j1; j++)
+                for (let o = j * M + i0, ende = j * M + i1; o <= ende; o++)
+                    if (!(m[o] === alt[o] || (m[o] !== m[o] && alt[o] !== alt[o]))) return false;
+        }
+        for (const k of karten.keys()) karten.set(k, vc.get(k).surfMap);
+        return true;
+    }
 
     // Täler und Seen trägt das Flussnetz des Gelände-Gesetzbuchs (K16): ein See ist eine Senke des Netzes (Ebene 0),
     // die Hydrosphäre füllt sie — keine Erosions-Simulation, kein Tarn-Pass, das Gelände entwässert aus sich selbst.

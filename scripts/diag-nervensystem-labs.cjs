@@ -21,11 +21,7 @@ const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ===== TEIL S: das Manifest trägt die drei MESHFREI-Kerne (die Kern-Form prüft gate:daten-contract am Namensraum) =====
 function staticLaws(manifestSrc) {

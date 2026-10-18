@@ -66,11 +66,7 @@ const ORTE = [
 ];
 const MODI = ["third", "ritt", "first"];
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const pct = (x) => (x == null ? "—" : `${(100 * x).toFixed(1)} %`);
 
 // ── DAS URTEIL (pure Funktion; Welt UND Selbst-Test). Rückgabe: die Täter beim Namen. ──

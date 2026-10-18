@@ -601,11 +601,119 @@ function standUrteil(b) {
     return v;
 }
 
+// DIE FAHRT (F5): geradeaus im Blick `weg` m mit `kmh` (die Lage aus der Zeit, `playerVel` trägt die Fahrt vor Takt und
+// Strom) durch den echten Takt (`raf`: der Loop mit Bild-Zeiten, `werkbank eval`; sonst 16,7-ms-Schritte). Je Bild IM BLICK
+// (`_imErstenBlick`): die Lücken des ersten Weltbilds (`_weltbildLuecken`), die Chunks des Rings bis 200 m ohne Netz, die
+// Kacheln der Nah-Wiese und Nah-Streu ohne Zustand; ein POP ist, was fehlte und im dichten Kern erscheint.
+function fahrtLauf(k) {
+    return (async () => {
+        const r = window.anazhRealm, st = r.state, pm = st.playerMesh.position, v = k.kmh / 3.6, f = r._blickVorn(st.yaw, 0);
+        const [ux, uz, sx, sz, S, sp] = [f.x / Math.hypot(f.x, f.z), f.z / Math.hypot(f.x, f.z), pm.x, pm.z, r._voxelChunkConfig().span, st.speed];
+        const schiene = () => st.playerVel.setValue(ux * v, st.playerVel.y(), uz * v);
+        r._loopVoxelStreaming = function () {
+            schiene();
+            return Object.getPrototypeOf(r)._loopVoxelStreaming.call(this);
+        };
+        r._applyPlayerSpeed(v);
+        st.keys.w = true;
+        const P = [], pops = { bau: 0, chunk: 0, kachel: 0 }, vor = {};
+        // je Klasse die Fehlenden im Blick ([Schlüssel, Abstand, fehlt]): was fehlte und jetzt steht, näher als `kern`, ist ein Pop
+        const zaehle = (name, liste, kern, pop) => {
+            const neu = new Set(), alt = vor[name] || new Set();
+            for (const [key, d, fehlt] of liste) if (fehlt) neu.add(key); else if (alt.has(key) && d < kern) pops[pop]++;
+            vor[name] = neu;
+            return neu.size;
+        };
+        const kacheln = (K, map, bereit) => {
+            const c = st.camera.position, R = K.radius + K.kachel * 0.71, L = [];
+            for (let tx = Math.floor((c.x - R) / K.kachel); tx <= Math.floor((c.x + R) / K.kachel); tx++)
+                for (let tz = Math.floor((c.z - R) / K.kachel); tz <= Math.floor((c.z + R) / K.kachel); tz++) {
+                    const [mx, mz] = [(tx + 0.5) * K.kachel, (tz + 0.5) * K.kachel], d = Math.hypot(mx - c.x, mz - c.z);
+                    const e = map && map.get(tx + "," + tz);
+                    if (d <= R && r._imErstenBlick(mx, mz, K.kachel * 0.71)) L.push([tx + "," + tz, d, !e || !bereit(e)]);
+                }
+            return L;
+        };
+        const messen = (dt, cpu) => {
+            const p = { dt, cpu, bauten: 0, pflanzung: 0, streu: 0, karten: 0 };
+            for (const l of r._weltbildLuecken()) if (l.term in p) p[l.term] += l.n;
+            const R = st.architectureCullingRadius || 150, bau = [], chunk = [], ring = r._voxelChunkConfig().ringRadius;
+            for (const e of st.architectures || []) {
+                const d = e && e.position ? Math.hypot(e.position.x - pm.x, e.position.z - pm.z) : Infinity;
+                if (d <= R && r._imErstenBlick(e.position.x, e.position.z, 12)) bau.push([e.id, d, !r._archIsRendered(e)]);
+            }
+            for (let a = -ring; a <= ring; a++)
+                for (let b = -ring; b <= ring; b++) {
+                    const cx = Math.floor(pm.x / S) + a, cz = Math.floor(pm.z / S) + b, e = st.voxelChunks.get(cx + "," + cz);
+                    const d = Math.hypot((cx + 0.5) * S - pm.x, (cz + 0.5) * S - pm.z);
+                    if (d <= 200 && r._imErstenBlick((cx + 0.5) * S, (cz + 0.5) * S, S * Math.SQRT1_2)) chunk.push([cx + "," + cz, d, !e || (!e.mesh && !e.empty)]);
+                }
+            const NW = r.constructor.NAH_WIESE, NS = r.constructor.NAH_STREU;
+            zaehle("bau", bau, 100, "bau");
+            p.chunk = zaehle("chunk", chunk, 200, "chunk");
+            p.wiese = zaehle("wiese", kacheln(NW, st.nahWiese && st.nahWiese.kacheln, () => true), NW.radius - NW.rand, "kachel");
+            p.nahStreu = zaehle("streu", kacheln(NS, st.nahStreu && st.nahStreu.kacheln, (e) => e.zustand != null), NS.radius - NS.rand, "kachel");
+            p.summe = p.bauten + p.pflanzung + p.streu + p.karten + p.chunk + p.wiese + p.nahStreu;
+            P.push(p);
+        };
+        const lage = (s) => ((pm.x = sx + ux * s), (pm.z = sz + uz * s), schiene());
+        try {
+            if (k.raf) {
+                if (window.__buehne) window.__buehne();
+                if (window.__tiereHalten) window.__tiereHalten();
+                await new Promise((fertig) => {
+                    let t0 = null, tVor = null;
+                    st.renderer.setAnimationLoop((t) => {
+                        if (window.__wetterHalten) window.__wetterHalten();
+                        const s = (v * (t - (t0 == null ? (t0 = t) : t0))) / 1000, c0 = performance.now();
+                        lage(s);
+                        r._gameLoopTick(t);
+                        messen(tVor == null ? null : t - tVor, performance.now() - c0);
+                        tVor = t;
+                        if (s >= k.weg) fertig();
+                    });
+                });
+            } else
+                for (let s = 0, T = performance.now(); s < k.weg; s += v * 0.0167) {
+                    lage(s);
+                    r._gameLoopTick((T += 16.7));
+                    messen(null, null);
+                    await new Promise((q) => setTimeout(q, 0));
+                }
+        } finally {
+            if (k.raf) st.renderer.setAnimationLoop(null);
+            delete r._loopVoxelStreaming;
+            st.keys.w = false;
+            r._applyPlayerSpeed(sp);
+        }
+        const Q = P.slice(5), je = (n) => Q.map((p) => p[n]).filter(Number.isFinite).sort((x, y) => x - y);
+        const q = (n, f) => (je(n).length ? +je(n)[Math.floor(f * (je(n).length - 1))].toFixed(2) : null);
+        const aus = { kmh: k.kmh, weg: k.weg, bilder: Q.length, mitLuecke: Q.filter((p) => p.summe > 0).length, pops };
+        for (const n of ["summe", "bauten", "pflanzung", "streu", "karten", "chunk", "wiese", "nahStreu"])
+            aus[n] = { mittel: +(je(n).reduce((a, x) => a + x, 0) / Math.max(1, Q.length)).toFixed(2), p95: q(n, 0.95) };
+        if (k.raf) aus.frame = { p50: q("dt", 0.5), p95: q("dt", 0.95), cpuP95: q("cpu", 0.95) };
+        return aus;
+    })();
+}
+// DAS URTEIL DER FAHRT (gate:scatter-lod V3): je Tempo im Mittel höchstens FAHRT.luecken Lücken je Bild im Blick — Befund F5
+// an der Basis 25f53923 (Null-Renderer, 90 km/h): 54,8, davon 48,5 Kacheln der Nah-Streu und 5,9 der Nah-Wiese.
+const FAHRT = { luecken: 4 };
+function fahrtUrteil(laeufe) {
+    if (!Array.isArray(laeufe) || !laeufe.length) return ["FAHRT: kein Lauf"];
+    const zeile = (l) => ["nahStreu", "wiese", "chunk", "bauten", "streu", "pflanzung", "karten"].map((n) => `${n} ${l[n].mittel}`).join(" · ");
+    return laeufe
+        .filter((l) => !(l && l.bilder > 0 && l.summe.mittel <= FAHRT.luecken))
+        .map((l) => (l && l.bilder > 0 ? `FAHRT ${l.kmh} km/h: ${l.summe.mittel} Lücken je Bild im Blick (Soll ≤ ${FAHRT.luecken}) — ${zeile(l)}` : `FAHRT ${l && l.kmh} km/h: keine Bilder`));
+}
+
 module.exports = {
     TAKTE,
     standUrteil,
+    FAHRT,
+    fahrtUrteil,
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__standPhase = ${standPhase.toString()};` +
-        `window.__standLauf = ${standLauf.toString()};`,
+        `window.__standLauf = ${standLauf.toString()};` +
+        `window.__fahrtLauf = ${fahrtLauf.toString()};`,
 };

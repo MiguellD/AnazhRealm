@@ -691,7 +691,19 @@ async function buehne(page) {
     await page.evaluate(() => window.__buehne());
 }
 
+// DER EINE PRÜFER jeder Linse: `check(name, ok, detail)` druckt ✅/❌ und sammelt jeden roten Namen in `errs` (bis F5 trugen
+// 43 Linsen dieselben fünf Zeilen).
+function pruefer() {
+    const errs = [];
+    const check = (name, ok, detail) => {
+        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) errs.push(name);
+    };
+    return { errs, check };
+}
+
 module.exports = {
+    pruefer,
     ROOT,
     MIME,
     REZEPTE,

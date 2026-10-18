@@ -1523,7 +1523,9 @@ class AnazhRealm_wasser_zellen {
             for (const k of keys) if (distOf(k) > ring) queue.delete(k);
             const wi = this.state.voxelChunkWaterIso;
             const luecke = (k) => (wi && wi.has(k) ? 1 : 0);
-            keys = [...queue].sort((a, b) => luecke(a) - luecke(b) || distOf(a) - distOf(b));
+            // je Gruppe nach der Ankunft (`_ankunftChunkD2`, F5)
+            const rang = new Map([...queue].map((k) => [k, this._ankunftChunkD2(k)]));
+            keys = [...queue].sort((a, b) => luecke(a) - luecke(b) || rang.get(a) - rang.get(b));
         }
         // Anti-Starvation: (maxPerFrame−1) Slots nah-zuerst, der LETZTE Slot baut den ÄLTESTEN Eintrag (Set-
         // Insertion-Order = FIFO; ein Re-Add ändert sie nicht) → bounded Wartezeit für jeden Key. Reine

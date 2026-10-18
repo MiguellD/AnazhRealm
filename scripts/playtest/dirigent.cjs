@@ -472,7 +472,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
 
 // Waldboden 04.10. — die DEKO-KASKADE IST GEFALLEN: die Klein-Vegetation hing an den Chunk-Bändern (mesh · Kreuz-
 // Fernfeld · none); die Nah-Streu hängt am Schirm (Kachel-Ring um die Kamera, NAH_STREU), jenseits trägt der Boden.
-// Die Kaskade trägt nur noch LOD + KI-Takt; der Loop tickt die Nah-Streu im scatterDeco-Job.
+// Die Kaskade trägt nur noch LOD + KI-Takt; der Loop tickt die Nah-Streu im nahFeld-Job (F5).
 async function checkBandWaldbodenKaskade(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {

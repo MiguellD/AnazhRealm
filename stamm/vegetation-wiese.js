@@ -100,7 +100,8 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
-    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
+    // Je Takt (nahFeld, prio 1): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
+    // ≤ kachelnJeTakt Neubauten),
     // außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
     // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
     // (`_nahWieseSicht`) — eine Kachel baut nur, wenn sie den Ring betritt. Rückgabe: Zahl der Neubauten (0 = der Ring
@@ -122,15 +123,15 @@ class AnazhRealm_vegetation_wiese {
         const tcx = Math.floor(cam.x / NW.kachel);
         const tcz = Math.floor(cam.z / NW.kachel);
         const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
-        // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
-        // am alten Ufer).
+        // Neuer Boden unter der Kachel oder neues gezeichnetes Wasser → die Kachel neu (ihre Büschel standen auf dem alten
+        // Boden, am alten Ufer); eine neue Karte ihres Chunks, die unter ihr gleich ist, trägt sie weiter (`_bodenSichtGleich`, F5).
         for (const [key, k] of nw.kacheln) {
-            let neu = !this._wasserKennungenGleich(k.wasser);
-            for (const ck of k.chunks) {
-                if (neu) break;
-                const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== k.chunkKarten.get(ck)) neu = true;
-            }
+            const ci = key.indexOf(",");
+            const x0 = parseInt(key.slice(0, ci), 10) * NW.kachel - 0.34;
+            const z0 = parseInt(key.slice(ci + 1), 10) * NW.kachel - 0.34;
+            const neu =
+                !this._wasserKennungenGleich(k.wasser) ||
+                !this._bodenSichtGleich(k.chunkKarten, x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             if (neu && this._nahWieseKachelFaellt(key)) gefallen++;
         }
         const wunsch = [];
@@ -140,12 +141,13 @@ class AnazhRealm_vegetation_wiese {
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
                 if (d > NW.radius + NW.kachel * 0.71) continue;
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+                const rang = this._ankunftD2((tx + 0.5) * NW.kachel, (tz + 0.5) * NW.kachel); // DIE ANKUNFT (F5)
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, rang });
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
         for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && this._nahWieseKachelFaellt(key)) gefallen++;
-        wunsch.sort((a, b) => a.d - b.d);
+        wunsch.sort((a, b) => a.rang - b.rang);
         // Buch und Render-Config docken in EINER Nachricht (wie `_nahStreuArten`): solange beide fehlen, wartet die Wiese —
         // ein Budget vor dem Buch ist kein Bruch, sondern noch nicht da. Bis Welle K las sie das Budget im ersten Takt nach
         // dem Boot und warf KERN-PFLICHT, bis das Buch kam (gate:post-kette sah es, sobald der Boot schneller zeichnete).
@@ -191,11 +193,10 @@ class AnazhRealm_vegetation_wiese {
             const x0 = w.tx * NW.kachel - 0.34;
             const z0 = w.tz * NW.kachel - 0.34;
             const chunkKarten = this._bodenSichtChunks(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
-            const chunks = new Set(chunkKarten.keys());
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunks, chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
@@ -736,7 +737,8 @@ class AnazhRealm_vegetation_wiese {
         k.zustand = null;
     }
 
-    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
+    // Je Takt (nahFeld, prio 1): Kacheln im Ring um die KAMERA anlegen (nach der Ankunft, `_ankunftD2`, F5;
+    // ≤ kachelnJeTakt Neubauten),
     // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
     // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
     // Würfel-Ordnung (Viertel-Stufen), außerhalb
@@ -762,16 +764,22 @@ class AnazhRealm_vegetation_wiese {
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
-        // Chunk-Neubau oder neues gezeichnetes Wasser → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten
-        // Boden, am alten Ufer).
+        // Neuer Boden unter der Kachel oder neues gezeichnetes Wasser → die Kachel neu (ihre Pflanzen standen auf dem alten
+        // Boden, am alten Ufer); eine neue Karte ihres Chunks, die unter ihr gleich ist, trägt sie weiter (`_bodenSichtGleich`, F5).
         for (const [key, k] of ns.kacheln) {
             if (!k.chunks) continue;
-            let neu = !this._wasserKennungenGleich(k.wasser);
-            for (const [ck, karte] of k.chunks) {
-                if (neu) break;
-                const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== karte) neu = true;
-            }
+            const ci = key.indexOf(",");
+            const tx = parseInt(key.slice(0, ci), 10),
+                tz = parseInt(key.slice(ci + 1), 10);
+            const neu =
+                !this._wasserKennungenGleich(k.wasser) ||
+                !this._bodenSichtGleich(
+                    k.chunks,
+                    tx * NS.kachel,
+                    tz * NS.kachel,
+                    (tx + 1) * NS.kachel,
+                    (tz + 1) * NS.kachel
+                );
             if (neu) {
                 this._nahStreuKachelEntsorgen(k);
                 ns.kacheln.delete(key);
@@ -788,7 +796,8 @@ class AnazhRealm_vegetation_wiese {
                 // die kürzeste Distanz Kamera → Kachel-Rechteck: reicht der Armlängen-Kreis hinein?
                 const ex = Math.max(tx * NS.kachel - cam.x, 0, cam.x - (tx + 1) * NS.kachel);
                 const ez = Math.max(tz * NS.kachel - cam.z, 0, cam.z - (tz + 1) * NS.kachel);
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, imKreis: Math.hypot(ex, ez) <= NS.stufe0 + 1 });
+                const rang = this._ankunftD2((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel); // DIE ANKUNFT (F5)
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, rang, imKreis: Math.hypot(ex, ez) <= NS.stufe0 + 1 });
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
@@ -798,7 +807,14 @@ class AnazhRealm_vegetation_wiese {
             ns.kacheln.delete(key);
             gefallen++;
         }
-        wunsch.sort((a, b) => a.d - b.d);
+        // ERST DIE LÜCKE (F5, wie das Wasser): eine Kachel ohne Zustand ist ein Loch im Bild, eine mit altem Zustand (Armlänge,
+        // Rand-Band) zeigt ihre Pflanzen weiter — je Gruppe nach der Ankunft. Bis F5 fraßen die Auffrischungen des Rand-Bands
+        // in Fahrt jede Kappe, die Lücken davor warteten.
+        const luecke = (w) => {
+            const k = ns.kacheln.get(w.key);
+            return k && k.zustand != null ? 1 : 0;
+        };
+        wunsch.sort((a, b) => luecke(a) - luecke(b) || a.rang - b.rang);
         const geerntet = st.scatterHarvested;
         let gebaut = 0;
         ns.offen = 0;
@@ -992,7 +1008,9 @@ class AnazhRealm_vegetation_wiese {
                 return Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
             };
             for (const k of keys) if (distOf(k) > GRASS_RING) queue.delete(k);
-            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+            // je Chunk nach seiner Ankunft (`_ankunftChunkD2`, F5)
+            const rang = new Map([...queue].map((k) => [k, this._ankunftChunkD2(k)]));
+            keys = [...queue].sort((a, b) => rang.get(a) - rang.get(b));
         }
         let built = 0;
         for (const key of keys) {
@@ -1658,7 +1676,7 @@ class AnazhRealm_vegetation_wiese {
         const liste = [];
         for (const [k, g] of Q) {
             if (memo.has(k)) Q.delete(k);
-            else if (!flug || !flug.has(k)) liste.push([this._spielerD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
+            else if (!flug || !flug.has(k)) liste.push([this._ankunftD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
         }
         liste.sort((a, b) => a[0] - b[0]);
         return liste;

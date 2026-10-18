@@ -509,8 +509,9 @@ class AnazhRealm_studio_gestalt {
         // postMessage; nur das Platzieren bleibt placeBudget-begrenzt. Ein 0-Throttle ließe die nahen
         // LOD0/1-Bäume unter Last nie backen (kahle Nähe).
         let bakeBudget = overBudget ? 2 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK;
-        // NAH ZUERST (Lehre 16): die Budgets gehen an die nächsten Kandidaten, nie in Listen-Reihenfolge an ferne
-        // Altbauten (Befund 30.09.: die Mesh-Zone konvergierte vom Listenanfang her, der Baum vor der Kamera wartete).
+        // NAH ZUERST (Lehre 16) nach der ANKUNFT (`_ankunftD2`, F5): die Budgets gehen an die nächsten Kandidaten, nie in
+        // Listen-Reihenfolge an ferne Altbauten (Befund 30.09.: die Mesh-Zone konvergierte vom Listenanfang her, der Baum
+        // vor der Kamera wartete).
         const kand = this._rewarmKand || (this._rewarmKand = []);
         kand.length = 0;
         // Die billigen Filter zuerst (Lehre 25: der Scan läuft je Frame über JEDEN Eintrag): schon foundry-platziert,
@@ -530,7 +531,7 @@ class AnazhRealm_studio_gestalt {
             // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
             // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht).
             if (!this._foundryPresetForEntry(entry)) continue;
-            entry._rewarmD2 = d2;
+            entry._rewarmD2 = this._ankunftD2(entry.position.x, entry.position.z); // DIE ANKUNFT (F5)
             kand.push(entry);
         }
         kand.sort((a, b) => a._rewarmD2 - b._rewarmD2);

@@ -32,11 +32,7 @@ const SC = globalThis.__schmiedeCore;
 const VC = globalThis.__vehicleCore;
 const KC = globalThis.__klangCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 function fp(g) {
     const h = crypto.createHash("sha256");
     let n = 0;

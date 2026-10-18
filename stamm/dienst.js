@@ -406,19 +406,49 @@ class AnazhRealm_dienst {
         return true;
     }
 
-    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
-    _spielerD2(x, z) {
+    // DIE ANKUNFT (F5) — der EINE Rang jeder Schlange der Welt (Foundry, Bake-Takt, Ring und Neubau der Chunks, Gras,
+    // Wasser, Wald-Plan, Pflanzung, Laub, Streu-Regionen, Promotion, Nah-Wiese, Nah-Streu, Bauten, Karten): d² eines
+    // Welt-Punkts zum Ort, an dem der Spieler in VORAUSSCHAU.sek Sekunden steht — seine Lage plus seine Fahrt
+    // (`state.playerVel`, die EINE Geschwindigkeit, geritten die des Gefährts) mal die Zeit, der Vorlauf gedeckelt auf
+    // VORAUSSCHAU.maxM. Unter VORAUSSCHAU.minV ist es der Abstand (der Stand bleibt byte-alt). Bis F5 ordnete jede Schlange
+    // nach dem Abstand JETZT: bei Tempo kam, was voraus liegt, zu spät, und was hinten lag, fraß das Budget (Schöpfer
+    // 17.10.: „beim schnellen Fahren kommen Bäume, Wiese usw. nicht mehr fließend nach"). Ohne Spieler: vorne (0).
+    _ankunftD2(x, z) {
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return 0;
-        const dx = x - pm.x,
-            dz = z - pm.z;
+        const a = this._ankunftVorlauf();
+        const dx = x - pm.x - a.x,
+            dz = z - pm.z - a.z;
         return dx * dx + dz * dz;
     }
-    // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
+    // Der Rang eines Chunks (cx, cz — oder sein Schlüssel "cx,cz"): seine Mitte.
+    _ankunftChunkD2(cx, cz) {
+        if (typeof cx === "string") {
+            const i = cx.indexOf(",");
+            cz = parseInt(cx.slice(i + 1), 10);
+            cx = parseInt(cx.slice(0, i), 10);
+        }
+        const S = this._voxelChunkConfig(0).span;
+        return this._ankunftD2((cx + 0.5) * S, (cz + 0.5) * S);
+    }
+    // Der Vorlauf {x, z} (m) aus der Fahrt — NaN-fest (eine kaputte Fahrt ist der Stand).
+    _ankunftVorlauf() {
+        const V = AnazhRealm.VORAUSSCHAU;
+        const o = this._vorlaufWert || (this._vorlaufWert = { x: 0, z: 0 });
+        const v = this.state.playerVel;
+        const vx = v ? v.x() : 0,
+            vz = v ? v.z() : 0;
+        const sp = Math.hypot(vx, vz);
+        const k = sp >= V.minV ? Math.min(sp * V.sek, V.maxM) / sp : 0;
+        o.x = k ? vx * k : 0;
+        o.z = k ? vz * k : 0;
+        return o;
+    }
+    // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Ankunft.
     _archZiegelD2(entry) {
         if (Number.isFinite(entry._ziegelD2)) return entry._ziegelD2;
         const p = entry.position || { x: 0, z: 0 };
-        return this._spielerD2(p.x || 0, p.z || 0);
+        return this._ankunftD2(p.x || 0, p.z || 0);
     }
 
     _weltMarchEnsure() {
@@ -709,7 +739,7 @@ class AnazhRealm_dienst {
         if (gestalt == null) return null; // Buch kalt — die Zelle wartet
         const key = "agesetz:" + preset + ":" + gestalt;
         // Fit-Takt (Treffer frei); die volle Liste verbrennt keinen (`kapselVoll`, die Zelle wartet billig).
-        if (!wm.kapselCache.has(key) && (wm.kapselVoll || !this._weltBakeErlaubt(this._spielerD2(x, z)))) return null;
+        if (!wm.kapselCache.has(key) && (wm.kapselVoll || !this._weltBakeErlaubt(this._ankunftD2(x, z)))) return null;
         const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed));
         if (!satz) return null;
         const W = AnazhRealm.WELT_MARCH;
@@ -1525,3 +1555,6 @@ AnazhRealm.WELT_MARCH = Object.freeze({
 // DER SCHWUND (ms): so lange dithert ein Analog-Satz aus, wenn sein Mesh übernimmt (`_weltFeldAktiv`) — der
 // Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
 AnazhRealm.WELT_SCHWUND_MS = 500;
+// DIE VORAUSSCHAU (F5, `_ankunftD2`): so viele Sekunden voraus misst jede Schlange (die Zeit, die ein Auftrag bis ins Bild
+// braucht: Chunk 0,1–0,3 s, Region in Scheiben, Foundry 0,1–25 s), höchstens maxM Meter, ab minV m/s.
+AnazhRealm.VORAUSSCHAU = Object.freeze({ sek: 2, maxM: 60, minV: 0.5 });

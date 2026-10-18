@@ -2470,7 +2470,7 @@ class AnazhRealm_kreatur_verhalten {
                 cr.visible = false;
                 return;
             }
-            if (!this._weltBakeErlaubt(d2)) return; // getaktet — bis dahin trägt der Körper
+            if (!this._weltBakeErlaubt(this._ankunftD2(cr.position.x, cr.position.z))) return; // getaktet — bis dahin trägt der Körper
             u._kzVersuch = true;
             this._leibMatrix(cr);
             // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.

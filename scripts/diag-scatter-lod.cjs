@@ -25,20 +25,23 @@
 //     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Befund (echte GPU, Mess-Wiese): die Gruppe im
 //     @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
 //     Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
+//   V (F5 — DIE FAHRT, Schöpfer 17.10.: „beim schnellen Fahren kommen Bäume, Wiese usw. nicht mehr fließend nach"): an der
+//     Mess-Wiese 30 · 60 · 90 km/h dieselbe Strecke geradeaus durch den echten Takt (`__fahrtLauf`, lib/stand-linse.cjs). V1
+//     der EINE Rang jeder Schlange ist die Ankunft (`_ankunftD2`: voraus vor hinten, im Stand der Abstand, gedeckelt); V2 Ring,
+//     Einbau, Cull, Nah-Wiese und Nah-Streu lesen ihn; V3 je Bild im Blick höchstens FAHRT.luecken Lücken (Basis 25f53923,
+//     90 km/h: 54,8, davon 48,5 Kacheln der Nah-Streu); Selbsttest: die Fahrt des Befunds fällt rot beim Namen.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
+const { STAND_INSTALL, fahrtUrteil } = require("./lib/stand-linse.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     // ── F (Absenz über den EINEN Helfer): kein zweiter Keying-Ort — die Konstante lesen NUR der Key (`_archFernRegionKey`)
@@ -615,6 +618,51 @@ function check(name, ok, detail) {
             `leckA=${out.f.leckA} leckB=${out.f.leckB}`
         );
     } else check("F: Fern-Diät-Block erreicht", false);
+    // ── V (F5) DIE FAHRT: an der Mess-Wiese, je Tempo dieselbe Strecke vom eingeschwungenen Start ──
+    await page.evaluate(STAND_INSTALL);
+    const fahrt = await page.evaluate(async (ort) => {
+        const r = window.anazhRealm, st = r.state, pm = st.playerMesh.position, P = Object.getPrototypeOf(r);
+        const aus = { laeufe: [], leser: new Set() };
+        // V1 am Ort: Punkte 40 m voraus · hinten · quer bei 25 m/s nach +x, im Stand, mit kaputter und mit rasender Fahrt
+        const rang = (vx) => (st.playerVel.setValue(vx, 0, 0), [[40, 0], [-40, 0], [0, 40]].map(([a, b]) => r._ankunftD2(pm.x + a, pm.z + b)));
+        if (typeof P._ankunftD2 === "function") {
+            aus.gesetz = { fahrt: rang(25), stand: rang(0), kaputt: rang(NaN), rasend: rang(400)[0], deckel: (40 - r.constructor.VORAUSSCHAU.maxM) ** 2 };
+            st.playerVel.setValue(0, 0, 0);
+            // V2: wer in der Fahrt den Rang liest — jeder 25. Ruf trägt seinen Stapel
+            let n = 0;
+            r._ankunftD2 = function (x, z) {
+                if (n++ % 25 === 0) for (const m of String(new Error().stack).matchAll(/\.(\w+) \(/g)) aus.leser.add(m[1]);
+                return P._ankunftD2.call(this, x, z);
+            };
+        }
+        const takt = async () => (r._gameLoopTick(performance.now()), await new Promise((q) => setTimeout(q, 0)));
+        try {
+            for (const kmh of [30, 60, 90]) {
+                st.yaw = Math.atan2(ort.blick.x - ort.x, ort.blick.z - ort.z);
+                pm.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+                await window.__weltStehtNach(takt, 1800);
+                aus.laeufe.push(await window.__fahrtLauf({ kmh, weg: 150 }));
+            }
+        } finally {
+            delete r._ankunftD2;
+        }
+        return Object.assign(aus, { leser: [...aus.leser] });
+    }, messort("wiese"));
+    const G = fahrt.gesetz;
+    check(
+        "V1: der EINE Rang ist die Ankunft — in Fahrt voraus vor quer vor hinten, im Stand und bei kaputter Fahrt der Abstand, der Vorlauf gedeckelt",
+        !!G && G.fahrt[0] < G.fahrt[2] && G.fahrt[2] < G.fahrt[1] && [...G.stand, ...G.kaputt].every((d) => d === 1600) && Math.abs(G.rasend - G.deckel) < 1e-6,
+        G ? JSON.stringify(G) : "`_ankunftD2` fehlt — die Schlangen ordnen nach dem Abstand jetzt"
+    );
+    const ohne = ["_tickVoxelChunkStreaming", "_finalizeVoxelChunkBuild", "tickArchitectureCulling", "_tickNahWiese", "_tickNahStreu"].filter((m) => !fahrt.leser.includes(m));
+    check("V2: in der Fahrt lesen Ring, Einbau, Cull, Nah-Wiese und Nah-Streu die Ankunft", ohne.length === 0, ohne.length ? `ohne Ankunft: ${ohne.join(", ")}` : "");
+    for (const l of fahrt.laeufe)
+        console.log(`  · Fahrt ${l.kmh} km/h: ${l.summe.mittel} Lücken je Bild im Blick (p95 ${l.summe.p95}), ${l.mitLuecke}/${l.bilder} Bilder mit Lücke, Pops ${JSON.stringify(l.pops)}`);
+    const v3 = fahrtUrteil(fahrt.laeufe);
+    check("V3: je Tempo höchstens FAHRT.luecken Lücken je Bild im Blick", v3.length === 0, v3.join(" · "));
+    const m = (x) => ({ mittel: x });
+    const st3 = fahrtUrteil([{ kmh: 90, bilder: 959, summe: m(54.8), nahStreu: m(48.5), wiese: m(5.9), chunk: m(0.3), bauten: m(0), streu: m(0.1), pflanzung: m(0), karten: m(0) }]);
+    check("V3: Selbsttest — die Fahrt des Befunds fällt rot und nennt die Nah-Streu", st3.length === 1 && /nahStreu 48\.5/.test(st3[0]), st3.join(" · "));
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
