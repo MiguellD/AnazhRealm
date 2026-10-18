@@ -97,7 +97,6 @@ async function installiereBacke(page) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
-                        if (e === 0) continue; // ein Ring der Hebung steht, der nächste folgt (F2b)
                     }
                     if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
                     await new Promise((ok) => setTimeout(ok, 50));
@@ -217,8 +216,6 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            // der Bake in der Welt; die gefallenen Wege (RTT-Nachbau, Bake-iframe, Bäcker-Kanal) hält die Verfassung (G3)
-            out.vereinigung = { weltBake: typeof r._karteWeltBacken === "function" };
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -400,49 +397,24 @@ async function kleberProbe(page, fmtWunsch) {
             const sch = new T.CircleGeometry(3.6, 48).rotateX(-Math.PI / 2).translate(0, 6.6, 0).toNonIndexed().attributes.position.array;
             const st = [-1, 0, 1, 0, 1, 1, -1, 0, 1, 1, -1, 1].map((v, i) => (i % 2 ? v * 6.6 : v * 0.3));
             const ob = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([...sch, ...[0, 1].flatMap((a) => st.flatMap((v, i) => (i % 2 ? [] : a ? [0, st[i + 1], v] : [v, st[i + 1], 0])))], 3));
-            const leafO = r._impostorLeaf(await window.__fimpBacke(ren, at, "fimp:gateKarte|3", 93, ob), new T.Matrix4(), H0);
-            const mO = new T.InstancedMesh(r._lodInstanceFacade(leafO.geom, 2), mat, 1);
-            const gO = { key: "gate:oben", mesh: mO, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] };
-            const sO = r._archGroupAlloc(gO, null).slot;
-            mO.setMatrixAt(sO, new T.Matrix4()), (mO.frustumCulled = false), r._lodSlotStamp({ mesh: mO }, sO, 1, false, leafO);
             const camO = new T.PerspectiveCamera(35, W / H, 0.5, 500);
             camO.position.set(0, 4 + 26 * Math.sin(Math.PI / 3), 26 * Math.cos(Math.PI / 3)), camO.lookAt(0, 4, 0), camO.updateMatrixWorld(true);
-            // ein neuer Stoff zeichnet erst, wenn sein Programm steht (die Bau-Frist der Erst-Zeichnung): gezählt wird das
-            // ruhige Bild — zweimal dieselbe Pixel-Zahl, nicht null (höchstens 40 Bilder)
-            const deckt = async (o) => {
-                const s2 = new T.Scene().add(o, new T.AmbientLight(0xffffff, 3));
-                let px = null;
-                for (let i = 0, vor = -1; i < 40; i++) {
-                    await ren.renderAsync(s2, camO);
-                    px = (await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H)).filter((v, j) => j % 4 === 3).map((a) => +(a > 0));
-                    const n = px.reduce((a, b) => a + b, 0);
-                    if (n > 0 && n === vor) break;
-                    vor = n;
-                    await new Promise((ok) => setTimeout(ok, 25));
-                }
-                return px;
+            const deckt = (o) => ren.renderAsync(new T.Scene().add(o, new T.AmbientLight(0xffffff, 3)), camO).then(() => ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H)).then((b) => b.filter((v, i) => i % 4 === 3).map((a) => +(a > 0)));
+            const gG = await deckt(new T.Mesh(ob, new T.MeshBasicMaterial({ side: T.DoubleSide }))), nG = gG.reduce((a, b) => a + b, 0);
+            const oben = async (n, hoe) => {
+                const vor = at.hoehen;
+                at.hoehen = hoe; // die Ringe aus diesen Hebungen gebacken (der Stoff liest die Ringe des Rezepts)
+                const leafO = r._impostorLeaf(await window.__fimpBacke(ren, at, "fimp:gateKarte|" + n, 93, ob).finally(() => (at.hoehen = vor)), new T.Matrix4(), H0);
+                const mO = new T.InstancedMesh(r._lodInstanceFacade(leafO.geom, 2), mat, 1);
+                const sO = r._archGroupAlloc({ key: "gate:oben" + n, mesh: mO, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] }, null).slot;
+                mO.setMatrixAt(sO, new T.Matrix4()), (mO.frustumCulled = false), r._lodSlotStamp({ mesh: mO }, sO, 1, false, leafO);
+                const kO = await deckt(mO);
+                const nK = kO.reduce((a, b) => a + b, 0), nI = kO.reduce((a, b, i) => a + (b & gG[i]), 0);
+                return { gestalt: nG, karte: nK, ringe: hoe.length, deckung: +(nK / Math.max(1, nG)).toFixed(3), iou: +(nI / Math.max(1, nG + nK - nI)).toFixed(3) };
             };
-            const kO = await deckt(mO), gG = await deckt(new T.Mesh(ob, new T.MeshBasicMaterial({ side: T.DoubleSide })));
-            const nK = kO.reduce((a, b) => a + b, 0), nG = gG.reduce((a, b) => a + b, 0), nI = kO.reduce((a, b, i) => a + (b & gG[i]), 0);
-            out.oben = { gestalt: nG, karte: nK, deckung: +(nK / Math.max(1, nG)).toFixed(3), iou: +(nI / Math.max(1, nG + nK - nI)).toFixed(3) };
-            // SELBSTTEST C6: dieselbe Scheibe in derselben Karte, ihre Ringe aber aus der Hebung 0 gebacken (das Gesetz bis F2b:
-            // jede Ansicht waagrecht) — die Karte MUSS von oben durchfallen; danach backt der Atlas wieder seine Ringe
-            const hoeVor = at.hoehen;
-            let zW = null;
-            try {
-                at.hoehen = hoeVor.map(() => 0);
-                zW = await window.__fimpBacke(ren, at, "fimp:gateKarte|4", 93, ob);
-            } finally {
-                at.hoehen = hoeVor;
-            }
-            const leafW = r._impostorLeaf(zW, new T.Matrix4(), H0);
-            const mW = new T.InstancedMesh(r._lodInstanceFacade(leafW.geom, 2), mat, 1);
-            const gW = { key: "gate:oben-waagrecht", mesh: mW, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] };
-            const sW = r._archGroupAlloc(gW, null).slot;
-            mW.setMatrixAt(sW, new T.Matrix4()), (mW.frustumCulled = false), r._lodSlotStamp({ mesh: mW }, sW, 1, false, leafW);
-            const kW = await deckt(mW);
-            const nW = kW.reduce((a, b) => a + b, 0), iW = kW.reduce((a, b, i) => a + (b & gG[i]), 0);
-            out.obenSelbst = { ringe: hoeVor.length, karte: nW, deckung: +(nW / Math.max(1, nG)).toFixed(3), iou: +(iW / Math.max(1, nG + nW - iW)).toFixed(3) };
+            out.oben = await oben(3, at.hoehen);
+            // SELBSTTEST: dieselbe Scheibe, jeder Ring waagrecht gebacken (das Gesetz bis F2b) — sie MUSS von oben durchfallen
+            out.obenSelbst = await oben(4, at.hoehen.map(() => 0));
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
@@ -871,7 +843,6 @@ async function windProbe(page) {
     console.log(`  Atlas-Zelle: ${JSON.stringify(A.rec)}`);
     console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
-    console.log(`  Vereinigung (Kanal/Methoden/kein Nachbau): ${JSON.stringify(A.vereinigung)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
     if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
@@ -915,8 +886,8 @@ async function windProbe(page) {
             if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
-    if (A.vereinigung) {
-        const s = A.strich || {};
+    if (A.strich) {
+        const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
         if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0))
             errs.push(
@@ -924,7 +895,6 @@ async function windProbe(page) {
             );
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
-        if (!A.vereinigung.weltBake) errs.push("A: `_karteWeltBacken` fehlt");
     } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
@@ -979,13 +949,10 @@ async function windProbe(page) {
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
         console.log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
         for (const f of C.wachsen || ["keine Messung"]) errs.push(`${F} C5: ${f}`);
-        const O = C.oben || {}; // C6 DIE KARTE VON OBEN (F2b)
-        console.log(`  C6 VON OBEN (60°): Gestalt ${O.gestalt} px · Karte ${O.karte} px · Deckung ${O.deckung} · IoU ${O.iou} (Soll 1 ± 0,25 · ≥ 0,6)`);
+        const O = C.oben || {}, OS = C.obenSelbst || {}; // C6 DIE KARTE VON OBEN (F2b)
+        console.log(`  C6 VON OBEN (60°): Gestalt ${O.gestalt} px · Karte ${O.karte} px · Deckung ${O.deckung} · IoU ${O.iou} (Soll 1 ± 0,25 · ≥ 0,6) · Selbsttest (${OS.ringe} Ringe waagrecht) ${OS.deckung} · ${OS.iou}`);
         if (!(O.gestalt > 500 && O.iou >= 0.6 && Math.abs(O.deckung - 1) <= 0.25)) errs.push(`${F} C6: die Karte zeigt von oben nicht die Krone der Gestalt (Deckung ${O.deckung}, IoU ${O.iou})`);
-        const OS = C.obenSelbst || {};
-        console.log(`  C6 SELBSTTEST (${OS.ringe} Ringe, jeder waagrecht gebacken): Deckung ${OS.deckung} · IoU ${OS.iou} — MUSS durchfallen`);
-        if (!(OS.ringe > 1 && (OS.iou < 0.6 || Math.abs(OS.deckung - 1) > 0.25)))
-            errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben (Deckung ${OS.deckung}, IoU ${OS.iou}) — die Linse ist blind`);
+        if (!(OS.ringe > 1 && (OS.iou < 0.6 || Math.abs(OS.deckung - 1) > 0.25))) errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben (${OS.deckung}, ${OS.iou}) — die Linse ist blind`);
     }
     {
         console.log(
