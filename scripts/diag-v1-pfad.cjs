@@ -102,7 +102,7 @@ Object.assign(SOLL, { kontrolleM: 2, fahrM: 100, armMin: 0.9, wagenMin: 0.005, w
 // Gleichlauf am Kopf 0,91–0,96, nach F1 ≤ 0,1; über der Fahrbahn am Kopf −3,3°, nach F1 17,4° (das Gesetz 19,5°).
 Object.assign(SOLL, { wechselS: 2, kreisMs: 3, kreisM: 10, egoGrad: 30, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, schnapp: 0.05, schnappMax: 3, hangM: 60, hangMin: 0.2, hangMittel: 0.3 });
 // Der Wiederaufstieg: das erste Bild ohne Sim-Schritt zeichnet den Wagen ≤ wiederaufGrad neben seiner Gier (das Gesetz: 0, der
-// Rest des Grads ist die Rundung). Das Werk in der Vorschau der Werkstatt deckt ≥ vorschauBildMin ihres Canvas.
+// Rest des Grads ist die Rundung). Die Eiche der Vorschau deckt ≥ vorschauBildMin ihres Canvas (Radeon 18.10.: 4,3 %, das leere Canvas 0).
 Object.assign(SOLL, { wiederaufGrad: 1, vorschauBildMin: 0.02 });
 const pct = (x) => `${(100 * (x || 0)).toFixed(1)} %`;
 // ANKUNFT: das erste Weltbild ist ganz (das Gesetz von L2a sagt es selbst im Log, wenn es über Ruhe oder Deckel wich), der
@@ -1533,7 +1533,7 @@ async function probe(arg) {
         // DAS BILD DER WERKSTATT: die Vorschau zeichnet in ihr eigenes Canvas, das ist ihr Ausgabe-Pfad (der Spieler sieht es).
         // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und ohne Werk:
         // der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im Bild der Fahrt)
-        if (!R._isHeadlessNull) {
+        if (!st.renderer._isHeadlessNull) { // (R ist hier die letzte Probe des Beobachters)
             const [beob, c] = [p.renderer.render, p.canvas];
             delete p.renderer.render;
             try {
