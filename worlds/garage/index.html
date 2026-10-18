@@ -6,12 +6,13 @@
 <!-- Garage-Portal (08.07.2026) — ANATOMIE · FAHRZEUG: das Fahrzeug-Labor des
      Schöpfers (Rahmen · Gelenke · Lehren · Baukörper · Haut + Probefahrt).
      Eigenes Document, eigene strikte CSP: Skript nur same-origin (garage.js +
-     ../terrain/lib/ — Three.js r128 vendored, kein CDN). Die iframe-Sandbox
+     die EINE Engine der Welt aus ../../vendor/ — three r184 WebGPU, kein CDN; der
+     Hash trägt die Import-Map). Die iframe-Sandbox
      trägt die Isolation; die Hülle (../huelle/huelle.js) trägt Regler, Sitzung,
      Kosten-Leiste und die Brücke zur Heimat (enter/ready/dsl/exit). -->
 <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+    content="default-src 'self'; script-src 'self' 'sha256-0GvGmzWavRegxN1My7wRvCLRbft9D2pWirOHv/rDu50='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>ANATOMIE · FAHRZEUG — Rahmen · Gelenke · Lehren</title>
 <link rel="stylesheet" href="../huelle/huelle.css?v=18.546.19">
@@ -103,6 +104,7 @@ canvas{display:block}
   <div class="row" id="presets"></div>
   <div class="sec-t">FAHREN</div>
   <div class="row"><button class="btn start" id="start">▶ Motor starten · Probefahrt</button></div>
+  <div class="row"><button class="btn" id="welt">In der Welt ansehen</button></div>
   <div class="sec-t">EBENEN</div>
   <div class="row" id="layers"></div>
   <div class="sec-t">ANSICHT</div>
@@ -124,15 +126,14 @@ canvas{display:block}
 <div id="hint">MAUS orbit · 1–7 Ebenen · K Türen · P Preset · Fahrzustand oben rechts · „Ergebnis" = fertiges Auto</div>
 <div id="hud"><span class="spd-wrap"><span id="spd">0</span> <span class="u">km/h</span></span><span class="keys"><b>W</b>/<b>S</b> Gas·Brems&nbsp;&nbsp;<b>A</b>/<b>D</b> Lenken&nbsp;&nbsp;<b>Leer</b> Handbremse&nbsp;&nbsp;<b>Maus</b> umsehen&nbsp;&nbsp;<b>ESC</b> Werkstatt&nbsp;&nbsp;·&nbsp;&nbsp;<b>Pylonen</b> umfahren · Reifen brennen Spuren</span></div>
 
-<!-- Klassische Global-Skripte: Three.js r128 + OrbitControls aus dem geteilten
-     Vendor-Regal des Terrain-Portals (EINE Kopie, kein Duplikat), dann der
-     FAHRZEUG-STUDIO-KERN (vehicle-core.js, __vehicleCore — W7a Kern-Split,
-     die EINE generative Quelle für Shell UND AnazhRealm-Foundry) VOR der
-     Shell, dann das Schöpfer-Werk selbst. -->
-<script src="../terrain/lib/three-r128.min.js"></script>
-<script src="../terrain/lib/OrbitControls.js"></script>
-<script src="../../vehicle-core.js?v=18.546.19"></script>
-<script src="../huelle/huelle.js?v=18.546.19"></script>
-<script src="garage.js?v=18.546.19"></script>
+<!-- DIE EINE ENGINE (18.10.): die Garage läuft auf der Engine der Welt — dieselbe Import-Map, derselbe Bootstrap
+     (three r184 WebGPU, window.THREE) wie index.html der Welt; danach der FAHRZEUG-STUDIO-KERN (vehicle-core.js,
+     __vehicleCore — die EINE generative Quelle für Shell UND Foundry), die Hülle und das Werk (defer hält die Reihe
+     hinter dem Modul). -->
+<script type="importmap">{"imports":{"three":"../../vendor/three.module.min.js","three/webgpu":"../../vendor/three.webgpu.min.js","three/tsl":"../../vendor/three.tsl.min.js"}}</script>
+<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.19"></script>
+<script src="../../vehicle-core.js?v=18.546.19" defer></script>
+<script src="../huelle/huelle.js?v=18.546.19" defer></script>
+<script src="garage.js?v=18.546.19" defer></script>
 </body>
 </html>

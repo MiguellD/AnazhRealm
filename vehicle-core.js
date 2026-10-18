@@ -282,7 +282,10 @@
         return c;
     }
     // r128 legte das Hex roh ab (Komponente = Byte / 255): das Gesetz liest die Komponente selbst, kein Hex-Umweg.
+    // Unter r184 (ColorManagement an — die Garage auf der Engine der Welt) rechnet die Engine dieselbe sRGB-Kurve beim
+    // Bau: die Komponente IST schon linear, ein zweiter Zug verdunkelte jeden Stoff (r128 kennt kein ColorManagement).
     function stoffFarbe(m) {
+        if (THREE.ColorManagement && THREE.ColorManagement.enabled) return;
         for (const c of [m.color, m.emissive]) if (c) c.setRGB(linKanal(c.r), linKanal(c.g), linKanal(c.b));
     }
     // DER LACK DER WELT (W5): das Labor zeigt das Ton-Modell (Clay, die Anatomie-Ansicht) und den Lack der Leiste; die
@@ -3387,8 +3390,9 @@
     // Stufe 1 unter FAHRZEUG_DETAIL_1; die Karte gradet der Wirt). ov reist
     // als Parameter-Override (z. B. CULTURES[x].fx). Ausgang: EINE THREE.Group
     // (Baukörper + Haut + Räder, Querschnitt-verjüngt + plan-konvex), Welt-Matrizen
-    // aktualisiert — die Naht sind die Float32-Attribute ihrer Meshes (G2.2).
-    function buildInstance(rezeptId, seed, lod, ov) {
+    // aktualisiert — die Naht sind die Float32-Attribute ihrer Meshes (G2.2). werk (die Werkstatt der Garage, Labor = Welt):
+    // derselbe Bau mit ihren Hörern — bodyMat (Clay oder der Lack der Leiste), doors und corners (Türen, Rad-Ecken der Fahrt).
+    function buildInstance(rezeptId, seed, lod, ov, werk) {
         const pre = PRESETS[rezeptId];
         if (!pre) return null;
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
@@ -3396,14 +3400,15 @@
         const st = lod >= 1 ? 1 : 0;
         _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
         try {
-            return baueFahrzeug(rezeptId, seed, P, st);
+            return baueFahrzeug(rezeptId, seed, P, st, werk);
         } finally {
             _vd = FAHRZEUG_DETAIL;
         }
     }
-    function baueFahrzeug(rezeptId, seed, P, st) {
+    function baueFahrzeug(rezeptId, seed, P, st, werk) {
         const mats = materials();
-        const ctx = { M: mats, bodyMat: lackStoff(lackIndex(seed)), doors: [], corners: [] };
+        const w = werk || {};
+        const ctx = { M: mats, bodyMat: w.bodyMat || lackStoff(lackIndex(seed)), doors: w.doors || [], corners: w.corners || [] };
         const H = hardpoints(P);
         const g = new THREE.Group();
         const pkg = buildPackage(H, P, ctx);

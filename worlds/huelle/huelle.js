@@ -18,7 +18,8 @@
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
  *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
- *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten);
+ *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten;
+ *                              unter r184 WebGPU ein Versprechen der gelesenen Würfe);
  *                              panoramaBild(maler) dasselbe für die flache Welt (sie malt ihr Equirekt selbst)
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
@@ -685,7 +686,7 @@
         try {
             for (var i = 0; i < 6; i++) {
                 var S = SEITEN[i];
-                var ziel = new T.WebGLRenderTarget(256, 256, {
+                var ziel = new (renderer.isWebGPURenderer ? T.RenderTarget : T.WebGLRenderTarget)(256, 256, {
                     type: T.HalfFloatType,
                     generateMipmaps: false,
                     minFilter: T.LinearFilter,
@@ -708,6 +709,54 @@
         } finally {
             verborgen.forEach(function (o, i) {
                 o.visible = sicht[i];
+            });
+        }
+        // DIE ENGINE DER WELT (r184 WebGPU — die Garage seit 18.10.) trägt kein GLSL: die sechs Würfe kommen gelesen zurück
+        // (Halbfloat; Zeile 0 OBEN auf dem WebGPU-Backend, UNTEN auf seinem WebGL2-Ersatz) und falten sich hier nach demselben
+        // Gesetz wie der Shader unten (die Seite mit dem größten Anteil, bilinear), als Versprechen; die GLSL-Faltung lebt,
+        // solange eine r128-Seite lebt (die Ratsche H6).
+        if (renderer.isWebGPURenderer) {
+            renderer.setRenderTarget(alt);
+            renderer.toneMapping = tm;
+            return Promise.all(
+                ziele.map(function (z) {
+                    return renderer.readRenderTargetPixelsAsync(z, 0, 0, 256, 256);
+                })
+            ).then(function (roh) {
+                ziele.forEach(function (z) {
+                    z.dispose();
+                });
+                var N = 256,
+                    oben = !!(renderer.backend && renderer.backend.isWebGPUBackend),
+                    h = T.DataUtils.fromHalfFloat,
+                    f = new Float32Array(PANO_W * PANO_H * 4);
+                var texel = function (s, x, y, k) {
+                    x = Math.min(N - 1, Math.max(0, x));
+                    y = Math.min(N - 1, Math.max(0, y));
+                    return h(roh[s][((oben ? N - 1 - y : y) * N + x) * 4 + k]);
+                };
+                for (var j = 0; j < PANO_H; j++)
+                    for (var i = 0; i < PANO_W; i++) {
+                        var az = ((i + 0.5) / PANO_W - 0.5) * 2 * Math.PI + drehung,
+                            el = ((j + 0.5) / PANO_H - 0.5) * Math.PI;
+                        var d = new T.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+                        var a = [Math.abs(d.x), Math.abs(d.y), Math.abs(d.z)];
+                        var s = a[0] >= a[1] && a[0] >= a[2] ? (d.x > 0 ? 0 : 1) : a[1] >= a[2] ? (d.y > 0 ? 2 : 3) : d.z > 0 ? 4 : 5;
+                        var z = d.dot(vor6[s]),
+                            u = ((d.dot(rechts6[s]) / z) * 0.5 + 0.5) * N - 0.5,
+                            v = ((d.dot(hoch6[s]) / z) * 0.5 + 0.5) * N - 0.5;
+                        var x0 = Math.floor(u),
+                            y0 = Math.floor(v),
+                            fx = u - x0,
+                            fy = v - y0,
+                            o = (j * PANO_W + i) * 4;
+                        for (var k = 0; k < 3; k++)
+                            f[o + k] =
+                                (texel(s, x0, y0, k) * (1 - fx) + texel(s, x0 + 1, y0, k) * fx) * (1 - fy) +
+                                (texel(s, x0, y0 + 1, k) * (1 - fx) + texel(s, x0 + 1, y0 + 1, k) * fx) * fy;
+                        f[o + 3] = 1;
+                    }
+                return { w: PANO_W, h: PANO_H, rt: null, daten: halbPuffer(f) };
             });
         }
         var rt = new T.WebGLRenderTarget(PANO_W, PANO_H, {
@@ -868,6 +917,9 @@
                                 verbergen: q.verbergen,
                                 lesen: true,
                             });
+                        return P; // r184 faltet als Versprechen (das gelesene Bild), r128 sofort
+                    })
+                    .then(function (P) {
                         if (!P) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
                         if (P.rt) P.rt.dispose();
                         antwort.w = P.w;
