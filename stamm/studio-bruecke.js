@@ -758,7 +758,7 @@ class AnazhRealm_studio_bruecke {
         // passieren sofort; Konsumenten tragen null-bis-fertig.
         return this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, wo)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
-            .then((ergebnis) => this._foundryIngestTakt(ergebnis));
+            .then((ergebnis) => this._foundryIngestTakt(ergebnis, wo));
     }
     // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
     // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
@@ -796,14 +796,37 @@ class AnazhRealm_studio_bruecke {
         return zug;
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
-    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
-    _foundryIngestTakt(x) {
+    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `wo` = der Rang des Bestellers wie in der
+    // Worker-Schlange (`_foundryAuftrag`): die Freigabe wählt mit der EINEN Wahl der Pumpe (`_foundryWahl`).
+    _foundryIngestTakt(x, wo) {
         if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
         const r = this.state.renderer;
         if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
         const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
-        return new Promise((res) => q.push(() => res(x)));
+        return new Promise((res) => q.push({ frei: () => res(x), wo, t: performance.now() }));
+    }
+    // DIE EINE WAHL der Foundry (Worker-Schlange `_foundryPumpe`, Freigabe `_tickFoundryIngest`): nah zuerst nach dem EINEN
+    // Rang (`_foundryAuftragD2`, vor dem ersten Weltbild der Blick zuerst), unter Gleichen FIFO, nie verhungert — wartet der
+    // Älteste (der erste, der `darf`) länger als FOUNDRY_ALTER_MS, geht er jedes zweite Mal (`halter.warteZug`), die Nahen
+    // bleiben vorn. Index, −1 wenn keiner darf. Bis B4-n1 ging die Freigabe FIFO (die Vorlagen des Leibs warteten hinter
+    // 13–24 Baum-Ergebnissen des Boden-Rings, Radeon kalt Leib 5,9 -> 7,1 s), danach in einer zweiten Wahl mit eigener
+    // Hunger-Regel (der Älteste immer zuerst); gate:takt T5 + T6 fahren Pumpe UND Freigabe.
+    _foundryWahl(q, halter, darf) {
+        let i = 0;
+        if (darf) while (i < q.length && !darf(q[i])) i++;
+        if (i >= q.length) return -1;
+        if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS && (halter.warteZug = !halter.warteZug)) return i;
+        let best = this._foundryAuftragD2(q[i].wo);
+        for (let k = i + 1; k < q.length; k++) {
+            if (darf && !darf(q[k])) continue;
+            const d2 = this._foundryAuftragD2(q[k].wo);
+            if (d2 < best) {
+                best = d2;
+                i = k;
+            }
+        }
+        return i;
     }
     // Freigabe-Tick (EIN Aufruf je Frame), sekunden-normalisiert: n = round(INGEST_RATE_PER_S·dt),
     // gedeckelt durch INGEST_BURST_CAP — die Welt lädt mit der Wanduhr, nicht mit der Framerate. Über
@@ -823,7 +846,7 @@ class AnazhRealm_studio_bruecke {
             n = Math.max(1, Math.min(AnazhRealm.INGEST_BURST_CAP, Math.round(rate * dt)));
         }
         for (let i = 0; i < n && q.length; i++) {
-            const frei = q.shift();
+            const { frei } = q.splice(this._foundryWahl(q, q), 1)[0];
             this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
             // die Freigabe erfüllt nur ein Versprechen (`res(x)` wirft nie); der Bau des Aufrufers läuft danach in SEINER
             // Kette, deren Fang laut bricht (K22: kein toter catch um die Freigabe)
@@ -972,7 +995,7 @@ class AnazhRealm_studio_bruecke {
         return h ? "werk" + h[1] : "werk";
     }
     // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
-    // Wartenden — nah zuerst, nie verhungert (die Alters-Wache). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
+    // Wartenden ist die EINE Wahl (`_foundryWahl`: nah zuerst, nie verhungert). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
     // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
     _foundryPumpe(f) {
         const q = f && f.warte;
@@ -1002,26 +1025,8 @@ class AnazhRealm_studio_bruecke {
                 }
             }
             if (!bahn) return; // kein Faden mit Platz
-            let i = -1;
-            for (let k = 0; k < q.length; k++)
-                if (darf(q[k])) {
-                    i = k;
-                    break;
-                }
+            const i = this._foundryWahl(q, f, darf);
             if (i < 0) return; // kein Wartender, der in die freiste Bahn darf
-            let aeltester = false;
-            if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
-            if (!aeltester) {
-                let best = this._foundryAuftragD2(q[i].wo);
-                for (let k = i + 1; k < q.length; k++) {
-                    if (!darf(q[k])) continue;
-                    const d2 = this._foundryAuftragD2(q[k].wo);
-                    if (d2 < best) {
-                        best = d2;
-                        i = k;
-                    }
-                }
-            }
             const a = q.splice(i, 1)[0];
             const reqId = a.praefix + (bahn.k ? "w" + bahn.k + "_" : "") + f.reqSeq++;
             f.pending.set(reqId, a.resolve);
