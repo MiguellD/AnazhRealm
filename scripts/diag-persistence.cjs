@@ -19,7 +19,7 @@
 // (Prüfung 1: der Restore stellte jeden Bau `precise` in seiner alten Höhe auf, |Δh| p50 37,7 m). Gegenprobe: ein Save
 // desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
 //
-// (L) DIE LÖCHER NACH DEM RELOAD (K23, 12.10.): 300 Schnitz-Kugeln über den Spielpfad (`carveVoxelSphere`), Save,
+// (L) DIE LÖCHER NACH DEM RELOAD (K23, 12.10.): 300 Schnitz-Kugeln über den Spielpfad (`carveVoxel`), Save,
 // echter Reload — jedes Loch steht wieder (die Dichte am Kugel-Zentrum liegt genau 48 unter der Basis). Bis K23
 // verdrängte der FIFO-Deckel in `_addVoxelEdit` still die ersten 44: 256/300.
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
@@ -288,7 +288,7 @@ const server = statikServer();
                 const z = 200 + Math.floor(i / 20) * 10;
                 const y = r._terrainMacroSurfaceY(x, z) - 2;
                 orte.push({ x, y, z });
-                r.carveVoxelSphere(x, y, z, 3);
+                r.carveVoxel(x, y, z, 3);
             }
             const loch = (o) => Math.abs(r._terrainBaseDensityAt(o.x, o.y, o.z) - r._terrainDensityAt(o.x, o.y, o.z) - 48) < 0.01;
             r.saveState();

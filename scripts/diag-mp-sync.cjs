@@ -684,7 +684,7 @@ function bericht(p) {
         // ── (c) DAS CHAT-GRABEN REIST (K23) ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
         // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
-        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxelSphere/fillVoxelSphere)
+        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxel/fillVoxel)
         // statt über dslRun, das broadcastet; wenn B mehr trägt: der Empfang wendet eine Graben-Nachricht mehrfach an.
         const editsVon = (p) =>
             p.evaluate(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).map((e) => ({ ...e })));

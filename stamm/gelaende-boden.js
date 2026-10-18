@@ -974,14 +974,71 @@ class AnazhRealm_gelaende_boden {
         return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContextIn(x, z, s));
     }
 
-    // Volle Terrain-Dichte = Basis + voxelEdit-Delta für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`,
-    // direkte Aufrufer); der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht + Delta).
+    // Volle Terrain-Dichte = Basis mit den Edits für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`, direkte Aufrufer);
+    // der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht, dieselbe Form je Ecke).
     _terrainDensityAt(x, y, z) {
-        // Die Edit-Deltas leben in `_voxelEditDeltaAt`, damit der feld-native Kollisions-Pfad
-        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
-        // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
-        // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
-        return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        // Die Edits leben in `_mitEdits`, damit der feld-native Kollisions-Pfad (`_fieldDensityAt`) DIESELBE Edit-Wahrheit
+        // liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt dieselbe Form je Ecke auf das Basis-Gitter; sein
+        // Worker-Spiegel `computeDensityGrid` ist byte-gleich (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
+        return this._mitEdits(this._terrainBaseDensityAt(x, y, z), x, y, z);
+    }
+
+    // DIE FORM DES EDITS (F2a „Hoch bauen“, 17.10.): jeder Edit ist die SÄULE seines Maßes r — Radius r, halbe Höhe r, die
+    // Kanten gerundet (`kanteM`), oben und unten eben: Aufschütten vereinigt sie mit dem Boden, Graben nimmt sie heraus
+    // (weiches Maximum/Minimum, das Polynom des Gewässers `_gewaesserForm`), in Setz-Reihenfolge, in jeder Höhe und Tiefe
+    // gleich. Gerechnet wird in Metern auf der GEKAPPTEN Dichte n = clamp(Basis, ±tiefeM) gegen das Abstandsfeld der Säule s;
+    // die Dichte ist max(1, |Basis|/tiefeM) · n — stetig, gleich der Basis, wo der Edit nichts ändert, um jede Säule ihr
+    // Abstand (die Wand-Proben `_fieldResolveSphere` lesen ihn). Das Gitter trägt n selbst (`_editsImGitter`): seine Kanten
+    // sehen ein Abstandsfeld, der Knick der Kappe liegt tiefeM hinter der Fläche. EBEN, weil der Boden ein 1,8-m-Gitter ist:
+    // die Kuppe einer Kugel (r 3,5) trug das Netz 0,14–1,1 m unter dem Gesetz (der Spieler schwebte über seinem Turm), eine
+    // Ebene trägt es genau — wer baut, steht auf dem, was er sieht. Bis F2a legte jeder Edit einen Kegel der Stärke 48 auf
+    // die Basis: h m über dem Boden blieb von ihm r · (1 − h/48) (der Turm wurde je Schuss schmaler, Hub 3,2 → 1,7 m), 48 m
+    // tief grub der Spaten nichts. Spiegel: `editForm`, `editReich`, `editKappe`, `applyVoxelEdits` (voxel-worker.js).
+    static _editForm(n, ed, dx, dy, dz) {
+        if (!(ed.r > 0)) return n; // ein Edit ohne Maß (Alt-Daten) ändert nichts
+        const F = AnazhRealm.EDIT_FORM;
+        const k = F.rundM;
+        // das Abstandsfeld der gerundeten Säule (positiv innen)
+        const c = Math.min(F.kanteM, ed.r * 0.5);
+        const qx = Math.sqrt(dx * dx + dz * dz) - ed.r + c;
+        const qy = Math.abs(dy) - ed.r + c;
+        const s = c - Math.min(Math.max(qx, qy), 0) - Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2);
+        if (ed.mode === "fill") {
+            const h = Math.max(k - Math.abs(n - s), 0) / k;
+            return Math.max(n, s) + h * h * k * 0.25;
+        }
+        const h = Math.max(k - Math.abs(n + s), 0) / k;
+        return Math.min(n, -s) - h * h * k * 0.25;
+    }
+    // so weit ändert ein Edit die Dichte (jenseits liegt seine Säule — Ecke im Abstand r·√2 — um mehr als tiefeM + rundM unter
+    // der gekappten Dichte)
+    static _editReich(ed) {
+        const F = AnazhRealm.EDIT_FORM;
+        return (Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1) * Math.SQRT2 + F.tiefeM + F.rundM;
+    }
+    static _editKappe(basis) {
+        const K = AnazhRealm.EDIT_FORM.tiefeM;
+        return basis < -K ? -K : basis > K ? K : basis;
+    }
+    // Die Dichte über der Basis `basis` an (x, y, z) mit den Edits des Chunks (die Karte, `_voxelEditKarte` Kern).
+    _mitEdits(basis, x, y, z) {
+        const meta = this.state.worldMeta;
+        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
+        const k = this._voxelEditKarte();
+        const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
+        if (!edits) return basis;
+        let n = AnazhRealm._editKappe(basis);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const dx = x - ed.x;
+            const dy = y - ed.y;
+            const dz = z - ed.z;
+            const d2 = dx * dx + dy * dy + dz * dz;
+            const R = AnazhRealm._editReich(ed);
+            if (d2 < R * R) n = AnazhRealm._editForm(n, ed, dx, dy, dz);
+        }
+        return Math.max(1, Math.abs(basis) / AnazhRealm.EDIT_FORM.tiefeM) * n;
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
@@ -1011,10 +1068,10 @@ class AnazhRealm_gelaende_boden {
             while (k.n < edits.length) {
                 const ed = edits[k.n++];
                 if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-                const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+                const r = AnazhRealm._editReich(ed); // so weit ändert der Edit die Dichte (`_editForm`)
                 this._editGenZaehler = (this._editGenZaehler || 0) + 1;
                 const g = this._editGenZaehler;
-                // Der Kasten der Kugel in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
+                // Der Kasten seiner Reichweite in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
                 const kax = Math.floor((ed.x - r) / span);
                 const kbx = Math.floor((ed.x + r) / span);
                 const kaz = Math.floor((ed.z - r) / span);
@@ -1081,40 +1138,9 @@ class AnazhRealm_gelaende_boden {
         return `${this.state.voxelWorkerStateGen}|${g}`;
     }
 
-    // Voxel-Edit-Deltas (EINE Quelle): jede Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf
-    // (fill). Edits leben in worldMeta.voxelEdits (persistiert) und gelten ZULETZT — der Spieler-Wille
-    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits, deren Kasten den Chunk der Probe
-    // berührt (der Kern der Karte).
-    _voxelEditDeltaAt(x, y, z) {
-        const meta = this.state.worldMeta;
-        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return 0;
-        const k = this._voxelEditKarte();
-        const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
-        if (!edits) return 0;
-        let d = 0;
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const dx = x - ed.x;
-            const dy = y - ed.y;
-            const dz = z - ed.z;
-            const dist2 = dx * dx + dy * dy + dz * dz;
-            const r = ed.r;
-            if (dist2 < r * r) {
-                const fall = 1 - Math.sqrt(dist2) / r;
-                const amt = fall * (ed.strength || 48);
-                // `fill` addiert Dichte (Boden aufschütten), `carve` (Default,
-                // auch mode-lose Alt-Edits) zieht ab.
-                if (ed.mode === "fill") d += amt;
-                else d -= amt;
-            }
-        }
-        return d;
-    }
-
     // Base-gecachter Density-Grid-Pfad: (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu
     // `_voxelSampleDensityGrid`, aber das teure Basis-Grid wird pro Chunk+LOD gecacht; der Edit-Rebuild
-    // legt nur die Kugel-Deltas auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
+    // legt nur die Form der Edits auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
     // Bit-identisch zu `_terrainDensityAt` (base + Σ edit-delta).
     _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
         const Nx = dimX + 1;
@@ -1127,46 +1153,66 @@ class AnazhRealm_gelaende_boden {
             const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
             // V18.321 — der Spalten-Hoist: colVoxel = die per-Voxel-Hälfte (liest den 2D-Kontext).
             const colVoxel = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
-            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample, colVoxel);
+            baseGrid = this._voxelSampleDensityGrid(
+                gox,
+                goy,
+                goz,
+                dimX,
+                dimY,
+                dimZ,
+                step,
+                baseSample,
+                colVoxel,
+                true,
+                AnazhRealm.KEINE_EDITS
+            );
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
         // Die Edits des Gitter-Kastens (die Karte, `_voxelEditsImKasten`; der Worker fragt denselben Kasten).
         const edits = this._voxelEditsImKasten(gox, gox + dimX * step, goz, goz + dimZ * step);
         if (!edits.length) return baseGrid; // Basis IST das Grid (read-only)
-        // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
-        // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
-        const out = new Float32Array(baseGrid);
+        // Die Edits auf eine Kopie legen, deren Band ihre Reichweite deckt (`_voxelBandUmEdits`: dort die wahre Basis statt
+        // ±1 — die Kappe ±tiefeM braucht sie), je Ecke dieselbe Form wie das Gesetz (`_editForm` in Setz-Reihenfolge auf der
+        // gekappten Dichte). Nur Ecken in der Reichweite eines Edits werden berührt (Index-Kasten), der Rest bleibt Basis.
+        const basis = new Float32Array(baseGrid);
+        this._voxelBandUmEdits(basis, gox, goy, goz, Nx, Ny, Nz, step, edits, (x, y, z, ctx) =>
+            this._terrainBaseDensityAtCol(x, y, z, ctx)
+        );
+        return AnazhRealm._editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits);
+    }
+
+    // DIE EDITS IM GITTER (`_editForm` je Ecke, Spiegel `editsImGitter` in voxel-worker.js — byte-gleich, gate:worker-dichte):
+    // jede Ecke in der Reichweite eines Edits (Kasten, `_editReich`) beginnt bei ihrer gekappten Basis und nimmt die Edits in
+    // Setz-Reihenfolge; sie trägt n (dieselbe Fläche wie das Gesetz max(1, |Basis|/tiefeM) · n, ohne dessen Maß — die Kanten
+    // des Gitters sehen das Abstandsfeld der Säule). Float32 wie das Gitter.
+    static _editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits) {
+        const out = new Float32Array(basis);
+        const beruehrt = new Uint8Array(out.length);
         for (let e = 0; e < edits.length; e++) {
             const ed = edits[e];
             if (!ed) continue;
-            const r = ed.r;
-            const r2 = r * r;
-            const strength = ed.strength || 48;
-            const isFill = ed.mode === "fill";
-            // Grid-Index-Bounding-Box der Kugel (clamp auf [0, N-1]).
-            const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
-            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
-            const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
-            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
-            const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
-            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+            const R = AnazhRealm._editReich(ed);
+            const R2 = R * R;
+            const i0 = Math.max(0, Math.floor((ed.x - R - gox) / step));
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + R - gox) / step));
+            const j0 = Math.max(0, Math.floor((ed.y - R - goy) / step));
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + R - goy) / step));
+            const k0 = Math.max(0, Math.floor((ed.z - R - goz) / step));
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + R - goz) / step));
             for (let k = k0; k <= k1; k++) {
-                const wz = goz + k * step;
-                const dz = wz - ed.z;
+                const dz = goz + k * step - ed.z;
                 for (let j = j0; j <= j1; j++) {
-                    const wy = goy + j * step;
-                    const dy = wy - ed.y;
+                    const dy = goy + j * step - ed.y;
                     for (let i = i0; i <= i1; i++) {
-                        const wx = gox + i * step;
-                        const dx = wx - ed.x;
-                        const dist2 = dx * dx + dy * dy + dz * dz;
-                        if (dist2 < r2) {
-                            const fall = 1 - Math.sqrt(dist2) / r;
-                            const amt = fall * strength;
-                            const idx = i + j * Nx + k * Nx * Ny;
-                            if (isFill) out[idx] += amt;
-                            else out[idx] -= amt;
+                        const dx = gox + i * step - ed.x;
+                        const d2 = dx * dx + dy * dy + dz * dz;
+                        if (d2 >= R2) continue;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (!beruehrt[idx]) {
+                            beruehrt[idx] = 1;
+                            out[idx] = AnazhRealm._editKappe(basis[idx]);
                         }
+                        out[idx] = AnazhRealm._editForm(out[idx], ed, dx, dy, dz);
                     }
                 }
             }
@@ -1559,21 +1605,18 @@ class AnazhRealm_gelaende_boden {
     // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
     // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
     // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true) {
+    // `reich`: die Edits, deren Reichweite das Band deckt (`_voxelBandUmEdits`) — Default die des Kastens; der Basis-Cache
+    // (`_voxelEditedDensityGrid`) bleibt edit-frei, seine Kopie trägt sie.
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true, reich = undefined) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
-        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über `surf + Roughness`
-        // garantiert Luft, unter base−40 (Höhlen-Band endet base−28) garantiert Fels → −1/+1 statt sample(),
-        // bit-identische Geometrie, ~60–70 % weniger Calls; Edits (strength 48) dominieren das ±1.
+        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über dem Band garantiert Luft, unter
+        // ihm garantiert Fels → −1/+1 statt sample(), bit-identische Geometrie, ~60–70 % weniger Calls. Das Band ist EIN
+        // Gesetz (`_voxelBandOben`/`_voxelBandUnten`); wo ein Edit seine Fläche hinlegt, deckt es seine Reichweite.
         // MUSS bit-identisch im Worker (`computeDensityGrid`).
         const base = this.state.terrainBaseHeight || 0;
-        const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
-        // Der Band-Top-Margin MUSS den Gradient-eps von `_voxelGradientNormals` (1.5 Zellen) decken — ein
-        // Gipfel-Vertex sampelt +eps nach oben, das muss im echt gesampelten Band liegen (sonst kippt die
-        // Gipfel-Normale). eps 1.5 + Puffer → 4 Zellen.
-        const topMargin = 4 * step;
         // Spalten-Hoist: mit `colVoxel` wird `_terrainColumnContext` EINMAL pro Spalte gerechnet und deckt
         // Band-Grenzen (`ctx.surf`) UND per-Voxel-Auswertung (`colVoxel(...,ctx)` == sample, byte-identisch).
         // Ohne `colVoxel` (Edit-/Sonder-Sampler) der direkte Pfad. MUSS bit-identisch im Worker.
@@ -1583,10 +1626,8 @@ class AnazhRealm_gelaende_boden {
                 const wx = ox + i * step;
                 const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
                 const surf = !boden ? 0 : ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
-                const bandTopJ = boden ? Math.floor((surf + ROUGH + topMargin - oy) / step) + 1 : Ny;
-                // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels. Er MUSS surf folgen — in einer
-                // Tiefsee-Rinne (~−75 m) füllte ein fixes base−40 die Wassersäule fälschlich als Fels.
-                const bandBotJ = boden ? Math.floor((Math.min(surf, base) - 40 - oy) / step) : -1;
+                const bandTopJ = boden ? AnazhRealm._voxelBandOben(surf, oy, step) : Ny;
+                const bandBotJ = boden ? AnazhRealm._voxelBandUnten(surf, base, oy, step) : -1;
                 const colBase = i + k * Nx * Ny;
                 for (let j = 0; j < Ny; j++) {
                     const idx = colBase + j * Nx;
@@ -1596,7 +1637,78 @@ class AnazhRealm_gelaende_boden {
                 }
             }
         }
+        if (boden)
+            this._voxelBandUmEdits(
+                density,
+                ox,
+                oy,
+                oz,
+                Nx,
+                Ny,
+                Nz,
+                step,
+                reich === undefined ? this._voxelEditsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step) : reich,
+                colVoxel || ((x, y, z) => sample(x, y, z))
+            );
         return density;
+    }
+
+    // DAS BAND DES GITTERS (EIN Gesetz, Spiegel `bandOben`/`bandUnten` in voxel-worker.js): die oberste gesampelte Ebene liegt
+    // über `surf + ROUGH + topMargin` (ROUGH 12 = die größte 3D-Rauheit, noise·7 + noise·5; topMargin 4 Zellen deckt den
+    // Gradient-eps von `_voxelGradientNormals`, 1,5 Zellen — ein Gipfel-Vertex sampelt +eps nach oben, sonst kippt seine
+    // Normale), die unterste über `min(surf, base) − 40` (das Höhlen-Band endet base − 28; sie MUSS surf folgen — in einer
+    // Tiefsee-Rinne, ~−75 m, füllte ein fixes base − 40 die Wassersäule als Fels).
+    static _voxelBandOben(surf, oy, step) {
+        return Math.floor((surf + 12 + 4 * step - oy) / step) + 1;
+    }
+    static _voxelBandUnten(surf, base, oy, step) {
+        return Math.floor((Math.min(surf, base) - 40 - oy) / step);
+    }
+
+    // DAS BAND DECKT DIE EDITS (F2a „Hoch bauen“, 17.10.): über dem Band trug das Gitter Luft −1, unter ihm Fels +1 — bit-
+    // identisch, solange dort keine Fläche liegt. Ein Edit legt seine Fläche dorthin (der Turm über dem Band, die tiefe Grube):
+    // das Gesetz rechnete ihn auf der wahren Basis (h m über dem Boden: −h), das Gitter auf −1 — die Füll-Kugel stand im Bild
+    // voll und breit, im Gesetz geschrumpft; der Spieler sank in den sichtbaren Turm (30 Schüsse unter sich: das Mesh 3,1 m
+    // über den Füßen) und fiel an seiner Flanke durch das Bild. Die Kappe der Form (`_editKappe`, ±tiefeM) braucht die wahre
+    // Basis: hier sampelt das Gitter in der Reichweite jedes Edits (`_editReich` + 4 Zellen, die Marge des Bands)
+    // `probe(x, y, z, ctx)`, wo das Band übersprang — je Spalte die Hülle der Edits, die sie erreichen. Spiegel `bandUmEdits`
+    // (gate:worker-dichte).
+    _voxelBandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, probe) {
+        if (!edits || !edits.length) return;
+        const base = this.state.terrainBaseHeight || 0;
+        const huelle = new Map(); // Spalte i + k·Nx → [unterste, oberste] Ebene der Edits, die sie erreichen
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const r = AnazhRealm._editReich(ed);
+            const i0 = Math.max(0, Math.floor((ed.x - r - ox) / step) - 4);
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - ox) / step) + 4);
+            const j0 = Math.max(0, Math.floor((ed.y - r - oy) / step) - 4);
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - oy) / step) + 4);
+            const k0 = Math.max(0, Math.floor((ed.z - r - oz) / step) - 4);
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - oz) / step) + 4);
+            if (j0 > j1) continue;
+            for (let k = k0; k <= k1; k++)
+                for (let i = i0; i <= i1; i++) {
+                    const h = huelle.get(i + k * Nx);
+                    if (!h) huelle.set(i + k * Nx, [j0, j1]);
+                    else {
+                        if (j0 < h[0]) h[0] = j0;
+                        if (j1 > h[1]) h[1] = j1;
+                    }
+                }
+        }
+        for (const [s, h] of huelle) {
+            const i = s % Nx;
+            const k = (s - i) / Nx;
+            const wx = ox + i * step;
+            const wz = oz + k * step;
+            const ctx = this._terrainColumnContext(wx, wz);
+            const oben = AnazhRealm._voxelBandOben(ctx.surf, oy, step);
+            const unten = AnazhRealm._voxelBandUnten(ctx.surf, base, oy, step);
+            for (let j = h[0]; j <= h[1]; j++)
+                if (j > oben || j < unten) density[i + j * Nx + k * Nx * Ny] = probe(wx, oy + j * step, wz, ctx);
+        }
     }
 
     // Pass 1 — ein Vertex pro oberflächen-schneidender Zelle. Liefert positions (x/y/z-Tripel),
@@ -2890,6 +3002,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_boden]);
 // ===== ATLAS · Gelaende/boden — Außen-Konstanten =====
 // Die leere Edit-Liste eines Chunks ohne Edits (`_voxelEditsNah`, `_voxelEditsImKasten`): eingefroren, nie beschrieben.
 AnazhRealm.KEINE_EDITS = Object.freeze([]);
+// DIE FORM DES EDITS (`_editForm`, F2a 17.10.): `tiefeM` — die Kappe der Basis (Meter über/unter dem Boden), gegen die die
+// Säule gerechnet wird: über zwei 1,8-m-Zellen, so liegt der Knick der Vereinigung jenseits der Kanten um die Fläche;
+// `rundM` — die Kehle der Vereinigung mit dem Boden; `kanteM` — die Rundung der Säulen-Kante (höchstens r/2).
+// Spiegel: `EDIT_FORM` in voxel-worker.js.
+AnazhRealm.EDIT_FORM = Object.freeze({ tiefeM: 4, rundM: 1, kanteM: 0.5 });
 // DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (`_ortTraegt`), gewinnt. `grobM`: das Raster des ersten Urteils (die Wand urteilt im halben Meter).

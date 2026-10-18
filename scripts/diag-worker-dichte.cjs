@@ -12,8 +12,8 @@
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann mit zwei Kugeln am ersten Ort: einer Schnitz-Kugel
 // im Oberflächen-Band und einer FÜLL-KUGEL ÜBER dem Band (der Band-Befund des Richters 09.10.: der Main legt die
-// Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band). Dazu DIE EDIT-WAHRHEIT (K23): 300 Kugeln
-// über den Spielpfad (`carveVoxelSphere`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
+// Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band). Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
+// über den Spielpfad (`carveVoxel`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
 // sind SHA Main = Worker (bis K23 verdrängte der FIFO-Deckel in `_addVoxelEdit` ab Edit 257 still nur im Main).
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
@@ -297,7 +297,7 @@ async function probe(page, welt, mitAbdruck) {
             const zeilenEdit = [];
             for (let lod = 0; lod <= 3; lod++) zeilenEdit.push(await vergleiche(o0, lod, "edits"));
             out.orte.push({ id: o0.id + "+edits", x: o0.x, z: o0.z, zeilen: zeilenEdit });
-            // (3) DIE EDIT-WAHRHEIT (K23): 300 Kugeln über den Spielpfad (`carveVoxelSphere` → `_addVoxelEdit` → das Delta an den
+            // (3) DIE EDIT-WAHRHEIT (K23): 300 Säulen über den Spielpfad (`carveVoxel` → `_addVoxelEdit` → das Delta an den
             // Worker), 20 × 15 im 2-m-Raster über die Chunk-Naht des ersten Orts. Kein Edit fällt still: der Main hält alle 300,
             // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter). Der FIFO-Deckel
             // (256) verdrängte die ersten 44 nur im Main — der Worker hielt sie: zwei Böden ab Edit 257.
@@ -310,7 +310,7 @@ async function probe(page, welt, mitAbdruck) {
             for (let i = 0; i < N_EDITS; i++) {
                 const x = ex0 + (i % 20) * 2;
                 const z = ez0 + Math.floor(i / 20) * 2;
-                r.carveVoxelSphere(x, r._terrainMacroSurfaceY(x, z) - 1, z, 2.5);
+                r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 2.5);
             }
             out.editWahrheit = { gesetzt: N_EDITS, imMain: s.worldMeta.voxelEdits.length, gitter: [] };
             const zeilenWahr = [];
@@ -357,16 +357,16 @@ async function probe(page, welt, mitAbdruck) {
                     const x = ex0 - 4 + ((i * 7919) % 4800) / 100;
                     const z = ez0 - 4 + ((i * 104729) % 3800) / 100;
                     const y = r._terrainMacroSurfaceY(x, z) - 1 + ((i % 7) - 3) * 0.6;
-                    let d = 0;
+                    const [A, basis] = [r.constructor, r._terrainBaseDensityAt(x, y, z)]; // die Form über die Liste, das Gesetz über die Karte
+                    let n = A._editKappe(basis);
                     for (const ed of alle) {
                         const dx = x - ed.x;
                         const dy = y - ed.y;
                         const dz = z - ed.z;
-                        const d2 = dx * dx + dy * dy + dz * dz;
-                        if (d2 < ed.r * ed.r)
-                            d += (ed.mode === "fill" ? 1 : -1) * (1 - Math.sqrt(d2) / ed.r) * (ed.strength || 48);
+                        const R = A._editReich(ed);
+                        if (dx * dx + dy * dy + dz * dz < R * R) n = A._editForm(n, ed, dx, dy, dz);
                     }
-                    if (Object.is(d, r._voxelEditDeltaAt(x, y, z)) || d === r._voxelEditDeltaAt(x, y, z)) punkte++;
+                    if (Object.is(Math.max(1, Math.abs(basis) / A.EDIT_FORM.tiefeM) * n, r._mitEdits(basis, x, y, z))) punkte++;
                 }
                 out.editWahrheit.karteGleich = `${gleich}/${nachbarn.length} Gitter · ${punkte}/4000 Punkte`;
                 if (gleich !== nachbarn.length || punkte !== 4000)

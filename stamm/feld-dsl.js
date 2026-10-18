@@ -878,13 +878,13 @@ class AnazhRealm_feld_dsl {
             voxel_carve: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxelSphere(p.x, p.y, p.z, r);
+                this.carveVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxelSphere(p.x, p.y, p.z, r);
+                this.fillVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             skybox_color: ([color]) => {

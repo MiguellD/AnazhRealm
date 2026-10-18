@@ -2787,7 +2787,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const v836Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
+        // 3. Loch-Durchfall: `carveVoxel` braucht keinen Höhen-Clamp (das Graben beweist feld-leben W6.G P4).
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche

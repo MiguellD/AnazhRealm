@@ -2203,7 +2203,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
             // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
             // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
-            // unten → beweist Raycast + `carveVoxelSphere` + Material-Yield ohne Mock.
+            // unten → beweist Raycast + `carveVoxel` + Material-Yield ohne Mock.
             if (r.state.camera && r.state.playerMesh) {
                 // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
                 // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
@@ -2260,7 +2260,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain", wave6gP4Results.realRaycastHit);
         check(
-            "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxelSphere) yieldet Material",
+            "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxel) yieldet Material",
             wave6gP4Results.realDigYielded
         );
     }
