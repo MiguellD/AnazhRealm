@@ -1267,6 +1267,7 @@ class AnazhRealm_dirigent_takt {
         this._tickScatterLod(auge, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
+        this._tickGrundAuge(auge); // der Grund der Häuser am Auge (F4): der Boden-Stoff zeichnet im Grundriss keine Wiese
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)

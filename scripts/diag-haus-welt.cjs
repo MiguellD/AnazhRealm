@@ -18,9 +18,11 @@
 //       auf den Konsum (Nah-Streu ohne offene Kachel, jede Baum-Zelle des Rings promotet — die Promotion im Zustand ohne
 //       warme Foundry, dem einzigen, in dem sie lebt), nie auf eine feste Takt-Zahl. DIE WIESE IM HAUS (F4, 17.10.): über jedem
 //       Haus und einem Haus des Spielers baut das Gesetz der Nah-Wiese (`_nahWieseKachelBueschel`) keinen Büschel, dessen Kreis
-//       den Grundriss berührt, und die Halm-Schicht liest dort Erde (`_wegeFeldAt` ≥ 0,99). `--bild` (echter Renderer, lokal
-//       unter dem GPU-Schloss, am Ende von W4b): je Haus der Blick vom Innenraum auf den Boden — Tür, Mitte, Wand-Fuß —, Halm-
-//       Pixel der Büschel im Grundriss und grüne Boden-Pixel innerhalb der Wände 0 (artifacts/haus-welt/bild-*.png).
+//       den Grundriss berührt, und mit dem Auge im Haus liegt jede Probe im Grundriss im Grund am Auge des Boden-Stoffs
+//       (`_imGrundAuge`), keine davor. `--bild` (echter Renderer, lokal unter dem GPU-Schloss, am Ende von W4b): je Haus der
+//       Blick aus einem freien Auge auf den Boden — Tür, Mitte, Wand-Fuß —, Halm-Pixel der Büschel im Grundriss und Boden-Pixel
+//       mit grüner Albedo (unbeleuchtete Maske) innerhalb der Wände 0 (artifacts/haus-welt/bild-*.png); Erde über der Diele
+//       (Treppenloch, Hang) misst die Zeile als eigene offene Klasse.
 //   W5  KOLLISION == OPTIK: an jedem Punkt eines 0,5-m-Rasters im Kern-Grundriss urteilt die Welt-Kapsel (der echte
 //       Löser `_resolveCapsuleVsAABB` gegen die Boxen des Hauses) wie das Gesetzbuch (dieselbe Wand-Regel gegen die Solids des Hauses): frei
 //       oder Wand — Übereinstimmung ≥ 97 % (vorher füllten gedrehte Riegel den Raum, Innenwände fehlten)
@@ -104,15 +106,12 @@ const BASIS = {
             "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this.spawnArchitecture(",
         ],
     ],
-    // die Nah-Streu läuft an der Wand vorbei (und das Haus legt keinen Grund: seit F4 hält auch ihr Pfad-Feld den Grundriss)
-    nahstreu: [
-        ["this._naturSetzen(null, it, null, () => items.push(it));", "items.push(it);"],
-        ["if (!fp.lichtung && !fp.welt) this._grundFlaecheSetzen(haus, fp);", ""],
-    ],
-    // die Nah-Wiese läuft an der Wand vorbei, und kein Haus legt seinen Grund in die Wege-Karte (der Stand vor F4)
+    // die Nah-Streu läuft an der Wand vorbei
+    nahstreu: [["this._naturSetzen(null, it, null, () => items.push(it));", "items.push(it);"]],
+    // die Nah-Wiese läuft an der Wand vorbei, und der Boden-Stoff kennt keinen Grund am Auge (der Stand vor F4)
     wiese: [
         ['if (this._imGrundriss(x, z, NW.reich * s) === "haus") continue;', ""],
-        ["if (!fp.lichtung && !fp.welt) this._grundFlaecheSetzen(haus, fp);", ""],
+        ["if (d <= R) nah.set(e, [d, fp, c, s]);", ""],
     ],
     // DIE LICHTUNG (W8): die Wand kennt die Genesis-Plattform nicht (ihr Bauplan trägt keine Lichtung) — jede Quelle außer
     // dem Wald stand so über der Scheibe; der Wald hatte seinen eigenen Filter im Pflanz-Gang (der fiel mit D3)
@@ -381,14 +380,18 @@ async function proben(phasen) {
     // Spieler steht im Haus, bis es Stufe 0 zeigt UND die Nah-Wiese um ihn steht (keine offene Kachel, die Kachel des Auges
     // gebaut — sonst misst die Probe leere Luft: bis 18.10. pumpte sie nur bis Stufe 0 und war an der Basis grün). Drei Blicke
     // steil auf den Boden: hinter der Tür nach innen, die Mitte und der WAND-FUSS, wo der Boden der Diele am nächsten liegt (das
-    // Maximum Boden − Diele des Gesetzbuchs im Grundriss — dort sticht ein Büschel zuerst durch). Je Blick drei Aufnahmen aus
-    // dem Ausgabe-Pfad: das Bild, ohne die Büschel IM Grundriss (ihre Basis-Matrix 0, der Sicht-Satz schreibt neu), ohne den
-    // Boden-Satz. Halm-Pixel = was die Büschel im Grundriss zeichnen (|Δ| > 18), Schicht-Pixel = grüner Boden im Bild.
+    // Maximum Boden − Diele des Gesetzbuchs im Grundriss — dort sticht ein Büschel zuerst durch). Jedes Auge steht FREI: 0,25 m
+    // vor jedem festen Teil des Gesetzbuchs, die Sicht zum Ziel frei (bis 18.10. stand das Wand-Fuß-Auge 0,25 m vor der Wand,
+    // oft in Wand oder Treppe — sein Licht schwankte von Lauf zu Lauf um 13 020 Pixel). Je Blick aus dem Ausgabe-Pfad: das
+    // Bild, ohne die Büschel IM Grundriss (ihre Basis-Matrix 0, der Sicht-Satz schreibt neu), und die MASKE ohne die Nah-Wiese:
+    // der Boden-Satz zeichnet unbeleuchtet seine Albedo-Klasse (grün → Grün, sonst Magenta; `outputNode`, kein Licht, kein
+    // Schatten). Halm-Pixel = was die Büschel im Grundriss zeichnen (|Δ| > 18), Schicht-Pixel = Boden mit grüner Albedo, dessen
+    // Strahl den Boden mehr als 0,1 m innerhalb der Wände trifft; Boden-Pixel = jeder Boden dort (Erde über der Diele, gemessen).
     const blickInsHaus = async (haeuser, sb) => {
         await window.__weltStehtNach(() => pumpe(1));
         window.__buehne();
         s.renderer.setAnimationLoop(null); // der Loop ruht (Lehre 17): sonst stellt sein Takt die Kamera auf den Spieler zurück
-        const [W, Hb, cam, tick, weite] = [480, 270, s.camera, r._tickNahWiese, grasWeite()];
+        const [W, Hb, cam, tick, weite, TSL] = [480, 270, s.camera, r._tickNahWiese, grasWeite(), THREE.TSL];
         const schuss = async (aus, innen) => {
             const halt = innen.map(([k, i]) => [k, i, k.basis.slice(i * 16, i * 16 + 16)]);
             for (const m of aus) m.visible = false;
@@ -411,24 +414,12 @@ async function proben(phasen) {
         for (const e of haeuser) {
             const [fp, tu, Hh] = [r._grundrissVon(e), e.tuer, gesetz(e)];
             const base = e.position.y - 0.5;
-            const diele = (lx, lz) => {
-                let d = -Infinity;
-                for (const so of (Hh && Hh.solids) || [])
-                    if (so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2)
-                        d = Math.max(d, so.max[1]);
-                return d;
-            };
-            const b = {
-                typ: e.type,
-                spieler: e === sb,
-                halm: 0,
-                boden: 0,
-                gruen: 0,
-                ring: 0,
-                innen: 0,
-                fuss: null,
-                png: [],
-            };
+            const fest = (Hh && Hh.solids) || [];
+            const diele = (lx, lz) => Math.max(-Infinity, ...fest.filter((so) => so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2).map((so) => so.max[1])); // prettier-ignore
+            // frei: (lx, ly, lz) haus-lokal liegt `m` vor jedem festen Teil des Gesetzbuchs
+            const frei = (lx, ly, lz, m) =>
+                !fest.some((so) => [lx, ly, lz].every((q, k) => so.min[k] - m < q && q < so.max[k] + m));
+            const b = { typ: e.type, spieler: e === sb, halm: 0, boden: 0, gruen: 0, ring: 0, innen: 0, fuss: null, erde: 0, proben: 0, blicke: 0, png: [] }; // prettier-ignore
             const m = welt(e, fp.ox, fp.oz);
             stell(m.x, e.position.y + 1, m.z);
             const kachelDa = () =>
@@ -439,7 +430,8 @@ async function proben(phasen) {
                 ruhig = steht() ? ruhig + 1 : 0;
             }
             [b.stufe, b.steht, pm.visible] = [e._servedLod, steht(), false];
-            // der Wand-Fuß: im Grundriss (0,15 m vor der Wand, Raster 0,25 m) der Punkt, an dem der Boden der Diele am nächsten liegt
+            // der Wand-Fuß: im Grundriss (0,15 m vor der Wand, Raster 0,25 m) der Punkt, an dem der Boden der Diele am nächsten
+            // liegt — und ERDE ÜBER DER DIELE (gemessen, eine eigene Klasse: Treppenloch, Hang): Proben mit Boden > Diele + 2 cm
             let fuss = null;
             for (let u = -fp.ex + 0.15; u <= fp.ex - 0.15; u += 0.25)
                 for (let v = -fp.ez + 0.15; v <= fp.ez - 0.15; v += 0.25) {
@@ -447,21 +439,44 @@ async function proben(phasen) {
                     const d = diele(lx, lz);
                     const p = welt(e, lx, lz);
                     const y = Number.isFinite(d) ? r._bodenSichtAt(p.x, p.z) : null;
-                    if (y != null && (!fuss || y - base - d > fuss.h)) fuss = { lx, lz, h: y - base - d, d };
+                    if (y == null) continue;
+                    b.proben++;
+                    if (y - base - d > 0.02) b.erde++;
+                    if (!fuss || y - base - d > fuss.h) fuss = { lx, lz, h: y - base - d, d };
                 }
             b.fuss = fuss ? Math.round(fuss.h * 100) / 100 : null;
-            // je Blick: Auge haus-lokal, Ziel haus-lokal, die Diele darunter (das Auge 1,3 m über ihr)
+            // das freie Auge zu einem Ziel (haus-lokal, auf der Diele dz): 0,8–3 m vom Ziel in acht Richtungen (zur Mitte zuerst),
+            // 0,4 m innerhalb der Wände, 1,3 m über seiner Diele (über Erde im Haus 0,4 m über ihr), 0,25 m vor jedem festen Teil,
+            // die Sicht zum Ziel frei bis 0,3 m davor
+            const auge = (zx, zz, dz) => {
+                const zurMitte = Math.atan2(fp.oz - zz, fp.ox - zx);
+                for (const rr of [0.8, 1.2, 1.6, 2, 2.5, 3])
+                    for (let k = 0; k < 8; k++) {
+                        const wi = zurMitte + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 4);
+                        const [ax, az] = [zx + Math.cos(wi) * rr, zz + Math.sin(wi) * rr];
+                        if (Math.abs(ax - fp.ox) > fp.ex - 0.4 || Math.abs(az - fp.oz) > fp.ez - 0.4) continue;
+                        const da = diele(ax, az);
+                        const p = welt(e, ax, az);
+                        const g = r._bodenSichtAt(p.x, p.z);
+                        const ay = Math.max(
+                            (Number.isFinite(da) ? da : dz) + 1.3,
+                            g != null ? g - base + 0.4 : -Infinity
+                        );
+                        if (!frei(ax, ay, az, 0.25)) continue;
+                        const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((t) => [ax + (zx - ax) * t, ay + (dz - ay) * t, az + (zz - az) * t]); // prettier-ignore
+                        if (strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) return [ax, ay, az]; // prettier-ignore
+                    }
+                return null;
+            };
             const dm = Number.isFinite(diele(fp.ox, fp.oz)) ? diele(fp.ox, fp.oz) : 0.5;
-            const nach = (a, z) => a + Math.sign(z - a) * 0.25; // 0,25 m vom Wand-Fuß zur Mitte
-            const blicke = [
-                ...(tu ? [[tu.x, tu.z + 1, tu.x, tu.z + 1.6, dm]] : []),
-                [fp.ox, fp.oz - 0.3, fp.ox, fp.oz + 0.3, dm],
-                ...(fuss ? [[nach(fuss.lx, fp.ox), nach(fuss.lz, fp.oz), fuss.lx, fuss.lz, fuss.d]] : []),
-            ];
-            for (const [ax, az, zx, zz, dz] of blicke) {
-                const [p, q] = [welt(e, ax, az), welt(e, zx, zz)];
-                // das Auge 1,3 m über der Diele, nie im Hang (liegt der Boden im Haus über der Diele, steht es 0,4 m über ihm)
-                cam.position.set(p.x, Math.max(base + dz + 1.3, (r._bodenSichtAt(p.x, p.z) ?? -Infinity) + 0.4), p.z);
+            const ziele = [...(tu ? [[tu.x, tu.z + 1.6]] : []), [fp.ox, fp.oz], ...(fuss ? [[fuss.lx, fuss.lz]] : [])];
+            for (const [zx, zz] of ziele) {
+                const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
+                const a = auge(zx, zz, dz);
+                if (!a) continue;
+                b.blicke++;
+                const [p, q] = [welt(e, a[0], a[2]), welt(e, zx, zz)];
+                cam.position.set(p.x, base + a[1], p.z);
                 cam.lookAt(q.x, base + dz, q.z);
                 cam.updateMatrixWorld(true);
                 const G = await schuss([], []);
@@ -475,43 +490,42 @@ async function proben(phasen) {
                     }
                 [b.ring, b.innen] = [Math.max(b.ring, ring), Math.max(b.innen, innen.length)];
                 const ohneInnen = innen.length ? await schuss([], innen) : G;
-                // die Halm-Schicht ohne die Büschel: Boden-Pixel (der Boden-Satz zeichnet in einer Maske Magenta — die Verdeckung
-                // rechnet der Renderer), grün im Bild ohne die Nah-Wiese, und ihr Strahl trifft den Boden innerhalb der Wände (der
-                // erste Schnitt von oben, `_bodenSichtAt`, Schritt 2 cm) — der Boden hinter Tür, Fenster und Laube zählt nicht
-                const senken = [...s.nahWiese.senken.values()].map((a) => a.mesh).filter(Boolean);
-                const B = await schuss(senken, []);
+                // DIE MASKE ohne die Nah-Wiese: der Boden-Satz zeichnet unbeleuchtet die Klasse seiner Albedo (die Farbe, die die
+                // Halm-Schicht trägt — grün, wo sie Wiese zeichnet: g − (r + b) / 2 > 0,02; die Erde −0,002, die Wiese bis 0,129)
+                const senken = [...s.nahWiese.senken.values()].map((x) => x.mesh).filter(Boolean);
                 const stoff = s.chunkSaetze.get("boden").mesh.material;
-                const farbe = stoff.colorNode;
-                [stoff.colorNode, stoff.needsUpdate] = [THREE.TSL.vec4(1, 0, 1, 1), true];
+                const alt = stoff.outputNode;
+                const alb = stoff.colorNode.xyz;
+                const gruen = alb.y.sub(alb.x.add(alb.z).mul(0.5)).greaterThan(0.02);
+                [stoff.outputNode, stoff.needsUpdate] = [TSL.vec4(TSL.select(gruen, TSL.vec3(0, 1, 0), TSL.vec3(1, 0, 1)), 1), true]; // prettier-ignore
                 let M;
                 try {
                     M = await schuss(senken, []);
                 } finally {
-                    [stoff.colorNode, stoff.needsUpdate] = [farbe, true];
+                    [stoff.outputNode, stoff.needsUpdate] = [alt, true];
                 }
                 const anders = (X, Y, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(X[i + c] - Y[i + c]))) > 18;
                 const v = new THREE.Vector3();
+                // trifft der Strahl des Pixels den Boden mehr als 0,1 m innerhalb der Wände (erster Schnitt von oben, 2 cm)?
                 const drinnen = (px, py) => {
                     v.set(((px + 0.5) / W) * 2 - 1, 1 - ((py + 0.5) / Hb) * 2, 0.5).unproject(cam).sub(cam.position).normalize(); // prettier-ignore
                     for (let t = 0, ueber = false; t < 12; t += 0.02) {
-                        const [x, y, z] = [
-                            cam.position.x + v.x * t,
-                            cam.position.y + v.y * t,
-                            cam.position.z + v.z * t,
-                        ];
+                        const [x, y, z] = [cam.position.x + v.x * t, cam.position.y + v.y * t, cam.position.z + v.z * t]; // prettier-ignore
                         const g = r._bodenSichtAt(x, z);
                         if (g == null) continue;
-                        if (ueber && y <= g) return abGrundriss(e, fp, x, z) < 0;
+                        if (ueber && y <= g) return abGrundriss(e, fp, x, z) < -0.1;
                         ueber = y > g;
                     }
                     return false;
                 };
                 for (let i = 0; i < G.length; i += 4) {
                     if (anders(G, ohneInnen, i)) b.halm++;
-                    if (!(M[i] > M[i + 1] + 40 && M[i + 2] > M[i + 1] + 40)) continue;
-                    b.boden++; // Boden im Bild (auch draußen)
-                    if (B[i + 1] > B[i] + 8 && B[i + 1] > B[i + 2] + 8 && drinnen((i / 4) % W, Math.floor(i / 4 / W)))
-                        b.gruen++;
+                    const [mr, mg, mb] = [M[i], M[i + 1], M[i + 2]];
+                    const istGruen = mg > mr + 60 && mg > mb + 60;
+                    if (!istGruen && !(mr > mg + 60 && mb > mg + 60)) continue; // kein Boden im Pixel
+                    if (!drinnen((i / 4) % W, Math.floor(i / 4 / W))) continue;
+                    b.boden++;
+                    if (istGruen) b.gruen++;
                 }
                 const cv = Object.assign(document.createElement("canvas"), { width: W, height: Hb });
                 cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(G), W, Hb), 0, 0);
@@ -1351,28 +1365,78 @@ async function proben(phasen) {
         o.w4b.nah = naturImHaus(FH);
         // W4b WIESE (F4 „Wiese im Haus"): über jedem Haus des fernen Dorfs und dem Haus des Spielers baut jede Kachel, die den
         // Grundriss berührt, ihre Büschel nach dem EINEN Bau des Rings (`_nahWieseKachelBueschel`) — kein Kreis (die Weite der
-        // gelieferten Studio-Vorlage × Skala) berührt den Grundriss; jede Probe im Grundriss (0,5 m) liest in der Wege-Karte
-        // Erde (`_wegeFeldAt` ≥ 0,99, die Bytes des Boden-Stoffs: darunter zeichnet die Halm-Schicht Grün). Basis 18.10. (Radeon):
-        // 5 012 von 16 302 Büscheln, 12 148 von 12 371 Proben; im Bild 23 von 25 Häusern mit Halmen (bis 154 719 + 221 306 Pixel).
+        // gelieferten Studio-Vorlage × Skala) berührt den Grundriss; mit dem Auge im Haus liegt jede Probe im Grundriss (0,25 m,
+        // bis an die Wand) im Grund am Auge (`_imGrundAuge`, dieselben Kästen wie der Boden-Stoff: dort zeichnet die Halm-Schicht
+        // keinen Halm), und keine Probe 2 cm bis 1,5 m vor der Wand (draußen ändert der Grund nichts). Das Band draußen zählt die
+        // Büschel je 0,5 m bis 1,5 m vor der nächsten Wand (gemessen, kein Urteil). Basis 18.10. (Radeon): 5 012 von 16 302
+        // Büscheln im Grundriss, 12 148 von 12 371 Proben Wiese; im Bild 23 von 25 Häusern mit Halmen.
         const sb = await spielerHaus(mx, mz);
-        const w = { haeuser: FH.length + (sb ? 1 : 0), spieler: !!sb, reich: grasWeite(), bueschel: 0, imHaus: 0, offen: 0, punkte: 0, gruen: 0, je: {} }; // prettier-ignore
+        const w = { haeuser: FH.length + (sb ? 1 : 0), spieler: !!sb, reich: grasWeite(), bueschel: 0, imHaus: 0, offen: 0, punkte: 0, gruen: 0, aussen: 0, draussen: 0, band: [0, 0, 0], je: {} }; // prettier-ignore
         const K = A.NAH_WIESE.kachel;
-        for (const hs of [...FH, ...(sb ? [sb] : [])]) {
+        const HS = [...FH, ...(sb ? [sb] : [])];
+        // jede Kachel um ein Haus einmal (nach dem EINEN Bau des Rings); fehlt ihr Boden (kein Chunk um ein fernes Haus — das
+        // Dorf der Probe trägt bis zu 45 Häuser in zwei Orten), steht der Spieler am Haus, bis er steht
+        const kacheln = new Map();
+        for (const hs of HS) {
             const fp = r._grundrissVon(hs);
-            const R = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 1;
-            for (let tx = Math.floor((hs.position.x - R) / K); tx <= Math.floor((hs.position.x + R) / K); tx++)
-                for (let tz = Math.floor((hs.position.z - R) / K); tz <= Math.floor((hs.position.z + R) / K); tz++)
-                    for (const q of r._nahWieseKachelBueschel(tx, tz) || (w.offen++, [])) {
-                        w.bueschel++;
-                        if (!imHaus(hs, fp, q, w.reich)) continue;
-                        w.imHaus++;
-                        w.je[hs.type] = (w.je[hs.type] || 0) + 1;
-                    }
-            for (let u = -fp.ex; u <= fp.ex; u += 0.5)
-                for (let v = -fp.ez; v <= fp.ez; v += 0.5) {
-                    const p = welt(hs, fp.ox + u, fp.oz + v);
-                    if (++w.punkte && r._wegeFeldAt(p.x, p.z) < 0.99) w.gruen++;
+            const R = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            const [x0, x1] = [Math.floor((hs.position.x - R) / K), Math.floor((hs.position.x + R) / K)];
+            const [z0, z1] = [Math.floor((hs.position.z - R) / K), Math.floor((hs.position.z + R) / K)];
+            const hol = () => {
+                let leer = 0;
+                for (let tx = x0; tx <= x1; tx++)
+                    for (let tz = z0; tz <= z1; tz++)
+                        if (!kacheln.get(tx + "," + tz) && !kacheln.set(tx + "," + tz, r._nahWieseKachelBueschel(tx, tz)).get(tx + "," + tz)) leer++; // prettier-ignore
+                return leer;
+            };
+            for (let k = 0; k < 60 && hol(); k++) {
+                if (!k) stell(hs.position.x, hs.position.y + 1, hs.position.z);
+                await pumpe(5);
+            }
+        }
+        const fps = HS.map((hs) => [hs, r._grundrissVon(hs)]);
+        for (const l of kacheln.values()) {
+            if (!l) w.offen++;
+            for (const q of l || []) {
+                w.bueschel++;
+                const drin = fps.find(([hs, fp]) => imHaus(hs, fp, q, w.reich));
+                if (drin) {
+                    w.imHaus++;
+                    w.je[drin[0].type] = (w.je[drin[0].type] || 0) + 1;
+                    continue;
                 }
+                // das Band draußen: gegen den nächsten Grundriss
+                const d = Math.min(...fps.map(([hs, fp]) => abGrundriss(hs, fp, q.x, q.z)));
+                if (d > 0 && d <= 1.5) w.band[Math.min(2, Math.floor(d / 0.5))]++;
+            }
+        }
+        for (const [hs, fp] of fps) {
+            // das Auge im Haus (der Takt des Spiels trägt es von der Kamera, `_lodAuge`)
+            // (vor F4 kannte der Boden-Stoff keinen Grund: jede Probe liegt dann außerhalb — die Basis-Zeile urteilt rot)
+            if (r._tickGrundAuge) r._tickGrundAuge({ x: welt(hs, fp.ox, fp.oz).x, z: welt(hs, fp.ox, fp.oz).z });
+            const imGA = (x, z) => !!r._imGrundAuge && r._imGrundAuge(x, z);
+            // (bis 1 cm an die Wand: die Wand-Linie selbst trägt die Rundung der Lage)
+            for (let u = -fp.ex + 0.01; u <= fp.ex - 0.01 + 1e-9; u += 0.25)
+                for (let v = -fp.ez + 0.01; v <= fp.ez - 0.01 + 1e-9; v += 0.25) {
+                    const p = welt(hs, fp.ox + Math.min(u, fp.ex - 0.01), fp.oz + Math.min(v, fp.ez - 0.01));
+                    if (++w.punkte && !imGA(p.x, p.z)) w.gruen++;
+                }
+            // draußen: je Wand ein Strahl alle 0,5 m, von 2 cm bis 1,5 m vor der Wand (nie im Grundriss eines Nachbarn)
+            for (const [nx, nz, L, Q] of [
+                [1, 0, fp.ex, fp.ez],
+                [-1, 0, fp.ex, fp.ez],
+                [0, 1, fp.ez, fp.ex],
+                [0, -1, fp.ez, fp.ex],
+            ])
+                // prettier-ignore
+                for (let t = -Q; t <= Q; t += 0.5)
+                    for (const a of [0.02, 0.1, 0.25, 0.5, 1, 1.5]) {
+                        const [lx, lz] = nx ? [fp.ox + nx * (L + a), fp.oz + t] : [fp.ox + t, fp.oz + nz * (L + a)];
+                        const p = welt(hs, lx, lz);
+                        if (r._imGrundriss(p.x, p.z, 0) === "haus") continue;
+                        w.aussen++;
+                        if (imGA(p.x, p.z)) w.draussen++;
+                    }
         }
         o.w4b.wiese = w;
         if (P.has("bild")) await blickInsHaus([...FH, ...(sb ? [sb] : [])], sb);
@@ -1827,7 +1891,8 @@ function urteil(o) {
             if (!wi || !(wi.bueschel >= 500) || wi.offen || !wi.spieler || !(wi.reich > 0.1))
                 f.push(`W4b Aufbau Wiese: ${JSON.stringify(wi || null).slice(0, 160)} (Soll ≥ 500 Büschel, 0 offen, Spieler-Haus, Weite)`); // prettier-ignore
             else if (wi.imHaus) f.push(`W4b Wiese: ${wi.imHaus} von ${wi.bueschel} Büscheln im Grundriss (${JSON.stringify(wi.je)})`); // prettier-ignore
-            if (wi && wi.gruen) f.push(`W4b Halm-Schicht: ${wi.gruen} von ${wi.punkte} Proben im Grundriss lesen Wiese (Feld < 0,99)`); // prettier-ignore
+            if (wi && wi.gruen) f.push(`W4b Halm-Schicht: ${wi.gruen} von ${wi.punkte} Proben im Grundriss liegen nicht im Grund am Auge`); // prettier-ignore
+            if (wi && (wi.draussen || !(wi.aussen > 100))) f.push(`W4b Grund draußen: ${wi.draussen} von ${wi.aussen} Proben 2 cm–1,5 m vor der Wand im Grund am Auge (Soll 0 von > 100)`); // prettier-ignore
         }
     }
     if (P.has("bild")) {
@@ -1838,14 +1903,17 @@ function urteil(o) {
             .filter((x) => x.stufe !== 0 || !x.steht)
             .map((x) => `${x.typ}${x.spieler ? "*" : ""}:L${x.stufe}`);
         const wiese = b.filter((x) => x.ring > 0).length;
-        if (!(b.length >= 10) || !b.some((x) => x.spieler) || blind.length || wiese < 5) f.push(`Bild Aufbau: ${b.length} Häuser, Spieler-Haus ${b.some((x) => x.spieler) ? "da" : "fehlt"}, ${wiese} mit Büscheln im Ring, blind ${blind.join(" ") || "-"} (Soll ≥ 10 Häuser, Stufe 0, der Ring steht, ≥ 5 auf der Wiese)`); // prettier-ignore
+        const ohneAuge = b.filter((x) => x.blicke < 2).map((x) => `${x.typ}${x.spieler ? "*" : ""}:${x.blicke}`);
+        if (!(b.length >= 10) || !b.some((x) => x.spieler) || blind.length || wiese < 5 || ohneAuge.length) f.push(`Bild Aufbau: ${b.length} Häuser, Spieler-Haus ${b.some((x) => x.spieler) ? "da" : "fehlt"}, ${wiese} mit Büscheln im Ring, blind ${blind.join(" ") || "-"}, ohne freies Auge ${ohneAuge.join(" ") || "-"} (Soll ≥ 10 Häuser, Stufe 0, der Ring steht, ≥ 5 auf der Wiese, je Haus ≥ 2 freie Blicke)`); // prettier-ignore
         const rot = b.filter((x) => x.halm || x.gruen);
         if (rot.length) f.push(`Bild Halm: ${rot.length} von ${b.length} Häusern zeigen Halme im Innenraum (${rot.map((x) => `${x.typ}${x.spieler ? "*" : ""} ${x.halm}+${x.gruen}`).join(" · ")})`); // prettier-ignore
     }
     // der Blick ins Haus (`--bild`) fährt W4b in der Welt mit echtem Renderer und warmer Foundry: dort lebt keine Promotion und
     // keine Streu unter dem Dorf (18.10. an Basis und Kopf gleich) — er urteilt über F4 (Wiese, Halm-Schicht, Bild), die
     // Streu-Wand von W4b urteilt der Lauf ohne Bild (gate:haus-welt)
-    return P.has("bild") ? f.filter((x) => /^(W4b Wiese|W4b Aufbau Wiese|W4b Halm-Schicht|Bild )/.test(x)) : f;
+    return P.has("bild")
+        ? f.filter((x) => /^(W4b Wiese|W4b Aufbau Wiese|W4b Halm-Schicht|W4b Grund|Bild )/.test(x))
+        : f;
 }
 
 function zeile(o) {
@@ -1859,8 +1927,9 @@ function zeile(o) {
             .map((h) => h.treppeSteigM + "/" + h.treppeSollM)
             .join(" ")} m` +
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4 Weg ${o.w4weg ? o.w4weg.aufWeg + "/" + o.w4weg.natur + " auf " + o.w4weg.formen + " Formen" : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
-        ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser), Wiese ${o.w4b && o.w4b.wiese ? `${o.w4b.wiese.imHaus}/${o.w4b.wiese.bueschel} Büschel, Schicht ${o.w4b.wiese.gruen}/${o.w4b.wiese.punkte}` : "?"}` +
-        ` · Bild Halm-Pixel ${(o.bild || []).map((x) => x.halm + "+" + x.gruen + (x.spieler ? "*" : "") + " (" + x.innen + " im Haus, Fuß " + x.fuss + " m)").join(" / ") || "-"}` +
+        ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser), Wiese ${o.w4b && o.w4b.wiese ? `${o.w4b.wiese.imHaus}/${o.w4b.wiese.bueschel} Büschel, Schicht ${o.w4b.wiese.gruen}/${o.w4b.wiese.punkte}, draußen ${o.w4b.wiese.draussen}/${o.w4b.wiese.aussen}, Band 0–0,5/0,5–1/1–1,5 m ${o.w4b.wiese.band.join("/")}` : "?"}` +
+        ` · Bild Halm-Pixel ${(o.bild || []).map((x) => x.halm + "+" + x.gruen + (x.spieler ? "*" : "") + " (" + x.innen + " im Haus, " + x.blicke + " Blicke, Boden " + x.boden + " px, Fuß " + x.fuss + " m)").join(" / ") || "-"}` +
+        ` · Erde über Diele (offen, eigene Klasse) ${(o.bild || []).filter((x) => x.erde).length}/${(o.bild || []).length} Häuser, ${(o.bild || []).reduce((a, x) => a + x.erde, 0)}/${(o.bild || []).reduce((a, x) => a + x.proben, 0)} Proben, Boden im Bild ${(o.bild || []).reduce((a, x) => a + x.boden, 0)} px` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
         ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +

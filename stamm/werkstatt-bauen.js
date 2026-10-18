@@ -781,14 +781,6 @@ class AnazhRealm_werkstatt_bauen {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        // der Grundriss eines Baus fällt mit ihm — am Ort (`_grundrissFaellt`)
-        const fp = this._grundrissVon(entry);
-        if (fp) {
-            const p = entry.position;
-            const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
-            this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
-        }
-        this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
         // Eine Pflanze stempelte nie (`_stempelSpanne`): ihr Abbau gibt keiner Zelle etwas zurück.
@@ -827,12 +819,12 @@ class AnazhRealm_werkstatt_bauen {
         // Resonierende Strukturen verstummen beim Abbau mit abklingendem Sinus; stumme bleiben still.
         this._playArchitectureFarewellPing(entry);
         this._cullArchitectureMesh(entry);
-        this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
         this._blockerAustritt(entry);
+        // Grundriss, Ziegel-Fernstufe, Trittfläche und Krone fallen mit ihm (`_bauBodenAbschied`, derselbe Abschied wie über dem Deckel)
+        this._bauBodenAbschied(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
-        this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
                 type: entry.type,
