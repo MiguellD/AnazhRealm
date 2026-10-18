@@ -62,7 +62,6 @@ const WELTEN = [
     { id: "terrain", manifest: true, wort: "fichte", mitgebracht: "pass" },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
     { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
-    { id: "fachwerk", wort: "tudor", ui: { sel: "#pK", feld: "value", soll: "tudor" } },
     { id: "klang", wort: "trap", ui: { sel: "#presets .presetBtn.active", feld: "text", soll: "Trap" } },
     { id: "koerperstudio", wort: "wut", ui: { sel: "#emotions button.active", feld: "text", soll: "Wut" } },
     { id: "tetrapoda", wort: "hirsch", ui: { sel: "#presets button.active", feld: "text", soll: "Hirsch" } },
@@ -70,7 +69,8 @@ const WELTEN = [
     { id: "begegnung", wort: null },
     { id: "translated", wort: "sturm" },
 ];
-// (Die Garage ist seit S1 ein Modus der Welt-Engine, kein iframe — ihre Probefahrt und ihr Tor prüft gate:garage-labor.)
+// (Garage und Fachwerk sind seit S1 Modi der Welt-Engine, kein iframe — ihr Tor und ihre Wörter prüfen gate:garage-labor und
+// gate:studio-begehen.)
 // Die Strom-Welt zeichnet (statt der Regex-Probe „densityTexture/addSplat/uBackdrop stehen im Quelltext"): ihre Engine
 // meldet keinen Rückfall (WebGL2 + HalfFloat-Ziele stehen), und das Bild im Portal bewegt sich (zwei Aufnahmen des
 // Overlay-iframe unterscheiden sich).

@@ -639,7 +639,12 @@ H6 (Ratsche `EINE_ENGINE`). Auf der EINEN Engine stehen: **gelaende** und
 `spawnArchitecture("fahrzeug_<gattung>")` mit den Reglern als Prägung, dieselbe
 Foundry-Stufenkette; die Probefahrt ist der Ritt der Welt mit der EINEN
 `chaseKamera` des Kerns; die alte r128-Shell mit eigenem WebGLRenderer und
-ACES 1,04 fiel). Für sie gilt §4b nicht. Die übrigen Studios (fachwerk ·
+ACES 1,04 fiel) und **fachwerk** (S1-b, worlds/fachwerk/studio.js: das Haus ist
+`spawnArchitecture("haus_<kultur>")` mit den Reglern als Prägung, das Dorf der
+Siedlungs-Akt der Welt `spawnSettlement` am Hang der Lage — derselbe Plan v2,
+die Stadtmauer zeichnet die Welt `_stlMauerBauen`, ein neuer Stand ersetzt das
+Dorf ganz `siedlungAbbauen`; die r128-Shell mit eigenem WebGLRenderer, ACES 1,12
+und eigenem Dorf-Boden fiel). Für sie gilt §4b nicht. Die übrigen Studios (
 portale · schmiede · koerperstudio · tetrapoda · terrain) sind bis zu ihrem
 Schnitt in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert r184
 (physisch, farb-verwaltet). Wo AnazhRealm DEREN Inhalt selbst rendert (nicht

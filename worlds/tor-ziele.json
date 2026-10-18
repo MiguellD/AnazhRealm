@@ -3,11 +3,6 @@
     "w": 512,
     "h": 256,
     "welten": {
-        "worlds/fachwerk/index.html": {
-            "datei": "worlds/fachwerk/panorama.f16",
-            "stempel": "617e5759cafd6ff4ff3e338cc5fc2e1fa2d4a7daabb9ea433f53fd98516e9fa9",
-            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
-        },
         "worlds/fluid/index.html": {
             "datei": "worlds/fluid/panorama.f16",
             "stempel": "46920211bfb7c158563337744f8fc274a594f2f7de47e532f980305189055221",
@@ -53,6 +48,7 @@
         "worlds/translated/index.html": "die Szene ist Spieler-Daten und reist erst im enter (stamm PORTAL_TRANSLATED_WORLD) — vor dem Betreten kein Bild",
         "worlds/begegnung/index.html": "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
         "worlds/schwarm/index.html": "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
-        "index.html?studio=garage": "ein Modus der Welt-Engine — das Tor öffnet die Werkstatt in der Welt (stamm _studioModusBetreten), kein fremdes Bild"
+        "index.html?studio=garage": "ein Modus der Welt-Engine — das Tor öffnet die Werkstatt in der Welt (stamm _studioModusBetreten), kein fremdes Bild",
+        "index.html?studio=fachwerk": "ein Modus der Welt-Engine — das Tor öffnet das Fachwerk-Studio in der Welt (stamm _studioModusBetreten), kein fremdes Bild"
     }
 }

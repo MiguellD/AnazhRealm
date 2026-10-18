@@ -445,18 +445,10 @@
         {
             "id": "haus",
             "gruppe": "Haus",
-            "titel": "Fachwerkhaus alemannisch, die Bau-Stoffe (Putz, Holz, Dach: Seh-Klasse stoff); im Labor ohne Gelände und Garten (der Vertrags-Bau trägt sie nie, fachwerk-core Kopf (c)) — Komposition: Labor die Kultur auf Saat 3, Welt die Vorschau-Gestalt mit ihren Studio-Reglern",
+            "titel": "Fachwerkhaus alemannisch, die Bau-Stoffe (Putz, Holz, Dach: Seh-Klasse stoff); im Labor ohne Gelände und Garten (der Vertrags-Bau trägt sie nie, fachwerk-core Kopf (c)) — Labor = Welt: das Haus des Fachwerk-Studios ist ein Haus der Welt",
             "labor": {
-                "studio": "fachwerk",
-                "aktion": [
-                    {
-                        "waehle": "#pK",
-                        "wert": "alemannisch"
-                    },
-                    {
-                        "klick": "#pTerrain"
-                    }
-                ],
+                "welt": true,
+                "grund": "das Fachwerk ist ein Modus der Welt-Engine (S1-b, worlds/fachwerk/studio.js): sein Haus ist ein Haus der Welt, Labor = Welt durch Bau",
                 "stoff": {
                     "seh": "stoff"
                 }
@@ -819,17 +811,6 @@
                 ]
             },
             "ratsche": 0.7106
-        },
-        "fachwerk": {
-            "ist": {
-                "kL": 0.4807,
-                "ausgabe": [
-                    197,
-                    194,
-                    192
-                ]
-            },
-            "ratsche": 0.4181
         },
         "koerperstudio": {
             "ist": {

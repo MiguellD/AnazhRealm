@@ -1874,7 +1874,9 @@ class AnazhRealm_siedlung_satz {
         P = st.stlZaun = { mesh, cap: 256, top: 0 };
         return P;
     }
-    _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
+    // `scher` (die Mauer, `_stlMauerBauen`): die Höhe steigt längs des Streifens um `scher` je Meter — die Kanten bleiben lotrecht,
+    // Fuß und Krone laufen mit dem Hang (T·R·S·Sh, Sh hebt y um scher·sz/sy je lokalem z).
+    _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe, scher = 0) {
         const P = this._stlZaunEnsurePool();
         if (!P) return;
         if (P.top >= P.cap) {
@@ -1890,6 +1892,7 @@ class AnazhRealm_siedlung_satz {
             AnazhRealm._instanzZahl(bigger, P.mesh.count);
             bigger.frustumCulled = false;
             bigger.receiveShadow = true;
+            bigger.castShadow = P.mesh.castShadow; // die Mauer wirft (`_stlMauerBauen`)
             this.state.scene.add(bigger);
             this.state.scene.remove(P.mesh);
             this._instanzAbschied(P.mesh);
@@ -1906,6 +1909,10 @@ class AnazhRealm_siedlung_satz {
         e.set(pitch, yaw, 0, "YXZ");
         q.setFromEuler(e);
         m.compose(v.set(x, y, z), q, s.set(sx, sy, sz));
+        if (scher) {
+            const sh = this._stlWegeTmpSh || (this._stlWegeTmpSh = new THREE.Matrix4());
+            m.multiply(sh.set(1, 0, 0, 0, 0, 1, (scher * sz) / sy, 0, 0, 0, 1, 0, 0, 0, 0, 1));
+        }
         P.mesh.setMatrixAt(slot, m);
         P.mesh.setColorAt(slot, c.setHex(farbe));
         AnazhRealm._instanzZahl(P.mesh, P.top);
@@ -2063,6 +2070,7 @@ class AnazhRealm_siedlung_satz {
         if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
+        const zaun0 = this.state.stlZaun ? this.state.stlZaun.top : 0; // ab hier die Streifen dieser Siedlung
         for (const fz of plan.fences || []) {
             if (n >= MAX) break;
             if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
@@ -2091,7 +2099,147 @@ class AnazhRealm_siedlung_satz {
             );
             n++;
         }
+        const mauer = this._stlMauerBauen(plan, origin);
+        n += mauer;
+        // DAS GEDÄCHTNIS DES ABBAUS (S1-b, `_stlWegeAbbau`): je Schlüssel die Fläche der Karte und die Streifen im Pool
+        if (key) {
+            const Z = this.state.stlZaun;
+            const teile = this._stlWegeTeile || (this._stlWegeTeile = new Map());
+            teile.set(key, { box: box.formen.length ? box : null, zaun: [zaun0, Z ? Z.top : 0], mauer });
+        }
         return n;
+    }
+    // DIE STADTMAUER (S1-b — bis dahin zeichnete sie nur das Fachwerk-Labor): Segmente und Türme des Plans (fachwerk-core
+    // `dorfLayout`; die Tore sind die Lücken, wo die Gassen hinausführen) als Stein-Streifen im Bau-Pool der Siedlung, im Maß des
+    // Gesetzbuchs (`MAUER`). Je Segment EIN Streifen, geschert über die Enden (die Kanten lotrecht, Fuß und Krone mit dem Hang wie
+    // das Labor-Bild über seinem Dorf-Boden), der Fuß so tief, dass keine Senke unter dem Segment ihn freilegt; darüber die Krone;
+    // je Turm Schaft und Dach. Wasser-Wand wie der Zaun. Der Pool wirft Schatten, solange er Mauer trägt (der Zaun allein bleibt,
+    // wie er war). Die Mauer blockt den Gang nicht: das Blocker-Netz kennt je Eintrag Achsen-Kästen (offen benannt, S1-b).
+    _stlMauerBauen(plan, origin) {
+        const M = plan && plan.mauer;
+        if (!M || !Array.isArray(M.segs) || !M.segs.length) return 0;
+        const G = AnazhRealm.Gesetz("fachwerk:MAUER") || AnazhRealm._kernPflichtBruch("fachwerk:MAUER");
+        const F = AnazhRealm.Gesetz("fachwerk:DEFCOL") || AnazhRealm._kernPflichtBruch("fachwerk:DEFCOL");
+        const h = (x, z) => this.getTerrainHeightAt(x, z);
+        let n = 0;
+        for (const sg of M.segs) {
+            const ax = origin.x + sg.x0;
+            const az = origin.z + sg.z0;
+            const dx = sg.x1 - sg.x0;
+            const dz = sg.z1 - sg.z0;
+            const len = Math.hypot(dx, dz);
+            if (!(len > 0.4) || !this._landAt(ax + dx / 2, az + dz / 2, 0.2)) continue;
+            const y0 = h(ax, az);
+            const y1 = h(ax + dx, az + dz);
+            if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
+            let senke = 0; // wie tief der Grund zwischen den Enden unter ihre Linie fällt
+            for (let i = 1; i < 6; i++) {
+                const g = h(ax + (dx * i) / 6, az + (dz * i) / 6);
+                if (Number.isFinite(g)) senke = Math.max(senke, y0 + ((y1 - y0) * i) / 6 - g);
+            }
+            const fuss = senke + G.fussM;
+            const ym = (y0 + y1) / 2;
+            const yaw = Math.atan2(dx, dz);
+            const scher = (y1 - y0) / len;
+            const W = G.wand;
+            const K = G.krone;
+            const mx = ax + dx / 2;
+            const mz = az + dz / 2;
+            this._stlZaunAddStrip(
+                mx,
+                ym + (W.hoeheM - fuss) / 2,
+                mz,
+                yaw,
+                0,
+                W.dickeM,
+                W.hoeheM + fuss,
+                len + W.ueberM,
+                F[W.stoff],
+                scher
+            );
+            this._stlZaunAddStrip(
+                mx,
+                ym + K.untenM + K.hoeheM / 2,
+                mz,
+                yaw,
+                0,
+                K.dickeM,
+                K.hoeheM,
+                len,
+                F[K.stoff],
+                scher
+            );
+            n += 2;
+        }
+        for (const tw of M.towers || []) {
+            const x = origin.x + tw.x;
+            const z = origin.z + tw.z;
+            if (!this._landAt(x, z, 0.2)) continue;
+            const T = G.turm;
+            const D = G.dach;
+            const r = T.seiteM / 2;
+            const yc = h(x, z);
+            let yb = yc;
+            for (const [ox, oz] of [
+                [-r, -r],
+                [r, -r],
+                [-r, r],
+                [r, r],
+            ]) {
+                const g = h(x + ox, z + oz);
+                if (Number.isFinite(g)) yb = Math.min(yb, g);
+            }
+            if (!Number.isFinite(yc)) continue;
+            const fuss = yc - yb + G.fussM;
+            this._stlZaunAddStrip(
+                x,
+                yc + (T.hoeheM - fuss) / 2,
+                z,
+                0,
+                0,
+                T.seiteM,
+                T.hoeheM + fuss,
+                T.seiteM,
+                F[T.stoff]
+            );
+            this._stlZaunAddStrip(x, yc + D.untenM + D.hoeheM / 2, z, 0, 0, D.seiteM, D.hoeheM, D.seiteM, F[D.stoff]);
+            n += 2;
+        }
+        const P = this.state.stlZaun;
+        if (P && n) {
+            P.mauerN = (P.mauerN || 0) + n;
+            P.mesh.castShadow = true;
+        }
+        return n;
+    }
+    // DER ABBAU EINER SIEDLUNG IM BODEN (S1-b, Leser `siedlungAbbauen`): ihre Formen fallen aus der Wege-Karte (der Neu-Maler
+    // malt jede zentrierte Stufe neu, die Natur-Wand und die Wiese wachsen zurück — `_trittFlaecheLoesen`), ihre Streifen im
+    // Bau-Pool werden leer (eine Null-Matrix zeichnet nichts), ihr Schlüssel ist wieder frei.
+    _stlWegeAbbau(key) {
+        const T = this._stlWegeTeile && this._stlWegeTeile.get(key);
+        if (this._stlWegeKeys) this._stlWegeKeys.delete(key);
+        if (!T) return false;
+        this._stlWegeTeile.delete(key);
+        const wk = this.state.wegeKarte;
+        const box = T.box;
+        if (box && wk) {
+            for (const liste of [wk.siedlungen, wk.raeumen]) {
+                const i = liste.indexOf(box);
+                if (i >= 0) liste.splice(i, 1);
+            }
+            this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1);
+            for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
+            this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+        }
+        const P = this.state.stlZaun;
+        if (P) {
+            const leer = this._stlWegeTmpLeer || (this._stlWegeTmpLeer = new THREE.Matrix4().makeScale(0, 0, 0));
+            for (let i = T.zaun[0]; i < T.zaun[1] && i < P.cap; i++) P.mesh.setMatrixAt(i, leer);
+            P.mesh.instanceMatrix.needsUpdate = true;
+            P.mauerN = Math.max(0, (P.mauerN || 0) - T.mauer);
+            P.mesh.castShadow = P.mauerN > 0;
+        }
+        return true;
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
@@ -2129,6 +2277,7 @@ class AnazhRealm_siedlung_satz {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
+        if (this._stlWegeTeile) this._stlWegeTeile.clear();
     }
 
     _archInstanceAdd(entry, flat, opts) {

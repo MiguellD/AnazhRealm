@@ -1329,8 +1329,8 @@ class AnazhRealm_bau_vorlagen {
                 studioGestalt: "maurentor",
                 parts: this._stationVariant(weltSchmiedeParts, felsWorldSeed + "-portal6"),
             },
-            // Fachwerk-Portal → Haus-Labor (worlds/fachwerk/); fachwerk-core.js ist die EINE Quelle, auch für das
-            // Dorf (exportSettlement). Die Registry trägt Pfad + DSL-Manifest.
+            // Fachwerk-Portal → das Haus-Labor als Modus der Welt (index.html?studio=fachwerk, S1-b); fachwerk-core.js ist die
+            // EINE Quelle, auch für das Dorf (exportSettlement). Die Registry trägt Ziel + DSL-Manifest.
             welt_fachwerk: {
                 name: "welt_fachwerk",
                 label: "Fachwerkhaus — parametrisch, begehbar",

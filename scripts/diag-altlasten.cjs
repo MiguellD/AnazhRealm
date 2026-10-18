@@ -1089,19 +1089,19 @@ const ZWILLINGE = [
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: ["worlds/fachwerk/studio.js", ...STAMM],
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: ["worlds/fachwerk/studio.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: ["worlds/fachwerk/studio.js", ...STAMM],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {

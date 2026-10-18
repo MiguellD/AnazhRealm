@@ -2207,14 +2207,13 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
-    // Das HAUS-Labor: Fachwerkhaus, parametrisch + begehbar — 32 Kultur-Archetypen, Dorf-Modus
-    // (Straßengraph, Mauer, Jahresringe). fachwerk-core.js (__fachwerkCore) ist die EINE generative
-    // Quelle für Shell UND Foundry, inkl. Dorf-Quelle + exportSettlement. DSL = echte UI-Pfade: die 32
-    // Kulturen über #pK (change) + "dorf"/"haus" über #pDorf.
+    // Das HAUS-Labor: Fachwerkhaus, Dorf und Stadt mit Mauer — ein MODUS der Welt-Engine (S1-b, worlds/fachwerk/studio.js):
+    // das Tor öffnet es in der Welt (`_studioModusBetreten`), kein iframe. fachwerk-core.js (__fachwerkCore) ist die EINE
+    // generative Quelle für Haus, Dorf (exportSettlement → spawnSettlement) und Foundry. DSL = die 32 Kulturen + "dorf"/"haus".
     fachwerk: Object.freeze({
         id: "fachwerk",
         label: "Fachwerkhaus — parametrisch, begehbar",
-        world: "worlds/fachwerk/index.html",
+        world: "index.html?studio=fachwerk",
         dsl: Object.freeze([
             "alemannisch",
             "fraenkisch",
@@ -2251,7 +2250,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "dorf",
             "haus",
         ]),
-        desc: "Das Haus-Labor: parametrisches Fachwerk, tragwerk-ehrlich und begehbar — 32 Kulturen, Dorf-Modus mit gewachsenen Siedlungen.",
+        desc: "Das Haus-Labor: parametrisches Fachwerk, tragwerk-ehrlich und begehbar — 32 Kulturen, Dorf und Stadt mit Mauer in der Welt.",
     }),
     // Das MUSIK-Labor: 22 Genre-Presets aus Kompositions-Gesetzen + sechs DNA-Dials. klang-core.js
     // (__klangCore, meshfrei) ist die EINE Musik-Daten-Quelle (das Host-Lofi liest Tempo + Skala,

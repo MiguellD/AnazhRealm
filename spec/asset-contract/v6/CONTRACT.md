@@ -8,7 +8,7 @@
 > Goldens sind EINGEFROREN (Taille-Disziplin) — NIE regenerieren; ein bewusster
 > Re-Mint ist `MINT_FORCE=1` und eine eigene Entscheidung mit Begründung.
 >
-> Eingefroren bei W-A5a-Grün (Kern-Split worlds/fachwerk/index.html →
+> Eingefroren bei W-A5a-Grün (Kern-Split der Fachwerk-Shell →
 > fachwerk-core.js; die extrahierten Funktions-Slices sind sha256-identisch
 > zur HEAD-Vorlage, die Split-Parität buildInstance == Shell-Komposition der
 > Kern-Primitive ist eine AKTIVE Gate-Probe je Rezept × Stufe).

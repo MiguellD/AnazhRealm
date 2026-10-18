@@ -59,13 +59,6 @@ const STUDIOS = {
         ausgabe: "composer",
         wurzel: "weapon",
     },
-    fachwerk: {
-        pfad: "worlds/fachwerk/index.html",
-        szene: "scene",
-        renderer: "renderer",
-        ausgabe: null,
-        wurzel: "houseGroup",
-    },
     koerperstudio: {
         pfad: "worlds/koerperstudio/index.html",
         szene: "scene",

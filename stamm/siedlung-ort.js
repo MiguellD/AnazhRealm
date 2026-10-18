@@ -1648,8 +1648,10 @@ class AnazhRealm_siedlung_ort {
     // `blick` {gier, tanH} (das Programm eines Sprechers, „baue dorf hier"): der Sprecher steht am verlangten Ort und blickt
     // mit SEINER Gier durch SEINEN Bildwinkel — der Anker hängt dann an keinem Zustand des ausführenden Peers (Spieler,
     // Blick, Fenster), jeder baut dasselbe Dorf an derselben Stelle (Gegenprüfung Runde 1: ~60 m Versatz).
-    _siedlungsAnker(plan, wunsch, blick) {
-        const pm = this.state.playerMesh;
+    // DAS MASS EINES PLANS (plan-lokal): die Mitte seiner Häuser (cx, cz), je Haus [x, z, Reichweite des Grundrisses] und der
+    // Radius R, der jedes Haus samt Reichweite trägt. Leser: der Anker (unten) und das Fachwerk-Studio, das den Spieler vor
+    // sein Dorf stellt (worlds/fachwerk/studio.js — derselbe Radius, an dem der Anker urteilt, ob der Ort den Spieler berührt).
+    _siedlungsMass(plan) {
         const haeuser = [];
         let cx = 0;
         let cz = 0;
@@ -1666,6 +1668,11 @@ class AnazhRealm_siedlung_ort {
         }
         let R = 0;
         for (const [x, z, reich] of haeuser) R = Math.max(R, Math.hypot(x - cx, z - cz) + reich);
+        return { cx, cz, R, haeuser };
+    }
+    _siedlungsAnker(plan, wunsch, blick) {
+        const pm = this.state.playerMesh;
+        const { cx, cz, R, haeuser } = this._siedlungsMass(plan);
         const ergebnis = (x, z, y) => {
             const h = this.getTerrainHeightAt(x, z);
             return { x, y: Number.isFinite(h) ? h : y, z, radius: R, mitte: { x: x + cx, z: z + cz } };
@@ -1826,7 +1833,9 @@ class AnazhRealm_siedlung_ort {
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
             // die Ort-Wahl rechnet in Takt-Scheiben (`_ortPlanWarten`, Lehre 14), der Akt wartet auf sie
+            const ortKey = AnazhRealm._ortSchluessel(seed, anchor); // am Wunsch-Anker: die Ort-Wahl rückt ihn auf den Ort des Plans
             plan = await this._ortPlanWarten(plan, anchor);
+            const vor = new Set(this.state.architectures); // was der Akt stellt, ist danach neu (`siedlungAbbauen`)
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -1837,6 +1846,12 @@ class AnazhRealm_siedlung_ort {
             const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
+            res.abbau = {
+                dKey,
+                ortKey,
+                werke: this.state.architectures.filter((e) => !vor.has(e)),
+            };
+            res.mauer = plan.mauer ? plan.mauer.segs.length : 0;
             // Zwei Kanäle (V-D8): das Log trägt Same, Größe und Slots; wer das Dorf verlangt hat (`_spielerVerlangt`,
             // die Quelle des Akts), hört den Satz der Welt und schaut auf SEIN Dorf — Nexus, Welt-Regeln und Mitspieler handeln
             // für die Welt: kein Satz an den Empfänger, kein Blick.
@@ -1854,6 +1869,22 @@ class AnazhRealm_siedlung_ort {
             this._nachDorfOrientieren(res, o.verlangt);
             return res;
         });
+    }
+    // DER ABBAU EINER SIEDLUNG (S1-b): was der Akt `spawnSettlement` stellte, fällt ganz — jedes Werk, das er setzte (Häuser,
+    // Wandlaternen, Brunnen, Stände, Laternen, Hof-Bäume: `res.abbau.werke`), Wege, Zäune und Mauer (`_stlWegeAbbau`), der
+    // Erdbau und der Plan v2 des Orts, das Gedächtnis des Rebuilds (`settlementCells`). Leser: das Fachwerk-Studio — ein neuer
+    // Stand seiner Regler ersetzt sein Dorf, statt ein zweites danebenzustellen.
+    siedlungAbbauen(res) {
+        const A = res && res.abbau;
+        if (!A) return false;
+        res.abbau = null;
+        for (const e of A.werke) if (this.state.architectures.includes(e)) this.removeArchitecture(e);
+        this._stlWegeAbbau(A.dKey);
+        this._erdbauSetzen(A.ortKey, null);
+        if (this._ortPlaene) this._ortPlaene.delete(A.ortKey);
+        const wm = this.state.worldMeta;
+        if (wm && wm.settlementCells) delete wm.settlementCells[A.dKey];
+        return true;
     }
     // DER BAU-SAME (Γ5): zieht aus dem Welt-Seed-Stream (Suffix ":<art>", FNV-1a — das _worldRuleSeed-Muster); je Art zählt
     // ein Akt-Zähler hoch → jeder neue Bau derselben Welt ein ANDERER, aber deterministischer Same. Die Siedlung trägt die
@@ -2594,3 +2625,7 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = "Die Werkstatt der Welt erwacht noch — versuch es gleich noch einmal.";
+// Der Schlüssel EINES Orts (K10): der Plan v2 (`_ortPlaene`) und sein Erdbau (`worldMeta.erdbau`) hängen an Same und Anker — die
+// Ort-Wahl schreibt, der Abbau einer Siedlung (`siedlungAbbauen`) nimmt unter demselben Schlüssel zurück.
+AnazhRealm._ortSchluessel = (seed, origin) =>
+    "ort:" + (seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);

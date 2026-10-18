@@ -5459,13 +5459,16 @@
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
-            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
-            // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
-            // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
-            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
+            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit ist
+            // graph (Diagnose-Meta) aus dem Export GESTRICHEN (Messname
             // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
+            // DIE STADTMAUER reist (S1-b, additiv: nur die ummauerte Stadt trägt das
+            // Feld, jeder andere Export bleibt byte-gleich): seit das Fachwerk-Studio
+            // ein Modus der Welt ist, zeichnet die Welt sie (`_stlMauerBauen`) — das
+            // Labor zeigte sie allein.
+            mauer: lay.mauer || undefined,
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
@@ -6049,8 +6052,21 @@
     for (var _gid in PRESETS)
         PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = AUSSTATTUNG[_gid] ? AUSSTATTUNG[_gid].gestalten : GESTALTEN_JE_REZEPT;
 
+    // ── DAS MASS DER STADTMAUER (S1-b, additiv): die Zahlen, mit denen das Labor (worlds/fachwerk bis S1-b) die Mauer des
+    //    Plans zeichnete — je Segment die Wand (über die Fuge `ueberM` länger) und ihre Krone, je Turm Schaft und Dach; `untenM`
+    //    ist die Höhe über dem Grund, `fussM` der Fuß unter dem Grund, den kein Hang freilegt. Die Stoffe sind Rollen der
+    //    Palette (DEFCOL). Leser: die Welt (`_stlMauerBauen`); der Plan trägt Segmente, Türme und Tor-Lücken (`dorfLayout`). ──
+    var MAUER = {
+        wand: { hoeheM: 5.6, dickeM: 1.6, ueberM: 0.6, stoff: "stein" },
+        krone: { hoeheM: 0.7, dickeM: 2.0, untenM: 5.55, stoff: "stein" },
+        turm: { seiteM: 3.6, hoeheM: 8.4, stoff: "stein" },
+        dach: { seiteM: 4.2, hoeheM: 1.5, untenM: 8.35, stoff: "ziegel" },
+        fussM: 0.4,
+    };
+
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {
+        MAUER: MAUER,
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,

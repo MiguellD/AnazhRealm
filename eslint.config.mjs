@@ -132,8 +132,9 @@ export default [
         },
     },
     {
-        // DIE MODI DER WELT-ENGINE (S1): das Gelände-Studio (K16b, Panel + Makro-Worker) und die Garage — Panels über der Welt.
-        files: ["worlds/gelaende/*.js", "worlds/garage/*.js"],
+        // DIE MODI DER WELT-ENGINE (S1): das Gelände-Studio (K16b, Panel + Makro-Worker), die Garage und das Fachwerk (S1-b) —
+        // Panels über der Welt.
+        files: ["worlds/gelaende/*.js", "worlds/garage/*.js", "worlds/fachwerk/*.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",

@@ -608,14 +608,19 @@ class AnazhRealm_gelaende_boden {
     // was sie liest (`_forestDartsFallen`). Bis K69 warf jeder Erdbau die Gedächtnisse der ganzen Welt: der Gang in ein Dorf
     // (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen synchron neu, der längste Takt 880 ms (Null-Renderer,
     // Dorfweg gehend), an der Radeon ein Frame von 3,1 s (`_forestCellDarts › planForestCell`, die Hänger-Linse).
+    // `splats` null nimmt den Erdbau des Orts zurück (S1-b, der Abbau einer Siedlung `siedlungAbbauen`): dieselben Gedächtnisse
+    // fallen um seine Flächen, der Grund ist wieder die Funktion.
     _erdbauSetzen(key, splats) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
-        if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
+        const weg = splats === null && Array.isArray(wm.erdbau[key]);
+        if (weg) splats = wm.erdbau[key];
+        else if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
         const G = globalThis.__gelaendeCore;
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
         const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
-        wm.erdbau[key] = splats;
+        if (weg) delete wm.erdbau[key];
+        else wm.erdbau[key] = splats;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
         let x0 = Infinity;
         let x1 = -Infinity;
@@ -711,7 +716,7 @@ class AnazhRealm_gelaende_boden {
     *_ortWahl(plan, origin) {
         if (plan && plan.version === 2) return plan;
         // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
-        const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
+        const key = AnazhRealm._ortSchluessel(plan.seed, origin);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
         let v2 = ple.get(key);
         if (!v2) {

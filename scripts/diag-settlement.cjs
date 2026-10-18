@@ -1093,23 +1093,24 @@ const FIXTURES = [
         // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
         // trees/fences/felder/staende reisen (Hof-Bäume + Zäune + Äcker +
         // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
-        // Wahrheit) und die mauer sind GESTRICHEN (kein toter Passagier,
-        // Vertrags-Akt); die LATERNEN reisen seit K10 (ihr Leser ist das
-        // Leuchtquellen-Gesetz der Welt, die Gestalt `laterne_dorf`, K11). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
-        // Welt ist neues Verhalten hinter dem Feature-Stopp bis v1.0
-        // (docs/roadmap.md §0.v1, Leben-Synthese §5.3) — offen, benannt.
+        // Wahrheit) sind GESTRICHEN (kein toter Passagier, Vertrags-Akt); die LATERNEN reisen seit K10 (ihr Leser ist das
+        // Leuchtquellen-Gesetz der Welt, die Gestalt `laterne_dorf`, K11); die MAUER reist seit S1-b genau mit der ummauerten
+        // Stadt (städtisch vor 1750, `dorfLayout`) — ihr Leser ist die Welt (`_stlMauerBauen`), jeder andere Export bleibt
+        // byte-gleich (die Goldens oben).
+        const ummauert = FC.exportSettlement({ seed: 3, nH: 120, epoche: "mittelalter" });
         check(
-            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende/laternen, aber fluss/bruecken/graph/mauer sind gestrichen",
+            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende/laternen und die Mauer der ummauerten Stadt, fluss/bruecken/graph sind gestrichen",
             Array.isArray(stadt.trees) &&
                 Array.isArray(stadt.fences) &&
                 Array.isArray(stadt.felder) &&
                 Array.isArray(stadt.staende) &&
-                stadt.mauer === undefined &&
+                (stadt.mauer === undefined) === !(stadt.staedtisch && stadt.jahr < 1750) &&
+                ummauert.mauer && ummauert.mauer.segs.length > 0 && ummauert.mauer.towers.length > 0 &&
                 Array.isArray(stadt.laternen) &&
                 stadt.fluss === undefined &&
                 stadt.bruecken === undefined &&
                 stadt.graph === undefined,
-            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
+            `mauer (seed 3, nH 120, mittelalter)=${ummauert.mauer ? ummauert.mauer.segs.length + " Segmente" : "fehlt"} trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
         // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Bis K66-2 hielt „je
         // Platz und je 25 m Weg eine Laterne" die Zahl, während die dichte Gasse des Auto-Dorfs (Pose nacht-wand) auf 61 m keine

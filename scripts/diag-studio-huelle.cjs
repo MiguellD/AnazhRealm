@@ -6,7 +6,7 @@
 //   Adapter op[0]) · H3 Umstieg (gate:portal-konformanz je Betreten; --bild zählt die Schieber) · H4 Labor = Welt (kein eigener
 //   Leib im Ofen-Studio; im Bild L0 über der Budget-Zeile ROT) · H5 Ziel-Bild (das Panorama je Welt der Hülle in
 //   worlds/tor-ziele.json an den Quellen von HEUTE) · H6 EINE Engine (S1: jedes trusted Studio ein Modus index.html?studio=<x>,
-//   ROT in der Ratsche EINE_ENGINE, gezählt „N von 12"; 18.10.: 1 von 12, gelaende → 2 von 12 mit der garage; fachwerk steht in
+//   ROT in der Ratsche EINE_ENGINE, gezählt „N von 12"; 18.10.: 1 von 12, gelaende → 2 von 12 mit der garage → 3 von 12 mit dem fachwerk (S1-b); fachwerk steht in
 //   der Ratsche, ROT bis zum Schnitt S1-b) · H6 im Bild (`--gleich <id>`: das Werk des Modus = dasselbe Werk der Welt).
 // Ausgenommen, benannt: die sandgesicherten begegnung + schwarm (CSP default-src 'none', Protokoll: gate:portal-konformanz).
 //   node scripts/diag-studio-huelle.cjs [--selftest]   der Baum gegen H1–H6 · die Täter eingespielt → jede Wand rot beim Namen
@@ -23,10 +23,13 @@ const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 // Die Welten auf der Hülle: die Studios mit Reglern und die Nebenwelten mit der Brücke allein.
-const STUDIOS = ["schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
+const STUDIOS = ["schmiede", "portale", "klang", "koerperstudio", "tetrapoda", "terrain"];
 // Die MODI der Welt-Engine (S1, `index.html?studio=<id>`): ihr Tor (stamm `_studioModusBetreten`) steht benannt unter `ohne`.
-const MODI = ["gelaende", "garage"];
-const MODUS_TORE = { garage: "ein Modus der Welt-Engine — das Tor öffnet die Werkstatt in der Welt (stamm _studioModusBetreten), kein fremdes Bild" };
+const MODI = ["gelaende", "garage", "fachwerk"];
+const MODUS_TORE = {
+    garage: "ein Modus der Welt-Engine — das Tor öffnet die Werkstatt in der Welt (stamm _studioModusBetreten), kein fremdes Bild",
+    fachwerk: "ein Modus der Welt-Engine — das Tor öffnet das Fachwerk-Studio in der Welt (stamm _studioModusBetreten), kein fremdes Bild",
+};
 const zielVon = (id) => (MODUS_TORE[id] ? `index.html?studio=${id}` : `worlds/${id}/index.html`);
 const NEBENWELTEN = ["skeleton", "fluid", "translated"];
 const GELAENDE = "worlds/gelaende/studio.js";
@@ -59,7 +62,7 @@ const modusTag = (id) => new RegExp(`<script\\b[^>]*\\bsrc\\s*=\\s*["']worlds/${
 // `__studioModi[id].dorf(dp)`, `zustand()` → { aktiv, kommt, ort, dorf } mit `dorf` = das Ergebnis von `spawnSettlement`) und
 // einmal die Welt ohne Studio (index.html: `spawnSettlement({ …dp, position: ort })`, der Spieler am Ort des Studios) dasselbe
 // Werk, je auf frischer Seite; beide Bilder aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne ·
-// Sommer, Tiere gehalten, der Spieler verborgen) unter DERSELBEN Pose (die des Studios, aus den Häusern seines Dorfs) sind EIN
+// Sommer, Tiere und Dorf-Zug gehalten, der Spieler verborgen) unter DERSELBEN Pose (die des Studios, aus den Häusern seines Dorfs) sind EIN
 // Bild: Anteil der Pixel mit Kanal-Differenz > 24 ≤ 2,1 % (Rezept bild-diff a626dd20; die Garage 0,04–0,16 %). `mauer`: der Plan,
 // den die Welt über ihren EINEN Kanal bekommt (`_foundryRequestSettlement`), trägt die Stadtmauer (das Studio zeigte sie allein).
 const GLEICH = {
@@ -351,19 +354,19 @@ function selbsttest() {
             soll: /^H5 skeleton: das Panorama ist veraltet/,
         },
         {
-            name: "H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün",
-            rel: "worlds/fachwerk/index.html",
+            name: "H5 die Version allein macht kein neues Bild (?v= fällt) — die klang bleibt grün",
+            rel: "worlds/klang/index.html",
             vor: /\?v=[0-9.]+/g,
             nach: "?v=99.999.9",
             soll: null,
-            nichtRot: /^H5 fachwerk/,
+            nichtRot: /^H5 klang/,
         },
         {
-            name: "H5 der Export ohne die fachwerk",
+            name: "H5 der Export ohne die klang",
             rel: TOR_ZIELE,
-            vor: '"worlds/fachwerk/index.html": {',
-            nach: '"worlds/fachwerk-fort/index.html": {',
-            soll: /^H5 fachwerk: kein Panorama im Export/,
+            vor: '"worlds/klang/index.html": {',
+            nach: '"worlds/klang-fort/index.html": {',
+            soll: /^H5 klang: kein Panorama im Export/,
         },
         {
             name: "H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)",
@@ -510,7 +513,7 @@ async function bild(ordner, name) {
     const browser = await starteBrowser({ art: "echt", frist: 240000, zusatz: ["--use-angle=d3d11", "--window-size=1600,900"] });
     const zeilen = [];
     // je Studio seine Shell; das Gelände-Studio ist das Panel über der Welt-Engine (gezählt wird nur in ihm)
-    const ziele = STUDIOS.map((id) => ({ id, url: `/worlds/${id}/index.html`, wurzel: null, ms: id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 5000 }));
+    const ziele = STUDIOS.map((id) => ({ id, url: `/worlds/${id}/index.html`, wurzel: null, ms: id === "koerperstudio" || id === "terrain" ? 9000 : 5000 }));
     ziele.push({ id: "gelaende", url: "/index.html?studio=gelaende", wurzel: "#gelaende-studio", ms: 15000 });
     const nur = process.argv.includes("--nur") ? process.argv[process.argv.indexOf("--nur") + 1].split(",") : null;
     try {
@@ -619,6 +622,7 @@ async function gleichSeite(browser, PORT, { pfad, id, werk, vorgabe, W, H }) {
             o.modus = !!(window.__studioModi && window.__studioModi[id]);
             if (r.state.renderer._isHeadlessNull) return Object.assign(o, { fatal: "Null-Renderer — kein Bild" });
             if (!(await r._foundryAwaitBook(60000)).ok) return Object.assign(o, { fatal: "das Buch kam nicht" });
+            window.__anazhAutoSettlement = false; // der Dorf-Zug ruht auf beiden Seiten (sein Takt ist kein Werk des Studios)
             let res;
             if (!vorgabe) {
                 if (!o.modus) return o;
@@ -797,7 +801,7 @@ async function panoramaBacken(nur) {
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             if (OHNE_PANORAMA[id] || (nur && !nur.includes(id))) continue;
             const t0 = Date.now();
-            const reift = id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 4000;
+            const reift = id === "koerperstudio" || id === "terrain" ? 9000 : 4000;
             try {
                 const P = await page.evaluate(
                     (url, reift, frist) =>

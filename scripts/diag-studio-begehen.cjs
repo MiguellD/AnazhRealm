@@ -1,507 +1,139 @@
-// diag-studio-begehen.cjs — DAS STUDIO-DORF BEGEHEN (gate:studio-begehen, Welle L 06.10.).
-// Befund der Leben-Prüfung (Dorf/Stadt S-S1 … S-S5; gespielt im sichtbaren Fenster): das Fachwerk-Labor baut ein
-// Profi-Dorf, lässt aber niemanden hinein — die promovierten Häuser behalten ihre Ganz-Haus-Hülle (4 von 4 zu, 1,1 m vor
-// der offenen Tür), demotierte Häuser werden Geister (0 Solids); auf der Speichertreppe klemmt der Kopf im Dachboden-Boden
-// (0,000 m Weg); im Keller ist die Decke die Wiesen-Platte; der Fluss liegt unter der Boden-Platte (die Brücke überspannt
-// Gras); jede städtische Antike stürzt ab (`wm is not defined`). Der Selbsttest des Labors schrieb S1 fest (Demotion
-// verlangte null Solids). Die Linse ruft die ECHTEN Lab-Pfade (buildDorf · promoteB · demoteB · walkUpdate →
-// moveAxis/gravity/overlap · Raycaster gegen dorfGroup), nie eine Nachrechnung:
-//   B1  HÜLLE: jedes promovierte Haus trägt 0 Hüllen-Solids, jedes demotierte genau 1 (EIN Lebenszyklus je Haus)
-//   B2  TÜR: aus 2 m vor der Haustür geht der Körper (W, echte Lab-Physik) bis 1 m hinter die Schwelle
-//   B3  TREPPE: auf jeder Treppe (Geschoss- und Speichertreppe, seitlicher Versatz −0,10 … +0,10 m) endet kein Schritt
-//       mit dem Körper in einem Solid, das kein Tritt ist (die Klemme), und JEDER Lauf (mittig) erreicht seine Höhe —
-//       EG→OG, OG→2.OG und Speicher (die Speichertreppe stieß mit der Zylinder-Kante an den Estrich: 0 von 3 oben; der
-//       Lauf ins 2. OG lag ohne Speicher und Keller auf einer Null-Spur: 0 m breit, 44 von 270 Siedlungs-Häusern); am
-//       Austritt steht der Körper (PH) unter der sichtbaren Decke (der Speicherlauf dreigeschossiger Häuser trat unter der
-//       Schräge aus: Kopfraum 1,2 m)
-//   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
-//   B5  WELTGRUND (K10): das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
-//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
-//       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
-//       (B5 FLUSS bis K10) fiel mit seiner Klasse; das Wasser ist das der Welt.
-//   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser) — nur im echten Lauf
-//   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
-//   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
-//   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
-//   Vorher-Lauf gegen die Basis cf9a07ba (06.10., der Lauf des Commits 9876ffd2): B1 10/10 zu · 0/8 demotiert mit Hülle
-//   · B2 0/10 betreten · B3 Klemme 32/105 (Basis-Körper auf geheilter Hülle, Selbsttest „kopf"), Speicher 0/4 oben · B4
-//   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
-//   node scripts/diag-studio-begehen.cjs [--selftest]
+// diag-studio-begehen.cjs — DAS STUDIO-DORF IN DER WELT (gate:studio-begehen; seit S1-b ein MODUS DER WELT-ENGINE,
+// `index.html?studio=fachwerk`, worlds/fachwerk/studio.js). Bis S1-b prüfte die Linse die Pfade des eigenen Labors (buildDorf ·
+// promoteB · demoteB · walkUpdate: Hülle je Haus, Tür, Treppe, Keller-Decke, Weltgrund, Antike) — diese Täter fielen mit ihm: das
+// Dorf des Studios IST der Siedlungs-Akt der Welt, sein Gang der Gang der Welt. Geprüft wird, wie der Schöpfer das Studio
+// bedient — F1 steht · F2 engine · F3 wort · F4 stadt · F5 abbau · F6 tor · F7 heim; je Täter eine Zeile der REGELN (mit ihrem
+// Bruch für den Selbst-Test). Die Seite ist die Welt (Null-Renderer, Foundry an).
+//   node scripts/diag-studio-begehen.cjs [--selftest]          Port: STUDIO_BEGEHEN_PORT (Standard 4473)
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
-const ROOT = path.resolve(__dirname, "..");
-const SELBST = process.argv.includes("--selftest");
-
-// DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.
-const LAB = "/worlds/fachwerk/fachwerk.js";
-const KERN = "/fachwerk-core.js";
-const BASIS = {
-    // S-S1: die Promotion ließ die Hülle stehen, die Demotion löschte sie mit
-    huelle: [
-        [LAB, "  { const ix=solids.indexOf(B.huelle); if(ix>=0) solids.splice(ix,1); }", ""],
-        [LAB, "  if(B.huelle) solids.push(B.huelle);", ""],
-    ],
-    // S-S2: der Achs-Schritt ohne Kopf-Prüfung und der Körper als Zylinder (die Klemme der Basis)
-    kopf: [
-        [
-            LAB,
-            "  if(climb>oldY){ for(const s of solids){ if(overlap(p,s)){ p[ax]=oldA; p.y=oldY; return; } } } }",
-            " }",
-        ],
-        [LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"],
-    ],
-    // S-S2 (Steigen): der Körper als Zylinder — die Kante stößt hinter dem Antritt an den Estrich
-    kappe: [[LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"]],
-    // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
-    spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
-    // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [[KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""]],
-    // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
-    flach: [
-        [
-            LAB,
-            "    dorfBodenY=(x,z)=>{ let fx=(x-x0)/gx,",
-            "    dorfBodenY=(x,z)=>0; const _k10=(x,z)=>{ let fx=(x-x0)/gx,",
-        ],
-        [
-            LAB,
-            "for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i]; if(!geparkt(q)) q.y-=yRef; }",
-            "for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i]; if(!geparkt(q)) q.y=0; }",
-        ],
-    ],
-};
-let patch = null; // die aktive Basis-Liste
-let patchFehler = [];
-
-const server = statikServer({
-    root: ROOT,
-    start: "/worlds/fachwerk/index.html",
-    wandle: (p, data) => {
-        if (!data || !patch) return data;
-        let txt = null;
-        for (const [datei, geheilt, basis] of patch) {
-            if (datei !== p) continue;
-            if (txt === null) txt = data.toString("utf8");
-            if (!txt.includes(geheilt)) patchFehler.push(`${datei}: geheilte Zeile fehlt („${geheilt.slice(0, 60)}…")`);
-            else txt = txt.replace(geheilt, basis);
-        }
-        return txt === null ? data : Buffer.from(txt, "utf8");
-    },
-});
-
-// Die Proben laufen IN der Lab-Seite (die Top-Level-Bindungen des Labors sind globale lexikalische Namen).
-// `platte` setzt in der Seite die Basis-Boden-Platte (0,3 m, −0,32 … −0,02) zurück.
-function proben(inj) {
-    /* global buildDorf, dorfB, solids, promoteB, demoteB, player, keys, walkUpdate, dorfGroup, dorfCellars, dorf,
-       STEP, PH, overlap, dorfBodenY */
-    const out = { fehler: null };
-    const T = window.THREE;
-    // ── B6 Epochen: Antike × 18/40/120 baut (die städtische Antike stürzte an `wm is not defined` ab, 3 von 3) ──
-    const b6Lauf = () => {
-        const b6 = { faelle: [] };
-        for (const [seed, nH] of [
-            [7, 18],
-            [11, 40],
-            [7, 120],
-        ]) {
-            let fehler = null;
-            try {
-                buildDorf({ epoche: "antike", nH, seed, budget: 170000 });
-            } catch (e) {
-                fehler = e.message;
-            }
-            b6.faelle.push({ seed, nH, fehler, haeuser: fehler ? 0 : dorfB.length });
-        }
-        return b6;
-    };
-    try {
-        const pd = document.getElementById("pDorf");
-        if (pd) pd.checked = true;
-        buildDorf({ epoche: "gewuerfelt", nH: 18, seed: 7, budget: 170000 });
-    } catch (e) {
-        out.fehler = "buildDorf 7/18: " + e.message;
-        return out;
-    }
-    const huelleVon = (B, bi) =>
-        solids.filter(
-            (s) =>
-                s.bi === bi &&
-                B.ext &&
-                Math.abs(s.min[0] - B.ext.x0) < 1e-9 &&
-                Math.abs(s.max[0] - B.ext.x1) < 1e-9 &&
-                Math.abs(s.min[2] - B.ext.z0) < 1e-9 &&
-                Math.abs(s.max[2] - B.ext.z1) < 1e-9 &&
-                s.min[1] === B.q.y
-        ).length;
-    // haus-lokal → Welt (das Lab-Gesetz: wrap.rotation.y = phi, wrap.position = q)
-    const welt = (B, lx, lz) => {
-        const c = Math.cos(B.q.phi),
-            s = Math.sin(B.q.phi);
-        return { x: B.q.x + lx * c + lz * s, z: B.q.z - lx * s + lz * c };
-    };
-    const lokal = (B, x, z) => {
-        const c = Math.cos(B.q.phi),
-            s = Math.sin(B.q.phi),
-            dx = x - B.q.x,
-            dz = z - B.q.z;
-        return { x: dx * c - dz * s, z: dx * s + dz * c };
-    };
-    const ruhe = () => {
-        for (const k in keys) keys[k] = false;
-    };
-    // EIN Lauf mit der echten Lab-Physik (walkUpdate → moveAxis/gravity), feste 60 Hz.
-    const laufe = (n, yawW, jeSchritt) => {
-        ruhe();
-        keys.KeyW = true;
-        let eingeklemmt = 0;
-        for (let i = 0; i < n; i++) {
-            // eslint-disable-next-line no-undef
-            yaw = yawW;
-            walkUpdate(1 / 60);
-            const p = player.pos;
-            if (solids.some((s) => overlap(p, s) && s.max[1] - p.y > STEP + 1e-6)) eingeklemmt++;
-            if (jeSchritt) jeSchritt();
-        }
-        ruhe();
-        return eingeklemmt;
-    };
-    // die Lab-Blickrichtung: vorwärts = (−sin yaw, −cos yaw)
-    const yawZu = (dx, dz) => Math.atan2(-dx, -dz);
-    const ray = new T.Raycaster();
-    // ── B1/B2/B3: Promotion · Tür · Treppen · Demotion ──
-    const kandidaten = [];
-    for (let bi = 0; bi < dorfB.length; bi++) if (dorfB[bi].lod === "chunk") kandidaten.push(bi);
-    const b1 = { promoviert: 0, huelleNachPromotion: 0, demotiert: 0, huelleNachDemotion: 0 };
-    const b2 = { tueren: 0, hinein: 0, faelle: [] };
-    const treppen = [];
-    const keller = [];
-    for (const bi of kandidaten.slice(0, 10)) {
-        promoteB(bi);
-        const B = dorfB[bi];
-        if (B.lod !== "voll") continue;
-        b1.promoviert++;
-        b1.huelleNachPromotion += huelleVon(B, bi);
-        const dm = B.H && B.H.dims;
-        if (dm && dm.tuer) {
-            b2.tueren++;
-            const st = welt(B, dm.tuer.x, dm.tuer.z - 2.0);
-            const zi = welt(B, dm.tuer.x, dm.tuer.z + 1.0);
-            player.pos.set(st.x, 0, st.z);
-            player.vy = 0;
-            player.groundY = 0;
-            for (let i = 0; i < 20; i++) walkUpdate(1 / 60); // landen
-            laufe(240, yawZu(zi.x - st.x, zi.z - st.z));
-            const l = lokal(B, player.pos.x, player.pos.z);
-            if (l.z > dm.tuer.z + 0.6) b2.hinein++;
-            else b2.faelle.push(bi + ":" + (l.z - dm.tuer.z).toFixed(2));
-        }
-        if (B.H && B.H.cellar) keller.push(bi);
-        // B3 läuft im promovierten Zustand (die Solids des Hauses stehen); die Kellertreppe steigt aus dem Keller (eigene
-        // Schwerkraft-Ebene) und ist nicht Teil dieser Probe.
-        for (const f of (dm && dm.flights) || []) {
-            if (f.atLevel === "keller") continue;
-            const N = f.N || 0;
-            if (!(N > 0)) continue;
-            const t = { bi, loft: !!f.isLoft, eg: f.atLevel === 1, breite: +(f.x1 - f.x0).toFixed(2), N, faelle: [] };
-            treppen.push(t);
-            const go = f.go || 0.26;
-            const dir = f.dir || 1;
-            // seitlicher Versatz in der Spur (Spur 0,90 m, Körper Ø 0,60 m → Spiel ±0,15 m; die Befund-Klemme kam bei 5 cm)
-            for (const off of [-0.1, -0.05, 0, 0.05, 0.1]) {
-                const xm = (f.x0 + f.x1) / 2 + off;
-                // der freie Antritt: von 0,35 m vor dem Fuß rückwärts bis 1,2 m — der erste Punkt, an dem der Körper frei steht
-                let st = null;
-                for (let a = 0.35; a <= 1.2 && !st; a += 0.05) {
-                    const w = welt(B, xm, f.zFoot - dir * a);
-                    const q = { x: w.x, y: B.q.y + f.base + 0.1, z: w.z }; // über der Dielen-Oberkante (Boden-Solid ±0,06 um die Ebene)
-                    if (!solids.some((s) => overlap(q, s))) st = w;
-                }
-                if (!st) {
-                    t.faelle.push({ off, antritt: false });
-                    continue;
-                }
-                const zi = welt(B, xm, f.zFoot + dir * (N * go + 1));
-                player.pos.set(st.x, B.q.y + f.base + 0.1, st.z); // das Haus steht auf q.y (K10)
-                player.vy = 0;
-                player.groundY = B.q.y + f.base;
-                for (let i = 0; i < 10; i++) walkUpdate(1 / 60);
-                const y0 = player.pos.y;
-                const soll = N * f.rise;
-                // der KOPFRAUM am Austritt: im ersten Schritt auf der Lauf-Höhe der Strahl vom Fuß nach oben (die sichtbare Decke
-                // bzw. Dachhaut) — der Körper (PH) muss darunter stehen, nie mit dem Kopf im Dach
-                let kopfraum = null;
-                const klemm = laufe(300, yawZu(zi.x - st.x, zi.z - st.z), () => {
-                    if (kopfraum !== null || !(player.pos.y - y0 >= 0.9 * soll)) return;
-                    ray.set(new T.Vector3(player.pos.x, player.pos.y + 0.3, player.pos.z), new T.Vector3(0, 1, 0));
-                    const h = ray.intersectObject(dorfGroup, true).find((x) => x.object.visible !== false);
-                    kopfraum = h ? +(h.distance + 0.3).toFixed(2) : 99;
-                });
-                t.faelle.push({
-                    off,
-                    antritt: true,
-                    klemm,
-                    steig: +(player.pos.y - y0).toFixed(2),
-                    soll: +soll.toFixed(2),
-                    kopfraum,
-                });
-            }
-        }
-        // die Demotion setzt die Hülle zurück (EIN Lebenszyklus je Haus); Keller-Häuser bleiben für B4 promoviert
-        if (!(B.H && B.H.cellar)) {
-            demoteB(bi);
-            b1.demotiert++;
-            b1.huelleNachDemotion += huelleVon(B, bi);
-        }
-    }
-    // ── B4 Keller (promovierte Häuser mit Keller): der erste Treffer nach oben ──
-    const boden = dorfGroup.children.find((o) => o.isMesh && o.userData && o.userData.dorfBoden);
-    const istBodenPlatte = (o) =>
-        !!o &&
-        (o === boden ||
-            (o.geometry &&
-                o.geometry.type === "BoxGeometry" &&
-                o.geometry.parameters &&
-                o.geometry.parameters.height === 0.3 &&
-                o.userData.basisPlatte === true));
-    if (inj === "platte") {
-        for (const bi of keller) {
-            const B = dorfB[bi];
-            const g = new T.Mesh(new T.BoxGeometry(80, 0.3, 80), new T.MeshBasicMaterial());
-            g.position.set(B.q.x, B.q.y - 0.17, B.q.z);
-            g.userData.basisPlatte = true;
-            dorfGroup.add(g);
-        }
-        dorfGroup.updateMatrixWorld(true);
-    }
-    const b4 = { keller: 0, platteDecke: 0 };
-    for (const bi of keller) {
-        const kc = dorfCellars.find((c) => c.bi === bi);
-        if (!kc) continue;
-        b4.keller++;
-        const B = dorfB[bi];
-        const m = welt(B, (kc.x0 + kc.x1) / 2 + 0.3, (kc.z0 + kc.z1) / 2 + 0.3);
-        ray.set(new T.Vector3(m.x, kc.floorY + 1.0, m.z), new T.Vector3(0, 1, 0));
-        const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
-        if (hit && istBodenPlatte(hit.object)) b4.platteDecke++;
-    }
-    // ── B5 WELTGRUND (K10): der Plan v2 im Labor, die Höhen-Spanne der Häuser, der Fuß auf dem Bild ──
-    const b5 = {
-        v2: 0,
-        slots: 0,
-        haeuser: 0,
-        spanne: 0,
-        strahlen: 0,
-        aufBild: 0,
-        abw: 0,
-        v2Json: null,
-        ort: null,
-        planHash: null,
-    };
-    const O = dorf.ort;
-    if (O && O.v2) {
-        b5.v2 = O.v2.version;
-        b5.slots = O.v2.slots.length;
-        b5.v2Json = JSON.stringify(O.v2);
-        b5.ort = O.ort;
-        // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
-        // (lageGrund) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
-        const FCk = window.__fachwerkCore;
-        const Gk = window.__gelaendeCore;
-        const kern = FCk.ortPlan(
-            FCk.exportSettlement({ seed: 7, nH: 18, epoche: "gewuerfelt", budget: 170000 }),
-            O.ort,
-            Gk.ortCtx(Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise))
-        );
-        b5.planHash = JSON.stringify(kern) === b5.v2Json;
-        b5.v2Json = null;
-    }
-    let lo = Infinity;
-    let hi = -Infinity;
-    for (const B of dorfB) {
-        const q = B.q;
-        if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
-        b5.haeuser++;
-        lo = Math.min(lo, q.y);
-        hi = Math.max(hi, q.y);
-    }
-    b5.spanne = +(hi - lo).toFixed(2);
-    const W = dorf.lay.welt;
-    for (let i = 0; i < 600 && b5.strahlen < 150; i++) {
-        const x = W.x0 + (W.x1 - W.x0) * ((i * 0.618034) % 1);
-        const z = W.z0 + (W.z1 - W.z0) * ((i * 0.381966 + 0.5) % 1);
-        ray.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
-        const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
-        if (!hit || hit.object !== boden) continue;
-        b5.strahlen++;
-        const d = Math.abs(hit.point.y + 0.02 - dorfBodenY(x, z));
-        if (d <= 0.05) b5.aufBild++;
-        else b5.abw = Math.max(b5.abw, +d.toFixed(2));
-    }
-    out.PH = PH;
-    out.b1 = b1;
-    out.b2 = b2;
-    out.b3 = treppen;
-    out.b4 = b4;
-    out.b5 = b5;
-    out.b6 = inj ? { faelle: [] } : b6Lauf(); // kein Defekt zielt auf B6 (die Antike kostet je Seite 22–45 s)
-    return out;
+const REGAL = /\/worlds\/[^/]+\/lib\//;
+const STADT = { seed: 3, nH: 18, epoche: "mittelalter" }; // die Stadt mit Mauer (städtisch vor 1750, schon mit 18 Häusern)
+const DORF = { seed: 3, nH: 18, epoche: "gruenderzeit" }; // das Dorf ohne Mauer (Gründerzeit, 1836)
+const errs = [];
+function check(name, ok, detail) {
+    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+    if (!ok) errs.push(name);
 }
 
-// B3 zählt: Läufe aus freiem Antritt · davon geklemmt (ein Schritt endet im Solid, das kein Tritt ist) · die Mittel-Läufe
-// je Art (EG→OG, OG→OG, Speicher), die ihre Höhe erreichen (≥ 90 % der Lauf-Höhe).
-function b3Zahl(o) {
-    const z = {
-        laeufe: 0,
-        klemm: 0,
-        kopfZu: 0,
-        kopfMin: 99,
-        ohneAntritt: 0,
-        eg: 0,
-        egOben: 0,
-        og: 0,
-        ogOben: 0,
-        speicher: 0,
-        speicherOben: 0,
-        alle: 0,
-        alleOben: 0,
-    };
-    for (const t of o.b3)
-        for (const c of t.faelle) {
-            if (!c.antritt) {
-                z.ohneAntritt++;
-                if (c.off === 0) z.alle++; // ein Lauf ohne Antritt erreicht seine Höhe nicht
-                continue;
-            }
-            z.laeufe++;
-            if (c.klemm > 0) z.klemm++;
-            if (c.kopfraum !== null && c.kopfraum !== undefined) {
-                if (c.kopfraum < z.kopfMin) z.kopfMin = c.kopfraum;
-                if (c.kopfraum < o.PH) z.kopfZu++;
-            }
-            if (c.off !== 0) continue;
-            const oben = c.steig >= 0.9 * c.soll;
-            const art = t.loft ? "speicher" : t.eg ? "eg" : "og";
-            z[art]++;
-            z.alle++;
-            if (oben) {
-                z[art + "Oben"]++;
-                z.alleOben++;
-            }
-        }
-    return z;
-}
+// ── DAS VERDIKT (pure Funktion; Probe UND Selbst-Test): je Regel ihr Bruch, ob sie rot ist, der Täter beim Namen ──
+const GESUND = { geladen: true, werk: { typ: "haus_fraenkisch", marke: "fachwerk" }, regal: 0, revision: "184", iframes: 0, tor: true, spiegel: "index.html?studio=fachwerk" };
+Object.assign(GESUND, { wort: { kultur: "tudor", typ: "haus_tudor", modus: "dorf" }, stadt: { placed: 80, mauer: 22, streifen: 52, wirft: true }, heim: { weg: 0.2, sichtbar: true } });
+Object.assign(GESUND, { abbau: { rest: 0, erdbau: false, zelle: false, mauerN: 0, wirft: false, placed: 15 } });
+const J = (o) => JSON.stringify(o);
+const REGELN = [
+    [{ werk: { typ: "fahrzeug_gt", marke: "garage" } }, (m) => !/^haus_/.test((m.werk || {}).typ) || m.werk.marke !== "fachwerk", (m) => `steht: das Werk ist kein Haus des Fachwerks (${J(m.werk)})`],
+    [{ regal: 1, regalUrl: "/worlds/terrain/lib/three-r128.min.js" }, (m) => m.regal !== 0, (m) => `engine: ${m.regal} Anfragen auf worlds/*/lib/ (${m.regalUrl || ""})`],
+    [[{ revision: "128" }, { iframes: 1 }], (m) => m.revision !== "184" || m.iframes !== 0, (m) => `engine: three r${m.revision}, ${m.iframes} iframe`],
+    [{ wort: { kultur: "fraenkisch", typ: "haus_fraenkisch", modus: "haus" } }, ({ wort: w = {} }) => w.kultur !== "tudor" || w.typ !== "haus_tudor" || w.modus !== "dorf", (m) => `wort: tudor · dorf erreichen den Modus nicht (${J(m.wort)})`],
+    [{ stadt: { placed: 0, mauer: 22, streifen: 52, wirft: true } }, ({ stadt: s = {} }) => !(s.placed > 0), (m) => `stadt: die Welt stellt keine Stadt (${J(m.stadt)})`],
+    [[{ stadt: { placed: 80, mauer: 0, streifen: 0, wirft: false } }, { stadt: { placed: 80, mauer: 22, streifen: 0, wirft: false } }], ({ stadt: s = {} }) => !(s.mauer > 0 && s.streifen > 0 && s.wirft), (m) => `stadt: die Welt zeichnet keine Stadtmauer (${J(m.stadt)})`],
+    [[{ abbau: { rest: 7, erdbau: false, zelle: false, mauerN: 0, wirft: false, placed: 15 } }, { abbau: { rest: 0, erdbau: true, zelle: true, mauerN: 52, wirft: true, placed: 15 } }], ({ abbau: a = {} }) => a.rest !== 0 || a.erdbau || a.zelle || a.mauerN !== 0 || a.wirft || !(a.placed > 0), (m) => `abbau: das Dorf ersetzt die Stadt nicht ganz (${J(m.abbau)})`],
+    [[{ tor: false, torGrund: "kein Tor" }, { spiegel: "worlds/skeleton/index.html" }], (m) => m.tor !== true || m.spiegel !== "index.html?studio=fachwerk", (m) => `tor: ${m.torGrund || "Spiegel → " + m.spiegel}`],
+    [[{ heim: { weg: 1600, sichtbar: true } }, { heim: { weg: 0.2, sichtbar: false } }], ({ heim: h = {} }) => !(h.weg < 1) || h.sichtbar !== true, (m) => `heim: nach dem Studio steht der Spieler nicht am Tor (${J(m.heim)})`],
+];
+const verdikt = (m) => (!m || m.geladen !== true ? ["laden" + (m && m.grund ? ` (${m.grund})` : "")] : REGELN.filter(([, rot]) => rot(m)).map(([, , t]) => t(m)));
 
-function urteil(o) {
-    const f = [];
-    if (o.fehler) return [o.fehler];
-    if (!(o.b1.promoviert >= 3)) f.push(`B1 zu wenig promoviert (${o.b1.promoviert})`);
-    if (o.b1.huelleNachPromotion !== 0)
-        f.push(`B1 Hülle nach Promotion: ${o.b1.huelleNachPromotion} von ${o.b1.promoviert} Häusern zu`);
-    if (!(o.b1.demotiert >= 1) || o.b1.huelleNachDemotion !== o.b1.demotiert)
-        f.push(`B1 Hülle nach Demotion: ${o.b1.huelleNachDemotion} von ${o.b1.demotiert} Häusern (Geister)`);
-    if (!(o.b2.tueren >= 3)) f.push(`B2 zu wenig Türen (${o.b2.tueren})`);
-    if (o.b2.hinein !== o.b2.tueren)
-        f.push(`B2 Tür: ${o.b2.hinein} von ${o.b2.tueren} Häusern betreten (${o.b2.faelle.join(" ")})`);
-    const z = b3Zahl(o);
-    if (!(z.laeufe >= 10)) f.push(`B3 zu wenig Treppen-Läufe (${z.laeufe})`);
-    if (z.klemm) f.push(`B3 Kopf: ${z.klemm} von ${z.laeufe} Treppen-Läufen enden im Solid`);
-    if (z.kopfZu)
-        f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach)`);
-    if (!(z.eg >= 3) || !(z.og >= 1) || !(z.speicher >= 1))
-        f.push(`B3 Steigen: die Probe trifft zu wenig Läufe (EG→OG ${z.eg} · OG→OG ${z.og} · Speicher ${z.speicher})`);
-    if (z.alleOben !== z.alle)
-        f.push(
-            `B3 Steigen: ${z.alleOben} von ${z.alle} Treppen erreichen ihre Höhe (EG→OG ${z.egOben}/${z.eg} · OG→OG ${z.ogOben}/${z.og} · Speicher ${z.speicherOben}/${z.speicher})`
-        );
-    if (!(o.b4.keller >= 1)) f.push(`B4 kein Keller-Haus promoviert`);
-    if (o.b4.platteDecke) f.push(`B4 Keller-Decke = Boden-Platte in ${o.b4.platteDecke} von ${o.b4.keller}`);
-    if (o.b5.v2 !== 2 || !(o.b5.haeuser > 0) || o.b5.slots !== o.b5.haeuser)
-        f.push(`B5 Weltgrund: kein Plan v2 im Labor (v${o.b5.v2}, ${o.b5.slots} Slots, ${o.b5.haeuser} Häuser)`);
-    if (!(o.b5.spanne >= 1)) f.push(`B5 Weltgrund: die Häuser stehen eben (Spanne ${o.b5.spanne} m)`);
-    if (!(o.b5.strahlen >= 50) || o.b5.aufBild !== o.b5.strahlen)
-        f.push(`B5 Weltgrund: der Fuß steht neben dem Bild (${o.b5.aufBild}/${o.b5.strahlen}, max ${o.b5.abw} m)`);
-    if (o.b5.planHash !== true) f.push(`B5 Weltgrund: Plan-Hash Labor ≠ Kern (${o.b5.planHash})`);
-    for (const c of o.b6.faelle)
-        if (c.fehler || !(c.haeuser > 0)) f.push(`B6 Antike ${c.seed}/${c.nH}: ${c.fehler || "0 Häuser"}`);
-    return f;
-}
-
-function zeile(o) {
-    if (o.fehler) return o.fehler;
-    const z = b3Zahl(o);
-    return (
-        `B1 Hülle promoviert ${o.b1.huelleNachPromotion}/${o.b1.promoviert} · demotiert ${o.b1.huelleNachDemotion}/${o.b1.demotiert}` +
-        ` · B2 Tür ${o.b2.hinein}/${o.b2.tueren} · B3 Klemme ${z.klemm}/${z.laeufe} · Kopfraum am Austritt min ${z.kopfMin} m · oben EG→OG ${z.egOben}/${z.eg} · OG→OG ${z.ogOben}/${z.og} · Speicher ${z.speicherOben}/${z.speicher}` +
-        ` · B4 Platte ${o.b4.platteDecke}/${o.b4.keller} · B5 v${o.b5.v2} ${o.b5.slots}/${o.b5.haeuser} Spanne ${o.b5.spanne} m Fuß ${o.b5.aufBild}/${o.b5.strahlen} Hash ${o.b5.planHash}` +
-        ` · B6 ${o.b6.faelle.map((c) => (c.fehler ? "x" : c.haeuser)).join("/")}`
-    );
+// ── DIE PROBE (Seiten-Kontext; die Seite trägt index.html?studio=fachwerk) ──
+async function probe(page, anfragen) {
+    const ev = (fn, ...a) => page.evaluate(fn, ...a);
+    const steht = () => { const z = window.__studioModi && window.__studioModi.fachwerk && window.__studioModi.fachwerk.zustand(); return z && z.aktiv && z.werk !== null && z.kommt === null; };
+    await page.waitForFunction(steht, { timeout: 240000, polling: 200 }).catch(() => {});
+    if (!(await ev(steht))) return { geladen: false, grund: `der Modus steht nicht (${J(await ev(() => window.__studioModi && window.__studioModi.fachwerk && window.__studioModi.fachwerk.zustand())).slice(0, 200)})` };
+    // F1 · F2: das Werk ist ein Haus der Welt mit der Marke des Studios; Revision und iframes
+    const m = Object.assign({ geladen: true }, await ev(() => { const e = window.__studioModi.fachwerk.werk(); return { werk: { typ: e.type, marke: e.studioOv && e.studioOv.__werk }, revision: String(window.THREE && window.THREE.REVISION), iframes: document.querySelectorAll("iframe").length, heim0: window.anazhRealm.state.playerMesh.position.toArray() }; }));
+    // F3: die Wörter über den Chat der Welt (der EINE Weg des Spielers) · F4: die Stadt mit Mauer · F5: das Dorf ersetzt sie ganz
+    Object.assign(m, await ev(async (STADT, DORF) => {
+        const [r, g] = [window.anazhRealm, window.__studioModi.fachwerk];
+        const z = () => g.zustand();
+        const bis = async (fn, ms) => { for (const dl = performance.now() + ms; !fn() && performance.now() < dl; ) await new Promise((res) => setTimeout(res, 50)); return fn(); };
+        const vorWerk = g.werk();
+        r.processChatCommand("tudor");
+        await bis(() => z().kommt === null && z().kultur === "tudor" && g.werk() !== vorWerk, 60000);
+        const [kultur, typ] = [z().kultur, (g.werk() || {}).type];
+        r.processChatCommand("dorf");
+        await bis(() => z().modus === "dorf", 20000);
+        const wort = { kultur, typ, modus: z().modus };
+        const wm = () => r.state.worldMeta || {};
+        const marken = () => [new Set(r.state.architectures), Object.values(wm().erdbau || {}), Object.values(wm().settlementCells || {})]; // je Wert (derselbe Same am selben Ort trägt denselben Schlüssel)
+        await bis(() => z().kommt === null, 240000); // das Dorf, das der Modus-Wechsel baute
+        const [w0, e0, c0] = marken();
+        await g.dorf(STADT);
+        const P = r.state.stlZaun;
+        const s0 = z().dorf || {};
+        const stadt = { placed: s0.placed || 0, mauer: s0.mauer || 0, streifen: (P && P.mauerN) || 0, wirft: !!(P && P.mesh.castShadow) };
+        const [w1, e1, c1] = marken(); // was die Stadt stellte — nach dem Dorf steht davon nichts mehr
+        await g.dorf(DORF);
+        const [w2, e2, c2] = marken();
+        const neu = (a, b) => a.filter((k) => !b.includes(k));
+        const abbau = { rest: [...w1].filter((e) => !w0.has(e) && w2.has(e) && e !== g.werk()).length, erdbau: neu(e1, e0).some((k) => e2.includes(k)), zelle: neu(c1, c0).some((k) => c2.includes(k)), mauerN: (P && P.mauerN) || 0, wirft: !!(P && P.mesh.castShadow), placed: z().dorf ? z().dorf.placed : 0 };
+        return { wort, stadt, abbau };
+    }, STADT, DORF));
+    // F6 · F7: Esc verlässt den Modus (der Spieler zurück am Tor, sichtbar); das Fachwerk-Tor öffnet ihn wieder, ein alter Spielstand auch
+    m.spiegel = await ev(() => window.anazhRealm._sanitizePortalMeta({ world: "worlds/fachwerk/index.html" }, "Fachwerk").world);
+    await page.keyboard.press("Escape");
+    Object.assign(m, await ev(async (h0) => {
+        const [r, g] = [window.anazhRealm, window.__studioModi.fachwerk];
+        const [pm, tor0] = [r.state.playerMesh, r.state.architectures.find((a) => a && a.type === "welt_fachwerk")];
+        const p = pm.position;
+        const heim = { weg: g.zustand().aktiv ? -1 : +Math.hypot(p.x - h0[0], p.z - h0[2]).toFixed(2), sichtbar: pm.visible };
+        if (g.zustand().aktiv) return { heim, tor: false, torGrund: "Esc verlässt den Modus nicht" };
+        const tor = tor0 || r.spawnArchitecture("welt_fachwerk", { x: p.x + 6, y: p.y, z: p.z }, { silent: true });
+        if (!tor) return { heim, tor: false, torGrund: "kein Fachwerk-Tor in der Welt (der Bauplan welt_fachwerk steht nicht)" };
+        const ein = r.enterPortal(tor);
+        for (const dl = performance.now() + 60000; !g.zustand().aktiv && performance.now() < dl; ) await new Promise((res) => setTimeout(res, 100));
+        const ok = !!(ein && ein.ok) && g.zustand().aktiv && !document.getElementById("portal-overlay") && !r._portalOverlay;
+        g.verlassen();
+        return { heim, tor: ok, torGrund: ok ? null : `enterPortal ${JSON.stringify(ein)} · aktiv ${g.zustand().aktiv} · overlay ${!!r._portalOverlay}` };
+    }, m.heim0));
+    const regal = anfragen.filter((u) => REGAL.test(u));
+    return Object.assign(m, { regal: regal.length, regalUrl: (regal[0] || "").replace(/^https?:\/\/[^/]+/, ""), anfragen: anfragen.length });
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    let rot = 0;
-    try {
-        const lauf = async (inj) => {
-            patch = inj && BASIS[inj] ? BASIS[inj] : null;
-            patchFehler = [];
-            const page = await browser.newPage();
-            const errs = [];
-            page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await page.goto(`http://127.0.0.1:${PORT}/worlds/fachwerk/index.html`, {
-                waitUntil: "load",
-                timeout: 120000,
-            });
-            await page.waitForFunction(() => typeof buildDorf === "function" && typeof walkUpdate === "function", {
-                timeout: 60000,
-            });
-            const o = await page.evaluate(proben, inj || null);
-            await page.close();
-            patch = null;
-            return { o, errs, patchFehler: patchFehler.slice() };
-        };
-        if (SELBST) {
-            // je Basis-Zeile muss GENAU die Probe ihres Defekts rot werden (nicht irgendeine)
-            const soll = {
-                huelle: ["B1 Hülle nach Promotion", "B1 Hülle nach Demotion"],
-                kopf: ["B3 Kopf"],
-                kappe: ["B3 Steigen"],
-                spur: ["B3 Steigen"],
-                austritt: ["B3 Kopfraum"],
-                platte: ["B4 Keller-Decke"],
-                flach: ["B5 Weltgrund"],
-            };
-            for (const inj of Object.keys(soll)) {
-                const { o, patchFehler: pf } = await lauf(inj);
-                const f = urteil(o);
-                const fehlt = soll[inj].filter((s) => !f.some((x) => x.startsWith(s)));
-                const ok = pf.length === 0 && fehlt.length === 0;
-                const beleg = soll[inj].map((s) => f.find((x) => x.startsWith(s)) || `${s}: grün (blind!)`).join(" | ");
-                console.log(
-                    `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
-                );
-                if (!ok) rot++;
+    if (process.argv.includes("--selftest")) {
+        console.log("=== SELBST-TEST: die Linse nennt jeden Täter des Fachwerk-Modus — je Regel ihr Bruch ===");
+        check("Selbst-Test 0: gesunder Modus == 0 Täter", verdikt(GESUND).length === 0, verdikt(GESUND).join(" · "));
+        for (const [bruch, , text] of REGELN)
+            for (const b of [].concat(bruch)) {
+                const [f, v] = [Object.assign({}, GESUND, b), verdikt(Object.assign({}, GESUND, b))];
+                check(`Selbst-Test: ${J(b).slice(0, 70)} → ${v[0]}`, v[0] === text(f), v.join(" · "));
             }
-        }
-        const { o, errs } = await lauf(null);
-        console.log("  " + zeile(o));
-        const f = urteil(o);
-        for (const x of f) console.log("  ❌ " + x);
-        if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
-        rot += f.length + (errs.length ? 1 : 0);
-        if (process.env.STUDIO_BEGEHEN_JSON)
-            fs.writeFileSync(process.env.STUDIO_BEGEHEN_JSON, JSON.stringify(o, null, 1));
-    } finally {
-        await browser.close();
-        server.close();
+        console.log(errs.length ? "\n❌ SELBST-TEST ROT — die Linse ist vakuös." : "\n✅ SELBST-TEST GRÜN — die Linse nennt jeden Täter F1–F7 beim Namen.");
+        process.exit(errs.length ? 1 : 0);
     }
-    console.log(rot ? `❌ gate:studio-begehen ROT (${rot})` : "✅ gate:studio-begehen grün");
-    process.exit(rot ? 1 : 0);
+    const server = statikServer({ start: "/index.html" });
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 720 });
+    await nullRenderer(page, { foundry: true });
+    const [anfragen, worker] = [[], []]; // die Anfragen der SEITE; der Foundry-Worker zieht r128 (S1 letzter Schritt, nicht dieses Studio)
+    page.on("request", (q) => (q.frame() ? anfragen : worker).push(q.url()));
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?studio=fachwerk`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await warteAufWelt(page, 180000);
+    const m = await probe(page, anfragen);
+    m.workerRegal = worker.filter((u) => REGAL.test(u)).length;
+    await browser.close();
+    server.close();
+    console.log("=== F — DAS FACHWERK ALS MODUS DER WELT-ENGINE (index.html?studio=fachwerk, Null-Renderer, Foundry an) ===");
+    const v = verdikt(m);
+    const hat = (w) => !v.some((t) => t.startsWith(w));
+    if (!m.geladen) check("der Modus steht", false, m.grund);
+    else {
+        check("F1 das Werk ist ein Haus der Welt mit der Marke des Studios", hat("steht"), `${m.werk.typ} · ${m.werk.marke}`);
+        check("F2 EINE Engine: 0 Anfragen auf worlds/*/lib/, THREE r184, kein iframe", hat("engine"), `${m.regal} von ${m.anfragen} Anfragen der Seite im Regal (Foundry-Worker: ${m.workerRegal}) · REVISION ${m.revision} · ${m.iframes} iframe`);
+        check("F3 die Wörter der Registry erreichen den Modus über den Chat (tudor · dorf)", hat("wort"), J(m.wort));
+        check("F4 die Stadt mit Mauer steht in der Welt (der Plan trägt sie, der Bau-Pool zeichnet sie und wirft)", hat("stadt"), J(m.stadt));
+        check("F5 ein neuer Stand ersetzt die Stadt ganz (Werke, Erdbau, Gedächtnis, Mauer-Streifen)", hat("abbau"), J(m.abbau));
+        check("F6 das Fachwerk-Tor öffnet den Modus in der Welt (kein iframe), ein alter Spielstand auch", hat("tor"), m.torGrund || `Spiegel → ${m.spiegel}`);
+        check("F7 nach dem Studio steht der Spieler wieder am Tor, sichtbar", hat("heim"), J(m.heim));
+    }
+    console.log(errs.length ? `\n❌ ROT — ${v.join(" · ")}` : "\n✅ GRÜN — das Fachwerk als Modus der Welt-Engine: F1–F7.");
+    process.exit(errs.length ? 1 : 0);
 })().catch((e) => {
-    console.error(e);
+    console.error("Fachwerk-Modus-Linse-Fehler:", (e && e.stack) || e);
     process.exit(2);
 });
