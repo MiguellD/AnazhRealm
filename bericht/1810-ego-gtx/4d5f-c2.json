@@ -1,0 +1,290 @@
+[
+ {
+  "tag": "d1-dritt-wurf",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1",
+    "gpu0": false,
+    "ro0": -1,
+    "ver": "0/undefined",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "d1-dritt-wurf#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "d0-dritt-ohne",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "d0-dritt-ohne#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1,SkinnedMesh@1",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "kopf-e1-ego-wurf",
+  "ctx": 6,
+  "neu": 1,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "kopf-e1-ego-wurf#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "kopf-e0-ego-ohne",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "kopf-e0-ego-ohne#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "Ebene-0-bleibt-e1-ego-wurf",
+  "ctx": 6,
+  "neu": 1,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "Ebene-0-bleibt-e1-ego-wurf#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "Ebene-0-bleibt-e0-ego-ohne",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "Ebene-0-bleibt-e0-ego-ohne#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 8,
+    "opNamen": "Mesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5,SkinnedMesh@5",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 8,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "fremde-Ebene-e1-ego-wurf",
+  "ctx": 6,
+  "neu": 1,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 8,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "fremde-Ebene-e1-ego-wurf#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "fremde-Ebene-e0-ego-ohne",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ },
+ {
+  "tag": "fremde-Ebene-e0-ego-ohne#letzt",
+  "ctx": 6,
+  "neu": 0,
+  "x": [
+   {
+    "skin": true,
+    "name": "",
+    "op": 0,
+    "opNamen": "",
+    "gpu0": true,
+    "ro0": 0,
+    "ver": "0/0",
+    "ro1": 0,
+    "gpu1": true
+   }
+  ]
+ }
+]
