@@ -854,7 +854,10 @@ async function probe(arg) {
                 let pedal = null;
                 for (let w = 0; w < 4; w++) {
                     await tippe("v", "KeyV");
-                    for (let t0 = st._fixedSimTime, i = 0; i < 3000 && st._fixedSimTime - t0 < SOLL.wechselS; i++) {
+                    // in Ego dreht die Gier ≥ egoGrad, bevor Third zurückkehrt (Lauf 18.10. an [-73,82]: 71° · 22° in je 2 s — der
+                    // Wechsel bewies nichts); höchstens die dreifache Zeit, dann urteilt der Wechsel vakuös
+                    const mehr = (t0) => st.cameraMode !== "third" && L.egoAb != null && grad(fahrt() - L.egoAb) < SOLL.egoGrad + 5 && st._fixedSimTime - t0 < 3 * SOLL.wechselS;
+                    for (let t0 = st._fixedSimTime, i = 0; i < 9000 && (st._fixedSimTime - t0 < SOLL.wechselS || mehr(t0)); i++) {
                         const v = Math.abs((e._fahr && e._fahr.vlong) || 0);
                         const soll = v < SOLL.kreisMs ? "w" : v > 1.5 * SOLL.kreisMs ? "s" : null;
                         if (soll !== pedal) [pedal && taste("keyup", pedal, `Key${pedal.toUpperCase()}`), soll && taste("keydown", soll, `Key${soll.toUpperCase()}`), (pedal = soll)];
