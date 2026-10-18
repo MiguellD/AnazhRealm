@@ -311,3 +311,11 @@ Die Klasse hinter allen: die Linsen prüfen Ruhe-Zustände am Boden bei Mittag; 
 - 17:40 KARTE APPARAT-DIÄT (nächste Welle, ZUERST): W0 (spielgang a95b4632, Decke +806, davon diag-v1-pfad +663 prettier-normiert) und S2 (richter-spawn bf39d644, +11/+46) bezahlen ihre Decke über EINE Karte: die 143 diag-Linsen gegen Spielgang + Spawn-Matrix legen; jede Linse, deren Urteile dort am Spieler-Weg stehen oder die nur Interna liest (W9, 72 auf dem Null-Renderer), per Mutant nachweisen und physisch streichen (npm-Skript, CI-Schritt, ci-deckung). Ziel scripts/ netto ≤ 0 gegen integ mit W0 + S2. Merge: W0 + S2 + Apparat-Diät als EIN Bündel.
 - 19:00 integ-probe = 7ea61206 GANZ GRÜN (23/23 inkl. echt): + S1 Garage = Modus der Welt-Engine (Merge studio-einheit-garage e875e1f1, Prüfer R2 merge-reif) + CI-Zeiten neu (ci-zeiten.cjs, Waage verteilt die Gruppen neu). S2 nach R3 offen (falscher Täter fahrzeug, Ratsche von Hand, GTX ungemessen, Decke +67) → Bündel mit W0 + Apparat-Diät in der nächsten Welle. main wartet auf das OMEN-Bündel F6 + S6 (A = main f45ee994).
 - 20:30 MAIN VORGESPULT f45ee994 → ff88b82d (V18.546.19, CI 23/23 inkl. echt): F3 Wasser EINE Fläche, S1 Garage = Modus der Welt-Engine (H6 2/12), F6 Nacht-Fernfarbe (GTX gegen main nicht langsamer 8/8, bericht/1810-f6-gtx.md), G8 Mess-Linse, Welt-Boot-Verdichtung −205 Z. integ-probe = main. Offen in der Welle: W0 letzter Prüfer; S6 wartet auf seine GTX-ABAB (OMEN); S2 + W0 + Apparat-Diät als Bündel in die nächste Welle.
+
+## 19.10. 01:00 — main vorgespult auf 5ae6bdfe: die isolierte Garage steht wieder
+- S1 (8a00562e) loeschte das isolierte Garage-Studio und stellte den Wagen in die offene Welt - Revert 876feb6f, gemergt mit Kompass
+  (CLAUDE.md 209 -> 93 Z., Lehren als Skill anazh-lehren) und Albedo-Zensus -129; CI 22/22 inkl. echt, voller Playtest gruen.
+- GESETZ (Schoepfer): ein Studio wird nie geloescht und nie in die offene Welt verlegt; SYSTEMKARTE S1 korrigiert (93d629c5).
+- Fachwerk-Welle gestoppt, studio-einheit-fachwerk 21591a72 nie mergen. Pausiert: buendel-richter, menschen-npc, grund-datum.
+- EINE Front: garage-r184 (wf_082056dd-054). OMEN: S6 auf Basis 5ae6bdfe, dann B4+B5.
+- Meisterkarte 27/90: https://claude.ai/artifact/Y6nuChFfb1dJTf7Btch4J5
