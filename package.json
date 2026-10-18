@@ -155,7 +155,7 @@
         "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs",
         "gate:garage-labor": "node scripts/diag-garage-labor.cjs --selftest && node scripts/diag-garage-labor.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
-        "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs",
+        "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs && node scripts/diag-studio-huelle.cjs --engine",
         "gate:portal-konformanz": "node scripts/diag-portal-konformanz.cjs --selftest && node scripts/diag-portal-konformanz.cjs",
         "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",

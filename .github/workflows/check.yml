@@ -906,6 +906,14 @@ jobs:
               # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
               run: npm run gate:garage-labor
 
+            - name: Die EINE Engine der Studio-Seiten (Studio-Huelle H6 — Netz je Seite)
+              if: matrix.gruppe == 15
+              # JE SEITE DER HUELLE IHRE ANFRAGEN (worlds/<welt>/index.html, Rezept linse): eine Engine-Kopie im Studio-Baum
+              # (worlds/*/lib/, r128 · r130 · r183) oder das r160-UMD ist ROT beim Namen, wer three laedt, laedt vendor/three.webgpu
+              # (r184); laedt eine Seite die Welt (index.html, stamm/), ist die isolierte Buehne aufgeloest. Die Ratsche nennt,
+              # wer noch fremd laedt. Befund 18.10. an 5ae6bdfe: die garage laedt terrain/lib/three-r128 (2 von 11 Seiten sauber).
+              run: node scripts/diag-studio-huelle.cjs --engine
+
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
               if: matrix.gruppe == 15
               # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —

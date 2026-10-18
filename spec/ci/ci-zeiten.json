@@ -546,6 +546,12 @@
       "lauf": "npm run gate:garage-labor",
       "laeufe": ["39144661741", "39138873974", "39120508033", "39113754217", "39102311056", "39040554053", "39036331423"]
     },
+    "Die EINE Engine der Studio-Seiten (Studio-Huelle H6 — Netz je Seite)": {
+      "s": 30,
+      "geschaetzt": "H6 18.10.: lokal 29 s mit swiftshader wie die CI (LINSE_GPU=software, 11 Seiten je Laden + 1,5 s), 30 s auf der Radeon — gemessen ab dem ersten vollen Lauf (node scripts/ci-zeiten.cjs)",
+      "gruppe": "voll 1",
+      "lauf": "node scripts/diag-studio-huelle.cjs --engine"
+    },
     "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
       "s": 9,
       "n": 7,
