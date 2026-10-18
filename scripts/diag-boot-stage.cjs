@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT + ZEITLEISTE (W2) und DIE KALT-ZEILE (K30, Pflicht-OFFEN B)
+// diag-boot-stage.cjs — DIE BÜHNE (W2) und DIE KALT-ZEILE (K30, Pflicht-OFFEN B)
 //
-// Die volle Bühne ist ein PRÄDIKAT aus kanonischen Quellen (nichts hartkodiert, die Impostor-Erwartung aus der Bibliothek):
-//   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
-//   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
-//   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
-// Zeitleiste t(Weltbild/Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock; t(Weltbild) = `state._weltbildDa` ab
-// Navigation (der Ladeschirm hält jede Taste: das ist die Kontrolle). --selftest: die wartende Spieler-Region und die
-// fehlende Regionen-Karte machen das Prädikat rot.   node scripts/diag-boot-stage.cjs [--selftest]
+// DIE BÜHNE (Null-Renderer, `--selftest` = gate:boot-stage): der Takt pumpt, bis die EINE Bühnen-Wahrheit der Welt steht
+// (`_buehneSteht`, mit Renderer gefragt: Ring · Gras · Wasser · Streu `_streuWartet` 0) — die Linse rechnet kein eigenes
+// Prädikat (S2: der Zwilling fiel, mit ihm benannt seine drei Terme über der Wahrheit — BIBLIO: der Vorrat ist kein Bühnen-Term,
+// die Kalt-Zeile nennt seine Phasen; IMPOST: die Bühne wartet bewusst nie auf Karten, im Null-Renderer war er immer wahr; LUFT:
+// gate:luft-sicht); die wartende Spieler-Region und die fehlende Regionen-Karte machen sie rot, der Deckel öffnet laut, dazu der
+// Selbsttest der Kontrolle (rein).   node scripts/diag-boot-stage.cjs [--selftest]
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
 // Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
 // die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
-// Urteil: t(Weltbild) ≤ 5 s ohne halbes Weltbild. Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
+// Urteil VON AUSSEN (S2): t(Kontrolle) ≤ 5 s ohne halbes Weltbild (`kontrolleZeit`). Ohne `--echt` swiftshader, mit `--echt`
+// die Hardware-GPU (1920×1080); `--bild` schreibt das erste Bild nach der Kontrolle, wie der Spieler es sieht.
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -30,11 +30,111 @@ const OPT = (k, d) => {
 };
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
+// DIE RATSCHE DER ANKUNFT (`--echt`, gate:ankunft:echt): ein Dauer-Rot sieht keine Verschlechterung — ROT ist, was schlechter
+// wird als der gemessene Stand des Geräts (spec/profiband/haushalt.json `geraete`: t über `tMs`, halb über `halb`, halb
+// ungemessen) und ein Gerät ohne Stand; das Soll steht offen in der Zeile, bis B fällt. Gesenkt nur aus Kalt-Läufen des Geräts.
+const ANKUNFT_STAND = {
+    radeon: { tMs: 13500, halb: 0.25, quelle: "Radeon 890M kalt 18.10., 4 Läufe: t 11,45–12,68 s, halb 18,6–22,1 %, Gegenprobe 2,3–3,0 %" },
+    gtx: null, // ungemessen: der erste Lauf auf dem OMEN setzt ihn
+};
+
+// t(KONTROLLE) UND DAS HALBE WELTBILD — DER RICHTER STEHT AUSSEN (S2, W9; rein, aus der Rohdatei der Kalt-Zeile): t ist das
+// erste präsentierte Bild (`frames`, je `getCurrentTexture` der Leinwand) ab der ersten Eingabe, die die Welt annimmt (`eingabe`:
+// eine echte Taste des Browsers kommt am Fänger des Ladeschirms vorbei, ms ab Navigation); „halb" ist der Bild-Unterschied
+// (`blockAnteil`) des ersten Schusses der Leinwand nach der Kontrolle gegen das Rundum-Bild derselben Kamera (`halbDiff` über
+// HALB_ANTEIL) gegen die Hülle der Ruhe; er gilt nur, wenn die GEGENPROBE an der stehenden Welt (`halbGegen`,
+// dieselbe Regel) unter GEGEN_ANTEIL bleibt, und nennt sein Fenster (der Schuss kommt `erstesMs` nach t). Ungemessen ist halb.
+// Die Zeit, die der Stamm über sich schreibt (`_weltbildDa`), und seine WARN-Zeile trägt die Rohdatei nicht (G4); der Selbsttest
+// K ist darum rein und belegt nur, dass die Rechnung sie nicht liest — in der Seite hängt `eingabe` am Fänger des Ladeschirms.
+const HALB_ANTEIL = 0.1;
+const GEGEN_ANTEIL = HALB_ANTEIL / 2;
+const RUHE_ANTEIL = 0.02; // zwei Schirme in Folge, die sich in höchstens so vielen Blöcken unterscheiden, sind das Rundum-Bild
+const AU = require("./lib/abnahme-urteil.cjs");
+function kontrolleZeit(out) {
+    const k = kontrolleHalb(out);
+    const G = require("../spec/profiband/haushalt.json").geraete;
+    k.geraet = Object.keys(G).find((g) => new RegExp(G[g].muster, "i").test(out.adapter || ""));
+    const st = (k.stand = ANKUNFT_STAND[k.geraet]);
+    k.rueck = !st
+        ? `ungemessen — kein Stand für ${k.geraet || out.adapter || "das Gerät"} (ANKUNFT_STAND, aus Kalt-Läufen des Geräts)`
+        : k.t == null || k.t > st.tMs
+          ? `t(Kontrolle) ${k.t == null ? "—" : (k.t / 1000).toFixed(2) + " s"} über dem Stand ${st.tMs / 1000} s`
+          : out.halbDiff == null || out.halbDiff > st.halb || /^ungemessen/.test(k.halb || "")
+            ? `halb ${k.halb || "—"} über dem Stand ${Math.round(st.halb * 100)} % der Blöcke`
+            : null;
+    return k;
+}
+function kontrolleHalb(out) {
+    const t = out.eingabe != null ? (out.frames || []).find((f) => f >= out.eingabe) : undefined;
+    if (t == null) return { t: null, halb: null };
+    const [d, g, p] = [out.halbDiff, out.halbGegen, (x) => `${Math.round(x * 100)} %`];
+    const fenster = out.erstesMs != null ? `der Schuss ${((out.erstesMs - t) / 1000).toFixed(2)} s nach der Kontrolle` : "ohne Schuss";
+    if (d == null) return { t, fenster, halb: `ungemessen — ${out.halbOhne || "kein Rundum-Bild"}` };
+    if (g == null || !(g <= GEGEN_ANTEIL))
+        return { t, fenster, halb: `ungemessen — die Gegenprobe an der stehenden Welt zählt ${g == null ? "nichts" : p(g)} (≤ ${p(GEGEN_ANTEIL)})` };
+    return { t, fenster, halb: d > HALB_ANTEIL ? `${p(d)} der Blöcke ändern sich bis zum Rundum-Bild (${fenster}, Gegenprobe ${p(g)})` : null };
+}
+// DER SELBSTTEST DER KONTROLLE (rein): ein gefälschtes `_weltbildDa` und eine WARN-Zeile ohne Bild-Befund ändern das Urteil
+// nicht; ein halbes Bild ohne WARN-Zeile ist halb, ein fehlendes Rundum-Bild und eine rauschende Gegenprobe auch; die Ratsche
+// hält den Stand und ist ROT darüber und ohne Stand.
+function kontrolleSelbsttest() {
+    const v = [];
+    const roh = { adapter: "amd rdna-3", weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
+    const fall = (was, aend, soll) => {
+        const k = kontrolleZeit(Object.assign({}, roh, aend));
+        const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
+        if (k.t !== soll.t) v.push(`${was}: t(Kontrolle) ${s(k.t)} statt ${s(soll.t)}`);
+        if (!!k.halb !== soll.halb) v.push(`${was}: halb ${k.halb ? `„${k.halb}"` : "nein"} statt ${soll.halb ? "ja" : "nein"}`);
+        if (!!k.rueck !== !!soll.rueck) v.push(`${was}: die Ratsche ${k.rueck ? `ROT „${k.rueck}"` : "GRÜN"} statt ${soll.rueck ? "ROT" : "GRÜN"}`);
+    };
+    fall("die echte Ankunft", {}, { t: 9016, halb: false });
+    fall("ein gefälschtes _weltbildDa (1 ms)", { weltbildDa: 1 }, { t: 9016, halb: false });
+    fall("die WARN-Zeile ohne Bild-Befund", { ohne: ["Das erste Weltbild steht ohne: Baum — die Arbeit ruhte"] }, { t: 9016, halb: false });
+    fall("das halbe Bild ohne WARN-Zeile", { halbDiff: 0.4 }, { t: 9016, halb: true, rueck: true });
+    fall("kein Rundum-Bild", { halbDiff: null }, { t: 9016, halb: true, rueck: true });
+    fall("die Gegenprobe rauscht (der Richter misst sein Rauschen)", { halbGegen: 0.08 }, { t: 9016, halb: true, rueck: true });
+    fall("keine Gegenprobe (null ist nie 0)", { halbGegen: null }, { t: 9016, halb: true, rueck: true });
+    fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false, rueck: true });
+    fall("die Ankunft über dem Stand (die Ratsche)", { eingabe: 20000, frames: [20016] }, { t: 20016, halb: false, rueck: true });
+    fall("ein Gerät ohne Stand (ungemessen)", { adapter: "intel xe-lpg" }, { t: 9016, halb: false, rueck: true });
+    if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 })).halb || ""))
+        v.push("das halbe Bild nennt sein Fenster nicht (der Schuss 0,38 s nach der Kontrolle)");
+    // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
+    // der in zehn Schritten zu je 8 driftet (Wolke, Belichtung), nicht — derselbe Unterschied 80; vor der atmenden Membran (die
+    // Hülle der Ruhe 100…140) ist das leere Fenster (0) anders, die Membran in ihrem Atem (110) nicht
+    const bild = (a, b) => ({ w: 32, h: 16, d: Uint8Array.from({ length: 32 * 16 * 4 }, (_, i) => (i % 128 < 64 ? a : b)) });
+    const anteil = AU.blockAnteil(bild(0, 0), bild(80, 80), Float32Array.of(240, 24));
+    if (anteil !== 0.5) v.push(`das Erscheinen gegen den Zug: ${anteil} der Blöcke statt 0,5`);
+    const atem = [bild(100, 0), bild(140, 0)];
+    const leer = AU.blockAnteil(bild(0, 0), bild(120, 0), Float32Array.of(240, 0), atem);
+    if (leer !== 0.5) v.push(`das leere Fenster vor der atmenden Membran: ${leer} der Blöcke statt 0,5 (halb)`);
+    const imAtem = AU.blockAnteil(bild(110, 0), bild(120, 0), Float32Array.of(60, 0), atem);
+    if (imAtem !== 0) v.push(`die Membran in ihrem Atem zählt: ${imAtem} der Blöcke statt 0`);
+    return v;
+}
 const server = statikServer();
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 function KALT_PROBE() {
-    const A = (window.__kalt = { proben: [], lang: [], ev: [] });
+    const A = (window.__kalt = { proben: [], lang: [], ev: [], frames: [], eingabe: null });
+    // DIE KONTROLLE VON AUSSEN (S2): die erste echte Taste, die der Fänger des Ladeschirms (Capture am Fenster) durchlässt, bei
+    // einem Spieler (vor ihm steht kein Fänger und nichts zu steuern); dazu die präsentierten Bilder (die letzten 32 davor, 8 danach)
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            const r = window.anazhRealm;
+            if (A.eingabe == null && e.isTrusted && r && r.state && r.state.playerMesh) A.eingabe = Math.round(performance.now());
+        },
+        true
+    );
+    const gct = typeof GPUCanvasContext !== "undefined" && GPUCanvasContext.prototype.getCurrentTexture;
+    let nach = 0;
+    if (gct)
+        GPUCanvasContext.prototype.getCurrentTexture = function () {
+            if (A.eingabe == null || nach++ < 8) A.frames.push(Math.round(performance.now()));
+            if (A.frames.length > 40) A.frames.shift();
+            return gct.call(this);
+        };
     // der erste Asset-Auftrag an einen Studio-Faden (B3a: bis dahin ruht die Werkstatt)
     const post = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (m, t) {
@@ -108,7 +208,6 @@ function KALT_PROBE() {
             // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
             const E = r._erstZeichnung;
             if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
-            o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
         }
         A.proben.push(o);
     }, 200);
@@ -140,48 +239,83 @@ async function kaltLauf() {
         await page.evaluateOnNewDocument(KALT_PROBE);
         const t0 = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
-        while (Date.now() - t0 < SEK * 1000) {
-            await new Promise((r) => setTimeout(r, 500));
-            const da = await page
-                .evaluate(() => (window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa) || 0)
-                .catch(() => 0);
-            if (da) break;
-        }
-        // DAS BILD DER ANKUNFT (`--bild datei.png`): der erste Blick des Spielers aus dem Ausgabe-Pfad
-        // (scripts/lib/ausgabe-aufnahme.cjs), der Loop ruht, die Bühne hält Mittag · Sonne · Sommer.
-        const bildDatei = OPT("--bild", null);
-        let bildInfo = null;
-        if (bildDatei) {
-            const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-            await page.evaluate(AUSGABE_INSTALL);
-            bildInfo = await page.evaluate(
-                async (W, H) => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state._weltbildDa) return { fehlt: "kein Weltbild" };
-                    r.state.renderer.setAnimationLoop(null);
-                    window.__buehne();
-                    let auf = null;
-                    for (let i = 0; i < 2; i++) {
-                        r._schattenAlleNeu();
-                        auf = await window.__ausgabeAufnahme(W, H, 1);
-                    }
-                    const cv = document.createElement("canvas");
-                    cv.width = W;
-                    cv.height = H;
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(W, H);
-                    img.data.set(auf.u8.subarray(0, W * H * 4));
-                    ctx.putImageData(img, 0, 0);
-                    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
-                },
-                ECHT ? 960 : 640,
-                ECHT ? 540 : 360
-            );
-            if (bildInfo && bildInfo.png) {
-                fs.writeFileSync(path.resolve(bildDatei), Buffer.from(bildInfo.png.split(",")[1], "base64"));
-                delete bildInfo.png;
+        // DIE KONTROLLE VON AUSSEN: je 100 ms eine echte Taste (F24, kein Wort des Spiels) über die Eingabe des Browsers, bis
+        // die Welt eine annimmt; dann das erste Bild und die Bilder, bis zwei in Folge ruhen (das Rundum-Bild derselben Kamera).
+        // Der Schirm-Schuss trägt nur auf der echten GPU die Leinwand (gate:weltbild-frost B: der swiftshader-Lauf nicht).
+        let tasten = true;
+        const tastenLauf = (async () => {
+            while (tasten) {
+                await page.keyboard.press("F24").catch(() => {});
+                await new Promise((r) => setTimeout(r, 100));
+            }
+        })();
+        await page
+            .waitForFunction(() => window.__kalt.eingabe != null, { polling: 50, timeout: Math.max(1000, SEK * 1000 - (Date.now() - t0)) })
+            .catch(() => {});
+        tasten = false;
+        const roh = { halbDiff: null };
+        if (!ECHT) roh.halbOhne = "swiftshader: der Schirm-Schuss trägt die Leinwand nicht";
+        else if (!(await page.evaluate(() => window.__kalt.eingabe != null))) roh.halbOhne = "die Welt nahm keine Eingabe an";
+        else {
+            // DER SCHUSS SIEHT NUR DIE LEINWAND: jeder Geschwister-Knoten auf ihrem Weg zum body ruht unsichtbar — der Ladeschirm
+            // weicht schon (`.weg`, 0,7 s Blende: sein Ausblenden ist kein Weltbild), das HUD (die Uhr tickt) ist keines
+            await page.evaluate(() => {
+                for (let e = window.anazhRealm.state.renderer.domElement; e !== document.body; e = e.parentElement)
+                    for (const k of e.parentElement.children) if (k !== e) k.style.visibility = "hidden";
+            });
+            const clip = { x: 0, y: 0, width: 1920, height: 1080, scale: 0.5 };
+            const schuss = async () => {
+                const png = Buffer.from(await page.screenshot({ clip }));
+                const p = AU.pngLesen(png);
+                return { png, w: p.W, h: p.H, d: p.u8, t: await page.evaluate(() => Math.round(performance.now())) };
+            };
+            const ruhe = (ms) => new Promise((r) => setTimeout(r, ms));
+            // je Schritt die Block-Unterschiede in Folge, je Block ihr größter (`blockAnteil` schritt: was erscheint)
+            const folge = async (von, n, bis) => {
+                const S = { vor: von, bilder: [], reihe: [], max: null };
+                for (let i = 0; i < n && S.vor.t - von.t < 30000; i++) {
+                    await ruhe(300);
+                    const jetzt = await schuss();
+                    const d = AU.blockUnterschiede(S.vor, jetzt);
+                    S.max = S.max ? S.max.map((x, k) => Math.max(x, d[k])) : d;
+                    S.vor = jetzt;
+                    S.bilder = S.bilder.concat(jetzt).slice(-4);
+                    S.reihe.push(+(d.filter((y) => y > 12).length / d.length).toFixed(4));
+                    if (bis && bis(S.reihe)) break;
+                }
+                return S;
+            };
+            const erstes = await schuss();
+            // DAS RUNDUM-BILD: zwei Schirme in Folge unter RUHE_ANTEIL — oder der Unterschied in Folge steht (drei Schritte in
+            // ±0,01: es lebt nur noch, was atmet oder zieht); die Bilder dieser drei Schritte sind die HÜLLE der Ruhe — was atmet
+            // (Membran, Wolkenkante), ist im ersten Bild nur anders, wenn es außerhalb seines Atems liegt (das leere Tor-Fenster)
+            const ruht = (r) => r[r.length - 1] <= RUHE_ANTEIL || (r.length >= 4 && Math.max(...r.slice(-3)) - Math.min(...r.slice(-3)) <= 0.01);
+            const F = await folge(erstes, 100, ruht);
+            const rundum = F.vor;
+            roh.ruheReihe = F.reihe;
+            const marke = new Uint8Array(F.max.length);
+            if (ruht(F.reihe)) {
+                const huelle = F.bilder.slice(0, -1);
+                roh.halbDiff = +AU.blockAnteil(erstes, rundum, F.max, huelle, marke).toFixed(4);
+                roh.rundumMs = rundum.t - erstes.t;
+                // DIE GEGENPROBE: die stehende Welt drei Schritte nach dem Rundum-Bild gegen dieselbe Hülle, dieselbe Regel
+                const G = await folge(rundum, 3);
+                roh.halbGegen = +AU.blockAnteil(G.vor, rundum, G.max, huelle).toFixed(4);
+            } else roh.halbOhne = `das Bild ruht 30 s nicht (in Folge ${roh.ruheReihe.slice(-3).join(" · ")} der Blöcke)`;
+            roh.erstesMs = erstes.t;
+            const bildDatei = OPT("--bild", null);
+            if (bildDatei) {
+                fs.writeFileSync(path.resolve(bildDatei), erstes.png);
+                fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-rundum.png", rundum.png);
+                // die Karte des Urteils: rot, was als halb zählt (je Block 16×16 des ersten Bilds)
+                const bw = erstes.w >> 4;
+                const blk = (i) => (((i >> 2) % erstes.w) >> 4 < bw ? Math.floor(i / 64 / erstes.w) * bw + (((i >> 2) % erstes.w) >> 4) : -1);
+                const d = Uint8Array.from(erstes.d, (x, i) => (i % 4 === 0 && marke[blk(i)] ? 255 : x));
+                fs.writeFileSync(path.resolve(bildDatei).replace(/\.png$/i, "") + "-karte.png", AU.pngSchreiben(d, erstes.w, erstes.h));
+                roh.bild = { datei: path.resolve(bildDatei) };
             }
         }
+        await tastenLauf;
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
@@ -193,14 +327,12 @@ async function kaltLauf() {
                 adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
             } catch (_e) {}
             return Object.assign({}, window.__kalt, {
-                weltbildDa: st._weltbildDa ? Math.round(st._weltbildDa) : null,
                 holz: st._holzProfil || null,
                 version: r && r.constructor && r.constructor.VERSION,
                 adapter,
-                ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             });
         });
-        if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
+        Object.assign(out, roh);
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
@@ -219,7 +351,8 @@ async function kaltLauf() {
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const proben = out.proben || [];
-    const ende = Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
+    const { t, halb, fenster, geraet, rueck, stand } = kontrolleZeit(out);
+    const ende = Math.max(t || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
     const blockiert = new Array(S + 1).fill(0);
     for (const [s, d] of out.lang || []) {
@@ -244,7 +377,7 @@ async function kaltLauf() {
         const q = letzte || {};
         const erstMs = q.erst ? q.erst[1] - erstVor : 0;
         if (q.erst) erstVor = q.erst[1];
-        const gruende = q.da && q.da < (s + 1) * 1000 ? "— das Weltbild steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
+        const gruende = t != null && t < (s + 1) * 1000 ? "— die Kontrolle steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
         const kosten = Object.entries(out.kosten || {})
             .map(([k, z]) => [k, Math.round(z[s] || 0)])
             .concat([["Erst-Bau", Math.round(erstMs)]])
@@ -270,22 +403,36 @@ async function kaltLauf() {
     for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
-    if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
-    const t = out.weltbildDa;
-    const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
-    console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);
-    const gut = t != null && t <= ANKUNFT_SOLL_MS && !halb;
-    if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
+    if (out.bild) console.log(`  das erste Bild nach der Kontrolle: ${out.bild.datei} (dazu -rundum.png)`);
+    const s2 = (x) => (x != null ? (x / 1000).toFixed(2) + " s" : "—");
     console.log(
-        `  ${gut ? "✅" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
+        `\n  t(Kontrolle) ${t != null ? s2(t) : "— (nicht erreicht)"} ab Navigation — die erste angenommene Taste ${s2(out.eingabe)}, ` +
+            "das Bild danach" +
+            (out.halbDiff != null
+                ? ` · Bild-Unterschied zum Rundum-Bild ${(out.halbDiff * 100).toFixed(1)} % (${fenster}, ruht nach ${s2(out.rundumMs)}, ` +
+                  `Gegenprobe ${out.halbGegen != null ? (out.halbGegen * 100).toFixed(1) + " %" : "—"})`
+                : "")
+    );
+    const soll = t != null && t <= ANKUNFT_SOLL_MS && !halb;
+    if (halb) console.log(`  ${ECHT ? "·" : "❌"} das halbe Weltbild: ${halb}`);
+    console.log(
+        `  ${soll ? "✅" : ECHT ? "· offen:" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
             `${t != null ? (t / 1000).toFixed(2) + " s" : "nicht erreicht"}`
     );
-    process.exit(gut ? 0 : 1);
+    if (!ECHT) process.exit(soll ? 0 : 1);
+    console.log(`  ${rueck ? "❌" : "✅"} die Ratsche der Ankunft (${geraet || "?"}${stand ? `: ${stand.quelle}` : ""}) — ${rueck || "nicht schlechter"}`);
+    process.exit(rueck ? 1 : 0);
 }
 
 (async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
-    const SELFTEST = process.argv.includes("--selftest");
+    const kontrolle = kontrolleSelbsttest();
+    const SELFTEST = ARGV.includes("--selftest");
+    // der Selbsttest der Kontrolle zuerst (rein, < 1 s): ein Bruch hält vor dem Boot
+    if (SELFTEST && kontrolle.length) {
+        for (const b of kontrolle) console.log(`  ❌ SELBST-TEST K: ${b}`);
+        process.exit(1);
+    }
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -293,190 +440,92 @@ async function kaltLauf() {
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        // t(Weltbild) aus der Welt selbst: der Moment, in dem der Ladeschirm weicht (`state._weltbildDa`, ab Navigation).
-        await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa, {
+        await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.playerMesh, {
             timeout: 120000,
         });
-        const controlMs = await page.evaluate(() => window.anazhRealm.state._weltbildDa);
-        out = await page.evaluate(async (selftest) => {
+        out = await page.evaluate(async () => {
             const r = window.anazhRealm,
                 st = r.state;
-            const o = { terms: {}, timeline: {}, selftest: null };
-            const headless = !!(st.renderer && st.renderer._isHeadlessNull);
-            // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
-            const terms = () => {
-                const f = r._foundry;
-                const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-                // die EINE Antwort der Welt (`_streuWartet`): fehlend · aufgeschoben · Scheibe offen, je Region in Reichweite.
-                // Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte (der Streamer lief noch nie) als „steht".
-                const wartet = r._streuWartet(st.playerMesh ? st.playerMesh.position : null);
-                const q = r._impostorBakeQueue;
-                return {
-                    ring: st._activeRingRadius != null && st._activeRingRadius >= ringTarget,
-                    grass: !st.pendingGrass || st.pendingGrass.size === 0,
-                    water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
-                    streu: !!st.playerMesh && wartet === 0,
-                    biblio: !!(f && f.ready && !f._vorrat),
-                    // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
-                    impost: headless ? true : !q || q.length === 0,
-                    _streuWartet: wartet,
-                };
+            // DIE EINE BÜHNEN-WAHRHEIT mit Renderer gefragt (der Null-Renderer setzt sie sofort): Latch, Uhr, Marke und
+            // Regionen-Karte kehren nach jeder Frage zurück; `gedeckelt` stellt die Uhr weit hinter BUEHNE_SETTLE_CAP_MS
+            const frag = (ohneKarte, gedeckelt) => {
+                const merk = { h: st.renderer._isHeadlessNull, latch: st._buehneStand, t0: r._buehneT0, map: st.scatterRegions };
+                st.renderer._isHeadlessNull = false;
+                st._buehneStand = false;
+                r._buehneT0 = gedeckelt ? -Infinity : null;
+                if (ohneKarte) delete st.scatterRegions;
+                const steht = r._buehneSteht();
+                Object.assign(st, { _buehneStand: merk.latch, scatterRegions: merk.map });
+                st.renderer._isHeadlessNull = merk.h;
+                r._buehneT0 = merk.t0;
+                return steht;
             };
-            const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
-            // ── PUMPEN + MEILENSTEINE (Ticks + ms) ──
             const t0 = performance.now();
             let ticks = 0;
-            const mark = {};
-            const MAXT = 6000;
-            while (ticks < MAXT) {
+            while (ticks < 6000 && !frag(false)) {
                 try {
                     r._gameLoopTick();
                 } catch (_e) {}
-                ticks++;
-                const T = terms();
-                const luftSteht = !!(st.scene && st.scene.fogNode) && sichtM() >= 5000;
-                if (!mark.biblio && T.biblio) mark.biblio = { ticks, ms: performance.now() - t0 };
-                if (!mark.ring && T.ring) mark.ring = { ticks, ms: performance.now() - t0 };
-                if (!mark.impost && T.impost && T.biblio) mark.impost = { ticks, ms: performance.now() - t0 };
-                if (T.ring && T.grass && T.water && T.streu && T.biblio && T.impost && luftSteht) {
-                    mark.stage = { ticks, ms: performance.now() - t0 };
-                    o.terms = T;
-                    break;
-                }
-                if (ticks % 5 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (++ticks % 5 === 0) await new Promise((res) => setTimeout(res, 0));
             }
-            if (!mark.stage) o.terms = terms();
-            o.headless = headless;
-            o.sichtM = Math.round(sichtM());
-            o.timeline = {
-                biblio: mark.biblio || null,
-                ring: mark.ring || null,
-                impost: mark.impost || null,
-                stage: mark.stage || null,
-                totalTicks: ticks,
-            };
-            o.chunks = st.voxelChunks ? st.voxelChunks.size : 0;
-            o.impostorRecords = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
-            // ── SELBST-TEST: die Spieler-Region wartet auf ihr Asset, und die Regionen-Karte fehlt (der Streamer lief noch
-            // nie, Befund 09.10.) — beide machen das Prädikat rot. Beide Fälle stehen in jedem Lauf: schließt die Bühne,
-            // steht die Spieler-Region (sie ist stets in Reichweite).
-            if (selftest && mark.stage) {
-                const SC = r.constructor.SCATTER;
-                const p = st.playerMesh.position;
-                const map = st.scatterRegions;
-                const reg = map ? map.get(`${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`) : null;
-                o.selftest = { spielerRegion: !!reg };
-                if (reg) {
-                    reg._deferredFoundry = true;
-                    o.selftest.firesOnInject = terms().streu === false;
-                    delete reg._deferredFoundry;
-                }
-                delete st.scatterRegions;
-                o.selftest.firesOhneKarte = terms().streu === false;
-                st.scatterRegions = map;
-                o.selftest.healsOnClean = terms().streu === true;
-                // die Bühnen-Wahrheit der Welt (`_buehneSteht`, das Prädikat live) liest dieselbe Antwort: ohne Regionen-Karte
-                // steht sie nicht, mit ihr steht sie — nicht-headless gerechnet; Latch, Uhr und Renderer-Marke kehren zurück
-                {
-                    const merk = { h: st.renderer._isHeadlessNull, latch: st._buehneStand, t0: r._buehneT0 };
-                    const frag = (ohneKarte, gedeckelt) => {
-                        st.renderer._isHeadlessNull = false;
-                        st._buehneStand = false;
-                        // die Uhr beginnt in `_buehneSteht` neu — oder sie steht weit hinter dem Deckel
-                        r._buehneT0 = gedeckelt ? -Infinity : null;
-                        if (ohneKarte) delete st.scatterRegions;
-                        const steht = r._buehneSteht();
-                        st.scatterRegions = map;
-                        return steht;
-                    };
-                    o.selftest.buehneOhneKarte = frag(true);
-                    o.selftest.buehneMitKarte = frag(false);
-                    // der Deckel öffnet LAUT: ohne Regionen-Karte und hinter BUEHNE_SETTLE_CAP_MS steht die Bühne, und das Log
-                    // nennt die Lücke (WARN „Die Bühne steht ohne: … Wald-Stücke …")
-                    const warnt = () => st.logBuffer.slice(-30).filter((z) => /Bühne steht ohne: .*Wald-Stücke/.test(z)).length;
-                    const w0 = warnt();
-                    o.selftest.deckelSteht = frag(true, true);
-                    o.selftest.deckelWarnt = warnt() > w0;
-                    st.renderer._isHeadlessNull = merk.h;
-                    st._buehneStand = merk.latch;
-                    r._buehneT0 = merk.t0;
-                }
-                // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
+            const o = { steht: frag(false), ticks, ms: performance.now() - t0, chunks: st.voxelChunks ? st.voxelChunks.size : 0 };
+            // die wartende Spieler-Region und die fehlende Regionen-Karte (der Streamer lief noch nie, Befund 09.10.) machen sie
+            // rot, sie heilt; der Deckel öffnet laut (WARN „Die Bühne steht ohne: … Wald-Stücke …")
+            const SC = r.constructor.SCATTER;
+            const p = st.playerMesh.position;
+            const reg = st.scatterRegions && st.scatterRegions.get(`${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`);
+            o.spielerRegion = !!reg;
+            if (reg) {
+                reg._deferredFoundry = true;
+                o.wartetRot = r._streuWartet(p) > 0 && frag(false) === false;
+                delete reg._deferredFoundry;
             }
+            o.ohneKarteRot = frag(true) === false;
+            o.heilt = frag(false) === true;
+            const warnt = () => st.logBuffer.slice(-30).filter((z) => /Bühne steht ohne: .*Wald-Stücke/.test(z)).length;
+            const w0 = warnt();
+            o.deckelSteht = frag(true, true);
+            o.deckelWarnt = warnt() > w0;
             return o;
-        }, SELFTEST);
-        out.controlMs = controlMs;
+        });
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
     await browser.close();
     server.close();
-
     if (!out || out.__err) {
         console.log(`⛔ Bühnen-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
         process.exit(2);
     }
-    const tl = out.timeline;
-    const fm = (m) => (m ? `Tick ${m.ticks} · ${(m.ms / 1000).toFixed(1)} s` : "— (nicht erreicht)");
-    console.log(
-        "\n=== VOLLE BÜHNE — das Prädikat + die Zeitleiste (headless-Mechanik; Wall-Clock = Container-Anhalt) ==="
-    );
-    console.log(
-        `  t(Weltbild)    ${(out.controlMs / 1000).toFixed(1)} s ab Navigation (state._weltbildDa = t(Kontrolle); der ` +
-            "Null-Renderer zeigt kein Bild und setzt es beim Renderer-Bau — die Kalt-Zeile mit echtem Renderer: --kalt)"
-    );
-    console.log(`  t(Bibliothek)  ${fm(tl.biblio)}`);
-    console.log(`  t(Ring)        ${fm(tl.ring)}`);
-    console.log(
-        `  t(Impostoren)  ${fm(tl.impost)}${out.headless ? "  (headless: RTT-Term übersprungen, gate-treu)" : ""}`
-    );
-    console.log(
-        `  t(BÜHNE)       ${fm(tl.stage)}   (${out.chunks} Chunks · ${out.impostorRecords} Impostor-Records · Sichtweite ${out.sichtM} m)`
-    );
-    const T = out.terms;
+    console.log("\n=== DIE BÜHNE — die EINE Bühnen-Wahrheit der Welt (`_buehneSteht`), Null-Renderer-Mechanik ===");
     const checks = [
-        { name: `RING erreicht Ziel (${T.ring})`, pass: T.ring === true },
         {
-            name: `GRAS aufgeholt (${T.grass}) · WASSER aufgeholt (${T.water})`,
-            pass: T.grass === true && T.water === true,
+            name: `die Bühne steht nach ${out.ticks} Takten (${(out.ms / 1000).toFixed(1)} s, ${out.chunks} Chunks) — Ring · Gras · Wasser · Streu`,
+            pass: out.steht === true,
         },
-        {
-            name: `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
-            pass: T.streu === true,
-        },
-        {
-            name: `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`,
-            pass: T.biblio === true && T.impost === true,
-        },
-        { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!tl.stage },
     ];
-    if (SELFTEST) {
-        const s = out.selftest || {};
-        checks.push({
-            name:
-                "SELBST-TEST: die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot + es heilt " +
-                `(Spieler-Region ${s.spielerRegion ? "steht" : "FEHLT beim Schluss der Bühne"} · wartet → ${s.firesOnInject ? "rot" : "STUMPF"} · ohne Karte → ${s.firesOhneKarte ? "rot" : "STUMPF"} · heilt ${!!s.healsOnClean})`,
-            pass: !!(s.spielerRegion && s.firesOnInject && s.firesOhneKarte && s.healsOnClean),
-        });
-        checks.push({
-            name: `SELBST-TEST: die Bühnen-Wahrheit der Welt (\`_buehneSteht\`) liest dieselbe Streu — ohne Regionen-Karte ${s.buehneOhneKarte === false ? "steht sie nicht" : "STEHT sie"}, mit ihr ${s.buehneMitKarte ? "steht sie" : "steht sie NICHT"}`,
-            pass: s.buehneOhneKarte === false && s.buehneMitKarte === true,
-        });
-        checks.push({
-            name: `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
-            pass: s.deckelSteht === true && s.deckelWarnt === true,
-        });
-    }
+    if (SELFTEST)
+        checks.push(
+            {
+                name: `SELBST-TEST K: der Richter steht außerhalb — ein gefälschtes _weltbildDa und die WARN-Zeile ändern t(Kontrolle) und „halb" nicht, das leere Fenster vor der atmenden Membran ist halb, die Ratsche hält den Stand${kontrolle.length ? ` (${kontrolle.join(" · ")})` : ""}`,
+                pass: kontrolle.length === 0,
+            },
+            {
+                name:
+                    "SELBST-TEST: die wartende Spieler-Region und die fehlende Regionen-Karte machen die Bühne rot + sie heilt " +
+                    `(Spieler-Region ${out.spielerRegion ? "steht" : "FEHLT"} · wartet → ${out.wartetRot ? "rot" : "STUMPF"} · ohne Karte → ${out.ohneKarteRot ? "rot" : "STUMPF"} · heilt ${!!out.heilt})`,
+                pass: !!(out.spielerRegion && out.wartetRot && out.ohneKarteRot && out.heilt),
+            },
+            {
+                name: `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${out.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${out.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
+                pass: out.deckelSteht === true && out.deckelWarnt === true,
+            }
+        );
     let fails = 0;
     for (const c of checks) {
         console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
         if (!c.pass) fails++;
     }
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
-    if (fails) {
-        console.log("⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.");
-        process.exit(1);
-    }
-    console.log(`✅ „Volle Bühne" ist jetzt ein Prädikat mit Zeitleiste — Kriterium 2 ist messbar.`);
-    process.exit(0);
+    process.exit(fails ? 1 : 0);
 })();

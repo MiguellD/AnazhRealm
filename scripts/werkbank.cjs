@@ -6,122 +6,96 @@
 // Seite getauscht, das Terrain-Material neu gebaut, das Bild ist in Sekunden da.
 //
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]
-//                                                           Welt + Steuer-Server (bleibt offen); `--ort` der Messort vor
-//                                                           dem Boot (ohne Dorf-Zug ruht der Zug ab dem ersten Skript)
+//       Welt + Steuer-Server (bleibt offen); `--ort` der Messort vor dem Boot (ohne Dorf-Zug ruht der Zug ab dem ersten
+//       Skript)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
-//                                                           `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug,
-//                                                           Ort-Takt und Sicht (ohne Wahl Ego, K26) des Orts;
-//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
-//                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
+//       `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht (ohne Wahl Ego, K26)
+//       des Orts; ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen und Lade-Ring fest, `--pose`
+//       stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
-//                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
-//                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
+//       [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe Bühne zu dieser Stunde (0,5 Mittag), die
+//       Leuchtquellen folgen
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
-//                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
-//                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
-//                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
-//                                                           (`<datei>.maske.png`, je Klasse ein Ton), ihr Rauschen und die
-//                                                           Maße je Klasse (abnahme-urteil `klassenMasse`) im Begleit-JSON;
-//                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
-//                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
-//                                                           den Spieler-Leib im Bild
+//       DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/soll-tafel.json): in voller Puffer-Größe unter EINER Uhr
+//       G, G2 und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds (`<datei>.maske.png`, je Klasse ein Ton),
+//       ihr Rauschen und die Maße je Klasse (abnahme-urteil `klassenMasse`) im Begleit-JSON; `--abstand` zählt je
+//       Klasse den Boden-Abstand in Bändern, `--ist` schreibt die Messung in die Tafel, `--spieler` lässt den
+//       Spieler-Leib im Bild
+//   node scripts/werkbank.cjs spawn [--sicht ego,third,oben] [--uhr 0.25,0.5] | spawn --urteil
+//       DIE POSEN-MATRIX DES SPAWNS (S2, soll-tafel.json `spawn`): je Sicht (die Kamera des Spiels am Genesis-Platz,
+//       `oben` 30 m) × Uhr EIN Schuss mit der Teilung aller Klassen der Matrix als Messung der Pose; `--urteil` (ohne
+//       Welt) nennt die Zellen GRÜN/gesamt, jede rote beim Namen — Exit 1, solange eine ROT ist
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm (Arbeitsbaum;
-//                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
-//                                                           live tauschen; --terrain baut das EINE
-//                                                           Chunk-Material neu und hängt es an alle Chunks
+//       `--quelle`: aus einem anderen Stand, die Basis eines A/B) live tauschen; --terrain baut das EINE Chunk-Material
+//       neu und hängt es an alle Chunks
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
 //   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
-//                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
+//       (scripts/lib/licht-linsen.cjs; Karte = 0,180)
 //   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (S1 W1e,
-//                                                           spec/farbe/albedo-tafel.json): je Zeile ihr Exemplar (fehlt es,
-//                                                           setzt die Linse es — danach kein Band in derselben Welt), die
-//                                                           Züge ihrer Klasse und ihres Stoffs, Basis-Albedo; Eichung 0,180.
-//                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
-//                                                           diag-albedo-tafel.cjs --nachziehen
+//       spec/farbe/albedo-tafel.json): je Zeile ihr Exemplar (fehlt es, setzt die Linse es — danach kein Band in
+//       derselben Welt), die Züge ihrer Klasse und ihres Stoffs, Basis-Albedo; Eichung 0,180. Urteil gegen das
+//       Labor-Ist der Tafel; Nachzug mit diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
-//                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
+//       E alle / E Umgebung in die Soll-Tafel (K63-n1)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
-//                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
-//                                                           `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
+//       `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3; `--karte --uhr 0.5,0.25,0` (F6) dazu `ring` und `haus`
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
-//                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
+//       Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
-//                                                           DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
-//                                                           (Hauptbild · jede Kaskade) und Täter-Klasse, ein Frame
-//                                                           (scripts/lib/draw-zaehler.cjs; Top 16, --alle alle)
+//       DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass (Hauptbild · jede Kaskade) und Täter-Klasse, ein Frame
+//       (scripts/lib/draw-zaehler.cjs; Top 16, --alle alle)
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: nach erzwungenem GC jeder Geometrie-Puffer beim
-//                                                           Halter (szene · bild · ruhend · verwaist — scripts/lib/draw-
-//                                                           zaehler.cjs `__pufferZensus`) und der VRAM je Schlüssel
+//       Halter (szene · bild · ruhend · verwaist — scripts/lib/draw-zaehler.cjs `__pufferZensus`) und der VRAM je
+//       Schlüssel
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
-//                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
-//                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
+//       kostet (Bytes · Entpacken · Platte · Worker-Auslastung); erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs diaet [frames] [--modus ruhe|drehen|gehen] [--tiere halten|frei] | diaet --selbsttest
-//                                                           DIE DIÄT-LINSE: was Observer-Diät und Bundles je gerendertem
-//                                                           Frame arbeiten (Prüfungen · Voll-Refreshs · Gänge und ihre
-//                                                           Wiederholung je Render · Uploads · writeBuffer) und NETTO kosten
-//                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
-//                                                           Empfänger) ist abgezogen und beim Pfad genannt
-//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
+//       DIE DIÄT-LINSE: was Observer-Diät und Bundles je gerendertem Frame arbeiten (Prüfungen · Voll-Refreshs · Gänge
+//       und ihre Wiederholung je Render · Uploads · writeBuffer) und NETTO kosten — jeder verschachtelte Render (der
+//       Schatten im ersten Licht-Empfänger) ist abgezogen und beim Pfad genannt (scripts/lib/diaet-linse.cjs; Exit 1:
+//       Wiederholung oder Refresh ohne Änderung im Stand)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
-//                                                           ruht (scripts/lib/takt-linse.cjs)
+//       ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
-//                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
-//                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
-//                                                           arbeiten — Einheiten, Zeit je Takt, Welt-Matrizen je Frame —
-//                                                           im echten Loop, Folge B A A B (A = die Wache gebrochen;
-//                                                           scripts/lib/stand-linse.cjs); Urteil: Ruhe 0 Einheiten
+//       DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-Wahl, Cull, Streu, Nah-Streu, Nah-Wiese,
+//       Saum-Wache) im Stand arbeiten — Einheiten, Zeit je Takt, Welt-Matrizen je Frame — im echten Loop, Folge B A A B
+//       (A = die Wache gebrochen; scripts/lib/stand-linse.cjs); Urteil: Ruhe 0 Einheiten
 //   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
-//                                                           [--ein s] [--regler voll]
-//                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
-//                                                           arbeitet (Pässe · Prüfungen · Ecken · Bytes · Treffer) im
-//                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
-//                                                           des Spiels), Drehen (1°/Frame), Gehen
-//                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
+//       [--ein s] [--regler voll] DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame arbeitet (Pässe · Prüfungen
+//       · Ecken · Bytes · Treffer) im echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge des Spiels), Drehen
+//       (1°/Frame), Gehen (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s] | lauf --selbsttest
-//                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach `--ein` s
-//                                                           Einschwingen misst er `sek` s Frame-Zeit · GPU-Zeit (timestamp-
-//                                                           query; je Pass p50 · p95 · `rein` = p50 des unteren Gipfels,
-//                                                           `--selbsttest` ohne Welt prüft die Teilung) · Befehle und Drei-
-//                                                           ecke je Frame und Pass (Anteil der Frames je Pass) · VRAM ·
-//                                                           Regler-Stand; „voll" hebt die Decke (loadScale → 1, volle Welt)
+//       DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach `--ein` s Einschwingen misst er `sek` s Frame-Zeit · GPU-Zeit
+//       (timestamp-query; je Pass p50 · p95 · `rein` = p50 des unteren Gipfels, `--selbsttest` ohne Welt prüft die
+//       Teilung) · Befehle und Dreiecke je Frame und Pass (Anteil der Frames je Pass) · VRAM · Regler-Stand; „voll"
+//       hebt die Decke (loadScale → 1, volle Welt)
 //   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
-//                                                           DAS CPU-PROFIL des echten Laufs (Chrome-Profiler,
-//                                                           200 µs): Selbst- und Gesamtzeit je Funktion — wer
-//                                                           den Takt trägt, beim Namen (nach einem `lauf`)
+//       DAS CPU-PROFIL des echten Laufs (Chrome-Profiler, 200 µs): Selbst- und Gesamtzeit je Funktion — wer den Takt
+//       trägt, beim Namen (nach einem `lauf`)
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern kreis]
 //                                     [--schwelle ms] [--probe] [--json datei] | haenger --selbsttest
 //                                     | haenger --erst [ABBAABBA] [--ein s] [--art wolf]
-//                                                           DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte
-//                                                           Lauf unter dem Chrome-Profiler (1 ms), je Frame über der
-//                                                           Schwelle (100 ms) die Ursache beim Namen — TAKT (die Engstelle
-//                                                           im Spiel-Takt) · NEBEN (Haupt-Thread außerhalb des Takts) ·
-//                                                           GC · GPU (der Haupt-Thread wartet: synchrone Pipelines mit
-//                                                           Stoff-Namen, Shader, Upload) — und die Tabelle je Ursache;
-//                                                           `--probe` schmuggelt zwei benannte Lasten ein, die die Linse
-//                                                           nennen muss. Exit 1: kein Profil, keine Eichung, eine Probe
-//                                                           nicht genannt; `--selbsttest` (ohne Welt) prüft die Auswertung
+//       DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf unter dem Chrome-Profiler (1 ms), je Frame
+//       über der Schwelle (100 ms) die Ursache beim Namen — TAKT (die Engstelle im Spiel-Takt) · NEBEN (Haupt-Thread
+//       außerhalb des Takts) · GC · GPU (der Haupt-Thread wartet: synchrone Pipelines mit Stoff-Namen, Shader, Upload)
+//       — und die Tabelle je Ursache; `--probe` schmuggelt zwei benannte Lasten ein, die die Linse nennen muss. Exit 1:
+//       kein Profil, keine Eichung, eine Probe nicht genannt; `--selbsttest` (ohne Welt) prüft die Auswertung
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: Screenshot des präsentierten Canvas
-//                                                           (was der Spieler sieht) nach 1 s echtem Loop
+//       (was der Spieler sieht) nach 1 s echtem Loop
 //   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: n Frames ohne rAF/VSync hintereinander, die
-//                                                           reine GPU-Zeit je Frame (wenn GPU-gebunden)
+//       reine GPU-Zeit je Frame (wenn GPU-gebunden)
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                      [--selbsttest [--last iter]]
-//                                                           DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): schaltet
-//                                                           jeden benannten Verbraucher des echten Wegs ab (Pässe, Post-
-//                                                           Stufen, Klassen, leerer Frame) und misst je Schalter die gpu-
-//                                                           bank-Differenz ABBA (r ≥ 4 Runden à n Frames, Median ± σ =
-//                                                           1,4826 × MAD, dazu Δ CPU und Δ Pass-Stempel) → Tabelle mit Σ,
-//                                                           Rest, Frame-Anatomie (jeder GPU-Befehl je Frame mit Bytes) und
-//                                                           Beleg je Schalter; `--nur` nimmt Schalter-ids (Tabelle zeigt
-//                                                           sie), `--bilder` legt je Schalter das AUS-Bild aus dem Ausgabe-
-//                                                           Pfad ab, `--selbsttest` schmuggelt einen Vollbild-Pass fester
-//                                                           Last ein und prüft, dass er als Posten erscheint (Δ ≈ seine
-//                                                           Kosten allein) und wieder verschwindet; die STEMPEL-PROBE nennt,
-//                                                           wie viel derselben Last der Pass-Stempel sieht. Exit 1: ein
-//                                                           Schalter schaltet nicht, der Zustand ist nicht zurück, ein
-//                                                           Fenster änderte die Größe, oder der Selbsttest ist ROT.
+//       DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): schaltet jeden benannten Verbraucher des echten Wegs ab
+//       (Pässe, Post-Stufen, Klassen, leerer Frame) und misst je Schalter die gpu-bank-Differenz ABBA (r ≥ 4 Runden à n
+//       Frames, Median ± σ = 1,4826 × MAD, dazu Δ CPU und Δ Pass-Stempel) → Tabelle mit Σ, Rest, Frame-Anatomie (jeder
+//       GPU-Befehl je Frame mit Bytes) und Beleg je Schalter; `--nur` nimmt Schalter-ids (Tabelle zeigt sie),
+//       `--bilder` legt je Schalter das AUS-Bild aus dem Ausgabe-Pfad ab, `--selbsttest` schmuggelt einen Vollbild-Pass
+//       fester Last ein und prüft, dass er als Posten erscheint (Δ ≈ seine Kosten allein) und wieder verschwindet; die
+//       STEMPEL-PROBE nennt, wie viel derselben Last der Pass-Stempel sieht. Exit 1: ein Schalter schaltet nicht, der
+//       Zustand ist nicht zurück, ein Fenster änderte die Größe, oder der Selbsttest ist ROT.
 //     MESSFOLGE am ruhigen Messplatz (keine fremde Last, Port 3000 frei; Zeiten nur ruhig, ~3 min je Lauf):
 //       npm start                                           (save-server :4312, eigenes Fenster)
 //       node scripts/werkbank.cjs start --echt              (eigenes Fenster; wartet auf „WERKBANK bereit")
@@ -132,46 +106,32 @@
 //       node scripts/werkbank.cjs zerlegen --nur haupt,tiefenkopie,traa,nachbild,bloom,godrays,kontrast,feldPass,leer --runden 8
 //       node scripts/werkbank.cjs stop
 //   node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
-//                                                           DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): jede GPU-Textur mit
-//                                                           Erzeuger, Schreibern und Lesern je Pass über n Frames der Bank-Runde,
-//                                                           der Inhalt der Farb-Texturen zurück — Urteil über die Täter-Klassen
-//                                                           (ohne Leser · teilbar · volle Auflösung · Tiefe · Format); Exit 1,
-//                                                           solange eine fällt. `--selbsttest` schmuggelt je Klasse einen Täter
-//                                                           in den echten Frame (jeder beim Namen rot, danach restlos fort)
+//       DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): jede GPU-Textur mit Erzeuger, Schreibern und Lesern je Pass über
+//       n Frames der Bank-Runde, der Inhalt der Farb-Texturen zurück — Urteil über die Täter-Klassen (ohne Leser ·
+//       teilbar · volle Auflösung · Tiefe · Format); Exit 1, solange eine fällt. `--selbsttest` schmuggelt je Klasse
+//       einen Täter in den echten Frame (jeder beim Namen rot, danach restlos fort)
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
 //                                    [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
-//                                                           DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter
-//                                                           Frame (Bühne), je gezeichnetem Programm die statischen Kosten
-//                                                           seines erzeugten Fragments je Fragment — Abtastungen unbedingt ·
-//                                                           im Zweig · in Schleifen, Ladungen, Schleifen, Rausch-Aufrufe,
-//                                                           Ops-Schätzung; `--ordner` legt das WGSL ab. `--stoff` hält einen
-//                                                           Stoff (STOFFE: boden) gegen sein Budget, `--gegen` stellt ein
-//                                                           gesichertes Programm daneben, `--datei` sichert das jetzige,
-//                                                           `--rauschprobe` misst das Atlas-Rauschen der GPU gegen MaterialX/
-//                                                           das Rausch-Gesetz auf der CPU; `--selbsttest` (ohne Welt) prüft
-//                                                           die Zählung. Exit 1: ein Fehler, kein Programm im Frame, der
-//                                                           Stoff nicht im Frame, ein Budget gebrochen, die Probe ROT
+//       DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm die
+//       statischen Kosten seines erzeugten Fragments je Fragment — Abtastungen unbedingt · im Zweig · in Schleifen,
+//       Ladungen, Schleifen, Rausch-Aufrufe, Ops-Schätzung; `--ordner` legt das WGSL ab. `--stoff` hält einen Stoff
+//       (STOFFE: boden) gegen sein Budget, `--gegen` stellt ein gesichertes Programm daneben, `--datei` sichert das
+//       jetzige, `--rauschprobe` misst das Atlas-Rauschen der GPU gegen MaterialX/das Rausch-Gesetz auf der CPU;
+//       `--selbsttest` (ohne Welt) prüft die Zählung. Exit 1: ein Fehler, kein Programm im Frame, der Stoff nicht im
+//       Frame, ein Budget gebrochen, die Probe ROT
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
-//                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
-//                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
-//                                                           je Erzeuger + gpu-bank gegen den Haushalt und die Ratsche
-//                                                           (spec/profiband/, scripts/lib/band-urteil.cjs) → Tabelle
-//                                                           Ist/Soll/Täter, BAND (Befehle · Dreiecke · VRAM · GPU-ms)
-//                                                           und LINSE; Exit 1, solange eins ROT ist. `--ort` urteilt gegen
-//                                                           die Ratsche des Orts × Geräts × Sicht (der Adapter-Text und der
-//                                                           Kamera-Modus wählen sie, `umstellen --sicht ego|third` stellt
-//                                                           sie; ohne Ort: die Mess-Wiese) und nennt seine Soll-Zeilen
+//       DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau ruht), n Proben (Maximum je Klasse × Stufe × Pass) +
+//       VRAM je Erzeuger + gpu-bank gegen den Haushalt und die Ratsche (spec/profiband/, scripts/lib/band-urteil.cjs) →
+//       Tabelle Ist/Soll/Täter, BAND (Befehle · Dreiecke · VRAM · GPU-ms) und LINSE; Exit 1, solange eins ROT ist.
+//       `--ort` urteilt gegen die Ratsche des Orts × Geräts × Sicht (der Adapter-Text und der Kamera-Modus wählen sie,
+//       `umstellen --sicht ego|third` stellt sie; ohne Ort: die Mess-Wiese) und nennt seine Soll-Zeilen
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
-//                                                           DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten GPU
-//                                                           an EINEM Ort × Gerät × Sicht und EINER Version, eingeschwungen,
-//                                                           Erst- und Zweit-Boot — die Hülle zieht nach (setzt, senkt, hebt
-//                                                           nie), nur bei sauberer LINSE; `--neu` = der RE-MINT (K26): die
-//                                                           Ratsche wird die Hülle, auch nach oben, jede gehobene Zeile beim
-//                                                           Namen
+//       DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten GPU an EINEM Ort × Gerät × Sicht und EINER
+//       Version, eingeschwungen, Erst- und Zweit-Boot — die Hülle zieht nach (setzt, senkt, hebt nie), nur bei sauberer
+//       LINSE; `--neu` = der RE-MINT (K26): die Ratsche wird die Hülle, auch nach oben, jede gehobene Zeile beim Namen
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE: jede WebGPU-Validierung (Device-Meldung mit
-//                                                           Pass) und jeder Draw ohne gesetzten Vertex-Slot, mit Pipeline,
-//                                                           Pass und three-Objekt (scripts/lib/gpu-fehler.cjs); nur nach
-//                                                           `start --gpu-fehler` (sie hüllt jeden Draw — nie mit Zeit-Läufen)
+//       Pass) und jeder Draw ohne gesetzten Vertex-Slot, mit Pipeline, Pass und three-Objekt
+//       (scripts/lib/gpu-fehler.cjs); nur nach `start --gpu-fehler` (sie hüllt jeden Draw — nie mit Zeit-Läufen)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (Scratch, beim `stop` gelöscht) — der erste Boot ist
@@ -260,14 +220,29 @@ function sollIstSchreiben(ziele, messung) {
     fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
     return `${liste.join(", ")} → spec/abnahme/soll-tafel.json`;
 }
+// DIE POSE IN DIE MATRIX (S2, abnahme-urteil `spawnZellen`): der Abdruck JEDER Quelle der Tafel (jede Zelle liest dieselbe Pose),
+// eine Neumessung ersetzt ihre Pose; die Pose muss eine der Matrix sein
+function spawnSchreiben(pose, messung) {
+    const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
+    const sp = t.spawn;
+    const [sicht, uhr] = String(pose).split("@");
+    if (!sp || !sp.sichten.includes(sicht) || !sp.uhren.includes(Number(uhr)))
+        throw new Error(`spawn ${pose}: keine Pose der Matrix (${sp ? sp.sichten.join("|") + " @ " + sp.uhren.join("|") : "die Tafel trägt keine"})`);
+    messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
+    messung.quellen = Object.fromEntries([...new Set(t.klassen.flatMap((k) => k.quellen || []))].map((d) => [d, pruefsumme(d)]));
+    sp.messung = Object.assign({}, sp.messung, { [`${sicht}@${Number(uhr)}`]: messung });
+    fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
+    return `spawn ${sicht}@${Number(uhr)} → spec/abnahme/soll-tafel.json`;
+}
 // DIE TAFEL IN IHRER FORM (F1 + L2, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile, und jede Teil-Klasse einer Messung
-// (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
-// Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
+// (`klassen` unter einem `werkzeug`) und jede Pose der Posen-Matrix (`messung` unter `uhren`, S2) steht auf EINER Zeile — eine
+// Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
 function tafelText(v, ein = "") {
     if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return `[${v.map((x) => JSON.stringify(x)).join(", ")}]`;
     if (!v || typeof v !== "object") return JSON.stringify(v);
     const innen = ein + "    ";
-    const jeZeile = (k) => k === "klassen" && v.werkzeug && v[k] && typeof v[k] === "object" && !Array.isArray(v[k]);
+    const jeZeile = (k) =>
+        ((k === "klassen" && v.werkzeug) || (k === "messung" && v.uhren)) && v[k] && typeof v[k] === "object" && !Array.isArray(v[k]);
     const wert = (k) =>
         jeZeile(k) && Object.keys(v[k]).length
             ? "{\n" +
@@ -1687,6 +1662,7 @@ async function starte() {
             ctx.putImageData(img, 0, 0);
             return {
                 kamera: auf.abnahme.pose.kamera.map((v) => +v.toFixed(2)),
+                ferne: r._ankunftsFerne(), // die Ankunft gleitet, bis sie 1 ist (B2) — die Matrix misst nur die angekommene Pose
                 abnahme: auf.abnahme,
                 hell: +(l / n).toFixed(1),
                 kontrast: +(k2 / (2 * n)).toFixed(2),
@@ -1903,26 +1879,26 @@ async function starte() {
                     }
                     // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`)
-                    if (b.ist) {
-                        if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`) ODER IN DIE POSEN-MATRIX (S2, `spawn`:
+                    // die Pose `<sicht>@<uhr>` in `tafel.spawn.messung`, die Abnahme des Bilds reist mit) — EIN Schreiber der
+                    // Messung. Das Bild liegt beim Namen des Ziels unter artifacts/soll-tafel/ (K63-n8, `bildPfadFehler`; nie im
+                    // Scratch), kopiert erst, wenn die Tafel die Messung nahm; mehrere Ziele (D8, `--ist tor-fern:L1,tor-bunt:L1`):
+                    // das erste trägt den Schuss, jedes weitere nennt ihn (W1-n1, `sollIstSchreiben`)
+                    if (b.ist || b.spawn) {
                         const kl = o.klasse;
-                        if (!Object.keys(kl.klassen).length)
+                        if (!kl) throw new Error(`${b.ist ? "--ist" : "spawn"} braucht --klasse (die Teilung des Bilds)`);
+                        if (b.ist && !Object.keys(kl.klassen).length)
                             throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
-                        // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
-                        // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
-                        // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
-                        // MEHRERE ZIELE (D8, `--ist tor-fern:L1,tor-bunt:L1,tor-ziel:L1`): derselbe Schuss misst je Ziel sein
-                        // Maß — das erste Ziel trägt den Schuss, jedes weitere nennt ihn (W1-n1, `sollIstSchreiben`)
-                        const ziele = String(b.ist).split(",").filter(Boolean);
-                        const ablage = sollAblage(ziele[0], ".png");
-                        const messung = () => ({
+                        const name = b.ist ? String(b.ist).split(",")[0] : `spawn-${String(b.spawn).replace("@", "-")}`;
+                        const ablage = sollAblage(name, ".png");
+                        const messung = {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
                             stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
                             geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
                             leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
                             kamera: o.kamera,
+                            ferne: o.ferne,
                             ausdruck: kl.ausdruck,
                             schwelle: kl.schwelle,
                             rauschen: kl.rauschen,
@@ -1931,11 +1907,16 @@ async function starte() {
                             abstand: kl.abstand,
                             gesicht: kl.gesicht || null,
                             bild: path.relative(root, ablage).split(path.sep).join("/"),
-                        });
-                        o.ist = sollIstSchreiben(b.ist, messung());
-                        if (ablage !== datei) {
+                        };
+                        if (b.spawn) {
+                            const ab = (messung.abnahme = Object.assign({}, o.abnahme, { bild: Object.assign({}, o.abnahme.bild) }));
+                            for (const k of ["klasse", "zeile"]) delete ab[k];
+                            delete ab.bild.kanten;
+                        }
+                        o.ist = b.ist ? sollIstSchreiben(b.ist, messung) : spawnSchreiben(b.spawn, messung);
+                        if (path.resolve(ablage) !== path.resolve(datei)) {
                             fs.copyFileSync(datei, ablage);
-                            fs.copyFileSync(kl.maske, sollAblage(ziele[0], ".maske.png"));
+                            fs.copyFileSync(kl.maske, sollAblage(name, ".maske.png"));
                         }
                     }
                     const begleit = datei.replace(/\.png$/i, "") + ".abnahme.json";
@@ -3076,7 +3057,65 @@ async function starte() {
             ist: opt("--ist"),
             fov: opt("--fov"),
         });
-    else if (cmd === "methode")
+    else if (cmd === "spawn") {
+        // DIE POSEN-MATRIX DES SPAWNS (S2): je Sicht × Uhr EIN Schuss als Messung der Pose, danach das Urteil der Zellen
+        const AU = require("./lib/abnahme-urteil.cjs");
+        const urteil = () => {
+            const u = AU.spawnZellen(JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8")), sollQuelle());
+            for (const f of u.fehler) console.log(`BRUCH ${f}`);
+            for (const z of u.zellen) console.log(`  ${AU.spawnZelleText(z)}`);
+            if (u.abwesend.length) console.log(`  zeichnet zu keiner Uhr (keine Zelle): ${u.abwesend.join(" · ")}`);
+            console.log(`\nA AM SPAWN: ${u.gruen}/${u.gesamt} Zellen GRÜN (K5, Posen-Matrix spec/abnahme/soll-tafel.json spawn)`);
+            process.exit(u.fehler.length || u.gruen < u.gesamt ? 1 : 0);
+        };
+        if (argv.includes("--urteil")) return urteil();
+        const tafel = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8")),
+            sp = tafel.spawn;
+        const sichten = opt("--sicht") ? opt("--sicht").split(",") : sp.sichten;
+        const uhren = opt("--uhr") != null ? opt("--uhr").split(",").map(Number) : sp.uhren;
+        const klasse = [...new Set(Object.values(AU.spawnAusdruecke(tafel)))].map((a) => `(?:${a})`).join("|");
+        for (const sicht of sichten) {
+            await rufe("/umstellen", { ort: sp.ort, sicht: sicht === "oben" ? "third" : sicht });
+            const p = (
+                await rufe("/eval", {
+                    code: "const c = r.state.camera, d = c.getWorldDirection(new T.Vector3()); return { c: c.position.toArray(), d: d.toArray(), s: r.state.playerMesh.position.toArray() };",
+                })
+            ).ergebnis;
+            // Ego und Third: Ort und Blick der Kamera des Spiels (das Ziel auf dem Blick, am Spieler bzw. 8 m vor dem Auge);
+            // oben: 30 m über dem Spieler, 25 m hinter ihm auf seinem Blick, das Ziel der Spieler
+            let von = p.c,
+                nach;
+            if (sicht === "oben") {
+                const h = Math.hypot(p.d[0], p.d[2]) || 1;
+                von = [p.s[0] - (p.d[0] / h) * sp.oben.zurueck, p.s[1] + sp.oben.hoehe, p.s[2] - (p.d[2] / h) * sp.oben.zurueck];
+                nach = [p.s[0], p.s[1] + 1, p.s[2]];
+            } else {
+                const weit = sicht === "third" ? Math.hypot(...p.s.map((v, i) => v - p.c[i])) : 8;
+                nach = p.c.map((v, i) => v + p.d[i] * weit);
+            }
+            for (const uhr of uhren) {
+                const o = await rufe("/bild", {
+                    px: von[0],
+                    py: von[1],
+                    pz: von[2],
+                    lx: nach[0],
+                    ly: nach[1],
+                    lz: nach[2],
+                    uhr,
+                    klasse,
+                    abstand: true,
+                    spieler: sicht !== "ego",
+                    wahl: 0,
+                    ziel: sicht === "ego" ? "Blickziel" : "spieler",
+                    spawn: `${sicht}@${uhr}`,
+                    datei: path.join(root, "artifacts", "soll-tafel", `spawn-${sicht}-${uhr}.png`),
+                });
+                console.log(`${sicht}@${uhr}: ${o.abnahme || JSON.stringify(o).slice(0, 400)} (${o.gesamtMs} ms)`);
+                if (!o.ist) process.exit(1);
+            }
+        }
+        return urteil();
+    } else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {

@@ -3,11 +3,10 @@
 // NAMEN. Jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON, Null-Renderer) und misst seine Wirkung;
 // das Bild der Ankunft beweist die echte GPU (Bild-Paare vorher/nachher), diese Linse die Mechanik.
 //
-//   L2a DAS ERSTE WELTBILD — `#ladeschirm` steht im HTML ab dem ersten Bild der Seite (kein `hidden`, über allem) und
-//       weicht nur über `_ankunftsBild`: solange dem Weltbild ein Term fehlt (Boden, Horizont, Leib, Buch, Bäume und Bauten
-//       der Mesh-Zone, Pflanzung, Streu, ferne Karten, Dorf), bleibt er und nennt die Lücke; ruht sie, weicht er laut (WARN).
-//       Jeder Fall wird hergestellt, einer, der fehlt, ist ROT bei seinem Grund (`ohneFall`). DIE ANKUNFT AUS DER FERNE (B2):
-//       bis zum Bild wünscht jedes Ding seine billigste ganze Stufe (Baum Karte, Bau Grobstufe), danach verfeinert es.
+//   L2a DER LADESCHIRM — `#ladeschirm` steht im HTML ab dem ersten Bild der Seite (kein `hidden`, über allem), die Schleife
+//       fragt `_ankunftsBild`, hinter ihm gehört keine Taste der Welt, er weicht ganz aus dem Layout; der Rang der Foundry-
+//       Schlange (B3d), DIE ANKUNFT AUS DER FERNE (B2) und der Vorrat (K30). OB DAS ERSTE BILD HALB IST, urteilt der Richter
+//       außen (S2, gate:ankunft:echt: Eingabe + Bild) — die Fall-Batterie und der Rundblick aus den eigenen Termen fielen.
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -50,72 +49,13 @@ function ladeschirmVerdict(m) {
         if (m.htmlVersteckt) out.push("der Ladeschirm steht im HTML versteckt");
         if (!(m.zIndex >= 1000000)) out.push(`der Ladeschirm liegt unter der UI (z-index ${m.zIndex})`);
     }
-    const f = m.faelle || {};
-    if (f.fehler) return out.concat([f.fehler]);
-    // Ein Fall, den die Probe nicht herstellen konnte, ist ROT beim Grund, den sie nennt (`ohneFall`), nie still
-    // (Befund 09.10.: der Streu-Fall fehlte je nach Boot-Takt, CI 37942425121).
-    const ohne = (k) => `${(m.ohneFall || {})[k] || "die Probe stellte den Fall nicht her und nennt keinen Grund"} (Vorbedingung)`;
-    // eine Lücke hält den Ladeschirm und die Stand-Zeile nennt sie
-    for (const [k, name, wort] of [
-        ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/],
-        ["baumUngebaut", "mit einem Baum im Blick ohne Gestalt", /Bäume und Bauten/],
-        ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
-        ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/],
-        ["karteOffen", "mit der offenen Karte eines Baums im Blick", /ferne Bäume/],
-        ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
-        ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
-        ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
-        ["pflanzung", "mit einem gepflanzten Baum im Blick, der noch nicht steht", /gepflanzt/],
-        ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
-        ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
-        ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
-        ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
-        ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
-    ]) {
-        const z = f[k];
-        if (!z) out.push(`${name}: ${ohne(k)}`);
-        else if (z.weg) out.push(`${name} weicht der Ladeschirm (das halbe Weltbild)`);
-        else if (!wort.test(z.stand || "")) out.push(`${name} nennt die Stand-Zeile die Lücke nicht („${z.stand}")`);
-    }
-    // DAS WELTBILD IST DER BLICK (B3d): ein Loch hinter dem Spieler hält das erste Bild nie, der Rang der Foundry-Schlange
-    // stellt vor dem Bild den Blick vor die Nähe und danach die Nähe rundum, und gleich nach der Kontrolle zeigt der Rundblick
-    // kein Loch
-    for (const [k, name] of [["baumHinten", "mit einem Baum hinter dem Spieler ohne Gestalt"], ["karteHinten", "mit der offenen Karte eines Baums hinter dem Spieler"], ["pflanzungHinten", "mit einem gepflanzten Baum hinter dem Spieler"]])
-        if (!f[k]) out.push(`${name}: ${ohne(k)}`);
-        else if (!f[k].weg) out.push(`${name} hält der Ladeschirm („${f[k].stand}") — das erste Bild wartet auf das, was der Spieler nicht sieht (\`_weltbildLuecken\`)`);
+    if (m.fehler) return out.concat([m.fehler]);
+    // DAS WELTBILD IST DER BLICK (B3d): der Rang der Foundry-Schlange stellt vor dem Bild den Blick vor die Nähe und danach
+    // die Nähe rundum
     const rg = m.rang;
     if (!rg || !rg.vorBild || !rg.nachBild) out.push("der Rang der Foundry-Schlange: keine Probe (Vorbedingung)");
     else if (rg.vorBild !== "blick") out.push(`vor dem ersten Bild sendet die Pumpe „${rg.vorBild}" an eine Bahn mit einem Auftrag im Flug statt nur des Auftrags im Blick — außer Blick wartet auf eine leere Bahn (_foundryPumpe, _blickRang)`);
     else if (rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
-    const rb = m.rundblick;
-    if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
-    else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
-    // DIE TERM-DECKUNG (K60): jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
-    // Terme der Liste
-    const terme = m.terme;
-    if (!Array.isArray(terme) || !terme.length)
-        out.push("die Terme des ersten Weltbilds fehlen (`WELTBILD_TERME`) — die Linse sieht nicht, was das Bild hält");
-    else {
-        const gedeckt = new Set();
-        for (const [k, z] of Object.entries(f)) {
-            for (const t of (z && z.terme) || []) {
-                if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
-                else if (!z.weg) gedeckt.add(t);
-            }
-        }
-        for (const t of terme)
-            if (!gedeckt.has(t)) out.push(`der Term „${t}“ des ersten Weltbilds hat keinen Fall, der den Ladeschirm hält (L2a)`);
-    }
-    if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot && m.fehltNachBoot.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
-    if (!f.lueckeRuht) out.push(`eine ruhende Lücke: ${ohne("lueckeRuht")}`);
-    else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
-    else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
-    if (!f.lueckeArbeitet) out.push(`eine arbeitende Lücke: ${ohne("lueckeArbeitet")}`);
-    else if (f.lueckeArbeitet.weg)
-        out.push("eine arbeitende Lücke weicht wie eine ruhende (das halbe Weltbild unter Last, Prüfung K60-1 m1-6B)");
-    if (!f.lueckeFlackert) out.push(`eine flackernde Lücke: ${ohne("lueckeFlackert")}`);
-    else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
-    else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
     const g = m.weichtGanz;
     if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
     else if (!g.hidden || g.display !== "none" || g.animationen)
@@ -151,11 +91,6 @@ function ladeschirmVerdict(m) {
     else if (v.fehler) out.push(`der Vorrat: ${v.fehler} (Vorbedingung)`);
     else {
         const liste = (v.ohneLeser || []).join(", ") || "keine";
-        if (v.fehltNeu && v.fehltNeu.length)
-            out.push(
-                `während der Vorrat läuft, wartet das erste Weltbild („${v.fehltNeu.join(" · ")}") auf Aufträge ohne Leser des ` +
-                    `ersten Frames: ${liste}`
-            );
         if (v.karten > 0)
             out.push(
                 `der Vorrat bestellt ${v.karten} Karten nach der Buchgröße (${(v.kartenBsp || []).join(", ")}), das erste Weltbild ` +
@@ -394,9 +329,8 @@ async function probe(arg) {
     await tick(30, 30);
     // ── L2a: das erste Weltbild ──
     try {
-        const m = { gestartet: false, faelle: {}, ohneFall: {} };
+        const m = { gestartet: false };
         out.lade = m;
-        m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
         // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
@@ -405,168 +339,21 @@ async function probe(arg) {
         m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
         st._weltbildDa = daVor;
         if (ls && typeof r._ankunftsBild === "function") {
-            // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick und wieder vor den Fällen: die
-            // Mesh-Zone wächst im Rundblick, ein Baum im Werden hielte jeden Fall (lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
+            // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s), vor und nach dem ersten Bild (die Mesh-Zone
+            // wächst danach, lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
             const steht = async (dlW = performance.now() + 90000) => { while (r._weltbildFehlt().length && performance.now() < dlW) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
-            m.fehltNachBoot = await steht();
-            // DER RUNDBLICK (B3d): nach der Kontrolle (der EINE Schreiber, der Nachlauf beginnt) dreht die Kamera in RUNDBLICK_BILDER
-            // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle
-            const rb = (m.rundblick = { N: r.constructor.RUNDBLICK_BILDER, loecher: 0, erstes: null, rundumAb: null });
-            r._weltbildSteht();
-            for (let i = 1, yaw0 = st.yaw, Rmin = st.architectureCullingRadius; i <= rb.N && r._imErstenBlick; i++) {
-                st.yaw = yaw0 + (2 * Math.PI * i) / rb.N;
-                await tick(1, 10);
-                const [Rj, L] = [st.architectureCullingRadius, ((st.architectureCullingRadius = Rmin = Math.min(Rmin, st.architectureCullingRadius)), r._weltbildLuecken())];
-                const n = L.reduce((s, l) => s + (l.n || 1), (st.architectureCullingRadius = Rj) && 0);
-                if (n && !rb.erstes) rb.erstes = `Takt ${i} (${Math.round((360 * i) / rb.N)}°): ${L.map((l) => l.satz).join(" · ")}`;
-                [rb.loecher, rb.rundumAb] = [rb.loecher + n, rb.rundumAb != null || st._nachlauf != null ? rb.rundumAb : st._rundumDa ? i : -i];
-            }
             await steht();
-            // der Blick und sein Gegenteil (B3d): die Gier blickt auf einen Punkt bzw. kehrt ihm den Rücken, die Kamera folgt
+            r._weltbildSteht();
+            await steht();
+            // ein Punkt s m vor (s < 0: hinter) dem Spieler auf seinem Blick (B3d)
             const [yawM, p0, merkDa0] = [st.yaw, st.playerMesh.position, st._weltbildDa];
             const vorn = (s) => ({ x: p0.x + s * Math.sin(yawM), y: p0.y, z: p0.z + s * Math.cos(yawM) });
-            const blicke = (x, z, weg) => {
-                const a = r._lodAuge();
-                st.yaw = weg === undefined ? yawM : r._blickGierZu(x - a.x, z - a.z) + (weg ? Math.PI : 0);
-                r._loopCamera(performance.now() / 1000);
-            };
             // der Rang der Foundry-Schlange (`_foundryPumpe` über `_blickRang`): eine Bahn mit einem Auftrag im Flug, vor dem Bild geht nur
             // der Auftrag im Blick hinein (außer Blick nur in eine leere Bahn), danach nah zuerst rundum — der Vorrat ohne Ort (Rang ∞) eingeschlossen
             const pumpe = (da, g = [], f = { ready: true, worker: { postMessage: (x) => g.push(x.presetId) }, pending: new Map([["linse", null]]), reqSeq: 1 }) =>
                 ((st._weltbildDa = da), [["hinten", -20], ["blick", 100], ["vorrat", null]].forEach(([n, s]) => r._foundryAuftrag(f, "linse", { type: "build-asset", presetId: n }, s == null ? null : vorn(s), 45000, "-")), g.join(","));
             m.rang = { vorBild: pumpe(0), nachBild: pumpe(merkDa0 || 1) };
             st._weltbildDa = merkDa0;
-            const stand = () => (document.getElementById("ladeschirm-stand") || {}).textContent || "";
-            // ein Fall: den Ladeschirm wieder stellen, die Lücke schaffen, `_ankunftsBild` fragen, die Lücke schließen
-            const fall = (name, schaffe, heile, vorbereiten) => {
-                ls.hidden = false;
-                ls.classList.remove("weg");
-                st._weltbildDa = 0;
-                st._weltbildLuecke = null;
-                st._weltbildErsteFrage = null;
-                // der Puffer rollt (maxLogEntries): gesucht wird in seinem Ende, vorher und nachher
-                const warnt = () => st.logBuffer.slice(-30).filter((z) => /erste Weltbild steht ohne/.test(z)).length;
-                const w0 = warnt();
-                schaffe();
-                if (vorbereiten) vorbereiten();
-                const terme = typeof r._weltbildLuecken === "function" ? r._weltbildLuecken().map((l) => l.term) : null;
-                r._ankunftsBild();
-                const weg = ls.classList.contains("weg");
-                m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0), terme };
-                heile();
-            };
-            // ein Fall aus Tauschen: je [Objekt, Werte] die Werte setzen, danach jeden alten Wert zurück (ein fehlender fällt wieder)
-            const fallMit = (name, ...paare) => {
-                let zurueck = [];
-                const tausch = ([o, w]) => {
-                    const alt = Object.keys(w).map((k) => [k, Object.prototype.hasOwnProperty.call(o, k), o[k]]);
-                    Object.assign(o, w);
-                    return () => alt.forEach(([k, da, v]) => (da ? (o[k] = v) : delete o[k]));
-                };
-                fall(name, () => (zurueck = paare.map(tausch)), () => zurueck.reverse().forEach((z) => z()));
-            };
-            const nichts = () => {};
-            // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
-            const merkChunk = st.lastPlayerVoxelChunk;
-            fall("ohneBoden", () => (st.lastPlayerVoxelChunk = { cx: 9000, cz: 9000 }), () => (st.lastPlayerVoxelChunk = merkChunk));
-            // (2) ein Baum der Mesh-Zone ohne Gestalt (sein Mesh, seine Instanz beiseite), ab 30 m: im Blick hält er das Bild,
-            // hinter dem Spieler nie (B3d)
-            const pm = st.playerMesh.position;
-            const dP = (a) => Math.hypot(a.position.x - pm.x, a.position.z - pm.z);
-            const baum = st.architectures
-                .filter((a) => a && /^baum_/.test(a.type || "") && r._archIsRendered(a) && dP(a) >= 30)
-                .sort((a, b) => dP(a) - dP(b))[0];
-            let merkBaum = null;
-            const baumWeg = (hinten) => () => {
-                blicke(baum.position.x, baum.position.z, hinten);
-                merkBaum = { mesh: baum.mesh, instanced: baum.instanced };
-                baum.mesh = null;
-                baum.instanced = null;
-            };
-            const baumHer = () => {
-                baum.mesh = merkBaum.mesh;
-                baum.instanced = merkBaum.instanced;
-                blicke();
-            };
-            if (baum) {
-                m.baumD = +dP(baum).toFixed(1);
-                fall("baumUngebaut", baumWeg(false), baumHer);
-                fall("baumHinten", baumWeg(true), baumHer);
-            } else {
-                const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
-                m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
-            }
-            // (3) die Streu-Region des Spielers wartet auf ihr Asset — nach dem Boot steht sie immer (ihr Ort ist in Reichweite)
-            const SC = r.constructor.SCATTER;
-            const regKey = `${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`;
-            const reg = st.scatterRegions ? st.scatterRegions.get(regKey) : null;
-            if (reg) fall("streuWartet", () => (reg._deferredFoundry = true), () => delete reg._deferredFoundry);
-            else
-                m.ohneFall.streuWartet =
-                    `die Streu-Region des Spielers (${regKey}) steht nach dem Boot nicht (Regionen-Karte: ` +
-                    (st.scatterRegions ? `${st.scatterRegions.size} Regionen` : "keine, der Streamer lief nie") +
-                    (m.fehltNachBoot && m.fehltNachBoot.length ? `; nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")})` : "; das Weltbild galt ohne sie als fertig)");
-            // (3b) der Streamer lief noch nie (keine Regionen-Karte) — der Fall des Befunds, in jedem Boot hergestellt
-            const merkKarte = st.scatterRegions;
-            fall("streuNie", () => delete st.scatterRegions, () => (st.scatterRegions = merkKarte));
-            // (4) die Karte eines fernen Baums ist offen: ihr Leser steht 60 m vor bzw. hinter dem Spieler (sein Rang, B3d)
-            const [zellen, K] = [r._impostorAtlas().zellen, "linse:karte"];
-            for (const [k, s] of [["karteOffen", 60], ["karteHinten", -60]])
-                fall(k, () => zellen.set(K, { key: K, _bedarfD2: r._foundryAuftragD2(vorn(s)) }) && (r._impostorBakeQueue = (r._impostorBakeQueue || []).concat([K])), () => zellen.delete(K) && (r._impostorBakeQueue = r._impostorBakeQueue.filter((q) => q !== K)));
-            // (4b) die Welt fehlt (noch kein Spieler)
-            const merkPm = st.playerMesh;
-            fall("weltFehlt", () => (st.playerMesh = null), () => (st.playerMesh = merkPm));
-            // (4b') der Leib des Spielers steht aus (K60-2: sein Guss kommt aus dem Faden, `_leibBereit`)
-            const merkLeib = st._deferredAvatarSoul;
-            fall("leibFehlt", () => (st._deferredAvatarSoul = "linse:leib"), () => (st._deferredAvatarSoul = merkLeib));
-            // (4c) das Buch der Studios ist zu
-            const fo = r._foundry;
-            const merkBuch = fo ? fo.ready : undefined;
-            if (fo) fall("buchZu", () => (fo.ready = false), () => (fo.ready = merkBuch));
-            else m.ohneFall.buchZu = "die Foundry fehlt nach dem Boot";
-            // (4d) ein gepflanzter Baum der Mesh-Zone steht noch in der Pflanz-Schlange (`pendingVegSpawns`, K60)
-            for (const [k, s] of [["pflanzung", 0], ["pflanzungHinten", -60]]) {
-                const pflanze = { name: "linse:pflanzung", position: vorn(s), opts: {} };
-                fall(k, () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).concat([pflanze])), () => (st.pendingVegSpawns = st.pendingVegSpawns.filter((t) => t !== pflanze)));
-            }
-            // (4d') der Chunk des Spielers liegt im Laub-Radius und wartet auf seine Saat (`pendingFoliageChunks`, K60-3: der
-            // Radius wuchs, sein Wald war noch nicht in der Schlange)
-            const sp = r._voxelChunkConfig().span;
-            const saatKey = `${Math.floor(pm.x / sp)},${Math.floor(pm.z / sp)}`;
-            const hatteSaat = !!(st.pendingFoliageChunks && st.pendingFoliageChunks.has(saatKey));
-            if (st.voxelChunks && st.voxelChunks.has(saatKey) && !hatteSaat)
-                fall(
-                    "saat",
-                    () => (st.pendingFoliageChunks = st.pendingFoliageChunks || new Set()).add(saatKey),
-                    () => st.pendingFoliageChunks.delete(saatKey)
-                );
-            else
-                m.ohneFall.saat = hatteSaat
-                    ? `der Chunk des Spielers (${saatKey}) wartet nach dem Boot noch auf seine Saat`
-                    : `der Chunk des Spielers (${saatKey}) steht nach dem Boot nicht`;
-            // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
-            // ist noch nicht voll gezeichnet (`fr.ready`)
-            fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
-            // (4f) DAS DORF (K60-4): fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
-            const dorfAn = [window, { __anazhAutoSettlement: true }];
-            fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
-            const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
-            fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: { plan: dorfPlan, origin: { x: pm.x, z: pm.z }, idx: 0, cellKey: "start" } }]);
-            // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
-            const wmD = st.worldMeta || (st.worldMeta = {});
-            const ohneStart = Object.assign({}, wmD.settlementCells || {});
-            delete ohneStart.start;
-            const gMD = typeof r._genesisMitte === "function" ? r._genesisMitte() : null;
-            const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
-            const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
-            const kanal = typeof r._autoSettlementChannelLive === "function" && r._autoSettlementChannelLive();
-            if (amOrt && kanal) fallMit("dorfFaellig", dorfAn, [wmD, { settlementCells: ohneStart }], [r, { _autoSettlementStartHopeless: false }]);
-            else
-                m.ohneFall.dorfFaellig = !kanal
-                    ? "das Buch trägt keinen Dorf-Kanal (`_autoSettlementChannelLive`)"
-                    : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
-            // (5) alles steht
-            fall("allesSteht", nichts, nichts);
             // (5b) DIE ANKUNFT AUS DER FERNE (B2): vor dem Bild die billigste ganze Stufe, danach Distanz und Grenzen wie der Takt
             const A = (m.ankunft = { n: 0, fein: [], zwilling: [] });
             const [merkDa, R, auge] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge()];
@@ -584,33 +371,6 @@ async function probe(arg) {
                 A[da ? "nahDanach" : "nahKarte"] = r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m
             }
             st._weltbildDa = merkDa;
-            // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
-            if (baum)
-                fall("lueckeRuht", baumWeg(false), baumHer, () => {
-                    const sig = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
-                    st._weltbildLuecke = sig;
-                    st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
-                });
-            // (6b) eine Lücke ARBEITET (K60, Prüfung K60-1 m1-6B): ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
-            // ist etwas unterwegs (das Buch im bootenden Studio-Faden) — der Ladeschirm bleibt, nie das halbe Bild unter Last
-            if (fo && fo.worker)
-                fall(
-                    "lueckeArbeitet",
-                    () => (fo.ready = false),
-                    () => (fo.ready = merkBuch),
-                    () => {
-                        st._weltbildLuecke = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
-                        st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
-                    }
-                );
-            else m.ohneFall.lueckeArbeitet = "kein Studio-Faden nach dem Boot";
-            // (7) eine Lücke flackert (Gegenprüfung Runde 2: ihre Zahl wechselt je Frage, die Ruhe-Uhr beginnt je Wechsel neu)
-            // seit über einer Minute: der Ladeschirm weicht LAUT
-            if (baum)
-                fall("lueckeFlackert", baumWeg(false), baumHer, () => {
-                    st._weltbildLuecke = "eine andere Zahl";
-                    st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
-                });
             // (8) Tasten hinter dem Ladeschirm (Gegenprüfung Runde 2: W lief den Spieler vom Ankunfts-Ort, Enter öffnete das
             // Gespräch dahinter): solange er steht, gehört keine Taste der Welt
             {
@@ -678,7 +438,6 @@ async function probe(arg) {
                         v.karten++;
                         if (v.kartenBsp.length < 4) v.kartenBsp.push(`${a[0]}|${a[1]}`);
                     });
-                    const vor = r._weltbildFehlt();
                     f._vorrat = false;
                     let lauf = null;
                     // der Vorrat startet in der Ankunft: das erste Weltbild steht noch nicht
@@ -688,7 +447,6 @@ async function probe(arg) {
                         lauf = r._foundryPrefetchLibrary();
                         v.laeuft = !!f._vorrat;
                         v.phaseStart = f._vorrat;
-                        v.fehltNeu = r._weltbildFehlt().filter((z) => !vor.includes(z));
                         // die Streu-Weiche: eine neue Region fern jeder bestehenden, Scheibe mit abgelaufener Frist
                         const SC = r.constructor.SCATTER;
                         const p = st.playerMesh.position;
@@ -739,7 +497,7 @@ async function probe(arg) {
             await sleep(800);
             if (!st._weltbildDa) r._weltbildSteht();
             ls.classList.add("weg");
-        } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
+        } else m.fehler = ls ? "kein _ankunftsBild" : "kein Ladeschirm";
         m.gestartet = true;
     } catch (e) {
         out.lade = Object.assign(out.lade || {}, { err: (e && e.stack) || String(e) });
@@ -1555,28 +1313,6 @@ async function probe(arg) {
 (async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
-        const l2aFaelle = {
-            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
-            baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
-            streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
-            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
-            karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
-            ...Object.fromEntries(["baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, { weg: true, stand: "", warn: 0, terme: [] }])),
-            weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] },
-            buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
-            leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
-            pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
-            saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
-            horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
-            dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] },
-            dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] },
-            dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
-            allesSteht: { weg: true, stand: "", warn: 0 },
-            lueckeRuht: { weg: true, stand: "", warn: 1 },
-            lueckeFlackert: { weg: true, stand: "", warn: 1 },
-            lueckeArbeitet: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
-        };
         const faelle = [
             [
                 "L2a",
@@ -1589,103 +1325,47 @@ async function probe(arg) {
                     nachBootWeg: true,
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
-                    faelle: l2aFaelle,
-                    terme: l2aTerme,
                     rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat" },
-                    rundblick: { N: 240, loecher: 0, erstes: null },
                     ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
-                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
+                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
-                    ["ein Loch hinter dem Spieler hält das erste Bild (B3d vorher, OMEN 1610: 33,4 von 71 Bahn-s außer Blick)", { faelle: Object.assign({}, l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
-                    ["ein Loch im Blick weicht (B3d)", { faelle: Object.assign({}, l2aFaelle, { karteOffen: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
-                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen" } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
                     ["der Rang ohne Blick (B3d vorher, Radeon kalt: 0 wartend, 33 im Werk)", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild (B3d, CI 39003506058: gate:takt im Flug 1 von 12)", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
-                    ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
                     [
                         "der Vorrat stellt sich in der Ankunft vor die Leser (K30)",
-                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
                         "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)",
                     ],
-                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt nie"],
-                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat endet nicht"],
-                    [
-                        "das Tor wartet auf den Vorrat (K30, Grok R11: kalt 25–30 s)",
-                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
-                        "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0",
-                    ],
+                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt nie"],
+                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat endet nicht"],
                     [
                         "die Streu wartet auf den Vorrat statt auf ihr Asset (K30, Radeon: 4 Wald-Stücke 15 s nach dem Vorrat)",
-                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], streu: { aufgeschoben: true, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, streu: { aufgeschoben: true, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
                         "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn",
                     ],
-                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt 14 Karten"],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt 14 Karten"],
                     [
                         "der Merker sagt „an“, während der Vorrat auf das Bild wartet (K30-N1, Radeon: „Vorrat läuft“ 8–44 s, die erste Bestellung bei 45 s)",
-                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } },
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } },
                         "solange der Vorrat auf das erste Bild wartet, sagt sein Merker `f._vorrat` true",
                     ],
                     [
                         "der Vorrat bestellt in der Warte-Phase (K30-N1)",
-                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] } },
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] } },
                         "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe",
                     ],
-                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
+                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
-                    [
-                        "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
-                        {
-                            faelle: Object.assign({}, l2aFaelle, { streuWartet: undefined }),
-                            ohneFall: { streuWartet: "die Streu-Region des Spielers (0,0) steht nach dem Boot nicht (Regionen-Karte: keine, der Streamer lief nie; das Weltbild galt ohne sie als fertig)" },
-                        },
-                        "mit einer Streu-Region, die auf ihr Asset wartet: die Streu-Region des Spielers (0,0) steht nach dem Boot nicht",
-                    ],
-                    [
-                        "ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)",
-                        { terme: l2aTerme.concat(["zauber"]) },
-                        "der Term „zauber“ des ersten Weltbilds hat keinen Fall",
-                    ],
-                    [
-                        "ein Fall nennt einen Term außerhalb der Liste",
-                        { faelle: Object.assign({}, l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) },
-                        "der Fall pflanzung nennt den Term „saat“",
-                    ],
-                    ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
                     ["das Tor wartet auf seine L0 (B2 vorher, Radeon kalt an Genesis: 7 Tor-L0)", { ankunft: { n: 40, fein: ["geisttor 9 m L0"], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: geisttor 9 m L0"],
                     ["der nahe Baum vor dem Bild ohne Karte", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "ein naher Baum wünscht vor dem ersten Weltbild L0"],
                     ["die Gestalt verfeinert nie", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 2 } }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
                     ["der Kalt-Schätzer als Zwilling (B2 vorher: Baum-Distanzen 12/26 m am Tor)", { ankunft: { n: 40, fein: [], zwilling: ["geisttor 11 m L0"], nahKarte: 2, nahDanach: 0 } }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
                     ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
-                    [
-                        "das erste Weltbild ohne Dorf (Prüfung K60-3: 4 von 5 Kalt-Läufen, Nicht-Baum-Einträge 107 statt 134)",
-                        { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) },
-                        "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm",
-                    ],
-                    [
-                        "das fällige Start-Dorf ohne Fall",
-                        { faelle: Object.assign({}, l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } },
-                        "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort",
-                    ],
-                    [
-                        "eine arbeitende Lücke weicht (Prüfung K60-1 m1-6B: das Buch kam nach 19,6 s, der Ladeschirm wich nach 15 s)",
-                        { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) },
-                        "eine arbeitende Lücke weicht wie eine ruhende",
-                    ],
-                    ["ein Fall ohne Grund", { faelle: Object.assign({}, l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im Blick: die Probe stellte den Fall nicht her und nennt keinen Grund"],
                     ["kein Ladeschirm (Befund)", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter der UI"],
-                    ["stumme Stand-Zeile", { faelle: { ohneBoden: { weg: false, stand: "" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } } }, "ohne Boden unter dem Spieler nennt die Stand-Zeile"],
-                    ["bleibt, wenn alles steht", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: false, stand: "?" }, lueckeRuht: { weg: true, warn: 1 } } }, "steht alles, bleibt der Ladeschirm"],
-                    ["ruhende Lücke hält fest", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: false, warn: 0 } } }, "eine ruhende Lücke hält den Spieler"],
-                    ["ruhende Lücke still", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 0 } } }, "eine ruhende Lücke weicht ohne Wort"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
                     ["Schleife fragt das Weltbild nicht", { schleifeFragt: false }, "die Render-Schleife fragt das Weltbild nicht"],
-                    [
-                        "flackernde Lücke ohne Deckel (Gegenprüfung Runde 2)",
-                        { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 }, lueckeFlackert: { weg: false, warn: 0 } } },
-                        "eine flackernde Lücke hält den Ladeschirm ohne Grenze",
-                    ],
                     ["W hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft W"],
                     ["Enter hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: false, enter: "chat-input", omnibox: false } }, "hinter dem Ladeschirm öffnet Enter"],
                     ["Strg+K hinter dem Ladeschirm (Gelb 2 der dritten Gegenprüfung)", { tastenHinter: { w: false, enter: "BODY", omnibox: true } }, "hinter dem Ladeschirm öffnet Strg+K die Omnibox"],
@@ -1929,16 +1609,11 @@ async function probe(arg) {
     console.log("=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===");
     zeige(
         "L2a",
-        "das erste Bild ist der Ladeschirm, er weicht dem Weltbild im BLICK (Boden, Horizont, Leib; Bäume, Bauten, Streu und Karten im Blick), der Rundblick danach ohne Loch",
+        "das erste Bild ist der Ladeschirm, die Schleife fragt das Weltbild, keine Taste dahinter, der Blick vor der Nähe",
         out.lade,
         ladeschirmVerdict,
         (m) =>
             `im HTML ${m.imHtml} · z ${m.zIndex} · ` +
-            Object.entries(m.faelle || {})
-                .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
-                .join(" · ") +
-            (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
-            (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
