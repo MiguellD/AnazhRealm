@@ -17,6 +17,9 @@
 //   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
 //                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
 //                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
+//   H6 EINE Engine    (S1, W3) jedes trusted Studio ein Modus index.html?studio=<x> der Welt-Engine: keine eigene Shell,
+//                     kein Regal worlds/*/lib/ (three r128), kein eigener WebGLRenderer, Ton, Licht, Szene; ROT in der
+//                     Ratsche EINE_ENGINE, gezählt „N von 12" (18.10.: 1 von 12, gelaende)
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -26,7 +29,7 @@
 //                                                    Werkstatt-Schieber im Stamm, ein eigener Leib im Ofen-Labor, ein
 //                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor)
 //                                                    → jede Wand rot beim Namen
-//   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H5
+//   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H6
 //   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
 //                                                    der Stempel in worlds/tor-ziele.json); LINSE_GPU=software wie die CI
 //   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]
@@ -58,6 +61,21 @@ const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
+// H6 — EINE ENGINE (S1, W3: „das Studio ist eine fremde Engine"): ein trusted Studio ist ein MODUS der Welt-Engine
+// (`index.html?studio=<x>`, Vorbild worlds/gelaende/studio.js:1-23) — der Index lädt worlds/<x>/studio.js, das Studio trägt
+// keine eigene Shell (worlds/<x>/index.html, ein iframe neben der Welt), keine seiner Dateien lädt ein Regal worlds/*/lib/
+// (three r128 + Zusätze, r130) und keine baut einen eigenen Renderer, Look oder eine eigene Szene (toneMapping, Licht,
+// new THREE.Scene): die Bühne ist die Welt (r184, Welt-Licht, Welt-Boden, Neutral). Die Ratsche EINE_ENGINE nennt, wer
+// umgestiegen ist — dort ist jeder Bruch ROT beim Namen, und ein Studio, das die Wand hält, ohne in der Ratsche zu stehen,
+// ist ROT (die Ratsche wächst mit jedem Schnitt); die anderen stehen gezählt mit ihrem ersten Täter (Reihenfolge S1).
+const HAUPT = "index.html";
+const TRUSTED = [...STUDIOS, ...NEBENWELTEN, "gelaende"];
+const EINE_ENGINE = ["gelaende", "garage"];
+const FREMDES_REGAL_HTML = /<script\b[^>]*\bsrc\s*=\s*["'][^"']*\blib\/[\w.-]+\.js/gi;
+const FREMDES_REGAL_JS = /["'`][^"'`\n]*\blib\/[\w.-]+\.js/g;
+const EIGENER_RENDERER = /\bnew\s+THREE\.WebGLRenderer\b/g;
+const EIGENER_LOOK = /\btoneMapping(?:Exposure)?\s*=(?!=)|\bnew\s+THREE\.(?:Directional|Hemisphere|Ambient|Spot|Point|RectArea)Light\b|\bnew\s+THREE\.Scene\s*\(/g;
+const modusTag = (id) => new RegExp(`<script\\b[^>]*\\bsrc\\s*=\\s*["']worlds/${id}/studio\\.js\\b`, "g");
 // H5 — DAS ZIEL-BILD (D8, „Das Tor als Fenster"): jede Welt der Hülle rendert ihr Panorama in IHRER Welt (die Brücke
 // `panorama-bitte` → `AnazhHuelle.panorama`, Labor = Welt), gebacken je SHA ihrer Quellen (`--panorama`) und geliefert als
 // Datei; die Heimat liest sie (stamm `_torZielBuendel`) und bootet nie eine Ziel-Welt. Die Karte `worlds/tor-ziele.json` nennt je
@@ -123,6 +141,7 @@ function baum() {
         }
     }
     for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
+    karte[HAUPT] = fs.readFileSync(path.join(ROOT, HAUPT), "utf8");
     if (fs.existsSync(path.join(ROOT, TOR_ZIELE))) karte[TOR_ZIELE] = fs.readFileSync(path.join(ROOT, TOR_ZIELE), "utf8");
     return karte;
 }
@@ -140,7 +159,7 @@ function pruefe(karte) {
     for (const rel of Object.keys(karte)) {
         const m = /^worlds\/([^/]+)\//.exec(rel);
         const welt = m ? m[1] : null;
-        if (welt === "huelle" || !/\.(html|js)$/.test(rel)) continue;
+        if (rel === HAUPT || welt === "huelle" || !/\.(html|js)$/.test(rel)) continue;
         const ausgenommen = welt && AUSGENOMMEN[welt];
         // H1 — Hand-Regler
         if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) {
@@ -162,6 +181,26 @@ function pruefe(karte) {
     for (const [id, o] of Object.entries(OFEN_STUDIOS))
         for (const r of Object.keys(karte).filter((x) => x.startsWith(`worlds/${id}/`) && x.endsWith(".js")))
             if (!fehltIn(r, o.eigenbau)) rot.push(`H4 ${id}: baut einen eigenen Leib (${stammLib.fehlt.wo}) — ein Zwilling des Ofen-Körpers`);
+    // H6 — EINE Engine: je trusted Studio die Täter beim Namen; ROT nur in der Ratsche, die anderen gezählt
+    zahl.eineEngine = [];
+    zahl.fremd = [];
+    for (const id of TRUSTED) {
+        const t = [];
+        const dateien = Object.keys(karte).filter((r) => r.startsWith(`worlds/${id}/`) && typeof karte[r] === "string");
+        const shell = `worlds/${id}/index.html`;
+        if (dateien.includes(shell)) t.push(`H6 ${id}: eigene Shell ${shell} (ein iframe neben der Welt) — der Modus ist index.html?studio=${id}`);
+        for (const r of dateien) {
+            if (!fehltIn(r, /\.html$/.test(r) ? FREMDES_REGAL_HTML : FREMDES_REGAL_JS))
+                t.push(`H6 ${stammLib.fehlt.wo}: lädt eine fremde three (worlds/*/lib/) — die EINE Engine ist vendor r184`);
+            if (!fehltIn(r, EIGENER_RENDERER)) t.push(`H6 ${stammLib.fehlt.wo}: ein eigener Renderer — der EINE ist der der Welt`);
+            if (!fehltIn(r, EIGENER_LOOK)) t.push(`H6 ${stammLib.fehlt.wo}: ein eigener Look (Ton, Licht, Szene) — die Bühne ist die Welt`);
+        }
+        if (fehltIn(HAUPT, modusTag(id))) t.push(`H6 ${id}: kein Modus (${HAUPT} lädt worlds/${id}/studio.js nicht)`);
+        if (EINE_ENGINE.includes(id)) rot.push(...t);
+        else if (!t.length) rot.push(`H6 ${id}: hält die EINE Engine, steht aber nicht in der Ratsche EINE_ENGINE — trag es ein`);
+        if (t.length) zahl.fremd.push(`${id} (${t[0].replace(/^H6 /, "").split(" — ")[0]})`);
+        else zahl.eineEngine.push(id);
+    }
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -209,6 +248,8 @@ function bericht(zahl) {
     console.log(`  Hand-Regler: ${zahl.handRegler} (die terrain-Familie ohne Ausnahme)`);
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
     console.log(`  Labor = Welt (H4): ${Object.keys(OFEN_STUDIOS).join(", ")} zeigen den Ofen-Körper (keine Ausnahme)`);
+    console.log(`  EINE Engine (H6): ${zahl.eineEngine.length} von ${TRUSTED.length} trusted Studios (${zahl.eineEngine.join(", ") || "—"}), Ratsche ${EINE_ENGINE.join(", ")}`);
+    for (const f of zahl.fremd) console.log(`    fremd: ${f}`);
     console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${STUDIOS.length + NEBENWELTEN.length - Object.keys(OHNE_PANORAMA).filter((id) => !AUSGENOMMEN[id]).length} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
 }
 
@@ -308,6 +349,61 @@ function selbsttest() {
             nach: '"worlds/begegnung-fort/index.html":',
             soll: /^H5 begegnung: steht nicht benannt unter ohne/,
         },
+        {
+            name: "H6 der Gelände-Modus baut einen eigenen Renderer",
+            rel: GELAENDE,
+            vor: 'if (such.get("studio") !== "gelaende") return;',
+            nach: 'if (such.get("studio") !== "gelaende") return;\n    const _r = new THREE.WebGLRenderer({ antialias: true });',
+            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: ein eigener Renderer/,
+        },
+        {
+            name: "H6 der Gelände-Modus zieht three r128 aus dem terrain-Regal nach",
+            rel: GELAENDE,
+            vor: 'if (such.get("studio") !== "gelaende") return;',
+            nach: 'if (such.get("studio") !== "gelaende") return;\n    document.createElement("script").src = "worlds/terrain/lib/three-r128.min.js";',
+            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: lädt eine fremde three/,
+        },
+        {
+            name: "H6 der Gelände-Modus setzt sein eigenes ACES (Garage 1,04)",
+            rel: GELAENDE,
+            vor: 'if (such.get("studio") !== "gelaende") return;',
+            nach: 'if (such.get("studio") !== "gelaende") return;\n    window.__R.toneMappingExposure = 1.04;',
+            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: ein eigener Look/,
+        },
+        {
+            name: "H6 der Index lädt das Gelände-Studio nicht mehr (kein Modus)",
+            rel: HAUPT,
+            vor: '<script src="worlds/gelaende/studio.js',
+            nach: '<script src="worlds/gelaende/studio-fort.js',
+            soll: /^H6 gelaende: kein Modus/,
+        },
+        {
+            name: "H6 eine eigene Shell neben dem Gelände-Modus",
+            rel: "worlds/gelaende/index.html",
+            neu: '<!doctype html><html><body><canvas></canvas><script src="studio.js"></script></body></html>\n',
+            soll: /^H6 gelaende: eigene Shell worlds\/gelaende\/index\.html/,
+        },
+        {
+            name: "H6 die Garage als Modus (die Shell fällt, der Index lädt worlds/garage/studio.js) — die Garage ist grün",
+            rel: HAUPT,
+            vor: '<script src="worlds/gelaende/studio.js',
+            nach: '<script src="worlds/garage/studio.js?v=1" defer></script>\n        <script src="worlds/gelaende/studio.js',
+            dazu: {
+                "worlds/garage/index.html": null,
+                "worlds/garage/garage.js": null,
+                "worlds/garage/studio.js": '(function () {\n    if (new URLSearchParams(location.search).get("studio") !== "garage") return;\n})();\n',
+            },
+            soll: null,
+            nichtRot: /^H6 garage/,
+        },
+        {
+            name: "H6 die klang hält die Wand, steht aber nicht in der Ratsche",
+            rel: HAUPT,
+            vor: '<script src="worlds/gelaende/studio.js',
+            nach: '<script src="worlds/klang/studio.js?v=1" defer></script>\n        <script src="worlds/gelaende/studio.js',
+            dazu: { "worlds/klang/index.html": null, "worlds/klang/klang.js": null, "worlds/klang/studio.js": "(function () {})();\n" },
+            soll: /^H6 klang: hält die EINE Engine, steht aber nicht in der Ratsche/,
+        },
     ];
     let ok = true;
     const basis = pruefe(echt);
@@ -318,12 +414,21 @@ function selbsttest() {
     for (const f of faelle) {
         const t = f.rel && echt[f.rel];
         const am = f.vor instanceof RegExp; // ein Methoden-Kopf am NAMEN (gate:apparat Klinge 3)
-        if (!t || !(am ? f.vor.test(t) : t.includes(f.vor))) {
-            console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${f.rel}: ${String(f.vor).slice(0, 40)})`);
+        // `neu`: eine Datei, die der Baum nicht trägt (sie darf nicht schon stehen); `dazu`: weitere Dateien (null = fällt)
+        if (f.neu != null ? t != null : !t || !(am ? f.vor.test(t) : t.includes(f.vor))) {
+            console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${f.rel}: ${String(f.neu != null ? "neu, steht schon" : f.vor).slice(0, 40)})`);
             ok = false;
             continue;
         }
-        const karte = Object.assign({}, echt, { [f.rel]: am ? t.replace(f.vor, f.nach) : t.split(f.vor).join(f.nach) });
+        const karte = Object.assign({}, echt, { [f.rel]: f.neu != null ? f.neu : am ? t.replace(f.vor, f.nach) : t.split(f.vor).join(f.nach) });
+        for (const [rel, text] of Object.entries(f.dazu || {})) {
+            if (text == null && echt[rel] == null) {
+                console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${rel} soll fallen, steht nicht im Baum)`);
+                ok = false;
+            }
+            if (text == null) delete karte[rel];
+            else karte[rel] = text;
+        }
         const r = pruefe(karte);
         if (f.nichtRot) {
             const falsch = r.rot.find((x) => f.nichtRot.test(x));
@@ -532,7 +637,7 @@ async function panoramaBacken(nur) {
     }
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
     const { rot, zahl, veraltet } = pruefe(baum());
-    console.log("Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: " + STUDIOS.join(", ") + "; Nebenwelten: " + NEBENWELTEN.join(", ") + ")");
+    console.log("Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg · H6 EINE Engine (Studios: " + STUDIOS.join(", ") + "; Nebenwelten: " + NEBENWELTEN.join(", ") + ")");
     bericht(zahl);
     for (const x of veraltet) console.log("⚠ " + x + " (benannt, sperrt nicht)");
     if (rot.length) {
