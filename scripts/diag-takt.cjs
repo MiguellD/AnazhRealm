@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// diag-takt.cjs — DIE TAKT-WAND (V18.512): ein Takt-Subsystem rechnet Teures nur für das, was es betrifft — nie je
-// Takt für die ganze Welt. Befund 02.10. (Werkbank, `werkbank takt`, eingeschwungene Mess-Wiese, Render aus): der
-// Spiel-Takt kostete p50 31 ms / p95 89 ms, davon Ø 20 ms (max 62 ms) in `_tickFocusingAffordances` — bei Sonne
-// rechnete es für JEDEN der ~120 Bauten die Compound-Tags (`computeCompoundTags`), BEVOR es prüfte, ob überhaupt ein
-// Brennglas in Reichweite steht. Nach dem Schnitt (Reichweite zuerst): p50 13 ms, p95 24 ms.
-//
-// Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
+// diag-takt.cjs — DIE TAKT-WAND (V18.512): ein Takt-Subsystem rechnet Teures nur für das, was es betrifft — nie je Takt für
+// die ganze Welt (`werkbank takt` 02.10.: `_tickFocusingAffordances` rechnete die Compound-Tags aller ~120 Bauten vor der
+// Reichweite, Ø 20 ms; Reichweite zuerst: Spiel-Takt p50 31 → 13 ms). Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
 //   T1  steht kein Bau in seiner Reichweite → der Brennglas-Takt ruft computeCompoundTags 0-mal
 //   T2  stehen 3 Bauten in Reichweite → je Takt mindestens 1, höchstens 3 Rufe (genau die Betroffenen); das Brennglas ist ein
 //       Bauplan, der bündelt (am Mittag ≥ 1 Brennpunkt, sonst bricht die Linse ab — bis 0710-11 war sie mit einer Eiche vakuös)
@@ -26,8 +22,8 @@
 //       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
 //       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
 //   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
-//       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (keine eigene Uhr), Ring-Boden, Fern-Ring
-//       — bis zur EINEN Frist je Lade-Frame (`_ladeFrist`); der Selbsttest nennt jeden Leser, der an ihr vorbeigeht (vakuös).
+//       (`_kappeOffen`): Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (keine eigene Uhr) — bis zur EINEN Frist
+//       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (sein Name „buch"),
 //       nie als Nachricht — eine Nachricht vor dem Ende seines Start-Skripts reicht Chrome erst weiter, wenn der volle Haupt-Faden
 //       die Meldung „Skript gelaufen" liest (Radeon kalt 0,73–1,26 s); seine Helfer kommen mit ihm. Der Selbsttest fährt den alten Weg.
@@ -354,10 +350,10 @@ const SELBST = process.argv.includes("--selftest");
                         await null; // DER BODEN-STROM (Kappe 3 Stück): bis zur Frist darüber, im selben Frame danach nur die Kappe
                         const strom = () => { const n0 = aus9.stromBau; st.voxelChunks = new Map(); r._tickVoxelChunkStreaming({ x: 0, y: 0, z: 0 }); return aus9.stromBau - n0; }; // prettier-ignore
                         [aus9.strom, aus9.stromGleich] = [strom(), strom()];
-                        await null; // DER RING-BODEN (die Rampe, Kappe 0 Sprünge): ein Regler-Takt am eigenen Zustand, Rückstau hält die Rampe
+                        // RING-BODEN und FERN-RING (Lade-Takt, K60) am Frame-Ende nach der Frist: die Rampe springt, der Ring fliegt (Selbsttest: die Drossel des Spiels)
                         const zst = Object.assign(Object.create(st), { renderer: {}, atmosphere: {}, chunkRingRadius: 4, _activeRingRadius: null, voxelMeshPending: new Set([1]) }); // prettier-ignore
-                        r._nexusPerfActuate.call(Object.assign(Object.create(r), { state: zst, _applyEffectiveShadowRange: () => {}, _applyRenderScale: () => {} }), { loadScale: 1, phase: {}, frameMs: 1e3 }); // prettier-ignore
-                        await null; // DER FERN-RING (Kappe scheibenImFlug): bis zur Frist bestellt er mehr Scheiben, als im Spiel fliegen
+                        r._nexusPerfActuate.call(Object.assign(Object.create(r), { state: zst, _applyEffectiveShadowRange: () => {}, _applyRenderScale: () => {}, _ladeTakt: () => !selbst }), { loadScale: 1, phase: {}, frameMs: 1e3 }); // prettier-ignore
+                        r._ladeTakt = () => !selbst;
                         st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: r.constructor.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
                         Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: r.constructor.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: r.constructor.FERN_RING.scheibenImFlug }); // prettier-ignore
                         // DER NAH-GANG außerhalb des Lade-Takts (bis G2-n2 am Rumpf-TEXT: analog-nah S3, arch-feld „Warten ohne
