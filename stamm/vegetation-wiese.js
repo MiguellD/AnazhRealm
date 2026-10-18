@@ -83,13 +83,13 @@ class AnazhRealm_vegetation_wiese {
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
                 const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen;
                 if (wurf >= p) continue;
-                // DIE EINE NATUR-WAND (F4 „Wiese im Haus"): kein Büschel im Grundriss eines Hauses — sein Kreis (`reich` ×
-                // Skala) gegen die Wand (`_imGrundriss`); Weg und Platz dünnt das Pfad-Feld, die Lichtung gilt der Krone, die
-                // Hülle eines Baus ohne Haus-Zeile (K52: Tor, Esse, Würfel — achsparallel um alle Boxen) trägt die Wiese weiter.
-                // Bis F4 setzte die Nah-Wiese als einzige Quelle der Natur an der Wand vorbei: im Drehbuch-Dorf 7/18 standen
-                // 2 543 Büschel in 15 von 18 Häusern, ihre Halme bis 0,33 m hoch — über der Diele, 0,04–0,4 m über dem Boden.
+                // DER GRUND DES HAUSES (F4 „Wiese im Haus"): kein Büschel, dessen Kreis (`reich` × Skala) die Wände eines
+                // Hauses berührt (`_imHausGrund` — derselbe Grund, in dem der Boden-Stoff nichts zeichnet); unter der Traufe,
+                // vor der Wand, wächst sie weiter. Weg und Platz dünnt das Pfad-Feld, die Lichtung gilt der Krone. Bis F4 setzte
+                // die Nah-Wiese als einzige Quelle der Natur an der Wand vorbei: im Drehbuch-Dorf 7/18 standen 2 543 Büschel in
+                // 15 von 18 Häusern, ihre Halme bis 0,33 m hoch — über der Diele, 0,04–0,4 m über dem Boden.
                 const s = sk * (m > 0.8 ? 1.45 : 1);
-                if (this._imGrundriss(x, z, NW.reich * s) === "haus") continue;
+                if (this._imHausGrund(x, z, NW.reich * s)) continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
                 out.push({ x, y, z, s, rot, vorlage, ordnung, f });
             }

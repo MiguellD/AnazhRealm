@@ -1293,7 +1293,7 @@ class AnazhRealm_gelaende_chunks {
         // Fail-closed: jeder Boden-Chunk trägt seinen Höhlen-Graph (Welle 7, `_voxelHoehlenGraph`) — ohne ihn wüsste der
         // Satz nicht, welche Fläche aus dem Himmel zu sehen ist.
         if (!fresh.mesh.geometry.hoehle) throw new Error(`_finalizeVoxelChunkBuild(${key}): Boden ohne Höhlen-Graph`);
-        this._chunkSatzEin("boden", key, fresh.mesh.geometry, key);
+        this._chunkSatzEin("boden", key, this._grundSchnitt(fresh.mesh.geometry), key); // ohne den Grund der Häuser (F4)
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
         const entry = {
@@ -1591,6 +1591,127 @@ class AnazhRealm_gelaende_chunks {
         this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`, nahtZiel);
     }
 
+    // DER SCHNITT DES GRUNDS (F4 „Wiese im Haus"): das Gesetz des Fachwerks — „die Wiese ist die Welt MINUS dem Haus-Sockel"
+    // (`gelaende()`, die Rechtecke `_hausGrund`) — gilt dem GEZEICHNETEN Boden: der Bereich eines Chunks (und seines Naht-
+    // Bands) im Boden-Satz trägt keine Fläche in den Wänden eines Hauses über der Unterkante seines Sockels. Jedes Dreieck,
+    // das ein Rechteck berührt, zerfällt an den Wänden (`_schnittTeile`): der Rest draußen bleibt, das Innere fällt, wo es
+    // über die Unterkante + 2 cm reicht — im Treppenloch zeigt sich der Keller, am Hang die Diele. Exakt an der
+    // Wand, draußen ändert sich kein Pixel, und der Schnitt kostet die GPU nichts (die Maske des Chunk-Stoffs davor: ABAB auf
+    // der Radeon 18.10. +1,0 ms auf der Wiese ohne Haus, +2,4 ms im Dorf). Der Chunk behält seinen Körper ungeschnitten (Boden-
+    // Karte, Geomorph, Naht-Proben, `_bodenSichtAt`); der Schnitt ist eine Kopie, deren erste Ecken die der Quelle sind und
+    // deren neue Ecken ihr Rezept tragen (drei Quell-Ecken, drei Gewichte — `_schnittNach` zieht jeden Schreiber der Quelle
+    // nach). Ohne Rechteck die Quelle selbst; `alt` = der Bereich davor (dieselben Rechtecke: er bleibt).
+    _grundSchnitt(quelle, alt = null) {
+        const P = quelle.attributes.position.array;
+        // der Kasten der Quelle (ihre Lage ändert kein Schreiber — der Geomorph schreibt Ziele), einmal je Körper
+        if (!quelle.grundKasten) {
+            const K = (quelle.grundKasten = [Infinity, -Infinity, Infinity, -Infinity]);
+            for (let k = 0; k < P.length; k += 3) {
+                if (P[k] < K[0]) K[0] = P[k];
+                if (P[k] > K[1]) K[1] = P[k];
+                if (P[k + 2] < K[2]) K[2] = P[k + 2];
+                if (P[k + 2] > K[3]) K[3] = P[k + 2];
+            }
+        }
+        const [x0, x1, z0, z1] = quelle.grundKasten;
+        const R = this._hausGrundImKasten(x0, z0, x1, z1);
+        if (!R.length) return quelle;
+        const zeichen = R.map(({ q }) => [q.cx, q.cz, q.c, q.s, q.ex, q.ez, q.y0].join(",")).join(";");
+        if (alt && alt.schnitt && alt.schnitt.quelle === quelle && alt.schnitt.zeichen === zeichen) return alt;
+        const I = quelle.index.array;
+        const H = quelle.hoehle ? quelle.hoehle.tri : null;
+        const n0 = P.length / 3;
+        const [aus, tri, rez] = [[], [], []];
+        let n = n0;
+        const ecke = (ia, ib, ic, v) => {
+            if (v.src !== undefined) return v.src;
+            if (v.neu === undefined) {
+                rez.push(ia, ib, ic, v.wa, v.wb, v.wc);
+                v.neu = n++;
+            }
+            return v.neu;
+        };
+        for (let t = 0, i = 0; i < I.length; t++, i += 3) {
+            const [ia, ib, ic] = [I[i], I[i + 1], I[i + 2]];
+            const [a, b, c] = [ia * 3, ib * 3, ic * 3];
+            let stuecke = null; // die Dreiecke des Stücks (Ecken-Objekte), sobald ein Rechteck es berührt
+            for (const r of R) {
+                if (Math.max(P[a], P[b], P[c]) < r.x0 || Math.min(P[a], P[b], P[c]) > r.x1) continue;
+                if (Math.max(P[a + 2], P[b + 2], P[c + 2]) < r.z0 || Math.min(P[a + 2], P[b + 2], P[c + 2]) > r.z1)
+                    continue;
+                stuecke = stuecke || [
+                    [
+                        { x: P[a], y: P[a + 1], z: P[a + 2], wa: 1, wb: 0, wc: 0, src: ia },
+                        { x: P[b], y: P[b + 1], z: P[b + 2], wa: 0, wb: 1, wc: 0, src: ib },
+                        { x: P[c], y: P[c + 1], z: P[c + 2], wa: 0, wb: 0, wc: 1, src: ic },
+                    ],
+                ];
+                const neu = [];
+                for (const d of stuecke) {
+                    const teil = AnazhRealm._schnittTeile(d, r.q);
+                    if (!teil) {
+                        neu.push(d);
+                        continue;
+                    }
+                    neu.push(...teil.aussen);
+                    // das Innere fällt, wo es über die Unterkante reicht; bündig bleibt es (es liegt unter dem Sockel)
+                    const J = teil.innen;
+                    if (!J.some((p) => p.y > r.q.y0 + 0.02)) for (let k = 1; k + 1 < J.length; k++) neu.push([J[0], J[k], J[k + 1]]); // prettier-ignore
+                }
+                stuecke = neu;
+            }
+            if (!stuecke) {
+                aus.push(ia, ib, ic);
+                tri.push(H ? H[t] : -1);
+                continue;
+            }
+            for (const d of stuecke) {
+                aus.push(ecke(ia, ib, ic, d[0]), ecke(ia, ib, ic, d[1]), ecke(ia, ib, ic, d[2]));
+                tri.push(H ? H[t] : -1);
+            }
+        }
+        const g = new THREE.BufferGeometry();
+        for (const name in quelle.attributes) {
+            const a = quelle.attributes[name];
+            const A = new a.array.constructor(n * a.itemSize);
+            A.set(a.array);
+            g.setAttribute(name, new THREE.BufferAttribute(A, a.itemSize, a.normalized));
+        }
+        g.setIndex(new THREE.BufferAttribute(Uint32Array.from(aus), 1));
+        g.schnitt = { quelle, zeichen, n0, rez: Float64Array.from(rez) };
+        AnazhRealm._schnittNach(g, null);
+        if (quelle.hoehle) g.hoehle = Object.assign({}, quelle.hoehle, { tri: Int32Array.from(tri) });
+        return g;
+    }
+    // Der Grund fiel oder kam im Kasten x0…x1 · z0…z1 (`_grundrissFaellt`: Spawn, Hülle, Abriss, Abschied): jeder Bereich eines
+    // Chunks und seines Naht-Bands, dessen Lage den Kasten berührt, betritt den Boden-Satz neu geschnitten — nur, wo sich sein
+    // Schnitt ändert (dieselben Rechtecke: der Bereich bleibt). Ohne Kasten jeder Chunk.
+    _grundSchnittNeu(x0, z0, x1, z1) {
+        const st = this.state;
+        const s = st.chunkSaetze ? st.chunkSaetze.get("boden") : null;
+        if (!s || !st.voxelChunks) return;
+        const span = this._voxelChunkConfig(0).span;
+        const ganz = ![x0, z0, x1, z1].every(Number.isFinite);
+        for (const [key, entry] of st.voxelChunks) {
+            if (!entry || !entry.mesh || !entry.mesh.geometry) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            if (
+                !ganz &&
+                ((cx + 1) * span + 4 < x0 || cx * span - 4 > x1 || (cz + 1) * span + 4 < z0 || cz * span - 4 > z1)
+            )
+                continue;
+            for (const [k, m] of [
+                [key, entry.mesh],
+                ["stitch:" + key, entry.lodStitchMesh],
+            ]) {
+                const b = m && m.geometry ? s.bloecke.get(k) : null;
+                if (!b) continue;
+                const neu = this._grundSchnitt(m.geometry, b.geom);
+                if (neu !== b.geom) this._chunkSatzEin("boden", k, neu, key);
+            }
+        }
+    }
+
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
     // Mesh-KANTE der Grenz-Zeile (beide Endpunkte in der Border-Row — echte Topologie inkl. Höhlen-
     // Loops, kein Polyline-Sortieren) der Skirt und, wo ein Ende gekappt ist (Gewicht < 1), ein Quad von der
@@ -1734,7 +1855,7 @@ class AnazhRealm_gelaende_chunks {
         bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
-        this._chunkSatzEin("boden", "stitch:" + key, bg, key);
+        this._chunkSatzEin("boden", "stitch:" + key, this._grundSchnitt(bg), key); // ohne den Grund der Häuser (F4)
         entry.lodStitchMesh = mesh;
     }
 
@@ -2968,3 +3089,172 @@ AnazhRealm.FIELD_GRAD_EPS = 0.6;
 // Max Auswurf-Iterationen pro Kugel (collide-and-slide): typisch 0–2 (flache Penetration), 4 tragen
 // auch eine tiefere robust an die Oberfläche; der gesweepte Schritt hält sie radius-beschränkt.
 AnazhRealm.FIELD_RESOLVE_ITERS = 4;
+
+// DER SCHNITT AN DEN WÄNDEN (`_grundSchnitt`): ein Dreieck (Ecken { x, y, z, wa, wb, wc } — die Gewichte über die drei Quell-
+// Ecken) gegen das gedrehte Rechteck q ({ cx, cz, c, s, ex, ez }, lokal u = Δx·c − Δz·s, v = Δx·s + Δz·c). null: es berührt
+// das Rechteck nicht. Sonst { innen, aussen }: `innen` = Dreieck ∩ Rechteck (konvex), `aussen` = die Dreiecke des Rests. Neue
+// Ecken entstehen NUR, wo eine Wand eine Kante kreuzt (der Nachbar an dieser Kante kreuzt dieselbe Wand und trägt dieselbe
+// Ecke — kein T-Stoß in der Fläche vor der Wand), und an den Ecken des Rechtecks im Dreieck. Liegt das Rechteck ganz im
+// Dreieck (ein Dreieck der Fernstufe größer als das Haus), bleibt das Dreieck (kein Loch-Vieleck; ein Innenraum zeigt sich
+// so fern nicht).
+AnazhRealm._schnittTeile = (tri, q) => {
+    const uv = (p) => {
+        const [dx, dz] = [p.x - q.cx, p.z - q.cz];
+        return [dx * q.c - dz * q.s, dx * q.s + dz * q.c];
+    };
+    const drin = (p) => {
+        const [u, v] = uv(p);
+        return Math.abs(u) <= q.ex + 1e-7 && Math.abs(v) <= q.ez + 1e-7;
+    };
+    const misch = (A, B, t) => {
+        const o = {};
+        for (const k of ["x", "y", "z", "wa", "wb", "wc"]) o[k] = A[k] + (B[k] - A[k]) * t;
+        return o;
+    };
+    const flaeche = (P) => P.reduce((a, p, i) => a + p.x * P[(i + 1) % P.length].z - P[(i + 1) % P.length].x * p.z, 0);
+    // die Kante A→B gegen das Rechteck (Liang–Barsky): der Abschnitt [t0, t1] darin, sonst null
+    const abschnitt = (A, B) => {
+        const [[ua, va], [ub, vb]] = [uv(A), uv(B)];
+        let [t0, t1] = [0, 1];
+        for (const [p, d, e] of [
+            [ua, ub - ua, q.ex],
+            [-ua, ua - ub, q.ex],
+            [va, vb - va, q.ez],
+            [-va, va - vb, q.ez],
+        ]) {
+            // p + d·t ≤ e
+            if (Math.abs(d) < 1e-12) {
+                if (p > e) return null;
+            } else if (d > 0) t1 = Math.min(t1, (e - p) / d);
+            else t0 = Math.max(t0, (e - p) / d);
+        }
+        return t0 <= t1 ? [t0, t1] : null;
+    };
+    // der Rand des Dreiecks mit den Kreuzungen (Eintritt `ein`, Austritt `aus`); `drin` = im Rechteck oder auf seinem Rand
+    const S = [];
+    for (let i = 0; i < 3; i++) {
+        const [A, B] = [tri[i], tri[(i + 1) % 3]];
+        S.push({ p: A, drin: drin(A) });
+        const ab = abschnitt(A, B);
+        if (!ab) continue;
+        if (ab[0] > 1e-9 && ab[0] < 1 - 1e-9) S.push({ p: misch(A, B, ab[0]), drin: true, ein: true });
+        if (ab[1] > 1e-9 && ab[1] < 1 - 1e-9 && ab[1] > ab[0] + 1e-12)
+            S.push({ p: misch(A, B, ab[1]), drin: true, aus: true });
+    }
+    if (!S.some((x) => x.ein || x.aus)) return S.every((x) => x.drin) ? { innen: tri, aussen: [] } : null;
+    // die Ecken des Rechtecks im Umlauf des Dreiecks; eine Ecke im Dreieck trägt Gewichte und Höhe aus seiner Ebene
+    let ecken = [
+        [q.ex, q.ez],
+        [-q.ex, q.ez],
+        [-q.ex, -q.ez],
+        [q.ex, -q.ez],
+    ].map(([u, v]) => ({ x: q.cx + u * q.c + v * q.s, z: q.cz - u * q.s + v * q.c }));
+    if (Math.sign(flaeche(ecken)) !== Math.sign(flaeche(tri))) ecken = ecken.reverse();
+    const [a, b, c] = tri;
+    const det = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+    const ecke = ecken.map((p) => {
+        const l1 = ((b.z - c.z) * (p.x - c.x) + (c.x - b.x) * (p.z - c.z)) / det;
+        const l2 = ((c.z - a.z) * (p.x - c.x) + (a.x - c.x) * (p.z - c.z)) / det;
+        const l3 = 1 - l1 - l2;
+        if (!(l1 >= 0 && l2 >= 0 && l3 >= 0)) return null; // nicht im Dreieck
+        const o = { x: p.x, z: p.z };
+        for (const k of ["y", "wa", "wb", "wc"]) o[k] = a[k] * l1 + b[k] * l2 + c[k] * l3;
+        return o;
+    });
+    // der Umfang-Parameter eines Rand-Punkts (Kante k + Anteil, im Umlauf von `ecken`)
+    const umfang = (p) => {
+        let best = [Infinity, 0];
+        for (let k = 0; k < 4; k++) {
+            const [A, B] = [ecken[k], ecken[(k + 1) % 4]];
+            const [dx, dz] = [B.x - A.x, B.z - A.z];
+            const t = Math.max(0, Math.min(1, ((p.x - A.x) * dx + (p.z - A.z) * dz) / (dx * dx + dz * dz)));
+            const d = Math.hypot(A.x + dx * t - p.x, A.z + dz * t - p.z);
+            if (d < best[0]) best = [d, k + t];
+        }
+        return best[1];
+    };
+    // die Ecken des Rechtecks (im Dreieck) auf dem Weg von p nach q entlang des Rechteck-Rands
+    const kette = (p, r) => {
+        let [sp, sr] = [umfang(p), umfang(r)];
+        if (sr <= sp) sr += 4;
+        const aus = [];
+        for (let k = Math.ceil(sp); k < sr; k++) if (k > sp && ecke[k % 4]) aus.push(ecke[k % 4]);
+        return aus;
+    };
+    // DRINNEN: der Rand des Dreiecks im Rechteck, nach jedem Austritt der Weg über die Rechteck-Ecken bis zum nächsten Eintritt
+    // DRAUSSEN: je Lauf draußen vom Austritt X bis zum Eintritt E, zurück über die Rechteck-Ecken von E nach X (rückwärts)
+    const n = S.length;
+    const [innen, aussen] = [[], []];
+    for (let i = 0; i < n; i++) {
+        if (!S[i].drin) continue;
+        innen.push(S[i].p);
+        if (S[(i + 1) % n].drin) continue;
+        let j = (i + 1) % n;
+        const poly = [S[i].p];
+        while (!S[j].drin) {
+            poly.push(S[j].p);
+            j = (j + 1) % n;
+        }
+        poly.push(S[j].p);
+        const k = kette(S[i].p, S[j].p);
+        for (const e of k) innen.push(e);
+        for (const e of k.reverse()) poly.push(e);
+        aussen.push(...AnazhRealm._ohrSchnitt(poly));
+    }
+    return innen.length >= 3 ? { innen, aussen } : null; // eine Berührung ohne Fläche schneidet nicht
+};
+// Die Dreiecke eines einfachen Vielecks (Ohr-Schnitt in xz; der Umlauf bleibt): je Ohr ein Dreieck aus drei Ecken-Objekten.
+AnazhRealm._ohrSchnitt = (P) => {
+    const kreuz = (a, b, c) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
+    const sg =
+        Math.sign(P.reduce((s, p, i) => s + p.x * P[(i + 1) % P.length].z - P[(i + 1) % P.length].x * p.z, 0)) || 1;
+    const idx = P.map((_, i) => i);
+    const aus = [];
+    for (let schutz = 0; idx.length > 3 && schutz < 64; schutz++) {
+        let ohr = -1;
+        for (let i = 0; i < idx.length && ohr < 0; i++) {
+            const [a, b, c] = [P[idx[(i + idx.length - 1) % idx.length]], P[idx[i]], P[idx[(i + 1) % idx.length]]];
+            if (kreuz(a, b, c) * sg <= 1e-12) continue;
+            const frei = idx.every((j) => {
+                const p = P[j];
+                if (p === a || p === b || p === c) return true;
+                return !(kreuz(a, b, p) * sg > 0 && kreuz(b, c, p) * sg > 0 && kreuz(c, a, p) * sg > 0);
+            });
+            if (frei) ohr = i;
+        }
+        if (ohr < 0) break;
+        aus.push([P[idx[(ohr + idx.length - 1) % idx.length]], P[idx[ohr]], P[idx[(ohr + 1) % idx.length]]]);
+        idx.splice(ohr, 1);
+    }
+    for (let k = 1; k + 1 < idx.length; k++) aus.push([P[idx[0]], P[idx[k]], P[idx[k + 1]]]); // der Rest als Fächer
+    return aus;
+};
+// DAS REZEPT NACHZIEHEN (`_grundSchnitt`): die Attribute `namen` (null = alle) eines geschnittenen Bereichs aus seiner Quelle —
+// die ersten Ecken sind ihre, jede neue mischt drei Quell-Ecken mit ihren Gewichten; der Morph-Code (`aMorphWeight`: 2 · Stufe
+// + Naht) folgt der schwersten Quell-Ecke (gemischt läge er zwischen zwei Stufen). Leser: der Schnitt selbst und der
+// Geomorph-Schreiber (`_chunkSatzMarke`: er schreibt in den Körper des Chunks, der Bereich zieht nach).
+AnazhRealm._schnittNach = (g, namen) => {
+    const S = g.schnitt;
+    if (!S) return;
+    const { quelle, n0, rez } = S;
+    for (const name in g.attributes) {
+        if (namen && !namen.includes(name)) continue;
+        const [A, Q, is] = [g.attributes[name].array, quelle.attributes[name].array, g.attributes[name].itemSize];
+        if (namen) A.set(Q);
+        const kodiert = name === "aMorphWeight";
+        for (let j = 0, v = n0; j < rez.length; j += 6, v++) {
+            const [a, b, c, wa, wb, wc] = [
+                rez[j] * is,
+                rez[j + 1] * is,
+                rez[j + 2] * is,
+                rez[j + 3],
+                rez[j + 4],
+                rez[j + 5],
+            ];
+            for (let k = 0; k < is; k++)
+                A[v * is + k] = kodiert
+                    ? Q[(wa >= wb && wa >= wc ? a : wb >= wc ? b : c) + k]
+                    : Q[a + k] * wa + Q[b + k] * wb + Q[c + k] * wc;
+        }
+    }
+};

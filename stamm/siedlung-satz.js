@@ -1727,11 +1727,8 @@ class AnazhRealm_siedlung_satz {
         const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k);
         const e = P.dirt;
         const a = P.wet;
-        // DER GRUND AM AUGE (F4 „Wiese im Haus", `_tickGrundAuge`): im Grundriss eines Hauses liegt Erde, auch am Hang — dieselben
-        // Kästen wie die Natur-Wand, exakt an der Wand; Erde trägt kein Grün, also zeichnet die Halm-Schicht dort keinen Halm
-        const _grund = this._grundAugeNode(_T, xz);
-        const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _T.max(_wm.r.mul(_begehbar), _grund));
-        return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar).mul(_T.float(1).sub(_grund)));
+        const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
+        return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
     }
 
     // DAS EINE PFAD-FELD der Wiese: der getrampelte Ufer-Pfad (Drainage, im Boden gebacken) ODER der Siedlungs-Weg

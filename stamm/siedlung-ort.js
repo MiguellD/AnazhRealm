@@ -2459,6 +2459,7 @@ class AnazhRealm_siedlung_ort {
     // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
     _grundrissFaellt(x0, z0, x1, z1) {
         this._grundrissGitter = null;
+        this._grundSchnittNeu(x0, z0, x1, z1); // der Boden-Satz schneidet den Grund der Häuser neu (F4, nur wo er sich ändert)
         if (!this._ortSame) return;
         if (![x0, z0, x1, z1].every(Number.isFinite)) {
             this._ortSame = null;

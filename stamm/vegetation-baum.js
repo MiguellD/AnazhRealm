@@ -1607,7 +1607,7 @@ class AnazhRealm_vegetation_baum {
     // über ihr (gate:haus-welt W8). `absage(wo)` hört, wo ein Wurf fiel ("haus" | "lichtung") — der Hain der KI und des
     // Chats sagt es laut (`_ergebnisSatz`), nie still „gewachsen". Seit Welle L Folge setzt auch der Spieler durch sie:
     // der Bau-Modus (`confirmBuild`) und sein Phantom (`tickBuildMode`, das Urteil `_naturWand`). Die Nah-Wiese fragt den
-    // Grundriss selbst (`_nahWieseKachelBueschel` → `_imGrundriss` mit dem Kreis des Büschels; Weg und Platz dünnt ihr Pfad-Feld).
+    // Grund der Häuser selbst (`_nahWieseKachelBueschel` → `_imHausGrund`, der Kreis des Büschels; Weg und Platz dünnt ihr Pfad-Feld).
     _naturSetzen(name, position, opts, setzen, absage) {
         const wo = this._naturWand(name, position, opts);
         if (wo) {
@@ -1806,98 +1806,78 @@ class AnazhRealm_vegetation_baum {
         return gitter;
     }
 
-    // DER GRUND AM AUGE (F4 „Wiese im Haus"): die Halm-Schicht ist eine reine WGSL-Funktion des Boden-Stoffs und kannte keinen
-    // Grundriss — wo der Boden im Haus über der Diele liegt (Treppenloch, Hang, der Wand-Fuß), zeichnete sie Wiese. Der Boden-
-    // Stoff liest darum DIESELBEN Grundrisse wie die Natur-Wand (`_grundrissVon` über das Gitter `_grundrissStand`): die
-    // `GRUND_AUGE.n` Häuser, deren Grundriss dem Auge am nächsten liegt (bis `reichM`; ein Innenraum zeigt sich nur nah),
-    // als gedrehte Kästen (`_grundAugeNode` in `_wegeBodenFarbe`: im Kasten Erde, also kein Grün und kein Halm) — exakt an
-    // der Wand, draußen ändert sich nichts. Bis 18.10. lag der Grund als Erde 1,0 m über die Wand hinaus in der Wege-Karte
-    // (bilinear braucht die Kante dort einen Texel und die Diagonale), und das Pfad-Feld dünnte die Nah-Wiese im Band
-    // 0–1,5 m um 62 %. Je Kasten 8 Zahlen: Mitte x, z · cos, sin der Gier · Versatz ox, oz · halbe Maße ex, ez (ein leerer
-    // Platz ex = −1). Neu, wenn das Gitter fällt (Spawn, Abriss, Abschied, Hülle) oder das Auge `schrittM` wandert. Leser: der
-    // Boden-Stoff (GPU, die Uniforms `U`) und `_imGrundAuge` (CPU, dieselben Zahlen — gate:haus-welt W4b).
-    _grundAuge() {
-        if (this._grundAugeStand) return this._grundAugeStand;
-        const n = AnazhRealm.GRUND_AUGE.n;
-        const daten = new Float32Array(n * 8);
-        for (let i = 0; i < n; i++) daten[i * 8 + 6] = daten[i * 8 + 7] = -1;
-        const TSL = THREE.TSL;
-        const U = this._uniformHeimatTeilen({
-            a: Array.from({ length: n }, () => TSL.uniform(new THREE.Vector4(0, 0, 1, 0))),
-            b: Array.from({ length: n }, () => TSL.uniform(new THREE.Vector4(0, 0, -1, -1))),
-        });
-        return (this._grundAugeStand = { n, daten, U, stand: null, x: NaN, z: NaN, zahl: 0, weiteste: 0 });
+    // DER GRUND DES HAUSES (F4 „Wiese im Haus"): das Gesetz des Geländes im Fachwerk-Gesetzbuch — „die Wiese ist die Welt
+    // MINUS dem Haus-Sockel" (fachwerk `gelaende()`) — reist mit der Hülle (`__huelle.grund`, `grundZeile`): je Körper auf
+    // seinem Sockel das Rechteck seiner WÄNDE mit der Unterkante des Sockels, dazu der Keller mit seiner Sohle. Darin, über
+    // der Unterkante, ist keine Welt: der Boden-Satz zeichnet dort keine Fläche (`_grundSchnitt`) und die Nah-Wiese setzt keinen
+    // Büschel hinein (`_imHausGrund`) — EIN Leser für Schicht und Instanz. Bis 18.10. lasen beide das obb des Exports samt
+    // Traufe (0,3–1,8 m vor der Wand): außen ein Erdstreifen ohne Wiese, und im Treppenloch lag die Erde quer über dem Keller
+    // (12 von 25 Häusern, bis 2,33 m über den Stufen). Welt-Rahmen wie die Blocker (`_hausObb`: T(x, y − 0,5, z) · R_y ·
+    // S(Skala · k)): je Rechteck { cx, cz, c, s, ex, ez, y0 }, gemerkt je Hülle und Lage. Leer ohne Hülle (vor der ersten
+    // Stufe zeigt das Haus keinen Innenraum) und für ein Haus auf Stelzen (es trägt keinen Sockel).
+    _hausGrund(e) {
+        const hu = e && e._hausHuelle;
+        const z = hu && hu.grund;
+        if (!Array.isArray(z) || !e.position) return AnazhRealm.KEIN_GRUND;
+        const p = e.position;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const m = e._hausGrundStand;
+        if (m && m.hu === hu && m.x === p.x && m.y === p.y && m.z === p.z && m.ry === ry) return m.liste;
+        const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+        const sc = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * k;
+        const [c, s] = [Math.cos(ry), Math.sin(ry)];
+        const liste = [];
+        for (let i = 0; i + 4 < z.length; i += 5) {
+            const [lx, lz] = [((z[i] + z[i + 2]) / 2) * sc, ((z[i + 1] + z[i + 3]) / 2) * sc];
+            const [ex, ez] = [((z[i + 2] - z[i]) / 2) * sc, ((z[i + 3] - z[i + 1]) / 2) * sc];
+            const [cx, cz] = [p.x + lx * c + lz * s, p.z - lx * s + lz * c];
+            liste.push({ cx, cz, c, s, ex, ez, y0: p.y - 0.5 + z[i + 4] * sc });
+        }
+        e._hausGrundStand = { hu, x: p.x, y: p.y, z: p.z, ry, liste };
+        return liste;
     }
-    _tickGrundAuge(auge) {
-        const g = this._grundAuge();
-        if (!auge || !Number.isFinite(auge.x) || !Number.isFinite(auge.z)) return g;
-        const S = AnazhRealm.GRUND_AUGE;
-        const stand = this._grundrissStand();
-        if (stand === g.stand && Math.hypot(auge.x - g.x, auge.z - g.z) < S.schrittM) return g;
-        [g.stand, g.x, g.z] = [stand, auge.x, auge.z];
+    // Die Rechtecke des Grunds (`_hausGrund`), deren Welt-Kasten den Kasten x0…x1 · z0…z1 berührt — je Rechteck dazu sein
+    // Welt-Kasten { x0, x1, z0, z1 } (der billige Filter jedes Lesers). Die Häuser aus dem Gitter der Grundrisse. Leser: der
+    // Schnitt des Boden-Satzes (`_grundSchnitt`).
+    _hausGrundImKasten(x0, z0, x1, z1) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
-        const R = S.reichM;
-        const nah = new Map(); // Eintrag → [Abstand seines Grundrisses zum Auge, Grundriss]
-        for (let gx = Math.floor((auge.x - R) / G); gx <= Math.floor((auge.x + R) / G); gx++)
-            for (let gz = Math.floor((auge.z - R) / G); gz <= Math.floor((auge.z + R) / G); gz++) {
-                const l = stand.zellen.get(AnazhRealm._grundrissSchluessel(gx, gz));
+        const gitter = this._grundrissStand();
+        const gesehen = new Set();
+        const aus = [];
+        for (let gx = Math.floor(x0 / G); gx <= Math.floor(x1 / G); gx++)
+            for (let gz = Math.floor(z0 / G); gz <= Math.floor(z1 / G); gz++) {
+                const l = gitter.zellen.get(AnazhRealm._grundrissSchluessel(gx, gz));
                 if (l)
                     for (const e of l) {
-                        if (nah.has(e)) continue;
-                        const fp = this._grundrissVon(e);
-                        if (!fp || fp.lichtung || fp.welt) continue; // ein Haus: die Hülle eines Baus trägt die Wiese weiter (K52)
-                        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-                        const [c, s] = [Math.cos(ry), Math.sin(ry)];
-                        const [dx, dz] = [auge.x - e.position.x, auge.z - e.position.z];
-                        const u = Math.max(0, Math.abs(dx * c - dz * s - fp.ox) - fp.ex);
-                        const v = Math.max(0, Math.abs(dx * s + dz * c - fp.oz) - fp.ez);
-                        const d = Math.hypot(u, v);
-                        if (d <= R) nah.set(e, [d, fp, c, s]);
+                        if (gesehen.has(e)) continue;
+                        gesehen.add(e);
+                        for (const q of this._hausGrund(e)) {
+                            const hx = q.ex * Math.abs(q.c) + q.ez * Math.abs(q.s);
+                            const hz = q.ex * Math.abs(q.s) + q.ez * Math.abs(q.c);
+                            if (q.cx + hx < x0 || q.cx - hx > x1 || q.cz + hz < z0 || q.cz - hz > z1) continue;
+                            aus.push({ q, x0: q.cx - hx, x1: q.cx + hx, z0: q.cz - hz, z1: q.cz + hz });
+                        }
                     }
             }
-        const liste = [...nah].sort((p, q) => p[1][0] - q[1][0]).slice(0, g.n);
-        const D = g.daten;
-        for (let i = 0; i < g.n; i++) {
-            const o = i * 8;
-            const z = liste[i];
-            if (z) {
-                const [e, [, fp, c, s]] = z;
-                D.set([e.position.x, e.position.z, c, s, fp.ox, fp.oz, fp.ex, fp.ez], o);
-            } else D.set([0, 0, 1, 0, 0, 0, -1, -1], o);
-            g.U.a[i].value.set(D[o], D[o + 1], D[o + 2], D[o + 3]);
-            g.U.b[i].value.set(D[o + 4], D[o + 5], D[o + 6], D[o + 7]);
-        }
-        g.zahl = liste.length;
-        g.weiteste = liste.length ? liste[liste.length - 1][1][0] : 0;
-        return g;
+        return aus;
     }
-    // Liegt (x, z) in einem Grundriss am Auge — dieselbe Rechnung wie der Boden-Stoff (`_grundAugeNode`)?
-    _imGrundAuge(x, z) {
-        const g = this._grundAuge();
-        const D = g.daten;
-        for (let o = 0; o < D.length; o += 8) {
-            if (!(D[o + 6] >= 0)) continue;
-            const [dx, dz] = [x - D[o], z - D[o + 1]];
-            if (
-                Math.abs(dx * D[o + 2] - dz * D[o + 3] - D[o + 4]) <= D[o + 6] &&
-                Math.abs(dx * D[o + 3] + dz * D[o + 2] - D[o + 5]) <= D[o + 7]
-            )
-                return true;
-        }
+    // Berührt der Kreis (x, z, r) den Grund eines Hauses (`_hausGrund`)? Die Häuser der Zelle aus dem Gitter der Grundrisse.
+    // Leser: die Nah-Wiese (`_nahWieseKachelBueschel`, der Kreis eines Büschels).
+    _imHausGrund(x, z, r) {
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const gitter = this._grundrissStand();
+        const l = gitter.zellen.size
+            ? gitter.zellen.get(AnazhRealm._grundrissSchluessel(Math.floor(x / G), Math.floor(z / G)))
+            : null;
+        if (l)
+            for (const e of l)
+                for (const q of this._hausGrund(e)) {
+                    const [dx, dz] = [x - q.cx, z - q.cz];
+                    const u = Math.max(0, Math.abs(dx * q.c - dz * q.s) - q.ex);
+                    const v = Math.max(0, Math.abs(dx * q.s + dz * q.c) - q.ez);
+                    if (u * u + v * v < r * r) return true;
+                }
         return false;
-    }
-    // Der Grund am Auge als TSL-Gewicht (1 im Kasten eines Hauses, sonst 0) am Welt-Ort `xz` — Leser `_wegeBodenFarbe`.
-    _grundAugeNode(_T, xz) {
-        const g = this._grundAuge();
-        let w = _T.float(0);
-        for (let i = 0; i < g.n; i++) {
-            const [a, b] = [g.U.a[i], g.U.b[i]];
-            const d = xz.sub(a.xy);
-            const u = d.x.mul(a.z).sub(d.y.mul(a.w)).sub(b.x).abs().sub(b.z);
-            const v = d.x.mul(a.w).add(d.y.mul(a.z)).sub(b.y).abs().sub(b.w);
-            w = w.max(_T.step(_T.max(u, v), _T.float(0)));
-        }
-        return w;
     }
 
     // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
@@ -2003,8 +1983,8 @@ class AnazhRealm_vegetation_baum {
     // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m), und ein älterer Stand trägt Bäume über der
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
     // Kacheln der Nah-Wiese und der Nah-Streu über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der
-    // Krone (`_naturKrone`, die Suche reicht eine Streu-Region weiter). Die Halm-Schicht des Boden-Stoffs liest denselben
-    // Grundriss am Auge (`_tickGrundAuge`: das Gitter fällt hier). Der billige Orts-Filter zuerst, die Art-Frage nur für
+    // Krone (`_naturKrone`, die Suche reicht eine Streu-Region weiter). Der Boden-Satz schneidet den Grund der
+    // Häuser aus (`_grundSchnittNeu` am Fall des Gitters). Der billige Orts-Filter zuerst, die Art-Frage nur für
     // Betroffene (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss),
     // `_hausHuelleSetzen` (die Hülle bringt ihn) und das Laden. Gibt die Zahl der geräumten Natur-Stücke.
     _grundrissRaeumen(haus) {
@@ -2532,7 +2512,7 @@ class AnazhRealm_vegetation_baum {
     }
 
     // DER ABSCHIED VOM BODEN (die EINE Quelle für Abbau und Abschied, nach dem Austritt aus dem Bestand): was ein Bau dem Boden
-    // gab, fällt mit ihm — sein Grundriss aus der Natur-Wand und dem Grund am Auge (`_grundrissFaellt`), die Ziegel-Fernstufe,
+    // gab, fällt mit ihm — sein Grundriss aus der Natur-Wand und sein Grund aus dem Boden-Satz (`_grundrissFaellt`), die Ziegel-Fernstufe,
     // die Trittfläche aus der Wege-Karte, die Krone aus der Kronen-Karte. Leser: `removeArchitecture` und `_evictArchitecture`
     // (bis 18.10. räumte der Abschied über `MAX_NEXUS_STRUCTURES` nur Mesh und Eintrag: Grundriss, Trittfläche und Krone eines
     // autonomen Baus blieben ohne ihn in Natur-Wand und Karte).
@@ -2709,9 +2689,8 @@ AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
 });
 // Das Gitter der Grundrisse (`_grundrissStand`): 32-m-Zellen, Zahlen-Schlüssel (die Streu fragt je Zelle).
 AnazhRealm.GRUNDRISS_ZELLE = 32;
-// Der Grund am Auge (`_tickGrundAuge`): `n` Kästen im Boden-Stoff (je Fragment ein gedrehter Kasten-Test), die Häuser bis
-// `reichM` um das Auge, neu ab `schrittM` Weg.
-AnazhRealm.GRUND_AUGE = Object.freeze({ n: 16, reichM: 48, schrittM: 1 });
+// Der Grund eines Baus ohne Grund-Zeile (`_hausGrund`): leer, eingefroren.
+AnazhRealm.KEIN_GRUND = Object.freeze([]);
 AnazhRealm._grundrissSchluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
 // DER FUSS EINES STAMMS (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): der Kreis um die Achse, auf dem eine Pflanze steht
 // (m) — die Natur-Wand fragt das Land an der Achse UND auf ihm (`_stammFussLand`). Befund (gate:werk-im-wasser Z am See

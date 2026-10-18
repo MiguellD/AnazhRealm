@@ -2044,6 +2044,8 @@ class AnazhRealm_siedlung_bauten {
             throw new Error(
                 `_chunkSatzMarke(${art}, ${key}): ein flüchtiger Block trägt keinen CPU-Schreiber (_satzBlock)`
             );
+        // ein geschnittener Bereich (F4, `_grundSchnitt`): der Schreiber schrieb den Körper des Chunks — der Schnitt zieht nach
+        if (b.geom.schnitt) AnazhRealm._schnittNach(b.geom, namen);
         // je geschriebenem Namen das Satz-Attribut, das ihn trägt — selbst oder in seiner vierten Komponente (`w`)
         for (const fa of s.attr) {
             if (!namen.includes(fa.name) && !(fa.w && namen.includes(fa.w))) continue;

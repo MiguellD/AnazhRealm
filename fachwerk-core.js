@@ -3550,10 +3550,31 @@
         if (st.topH) solAus(st.topH, st.off || 0);
         return solL;
     }
-    function hausSolids(p) {
+    // DER GRUND DES HAUSES (F4 „Wiese im Haus", additiv, must-ignore): das Gesetz des Geländes — „die Wiese ist die Welt
+    // MINUS dem Haus-Sockel" (`gelaende()`) — reist mit der Hülle zur Welt. Je Körper, der auf seinem Sockel steht (der
+    // Hauptkörper, jede Einheit des Doppelhauses, jeder Flügel), das Rechteck seiner WÄNDE mit der Unterkante des Sockels,
+    // dazu der Kellerraum mit seiner Sohle: haus-lokal [x0, z0, x1, z1, y0]…. Darin, über y0, ist keine Welt — der Sockel
+    // und der Keller tragen den Grund. Ein Haus auf Stelzen (`pilotis`) trägt keinen Sockel (die Welt geht unter ihm durch).
+    function grundZeile(st) {
+        var H = st && st.H;
+        if (!H || !H.P || H.P.pilotis) return null;
+        var g = [];
+        var rechteck = function (m, y0) {
+            if (m && isFinite(m.x0) && isFinite(m.x1) && isFinite(m.z0) && isFinite(m.z1) && m.x1 > m.x0 && m.z1 > m.z0)
+                g.push(_hr(m.x0), _hr(m.z0), _hr(m.x1), _hr(m.z1), _hr(y0));
+        };
+        var ms = H.masse || [];
+        for (var i = 0; i < ms.length; i++) if (ms[i].art === "haupt") rechteck(ms[i], 0);
+        var wi = H.wings || [];
+        for (var j = 0; j < wi.length; j++) rechteck(wi[j], 0);
+        if (H.cellar) rechteck(H.cellar, H.cellar.floorY - 0.12);
+        return g.length ? g : null;
+    }
+    function hausSolids(p, aus) {
         var hp = stufe0Param(p);
         hp.nur = Object.assign({}, SOLIDLOS, hp.nur);
         var st = stufe0Bau(hp);
+        if (aus) aus.grund = grundZeile(st);
         var z = solidZeile(st);
         st.g.traverse(function (o) {
             if (o.geometry) o.geometry.dispose();
@@ -3613,6 +3634,8 @@
             // — dieselbe Liste, die das Labor begeht (bauSolidsUndTueren). Die Welt stellte statt ihrer vier EG-Riegel
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
+            var grund0 = grundZeile(st);
+            if (grund0) geoms.__grund = grund0; // der Grund des Hauses (F4) reist neben den Solids (die Rollen-Schleifen lesen `.vo`)
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
@@ -3642,7 +3665,9 @@
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
             B.frag = null;
             B.fragStufe = undefined;
-            geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            var mit = {};
+            geoms.__solids = hausSolids(p, mit); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            if (mit.grund) geoms.__grund = mit.grund; // … und ihr Grund (F4)
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
         }
         return geoms;
@@ -3721,6 +3746,9 @@
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
         }
+        // DER GRUND REIST MIT DER HÜLLE (F4, additiv, must-ignore): die Wand-Rechtecke der Körper auf ihrem Sockel und der Keller
+        // (`grundZeile`) — die Welt zeichnet darin keinen Boden (`_hausGrund` → `_grundAugeMaske`) und setzt keine Wiese hinein
+        if (g.userData.__huelle && gm.__grund) g.userData.__huelle.grund = gm.__grund;
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
         if (gm.__fern) {
