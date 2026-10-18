@@ -747,14 +747,13 @@ Bake aus dem Gelände-Kern und `treeParams` für JEDEN Ort einer endlosen Welt, 
 
 Die Hülle `worlds/huelle`, die 12 Studios unter `worlds/`, die Werkstatt in der Welt.
 
-**10/10.** Jedes Studio ist ein Modus der laufenden Welt, mit ihrem r184-Renderer, ihrem Licht, ihrer Uhr, ihrem Wetter und ihrem Boden.
-Ein Griff am Regler zeigt das Werk in höchstens 200 ms (Gesetz-Wert) bzw. 1 s (Neubau) an seinem echten Ort; daneben stehen die gemessenen
-Kosten je Stufe (Dreiecke, Befehle, VRAM, GPU-ms gegen das Profi-Band), A/B gegen den gebauten Stand und ein Undo, das ein Neuladen übersteht.
-Jeder Regler ist ein Gesetz-Parameter, der nachweislich wirkt; was der Schöpfer baut, bleibt als Plan (Saat + Regler, Bytes statt Megabytes)
-in der Welt — in derselben Regler-Sprache, die auch die KI spricht.
-**Wo wir sie schlagen.** Die Besten trennen Editor und Spiel (Bake, Import, Export-Datei, eigene Vorschau-Bühne). Bei uns gibt es nichts zu
-exportieren, das Studio IST die Welt. Weil die Welt eine Funktion ist, ändert ein Griff jede Instanz im Blick zugleich — Horizons Weg ohne
-Bake, aber für jede Domäne —, und ein Satz an die KI stellt dieselben Regler wie die Hand.
+**10/10.** Jedes Studio ist eine ISOLIERTE Bühne (eigene Szene, Panorama, Bodenplatte, Orbit) auf der Welt-Engine: ihr r184-Renderer, ihre Stoffe,
+ihre Foundry-Stufenkette, ihr Licht-Gesetz. Ein Griff am Regler zeigt das Werk in höchstens 200 ms (Gesetz-Wert) bzw. 1 s (Neubau); daneben
+stehen die gemessenen Kosten je Stufe gegen das Profi-Band, A/B gegen den gebauten Stand und ein Undo, das ein Neuladen übersteht; ein Knopf
+„in der Welt ansehen“ öffnet das Werk an seinem Ort. GESETZ des Schöpfers (18.10.): ein Studio wird NIE gelöscht und NIE in die offene Welt
+verlegt — sonst ist es nur ein Spawn in die Welt.
+**Wo wir sie schlagen.** Bei den Besten trennt der Import Editor und Spiel; bei uns baut die Bühne mit DEMSELBEN Bauer und Renderer wie die
+Welt — Labor = Welt ohne Export-Datei, und der Plan (Saat + Regler) reist als Bytes.
 
 **Die Besten**
 - **Unreal Engine, Static Mesh Editor**: im Vorschaufenster die Zahlen der Spiel-Engine (Zahl der LODs, aktuelle Schirmgröße, Dreiecke,
@@ -779,8 +778,8 @@ Bake, aber für jede Domäne —, und ein Satz an die KI stellt dieselben Regler
   docs.unity3d.com/speedtree-modeler/manual/level-of-detail.html
 
 **Kriterien**
-1. **EINE Bühne: jedes Studio ein Modus der Welt-Engine — 0/2.** *Messung:* Prüfung H6 in `scripts/diag-studio-huelle.cjs` (Ratsche
-   EINE_ENGINE): wie viele vertrauenswürdige Studios laufen als `index.html?studio=<x>`; 2 = 12/12 plus Bild-Differenz Studio gegen Welt bei
+1. **EINE Engine unter jeder isolierten Studio-Seite — 0/2.** *Messung:* H6 in `scripts/diag-studio-huelle.cjs` als Netz-Prüfung der
+   Studio-SEITE (lädt sie r128? — nie „läuft als ?studio=“); 2 = 12/12 plus Bild-Differenz Studio gegen Welt bei
    gleicher Pose ≤ 2,1 % (`bild-diff.cjs` über `ausgabe-aufnahme.cjs`) und 0 Netz-Anfragen auf `worlds/*/lib/three*`; 1 ab 6/12. *Beleg:* H6
    heute 2 von 12 (gelaende, garage; Garage seit S1 auf der Welt-Engine, Bild-Diff 0,04 %), Ratsche `diag-studio-huelle.cjs:48`. Die anderen
    10 laufen in einer eigenen iframe-Shell mit eigenem Renderer (r128 siebenmal, r130, r183) und eigenem Licht (SYSTEMKARTE W3); H5: 7

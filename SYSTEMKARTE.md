@@ -293,7 +293,7 @@ Hebel = Brüche, die fallen × Pflicht-Buchstaben ÷ Aufwand, plus was andere Sc
 
 | # | Schnitt | Wurzel | Brüche fallen | Pflicht | Aufwand |
 |---|---|---|---|---|---|
-| S1 | Studio = Modus der Welt-Engine | W3 | 13 | A B E | groß: 1–3 d je Studio, ~9 000 Z. Shell |
+| S1 | EINE Engine unter jeder isolierten Studio-Seite | W3 | 13 | A B E | groß: 1–3 d je Studio, ~9 000 Z. Shell |
 | S2 | Der Richter steht außerhalb | W9 | 11 | A B | klein–mittel: 1–2 d |
 | S3 | EIN Rang, freier Haupt-Faden | W5 W6 | 13 | B E | mittel: Code auf b5-lieferung/ankunft-takt/fahrt-vorausschau |
 | S4 | EIN Grund-Datum aus dem Körper-Satz | W2 | 12 | A | mittel: 2–3 d |
@@ -305,8 +305,14 @@ Hebel = Brüche, die fallen × Pflicht-Buchstaben ÷ Aufwand, plus was andere Sc
 Vor jedem Schnitt (W0): die Zweige ohne Abschrift einfädeln — nacht-fernfarbe (F6), B4 + B5 als EIN Paket, spielgang (F1), mess-wiese;
 hoch-bauen und wiese-im-haus sind Vorlagen für S5 und S4. S2 liefert das erste ROT für S4, S6, S7, S8; S5 macht S4 im Kern billiger.
 
-### S1 Studio = Modus der Welt-Engine (W3)
-- Inhalt: jedes trusted Studio wird `index.html?studio=<x>` nach `worlds/gelaende/studio.js:1-23` — Panel + Kamera über `AnazhHuelle`, Bühne = Welt (r184, Welt-Licht, Welt-Boden, Neutral), gezeichnet über dieselbe Foundry-Stufenkette wie die Welt. Am Ende fallen `worlds/terrain/lib/three-r128.min.js`, `cores.manifest.json:7 lib`, `bakeImpostorAtlas foundry-bruecke.js:246`, §4b und `LEGACY_LICHT`; der Foundry-Worker läuft als Modul auf `vendor/three.core.min.js`.
+### S1 EINE Engine unter jeder isolierten Studio-Seite (W3)
+- GESETZ des Schöpfers (18.10., zweimal): ein Studio wird NIE gelöscht und NIE in die offene Welt verlegt. Jede Studio-Seite
+  `worlds/<x>/index.html` bleibt die ISOLIERTE Bühne (eigene Szene, Panorama, Bodenplatte, Orbit, Regler, Lehren). Einheit heißt NUR:
+  unter derselben Seite läuft die Welt-Engine (r184/WebGPU, Welt-Stoffe, Foundry-Stufenkette, Licht-Gesetz) statt r128 — Profi-Muster
+  UE Asset-Editor / Unity Prefab Mode; „in der Welt ansehen" ist ein Knopf über die Portal-Brücke. Ausnahme benannt: das Gelände-Studio
+  (`index.html?studio=gelaende`), denn sein Werk IST der Weltboden. Der erste Versuch (S1 8a00562e, Garage als Modus in der offenen Welt)
+  löschte die Seite und fiel per Revert 876feb6f. Am Ende fallen `worlds/terrain/lib/three-r128.min.js`, `cores.manifest.json:7 lib`,
+  `bakeImpostorAtlas foundry-bruecke.js:246`, §4b und `LEGACY_LICHT`; der Foundry-Worker läuft als Modul auf `vendor/three.core.min.js`.
 - Reihenfolge: garage (447 Z., F1) → fachwerk (1 029 Z., F4, Stadt) → portale (Membran, Vorschau) → schmiede → tetrapoda + koerperstudio (Bühne für Rudel und Verhalten, S6) → terrain (4 530 Z.) → Foundry-Worker.
 - Fallen: Klasse haus Labor ≠ Welt · F4 im Studio unsichtbar · Licht im Studio nicht eichbar · F1c Chase ×2 · Tier-Labor-Gang · Membran ×2 · Impostor-Bäcker ×2 · Dorf ×2 + Paritäts-throw · Mauer nur im Studio · 4 Stamm-Bühnen · r128-Parse + sync-XHR im Worker · §4b/Ü2-Widerspruch · 5 three-Revisionen → r184 (+ fremde fluid-Sandbox benannt).
 - Erster Schritt: `scripts/diag-studio-huelle.cjs` H6 „EINE Engine" (keine trusted Shell lädt `worlds/*/lib/three*` oder baut `new THREE.WebGLRenderer`) ROT bei 1/12; dann garage auf den Welt-Renderer, Chase aus dem Kern (8432627c).
