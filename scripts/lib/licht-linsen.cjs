@@ -7,15 +7,12 @@
 //   Differenz (Umgebungslicht π) − (Umgebungslicht 0) heraus. Eine 18-%-Karte liest 0,180 (Selbst-
 //   Eichung, gemessen 01.10.). Je Täter-Klasse des Stamms (bodenSatz · f:<preset>:L<stufe> · tier:<seele> · …)
 //   ein Schuss aufs nächste Exemplar, Statistik + Bild (sRGB-kodiert, Hintergrund magenta).
-// __albedoSicht({ zeilen }) — DIE ALBEDO-TAFEL DER WELT (S1 W1e, spec/farbe/albedo-tafel.json): je Tafel-Zeile ihr
-//   Exemplar (eine Architektur, ein Tier, der Spieler, der Boden unter ihm — fehlt es am Ort, setzt die Linse es über die
-//   Verben des Stamms, `spawnArchitecture` · `spawnCreatureAt`, und wartet, bis es gezeichnet ist), sichtbar NUR die Züge
-//   seiner Täter-Klasse, deren STOFF dem Wähler der Zeile passt (der Material-Schlüssel des Wirts `budgetStoff`: Art ·
-//   Rauheit · Metall · Klarlack · Seh-Klasse — dieselben Felder, die das Labor an seinem Material liest); Metall hält die
-//   Linse für den Schuss auf 0 (die BASIS-Albedo: ein Lack, eine Klinge tragen sonst fast keine diffuse). Gezählt werden
-//   jeder geschriebene Pixel (Alpha > 0 — die Karten-Alpha eines deckenden Stoffs, Ziegel und Backstein, ist kein Loch:
-//   mit der Schwelle 0,99 fehlte dem Labor-Haus das Dach). Dieselbe Auswertung wie das
-//   Labor (scripts/lib/albedo-tafel.cjs): `albedoAuswerten`, `stoffPasst`.
+// __albedoSicht({ zeilen }) — DIE ALBEDO-TAFEL DER WELT (S1 W1e, spec/farbe/albedo-tafel.json): je Tafel-Zeile ihr Exemplar
+//   (Architektur, Tier, Spieler, der Boden unter ihm — fehlt es, setzt die Linse es über `spawnArchitecture` · `spawnCreatureAt`
+//   und wartet, bis es gezeichnet ist), sichtbar NUR die Züge seiner Täter-Klasse, deren STOFF dem Wähler der Zeile passt (der
+//   Material-Schlüssel `budgetStoff`: Art · Rauheit · Metall · Klarlack · Seh-Klasse, wie im Labor); Metall auf 0 (die BASIS-
+//   Albedo). Gezählt jeder geschriebene Pixel (Alpha > 0: die Karten-Alpha eines deckenden Stoffs ist kein Loch). Dieselbe
+//   Auswertung wie das Labor (scripts/lib/albedo-tafel.cjs): `albedoAuswerten`, `stoffPasst`.
 // __lichtBilanz() — DIE LICHT-BILANZ: eine 18-%-Karte über dem Kronendach in drei Lagen (oben · zur
 //   Sonne · von der Sonne), je Licht einzeln und alle zusammen; E = π·L/0,18.
 //
@@ -439,14 +436,11 @@ function albedoSicht(opts) {
             const c = bb.getCenter(new T.Vector3());
             return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
-        // DER SATZ DES EXEMPLARS (K63-n6; gemessen 15.10., Radeon: das Tor Kathedrale las in der Welt 0,0226 gegen das Gold
-        // 0,6496 des Labors — der Bau-Satz zeichnete im Schuss die Metalle der Nachbar-Tore mit): ein Stoff-Satz trägt viele
-        // Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr
-        // Eintrag). Für den Schuss zeichnet ein Ausschnitt nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt kopiert,
-        // derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein Mesh, das kein Satz ist, bleibt (es selbst).
-        // DIE BASIS IM SATZ (gemessen 15.10., Radeon: die Nieten des Tors lasen Y 0,0000): der Satz-Stoff liest sein Metall je
-        // Ecke (`aRegler.y`, `_satzBlock`) — `metalness = 0` am Stoff erreicht ihn nie, das Metall blieb schwarz ohne Umgebung;
-        // mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke (0 ist in jeder Packung 0).
+        // DER SATZ DES EXEMPLARS (K63-n6): ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
+        // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
+        // nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt, derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein
+        // Mesh, das kein Satz ist, bleibt. DIE BASIS IM SATZ: der Satz-Stoff liest sein Metall je Ecke (`aRegler.y`) — `metalness = 0`
+        // am Stoff erreicht ihn nie; mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke.
         const ausschnitte = [];
         const satzAusschnitt = (m, eintrag, basis) => {
             let s = null;
@@ -873,15 +867,12 @@ function lichtBilanz() {
     })();
 }
 
-// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): der Boden-Satz (nah) und der Fern-Ring (fern)
-// zeichnen dieselbe Stelle des Chunk-Quadrats — der Ring liegt darunter. Aus 420 m Höhe (jenseits der Karten-Sicht des Baums,
-// 384 m: kein echter Wald im Bild, wie im Befund des Schöpfers) orthogonal über einem Quadrat von 2 × `halb` (132 m) je Ort
-// zwei Schüsse unter weißem Umgebungslicht π (hell − dunkel = die Albedo, wie `__albedoSicht`): nur der Boden-Satz, nur der
-// Fern-Ring. Das Quadrat trägt mehrere Zellen des Rings (Schale 0 schnappt auf 24 m): auf 44 m lag der Ring allein durch
-// seine Abtastung −22 … +20 % neben dem Gesetz an der Stelle, auf 132 m −12 … +7 % (gemessen 11.10., Mess-Wiese). Die Orte
-// wählt die Linse unter den Blöcken des Boden-Satzes (der ganze Fußabdruck nah gedeckt) nach der Deckung des Fern-Rings in
-// der Mitte (`_fernFarbeTeile`): Wald ≥ 0,9, Wiese ≤ 0,7 (an der Mess-Wiese deckt der Ring im Median 0,98, die lichteste
-// Stelle 0,38), je bis zu vier, 30 m auseinander, auf Land.
+// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): Boden-Satz (nah) und Fern-Ring (fern, er liegt
+// darunter) zeichnen dieselbe Stelle. Aus 420 m Höhe (über der Karten-Sicht des Baums, 384 m) orthogonal über 2 × `halb` (132 m) je
+// Ort zwei Schüsse unter weißem Umgebungslicht π (hell − dunkel = die Albedo, wie `__albedoSicht`): nur der Satz, nur der Ring. Das
+// Quadrat trägt mehrere Zellen des Rings (Schale 0 schnappt auf 24 m: auf 132 m −12 … +7 % neben dem Gesetz, auf 44 m −22 … +20 %).
+// Die Orte: Blöcke des Boden-Satzes (der Fußabdruck ganz gedeckt) nach der Deckung des Rings in der Mitte (`_fernFarbeTeile`),
+// je Klasse bis zu vier, 30 m auseinander, auf Land.
 function nahFernSicht(opts) {
     return (async () => {
         opts = opts || {};
@@ -1052,14 +1043,10 @@ function nahFernSicht(opts) {
             for (const [l] of lichter) l.intensity = 0;
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-            // Das Licht der Linse (nur Umgebungslicht) ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff zeichnet
-            // hier zum ersten Mal und wartet auf seine Pipeline (`_erstWartet`, die Welt baut sie asynchron) — in frischer
-            // Sitzung zeichnete der Boden-Satz 0 von 4 096 Bildpunkten, erst nach Sekunden voll. Der Schuss steht darum erst,
-            // wenn zwei Läufe dieselben Bildpunkte decken UND dieselbe Helligkeit zeigen (höchstens 20 s): in einem von acht
-            // frischen Läufen (Integration V18.542, Software-Holz unter Last) zeigte der erste Schuss den Boden-Satz an einem
-            // Wald-Ort bei voller Deckung mit Y 0,694 statt 0,053 (ROT +1 200 % gegen das Gesetz, im Lauf danach grün) — die
-            // Deckung allein hielt ein Bild für fertig, das sich noch änderte. Die Spur (Bildpunkte, Helligkeit je Lauf) reist
-            // mit; steht der Schuss nach der Frist nicht still, urteilt die Linse laut (`still`).
+            // Das Licht der Linse ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff wartet auf seine Pipeline
+            // (`_erstWartet`, asynchron; ein erster Schuss zeigte den Boden-Satz bei voller Deckung mit Y 0,694 statt 0,053). Der Schuss
+            // steht erst, wenn zwei Läufe dieselben Bildpunkte UND dieselbe Helligkeit zeigen (höchstens 20 s); die Spur reist mit,
+            // steht er nach der Frist nicht still, urteilt die Linse laut (`still`).
             let px = null,
                 n = -1,
                 yAlt = NaN,
@@ -1208,14 +1195,12 @@ function nahFernSicht(opts) {
     })();
 }
 
-// DAS URTEIL NAH GEGEN FERN (rein): beide Leser lesen EIN Gesetz an der Stelle (`gesetz`, das feine Mittel derselben Formel);
-// jeder liegt in SEINEM Band um das Gesetz — der Boden-Satz eng (`nah`: Karte 8 Bit im Raster N), der Fern-Ring nach seiner
-// Abtastung (`fern`: Schale 0 schnappt auf 24 m; über 132 m gemessen −12 … +18 %), dazu der Grün-Anteil g / (r + g + b). ROT
-// beim Namen (Klasse, Ort, nah gegen fern, der TÄTER: der Leser außerhalb seines Bands), wenn einer Klasse Orte fehlen (mindestens
-// drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb oder nicht stillstand, das Gesetz fehlt, die Karte der Fern-Krone
-// nicht steht, die Welt vor der Linse nicht stand (`welt`: das 5 × 5 der Chunks um den Spieler im Boden-Satz) oder ein
-// Daten-Bild des Boden-Stoffs die GPU des Hauptbilds nicht erreicht (`upload`: Version gehoben, drei Takte, in denen der
-// Boden-Satz ruht, die GPU hält sie).
+// DAS URTEIL NAH GEGEN FERN (rein): beide Leser lesen EIN Gesetz an der Stelle (`gesetz`), jeder liegt in SEINEM Band — der
+// Boden-Satz eng (`nah`: Karte 8 Bit im Raster N), der Fern-Ring nach seiner Abtastung (`fern`: Schale 0, 24 m; über 132 m
+// −12 … +18 %), dazu der Grün-Anteil g / (r + g + b). ROT beim Namen (Klasse, Ort, der TÄTER: der Leser außerhalb seines Bands),
+// wenn einer Klasse Orte fehlen (je drei Wald- und Wiesen-Orte), ein Schuss leer blieb oder nicht stillstand, das Gesetz fehlt, die
+// Karte der Fern-Krone nicht steht, die Welt nicht stand (`welt`: 5 × 5 Chunks im Boden-Satz) oder ein Daten-Bild des Boden-Stoffs
+// die GPU des Hauptbilds nicht erreicht (`upload`: Version gehoben, drei Takte Ruhe, die GPU hält sie).
 function nahFernUrteil(messung, band) {
     band = Object.assign({ nah: 0.1, fern: 0.25, gruenNah: 0.03, gruenFern: 0.05, jeKlasse: 3 }, band || {});
     const befunde = [];
@@ -1331,6 +1316,8 @@ function laubGegenlicht(opts) {
             rend = st.renderer;
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
+        // DIE STUNDE (F6, `uhr` 0..1, 0,5 Mittag): die Bühne zu dieser Stunde, der Pfad des Spielers (sein Satz „nacht")
+        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
         let abstand = opts.abstand || 8;
         let verdeckt = null;
@@ -1346,10 +1333,12 @@ function laubGegenlicht(opts) {
             if (!(o.isMesh || o.isSprite || o.isPoints)) return;
             alle.push(o);
             const k = o.material && o.material.userData && o.material.userData.foundryKind;
-            if ((k === "foliage" || k === "foliageTex") && art.test(r._taeterKlasse(o))) laub.push(o);
+            // DAS HAUS und DER BODEN (F6): der Bau-Satz zeichnet jede Gruppe der gesetzten Studio-Architektur, der Boden-Satz den Boden
+            if (opts.haus || opts.boden ? o.name === (opts.haus ? "bauSatz" : "bodenSatz") : (k === "foliage" || k === "foliageTex") && art.test(r._taeterKlasse(o))) laub.push(o);
         });
         // der Schuss der Karte (`karte: 2`) sucht kein Exemplar: alle Kronen stehen auf der Karte, das Ziel ist das der Gestalt
         const vorher = opts.karte === 2 ? window.__karteGestalt : null;
+        let freiAlt = null;
         if (!laub.length && !vorher) return { fehler: "keine Laub-Senke der Art " + art };
         // Das Exemplar: die nächste Instanz zum Spieler (ab 6 m, sonst stünde das Auge im Stamm).
         const m4 = new T.Matrix4(),
@@ -1358,7 +1347,7 @@ function laubGegenlicht(opts) {
             s = new T.Vector3();
         let ziel = null;
         const gef = (x, z) => [r._voxelSurfaceY(x + 2, z) - r._voxelSurfaceY(x - 2, z), r._voxelSurfaceY(x, z + 2) - r._voxelSurfaceY(x, z - 2)].map((v) => v / 4);
-        for (const o of laub) {
+        for (const o of opts.haus || opts.boden ? [] : laub) {
             const n = o.isInstancedMesh ? o.count : 1;
             if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
             for (let i = 0; i < n; i++) {
@@ -1379,8 +1368,36 @@ function laubGegenlicht(opts) {
                 }
             }
         }
+        // DAS HAUS (F6): der Eintrag `haus` nächst dem Anker (oder an `ziel`), Box aus den Slots seiner Gruppen, Stufe `_lodLevel`
+        if (opts.haus) {
+            const von = opts.ziel || opts.anker || [pp.x, pp.z];
+            for (const e of st.architectures || []) {
+                const pr = e && e.instFoundry === true && Array.isArray(e.instSlots) ? r._foundryPresetForEntry(e) : null;
+                const d = pr && r._foundry.recipes[pr] && r._foundry.recipes[pr].kind === "haus" ? Math.hypot(e.position.x - von[0], e.position.z - von[1]) : Infinity;
+                if (!(d < (ziel ? ziel.d : Infinity))) continue;
+                const box = e.instSlots.map((sl) => st.archInstanceGroups.get(sl.key) && [st.archInstanceGroups.get(sl.key), sl.slot]).filter((gs) => gs && gs[0].mesh && !gs[0].shadowTwin)
+                    .reduce((b, [g, i]) => (g.mesh.getMatrixAt(i, m4), b.union((g.mesh.geometry.boundingBox || (g.mesh.geometry.computeBoundingBox(), g.mesh.geometry.boundingBox)).clone().applyMatrix4(m4.premultiply(g.mesh.matrixWorld)))), new T.Box3());
+                if (!box.isEmpty()) ziel = { d, e, preset: pr, box, fuss: new T.Vector3(e.position.x, e.position.y, e.position.z) };
+            }
+        }
+        // DER BODEN (F6): die Stelle S (± 6 m, 12–90 m vom Anker) im Boden-Satz, eben (am Hang trägt die grobe Normale des Rings die
+        // Sonne anders: Form, nicht Licht), wo Satz und Gesetz des Rings auf 0,5 m gleich hoch liegen (das Dorf ebnet seinen Grund)
+        if (opts.boden) {
+            const bb = [...st.chunkSaetze.get("boden").bloecke.values()].map((q) => (q.geom.boundingBox || q.geom.computeBoundingBox(), q.geom.boundingBox)), drin = (x, z) => bb.some((q) => x >= q.min.x && x <= q.max.x && z >= q.min.z && z <= q.max.z);
+            const von = opts.ziel || opts.anker || [pp.x, pp.z], kand = [];
+            for (let rad = opts.ziel ? 0 : 12; rad <= (opts.ziel ? 0 : 90); rad += 6)
+                for (let k = 0; k < (opts.ziel ? 1 : 24); k++) {
+                    const [x, z] = [von[0] + rad * Math.cos((k * Math.PI) / 12), von[1] + rad * Math.sin((k * Math.PI) / 12)], pkt = [[0, 0], [6, 0], [-6, 0], [0, 6], [0, -6]].map(([u, v]) => [x + u, z + v]), h = pkt.map(([u, v]) => (drin(u, v) ? r._voxelSurfaceY(u, v) : NaN));
+                    if (h.every((y) => y > (st.waterLevel || 0) + 1) && Math.hypot(h[1] - h[2], h[3] - h[4]) <= 1.44 && Math.abs(h[1] + h[2] - 2 * h[0]) + Math.abs(h[3] + h[4] - 2 * h[0]) <= 0.4) kand.push({ x, z, h, pkt });
+                }
+            const g = kand.length && !opts.ziel ? await r._fernAuftrag("teile", { punkte: new Float64Array(kand.flatMap((c) => c.pkt.flat())) }) : null;
+            const c = kand.find((c, i) => !g || c.h.every((y, j) => Math.abs(g.law[i * 5 + j] - y) <= 0.5));
+            if (c) ziel = { d: 0, box: new T.Box3(new T.Vector3(c.x - 6, Math.min(...c.h) - 0.5, c.z - 6), new T.Vector3(c.x + 6, Math.max(...c.h) + 0.5, c.z + 6)), fuss: new T.Vector3(c.x, c.h[0], c.z) };
+        }
         if (vorher) ziel = vorher.ziel;
-        if (!ziel) return { fehler: "kein Exemplar der Art" };
+        if (!ziel) return { fehler: opts.haus ? "kein Haus" : opts.boden ? "keine Stelle im Boden-Satz" : "kein Exemplar der Art" };
+        if (opts.haus && Number.isFinite(opts.stufe) && ziel.e._lodLevel !== opts.stufe)
+            return { fehler: `das Haus steht in Stufe ${ziel.e._lodLevel}, nicht ${opts.stufe}` };
         // der Schuss der Gestalt nur am Exemplar des Plans in seiner Gestalt (sonst stünde ein fremder Baum im Vergleich)
         if (opts.karte === 1 && opts.ziel && ziel.d > 1.5) return (window.__karteGestalt = null), { fehler: "das Exemplar zeigt keine Gestalt", d: +ziel.d.toFixed(1) };
         const mitte = ziel.box.getCenter(new T.Vector3());
@@ -1391,7 +1408,7 @@ function laubGegenlicht(opts) {
         // DAS SPIEL-AUGE (S2b): `wechsel` stellt das Auge in den Abstand, ab dem das Spiel die Karte zeigt — die Stufen-Wahl
         // (`_chooseLODForDistance`) aus der Karte heraus für die Höhe des Exemplars, die nächste Distanz mit Karte —, mal `wechsel`;
         // `augeH` ist die Augenhöhe über dem Boden (Ego 1,6, Third 3,5).
-        if (opts.wechsel > 0) {
+        if (opts.wechsel > 0 && !opts.boden) {
             let d = 4;
             while (d < 600 && r._chooseLODForDistance(d, 2, hoehe) !== 2) d += 0.25;
             abstand = d * opts.wechsel;
@@ -1436,8 +1453,14 @@ function laubGegenlicht(opts) {
         // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
         // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet)
         const D = r.constructor.LOD_DISTANCES;
-        const l1 = +(r._lodPerceptionDistance(abstand, hoehe) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
-        if (opts.plan) return { ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
+        const l1 = +(Math.max(r._lodPerceptionDistance(abstand, hoehe), opts.haus ? abstand : 0) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
+        // DAS FERNE AUGE (der Boden): 400 m vor S, der flachste Blick von oben (≥ 1°) — dort zeichnet der Fern-Ring S (Schuss 2)
+        let fern = null;
+        for (let j = 0; opts.plan && opts.boden && j < 24; j++) {
+            const [fx, fz] = [ziel.fuss.x + 400 * Math.cos((j * Math.PI) / 12), ziel.fuss.z + 400 * Math.sin((j * Math.PI) / 12)], neig = Math.atan2(r._voxelSurfaceY(fx, fz) + (opts.augeH || 1.7) - ziel.fuss.y, 400);
+            if (neig >= Math.PI / 180 && r._voxelSurfaceY(fx, fz) > (st.waterLevel || 0) && (!fern || neig < fern[2])) fern = [fx, fz, neig];
+        }
+        if (opts.plan) return opts.boden && !fern ? { fehler: "kein fernes Auge über der Stelle" } : { fern, ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
         const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;
@@ -1464,7 +1487,7 @@ function laubGegenlicht(opts) {
                 Math.atan2(mitte.y - auge.y, Math.hypot(mitte.x - auge.x, mitte.z - auge.z))
             );
         const out = {
-            art: opts.art || "buche",
+            art: opts.haus ? ziel.preset : opts.boden ? "boden" : opts.art || "buche",
             abstand: +Math.hypot(auge.x - ziel.fuss.x, auge.z - ziel.fuss.z).toFixed(1),
             gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1),
             sonneGrad: +((elev * 180) / Math.PI).toFixed(1),
@@ -1553,8 +1576,12 @@ function laubGegenlicht(opts) {
                 // dasselbe Auge auf die Kugel des Exemplars, die Licht-Kette der Bühne (Sonne mit Schatten, Himmel), derselbe Baum-Satz
                 // (Laub, Rinde, Karten jeder Art) — Schuss 1 in den Stufen der Gestalt, Schuss 2 (der Aufrufer stellt die Stufen auf
                 // die Karte) jede Krone als Karte. Gezählt jedes Pixel im Rechteck der Box, das beide zeichnen; Mittel linear, L*, C*ab.
+                const fr = opts.karte === 2 && opts.boden ? st.fernRing : null;
+                const frei = fr && fr.teilung && fr.teilung.frei ? fr.teilung.frei.index : null;
+                const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
+                if (frei && fr.geos[0].index.array.length === frei.array.length) (freiAlt = [frei, frei.array.slice()]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true);
                 for (const m of alle)
-                    m.visible = /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material && m.material.userData && m.material.userData.foundryKind));
+                    m.visible = opts.boden ? (fr ? m !== naht && m.userData.inventar === "fern-ring" : laub.includes(m)) : opts.haus ? laub.includes(m) || m.name === "bauWurf" : /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material && m.material.userData && m.material.userData.foundryKind));
                 bundles();
                 const fovAlt = cam.fov,
                     rad = ziel.box.min.distanceTo(ziel.box.max) / 2;
@@ -1576,11 +1603,25 @@ function laubGegenlicht(opts) {
                     rand[0] = Math.max(rand[0], Math.abs(e.x));
                     rand[1] = Math.max(rand[1], Math.abs(e.y));
                 }
+                const wurf = dl.castShadow;
+                dl.castShadow = wurf && !opts.boden; // der Boden ohne Schatten: die Kaskaden folgen dem Auge, die ferne Stelle läge außerhalb
                 const b = await lies("die Karte gegen die Gestalt");
+                dl.castShadow = wurf;
+                // DIE STELLE IM BILD (der Boden): gezählt wird je Schuss, was waagrecht in 6 m um S liegt (Orts-Stoff: die Welt-Lage je Pixel)
+                if (opts.boden) {
+                    const os = new T.MeshBasicNodeMaterial({ side: T.DoubleSide }), sicht = alle.filter((m) => m.visible), stoffe = sicht.map((m) => m.material);
+                    os.colorNode = T.TSL.vec4(T.TSL.positionWorld.sub(T.TSL.uniform(ziel.fuss.clone())), 1);
+                    sicht.forEach((m) => (m.material = os));
+                    const o = await lies("der Ort der Stelle");
+                    sicht.forEach((m, i) => (m.material = stoffe[i]));
+                    os.dispose();
+                    b.maske = Uint8Array.from(o.Yp, (y, i) => +(y !== -1 && b.Yp[i] >= 0 && Math.hypot(o.Cp[i * 3], o.Cp[i * 3 + 2]) <= 6));
+                }
                 [cam.near, cam.far] = nfAlt;
                 cam.fov = fovAlt;
                 cam.updateProjectionMatrix();
-                if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: r._taeterKlasse(ziel.o), ziel })), { stufe: out.stufe };
+                const stufeJetzt = opts.boden ? (opts.karte === 1 ? "bodenSatz" : "fern-ring") : opts.haus ? "f:" + ziel.preset + ":L" + ziel.e._lodLevel : r._taeterKlasse(ziel.o);
+                if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: stufeJetzt, ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
                 const lab = (rgb) => {
                     const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
@@ -1588,6 +1629,12 @@ function laubGegenlicht(opts) {
                     const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
                     return { Y: +Y.toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
                 };
+                if (opts.boden) {
+                    const mittel = (x, m = x.maske.reduce((s, v) => s + v, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
+                    const [lg, lk] = [mittel(g), mittel(b)];
+                    if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
+                    return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                }
                 const sg = [0, 0, 0], sk = [0, 0, 0];
                 let n = 0;
                 // DAS EXEMPLAR ALLEIN (S2b): gezählt wird die Insel um die Mitte der Krone, die beide Schüsse zeichnen (Lücken
@@ -1611,7 +1658,7 @@ function laubGegenlicht(opts) {
                     }
                 if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
                 const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
-                return Object.assign(out, { stufe: g.stufe, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
             }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
@@ -1730,6 +1777,7 @@ function laubGegenlicht(opts) {
             out.sonne = { pixel: s.pixel, gegen: { Y: s.gegen.Y }, auf: { Y: s.auf.Y }, verhaeltnis: s.verhaeltnis };
             out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
         } finally {
+            if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true);
             for (const m of alle) m.visible = visAlt.get(m);
             bundles();
             if (luftU) luftU.beta.value = luftAlt;
@@ -1747,8 +1795,6 @@ function laubGegenlicht(opts) {
     })();
 }
 
-// DAS URTEIL DER LAUB-LICHT-LINSE (K19): je Art leuchtet das Laub im Gegenlicht — Luma Gegenlicht / Auflicht ≥ `glanz`
-// (1,3) —, und das Labor zeigt dasselbe Verhältnis (± `labor`, 10 %), wo es gemessen ist. Täter beim Namen.
 function laubLichtUrteil(messung, band) {
     band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
@@ -1756,10 +1802,19 @@ function laubLichtUrteil(messung, band) {
     for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
         if (w && w.karte) {
             // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
-            const k = w.karte;
-            zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC });
+            // DIE FERNE JE STUNDE (F6, `paar` fern/nah: Haus L2/L0, Fern-Ring/Boden-Satz) antwortet der Uhr wie die Nähe — gegen ihre Zeile
+            // zu Mittag (`<art>@0.5`; der Ton-Abstand skaliert mit der Buntheit der Nähe), der Mittag selbst reist als `mittag` (Lehre 19)
+            const mittag = w.paar && /@/.test(art) && !/@0\.5$/.test(art) ? messung.welt[art.replace(/@.*$/, "@0.5")] : null;
+            const kC = mittag && mittag.karte && mittag.karte.gestalt && w.karte.gestalt ? w.karte.gestalt.C / mittag.karte.gestalt.C : 1;
+            const k = mittag && mittag.karte ? { verhaeltnis: +(w.karte.verhaeltnis / mittag.karte.verhaeltnis).toFixed(3), dL: +(w.karte.dL - mittag.karte.dL).toFixed(2), dC: +(w.karte.dC - mittag.karte.dC * kC).toFixed(2) } : w.karte;
+            if (w.paar && !mittag && !/@0\.5$/.test(art)) befunde.push(`FERN ${art}: ohne die Zeile zu Mittag (\`--uhr 0.5,…\`) kein Urteil der Stunde`);
+            if (w.paar && /@0\.5$/.test(art)) {
+                zeilen.push({ art, stufe: w.stufe, mittag: w.karte.verhaeltnis, dL: w.karte.dL, dC: w.karte.dC });
+                continue;
+            }
+            zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC, mittag: mittag ? mittag.karte.verhaeltnis : undefined });
             if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
-                befunde.push(`KARTE ${art}: Karte/Gestalt (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+                befunde.push(`${w.paar ? "FERN" : "KARTE"} ${art}: ${w.paar ? w.paar + " gegen Mittag" : "Karte/Gestalt"} (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
             continue;
         }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {

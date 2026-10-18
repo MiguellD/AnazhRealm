@@ -2576,9 +2576,6 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        // B8 — prüft nur das LEBENDE Struktur-Licht: die rimStrength-Uniform (PBR-Rim); die Struktur-LUT
-        // (`_ensureStructureGradient`) ist mit dem Cel-System gefallen, kein Shader liest sie.
-        out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
         // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
         // steht neben der Hotbar + der Tausch-Key ist gebunden.
@@ -3148,7 +3145,6 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
-    check("B8: rimStrength-Uniform verdrahtet (Struktur-LUT mit Toon gepurged → PBR-Rim)", res.b8Rim);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,

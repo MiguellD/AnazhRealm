@@ -1966,7 +1966,7 @@ class AnazhRealm_bild_himmel {
         // (`_celestialHorizonFade`) → der Richtungswechsel bei y=0 ist unsichtbar.
         // Farbe: `atm.col` (der Durchlass der EINEN Atmosphäre) × `tint.lightColor` (weiß + Aura/Emotion).
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
-        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1.
+        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(
@@ -2187,13 +2187,19 @@ class AnazhRealm_bild_himmel {
     // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
     // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
     // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
-    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden (0.04) mit Hemi (0.10) die
-    // Nacht-Kalibrierung Mond/(amb+hemi) ≥ 1.5. Er blendet mit `_nachtAnteil` (dieselbe Tag-Achse wie der
-    // Nebel). joy/awe/sorrow modulieren wie bisher.
+    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden mit Hemi (0,10) das Licht neben dem Mond. Er blendet
+    // mit `_nachtAnteil` (dieselbe Tag-Achse wie der Nebel). joy/awe/sorrow modulieren wie bisher.
+    // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
+    // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
+    // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
+    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG ist damit Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
+    // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
+    // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
+    // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
     _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = 0.04 * this._nachtAnteil(angle);
+        const baseAmb = (0.04 + 0.06 * Math.PI) * this._nachtAnteil(angle);
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -2353,18 +2359,6 @@ class AnazhRealm_bild_himmel {
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
             }
-        }
-        // Mond-Rim atmet mit der Nacht: voll bei Sonne unter dem Horizont, ausgeblendet bis Sonnenhöhe 0.25, tags
-        // 0; Regen dämpft. Der Wert IST das Shader-Gate.
-        const au = this.state.atmoUniforms;
-        if (au && au.terrainMoonRim) {
-            const rainyMix = this._weatherBlendedValue(0, 1);
-            const moonBase =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
-                    ? this.state.atmosphere.moonRim
-                    : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
-            const sunUp = Math.max(0, Math.sin(angle));
-            au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
         }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
         // fehlte die Decke. Liegt die Kamera unter Wasser, wird das EINE geteilte Wasser-Material

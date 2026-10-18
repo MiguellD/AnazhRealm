@@ -859,7 +859,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandLambda4Streu, ctx);
             await timed(BAND.checkBandStoffSignatur, ctx);
             await timed(BAND.checkBandLambda5MischwaldSynthese, ctx);
-            await timed(BAND.checkBandLambda6Detail, ctx);
             await timed(BAND.checkBandV18177AAA, ctx);
             await timed(BAND.checkBandGammaGenese, ctx);
             await timed(BAND.checkBandWEFrequenzband, ctx);

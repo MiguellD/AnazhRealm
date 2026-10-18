@@ -295,7 +295,7 @@ class AnazhRealm {
             // DIE LUFT (V18.530): {U, faktor, farbe} — die EINE Luftperspektive (`_luftEnsure`, `scene.fogNode`),
             // gespeist von _dayNightApplyHemiUndLuft (Tag-Nacht × Wetter × Sonne).
             luft: null,
-            // Substanz-Uniforms (TSL: Mikro-Tiefe, Rim, Nacht-Boden, Mond-Rim …). Lazy beim ersten
+            // Substanz-Uniforms (TSL: Mikro-Tiefe, Kavitäts-AO, Geologie, Licht-Pool …). Lazy beim ersten
             // Terrain-Material-Build (_ensureAtmoUniforms).
             atmoUniforms: null,
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.

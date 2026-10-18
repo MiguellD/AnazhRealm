@@ -750,7 +750,7 @@ async function checkBandM3RittVollendet(ctx) {
 // geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
 // Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
-// via _substanceResponseProfile, FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.)
+// via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {

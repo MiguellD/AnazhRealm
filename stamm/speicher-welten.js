@@ -939,17 +939,9 @@ class AnazhRealm_speicher_welten {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
                         ? this.state.atmosphere.microStrength
                         : 0.1,
-                terrainNightFloor:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
-                        ? this.state.atmosphere.terrainNightFloor
-                        : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor,
-                moonRim:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
-                        ? this.state.atmosphere.moonRim
-                        : AnazhRealm.SUBSTANCE_RESPONSE.moonRim,
                 // V18.210 (§1-A2) — der R5-STRUKTUR-BOOST überlebt den Reload
                 // (sonst springt der Slider zurück auf 1.3 → V8.59-Klasse,
-                // dieselbe Heilung wie microStrength/terrainNightFloor V18.164).
+                // dieselbe Heilung wie microStrength V18.164).
                 r5StructureBoost:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
                         ? this.state.atmosphere.r5StructureBoost
