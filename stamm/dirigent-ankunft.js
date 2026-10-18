@@ -954,13 +954,11 @@ class AnazhRealm_dirigent_ankunft {
     _rangImErstenBlick(rang) {
         return !!this.state._weltbildDa || rang < AnazhRealm.ERSTER_BLICK.ausserD2;
     }
-    // Steht das Bild, fällt der Blick-Schlüssel aus jedem wartenden Rang: die Zahl einer Karte (ihr Bedarf) und jedes
-    // Auftrags, der sie trägt — ab jetzt gilt nah zuerst rundum.
+    // Steht das Bild, fällt der Blick-Schlüssel aus dem Bedarf jeder Karte — ab jetzt gilt nah zuerst rundum. Der Rang eines
+    // Auftrags, der eine solche Zahl trägt, misst sie frisch (`_foundryAuftragD2`, B5: in Schlange, Flug und Wächter derselbe).
     _ersterBlickAus() {
         const A = AnazhRealm.ERSTER_BLICK.ausserD2;
         const ab = (v) => (Number.isFinite(v) && v >= A ? v - A : v);
-        const f = this._foundry;
-        for (const a of (f && f.warte) || []) if (typeof a.wo === "number") a.wo = ab(a.wo);
         for (const z of this._impostorAtlas().zellen.values()) z._bedarfD2 = ab(z._bedarfD2);
     }
 

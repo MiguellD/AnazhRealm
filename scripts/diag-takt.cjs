@@ -11,7 +11,9 @@
 //   T5  DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`) und ihre Freigabe wählen mit der EINEN Wahl (`_foundryWahl`) NAH zuerst:
 //       hinter vollem Worker und zehn Vorrats-Aufträgen geht der nahe Bau als nächster hinein, ein wartender Vorrats-Schlüssel,
 //       den ein naher Bau verlangt, wird nachpriorisiert, die Request-Nummer entsteht beim Senden; das Ergebnis am Ort des Spielers
-//       geht zuerst frei. T6 und nie verhungert: der Älteste (über FOUNDRY_ALTER_MS) geht unter lauter Nahen spätestens als zweiter.
+//       geht zuerst frei; ein naher Leser, der sich an einen fernen Zug am Wächter hängt, hebt dessen EINEN Rang-Datensatz und
+//       geht zuerst frei (B5, der Selbsttest friert ihn ein). T6 und nie verhungert: der Älteste (über FOUNDRY_ALTER_MS) geht unter
+//       lauter Nahen spätestens als zweiter.
 //   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und Uhr
 //       der Späteren, bis der Worker ihn fertig hat (sonst lief der Wiederholer ab, und der dritte Ablauf macht die Zelle
 //       gescheitert); je FADEN, auch im Werk-Helfer (`w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (`_foundryUhren`)
@@ -169,29 +171,17 @@ const SELBST = process.argv.includes("--selftest");
             const pm = st.playerMesh.position;
             const fEcht = r._foundry;
             const fifo = (q, halter, darf) => (darf ? q.findIndex(darf) : 0); // die alte Klasse: jede in Ankunfts-Reihenfolge
-            const nurNaechster = function (q, halter, darf) {
-                // ohne Alters-Wache: der Nächste gewinnt immer
+            const nurNaechster = function (q, halter, darf) { // ohne Alters-Wache: der Nächste gewinnt immer
                 let i = -1;
-                for (let k = 0; k < q.length; k++)
-                    if ((!darf || darf(q[k])) && (i < 0 || this._foundryAuftragD2(q[k].wo) < this._foundryAuftragD2(q[i].wo))) i = k;
+                for (let k = 0; k < q.length; k++) if ((!darf || darf(q[k])) && (i < 0 || this._foundryAuftragD2((q[k].rang || q[k]).wo) < this._foundryAuftragD2((q[i].rang || q[i]).wo))) i = k; // prettier-ignore
                 return i;
             };
             const schlange = (wahl, lauf) => {
                 const gesendet = [];
-                const f = {
-                    ready: true,
-                    worker: { postMessage: (m) => gesendet.push(m) },
-                    pending: new Map(),
-                    reqSeq: 1,
-                };
+                const f = { ready: true, worker: { postMessage: (m) => gesendet.push(m) }, pending: new Map(), reqSeq: 1 };
                 r._foundry = f;
                 if (wahl) r._foundryWahl = wahl;
-                const antworte = () => {
-                    const [id, res] = f.pending.entries().next().value;
-                    f.pending.delete(id);
-                    res([]);
-                    r._foundryPumpe(f);
-                };
+                const antworte = () => ((([id, res]) => (f.pending.delete(id), res([])))(f.pending.entries().next().value), r._foundryPumpe(f)); // prettier-ignore
                 const bestelle = (name, wo) => r._foundryWorkerRequest(name, 0, 0, null, null, false, wo); // V18.527: ohne Saison
                 try {
                     return lauf(f, gesendet, antworte, bestelle);
@@ -203,18 +193,14 @@ const SELBST = process.argv.includes("--selftest");
             const K = r.constructor.FOUNDRY_IM_FLUG;
             const t5 = schlange(selbst ? fifo : null, (f, gesendet, antworte, bestelle) => {
                 for (let i = 0; i < K; i++) bestelle("block" + i); // der Worker ist voll
-                for (let i = 0; i < 10; i++) bestelle(i === 4 ? "eiche" : "vorrat" + i);
+                const zug = (wo) => r._foundryZug("linse:t5:eiche", "eiche", 0, 0, undefined, wo); // der Zug des Vorrats-Schlüssels
+                for (let i = 0; i < 10; i++) if (i === 4) zug(); else bestelle("vorrat" + i); // prettier-ignore
                 bestelle("nah10", { x: pm.x + 10, z: pm.z });
-                r._foundryNaeher(f, "eiche", 0, 0, { x: pm.x + 5, z: pm.z }); // ein naher Bau verlangt den Vorrats-Schlüssel
+                zug({ x: pm.x + 5, z: pm.z }); // ein naher Bau verlangt den Vorrats-Schlüssel (`_foundryZug` → `_foundryNaeher`)
                 antworte();
                 antworte();
                 const nr = gesendet.map((m) => Number(String(m.reqId).replace(/^\D+/, "")));
-                return {
-                    folge: gesendet.slice(K, K + 2).map((m) => m.presetId),
-                    nummernSteigen: nr.every((n, i) => i === 0 || n > nr[i - 1]),
-                    imFlug: f.pending.size,
-                    K,
-                };
+                return { folge: gesendet.slice(K, K + 2).map((m) => m.presetId), nummernSteigen: nr.every((n, i) => i === 0 || n > nr[i - 1]), imFlug: f.pending.size, K }; // prettier-ignore
             });
             // DIE FREIGABE (`_tickFoundryIngest`, die EINE Wahl): Ergebnisse am Wächter, EIN Tick (3 frei) — ihre Reihe
             const freigabe = async (wahl, posten, alt) => {
@@ -242,6 +228,31 @@ const SELBST = process.argv.includes("--selftest");
             });
             // hinter 10 fernen Ergebnissen geht das am Ort des Spielers zuerst frei (B4-n1), der Älteste unter 6 Nahen spätestens als zweiter
             const t5i = await freigabe(selbst && fifo, [...Array(11).keys()].map((i) => ["e" + i, i < 10 ? { x: pm.x + 900 + i, z: pm.z } : pm])); // prettier-ignore
+            // DER ANHÄNGER AM WÄCHTER (B5, Befund des B4-Prüfers): elf ferne Züge liegen am Wächter, ein naher Leser hängt sich an den
+            // letzten (`_foundryZug` → `_foundryNaeher`) — dessen Rang-Datensatz steigt, er geht als erster frei; der Selbsttest friert ihn ein
+            const t5a = await (async () => {
+                const [fE, qE, rE, reihe] = [r._foundry, r._foundryIngestQueue, st.renderer, []];
+                const f = { ready: true, worker: { postMessage: () => {} }, pending: new Map(), reqSeq: 1, cache: new Map() };
+                try {
+                    [r._foundry, st.renderer, r._foundryIngestQueue] = [f, {}, []]; // ein Renderer: der Wächter hält
+                    if (selbst) r._foundryNaeher = () => {}; // der eingefrorene Rang: der Anhänger hebt nichts
+                    const zug = (n, wo) => r._foundryZug("linse:t5a:" + n, "eiche", 0, 0, undefined, wo);
+                    const wos = [...Array(11).keys()].map((i) => ({ x: pm.x + 900 + i, z: pm.z }));
+                    const zuege = wos.map((wo, i) => zug("fern" + i, wo));
+                    for (const [id, res] of [...f.pending]) f.pending.delete(id) && res([]);
+                    await new Promise((res) => setTimeout(res, 0));
+                    // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn (vorher) am Ort
+                    const meine = r._foundryIngestQueue.map((e) => [e, zuege.findIndex((z, i) => (e.rang ? e.rang === z.rang : e.wo === wos[i]))]).filter(([, i]) => i >= 0); // prettier-ignore
+                    meine.forEach(([e, i]) => ((f0) => (e.frei = () => (reihe.push(i), f0())))(e.frei));
+                    zug("fern10", pm); // der nahe Leser hängt sich an den letzten Zug
+                    for (let t = 0; t < 30 && reihe.length < meine.length; t++) r._tickFoundryIngest(1 / 60);
+                    await new Promise((res) => setTimeout(res, 0));
+                    return { n: meine.length, erster: reihe[0] };
+                } finally {
+                    [r._foundry, st.renderer, r._foundryIngestQueue] = [fE, rE, qE];
+                    delete r._foundryNaeher;
+                }
+            })();
             const t6i = await freigabe(selbst && nurNaechster, [["alt", { x: pm.x + 900, z: pm.z }], ...[0, 1, 2, 3, 4, 5].map((i) => ["nah" + i, { x: pm.x + 5 + i, z: pm.z }])], true); // prettier-ignore
             // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der erste ab,
             // bekommt sein Besteller null, aber die Uhr des zweiten startet nicht, solange sein Geist Platz und Uhr hält (die alte
@@ -261,13 +272,7 @@ const SELBST = process.argv.includes("--selftest");
             // Nummer am ENDE — die Lesart vom Anfang (`/^\D+/`) machte aus `rw1_4` NaN, seine Uhr lief ab dem Anmelden.
             const t8 = await (async () => {
                 const still = { postMessage: () => {} };
-                const f = {
-                    ready: true,
-                    worker: still,
-                    helfer: [{ k: 1, bereit: true, w: still }],
-                    pending: new Map(),
-                    reqSeq: 1,
-                };
+                const f = { ready: true, worker: still, helfer: [{ k: 1, bereit: true, w: still }], pending: new Map(), reqSeq: 1 };
                 r._foundry = f;
                 if (selbst) r._foundryFrist = fristAlt;
                 const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
@@ -414,6 +419,7 @@ const SELBST = process.argv.includes("--selftest");
                 t3,
                 t5,
                 t5i,
+                t5a,
                 t6: { ...t6, frei: t6i.frei },
                 t8,
                 t9,
@@ -435,22 +441,15 @@ const SELBST = process.argv.includes("--selftest");
     const t3 = aus.t3;
     const T3 = t3.fernJa === 4 && t3.nah1 === false && t3.nah2 === true && t3.fern2 === false;
     const T4 = t3.fern3 === true;
-    const t5 = aus.t5,
-        t6 = aus.t6;
+    const [t5, t6] = [aus.t5, aus.t6];
     const T5i = aus.t5i.n === 11 && aus.t5i.frei[0] === "e10"; // die Vorlagen des Leibs vor den Bäumen des Rings
-    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K && T5i;
+    const T5a = aus.t5a.n === 11 && aus.t5a.erster === 10; // der Anhänger am Wächter geht zuerst frei (B5)
+    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K && T5i && T5a;
     const T6 = t6.folge.includes("alt") && t6.frei.slice(0, 2).includes("alt"); // Pumpe UND Freigabe: die EINE Wahl
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
     const helferNr = (t8.nummern || []).filter((k) => /w1_\d+$/.test(k));
-    const T8 =
-        t8.erster === "abgelaufen" &&
-        t8.zweiter === "offen" &&
-        t8.geist === true &&
-        helferNr.length === 2 &&
-        t8.helferErster === "abgelaufen" &&
-        t8.helferZweiter === "offen" &&
-        t8.helferGeist === true;
+    const T8 = t8.erster === "abgelaufen" && t8.zweiter === "offen" && t8.geist === true && helferNr.length === 2 && t8.helferErster === "abgelaufen" && t8.helferZweiter === "offen" && t8.helferGeist === true; // prettier-ignore
     const t9 = aus.t9;
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Ort-Wahl ein Vielfaches ihrer 3 Uhr-Fragen; die Frist gilt je Aufgabe
     const frist = { _tickPendingVegSpawns: t9.pflanz === 12, _ortWahlScheibe: t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _nexusPerfActuate: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
@@ -460,12 +459,12 @@ const SELBST = process.argv.includes("--selftest");
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
-                `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.frei[0]} zuerst → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
+                `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.frei[0]} zuerst, der eingefrorene Rang gibt den Anhänger als ${aus.t5a.erster === 10 ? "ersten (vakuös!)" : `Nr. ${aus.t5a.erster}`} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Nur-der-Nächste-Wahl sendet ${t6.folge.join("·")}, gibt ${t6.frei.join("·")} frei → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}/${t9.stromMs} ms, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
@@ -479,7 +478,7 @@ const SELBST = process.argv.includes("--selftest");
     zeile(T2, `T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`);
     zeile(T3, `T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`);
     zeile(T4, `T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
-    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.frei[0]} von ${aus.t5i.n} zuerst frei (Soll e10, am Ort des Spielers)`);
+    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.frei[0]} von ${aus.t5i.n} zuerst frei (Soll e10, am Ort des Spielers) · der Anhänger am Wächter (ein naher Leser am fernen Zug, ${aus.t5a.n} Ergebnisse am Wächter, Soll 11) geht als ${aus.t5a.erster === 10 ? "erster" : `Nr. ${aus.t5a.erster} statt erster — Täter: der eingefrorene Rang (_foundryNaeher hebt nur die Wartenden)`} frei`);
     zeile(T6, `T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")} · die Freigabe → ${t6.frei.join(" · ")}`);
     zeile(T8, `T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
             `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +

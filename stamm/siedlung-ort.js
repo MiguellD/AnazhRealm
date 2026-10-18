@@ -1226,7 +1226,7 @@ class AnazhRealm_siedlung_ort {
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
     // Mesh, kein Cache — ein deliberater Akt). Fail-closed: kein Worker/nicht ready → null. Dieselbe
     // pending-Map wie die Assets.
-    _foundryRequestSettlement(dp) {
+    _foundryRequestSettlement(dp, kopf) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
@@ -1235,7 +1235,7 @@ class AnazhRealm_siedlung_ort {
             f,
             "stl-",
             { type: "export-settlement", dp: dp || {} },
-            0,
+            this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_buchKoepfe`, die Bahn ohne Arbeit)
             45000,
             "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
         );
@@ -2275,11 +2275,14 @@ class AnazhRealm_siedlung_ort {
         const key = i2.key || cx + "," + cz; // Zell-Infos tragen cx,cz — das Start-Dorf trägt "start"
         if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
         this._autoSettlementPendingKey = key;
-        return this._foundryRequestSettlement({
-            seed: i2.seed,
-            nH: i2.nH,
-            epoche: this._siedlungEpoche(i2.seed), // ZENSUS-REST V18.488 — die Epochen-Legende
-        }).then((plan) => {
+        return this._foundryRequestSettlement(
+            {
+                seed: i2.seed,
+                nH: i2.nH,
+                epoche: this._siedlungEpoche(i2.seed), // ZENSUS-REST V18.488 — die Epochen-Legende
+            },
+            key === "start"
+        ).then((plan) => {
             this._autoSettlementPendingKey = null;
             if (!plan || !Array.isArray(plan.slots)) return null; // fail-closed (Foundry kalt)
             // Der Anker misst den Plan selbst (`_siedlungsAnker`, die EINE Regel jedes Dorfs): nie um den Spieler —

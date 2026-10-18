@@ -1376,13 +1376,15 @@ class AnazhRealm_koerper_leib {
                     this._ofenVorlage(keyM, false, () => null, true);
                     continue;
                 }
+                const nachBild = lodM === 0 && grob;
+                // die Stufen des ersten Bilds sind ein Kopf der Ankunft (`_foundryRang`: die Bahn ohne Arbeit, `_foundryPumpe`)
                 const bestellen = () =>
                     this._foundryRequest(
                         "mensch",
                         0,
                         lodM,
                         { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
-                        pm ? pm.position : undefined
+                        this._foundryRang(pm ? pm.position : undefined, !nachBild)
                     ).then((meshes) => {
                         // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                         // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
@@ -1393,7 +1395,6 @@ class AnazhRealm_koerper_leib {
                         }
                         this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                     });
-                const nachBild = lodM === 0 && grob;
                 const auftrag = nachBild
                     ? this._weltbildKommt()
                           .then(bestellen)

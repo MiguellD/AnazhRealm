@@ -725,8 +725,11 @@ class AnazhRealm_studio_bruecke {
         return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
     }
     // `wo` = der Rang in der Worker-Schlange (`_foundryAuftrag`): die Position des Bestellers ({x,z}, d² wird beim
-    // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker).
+    // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker) — oder
+    // sein Rang-Datensatz (`_foundryRang`). Das Versprechen trägt den Datensatz (`.rang`): der Zug hebt ihn (`_foundryNaeher`).
     _foundryRequest(presetId, seed, lod, ov, wo) {
+        const rang = this._foundryRang(wo);
+        wo = rang.wo;
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
         // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
@@ -755,9 +758,19 @@ class AnazhRealm_studio_bruecke {
         // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
-        return this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, wo)
+        const auftrag = this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
-            .then((ergebnis) => this._foundryIngestTakt(ergebnis, wo));
+            .then((ergebnis) => this._foundryIngestTakt(ergebnis, rang));
+        auftrag.rang = rang;
+        return auftrag;
+    }
+    // DER EINE RANG-DATENSATZ je Auftrag bzw. Zug (B5): `wo` = der Ort des nächsten Lesers ({x,z}, eine Zahl d² oder nichts =
+    // Vorrat), `kopf` = der Kopf einer Ankunfts-Kette (`_buchKoepfe`: die Bahn ohne Arbeit, `_foundryPumpe`). DERSELBE Datensatz
+    // wartet in der Schlange (`_foundryAuftrag`), reist im Flug mit und wartet am Wächter (`_foundryIngestTakt`) — `_foundryNaeher`
+    // hebt ihn, wo der Zug gerade steht, die EINE Wahl (`_foundryWahl`) liest ihn. Befund des B4-Prüfers: die Freigabe las das
+    // `wo` aus dem Closure von `_foundryRequest`, ein naher Leser, der sich an einen fernen Zug hängte, blieb am Wächter hinten.
+    _foundryRang(wo, kopf) {
+        return wo && wo.rangSatz === true ? wo : { rangSatz: true, wo, kopf: kopf === true };
     }
     // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
     // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
@@ -773,14 +786,15 @@ class AnazhRealm_studio_bruecke {
         const zuege = f.zuege || (f.zuege = new Map());
         const da = zuege.get(key);
         if (da) {
-            if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
+            if (wo != null && da.rang) this._foundryNaeher(da.rang, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
             this._streuWartetAuf(da);
             return da;
         }
         if (!f.requested) f.requested = new Set();
         f.requested.add(key);
         if (erst && erst.vor) erst.vor();
-        const zug = this._foundryRequest(preset, variant, lod, ov || undefined, wo).then((meshes) => {
+        const auftrag = this._foundryRequest(preset, variant, lod, ov || undefined, wo);
+        const zug = auftrag.then((meshes) => {
             if (zuege.get(key) === zug) zuege.delete(key);
             if (meshes) {
                 this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
@@ -789,21 +803,24 @@ class AnazhRealm_studio_bruecke {
             f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
             return false;
         });
+        zug.rang = auftrag.rang;
         zuege.set(key, zug);
         if (erst && erst.nach) zug.then(erst.nach);
         this._streuWartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
         return zug;
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
-    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `wo` = der Rang des Bestellers wie in der
-    // Worker-Schlange (`_foundryAuftrag`): die Freigabe wählt mit der EINEN Wahl der Pumpe (`_foundryWahl`).
-    _foundryIngestTakt(x, wo) {
+    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `rang` = der Rang-Datensatz des Auftrags
+    // (`_foundryRang`, derselbe wie in der Worker-Schlange): die Freigabe wählt mit der EINEN Wahl der Pumpe (`_foundryWahl`).
+    _foundryIngestTakt(x, rang) {
         if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
         const r = this.state.renderer;
         if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
         const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
-        return new Promise((res) => q.push({ frei: () => res(x), wo, t: performance.now() }));
+        return new Promise((res) =>
+            q.push({ frei: () => res(x), rang: this._foundryRang(rang), t: performance.now() })
+        );
     }
     // DIE EINE WAHL der Foundry (Worker-Schlange `_foundryPumpe`, Freigabe `_tickFoundryIngest`): nah zuerst nach dem EINEN
     // Rang (`_foundryAuftragD2`, vor dem ersten Weltbild der Blick zuerst), unter Gleichen FIFO, nie verhungert — wartet der
@@ -816,10 +833,10 @@ class AnazhRealm_studio_bruecke {
         if (darf) while (i < q.length && !darf(q[i])) i++;
         if (i >= q.length) return -1;
         if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS && (halter.warteZug = !halter.warteZug)) return i;
-        let best = this._foundryAuftragD2(q[i].wo);
+        let best = this._foundryAuftragD2(q[i].rang.wo);
         for (let k = i + 1; k < q.length; k++) {
             if (darf && !darf(q[k])) continue;
-            const d2 = this._foundryAuftragD2(q[k].wo);
+            const d2 = this._foundryAuftragD2(q[k].rang.wo);
             if (d2 < best) {
                 best = d2;
                 i = k;
@@ -974,12 +991,16 @@ class AnazhRealm_studio_bruecke {
     _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort) {
         return new Promise((resolve) => {
             const q = f.warte || (f.warte = []);
-            q.push({ praefix, msg, wo, fristMs, ablaufWort, resolve, t: performance.now() });
+            q.push({ praefix, msg, rang: this._foundryRang(wo), fristMs, ablaufWort, resolve, t: performance.now() });
             this._foundryPumpe(f);
         });
     }
     _foundryAuftragD2(wo) {
-        if (typeof wo === "number") return Number.isFinite(wo) ? wo : Infinity;
+        // eine Zahl trägt den Blick-Schlüssel ihres Lesers (`_blickRang`, die Karte) — wie beim Ort gilt er nur vor dem Bild
+        if (typeof wo === "number") {
+            const A = AnazhRealm.ERSTER_BLICK.ausserD2;
+            return !Number.isFinite(wo) ? Infinity : this.state._weltbildDa && wo >= A ? wo - A : wo;
+        }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
         const dx = wo.x - pm.x,
@@ -996,6 +1017,10 @@ class AnazhRealm_studio_bruecke {
     // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
     // Wartenden ist die EINE Wahl (`_foundryWahl`: nah zuerst, nie verhungert). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
     // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
+    // DER BILD-RANG DER BAHN (B5): nach dem Buch malt das Werk den Blatt-Atlas (bis seine Fracht ankommt, `f.blattAtlas`) — es
+    // ist belegt, auch ohne Auftrag im Flug. Ein Kopf der Ankunft (`rang.kopf`: der Leib, das Start-Dorf) geht in eine Bahn ohne
+    // Arbeit, und keiner stellt sich hinter ihn, solange eine Bahn ohne Kopf Platz hat. Befund OMEN 1810 B5 (GTX kalt): die
+    // Leib-Stufe wartete im Werk hinter dem Atlas, hinter dem Dorf-Export (3,4–5,4 s) wartete jeder Auftrag seiner Bahn.
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
@@ -1006,31 +1031,45 @@ class AnazhRealm_studio_bruecke {
         // DER BLICK ZUERST (B3d): vor dem ersten Weltbild geht ein Auftrag außer Blick (sein Rang, `_blickRang`) nur in eine
         // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
         // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
+        let leer = null;
         const darf = (a) =>
-            frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.wo));
+            a.rang.kopf
+                ? !!(leer || bahn)
+                : !!bahn &&
+                  (frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.rang.wo)));
+        const koepfe = f.koepfe || (f.koepfe = new Set());
         while (q.length) {
             const im = new Map();
+            const mitKopf = new Set();
             for (const k of f.pending.keys()) {
                 const b = this._foundryBahn(k);
                 im.set(b, (im.get(b) || 0) + 1);
+                if (koepfe.has(k)) mitKopf.add(b);
             }
+            for (const k of koepfe) if (!f.pending.has(k)) koepfe.delete(k);
+            if (f.recipes && !f.blattAtlas) im.set("werk", (im.get("werk") || 0) + 1); // das Werk malt den Atlas
             frei = 0;
             bahn = null;
+            leer = null;
             for (const w of werke) {
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
-                if (fr > frei) {
+                const n = im.get(w.bahn) || 0;
+                if (!n && !leer) leer = w;
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - n;
+                if (!mitKopf.has(w.bahn) && fr > frei) {
                     frei = fr;
                     bahn = w;
                 }
             }
-            if (!bahn) return; // kein Faden mit Platz
+            if (!bahn && !leer) return; // kein Faden mit Platz
             const i = this._foundryWahl(q, f, darf);
             if (i < 0) return; // kein Wartender, der in die freiste Bahn darf
             const a = q.splice(i, 1)[0];
-            const reqId = a.praefix + (bahn.k ? "w" + bahn.k + "_" : "") + f.reqSeq++;
+            const ziel = a.rang.kopf ? leer || bahn : bahn;
+            const reqId = a.praefix + (ziel.k ? "w" + ziel.k + "_" : "") + f.reqSeq++;
             f.pending.set(reqId, a.resolve);
+            if (a.rang.kopf) koepfe.add(reqId);
             try {
-                bahn.ziel.postMessage(Object.assign({ reqId }, a.msg));
+                ziel.ziel.postMessage(Object.assign({ reqId }, a.msg));
             } catch (_e) {
                 f.pending.delete(reqId);
                 a.resolve(null);
@@ -1043,26 +1082,10 @@ class AnazhRealm_studio_bruecke {
             });
         }
     }
-    // Ein Besteller, dessen Schlüssel schon wartet (der Boot-Vorrat fragte ihn zuerst), hebt dessen Rang auf seine
-    // Nähe — sonst wartete der nahe Bau mit Vorrats-Rang hinter dem ganzen Vorrat.
-    _foundryNaeher(f, presetId, seed, lod, wo) {
-        const q = f && f.warte;
-        if (!q || !q.length) return;
-        const d2 = this._foundryAuftragD2(wo);
-        for (const a of q) {
-            const m = a.msg;
-            if (
-                m.type !== "build-asset" ||
-                m.ov ||
-                m.vorrat ||
-                m.presetId !== presetId ||
-                m.seed !== seed ||
-                m.lod !== lod
-            )
-                continue;
-            if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
-            return;
-        }
+    // Ein Besteller, dessen Schlüssel schon unterwegs ist (der Boot-Vorrat oder ein ferner Leser fragte ihn zuerst), hebt den
+    // Rang-Datensatz des Zugs auf seine Nähe — wo der Zug gerade steht: wartend, im Flug, am Wächter (`_foundryRang`).
+    _foundryNaeher(rang, wo) {
+        if (this._foundryAuftragD2(wo) < this._foundryAuftragD2(rang.wo)) rang.wo = wo;
     }
     // Die Foundry-Art einer Grammatik-Spezies (Bäume, Sträucher …): ihre Fernstufe ist die Karte, die die Welt aus der L1
     // derselben Art bäckt (`_karteWeltBacken`).

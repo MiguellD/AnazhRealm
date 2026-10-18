@@ -86,7 +86,14 @@ function ladeschirmVerdict(m) {
     const rg = m.rang;
     if (!rg || !rg.vorBild || !rg.nachBild) out.push("der Rang der Foundry-Schlange: keine Probe (Vorbedingung)");
     else if (rg.vorBild !== "blick") out.push(`vor dem ersten Bild sendet die Pumpe „${rg.vorBild}" an eine Bahn mit einem Auftrag im Flug statt nur des Auftrags im Blick — außer Blick wartet auf eine leere Bahn (_foundryPumpe, _blickRang)`);
-    else if (rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
+    else if (rg.bahnen) {
+        const B = rg.bahnen;
+        const koepfe = [B.leib, B["export-settlement"]];
+        const hinter = ["tor0", "tor1", "tor2", "tor3"].filter((t) => B[t] && koepfe.includes(B[t]));
+        if (koepfe.includes("w0") || koepfe[0] === koepfe[1]) out.push(`der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit (Leib → ${B.leib}, Dorf-Export → ${B["export-settlement"]}; das Werk w0 malt den Blatt-Atlas) — der Bild-Rang der Bahn fehlt (_foundryPumpe, _foundryRang)`);
+        if (hinter.length) out.push(`${hinter.join(", ")} stellen sich hinter einen Kopf der Ankunft (${hinter.map((t) => B[t]).join(", ")}) — sie warten auf den Export (3,4–5,4 s) bzw. den Leib`);
+    }
+    if (rg && rg.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
@@ -200,6 +207,7 @@ function ladeschirmVerdict(m) {
         const b = L.bestellt.join(", ");
         if (L.fehler) out.push(`der Leib: ${L.fehler} (Vorbedingung)`);
         else {
+            if (!b.includes("vor L1 Kopf")) out.push(`vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang in die Schlange (${b}) — sie wartet im Werk hinter dem Blatt-Atlas (_foundryRang)`);
             if (b.includes("vor L0")) out.push(`vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe (${b}) — das Bild zeigt nur den Wurf der Grobstufe`);
             if (!L.ohneFein) out.push("der Leib wartet vor dem Bild auf seine feine Stufe (mensch L0, `_leibBereit`), die Grobstufe steht");
             else if (L.baut[0] !== "vor 1") out.push(`vor dem Bild baut der Leib ohne die Grobstufe als Nah-Gestalt (nahStufe: ${L.baut.join(", ")})`);
@@ -207,6 +215,7 @@ function ladeschirmVerdict(m) {
             else if (!L.baut.includes("nach 0")) out.push("die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein (`_leibFeinTausch`)");
         }
         if (K.dorf.ohne) out.push(`das Start-Dorf beim Buch: ${K.dorf.ohne} (Vorbedingung)`);
+        else if (K.dorf.export && !K.dorf.kopfRang) out.push("der Export des Start-Dorfs geht ohne Kopf-Rang in die Schlange — hinter ihm wartet jeder Auftrag seiner Bahn (_foundryRang)");
         else if (!K.dorf.export) out.push(`mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus${K.dorf.kopf ? "" : " (kein `_buchKoepfe`)"} — er wartet auf den Siedlungs-Takt im Leerlauf des Streamings`);
     }
     return out;
@@ -454,6 +463,16 @@ async function probe(arg) {
             const pumpe = (da, g = [], f = { ready: true, worker: { postMessage: (x) => g.push(x.presetId) }, pending: new Map([["linse", null]]), reqSeq: 1 }) =>
                 ((st._weltbildDa = da), [["hinten", -20], ["blick", 100], ["vorrat", null]].forEach(([n, s]) => r._foundryAuftrag(f, "linse", { type: "build-asset", presetId: n }, s == null ? null : vorn(s), 45000, "-")), g.join(","));
             m.rang = { vorBild: pumpe(0), nachBild: pumpe(merkDa0 || 1) };
+            // DER BILD-RANG DER BAHN (B5): drei Fäden, das Buch ist da, das Werk malt den Atlas — Leib und Start-Dorf (Köpfe) gehen je in einen
+            // Helfer ohne Arbeit, vier Tore im Blick nie hinter einen Kopf
+            m.rang.bahnen = (() => {
+                const [g, ziel] = [{}, (n) => ({ postMessage: (x) => (g[x.presetId || x.type] = n) })];
+                const f = { ready: true, worker: ziel("w0"), helfer: [1, 2].map((k) => ({ k, w: ziel("w" + k), bereit: true })), pending: new Map(), reqSeq: 1, recipes: {}, blattAtlas: false }; // prettier-ignore
+                const kopf = (wo) => (r._foundryRang ? r._foundryRang(wo, true) : wo);
+                st._weltbildDa = 0;
+                [["leib", kopf(p0)], ["export-settlement", kopf(0)], ...[0, 1, 2, 3].map((i) => ["tor" + i, vorn(10 + i)])].forEach(([n, rg]) => r._foundryAuftrag(f, "r", { type: /^tor|^leib/.test(n) ? "build-asset" : n, presetId: /^tor|^leib/.test(n) ? n : undefined }, rg, 45000, "-")); // prettier-ignore
+                return g;
+            })();
             st._weltbildDa = merkDa0;
             const stand = () => (document.getElementById("ladeschirm-stand") || {}).textContent || "";
             // ein Fall: den Ladeschirm wieder stellen, die Lücke schaffen, `_ankunftsBild` fragen, die Lücke schließen
@@ -782,7 +801,7 @@ async function probe(arg) {
                     Object.assign(st, { _deferredAvatarSoul: st.player.soul || "human", cameraMode: "first" });
                     if (merk.held) st.player.equipped.held = null;
                     r._spielerVorlagen = null;
-                    r._foundryRequest = function (pre, s, lod, ...a) { if (pre === "mensch") k.leib.bestellt.push(`${st._weltbildDa ? "nach" : "vor"} L${lod}`); return P._foundryRequest.call(this, pre, s, lod, ...a); }; // prettier-ignore
+                    r._foundryRequest = function (pre, s, lod, ...a) { if (pre === "mensch") k.leib.bestellt.push(`${st._weltbildDa ? "nach" : "vor"} L${lod}${a[1] && a[1].kopf ? " Kopf" : ""}`); return P._foundryRequest.call(this, pre, s, lod, ...a); }; // prettier-ignore
                     r.applyPlayerSoul = function (...a) { const x = P.applyPlayerSoul.apply(this, a); k.leib.baut.push(`${st._weltbildDa ? "nach" : "vor"} ${(st.playerMesh.userData._gelenk || {}).nahStufe}`); return x; }; // prettier-ignore
                     r._ofenSpielerVorlagen();
                     if (!(await bis(() => r._leibBereit(), 90000))) k.leib.fehler = "die Vorlagen des Leibs kamen nicht in 90 s";
@@ -794,7 +813,7 @@ async function probe(arg) {
                     if (amOrt && kanal) {
                         const mD = [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue];
                         Object.assign(window, { __anazhAutoSettlement: true }) && Object.assign(wmD, { settlementCells: ohneStart });
-                        Object.assign(r, { _autoSettlementStartHopeless: false, _autoSettlementPendingKey: null, _autoSettlementQueue: null, _foundryRequestSettlement: (dp) => ((k.dorf.export = !!dp), Promise.resolve(null)) }); // prettier-ignore
+                        Object.assign(r, { _autoSettlementStartHopeless: false, _autoSettlementPendingKey: null, _autoSettlementQueue: null, _foundryRequestSettlement: (dp, kopf) => ((k.dorf.export = !!dp), (k.dorf.kopfRang = kopf === true), Promise.resolve(null)) }); // prettier-ignore
                         if ((k.dorf.kopf = typeof r._buchKoepfe === "function")) r._buchKoepfe();
                         await sleep(0);
                         [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue] = mD; // prettier-ignore
@@ -1663,10 +1682,10 @@ async function probe(arg) {
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
                     terme: l2aTerme,
-                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat" },
+                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
                     rundblick: { N: 240, loecher: 0, erstes: null },
                     ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
-                    koepfe: { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } },
+                    koepfe: { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } },
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
@@ -1702,11 +1721,14 @@ async function probe(arg) {
                     ["die Gestalt verfeinert nie", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 2 } }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
                     ["der Kalt-Schätzer als Zwilling (B2 vorher: Baum-Distanzen 12/26 m am Tor)", { ankunft: { n: 40, fein: [], zwilling: ["geisttor 11 m L0"], nahKarte: 2, nahDanach: 0 } }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
                     ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
-                    ["der Bild-Rang ortlos (B5 vorher, GTX kalt: gras L1/L2, blume L0 8,5 s auf ∞)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } }, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt die Nah-Wiese gras L1 ohne den Ort"],
-                    ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } }, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor dem Bild nichts"],
-                    ["der Leib wartet auf die feine Stufe (B5 vorher, GTX kalt: Leib 10,46 s, die Grobstufe 4,23 s)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } }, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe"],
-                    ["die feine Stufe tauscht nie ein", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } }, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1"] } }) }, "die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein"],
-                    ["der Dorf-Export wartet auf den Takt (B5 vorher, GTX kalt: 1,7 s nach dem Buch)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true } }, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus"],
+                    ["die Köpfe ohne Bild-Rang der Bahn (B5 vorher, GTX kalt: der Leib hinter dem Atlas, Tore hinter dem Export)", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit"],
+                    ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter einen Kopf der Ankunft"],
+                    ["der Leib ohne Kopf-Rang", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] } }) }, "vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang"],
+                    ["der Bild-Rang ortlos (B5 vorher, GTX kalt: gras L1/L2, blume L0 8,5 s auf ∞)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt die Nah-Wiese gras L1 ohne den Ort"],
+                    ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor dem Bild nichts"],
+                    ["der Leib wartet auf die feine Stufe (B5 vorher, GTX kalt: Leib 10,46 s, die Grobstufe 4,23 s)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe"],
+                    ["die feine Stufe tauscht nie ein", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1"] } }) }, "die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein"],
+                    ["der Dorf-Export wartet auf den Takt (B5 vorher, GTX kalt: 1,7 s nach dem Buch)", { koepfe: Object.assign({ orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } }, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus"],
                     ["das erste Weltbild ohne Dorf (Prüfung K60-3: 4 von 5 Kalt-Läufen, Nicht-Baum-Einträge 107 statt 134)", { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: Object.assign({}, l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort"],
                     ["eine arbeitende Lücke weicht (Prüfung K60-1 m1-6B: das Buch kam nach 19,6 s, der Ladeschirm wich nach 15 s)", { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) }, "eine arbeitende Lücke weicht wie eine ruhende"],
@@ -1726,12 +1748,7 @@ async function probe(arg) {
                     ["weicht nicht aus dem Layout (0710-11)", { weichtGanz: { hidden: true, display: "flex", animationen: 1 } }, "der Ladeschirm weicht nicht aus dem Layout"],
                 ],
             ],
-            [
-                "L1",
-                kreuzVerdict,
-                { gestartet: true, da: true, sichtbar: true, dx: 0, dy: 0, mitSchublade: false, nachSchublade: true },
-                [["kein Fadenkreuz (Befund)", { da: false }, "kein Fadenkreuz"], ["daneben", { dx: 7 }, "das Fadenkreuz steht 7/0 px"], ["über der Werkstatt", { mitSchublade: true }, "das Fadenkreuz steht über der offenen Werkstatt"]],
-            ],
+            ["L1", kreuzVerdict, { gestartet: true, da: true, sichtbar: true, dx: 0, dy: 0, mitSchublade: false, nachSchublade: true }, [["kein Fadenkreuz (Befund)", { da: false }, "kein Fadenkreuz"], ["daneben", { dx: 7 }, "das Fadenkreuz steht 7/0 px"], ["über der Werkstatt", { mitSchublade: true }, "das Fadenkreuz steht über der offenen Werkstatt"]]],
             [
                 "L2b",
                 hilfeVerdict,
@@ -1742,12 +1759,7 @@ async function probe(arg) {
                 },
                 [["hilfe unbekannt (Befund)", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, "?": { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true } } }, "„hilfe\" ist unbekannt"], ["Liste von Hand (Befund)", { unbekanntListe: true }, "der Satz für Unbekanntes trägt eine Liste von Hand"], ["Tafel halb", { antworten: { hilfe: { unbekannt: false, fehlt: ["folge mir"], tastenFehlen: [], v1: true }, help: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, "?": { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true } } }, "„hilfe\" nennt 1 Beispiel"]],
             ],
-            [
-                "L3",
-                gespraechVerdict,
-                { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" },
-                [["Enter öffnet nichts (Befund)", { enterFokus: "BODY" }, "Enter öffnet das Gespräch nicht"], ["Fokus bleibt im Feld (Befund)", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt der Fokus im Feld"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt nicht zurück"], ["Enter stiehlt dem Knopf den Fokus (Gegenprüfung)", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten Knopf öffnet das Gespräch"]],
-            ],
+            ["L3", gespraechVerdict, { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" }, [["Enter öffnet nichts (Befund)", { enterFokus: "BODY" }, "Enter öffnet das Gespräch nicht"], ["Fokus bleibt im Feld (Befund)", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt der Fokus im Feld"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt nicht zurück"], ["Enter stiehlt dem Knopf den Fokus (Gegenprüfung)", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten Knopf öffnet das Gespräch"]]],
             [
                 "L7",
                 gurtVerdict,
@@ -1827,12 +1839,7 @@ async function probe(arg) {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            [
-                "D8",
-                kanalVerdict,
-                { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] },
-                [["Siedlungs-Zahlen im Chat (Befund)", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]],
-            ],
+            ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat (Befund)", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
                 kiVerdict,
