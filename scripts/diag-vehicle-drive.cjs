@@ -2,7 +2,10 @@
 // Beweist die drive-Reise Lab-Formel → Buch → Host-Profil, OHNE dass ein zweiter
 // Wahrheits-Satz oder ein zweiter Fahr-Pfad entsteht (M1/M9 · N6.4):
 //   A (statisch + numerisch, Node):
-//     (A1/A2 fielen mit der Garage-Shell, S1: die Probefahrt ist der Ritt der Welt — gate:fahr-leben K1c.)
+//     A1 die Shell traegt KEIN eigenes FAHR-Literal/carPhys mehr (der N6.1-Umzug).
+//     A2 (Formel-Paritaet, Kriterium d): exportDrive == die Hand-Ableitung aus den
+//        Primitiven carPhys/FAHR/DEFAULT_P an 3 Presets, byte-exakt (===) — die
+//        Shell faehrt ihre Probefahrt mit EXAKT diesen Primitiven, also Kern==Shell.
 //     A3 (H7, Kriterium b numerisch): GT vs Supersport — mindestens zwei drive-
 //        Skalare messbar verschieden (Lab-Formel != Emergenz-Zufall).
 //     A4 die Bruecke kennt kein ns-Literal (Gesetz #0: kein eingefrorenes Preset-Duplikat).
@@ -28,7 +31,8 @@
 //     Foundry-Gestalt, ohne Foundry der Bauplan), und der Kapsel-Chokepoint stößt den
 //     Reiter nie an sein eigenes Gefährt (am Lauf, mit und ohne dessen Boxen).
 //   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
-//     Linse feuert; (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
+//     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert;
+//     (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
 //     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -129,11 +133,17 @@ function expectedFor(presetId) {
 }
 
 // ===== TEIL A: die statischen Absenzen (Node, kommentarfrei) — die Präsenzen (Kern-Export, Brücke, Steckplatz, die Bindung
-// des Ritts an den Chokepoint, Kern-Sitz und Kern-Hülle) beweisen A3 und der lebende Draht B-a … B-d =====
-// Jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter beim Namen).
-function staticLaws() {
+// des Ritts an den Chokepoint, Kern-Sitz und Kern-Hülle) beweisen A2/A3 und der lebende Draht B-a … B-d =====
+// Jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter beim Namen); `garage` wandelt die Shell (Selbsttest-Vor-Stand).
+function staticLaws(garage) {
     const out = [];
     const fehlt = (name, ...a) => out.push([name, stammLib.fehlt(...a), stammLib.fehlt.wo]);
+    fehlt(
+        "A1: die Shell trägt kein eigenes FAHR-Literal und kein eigenes carPhys (sie liest VC.FAHR)",
+        null,
+        /maxSteer\s*:|function\s+carPhys/,
+        { datei: "worlds/garage/garage.js", wandel: garage }
+    );
     fehlt("A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", null, /self\.__vehicleCore/, { datei: "foundry-bruecke.js" });
     // N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
     fehlt(
@@ -154,6 +164,17 @@ function staticLaws() {
         check("Selbst-Test 1: verfaelschtes topSpeedMul → Divergenz erkannt", driveDiverges(bad1, exp).length >= 1);
         const bad2 = Object.assign({}, exp, { kBrake: exp.kAcc }); // kBrake auf kAcc gefaelscht (die Formel-Verwechslung)
         check("Selbst-Test 2: verfaelschtes kBrake → Divergenz erkannt", driveDiverges(bad2, exp).length >= 1);
+        // V2: eine Shell mit EIGENEM FAHR-Literal (der Rueckfall vor den N6.1-Umzug) → A1 feuert.
+        const brokenShell = (t) =>
+            t.replace(
+                /const FAHR\s*=\s*VC\.FAHR[^\n]*/,
+                "const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};"
+            );
+        const a1 = staticLaws(brokenShell).filter((l) => l[0].startsWith("A1"));
+        check(
+            "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
+            a1.some((l) => l[1] === false)
+        );
         // V3 (B2): die FAHR-VERDIKT-Linse feuert auf beide Verletzungs-Klassen des Befunds.
         const healthy = {
             spawned: true,
@@ -219,6 +240,23 @@ function staticLaws() {
     console.log("=== N6/H7 — TEIL A: Formel + Paritaet + ein Pfad (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
+    // A2 (Kriterium d) — FORMEL-PARITAET an 3 Presets: exportDrive == Hand-Ableitung aus den
+    // Primitiven, mit denen die Shell ihre Probefahrt faehrt (carPhys + FAHR + DEFAULT_P/BASE_P).
+    for (const id of ["gt", "supersport", "suv"]) {
+        const pre = VC.PRESETS[id];
+        const P = Object.assign({}, VC.DEFAULT_P, VC.BASE_P, pre.s, pre.fx);
+        const ph = VC.carPhys(P);
+        const hand = {
+            topSpeedMul: ph.vmax / 10,
+            kAcc: ph.aEngine / ph.vmax,
+            kBrake: (ph.aEngine + VC.FAHR.rollDecel) / ph.vmax,
+            mass: ph.mass,
+            vmax: ph.vmax,
+            spring: { k: P.springRate, c: P.damping },
+        };
+        const div = driveDiverges(expectedFor(id), hand);
+        check(`A2: Formel-Paritaet Kern==Probefahrt-Primitive @ ${id} (byte)`, div.length === 0, div.join(","));
+    }
     // A3 (H7 numerisch) — GT vs Supersport: mindestens zwei drive-Skalare verschieden.
     const gtExp = expectedFor("gt");
     const ssExp = expectedFor("supersport");

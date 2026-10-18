@@ -788,16 +788,6 @@ class AnazhRealm_feld_leben {
     // der eingefrorenen Heimat-Welt zu laufen. Das Welt-Manifest entscheidet
     // (_portalRouteDsl trägt die Drei-Stufen-Logik).
     _chatTryPortalRoute(command, chatInput, appendChatOutput) {
-        // Ein offener Studio-Modus (S1) hört seine Wörter zuerst (die DSL der Registry); was er nicht kennt, hört die Welt.
-        const modus =
-            this._studioModus && typeof window !== "undefined" && window.__studioModi
-                ? window.__studioModi[this._studioModus]
-                : null;
-        if (modus && typeof modus.wort === "function" && modus.wort(command.toLowerCase())) {
-            appendChatOutput(`(${this._studioModus}: „${command}")`);
-            chatInput.value = "";
-            return true;
-        }
         if (!this._portalOverlay) return false;
         const inWorld = this.parseChatToDsl(command);
         const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);

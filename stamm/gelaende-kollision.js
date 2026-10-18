@@ -774,9 +774,7 @@ class AnazhRealm_gelaende_kollision {
     // Das Fahrzeug-Gesetz eines Eintrags (Muster `_torGesetzFor`): reine vehicle-Zahlen (exportDrive:
     // sitz + huelle + Fahrwerte) aus dem SYNCHRON geladenen Kern (Lockstep-fest, nie der async Buch-
     // Stand), via studioGestalt-Zeile oder KIND_POLICY.vehicle.prefix. Domänen-Wand: pre.kind ===
-    // "vehicle". Memoisiert je Gestalt und Prägung: ein geprägtes Werk (studioOv — die Garage, eine Kultur) fährt, wie es
-    // gebaut ist (dieselbe Merge-Ordnung wie buildInstance: Gattung, dann die Prägung); null ohne Fahrzeug/Kern (fail-closed
-    // → Donor-Pfad).
+    // "vehicle". Memoisiert je Gestalt; null ohne Fahrzeug/Kern (fail-closed → Donor-Pfad).
     _fahrzeugGesetzFor(entry) {
         if (!entry || typeof entry.type !== "string") return null;
         const core = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
@@ -793,13 +791,11 @@ class AnazhRealm_gelaende_kollision {
         const pre = gestalt ? core.PRESETS[gestalt] : null;
         if (!pre || pre.kind !== "vehicle") return null;
         if (!this._fahrzeugGesetzMemo) this._fahrzeugGesetzMemo = new Map();
-        const ov = entry.studioOv && typeof entry.studioOv === "object" ? entry.studioOv : null;
-        const schluessel = ov ? gestalt + "|ov:" + this._studioOvHash(ov) : gestalt;
-        let g = this._fahrzeugGesetzMemo.get(schluessel);
+        let g = this._fahrzeugGesetzMemo.get(gestalt);
         if (!g) {
             // s+fx ist exakt der Brücken-Merge (phytogenesis fahrprofil-Münze) —
             // der Kern mergt DEFAULT_P+BASE_P intern davor: EINE Merge-Ordnung.
-            const P = Object.assign({}, pre.s, pre.fx, ov || {});
+            const P = Object.assign({}, pre.s, pre.fx);
             g = { gestalt, drive: core.exportDrive(P) };
             // V18.491.88 — vehicle LEHREN/messen Host-Leser (fail-soft; exportDrive unverändert).
             if (typeof core.evalLehren === "function") {
@@ -812,7 +808,7 @@ class AnazhRealm_gelaende_kollision {
                     g.messen = core.messen(P);
                 } catch (_) {}
             }
-            this._fahrzeugGesetzMemo.set(schluessel, g);
+            this._fahrzeugGesetzMemo.set(gestalt, g);
         }
         return g;
     }

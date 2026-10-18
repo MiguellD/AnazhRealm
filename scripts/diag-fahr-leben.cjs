@@ -129,8 +129,7 @@ function taktWand(q) {
 function fahrWand(q, garage) {
     return [
         ["K1b die Welt integriert keine Kopie des Fahr-Schritts", fehlt(null, /\bFlatF\b/, q), fehlt.wo],
-        // der Garage-Modus fährt den Ritt der Welt (S1): keine Reifen-Kraft, kein FAHR-Literal, kein carPhys in seiner Quelle
-        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b|maxSteer\s*:|function\s+carPhys/, { datei: "worlds/garage/studio.js", wandel: garage }), fehlt.wo],
+        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }), fehlt.wo],
     ];
 }
 
@@ -2057,7 +2056,7 @@ function quellenAbgriff() {
         );
         const kRot = fahrWand(
             (t) => stammLib.ersetze(t, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
-            (g) => g.replace(/(\n {4}function fahrStart\(\) \{)/, "$1let FlatF=0;")
+            (g) => g.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;")
         );
         check(
             "Selbst-Test K1: der Vor-Stand (Kopien in Welt und Labor) → K1b K1c feuern",

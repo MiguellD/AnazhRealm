@@ -32,10 +32,15 @@
 //                  Hülle EINE Brücke für 10 Welten, die ready einmal; 0/7)
 // Eine Welt, die neu stumm oder neu Echo ist, ist rot; eine geheilte ebenfalls, bis ihre Zeile im selben Commit fällt.
 //
-//   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung, die
-//       Heimat beantwortet JEDE ready, die Hülle spricht den Echo-Dialekt und liest op[0] je Element, skeleton und terrain ohne
-//       Manifest (404), fluid ohne „flut“, die schmiede mit einem ohne Soll-Zeile) → jede Wand rot beim Täter; die TRÄGE klang
-//       (3 s Bau zwischen ready und enter) hält die Ratsche readyEcho (ein Uhr-Fenster las an der fachwerk „ready 1 · enter 3“)
+//   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung,
+//                                                        die Heimat beantwortet JEDE ready und die Brücke der Hülle
+//                                                        spricht wieder den Echo-Dialekt, die Hülle liest op[0] je
+//                                                        Element, skeleton und terrain ohne Manifest — der Server
+//                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
+//                                                        garage trägt eins ohne Soll-Zeile) → jede Wand wird rot und
+//                                                        nennt den Täter; die TRÄGE klang (3 s Bau zwischen ihrer
+//                                                        ready und den enter) hält die Ratsche readyEcho — ein
+//                                                        Uhr-Fenster las an der fachwerk „ready 1 · enter 3"
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
@@ -60,6 +65,7 @@ const WELTEN = [
     { id: "skeleton", manifest: true, wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
     { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
     { id: "terrain", manifest: true, wort: "fichte", mitgebracht: "pass" },
+    { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
     { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
     { id: "fachwerk", wort: "tudor", ui: { sel: "#pK", feld: "value", soll: "tudor" } },
@@ -70,7 +76,33 @@ const WELTEN = [
     { id: "begegnung", wort: null },
     { id: "translated", wort: "sturm" },
 ];
-// (Die Garage ist seit S1 ein Modus der Welt-Engine, kein iframe — ihre Probefahrt und ihr Tor prüft gate:garage-labor.)
+// Das Wort „probefahrt" der Garage (aus smoke-labs übernommen, das mit der Form [[w]] fuhr, die die Heimat nie sendet):
+// die Heimat schickt es (chain-Form, der echte Weiterleiter), die Garage schaltet in den Fahr-Modus (HUD sichtbar), W
+// beschleunigt — der Tacho steigt (carPhys + FAHR aus vehicle-core treiben das Labor) —, „werkstatt" schaltet zurück.
+async function probefahrt(page, fr) {
+    const route = (w) => schleuse(page, "heimat", null, { route: [[w], w] });
+    await route("probefahrt");
+    const hud = await fr.evaluate(() => {
+        const h = document.getElementById("hud");
+        // sichtbar = berechnet nicht „none" (die Garage darf den HUD als block oder flex zeigen); dann gibt W Gas
+        return !!h && getComputedStyle(h).display !== "none";
+    });
+    // W hält, bis der Tacho steigt — nie nach der Uhr (gate:apparat Klinge 5: auf dem CPU-Raster kommen in 1,6 s wenige Frames)
+    const halt = await halteBis(fr, {
+        druck: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))),
+        los: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))),
+        ziel: () => {
+            const el = document.querySelector("#hud #spd");
+            const v = el ? parseInt(el.textContent, 10) : 0;
+            return v > 0 ? v : false;
+        },
+        frist: 30000,
+    });
+    const spd = halt.erreicht ? halt.wert : 0;
+    await route("werkstatt");
+    return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
+}
+
 // Die Strom-Welt zeichnet (statt der Regex-Probe „densityTexture/addSplat/uBackdrop stehen im Quelltext"): ihre Engine
 // meldet keinen Rückfall (WebGL2 + HalfFloat-Ziele stehen), und das Bild im Portal bewegt sich (zwei Aufnahmen des
 // Overlay-iframe unterscheiden sich).
@@ -149,11 +181,11 @@ const UEBERSETZT = {
 // ── DIE TÄTER des Selbsttests: die alten Defekte, eingespielt am Server (Text-Ersatz an der Quelle). Fehlt die
 // Fundstelle, ist der Selbsttest rot — die Linse wandert mit dem Code.
 // Die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios) — eingespielt
-// an der schmiede (die träge klang unten misst die Uhr, nicht das Ping-Pong). Ausgeliefert in der Stamm-Datei, die die Zeile
+// an der garage (die träge klang unten misst die Uhr, nicht das Ping-Pong). Ausgeliefert in der Stamm-Datei, die die Zeile
 // trägt (scripts/lib/stamm.cjs `dateiMit`; trägt sie keine, die erste — dort meldet der Selbsttest die fehlende Fundstelle).
 const HEIMAT_PINGPONG = [
     "if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }",
-    'if (!po.enterAufReady || String(po.world || "").includes("/schmiede/")) this._portalSendEnter();\n                po.enterAufReady = true;',
+    'if (!po.enterAufReady || String(po.world || "").includes("/garage/")) this._portalSendEnter();\n                po.enterAufReady = true;',
 ];
 const TAETER = {
     // begegnung vor dem Schnitt: der message-Handler prüft die Quelle nicht.
@@ -161,7 +193,7 @@ const TAETER = {
     [stammLib.dateiMit(ROOT, HEIMAT_PINGPONG[0]) || stammLib.dateien(ROOT)[0]]: [HEIMAT_PINGPONG],
     // DIE EINE BRÜCKE (Studio-Hülle K41) mit den alten Defekten der 13 Kopien: (a) der Element-Adapter — die Elemente des
     // Programms je einzeln (aus ["w", arg] wird "w", arg): das Einzelwort stumm, die chain-Form wirkt; (b) der Echo-
-    // Dialekt — jedes enter bekommt eine neue ready (das Ping-Pong mit der Heimat-Täterin an der schmiede, die träge klang);
+    // Dialekt — jedes enter bekommt eine neue ready (das Ping-Pong mit der Heimat-Täterin an der garage, die träge klang);
     // (c) das unvollständige Manifest — das welt-eigene Wort fehlt im ready (fluid ohne „flut" → K1 rot beim Namen); (d) s. u.
     "worlds/huelle/huelle.js": [
         ['} else if (m.type === "dsl") wirke(m.program);', '} else if (m.type === "dsl") m.program.forEach(function (op) { wirke(op); });'],
@@ -197,8 +229,8 @@ const TAETER = {
 // Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
 // Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
 const TAETER_WEG = ["worlds/skeleton/manifest.json", "worlds/terrain/manifest.json"];
-// Ein Manifest ohne Soll-Zeile: die schmiede (kein `manifest` in WELTEN) liefert eins → K1 rot.
-const TAETER_UNTER = { "worlds/schmiede/manifest.json": { schemaVersion: "1.0", id: "schmiede", label: "Schmiede", dsl: ["degen"] } };
+// Ein Manifest ohne Soll-Zeile: die garage (kein `manifest` in WELTEN) liefert eins → K1 rot.
+const TAETER_UNTER = { "worlds/garage/manifest.json": { schemaVersion: "1.0", id: "garage", label: "Garage", dsl: ["supersport"] } };
 
 // Was der Server unter einem Pfad ausliefert (null = 404): die Welt im Browser und K1 lesen DIESELBEN Bytes.
 function ausliefern(rel, taeter, fehlend) {
@@ -733,7 +765,7 @@ function drucke(e) {
 }
 
 async function selbsttest() {
-    const welten = WELTEN.filter((w) => ["begegnung", "schmiede", "skeleton", "fluid", "terrain", "klang"].includes(w.id));
+    const welten = WELTEN.filter((w) => ["begegnung", "garage", "skeleton", "fluid", "terrain", "klang"].includes(w.id));
     const { ergebnisse, fehlend, weg } = await lauf(welten, true);
     ergebnisse.forEach(drucke);
     const by = Object.fromEntries(ergebnisse.map((e) => [e.id, e]));
@@ -743,8 +775,8 @@ async function selbsttest() {
     const proben = [
         ["Täter-Fundstellen gefunden", !fehlend.length, fehlend.join(" · ")],
         ["K3 rot: begegnung ohne Quellen-Prüfung nimmt den fremden peer-join an", by.begegnung && by.begegnung.k.K3 === false, ""],
-        ["K3 rot am UI-Pfad: die Hülle ohne Quellen-Prüfung — die schmiede nimmt die fremde chain-Form an (der Vorher-Zustand vor der Tat gelesen)", by.schmiede && by.schmiede.k.K3 === false, ""],
-        ["K2 rot: die Heimat beantwortet jede ready, schmiede spielt Ping-Pong", by.schmiede && by.schmiede.k.K2 === false, by.schmiede && by.schmiede.handshake ? `${by.schmiede.handshake.enters} enter` : ""],
+        ["K3 rot am UI-Pfad: die Hülle ohne Quellen-Prüfung — die garage nimmt die fremde chain-Form an (der Vorher-Zustand vor der Tat gelesen)", by.garage && by.garage.k.K3 === false, ""],
+        ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
         [
             "Uhr-frei: klang baut nach ihrer ready 3 s, bevor sie die enter liest — die Ratsche readyEcho hält, der Handshake endet",
             by.klang && by.klang.echo === true && by.klang.k.K2 === true,
@@ -760,7 +792,7 @@ async function selbsttest() {
             by[id] ? by[id].notiz.filter((n) => /Manifest/.test(n)).join("") : "",
         ]),
         ["K1 rot: fluid meldet ihr Manifest ohne „flut“ (die Heimat lernt das Wort nicht)", by.fluid && by.fluid.k.K1 === false && by.fluid.notiz.some((n) => /es fehlen flut/.test(n)), by.fluid ? by.fluid.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
-        ["K1 rot: schmiede trägt ein manifest.json ohne Soll-Zeile", by.schmiede && by.schmiede.k.K1 === false && by.schmiede.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.schmiede ? by.schmiede.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
+        ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
     ];
     let ok = true;

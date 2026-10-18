@@ -1615,31 +1615,26 @@ class AnazhRealm_koerper_bewegung {
             if (this.state.cameraMode === "third") {
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
-                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: das EINE Gesetz des Kerns (`chaseKamera`, die Probefahrt der Garage
-                // liest es auch) — hinter dem Wagen, Azimut-Ease auf die Gier, Elevation über der Fahrbahn, feste Distanz; Boden-Clamp
-                // + Kollision unten gelten gleich.
+                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: hinter dem Wagen (Kern-Azimut-Ease auf die Gier,
+                // feste Kern-Elevation/-Distanz, Blick auf blickHoehe); Boden-Clamp + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
                     const K = _fahrRitt.kam;
-                    // die Gier des Ritts; der Zustand der Chase-Cam lebt am Werk (`_kamChase`, beim Aufstieg frisch: sie springt hinter den Wagen)
                     const yawF = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
-                    // DIE ELEVATION ZUR FAHRBAHN (F1): das EINE Gesetz des Kerns (`chaseKamera`) — der Arm steht `el` über der Ebene der
-                    // Räder (die Steigung des Kerns `steig`), Azimut-Ease auf die Gier, die Elevation als Feder mit Dämpfer; die Probefahrt
-                    // der Garage liest dieselbe Funktion. Gier des Kerns = Fahrt − π/2 (Studio-Wagen: Bug +x).
+                    let az = Number.isFinite(ent._kamYaw) ? ent._kamYaw : yawF;
+                    let d = yawF - az;
+                    while (d > Math.PI) d -= 2 * Math.PI;
+                    while (d < -Math.PI) d += 2 * Math.PI;
                     const kDt = Math.min(0.1, Math.max(0.001, currentTime - (ent._kamT || currentTime)));
                     ent._kamT = currentTime;
-                    const c = (ent._kamChase = ent._kamChase || {});
-                    const v = AnazhRealm._fahrSchrittGesetz().vc.chaseKamera(
-                        c,
-                        yawF - Math.PI / 2,
-                        ent._fahr ? ent._fahr.steig : 0,
-                        kDt,
-                        K
-                    );
-                    camX = ent.position.x + v.x;
-                    camZ = ent.position.z + v.z;
-                    camY = ent.position.y + v.y;
+                    az += d * (1 - Math.pow(K.azEase, kDt));
+                    ent._kamYaw = az;
+                    const ce = Math.cos(K.el);
+                    const se = Math.sin(K.el);
+                    camX = ent.position.x - Math.sin(az) * ce * K.dist;
+                    camZ = ent.position.z - Math.cos(az) * ce * K.dist;
+                    camY = ent.position.y + K.blickHoehe + se * K.dist;
                 } else {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;

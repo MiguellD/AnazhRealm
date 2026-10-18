@@ -132,8 +132,8 @@ export default [
         },
     },
     {
-        // DIE MODI DER WELT-ENGINE (S1): das Gelände-Studio (K16b, Panel + Makro-Worker) und die Garage — Panels über der Welt.
-        files: ["worlds/gelaende/*.js", "worlds/garage/*.js"],
+        // DAS GELÄNDE-STUDIO (K16b): das Panel im Browser (studio.js) und sein Makro-Worker (makro-worker.js).
+        files: ["worlds/gelaende/*.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -160,8 +160,6 @@ export default [
                 setTimeout: "readonly",
                 setInterval: "readonly",
                 console: "readonly",
-                requestAnimationFrame: "readonly",
-                history: "readonly",
             },
         },
         rules: {

@@ -701,7 +701,6 @@ class AnazhRealm_dirigent_ankunft {
         window.addEventListener(
             "wheel",
             (event) => {
-                if (this._studioModus) return; // das Rad gehört dem offenen Studio-Modus (`studioModus`)
                 if (this.state.inventoryOpen) return;
                 if (this.state.keybindRebind) return;
                 // Toleranter Pfad statt strict isPointerLocked: das Mausrad wirkt, wenn das Event aus dem
