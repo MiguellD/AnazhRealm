@@ -30,13 +30,14 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),
 floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(60,60,0x1c3340,0x0f1820);grid.position.y=0.001;grid.material.opacity=0.5;grid.material.transparent=true;scene.add(grid);
 
-// ── Licht ──
-const PI=Math.PI;
-scene.add(new THREE.HemisphereLight(0x7a8da0,0x0c1016,0.55*PI));
+// ── Licht ── (die Studio-Lichter sind unter r128 roh, also linear, eingestellt: `_lin` hält ihren Ton — als sRGB dekodiert
+// sättigten Füll-, Rand- und Himmelslicht den Lack cyan; der Lack selbst bleibt FARB-GESETZ des Kerns, sRGB → linear)
+const PI=Math.PI,_lin=h=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);
+scene.add(new THREE.HemisphereLight(_lin(0x7a8da0),_lin(0x0c1016),0.55*PI));
 const key=new THREE.DirectionalLight(0xffffff,2.6*PI);key.position.set(5,9,4);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.bias=-0.0001;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(0x4f8fa6,0.8*PI);fill.position.set(-6,4,-4);scene.add(fill);
-const rim=new THREE.DirectionalLight(0x6fd0e8,0.6*PI);rim.position.set(-2,3,6);scene.add(rim);
+const fill=new THREE.DirectionalLight(_lin(0x4f8fa6),0.8*PI);fill.position.set(-6,4,-4);scene.add(fill);
+const rim=new THREE.DirectionalLight(_lin(0x6fd0e8),0.6*PI);rim.position.set(-2,3,6);scene.add(rim);
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
