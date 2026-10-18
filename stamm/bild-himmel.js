@@ -1966,7 +1966,7 @@ class AnazhRealm_bild_himmel {
         // (`_celestialHorizonFade`) → der Richtungswechsel bei y=0 ist unsichtbar.
         // Farbe: `atm.col` (der Durchlass der EINEN Atmosphäre) × `tint.lightColor` (weiß + Aura/Emotion).
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
-        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1.
+        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(
@@ -2187,13 +2187,15 @@ class AnazhRealm_bild_himmel {
     // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
     // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
     // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
-    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden (0.04) mit Hemi (0.10) die
-    // Nacht-Kalibrierung Mond/(amb+hemi) ≥ 1.5. Er blendet mit `_nachtAnteil` (dieselbe Tag-Achse wie der
-    // Nebel). joy/awe/sorrow modulieren wie bisher.
+    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden mit Hemi (0,10) das Licht neben dem Mond. Er blendet
+    // mit `_nachtAnteil` (dieselbe Tag-Achse wie der Nebel). joy/awe/sorrow modulieren wie bisher.
     // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
     // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
     // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
-    // Ferne bleichten, fallen. Mond/(amb+hemi) sinkt damit unter 1,5 (Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3).
+    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG ist damit Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
+    // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
+    // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
+    // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
     _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
         if (!al) return;
