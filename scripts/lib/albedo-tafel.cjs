@@ -45,7 +45,6 @@ const STUDIOS = {
         ausgabe: "composer",
         wurzel: "subject",
     },
-    garage: { pfad: "worlds/garage/index.html", szene: "scene", renderer: "R", ausgabe: null, wurzel: "vehicle" },
     portale: {
         pfad: "worlds/portale/index.html",
         szene: "scene",
@@ -106,7 +105,7 @@ function tafelPruefen(t) {
         ids.add(z.id);
         if (!PFLICHT_GRUPPEN.includes(z.gruppe)) f.push(`${z.id}: gruppe ${z.gruppe} ist keine der acht Klassen`);
         const L = z.labor || {};
-        if (!STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
+        if (L.welt !== true && !STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
@@ -858,7 +857,12 @@ const LABOR_INSTALL =
     `window.__laborAlbedo = ${laborAlbedo.toString()};` +
     `window.__laborKarte = ${laborKarte.toString()};`;
 
+// LABOR = WELT (S1): die Zeile eines Modus der Welt-Engine (`labor.welt`, die Garage) misst im Labor die Welt selbst.
+const laborDerWelt = (t, labor, welt) =>
+    Object.assign({}, labor, ...(t.zeilen || []).filter((z) => z.labor && z.labor.welt === true && welt && welt[z.id]).map((z) => ({ [z.id]: welt[z.id] })));
+
 module.exports = {
+    laborDerWelt,
     TAFEL_PFAD,
     PFLICHT_GRUPPEN,
     STUDIOS,

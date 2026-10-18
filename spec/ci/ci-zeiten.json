@@ -540,11 +540,10 @@
       "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
     },
     "Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)": {
-      "s": 48,
-      "n": 7,
+      "s": 15,
+      "geschaetzt": "S1 18.10.: die Garage ist ein Modus der Welt-Engine (Welt-Boot im Null-Renderer, Foundry an, keine GPU) — lokal 6 s (Radeon), der Welt-Boot im Null-Renderer misst in der CI 10 s (gate:vehicle-drive); die alte r128-Seite maß 48 s",
       "gruppe": "voll 14",
-      "lauf": "npm run gate:garage-labor",
-      "laeufe": ["39007430669", "39005494771", "39005087060", "38999210601", "38996037938", "38989110481", "38987564279"]
+      "lauf": "npm run gate:garage-labor"
     },
     "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
       "s": 7,

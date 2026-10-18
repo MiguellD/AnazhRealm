@@ -628,11 +628,22 @@ angewandt:
 - **G4.4 kein Spiegel:** Leser lesen die angekommenen Daten LIVE (Referenz),
   kein Hardcode-Duplikat in der Welt — bewiesen durch den Mutation-wins-Test.
 
-## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV
+## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV, nur für die Studios auf r128
 
-Die Studios sind in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert
-r184 (physisch, farb-verwaltet). Wo AnazhRealm Studio-INHALT selbst rendert
-(nicht das Portal — dort läuft das Original), gelten DREI dokumentierte
+**Der Weg ist EINE Engine (S1):** ein Studio wird ein Modus der Welt-Engine
+(`index.html?studio=<id>`, Panel + Kamera über `AnazhHuelle`, die Bühne ist die
+Welt: r184, Welt-Licht, Welt-Boden, ihre Tonkurve) — dann gibt es keine zweite
+Engine und nichts zu übersetzen. Die Wand ist `scripts/diag-studio-huelle.cjs`
+H6 (Ratsche `EINE_ENGINE`). Auf der EINEN Engine stehen: **gelaende** und
+**garage** (18.10., worlds/garage/studio.js: der Wagen ist ein Werk der Welt —
+`spawnArchitecture("fahrzeug_<gattung>")` mit den Reglern als Prägung, dieselbe
+Foundry-Stufenkette; die Probefahrt ist der Ritt der Welt mit der EINEN
+`chaseKamera` des Kerns; die alte r128-Shell mit eigenem WebGLRenderer und
+ACES 1,04 fiel). Für sie gilt §4b nicht. Die übrigen Studios (fachwerk ·
+portale · schmiede · koerperstudio · tetrapoda · terrain) sind bis zu ihrem
+Schnitt in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert r184
+(physisch, farb-verwaltet). Wo AnazhRealm DEREN Inhalt selbst rendert (nicht
+das Portal — dort läuft das Original), gelten DREI dokumentierte
 Übersetzungs-Regeln (three.js-Migrationspfad, KEINE Tuning-Knöpfe):
 
 - **Ü1 — LICHT-INTENSITÄTEN × π** (r155, useLegacyLights→physisch: Legacy

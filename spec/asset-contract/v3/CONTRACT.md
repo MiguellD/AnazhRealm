@@ -8,7 +8,7 @@
 > (Taille-Disziplin) — NIE regenerieren; ein bewusster Re-Mint ist `MINT_FORCE=1`
 > und eine eigene Entscheidung mit Begründung.
 >
-> Eingefroren bei W7a-Grün (Kern-Split garage.js → vehicle-core.js,
+> Eingefroren bei W7a-Grün (Kern-Split der Garage-Shell → vehicle-core.js,
 > Shell-Verhaltens-Parität 9/9 Schritte hash-identisch vor/nach Split).
 
 ## Die Bau-Funktion

@@ -1,41 +1,17 @@
 #!/usr/bin/env node
-// diag-studio-huelle.cjs — DIE WAND DER STUDIO-HÜLLE (Studio-Welle 1, K41; Welle 2, K47 die terrain-Familie; Synthese §2.1
-// W4a, gate:studio-huelle).
-//
-// EIN UI-Modul (worlds/huelle/huelle.js) trägt die Regler, die Sitzung (Undo/Redo · Same · Sperre), die Kosten-Leiste
-// und die Portal-Brücke aller umgestiegenen Studios UND der Welt-Werkstatt. Die Wand nennt jede Kopie beim Namen:
-//   H1 Hand-Regler    ein <input type="range"> von Hand in worlds/<welt>/index.html, ein `type = "range"` in einer Shell
-//                     oder in den Werkstatt-Dateien des Stamms (am Regler-Glied) — der EINE Generator ist AnazhHuelle.regler
-//   H2 Brücken-Kopie  eine eigene ready-Meldung (`type: "ready"`) oder ein Element-Adapter (`op[0]` je Element des
-//                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
-//   H3 Umstieg        (D3: die Text-Präsenz fiel) die Brücke beweist gate:portal-konformanz je Betreten (readyEcho), Regler,
-//                     Sitzung und Kosten-Leiste je Studio zählt das Bild (--bild: Schieber gesamt == Schieber der Hülle)
-//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) baut nie einen
-//                     eigenen Leib (bauTier · bauMensch · morphAuf · fellStreu · haarStreu · kleidZonen · surfaceNets in der
-//                     Shell — K45: das tetrapoda-Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das
-//                     koerperstudio-Labor 332 645 △ gegen 40 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT.
-//   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
-//                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
-//                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
-//   H6 EINE Engine    (S1, W3) jedes trusted Studio ein Modus index.html?studio=<x> der Welt-Engine: keine eigene Shell,
-//                     kein Regal worlds/*/lib/ (three r128), kein eigener WebGLRenderer, Ton, Licht, Szene; ROT in der
-//                     Ratsche EINE_ENGINE, gezählt „N von 12" (18.10.: 1 von 12, gelaende)
-// Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
-// Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
-// Ausnahme mehr.
-//
-//   node scripts/diag-studio-huelle.cjs --selftest   die Täter eingespielt (ein Hand-Regler in der garage, eine eigene
-//                                                    ready in der schmiede, der Element-Adapter in der klang, ein
-//                                                    Werkstatt-Schieber im Stamm, ein eigener Leib im Ofen-Labor, ein
-//                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor)
-//                                                    → jede Wand rot beim Namen
-//   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H6
-//   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
-//                                                    der Stempel in worlds/tor-ziele.json); LINSE_GPU=software wie die CI
-//   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]
-//                                                    je Studio die Shell im echten Browser (Hardware-Adapter): ein
-//                                                    Schuss + die Seiten-Zählung (Schieber gesamt · davon Hülle · Undo
-//                                                    wirkt · Kosten-Leiste zeigt Zahlen); Port STUDIO_HUELLE_PORT (8742)
+// diag-studio-huelle.cjs — DIE WAND DER STUDIO-HÜLLE (Studio-Welle 1, K41; Welle 2, K47; Synthese §2.1 W4a, gate:studio-huelle).
+// EIN UI-Modul (worlds/huelle/huelle.js) trägt Regler, Sitzung (Undo/Redo · Same · Sperre), Kosten-Leiste und Portal-Brücke
+// aller Studios UND der Welt-Werkstatt; die Wand nennt jede Kopie beim Namen (die Gesetze je H an ihrer Konstante unten):
+//   H1 Hand-Regler (ein range von Hand, auch im Stamm am Regler-Glied) · H2 Brücken-Kopie (eine eigene ready, ein Element-
+//   Adapter op[0]) · H3 Umstieg (gate:portal-konformanz je Betreten; --bild zählt die Schieber) · H4 Labor = Welt (kein eigener
+//   Leib im Ofen-Studio; im Bild L0 über der Budget-Zeile ROT) · H5 Ziel-Bild (das Panorama je Welt der Hülle in
+//   worlds/tor-ziele.json an den Quellen von HEUTE) · H6 EINE Engine (S1: jedes trusted Studio ein Modus index.html?studio=<x>,
+//   ROT in der Ratsche EINE_ENGINE, gezählt „N von 12"; 18.10.: 1 von 12, gelaende → 2 von 12 mit der garage).
+// Ausgenommen, benannt: die sandgesicherten begegnung + schwarm (CSP default-src 'none', Protokoll: gate:portal-konformanz).
+//   node scripts/diag-studio-huelle.cjs [--selftest]   der Baum gegen H1–H6 · die Täter eingespielt → jede Wand rot beim Namen
+//   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt ihr Ziel-Bild backen; LINSE_GPU=software wie die CI
+//   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]   je Studio die Shell im echten Browser: ein
+//       Schuss + die Seiten-Zählung (Schieber gesamt · davon Hülle · Undo · Kosten-Leiste); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -43,9 +19,12 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
-// Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
-// Panel über der Welt-Engine lebt (index.html?studio=gelaende: keine eigene Shell, keine Brücke — die Heimat IST die Welt).
-const STUDIOS = ["garage", "schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
+// Die Welten auf der Hülle: die Studios mit Reglern und die Nebenwelten mit der Brücke allein.
+const STUDIOS = ["schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
+// Die MODI der Welt-Engine (S1, `index.html?studio=<id>`): ihr Tor (stamm `_studioModusBetreten`) steht benannt unter `ohne`.
+const MODI = ["gelaende", "garage"];
+const MODUS_TORE = { garage: "ein Modus der Welt-Engine — das Tor öffnet die Werkstatt in der Welt (stamm _studioModusBetreten), kein fremdes Bild" };
+const zielVon = (id) => (MODUS_TORE[id] ? `index.html?studio=${id}` : `worlds/${id}/index.html`);
 const NEBENWELTEN = ["skeleton", "fluid", "translated"];
 const GELAENDE = "worlds/gelaende/studio.js";
 const AUSGENOMMEN = {
@@ -61,33 +40,26 @@ const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
-// H6 — EINE ENGINE (S1, W3: „das Studio ist eine fremde Engine"): ein trusted Studio ist ein MODUS der Welt-Engine
-// (`index.html?studio=<x>`, Vorbild worlds/gelaende/studio.js:1-23) — der Index lädt worlds/<x>/studio.js, das Studio trägt
-// keine eigene Shell (worlds/<x>/index.html, ein iframe neben der Welt), keine seiner Dateien lädt ein Regal worlds/*/lib/
-// (three r128 + Zusätze, r130) und keine baut einen eigenen Renderer, Look oder eine eigene Szene (toneMapping, Licht,
-// new THREE.Scene): die Bühne ist die Welt (r184, Welt-Licht, Welt-Boden, Neutral). Die Ratsche EINE_ENGINE nennt, wer
-// umgestiegen ist — dort ist jeder Bruch ROT beim Namen, und ein Studio, das die Wand hält, ohne in der Ratsche zu stehen,
-// ist ROT (die Ratsche wächst mit jedem Schnitt); die anderen stehen gezählt mit ihrem ersten Täter (Reihenfolge S1).
+// H6 — EINE ENGINE (S1, W3): ein trusted Studio ist ein MODUS der Welt-Engine (der Index lädt worlds/<x>/studio.js; keine Shell,
+// kein Regal worlds/*/lib/, kein eigener Renderer, Ton, Licht, keine Szene). In der Ratsche EINE_ENGINE ist jeder Bruch ROT,
+// wer die Wand hält, ohne in ihr zu stehen, auch (sie wächst je Schnitt); die anderen stehen gezählt mit ihrem ersten Täter.
 const HAUPT = "index.html";
-const TRUSTED = [...STUDIOS, ...NEBENWELTEN, "gelaende"];
+const TRUSTED = [...STUDIOS, ...NEBENWELTEN, ...MODI];
 const EINE_ENGINE = ["gelaende", "garage"];
 const FREMDES_REGAL_HTML = /<script\b[^>]*\bsrc\s*=\s*["'][^"']*\blib\/[\w.-]+\.js/gi;
 const FREMDES_REGAL_JS = /["'`][^"'`\n]*\blib\/[\w.-]+\.js/g;
 const EIGENER_RENDERER = /\bnew\s+THREE\.WebGLRenderer\b/g;
 const EIGENER_LOOK = /\btoneMapping(?:Exposure)?\s*=(?!=)|\bnew\s+THREE\.(?:Directional|Hemisphere|Ambient|Spot|Point|RectArea)Light\b|\bnew\s+THREE\.Scene\s*\(/g;
 const modusTag = (id) => new RegExp(`<script\\b[^>]*\\bsrc\\s*=\\s*["']worlds/${id}/studio\\.js\\b`, "g");
-// H5 — DAS ZIEL-BILD (D8, „Das Tor als Fenster"): jede Welt der Hülle rendert ihr Panorama in IHRER Welt (die Brücke
-// `panorama-bitte` → `AnazhHuelle.panorama`, Labor = Welt), gebacken je SHA ihrer Quellen (`--panorama`) und geliefert als
-// Datei; die Heimat liest sie (stamm `_torZielBuendel`) und bootet nie eine Ziel-Welt. Die Karte `worlds/tor-ziele.json` nennt je
-// Welt Datei und Stempel = SHA-256 über index.html und jede lokale Quelle, die sie lädt (Skript, Stil; `?v=` fällt — die
-// Version allein macht kein neues Bild). Ein Stempel, der nicht die Quellen von HEUTE trägt, ist ROT beim Namen; die
-// ausgenommenen Welten stehen benannt unter `ohne`.
+// H5 — DAS ZIEL-BILD (D8): jede Welt der Hülle rendert ihr Panorama in IHRER Welt (`AnazhHuelle.panorama`), gebacken je SHA
+// ihrer Quellen (`--panorama`); die Heimat liest die Datei (stamm `_torZielBuendel`). Die Karte nennt je Welt Datei und Stempel
+// (SHA-256 über index.html und jede lokale Quelle, `?v=` fällt); ein Stempel ohne die Quellen von HEUTE ist ROT beim Namen.
 const TOR_ZIELE = "worlds/tor-ziele.json";
-// Ohne Ziel-Bild, benannt: die sandgesicherten Welten (kein Skript, kein Renderer) und die übersetzte Welt (ihre Szene ist
-// Spieler-Daten und reist erst im enter — vor dem Betreten hat sie kein Bild; jedes Tor auf sie zeigt kein Fenster).
+// Ohne Ziel-Bild, benannt (`ohne`): die sandgesicherten Welten, die übersetzte (ihre Szene reist im enter) und die Modi.
 const OHNE_PANORAMA = Object.assign(
     { translated: "die Szene ist Spieler-Daten und reist erst im enter (stamm PORTAL_TRANSLATED_WORLD) — vor dem Betreten kein Bild" },
-    AUSGENOMMEN
+    AUSGENOMMEN,
+    MODUS_TORE
 );
 const PANO = { format: 1, w: 512, h: 256 };
 const panoDatei = (id) => `worlds/${id}/panorama.f16`;
@@ -237,9 +209,9 @@ function pruefe(karte) {
         for (const key of Object.keys(welten))
             if (!soll.some((id) => key === `worlds/${id}/index.html`)) rot.push(`H5 ${key}: ein Panorama ohne Welt der Hülle (verwaist)`);
         for (const [id, grund] of Object.entries(OHNE_PANORAMA))
-            if (!ohne[`worlds/${id}/index.html`]) rot.push(`H5 ${id}: steht nicht benannt unter ohne (${grund})`);
+            if (!ohne[zielVon(id)]) rot.push(`H5 ${id}: steht nicht benannt unter ohne (${grund})`);
         for (const key of Object.keys(ohne))
-            if (!Object.keys(OHNE_PANORAMA).some((id) => key === `worlds/${id}/index.html`)) rot.push(`H5 ${key}: unter ohne, aber keine ausgenommene Welt`);
+            if (!Object.keys(OHNE_PANORAMA).some((id) => key === zielVon(id))) rot.push(`H5 ${key}: unter ohne, aber keine ausgenommene Welt`);
     }
     return { rot, zahl, veraltet };
 }
@@ -258,11 +230,11 @@ function selbsttest() {
     const echt = baum();
     const faelle = [
         {
-            name: "H1 ein Hand-Regler in der garage (index.html)",
-            rel: "worlds/garage/index.html",
+            name: "H1 ein Hand-Regler in der schmiede (index.html)",
+            rel: "worlds/schmiede/index.html",
             vor: '<div id="sliders"></div>',
             nach: '<div id="sliders"><input type="range" id="sTaeter" min="0" max="1"></div>',
-            soll: /^H1 worlds\/garage\/index\.html:\d+ .*: ein Hand-Regler/,
+            soll: /^H1 worlds\/schmiede\/index\.html:\d+ .*: ein Hand-Regler/,
         },
         {
             name: "H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)",
@@ -314,11 +286,11 @@ function selbsttest() {
             soll: /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/,
         },
         {
-            name: "H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)",
-            rel: "worlds/garage/garage.js",
+            name: "H5 eine Quelle der schmiede ändert sich, ihr Panorama bleibt (veraltet)",
+            rel: "worlds/schmiede/schmiede.js",
             vor: /$/, // ankerfrei: ein Kommentar am Ende der Quelle
             nach: "\n/* ein neuer Look */",
-            soll: /^H5 garage: das Panorama ist veraltet/,
+            soll: /^H5 schmiede: das Panorama ist veraltet/,
         },
         {
             name: "H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet",
@@ -349,27 +321,17 @@ function selbsttest() {
             nach: '"worlds/begegnung-fort/index.html":',
             soll: /^H5 begegnung: steht nicht benannt unter ohne/,
         },
-        {
-            name: "H6 der Gelände-Modus baut einen eigenen Renderer",
+        ...[
+            ["baut einen eigenen Renderer", "const _r = new THREE.WebGLRenderer({ antialias: true });", "ein eigener Renderer"],
+            ["zieht three r128 aus dem terrain-Regal nach", 'document.createElement("script").src = "worlds/terrain/lib/three-r128.min.js";', "lädt eine fremde three"],
+            ["setzt sein eigenes ACES (Garage 1,04)", "window.__R.toneMappingExposure = 1.04;", "ein eigener Look"],
+        ].map(([was, tat, wort], _i, _a, vor = 'if (such.get("studio") !== "gelaende") return;') => ({
+            name: `H6 der Gelände-Modus ${was}`,
             rel: GELAENDE,
-            vor: 'if (such.get("studio") !== "gelaende") return;',
-            nach: 'if (such.get("studio") !== "gelaende") return;\n    const _r = new THREE.WebGLRenderer({ antialias: true });',
-            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: ein eigener Renderer/,
-        },
-        {
-            name: "H6 der Gelände-Modus zieht three r128 aus dem terrain-Regal nach",
-            rel: GELAENDE,
-            vor: 'if (such.get("studio") !== "gelaende") return;',
-            nach: 'if (such.get("studio") !== "gelaende") return;\n    document.createElement("script").src = "worlds/terrain/lib/three-r128.min.js";',
-            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: lädt eine fremde three/,
-        },
-        {
-            name: "H6 der Gelände-Modus setzt sein eigenes ACES (Garage 1,04)",
-            rel: GELAENDE,
-            vor: 'if (such.get("studio") !== "gelaende") return;',
-            nach: 'if (such.get("studio") !== "gelaende") return;\n    window.__R.toneMappingExposure = 1.04;',
-            soll: /^H6 worlds\/gelaende\/studio\.js:\d+ .*: ein eigener Look/,
-        },
+            vor,
+            nach: `${vor}\n    ${tat}`,
+            soll: new RegExp(`^H6 worlds/gelaende/studio\\.js:\\d+ .*: ${wort}`),
+        })),
         {
             name: "H6 der Index lädt das Gelände-Studio nicht mehr (kein Modus)",
             rel: HAUPT,
@@ -378,23 +340,17 @@ function selbsttest() {
             soll: /^H6 gelaende: kein Modus/,
         },
         {
-            name: "H6 eine eigene Shell neben dem Gelände-Modus",
-            rel: "worlds/gelaende/index.html",
-            neu: '<!doctype html><html><body><canvas></canvas><script src="studio.js"></script></body></html>\n',
-            soll: /^H6 gelaende: eigene Shell worlds\/gelaende\/index\.html/,
+            name: "H6 die alte Garage-Shell kehrt zurück (r128 aus dem terrain-Regal neben dem Modus)",
+            rel: "worlds/garage/index.html",
+            neu: '<!doctype html><html><body><script src="../terrain/lib/three-r128.min.js"></script></body></html>\n',
+            soll: /^H6 garage: eigene Shell worlds\/garage\/index\.html/,
         },
         {
-            name: "H6 die Garage als Modus (die Shell fällt, der Index lädt worlds/garage/studio.js) — die Garage ist grün",
-            rel: HAUPT,
-            vor: '<script src="worlds/gelaende/studio.js',
-            nach: '<script src="worlds/garage/studio.js?v=1" defer></script>\n        <script src="worlds/gelaende/studio.js',
-            dazu: {
-                "worlds/garage/index.html": null,
-                "worlds/garage/garage.js": null,
-                "worlds/garage/studio.js": '(function () {\n    if (new URLSearchParams(location.search).get("studio") !== "garage") return;\n})();\n',
-            },
-            soll: null,
-            nichtRot: /^H6 garage/,
+            name: "H5 das Garage-Tor fehlt unter ohne (der Modus ohne benanntes Ziel)",
+            rel: TOR_ZIELE,
+            vor: '"index.html?studio=garage":',
+            nach: '"index.html?studio=garage-fort":',
+            soll: /^H5 garage: steht nicht benannt unter ohne/,
         },
         {
             name: "H6 die klang hält die Wand, steht aber nicht in der Ratsche",
@@ -537,7 +493,7 @@ async function panoramaBacken(nur) {
     const kp = path.join(ROOT, TOR_ZIELE);
     const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
     const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };
-    for (const [id, grund] of Object.entries(OHNE_PANORAMA)) neu.ohne[`worlds/${id}/index.html`] = grund;
+    for (const [id, grund] of Object.entries(OHNE_PANORAMA)) neu.ohne[zielVon(id)] = grund;
     for (const k of Object.keys(neu.welten)) if (!k.startsWith("worlds/") || OHNE_PANORAMA[k.split("/")[1]]) delete neu.welten[k];
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--window-size=1400,900"] });
     const lies = liesAus({});
