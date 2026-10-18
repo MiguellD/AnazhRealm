@@ -18,7 +18,9 @@
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf, der Lauf nicht auf sein Ziel), die Beute
 //             läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Bären nicht),
-//             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
+//             Bewegung gleich mit und ohne Blick (Frustum + Zufall); (S6) der Verband: die scheue Herde des echten Wurfs
+//             hält ihre Glieder binnen fensterRaum × Paar-Raum vom Mittel: 60 s Wandern im Mittel ab 10 s ≥ 90 %, 60 s
+//             Flucht im Mittel der Flucht-Takte ≥ 80 %
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
 //             (_kreaturLeib, D2), seine vordere Achse bleibt vor dem Stein
 //   gedreht   (D5) das Tier am GEDREHTEN Haus: die Haus-Hülle ist eine gedrehte Box (obb); der Leib löst im Rahmen der
@@ -1037,7 +1039,119 @@ async function kreaturProben(r, T, opts) {
         let blickDiff = 0;
         for (let i = 0; i < blick.length; i++)
             blickDiff = Math.max(blickDiff, Math.hypot(blick[i].x - weg[i].x, blick[i].z - weg[i].z));
-        return { artFremdZugM: +artDiff.toFixed(4), blickDiffM: +blickDiff.toFixed(4), gleichartigN, zugRufe };
+        // DER VERBAND (S6, W4 „die Herde zerfällt"): die Kohäsion oben lebt nur im Neugier-Zweig am neugierigen Bären; die
+        // scheue Herde des ECHTEN Wurfs (`_kreaturWurf`, tetrapoda herde.wurf) wandert und flieht je Tier für sich. Gemessen
+        // wird, was der Spieler sieht: der Anteil der Glieder binnen fensterRaum × Paar-Raum (2 × der Raum des Glieds) vom
+        // Mittel des Verbands, je Takt — 60 s Wandern (der Spieler 45 m fern, jenseits der Witterung) und 60 s Flucht (der
+        // Spieler treibt die Herde mit 1,4 m/s auf einer Geraden durch ihren Wurf-Ort; der eigene Strom „verband" wirft fünf). Die Geburt liegt nach ihrem Gesetz
+        // fern und außerhalb des Blicks: beim Wurf steht der Spieler 140 m fort und blickt fort.
+        const VH = A._verhaltenGesetz().herde;
+        const heim = frei(0, 70, 40);
+        const verbandLauf = (flucht) => {
+            for (const c of s.creatures.slice()) r.removeCreature(c);
+            s._creatureNetSeq = seq0;
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
+            r._faunaStroeme = null;
+            pm.set(heim.x + 140, heim.y, heim.z);
+            kamera(1, 0);
+            let glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+            // der alte Defekt (kreatur-leben.js _kreaturWurf vor S6): der Wurf stellt Tiere nebeneinander, ohne sie zu
+            // binden — dieselben Orte, dieselbe Seele, derselbe Anker, aber jedes für sich geboren
+            if (taeter === "herde-zerfall")
+                glieder = glieder.map((c) => {
+                    const p = c.position.clone();
+                    const anker = Object.assign({}, c.userData.wanderAnchor);
+                    const seele = c.userData.soul;
+                    r.removeCreature(c);
+                    const n = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele);
+                    if (!n) throw new Error("Spawn " + seele);
+                    n.userData.wanderAnchor = anker;
+                    return n;
+                });
+            const anteil = () => {
+                if (!glieder.length) return null;
+                let mx = 0,
+                    mz = 0;
+                for (const c of glieder) {
+                    mx += c.position.x / glieder.length;
+                    mz += c.position.z / glieder.length;
+                }
+                let drin = 0,
+                    weit = 0;
+                for (const c of glieder) {
+                    const d = Math.hypot(c.position.x - mx, c.position.z - mz) / (2 * r._kreaturRaum(c));
+                    if (d <= VH.fensterRaum) drin++;
+                    weit = Math.max(weit, d);
+                }
+                return { anteil: +(drin / glieder.length).toFixed(3), weitRaum: +weit.toFixed(2), x: mx, z: mz };
+            };
+            const x0 = flucht ? -12 : 45; // der Spieler: auf der Flucht 12 m vor der Herde, beim Wandern jenseits der Witterung
+            const stelle = (t) => {
+                const q = neben(heim.x + x0 + (flucht ? 1.4 * t : 0), heim.z);
+                pm.set(q.x, q.y, q.z);
+            };
+            stelle(0);
+            kamera(flucht ? 1 : -1, 0);
+            const w0 = anteil();
+            const reihe = [w0 && w0.anteil];
+            let fluchtTakte = 0,
+                fluchtSumme = 0,
+                fluchtBild = 0,
+                fluchtMin = 1,
+                summe = 0,
+                bilder = 0;
+            for (let k = 0; k < 3600; k++) {
+                if (flucht) stelle(k / 60);
+                takt(1 / 60);
+                let fliehen = 0;
+                for (const c of glieder) if (c.userData._motionZustand === "flucht") fliehen++;
+                fluchtTakte += fliehen;
+                const a = anteil().anteil;
+                // der Zusammenhalt ab 10 s (die Herde hatte Zeit, sich aus dem Wurf zu sammeln) — je Takt, nie ein Augenblick
+                if (k >= 600) {
+                    summe += a;
+                    bilder++;
+                }
+                // der Zusammenhalt AUF der Flucht: je Takt, in dem ein Glied flieht (hinter dem Spieler sammelt die Leine
+                // die Herde wieder am Anker — das Ende des Laufs sähe die Flucht nicht)
+                if (fliehen) {
+                    fluchtSumme += a;
+                    fluchtBild++;
+                    if (a < fluchtMin) fluchtMin = a;
+                }
+                if ((k + 1) % 600 === 0) {
+                    kamera(flucht ? 1 : -1, 0);
+                    const a = anteil();
+                    reihe.push(a && a.anteil);
+                }
+            }
+            const w1 = anteil();
+            return {
+                n: glieder.length,
+                temperament: glieder.length ? r._creatureTemperament(glieder[0]) : null,
+                verbandN: glieder.filter((c) => c.userData.verband != null).length,
+                wurfAnteil: w0 && w0.anteil,
+                anteil: w1 && w1.anteil,
+                mittel: bilder ? +(summe / bilder).toFixed(3) : null,
+                weitRaum: w1 && w1.weitRaum,
+                wegM: w0 && w1 ? +Math.hypot(w1.x - w0.x, w1.z - w0.z).toFixed(1) : null,
+                fluchtAnteil: glieder.length ? +(fluchtTakte / (3600 * glieder.length)).toFixed(3) : 0,
+                fluchtMittel: fluchtBild ? +(fluchtSumme / fluchtBild).toFixed(3) : null,
+                fluchtMin: fluchtBild ? fluchtMin : null,
+                reihe,
+            };
+        };
+        const verband = heim
+            ? { fensterRaum: VH.fensterRaum, wander: verbandLauf(false), flucht: verbandLauf(true) }
+            : { fehler: "kein freies Land für die Herde (frei(0, 70, 40))" };
+        return {
+            artFremdZugM: +artDiff.toFixed(4),
+            blickDiffM: +blickDiff.toFixed(4),
+            gleichartigN,
+            zugRufe,
+            verband,
+        };
     });
 
     // ── hindernis (Q11 + Lehre 25): kein Feld-Strahl je Tier und Takt, die Wand wird umgangen ──
@@ -2869,6 +2983,25 @@ function urteil(name, z) {
             `herdeZug zählt keinen gleichartigen Nachbarn (n = ${z.gleichartigN} in ${z.zugRufe} Rufen — Probe vakuös)`
         );
         soll(z.blickDiffM < 1e-6, `Bewegung hängt am Blick: ${z.blickDiffM} m Unterschied`);
+        // DER VERBAND (S6): die scheue Herde des Wurfs hält beim Wandern UND auf der Flucht zusammen — höchstens ein
+        // Nachzügler je fünf Glieder außerhalb von fensterRaum × Paar-Raum vom Mittel: beim Wandern im Mittel ab 10 s ≥ 0,9,
+        // auf der Flucht im Mittel der Flucht-Takte ≥ 0,8
+        const V = z.verband;
+        soll(V && !V.fehler, `Verband ohne Zahl (${V && V.fehler})`);
+        if (V && !V.fehler) {
+            const { wander: W, flucht: F } = V;
+            soll(W.n >= 3 && F.n >= 3, `der Wurf wirft keine Herde (${W.n} / ${F.n} Glieder — Probe vakuös)`);
+            soll(F.fluchtAnteil >= 0.1, `die Herde flieht nicht (${F.fluchtAnteil} der Takte in Flucht — Probe vakuös)`);
+            soll(W.fluchtAnteil === 0, `die wandernde Herde flieht (${W.fluchtAnteil} der Takte — Probe misst nicht Wandern)`);
+            soll(
+                W.mittel !== null && W.mittel >= 0.9,
+                `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${V.fensterRaum} Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; nach 60 s ${W.anteil}, der weiteste ${W.weitRaum} Paar-Räume, Wurf ${W.wurfAnteil})`
+            );
+            soll(
+                F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
+                `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${V.fensterRaum} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
+            );
+        }
     }
     if (name === "hindernis") {
         soll(z.strahlenJeTakt === 0, `${z.strahlenJeTakt} Feld-Strahlen je Takt (${z.dichteJeTakt} Dichte-Proben)`);
@@ -3125,6 +3258,8 @@ const TAETER = {
     herde: [
         ["herde", /am Blick/],
         ["herde-artfremd", /Kohäsion artfremd/],
+        // S6: der Wurf ohne Bindung (jedes Glied für sich geboren) — der Verband zerfällt beim Wandern UND auf der Flucht
+        ["herde-zerfall", /Verband zerfällt beim Wandern[\s\S]*Verband zerfällt auf der Flucht/],
     ],
     hindernis: [
         ["hindernis", /Feld-Strahlen/],
