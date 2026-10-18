@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Meisterkarte</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f4ef;
+    --fg: #1c1e20;
+    --muted: #5c6166;
+    --card: #ffffff;
+    --line: #e2dfd6;
+    --track: #e9e6dd;
+    --fill: #2f6f5e;
+    --fill-strong: #245a4c;
+    --dot-off: #d3cfc4;
+    --chip: #e6efea;
+    --chip-fg: #245a4c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #111315;
+      --fg: #e7e5e0;
+      --muted: #9ba1a7;
+      --card: #1a1d20;
+      --line: #2a2e32;
+      --track: #2a2e33;
+      --fill: #5fb497;
+      --fill-strong: #8fd3bc;
+      --dot-off: #3a4045;
+      --chip: #1f2a26;
+      --chip-fg: #8fd3bc;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111315;
+    --fg: #e7e5e0;
+    --muted: #9ba1a7;
+    --card: #1a1d20;
+    --line: #2a2e32;
+    --track: #2a2e33;
+    --fill: #5fb497;
+    --fill-strong: #8fd3bc;
+    --dot-off: #3a4045;
+    --chip: #1f2a26;
+    --chip-fg: #8fd3bc;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background-color: #f5f4ef;
+    background-color: var(--bg);
+    color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.125rem; margin: 32px 0 12px; }
+  h3 { font-size: 1rem; margin: 0; }
+  p, li, h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.9rem; }
+  .flaeche { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .zahl { font-size: 2.5rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .zahl small { font-size: 1.1rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
+  .bar { height: 8px; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--fill); border-radius: inherit; }
+  .bar.gross { height: 12px; margin: 10px 0 12px; }
+  .summe p { margin: 0 0 6px; font-size: 0.95rem; }
+  .summe p:last-child { margin-bottom: 0; color: var(--muted); }
+  .top { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: top; }
+  .top li { position: relative; padding-left: 52px; }
+  .top li::before {
+    counter-increment: top;
+    content: counter(top);
+    position: absolute; left: 16px; top: 15px;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--chip); color: var(--chip-fg);
+    font-size: 0.85rem; font-weight: 650;
+  }
+  .kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .rate, .punkte { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rate { color: var(--fill-strong); }
+  .meta { color: var(--muted); font-size: 0.875rem; margin: 2px 0 0; }
+  .hinweis { color: var(--muted); font-size: 0.875rem; margin: 10px 0 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+  .karte { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .karte .kopf { flex-wrap: nowrap; }
+  .karte h3 { min-width: 0; }
+  .krit { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.9rem; }
+  .krit li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .dots { display: inline-flex; gap: 4px; flex: none; }
+  .dots i { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--dot-off); }
+  .dots i.an { background: var(--fill); }
+  .vision, .hebel { margin: 0; font-size: 0.9rem; }
+  .vision { color: var(--muted); }
+  .hebel { border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; }
+  .marke { font-weight: 600; color: var(--fg); }
+  footer { color: var(--muted); font-size: 0.85rem; margin-top: 32px; }
+  footer p { margin: 0 0 4px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Meisterkarte</h1>
+    <p class="sub">Ultiversum · Stand 18.10.2026 · Kopf integ-probe = main ff88b82d (V18.546.19)</p>
+    <section class="flaeche summe" aria-label="Gesamtstand">
+      <div class="zahl">27<small>/ 90</small></div>
+      <div class="bar gross" role="img" aria-label="27 von 90 Punkten"><span style="width:30%"></span></div>
+      <p>Alle 27 Hebel zusammen bringen +48 auf 75/90 in etwa 45 Arbeitstagen. S6 (die Funktion ins Gesetzbuch) trägt 19 dieser 48 Punkte; die Pflicht trägt S3 (B, E).</p>
+      <p>Der Scope bleibt PFLICHT-OFFEN: A AAAA je Klasse · B Ankunft ≤ 5 s · E Profi-Band.</p>
+    </section>
+  </header>
+
+  <section aria-labelledby="h-top">
+    <h2 id="h-top">Top-5-Hebel nach Punkten je Tag</h2>
+    <ol class="top">
+      <li class="flaeche">
+        <div class="kopf"><strong>EIN Kamera-Rig für jeden Übergang</strong><span class="rate">4,0 P/d</span></div>
+        <p class="meta">Fahrzeug K4 0 → 2 · +2 · ½ d · S6 · gebaut auf spielgang 7348d7db + 757d1b0f</p>
+      </li>
+      <li class="flaeche">
+        <div class="kopf"><strong>Der Verband ins Gesetzbuch</strong><span class="rate">2,7 P/d</span></div>
+        <p class="meta">Tiere K1 0 → 2 · +2 · ¾ d · S6 · rudel-verband 0716fa0a merge-reif (Kohäsion 0,19 → 0,98), GTX-ABAB beauftragt</p>
+      </li>
+      <li class="flaeche">
+        <div class="kopf"><strong>EINE Tag-Achse, Belichtungs-Kompensation, Uhr-Linse</strong><span class="rate">2,0 P/d</span></div>
+        <p class="meta">Licht K2 0 → 2, K1 1 → 2 · +3 · 1½ d · S7 · Pflicht A (himmel-licht)</p>
+      </li>
+      <li class="flaeche">
+        <div class="kopf"><strong>Bewohner = Kreatur mit Menschen-Leib</strong><span class="rate">2,0 P/d</span></div>
+        <p class="meta">Mensch K1 0 → 1, K4 1 → 2 · +2 · 1 d · S6 · öffnet Mensch H2 + H3 (+6 in 3 d)</p>
+      </li>
+      <li class="flaeche">
+        <div class="kopf"><strong>Jagd-Kreislauf schließen, Gangart aus dem Tempo</strong><span class="rate">2,0 P/d</span></div>
+        <p class="meta">Tiere K2 1 → 2, K3 1 → 2 · +2 · 1 d · S6 · der Gang ist ein Vertrags-Akt</p>
+      </li>
+    </ol>
+    <p class="hinweis">Rang = Punkte ÷ Mitte des Aufwands; bei Gleichstand zuerst, was eine Pflicht trägt, dann, was B und E nicht belastet, dann, was weitere Hebel öffnet.</p>
+  </section>
+
+  <section aria-labelledby="h-bereiche">
+    <h2 id="h-bereiche">Die neun Bereiche</h2>
+    <div class="grid">
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Gelände, Boden und Wasser</h3><span class="punkte">5/10</span></div>
+        <div class="bar" role="img" aria-label="5 von 10"><span style="width:50%"></span></div>
+        <ul class="krit">
+          <li><span>EIN 3D-Gesetz: Höhe, Dichte, Edit, Wasser im Kern</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Wasser lebt aus dem Gelände</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Edits überall, auf jeder Höhe</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Fernsicht 0–8 km ohne Naht, auch in Fahrt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Boden nah: Feinform, Stoff, Kontakt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Jeder Hügel, Fluss, See und Spatenstich ist EINE Funktion des Kerns, nahtlos von 0,3 m bis 8 km auch in Fahrt; das Wasser spiegelt wie ein See und fließt wie ein Bach, bei ≤ 12 Befehlen und ≤ 120k Dreiecken.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Wasser-Bild aus dem Gesetz – Strömungs-Normalen aus der Fluss-Bahn im EINEN Wasser-Blick · +1 · 1 d · Pflicht A</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Vegetation: Wiese und Wald</h3><span class="punkte">3/10</span></div>
+        <div class="bar" role="img" aria-label="3 von 10"><span style="width:30%"></span></div>
+        <ul class="krit">
+          <li><span>Nah-Wiese dicht und bunt (0–18 m)</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Wind als EIN Feld bis zum Saum</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Wald-Silhouette bis zum Horizont</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>LOD-Übergänge unsichtbar in Bewegung</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Die Natur gehorcht dem Ort</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Vom Halm am Stiefel bis zum Kamm am Horizont ist jede Pflanze EINE Funktion des Ortes: die Wiese wogt ohne Naht, jede Böe wandert sichtbar und hörbar, Kämme behalten bis 4 km ihren Sägezahn, nichts ploppt.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Die Wiese wogt bis zum Saum – Ringe nach Tsushima von 14 auf 40 m bei ≤ 80k Dreiecken, Wind auch in der Halm-Schicht · +2 · 1–1½ d</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Siedlung: Dorf bis Stadt, Bauen</h3><span class="punkte">3/10</span></div>
+        <div class="bar" role="img" aria-label="3 von 10"><span style="width:30%"></span></div>
+        <ul class="krit">
+          <li><span>Haus = Gesetz, Labor = Welt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Stadt-Genese: Weiler bis Metropole</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Der Grundriss liest den Boden</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Spieler-Bauen: Teil, Haus, Ort</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Leben und Last: Bewohner, Stadt im Band</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Jede Zelle trägt die Siedlung, die Boden, Wasser und Epoche verlangen – vom Weiler bis zur ummauerten Stadt, Gassen auf den Höhenlinien, jedes Haus begehbar bis in den Keller, das Spielerhaus im selben Plan.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Stadt-Tor mit Rang-Export – Epoche und Rang-Größe-Gesetz geben Städte, die Mauer reist im Export, das erste Haus steht in ≤ 0,5 s · +3 · 1¾ d</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Tiere, Herden und Rudel</h3><span class="punkte">2/10</span></div>
+        <div class="bar" role="img" aria-label="2 von 10"><span style="width:20%"></span></div>
+        <ul class="krit">
+          <li><span>Verband: Herde und Rudel als Datum</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Jagd-Kreislauf bis Riss und Aas</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Gang und Leib: Gangart folgt dem Tempo</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Lebensraum und Tagesrhythmus</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Dichte und Kosten am Schirm</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Die Herde ist ein Datum des Gesetzbuchs: 30 Hirsche ziehen ausgerichtet und fliehen auf den ersten Alarm binnen 1 s als Verband, das Rudel umstellt, reißt und frisst, die Gangart folgt der Froude-Zahl – ≤ 1 ms KI je 150 Tiere.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Der Verband ins Gesetzbuch – Couzin-Zonen, Leittier, Flucht auf Alarm · +2 · ¾ d · gebaut auf rudel-verband, GTX-ABAB beauftragt</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Menschen und NPC</h3><span class="punkte">2/10</span></div>
+        <div class="bar" role="img" aria-label="2 von 10"><span style="width:20%"></span></div>
+        <ul class="krit">
+          <li><span>Besiedlung: Plan wird Körper</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Tagesablauf: Rolle × Uhr × Ort</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Wege und Raum: Gassen, Türen</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Körper und Ausdruck</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Begegnung: Reaktion, Gespräch, Gedächtnis</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Jede Siedlung ist von genau den Menschen bewohnt, die ihr Gesetz zählt – jeder ein Seed mit Leib, Heim, Werk, Weg und einem Tag f(seed, t), nah grüßend und sprechend mit Gedächtnis, ≥ 200 je Stadt bei p95 ≤ 33 ms.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Bewohner = Kreatur mit Menschen-Leib – Geburt am Haus, das Genom getragen, der Export trägt Rolle, Leute und Tür · +2 · 1 d</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Fahrzeuge, Fahrgefühl und Kamera</h3><span class="punkte">3/10</span></div>
+        <div class="bar" role="img" aria-label="3 von 10"><span style="width:30%"></span></div>
+        <ul class="krit">
+          <li><span>Fahr-Gesetz: Reifen, Boden, Takt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Tempo mit Welt (250 km/h)</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Chase-Kamera als Rig</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Übergänge unter Bewegung</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Rückmeldung: der Körper fühlt die Fahrt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Ein Wagen aus dem Gesetz fährt 250+ km/h ohne Loch im Boden, seine Reifen greifen je Boden anders, und EIN Rig atmet das Tempo und trägt jeden Übergang ohne Sprung – bei p95 ≤ 33 ms.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> EIN Kamera-Rig – ein Reset beim Sicht-Wechsel trägt Chase, Zeit und Arm zusammen · +2 · ½ d · gebaut auf spielgang</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Licht, Atmosphäre und Ferne</h3><span class="punkte">3/10</span></div>
+        <div class="bar" role="img" aria-label="3 von 10"><span style="width:30%"></span></div>
+        <ul class="krit">
+          <li><span>Eine Atmosphäre trägt jedes Licht</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Tag und Nacht: EINE Kurve</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Die Luft macht die Ferne lesbar</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Die Ferne hat Gestalt</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Himmel mit Körper und Schatten</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Jede Stunde, jedes Wetter und jede Distanz kommen aus EINEM Medium: eine stetige Lichtkurve über den Tag, Wald-Silhouetten bis 20 km unter blauem Dunst, Grat- und Wolkenschatten – für ≤ 1,5 ms auf der GTX 1060.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> S7 EINE Tag-Achse – Belichtung mit Kompensation, EIN Schreiber, die Uhr-Linse zuerst ROT · +3 · 1½ d · Pflicht A</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Studios und Werkzeug-UI</h3><span class="punkte">4/10</span></div>
+        <div class="bar" role="img" aria-label="4 von 10"><span style="width:40%"></span></div>
+        <ul class="krit">
+          <li><span>EINE Bühne: Studio = Welt-Engine</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Kosten-Wahrheit am Griff</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Jeder Regler wirkt und hält das Budget</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Iteration und Sitzung</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Weg in die Welt, Sprache der KI</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Jedes Studio ist ein Modus der laufenden Welt: ein Griff zeigt das Werk in ≤ 200 ms an seinem Ort, daneben gemessene Kosten, A/B und ein Undo über das Neuladen hinaus – in der Regler-Sprache, die auch die KI spricht.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Sitzung mit A/B und Persistenz am EINEN Chokepoint der Hülle, dazu die Linse Griff → Bild · +1 · 1½ d</p>
+      </article>
+
+      <article class="flaeche karte">
+        <div class="kopf"><h3>Ankunft, Streaming und Leistung</h3><span class="punkte">2/10</span></div>
+        <div class="bar" role="img" aria-label="2 von 10"><span style="width:20%"></span></div>
+        <ul class="krit">
+          <li><span>Ankunft kalt: Klick bis Kontrolle</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Takt in Ruhe: Profi-Band</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Glätte in Bewegung: keine Hänger</span><span class="dots" aria-label="1 von 2"><i class="an"></i><i></i></span></li>
+          <li><span>Kein Pop-in unter Tempo</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+          <li><span>Wiederkehr: warm und Portal</span><span class="dots" aria-label="0 von 2"><i></i><i></i></span></li>
+        </ul>
+        <p class="vision"><span class="marke">10/10:</span> Ein Klick, und nach ≤ 5 s kalt (1,5 s warm, Portal 1 s) hält der Spieler ein ganzes Bild auf Radeon 890M wie GTX 1060 – danach nie eine Lücke, nie ein Hänger über 100 ms, Frame p95 ≤ 16,7 ms.</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> S3 EIN Rang und freier Haupt-Faden – B4 und B5 als EIN Paket · +1 · 2½ d · Pflicht B</p>
+      </article>
+
+    </div>
+  </section>
+
+  <footer>
+    <p>Punkte je Kriterium: zwei volle Punkte = Soll gemessen gehalten · einer = trägt an einer Pose, einem Gerät oder zum Teil · keiner = fehlt oder ROT.</p>
+    <p>Belege, Messungen, die Besten und alle Hebel: MEISTERKARTE.md · Punktestand: meisterkarte.json (nach jedem Bündel nachgezogen).</p>
+  </footer>
+</main>
+</body>
+</html>
