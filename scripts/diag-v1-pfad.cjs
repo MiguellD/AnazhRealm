@@ -232,7 +232,7 @@ function fahrtVerdict(m) {
             out.push(`wagen${wo} im Bild ${pct(a.anteil)} außerhalb [${pct(SOLL.wagenMin)}; ${pct(SOLL.wagenMax)}]`);
     }
     if (m.bild !== false && !(m.rauschen <= SOLL.rauschenMax))
-        out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht)`);
+        out.push(`bild-rauschen ${m.rauschen} > ${SOLL.rauschenMax} (die Maske des Wagens trägt nicht; Regung Welt,Bau,Karte vor · zwischen · nach den Schüssen: ${(m.regungen || []).join(" · ")})`);
     // DER WECHSEL: je Rückkehr nach Third steht die Kamera nach 10 Bildern an der Gier; der Ruck bei fester Lenkung
     const nach = w.wechsel || [];
     const ausEgo = nach.filter(([, , von]) => von !== "fuehrung").length;
@@ -1049,13 +1049,20 @@ async function probe(arg) {
                             await new Promise((ok) => requestAnimationFrame(ok));
                             still = regung() === v ? still + 1 : ((v = regung()), 0);
                         }
-                        const [G1, G2] = [await auf(false), await auf(false)];
+                        // die Regungen vor, zwischen und nach den Schüssen: ein Rauschen nennt, ob die Welt sich regte
+                        const regungen = [regung()];
+                        const G1 = await auf(false);
+                        regungen.push(regung());
+                        const G2 = await auf(false);
+                        regungen.push(regung());
                         const O = await auf(true);
                         const { teil } = window.__klassenTeilung(G1, [O], W, H, 18);
                         out.bilder[name] = png(G1);
+                        const rauschen = window.__bildRauschen(G1, G2, W, H, 18).anteil;
                         return {
                             anteil: +(teil.reduce((s, x) => s + (x === 1), 0) / (W * H)).toFixed(4),
-                            rauschen: window.__bildRauschen(G1, G2, W, H, 18).anteil,
+                            rauschen,
+                            regungen,
                             teile: gr.size,
                         };
                     } finally {
@@ -1291,11 +1298,17 @@ async function probe(arg) {
             // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von
             // `kreisM` um ihn (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines
             // tor_drachentor, dessen Pfosten außerhalb von `kreisM` standen)
-            const kreisOrt = ort((x, z, y, torNah) =>
-                !torNah(x, z, SOLL.kreisM) &&
-                !boxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < SOLL.kreisM ** 2) &&
-                [0, 1, 2, 3, 4, 5, 6, 7].every((j) => Math.abs(r.getTerrainHeightAt(x + Math.sin((j * Math.PI) / 4) * SOLL.kreisM, z + Math.cos((j * Math.PI) / 4) * SOLL.kreisM) - y) < 1.5) && { d: 0 }
-            );
+            const kreisOrt = ort((x, z, y, torNah) => {
+                const K = SOLL.kreisM;
+                const baut = boxen.some(
+                    (b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < K ** 2
+                );
+                const eben = [0, 1, 2, 3, 4, 5, 6, 7].every((j) => {
+                    const [sx, sz] = [x + Math.sin((j * Math.PI) / 4) * K, z + Math.cos((j * Math.PI) / 4) * K];
+                    return Math.abs(r.getTerrainHeightAt(sx, sz) - y) < 1.5;
+                });
+                return !torNah(x, z, K) && !baut && eben && { d: 0 };
+            });
             m.wechsel = { ort: kreisOrt && kreisOrt.ort };
             if (kreisOrt) {
                 phase = "Wechsel";
@@ -1511,6 +1524,44 @@ async function probe(arg) {
                         +s.weg.toFixed(1),
                     ];
                 }
+                // DER SELBSTTEST IM LAUF (Prüfer 18.10.: der Leser des Tors warf in jedem Takt, das Urteil „portal
+                // betreten in der Fahrt" fiel nie): ein Wagen fährt von der Fahrbahn auf der Achse seiner Membran
+                // (`_tickPortalMembranes`: die Kreuzung in der Apertur) in das Tor des Rings, dessen Achse radial liegt
+                // (die Tore stehen in Gier 0: auf jeder anderen Achse streift der Wagen ein Nachbar-Tor) — der Takt nennt es
+                // beim Namen (`m.tor`), das Urteil wird ROT
+                const radial = (a) =>
+                    Math.abs(Math.sin(a.rotationY || 0) * (a.position.x - Mg.x) + Math.cos(a.rotationY || 0) * (a.position.z - Mg.z));
+                const torZiel = [...(r._portalMembranes || new Map()).values()]
+                    .map((rec) => rec.entry)
+                    .filter((a) => Math.abs(Math.hypot(a.position.x - Mg.x, a.position.z - Mg.z) - GP.ringR) < 1)
+                    .sort((a, b) => radial(b) - radial(a))[0];
+                const [vorher, phaseVor, T] = [m.tor, phase, {}];
+                [m.tor, phase] = [null, "Selbsttest Tor"];
+                if (torZiel)
+                    try {
+                        const [p, ry] = [torZiel.position, torZiel.rotationY || 0];
+                        const aus = Math.sign(Math.sin(ry) * (p.x - Mg.x) + Math.cos(ry) * (p.z - Mg.z)) || 1;
+                        const [nx, nz] = [Math.sin(ry) * aus, Math.cos(ry) * aus]; // die Normale der Membran, vom Platz fort
+                        const h = Math.atan2(-nx, -nz);
+                        T.von = [Math.round(p.x + nx * 8), Math.round(p.z + nz * 8)];
+                        await steigEin(p.x + nx * 8, p.z + nz * 8, h, true);
+                        taste("keydown", "w", "KeyW");
+                        for (let i = 0; i < 600 && !m.tor; i++) {
+                            const fehl = wrap(fahrt() - h);
+                            lenke(fehl > 0.03 ? (hebt === "a" ? "d" : "a") : fehl < -0.03 ? hebt : null);
+                            await tick(1);
+                        }
+                    } catch (err) {
+                        T.fehler = String((err && err.message) || err).slice(0, 200);
+                    } finally {
+                        T.bis = e ? [Math.round(e.position.x), Math.round(e.position.z)] : null;
+                        lenke(null);
+                        taste("keyup", "w", "KeyW");
+                        if (r._portalOverlay) r.exitPortal();
+                        if (st.player.mountedArch != null) r.dismountArchitecture();
+                        for (const w of gebaut.splice(0)) r.removeArchitecture(w);
+                    }
+                [out.fahrtTor, m.tor, phase] = [Object.assign(T, { ziel: torZiel && torZiel.type, tor: m.tor }), vorher, phaseVor];
             }
             m.gestartet = true;
         } catch (e) {
@@ -2406,7 +2457,12 @@ async function probe(arg) {
             telemetrieImChat: false,
         };
         for (const [kurz, urteil, gesund, brueche] of [
-            ["V-D5", rezeptVerdict, { gestartet: true, friedenGesperrt: true, schoepferFrei: true }, [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]]],
+            [
+                "V-D5",
+                rezeptVerdict,
+                { gestartet: true, friedenGesperrt: true, schoepferFrei: true },
+                [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]],
+            ],
             ["V-k4", tasteVerdict, { gestartet: true, gedrueckt: true, nachBlur: false }, [["Klebetaste (V-k4)", { nachBlur: true }, "W bleibt"]]],
             [
                 "V-D6",
@@ -2753,7 +2809,11 @@ async function probe(arg) {
         );
         // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der
         // längste Gang nicht
-        for (const [a, soll] of [[["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"], [["fahrt", 91.4, 5400], null], [["werkstatt", 68.5, 900], null]])
+        for (const [a, soll] of [
+            [["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"],
+            [["fahrt", 91.4, 5400], null],
+            [["werkstatt", 68.5, 900], null],
+        ])
             check(
                 `Selbst-Test Frist: ${a.join(" · ")} → ${soll || "kein Bruch"}`,
                 fristBruch(...a) === soll,
@@ -2848,14 +2908,26 @@ async function probe(arg) {
     // DES GANGS je 5 s: der Puls je 30 s (die CI sieht, wo er steht: die Station, ihre Sekunden, die Takte) und die
     // FRIST der Station (Tafel STATIONEN) — ihr Bruch schließt den Browser und ist ROT beim Namen der Station
     let [bruch, schlag, zu] = [null, 0, null];
-    const wache = setInterval(() => page.evaluate(() => [window.__gang.station, Math.round(performance.now()), window.__gang.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)]).then(([s, t, k, log]) => {
-        if (!s || bruch) return;
-        const sek = (t - s[1]) / 1000;
-        if (++schlag % 6 === 0) console.log(`  … ${s[0]} seit ${sek.toFixed(0)} s, ${k - s[2]} Takte`);
-        const f = fristBruch(s[0], sek, k - s[2]);
-        if (f) [bruch, zu] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
-    }).catch(() => {}), 5000);
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) }).catch((e) => {
+    const puls = () => {
+        const g = window.__gang;
+        return [g.station, Math.round(performance.now()), g.takte, (window.anazhRealm.state.logBuffer || []).slice(-2).map(String)];
+    };
+    const wache = setInterval(
+        () =>
+            page
+                .evaluate(puls)
+                .then(([s, t, k, log]) => {
+                    if (!s || bruch) return;
+                    const sek = (t - s[1]) / 1000;
+                    if (++schlag % 6 === 0) console.log(`  … ${s[0]} seit ${sek.toFixed(0)} s, ${k - s[2]} Takte`);
+                    const f = fristBruch(s[0], sek, k - s[2]);
+                    if (f) [bruch, zu] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
+                })
+                .catch(() => {}),
+        5000
+    );
+    const knoten = KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]);
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten }).catch((e) => {
         if (!bruch) throw e;
     });
     clearInterval(wache);
@@ -2927,6 +2999,13 @@ async function probe(arg) {
                 out.fahrt,
                 fahrtVerdict,
                 zeile
+            );
+            const T = out.fahrtTor || {};
+            const tor = T.tor ? fahrtVerdict({ ...out.fahrt, tor: T.tor }) : [];
+            check(
+                "Selbst-Test im Lauf: der Wagen fährt in ein Tor des Rings — die Fahrt wird ROT beim Namen (portal betreten)",
+                tor.some((t) => t.startsWith("portal betreten in der Fahrt (Selbsttest Tor)")),
+                `Ziel ${T.ziel} von ${T.von} bis ${T.bis} · ${T.tor ? `${T.tor.ort} ${T.tor.log}` : `kein Tor betreten ${T.fehler || ""}`}`
             );
             const alt = out.fahrtAlt ? fahrtVerdict(out.fahrtAlt) : [];
             check(
