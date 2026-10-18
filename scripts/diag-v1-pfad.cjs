@@ -617,10 +617,7 @@ async function probe(arg) {
             m.ringMitteAbstand = +Math.hypot(cx - P.x, cz - P.z).toFixed(2);
         }
         // DAS BILD DER LICHTUNG: der Spieler auf der Plattform, sein Blick über die Lichtung, wenn der Wald steht
-        if (!R._isHeadlessNull)
-            await angehalten(async () => {
-                out.bilder.lichtung = png(await schuss());
-            });
+        if (!R._isHeadlessNull) await angehalten(async () => (out.bilder.lichtung = png(await schuss())));
         m.gestartet = true;
     } catch (e) {
         out.lichtung = Object.assign(out.lichtung || {}, { err: (e && e.stack) || String(e) });
@@ -954,9 +951,9 @@ async function probe(arg) {
             const ort = (wahl) => {
                 const tore = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.isPortal);
                 const torBoxen = tore.flatMap((a) => a.blockerAABBs || (r._populateBlockerAABBs(a), a.blockerAABBs) || []);
-                const torNah = (x, z) =>
-                    tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < torFrei) ||
-                    torBoxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < torFrei ** 2);
+                const torNah = (x, z, frei = torFrei) =>
+                    tore.some((t) => Math.hypot(t.position.x - x, t.position.z - z) < frei) ||
+                    torBoxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < frei ** 2);
                 for (let rad = 10; rad <= 300; rad += 10)
                     for (let i = 0, n = Math.round((2 * Math.PI * rad) / 10); i < n; i++) {
                         const [x, z] = [hx + Math.sin((i / n) * 2 * Math.PI) * rad, hz + Math.cos((i / n) * 2 * Math.PI) * rad];
@@ -965,7 +962,11 @@ async function probe(arg) {
                     }
                 return null;
             };
-            const kreisOrt = ort((x, z, y) =>
+            // der Kreis unter fester Lenkung reicht bis zu seinem Durchmesser vom Aufstieg: kein Tor im Kreis von `kreisM` um ihn
+            // (Lauf 18.10. am Kopf 230f2880: der Wagen fuhr im Kreis bei −16/14 durch die Membran eines tor_drachentor, dessen
+            // Pfosten außerhalb von `kreisM` standen)
+            const kreisOrt = ort((x, z, y, torNah) =>
+                !torNah(x, z, SOLL.kreisM + torFrei) &&
                 !boxen.some((b) => Math.max(b.minX - x, 0, x - b.maxX) ** 2 + Math.max(b.minZ - z, 0, z - b.maxZ) ** 2 < SOLL.kreisM ** 2) &&
                 [0, 1, 2, 3, 4, 5, 6, 7].every((j) => Math.abs(r.getTerrainHeightAt(x + Math.sin((j * Math.PI) / 4) * SOLL.kreisM, z + Math.cos((j * Math.PI) / 4) * SOLL.kreisM) - y) < 1.5) && { d: 0 }
             );
@@ -984,9 +985,7 @@ async function probe(arg) {
                 // E steigt wieder ein, und das erste Bild trifft auf keinen Sim-Schritt (Rest 0, über 60 fps oft) — es zeichnet den
                 // Wagen in seiner Gier, nie zwischen der letzten Fahrt und ihr; die Chase-Cam des neuen Rigs beginnt dort
                 if (st.player.mountedArch == null) {
-                    phase = "Wiederaufstieg";
-                    const stoss = 1; // rad, der Wagen dreht im Stand um 57°
-                    e.rotationY = (Number.isFinite(e.rotationY) ? e.rotationY : 0) + stoss;
+                    [phase, e.rotationY] = ["Wiederaufstieg", (e.rotationY || 0) + 1]; // der Stoß: 1 rad (57°) im Stand
                     r._archInstanceUpdate(e);
                     r.mountArchitecture(e);
                     try {
@@ -1146,12 +1145,10 @@ async function probe(arg) {
         if (!R._isHeadlessNull && nB.length) {
             for (let i = 0; i < 900 && !nB.every((a) => r._archIsRendered(a)); i++) await tick(1);
             m.birkenGezeichnet = nB.filter((a) => r._archIsRendered(a)).length;
-            const [cx, cz] = [nB.reduce((s2, a) => s2 + a.position.x, 0) / nB.length, nB.reduce((s2, a) => s2 + a.position.z, 0) / nB.length];
-            st.yaw = Math.atan2(cx - pm.x, cz - pm.z); // vor dem Spieler liegt (sin Gier, cos Gier)
+            const c = nB.reduce((s2, a) => [s2[0] + a.position.x / nB.length, s2[1] + a.position.z / nB.length], [0, 0]);
+            st.yaw = Math.atan2(c[0] - pm.x, c[1] - pm.z); // vor dem Spieler liegt (sin Gier, cos Gier)
             await tick(12);
-            await angehalten(async () => {
-                out.bilder.wort = png(await schuss());
-            });
+            await angehalten(async () => (out.bilder.wort = png(await schuss())));
         }
         for (const a of nB.slice().reverse()) r.removeArchitecture(a);
         // Der Empfänger steht 200 m weiter: seine Birken stehen dort, wo der Absender sie wollte.
@@ -1537,29 +1534,19 @@ async function probe(arg) {
         // Auf der Karte zeichnet sie einmal ECHT (der Beobachter ruht dafür) und wird im selben Takt gelesen, mit und ohne Werk:
         // der Anteil, den das Werk deckt (die Klassen-Teilung der Abnahme, wie der Wagen im Bild der Fahrt)
         if (!R._isHeadlessNull) {
-            const beob = ws.preview.renderer.render;
-            delete ws.preview.renderer.render;
+            const [beob, c] = [p.renderer.render, p.canvas];
+            delete p.renderer.render;
             try {
-                await ws.preview.renderer.init();
-                const c = ws.preview.canvas;
-                const [w2, h2] = [c.width, c.height];
-                const cv = Object.assign(document.createElement("canvas"), { width: w2, height: h2 });
+                await p.renderer.init();
+                const cv = Object.assign(document.createElement("canvas"), { width: c.width, height: c.height });
                 const ctx = cv.getContext("2d", { willReadFrequently: true });
-                const zeichne = (sichtbar) => {
-                    ws.preview.currentMesh.visible = sichtbar;
-                    r._workshopRender();
-                    ctx.clearRect(0, 0, w2, h2);
-                    ctx.drawImage(c, 0, 0);
-                    return ctx.getImageData(0, 0, w2, h2).data;
-                };
-                const ohne = zeichne(false);
-                const mit = zeichne(true);
-                const { teil } = window.__klassenTeilung(mit, [ohne], w2, h2, 18);
-                m.bildAnteil = +(teil.reduce((s2, x) => s2 + (x === 1), 0) / (w2 * h2)).toFixed(4);
+                const zeichne = (an) => ((p.currentMesh.visible = an), r._workshopRender(), ctx.clearRect(0, 0, c.width, c.height), ctx.drawImage(c, 0, 0), ctx.getImageData(0, 0, c.width, c.height).data);
+                const [ohne, mit] = [zeichne(false), zeichne(true)]; // zuletzt mit Werk: das Bild der Station
+                const { teil } = window.__klassenTeilung(mit, [ohne], c.width, c.height, 18);
+                m.bildAnteil = +(teil.reduce((s2, x) => s2 + (x === 1), 0) / (c.width * c.height)).toFixed(4);
                 out.bilder.werkstatt = cv.toDataURL("image/png");
             } finally {
-                ws.preview.currentMesh.visible = true;
-                ws.preview.renderer.render = beob;
+                [p.currentMesh.visible, p.renderer.render] = [true, beob];
             }
         }
         m.gestartet = true;
@@ -2072,14 +2059,8 @@ async function probe(arg) {
         const vorWelt = fahrtVerdict({ gestartet: true, typ: "fahrzeug_gt", sichtVor: "first", sichtRitt: "third", sichtNach: "first", weg: 100, armN: 300, armP50: 0.68, armMin: 0.46, imWagen: 0, anteil: 0.013, rauschen: 0, abgestiegen: true, stufeWeg: 1.7, wechsel: WECHSEL_GESUND, hang: HANG_GESUND });
         check("Selbst-Test Fahrt: ein Arm vor Boden und Bau (p50 0,68, nie am Wagen) ist kein Täter", vorWelt.length === 0, vorWelt.join(" · "));
         // DIE FRIST JE STATION: der Hänger der Werkstatt (696 s, Befund des Prüfers 18.10.) ist ROT beim Namen, der längste Gang nicht
-        for (const [name, [st0, sek, takte], soll] of [
-            ["der Hänger der Werkstatt", ["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"],
-            ["die längste Fahrt (91,4 s)", ["fahrt", 91.4, 5400], null],
-            ["die längste Werkstatt (68,5 s)", ["werkstatt", 68.5, 900], null],
-        ]) {
-            const ist = fristBruch(st0, sek, takte);
-            check(`Selbst-Test Frist: ‚${name}' → ${soll || "kein Bruch"}`, ist === soll, String(ist));
-        }
+        for (const [a, soll] of [[["werkstatt", 696, 83075], "station werkstatt steht 696 s (83075 Takte) über ihrer Frist von 300 s"], [["fahrt", 91.4, 5400], null], [["werkstatt", 68.5, 900], null]])
+            check(`Selbst-Test Frist: ${a.join(" · ")} → ${soll || "kein Bruch"}`, fristBruch(...a) === soll, String(fristBruch(...a)));
         check("Selbst-Test Frist: jede Station trägt ihre Frist", STATIONEN.every(([, , f]) => f > 0), STATIONEN.map(([n, , f]) => `${n} ${f}`).join(" · "));
         // DIE WAHL: eine Datei des Stamms ruft die Stationen ihres Moduls, was die Welt sonst lädt den ganzen Gang, Doku nur die Ankunft
         const ordnung = JSON.parse(fs.readFileSync(path.join(root, "spec/stamm/modul-karte.json"), "utf8")).ordnung;
@@ -2156,23 +2137,15 @@ async function probe(arg) {
         const f = fristBruch(s[0], sek, k - s[2]);
         if (f) [bruch, zu] = [`${f} — zuletzt im Log: ${log.join(" · ") || "—"}`, browser.close().catch(() => {})];
     }).catch(() => {}), 5000);
-    let out = null;
-    try {
-        out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
-    } catch (e) {
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, soll: SOLL, stationen, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) }).catch((e) => {
         if (!bruch) throw e;
-    }
+    });
     clearInterval(wache);
     server.close();
-    if (bruch) {
-        check("jede Station in ihrer Frist (Tafel STATIONEN)", false, bruch);
-        await zu; // der Browser gibt die Platte frei, bevor sie fällt
-        fs.rmSync(platte, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    await browser.close();
-    fs.rmSync(platte, { recursive: true, force: true });
+    if (bruch) check("jede Station in ihrer Frist (Tafel STATIONEN)", false, bruch);
+    await (zu || browser.close()); // der Browser gibt die Platte frei, bevor sie fällt
+    fs.rmSync(platte, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    if (bruch) process.exit((console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`), 1));
     fs.mkdirSync(bilderOrt, { recursive: true });
     for (const [name, url] of Object.entries(out.bilder)) fs.writeFileSync(path.join(bilderOrt, `${name}.png`), Buffer.from(url.split(",")[1], "base64"));
 
