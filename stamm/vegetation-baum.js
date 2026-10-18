@@ -1606,7 +1606,8 @@ class AnazhRealm_vegetation_baum {
     // (ein eigener Filter im Pflanz-Gang): 28 promotete Bäume, 23 Streu-Zellen, 4 Kachel-Pflanzen und der Hain der KI standen
     // über ihr (gate:haus-welt W8). `absage(wo)` hört, wo ein Wurf fiel ("haus" | "lichtung") — der Hain der KI und des
     // Chats sagt es laut (`_ergebnisSatz`), nie still „gewachsen". Seit Welle L Folge setzt auch der Spieler durch sie:
-    // der Bau-Modus (`confirmBuild`) und sein Phantom (`tickBuildMode`, das Urteil `_naturWand`).
+    // der Bau-Modus (`confirmBuild`) und sein Phantom (`tickBuildMode`, das Urteil `_naturWand`). Die Nah-Wiese fragt den
+    // Grundriss selbst (`_nahWieseKachelBueschel` → `_imGrundriss` mit dem Kreis des Büschels; Weg und Platz dünnt ihr Pfad-Feld).
     _naturSetzen(name, position, opts, setzen, absage) {
         const wo = this._naturWand(name, position, opts);
         if (wo) {
@@ -1791,10 +1792,11 @@ class AnazhRealm_vegetation_baum {
                     l.push(e);
                 }
         }
-        // die Flächen der Dörfer (`_aufWeg`): jede Hülle der Wege-Karte in die Zellen, die sie mit 1 m Rand berührt
+        // die Flächen der Dörfer (`_aufWeg`): jede Hülle der Wege-Karte in die Zellen, die sie mit 1 m Rand berührt — der Grund
+        // eines Hauses (`_grundFlaecheSetzen`) ist keine Fläche des Dorfs: Hof-Baum und Streu stehen wie vorher bis an die Wand
         const wk = this.state.wegeKarte;
         if (wk)
-            for (const b of wk.siedlungen)
+            for (const b of wk.siedlungen.filter((q) => !q.grund))
                 for (let gx = Math.floor((b.x0 - 1) / G); gx <= Math.floor((b.x1 + 1) / G); gx++)
                     for (let gz = Math.floor((b.z0 - 1) / G); gz <= Math.floor((b.z1 + 1) / G); gz++) {
                         const k = AnazhRealm._grundrissSchluessel(gx, gz);
@@ -1907,14 +1909,15 @@ class AnazhRealm_vegetation_baum {
     // Ein Bau mit Grundriss steht: was die Natur schon in ihn geworfen hat, fällt — der Wald und die Streu standen oft vor
     // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m), und ein älterer Stand trägt Bäume über der
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
-    // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
-    // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
-    // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
-    // und das Laden. Gibt die Zahl der geräumten
-    // Natur-Stücke.
+    // Kacheln der Nah-Wiese und der Nah-Streu über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der
+    // Krone (`_naturKrone`, die Suche reicht eine Streu-Region weiter). Der Grundriss eines Hauses ist dazu sein Grund in der
+    // Wege-Karte (`_grundFlaecheSetzen`): die Halm-Schicht des Boden-Stoffs liest ihn. Der billige Orts-Filter zuerst, die
+    // Art-Frage nur für Betroffene (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss),
+    // `_hausHuelleSetzen` (die Hülle bringt ihn) und das Laden. Gibt die Zahl der geräumten Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
+        if (!fp.lichtung && !fp.welt) this._grundFlaecheSetzen(haus, fp);
         const nenne = (e) => {
             const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
             return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
@@ -1980,17 +1983,8 @@ class AnazhRealm_vegetation_baum {
                     }
                 }
         }
-        const ns = this.state.nahStreu;
-        if (ns && ns.kacheln.size) {
-            const K = AnazhRealm.NAH_STREU.kachel;
-            for (let tx = Math.floor((hx - r) / K); tx <= Math.floor((hx + r) / K); tx++)
-                for (let tz = Math.floor((hz - r) / K); tz <= Math.floor((hz + r) / K); tz++) {
-                    const k = ns.kacheln.get(`${tx},${tz}`);
-                    if (!k) continue;
-                    this._nahStreuKachelEntsorgen(k);
-                    ns.kacheln.delete(k.key);
-                }
-        }
+        // die Kacheln der Nah-Wiese und der Nah-Streu über der Fläche wachsen durch die Wand neu (bis F4 nur die der Streu)
+        this._nahWieseNeuIn(hx - r, hz - r, hx + r, hz + r);
         return n;
     }
 

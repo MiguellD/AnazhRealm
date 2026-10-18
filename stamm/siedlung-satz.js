@@ -1480,14 +1480,14 @@ class AnazhRealm_siedlung_satz {
     // Eine Form in EINE Stufe malen (nur innerhalb des Fensters, der Rand-Texel bleibt 0 — Clamp-to-Edge liest
     // außerhalb nichts). Segment: Kapsel-Abstand zur Mittellinie; Rechteck: gedrehter Kasten-Abstand. Der Rand
     // fällt über ±rand weich (smoothstep; rand = max(randM, randMinM der Stufe) — die ferne Stufe trägt 2-m-Texel,
-    // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen
-    // das Maximum.
+    // ein schmaler Feldweg zerfiele dort sonst in Punkte; der Grund eines Hauses trägt seinen harten Rand `f.rand`), Kanal
+    // 0 = Erde, 1 = Acker; überlappende Formen nehmen das Maximum.
     _wegeKarteMale(stufe, f) {
         if (f.kanal < 0) return; // eine Fläche ohne Boden-Kanal (der Gras-Anger) bleibt Wiese
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
-        const rand = Math.max(AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        const rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1776,15 +1776,63 @@ class AnazhRealm_siedlung_satz {
                 : Number.isFinite(t.r)
                   ? { typ: "segment", kanal: 0, ax: x, az: z, bx: x, bz: z, halb: t.r * s }
                   : null;
-        if (!form) return;
+        if (form) this._bodenFormSetzen(entry, "_trittBox", form); // der Restore setzt sie beim ersten Platz neu
+    }
+    // DER GRUND EINES HAUSES (F4 „Wiese im Haus"): sein Grundriss (`_grundrissVon`, haus-lokal gedreht) liegt als Erde in der
+    // EINEN Wege-Karte — die Halm-Schicht des Boden-Stoffs liest DIESELBEN Bytes (`_wegeBodenFarbe`: Erde trägt kein Grün,
+    // `_halmW` 0) wie das Pfad-Feld der Wiese und der Streu. Die Form reicht `WEGE_KARTE.grundM` über die Wand hinaus, mit
+    // hartem Rand (ein halber Texel): bis zur Wand ist das Feld 1, auch bilinear über gedrehte Texel — die Halm-Schicht zeichnet
+    // erst ab Feld 0,99 kein Grün (die grünste Vertex-Farbe g − (r+b)/2 = 0,129 gegen die Erde −0,002). Der Natur-Wand ist
+    // der Grund keine Fläche des Dorfs (`_grundrissStand` lässt ihn aus `_aufWeg`), der Grundriss bleibt ihr Haus. Bis F4 trug
+    // der Boden unter jedem Haus die Wiese — sichtbar, wo er durch die Diele oder in den Hof reicht. Neu, wenn der
+    // Grundriss sich ändert (die Hülle bringt ihn); der Abbau löst ihn mit der Trittfläche (`_trittFlaecheLoesen`).
+    _grundFlaecheSetzen(haus, fp) {
+        const W = AnazhRealm.WEGE_KARTE;
+        const ry = Number.isFinite(haus.rotationY) ? haus.rotationY : 0;
+        const c = Math.cos(ry);
+        const sn = Math.sin(ry);
+        const ax = haus.position.x + fp.ox * c + fp.oz * sn;
+        const az = haus.position.z - fp.ox * sn + fp.oz * c;
+        const [ex, ez] = [fp.ex + W.grundM, fp.ez + W.grundM];
+        const alt = haus._grundBox ? haus._grundBox.formen[0] : null;
+        if (alt && alt.ax === ax && alt.az === az && alt.ex === ex && alt.ez === ez && alt.phi === ry) return;
+        this._bodenFormLoesen(haus, "_grundBox");
+        const rand = W.stufen[0].texelM / 2;
+        const form = {
+            typ: "kasten",
+            kanal: 0,
+            ax,
+            az,
+            bx: ax,
+            bz: az,
+            ex,
+            ez,
+            phi: ry,
+            halb: 0,
+            rand,
+        };
+        this._bodenFormSetzen(haus, "_grundBox", form);
+    }
+    // Eine Boden-Form eines Eintrags (Trittfläche, Grund) in die EINE Wege-Karte: ihre Hülle unter die Flächen der Karte (der
+    // Fenster-Umzug malt sie neu, die Natur-Wand liest sie, `_aufWeg`), JETZT gemalt in jede zentrierte Stufe; was schon dort
+    // wuchs, räumt der Takt (`_wegeRaeumen`), Wiese und Streu darüber wachsen neu. Der Eintrag hält sie in `feld` (transient,
+    // kein Snapshot).
+    _bodenFormSetzen(entry, feld, form) {
         const wk = this._wegeKarteEnsure();
         if (!wk) return;
         const r = AnazhRealm._wegeFormRadius(form);
-        const box = { x0: x - r, z0: z - r, x1: x + r, z1: z + r, formen: [form] };
+        const box = {
+            x0: form.ax - r,
+            z0: form.az - r,
+            x1: form.ax + r,
+            z1: form.az + r,
+            formen: [form],
+            grund: feld === "_grundBox",
+        };
         wk.siedlungen.push(box);
-        wk.raeumen.push(box); // was schon um die Ausstattung wuchs, räumt der Takt (`_wegeRaeumen`)
+        wk.raeumen.push(box);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
-        entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
+        entry[feld] = box;
         for (const stufe of wk.stufen)
             if (stufe.zentriert) {
                 this._wegeKarteMale(stufe, form);
@@ -1794,17 +1842,21 @@ class AnazhRealm_siedlung_satz {
         if (pm && wk.stufen.some((st) => !st.zentriert)) this._tickWegeKarte(pm.position);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
-    // Der Abbau nimmt die Trittfläche mit: die Form fällt aus der Karte, jede zentrierte Stufe malt JETZT neu (der
+    // Der Abbau nimmt Trittfläche und Grund mit: die Form fällt aus der Karte, jede zentrierte Stufe malt JETZT neu (der
     // EINE Neu-Maler — bis 06.10. wartete der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte: die
     // GPU-Karte zeigte weiter Erde, der CPU-Leser 0), Wiese und Nah-Streu wachsen über der Fläche zurück.
     _trittFlaecheLoesen(entry) {
+        this._bodenFormLoesen(entry, "_trittBox");
+        this._bodenFormLoesen(entry, "_grundBox");
+    }
+    _bodenFormLoesen(entry, feld) {
         const wk = this.state.wegeKarte;
-        const box = entry ? entry._trittBox : null;
+        const box = entry ? entry[feld] : null;
         if (!box || !wk) return;
         const i = wk.siedlungen.indexOf(box);
         if (i >= 0) wk.siedlungen.splice(i, 1);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
-        entry._trittBox = undefined;
+        entry[feld] = undefined;
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
@@ -3333,6 +3385,7 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+    grundM: 1.0, // der Grund eines Hauses über seine Wand hinaus (`_grundFlaecheSetzen`): halber Texel + Diagonale ≤ 1,0 m
 });
 // DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
 // (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich
