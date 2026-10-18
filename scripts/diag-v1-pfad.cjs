@@ -775,6 +775,15 @@ async function probe(arg) {
             // den Ring fährt (SG1-F1d: ihr Platz liegt jenseits der Fahrbahn, `_portalVorschauOrt`; ohne das Warten
             // baute sie zwischen den zwei Schüssen des ersten Bilds, Radeon 18.10.: Rauschen 0,022)
             const VS = r.constructor.PORTAL_VORSCHAU;
+            // DIE NaN-WAND: die Fahrt liest die Zahlen des Platz-Gesetzes — fehlt eine, ist das ROT beim Namen, nie NaN
+            const GP = r.constructor.GENESIS_PLATZ || {};
+            const loch = ["ringR", "rand", "bahn", "lichtung", "vorschau"].filter((k) => !Number.isFinite(GP[k]));
+            const lochVS = VS && Array.isArray(VS.tore) && Number.isFinite(VS.anflugM) ? [] : ["PORTAL_VORSCHAU"];
+            if (loch.length || lochVS.length)
+                throw Object.assign(
+                    new Error(`das Platz-Gesetz trägt ${[...loch.map((k) => "GENESIS_PLATZ." + k), ...lochVS].join(", ")} nicht (NaN-Wand)`),
+                    { wand: true }
+                );
             const studioTore = () =>
                 st.architectures.filter((a) => a && a.position && VS.tore.some(([w]) => a.type === "welt_" + w));
             const offen = () =>
@@ -1572,7 +1581,7 @@ async function probe(arg) {
             }
             m.gestartet = true;
         } catch (e) {
-            Object.assign(m, { err: (e && e.stack) || String(e), grund: String((e && e.message) || e) });
+            Object.assign(m, e && e.wand ? { grund: e.message } : { err: (e && e.stack) || String(e), grund: String((e && e.message) || e) });
         } finally {
             A.jeTakt = null;
         }

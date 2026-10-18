@@ -1279,6 +1279,7 @@ async function proben(phasen) {
                 // der Weg wird verfolgt: der Körper bleibt über dem Boden unter ihm (dem Gelände-Gesetz, auf Podest und Diele der
                 // Haus-Basis) — höchstens eine Stufe darüber vor der Schwelle (nie über eine Mauer), nie darunter (nie in ein Loch)
                 const base = e.position.y - 0.5;
+                [w._grund, w._schritt] = [null, 0]; // je Anlauf frisch
                 s.keys = s.keys || {};
                 for (const [lx, lz] of wegpunkte) {
                     const q = welt(e, lx, lz);
@@ -1292,9 +1293,16 @@ async function proben(phasen) {
                         const fuss = pm.position.y - FUSS;
                         const ueber = Math.round((fuss - Math.max(gel, base)) * 100) / 100;
                         const unter = Math.round((fuss - gel) * 100) / 100;
+                        // der Täter beim Namen: der Grund unter dem Fuß über der Basis je Schritt — fällt er in einem Schritt,
+                        // stand der Körper auf dem Grund von vorher (der Erdbau des Slots kam erst nach dem Start an)
+                        const grund = Math.round((gel - base) * 100) / 100;
+                        const sturz = w._grund == null ? 0 : Math.round((w._grund - grund) * 100) / 100;
+                        w._grund = grund;
+                        w._schritt = (w._schritt || 0) + 1;
                         if (lq.z < tu.z - 0.3 && !(ueber <= w.hochM)) {
                             w.hochM = ueber;
                             w.hochOrt = [Math.round(lq.x * 100) / 100, Math.round(lq.z * 100) / 100];
+                            w.hochGrund = sturz > 1 ? `der Grund fiel unter dem Fuß um ${sturz} m im Schritt ${w._schritt} (Grund ${grund} m über der Basis)` : "über eine Mauer";
                         }
                         if (!(unter >= w.tiefM)) {
                             w.tiefM = unter;
@@ -1439,7 +1447,7 @@ function urteil(o) {
         const ueberMauer = w6.filter((w) => !(w.hochM <= 1.3));
         if (ueberMauer.length)
             f.push(
-                `W6 Aufbau: der Anlauf lief vor der Schwelle über dem Boden (${ueberMauer.map((w) => w.kultur + " " + w.hochM + " m @" + w.hochOrt).join(" ")} — über eine Mauer, nicht durch die Tür)`
+                `W6 Aufbau: der Anlauf lief vor der Schwelle über dem Boden (${ueberMauer.map((w) => w.kultur + " " + w.hochM + " m @" + w.hochOrt + ": " + w.hochGrund).join(" ")} — nicht durch die Tür)`
             );
         const imLoch = w6.filter((w) => !(w.tiefM >= -1));
         if (imLoch.length)

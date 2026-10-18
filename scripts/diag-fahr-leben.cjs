@@ -1031,7 +1031,12 @@ async function probeBahn(B) {
         frame();
         m.eingestiegen = st.player.mountedArch === e.id;
         if (!m.eingestiegen) {
-            m.statt = logs.slice(vorLog).join(" · ") || "keine Meldung";
+            // der Täter beim Namen: nahm E ein anderes Werk, steht es hier (Typ, Id, Abstand zum Wagen) — still ist nie grün
+            const statt = (st.architectures || []).find((a) => a && a.id === st.player.mountedArch);
+            const wo = (a) => Math.hypot(a.position.x - e.position.x, a.position.z - e.position.z).toFixed(1);
+            const nahm = statt ? `E nahm ${statt.type} ${statt.id} ${wo(statt)} m vom Wagen` : null;
+            if (statt) r.dismountArchitecture();
+            m.statt = [nahm, ...logs.slice(vorLog)].filter(Boolean).join(" · ") || "keine Meldung";
             if (r._portalOverlay && typeof r.exitPortal === "function") r.exitPortal(); // die Probe geht weiter in der Heimat
             return m;
         }

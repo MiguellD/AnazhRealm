@@ -2773,6 +2773,12 @@ function spawnSelbsttest(tafel, q) {
     for (const id of ["fahrzeug", "tier", "dorf-stadt"]) if (!(id in echtAus)) v.push(`die Klasse ${id} fehlt in der Matrix`);
     const ue = spawnZellen(tafel, q);
     for (const f of ue.fehler) v.push(`die echte Tafel: ${f}`);
+    // DER TÄTER BRAUCHT SEINEN ZEUGEN (Prüfer S2 R3): eine Zelle, die die Teilung des Atlas nennt, ohne dass die Pose die Klasse im
+    // Blick hat (`blick` je Klasse, werkbank spawn), nennt die falsche Ursache — in Ego/Third steht der GT außerhalb des Bilds
+    const zeuge = (z) => ((((echt.messung || {})[z.pose] || {}).blick || {})[z.klasse] || 0) > 0;
+    const ohneZeuge = ue.zellen.filter((z) => /die Teilung/.test(z.taeter || "") && !zeuge(z));
+    if (ohneZeuge.length)
+        v.push(`die echte Tafel: ${ohneZeuge.length} Zellen nennen die Teilung des Atlas ohne Blick-Zeugen (${[...new Set(ohneZeuge.map((z) => z.klasse + " " + z.pose))].join(" · ")})`);
     const kk = (tafel.klassen || []).find((k) => k.id === "laub-kante");
     if (!kk) return v.concat("die Zeile laub-kante fehlt (der Fall der Matrix)");
     const aus = echtAus["laub-kante"];
@@ -2843,10 +2849,15 @@ function spawnSelbsttest(tafel, q) {
         v.push("die Klasse, die in einer Sicht zu keiner Uhr zeichnet, steht als Zelle statt abwesend");
     if (u.gesamt !== 32 || u.gruen !== 2) v.push(`die gebaute Matrix zählt ${u.gruen}/${u.gesamt} statt 2/32`);
     // die Karten-Klasse, die nur als Schicht des EINEN Atlas zeichnet (der GT von oben): unteilbar, nie „in keiner Sicht"
-    const atlas = { "ego@0.5": block({ uhr: 0.5, klassen: { "fimp:atlas:L2": teil(0.2, 90) } }) };
+    const atlas = { "ego@0.5": Object.assign(block({ uhr: 0.5, klassen: { "fimp:atlas:L2": teil(0.2, 90) } }), { blick: { wagen: 1 } }) };
     const ta = Object.assign({}, t, { spawn: Object.assign({}, t.spawn, { klassen: { wagen: "^(f|fimp):wagen:L[0-9]$" }, messung: Object.assign({}, t.spawn.messung, atlas) }) });
     const za = spawnZellen(ta, q).zellen.find((z) => z.klasse === "wagen" && z.pose === "ego@0.5") || {};
     if (!/^unteilbar: Atlas-Schicht/.test(za.grund || "")) v.push(`die Karten-Klasse im EINEN Atlas: ${za.grund || "keine Zelle"} statt „unteilbar: Atlas-Schicht"`);
+    // dieselbe Pose ohne Wagen im Blick (`blick` 0): der Täter ist die Pose, nie die Teilung
+    ta.spawn.messung["ego@0.5"] = Object.assign({}, atlas["ego@0.5"], { blick: { wagen: 0 } });
+    const zb = spawnZellen(ta, q).zellen.find((z) => z.klasse === "wagen" && z.pose === "ego@0.5") || {};
+    if (!/nicht im Blick/.test(zb.grund || "") || /Teilung/.test(zb.taeter || ""))
+        v.push(`die Karten-Klasse außerhalb des Blicks: ${zb.grund || "keine Zelle"} (Täter ${zb.taeter}) statt „nicht im Blick" der Pose`);
     // ein eigener Ausdruck neben der Teilung einer Zeile fällt beim Namen
     const kz = (tafel.klassen || []).find(spawnTeilung);
     if (kz) {

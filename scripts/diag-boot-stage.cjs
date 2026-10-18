@@ -80,12 +80,13 @@ function kontrolleHalb(out) {
 function kontrolleSelbsttest() {
     const v = [];
     const roh = { adapter: "amd rdna-3", weltbildDa: 9000, ohne: [], eingabe: 9000, frames: [8100, 8990, 9016, 9033], halbDiff: 0.01, halbGegen: 0.01, erstesMs: 9400 };
-    const fall = (was, aend, soll) => {
-        const k = kontrolleZeit(Object.assign({}, roh, aend));
+    const fall = (was, aend, soll, stand) => {
+        const k = kontrolleZeit(Object.assign({}, roh, aend), stand);
         const s = (x) => (x == null ? "—" : (x / 1000).toFixed(2) + " s");
         if (k.t !== soll.t) v.push(`${was}: t(Kontrolle) ${s(k.t)} statt ${s(soll.t)}`);
         if (!!k.halb !== soll.halb) v.push(`${was}: halb ${k.halb ? `„${k.halb}"` : "nein"} statt ${soll.halb ? "ja" : "nein"}`);
         if (!!k.rueck !== !!soll.rueck) v.push(`${was}: die Ratsche ${k.rueck ? `ROT „${k.rueck}"` : "GRÜN"} statt ${soll.rueck ? "ROT" : "GRÜN"}`);
+        if (soll.offen != null && !!k.offen !== soll.offen) v.push(`${was}: ${k.offen ? `offen „${k.offen}"` : "nicht benannt offen"} statt ${soll.offen ? "benannt offen" : "nicht offen"}`);
     };
     fall("die echte Ankunft", {}, { t: 9016, halb: false });
     fall("ein gefälschtes _weltbildDa (1 ms)", { weltbildDa: 1 }, { t: 9016, halb: false });
@@ -97,6 +98,11 @@ function kontrolleSelbsttest() {
     fall("keine Eingabe angenommen", { eingabe: null }, { t: null, halb: false, rueck: true });
     fall("die Ankunft über dem Stand (die Ratsche)", { eingabe: 20000, frames: [20016] }, { t: 20016, halb: false, rueck: true });
     fall("ein Gerät ohne Stand (ungemessen)", { adapter: "intel xe-lpg" }, { t: 9016, halb: false, rueck: true });
+    // DER STAND IST GEMESSEN, NIE GETIPPT (Prüfer S2 R3): die Ratsche liest die Kalt-Läufe des Geräts aus der Stand-Datei — zwei
+    // Läufe um 6 s machen 9 s ROT; ein Gerät des Haushalts ohne Lauf (die GTX vor dem ersten OMEN-Lauf) steht benannt offen
+    const gemessen = { radeon: { laeufe: [{ t: 6000, halb: 0.05 }, { t: 6500, halb: 0.06 }] } };
+    fall("der Stand aus den Kalt-Läufen der Stand-Datei", {}, { t: 9016, halb: false, rueck: true }, gemessen);
+    fall("die GTX ohne Kalt-Lauf (benannt offen)", { adapter: "nvidia geforce gtx 1060" }, { t: 9016, halb: false, rueck: false, offen: true }, gemessen);
     if (!/0.38 s nach der Kontrolle/.test(kontrolleZeit(Object.assign({}, roh, { halbDiff: 0.4 })).halb || ""))
         v.push("das halbe Bild nennt sein Fenster nicht (der Schuss 0,38 s nach der Kontrolle)");
     // das Erscheinen gegen den Zug (`blockAnteil` schritt, zwei Blöcke 16×16): ein Block, der in EINEM Schritt kommt, zählt; einer,
