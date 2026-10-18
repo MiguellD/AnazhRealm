@@ -21,3 +21,12 @@ Lauf-ABAB des Pakets läuft (scratchpad ap-lauf).
 
 ## echt an f27b04f0 (Garage-Merge): 21/22, rot nur gate:analog-nah Selbsttest S „Rang des Wartenden false“ —
 dieselbe Röte stand an main (bericht/1810-f6-gtx.md, A 5/5); Heilung liegt im Paket (7306712e).
+
+## Nachtrag 04:00 — Lauf-ABAB des Pakets (Radeon, 4+4, Tiere frei)
+Genesis: Frame p95 8,5 = 8,5 ms · CPU-Takt p95 3,05 → 2,8 · GPU 8,4 = 8,4 · VRAM 50 = 50. Wiese: 8,5 = 8,5 · 2,75 → 2,95 (Streuung
+2,7–3,5) · 8,4 = 8,4 · 50 = 50. Urteil nicht langsamer → integ 2168ba10 (Baum = Paket-Baum, check + voller Playtest am Paket), V18.546.20 e99b66ab.
+echt an 475a446a (S6): rot nur gate:foundry-impostor Teil C „die Welt lieferte in den Probe-Atlas (fichte|3, birke|2, eiche|2)“.
+Befund der Linse (benannt, NICHT geschnitten): ihre Ruhe (`lieferungenLanden`) zählt nur Lieferungen im Flug — ein Zwilling von
+`_weltSteht`; die Linsen-Welt tickt von Hand (`_gameLoopTick` in Teil A), 37 Wald-Pflanzungen warten (`_waldPflanzWarten`), Ruhe 0 —
+`_weltSteht` direkt einzusetzen macht sie dauerhaft rot (lokal gemessen, zurückgenommen). Heilung: Teil C hält die Welt an (kein Takt,
+keine Bestellung) statt auf Ruhe zu warten.
