@@ -2234,7 +2234,7 @@ AnazhRealm._fahrSchrittGesetz = function () {
     const S = vc && vc.FAHR && vc.FAHR.schritt;
     if (
         S &&
-        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
+        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand", "chaseKamera"].every(
             (f) => typeof vc[f] === "function"
         ) &&
         ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>

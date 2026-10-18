@@ -348,21 +348,18 @@ function updateVehicle(dt,t){
   key.position.set(car.x+5,car.y+9,car.z+4);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
 }
 
-// Verfolgerkamera — schwingt sanft hinter das Auto, blickt voraus
-// Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück
-const _cf=new THREE.Vector3();
-const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)
+// Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück.
+// F1 (18.10.) — DIE CHASE-CAM IST DAS GESETZ DES KERNS (VC.chaseKamera; der Welt-Ritt liest dasselbe): der Azimut folgt der Gier,
+// die Elevation steht über der FAHRBAHN als Feder mit Dämpfer. Vorher federte das Labor einstufig auf FAHR.kamera.el zur Welt und
+// zog die Lage nach (posEase) — bergab am Hügel stand die Kamera 4,3° über der Fahrbahn, in der Welt 19,5° (gate:garage-labor G7).
+const camOrb={az:0,el:FAHR.kamera.el,elF:FAHR.kamera.el,follow:true};  // der Zustand des Gesetzes (az: Gier des Kerns, Bug +x)
 // Welle L: der Zug-Zustand der Maus steht im CODE (er stand im Kommentar hinter camOrb — jede Mausbewegung warf ReferenceError)
 let dragging=false,_lpx=0,_lpy=0;
-function lerpAngle(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
 function updateChaseCam(dt,snap){
-  if(camOrb.follow){const azT=Math.atan2(Math.sin(car.yaw),-Math.cos(car.yaw));   // Soll-Azimut: hinter dem Auto
-    camOrb.az=lerpAngle(camOrb.az,azT,snap?1:1-Math.pow(FAHR.kamera.azEase,dt));
-    camOrb.el+=(FAHR.kamera.el-camOrb.el)*(snap?1:1-Math.pow(FAHR.kamera.elEase,dt));}
-  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=FAHR.kamera.blickHoehe+(Number.isFinite(car.y)?car.y:bodenY(car.x,car.z)),lz=car.z;
-  _cf.set(lx+Math.cos(camOrb.az)*ce*d, ly+se*d, lz+Math.sin(camOrb.az)*ce*d);
-  if(snap)cam.position.copy(_cf); else cam.position.lerp(_cf,1-Math.pow(FAHR.kamera.posEase,dt));
-  cam.lookAt(lx,ly,lz);
+  const v=VC.chaseKamera(camOrb,camOrb.follow?car.yaw:NaN,car.steig,snap?0:dt,FAHR.kamera);
+  const by=Number.isFinite(car.y)?car.y:bodenY(car.x,car.z);
+  cam.position.set(car.x+v.x,by+v.y,car.z+v.z);
+  cam.lookAt(car.x,by+FAHR.kamera.blickHoehe,car.z);
 }
 
 // Modus-Wechsel: Werkstatt ⇄ Fahren
@@ -406,7 +403,7 @@ const startB=document.getElementById('start');if(startB)startB.onclick=enterDriv
 R.domElement.style.touchAction='none';
 R.domElement.addEventListener('pointerdown',e=>{if(mode!=='fahren')return;dragging=true;camOrb.follow=false;_lpx=e.clientX;_lpy=e.clientY;});
 addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-_lpx,dy=e.clientY-_lpy;_lpx=e.clientX;_lpy=e.clientY;
-  camOrb.az-=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));});
+  camOrb.az+=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));});
 addEventListener('pointerup',()=>{if(dragging){dragging=false;camOrb.follow=true;}});
 
 // ── Loop ──
