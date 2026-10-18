@@ -60,7 +60,6 @@
         ergOn: false,
         werk: null,
         kommt: null,
-        kommtT: 0,
         ort: null,
         ebenen: null,
         dom: null,
@@ -176,7 +175,7 @@
             { x: o.x, y: o.y, z: o.z },
             { silent: true, seed: saat(), rotationY: o.ry, studioOv: praegung(), absage: (g) => (absage = g) }
         );
-        st.kommtT = 0;
+        if (st.kommt) st.kommt._werkstatt = true; // die Vorschau der Werkstatt: ein Unikat je Regler-Stand, nie auf der Platte
         if (!st.kommt) bruch(`die Welt stellt ${typ} nicht hin (${absage || "ohne Grund"})`);
     }
     function werkWeg() {
@@ -184,20 +183,16 @@
         for (const e of [st.kommt, st.werk]) if (e) r.removeArchitecture(e);
         st.kommt = st.werk = null;
     }
-    // je Bild: das kommende Werk löst das stehende ab, sobald es gezeichnet ist; die Ebenen stehen an der Lage des Werks
-    function takt(t) {
+    // je Bild: das kommende Werk löst das stehende ab, sobald es gezeichnet ist (den Bau dockt der Takt der Welt an, die
+    // Foundry-Stufenkette jedes Werks); die Ebenen stehen an der Lage des Werks
+    function takt() {
         if (!st.aktiv) return;
         requestAnimationFrame(takt);
         const r = st.r;
-        if (st.kommt) {
-            if (gezeichnet(st.kommt)) {
-                if (st.werk && st.werk !== st.kommt) r.removeArchitecture(st.werk);
-                st.werk = st.kommt;
-                st.kommt = null;
-            } else if (t - st.kommtT > 250) {
-                st.kommtT = t;
-                r._rebuildArchitectureMesh(st.kommt);
-            }
+        if (st.kommt && gezeichnet(st.kommt)) {
+            if (st.werk && st.werk !== st.kommt) r.removeArchitecture(st.werk);
+            st.werk = st.kommt;
+            st.kommt = null;
         }
         const e = st.werk;
         if (e && st.modus === "werkstatt") st.ort = ortVon(e);
@@ -375,11 +370,14 @@
         const g = st.ebenen;
         if (!g) return;
         if (g.parent) g.parent.remove(g);
+        // jeder Stoff der Ebenen fällt mit ihnen (Gelenke, Messlinien, Schilder) — nur die geteilten des Kerns (VC.materials) bleiben
+        const geteilt = new Set(Object.values(st.M || {}));
         g.traverse((o) => {
             if (o.geometry) o.geometry.dispose();
-            if (o.isSprite && o.material) {
-                if (o.material.map) o.material.map.dispose();
-                o.material.dispose();
+            const m = o.material;
+            if (m && !geteilt.has(m)) {
+                if (m.map) m.map.dispose();
+                m.dispose();
             }
         });
         st.ebenen = null;
@@ -536,7 +534,7 @@
         return !!c && ev.target === c;
     }
     function hoeren(ziel, art, fn) {
-        ziel.addEventListener(art, fn, true);
+        ziel.addEventListener(art, fn, { capture: true, passive: false }); // das Rad ruft preventDefault (Zoom der Werkstatt)
         st.hoerer.push([ziel, art, fn]);
     }
     function hoererAn() {
@@ -613,9 +611,10 @@
 #garage-studio *{box-sizing:border-box}
 #garage-studio .tafel,#garage-studio .ctl,#garage-studio .leg{position:fixed;z-index:2147483100;background:var(--panel);
   border:1px solid var(--hair);border-radius:11px;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
-#garage-studio .tafel{top:16px;left:18px;width:336px;max-height:calc(100vh - 150px);overflow-y:auto;padding:13px 13px 9px}
+/* unten links steht der Chat der Welt (die Wörter der Garage), unten mittig die Legende */
+#garage-studio .tafel{top:16px;left:18px;width:336px;max-height:calc(100vh - 250px);overflow-y:auto;padding:13px 13px 9px}
 #garage-studio .ctl{top:16px;right:16px;width:294px;max-height:calc(100vh - 32px);overflow-y:auto;padding:12px}
-#garage-studio .leg{bottom:14px;left:18px;font-family:var(--mono);font-size:10px;color:var(--mut);padding:8px 11px;line-height:1.9}
+#garage-studio .leg{bottom:14px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--mut);padding:8px 11px;line-height:1.9}
 #garage-studio .leg .k{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
 #garage-studio .eb{font-family:var(--mono);font-size:10px;letter-spacing:.32em;color:var(--steel)}
 #garage-studio h1{font-size:14px;font-weight:600;letter-spacing:.04em;margin:3px 0 9px}
@@ -832,6 +831,7 @@
             st.kam.soll = null;
             st.kam.t = 0;
             r.kameraFuehren(fuehre);
+            r.studioModus(WERK); // HUD, Rad und Wort der Welt gehören der Werkstatt
             requestAnimationFrame(takt);
             r.log("Garage: die Werkstatt steht in der Welt (Esc — zurück)", "INFO");
         })()
@@ -846,9 +846,11 @@
         hoererAus();
         ebenenWeg();
         if (st.kommt) st.r.removeArchitecture(st.kommt); // das Werk, das steht, bleibt in der Welt
+        if (st.werk) delete st.werk._werkstatt; // ab jetzt ein Werk der Welt: seine Stufen treffen die Platte
         st.kommt = null;
         st.werk = null;
         st.r.kameraFuehren(null);
+        st.r.studioModus(null);
         if (st.dom) st.dom.remove();
         st.dom = null;
         if (such.get("studio") === WERK) history.replaceState(null, "", location.pathname + location.hash);

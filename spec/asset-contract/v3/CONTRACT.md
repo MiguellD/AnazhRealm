@@ -22,8 +22,8 @@ __vehicleCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   trägt `kind:"vehicle"` + `lab` (UI-Wortlaut) + `s` (numerischer Dial-Vektor) +
   `fx` (domänen-eigene Ausstattung: `sig`, `heck`)).
 - `seed` (int): **wählt den LACK der Gestalt — die GEOMETRIE ist seed-invariant.**
-  Das Garage-Studio trägt keinen stochastischen Term (Math.random lebt nur in der
-  Shell-Deko: Reifenrauch/Pylonen); derselbe Bauplan bei seed 7 und 12345 ist
+  Das Garage-Studio trägt keinen stochastischen Term (die Shell-Deko mit Math.random,
+  Reifenrauch und Pylonen, fiel mit der r128-Shell in S1); derselbe Bauplan bei seed 7 und 12345 ist
   geometrisch byte-gleich (das Gate prüft es aktiv, Fingerabdruck ohne Material).
   Der Same wählt reihum einen der acht Lacke des `LACK_GESETZ` (`lackIndex(seed)
   = 1 + seed mod 8`, Clay bleibt die Anatomie-Ansicht des Labors) — bewusster

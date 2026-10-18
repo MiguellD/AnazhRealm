@@ -2156,7 +2156,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "probefahrt",
             "werkstatt",
         ]),
-        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, fahrbare Probefahrt mit Reifenspuren.",
+        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, die Probefahrt in der Welt.",
     }),
     // Das TOR-Labor: sieben Ordnungen (Drachentor bis Maurentor), Stich→Schub→Dicke-Lehre, fraktale
     // Tiefe, begehbare Türen (E/R).

@@ -901,9 +901,11 @@ jobs:
             - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
               if: matrix.gruppe == 6
               # DIE PROBEFAHRT-WERKSTATT WIE DER SCHOEPFER SIE BEDIENT (seit S1 ein Modus der Welt-Engine, index.html?studio=garage,
-              # Null-Renderer, Foundry an): Orbit-Zug und Fahrt ohne Seitenfehler, der Fahr-HUD als Flex-Band, der Tacho in km/h
-              # aus FAHR.kmh, Preset und Kultur ohne Leck, die Probefahrt mit der Kamera der Welt (chaseKamera), 0 Anfragen auf
-              # worlds/*/lib/ (kein r128), das Werk ein Wagen der Welt, das Garage-Tor oeffnet den Modus. Inklusive Selbst-Test.
+              # Null-Renderer, Foundry an): Orbit-Zug, Rad und Fahrt ohne Seitenfehler (das Rad zoomt, die Hotbar der Welt steht), das
+              # Spiel-HUD weicht, der Fahr-HUD als Flex-Band, der Tacho in km/h aus FAHR.kmh, Preset und Kultur ohne Leck, die
+              # Probefahrt mit der Kamera der Welt (chaseKamera), 0 Anfragen auf
+              # worlds/*/lib/ (kein r128), das Werk ein Wagen der Welt, die Woerter des Chats, das Garage-Tor und alte Spielstaende oeffnen
+              # den Modus. Inklusive Selbst-Test.
               run: npm run gate:garage-labor
 
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
@@ -1160,7 +1162,7 @@ jobs:
               # Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
               # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
               # Element-Adapter und Markup-Panel, skeleton und terrain ohne Manifest (der Server antwortet 404), fluid
-              # meldet ihr Manifest ohne „flut", die garage trägt eins ohne Soll-Zeile → jede Wand rot und beim Namen.
+              # meldet ihr Manifest ohne „flut", die schmiede trägt eins ohne Soll-Zeile → jede Wand rot und beim Namen.
               run: npm run gate:portal-konformanz
 
             - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)

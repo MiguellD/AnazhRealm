@@ -1,5 +1,5 @@
 // AnazhRealm — vehicle-core.js: DER FAHRZEUG-STUDIO-KERN (Studio-Vertrag Phase 1, W7a).
-// Die generative Substanz des Garage-Labors (worlds/garage/garage.js — ANATOMIE ·
+// Die generative Substanz des Garage-Labors (worlds/garage/studio.js, ein Modus der Welt — ANATOMIE ·
 // FAHRZEUG): Lehren · Rahmen/Hardpoints · Gelenk-Räder · Karosserie-Haut ·
 // Baukörper · Presets/Params/Kulturen. Byte-treu aus dem Schöpfer-Werk extrahiert
 // (Zeilen-Slices, Paritäts-Hash-bewiesen) — die Shell UND AnazhRealm lesen DIESE
@@ -13,8 +13,8 @@
 // namens- und formgleich; der Validator (gate:studio-vertrag) mappt per CORES-ns.
 //
 // DETERMINISMUS (G2.3): der Bau ist eine reine Funktion der Parameter — das
-// Garage-Studio trägt KEINEN stochastischen Term (Math.random lebt nur in der
-// Shell-Deko: Reifenrauch/Pylonen). Die GEOMETRIE ist seed-invariant; seit W5
+// Garage-Studio trägt KEINEN stochastischen Term (die Shell-Deko mit Math.random,
+// Reifenrauch und Pylonen, fiel mit der r128-Shell in S1). Die GEOMETRIE ist seed-invariant; seit W5
 // (05.10.) wählt der Same den Lack der Gestalt aus dem LACK_GESETZ (`lackIndex`) —
 // der bewusste Golden-Re-Mint von spec/asset-contract/v3 (cv:3), kein Drift.
 //
@@ -2164,7 +2164,7 @@
     const A_PITCH_MAX = 13,
         A_LAT_MAX = 11; // Laengs-/Quer-Beschl.-Klammern (g-equiv.) — EINZIGE Quelle: updateVehicle UND Radkasten-Huellkurve
     // ── N6.1 (Nervensystem Phase δ) — DIE FAHR-KONSTANTEN: Formel-UMZUG aus der Shell
-    // (worlds/garage/garage.js, byte-gleiche Werte). Die Antriebs-/Reifen-Konstanten der
+    // (der r128-Garage bis S1, byte-gleiche Werte). Die Antriebs-/Reifen-Konstanten der
     // Probefahrt tragen KEINEN Geometrie-Bezug (Lenkanschlag · Brems-/Roll-/Handbrems-
     // Verzoegerung · Reifen-Steifigkeiten · Reibkreis · Gier-Traegheits-Faktor). Die Shell
     // LIEST sie von hier (VC.FAHR) — EINE Quelle fuer Probefahrt UND exportDrive (M1/M9:
@@ -3388,7 +3388,7 @@
             fx: { sig: "brow", heck: "steil" },
         },
     };
-    // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
+    // Der Regler-Grundzustand (Original der r128-Garage Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
         radstand: 2.9,
@@ -3427,12 +3427,32 @@
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
-        _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
-        try {
-            return baueFahrzeug(rezeptId, seed, P, st);
-        } finally {
-            _vd = FAHRZEUG_DETAIL;
+        // DAS BUDGET HÄLT JEDE PRÄGUNG (Lehre 19, S1): die Hülle über alle Rezepte ist das Soll der Stufe; reißt ein geprägter
+        // Bau sie (Regler, Kultur: suv+cavallo L1 12 296 > 10 600), baut die Stufe neu mit dem Faktor, der sie hält. Unter der
+        // Hülle bleibt der Bau byte-gleich (der erste Versuch ist der alte).
+        const deckel = PORTAL_RENDER_CONFIG.lod.budget.vehicle[st].tris;
+        let vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
+        for (let versuch = 0; ; versuch++) {
+            _vd = vd;
+            let g;
+            try {
+                g = baueFahrzeug(rezeptId, seed, P, st);
+            } finally {
+                _vd = FAHRZEUG_DETAIL;
+            }
+            const n = dreieckeVon(g);
+            if (n <= deckel || versuch >= 5) return g;
+            g.traverse((o) => o.geometry && o.geometry.dispose());
+            vd = { k: vd.k * Math.sqrt(deckel / n) * 0.97 };
         }
+    }
+    function dreieckeVon(g) {
+        let n = 0;
+        g.traverse((o) => {
+            const ge = o.isMesh && o.geometry;
+            if (ge) n += (ge.index ? ge.index.count : ge.attributes.position.count) / 3;
+        });
+        return n;
     }
     function baueFahrzeug(rezeptId, seed, P, st) {
         const mats = materials();

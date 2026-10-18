@@ -29,6 +29,11 @@ class AnazhRealm_netz_portal {
     _sanitizePortalMeta(portalMeta, fallbackLabel) {
         const src = portalMeta && typeof portalMeta === "object" ? portalMeta : {};
         let world = String(src.world || "").trim();
+        // DER SPIEGEL ALTER SPIELSTÄNDE: die Shell eines Studios, das ein Modus wurde (worlds/garage/index.html bis S1), zeigt
+        // auf seinen Modus — die Registry trägt das Ziel, nie ein 404 im iframe.
+        const alt = /^worlds\/([a-z]+)\/index\.html$/.exec(world);
+        const reg = alt && AnazhRealm.WORLD_REGISTRY[alt[1]];
+        if (reg && reg.world === `index.html?studio=${alt[1]}`) world = reg.world;
         const modus = /^index\.html\?studio=[a-z]+$/.test(world);
         if (!modus && (!/^worlds\/[\w./-]+$/.test(world) || world.includes(".."))) {
             world = AnazhRealm.PORTAL_SKELETON_WORLD;
