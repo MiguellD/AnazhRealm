@@ -77,7 +77,8 @@ function pruefeGang(netz, seiten = {}) {
             rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
     }
     for (const [id, { undo: u, l0, zeile }] of Object.entries(seiten)) {
-        if (u && !(u.nach === u.vor && u.mitte !== u.vor))
+        if (!u && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
+        else if (u && !(u.nach === u.vor && u.mitte !== u.vor))
             rot.push(`H3 ${id}: die Sitzung ist stumm (Schieber ${u.vor} → ${u.mitte}, Strg+Z → ${u.nach}) — das Rückgängig der Hülle wirkt nicht`);
         if (OFEN_STUDIOS[id] && !(l0 <= zeile))
             rot.push(`H4 ${id}: Labor L0 ${l0} △ über der Welt-Zeile ${zeile} — das Labor zeigt nicht den Ofen-Körper`);
@@ -344,7 +345,8 @@ function selbsttest() {
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
-    const seiten = { garage: { undo: { vor: "1", mitte: "2", nach: "1" } }, tetrapoda: { l0: 54894, zeile: 62000 }, koerperstudio: { l0: 30000, zeile: 40000 } };
+    const undo = { vor: "1", mitte: "2", nach: "1" }, ofen = { tetrapoda: { l0: 54894, zeile: 62000 }, koerperstudio: { l0: 30000, zeile: 40000 } };
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { undo, ...ofen[id] }])); // jedes Studio mit Sitzung, die Ofen-Labore unter der Zeile
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
@@ -352,6 +354,7 @@ function selbsttest() {
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
         ["H6 die schmiede lädt keine Kopie mehr (die Ratsche zieht an)", { schmiede: eine }, /^H6 schmiede: lädt keine fremde Engine mehr/],
         ["H3 die Sitzung der garage bleibt stumm", {}, /^H3 garage: die Sitzung ist stumm/, { garage: { undo: { vor: "1", mitte: "2", nach: "2" } } }],
+        ["H3 die schmiede verliert ihre Sitzung ganz (nie still)", {}, /^H3 schmiede: das Studio trägt keine Sitzung/, { schmiede: {} }],
         ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, { tetrapoda: { l0: 1299852, zeile: 62000 } }],
         ["H4 die Kosten-Leiste des koerperstudio nennt keine L0 (nie grün auf der leeren Zeile)", {}, /^H4 koerperstudio: Labor L0 undefined/, { koerperstudio: {} }],
     ];
@@ -407,8 +410,7 @@ async function gang() {
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
             const engine = fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three";
             const sitzung = z.undo ? `Schieber ${z.undo.vor} → ${z.undo.mitte}, Strg+Z → ${z.undo.nach}` : "ohne Sitzung"; // den Spruch fällt pruefeGang
-            const ofen = OFEN_STUDIOS[id] ? ` · L0 ${z.l0} / ${z.zeile} △` : "";
-            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${ofen}`);
+            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${OFEN_STUDIOS[id] ? ` · L0 ${z.l0} / ${z.zeile} △` : ""}`);
         }
     } finally {
         await browser.close();
@@ -417,8 +419,7 @@ async function gang() {
     const rot = pruefeGang(netz, seiten);
     for (const x of rot) console.log("❌ " + x);
     const sauber = Object.values(netz).filter((p) => !p.some((x) => ENGINE_FREMD.test(x))).length;
-    const sitzungen = Object.values(seiten).filter((z) => z.undo).length;
-    console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine (Ratsche ${Object.keys(ENGINE_RATSCHE).join(", ")}) · ${sitzungen} Sitzungen · ${Object.keys(OFEN_STUDIOS).length} Ofen-Labore`);
+    console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine (Ratsche ${Object.keys(ENGINE_RATSCHE).join(", ")}) · ${Object.values(seiten).filter((z) => z.undo).length} Sitzungen · ${Object.keys(OFEN_STUDIOS).length} Ofen-Labore`);
     if (rot.length) process.exitCode = 1;
 }
 

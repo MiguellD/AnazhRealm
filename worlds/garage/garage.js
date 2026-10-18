@@ -417,13 +417,20 @@ function werkOrbit(){oc.az+=oc.vAz*0.05;oc.el=Math.max(-1.55,Math.min(1.55,oc.el
 // loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';
 R.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-R.domElement.addEventListener('pointerdown',e=>{_lpx=e.clientX;_lpy=e.clientY;if(mode==='fahren'){dragging=true;camOrb.follow=false;}else oc.zug=e.button;});
-addEventListener('pointermove',e=>{const dx=e.clientX-_lpx,dy=e.clientY-_lpy;_lpx=e.clientX;_lpy=e.clientY;
+// Touch wie der alte Orbit: ein Finger dreht, zwei kneifen (zoomen) und schieben — der Zug folgt ihrer Mitte, nie einem Finger
+const finger=new Map(),_mitte=()=>{const [a,b]=[...finger.values()];return b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)}:a;};
+R.domElement.addEventListener('pointerdown',e=>{finger.set(e.pointerId,{x:e.clientX,y:e.clientY});const m=_mitte();_lpx=m.x;_lpy=m.y;oc.kneif=m.d;
+  if(mode==='fahren'){dragging=true;camOrb.follow=false;}else oc.zug=finger.size>1?2:e.button;});
+addEventListener('pointermove',e=>{if(finger.has(e.pointerId))finger.set(e.pointerId,{x:e.clientX,y:e.clientY});const m=finger.size?_mitte():{x:e.clientX,y:e.clientY};
+  const dx=m.x-_lpx,dy=m.y-_lpy;_lpx=m.x;_lpy=m.y;
+  if(m.d&&oc.kneif&&mode==='werkstatt')oc.dist=Math.max(3.5,Math.min(16,oc.dist*oc.kneif/m.d));oc.kneif=m.d;
   if(dragging){camOrb.az-=dx*0.006;camOrb.el=Math.max(0.06,Math.min(1.25,camOrb.el+dy*0.006));}
   else if(oc.zug===0){const k=2*Math.PI/R.domElement.clientHeight;oc.vAz+=dx*k;oc.vEl+=dy*k;}
   else if(oc.zug===2){const k=2*oc.dist*Math.tan(cam.fov*Math.PI/360)/R.domElement.clientHeight;   // ein Pixel am Schirm = ein Pixel am Ziel
     oc.ziel.addScaledVector(_cr.setFromMatrixColumn(cam.matrix,0),-dx*k).addScaledVector(_cr.setFromMatrixColumn(cam.matrix,1),dy*k);}});
-addEventListener('pointerup',()=>{oc.zug=-1;if(dragging){dragging=false;camOrb.follow=true;}});
+const _los=e=>{finger.delete(e.pointerId);if(finger.size){const m=_mitte();_lpx=m.x;_lpy=m.y;oc.kneif=m.d;oc.zug=0;return;}
+  oc.zug=-1;if(dragging){dragging=false;camOrb.follow=true;}};
+addEventListener('pointerup',_los);addEventListener('pointercancel',_los);
 R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.preventDefault();
   oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
