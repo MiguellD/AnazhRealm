@@ -2761,6 +2761,217 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── bewohner (S6-b, SYSTEMKARTE §W4 „Menschen-NPC 0 · Siedlung ohne Leute"): das Dorf hat Leute. Das Start-Dorf der Welt
+    // entsteht wie im Spiel (`_autoSettlementSpawnCell`, dann hebt `_tickAutoSettlement` seine Slots über
+    // `_spawnSettlementSlot`), danach laufen 120 s Kreatur-Takt am hellen Vormittag, der Spieler auf dem Platz. Gemessen:
+    // (1) die Menschen-NPC (Seele `mensch` in CREATURE_SOULS) im Dorf, je Haus gegen die Zahl, die der Export des
+    // Gesetzbuchs je Slot nach rolle nennt (`slot.leute`); ein Bewohner trägt sein Haus (`userData.bewohner.slot`, der
+    // Index im Plan) und seine Arbeit (`userData.bewohner.arbeit` {x, z}); (2) ihr Gang: der Anteil der Gang-Proben auf der
+    // EINEN Wege-Karte (`_aufWeg`) oder dem Vorplatz der eigenen Tür (fachwerk `vorplatzFlaeche`), wer geht (≥ 10 m), wer
+    // Tür oder Arbeit erreicht (≤ 4 m); (3) die Proben im Grundriss eines FREMDEN Hauses (`_imGrundriss` ohne das eigene).
+    // Vorher (V18.546.19): 0 Menschen-NPC — die Siedlung exportiert rolle und tuer, kein Leser macht daraus einen Leib. ──
+    await buehne("bewohner", async (restore) => {
+        r.setGameMode("frieden");
+        const wm = s.worldMeta || (s.worldMeta = {});
+        if (wm.settlementCells && wm.settlementCells.start)
+            return { fehler: "das Start-Dorf stand schon — die Bühne braucht die frische Zelle" };
+        const info = r._autoSettlementStartInfo();
+        if (!info) return { fehler: "kein Start-Dorf in dieser Welt (_autoSettlementStartInfo null)" };
+        const altHook = window.__anazhAutoSettlement;
+        const altTod = s.timeOfDay;
+        const altBudget = s._frameOverBudget;
+        window.__anazhAutoSettlement = true;
+        s.maxCreatures = 256;
+        s.timeOfDay = 0.4; // 9:36 — der helle Vormittag
+        const haus = new Map(); // Slot-Index → das gesetzte Haus (instrumentiert, nicht gestubbt)
+        decke(
+            restore,
+            "_spawnSettlementSlot",
+            (alt) =>
+                function (slot, origin, f, so) {
+                    const e = alt.call(this, slot, origin, f, so);
+                    if (e && so && Number.isInteger(so.si)) haus.set(so.si, e);
+                    return e;
+                }
+        );
+        // DAS DORF FÄLLT GANZ (jeder Lauf der Seite — Selbsttest: drei — sieht dieselbe frische Zelle): jeder Bau, den die
+        // Probe hob (Häuser, Brunnen, Laternen, Stände), und jede Fläche, die sie in die Wege-Karte legte; sonst sperren die
+        // Reste des ersten Dorfs die Slots des zweiten (17 → 8 Häuser)
+        const vorBau = new Set(s.architectures || []);
+        const vorWeg = new Set(s.wegeKarte ? s.wegeKarte.siedlungen : []);
+        restore.push(() => {
+            for (const e of (s.architectures || []).filter((e) => !vorBau.has(e)))
+                try {
+                    r.removeArchitecture(e);
+                } catch (_e) {
+                    /* Aufräumen bleibt best effort */
+                }
+            const wk = s.wegeKarte;
+            if (wk)
+                for (const b of wk.siedlungen.filter((b) => !vorWeg.has(b))) {
+                    wk.siedlungen.splice(wk.siedlungen.indexOf(b), 1);
+                    r._grundrissFaellt(b.x0, b.z0, b.x1, b.z1);
+                }
+            if (r._stlWegeKeys) r._stlWegeKeys.delete("start");
+            if (wm.settlementCells) delete wm.settlementCells.start;
+            r._autoSettlementQueue = null;
+            s.timeOfDay = altTod;
+            s._frameOverBudget = altBudget;
+            if (altHook === undefined) delete window.__anazhAutoSettlement;
+            else window.__anazhAutoSettlement = altHook;
+        });
+        const t0 = performance.now();
+        const plan = await Promise.race([
+            r._autoSettlementSpawnCell(0, 0, info),
+            new Promise((rs) => setTimeout(() => rs("frist"), 90000)),
+        ]);
+        if (!plan || plan === "frist" || !Array.isArray(plan.slots))
+            return { fehler: `der Export des Start-Dorfs kam nicht (${plan})` };
+        const zelle = wm.settlementCells && wm.settlementCells.start;
+        if (!zelle) return { fehler: "das Start-Dorf ist nicht reserviert" };
+        const O = { x: zelle.x, z: zelle.z };
+        for (let k = 0; k < 600 && r._autoSettlementQueue; k++) {
+            s._frameOverBudget = false;
+            r._tickAutoSettlement(pm);
+            if (k % 20 === 19) await new Promise((rs) => setTimeout(rs, 0));
+        }
+        if (r._autoSettlementQueue) return { fehler: "das Dorf wuchs nicht aus (Slots in der Schlange)" };
+        const dorfMs = Math.round(performance.now() - t0);
+        pm.set(O.x, r.getTerrainHeightAt(O.x, O.z) + 1, O.z);
+        kamera(0, -1);
+        const istMensch = (c) => !!(c && c.userData && c.userData.soul === "mensch");
+        const menschen = () => s.creatures.filter(istMensch);
+        if (taeter === "bewohner") for (const c of menschen()) r.removeCreature(c);
+        const gesetzt = [...haus.keys()].sort((a, b) => a - b);
+        const FC = globalThis.__fachwerkCore;
+        const vorplatz = new Map(); // Slot-Index → der Vorplatz der Tür in der Welt
+        for (const si of gesetzt) {
+            const v = FC && FC.vorplatzFlaeche ? FC.vorplatzFlaeche(plan.slots[si]) : null;
+            if (v) vorplatz.set(si, { x: O.x + v.cx, z: O.z + v.cz, phi: v.phi, ex: v.ex, ez: v.ez });
+        }
+        const imVorplatz = (v, x, z, rand) => {
+            if (!v) return false;
+            const c = Math.cos(v.phi),
+                sn = Math.sin(v.phi),
+                dx = x - v.x,
+                dz = z - v.z;
+            return Math.abs(dx * c - dz * sn) <= v.ex + rand && Math.abs(dx * sn + dz * c) <= v.ez + rand;
+        };
+        // (1) die Leute je Haus
+        const M0 = menschen();
+        const jeHaus = new Map();
+        let ohneHaus = 0,
+            ohneArbeit = 0;
+        for (const c of M0) {
+            const b = c.userData.bewohner;
+            if (!b || !haus.has(b.slot)) {
+                ohneHaus++;
+                continue;
+            }
+            jeHaus.set(b.slot, (jeHaus.get(b.slot) || 0) + 1);
+            if (!b.arbeit || !Number.isFinite(b.arbeit.x) || !Number.isFinite(b.arbeit.z)) ohneArbeit++;
+        }
+        const abweichung = [];
+        for (const si of gesetzt) {
+            const sl = plan.slots[si];
+            if (!Number.isInteger(sl.leute)) continue;
+            const ist = jeHaus.get(si) || 0;
+            if (ist !== sl.leute) abweichung.push(`${si}:${sl.rolle} ${ist}/${sl.leute}`);
+        }
+        const wohn = gesetzt.filter((si) => plan.slots[si].rolle === "wohnhaus");
+        // DIE TÄTER: der Gang verlässt die Wege (jeder Bewohner läuft 1,5 m/s vom Dorf fort) · einer steht in einem fremden Haus
+        if (taeter === "bewohner-weg")
+            decke(
+                restore,
+                "updateCreatures",
+                (alt) =>
+                    function (dt) {
+                        alt.call(this, dt);
+                        for (const c of menschen()) {
+                            const dx = c.position.x - O.x,
+                                dz = c.position.z - O.z,
+                                d = Math.hypot(dx, dz) || 1;
+                            c.position.x += (dx / d) * 1.5 * dt;
+                            c.position.z += (dz / d) * 1.5 * dt;
+                        }
+                    }
+            );
+        if (taeter === "bewohner-fremd")
+            decke(
+                restore,
+                "updateCreatures",
+                (alt) =>
+                    function (dt) {
+                        alt.call(this, dt);
+                        const c = menschen().find((m) => m.userData.bewohner && haus.has(m.userData.bewohner.slot));
+                        const fremd = c && gesetzt.find((si) => si !== c.userData.bewohner.slot);
+                        if (fremd !== undefined)
+                            c.position.set(haus.get(fremd).position.x, c.position.y, haus.get(fremd).position.z);
+                    }
+            );
+        // (2)+(3) der Gang über 120 s, je 0,5 s eine Probe je Bewohner
+        const DT = 1 / 30;
+        const spur = new Map();
+        let gangProben = 0,
+            aufWegProben = 0,
+            fremdProben = 0;
+        const fremdWo = [];
+        const tT = performance.now();
+        for (let k = 0; k < 120 / DT; k++) {
+            takt(DT);
+            if (k % 15 !== 14) continue;
+            for (const c of menschen()) {
+                const p = c.position;
+                const b = c.userData.bewohner || null;
+                const si = b && haus.has(b.slot) ? b.slot : null;
+                let sp = spur.get(c);
+                if (!sp) spur.set(c, (sp = { x: p.x, z: p.z, weg: 0, minZiel: Infinity }));
+                const d = Math.hypot(p.x - sp.x, p.z - sp.z);
+                sp.weg += d;
+                sp.x = p.x;
+                sp.z = p.z;
+                const v = si === null ? null : vorplatz.get(si);
+                if (v) sp.minZiel = Math.min(sp.minZiel, Math.hypot(p.x - v.x, p.z - v.z));
+                if (b && b.arbeit && Number.isFinite(b.arbeit.x))
+                    sp.minZiel = Math.min(sp.minZiel, Math.hypot(p.x - b.arbeit.x, p.z - b.arbeit.z));
+                if (d > 0.15) {
+                    gangProben++;
+                    if (r._aufWeg(p.x, p.z, 1.0) || imVorplatz(v, p.x, p.z, 1.0)) aufWegProben++;
+                }
+                if (r._imGrundriss(p.x, p.z, 0, 0, si === null ? null : haus.get(si)) === "haus") {
+                    fremdProben++;
+                    if (fremdWo.length < 3) fremdWo.push(`${p.x.toFixed(1)},${p.z.toFixed(1)}`);
+                }
+            }
+        }
+        const msJeTakt = +((performance.now() - tT) / (120 / DT)).toFixed(3);
+        const S = [...spur.values()];
+        const wk = s.wegeKarte;
+        return {
+            slots: plan.slots.length,
+            haeuser: gesetzt.length,
+            wohnhaeuser: wohn.length,
+            rollen: [...new Set(gesetzt.map((si) => plan.slots[si].rolle))].join("/"),
+            leuteExport: gesetzt.filter((si) => Number.isInteger(plan.slots[si].leute)).length,
+            menschen: M0.length,
+            verloren: M0.filter((c) => !s.creatures.includes(c)).length,
+            ohneHaus,
+            ohneArbeit,
+            wohnLeer: wohn.filter((si) => !(jeHaus.get(si) > 0)).length,
+            abweichungN: abweichung.length,
+            abweichung: abweichung.slice(0, 6),
+            wegFlaechen: wk && wk.siedlungen ? wk.siedlungen.filter((b) => !vorWeg.has(b)).length : 0, // die Flächen dieses Dorfs
+            gangProben,
+            aufWegAnteil: gangProben ? +(aufWegProben / gangProben).toFixed(3) : null,
+            gehen: S.filter((sp) => sp.weg >= 10).length,
+            erreicht: S.filter((sp) => sp.minZiel <= 4).length,
+            fremdProben,
+            fremdWo,
+            dorfMs,
+            msJeTakt,
+        };
+    });
+
     return aus;
 }
 
@@ -2789,6 +3000,7 @@ const PROBEN = [
     "querhang",
     "ferngang",
     "gestalt",
+    "bewohner",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -3020,6 +3232,40 @@ function urteil(name, z) {
         );
         soll(z.gehalten === true, "die Passung verstellt die laufende Pose des Tiers");
     }
+    if (name === "bewohner") {
+        soll(z.haeuser > 0, `das Start-Dorf setzte kein Haus (${z.slots} Slots) — die Probe wäre vakuös`);
+        soll(
+            z.menschen > 0,
+            `0 Menschen-NPC im Auto-Dorf (${z.haeuser} Häuser, ${z.wohnhaeuser} Wohnhäuser, Rollen ${z.rollen}) — die Siedlung exportiert rolle und tuer, kein Leser macht daraus einen Leib`
+        );
+        soll(
+            z.leuteExport === z.haeuser,
+            `der Export trägt leute an ${z.leuteExport} von ${z.haeuser} Häusern (das Gesetzbuch nennt je Haus nach rolle, wie viele dort leben)`
+        );
+        soll(z.wohnLeer === 0, `${z.wohnLeer} von ${z.wohnhaeuser} Wohnhäusern ohne Bewohner`);
+        soll(z.abweichungN === 0, `Bewohner je Haus ≠ leute an ${z.abweichungN} Häusern: ${z.abweichung.join(", ")}`);
+        soll(z.ohneHaus === 0, `${z.ohneHaus} Menschen-NPC ohne Haus (userData.bewohner.slot)`);
+        soll(z.ohneArbeit === 0, `${z.ohneArbeit} Bewohner ohne Arbeit (userData.bewohner.arbeit)`);
+        soll(z.verloren === 0, `${z.verloren} Bewohner verschwanden im Takt`);
+        if (z.menschen > 0) {
+            soll(
+                z.gehen >= Math.ceil(z.menschen / 2),
+                `nur ${z.gehen} von ${z.menschen} Bewohnern gehen ≥ 10 m in 120 s — das Dorf steht still`
+            );
+            soll(
+                z.gangProben > 0 && z.aufWegAnteil >= 0.9,
+                `Gang abseits der Wege: ${z.aufWegAnteil} der ${z.gangProben} Gang-Proben auf der Wege-Karte oder dem eigenen Vorplatz (Soll ≥ 0,9)`
+            );
+            soll(
+                z.erreicht >= Math.ceil(0.9 * z.menschen),
+                `nur ${z.erreicht} von ${z.menschen} Bewohnern erreichen Tür oder Arbeit (≤ 4 m)`
+            );
+            soll(
+                z.fremdProben === 0,
+                `${z.fremdProben} Proben im Grundriss eines fremden Hauses (${z.fremdWo.join(" · ")})`
+            );
+        }
+    }
     if (name === "jagdkreis") {
         const a = z.kampfSchau,
             b = z.sprinter;
@@ -3167,6 +3413,12 @@ const TAETER = {
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
     gestalt: [["gestalt", /hängt am ersten Tier/]],
+    // die Täter weg und fremd brauchen Bewohner: an der Basis (0 Menschen-NPC) liest die Probe rot aus dem ersten Grund
+    bewohner: [
+        ["bewohner", /0 Menschen-NPC im Auto-Dorf/],
+        ["bewohner-weg", /Gang abseits der Wege/],
+        ["bewohner-fremd", /fremden Hauses/],
+    ],
 };
 
 module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };
