@@ -206,6 +206,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "const s=e.isRenderTargetTexture||e.isDepthTexture||e.isFramebufferTexture,i=this.backend;if(s&&!0===r.initialized&&i.destroyTexture(e)", organ: "Diät (6) Vorher-Textur-Wächter (updateTexture zerstört die alte Ziel-Textur)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
     { file: "vendor/three.webgpu.min.js", sub: '"assign"!==e&&(ci.prototype[e]=function(...e){', organ: "Diät (9) die eigenen Felder: das Geerbte am Knoten-Prototyp sind nur Ketten-Methoden (B4, 18.10.: 122 Klassen, 2 324 Felder, 0 Uniform/Knoten/Accessor)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.hasAnimation=!0===e.object.isSkinnedMesh,this.refreshUniforms=", organ: "Diät (11) nach Eingang: der Stoff-Verweis, dessen Eigenschaft equals() prüft (refreshUniforms)" },
+    { file: "vendor/three.webgpu.min.js", sub: "clearUpdateRanges(){this._updateRangeCache.clear(),super.clearUpdateRanges()}", organ: "Diät (11) nach Eingang: der eigene Uniform-Puffer lädt seine Bereiche und leert sie (wie Bindings._update)" },
     // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
     // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
     // eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.
@@ -545,7 +547,7 @@ function diaetLauf(fn) {
         },
     };
     const rend = {
-        info: { calls: 0 },
+        info: { calls: 0 }, backend: { updateBinding: () => objektDurchDiaet++ },
         _nodes: {
             updateBefore() {},
             // r184: EIN Node-Frame, getNodeFrameForRender stellt Kamera und Objekt des Render-Objekts. Der Vorher-Knoten
@@ -587,6 +589,7 @@ function diaetLauf(fn) {
         geteilt: { id: 502, knoten: [600], bindings: [{ groupNode: { shared: true } }] },
         nbs: { updateNodes: [geteilterKnoten], updateBeforeNodes: [], updateAfterNodes: [] },
     };
+    const steinEigen = { bindings: [{ groupNode: { shared: false }, isUniformBuffer: true, updateRanges: [], geladen: 0, updateByType(u) { const v = u.getValue(); if (v === this.geladen) return false; this.geladen = v; return true; }, uniforms: [{ nodeUniform: { node: freiWert }, getValue: () => freiWert.value }] }] }; // die eigene Gruppe: EIN Uniform-Puffer wie r184 (updateByType vergleicht, updateBinding lädt)
     const stein = {
         prog: steinProg,
         ro: {
@@ -594,7 +597,7 @@ function diaetLauf(fn) {
             object: { material: { _anazhDiaet: true }, welt: 0, get matrixWorld() { return { w: this.welt }; } },
             material: { _anazhDiaet: true },
             lightsNode: {},
-            getBindings: () => [steinProg.geteilt, { bindings: [{ groupNode: { shared: false }, isUniformBuffer: true, uniforms: [{ nodeUniform: { node: freiWert }, getValue: () => freiWert.value }] }] }],
+            getBindings: () => [steinProg.geteilt, steinEigen],
             getNodeBuilderState: () => steinProg.nbs,
         },
     };
