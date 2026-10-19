@@ -907,10 +907,10 @@ class AnazhRealm_vegetation_baum {
                 return false;
             }
             // fehlt der Plan, bestellt ihn die Frage in der EINEN Schlange des Walds (ihr Rechner ist der Wald-Faden, K60-3);
-            // wer warten kann (die Streu-Scheibe), wartet benannt auf ihre leere Schlange (`_waldPlanZusage`)
+            // wer warten kann (die Streu-Scheibe), wartet benannt auf die Zellen des Kastens um den Ort (`_waldPlanZusage`)
             if (!this._waldPlanSteht(x, z)) {
                 wartet = true;
-                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage());
+                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage(x, z));
                 return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));

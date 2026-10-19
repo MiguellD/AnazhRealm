@@ -2639,7 +2639,7 @@ async function checkBandScatterScheibe(ctx) {
             const fremde = new Set();
             r._streuWartetAuf = function (z) {
                 if (this._streuSammler && z && !zus.includes(z))
-                    fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                    fremde.add([...(this._waldZusagen || new Map()).values()].some((e) => e.zusage === z) ? "wald" : "fremd");
                 return altWartet.call(this, z);
             };
             wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
@@ -2651,8 +2651,8 @@ async function checkBandScatterScheibe(ctx) {
                 r._streuWartetAuf = altWartet;
             }
             wecker.fremde = [...fremde];
-            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die leere Schlange
-            // (`_waldPlanZusage`, K60-4): die Linse leert sie zuerst (der Takt schickt sie an den Faden) — danach steht
+            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die Zellen ihrer Kästen
+            // (`_waldPlanZusage`, B-Wald): die Linse leert die Schlange zuerst (der Takt schickt sie an den Faden) — danach steht
             // die Region NUR noch auf ihren zwei Zusagen
             for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
                 r._tickWaldPlan(Infinity);

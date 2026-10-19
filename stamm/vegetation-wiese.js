@@ -1599,11 +1599,12 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) nimmt die bestellten Zellen
     // (`_waldPlanSteht`) nah zuerst. IHR RECHNER IST DER WALD-FADEN (K60-3, `_waldFadenSchicken`): wo ein Voxel-Faden lebt,
-    // plant der Haupt-Faden keine Zelle der Schlange — sie reisen in Aufträgen an den Wald-Faden und landen im Gedächtnis
-    // (`_waldDartsAn`). Ohne Faden plant der Takt je Takt höchstens `WALD_PLAN.ms` (mindestens eine Zelle — nie verhungert;
-    // der Lade-Takt gibt sein ganzes Budget). Bis zur Vereinigung K60-4 bestellte die Streu ihre Darts an der Schlange
-    // vorbei beim Faden (`_waldDartsBestellen`), und jeder andere Leser plante im Haupt-Faden: zwei Wege an EIN Gedächtnis.
-    // Ihre Regung (`_waldPlanGeplant`) weckt die Fege-Takte, deren Bäume auf ihre Zellen warten. → die Zahl der Zellen.
+    // plant der Haupt-Faden keine Zelle der Schlange — jede reist an den Wald-Faden, sobald sie bestellt ist, und landet im
+    // Gedächtnis (`_waldDartsAn`). Ohne Faden plant der Takt je Takt höchstens `WALD_PLAN.ms` (mindestens eine Zelle — nie
+    // verhungert; der Lade-Takt gibt sein ganzes Budget). Bis zur Vereinigung K60-4 bestellte die Streu ihre Darts an der
+    // Schlange vorbei beim Faden (`_waldDartsBestellen`), und jeder andere Leser plante im Haupt-Faden: zwei Wege an EIN
+    // Gedächtnis. Ihre Regung (`_waldPlanGeplant`) weckt die Fege-Takte und die Zusagen, deren Kasten steht — auch wenn ein
+    // anderer Leser die Zellen plante (die Liste wirft sie aus der Schlange). → die Zahl der Zellen.
     _tickWaldPlan(ms) {
         const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
         const P = this._waldPflanzWarten;
@@ -1611,6 +1612,7 @@ class AnazhRealm_vegetation_wiese {
         if (!this._forestGesetzWahr()) return 0;
         const seedInt = this._forestSeedInt();
         const t0 = performance.now();
+        const vor = Q.size;
         let n = 0;
         if (this._waldFadenLebt()) this._waldFadenSchicken(seedInt);
         else {
@@ -1635,7 +1637,7 @@ class AnazhRealm_vegetation_wiese {
                 const cz = Number(key.slice(i + 1));
                 if (this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) this._forestPlantChunk(cx, cz);
             }
-        if (n > 0) this._waldPlanGeplant(t0);
+        if (n > 0 || Q.size < vor) this._waldPlanGeplant(t0);
         return n;
     }
 
@@ -1657,10 +1659,10 @@ class AnazhRealm_vegetation_wiese {
     // Zellen sind geplant (von welchem Rechner auch immer): die Regung (`_waldPlanRegung`) liest der Stand-Stempel — sie
     // weckt die Fege-Takte, wenn die Schlange leer ist, und solange sie plant, höchstens alle 250 ms.
     // DIE STREU WARTET AUF DEN WALD WIE AUF IHR ASSET (K69-2): eine Streu-Region, deren Bäume auf die Gestalt ihres Orts
-    // warten (`_scatterFoundrySeed` → null), schiebt sich auf (`_deferredFoundry`) und wartet benannt auf die leere Schlange
-    // (`_waldPlanZusage`, ihr Wecker `_streuWeckerSpannen`). Ohne Nachschub stand sie für immer: Null-Gang an der Mess-Wiese
-    // 6 von 6 Regionen nach geleerter Schlange aufgeschoben (CI 38736568849). Ist die Schlange leer, steht jede bestellte
-    // Zelle — die Region baut neu wie nach einer Lieferung.
+    // warten (`_scatterFoundrySeed` → null), schiebt sich auf (`_deferredFoundry`) und wartet benannt auf die Zellen ihrer
+    // Kästen (`_waldPlanZusage`, ihr Wecker `_streuWeckerSpannen`): jede Zusage, deren Kasten keine Zelle mehr in der Schlange
+    // hat, kommt hier. Ohne Nachschub stand sie für immer: Null-Gang an der Mess-Wiese 6 von 6 Regionen nach geleerter
+    // Schlange aufgeschoben (CI 38736568849). Ist die Schlange leer, baut jede geweckte Region neu wie nach einer Lieferung.
     _waldPlanGeplant(t0) {
         const Q = this._waldPlanSchlange;
         const leer = !(Q && Q.size);
@@ -1668,28 +1670,36 @@ class AnazhRealm_vegetation_wiese {
             this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
             this._waldPlanWeckBis = t0 + 250;
         }
-        if (!leer) return;
-        this._scatterRefillPending = true;
-        const z = this._waldLeer;
-        if (z) {
-            this._waldLeer = null;
-            z.loesen();
-        }
+        const Z = this._waldZusagen;
+        if (Z && Z.size)
+            for (const [bk, e] of Z) {
+                const f = e.zellen;
+                while (f.length && !(Q && Q.has(f[f.length - 1]))) f.pop();
+                if (f.length) continue;
+                Z.delete(bk);
+                e.loesen();
+            }
+        if (leer) this._scatterRefillPending = true;
     }
 
-    // Die Zusage der leeren Schlange (der Wecker der Streu wartet auf sie, `_streuWartetAuf`): null, wenn nichts bestellt ist.
-    _waldPlanZusage() {
+    // DIE ZUSAGE DES PLANS UM (x, z) (B-Wald; der Wecker der Streu wartet auf sie, `_streuWartetAuf`): sie kommt, sobald keine
+    // Zelle IHRES Kastens — die fehlenden ±`reich`, die `_waldPlanSteht(x, z)` eben bestellte — mehr in der Schlange steht; null,
+    // wenn dort nichts aussteht. Bis B-Wald wartete jede Region auf die LEERE Schlange: GTX kalt warteten die 4 Wald-Stücke der
+    // Ankunft bis 14,8 s, zuletzt auf Zellen in 405–467 m Ferne (p3/n1910/kette, K2).
+    _waldPlanZusage(x, z) {
+        const C = AnazhRealm.FOREST.cell;
+        const bk = Math.floor(x / C) + "," + Math.floor(z / C);
+        const Z = this._waldZusagen || (this._waldZusagen = new Map());
+        const da = Z.get(bk);
+        if (da) return da.zusage;
         const Q = this._waldPlanSchlange;
-        if (!Q || !Q.size) return null;
-        if (!this._waldLeer) {
-            let loesen = null;
-            const z = new Promise((res) => {
-                loesen = res;
-            });
-            z.loesen = loesen;
-            this._waldLeer = z;
-        }
-        return this._waldLeer;
+        const fehlt = this._waldWarten ? this._waldWarten.get(bk) : null;
+        const zellen = fehlt && Q ? fehlt.filter((k) => Q.has(k)) : [];
+        if (!zellen.length) return null;
+        let loesen = null;
+        const zusage = new Promise((res) => (loesen = res));
+        Z.set(bk, { zusage, loesen, zellen });
+        return zusage;
     }
 
     // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt, und seine Quelle ist bekannt (`_voxelWorkerWaldDarts`).
@@ -1697,35 +1707,36 @@ class AnazhRealm_vegetation_wiese {
         return !!(this.state.voxelWorker && this._voxelFadenQuelle);
     }
 
-    // DER STOFF DES WALDS IM FADEN (K60-3): die offenen Zellen der Schlange nah zuerst, je Auftrag `WALD_PLAN.faden` Zellen,
-    // höchstens `WALD_PLAN.fadenFlug` Aufträge im Flug (der nächste geht mit der Ankunft des vorigen, nie erst im nächsten
-    // Takt). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der Zustand über den EINEN Sender. Bis K60-3
-    // rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten Bild 1,6 von 2,2 s Streu (K602c/q2:
-    // `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
+    // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
+    // je Auftrag `WALD_PLAN.faden` Zellen, alle Aufträge zugleich im Flug; der Faden rechnet sie hintereinander, jede Antwort
+    // landet für sich per Transfer (`_waldDartsAn`). Bis B-Wald hielt die Schlange 2 Aufträge im Flug, der nächste ging mit der
+    // Ankunft des vorigen — und die kam erst am Ende der Aufgabe des Haupt-Fadens, in der der Faden fertig wurde (GTX kalt 38
+    // von 42): je Lade-Bild EINE Runde von 128 Zellen, der Faden rechnete 3,37 s und seine Antworten warteten 12,57 s
+    // (p3/n1910/kette, K2). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der Zustand über den EINEN
+    // Sender. Bis K60-3 rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten Bild 1,6 von 2,2 s
+    // Streu (K602c/q2: `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
     _waldFadenSchicken(seedInt) {
         this._forestDartStand(seedInt);
         const memo = this._forestDartMemo;
         if (this._waldFlugVon !== memo || !this._waldFlug) {
             this._waldFlug = new Set(); // die Zellen im Flug gelten dem Gedächtnis, für das sie geschickt wurden
             this._waldFlugVon = memo;
-            this._waldFlugAuftraege = 0;
         }
-        const W = AnazhRealm.WALD_PLAN;
-        if (this._waldFlugAuftraege >= W.fadenFlug) return;
+        const N = AnazhRealm.WALD_PLAN.faden;
         const flug = this._waldFlug;
         const liste = this._waldPlanListe(flug);
+        if (!liste.length) return;
         const C = AnazhRealm.FOREST.cell;
         const extras = this._forestExtraSpecies();
-        for (let a = 0; a < liste.length && this._waldFlugAuftraege < W.fadenFlug; a += W.faden) {
+        const erd = this._erdbauStand | 0;
+        for (let a = 0; a < liste.length; a += N) {
             const zellen = [];
-            for (let b = a; b < Math.min(liste.length, a + W.faden); b++) {
+            for (let b = a; b < Math.min(liste.length, a + N); b++) {
                 const g = liste[b][2];
                 this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C);
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
-            this._waldFlugAuftraege++;
-            const erd = this._erdbauStand | 0;
             this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {
@@ -1740,11 +1751,10 @@ class AnazhRealm_vegetation_wiese {
     // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft sie — die Zellen bleiben in der Schlange, ein neuer
     // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
     // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
+    // Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft, nie erst im nächsten Takt.
     _waldDartsAn(memo, zellen, r, erd) {
-        if (this._waldFlugVon === memo) {
-            this._waldFlugAuftraege--;
+        if (this._waldFlugVon === memo)
             for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
-        }
         const Q = this._waldPlanSchlange;
         let n = 0;
         if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
@@ -1916,5 +1926,5 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 AnazhRealm.STAND_RAND_M = 0.25;
 // DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
 // um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
-// `ms` lang, mit ihm reisen sie in Aufträgen von `faden` Zellen, höchstens `fadenFlug` im Flug (`_waldFadenSchicken`, K60-4).
-AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64, fadenFlug: 2 });
+// `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von `faden` Zellen, alle im Flug (`_waldFadenSchicken`).
+AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64 });
