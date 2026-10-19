@@ -543,8 +543,9 @@ async function proben(phasen) {
             const Hh = gesetz(e);
             const h = { typ: e.type, spieler: e === sbE, koerper: [], keller: null };
             o.w9.haeuser.push(h);
-            if (!Hh) {
-                h.fehler = "kein Gesetzbuch";
+            // ohne das Grund-Datum des Gesetzbuchs (`grundVon`) rät jeder Leser den Grund aus EINER obb-Box: ROT beim Namen
+            if (!Hh || typeof FC.grundVon !== "function") {
+                [h.fehler, h.ohneDatum] = [Hh ? "kein Grund-Datum" : "kein Gesetzbuch", !!Hh];
                 continue;
             }
             const base = e.position.y - 0.5;
@@ -1669,8 +1670,8 @@ async function proben(phasen) {
             const a = { art };
             o.w9.abbau.push(a);
             const Hh = e && gesetz(e);
-            if (!Hh) {
-                a.fehler = e ? "kein Gesetzbuch" : "kein Haus";
+            if (!Hh || typeof FC.grundVon !== "function") {
+                a.fehler = !e ? "kein Haus" : Hh ? "kein Grund-Datum" : "kein Gesetzbuch";
                 continue;
             }
             const sc = (e.scale > 0 ? e.scale : 1) * (e._hausHuelleSkala > 0 ? e._hausHuelleSkala : 1);
@@ -1930,6 +1931,8 @@ function urteil(o) {
     // W9 DAS GRUND-DATUM: Büschel, Erde über der Diele und Bild je Box des Körper-Satzes 0, der Leib erreicht den Kellerboden
     if (P.has("grund")) {
         const hs = ((o.w9 && o.w9.haeuser) || []).filter((h) => !h.fehler);
+        const ohne = ((o.w9 && o.w9.haeuser) || []).filter((h) => h.ohneDatum).length;
+        if (ohne) f.push(`W9 Grund-Datum: ${ohne} Häuser ohne Körper-Satz — das Gesetzbuch trägt kein grundVon (fachwerk-core)`);
         const [boxen, mitK] = [hs.flatMap((h) => h.koerper), hs.filter((h) => h.keller)];
         const summe = (feld) => boxen.reduce((a, b) => a + (b[feld] || 0), 0);
         const je = (w) => JSON.stringify(boxen.reduce((m, b) => (w(b) && (m[b.art] = (m[b.art] || 0) + w(b)), m), {}));
