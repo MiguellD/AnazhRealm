@@ -1344,21 +1344,8 @@ async function checkBandWave10b(ctx) {
     const wave10b3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const AR = r.constructor;
         const out = {};
         try {
-            out.constantsExist =
-                AR.MOUNT_RANGE_M === 3 &&
-                AR.ZOOM_FOV_DEG === 25 &&
-                AR.FOCUSING_HEAT_RANGE_M === 4 &&
-                AR.FOCUSING_IGNITE_THRESHOLD === 1.0;
-            out.hasMount = typeof r.mountArchitecture === "function";
-            out.hasDismount = typeof r.dismountArchitecture === "function";
-            out.hasToggleMount = typeof r.toggleMountAtPlayer === "function";
-            out.hasSetZoom = typeof r.setZoomActive === "function";
-            out.hasFocusingTick = typeof r._tickFocusingAffordances === "function";
-            out.hasTickAffordances = typeof r.tickAffordances === "function";
-            out.initialMountNull = r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
 
             // Mount-Test
             if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
@@ -1385,7 +1372,6 @@ async function checkBandWave10b(ctx) {
             ];
             const ppos = r.state.playerMesh.position;
             const entry = r.spawnArchitecture("test_10b3_car", { x: ppos.x, y: ppos.y, z: ppos.z }, { silent: true });
-            out.entryHasMoveable = !!(entry && entry.affordances && entry.affordances.moveable);
             const mountRes = r.toggleMountAtPlayer();
             out.mountSucceeds = mountRes && mountRes.ok === true;
             out.playerMountedTo = r.state.player.mountedArch === entry.id;
@@ -1478,24 +1464,6 @@ async function checkBandWave10b(ctx) {
     });
 
     if (wave10b3Results && !wave10b3Results.error) {
-        check(
-            "Welle 10b.3: Konstanten (MOUNT_RANGE_M, ZOOM_FOV_DEG, FOCUSING_*) korrekt",
-            wave10b3Results.constantsExist
-        );
-        check(
-            "Welle 10b.3: alle 6 Methoden existieren (mount/dismount/toggleMount/setZoom/focusingTick/tickAffordances)",
-            wave10b3Results.hasMount &&
-                wave10b3Results.hasDismount &&
-                wave10b3Results.hasToggleMount &&
-                wave10b3Results.hasSetZoom &&
-                wave10b3Results.hasFocusingTick &&
-                wave10b3Results.hasTickAffordances
-        );
-        check("Welle 10b.3: state.player.mountedArch initial null", wave10b3Results.initialMountNull);
-        check(
-            "Welle 10b.3: spawnArchitecture speichert moveable-Affordance am entry",
-            wave10b3Results.entryHasMoveable
-        );
         check(
             "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
             wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo

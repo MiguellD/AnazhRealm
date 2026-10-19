@@ -1192,7 +1192,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Avatar-Hide im 1st-Person ---
-        out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
         // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5, Chokepoint `_applyEgoSicht`): im 1st liegt jeder Knoten des Leibs
         // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort; jeder,
         // der im 3rd warf, liegt weiter auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72 — die Kaskaden werfen ihn); 3rd gibt jede

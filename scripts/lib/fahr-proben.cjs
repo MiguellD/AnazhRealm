@@ -347,7 +347,10 @@ async function probeLeben(expected) {
         // (2b) T4 DER WECHSEL AM STEILHANG (F1, Kopf von diag-fahr-leben): bergab 8–11 m/s Third → Ego (W + A, Gier ≥ 75°) →
         // Third → Ego (W + D) → Third; je Bild jede zeichnende Stufe (`instSlots`, `instSlotsBand`, starres Blatt) gegen
         // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
-        // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
+        // `chaseKamera`, in den ersten 3 Third-Bildern nach Ego die DECKUNG des Wagens (je zeichnender Stufe ohne Wurf-Zwilling der
+        // Anteil von 64 Dither-Werten, den `__phytoCore.lodCrossfadeMask` vom Auge der Maske je Blatt behält, Halt aH0L < 0 = voll);
+        // dann ABSTEIGEN in voller Fahrt in Third und (aufgesessen, ≥ 8,5 m/s) in Ego: der größte Weg der Kamera je Bild, 3 Bilder
+        // davor bis 30 danach; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
         const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
         const w = (res.wechsel = { gestartet: false, ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung] });
         if (steil) {
@@ -363,25 +366,18 @@ async function probeLeben(expected) {
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
-            // DIE DECKUNG des Wagens (F1 a): je zeichnender Stufe (Primär + Band, ohne Wurf-Zwilling) der Anteil von 64 Dither-Werten,
-            // den das Blend-Gesetz (`__phytoCore.lodCrossfadeMask`) vom Auge der Maske je Blatt behält, über die Stufen summiert
             const [LD, maske] = [r.constructor.LOD_DISTANCES, st.foundryCrossfade === true && st.lodMaskOn !== false];
-            const deckung = (lu = st.lodUniforms, auge = lu ? lu.uLodAuge.value : r._lodAuge(), summe = 0) => {
-                const [perf, ref] = lu ? [lu.uLodPerf.value, lu.uLodRef.value] : [r._lodPerfMul(), st.lodRef > 0 ? +st.lodRef : 14];
+            const deckung = (auge = r._lodAuge(), perf = r._lodPerfMul(), ref = st.lodRef > 0 ? +st.lodRef : 14, summe = 0) => {
                 for (const liste of [e.instSlots, e.instSlotsBand]) {
-                    const gs = (liste || []).map((s) => [st.archInstanceGroups.get(s.key), s.slot]).filter(([g]) => g && !g.shadowTwin);
-                    for (const [g, slot] of gs) {
+                    const gs = (liste || []).map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin);
+                    for (const [g, o] of gs) {
                         const [at, a, mw] = [g.mesh.geometry.attributes, g.mesh.instanceMatrix.array, g.mesh.matrixWorld.elements];
-                        const [stufe, hL] = [at.aLodLevel ? at.aLodLevel.array[0] : 0, at.aH0L ? at.aH0L.array[slot] : -1];
-                        const d = Math.hypot(a[slot * 16 + 12] + mw[12] - auge.x, a[slot * 16 + 14] + mw[14] - auge.z) * perf;
+                        const [stufe, hL, d] = [at.aLodLevel ? at.aLodLevel.array[0] : 0, at.aH0L ? at.aH0L.array[o] : -1, Math.hypot(a[o * 16 + 12] + mw[12] - auge.x, a[o * 16 + 14] + mw[14] - auge.z) * perf];
                         const k = (h) => d * Math.min(ref / Math.max(Math.abs(h), 1e-3), 1);
-                        let behalten = 64; // ungemaskt oder der Halt (aH0L < 0): voll
-                        for (let j = 0, m, dh; maske && stufe >= 1 && hL >= 0 && j < 64; j++) {
-                            [dh, m] = [(j + 0.5) / 64, { d0: LD.thresh01, d1: LD.thresh12, fade: LD.fade, fade0: LD.fade0 }];
-                            m = globalThis.__phytoCore.lodCrossfadeMask(k(at.aH0.array[slot]), dh, m, stufe - 1, false, k(hL));
-                            if (!(stufe >= 3 ? m.f1o < dh : m.keep)) behalten--;
+                        for (let j = 0.5, m; j < 64; j++) {
+                            m = maske && stufe >= 1 && hL >= 0 && globalThis.__phytoCore.lodCrossfadeMask(k(at.aH0.array[o]), j / 64, { d0: LD.thresh01, d1: LD.thresh12, fade: LD.fade, fade0: LD.fade0 }, stufe - 1, false, k(hL));
+                            summe += !m || (stufe >= 3 ? m.f1o < j / 64 : m.keep) ? 1 / 64 / gs.length : 0;
                         }
-                        summe += behalten / 64 / gs.length;
                     }
                 }
                 return Math.min(1, summe);
@@ -442,18 +438,14 @@ async function probeLeben(expected) {
                     sicht("third", true, false, 70);
                     sicht("first", false, true);
                     sicht("third", false, true, 70);
-                    // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
-                    // Kamera je Bild, 3 Bilder vor bis 30 nach dem Abstieg
                     for (const s of ["third", "first"]) {
                         if (s === "first") [r.mountArchitecture(e), r.setCameraMode(s), Object.assign(st.keys, { a: false, d: false, w: true, s: false })];
                         for (let j = 0; s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
-                        let m = 0;
-                        for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
+                        for (let j = 0, m = 0; j < 33 || !w.abSprung.push(+m.toFixed(2)); j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
                             if (j === 3) [w.abV.push(+Math.hypot(st.playerVel.x(), st.playerVel.z()).toFixed(1)), r.dismountArchitecture()];
                             frame(i++);
                         }
-                        w.abSprung.push(+m.toFixed(2));
                     }
                     bahnWache = null;
                     tasten(false);
