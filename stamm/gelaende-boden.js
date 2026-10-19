@@ -667,7 +667,8 @@ class AnazhRealm_gelaende_boden {
         if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
             for (const st of this.state.wegeKarte.stufen) {
                 const h = st.S.fensterM / 2 + R;
-                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h) st.grundNeu = true;
+                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)
+                    st.grundNeu = true;
             }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
