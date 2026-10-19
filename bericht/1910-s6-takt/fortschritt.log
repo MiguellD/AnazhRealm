@@ -1,0 +1,183 @@
+04:23:53 SERIE START A=253869f0 B=ffa8fac8 Instrument=ffa8fac8 FOLGE=A1
+04:23:59 A1 start FP=c88864f0d827f358 64 50 gpu[60, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:25:50 A1 lauf exit=0 cpu {"p50":4.4,"p95":6.1,"p99":8.2,"max":26.3} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:26:13 A1 profil exit=0
+04:26:25 A1 takt exit=0
+04:26:59 A1 fz exit=0 cpu {"p50":4.6,"p95":6.9,"p99":15,"mittel":4.9817,"schwerN":123} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.1734,"gierKipp005JeTierS":0.1467,"gierKipp001JeVerbandsTierS":null,"gierKipp001JeFreiTierS":0.1734,"tierS":299.9,"verbandsTierS":0} fehler null
+04:27:01 A1 ende gpu[82, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+04:27:41 SERIE START A=253869f0 B=ffa8fac8 Instrument=ffa8fac8 FOLGE=B1 A2 B2 A3 B3 A4 B4
+04:27:48 B1 start FP=6e2ff42aaa386156 64 50 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:28:06 SERIE ENDE
+04:28:09 B1 umstellen exit=1 WERKBANK-FEHLER: read ECONNRESET 
+04:28:10 B1 lauf exit=1 <anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:14
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:451:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:449:60)
+    at evalFunction (node:internal/process/execution:283:30)
+    at evalTypeScript (node:internal/process/execution:295:3)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.14.1
+04:28:10 B1 profil exit=1
+04:28:10 B1 takt exit=1
+04:28:11 B1 fz exit=1 <anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:14
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:451:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:449:60)
+    at evalFunction (node:internal/process/execution:283:30)
+    at evalTypeScript (node:internal/process/execution:295:3)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.14.1
+SEITEN-WACHE ROT: fetch failed
+04:28:12 B1 SEITEN-WACHE NACHHER ROT (ROT)
+04:28:12 B1 ende gpu[71, 822 MHz, 2999 MHz, P3, 0x0000000000000001] zensus[]
+04:28:50 B1 verworfen: die EXIT-Falle des A1-Skripts (stopp, schloss_loesen) lief in die B1-Sitzung des zweiten Skripts - Neulauf in der Folge B1 A2 ... B4
+04:29:02 SERIE START A=253869f0 B=ffa8fac8 Instrument=ffa8fac8 FOLGE=B1 A2 B2 A3 B3 A4 B4
+04:29:08 B1 start FP=6e2ff42aaa386156 64 50 gpu[65, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:31:00 B1 lauf exit=0 cpu {"p50":4.6,"p95":6.3,"p99":8.5,"max":31.4} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:31:23 B1 profil exit=0
+04:31:35 B1 takt exit=0
+04:32:09 B1 fz exit=0 cpu {"p50":4.7,"p95":6.6,"p99":15.7,"mittel":4.9782,"schwerN":121} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.2934,"gierKipp005JeTierS":0.2034,"gierKipp001JeVerbandsTierS":0.4585,"gierKipp001JeFreiTierS":0.1834,"tierS":299.9,"verbandsTierS":120} fehler null
+04:32:10 B1 ende gpu[83, 1746 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+04:33:21 A2 start FP=c88864f0d827f358 64 50 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:35:14 A2 lauf exit=0 cpu {"p50":4.5,"p95":6,"p99":7.6,"max":26.8} frame 16.8 ruhe {"ruhig":true,"sek":3.1,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:35:37 A2 profil exit=0
+04:35:48 A2 takt exit=0
+04:36:22 A2 fz exit=0 cpu {"p50":4.6,"p95":7.5,"p99":17,"mittel":5.0221,"schwerN":121} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.1667,"gierKipp005JeTierS":0.15,"gierKipp001JeVerbandsTierS":null,"gierKipp001JeFreiTierS":0.1667,"tierS":299.9,"verbandsTierS":0} fehler null
+04:36:24 A2 ende gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+04:37:35 B2 start FP=6e2ff42aaa386156 64 50 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:39:27 B2 lauf exit=0 cpu {"p50":4.5,"p95":6,"p99":7.3,"max":28} frame 16.7 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:39:50 B2 profil exit=0
+04:40:02 B2 takt exit=0
+04:40:36 B2 fz exit=0 cpu {"p50":4.7,"p95":8.1,"p99":16.3,"mittel":5.1494,"schwerN":120} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.2767,"gierKipp005JeTierS":0.2034,"gierKipp001JeVerbandsTierS":0.4168,"gierKipp001JeFreiTierS":0.1834,"tierS":299.9,"verbandsTierS":120} fehler null
+04:40:37 B2 ende gpu[83, 1746 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+04:41:48 A3 start FP=c88864f0d827f358 64 50 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:43:41 A3 lauf exit=0 cpu {"p50":4.5,"p95":6.1,"p99":7.7,"max":32.1} frame 16.8 ruhe {"ruhig":true,"sek":3.1,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:44:04 A3 profil exit=0
+04:44:16 A3 takt exit=0
+04:44:50 A3 fz exit=0 cpu {"p50":4.7,"p95":6.7,"p99":17,"mittel":5.037,"schwerN":120} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.1834,"gierKipp005JeTierS":0.1467,"gierKipp001JeVerbandsTierS":null,"gierKipp001JeFreiTierS":0.1834,"tierS":299.9,"verbandsTierS":0} fehler null
+04:44:51 A3 ende gpu[84, 1759 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+04:46:02 B3 start FP=6e2ff42aaa386156 64 50 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:47:55 B3 lauf exit=0 cpu {"p50":4.6,"p95":6.3,"p99":7.7,"max":32.7} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:48:18 B3 profil exit=0
+04:48:29 B3 takt exit=0
+04:49:03 B3 fz exit=0 cpu {"p50":4.7,"p95":7.7,"p99":15.8,"mittel":5.128,"schwerN":119} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.2868,"gierKipp005JeTierS":0.1867,"gierKipp001JeVerbandsTierS":0.4418,"gierKipp001JeFreiTierS":0.1834,"tierS":299.9,"verbandsTierS":120} fehler null
+04:49:05 B3 ende gpu[84, 1759 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+04:50:16 A4 start FP=c88864f0d827f358 64 50 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:52:10 A4 lauf exit=0 cpu {"p50":4.5,"p95":6,"p99":7.2,"max":32.8} frame 16.7 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:52:34 A4 profil exit=0
+04:52:45 A4 takt exit=0
+04:53:19 A4 fz exit=0 cpu {"p50":4.6,"p95":6.9,"p99":15.6,"mittel":4.9772,"schwerN":120} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.1767,"gierKipp005JeTierS":0.1467,"gierKipp001JeVerbandsTierS":null,"gierKipp001JeFreiTierS":0.1767,"tierS":300,"verbandsTierS":0} fehler null
+04:53:20 A4 ende gpu[84, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+04:54:31 B4 start FP=6e2ff42aaa386156 64 50 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:56:24 B4 lauf exit=0 cpu {"p50":4.6,"p95":6.2,"p99":7.5,"max":29.8} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+04:56:47 B4 profil exit=0
+04:56:59 B4 takt exit=0
+04:57:33 B4 fz exit=0 cpu {"p50":4.7,"p95":6.7,"p99":16.9,"mittel":5.0405,"schwerN":119} raten {"stufenWechselJeS":0,"buendelNeuJeS":0,"gierKipp001JeTierS":0.2734,"gierKipp005JeTierS":0.1934,"gierKipp001JeVerbandsTierS":0.4085,"gierKipp001JeFreiTierS":0.1834,"tierS":299.9,"verbandsTierS":120} fehler null
+04:57:34 B4 ende gpu[84, 1746 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+04:58:39 SERIE ENDE
+05:02:00 SERIE START A=253869f0 B=ffa8fac8 Instrument=ffa8fac8 FOLGE=A5 B5 A6 B6
+05:02:06 A5 start FP=c88864f0d827f358 64 50 gpu[63, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:03:58 A5 lauf exit=0 cpu {"p50":4.3,"p95":5.5,"p99":6.9,"max":31.2} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:04:22 A5 rz exit=0 frames 1590 summe {"ref":84.52,"refT":0.01,"gang":13.06,"geteilt":69.508,"klassen":30} buendel [{"k":"BundleGroup","spiel":1,"neu":0},{"k":"regionBundle:@global","spiel":1,"neu":0},{"k":"regionBundle:s:0,0","spiel":1,"neu":0},{"k":"regionBundle:0,0","spiel":1,"neu":0}]
+05:04:23 A5 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+05:05:34 B5 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:07:27 B5 lauf exit=0 cpu {"p50":4.4,"p95":5.8,"p99":6.9,"max":30.4} frame 16.8 ruhe {"ruhig":true,"sek":3.1,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:07:51 B5 rz exit=0 frames 1579 summe {"ref":84.52,"refT":0.01,"gang":13.06,"geteilt":69.501,"klassen":30} buendel [{"k":"BundleGroup","spiel":1,"neu":0},{"k":"regionBundle:@global","spiel":1,"neu":0},{"k":"regionBundle:s:0,0","spiel":1,"neu":0},{"k":"regionBundle:0,0","spiel":1,"neu":0}]
+05:07:52 B5 ende gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+05:09:03 A6 start FP=c88864f0d827f358 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:10:55 A6 lauf exit=0 cpu {"p50":4.5,"p95":6,"p99":7.5,"max":28.3} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:11:19 A6 rz exit=0 frames 1577 summe {"ref":84.53,"refT":0.01,"gang":13.06,"geteilt":69.518,"klassen":30} buendel [{"k":"BundleGroup","spiel":1,"neu":0},{"k":"regionBundle:@global","spiel":1,"neu":0},{"k":"regionBundle:s:0,0","spiel":1,"neu":0},{"k":"regionBundle:0,0","spiel":1,"neu":0}]
+05:11:20 A6 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+05:30:05 B6 start FP=6e2ff42aaa386156 64 50 gpu[63, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:31:56 B6 lauf exit=0 cpu {"p50":4.4,"p95":6,"p99":7.2,"max":32.9} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:32:20 B6 rz exit=0 frames 1586 summe {"ref":84.5,"refT":0.01,"gang":13.05,"geteilt":70.487,"klassen":30} buendel [{"k":"BundleGroup","spiel":1,"neu":0},{"k":"regionBundle:@global","spiel":1,"neu":0},{"k":"regionBundle:s:0,0","spiel":1,"neu":0},{"k":"regionBundle:0,0","spiel":1,"neu":0}]
+05:32:21 B6 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+05:33:26 SERIE ENDE
+05:34:03 B7 SCHALTER start FP=6e2ff42aaa386156 64 50 gpu[64, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:35:54 B7 ruhe-lauf AN {"p50":4.3,"p95":5.6,"p99":6.7,"max":26.7}
+05:36:21 B7 1 AUS {"ergebnis":{"aus":10,"gemerkt":10,"verbaendeMap":7},"ms":2} cpu {"p50":4.2,"p95":5.5,"p99":6.7,"max":27}
+05:36:47 B7 2 AN {"ergebnis":{"an":10,"glieder":10},"ms":2} cpu {"p50":4.3,"p95":5.6,"p99":6.8,"max":31.7}
+05:37:13 B7 3 AN {"ergebnis":{"an":0,"glieder":10},"ms":3} cpu {"p50":4.3,"p95":5.5,"p99":7,"max":32.3}
+05:37:39 B7 4 AUS {"ergebnis":{"aus":10,"gemerkt":10,"verbaendeMap":7},"ms":2} cpu {"p50":4.3,"p95":5.6,"p99":7.4,"max":28.2}
+05:38:05 B7 5 AUS {"ergebnis":{"aus":0,"gemerkt":10,"verbaendeMap":0},"ms":2} cpu {"p50":4.3,"p95":5.7,"p99":6.7,"max":21.9}
+05:38:31 B7 6 AN {"ergebnis":{"an":10,"glieder":10},"ms":2} cpu {"p50":4.2,"p95":5.5,"p99":6.5,"max":8.3}
+05:38:57 B7 7 AN {"ergebnis":{"an":0,"glieder":10},"ms":1} cpu {"p50":4.2,"p95":5.4,"p99":6.4,"max":24.9}
+05:39:23 B7 8 AUS {"ergebnis":{"aus":10,"gemerkt":10,"verbaendeMap":7},"ms":2} cpu {"p50":4.2,"p95":5.5,"p99":6.4,"max":26.7}
+05:39:50 B7 9 AUS {"ergebnis":{"aus":0,"gemerkt":10,"verbaendeMap":0},"ms":2} cpu {"p50":4.3,"p95":5.7,"p99":7,"max":27.4}
+05:40:16 B7 10 AN {"ergebnis":{"an":10,"glieder":10},"ms":3} cpu {"p50":4.2,"p95":5.6,"p99":6.8,"max":29.6}
+05:40:42 B7 11 AN {"ergebnis":{"an":0,"glieder":10},"ms":1} cpu {"p50":4.3,"p95":5.8,"p99":6.6,"max":29.2}
+05:41:08 B7 12 AUS {"ergebnis":{"aus":10,"gemerkt":10,"verbaendeMap":7},"ms":2} cpu {"p50":4.3,"p95":5.8,"p99":6.8,"max":21.3}
+05:41:31 B7 profil 1 AN exit=0
+05:41:54 B7 profil 2 AUS exit=0
+05:42:17 B7 profil 3 AN exit=0
+05:42:40 B7 profil 4 AUS exit=0
+05:43:05 B7 tacho 1 AUS {"ergebnis":{"frames":1634,"cpu":{"mittel":4.3903,"p50":4.3,"p95":5.5,"p99":6.6},"tacho":{"mittel":2.3642,"p50":2.5,"p95":3.2},"senke":true},"ms":24018}
+05:43:30 B7 tacho 2 AN {"ergebnis":{"frames":1632,"cpu":{"mittel":4.4548,"p50":4.4,"p95":5.8,"p99":6.6},"tacho":{"mittel":2.3371,"p50":2.5,"p95":3.3},"senke":true},"ms":24012}
+05:43:55 B7 tacho 3 AUS {"ergebnis":{"frames":1627,"cpu":{"mittel":4.3858,"p50":4.3,"p95":5.5,"p99":6.6},"tacho":{"mittel":2.1555,"p50":2.4,"p95":3.1},"senke":true},"ms":24008}
+05:44:19 B7 tacho 4 AN {"ergebnis":{"frames":1621,"cpu":{"mittel":4.4161,"p50":4.3,"p95":5.7,"p99":7.5},"tacho":{"mittel":2.1916,"p50":2.4,"p95":3.3},"senke":true},"ms":24024}
+05:44:21 B7 SCHALTER ende gpu[83, 1733 MHz, 4006 MHz, P0, 0x0000000000000001]
+05:44:26 SCHALTER ENDE
+05:47:08 SERIE START A=253869f0 B=ffa8fac8 Instrument=ffa8fac8 FOLGE=A7 B8 X1 X2 A8 B9 B10 X3 A9
+05:47:14 A7 start FP=c88864f0d827f358 64 50 gpu[65, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:49:06 A7 lauf exit=0 cpu {"p50":4.3,"p95":5.7,"p99":7.1,"max":28.9} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:49:29 A7 profil exit=0
+05:49:53 A7 tacho exit=0 {"ergebnis":{"frames":1628,"cpu":{"mittel":4.3842,"p50":4.3,"p95":5.6,"p99":6.6},"tacho":{"mittel":2.3303,"p50":2.5,"p95":3.2},"senke":true},"ms":24012}
+05:49:55 A7 ende gpu[82, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+05:51:06 B8 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:52:58 B8 lauf exit=0 cpu {"p50":4.3,"p95":5.5,"p99":6.6,"max":29.5} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:53:21 B8 profil exit=0
+05:53:46 B8 tacho exit=0 {"ergebnis":{"frames":1637,"cpu":{"mittel":4.4368,"p50":4.4,"p95":5.6,"p99":6.7},"tacho":{"mittel":2.3478,"p50":2.5,"p95":3.3},"senke":true},"ms":24022}
+05:53:47 B8 ende gpu[83, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+05:54:58 X1 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:55:04 X1 x-aus {"ergebnis":{"aus":0,"tiere":0,"binden":"aus"},"ms":3}
+05:56:50 X1 lauf exit=0 cpu {"p50":4.4,"p95":5.9,"p99":7.2,"max":32.1} frame 16.8 ruhe {"ruhig":true,"sek":3.1,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+05:57:13 X1 profil exit=0
+05:57:38 X1 tacho exit=0 {"ergebnis":{"frames":1628,"cpu":{"mittel":4.4925,"p50":4.4,"p95":5.7,"p99":7},"tacho":{"mittel":2.3666,"p50":2.5,"p95":3.5},"senke":true},"ms":24015}
+05:57:39 X1 ende gpu[83, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+05:58:50 X2 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+05:58:56 X2 x-aus {"ergebnis":{"aus":0,"tiere":0,"binden":"aus"},"ms":3}
+06:00:43 X2 lauf exit=0 cpu {"p50":4.5,"p95":6,"p99":7.9,"max":42.8} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:01:06 X2 profil exit=0
+06:01:31 X2 tacho exit=0 {"ergebnis":{"frames":1623,"cpu":{"mittel":4.5494,"p50":4.5,"p95":5.9,"p99":6.9},"tacho":{"mittel":2.3652,"p50":2.5,"p95":3.3},"senke":true},"ms":24014}
+06:01:32 X2 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+06:02:43 A8 start FP=c88864f0d827f358 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:04:35 A8 lauf exit=0 cpu {"p50":4.4,"p95":5.8,"p99":7.4,"max":31.2} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:04:58 A8 profil exit=0
+06:05:23 A8 tacho exit=0 {"ergebnis":{"frames":1628,"cpu":{"mittel":4.4631,"p50":4.4,"p95":5.8,"p99":6.5},"tacho":{"mittel":2.3506,"p50":2.5,"p95":3.4},"senke":true},"ms":24014}
+06:05:24 A8 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+06:06:35 B9 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:08:27 B9 lauf exit=0 cpu {"p50":4.4,"p95":5.9,"p99":7.2,"max":30.5} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:08:50 B9 profil exit=0
+06:09:15 B9 tacho exit=0 {"ergebnis":{"frames":1626,"cpu":{"mittel":4.428,"p50":4.4,"p95":5.7,"p99":6.7},"tacho":{"mittel":2.3079,"p50":2.4,"p95":3.4},"senke":true},"ms":24010}
+06:09:16 B9 ende gpu[83, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+06:10:27 B10 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:12:19 B10 lauf exit=0 cpu {"p50":4.5,"p95":5.9,"p99":7,"max":37.9} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:12:42 B10 profil exit=0
+06:13:07 B10 tacho exit=0 {"ergebnis":{"frames":1631,"cpu":{"mittel":4.5562,"p50":4.4,"p95":5.9,"p99":7.7},"tacho":{"mittel":2.377,"p50":2.5,"p95":3.4},"senke":true},"ms":24018}
+06:13:08 B10 ende gpu[83, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":1 ]
+06:14:19 X3 start FP=6e2ff42aaa386156 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:14:25 X3 x-aus {"ergebnis":{"aus":0,"tiere":0,"binden":"aus"},"ms":3}
+06:16:11 X3 lauf exit=0 cpu {"p50":4.4,"p95":5.8,"p99":6.9,"max":29.1} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:16:34 X3 profil exit=0
+06:16:59 X3 tacho exit=0 {"ergebnis":{"frames":1630,"cpu":{"mittel":4.4593,"p50":4.4,"p95":5.7,"p99":6.5},"tacho":{"mittel":2.3602,"p50":2.5,"p95":3.3},"senke":true},"ms":24012}
+06:17:01 X3 ende gpu[83, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+06:18:11 A9 start FP=c88864f0d827f358 64 50 gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:20:04 A9 lauf exit=0 cpu {"p50":4.4,"p95":5.7,"p99":6.7,"max":41.6} frame 16.8 ruhe {"ruhig":true,"sek":3,"chunks":81,"foundry":0,"karten":0,"meshOffen":0}
+06:20:27 A9 profil exit=0
+06:20:51 A9 tacho exit=0 {"ergebnis":{"frames":1620,"cpu":{"mittel":4.4436,"p50":4.3,"p95":5.7,"p99":7.2},"tacho":{"mittel":2.3331,"p50":2.4,"p95":3.5},"senke":true},"ms":24015}
+06:20:53 A9 ende gpu[83, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] zensus["gesamt":10 "wuerfeAb2":1 "verbaendeAb2":0 ]
+06:21:58 SERIE ENDE

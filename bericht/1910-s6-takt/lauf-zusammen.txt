@@ -1,0 +1,14 @@
+Paar | A p50/p95/p99 | B p50/p95/p99 | Δ p50 | Δ p95 | Δ p99
+1 | 4.4/6.1/8.2 | 4.6/6.3/8.5 | 0.20 | 0.20 | 0.30
+2 | 4.5/6/7.6 | 4.5/6/7.3 | 0.00 | 0.00 | -0.30
+3 | 4.5/6.1/7.7 | 4.6/6.3/7.7 | 0.10 | 0.20 | 0.00
+4 | 4.5/6/7.2 | 4.6/6.2/7.5 | 0.10 | 0.20 | 0.30
+5 | 4.3/5.5/6.9 | 4.4/5.8/6.9 | 0.10 | 0.30 | 0.00
+6 | 4.5/6/7.5 | 4.4/6/7.2 | -0.10 | 0.00 | -0.30
+
+p50: A Ø 4.450 · B Ø 4.517 · Paar-Δ Ø 0.067 (sd 0.103, n 6, t 1.58)
+p95: A Ø 5.950 · B Ø 6.100 · Paar-Δ Ø 0.150 (sd 0.122, n 6, t 3.00)
+p99: A Ø 7.517 · B Ø 7.517 · Paar-Δ Ø 0.000 (sd 0.268, n 6, t 0.00)
+Soll 5,8 (p95 ≤ 5,8): A 1 von 6 · B 1 von 6
+
+Rohpfade: welt/A1/lauf.json · welt/A2/lauf.json · welt/A3/lauf.json · welt/A4/lauf.json · welt/B1/lauf.json · welt/B2/lauf.json · welt/B3/lauf.json · welt/B4/lauf.json · welt2/A5/lauf.json · welt2/A6/lauf.json · welt2/B5/lauf.json · welt2/B6/lauf.json

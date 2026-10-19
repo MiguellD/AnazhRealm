@@ -1,0 +1,21 @@
+Quantile p50 / p75 / p90 / p95 / p99  Ø  (gerenderte Takte, gepoolt)
+A n 9510
+  cpu              4.60 / 5.10 / 6.00 / 6.90 / 15.60  Ø 5.004
+  render           3.20 / 3.60 / 4.10 / 4.60 / 6.20  Ø 3.264
+  rest             1.40 / 1.60 / 2.00 / 2.50 / 9.60  Ø 1.740
+  updateCreatures  0.30 / 0.30 / 0.40 / 0.40 / 0.50  Ø 0.269
+  schatten         0.60 / 0.80 / 0.90 / 1.10 / 2.10  Ø 0.494
+    A1 cpu 4.982 render 3.262 rest 1.720
+    A2 cpu 5.022 render 3.236 rest 1.786
+    A3 cpu 5.037 render 3.291 rest 1.746
+    A4 cpu 4.977 render 3.268 rest 1.709
+B n 9529
+  cpu              4.70 / 5.20 / 6.00 / 7.10 / 15.90  Ø 5.074
+  render           3.20 / 3.60 / 4.10 / 4.60 / 6.10  Ø 3.291
+  rest             1.40 / 1.70 / 2.00 / 2.80 / 10.30  Ø 1.782
+  updateCreatures  0.30 / 0.30 / 0.40 / 0.50 / 0.60  Ø 0.288
+  schatten         0.60 / 0.80 / 0.90 / 1.10 / 2.10  Ø 0.505
+    B1 cpu 4.978 render 3.285 rest 1.694
+    B2 cpu 5.149 render 3.299 rest 1.850
+    B3 cpu 5.128 render 3.316 rest 1.812
+    B4 cpu 5.040 render 3.266 rest 1.775

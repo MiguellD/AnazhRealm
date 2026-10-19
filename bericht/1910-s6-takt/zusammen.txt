@@ -1,0 +1,71 @@
+## 1. CPU-Takt (lauf 30 --ein 20 --ruhe 300 --regler voll --tiere frei, sauber) Genesis Third
+
+A (9): p50 4.4 4.5 4.5 4.5 4.3 4.5 4.3 4.4 4.4 · Ø 4.422 | p95 6.1 6 6.1 6 5.5 6 5.7 5.8 5.7 · Ø 5.878 | p99 Ø 7.367 | p95 ≤ 5,8: 4/9
+B (9): p50 4.6 4.5 4.6 4.6 4.4 4.4 4.3 4.4 4.5 · Ø 4.478 | p95 6.3 6 6.3 6.2 5.8 6 5.5 5.9 5.9 · Ø 5.989 | p99 Ø 7.322 | p95 ≤ 5,8: 2/9
+X (3): p50 4.4 4.5 4.4 · Ø 4.433 | p95 5.9 6 5.8 · Ø 5.900 | p99 Ø 7.333 | p95 ≤ 5,8: 1/3
+Paar-Δ B − A p50 (A1/B1 A2/B2 A3/B3 A4/B4 A5/B5 A6/B6 A7/B8 A8/B9 A9/B10): 0.20 0.00 0.10 0.10 0.10 -0.10 0.00 0.00 0.10 · Ø 0.056 · sd 0.088 · t 1.89
+Paar-Δ B − A p95 (A1/B1 A2/B2 A3/B3 A4/B4 A5/B5 A6/B6 A7/B8 A8/B9 A9/B10): 0.20 0.00 0.20 0.20 0.30 0.00 -0.20 0.10 0.20 · Ø 0.111 · sd 0.154 · t 2.17
+Runde 3 je Arm p95 Ø: A 5.733 · B 5.767 · X 5.900
+
+## 2. Der Schalter in EINER B-Welt (schalter/B7): userData.verband aus/an (vb-aus.js / vb-an.js)
+
+ 0 AN  cpu 4.3/5.6/6.7 · Herde Spanne 3.4 m · schalter/B7/lauf-0-AN.json
+ 1 AUS cpu 4.2/5.5/6.7 · Herde Spanne 9 m · schalter/B7/lauf-1-AUS.json
+ 2 AN  cpu 4.3/5.6/6.8 · Herde Spanne 1.9 m · schalter/B7/lauf-2-AN.json
+ 3 AN  cpu 4.3/5.5/7 · Herde Spanne 2.6 m · schalter/B7/lauf-3-AN.json
+ 4 AUS cpu 4.3/5.6/7.4 · Herde Spanne 6.2 m · schalter/B7/lauf-4-AUS.json
+ 5 AUS cpu 4.3/5.7/6.7 · Herde Spanne 5.1 m · schalter/B7/lauf-5-AUS.json
+ 6 AN  cpu 4.2/5.5/6.5 · Herde Spanne 2.4 m · schalter/B7/lauf-6-AN.json
+ 7 AN  cpu 4.2/5.4/6.4 · Herde Spanne 2.8 m · schalter/B7/lauf-7-AN.json
+ 8 AUS cpu 4.2/5.5/6.4 · Herde Spanne 7.8 m · schalter/B7/lauf-8-AUS.json
+ 9 AUS cpu 4.3/5.7/7 · Herde Spanne 6.4 m · schalter/B7/lauf-9-AUS.json
+10 AN  cpu 4.2/5.6/6.8 · Herde Spanne 2.9 m · schalter/B7/lauf-10-AN.json
+11 AN  cpu 4.3/5.8/6.6 · Herde Spanne 2.8 m · schalter/B7/lauf-11-AN.json
+12 AUS cpu 4.3/5.8/6.8 · Herde Spanne 4.4 m · schalter/B7/lauf-12-AUS.json
+p50: AN Ø 4.250 (n 6) · AUS Ø 4.267 (n 6) · Δ AN − AUS -0.017
+p95: AN Ø 5.567 (n 6) · AUS Ø 5.633 (n 6) · Δ AN − AUS -0.067
+p99: AN Ø 6.683 (n 6) · AUS Ø 6.833 (n 6) · Δ AN − AUS -0.150
+profil-1-AN.json: loop 6.151 · _loopRender 4.088 · updateCreatures 0.360 ms je Frame
+profil-2-AUS.json: loop 6.210 · _loopRender 4.142 · updateCreatures 0.387 ms je Frame
+profil-3-AN.json: loop 6.141 · _loopRender 4.090 · updateCreatures 0.343 ms je Frame
+profil-4-AUS.json: loop 6.161 · _loopRender 4.095 · updateCreatures 0.379 ms je Frame
+tacho-1-AUS.json: Takt-CPU Ø 4.3903 p95 5.5 · feste Last 2.3642 ms
+tacho-2-AN.json: Takt-CPU Ø 4.4548 p95 5.8 · feste Last 2.3371 ms
+tacho-3-AUS.json: Takt-CPU Ø 4.3858 p95 5.5 · feste Last 2.1555 ms
+tacho-4-AN.json: Takt-CPU Ø 4.4161 p95 5.7 · feste Last 2.1916 ms
+
+## 3. Kandidaten im Frame-Zerleger (welt/*/fz.json, ms je gerendertem Frame, Mittel über 4 Welten je Seite; Raten je s)
+
+updateCreatures            A 0.2686 · B 0.2875 · Δ 0.0190 | in den Frames ≥ p95: A 0.3797 · B 0.3548
+_kreaturVerbandZug         A 0.0000 · B 0.0098 · Δ 0.0098 | in den Frames ≥ p95: A 0.0000 · B 0.0104
+_kreaturVerbandAlarm       A 0.0000 · B 0.0048 · Δ 0.0048 | in den Frames ≥ p95: A 0.0000 · B 0.0060
+kern.verbandZug            A 0.0000 · B 0.0014 · Δ 0.0014 | in den Frames ≥ p95: A 0.0000 · B 0.0019
+kern.herdeZug              A 0.0000 · B 0.0000 · Δ 0.0000 | in den Frames ≥ p95: A 0.0000 · B 0.0000
+_creatureWariness          A 0.0052 · B 0.0118 · Δ 0.0066 | in den Frames ≥ p95: A 0.0054 · B 0.0150
+_applyCreatureSeparation   A 0.0094 · B 0.0112 · Δ 0.0017 | in den Frames ≥ p95: A 0.0093 · B 0.0131
+_tickKreaturRuhe           A 0.0176 · B 0.0198 · Δ 0.0022 | in den Frames ≥ p95: A 0.0223 · B 0.0217
+_tickKreaturZiegel         A 0.0183 · B 0.0164 · Δ -0.0019 | in den Frames ≥ p95: A 0.0159 · B 0.0148
+_animateCompoundMotion     A 0.0015 · B 0.0019 · Δ 0.0004 | in den Frames ≥ p95: A 0.0023 · B 0.0027
+_leibBuendelStand          A 0.0059 · B 0.0054 · Δ -0.0004 | in den Frames ≥ p95: A 0.0105 · B 0.0065
+matrixGang                 A 0.1631 · B 0.1663 · Δ 0.0032 | in den Frames ≥ p95: A 0.1892 · B 0.1868
+renderOben                 A 3.2641 · B 3.2914 · Δ 0.0274 | in den Frames ≥ p95: A 5.2161 · B 5.1364
+schatten                   A 0.4942 · B 0.5048 · Δ 0.0106 | in den Frames ≥ p95: A 1.2604 · B 1.2584
+wach                       A 1.0000 · B 1.0000 · Δ 0.0000 | in den Frames ≥ p95: A 1.0000 · B 1.0000
+knotenWach                 A 69.0000 · B 69.0000 · Δ 0.0000 | in den Frames ≥ p95: A 69.0000 · B 69.0000
+laeuft                     A 9.7149 · B 9.4521 · Δ -0.2628 | in den Frames ≥ p95: A 9.8887 · B 8.8739
+nAnim                      A 1.0000 · B 1.0000 · Δ 0.0000 | in den Frames ≥ p95: A 1.0000 · B 1.0000
+nKernZug                   A 0.0000 · B 1.0000 · Δ 1.0000 | in den Frames ≥ p95: A 0.0000 · B 1.0000
+nVerbandZug                A 0.0000 · B 3.2516 · Δ 3.2516 | in den Frames ≥ p95: A 0.0000 · B 3.2714
+stufenWechselJeS             A 0.000 0.000 0.000 0.000 · B 0.000 0.000 0.000 0.000
+buendelNeuJeS                A 0.000 0.000 0.000 0.000 · B 0.000 0.000 0.000 0.000
+gierKipp001JeTierS           A 0.173 0.167 0.183 0.177 · B 0.293 0.277 0.287 0.273
+gierKipp005JeTierS           A 0.147 0.150 0.147 0.147 · B 0.203 0.203 0.187 0.193
+gierKipp001JeVerbandsTierS   A – · B 0.459 0.417 0.442 0.408
+gierKipp001JeFreiTierS       A 0.173 0.167 0.183 0.177 · B 0.183 0.183 0.183 0.183
+
+## 4. Refresh-Zensus (welt2/*/rz.json, je gerendertem Frame)
+
+A5: frames 1590 · {"ref":84.52,"refT":0.01,"gang":13.06,"geteilt":69.508,"klassen":30} · Bündel neu 0 · welt2/A5/rz.json
+A6: frames 1577 · {"ref":84.53,"refT":0.01,"gang":13.06,"geteilt":69.518,"klassen":30} · Bündel neu 0 · welt2/A6/rz.json
+B5: frames 1579 · {"ref":84.52,"refT":0.01,"gang":13.06,"geteilt":69.501,"klassen":30} · Bündel neu 0 · welt2/B5/rz.json
+B6: frames 1586 · {"ref":84.5,"refT":0.01,"gang":13.05,"geteilt":70.487,"klassen":30} · Bündel neu 0 · welt2/B6/rz.json

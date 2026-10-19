@@ -1,0 +1,47 @@
+A: Rest (cpu − renderOben) p50 1.40 · p95 2.50 · p99 9.60 · Ø 1.740 (n 9510)
+B: Rest (cpu − renderOben) p50 1.40 · p95 2.80 · p99 10.30 · Ø 1.782 (n 9529)
+
+## Rest-Takte über der A-Schwelle p95 = 2.50 ms
+Anteil: A 4.97 % (473/9510) · B 5.44 % (518/9529)
+Spalte | Ø in schweren A | Ø in schweren B | ms je 100 Takte A | B | Δ
+_loopVoxelStreaming | 3.820 | 4.029 | 19.00 | 21.90 | 2.90
+renderOben | 4.465 | 4.553 | 22.21 | 24.75 | 2.54
+schatten | 1.023 | 1.040 | 5.09 | 5.65 | 0.56
+tickArchitectureCulling | 0.431 | 0.490 | 2.14 | 2.66 | 0.52
+updateStatusPanel | 0.306 | 0.228 | 1.52 | 1.24 | -0.28
+_perfSenseFoldFrame | 0.293 | 0.241 | 1.46 | 1.31 | -0.14
+_loopCamera | 0.161 | 0.172 | 0.80 | 0.93 | 0.13
+_loopWeatherAndGrowth | 0.354 | 0.343 | 1.76 | 1.87 | 0.11
+_loopAutoSave | 0.503 | 0.480 | 2.50 | 2.61 | 0.11
+matrixGang | 0.166 | 0.172 | 0.83 | 0.93 | 0.11
+updateCreatures | 0.351 | 0.340 | 1.74 | 1.85 | 0.10
+tickDayNight | 0.166 | 0.168 | 0.82 | 0.91 | 0.09
+tickAffordances | 0.090 | 0.095 | 0.45 | 0.51 | 0.07
+_creatureWariness | 0.005 | 0.015 | 0.03 | 0.08 | 0.06
+
+## Rest-Takte über der A-Schwelle p99 = 9.60 ms
+Anteil: A 0.99 % (94/9510) · B 1.19 % (113/9529)
+Spalte | Ø in schweren A | Ø in schweren B | ms je 100 Takte A | B | Δ
+_loopVoxelStreaming | 10.336 | 10.068 | 10.22 | 11.94 | 1.72
+renderOben | 5.432 | 5.361 | 5.37 | 6.36 | 0.99
+tickArchitectureCulling | 0.795 | 0.907 | 0.79 | 1.08 | 0.29
+schatten | 1.453 | 1.373 | 1.44 | 1.63 | 0.19
+_loopAutoSave | 2.519 | 2.196 | 2.49 | 2.60 | 0.11
+_loopWeatherAndGrowth | 0.618 | 0.458 | 0.61 | 0.54 | -0.07
+updateCreatures | 0.612 | 0.452 | 0.60 | 0.54 | -0.07
+matrixGang | 0.171 | 0.181 | 0.17 | 0.21 | 0.04
+_loopCamera | 0.179 | 0.179 | 0.18 | 0.21 | 0.04
+_loopFixedStep | 0.130 | 0.133 | 0.13 | 0.16 | 0.03
+_perfSenseFoldFrame | 0.152 | 0.103 | 0.15 | 0.12 | -0.03
+tickAffordances | 0.089 | 0.092 | 0.09 | 0.11 | 0.02
+_standSicht | 0.032 | 0.040 | 0.03 | 0.05 | 0.02
+_kreaturVerbandZug | 0.000 | 0.012 | 0.00 | 0.01 | 0.01
+
+## Anteil der Takte, in denen ein Glied > 1 ms trägt (gepoolt)
+tickDayNight: A 0.32 % · B 0.31 %
+updateStatusPanel: A 1.52 % · B 1.50 %
+_loopVoxelStreaming: A 3.08 % · B 3.76 %
+tickArchitectureCulling: A 0.38 % · B 0.49 %
+_perfSenseFoldFrame: A 0.32 % · B 0.29 %
+renderOben: A 100.00 % · B 100.00 %
+schatten: A 6.39 % · B 6.79 %
