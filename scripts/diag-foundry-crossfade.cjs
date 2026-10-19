@@ -965,9 +965,10 @@ async function runPartB() {
                 res.geisterBaum = {
                     normal: geisterLauf({ armM: 0 }),
                     karteLaedt: geisterLauf({ armM: 0, karteLaedt: true }),
-                    auge: geisterLauf({ armM: 9.6 }),
+                    auge: geisterLauf({ armM: 9.6, ohneHalt: true }),
+                    sprung: geisterLauf({ armM: 9.6, wahlVomSpieler: true }),
                     gegenHalt: geisterLauf({ armM: 0, karteLaedt: true, ohneHalt: true }),
-                    gegenAuge: geisterLauf({ armM: 9.6, wahlVomSpieler: true }),
+                    gegenAuge: geisterLauf({ armM: 9.6, wahlVomSpieler: true, ohneHalt: true }),
                     gegenSchatten: geisterLauf({ armM: 0, karteLaedt: true, zwillingOhneHalt: true }),
                 };
                 geisterLauf({ armM: 0 }); // die Stufen und der Halt zurück auf die gebackene Karte
@@ -1621,9 +1622,10 @@ async function main() {
         const sauber = (o) => o.proben >= 14 && o.geister === 0 && o.loecher === 0 && o.schatten === 0 && o.mitZwilling > 0;
         check("GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende)", sauber(GB.normal), g(GB.normal));
         check("GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)", sauber(GB.karteLaedt), g(GB.karteLaedt));
-        check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
+        check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske, auch ohne Halt (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
+        check("GEISTER-BAUM: die Wahl misst vom alten Ort (das Auge sprang, F1) — jede Stufe ohne gezeichneten Partner hält voll (der Täter: der Halt fällt, wo keiner verlangt ist)", sauber(GB.sprung), g(GB.sprung));
         check("GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte", GB.gegenHalt.geister + GB.gegenHalt.loecher > 0, g(GB.gegenHalt));
-        check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
+        check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, ohne Halt, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
         check("GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum", GB.gegenSchatten.schatten > 0, g(GB.gegenSchatten));
         // (10b) das Auge vor der Setzung, im Sprung, der Sonde und bei der Geburt der Streu
         const ga = (o) => `${o.falsch} falsche Wahlen in ${o.proben} Proben · ${o.geburtFalsch} von ${o.geburten} Geburten nicht vom Auge${o.err ? " — Fehler " + o.err : ""}${o.beispiel.length ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;

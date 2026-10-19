@@ -1016,7 +1016,9 @@ class AnazhRealm_vegetation_streu {
                     else bandHalt = true;
                 }
             }
-            // die Primär-Slots (die Liste trägt bis hier nur sie, der Partner hängt dahinter) halten voll
+            // die Primär-Slots (die Liste trägt bis hier nur sie, der Partner hängt dahinter) halten voll — auch ohne Wunsch
+            // (`_lodHaltSetzen`, F1: die Maske misst vom Auge nach dem Rig, die Zelle wählte vom Auge davor)
+            if (bandWunsch === null) bandHalt = true;
             if (bandHalt) for (const ref of slots) this._streuSlotHalt(ref, tf.scale);
         }
         return {
