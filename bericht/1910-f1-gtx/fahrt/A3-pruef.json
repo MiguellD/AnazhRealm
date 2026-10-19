@@ -1,0 +1,14 @@
+{
+ "ergebnis": {
+  "geritten": true,
+  "inst": true,
+  "weg": 121.2,
+  "pos": [
+   -279,
+   -1058
+  ],
+  "v": 6,
+  "sicht": "third"
+ },
+ "ms": 2
+}

@@ -1,0 +1,11 @@
+F1 stehend, B − A je Zelle (Welch-t aus stehen/auswertung-<k>.json, spanne)
+w-ego: CPU p95 Δ -0.025 t -0.45 | p99 Δ -0.200 t -1.63
+w-third: CPU p95 Δ -0.025 t -0.08 | p99 Δ -0.175 t -0.44
+g-ego: CPU p95 Δ +0.100 t +1.48 | p99 Δ +0.300 t +3.06
+g-third: CPU p95 Δ -0.075 t -1.00 | p99 Δ -0.025 t -0.13
+Stouffer über 4 Zellen (Σt/√k): p95 -0.02 · p99 0.43
+
+F1 gehend (Mittel geht-1/geht-2 je Boot), B − A je Zelle (Welch-t aus gehen/auswertung-gehen-<k>.json)
+w-ego: geht CPU p95 Δ +0.12 t +0.13 | p99 Δ +1.25 t +3.95 | steht CPU p95 Δ +0.20 t +0.89
+w-third: geht CPU p95 Δ -1.41 t -0.87 | p99 Δ -3.21 t -0.88 | steht CPU p95 Δ -0.15 t -0.56
+Stouffer über 2 Zellen: geht p95 -0.52 · geht p99 2.17 · steht (Geh-Sitzung) p95 0.24

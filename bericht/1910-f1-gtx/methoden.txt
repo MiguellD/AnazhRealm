@@ -1,0 +1,8 @@
+Instrument A = ../../../n1910-f1a, Seite B = ../../../n1910-f1b
+Methoden A 3495 · B 3496
+in B entfernt (0): keine
+in B neu (1): _archInstanzSlotsSetzen
+vom Instrument gerufen und in B fehlend (0): KEINE
+Instrument-Dateien A↔B (git diff 47c8b089 e93134f4): werkbank.cjs + omen-messfolge.cjs byte-gleich; scripts/lib nur fahr-proben.cjs geändert, das weder werkbank.cjs noch omen-messfolge.cjs noch eine andere lib lädt
+ scripts/lib/fahr-proben.cjs | 228 +++++++++++++++++++++++++++-----------------
+ 1 file changed, 142 insertions(+), 86 deletions(-)
