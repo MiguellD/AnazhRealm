@@ -1302,7 +1302,7 @@ const server = statikServer();
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
                 // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
-                // sich ihre Region auf — steht der Plan (die Schlange leer) und steht kein Asset aus, baut sie neu. Bis K69-2
+                // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu. Bis K69-2
                 // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
                 {
                     const p = st.playerMesh.position;

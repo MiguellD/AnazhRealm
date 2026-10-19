@@ -6,9 +6,10 @@ class AnazhRealm_vegetation_baum {
     // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
     // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
     // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
-    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
-    _voxelWorkerWaldDarts(zellen, seedInt, extras) {
-        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST }, [
+    // Auftrag rechnet mindestens am Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten
+    // Zelle beim Senden, ohne Rang zuerst). Leser: die Schlange des Walds (`_waldFadenSchicken`).
+    _voxelWorkerWaldDarts(zellen, seedInt, extras, rang) {
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, rang }, [
             zellen.buffer,
         ]).then((msg) => ({
             anzahl: new Int32Array(msg.anzahl),
@@ -907,10 +908,10 @@ class AnazhRealm_vegetation_baum {
                 return false;
             }
             // fehlt der Plan, bestellt ihn die Frage in der EINEN Schlange des Walds (ihr Rechner ist der Wald-Faden, K60-3);
-            // wer warten kann (die Streu-Scheibe), wartet benannt auf ihre leere Schlange (`_waldPlanZusage`)
+            // wer warten kann (die Streu-Scheibe), wartet benannt auf die Zellen des Kastens um den Ort (`_waldPlanZusage`)
             if (!this._waldPlanSteht(x, z)) {
                 wartet = true;
-                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage());
+                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage(x, z));
                 return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
