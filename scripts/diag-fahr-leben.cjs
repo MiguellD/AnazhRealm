@@ -129,8 +129,8 @@ function fahrWand(q, garage) {
 
 // ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer): EIN fail-closed Leser (`AnazhRealm._fahrSchrittGesetz`
 // → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn — kein stilles null, kein Literal-Zwilling der FAHR.schritt-Zeilen. ──
-const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrzeugStand", "_fahrNachlauf", "_fahrHuelle"];
-FAHR_LESER.push("_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement");
+const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrzeugStand", "_fahrNachlauf", "_fahrHuelle",
+    "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
 function pflichtWand(q) {
     // ein Fahr-Leser ohne Definition wirft im Helfer: P1 nennt ihn, seine Absenz zählt nie als grün
     const tot = new Set();
