@@ -5,7 +5,7 @@
 // Replay (Pfad szene › replay › Prüfung › Gang › Vorher-Knoten des Schattens), netto 5–9 ms bei 1,3–1,4 Kaskaden je
 // Frame, die Diät selbst netto 0,7 (Prüfung) + 1,0 (Gang) ms, der Replay 0,1 ms. Die Linse zählt und zieht jeden
 // verschachtelten Bereich vom äußeren ab:
-//   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen
+//   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten, geteilte Gruppen und fremde Verweise
 //                  (und wie viele davon einen Knoten oder eine Gruppe im SELBEN Render-Abschnitt wiederholen) · Uploads geteilter
 //                  und eigener Gruppen · writeBuffer · Replay-Bürger · Renders
 //   Netto je Frame: Prüfung · Gang · Replay · Aufnahme · Voll-Refresh (Knoten · Bindungen · Geometrie) · Schatten-
@@ -31,6 +31,7 @@ function diaetLauf(opts) {
         const roh = {
             refresh: A._diaetRefresh,
             schreib: A._diaetGeteiltSchreiben,
+            og: A._diaetObjektGang,
             szene: rend._renderScene,
             bundle: rend._renderBundle,
             nUpd: rend._nodes.updateForRender,
@@ -47,7 +48,7 @@ function diaetLauf(opts) {
         };
         let c = null;
         const stapel = [];
-        let imGang = 0;
+        let imGang = 0, imOG = 0;
         // DER REFRESH OHNE ÄNDERUNG (K71): ein Voll-Refresh, der nichts Neues zur GPU trägt — kein Upload einer Gruppe (r184
         // lädt eine Gruppe nur bei geändertem Wert), kein neuer Puffer, und jedes geschriebene Byte gleicht dem, was an dieser
         // Stelle schon liegt (eine Version, die ein Schreiber ohne Änderung hob). Je Refresh offen bis zum Ende seiner
@@ -65,10 +66,7 @@ function diaetLauf(opts) {
                 }
             return (ro && ro.material && ro.material.isShadowPassMaterial ? "Schatten " : "") + nm;
         };
-        const wirkt = () => {
-            const w = aktRo && offen.get(aktRo);
-            if (w) w.wirkung++;
-        };
+        const wirkt = () => { const w = aktRo && offen.get(aktRo); if (w) w.wirkung++; };
         const mitRo = (ro, fn) => {
             const alt = aktRo;
             aktRo = ro;
@@ -97,9 +95,7 @@ function diaetLauf(opts) {
                 if (aussen) aussen.kind += d;
             }
         };
-        const zaehle = (k, n = 1) => {
-            if (c) c.n[k] = (c.n[k] || 0) + n;
-        };
+        const zaehle = (k, n = 1) => { if (c) c.n[k] = (c.n[k] || 0) + n; };
         // Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`, wie der Stempel des Gangs): nach einem
         // verschachtelten Render stellt der äußere seine Knoten zu Recht ein zweites Mal.
         const besuch = (art, id) => {
@@ -117,14 +113,7 @@ function diaetLauf(opts) {
             if (v && c) offen.set(ro, { name: nameVon(ro), wirkung: 0 });
             if (v && c) {
                 zaehle("voll");
-                const obj = ro && ro.object;
-                let nm = (obj && (obj.name || obj.type)) || "?";
-                for (let p = obj && obj.parent, i = 0; p && i < 4; p = p.parent, i++)
-                    if (p.name) {
-                        nm = p.name + "/" + nm;
-                        break;
-                    }
-                c.grund[nm] = (c.grund[nm] || 0) + 1;
+                c.grund[nameVon(ro)] = (c.grund[nameVon(ro)] || 0) + 1;
             }
             return v;
         };
@@ -136,8 +125,13 @@ function diaetLauf(opts) {
                 imGang--;
             }
         };
+        // DER FREMDE VERWEIS (E-Diät, 19.10.): ein Verweis auf ein festes Objekt (Schatten-Bias · Radius · Kaskaden des Lichts)
+        // speist eine GETEILTE Uniform — EIN Wert je Render-Abschnitt; der Objekt-Gang stellte ihn je Objekt (Fremd).
+        const fremd = (n) => n.isMaterialReferenceNode !== true && typeof n.getValueFromReference === "function" && n.object != null && n.count === null && !!(n.node && n.node.groupNode && n.node.groupNode.shared === true);
+        A._diaetObjektGang = function (...a) { imOG++; try { return rahmen("objektGang", () => roh.og.apply(this, a)); } finally { imOG--; } };
         nf.updateNode = function (n) {
-            if (imGang) besuch("Knoten", n.id);
+            if ((imGang || imOG) && fremd(n)) besuch("Fremd", n.node.id);
+            else if (imGang) besuch("Knoten", n.id);
             return nfP.updateNode.call(this, n);
         };
         nf.updateBeforeNode = function (n) {
@@ -189,12 +183,13 @@ function diaetLauf(opts) {
         // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) und ein Voll-Refresh sind nie
         // der Gang: ihre Knoten-Besuche zählen nicht als Wiederholung des äußeren Gangs.
         const ohneGang = (fn) => {
-            const alt = imGang;
-            imGang = 0;
+            const alt = imGang, altOG = imOG;
+            imGang = imOG = 0;
             try {
                 return fn();
             } finally {
                 imGang = alt;
+                imOG = altOG;
             }
         };
         rend._renderScene = function (scene, camera, fb) {
@@ -288,6 +283,7 @@ function diaetLauf(opts) {
         } finally {
             A._diaetRefresh = roh.refresh;
             A._diaetGeteiltSchreiben = roh.schreib;
+            A._diaetObjektGang = roh.og;
             delete nf.updateNode;
             delete nf.updateBeforeNode;
             rend._bindings._update = roh.bu;
@@ -342,10 +338,10 @@ function diaetUrteil(e) {
     const z = e.zahl || {};
     if (!(z.pruef > 0)) v.push("DIÄT: keine Diät-Prüfung gezählt — die Linse ist blind");
     if (e.modus === "ruhe") {
-        const w = (z.wiederholtKnoten || 0) + (z.wiederholtVorher || 0) + (z.wiederholtGruppe || 0);
+        const w = (z.wiederholtKnoten || 0) + (z.wiederholtVorher || 0) + (z.wiederholtGruppe || 0) + (z.wiederholtFremd || 0);
         if (w > 0)
             v.push(
-                `RUHE: ${Math.round(w * 10) / 10} wiederholte Gänge je Frame (Knoten ${z.wiederholtKnoten || 0} · Vorher ${z.wiederholtVorher || 0} · Gruppe ${z.wiederholtGruppe || 0}) — dieselbe Arbeit je Programm statt EINMAL je Render`
+                `RUHE: ${Math.round(w * 10) / 10} wiederholte Gänge je Frame (Knoten ${z.wiederholtKnoten || 0} · Vorher ${z.wiederholtVorher || 0} · Gruppe ${z.wiederholtGruppe || 0} · Fremd ${z.wiederholtFremd || 0}) — dieselbe Arbeit je Programm statt EINMAL je Render`
             );
         // K71: im Stand trägt jeder Voll-Refresh eine Änderung zur GPU — ein Refresh ohne Änderung nennt sein Objekt
         if (z.ohne > 0)
@@ -362,6 +358,7 @@ function selbsttest() {
     if (diaetUrteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + diaetUrteil(gruen).join(" · "));
     const faelle = [
         ["Gang je Programm", Object.assign({}, gruen, { zahl: { pruef: 120, wiederholtKnoten: 850, wiederholtGruppe: 70 } }), /RUHE: 920 wiederholte Gänge/],
+        ["Fremd je Objekt", Object.assign({}, gruen, { zahl: { pruef: 120, wiederholtFremd: 40 } }), /RUHE: 40 wiederholte Gänge .*Fremd 40/],
         ["blind (kein Frame)", { modus: "ruhe", frames: 0, zahl: {} }, /kein gerenderter Frame/],
         ["blind (keine Prüfung)", Object.assign({}, gruen, { zahl: { pruef: 0 } }), /keine Diät-Prüfung/],
         [
