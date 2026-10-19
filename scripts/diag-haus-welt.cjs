@@ -40,7 +40,8 @@
 //       Hain wächst nicht in ihn. Selbsttests: die Scheibe schwebt (schwebe), der Platz ist nur die Scheibe (platz), ein
 //       Bau ohne Haus-Zeile trägt keinen Grundriss (baugrund).
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes des Gesetzbuchs (`grundVon`: Haupthaus, Anbau, Flügel, Hof-Arm, Turm,
-//       Rund) kein Büschel des Gesetzes der Nah-Wiese, keine Erde 5 cm über der Diele, der Leib erreicht über die Keller-
+//       Rund) kein Büschel des Gesetzes der Nah-Wiese, dessen Halme hineinreichen (die Weite der gezeichneten Vorlage, an
+//       ihrer Geometrie gemessen — nie das `reich` des Gesetzes, das sie bewacht), keine Erde 5 cm über der Diele, der Leib erreicht über die Keller-
 //       Treppe den Kellerboden (kellerY + 0,12 m); `--bild` (echter Renderer, GPU-Schloss): Halm- und Boden-Pixel je Box 0
 //       (wo der Grund der Boden der Box ist — der Turm —, zählt vom Boden nur der Halm).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
@@ -126,8 +127,9 @@ const BASIS = {
     ],
     // DER KELLER VOLL ERDE (W9): der Erdbau kennt keinen Hohlraum — der Leib bleibt auf Grade, Erde über den Tritten der Treppe
     grundkeller: [["/gelaende-core.js", "        if (!E || !E.hohl) return d;", "        if (E || !E) return d;"]],
-    // DIE WIESE IM GRUND (W9): die Nah-Wiese fragt den Grund der Häuser nicht — der Turm und der Rand an der Wand wachsen zu
-    grundbueschel: [["if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;", "if (!Gb) continue;"]],
+    // DIE WIESE IM GRUND (W9): der Kreis des Büschels ist das Studio-Gras ohne seine Matrix (0,17 m, 17.10.) — die Halme eines
+    // Büschels vor der Wand stecken durch sie in den Anbau
+    grundbueschel: [["            reich: 0.72,", "            reich: 0.17,"]],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
@@ -587,14 +589,23 @@ async function proben(phasen) {
             [h.stufe, h.steht] = [e._servedLod, !!steht()];
             // die Büschel des Gesetzes über dem Grund (je Kachel einmal)
             const bueschel = [];
-            for (let tx = Math.floor((mx0 - 1) / KW); tx <= Math.floor((mx1 + 1) / KW); tx++)
-                for (let tz = Math.floor((mz0 - 1) / KW); tz <= Math.floor((mz1 + 1) / KW); tz++)
+            for (let tx = Math.floor((mx0 - 2) / KW); tx <= Math.floor((mx1 + 2) / KW); tx++)
+                for (let tz = Math.floor((mz0 - 2) / KW); tz <= Math.floor((mz1 + 2) / KW); tz++)
                     bueschel.push(...(r._nahWieseKachelBueschel(tx, tz) || []));
             h.ring = bueschel.length;
+            // DIE WEITE DER VORLAGE: die weiteste Halm-Spitze der gezeichneten Büschel (Geometrie × lokale Matrix, waagrecht, je
+            // Skala 1); ein Büschel, dessen Kreis eine Box berührt, steckt seine Halme in sie — auch durch die Wand
+            for (const V of s.nahWiese.vorlagen.values())
+                for (const a of V.senken)
+                    for (let i = 0, P = a.geo.attributes.position, v = new THREE.Vector3(); i < P.count; i++) {
+                        v.fromBufferAttribute(P, i).applyMatrix4(a.lokal);
+                        o.w9.weite = Math.max(o.w9.weite || 0, Math.hypot(v.x, v.z));
+                    }
+            const W = o.w9.weite || 0;
             for (const m of boxen) {
                 const b = { art: m.art, bueschel: 0, dichte: 0, proben: 0, halm: 0, boden: 0, blicke: 0, png: [] };
                 h.koerper.push(b);
-                for (const q of bueschel) if (inBox(m, q.x, q.z, 0)) b.bueschel++;
+                for (const q of bueschel) if (inBox(m, q.x, q.z, (-W * q.s) / sc)) b.bueschel++;
                 for (let lx = m.x0 + 0.2; lx <= m.x1 - 0.2; lx += 0.25)
                     for (let lz = m.z0 + 0.2; lz <= m.z1 - 0.2; lz += 0.25) {
                         const d = diele(lx, lz);
@@ -626,7 +637,7 @@ async function proben(phasen) {
                     const innen = [];
                     for (const k of s.nahWiese.kacheln.values())
                         for (const [j, bu] of (k.bueschel || []).entries())
-                            if (inBox(m, bu.x, bu.z, 0)) innen.push([k, j]);
+                            if (inBox(m, bu.x, bu.z, (-W * bu.s) / sc)) innen.push([k, j]);
                     b.innen = Math.max(b.innen || 0, innen.length);
                     const ohne = innen.length ? await schuss([], innen) : G;
                     // DIE MASKE ohne die Nah-Wiese: der Boden-Satz zeichnet unbeleuchtet (grün: grüne Albedo, sonst Magenta)
@@ -1879,7 +1890,8 @@ function urteil(o) {
             (b) => (b.halm + b.boden > 20 ? b.halm + b.boden : 0),
         ];
         if (!boxen.length || !hs.some((h) => h.ring > 0)) f.push(`W9 Aufbau: blind — ${boxen.length} Boxen, kein Büschel des Gesetzes um ein Haus`); // prettier-ignore
-        if (summe("bueschel")) f.push(`W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes im Körper-Satz ${mit((b) => b.bueschel)} (${je((b) => b.bueschel)})`); // prettier-ignore
+        if (!(o.w9 && o.w9.weite > 0)) f.push("W9 Weite: blind — keine Vorlage der Nah-Wiese gezeichnet");
+        if (summe("bueschel")) f.push(`W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes reichen in den Körper-Satz ${mit((b) => b.bueschel)} (${je((b) => b.bueschel)}, Weite der Vorlage ${o.w9.weite.toFixed(3)} m je Skala)`); // prettier-ignore
         if (summe("dichte")) f.push(`W9 Dichte: ${summe("dichte")} von ${summe("proben")} Zellen über der Diele tragen Erde ${mit((b) => b.dichte)} (${je((b) => b.dichte)})`); // prettier-ignore
         if (!mitK.length) f.push("W9 Keller: blind — kein Haus mit Keller-Lauf im Gesetzbuch");
         else if (oben.length) f.push(`W9 Keller: ${oben.length} von ${mitK.length} Leibern erreichen den Kellerboden nicht (tiefster Fuß ${[...new Set(oben.map((h) => h.keller.tiefM))].join("/")} m, Soll ${oben[0].keller.boden} m), Erde im Keller-Raum ${mitK.reduce((a, h) => a + h.keller.erde, 0)} von ${mitK.reduce((a, h) => a + h.keller.proben, 0)} Proben`); // prettier-ignore
@@ -1904,7 +1916,7 @@ function zeile(o) {
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
         (o.w9
-            ? ` · W9 Grund ${o.w9.haeuser.filter((h) => !h.fehler).length} Häuser, Boxen ${JSON.stringify(o.w9.haeuser.flatMap((h) => h.koerper || []).reduce((m, b) => ((m[b.art] = (m[b.art] || 0) + 1), m), {}))}, Keller-Fuß ${o.w9.haeuser
+            ? ` · W9 Grund ${o.w9.haeuser.filter((h) => !h.fehler).length} Häuser, Boxen ${JSON.stringify(o.w9.haeuser.flatMap((h) => h.koerper || []).reduce((m, b) => ((m[b.art] = (m[b.art] || 0) + 1), m), {}))}, Weite ${(o.w9.weite || 0).toFixed(3)} m, Keller-Fuß ${o.w9.haeuser
                   .filter((h) => h.keller)
                   .map((h) => h.keller.tiefM)
                   .join(

@@ -1488,17 +1488,20 @@
     function erdbauGrund(E, x, z, rand) {
         if (!E || !E.gruende || !E.gruende.length) return 0;
         const Z = ERDBAU.zelleM;
-        const liste = E.grundZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
-        if (!liste) return 0;
         const r = rand > 0 ? rand : 0;
-        for (let k = 0; k < liste.length; k++) {
-            const g = E.gruende[liste[k]];
-            const dx = x - g.cx;
-            const dz = z - g.cz;
-            const u = dx * g.c - dz * g.s;
-            const v = dx * g.s + dz * g.c;
-            for (const b of g.boxen) if (u > b[0] - r && u < b[1] + r && v > b[2] - r && v < b[3] + r) return 1;
-        }
+        // je Zelle, die der Kreis berührt: der Grund ist nur über seinem Saum gerastert, der Kreis reicht weiter
+        for (let i = Math.floor((x - r) / Z); i <= Math.floor((x + r) / Z); i++)
+            for (let j = Math.floor((z - r) / Z); j <= Math.floor((z + r) / Z); j++) {
+                const liste = E.grundZellen.get((i + 32768) * 65536 + (j + 32768));
+                for (let k = 0; liste && k < liste.length; k++) {
+                    const g = E.gruende[liste[k]];
+                    const dx = x - g.cx;
+                    const dz = z - g.cz;
+                    const u = dx * g.c - dz * g.s;
+                    const v = dx * g.s + dz * g.c;
+                    for (const b of g.boxen) if (u > b[0] - r && u < b[1] + r && v > b[2] - r && v < b[3] + r) return 1;
+                }
+            }
         return 0;
     }
     // DER KELLER IST HOHL (S4): die Dichte d an (x, y, z) mit dem Hohlraum jedes Kellers vereinigt — im Raum (ein Kasten) der
