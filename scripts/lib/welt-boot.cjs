@@ -562,7 +562,7 @@ async function starteBrowser(opts = {}) {
     // jede GPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4), die WebGL-Linse ihren
     // WebGL2-Renderer; die ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT beim Namen
     if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl") {
-        const info = await adapterZeile(browser, { webgl: opts.art === "webgl" });
+        const info = (browser.adapter = await adapterZeile(browser, { webgl: opts.art === "webgl" }));
         const rot = zeitZeile({ zeit: !!opts.zeit, art: opts.art, info });
         if (rot) melde("zeit-linse", rot);
     }

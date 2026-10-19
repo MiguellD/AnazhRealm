@@ -1,72 +1,52 @@
 // diag-fahr-leben.cjs — DIE FAHR-LINSE DES LEBENS (Welle L, Familie fahren): sie fährt den Ritt durch den ECHTEN
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
-// den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Befund 06.10.
-// (artifacts/profiband/leben/befund-fahren-gelaende.md +
-// artifacts/profiband/leben/karte-fahren-gelaende.md, sichtbar gespielt auf der Radeon):
-// `gate:vehicle-drive` B-e integrierte den Ritt ohne Akkumulator und ohne Interpolation (Q0 F-L6) — die Defekte des
-// echten Loops sah sie nie; Vertikale, Querhang und Reibkreis sah kein Gate.
+// den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
 //   T (Q1 · F-D1 F-D2 F-D10) — DER RITT-TAKT. Der GT fährt mit W über eine trockene Gerade an der Mess-Wiese, die
 //     Frame-Zeiten wechseln (8–33 ms: Frames ohne, mit einem und mit zwei Sim-Schritten). Gezählt wird je Frame:
-//       teleport  — der Akkumulator fand das Spieler-Mesh NICHT dort, wo die Interpolation es hinlegte, und übernahm
-//                   die nachhinkende Lage als Sim-Wahrheit (Befund: 114 von 114 Frames)        Soll 0
-//       weg       — Sim-Weg (Σ der Sim-Schritte) gegen Fahr-Weg (Σ der Wagen-Lage je Frame)
-//                   (Befund: 25,95 m simuliert, 10,27 m gefahren)                                Soll ±2 % (min 0,4 m)
-//       luft      — Sim-Schritte, in denen der Reiter nicht auf seinem Sitz sitzt oder der geerdete Wagen auf keinem
-//                   seiner vier Aufstandspunkte steht (die Lage selbst, nie das Flag isInAir — Gegenprüfung 07.10.)
-//                   (Befund: 421 von 421)                                                         Soll 0
-//       gier      — die Gier dreht in Frames OHNE Sim-Schritt (das Frame-Flag: in 14 von 192 Frames 82,4°)   Soll ≤ 0,5°
-//     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht (Befund: rollte mit
-//     4,7 m/s zurück und drehte sich 84°). Dazu das Pferd (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-
-//     Gesetz): teleport 0, weg ±2 % (Befund: 131 von 135 Frames, 3,66 m simuliert, 1,81 m geritten).
+//       teleport — der Akkumulator fand das Spieler-Mesh nicht dort, wo die Interpolation es hinlegte      Soll 0
+//       weg      — Sim-Weg (Σ der Sim-Schritte) gegen Fahr-Weg (Σ der Wagen-Lage je Frame)       Soll ±2 % (min 0,4 m)
+//       luft     — Sim-Schritte, in denen der Reiter nicht auf seinem Sitz oder der geerdete Wagen auf keinem seiner
+//                  vier Aufstandspunkte steht (die Lage selbst, nie das Flag isInAir)                       Soll 0
+//       gier     — die Gier dreht in Frames OHNE Sim-Schritt                                               Soll ≤ 0,5°
+//     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht. T3 das Pferd
+//     (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-Gesetz): teleport 0, weg ±2 %.
+//     T4 (F1 des Schöpfers 17.10.) DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
+//     (die Schwellen am Verdikt `WECHSEL`).
 //
 //   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:
-//       K1 der Kern trägt fahrSchritt (Kräfte + Stand), die Probefahrt ruft ihn, der Stamm ruft ihn — und keiner von
-//          beiden integriert eine eigene Kopie (Befund: zwei Integratoren, Stillstand GT Labor 54,7° gegen Welt 66,6°)
-//       K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ (Befund: Supersport 90°, GT 66,6°)
+//       K1 der Kern trägt fahrSchritt (Kräfte + Stand), Probefahrt und Stamm rufen ihn, keiner integriert eine Kopie
+//       K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ
 //       K3 Halt: am 21°-Hang ohne Eingabe hält der Wagen; über dem Reibkreis (50°) rutscht er
-//       K4 Querhang: der Quer-Hangabtrieb wirkt (Fahrt längs 35° ohne Lenkung driftet talwärts; am Stand hält 30°,
-//          50° rutscht) (Befund: 0,00 m Abdrift)
-//       K5 Vertikale: an der Kuppe mit v²/R > g hebt der Wagen ab, unter g nicht; über eine 7-m-Klippe fällt er
-//          ballistisch (kein Höhen-Sprung > 0,5 m je Schritt) und landet auf dem Grund (Befund: 7,95 m in einem Frame)
+//       K4 Querhang: Fahrt längs 35° ohne Lenkung driftet talwärts; am Stand hält 30°, 50° rutscht
+//       K5 Vertikale: mit v²/R > g hebt der Wagen an der Kuppe ab, unter g nicht; über eine 7-m-Klippe fällt er
+//          ballistisch (kein Höhen-Sprung > 0,5 m je Schritt) und landet auf dem Grund
 //   S (Q13) — DIE STATIONEN IN DER WELT (echter Sim-Schritt, an der Mess-Wiese gesucht):
-//       S1 Welt == Labor: dieselben Eingaben, derselbe Boden — der Welt-Ritt fährt die Spur des Labor-Aufrufs
-//          (VC.fahrSchritt) auf den Millimeter                                                         Soll ≤ 0,01 m
-//       S2 Klippe: kein Höhen-Sprung je Sim-Schritt > 0,5 m (Befund 6,94/7,95 m), der Wagen fliegt (Luft-Schritte > 0)
-//       S3 Querhang: Fahrt längs eines 25–40°-Querhangs ohne Lenkung driftet quer talwärts (Befund 0,00 m) Soll ≥ 0,3 m
+//       S1 Welt == Labor: dieselben Eingaben, derselbe Boden — der Welt-Ritt fährt die Spur von VC.fahrSchritt  Soll ≤ 0,01 m
+//       S2 Klippe: kein Höhen-Sprung je Sim-Schritt > 0,5 m, der Wagen fliegt (Luft-Schritte > 0)
+//       S3 Querhang: Fahrt längs eines 25–40°-Querhangs ohne Lenkung driftet quer talwärts                     Soll ≥ 0,3 m
 //
 //   R (Q13 · F-D8) — DIE RÄDER IN DER INSTANZ: der GT fährt (W), bremst voll (S) und lenkt (W + A); je Sim-Schritt die
 //       Rad-Leaves relativ zum Aufbau (Rolle > 1 rad, Einschlag vorn > 0,1 rad, hinten 0) und der Aufstand (Eintauchen
-//       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m). Befund: 12 Blätter mit unveränderter relativer Matrix, beim
-//       Bremsen die Vorderräder 7,4–11,1 cm im Boden.
-//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: der GT fährt mit W gegen einen Felsblock und gegen einen Bären; das
-//       Eindringen der Wagen-Hülle (exportDrive.huelle) in die Blocker-Boxen bzw. den LEIB des Wesens (Befund: Bug
-//       1,97–2,32 m im Stamm, der Bär ganz im Wagen)                                                Soll ≤ 0,05 m
-//       H6 (D2): Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`); der Bär steht quer, die
-//       Hülle berührt seine Flanke (≤ 0,3 m) statt vor einem zweiten Kreis (separation × bodySize) zu halten.
-//       H7 (D5): eine 34° gedrehte Haus-Wand (Hülle der Stufe, `_hausObb`) — die Hülle berührt die ECHTE Wand (≤ 0,3 m)
-//       und dringt nicht ein, statt vor ihrer Welt-AABB zu halten.
-//       H8 (D5, die zweite Rolle): eine 34° gedrehte Mauer aus EINEM Teil — jedes gedrehte Teil eines Hindernisses (der
-//       geparkte Wagen, Fels, Tor, Bauwerk) ist seine gedrehte Box (`_blockerComputePartAABB` → obb); die Hülle berührt
-//       das Teil (≤ 0,3 m), nie seine Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen (der Leib hält den Wagen).
+//       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m).
+//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: das Eindringen der Wagen-Hülle (exportDrive.huelle) in Felsblock-Boxen
+//       und den LEIB eines Bären ≤ 0,05 m. H6 (D2) Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle
+//       (`_kreaturLeib`, die Hülle berührt die Flanke ≤ 0,3 m). H7/H8 (D5) eine 34° gedrehte Haus-Wand (`_hausObb`) und
+//       Mauer aus EINEM Teil (`_blockerComputePartAABB` → obb): die Hülle berührt die echte Wand ≤ 0,3 m, nie die
+//       Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen.
 //
-//   K7 (0710-2) die Wand ist ein SPRUNG des Bodens: liegt der Boden unter dem Wagen auf einmal 0,35 m höher, hält die
-//       Wand einen Schritt, dann steigt er auf sein Gesetz (je Schritt ≤ eine Stufe) — vorher fror die Höhe für immer ein.
-//   L (0710-2) — DIE ORTE DER LEBEN-SCHAU (07.10., integ-l 828d5ace, sichtbar gefahren), echter Sim-Schritt, an genau den
-//       Orten mit Tempo und Gier der Schau:
-//       L1 HANGFUSS (−852/−861,2, 9,3 m/s, Gier 92,3°): die flache Box eines Glutbrunnens schob den GT in EINEM Schritt
-//          0,97 m quer auf höheren Grund, die Höhe fror ein, 1,16 m unter den Rädern für immer. Soll: nach JEDER Kontakt-
-//          Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m darunter, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die
-//          eigene Fahrt, er fährt weiter.
-//       L2 SPALTKANTE (−904/−975, 11,4 m/s in +x): eine unsichtbare Wand stoppte den Wagen in EINEM Schritt (11,44 →
-//          0,19 m/s), Gas danach 0,00 m. Soll: er fährt über die Kante und FÄLLT.
-//       L3–L5 DER STOSS (Schau: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je EIN Frame, ohne
-//          Folge): aus 9 m Anlauf in der freien Gasse gegen Fels, geparkten GT und Bären (nicht gehalten). Soll: das EINE
-//          Impuls-Gesetz — am Fels Rückprall, der Gegner bekommt seinen Impuls nach Masse, ein Stoß-Ereignis (Kamera, Klang).
+//   K7 (0710-2) die Wand ist ein SPRUNG des Bodens: 0,35 m höherer Boden hält EINEN Schritt, dann steigt der Wagen auf
+//       sein Gesetz (je Schritt ≤ eine Stufe).
+//   L (0710-2) — DIE ORTE DER LEBEN-SCHAU, echter Sim-Schritt, an den Orten mit Tempo und Gier der Schau:
+//       L1 HANGFUSS (−852/−861,2, 9,3 m/s, Gier 92,3°): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz
+//          (≤ 0,2 m darunter, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter.
+//       L2 SPALTKANTE (−904/−975, 11,4 m/s in +x): er fährt über die Kante und FÄLLT.
+//       L3–L5 DER STOSS aus 9 m Anlauf gegen Fels, geparkten GT und Bären: das EINE Impuls-Gesetz — am Fels Rückprall,
+//          der Gegner bekommt seinen Impuls nach Masse, ein Stoß-Ereignis (Kamera, Klang).
 //
-//   F (K12) — DIE FAHR-BAHN, im zweiten Boot derselben Linse (die Fahr-Bahn-Linse der Leben-Schau 2 ging hier auf): der
-//       Platz an jedem Tor des Genesis-Rings und am Vorschau-GT, rückwärts aus dem Stand, die Befreiung nach dem Stoß, die
-//       Natur-Wand um den Wagen, Tacho, Stimme und Tasten — die Zeilen FK…F7 stehen am Block `BAHN`.
+//   F (K12) — DIE FAHR-BAHN, im zweiten Boot derselben Linse: der Platz an jedem Tor des Genesis-Rings und am
+//       Vorschau-GT, rückwärts aus dem Stand, die Befreiung nach dem Stoß, die Natur-Wand um den Wagen, Tacho, Stimme
+//       und Tasten — die Zeilen FK…F7 stehen am Block `BAHN`.
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
@@ -107,44 +87,46 @@ function haltVerdict(m) {
     if (!(m.gierGesamt <= TAKT.gierGrad)) out.push(`gier ${(m.gierGesamt || 0).toFixed(1)}°`);
     return out;
 }
-
-// ── DIE STATISCHE WAND (Node, der EINE Absenz-Helfer `stammLib.fehlt`): der Ritt sitzt im Sim-Schritt, der Frame-Tick
-// schreibt nie den Reiter, das Lenk-Frame-Flag ist tot. Liefert [name, ok, detail]; `q` die Wandlung des Vor-Stands, leer =
-// der Arbeitsbaum. ──
-const fehlt = stammLib.fehlt;
-// (Dass der Sim-Schritt den Ritt trägt und den Sitz setzt, beweisen T1/T3 am Verhalten: Teleport und Luft je Sim-Schritt.)
-function taktWand(q) {
-    return [
-        ["W2 der Frame-Tick schreibt nie den Reiter (`_tickMountedMovement` ohne pm.y-Zuweisung)", fehlt("_tickMountedMovement", /\bpm\.y\s*=[^=]/, q), fehlt.wo],
-        ["W3 das Lenk-Frame-Flag `_rideSteer` ist tot (0 im Code)", fehlt(null, /_rideSteer(?!Yaw)\b/, q), fehlt.wo],
-    ];
+// T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
+// nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05, `chaseKamera` je Third-Bild.
+const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1 };
+function wechselVerdict(m) {
+    if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
+    const W = WECHSEL;
+    const out = [];
+    if (!(m.stufeM <= W.stufeM)) out.push(`stufe ${m.stufeWer} ${m.stufeM} m neben dem Wagen (sie fährt nicht mit)`);
+    if (!(m.band > 0)) out.push("band: kein Band-Partner im Ritt (vakuös)");
+    if (!(m.ego.length === 2 && m.ego.every((g) => g >= W.egoGrad)))
+        out.push(`ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`);
+    if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
+        out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
+    // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
+    if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
+    if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
+        out.push(`gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`);
+    if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
+        out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
+    if (!(m.third > 0 && m.gesetz >= m.third)) out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
+    if (!Number.isFinite(m.wiederauf)) out.push("wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)");
+    else if (!(m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
+    return out;
 }
+
+const fehlt = stammLib.fehlt; // der EINE Absenz-Helfer; dass der Ritt im Sim-Schritt sitzt, urteilen T0/T1/T4 am Verhalten
 
 // ── K1 — DIE WAND DES EINEN FAHR-SCHRITTS (Node, der Absenz-Helfer): keiner integriert eine eigene Kopie (die Reifen-
 // Seitenkraft `FlatF` lebt nur im Kern); dass die Welt dem Kern-Schritt folgt, beweist S1 (Welt == Labor) am Verhalten. ──
 function fahrWand(q, garage) {
     return [
         ["K1b die Welt integriert keine Kopie des Fahr-Schritts", fehlt(null, /\bFlatF\b/, q), fehlt.wo],
-        // der Garage-Modus fährt den Ritt der Welt (S1): keine Reifen-Kraft, kein FAHR-Literal, kein carPhys in seiner Quelle
-        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b|maxSteer\s*:|function\s+carPhys/, { datei: "worlds/garage/studio.js", wandel: garage }), fehlt.wo],
+        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }), fehlt.wo],
     ];
 }
 
-// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer; Gegenprüfung 07.10.): `_fahrSatz`/`_rittEbene` gaben bei
-// einem Kern ohne fahrGesetz/fahrEbene still null (der Gesetz-Wagen ritt richtungs-folgend), Hülle, Kontakt und Rad trugen
-// Literal-Zwillinge der FAHR.schritt-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Soll: EIN fail-closed Leser
-// (`AnazhRealm._fahrSchrittGesetz` → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn. ──
-const FAHR_LESER = [
-    "_fahrSatz",
-    "_rittEbene",
-    "_rittSchritt",
-    "_fahrzeugStand",
-    "_fahrNachlauf",
-    "_fahrHuelle",
-    "_fahrHuelleKontakt",
-    "_archRadMatrix",
-    "_loopPlayerMovement",
-];
+// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer): EIN fail-closed Leser (`AnazhRealm._fahrSchrittGesetz`
+// → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn — kein stilles null, kein Literal-Zwilling der FAHR.schritt-Zeilen. ──
+const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrzeugStand", "_fahrNachlauf", "_fahrHuelle",
+    "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
 function pflichtWand(q) {
     // ein Fahr-Leser ohne Definition wirft im Helfer: P1 nennt ihn, seine Absenz zählt nie als grün
     const tot = new Set();
@@ -170,14 +152,10 @@ function pflichtWand(q) {
     ];
 }
 
-// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, der Absenz-Helfer; Gegenprüfung 07.10.): die Gelände-Gleitschleife der Hülle war eine
-// Kopie der PM_ClipVelocity-Schleife aus Schritt 5b. Soll: die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
-// rufen sie. ──
-// H6 — EIN LEIB JE TIER (Entscheid D2 der Welle L, Integration): der Wagen-Kontakt rechnete das Wesen als zweiten Leib
-// (den Kreis VERHALTEN.separation × bodySize, quer bis 0,8 m breiter als das Tier). Soll: Wagen gegen Tier liest
-// denselben Leib wie Tier gegen Hülle (`_kreaturLeib`, die EINE Größe der Familie kreatur), kein `separation` im Kontakt.
-// Dass Kapsel und Hülle `_wandGleiten` rufen und Wagen wie Tier `_kreaturLeib` lesen, beweist der Zähl-Spion im Lauf
-// (Stationen, huelleKonsum); die gedrehte Box (H7, H8) messen die Fahrten gegen Haus und Mauer an der echten Wand.
+// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, der Absenz-Helfer): die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
+// rufen sie. H6 — EIN LEIB JE TIER (D2): Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`), kein
+// `separation` im Kontakt. Den Konsum beweist der Zähl-Spion im Lauf (Stationen, huelleKonsum), die gedrehte Box (H7, H8)
+// die Fahrten gegen Haus und Mauer an der echten Wand.
 function huelleWand(q) {
     return [
         [
@@ -655,11 +633,8 @@ const server = statikServer();
 
 const { probeLeben } = require("./lib/fahr-proben.cjs");
 
-// ════ F — DIE FAHR-BAHN (K12; Leben-Schau 2 #6 und Auge 06 — die Fahr-Bahn-Linse der Schau geht hier auf) ════
-// Der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts und nach einem Stoß frei, zeigt sein
-// Tempo und klingt. Befund (artifacts/profiband/leben-schau-2/befund.md §2 Spur B, §6 #6): der Vorschau-GT klebte 38–40°
-// gekippt am Fels hinter dem Garage-Tor, rückwärts kam er 0,1 m in 2,5 s, jede Befreiung brachte −0,7 km/h, die Fahrt war
-// stumm, ohne Tacho, ihre Tasten fehlten in der Hilfe. Eigenes Boot (Takt-Zähler statt Wanduhr):
+// ════ F — DIE FAHR-BAHN (K12; die Fahr-Bahn-Linse der Leben-Schau 2 geht hier auf) ════ Der Wagen, den die Welt hinstellt,
+// steht auf fahrbarem Grund, kommt rückwärts und nach einem Stoß frei, zeigt sein Tempo und klingt. Eigenes Boot (Takt-Zähler):
 //   FK  (Node, der Kern) RÜCKWÄRTS AUS DEM STAND: jedes Rezept fährt S (und S + Gegenlenkung je Seite) 2,5 s eben, 10° und
 //       15° bergauf ≥ 3 m.
 //   FK2 (Node) DIE DREHZAHL ÜBER 0…vmax: klang:FAHRT trägt sie vom Leerlauf (v 0) zum Begrenzer (vmax), steigt in jedem
@@ -1619,6 +1594,25 @@ function quellenAbgriff() {
             rollt.length === 2 && rollt[0].startsWith("rollt") && rollt[1].startsWith("gier"),
             rollt.join(" · ")
         );
+        const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8], third: 210, gesetz: 210 };
+        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0 });
+        check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
+        for (const [name, bruch, soll] of [
+            ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
+            ["kein Band im Ritt", { band: 0 }, "band"],
+            ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
+            ["Third beginnt aus der alten Richtung (18° / 20°)", { nach10: [18, 20] }, "kamera"],
+            ["Third ruckt quer (0,14 m)", { ruckP95: 0.14 }, "ruck"],
+            ["das Bild läuft 0,9 neben der Physik", { gleichP95: 0.91 }, "gleichlauf"],
+            ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],
+            ["die Chase-Cam liest kein Kern-Gesetz", { gesetz: 0 }, "gesetz"],
+            ["der Wiederaufstieg zeigt die alte Gier (57°)", { wiederauf: 57 }, "wiederaufstieg"],
+            ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
+            ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
+        ]) {
+            const v = wechselVerdict(Object.assign({}, wechsel, bruch));
+            check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
+        }
         // Die Stations-Linse.
         const gutS = {
             kern: true,
@@ -2022,26 +2016,6 @@ function quellenAbgriff() {
                 v.join(" · ")
             );
         }
-        // Die statischen Wände feuern auf den Vor-Stand.
-        const gruen = taktWand();
-        check(
-            "Selbst-Test W: der Arbeitsbaum ist grün",
-            gruen.every((w) => w[1]),
-            gruen
-                .filter((w) => !w[1])
-                .map((w) => w[0])
-                .join(" | ")
-        );
-        const vorStand = (t) => stammLib.ersetze(t, [
-            [null, /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
-                "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"],
-        ]);
-        const rot = taktWand(vorStand);
-        check(
-            "Selbst-Test W: der Vor-Stand (Sitz im Frame, Flag lebt) → W2 W3 feuern",
-            rot.filter((w) => !w[1]).length === 2,
-            rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
-        );
         const kGruen = fahrWand();
         check(
             "Selbst-Test K1: der Arbeitsbaum ist grün",
@@ -2053,7 +2027,7 @@ function quellenAbgriff() {
         );
         const kRot = fahrWand(
             (t) => stammLib.ersetze(t, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
-            (g) => g.replace(/(\n {4}function fahrStart\(\) \{)/, "$1let FlatF=0;")
+            (g) => g.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;")
         );
         check(
             "Selbst-Test K1: der Vor-Stand (Kopien in Welt und Labor) → K1b K1c feuern",
@@ -2305,8 +2279,6 @@ function quellenAbgriff() {
         process.exit(0);
     }
 
-    console.log("=== W — DIE STATISCHE WAND DES RITT-TAKTS (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of taktWand()) check(name, ok, detail);
     console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of pflichtWand()) check(name, ok, detail);
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): Wand + der Kern selbst (Node) ===");
@@ -2384,6 +2356,12 @@ function quellenAbgriff() {
         "T3 Pferd (richtungs-folgender Ritt): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt",
         vRoss.length === 0,
         `${zeile(out.ross)}${vRoss.length ? " — Täter: " + vRoss.join(", ") : ""}`
+    );
+    const vW = wechselVerdict(out.wechsel);
+    check(
+        "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
+        vW.length === 0,
+        `${JSON.stringify(out.wechsel)}${vW.length ? " — Täter: " + vW.join(" · ") : ""}`
     );
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
     const S = out.stationen || {};

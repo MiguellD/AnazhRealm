@@ -129,11 +129,95 @@ class AnazhRealm_kreatur_verhalten {
         return best;
     }
 
+    // DIE GLIEDER DES VERBANDS (S6): die Liste dieses Takts (`updateCreatures` sammelt sie je Verband) mit dem Wesen darin,
+    // oder null — ein Ungebundener (ohne Wurf geboren: DSL, Hof, Test) hat keinen Verband.
+    _kreaturVerbandGlieder(creature) {
+        const vb = creature && creature.userData && creature.userData.verband;
+        if (vb == null || !this._verbaende) return null;
+        return this._verbaende.get(vb) || null;
+    }
+
+    // DER ZUG DES VERBANDS (S6, tetrapoda verbandZug) auf den Wunsch `direction` (m/s), den der wilde Zweig schrieb: die
+    // ANDEREN Glieder mit Ort, Wunsch (ihr KI-Wunsch dieses oder des Vor-Takts, `aiDir`), Raum und Leittier (das Glied,
+    // dessen netId der Verband trägt — der Erstgeborene des Wurfs). Das Tempo des Zugs ist das größere aus dem Schritt und
+    // dem Wunsch (auf der Flucht der Sprint). Die Zahlen: VERHALTEN.herde (gewicht · fensterRaum · maxNachbarn).
+    _kreaturVerbandZug(creature, direction, speed, hueftL) {
+        const glieder = this._kreaturVerbandGlieder(creature);
+        if (!glieder || glieder.length < 2) return;
+        const vb = creature.userData.verband;
+        const nb = this._verbandNachbarn || (this._verbandNachbarn = []);
+        const pool = this._verbandEintraege || (this._verbandEintraege = []);
+        nb.length = 0;
+        for (const g of glieder) {
+            if (g === creature || !g.position) continue;
+            const e = pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, vx: 0, vz: 0, raum: 0, leit: false });
+            const w = g.userData.aiDir;
+            e.x = g.position.x;
+            e.z = g.position.z;
+            e.vx = w ? w.x : 0;
+            e.vz = w ? w.z : 0;
+            e.raum = this._kreaturRaum(g);
+            e.leit = g.userData.netId === vb;
+            nb.push(e);
+        }
+        const zug = AnazhRealm._steuerGesetz().verbandZug(
+            creature.position.x,
+            creature.position.z,
+            direction.x,
+            direction.z,
+            Math.max(speed, Math.hypot(direction.x, direction.z)),
+            this._kreaturRaum(creature, hueftL),
+            nb,
+            AnazhRealm._verhaltenGesetz().herde,
+            this._verbandZugOut || (this._verbandZugOut = { x: 0, z: 0, n: 0 })
+        );
+        direction.x = zug.x;
+        direction.z = zug.z;
+    }
+
+    // DER ALARM DES VERBANDS (S6): wer selbst nichts fürchtet (w unter fleeThreshold), flieht mit dem nächsten Glied seines
+    // Verbands, das vor seiner EIGENEN Bedrohung flieht — von deren Ort, im Radius r + dem Abstand zum Glied (wer flieht,
+    // steht in r, also dieses Glied in r + Abstand). Nur das eigene Wittern alarmiert (`_alarmEigen`): ein Alarm aus zweiter
+    // Hand trägt nicht weiter, sonst hielte die Herde ihre Flucht im Kreis am Leben, wenn die Bedrohung längst fort ist.
+    // Vorher floh nur, wer selbst witterte — die Nachbarn grasten weiter, die Herde riss (Linse herde 18.10.).
+    _kreaturVerbandAlarm(creature, NAT, von, w) {
+        const ud = creature.userData;
+        ud._alarmEigen = w >= NAT.fleeThreshold;
+        if (ud._alarmEigen || !von) return w;
+        const glieder = this._kreaturVerbandGlieder(creature);
+        if (!glieder) return w;
+        let best = Infinity;
+        let B = null;
+        for (const g of glieder) {
+            const gu = g.userData;
+            if (g === creature || !gu._alarmEigen || gu._motionZustand !== "flucht" || !gu._bedrohtVon) continue;
+            const d = Math.hypot(g.position.x - creature.position.x, g.position.z - creature.position.z);
+            if (d < best) {
+                best = d;
+                B = gu._bedrohtVon;
+            }
+        }
+        if (!B) return w;
+        von.x = B.x;
+        von.z = B.z;
+        von.r = B.r + best;
+        return Math.max(w, NAT.fleeThreshold);
+    }
+
     // WARINESS = die natürliche Reaktion eines wilden Wesens auf den Spieler, EIN emergentes Signal:
     // deine Aura-MENACE (v. a. `chaos`, feedback-frei, minus peace/joy) gegen die Natur des Wesens
     // (dicht/hart kühn, lebendig scheu) + BINDUNG + MODUS + frische Kampf-Furcht.
-    // Negativ = neugierig (näher), positiv = scheu (fort).
+    // Negativ = neugierig (näher), positiv = scheu (fort). DER ALARM DES VERBANDS (S6) liegt darüber: wer selbst nichts
+    // fürchtet, flieht mit seinem Verband (`_kreaturVerbandAlarm`).
     _creatureWariness(creature) {
+        const NAT = AnazhRealm._verhaltenGesetz().furcht;
+        const w = this._creatureWarinessEigen(creature);
+        const ud = creature.userData;
+        return ud ? this._kreaturVerbandAlarm(creature, NAT, ud._bedrohtVon, w) : w;
+    }
+
+    // Die EIGENE Wariness des Wesens: was es selbst wittert — den Spieler und den jagenden Jäger.
+    _creatureWarinessEigen(creature) {
         // SPIEGEL-ZENSUS — die Wariness-Gewichte wohnen im tetrapoda-Gesetzbuch
         // (VERHALTEN.furcht via _verhaltenGesetz, fail-soft byte-gleich).
         const NAT = AnazhRealm._verhaltenGesetz().furcht;
@@ -286,9 +370,10 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DIE JAGD (Welle LF 08.10.): der EINE Weg eines Jägers zu seinem Ziel (der Spieler oder seine Beute, zielKey benennt
-    // es). DAS RUDEL — die Jäger desselben Ziels (der Vor-Takt) — verteilt sich auf dem Ring jagd.hetzM um das Ziel: die
-    // Plätze liegen im Winkel-Abstand 2π/n, in der Reihenfolge, in der die Jäger um das Ziel stehen, um ihre mittlere
-    // Richtung. Wer seinen Platz nicht hat, pirscht (Pirsch-Tempo) zum Platz — nah am Ring kreist er außen herum, statt
+    // es). DAS RUDEL — die Jäger DESSELBEN Verbands auf dasselbe Ziel (der Vor-Takt; S6: ein fremdes Rudel am selben Ziel
+    // verschmilzt nicht, ein Ungebundener jagt allein) — verteilt sich auf dem Ring jagd.hetzM um das Ziel nach dem Gesetz
+    // des Kerns (tetrapoda rudelPlatz): die Plätze liegen im Winkel-Abstand 2π/n, in der Reihenfolge, in der die Jäger um
+    // das Ziel stehen, um ihre mittlere Richtung. Wer seinen Platz nicht hat, pirscht (Pirsch-Tempo) zum Platz — nah am Ring kreist er außen herum, statt
     // durch das Ziel zu laufen; wer in seinem Sektor auf dem Ring steht, HETZT im Sprint der Gestalt (STEUER sprintTempo)
     // auf das Ziel und hält erst ein, wenn es weiter als drei Ringe davonläuft. LÄUFT DAS ZIEL DAVON (sein Lauf vx, vz zeigt
     // vom Jäger fort, schneller als ein Schritt), hetzt der Jäger schon aus drei Ringen. Vorher pirschte jeder Jäger einzeln
@@ -304,46 +389,27 @@ class AnazhRealm_kreatur_verhalten {
         const d = Math.hypot(dx, dz);
         const TAU = Math.PI * 2;
         const eigen = Math.atan2(p.x - tx, p.z - tz);
-        let sx = Math.sin(eigen),
-            sz = Math.cos(eigen),
-            n = 1;
         const rudel = this._rudelWinkel || (this._rudelWinkel = []);
         rudel.length = 0;
-        for (const j of this._kreaturJaeger || []) {
-            if (j === creature || !j.userData || j.userData._jagdZiel !== zielKey) continue;
-            const w = Math.atan2(j.position.x - tx, j.position.z - tz);
-            rudel.push(w);
-            sx += Math.sin(w);
-            sz += Math.cos(w);
-            n++;
-        }
-        let platz = eigen;
-        if (n > 1) {
-            const mittel = Math.atan2(sx, sz);
-            const rel = (w) => {
-                const r = w - mittel;
-                return r - TAU * Math.round(r / TAU);
-            };
-            const re = rel(eigen);
-            let rang = 0;
-            for (const w of rudel) if (rel(w) < re) rang++;
-            platz = mittel + (rang - (n - 1) / 2) * (TAU / n);
-        }
+        const vb = ud.verband;
+        if (vb != null)
+            for (const j of this._kreaturJaeger || []) {
+                const ju = j.userData;
+                if (j === creature || !ju || ju._jagdZiel !== zielKey || ju.verband !== vb) continue;
+                rudel.push(Math.atan2(j.position.x - tx, j.position.z - tz));
+            }
+        const R = AnazhRealm._steuerGesetz().rudelPlatz(
+            eigen,
+            rudel,
+            this._rudelPlatzOut || (this._rudelPlatzOut = { platz: 0, n: 1, umstellt: true })
+        );
+        const n = R.n;
+        const platz = R.platz;
         let abw = eigen - platz;
         abw -= TAU * Math.round(abw / TAU);
-        // UMSTELLT: das Rudel hetzt erst, wenn es das Ziel umringt — die größte Winkel-Lücke zwischen den Jägern ist höchstens
-        // anderthalb Plätze breit (allein ist man immer „umstellt"); vorher hetzte, wer zuerst auf dem Ring stand.
-        let umstellt = true;
-        if (n > 1) {
-            rudel.push(eigen);
-            rudel.sort((a, b) => a - b);
-            let luecke = 0;
-            for (let k = 0; k < rudel.length; k++) {
-                const nx = k + 1 < rudel.length ? rudel[k + 1] : rudel[0] + TAU;
-                if (nx - rudel[k] > luecke) luecke = nx - rudel[k];
-            }
-            umstellt = luecke <= 1.5 * (TAU / n);
-        }
+        // UMSTELLT: das Rudel hetzt erst, wenn es das Ziel umringt (die größte Winkel-Lücke ≤ anderthalb Plätze, rudelPlatz);
+        // vorher hetzte, wer zuerst auf dem Ring stand.
+        const umstellt = R.umstellt;
         const hetzt = ud._motionZustand === "hetzen";
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
         if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
@@ -2091,10 +2157,12 @@ class AnazhRealm_kreatur_verhalten {
             if (this.state.symphony) this.state.symphony.enabled = false;
             const emotions = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions : [];
             let restored = 0;
+            this._verbandWiederkehr = new Map(); // S6: die Verbände des Stands, neu gebunden (_restoreCreatureFromSnapshot)
             for (let i = 0; i < pending.length; i++) {
                 const emotion = emotions[i] || "happy";
                 if (this._restoreCreatureFromSnapshot(pending[i], emotion)) restored++;
             }
+            this._verbandWiederkehr = null;
             if (this.state.symphony) this.state.symphony.enabled = symBefore;
             this.state._pendingCreatureSnapshots = null;
             this.log(`Kreaturen wiederhergestellt: ${restored} aus persistiertem Save`, "INFO");
@@ -2803,35 +2871,25 @@ class AnazhRealm_kreatur_verhalten {
             sa.x = playerPos.x;
             sa.z = playerPos.z;
         }
-        // Spatial-Hash fürs Flocking: 5-m-Buckets (= Flocking-Range `dsq < 25`), je Kreatur nur die 3×3-
-        // Nachbar-Cells statt O(N²). Map + Buckets als Pool recycelt — keine Allokation pro Frame.
-        const FLOCK_CELL = 5;
-        if (!this._flockGrid) {
-            this._flockGrid = new Map();
-            this._flockBucketPool = [];
+        // DIE VERBÄNDE dieses Takts (S6): die Glieder je Verband (der Wurf bindet sie, `_kreaturVerbinden`) — EINE Liste je
+        // Takt, die Listen im Pool (keine Allokation je Frame). Sie ersetzt das Herden-Gitter (5-m-Zellen der Kohäsion je
+        // Gattung): der Verband reicht, so weit seine Glieder stehen, und kennt kein fremdes Tier.
+        if (!this._verbaende) {
+            this._verbaende = new Map();
+            this._verbandPool = [];
         }
-        const flockGrid = this._flockGrid;
-        const flockBucketPool = this._flockBucketPool;
-        // Buckets in den Pool zurück, Map leeren — beides allokationsfrei.
-        for (const bucket of flockGrid.values()) {
-            bucket.length = 0;
-            flockBucketPool.push(bucket);
+        const verbaende = this._verbaende;
+        for (const glieder of verbaende.values()) {
+            glieder.length = 0;
+            this._verbandPool.push(glieder);
         }
-        flockGrid.clear();
-        // Grid auffüllen — nur happy-Kreaturen, weil das die einzigen Flocking-
-        // Teilnehmer sind (siehe Filter im Flocking-Loop weiter unten).
-        for (let j = 0; j < this.state.creatures.length; j++) {
-            if (this.state.creatureEmotions[j] !== "happy") continue;
-            const c = this.state.creatures[j];
-            const gcx = Math.floor(c.position.x / FLOCK_CELL);
-            const gcz = Math.floor(c.position.z / FLOCK_CELL);
-            const key = gcx * 100000 + gcz; // numerischer Key für Map-Speed
-            let bucket = flockGrid.get(key);
-            if (!bucket) {
-                bucket = flockBucketPool.pop() || [];
-                flockGrid.set(key, bucket);
-            }
-            bucket.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
+        verbaende.clear();
+        for (const c of this.state.creatures) {
+            const vb = c && c.userData && c.userData.verband;
+            if (vb == null) continue;
+            let glieder = verbaende.get(vb);
+            if (!glieder) verbaende.set(vb, (glieder = this._verbandPool.pop() || []));
+            glieder.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
         }
         const lifeTrickleNow = performance.now() / 1000;
         // Frame-Budget für volle `_voxelSurfaceY`-Scans in `_creatureGroundY`, egal wie viele Kreaturen;
@@ -2902,7 +2960,9 @@ class AnazhRealm_kreatur_verhalten {
                     const NAT = VG.furcht;
                     // JAGD: ein wildes, unverängstigtes Wesen pirscht ZUR Beute (schneller als Schlendern) und beißt in
                     // Reichweite. _creatureHuntDrive prüft fleeThreshold selbst → getroffen fällt es in den Flucht-Zweig.
+                    let jagt = false;
                     if (this._creatureHuntDrive(creature, wariness)) {
+                        jagt = true;
                         // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
                         // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
                         // wählte es je — jetzt pirscht der Jäger sichtbar).
@@ -2948,51 +3008,13 @@ class AnazhRealm_kreatur_verhalten {
                         const tpz = playerPos.z - creature.position.z;
                         const rest = Math.hypot(tpx, tpz) - this._kreaturRaum(creature, hueftL) - this._spielerRaum();
                         this._kreaturZiel(direction, tpx, tpz, rest, speed, creature);
-                        // DIE HERDEN-FORM (Q11, tetrapoda herdeZug): Kohäsion nur zu Nachbarn DERSELBEN Gattung, für jedes
-                        // Tier — nie am Blick des Spielers (R-D5: nur im Frustum, artfremd). Kandidaten aus dem Gitter (die 9
-                        // Zellen um das Tier), die Zahlen VERHALTEN.herde, die Kosten trägt aiDiv.
-                        const nb = this._herdeNachbarn || (this._herdeNachbarn = []);
-                        const pool = this._herdePool || (this._herdePool = []);
-                        nb.length = 0;
-                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
-                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
-                        for (let dgx = -1; dgx <= 1; dgx++) {
-                            for (let dgz = -1; dgz <= 1; dgz++) {
-                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
-                                if (!bucket) continue;
-                                for (let bi = 0; bi < bucket.length; bi++) {
-                                    const o = bucket[bi];
-                                    if (o === creature) continue;
-                                    const e =
-                                        pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null, raum: 0 });
-                                    e.x = o.position.x;
-                                    e.z = o.position.z;
-                                    e.gattung = this._kreaturGattung(o); // die EINE Gattungs-Quelle
-                                    e.raum = this._kreaturRaum(o); // der persönliche Raum des Nachbarn
-                                    nb.push(e);
-                                }
-                            }
-                        }
-                        if (nb.length) {
-                            // im Paar-Raum zieht niemand (Welle LF), der Zug misst im Tempo des Tiers
-                            const zug = AnazhRealm._steuerGesetz().herdeZug(
-                                creature.position.x,
-                                creature.position.z,
-                                this._kreaturGattung(creature),
-                                nb,
-                                VG.herde,
-                                this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 }),
-                                this._kreaturRaum(creature, hueftL)
-                            );
-                            direction.x += zug.x * speed;
-                            direction.z += zug.z * speed;
-                        }
                     } else {
                         // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
                         // als Quellen); sonst neutrales Wandern. Der Beute-Strike läuft separat.
                         const scentDir = this._creatureScentHuntDir(creature, wariness);
                         const beute = scentDir && creature.userData._beute;
                         if (beute) {
+                            jagt = true;
                             // DIE JAGD (Welle LF): die gewitterte Beute ist das Ziel desselben EINEN Wegs wie der Spieler.
                             const bs = beute.userData._steuer;
                             const bv = bs && beute.userData._motionZustand === "flucht" ? bs.v : 0;
@@ -3017,6 +3039,10 @@ class AnazhRealm_kreatur_verhalten {
                             this._creatureCharacterWander(creature, direction, speed);
                         }
                     }
+                    // DER VERBAND (S6, tetrapoda verbandZug): EIN Zug für jeden wilden Zweig — Wandern, Flucht, Neugier — auf
+                    // den Wunsch, den der Zweig schrieb: die Glieder richten sich aus und halten zusammen. Nur die Jagd folgt
+                    // ihrem Ring (rudelPlatz). Vorher zog die Herden-Form allein im Neugier-Zweig, und nur Nachbarn im Fenster.
+                    if (!jagt) this._kreaturVerbandZug(creature, direction, speed, hueftL);
                 }
                 // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
                 // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.
@@ -3388,8 +3414,9 @@ AnazhRealm._verhaltenGesetz = function () {
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
 };
-// DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo · herdeZug, Welle L): der EINE
-// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form; dazu das Temperament
+// DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo, Welle L; verbandZug ·
+// rudelPlatz, S6): der EINE Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L), der Verband
+// und der Platz im Rudel; dazu das Temperament
 // der Gattung (temperamentDerGattung, Welle LF). Fail-closed.
 AnazhRealm._steuerGesetz = function () {
     if (AnazhRealm._steuerGesetzMemo) return AnazhRealm._steuerGesetzMemo;
@@ -3403,7 +3430,11 @@ AnazhRealm._steuerGesetz = function () {
         typeof k.steuerSchritt === "function" &&
         typeof k.tempoEinheit === "function" &&
         typeof k.ankunftTempo === "function" &&
-        typeof k.herdeZug === "function" &&
+        typeof k.verbandZug === "function" &&
+        typeof k.rudelPlatz === "function" &&
+        k.VERBAND_GESETZ &&
+        Number.isFinite(k.VERBAND_GESETZ.ausrichtung) &&
+        Number.isFinite(k.VERBAND_GESETZ.leitGewicht) &&
         typeof k.temperamentDerGattung === "function" &&
         Number.isFinite(S.sprint) &&
         typeof k.sprintTempo === "function"

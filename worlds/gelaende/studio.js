@@ -116,7 +116,9 @@
 #gelaende-studio .abweichung{font-size:10px;line-height:1.45;color:#ffb4a8;border-left:2px solid #ff6e5a;padding:3px 0 3px 7px;margin:5px 0}
 #gelaende-studio .abweichung:empty{display:none}
 #gelaende-studio .hinweis{font-size:9.5px;color:var(--mut);margin-top:6px;line-height:1.45}
-body.studio-modus-an #console{display:none!important}
+body.gelaende-studio-an #fadenkreuz,body.gelaende-studio-an #stats-hud,body.gelaende-studio-an #hotbar,
+body.gelaende-studio-an #dialogue-box,body.gelaende-studio-an #console,body.gelaende-studio-an #topbar,
+body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!important}
 `;
 
     const st = {
@@ -472,7 +474,7 @@ body.studio-modus-an #console{display:none!important}
         document.head.appendChild(huelleCss);
         style.textContent = CSS;
         document.head.appendChild(style);
-        st.realm.studioModus("gelaende"); // das Spiel-HUD und das Rad der Welt gehören dem Studio (die Hülle blendet aus)
+        document.body.classList.add("gelaende-studio-an");
         const p = document.createElement("section");
         p.id = "gelaende-studio";
         p.setAttribute("aria-label", "Gelände-Studio");

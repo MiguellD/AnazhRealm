@@ -1181,14 +1181,6 @@ class AnazhRealm {
     kameraFuehren(fn) {
         this._kameraFuehrung = typeof fn === "function" ? fn : null;
     }
-    // DER OFFENE STUDIO-MODUS (S1, worlds/<id>/studio.js): solange einer offen ist, gehört ihm das Spiel-HUD (die Hülle blendet
-    // Fadenkreuz · Hotbar · Werte aus, `body.studio-modus-an`), das Mausrad (der Hotbar-Hörer der Welt gibt es ab) und das
-    // Wort des Chats (`_chatTryPortalRoute` → `__studioModi[id].wort`). null schließt ihn.
-    studioModus(id) {
-        this._studioModus = typeof id === "string" && id ? id : null;
-        if (typeof document !== "undefined" && document.body)
-            document.body.classList.toggle("studio-modus-an", !!this._studioModus);
-    }
 
     setCameraMode(mode) {
         const next = mode === "third" ? "third" : "first";
@@ -1798,7 +1790,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.19";
+AnazhRealm.VERSION = "18.546.22";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

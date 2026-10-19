@@ -221,6 +221,12 @@ class AnazhRealm_kreatur_leben {
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
+            // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
+            verband: ud.verband != null ? String(ud.verband) : undefined,
+            revier:
+                ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
+                    ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z }
+                    : undefined,
             // Q12 (Kritik 06.10. §2.5): die Wunde und die Blickrichtung reisen mit — ein verwundeter Hirsch kehrte geheilt
             // zurück (hp 97,3 → 115,4), jeder Leib blickte nach dem Reload nach +z. DIE WUNDE IST EIN ANTEIL DES LEBENS (Welle
             // LF kampf Nachbesserung 2): wie beim Wachsen (_kreaturGroesseSetzen) reist hp/hpMax — das Leben selbst rechnet der Leib
@@ -278,6 +284,15 @@ class AnazhRealm_kreatur_leben {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
+        // S6 — der Verband kehrt gebunden wieder: seine alte Kennung zeigt auf die netId seines ersten Wiedergekehrten (die
+        // Wiederkehr vergibt neue netIds; eine alte Kennung träfe sonst ein fremdes, neu geborenes Leittier), das Revier zurück
+        if (snap.verband != null) {
+            const wk = this._verbandWiederkehr || (this._verbandWiederkehr = new Map());
+            if (!wk.has(snap.verband)) wk.set(snap.verband, c.userData.netId);
+            c.userData.verband = wk.get(snap.verband);
+        }
+        if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
+            c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -1604,7 +1619,20 @@ class AnazhRealm_kreatur_leben {
             geboren.push(c);
         }
         if (symphonie) this.state.symphony.enabled = true;
+        this._kreaturVerbinden(geboren);
         return geboren;
+    }
+
+    // DER VERBAND (S6): der Wurf bindet seine Geborenen — das Rudel, die Herde — zu EINEM Verband, ein Datum am Leib
+    // (`userData.verband` = die netId des Erstgeborenen, des Leittiers; nie ein Tag, nie die Gattung — Lehre 8), und ihr
+    // Revier ist der gemeinsame Anker der Leine (`wanderAnchor`, der Wurf-Ort). Der Verband zieht seine Glieder zusammen
+    // und richtet sie aus (tetrapoda verbandZug), alarmiert sie gemeinsam (`_kreaturVerbandAlarm`) und jagt als Rudel
+    // (rudelPlatz); ein fremder Verband derselben Art verschmilzt nie mit ihm. Vorher stellte der Wurf die Tiere nur
+    // nebeneinander — jedes wanderte und floh für sich (Linse herde 18.10.: auf der Flucht 0,186 der Glieder beisammen).
+    _kreaturVerbinden(glieder) {
+        if (!glieder || !glieder.length) return;
+        const vb = glieder[0].userData.netId;
+        for (const c of glieder) c.userData.verband = vb;
     }
 
     // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste

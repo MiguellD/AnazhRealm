@@ -133,5 +133,6 @@ module.exports = {
     linsenWebglArgs,
     zeitZeile,
     adapterZeile,
+    istHardwareAdapter,
     LINUX_SWAPCHAIN,
 };

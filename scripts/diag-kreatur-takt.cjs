@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-// diag-kreatur-takt.cjs — DIE KREATUR-LINSE der Welle L (npm run gate:kreatur-takt). Befund der Leben-Prüfung 06.10.
-// (sichtbar gespielt auf der Radeon): die Tiere laufen im Krebsgang (niemand schreibt rotation.y), hüpfen in 21–26 %
-// ihrer Frames (ein Würfel je Frame, feste 0,05 s), clearCreatures lässt jedes zweite Tier als Geist stehen, die Geburt
-// steht 12–25 m vor dem Spieler, die Beute flieht nie vor dem Jäger, die Witterungs-Jagd läuft auf vier Achsen, und
-// jedes Tier im Bild zieht je Frame einen Feld-Strahl (29–37 % der CPU). Keine alte Linse sah es: sie setzten die Gier
-// von Hand (diag-tier-gang) oder liefen jenseits des Strahls (diag-tier-separation).
-//
+// diag-kreatur-takt.cjs — DIE KREATUR-LINSE (npm run gate:kreatur-takt): das Leben der Tiere am ECHTEN Takt.
 // Die Proben wohnen in scripts/lib/kreatur-proben.cjs und rufen den ECHTEN Kreatur-Takt (updateCreatures); dieselbe
 // Seiten-Funktion läuft hier headless (Null-Renderer, Produktions-Boot) und mit `--werkbank <port>` im sichtbaren
 // Fenster der echten GPU (der Spiel-Loop ruht je Probe).
@@ -43,7 +37,6 @@ const RAMPE = (() => {
 // DAS GATE wächst je geschnittener Klasse: eine Probe steht hier, sobald ihr Schnitt im Stamm steht.
 const GATE_PROBEN = PROBEN; // jede Probe steht im Gate: jede Klasse der Familie ist geschnitten
 const gewaehlt = opt("--proben", null) ? opt("--proben").split(",") : argv.includes("--alle") ? PROBEN : GATE_PROBEN;
-
 
 function rufeWerkbank(code) {
     return new Promise((res, rej) => {

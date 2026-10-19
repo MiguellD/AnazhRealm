@@ -39,7 +39,7 @@ Spiegel steht im Stand von `CLAUDE.md`). Eine Probe sinkt nur mit Konsum-Urteil,
 ## §1 · Das Fischer-Prinzip (über allem — „Regel #0" GESTRICHEN V18.356)
 
 Ich MESSE (Gate · Diag · hardware-unabhängiger Proxy · `gpu-bank` auf echter GPU), ich SEHE (Beweisbilder aus dem Ausgabe-Pfad;
-Bild-Urteile auf echter Hardware, swiftshader verbirgt Präzisionsfehler — CLAUDE.md Lehre 17), ich URTEILE, ich LIEFERE — das Neue
+Bild-Urteile auf echter Hardware, swiftshader verbirgt Präzisionsfehler — Lehre 17 im Skill `.claude/skills/anazh-lehren/SKILL.md`), ich URTEILE, ich LIEFERE — das Neue
 wird DER Pfad (default-an), kein Hedge. Der Schöpfer wertet das ERGEBNIS und setzt Scope und Ship; er ist kein Merge-Tor für Pixel
 (BETRIEBSGESETZ 4) und NIE die Ausrede, etwas halb/AUS zu lassen. MECHANIK braucht eine ZAHL, LOOK braucht ein BILD (eine
 headless-Zahl als Look-Beweis kann lügen).
@@ -111,7 +111,7 @@ der Sozial-Bogen schreibt sie).
 
 ## §5 · Die operative Disziplin
 
-Die tragenden Lehren leben in `CLAUDE.md` (auto-geladen). Zusätzlich hier: **Read-as-stranger
+Die tragenden Lehren leben im Skill `.claude/skills/anazh-lehren/SKILL.md` (Verweis in `CLAUDE.md`). Zusätzlich hier: **Read-as-stranger
 vor jeder Präsentation** (wirklich gemessen oder behauptet?) · **Merge-Rhythmus** = ein
 validierter Bogen = ein Merge, der Tisch bleibt schlank · **eine verworfene Architektur nicht
 wieder anfassen** (ein Revert ist ein Signal, dass die Wurzel woanders liegt).
@@ -123,4 +123,4 @@ thematischer Commit — **die Commit-Message IST der Chronik-Eintrag** (git log 
 PATCH ist ein Fix INNERHALB einer Welle — nie eine Konstante, nie ein Stempel (September 2026:
 586 Patch-Versionen für Lab-Literal-Hebungen in 2 Sammel-Commits = die Narbe). Alle Träger
 setzt EIN Befehl: `npm run bump -- x.y.z` (`--check` meldet Drift).
-Eine dauerhafte Lehre → eine Zeile in `CLAUDE.md`, nie Epen.
+Eine dauerhafte Lehre → eine Zeile im Skill der Lehren, nie Epen.

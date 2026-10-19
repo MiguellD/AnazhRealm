@@ -288,7 +288,9 @@ const show={spine:false,section:true,lehren:true,mass:false,steel:true};
 let gSpine,gSection,gLehren,gMass,gWeapon,gBladeMesh;
 const weapon=new THREE.Group();weapon.position.y=0.30;scene.add(weapon);
 
-function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose();
+// Ein Sprite besitzt nur Stoff und Bild — seine Geometrie ist das EINE Quad, das three allen Sprites teilt (Garage 19.10.: r184
+// behält den zerstörten Puffer am InterleavedBuffer, jedes spätere Schild zeichnete aus ihm).
+function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry&&!o.isSprite)o.geometry.dispose();
   if(o.isSprite&&o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
 
 function rebuild(){

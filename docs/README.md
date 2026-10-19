@@ -11,7 +11,8 @@
 
 | Dokument                      | Zweck                                                                                                          |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md`                   | **AUTO-GELADEN** — die GOLDENE DEFINITION, das BETRIEBSGESETZ, der Stand, die Lehren, die Architektur-Karte.   |
+| `CLAUDE.md`                   | **AUTO-GELADEN** — die GOLDENE DEFINITION, das BETRIEBSGESETZ, der Stand und die Verweise auf die Karten.       |
+| `.claude/skills/anazh-lehren/SKILL.md` | Der Skill der Lehren 1–27 (die Anker des Codes), die Architektur, die Quelle je Domäne, die Workflows.  |
 | `README.md`                   | Die Tür für Fremde — was AnazhRealm ist, Schnellstart, der eigene Leuchtturm (Self-Host), die Prüf-Befehle.    |
 | `docs/README.md`              | Diese Karte — jedes Dokument des Baums mit einer Zeile Zweck.                                                  |
 | `docs/PFLICHT-OFFEN.md`       | **DIE FROZEN-LISTE** — die EINE Offen-Wahrheit (max 5, vom Schöpfer gesetzt; `gate:betriebsgesetz` bewacht sie). |

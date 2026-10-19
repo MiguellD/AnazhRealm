@@ -11,12 +11,12 @@
 //       three-Objekt, das der Renderer gerade zeichnet (`backend.draw` → `renderObject.object`), im Protokoll.
 //
 // Gebrauch: `page.evaluateOnNewDocument(GPU_FEHLER_INSTALL)` vor jedem Seiten-Skript; nach dem Renderer-Init
-// `page.evaluate(GPU_FEHLER_OBJEKT)`; lesen: `window.__gpuFehler` ({device: […], draws: […]}).
+// `page.evaluate(GPU_FEHLER_OBJEKT)`; lesen: `window.__gpuFehler` ({device: […], draws: […], geraete: [GPUDevice]}).
 "use strict";
 
 function gpuFehlerAbgriff() {
     if (typeof GPUDevice === "undefined" || window.__gpuFehler) return;
-    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null });
+    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [] });
     const merke = (liste, e) => {
         if (liste.length < 200) liste.push(e);
     };
@@ -24,6 +24,7 @@ function gpuFehlerAbgriff() {
     const rd = A.requestDevice;
     A.requestDevice = async function (d) {
         const dev = await rd.call(this, d);
+        F.geraete.push(dev); // wer urteilt, wartet auf die Arbeit jedes Geräts (`queue.onSubmittedWorkDone`) — und mit ihr auf ihre Prüfung
         try {
             dev.addEventListener("uncapturederror", (ev) =>
                 merke(F.device, {

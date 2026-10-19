@@ -1743,7 +1743,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const v849Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // Die Herde (Kern herdeZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
+        // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).

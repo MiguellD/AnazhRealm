@@ -568,8 +568,8 @@ matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   Werte seiner Substanz). Der Snapshot eines Tiers trägt seine Wunde als
   `hpAnteil` (hp/hpMax); ein Stand mit absolutem `hp` (vor der Nachbesserung 2 der Welle LF kampf) gilt gegen
   das Leben vor dem Massen-Gesetz.
-- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
-  `herdeZug` (Welle L, tetrapoda-core, Namensraum-Export, rein
+- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` (Welle L) ·
+  `VERBAND_GESETZ` + `verbandZug` · `rudelPlatz` (S6; tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
   mit):** der EINE Steuer-Schritt je Tier und Takt. `STEUER_GESETZ { tempo
 wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
@@ -581,13 +581,21 @@ wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
   folgt mit Anfahr- (beschl·g) und Brems-Grenze (brems·g) ·
   `ankunftTempo(rest, vMax)` = min(vMax, √(2·brems·g·rest)) — das
   Ankunfts-Gesetz (wer `rest` m vor seinem Halt steht, wünscht nur das
-  Tempo, aus dem er dort steht) · `herdeZug(x, z, gattung, nachbarn, H,
-out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
-  derselben Gattung im Fenster `H = VERHALTEN.herde`, nie am Blick; das
-  Herden-Verhalten ist nach v1.0). Rein, THREE-frei. Leser:
+  Tempo, aus dem er dort steht) · `verbandZug(x, z, vx, vz, tempo, raum,
+  glieder, H, out?)` → `{ x, z, n }` — DER VERBAND (S6: der Wurf bindet Rudel
+  und Herde, `userData.verband`; die Glieder wählt der Wirt nach dem Verband,
+  nie nach Gattung oder Tag): der Wunsch neigt sich um
+  `VERBAND_GESETZ.ausrichtung` zum Mittel der Glieder-Wünsche, jenseits des
+  Paar-Raums zieht das Glieder-Mittel bis `H.gewicht` × tempo (H =
+  VERHALTEN.herde), das Leittier wiegt `leitGewicht`-fach; `VERBAND_GESETZ`
+  lebt außerhalb von VERHALTEN (PRESETS und der v7-Fingerabdruck bleiben) ·
+  `rudelPlatz(eigen, winkel, out?)` → `{ platz, n, umstellt }` — der Platz
+  des Jägers im Rudel auf dem Ring um das Ziel. Rein, THREE-frei. Leser:
   `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
   `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
-  (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
+  (Ankunft), `_kreaturVerbandZug` (jeder wilde Zweig außer der Jagd) und
+  `_kreaturJagdZug` (das Rudel); Linse `gate:kreatur-takt` (gier · herde ·
+  abstand · rudel).
 - **`GANG_GESETZ.hubForm` (Welle LF, tetrapoda-core, VERTRAGS-AKT an
   `gangFuss` — die Ausgabe `hub` ändert sich für jede Phase im Schwung außer
   dem Scheitel; PRESETS/PARAMS byte-gleich, der v7-Fingerabdruck wandert
@@ -628,22 +636,11 @@ angewandt:
 - **G4.4 kein Spiegel:** Leser lesen die angekommenen Daten LIVE (Referenz),
   kein Hardcode-Duplikat in der Welt — bewiesen durch den Mutation-wins-Test.
 
-## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV, nur für die Studios auf r128
+## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV
 
-**Der Weg ist EINE Engine (S1):** ein Studio wird ein Modus der Welt-Engine
-(`index.html?studio=<id>`, Panel + Kamera über `AnazhHuelle`, die Bühne ist die
-Welt: r184, Welt-Licht, Welt-Boden, ihre Tonkurve) — dann gibt es keine zweite
-Engine und nichts zu übersetzen. Die Wand ist `scripts/diag-studio-huelle.cjs`
-H6 (Ratsche `EINE_ENGINE`). Auf der EINEN Engine stehen: **gelaende** und
-**garage** (18.10., worlds/garage/studio.js: der Wagen ist ein Werk der Welt —
-`spawnArchitecture("fahrzeug_<gattung>")` mit den Reglern als Prägung, dieselbe
-Foundry-Stufenkette; die Probefahrt ist der Ritt der Welt mit der EINEN
-`chaseKamera` des Kerns; die alte r128-Shell mit eigenem WebGLRenderer und
-ACES 1,04 fiel). Für sie gilt §4b nicht. Die übrigen Studios (fachwerk ·
-portale · schmiede · koerperstudio · tetrapoda · terrain) sind bis zu ihrem
-Schnitt in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert r184
-(physisch, farb-verwaltet). Wo AnazhRealm DEREN Inhalt selbst rendert (nicht
-das Portal — dort läuft das Original), gelten DREI dokumentierte
+Die Studios sind in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert
+r184 (physisch, farb-verwaltet). Wo AnazhRealm Studio-INHALT selbst rendert
+(nicht das Portal — dort läuft das Original), gelten DREI dokumentierte
 Übersetzungs-Regeln (three.js-Migrationspfad, KEINE Tuning-Knöpfe):
 
 - **Ü1 — LICHT-INTENSITÄTEN × π** (r155, useLegacyLights→physisch: Legacy

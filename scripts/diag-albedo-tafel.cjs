@@ -105,20 +105,20 @@ async function messeLabor({ echt, nur, tafel }) {
             page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0]));
             await page.goto(`http://127.0.0.1:${PORT}/${S.pfad}`, { waitUntil: "load", timeout: 120000 });
             await page.evaluate(AT.LABOR_INSTALL);
-            await page.waitForFunction(
-                (S) => {
-                    const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
-                    const w = g(S.wurzel);
-                    let n = 0;
-                    if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
-                    return n > 0 && !!g(S.renderer);
-                },
-                { timeout: 180000, polling: 300 },
-                S
-            );
+            // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
+            const bereit = (S) => {
+                const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
+                const w = g(S.wurzel);
+                let n = 0;
+                if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
+                return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
+            };
+            for (const t0 = Date.now(); !(await page.evaluate(bereit, S)); await new Promise((r) => setTimeout(r, 300)))
+                if (Date.now() - t0 > 180000) throw new Error(`${sid}: die Seite steht nach 180 s nicht bereit`);
             if (!out.geraet)
                 out.geraet = await page.evaluate((S) => {
                     const R = new Function(`return ${S.renderer};`)();
+                    if (R.isWebGPURenderer) return "WebGPU " + (R.backend.device ? R.backend.device.adapterInfo.architecture : "WebGL2-Ersatz");
                     const gl = R.getContext();
                     const e = gl.getExtension("WEBGL_debug_renderer_info");
                     return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
@@ -315,8 +315,8 @@ async function selbsttest() {
     t("eine stumme Labor-Zeile → ROT `stumm`", hatRot(AT.tafelUrteil(T0, m4), "stumm"));
     // S5 — die Karte: k·L 0,62 (der Belichtungs-Bias des Labors) über der Ratsche ROT.
     const m5 = messungZumTest(T0);
-    m5.karten.schmiede.kL = 0.62;
-    t("Karte schmiede k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
+    m5.karten.garage.kL = 0.62;
+    t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -542,7 +542,7 @@ async function neuMessen(t, ids) {
     const ld = path.join(ordner, "labor.json");
     fs.writeFileSync(ld, JSON.stringify(labor, null, 1));
     const u = AT.tafelUrteil(t, {
-        labor: AT.laborDerWelt(t, labor.labor, welt.welt),
+        labor: labor.labor,
         karten: labor.karten,
         welt: welt.welt,
         eichung: { welt: welt.eichung, labor: labor.eichung.labor },
@@ -601,7 +601,7 @@ async function main() {
         const welt = JSON.parse(fs.readFileSync(path.resolve(argv[i + 1]), "utf8"));
         const labor = JSON.parse(fs.readFileSync(path.resolve(argv[i + 2]), "utf8"));
         const m = {
-            labor: AT.laborDerWelt(t, labor.labor, welt.welt),
+            labor: labor.labor,
             karten: labor.karten,
             welt: welt.welt,
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },

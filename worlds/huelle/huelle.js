@@ -18,7 +18,8 @@
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
  *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
- *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten);
+ *                              ihrem eigenen Renderer, EINE CPU-Faltung für jede Engine — das Labor liest es selbst
+ *                              (textur), die Brücke exportiert es (daten; unter r184 WebGPU ein Versprechen);
  *                              panoramaBild(maler) dasselbe für die flache Welt (sie malt ihr Equirekt selbst)
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
@@ -619,8 +620,8 @@
     // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: die Würfe schreiben wie der Schirm (sRGB-Kodierung des Ziels
     // — Hintergrund und Nebel stehen in r128 in Bild-Werten, die Stoffe kodiert der Shader), die Faltung dekodiert; ohne
     // Tonabbildung (der Leser belichtet und tont selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene
-    // Membran), nah/fern, lesen (true: die Texel als Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } —
-    // rt.texture liest das Labor selbst.
+    // Membran), nah/fern, lesen (true: nur die Texel als Halbfloat-Puffer, der Welt-Export). Rückgabe { w, h, daten, textur } —
+    // die textur (dieselben Halbfloat-Texel) liest das Labor selbst; unter r184 WebGPU als Versprechen.
     var PANO_W = 512,
         PANO_H = 256;
     function halb(x) {
@@ -669,6 +670,7 @@
             [0, 0, -1, 0, 1, 0],
         ];
         var ziele = [],
+            roh = [],
             vor6 = [],
             rechts6 = [],
             hoch6 = [];
@@ -685,7 +687,7 @@
         try {
             for (var i = 0; i < 6; i++) {
                 var S = SEITEN[i];
-                var ziel = new T.WebGLRenderTarget(256, 256, {
+                var ziel = new (renderer.isWebGPURenderer ? T.RenderTarget : T.WebGLRenderTarget)(256, 256, {
                     type: T.HalfFloatType,
                     generateMipmaps: false,
                     minFilter: T.LinearFilter,
@@ -704,68 +706,106 @@
                 renderer.setRenderTarget(ziel);
                 renderer.render(scene, cam);
                 ziele.push(ziel);
+                if (!renderer.isWebGPURenderer) {
+                    var gl = renderer.getContext(),
+                        px = new Float32Array(256 * 256 * 4);
+                    gl.readPixels(0, 0, 256, 256, gl.RGBA, gl.FLOAT, px); // das gebundene Ziel, Zeile 0 unten
+                    roh.push(px);
+                }
             }
         } finally {
             verborgen.forEach(function (o, i) {
                 o.visible = sicht[i];
             });
         }
-        var rt = new T.WebGLRenderTarget(PANO_W, PANO_H, {
-            type: T.FloatType,
-            minFilter: T.LinearFilter,
-            magFilter: T.LinearFilter,
-            depthBuffer: false,
-        });
-        var mat = new T.ShaderMaterial({
-            uniforms: {
-                uSeite: {
-                    value: ziele.map(function (z) {
-                        return z.texture;
-                    }),
-                },
-                uVor: { value: vor6 },
-                uRechts: { value: rechts6 },
-                uHoch: { value: hoch6 },
-                uDreh: { value: drehung },
-                uKodiert: { value: kodiert ? 1 : 0 },
-            },
-            vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
-            fragmentShader:
-                "uniform sampler2D uSeite[6];uniform vec3 uVor[6],uRechts[6],uHoch[6];uniform float uDreh,uKodiert;varying vec2 vUv;" +
-                "vec3 seite(sampler2D t,vec3 d,vec3 f,vec3 r,vec3 h){float z=dot(d,f);" +
-                "return texture2D(t,vec2(dot(d,r),dot(d,h))/z*0.5+0.5).rgb;}" +
-                "void main(){" +
-                "float az=(vUv.x-0.5)*6.28318530718+uDreh;float el=(vUv.y-0.5)*3.14159265359;" +
-                "vec3 d=vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az));vec3 a=abs(d);vec3 c;" +
-                "if(a.x>=a.y&&a.x>=a.z)c=d.x>0.0?seite(uSeite[0],d,uVor[0],uRechts[0],uHoch[0]):seite(uSeite[1],d,uVor[1],uRechts[1],uHoch[1]);" +
-                "else if(a.y>=a.z)c=d.y>0.0?seite(uSeite[2],d,uVor[2],uRechts[2],uHoch[2]):seite(uSeite[3],d,uVor[3],uRechts[3],uHoch[3]);" +
-                "else c=d.z>0.0?seite(uSeite[4],d,uVor[4],uRechts[4],uHoch[4]):seite(uSeite[5],d,uVor[5],uRechts[5],uHoch[5]);" +
-                "vec3 l=mix(c/12.92,pow((max(c,0.0)+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));" +
-                "gl_FragColor=vec4(mix(c,l,uKodiert),1.0);}",
-            depthTest: false,
-            depthWrite: false,
-            toneMapped: false,
-        });
-        var quad = new T.Mesh(new T.PlaneGeometry(2, 2), mat);
-        quad.frustumCulled = false;
-        var buehne = new T.Scene();
-        buehne.add(quad);
-        renderer.setRenderTarget(rt);
-        renderer.render(buehne, new T.Camera());
-        var daten = null;
-        if (opt.lesen) {
-            var f = new Float32Array(PANO_W * PANO_H * 4);
-            renderer.readRenderTargetPixels(rt, 0, 0, PANO_W, PANO_H, f);
-            daten = halbPuffer(f);
-        }
         renderer.setRenderTarget(alt);
         renderer.toneMapping = tm;
-        quad.geometry.dispose();
-        mat.dispose();
-        ziele.forEach(function (z) {
-            z.dispose();
+        // DIE EINE FALTUNG (beide Engines, die Ratsche H6 läuft auf ihr aus): die sechs Würfe kommen gelesen zurück — r184
+        // WebGPU als Versprechen (Halbfloat; Zeile 0 OBEN auf dem WebGPU-Backend, UNTEN auf seinem WebGL2-Ersatz), r128 sofort
+        // (RGBA/FLOAT, die Lese-Art, die WebGL2 jedem Float-Ziel erlaubt) — und falten sich auf der CPU: je Richtung die Seite mit
+        // dem größten Anteil, bilinear an geklemmter Kante, die kodierten Bild-Werte erst danach ins Lineare.
+        var N = 256,
+            falten = function (seiten) {
+                ziele.forEach(function (z) {
+                    z.dispose();
+                });
+                var f = new Float32Array(PANO_W * PANO_H * 4),
+                    c = [0, 0, 0],
+                    zahl = function (v) {
+                        return [v.x, v.y, v.z];
+                    },
+                    F = vor6.map(zahl),
+                    R = rechts6.map(zahl),
+                    H = hoch6.map(zahl),
+                    cosA = [],
+                    sinA = [];
+                for (var i = 0; i < PANO_W; i++) {
+                    var az = ((i + 0.5) / PANO_W - 0.5) * 2 * Math.PI + drehung;
+                    cosA.push(Math.cos(az));
+                    sinA.push(Math.sin(az));
+                }
+                for (var j = 0; j < PANO_H; j++) {
+                    var el = ((j + 0.5) / PANO_H - 0.5) * Math.PI,
+                        ce = Math.cos(el),
+                        dy = Math.sin(el),
+                        ay = Math.abs(dy);
+                    for (i = 0; i < PANO_W; i++) {
+                        var dx = ce * cosA[i],
+                            dz = ce * sinA[i],
+                            ax = Math.abs(dx),
+                            azz = Math.abs(dz);
+                        var s = ax >= ay && ax >= azz ? (dx > 0 ? 0 : 1) : ay >= azz ? (dy > 0 ? 2 : 3) : dz > 0 ? 4 : 5;
+                        var fv = F[s],
+                            rs = R[s],
+                            hs = H[s],
+                            z = dx * fv[0] + dy * fv[1] + dz * fv[2],
+                            u = (((dx * rs[0] + dy * rs[1] + dz * rs[2]) / z) * 0.5 + 0.5) * N - 0.5,
+                            v = (((dx * hs[0] + dy * hs[1] + dz * hs[2]) / z) * 0.5 + 0.5) * N - 0.5;
+                        var x0 = Math.floor(u),
+                            y0 = Math.floor(v),
+                            fx = u - x0,
+                            fy = v - y0,
+                            xa = Math.max(0, Math.min(N - 1, x0)) * 4,
+                            xb = Math.max(0, Math.min(N - 1, x0 + 1)) * 4,
+                            ya = Math.max(0, Math.min(N - 1, y0)) * N * 4,
+                            yb = Math.max(0, Math.min(N - 1, y0 + 1)) * N * 4,
+                            q = seiten[s],
+                            o = (j * PANO_W + i) * 4;
+                        for (var k = 0; k < 3; k++) {
+                            c[k] =
+                                (q[ya + xa + k] * (1 - fx) + q[ya + xb + k] * fx) * (1 - fy) +
+                                (q[yb + xa + k] * (1 - fx) + q[yb + xb + k] * fx) * fy;
+                            f[o + k] = !kodiert ? c[k] : c[k] < 0.04045 ? c[k] / 12.92 : Math.pow((c[k] + 0.055) / 1.055, 2.4);
+                        }
+                        f[o + 3] = 1;
+                    }
+                }
+                var daten = halbPuffer(f),
+                    textur = null;
+                if (!opt.lesen) {
+                    // das Labor liest dieselben Texel, die der Export trägt (Halbfloat, Zeile 0 unten, linear gefiltert)
+                    textur = new T.DataTexture(daten, PANO_W, PANO_H, T.RGBAFormat, T.HalfFloatType);
+                    textur.minFilter = textur.magFilter = T.LinearFilter;
+                    textur.needsUpdate = true;
+                }
+                return { w: PANO_W, h: PANO_H, daten: daten, textur: textur };
+            };
+        if (!renderer.isWebGPURenderer) return falten(roh);
+        return Promise.all(
+            ziele.map(function (z) {
+                return renderer.readRenderTargetPixelsAsync(z, 0, 0, N, N);
+            })
+        ).then(function (halbe) {
+            var oben = !!(renderer.backend && renderer.backend.isWebGPUBackend),
+                Z = N * 4;
+            return falten(
+                halbe.map(function (r) {
+                    var q = new Float32Array(N * Z);
+                    for (var p = 0; p < N * Z; p++) q[(oben ? N - 1 - ((p / Z) | 0) : (p / Z) | 0) * Z + (p % Z)] = T.DataUtils.fromHalfFloat(r[p]);
+                    return q;
+                })
+            );
         });
-        return { w: PANO_W, h: PANO_H, rt: rt, daten: daten };
     }
     function halbPuffer(f) {
         var d = new Uint16Array(f.length);
@@ -796,7 +836,7 @@
                 f[z + 2] = lin(px[q + 2]);
                 f[z + 3] = 1;
             }
-        return { w: PANO_W, h: PANO_H, rt: null, daten: halbPuffer(f) };
+        return { w: PANO_W, h: PANO_H, daten: halbPuffer(f) };
     }
 
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
@@ -868,8 +908,10 @@
                                 verbergen: q.verbergen,
                                 lesen: true,
                             });
+                        return P; // r184 faltet als Versprechen (das gelesene Bild), r128 sofort
+                    })
+                    .then(function (P) {
                         if (!P) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
-                        if (P.rt) P.rt.dispose();
                         antwort.w = P.w;
                         antwort.h = P.h;
                         antwort.daten = P.daten;

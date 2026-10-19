@@ -223,6 +223,10 @@ class AnazhRealm_dirigent_takt {
                 // V18.355 — PHASE C: VOR der Kamera die Render-Interpolation anwenden (das Auge
                 // folgt der glatt interpolierten Spieler-Position, nicht der gestuften Sim-Position).
                 this._applyFixedInterpolation();
+                // DER RITT IM BILD VOR DER KAMERA (F1): der Wagen steht, wo der Reiter gezeichnet wird, BEVOR die Chase-Cam ihn
+                // liest — sie las die Sim-Lage des letzten Schritts (ohne Schritt die gezeichnete des Vor-Bilds) und blickte auf
+                // den interpolierten Reiter: Lage und Blick aus zwei Quellen derselben Lage.
+                this._tickMountedMovement(delta);
                 this._loopCamera(currentTime);
 
                 if (!ruht) {
@@ -702,6 +706,8 @@ class AnazhRealm_dirigent_takt {
     // Der EINE Sim-Schritt (deterministisch, fixed-dt). Physik LIEST die Velocity, die Bewegung
     // SETZT sie (dieselbe Ordnung wie der variable Loop: physics → movement → 1-Frame-Input-Latenz).
     _stepFixedSim(simTime, dt) {
+        // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
+        if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
         this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
@@ -739,14 +745,18 @@ class AnazhRealm_dirigent_takt {
                 st._fixedPrevPos = null; // Teleport → kein Interpolations-Schweif über den Sprung
             }
         }
-        // prev = die Sim-Position VOR diesem Frame (für die Render-Interpolation)
+        // prev = die Sim-Position VOR DEM LETZTEN SCHRITT (Fiedler: das Bild liegt zwischen den zwei jüngsten Zuständen, um den
+        // Rest des Akkumulators). Ein Bild ohne Schritt behält sein Paar und gleitet weiter; ein Teleport beginnt ohne Schweif.
+        // F1 (Befund des Schöpfers 17.10.: „Third ruckelt horizontal"): prev war die Lage VOR DEM BILD — mit zwei Schritten
+        // lag das Bild um zwei Schritte zurück, ohne Schritt sprang es auf den Zustand; der gezeichnete Wagen lief je Bild
+        // 0,56–2,3-mal so weit, wie die Physik ihn trug (Spielgang, Null-Renderer, p95 der Abweichung).
         if (!st._fixedPrevPos) st._fixedPrevPos = mesh.position.clone();
-        else st._fixedPrevPos.copy(mesh.position);
         // den Akkumulator füllen — der Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` in startEternalLoop, kein Spiral-of-Death)
         st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
         let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
         let steps = 0;
         while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
+            st._fixedPrevPos.copy(mesh.position);
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -769,10 +779,9 @@ class AnazhRealm_dirigent_takt {
         if (!mesh) return;
         if (!st._fixedSimPos) st._fixedSimPos = mesh.position.clone();
         else st._fixedSimPos.copy(mesh.position); // die authoritative Sim-Position (post-Rescue) festhalten
-        if (st._fixedPrevPos) {
-            const a = Math.max(0, Math.min(1, st._fixedAlpha || 0));
-            mesh.position.lerpVectors(st._fixedPrevPos, st._fixedSimPos, a);
-        }
+        const a = Math.max(0, Math.min(1, st._fixedAlpha || 0));
+        if (st._fixedPrevPos) mesh.position.lerpVectors(st._fixedPrevPos, st._fixedSimPos, a);
+        st._bildAlpha = a; // der Rest dieses Bilds — der Ritt im Bild liest ihn EINMAL (`_tickMountedMovement`)
         // V18.356 — merken, WAS wir mesh setzten → der nächste _loopFixedStep unterscheidet
         // „unangetastet" (Sim wiederherstellen) von „extern teleportiert" (übernehmen).
         if (!st._fixedRenderPos) st._fixedRenderPos = mesh.position.clone();
@@ -1059,7 +1068,8 @@ class AnazhRealm_dirigent_takt {
     // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
     // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
     // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
-    // Drossel-Takt, Gras 1 Chunk je Frame) schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
+    // Drossel-Takt, Gras 1 Chunk je Frame, die Ring-Rampe bis zum Existenz-Boden, drei Fern-Scheiben im Flug — gate:takt T9)
+    // schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
     // Welt fest: Radeon kalt rissen ALLE Frames das Budget, der Takt-Planer gab der Welt 2 ms je Frame, und jeder Leser
     // des ersten Weltbilds lief mit der Frame-Rate des Boots (4–8 Frames je Sekunde) statt mit der Arbeit. Jetzt trägt
     // jeder Lade-Frame LADE_TAKT_MS Arbeit, und keine Drossel des Spiels greift.
@@ -1088,7 +1098,7 @@ class AnazhRealm_dirigent_takt {
     // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
     // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
     // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
-    // Budget), Nachwuchs des Laubs — gate:takt T9 fährt jeden.
+    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden.
     _kappeOffen(n, kappe) {
         return n < kappe || performance.now() < this._ladeFrist();
     }

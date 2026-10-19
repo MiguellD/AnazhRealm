@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.19",
+    "version": "18.546.22",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -10,7 +10,7 @@
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
         "leuchtturm": "node scripts/leuchtturm.cjs",
-        "lint": "eslint stamm phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js worlds/gelaende worlds/garage",
+        "lint": "eslint stamm phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js worlds/gelaende",
         "lint:fix": "eslint --fix stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js save-server.js signaling-server.js",
@@ -155,7 +155,7 @@
         "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs",
         "gate:garage-labor": "node scripts/diag-garage-labor.cjs --selftest && node scripts/diag-garage-labor.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
-        "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs",
+        "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs && node scripts/diag-studio-huelle.cjs --engine",
         "gate:portal-konformanz": "node scripts/diag-portal-konformanz.cjs --selftest && node scripts/diag-portal-konformanz.cjs",
         "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",

@@ -498,6 +498,8 @@ const FORBIDDEN = [
         auch: ["tetrapoda-core.js"],
     },
     { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: ["tetrapoda-core.js"] },
+    { token: "_flockGrid", fiel: "S6 — die Glieder je Verband statt der Gattungs-Zellen (_verbaende)" },
     { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
     {
         token: "scentProbeM",
@@ -732,7 +734,7 @@ const FORBIDDEN = [
     {
         token: "sliderEls",
         fiel: "Studio-Hülle K41 — die Schieber hält der Generator (regler.eingabe / regler.sync)",
-        auch: ["worlds/garage/studio.js", "worlds/schmiede/schmiede.js"],
+        auch: ["worlds/garage/garage.js", "worlds/schmiede/schmiede.js"],
     },
     {
         token: "slMap",
@@ -771,7 +773,7 @@ const FORBIDDEN = [
     {
         token: "Spring.prototype.step",
         fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
-        auch: ["worlds/garage/studio.js"],
+        auch: ["worlds/garage/garage.js"],
     },
     { token: "zoneMulAt", fiel: "Welle L Q8 — die Zone trägt das Urteil (ARENA.zonen, tetrapoda trefferZone)" },
     { token: "zoneKindAt", fiel: "Welle L Q8" },
@@ -965,6 +967,7 @@ const FORBIDDEN = [
     },
     { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
     { token: "gpuScatter", fiel: "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter" },
+    { token: "uSeite", fiel: "18.10. — das Panorama faltet EINE CPU-Faltung je Engine, die GLSL-Faltung fiel", auch: ["worlds/huelle/huelle.js"] },
     // F6 — das additive Licht-Band der Host-Stoffe (Rim, Nacht-Boden, Mond-Rim, der sonnen-blinde Gegenlicht-Glow) leuchtete aus
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)

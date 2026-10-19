@@ -8,7 +8,8 @@
 // Kaskaden sehen ihn ganz, das Auge nie (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz).
 //
 // Die Linse fährt den ECHTEN Renderer (swiftshader, kienspan) an einer eigenen Bühne: der ECHTE Leib des Spielers
-// (`state.playerMesh`, der Mensch aus dem Ofen), die ECHTE Regel (`_applyEgoSicht` über setCameraMode und _loopCamera),
+// (`state.playerMesh`, der Mensch aus dem Ofen) in BEIDEN Stufen, die er trägt (je Lauf `grob` vor dem Bild, `fein` nach
+// dem Tausch, B5), die ECHTE Regel (`_applyEgoSicht` über setCameraMode und _loopCamera),
 // die ECHTE Haupt-Kamera am Auge (ihre Ebenen), ein Boden und ein Richtungslicht, dessen Schatten-Kamera die Ebenen des
 // Spiel-Lichts trägt (der Vertrag, den die Kaskaden klonen). Die Sonne steht seitlich hinter dem Leib (30° hoch, der
 // Schatten fällt 35° neben der Blickachse); der Blick geht 49° hinab. Je Schuss ein Render in ein Ziel (192×108):
@@ -23,9 +24,9 @@
 //   ZWILLING — ein Knoten, der nur in den Kaskaden lebt, liegt nach 1st → 3rd auf Ebene 0 (die Haupt-Kamera sähe ihn).
 //   ZURÜCK — 3rd gibt nicht jede Maske zurück, oder die Regel schaltet `visible`.
 //   VERTRAG — die Haupt-Kamera sieht SHADOW_TWIN_LAYER, oder eine Schatten-Kamera des Spiel-Lichts sieht sie nicht.
-//   BLIND — die 3rd-Person wirft auf der Bühne nicht (die Linse sähe nichts).
-// GEGENPROBE im selben Lauf: vier eingeschmuggelte Regeln fallen je beim Namen — die von main (`visible`), „Ebene 0
-// bleibt", „fremde Ebene", „das Gerät mit" und „Zwilling geweckt"; fällt eine nicht, ist die Linse blind.
+//   BLIND — die 3rd-Person wirft auf der Bühne nicht (die Linse sähe nichts). STUFE — die Bühne misst nicht ihren Leib.
+// GEGENPROBE im selben Lauf: sechs Täter fallen je beim Namen — die Regel von main (`visible`), „Ebene 0 bleibt", „fremde
+// Ebene", „das Gerät mit", „Zwilling geweckt" und die Bühne ohne Frame-Schritt („Karte steht"); fällt einer nicht, ist die Linse blind.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen Täter.
 //   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten; Port EGO_SCHATTEN_PORT, 4398)
 // ─────────────────────────────────────────────────────────────────────────
@@ -87,42 +88,35 @@ const GEGENPROBEN = [
     { name: "fremde Ebene", soll: "LEIB WIRFT NICHT" },
     { name: "das Gerät mit", soll: "GERÄT" },
     { name: "Zwilling geweckt", soll: "ZWILLING" },
+    { name: "Karte steht", soll: "LEIB WIRFT NICHT" },
+];
+const STUFEN = [
+    ["grob", 1],
+    ["fein", 0],
 ];
 
+// Das Urteil über den Lauf: je Stufe des Leibs, die Bühne misst den Leib, den ihr Name sagt.
+function urteilJeStufe(lauf) {
+    const v = [];
+    for (const [name, stufe] of STUFEN) {
+        const z = lauf[name] || {};
+        if (z.stufe !== stufe)
+            v.push(
+                `STUFE: die Bühne „${name}" misst den Leib mit nahStufe ${z.stufe} statt ${stufe} — nicht den, den der Spieler ${stufe ? "vor" : "nach"} dem Bild trägt`
+            );
+        for (const x of urteil(z)) v.push(`${name}: ${x}`);
+    }
+    return v;
+}
+
 function selbsttest() {
-    const gut = () => ({
-        ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 },
-        iou: 1,
-        geraet: true,
-        zwilling: true,
-        zurueck: true,
-    });
-    const gruen = {
-        dritt: { wurf: 1500, leib: 900 },
-        vertrag: true,
-        kopf: gut(),
-        gegenprobe: [
-            {
-                name: "main: visible",
-                soll: "LEIB WIRFT NICHT",
-                m: Object.assign(gut(), { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }),
-            },
-            {
-                name: "Ebene 0 bleibt",
-                soll: "AUGE",
-                m: Object.assign(gut(), { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }),
-            },
-            {
-                name: "fremde Ebene",
-                soll: "LEIB WIRFT NICHT",
-                m: Object.assign(gut(), { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }),
-            },
-            { name: "das Gerät mit", soll: "GERÄT", m: Object.assign(gut(), { geraet: 4 }) },
-            { name: "Zwilling geweckt", soll: "ZWILLING", m: Object.assign(gut(), { zwilling: 5 }) },
-        ],
-    };
+    const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
+    // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
+    const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
+    const stufe = (n) => ({ stufe: n, dritt: { wurf: 1500, leib: 900 }, vertrag: true, kopf: gut(), gegenprobe: GEGENPROBEN.map((g) => Object.assign({ m: gut(taeter[g.soll]) }, g)) }); // prettier-ignore
+    const gruen = { grob: stufe(1), fein: stufe(0) };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
+    if (urteilJeStufe(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteilJeStufe(gruen).join(" · "));
     const mit = (pfad, wert) => {
         const z = JSON.parse(JSON.stringify(gruen));
         let o = z;
@@ -130,44 +124,24 @@ function selbsttest() {
         Object.assign(o, wert);
         return z;
     };
+    // prettier-ignore
     const faelle = [
-        {
-            name: "main (der Wurf geht mit der Haut)",
-            z: mit("kopf.ego", { wurf: 0 }),
-            muss: /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/,
-        },
-        { name: "nur der Rumpf wirft", z: mit("kopf", { iou: 0.62 }), muss: /UMRISS: .* IoU 0\.62/ },
-        { name: "Leib vor dem Auge", z: mit("kopf.ego", { leibPx: 12 }), muss: /AUGE: .* 12 Bildpunkte vor dem Auge/ },
-        {
-            name: "Leib-Mesh auf Ebene 0",
-            z: mit("kopf.ego", { leibAufNull: 3 }),
-            muss: /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/,
-        },
-        { name: "Gerät verborgen", z: mit("kopf", { geraet: 4 }), muss: /GERÄT: .* Maske 4 statt 1/ },
-        { name: "Zwilling geweckt", z: mit("kopf", { zwilling: 5 }), muss: /ZWILLING: .* Maske 5/ },
-        {
-            name: "visible geschaltet",
-            z: mit("kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }),
-            muss: /ZURÜCK: die Regel schaltet visible/,
-        },
-        {
-            name: "Haupt-Kamera sieht die Zwillings-Ebene",
-            z: mit("", { vertrag: "die Haupt-Kamera sieht Ebene 2" }),
-            muss: /VERTRAG: die Haupt-Kamera sieht Ebene 2/,
-        },
-        {
-            name: "Bühne ohne Schatten",
-            z: mit("dritt", { wurf: 3 }),
-            muss: /BLIND: die 3rd-Person wirft auf der Bühne 3 px/,
-        },
-        {
-            name: "Gegenprobe blind",
-            z: mit("gegenprobe.0.m.ego", { wurf: 1500 }),
-            muss: /GEGENPROBE: die Regel „main: visible" fällt nicht/,
-        },
+        { name: "main (der Wurf geht mit der Haut)", z: mit("fein.kopf.ego", { wurf: 0 }), muss: /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/ },
+        { name: "nur der Rumpf wirft", z: mit("fein.kopf", { iou: 0.62 }), muss: /UMRISS: .* IoU 0\.62/ },
+        { name: "Leib vor dem Auge", z: mit("fein.kopf.ego", { leibPx: 12 }), muss: /AUGE: .* 12 Bildpunkte vor dem Auge/ },
+        { name: "Leib-Mesh auf Ebene 0", z: mit("fein.kopf.ego", { leibAufNull: 3 }), muss: /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/ },
+        { name: "Gerät verborgen", z: mit("fein.kopf", { geraet: 4 }), muss: /GERÄT: .* Maske 4 statt 1/ },
+        { name: "Zwilling geweckt", z: mit("fein.kopf", { zwilling: 5 }), muss: /ZWILLING: .* Maske 5/ },
+        { name: "visible geschaltet", z: mit("fein.kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }), muss: /ZURÜCK: die Regel schaltet visible/ },
+        { name: "Haupt-Kamera sieht die Zwillings-Ebene", z: mit("fein", { vertrag: "die Haupt-Kamera sieht Ebene 2" }), muss: /VERTRAG: die Haupt-Kamera sieht Ebene 2/ },
+        { name: "Bühne ohne Schatten", z: mit("fein.dritt", { wurf: 3 }), muss: /BLIND: die 3rd-Person wirft auf der Bühne 3 px/ },
+        { name: "Gegenprobe blind", z: mit("fein.gegenprobe.0.m.ego", { wurf: 1500 }), muss: /GEGENPROBE: die Regel „main: visible" fällt nicht/ },
+        { name: "Grob-Leib liest die Karte des vorigen Schusses (CI Gruppe 17)", z: mit("grob.kopf.ego", { wurf: 0, leibPx: 1075 }), muss: /grob: LEIB WIRFT NICHT: .*0 px/ },
+        { name: "Bühne schreitet nicht (Gegenprobe Karte steht blind)", z: mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), muss: /GEGENPROBE: die Regel „Karte steht" fällt nicht/ },
+        { name: "Bühne am falschen Leib", z: mit("fein", { stufe: 1 }), muss: /STUFE: die Bühne „fein" misst .* nahStufe 1/ },
     ];
     for (const f of faelle) {
-        const v = urteil(f.z);
+        const v = urteilJeStufe(f.z);
         if (!v.some((s) => f.muss.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
         console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
@@ -206,14 +180,14 @@ function buehne(arg) {
         const rend = st.renderer;
         const E = r.constructor.SHADOW_TWIN_LAYER;
         const P = Object.getPrototypeOf(r);
+        // JE BILD DER BÜHNE EIN FRAME: r184 zeichnet eine Schatten-Karte höchstens einmal je Frame (`ShadowNode.updateBefore`,
+        // frameId), den Frame zählt nur der rAF (`Animation.start`) — tickte zwischen zwei Schüssen keiner, las der zweite die
+        // Karte des ersten (CI Gruppe 17: Ego-Wurf 0 px in 3 von 9 Läufen). Der rAF ruht, `frame` schreitet; die Zeit steht.
         const nf = rend._nodes.nodeFrame;
         const zeit = nf.time;
-        nf.update = function () {
-            this.frameId++;
-            this.deltaTime = 0;
-            this.time = zeit;
-        };
-        const aus = { ms: {} };
+        nf.update = () => {};
+        let stehend = false;
+        const aus = { ms: {}, stufe: st.playerMesh.userData._gelenk.nahStufe };
         const t0 = performance.now();
         const pm = st.playerMesh;
         const kam = st.camera;
@@ -304,6 +278,7 @@ function buehne(arg) {
             aus.kamera = { auge: +(pose.p.y - fuss).toFixed(2), fov: kam.fov };
             const frame = () => {
                 halte();
+                if (!stehend) Object.assign(nf, { frameId: nf.frameId + 1, deltaTime: 0, time: zeit });
                 rend.setRenderTarget(ziel);
                 rend.render(szene, kam);
                 rend.setRenderTarget(null);
@@ -449,6 +424,8 @@ function buehne(arg) {
                 for (const ch of p.children) if (ch.userData && ch.userData._creatureSkin) geh(ch);
             };
             const regeln = {
+                // die echte Regel an einer Bühne ohne Frame-Schritt (die alte Bühne): die Karte des vorigen Schusses bleibt
+                "Karte steht": P._applyEgoSicht,
                 "main: visible": function () {
                     const p = this.state.playerMesh;
                     const third = this.state.cameraMode === "third";
@@ -506,9 +483,11 @@ function buehne(arg) {
                 r._applyEgoSicht = regeln[g.name];
                 // nur die Regeln, deren Klasse ein Bild braucht, rendern; die übrigen urteilen an der Struktur
                 const bild = g.soll === "LEIB WIRFT NICHT" || g.soll === "AUGE";
+                stehend = g.name === "Karte steht";
                 const m = bild
                     ? await egoMessen(g.name.replace(/[^a-z0-9]+/gi, "-"))
                     : { ego: aus.kopf.ego, iou: aus.kopf.iou };
+                stehend = false;
                 zurueckStellen();
                 r._applyEgoSicht = regeln[g.name];
                 Object.assign(m, struktur());
@@ -530,6 +509,7 @@ function buehne(arg) {
             if (elternAlt) elternAlt.add(pm);
             pm.visible = true;
             rend.shadowMap.enabled = schattenAlt;
+            delete nf.update;
             ziel.dispose();
         }
         aus.ms.gesamt = Math.round(performance.now() - t0);
@@ -554,61 +534,67 @@ function buehne(arg) {
             timeout: 60000,
         });
         await page.evaluate(AUSGABE_INSTALL);
-        // der Renderer und der Leib aus dem Ofen (der Mensch mit seiner Haut) — erst NACH dem Foundry-Buch: seine Ankunft
-        // gießt den Avatar einmal neu (`_foundryIngestRecipes`, die Konstanten-Gestalt zieht nach), und eine Bühne am alten
-        // Leib misst einen Körper, den keine Regel mehr erreicht. Danach ruht der Spiel-Loop.
-        const bereit = await page.evaluate(async () => {
-            const t0 = performance.now();
-            while (performance.now() - t0 < 240000) {
-                const r = window.anazhRealm;
-                const st = r && r.state;
-                const pm = st && st.playerMesh;
-                if (
-                    st &&
-                    st.rendererReady &&
-                    st.renderer &&
-                    st.renderer.backend &&
-                    r._foundry &&
-                    r._foundry.recipes &&
-                    !st._deferredAvatarSoul &&
-                    pm &&
-                    pm.children.some((c) => c.userData && c.userData._creatureSkin)
-                ) {
-                    st.renderer.setAnimationLoop(null);
-                    for (const c of st.creatures || []) c.visible = false;
-                    return {
-                        ok: true,
-                        ms: Math.round(performance.now() - t0),
-                        webgpu: st.renderer.backend.isWebGPUBackend === true,
-                        seele: st.player && st.player.soul,
-                    };
+        // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
+        // nach dem Bild die feine (`_leibFeinTausch`) — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der
+        // Stufe nach dem Foundry-Buch steht (sein Ingest gießt den Avatar neu), nie per Abfrage-Uhr: die Grobstufe lebt nur bis
+        // zum Tausch. Danach ruht der Spiel-Loop, bis die Bühne den Leib zurückgibt.
+        const halt = (stufe) =>
+            page.evaluate(async (stufe) => {
+                const t0 = performance.now();
+                const steht = (r, st, pm = st.playerMesh) =>
+                    !!(r._foundry && r._foundry.recipes && !st._deferredAvatarSoul && pm && pm.userData._gelenk) &&
+                    pm.userData._gelenk.nahStufe === stufe &&
+                    (stufe === 1 || !!st._weltbildDa) &&
+                    pm.children.some((c) => c.userData && c.userData._creatureSkin);
+                let r = window.anazhRealm;
+                while (!(r && r._gameLoopTick && r.state.rendererReady && r.state.renderer.backend)) {
+                    if (performance.now() - t0 > 240000) return { ok: false };
+                    await new Promise((res) => setTimeout(res, 50));
+                    r = window.anazhRealm;
                 }
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            return { ok: false };
-        });
-        if (!bereit.ok) throw new Error("Renderer oder Leib standen nach 240 s nicht");
-        if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Bühne wäre nicht der Renderer des Spiels");
-        log(`Renderer und Leib (${bereit.seele}) bereit nach ${Math.round(bereit.ms / 1000)} s`);
-        out = await page.evaluate(buehne, { W: 192, H: 108, SCHWELLE, bilder: !!BILDER, gegenproben: GEGENPROBEN });
-        log(
-            `Bühne ${Math.round(out.ms.gesamt / 1000)} s (Erst-Zeichnung ${Math.round(out.ms.erst / 1000)} s, echte Regel ` +
-                `${Math.round(out.ms.kopf / 1000)} s, Gegenprobe ${Math.round(out.ms.gegenprobe / 1000)} s) · Leib ${out.leib.meshes} Meshes, ` +
-                `${out.leib.wirft} werfen · Auge ${out.kamera.auge} m über dem Fuß · ${out.schattenKameras} Schatten-Kameras im Vertrag`
-        );
-        log(`3rd-Person: Schatten ${out.dritt.wurf} px, Leib im Bild ${out.dritt.leib} px`);
-        log(`Ego (Kopf): ${JSON.stringify(out.kopf)}`);
-        for (const g of out.gegenprobe) log(`Gegenprobe „${g.name}": ${JSON.stringify(g.m)}`);
-        if (BILDER && out.bilder) {
-            fs.mkdirSync(BILDER, { recursive: true });
-            const roh = (n) => Buffer.from(out.bilder[n]);
-            fs.writeFileSync(
-                path.join(BILDER, "bilder.json"),
-                JSON.stringify({ W: 192, H: 108, namen: Object.keys(out.bilder) })
+                const st = r.state;
+                const ok = await new Promise((res) => {
+                    const frist = setTimeout(() => res(false), 240000);
+                    const takt = r._gameLoopTick;
+                    const halten = () => (st.renderer.setAnimationLoop(null), clearTimeout(frist), res(true));
+                    if (steht(r, st)) return halten();
+                    st.renderer.setAnimationLoop((t, x) => (takt(t, x), steht(r, st) && halten()));
+                });
+                for (const c of st.creatures || []) c.visible = false;
+                return {
+                    ok,
+                    ms: Math.round(performance.now() - t0),
+                    webgpu: st.renderer.backend.isWebGPUBackend === true,
+                };
+            }, stufe);
+        out = {};
+        for (const [name, stufe] of STUFEN) {
+            const b = await halt(stufe);
+            if (!b.ok) throw new Error(`der Leib der Stufe ${stufe} (${name}) stand nach 240 s nicht`);
+            if (!b.webgpu) throw new Error("kein WebGPU-Backend — die Bühne wäre nicht der Renderer des Spiels");
+            log(`${name}: Leib der Stufe ${stufe} steht nach ${Math.round(b.ms / 1000)} s`);
+            const z = (out[name] = await page.evaluate(buehne, { W: 192, H: 108, SCHWELLE, bilder: !!BILDER, gegenproben: GEGENPROBEN })); // prettier-ignore
+            log(
+                `${name}: Bühne ${Math.round(z.ms.gesamt / 1000)} s (Erst-Zeichnung ${Math.round(z.ms.erst / 1000)} s, Gegenprobe ` +
+                    `${Math.round(z.ms.gegenprobe / 1000)} s) · Leib ${z.leib.meshes} Meshes, ${z.leib.wirft} werfen · Auge ` +
+                    `${z.kamera.auge} m über dem Fuß · ${z.schattenKameras} Schatten-Kameras im Vertrag`
             );
-            for (const n of Object.keys(out.bilder)) fs.writeFileSync(path.join(BILDER, n + ".rgba"), roh(n));
-            delete out.bilder;
-            log(`Bilder (RGBA 192×108) in ${BILDER}`);
+            log(
+                `${name}: 3rd-Person Schatten ${z.dritt.wurf} px, Leib im Bild ${z.dritt.leib} px · Ego ${JSON.stringify(z.kopf)}`
+            );
+            for (const g of z.gegenprobe) log(`${name}: Gegenprobe „${g.name}": ${JSON.stringify(g.m)}`);
+            if (BILDER && z.bilder) {
+                const d = path.join(BILDER, name);
+                fs.mkdirSync(d, { recursive: true });
+                fs.writeFileSync(
+                    path.join(d, "bilder.json"),
+                    JSON.stringify({ W: 192, H: 108, namen: Object.keys(z.bilder) })
+                );
+                for (const n of Object.keys(z.bilder))
+                    fs.writeFileSync(path.join(d, n + ".rgba"), Buffer.from(z.bilder[n]));
+                delete z.bilder;
+                log(`Bilder (RGBA 192×108) in ${d}`);
+            }
         }
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
@@ -619,17 +605,18 @@ function buehne(arg) {
         console.log("FEHLER:", out ? out.error : "?");
         process.exit(1);
     }
-    const v = urteil(out);
+    const v = urteilJeStufe(out);
     if (pageErrors.length) v.push(`${pageErrors.length} Seiten-Fehler: ${pageErrors[0]}`);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
         for (const s of v) console.log("   • " + s);
         process.exit(1);
     }
+    const [g, f] = [out.grob, out.fein];
     console.log(
-        `\n✅ GRÜN — in der Ego-Sicht wirft der Leib ${out.kopf.ego.wurf} px Schatten am Boden, IoU ${out.kopf.iou} gegen dieselbe ` +
-            `Pose in der 3rd-Person (${out.dritt.wurf} px); die Haupt-Kamera sieht 0 Bildpunkte Leib, kein Leib-Mesh liegt auf Ebene 0; ` +
-            `das Gerät bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede Maske zurück, visible wechselt nie; ` +
-            `die ${out.gegenprobe.length} Gegenproben fallen je beim Namen (${out.gegenprobe.map((g) => g.soll).join(" · ")}).`
+        `\n✅ GRÜN — in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +
+            `${f.kopf.ego.wurf} px (IoU ${f.kopf.iou}) gegen dieselbe Pose in der 3rd-Person; die Haupt-Kamera sieht 0 Bildpunkte Leib, ` +
+            `kein Leib-Mesh liegt auf Ebene 0; das Gerät bleibt auf Ebene 0, ein Zwilling in den Kaskaden, 3rd gibt jede Maske zurück, ` +
+            `visible wechselt nie; je Stufe fallen die ${f.gegenprobe.length} Gegenproben beim Namen (${f.gegenprobe.map((x) => x.soll).join(" · ")}).`
     );
 })();

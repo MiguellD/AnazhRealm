@@ -2127,13 +2127,13 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Morphologie-Labor: Bäume, Blumen und Felsen wachsen aus Gesetzen — mit begehbarem Wald, Tag/Nacht, Wetter und Jahreszeiten.",
     }),
-    // Das FAHRZEUG-Labor (Rahmen · Gelenke · Lehren · Baukörper · Wagen + Probefahrt) — ein MODUS der Welt-Engine (S1,
-    // worlds/garage/studio.js): das Tor öffnet es in der Welt (`_studioModusBetreten`), kein iframe. DSL = die echten
-    // UI-Pfade: Gattungs-Presets + Kultur-Vektoren + probefahrt/werkstatt (Fahrt in der Welt rein/raus).
+    // Das FAHRZEUG-Labor (Rahmen · Gelenke · Lehren · Baukörper · Haut + Probefahrt), dasselbe
+    // Vorlagen-Organ wie phytogenesis. DSL = die echten UI-Pfade: Gattungs-Presets + Kultur-Vektoren +
+    // probefahrt/werkstatt (Fahr-Modus rein/raus).
     garage: Object.freeze({
         id: "garage",
         label: "Anatomie · Fahrzeug",
-        world: "index.html?studio=garage",
+        world: "worlds/garage/index.html",
         dsl: Object.freeze([
             "gt",
             "supersport",
@@ -2148,7 +2148,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "probefahrt",
             "werkstatt",
         ]),
-        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, die Probefahrt in der Welt.",
+        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, fahrbare Probefahrt mit Reifenspuren.",
     }),
     // Das TOR-Labor: sieben Ordnungen (Drachentor bis Maurentor), Stich→Schub→Dicke-Lehre, fraktale
     // Tiefe, begehbare Türen (E/R).

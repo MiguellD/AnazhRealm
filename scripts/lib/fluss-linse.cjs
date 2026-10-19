@@ -73,9 +73,10 @@ function flussLinse() {
         return g;
     };
     const it = r._foundryIngestTakt.bind(r);
-    r._foundryIngestTakt = (x) => {
+    // der Rang des Auftrags reist mit (B5): ohne ihn mass die Linse die Freigabe FIFO statt mit der EINEN Wahl des Spiels
+    r._foundryIngestTakt = (x, rang) => {
         const t = performance.now();
-        return it(x).then((y) => {
+        return it(x, rang).then((y) => {
             if (x != null) L.ingest.push(performance.now() - t);
             return y;
         });
