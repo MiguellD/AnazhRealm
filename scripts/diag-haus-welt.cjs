@@ -543,7 +543,6 @@ async function proben(phasen) {
             const Hh = gesetz(e);
             const h = { typ: e.type, spieler: e === sbE, koerper: [], keller: null };
             o.w9.haeuser.push(h);
-            // ohne das Grund-Datum des Gesetzbuchs (`grundVon`) rät jeder Leser den Grund aus EINER obb-Box: ROT beim Namen
             if (!Hh || typeof FC.grundVon !== "function") {
                 [h.fehler, h.ohneDatum] = [Hh ? "kein Grund-Datum" : "kein Gesetzbuch", !!Hh];
                 continue;
