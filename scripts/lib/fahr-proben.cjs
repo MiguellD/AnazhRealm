@@ -348,15 +348,10 @@ async function probeLeben(expected) {
             res.gtHang = gh ? fahrt(gh, 180, false) : { gestartet: false };
             if (gh) weg(gh);
         }
-        // (2b) T4 DER WECHSEL AM STEILHANG (F1 des Schöpfers 17.10., selbst gespielt: beim Wechsel 1st ↔ 3rd WÄHREND der Fahrt
-        // wurde der Wagen in 3rd unsichtbar oder ein alter Zustand blieb stehen, 3rd ruckte horizontal, steil bergab folgte die
-        // Kamera komisch; in 1st immer sichtbar). Der GT fährt einen Steilhang (17–32°, 30 m talwärts ≥ 12°) bergab mit 8–11 m/s:
-        // Third geradeaus → Ego (W + A, bis die Gier ≥ 75° drehte) → Third (A fest) → Ego (W + D) → Third (D fest). Je Bild jede
-        // zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`, ihr starres Blatt) gegen den Rahmen des
-        // gezeichneten Werks (`_archEntryWorldMatrix` × Blatt) und der Gleichlauf des gezeichneten Wagens (Weg im Bild gegen
-        // den über 10 Bilder); in Third die Kamera: Azimut gegen die gezeichnete Gier 10 Bilder nach dem Wechsel, seitlicher
-        // Ruck (zweite Differenz der Quer-Lage), Höhe über der Ebene des Wagens, Konsum des Kern-Gesetzes (`chaseKamera`).
-        // Dann der Wiederaufstieg nach einem Stoß (der Wagen steht 1 rad gedreht): das erste Bild ohne Sim-Schritt zeigt seine Gier.
+        // (2b) T4 DER WECHSEL AM STEILHANG (F1, Kopf von diag-fahr-leben): bergab 8–11 m/s Third → Ego (W + A, Gier ≥ 75°) →
+        // Third → Ego (W + D) → Third; je Bild jede zeichnende Stufe (`instSlots`, `instSlotsBand`, starres Blatt) gegen
+        // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
+        // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
         const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
         const w = (res.wechsel = { gestartet: false, ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung] });
         if (steil) {
