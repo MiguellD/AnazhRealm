@@ -1705,8 +1705,6 @@ async function checkBandWave5(ctx) {
                 },
             ],
         };
-        const cAtomar = r.computeCompoundTags(contactBp);
-        const cSpatial = r.computeSpatialTags(contactBp);
         // Kontakt-Transfer (Stein-Slot ← 0.6 × Helix-Kupfer 2.85 = 1.71) ist im MAX-Aggregat unsichtbar
         // (MAX bleibt 2.85) → hier nur at_outside: in einer Dreier-Reihe tragen die äußeren Parts
         // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.

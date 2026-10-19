@@ -196,11 +196,9 @@ function ladeschirmVerdict(m) {
             );
     }
     // DIE ZUSAGE DES WALD-PLANS (B-Wald): sie kommt mit den Zellen ihres Kastens, nie erst mit der leeren Schlange
-    const W = m.wald;
-    if (!W || !(W.ferne > 0) || W.steht !== false) out.push(`die Zusage des Wald-Plans: kein Fall (${W ? `ferner Kasten ${W.ferne} Zellen, der Plan am Ort steht ${W.steht}` : "keine Probe"}) (Vorbedingung)`);
-    else if (!W.zusage) out.push("die Gestalt am Ort ohne Plan gibt keine Zusage (`_waldPlanZusage`) — die Streu-Region wartet auf nichts Benanntes");
-    else if (!W.kam) out.push("die Zusage des Wald-Plans kam nicht in 60 s");
-    else if (!(W.rest > 0)) out.push(`die Zusage des Wald-Plans kam erst mit der leeren Schlange — sie wartete auf ${W.ferne} Zellen außerhalb ihres Kastens (\`_waldPlanZusage\`)`);
+    const W = m.wald || {};
+    if (!(W.ferne > 0) || W.steht !== false || !W.zusage) out.push(`die Zusage des Wald-Plans: kein Fall (ferner Kasten ${W.ferne} Zellen, der Plan am Ort steht ${W.steht}, Zusage ${W.zusage}) (Vorbedingung)`);
+    else if (!(W.rest > 0)) out.push(`die Zusage des Wald-Plans kam ${W.kam ? "erst mit der leeren Schlange" : "nicht in 60 s"} — sie wartete auf ${W.ferne} Zellen außerhalb ihres Kastens (\`_waldPlanZusage\`)`);
     // DIE KÖPFE DER ANKUNFT UND DER BILD-RANG (B5): kein Leser im Blick bestellt ortlos, der Leib in der Ego-Sicht nur seine
     // Grobstufe (die feine nach dem Bild, dann der Tausch), das Buch den Export des fälligen Start-Dorfs
     const K = m.koepfe;
@@ -833,12 +831,10 @@ async function probe(arg) {
                     if (merk.held) (st.player.equipped.held = merk.held) && r._refreshHeldMesh();
                 }
             }
-            // (12) DIE ZUSAGE DES WALD-PLANS (B-Wald): die Gestalt am Ort wartet auf die Zellen IHRES Kastens, nie auf die ganze
-            // Schlange — der Plan um einen Ort 30 m vor dem Spieler fällt (`_forestDartsFallen`), ein Kasten 400 m hinter ihm steht
-            // mit in der Schlange, der Takt schickt beide an den Faden; gezählt, was noch aussteht, wenn die Zusage kommt
+            // (12) DIE ZUSAGE DES WALD-PLANS (B-Wald): der Plan 30 m vor dem Spieler fällt (`_forestDartsFallen`), ein Kasten 400 m
+            // hinter ihm steht mit in der Schlange, der Takt schickt beide an den Faden — gezählt, was aussteht, wenn die Zusage kommt
             {
-                const [w, C, o, f] = [(m.wald = { kam: false, rest: -1 }), r.constructor.FOREST.cell, vorn(30), vorn(-400)];
-                const Q = r._waldPlanSchlange || (r._waldPlanSchlange = new Map());
+                const [w, C, o, f, Q] = [(m.wald = { kam: false, rest: -1 }), r.constructor.FOREST.cell, vorn(30), vorn(-400), r._waldPlanSchlange || (r._waldPlanSchlange = new Map())]; // prettier-ignore
                 r._forestDartsFallen(o.x, o.z, o.x, o.z);
                 r._forestDartsFallen(f.x - 6 * C, f.z - 6 * C, f.x + 6 * C, f.z + 6 * C);
                 const [gx, gz, vor] = [Math.floor(f.x / C), Math.floor(f.z / C), Q.size];
@@ -846,8 +842,8 @@ async function probe(arg) {
                 [w.ferne, w.steht] = [Q.size - vor, r._waldPlanSteht(o.x, o.z)];
                 const z = r._waldPlanZusage(o.x, o.z);
                 if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
-                for (const dl = performance.now() + 60000; z && !w.kam && performance.now() < dl; ) await tick(1, 30);
-                for (const dl = performance.now() + 60000; Q.size && performance.now() < dl; ) await tick(1, 30); // der ferne Kasten steht wieder
+                // bis die Zusage kam, dann bis der ferne Kasten wieder steht (höchstens 60 s)
+                for (const dl = performance.now() + 60000; ((z && !w.kam) || Q.size) && performance.now() < dl; ) await tick(1, 30);
             }
             await sleep(800);
             if (!st._weltbildDa) r._weltbildSteht();

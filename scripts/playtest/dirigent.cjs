@@ -165,7 +165,6 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
         // mehr brechen — die Boundary fängt ihn, zählt ihn, der Tick kehrt normal zurück.
         const st = r.state;
         const before = st._loopErrorCount || 0;
-        const origFps = r.updateFps;
         let threw = false;
         try {
             r.updateFps = () => {

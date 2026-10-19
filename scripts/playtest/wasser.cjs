@@ -710,8 +710,6 @@ async function checkBandWelleC1WaterCells(ctx) {
             const idx = i + k * cfg.dim + j * cfg.dim * cfg.dim;
             const actual = testEntry.waterCells[idx];
             const cy = oy + (j + 0.5) * step;
-            const cxw = ox + (i + 0.5) * step;
-            const czw = oz + (k + 0.5) * step;
             // Die Klassifikation ist ein 3D-Flood-Fill (verbundenes Wasser), nicht billig nachrechenbar →
             // der Test prüft die Flood-INVARIANTEN: WATER ist NIE solide (Density ≤ 0) und NIE über dem
             // Hydro-Band (cy ≤ band.top). SOLID wird nicht geprüft (der Architektur-Stempel darf
