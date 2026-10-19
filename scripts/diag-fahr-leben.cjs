@@ -19,6 +19,11 @@
 //     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht (Befund: rollte mit
 //     4,7 m/s zurück und drehte sich 84°). Dazu das Pferd (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-
 //     Gesetz): teleport 0, weg ±2 % (Befund: 131 von 135 Frames, 3,66 m simuliert, 1,81 m geritten).
+//     T4 (F1 des Schöpfers 17.10.) DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten:
+//     jede zeichnende Stufe am Wagen, die Kamera hinter ihm (nach 10 Bildern), über der Fahrbahn, ohne Ruck, das Bild im
+//     Gleichlauf, die Chase-Cam liest das Kern-Gesetz, der Wiederaufstieg ohne alte Gier (Schwellen am Verdikt `WECHSEL`).
+//     Befund 47c8b089 (Radeon): Band-Partner L1 9,73 m neben dem Wagen, Kamera 19,4°/17,4°, Ruck p95 0,185 m, Gleichlauf
+//     p95 1,078, Höhe p05 0,8°, chaseKamera 0 von 210.
 //
 //   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:
 //       K1 der Kern trägt fahrSchritt (Kräfte + Stand), die Probefahrt ruft ihn, der Stamm ruft ihn — und keiner von
@@ -109,6 +114,30 @@ function haltVerdict(m) {
     if (m.teleport !== 0) out.push(`teleport ${m.teleport}/${m.frames}`);
     if (!(m.fahrWeg <= TAKT.haltM)) out.push(`rollt ${(m.fahrWeg || 0).toFixed(2)} m (v ${(m.v || 0).toFixed(1)} m/s)`);
     if (!(m.gierGesamt <= TAKT.gierGrad)) out.push(`gier ${(m.gierGesamt || 0).toFixed(1)}°`);
+    return out;
+}
+// T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe ≤ stufeM am Wagen; je Rückkehr nach Third (die Gier drehte in Ego
+// ≥ egoGrad) die Kamera nach 10 Bildern ≤ azGrad an der Gier; Ruck p95 ≤ ruckM, Gleichlauf p95 ≤ gleichMax, die Höhe über
+// der Ebene des Wagens p05 ≥ hochMin (das Gesetz 19,5°); jedes Third-Bild liest `chaseKamera`; der Wiederaufstieg ≤ 1°.
+const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1 };
+function wechselVerdict(m) {
+    if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
+    const W = WECHSEL;
+    const out = [];
+    if (!(m.stufeM <= W.stufeM)) out.push(`stufe ${m.stufeWer} ${m.stufeM} m neben dem Wagen (sie fährt nicht mit)`);
+    if (!(m.band > 0)) out.push("band: kein Band-Partner im Ritt (vakuös)");
+    if (!(m.ego.length === 2 && m.ego.every((g) => g >= W.egoGrad)))
+        out.push(`ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`);
+    if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
+        out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
+    // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
+    if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
+    if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
+        out.push(`gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`);
+    if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
+        out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
+    if (!(m.third > 0 && m.gesetz >= m.third)) out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
+    if (!(Number.isFinite(m.wiederauf) && m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
     return out;
 }
 
@@ -1622,6 +1651,24 @@ function quellenAbgriff() {
             rollt.length === 2 && rollt[0].startsWith("rollt") && rollt[1].startsWith("gier"),
             rollt.join(" · ")
         );
+        const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8], third: 210, gesetz: 210 };
+        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0 });
+        check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
+        for (const [name, bruch, soll] of [
+            ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
+            ["kein Band im Ritt", { band: 0 }, "band"],
+            ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
+            ["Third beginnt aus der alten Richtung (18° / 20°)", { nach10: [18, 20] }, "kamera"],
+            ["Third ruckt quer (0,14 m)", { ruckP95: 0.14 }, "ruck"],
+            ["das Bild läuft 0,9 neben der Physik", { gleichP95: 0.91 }, "gleichlauf"],
+            ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],
+            ["die Chase-Cam liest kein Kern-Gesetz", { gesetz: 0 }, "gesetz"],
+            ["der Wiederaufstieg zeigt die alte Gier (57°)", { wiederauf: 57 }, "wiederaufstieg"],
+            ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
+        ]) {
+            const v = wechselVerdict(Object.assign({}, wechsel, bruch));
+            check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
+        }
         // Die Stations-Linse.
         const gutS = {
             kern: true,
@@ -2387,6 +2434,12 @@ function quellenAbgriff() {
         "T3 Pferd (richtungs-folgender Ritt): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt",
         vRoss.length === 0,
         `${zeile(out.ross)}${vRoss.length ? " — Täter: " + vRoss.join(", ") : ""}`
+    );
+    const vW = wechselVerdict(out.wechsel);
+    check(
+        "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
+        vW.length === 0,
+        `${JSON.stringify(out.wechsel)}${vW.length ? " — Täter: " + vW.join(" · ") : ""}`
     );
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
     const S = out.stationen || {};

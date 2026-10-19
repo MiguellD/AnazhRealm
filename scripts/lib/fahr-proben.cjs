@@ -348,6 +348,104 @@ async function probeLeben(expected) {
             res.gtHang = gh ? fahrt(gh, 180, false) : { gestartet: false };
             if (gh) weg(gh);
         }
+        // (2b) T4 DER WECHSEL AM STEILHANG (F1 des Schöpfers 17.10., selbst gespielt: beim Wechsel 1st ↔ 3rd WÄHREND der Fahrt
+        // wurde der Wagen in 3rd unsichtbar oder ein alter Zustand blieb stehen, 3rd ruckte horizontal, steil bergab folgte die
+        // Kamera komisch; in 1st immer sichtbar). Der GT fährt einen Steilhang (17–32°, 30 m talwärts ≥ 12°) bergab mit 8–11 m/s:
+        // Third geradeaus → Ego (W + A, bis die Gier ≥ 75° drehte) → Third (A fest) → Ego (W + D) → Third (D fest). Je Bild jede
+        // zeichnende Stufe (Primär `instSlots`, Band-Partner `instSlotsBand`, ihr starres Blatt) gegen den Rahmen des
+        // gezeichneten Werks (`_archEntryWorldMatrix` × Blatt) und der Gleichlauf des gezeichneten Wagens (Weg im Bild gegen
+        // den über 10 Bilder); in Third die Kamera: Azimut gegen die gezeichnete Gier 10 Bilder nach dem Wechsel, seitlicher
+        // Ruck (zweite Differenz der Quer-Lage), Höhe über der Ebene des Wagens, Konsum des Kern-Gesetzes (`chaseKamera`).
+        // Dann der Wiederaufstieg nach einem Stoß (der Wagen steht 1 rad gedreht): das erste Bild ohne Sim-Schritt zeigt seine Gier.
+        const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
+        const w = (res.wechsel = { gestartet: false, ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung] });
+        if (steil) {
+            const ab = steil.gier + Math.PI;
+            const sicht0 = st.cameraMode;
+            r.setCameraMode("third");
+            const e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
+            const ck = VC.chaseKamera;
+            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], gesetz: 0, third: 0 });
+            if (ck) VC.chaseKamera = (...a) => (w.gesetz++, ck(...a));
+            const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
+            const [gleich, ruck, hoch, spur] = [[], [], [], []];
+            const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
+            const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
+            const pr = e && r._foundryPresetForEntry(e);
+            let [i, n, q, ausEgo] = [0, 0, [], false];
+            const bild = () => {
+                const v = st.playerVel ? Math.hypot(st.playerVel.x(), st.playerVel.z()) : 0;
+                [st.keys.w, st.keys.s] = [v < 8, v > 11];
+                frame(i++);
+                r._archEntryWorldMatrix(e, M);
+                const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
+                const f0 = r._foundryFlattenFor(e, pr, lod);
+                const reihe = [[e.instSlots, f0, `L${lod}`]];
+                if (e.instSlotsBand && f0 && ++w.band)
+                    reihe.push([e.instSlotsBand, r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0), `L${e._lodBandLevel} (Band)`]);
+                for (const [liste, f, wer] of reihe)
+                    for (let k = 0; liste && f && f.leaves && k < Math.min(liste.length, f.leaves.length); k++) {
+                        const g = !f.leaves[k].rad && st.archInstanceGroups.get(liste[k].key);
+                        if (!g) continue;
+                        V.setFromMatrixPosition(B.fromArray(g.mesh.instanceMatrix.array, liste[k].slot * 16));
+                        const d = V.distanceTo(U.setFromMatrixPosition(B.multiplyMatrices(M, f.leaves[k].localMatrix)));
+                        if (d > w.stufeM) [w.stufeM, w.stufeWer] = [+d.toFixed(2), wer];
+                    }
+                const tempo = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]) / ((b[2] - a[2]) / 1000);
+                if (spur.push([e.position.x, e.position.z, tMs]) > 11) spur.shift();
+                if (spur.length === 11 && tempo(spur[0], spur[10]) > 1)
+                    gleich.push(Math.abs(tempo(spur[4], spur[5]) / tempo(spur[0], spur[10]) - 1));
+                if (st.cameraMode !== "third") return;
+                const [c, f] = [st.camera.position, kurs()];
+                const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
+                if (++w.third && ++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
+                q.push(dx * Math.cos(f) - dz * Math.sin(f));
+                if (n > 15) ruck.push(Math.abs(q[q.length - 1] - 2 * q[q.length - 2] + q[q.length - 3]));
+                const o = V.setFromMatrixColumn(M, 1).normalize();
+                hoch.push((Math.asin((dx * o.x + dy * o.y + dz * o.z) / Math.hypot(dx, dy, dz)) * 180) / Math.PI);
+            };
+            const sicht = (s, a, d, k) => {
+                [n, q, ausEgo] = [0, [], st.cameraMode === "first"];
+                r.setCameraMode(s);
+                [st.keys.a, st.keys.d] = [a, d];
+                if (s === "third") for (let j = 0; j < k; j++) bild();
+                else {
+                    let [um, g0] = [0, kurs()];
+                    for (let j = 0; j < 300 && um < (75 * Math.PI) / 180; j++, g0 = kurs()) {
+                        bild();
+                        um += Math.abs(Math.atan2(Math.sin(kurs() - g0), Math.cos(kurs() - g0)));
+                    }
+                    w.ego.push(Math.round((um * 180) / Math.PI));
+                }
+            };
+            try {
+                if (e) {
+                    const [ux, uz] = [Math.sin(ab), Math.cos(ab)];
+                    bahnWache = { sx: steil.x - ux * 30, sz: steil.z - uz * 30, ux, uz, len: 90, quer: 45, n: 0 };
+                    sicht("third", false, false, 70);
+                    sicht("first", true, false);
+                    sicht("third", true, false, 70);
+                    sicht("first", false, true);
+                    sicht("third", false, true, 70);
+                    bahnWache = null;
+                    tasten(false);
+                    r.dismountArchitecture();
+                    e.rotationY += 1;
+                    r.mountArchitecture(e);
+                    for (let j = 0, s0; j < 8 && w.wiederauf == null; j++)
+                        if (((s0 = st._fixedSimTime), frame(i++), st._fixedSimTime === s0))
+                            w.wiederauf = wink(e.rotationY - r._rittGier(e, e._rideYaw));
+                    weg(e);
+                }
+            } finally {
+                bahnWache = null;
+                if (ck) VC.chaseKamera = ck;
+                r.setCameraMode(sicht0);
+            }
+            const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
+            Object.assign(w, { ruckN: ruck.length, ruckP95: pq(ruck, 0.95), gleichN: gleich.length, gleichP95: pq(gleich, 0.95) });
+            Object.assign(w, { hochN: hoch.length, hochP05: pq(hoch, 0.05) });
+        }
         // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).
         st.yaw = Math.PI / 2;
         const ross = await setzen("reittier_holzross", start.x, start.z, Math.PI / 2);
