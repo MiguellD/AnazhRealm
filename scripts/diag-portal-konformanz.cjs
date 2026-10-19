@@ -684,8 +684,9 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
-    // K6 die GPU (`gpu-fehler`): nach einem Bild meldet jedes Gerät der Welt seine Arbeit — und mit ihr jede Prüfung, die einen Befehl verwarf
-    const gpu = fr ? await fr.evaluate(async () => { const F = window.__gpuFehler; if (!F) return []; const bild = () => new Promise((r) => requestAnimationFrame(r)); await bild(); await Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone())); await bild(); return F.device.map((e) => e.msg.split("\n")[0]); }) : []; // prettier-ignore
+    // K6 die GPU (`gpu-fehler`): nach einem Bild meldet jedes Gerät der Welt seine Arbeit — und mit ihr jede Prüfung, die einen Befehl verwarf;
+    // ein Gerät oder Bild, das 30 s nicht kommt, fällt mit seinem Namen (nie die äußere Frist der ganzen Linse)
+    const gpu = fr ? await fr.evaluate(async () => { const F = window.__gpuFehler; if (!F) return []; const frist = (p, wort) => Promise.race([p.then(() => null), new Promise((r) => setTimeout(r, 30000, wort))]); const bild = () => frist(new Promise((r) => requestAnimationFrame(r)), "die Welt zeichnet 30 s kein Bild"); const steht = (await bild()) || (await frist(Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone())), "ein Gerät gibt seine Arbeit 30 s nicht ab (onSubmittedWorkDone)")) || (await bild()); return F.device.map((e) => e.msg.split("\n")[0]).concat(steht ? [steht] : []); }) : []; // prettier-ignore
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
     const offen = fr ? (await schleuse(page, "esc", null)).offen : true;
