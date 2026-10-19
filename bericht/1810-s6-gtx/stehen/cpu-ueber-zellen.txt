@@ -1,0 +1,6 @@
+S6 stehend, B − A je Zelle (Welch-t aus auswertung-<k>.json, spanne)
+w-ego: CPU p95 Δ 0.125 t 1.67 | p99 Δ 0.175 t 3.66 | KI-EWMA Δ 0.005 t 0.52
+w-third: CPU p95 Δ 0.100 t 0.59 | p99 Δ 0.050 t 0.26 | KI-EWMA Δ 0.115 t 2.06
+g-ego: CPU p95 Δ 0.100 t 1.12 | p99 Δ 0.050 t 0.65 | KI-EWMA Δ 0.017 t 1.00
+g-third: CPU p95 Δ 0.100 t 1.76 | p99 Δ 0.362 t 2.35 | KI-EWMA Δ 0.029 t 2.07
+Stouffer über 4 Zellen (Σt/√4): p95 2.57 · p99 3.46

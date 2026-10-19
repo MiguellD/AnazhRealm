@@ -1,0 +1,29 @@
+21:11:34 Schloss omen-1710-n, Schritt 3 gate:streu-fern, Kopf ab480f5b, gpu 139 MHz, 64, P8
+
+> anazhrealm@18.546.19 gate:streu-fern
+> node scripts/diag-streu-fern.cjs
+
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+=== STREU-FERN — die Fernform der Klein-Streu kommt aus dem Budget (B2c `fernform`), jenseits der EINEN Nah-Grenze ===
+  ✅ Boot + Studio-Buch (lod.budget) auf dem Host — zellen=1288 · Nah-Grenze 64 m
+  ✅ A KONSUM: fernform je Art live (tree/shrub karte · flower/rock gesetz · grass boden) — {"tree":"karte","shrub":"karte","grass":"boden","flower":"gesetz","rock":"gesetz"}
+  ✅ A KONSUM: Flip rock.fernform="boden" → die neu gebaute Region trägt jenseits der Grenze form boden (ohne Slots), zurück → gesetz — Region -3,-5: boden {"boden":110} · zurück {"gesetz":110}
+  ✅ B ABSENZ: keine Gesetz-/Boden-Art als Instanz jenseits Nah-Grenze + Totband (72 m) — 0 Instanzen
+  ✅ C FORM: jenseits der Grenze trägt jede Nicht-Baum-Fern-Zelle ihre Budget-Form (ohne Slots), diesseits keine eine Fernform, keine litter-Zelle — gesetz 1130 (wartet 0) · boden 0 · diesseits Mesh auf Fern-Wunsch 0 · diesseits Fernform 0 · ohne Form 0 · litter 0
+  ✅ G BAHNWECHSEL: am fernen Gesetz-Fels trägt jede Zelle < 64 m ihr Studio-Mesh (mit Instanzen), zurück an der Mess-Wiese wieder das Gesetz — Ziel 218 m · hin: Mesh 64 (ohne Instanz 0) · Fernform 0 · zurück um das Ziel: Gesetz 19 · Mesh 0 · B danach 0
+  ✅ D WAND: im eingeschwungenen Ring ist die Kapsel-Liste nicht erschöpft und keine Gesetz-Zelle wartet — Kapseln 1706/8192 · Gesetz-Plätze 1138 in 106 Blöcken · wartend 0
+  ✅ E TICK: die Wiederholung wartender Zellen legt keine Instanz-Slots an und rechnet keinen Fit (40 Durchläufe, Liste voll) — Züge im Tick 0 · Fits im Tick 0
+  ✅ F PASSUNG: Geröll fern = die 6 größten Fuß-Steine (unverschmolzen), kein Haufen-Primitiv — 6 Primitive aus 16 Steinen (verschmolzen 1 Leaf), größtes 1.68 m
+  ✅ SELBSTTEST 1: eine injizierte fscatter:geroell:3:0-Instanz bei 200 m macht B rot (mit Namen) — fscatter:geroell:3:0 @ 200 m
+  ✅ SELBSTTEST 2: die ECHTE Erschöpfung (Cursor an der Kapazität, echter Spawn) → die Zellen warten (0 L0), der Allokator setzt die Wand — wartet 121/121 · L0 0 · Bau-Züge 0 · Wand true
+  ✅ SELBSTTEST 3: ohne budget.flower.fernform bricht der Host-Leser fail-closed — KERN-PFLICHT verletzt: phyto:lod.budget.flower.fernform ist unlesbar — das Gesetzbuch fehlt oder ist alt (index.html läd
+  ✅ nach den Selbsttests: B wieder leer — 0
+  ✅ keine Page-Errors während der Probe
+  ✅ H VOR DEM BUCH: der Deko-Takt liest kein Budget, bevor das Buch dockt (Buch zurückgehalten, echter Spiel-Takt) — 8 kalte Deko-Takte · Loop-Fehler 0
+  ✅ H NACH DEM BUCH: die Nah-Wiese legt ihre 4 Studio-Vorlagen (das Budget gelesen, gras wirft nicht), ohne Loop-Fehler — 14 warme Takte · Vorlagen 4 · Loop-Fehler 0
+  ✅ SELBSTTEST 4: die alte Lese-Reihenfolge (ein Deko-Leser fragt das Budget vor dem Buch) macht H rot und nennt den Täter — 3 Loop-Fehler — _foundryBudgetZeile < _tickNahStreu (KERN-PFLICHT verletzt: phyto:lod.budget (gras) ist unlesbar )
+  ✅ H: keine Page-Errors
+
+✅ GRÜN — die Klein-Streu liest ihre Fernform aus dem Studio-Budget jenseits der EINEN Nah-Grenze: dort kein L0-Mesh, diesseits kein Kapsel-Satz, wartende Zellen ohne Instanz-Zug und ohne Fit, die echte Erschöpfung wird rot statt still L0.
+21:13:51 Schloss geloest
+EXIT=0 DAUER=137s SCHRITT=3 GATE=gate:streu-fern

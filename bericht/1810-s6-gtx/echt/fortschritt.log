@@ -1,0 +1,23 @@
+21:07:36 ECHT START baum=/c/Users/micha/Desktop/AnazhRealm-OMEN/n1810-s6d kopf=ab480f5b node=v22.23.3
+21:08:26 01-fern-ring EXIT=0 DAUER=49s
+21:11:28 02-fernwald EXIT=0 DAUER=176s
+21:13:51 03-streu-fern EXIT=0 DAUER=137s
+21:14:06 04-luft-sicht EXIT=0 DAUER=9s
+21:14:31 05-seam EXIT=0 DAUER=20s
+21:14:40 06-schatten-bias EXIT=0 DAUER=3s
+21:15:10 07-ziel-zensus EXIT=0 DAUER=23s
+21:15:58 08-scatter-lod EXIT=0 DAUER=42s
+21:16:10 09-analog-nah EXIT=1 DAUER=7s
+21:16:59 10-foundry-crossfade EXIT=0 DAUER=44s
+21:17:14 11-s4-impostor-workshop EXIT=0 DAUER=8s
+21:17:33 12-foundry-impostor EXIT=0 DAUER=14s
+21:18:17 13-freie-slots EXIT=0 DAUER=38s
+21:18:41 14-pruefbuehne-licht EXIT=0 DAUER=19s
+21:19:01 15-wasser-leben_bild EXIT=0 DAUER=14s
+21:19:22 16-post-kette EXIT=0 DAUER=15s
+21:20:15 17-portal-membran EXIT=0 DAUER=47s
+21:20:38 18-ego-schatten EXIT=0 DAUER=18s
+21:21:11 19-verdeckungs-abfrage EXIT=0 DAUER=27s
+21:22:48 20-weltbild-frost_echt EXIT=0 DAUER=91s
+21:22:58 21-gpu-fehler EXIT=0 DAUER=4s
+21:23:03 ECHT ENDE

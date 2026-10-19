@@ -1,0 +1,19 @@
+21:14:37 Schloss omen-1710-n, Schritt 6 gate:schatten-bias, Kopf ab480f5b, gpu 139 MHz, 65, P8
+
+> anazhrealm@18.546.19 gate:schatten-bias
+> node scripts/diag-schatten-bias.cjs --selftest && node scripts/diag-schatten-terminator.cjs --selftest
+
+=== SCHATTEN-BIAS — Selbsttest (ohne Browser) ===
+  ✅ das Gesetz wirkt (Kaskade und Regler), ein fester Meter-Wert fällt rot
+  ✅ ein leerer Wolf-Schatten → (S) wolf @0.32: Boden-IoU (Saum 9 px) 0.02 < 0.4 (gemessen 800 px, erwartet 900 px, Deckung 0.7) — der Werfer wirft keinen sichtbaren Schatten (normalBias undefined)
+  ✅ ein vakuöser Fuchs in der seitlichen Sonne → (S) fuchs @0.32: die Erwartung ist zu klein im Bild (4 px) — die Probe ist vakuös
+  ✅ ein Werfer fehlt seitlich → (S) busch: in der seitlichen Sonne nicht gemessen
+  ✅ Akne auf der ebenen Platte → (A) AKNE eben@0.28: 20.00 % der beleuchteten Fläche verdunkeln sich selbst (> 1 %; ein konvexer Körper wirft nie auf sich)
+  ✅ eine blinde Akne-Probe → (A) streif@0.32: nur 30 ruhende, beleuchtete Pixel der Platte im Bild — die Akne-Probe ist blind
+  ✅ die Zähne sehen keine Akne → (A) ZÄHNE: bei 0,1 Texel ohne Tiefen- und Hang-Bias zeigt die Platte nur 0.00 % Akne (40000 Pixel) — die Probe sieht keine
+  ✅ ein Werfer bricht ab → (S) pfosten @0.32: Werfer nicht gesetzt
+  ✅ Fremde derselben Art stehen im Mit-Schuss wieder → (S) busch @0.32: 3 Fremde derselben Art standen im Mit-Schuss wieder (ein Stufen-Wechsel setzte sie neu) — sie werfen unter der Isolation mit, die IoU ist unrein
+✅ SELBSTTEST GRÜN — normalBias schreibt nur das Gesetz; ein fester Wert, ein leerer Schatten, eine vakuöse Probe, Akne und eine blinde Akne-Probe fallen rot.
+SELBSTTEST GRÜN: das Terminator-Urteil nennt die Hang-Akne beim Namen
+21:14:40 Schloss geloest
+EXIT=0 DAUER=3s SCHRITT=6 GATE=gate:schatten-bias

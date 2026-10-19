@@ -1,0 +1,4 @@
+Gegenprobe gate:analog-nah, Folge A1 B1 A2 (A = n1810-s6c 5ae6bdfe, B = n1810-s6d ab480f5b), derselbe CI-Weg
+A1: EXIT=1 DAUER=29s SCHRITT=9 GATE=gate:analog-nah | ❌ S  am Ruf: der feste Takt ruft den Karten-Bäcker true · die Karte reist im Rang des Wartenden false
+B1: EXIT=1 DAUER=7s SCHRITT=9 GATE=gate:analog-nah | ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne Bäcker und Karte ohne Rang {"S1":false,"S2":false}
+A2: EXIT=1 DAUER=6s SCHRITT=9 GATE=gate:analog-nah | ❌ SELBST-TEST S: heil {"S1":true,"S2":false} · Takt ohne Bäcker und Karte ohne Rang {"S1":false,"S2":false}

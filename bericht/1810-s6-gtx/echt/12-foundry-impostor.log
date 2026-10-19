@@ -1,0 +1,66 @@
+21:17:19 Schloss omen-1710-n, Schritt 12 gate:foundry-impostor, Kopf ab480f5b, gpu 835 MHz, 66, P5
+
+> anazhrealm@18.546.19 gate:foundry-impostor
+> node scripts/diag-foundry-impostor.cjs
+
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===
+  Worker ready: true
+  Atlas-Zelle: {"imAtlas":true,"schicht":1,"hasFrame":true,"keineSaison":true}
+  Atlas (Quad/Material geteilt, Schichten): {"quadGeteilt":true,"materialGeteilt":true,"billboard":true,"schichtenVerschieden":true,"texturen":true,"fmt":"rgba8"}
+  Gruppen (Streu ×2 Arten + gesetzt): {"neu":[],"karten":["impostor#fimp:atlas"],"zellen":[1,0,1],"rahmen":[1.9883172512054443,5.267343521118164,3.648975133895874,6.722885608673096,1.9883172512054443,5.267343521118164],"slotGruppen":["impostor#fimp:atlas","impostor#fimp:atlas","impostor#fimp:atlas"],"erwartet":[1,0,1],"erwartetRahmen":[1.9883172770595594,5.26734375,3.6489752341548867,6.7228857421875,1.9883172770595594,5.26734375],"sicht":[21.568798065185547,26.49870491027832,-23.529598236083984],"erwartetSicht":[21.568797529296877,26.498704394531245,23.5295973046875],"voll":[false,false,true],"instanziert":true,"vertexPuffer":6,"attribute":["position","normal","uv","aKarte"]}
+  Vereinigung (Kanal/Methoden/kein Nachbau): {"weltBake":true,"rttNachbau":"undefined"}
+  asset-foundry-iframe im DOM: false (erwartet false)
+  gefallene Methoden (erwartet undefined): {"requestImpostor":"undefined","ensureBakeIframe":"undefined","buildImpostorRecord":"undefined","bakeImpostorRequest":"undefined","studioImpostorPayload":"undefined","baecker":"undefined"}
+  Strich-Wand am Graphen: {"gradMap":2,"gradNmap":1,"ohne":0,"springend":0} · Selbsttest {"gradMap":1,"gradNmap":0,"ohne":1,"springend":1}
+
+  RUHE VOR TEIL C: {"wellen":1,"offen":0,"foundry":0} (Lieferungs-Wellen bis keine mehr unterwegs ist)
+
+=== TEIL C [bc] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===
+  geschrieben: true · Wiring: true
+  Eichung der Lese-Richtung: {"markerPx":115,"obenZuerst":true}
+  LAYOUT (Karte: links oben opak) — Quadranten px: lo 281 · ro 0 · lu 0 · ru 0
+  Schirm-Box {"x0":53.36490319830455,"x1":87.4729806396609,"yOben":46.94596127932182,"yUnten":81.05403872067818} · Zeilen {"47":12,"48":16,"49":17,"50":17,"51":17,"52":17,"53":17,"54":17,"55":17,"56":17,"57":17,"58":17,"59":17,"60":17,"61":17,"62":17,"63":15}
+  Selbsttest Monster-Slot (Skala 1000) Pixel: 7852 (Linse MUSS Müll sehen)
+  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): true
+  nach _archGroupFree — lebender Slot: 313 px · befreiter Slot: 0 px
+  C5 WACHSEN: GRÜN · Selbsttest: Vorlage karte-albedo:atlas#50,Vorlage karte-normal:atlas#51
+
+=== TEIL C [rgba8] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===
+  geschrieben: true · Wiring: true
+  Eichung der Lese-Richtung: {"markerPx":115,"obenZuerst":true}
+  LAYOUT (Karte: links oben opak) — Quadranten px: lo 289 · ro 0 · lu 0 · ru 0
+  Schirm-Box {"x0":53.36490319830455,"x1":87.4729806396609,"yOben":46.94596127932182,"yUnten":81.05403872067818} · Zeilen {"47":17,"48":17,"49":17,"50":17,"51":17,"52":17,"53":17,"54":17,"55":17,"56":17,"57":17,"58":17,"59":17,"60":17,"61":17,"62":17,"63":17}
+  Selbsttest Monster-Slot (Skala 1000) Pixel: 7852 (Linse MUSS Müll sehen)
+  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): true
+  nach _archGroupFree — lebender Slot: 325 px · befreiter Slot: 0 px
+  C5 WACHSEN: GRÜN · Selbsttest: nur bc
+
+=== TEIL C3 — DIE KARTE SIEHT DAS AUGE (eine Karte, drei Instanz-Drehungen, Breite im Bild) ===
+  Drehung 0°: Breite 64 px (Soll 67 px)
+  Drehung 90°: Breite 64 px (Soll 67 px)
+  Drehung -119°: Breite 64 px (Soll 67 px)
+  Selbsttest: die Tafel von der Seite feuert true · die zugewandte Karte schweigt true
+
+=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===
+  rinde Drehung 0° Skala 1: Versatz (0.124, 0) m
+  rinde Drehung 90° Skala 1: Versatz (0.124, 0) m
+  rinde Drehung -119° Skala 1: Versatz (0.124, 0) m
+  rinde Drehung 0° Skala 2: Versatz (0.257, 0) m
+  rinde Drehung 90° Skala 2: Versatz (0.257, 0) m
+  gras Drehung 0° Skala 1: Versatz (0.33, 0.179) m
+  gras Drehung 90° Skala 1: Versatz (0.33, 0.179) m
+  gras Drehung -119° Skala 1: Versatz (0.33, 0.181) m
+  Selbsttest: der gedrehte Wind feuert true · der skalierte feuert true · der Welt-Wind schweigt true
+
+=== TEIL C2[bc] — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~4 px) ===
+  glatte Kante: Treppe 0.25 über 120 Zeilen (Soll ≤ 0,35)
+  Selbsttest 8-Texel-Stufen: Treppe 0.892 über 65 Zeilen (MUSS > 0,6)
+
+=== TEIL C2[rgba8] — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~4 px) ===
+  glatte Kante: Treppe 0.25 über 120 Zeilen (Soll ≤ 0,35)
+  Selbsttest 8-Texel-Stufen: Treppe 0.892 über 65 Zeilen (MUSS > 0,6)
+
+✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten.
+21:17:33 Schloss geloest
+EXIT=0 DAUER=14s SCHRITT=12 GATE=gate:foundry-impostor

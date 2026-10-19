@@ -1,0 +1,22 @@
+echt-Batterie S6 an B (n1810-s6d ab480f5b), CI-Weg CI=true CI_KLASSE=gpu LINSE_GPU=karte, Node v22.23.3 des Laeufers, Schloss omen-1710-n je Schritt
+echt/01-fern-ring.log EXIT=0 DAUER=49s SCHRITT=1 GATE=gate:fern-ring
+echt/02-fernwald.log EXIT=0 DAUER=176s SCHRITT=2 GATE=gate:fernwald
+echt/03-streu-fern.log EXIT=0 DAUER=137s SCHRITT=3 GATE=gate:streu-fern
+echt/04-luft-sicht.log EXIT=0 DAUER=9s SCHRITT=4 GATE=gate:luft-sicht
+echt/05-seam.log EXIT=0 DAUER=20s SCHRITT=5 GATE=gate:seam
+echt/06-schatten-bias.log EXIT=0 DAUER=3s SCHRITT=6 GATE=gate:schatten-bias
+echt/07-ziel-zensus.log EXIT=0 DAUER=23s SCHRITT=7 GATE=gate:ziel-zensus
+echt/08-scatter-lod.log EXIT=0 DAUER=42s SCHRITT=8 GATE=gate:scatter-lod
+echt/09-analog-nah.log EXIT=1 DAUER=7s SCHRITT=9 GATE=gate:analog-nah
+echt/10-foundry-crossfade.log EXIT=0 DAUER=44s SCHRITT=10 GATE=gate:foundry-crossfade
+echt/11-s4-impostor-workshop.log EXIT=0 DAUER=8s SCHRITT=11 GATE=gate:s4-impostor-workshop
+echt/12-foundry-impostor.log EXIT=0 DAUER=14s SCHRITT=12 GATE=gate:foundry-impostor
+echt/13-freie-slots.log EXIT=0 DAUER=38s SCHRITT=13 GATE=gate:freie-slots
+echt/14-pruefbuehne-licht.log EXIT=0 DAUER=19s SCHRITT=14 GATE=gate:pruefbuehne-licht
+echt/15-wasser-leben_bild.log EXIT=0 DAUER=14s SCHRITT=15 GATE=gate:wasser-leben:bild
+echt/16-post-kette.log EXIT=0 DAUER=15s SCHRITT=16 GATE=gate:post-kette
+echt/17-portal-membran.log EXIT=0 DAUER=47s SCHRITT=17 GATE=gate:portal-membran
+echt/18-ego-schatten.log EXIT=0 DAUER=18s SCHRITT=18 GATE=gate:ego-schatten
+echt/19-verdeckungs-abfrage.log EXIT=0 DAUER=27s SCHRITT=19 GATE=gate:verdeckungs-abfrage
+echt/20-weltbild-frost_echt.log EXIT=0 DAUER=91s SCHRITT=20 GATE=gate:weltbild-frost:echt
+echt/21-gpu-fehler.log EXIT=0 DAUER=4s SCHRITT=21 GATE=gate:gpu-fehler
