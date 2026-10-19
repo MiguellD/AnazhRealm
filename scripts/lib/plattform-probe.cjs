@@ -356,6 +356,24 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
     return { objects, vertices, sha256: h.digest("hex") };
 }
 
+// DER GOLDEN-VERGLEICH der Vertrags-Linsen (fachwerk · porta · schmiede · vehicle; auch ihr Selbst-Test ruft ihn): die
+// Fälle des Goldens gegen das Ist (sha256, dann objects/vertices) → Abweichungsliste.
+function goldenVergleich(golden, actual) {
+    const bad = [];
+    for (const k in golden.cases) {
+        const g = golden.cases[k];
+        const a = actual[k];
+        if (!a) {
+            bad.push(`${k}: fehlt im Ist`);
+            continue;
+        }
+        if (g.sha256 !== a.sha256)
+            bad.push(`${k}: sha256 weicht ab (${g.sha256.slice(0, 12)}… != ${a.sha256.slice(0, 12)}…)`);
+        else if (g.objects !== a.objects || g.vertices !== a.vertices) bad.push(`${k}: objects/vertices weichen ab`);
+    }
+    return bad;
+}
+
 module.exports = {
     plattformProbe,
     probeAblauf,
@@ -363,4 +381,5 @@ module.exports = {
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
+    goldenVergleich,
 };

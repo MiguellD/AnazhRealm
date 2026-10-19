@@ -32,7 +32,7 @@
 //   node scripts/diag-schmiede-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
@@ -62,22 +62,6 @@ function caseKey(c) {
     return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 }
 
-// Reine Vergleichs-Funktion (auch der Selbst-Test ruft sie) → Abweichungsliste.
-function compare(golden, actual) {
-    const bad = [];
-    for (const k in golden.cases) {
-        const g = golden.cases[k];
-        const a = actual[k];
-        if (!a) {
-            bad.push(`${k}: fehlt im Ist`);
-            continue;
-        }
-        if (g.sha256 !== a.sha256)
-            bad.push(`${k}: sha256 weicht ab (${g.sha256.slice(0, 12)}… != ${a.sha256.slice(0, 12)}…)`);
-        else if (g.objects !== a.objects || g.vertices !== a.vertices) bad.push(`${k}: objects/vertices weichen ab`);
-    }
-    return bad;
-}
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
