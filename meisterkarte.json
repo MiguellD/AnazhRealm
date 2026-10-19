@@ -1,16 +1,31 @@
 {
-  "stand": "2026-10-18",
+  "stand": "2026-10-19",
   "bereiche": [
     {
       "key": "gelaende",
       "titel": "Gelände, Boden und Wasser",
       "punkte": 5,
       "kriterien": [
-        { "name": "EIN 3D-Gesetz: Höhe, Dichte, Edit und Wasser im Kern", "punkte": 1 },
-        { "name": "Wasser lebt aus dem Gelände: Fluss, See, Ufer, Spiegel, Ruhe", "punkte": 1 },
-        { "name": "Edits überall: graben und bauen auf jeder Höhe, sichtbar nah, fern, im Wasser und in der Natur, gespeichert", "punkte": 1 },
-        { "name": "Fernsicht und Stufen: 0–8 km ohne Naht, auch in Fahrt", "punkte": 1 },
-        { "name": "Boden nah: Feinform, Stoff und Kontakt, im Budget", "punkte": 1 }
+        {
+          "name": "EIN 3D-Gesetz: Höhe, Dichte, Edit und Wasser im Kern",
+          "punkte": 1
+        },
+        {
+          "name": "Wasser lebt aus dem Gelände: Fluss, See, Ufer, Spiegel, Ruhe",
+          "punkte": 1
+        },
+        {
+          "name": "Edits überall: graben und bauen auf jeder Höhe, sichtbar nah, fern, im Wasser und in der Natur, gespeichert",
+          "punkte": 1
+        },
+        {
+          "name": "Fernsicht und Stufen: 0–8 km ohne Naht, auch in Fahrt",
+          "punkte": 1
+        },
+        {
+          "name": "Boden nah: Feinform, Stoff und Kontakt, im Budget",
+          "punkte": 1
+        }
       ]
     },
     {
@@ -18,11 +33,26 @@
       "titel": "Vegetation: Wiese und Wald",
       "punkte": 3,
       "kriterien": [
-        { "name": "Nah-Wiese wurzelt dicht und bunt (0–18 m)", "punkte": 1 },
-        { "name": "Wind als EIN sichtbares Feld bis zum Saum", "punkte": 1 },
-        { "name": "Wald-Silhouette bis zum Horizont", "punkte": 0 },
-        { "name": "LOD-Übergänge unsichtbar unter Bewegung", "punkte": 1 },
-        { "name": "Die Natur gehorcht dem Ort (EINE Wand, EINE Ableitung)", "punkte": 0 }
+        {
+          "name": "Nah-Wiese wurzelt dicht und bunt (0–18 m)",
+          "punkte": 1
+        },
+        {
+          "name": "Wind als EIN sichtbares Feld bis zum Saum",
+          "punkte": 1
+        },
+        {
+          "name": "Wald-Silhouette bis zum Horizont",
+          "punkte": 0
+        },
+        {
+          "name": "LOD-Übergänge unsichtbar unter Bewegung",
+          "punkte": 1
+        },
+        {
+          "name": "Die Natur gehorcht dem Ort (EINE Wand, EINE Ableitung)",
+          "punkte": 0
+        }
       ]
     },
     {
@@ -30,23 +60,53 @@
       "titel": "Siedlung: Dorf bis Stadt, Bauen",
       "punkte": 3,
       "kriterien": [
-        { "name": "Haus = Gesetz, Labor = Welt (Form, Stoff, Innenraum)", "punkte": 1 },
-        { "name": "Stadt-Genese in der Welt (Weiler bis Metropole, Mauer, Epoche)", "punkte": 0 },
-        { "name": "Gelände-Treue (der Grundriss liest den Boden)", "punkte": 1 },
-        { "name": "Spieler-Bauen (Teil, Haus, Ort)", "punkte": 1 },
-        { "name": "Leben und Last (Bewohner, Stadt im Profi-Band)", "punkte": 0 }
+        {
+          "name": "Haus = Gesetz, Labor = Welt (Form, Stoff, Innenraum)",
+          "punkte": 1
+        },
+        {
+          "name": "Stadt-Genese in der Welt (Weiler bis Metropole, Mauer, Epoche)",
+          "punkte": 0
+        },
+        {
+          "name": "Gelände-Treue (der Grundriss liest den Boden)",
+          "punkte": 1
+        },
+        {
+          "name": "Spieler-Bauen (Teil, Haus, Ort)",
+          "punkte": 1
+        },
+        {
+          "name": "Leben und Last (Bewohner, Stadt im Profi-Band)",
+          "punkte": 0
+        }
       ]
     },
     {
       "key": "tiere",
       "titel": "Tiere, Herden und Rudel",
-      "punkte": 2,
+      "punkte": 3,
       "kriterien": [
-        { "name": "Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm)", "punkte": 0 },
-        { "name": "Der Jagd-Kreislauf (Pirsch, Umstellen, Hetze, Riss, Fressen, Aas)", "punkte": 1 },
-        { "name": "Gang und Leib (der Fuß steht, die Gangart folgt dem Tempo, Gelände, Labor = Welt)", "punkte": 1 },
-        { "name": "Lebensraum und Tagesrhythmus (Art × Ort × Uhr)", "punkte": 0 },
-        { "name": "Dichte und Kosten am Schirm", "punkte": 0 }
+        {
+          "name": "Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm)",
+          "punkte": 1
+        },
+        {
+          "name": "Der Jagd-Kreislauf (Pirsch, Umstellen, Hetze, Riss, Fressen, Aas)",
+          "punkte": 1
+        },
+        {
+          "name": "Gang und Leib (der Fuß steht, die Gangart folgt dem Tempo, Gelände, Labor = Welt)",
+          "punkte": 1
+        },
+        {
+          "name": "Lebensraum und Tagesrhythmus (Art × Ort × Uhr)",
+          "punkte": 0
+        },
+        {
+          "name": "Dichte und Kosten am Schirm",
+          "punkte": 0
+        }
       ]
     },
     {
@@ -54,11 +114,26 @@
       "titel": "Menschen und NPC",
       "punkte": 2,
       "kriterien": [
-        { "name": "Besiedlung und Skala (Plan wird Körper)", "punkte": 0 },
-        { "name": "Tagesablauf (Rolle × Uhr × Ort)", "punkte": 0 },
-        { "name": "Wege und Raum (Gassen, Türen, keine Durchdringung)", "punkte": 0 },
-        { "name": "Körper und Ausdruck (Leib, Gang, Gesicht, Vielfalt, Kosten)", "punkte": 1 },
-        { "name": "Begegnung (Reaktion, Gespräch, Gedächtnis)", "punkte": 1 }
+        {
+          "name": "Besiedlung und Skala (Plan wird Körper)",
+          "punkte": 0
+        },
+        {
+          "name": "Tagesablauf (Rolle × Uhr × Ort)",
+          "punkte": 0
+        },
+        {
+          "name": "Wege und Raum (Gassen, Türen, keine Durchdringung)",
+          "punkte": 0
+        },
+        {
+          "name": "Körper und Ausdruck (Leib, Gang, Gesicht, Vielfalt, Kosten)",
+          "punkte": 1
+        },
+        {
+          "name": "Begegnung (Reaktion, Gespräch, Gedächtnis)",
+          "punkte": 1
+        }
       ]
     },
     {
@@ -66,11 +141,26 @@
       "titel": "Fahrzeuge, Fahrgefühl und Kamera",
       "punkte": 3,
       "kriterien": [
-        { "name": "Das Fahr-Gesetz: Reifen · Boden · Takt", "punkte": 1 },
-        { "name": "Tempo mit Welt", "punkte": 0 },
-        { "name": "Die Chase-Kamera als Rig", "punkte": 1 },
-        { "name": "Übergänge unter Bewegung", "punkte": 0 },
-        { "name": "Rückmeldung: der Körper fühlt die Fahrt", "punkte": 1 }
+        {
+          "name": "Das Fahr-Gesetz: Reifen · Boden · Takt",
+          "punkte": 1
+        },
+        {
+          "name": "Tempo mit Welt",
+          "punkte": 0
+        },
+        {
+          "name": "Die Chase-Kamera als Rig",
+          "punkte": 1
+        },
+        {
+          "name": "Übergänge unter Bewegung",
+          "punkte": 0
+        },
+        {
+          "name": "Rückmeldung: der Körper fühlt die Fahrt",
+          "punkte": 1
+        }
       ]
     },
     {
@@ -78,11 +168,26 @@
       "titel": "Licht, Atmosphäre und Ferne",
       "punkte": 3,
       "kriterien": [
-        { "name": "Eine Atmosphäre trägt jedes Licht", "punkte": 1 },
-        { "name": "Tag und Nacht sind EINE Kurve der Sonnenhöhe", "punkte": 0 },
-        { "name": "Die Luft macht die Ferne lesbar", "punkte": 1 },
-        { "name": "Die Ferne hat Gestalt", "punkte": 1 },
-        { "name": "Der Himmel hat Körper und wirft Schatten bis zum Horizont", "punkte": 0 }
+        {
+          "name": "Eine Atmosphäre trägt jedes Licht",
+          "punkte": 1
+        },
+        {
+          "name": "Tag und Nacht sind EINE Kurve der Sonnenhöhe",
+          "punkte": 0
+        },
+        {
+          "name": "Die Luft macht die Ferne lesbar",
+          "punkte": 1
+        },
+        {
+          "name": "Die Ferne hat Gestalt",
+          "punkte": 1
+        },
+        {
+          "name": "Der Himmel hat Körper und wirft Schatten bis zum Horizont",
+          "punkte": 0
+        }
       ]
     },
     {
@@ -90,11 +195,26 @@
       "titel": "Studios und Werkzeug-UI",
       "punkte": 4,
       "kriterien": [
-        { "name": "EINE Bühne: jedes Studio ein Modus der Welt-Engine", "punkte": 0 },
-        { "name": "Kosten-Wahrheit am Griff", "punkte": 1 },
-        { "name": "Jeder Regler wirkt und hält das Budget", "punkte": 1 },
-        { "name": "Iteration und Sitzung", "punkte": 1 },
-        { "name": "Der Weg in die Welt und die Sprache der KI", "punkte": 1 }
+        {
+          "name": "EINE Bühne: jedes Studio ein Modus der Welt-Engine",
+          "punkte": 0
+        },
+        {
+          "name": "Kosten-Wahrheit am Griff",
+          "punkte": 1
+        },
+        {
+          "name": "Jeder Regler wirkt und hält das Budget",
+          "punkte": 1
+        },
+        {
+          "name": "Iteration und Sitzung",
+          "punkte": 1
+        },
+        {
+          "name": "Der Weg in die Welt und die Sprache der KI",
+          "punkte": 1
+        }
       ]
     },
     {
@@ -102,12 +222,40 @@
       "titel": "Ankunft, Streaming und Leistung",
       "punkte": 2,
       "kriterien": [
-        { "name": "Ankunft kalt: Klick bis Kontrolle", "punkte": 0 },
-        { "name": "Takt in Ruhe: das Profi-Band an beiden Messplätzen", "punkte": 1 },
-        { "name": "Glätte in Bewegung: keine Hänger", "punkte": 1 },
-        { "name": "Kein Pop-in unter Tempo", "punkte": 0 },
-        { "name": "Wiederkehr und Reise: warm und Portal", "punkte": 0 }
+        {
+          "name": "Ankunft kalt: Klick bis Kontrolle",
+          "punkte": 0
+        },
+        {
+          "name": "Takt in Ruhe: das Profi-Band an beiden Messplätzen",
+          "punkte": 1
+        },
+        {
+          "name": "Glätte in Bewegung: keine Hänger",
+          "punkte": 1
+        },
+        {
+          "name": "Kein Pop-in unter Tempo",
+          "punkte": 0
+        },
+        {
+          "name": "Wiederkehr und Reise: warm und Portal",
+          "punkte": 0
+        }
       ]
+    }
+  ],
+  "verlauf": [
+    {
+      "stand": "2026-10-18",
+      "kopf": "ff88b82d",
+      "summe": 27
+    },
+    {
+      "stand": "2026-10-19",
+      "kopf": "ffa8fac8",
+      "summe": 28,
+      "was": "S6 Rudel-Verband (Tiere K1 0→1: Zusammenhalt gemessen gehalten, Ausrichtung/Alarm/ID offen); Garage isoliert auf r184 (Studios K1 bleibt 0: 3 von 11 Seiten)"
     }
   ]
 }

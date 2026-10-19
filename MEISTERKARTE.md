@@ -12,14 +12,14 @@ ordnet die Hebel und nennt, welche Pflicht jeder trägt.
 
 ---
 
-## Punktestand: 27 / 90
+## Punktestand: 28 / 90 (Verlauf: 18.10. 27 · 19.10. 28 — S6 Rudel-Verband auf main ffa8fac8)
 
 | Bereich | Punkte | K1 | K2 | K3 | K4 | K5 | nächster Hebel |
 |---|---|---|---|---|---|---|---|
 | 1 Gelände, Boden, Wasser | **5**/10 | 1 | 1 | 1 | 1 | 1 | Wasser-Bild aus dem Gesetz (+1 · 1 d · A) |
 | 2 Vegetation: Wiese und Wald | **3**/10 | 1 | 1 | 0 | 1 | 0 | Die Wiese wogt bis zum Saum (+2 · 1–1½ d) |
 | 3 Siedlung und Bauen | **3**/10 | 1 | 0 | 1 | 1 | 0 | Stadt-Tor + Export mit Rang (+3 · 1¾ d) |
-| 4 Tiere, Herden, Rudel | **2**/10 | 0 | 1 | 1 | 0 | 0 | Der Verband ins Gesetzbuch (+2 · ¾ d; gebaut auf rudel-verband) |
+| 4 Tiere, Herden, Rudel | **3**/10 | 1 | 1 | 1 | 0 | 0 | Den Verband ganz messen: Ausrichtung, Alarm-Kette, ID (+1 · ½ d; S6 auf main ffa8fac8) |
 | 5 Menschen und NPC | **2**/10 | 0 | 0 | 0 | 1 | 1 | Bewohner = Kreatur mit Menschen-Leib (+2 · 1 d) |
 | 6 Fahrzeug, Fahrgefühl, Kamera | **3**/10 | 1 | 0 | 1 | 0 | 1 | EIN Kamera-Rig (+2 · ½ d; gebaut auf spielgang) |
 | 7 Licht, Atmosphäre, Ferne | **3**/10 | 1 | 0 | 1 | 1 | 0 | EINE Tag-Achse S7 (+3 · 1½ d · A) |
@@ -394,7 +394,7 @@ Verhaltens-Studio zeigt mit den Couzin-Zonen als Reglern dieselbe Herde, die der
   laut Autor (unbestätigt) (80.lv/articles/mode-adaptive-neural-networks-for-quadruped-motion-control).
 
 **Kriterien**
-1. **Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm) — 0/2.** *Messung:* Band herde an scheuen
+1. **Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm) — 1/2 (19.10., S6 auf main ffa8fac8: (a) Zusammenhalt Wandern 1,0 · Flucht 0,98 gemessen gehalten; (b) Ausrichtung, (c) Alarm-Kette, (d) Verbands-ID 600 s ungemessen).** *Messung:* Band herde an scheuen
    Hirschen (Wurf 3–7), wandernd UND fliehend: (a) Anteil der Glieder nach 60 s im Fenster fensterRaum × Paar-Raum um die Verbands-Mitte ≥
    0,9; (b) Ausrichtung in der Flucht Φ = |Σ v̂_i| / N ≥ 0,8; (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verband-ID hält
    600 s, fremde Rudel verschmelzen nie. Linse: Bühne herde in `scripts/lib/kreatur-proben.cjs`, heute nur Existenz (n > 0) am neugierigen
