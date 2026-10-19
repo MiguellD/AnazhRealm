@@ -1708,13 +1708,13 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
-    // je Auftrag `WALD_PLAN.faden` Zellen, alle Aufträge zugleich im Flug; der Faden rechnet sie hintereinander, jede Antwort
-    // landet für sich per Transfer (`_waldDartsAn`). Bis B-Wald hielt die Schlange 2 Aufträge im Flug, der nächste ging mit der
-    // Ankunft des vorigen — und die kam erst am Ende der Aufgabe des Haupt-Fadens, in der der Faden fertig wurde (GTX kalt 38
-    // von 42): je Lade-Bild EINE Runde von 128 Zellen, der Faden rechnete 3,37 s und seine Antworten warteten 12,57 s
-    // (p3/n1910/kette, K2). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der Zustand über den EINEN
-    // Sender. Bis K60-3 rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten Bild 1,6 von 2,2 s
-    // Streu (K602c/q2: `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
+    // je Auftrag `WALD_PLAN.faden` Zellen, alle zugleich im Flug; der Faden rechnet je Takt den nächsten (`rang`, seine Schlange
+    // `waldAuftraege`), jede Antwort landet für sich per Transfer (`_waldDartsAn`). Bis B-Wald hielt die Schlange 2 Aufträge im
+    // Flug, der nächste ging mit der Ankunft des vorigen — und die kam erst am Ende der Aufgabe des Haupt-Fadens, in der der
+    // Faden fertig wurde (GTX kalt 38 von 42): je Lade-Bild EINE Runde von 128 Zellen, der Faden rechnete 3,37 s und seine
+    // Antworten warteten 12,57 s (p3/n1910/kette, K2). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der
+    // Zustand über den EINEN Sender. Bis K60-3 rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten
+    // Bild 1,6 von 2,2 s Streu (K602c/q2: `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
     _waldFadenSchicken(seedInt) {
         this._forestDartStand(seedInt);
         const memo = this._forestDartMemo;
@@ -1737,7 +1737,7 @@ class AnazhRealm_vegetation_wiese {
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
-            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras).then(
+            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0]).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {
                     this._waldDartsAn(memo, zellen, null, erd); // die Zellen bleiben in der Schlange, der Takt schickt neu
