@@ -139,7 +139,7 @@
     {
       "key": "fahrzeug",
       "titel": "Fahrzeuge, Fahrgefühl und Kamera",
-      "punkte": 3,
+      "punkte": 4,
       "kriterien": [
         {
           "name": "Das Fahr-Gesetz: Reifen · Boden · Takt",
@@ -155,7 +155,7 @@
         },
         {
           "name": "Übergänge unter Bewegung",
-          "punkte": 0
+          "punkte": 1
         },
         {
           "name": "Rückmeldung: der Körper fühlt die Fahrt",
@@ -262,6 +262,12 @@
       "kopf": "47c8b089",
       "summe": 28,
       "was": "Ankunfts-Paket B4+B5: Radeon kalt 7,89 -> 6,3-6,9 s (Ankunft K1 bleibt 0: Soll <= 5 s)"
+    },
+    {
+      "stand": "2026-10-19",
+      "kopf": "e93134f4",
+      "summe": 29,
+      "was": "F1 Kamera-Rig (Fahrzeug K4 0→1: Azimut 6,3° nach 10 Bildern, Stufe 0 m an der Physik, Ruck p95 0,017 m, GTX nicht langsamer; offen Absteigen in Fahrt, 2 Bilder durchscheinend)"
     }
   ]
 }
