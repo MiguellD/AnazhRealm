@@ -952,7 +952,7 @@ die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DER ORT (K1
 (Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY`, der
 Fläche `erdbauFlaeche` und seiner Wand `erdbauWand` (K66: Böschung und Kante zwischen zwei Flächen tragen im Fels-Stoff den
 Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der Keller eines Hauses aus fachwerk `grundVon`) mit
-seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts) und dem Schnitt des gezeichneten
+seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
