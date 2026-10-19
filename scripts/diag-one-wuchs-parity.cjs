@@ -29,16 +29,8 @@ require("../phyto-core.js");
 const core = globalThis.__phytoCore;
 
 // ── DIE ZWEI KONSUMENTEN-STRÖME, JEDER SEINER QUELLE TREU ──
-// Foundry-treu: mulberry32(Math.floor(n) >>> 0) — foundry-core.js `RNG` (Zeile ~2718).
-function mulberry32(a) {
-    return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
+// Foundry-treu: mulberry32(Math.floor(n) >>> 0) — foundry-core.js `RNG`, der Strom des Kerns.
+const { mulberry32 } = core;
 const seqFromInt = (n) => mulberry32(Math.floor(n) >>> 0);
 
 // Richter-treu: FNV-1a → xorshift32 — anazhRealm `_rollGenome().seq(name)` (Zeile ~53418).

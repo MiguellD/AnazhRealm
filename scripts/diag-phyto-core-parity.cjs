@@ -14,20 +14,10 @@ const vm = require("vm");
 const CORE_PATH = path.join(__dirname, "..", "phyto-core.js");
 const src = fs.readFileSync(CORE_PATH, "utf8");
 
-// mulberry32 — der deterministische Test-Strom (wie diag-phyto-tree).
-function mulberry32(a) {
-    return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
 // (a) MAIN-Pfad: require() → der IIFE-Seiteneffekt setzt globalThis.__phytoCore.
 require("../phyto-core.js");
 const mainCore = globalThis.__phytoCore;
+const { mulberry32 } = mainCore; // der Test-Strom ist der Strom des Kerns (wie diag-phyto-tree)
 
 // (b) WORKER-Pfad: ein frischer Context, in dem `self` das globale Objekt IST (Worker-Scope).
 // Der IIFE-Root-Ausdruck `typeof self !== "undefined" ? self : ...` greift dann `self`.
