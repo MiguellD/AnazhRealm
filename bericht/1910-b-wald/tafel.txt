@@ -1,0 +1,13 @@
+# 1910 B-Wald — Kalt-ABAB (GTX 1060, diag-boot-stage --kalt --echt, Instrument p3/n1910/kette byte-gleich)
+
+A1  Weltbild 15.52  Leib 5.81  Schlange leer 14.99 (zuletzt 14.99)  Faden: 41 Aufträge/2600 Zellen, rechnet 2.93, fertig→an Σ 14.23, letzte Antwort 14.99  letzte waldplan-Zusage 14.99  letzte Zusage karte:buche|1 15.29  letzte Terme streu 15.36 · bauten 15.10 · karten 15.10
+B1  Weltbild 15.89  Leib 5.42  Schlange leer 10.22 (zuletzt 15.35)  Faden: 52 Aufträge/2704 Zellen, rechnet 5.08, fertig→an Σ 17.02, letzte Antwort 15.35  letzte waldplan-Zusage 15.35  letzte Zusage karte:weide|1 15.63  letzte Terme streu 15.70 · bauten 15.49 · karten 15.49
+A2  Weltbild 16.40  Leib 5.46  Schlange leer 15.29 (zuletzt 15.29)  Faden: 42 Aufträge/2674 Zellen, rechnet 2.70, fertig→an Σ 15.84, letzte Antwort 15.29  letzte waldplan-Zusage 15.29  letzte Zusage karte:buche|1 16.25  letzte Terme streu 16.29 · bauten 15.70 · karten 15.70
+B2  Weltbild 16.23  Leib 5.28  Schlange leer 5.92 (zuletzt 15.58)  Faden: 51 Aufträge/2658 Zellen, rechnet 3.39, fertig→an Σ 18.19, letzte Antwort 15.58  letzte waldplan-Zusage 15.58  letzte Zusage karte:buche|1 15.99  letzte Terme streu 16.12 · bauten 15.75 · karten 15.75
+A3  Weltbild 16.22  Leib 4.67  Schlange leer 15.58 (zuletzt 15.58)  Faden: 42 Aufträge/2666 Zellen, rechnet 4.14, fertig→an Σ 15.04, letzte Antwort 15.58  letzte waldplan-Zusage 15.58  letzte Zusage karte:buche|1 15.78  letzte Terme boden 16.07 · streu 15.74 · bauten 15.47
+B3  Weltbild 15.64  Leib 5.88  Schlange leer 6.01 (zuletzt 15.13)  Faden: 60 Aufträge/3151 Zellen, rechnet 3.38, fertig→an Σ 20.96, letzte Antwort 15.13  letzte waldplan-Zusage 15.13  letzte Zusage zug:buche|3|1 15.43  letzte Terme streu 15.49 · bauten 15.07 · karten 15.07
+A4  Weltbild 15.96  Leib 6.45  Schlange leer 15.48 (zuletzt 15.48)  Faden: 41 Aufträge/2614 Zellen, rechnet 2.81, fertig→an Σ 14.23, letzte Antwort 15.48  letzte waldplan-Zusage 15.48  letzte Zusage karte:weide|1 15.78  letzte Terme streu 15.90 · bauten 15.71 · karten 15.71
+B4  Weltbild 15.84  Leib 5.21  Schlange leer 9.09 (zuletzt 15.11)  Faden: 53 Aufträge/2691 Zellen, rechnet 5.28, fertig→an Σ 22.53, letzte Antwort 15.11  letzte waldplan-Zusage 15.11  letzte Zusage karte:buche|2 15.63  letzte Terme streu 15.66 · bauten 15.48 · karten 15.48
+
+A (4): Weltbild 16.09 (15.52–16.40) · Leib 5.64 (4.67–6.45) · Schlange leer 15.39 (14.99–15.58) · letzte Faden-Antwort 15.39 (14.99–15.58) · fertig→an Σ 14.64 (14.23–15.84) · letzte waldplan-Zusage 15.39 (14.99–15.58)
+B (4): Weltbild 15.87 (15.64–16.23) · Leib 5.35 (5.21–5.88) · Schlange leer 7.55 (5.92–10.22) · letzte Faden-Antwort 15.24 (15.11–15.58) · fertig→an Σ 19.58 (17.02–22.53) · letzte waldplan-Zusage 15.24 (15.11–15.58)

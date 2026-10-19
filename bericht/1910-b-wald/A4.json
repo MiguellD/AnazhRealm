@@ -1,0 +1,15652 @@
+{
+ "proben": [
+  {
+   "t": 578
+  },
+  {
+   "t": 1495,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "lk": [
+    "welt:1"
+   ],
+   "det": {
+    "q": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "kt": {
+    "w": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "q": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 2869,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "leib:1*",
+    "buch:1*"
+   ],
+   "det": {
+    "q": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "kt": {
+    "w": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    "s": [
+     [
+      "-1,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 4626,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "10 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "leib:1*",
+    "bauten:10",
+    "dorf:1*",
+    "pflanzung:2",
+    "streu:4",
+    "karten:1"
+   ],
+   "det": {
+    "q": [
+     4,
+     17,
+     20,
+     1,
+     0
+    ],
+    "bauten": {
+     "zacken:L2": [
+      1,
+      44
+     ],
+     "geisttor:L2": [
+      1,
+      11
+     ],
+     "drachentor:L2": [
+      2,
+      11
+     ],
+     "verkalkt:L2": [
+      1,
+      11
+     ],
+     "maschine:L2": [
+      1,
+      11
+     ],
+     "kathedrale:L2": [
+      1,
+      11
+     ],
+     "maurentor:L2": [
+      1,
+      11
+     ],
+     "ruine:L2": [
+      1,
+      11
+     ],
+     "gt:L2": [
+      1,
+      19
+     ]
+    },
+    "streu": {
+     "fehlt": 4
+    },
+    "karten": {
+     "gt:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     120,
+     120,
+     2,
+     2,
+     1,
+     0
+    ],
+    "s": [
+     [
+      "-1,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     4,
+     17,
+     1,
+     1,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "4 wartend · 17 im Werk · 0 im Bäcker",
+   "erst": [
+    12,
+    696,
+    6
+   ],
+   "da": 0
+  },
+  {
+   "t": 6154,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "10 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "3 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1",
+    "horizont:1",
+    "leib:1*",
+    "bauten:10",
+    "dorf:1*",
+    "pflanzung:3",
+    "streu:4",
+    "karten:1"
+   ],
+   "det": {
+    "q": [
+     6,
+     16,
+     22,
+     1,
+     0
+    ],
+    "bauten": {
+     "zacken:L2": [
+      1,
+      44
+     ],
+     "geisttor:L2": [
+      1,
+      11
+     ],
+     "drachentor:L2": [
+      2,
+      11
+     ],
+     "verkalkt:L2": [
+      1,
+      11
+     ],
+     "maschine:L2": [
+      1,
+      11
+     ],
+     "kathedrale:L2": [
+      1,
+      11
+     ],
+     "maurentor:L2": [
+      1,
+      11
+     ],
+     "ruine:L2": [
+      1,
+      11
+     ],
+     "gt:L2": [
+      1,
+      19
+     ]
+    },
+    "streu": {
+     "fehlt": 4
+    },
+    "karten": {
+     "gt:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     168,
+     120,
+     2,
+     4,
+     1,
+     0
+    ],
+    "s": [
+     [
+      "-1,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     6,
+     16,
+     1,
+     1,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 16 im Werk · 0 im Bäcker",
+   "erst": [
+    20,
+    1336,
+    11
+   ],
+   "da": 0
+  },
+  {
+   "t": 6608,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "6 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "3 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "bauten:6",
+    "dorf:1*",
+    "pflanzung:3",
+    "streu:4",
+    "karten:1"
+   ],
+   "det": {
+    "q": [
+     4,
+     7,
+     19,
+     8,
+     0
+    ],
+    "bauten": {
+     "zacken:L2": [
+      1,
+      44
+     ],
+     "drachentor:L2": [
+      2,
+      11
+     ],
+     "maschine:L2": [
+      1,
+      11
+     ],
+     "kathedrale:L2": [
+      1,
+      11
+     ],
+     "gt:L2": [
+      1,
+      19
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "gt:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     545,
+     120,
+     2,
+     4,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs2",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     4,
+     7,
+     8,
+     1,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "4 wartend · 7 im Werk · 0 im Bäcker",
+   "erst": [
+    20,
+    1336,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 7681,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "7 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "11 Bäume werden gepflanzt, 1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "bauten:7",
+    "dorf:1*",
+    "pflanzung:12",
+    "streu:4",
+    "karten:1"
+   ],
+   "det": {
+    "q": [
+     3,
+     3,
+     11,
+     5,
+     0
+    ],
+    "bauten": {
+     "gt:L2": [
+      1,
+      19
+     ],
+     "tanne:L2": [
+      2,
+      21
+     ],
+     "eiche:L2": [
+      1,
+      26
+     ],
+     "birke:L2": [
+      1,
+      31
+     ],
+     "fichte:L2": [
+      2,
+      30
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "gt:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     786,
+     128,
+     2,
+     2,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     3,
+     3,
+     5,
+     1,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    30,
+    1629,
+    11
+   ],
+   "da": 0
+  },
+  {
+   "t": 8732,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (43 %)",
+    "41 Bäume und Bauten wachsen",
+    "17 Häuser des Dorfs wachsen",
+    "11 Bäume werden gepflanzt, 2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "bauten:41",
+    "dorf:17",
+    "pflanzung:13",
+    "streu:4",
+    "karten:1"
+   ],
+   "det": {
+    "q": [
+     3,
+     6,
+     12,
+     3,
+     0
+    ],
+    "bauten": {
+     "gt:L2": [
+      1,
+      19
+     ],
+     "tanne:L2": [
+      4,
+      21
+     ],
+     "eiche:L2": [
+      7,
+      26
+     ],
+     "birke:L2": [
+      7,
+      27
+     ],
+     "fichte:L2": [
+      6,
+      30
+     ],
+     "laterne:L2": [
+      13,
+      46
+     ],
+     "brunnen:L2": [
+      1,
+      129
+     ],
+     "marktstand:L2": [
+      2,
+      115
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "gt:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     1150,
+     128,
+     2,
+     5,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     3,
+     6,
+     3,
+     1,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    36,
+    1912,
+    7
+   ],
+   "da": 0
+  },
+  {
+   "t": 9806,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (66 %)",
+    "37 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "33 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "bauten:37",
+    "dorf:10",
+    "pflanzung:37",
+    "streu:4",
+    "karten:2"
+   ],
+   "det": {
+    "q": [
+     0,
+     16,
+     16,
+     0,
+     0
+    ],
+    "bauten": {
+     "gt:L2": [
+      1,
+      19
+     ],
+     "tanne:L2": [
+      4,
+      21
+     ],
+     "eiche:L2": [
+      7,
+      26
+     ],
+     "birke:L2": [
+      7,
+      27
+     ],
+     "fichte:L2": [
+      6,
+      30
+     ],
+     "gotisch:L2": [
+      1,
+      106
+     ],
+     "alpenchalet:L2": [
+      1,
+      116
+     ],
+     "wandlaterne:L2": [
+      4,
+      75
+     ],
+     "schwarzwald:L2": [
+      5,
+      83
+     ],
+     "strauch:L2": [
+      1,
+      36
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "gt:L1da": 1,
+     "strauch:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     1067,
+     128,
+     2,
+     9,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     16,
+     0,
+     3,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 16 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    2296,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 10639,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (70 %)",
+    "33 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "32 Bäume werden gepflanzt, 7 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "boden:1*",
+    "horizont:1",
+    "bauten:33",
+    "dorf:10",
+    "pflanzung:39",
+    "streu:4",
+    "karten:7"
+   ],
+   "det": {
+    "q": [
+     0,
+     16,
+     16,
+     0,
+     0
+    ],
+    "bauten": {
+     "gt:L2": [
+      1,
+      19
+     ],
+     "tanne:L2": [
+      4,
+      21
+     ],
+     "eiche:L2": [
+      7,
+      26
+     ],
+     "birke:L2": [
+      7,
+      27
+     ],
+     "fichte:L2": [
+      6,
+      30
+     ],
+     "gotisch:L2": [
+      1,
+      106
+     ],
+     "alpenchalet:L2": [
+      1,
+      116
+     ],
+     "schwarzwald:L2": [
+      5,
+      83
+     ],
+     "strauch:L2": [
+      1,
+      36
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "gt:L1da": 1,
+     "strauch:L1reist": 1,
+     "tanne:L1reist": 1,
+     "tanne:L1da": 1,
+     "eiche:L1reist": 1,
+     "fichte:L1reist": 1,
+     "birke:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     958,
+     128,
+     2,
+     14,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     16,
+     0,
+     8,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 16 im Werk · 0 im Bäcker",
+   "erst": [
+    44,
+    2373,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 11212,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "30 Bäume und Bauten wachsen",
+    "9 Häuser des Dorfs wachsen",
+    "68 Bäume werden gepflanzt, 9 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:30",
+    "dorf:9",
+    "pflanzung:77",
+    "streu:4",
+    "karten:9"
+   ],
+   "det": {
+    "q": [
+     0,
+     7,
+     13,
+     6,
+     0
+    ],
+    "bauten": {
+     "tanne:L2": [
+      4,
+      21
+     ],
+     "eiche:L2": [
+      7,
+      26
+     ],
+     "birke:L2": [
+      7,
+      27
+     ],
+     "fichte:L2": [
+      6,
+      30
+     ],
+     "alpenchalet:L2": [
+      1,
+      116
+     ],
+     "schwarzwald:L2": [
+      4,
+      83
+     ],
+     "strauch:L2": [
+      1,
+      36
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "tanne:L1reist": 1,
+     "tanne:L1da": 1,
+     "eiche:L1reist": 1,
+     "fichte:L1reist": 3,
+     "birke:L1reist": 2,
+     "strauch:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     714,
+     128,
+     2,
+     13,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     7,
+     6,
+     10,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 7 im Werk · 0 im Bäcker",
+   "erst": [
+    45,
+    2526,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 12567,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "56 Bäume und Bauten wachsen",
+    "105 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:56",
+    "pflanzung:105",
+    "streu:4",
+    "karten:11"
+   ],
+   "det": {
+    "q": [
+     13,
+     22,
+     35,
+     0,
+     0
+    ],
+    "bauten": {
+     "tanne:L2": [
+      9,
+      21
+     ],
+     "eiche:L2": [
+      8,
+      26
+     ],
+     "birke:L2": [
+      8,
+      27
+     ],
+     "fichte:L2": [
+      11,
+      27
+     ],
+     "strauch:L2": [
+      3,
+      36
+     ],
+     "schwarzwald:L2": [
+      4,
+      89
+     ],
+     "alpenchalet:L2": [
+      2,
+      112
+     ],
+     "skandinavisch:L2": [
+      2,
+      65
+     ],
+     "zacken:L1": [
+      1,
+      16
+     ],
+     "zacken:L2": [
+      8,
+      46
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "tanne:L1da": 3,
+     "eiche:L1da": 1,
+     "birke:L1reist": 2,
+     "fichte:L1reist": 1,
+     "eiche:L1reist": 1,
+     "fichte:L1da": 2,
+     "strauch:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     653,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs13",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     13,
+     22,
+     0,
+     14,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "13 wartend · 22 im Werk · 0 im Bäcker",
+   "erst": [
+    50,
+    2975,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 13264,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "70 Bäume und Bauten wachsen",
+    "82 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:70",
+    "pflanzung:82",
+    "streu:4",
+    "karten:11"
+   ],
+   "det": {
+    "q": [
+     12,
+     7,
+     31,
+     12,
+     0
+    ],
+    "bauten": {
+     "tanne:L2": [
+      10,
+      25
+     ],
+     "eiche:L2": [
+      10,
+      26
+     ],
+     "birke:L2": [
+      10,
+      27
+     ],
+     "fichte:L2": [
+      19,
+      27
+     ],
+     "strauch:L2": [
+      7,
+      36
+     ],
+     "schwarzwald:L2": [
+      3,
+      89
+     ],
+     "alpenchalet:L2": [
+      2,
+      112
+     ],
+     "alpenchalet:Lundefined": [
+      1,
+      140
+     ],
+     "skandinavisch:L2": [
+      2,
+      65
+     ],
+     "zacken:L1": [
+      1,
+      16
+     ],
+     "zacken:L2": [
+      5,
+      46
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "tanne:L1da": 2,
+     "eiche:L1da": 1,
+     "birke:L1da": 2,
+     "fichte:L1da": 3,
+     "eiche:L1reist": 1,
+     "strauch:L1da": 1,
+     "birke:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     535,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "cs22",
+      null,
+      -1
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     12,
+     7,
+     12,
+     13,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "12 wartend · 7 im Werk · 0 im Bäcker",
+   "erst": [
+    51,
+    3093,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 13953,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "86 Bäume und Bauten wachsen",
+    "53 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:86",
+    "pflanzung:53",
+    "streu:4",
+    "karten:12"
+   ],
+   "det": {
+    "q": [
+     9,
+     3,
+     24,
+     12,
+     0
+    ],
+    "bauten": {
+     "eiche:L2": [
+      13,
+      26
+     ],
+     "birke:L2": [
+      17,
+      27
+     ],
+     "fichte:L2": [
+      26,
+      27
+     ],
+     "strauch:L2": [
+      9,
+      36
+     ],
+     "alpenchalet:L2": [
+      2,
+      112
+     ],
+     "schwarzwald:L2": [
+      1,
+      116
+     ],
+     "skandinavisch:L2": [
+      1,
+      132
+     ],
+     "tanne:L2": [
+      13,
+      36
+     ],
+     "zacken:L2": [
+      2,
+      121
+     ],
+     "mammut:L2": [
+      1,
+      88
+     ],
+     "weide:L2": [
+      1,
+      108
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 1,
+     "fehlt": 3
+    },
+    "karten": {
+     "eiche:L1da": 1,
+     "birke:L1da": 2,
+     "fichte:L1da": 3,
+     "eiche:L1reist": 1,
+     "strauch:L1da": 1,
+     "tanne:L1da": 1,
+     "birke:L1reist": 1,
+     "mammut:L1reist": 1,
+     "weide:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     304,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "zug:eiche|1|1",
+       "karte:fichte|1",
+       "karte:fichte|2",
+       "karte:eiche|2",
+       "zug:buche|2|1",
+       "zug:buche|1|1"
+      ],
+      14
+     ],
+     [
+      "0,-1 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     9,
+     3,
+     12,
+     13,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "9 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    53,
+    3318,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 14511,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "111 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:111",
+    "streu:4",
+    "karten:10"
+   ],
+   "det": {
+    "q": [
+     7,
+     3,
+     10,
+     0,
+     0
+    ],
+    "bauten": {
+     "birke:L2": [
+      19,
+      31
+     ],
+     "fichte:L2": [
+      38,
+      27
+     ],
+     "eiche:L2": [
+      12,
+      28
+     ],
+     "strauch:L2": [
+      15,
+      36
+     ],
+     "tanne:L2": [
+      23,
+      36
+     ],
+     "mammut:L2": [
+      2,
+      88
+     ],
+     "weide:L2": [
+      2,
+      88
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 2,
+     "fehlt": 2
+    },
+    "karten": {
+     "fichte:L1da": 3,
+     "eiche:L1da": 1,
+     "birke:L1da": 2,
+     "strauch:L1da": 1,
+     "tanne:L1da": 1,
+     "mammut:L1da": 1,
+     "weide:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     691,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|1",
+       "karte:fichte|2",
+       "zug:buche|2|1",
+       "zug:buche|1|1",
+       "karte:strauch|1",
+       "zug:blume|2|0"
+      ],
+      11
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "cs7",
+      null,
+      -1
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     7,
+     3,
+     0,
+     12,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    53,
+    3318,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 14781,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "91 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:91",
+    "streu:4",
+    "karten:10"
+   ],
+   "det": {
+    "q": [
+     2,
+     3,
+     8,
+     3,
+     0
+    ],
+    "bauten": {
+     "birke:L2": [
+      18,
+      31
+     ],
+     "fichte:L2": [
+      30,
+      30
+     ],
+     "eiche:L2": [
+      10,
+      28
+     ],
+     "strauch:L2": [
+      15,
+      36
+     ],
+     "tanne:L2": [
+      14,
+      36
+     ],
+     "mammut:L2": [
+      2,
+      88
+     ],
+     "weide:L2": [
+      2,
+      88
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 2,
+     "fehlt": 2
+    },
+    "karten": {
+     "eiche:L1da": 1,
+     "fichte:L1da": 2,
+     "birke:L1da": 2,
+     "strauch:L1da": 1,
+     "tanne:L1da": 1,
+     "mammut:L1da": 1,
+     "weide:L1da": 1,
+     "eiche:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     440,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|1",
+       "karte:fichte|2",
+       "zug:buche|2|1",
+       "karte:strauch|1",
+       "zug:blume|2|0",
+       "zug:blume|1|0"
+      ],
+      10
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|1",
+       "karte:eiche|1",
+       "karte:fichte|2"
+      ],
+      7
+     ],
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     2,
+     3,
+     3,
+     11,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    54,
+    3352,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 15082,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "67 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:67",
+    "streu:4",
+    "karten:9"
+   ],
+   "det": {
+    "q": [
+     0,
+     2,
+     2,
+     0,
+     0
+    ],
+    "bauten": {
+     "birke:L2": [
+      18,
+      31
+     ],
+     "fichte:L2": [
+      15,
+      37
+     ],
+     "strauch:L2": [
+      15,
+      36
+     ],
+     "tanne:L2": [
+      14,
+      36
+     ],
+     "mammut:L2": [
+      2,
+      88
+     ],
+     "weide:L2": [
+      2,
+      88
+     ],
+     "eiche:L2": [
+      1,
+      135
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 3,
+     "fehlt": 1
+    },
+    "karten": {
+     "birke:L1da": 2,
+     "strauch:L1da": 1,
+     "tanne:L1da": 1,
+     "fichte:L1da": 1,
+     "karst:L1da": 1,
+     "mammut:L1da": 1,
+     "weide:L1da": 1,
+     "eiche:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     411,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|2",
+       "karte:strauch|1",
+       "zug:blume|2|0"
+      ],
+      7
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|2"
+      ],
+      5
+     ],
+     [
+      "-1,0 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:tanne|2",
+       "karte:karst|1",
+       "karte:fichte|2",
+       "karte:strauch|1",
+       "zug:blume|2|0"
+      ],
+      7
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     2,
+     0,
+     9,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    54,
+    3352,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15263,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "56 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:56",
+    "streu:4",
+    "karten:10"
+   ],
+   "det": {
+    "q": [
+     0,
+     0,
+     1,
+     1,
+     0
+    ],
+    "bauten": {
+     "fichte:L2": [
+      15,
+      37
+     ],
+     "birke:L2": [
+      6,
+      61
+     ],
+     "strauch:L2": [
+      15,
+      36
+     ],
+     "alpenchalet:Lundefined": [
+      1,
+      140
+     ],
+     "tanne:L2": [
+      14,
+      36
+     ],
+     "mammut:L2": [
+      2,
+      88
+     ],
+     "weide:L2": [
+      2,
+      88
+     ],
+     "eiche:L2": [
+      1,
+      135
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 4
+    },
+    "karten": {
+     "strauch:L1da": 1,
+     "tanne:L1da": 1,
+     "fichte:L1da": 1,
+     "birke:L1da": 1,
+     "karst:L1da": 1,
+     "buche:L1da": 2,
+     "mammut:L1da": 1,
+     "weide:L1da": 1,
+     "eiche:L1reist": 1
+    }
+   },
+   "kt": {
+    "w": [
+     318,
+     128,
+     2,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|2",
+       "karte:strauch|1"
+      ],
+      6
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:karst|1",
+       "karte:tanne|2",
+       "karte:fichte|2"
+      ],
+      5
+     ],
+     [
+      "-1,0 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1",
+       "karte:tanne|2",
+       "karte:karst|1",
+       "karte:fichte|2",
+       "karte:strauch|1"
+      ],
+      6
+     ],
+     [
+      "0,0 wartet auf ihr Asset",
+      "cs5",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     0,
+     1,
+     10,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    54,
+    3352,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15471,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "6 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "horizont:1",
+    "bauten:6",
+    "streu:4",
+    "karten:5"
+   ],
+   "det": {
+    "q": [
+     0,
+     1,
+     1,
+     0,
+     0
+    ],
+    "bauten": {
+     "alpenchalet:L2": [
+      1,
+      140
+     ],
+     "mammut:L2": [
+      2,
+      88
+     ],
+     "weide:L2": [
+      2,
+      88
+     ],
+     "eiche:L2": [
+      1,
+      135
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 4
+    },
+    "karten": {
+     "buche:L1da": 2,
+     "mammut:L1da": 1,
+     "weide:L1da": 1,
+     "eiche:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     62,
+     62,
+     1,
+     0,
+     1,
+     1
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1"
+      ],
+      2
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1"
+      ],
+      2
+     ],
+     [
+      "-1,0 wartet auf ihr Asset",
+      "",
+      [
+       "waldplan#1",
+       "karte:weide|1"
+      ],
+      2
+     ],
+     [
+      "0,0 wartet auf ihr Asset",
+      "",
+      [
+       "karte:buche|2",
+       "karte:buche|1",
+       "waldplan#1"
+      ],
+      3
+     ]
+    ],
+    "q": [
+     0,
+     1,
+     0,
+     5,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    54,
+    3352,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 15706,
+   "fehlt": [
+    "3 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "lk": [
+    "bauten:3",
+    "streu:4",
+    "karten:2"
+   ],
+   "det": {
+    "q": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "bauten": {
+     "weide:L2": [
+      2,
+      88
+     ],
+     "eiche:L2": [
+      1,
+      135
+     ]
+    },
+    "streu": {
+     "wartet auf ihr Asset": 3,
+     "fehlt": 1
+    },
+    "karten": {
+     "weide:L1da": 1,
+     "eiche:L1da": 1
+    }
+   },
+   "kt": {
+    "w": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    "s": [
+     [
+      "-1,-1 wartet auf ihr Asset",
+      "",
+      [
+       "karte:weide|1"
+      ],
+      1
+     ],
+     [
+      "0,-1 wartet auf ihr Asset",
+      "",
+      [
+       "karte:weide|1"
+      ],
+      1
+     ],
+     [
+      "-1,0 wartet auf ihr Asset",
+      "",
+      [
+       "karte:weide|1"
+      ],
+      1
+     ],
+     [
+      "0,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     0,
+     0,
+     2,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3369,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15899,
+   "fehlt": [
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "lk": [
+    "streu:1"
+   ],
+   "det": {
+    "q": [
+     0,
+     0,
+     1,
+     1,
+     0
+    ],
+    "streu": {
+     "fehlt": 1
+    }
+   },
+   "kt": {
+    "w": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    "s": [
+     [
+      "-1,0 fehlt",
+      "-",
+      null,
+      -1
+     ]
+    ],
+    "q": [
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3369,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 16112,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "38 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3369,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 16470,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "38 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    58,
+    3550,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 16694,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "37 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    58,
+    3550,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 16886,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "38 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    58,
+    3550,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 17096,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "38 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    58,
+    3550,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 17301,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "41 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 17490,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "41 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 17757,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "40 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 17870,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "39 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 18076,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "37 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 18281,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3599,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 18545,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "18 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    61,
+    3691,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 18707,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 26 im Werk · 0 im Bäcker",
+   "erst": [
+    62,
+    3718,
+    3
+   ],
+   "da": 15960
+  },
+  {
+   "t": 19085,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 24 im Werk · 0 im Bäcker",
+   "erst": [
+    68,
+    3994,
+    6
+   ],
+   "da": 15960
+  },
+  {
+   "t": 19507,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4253,
+    7
+   ],
+   "da": 15960
+  },
+  {
+   "t": 19700,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    74,
+    4261,
+    5
+   ],
+   "da": 15960
+  },
+  {
+   "t": 19889,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    74,
+    4261,
+    2
+   ],
+   "da": 15960
+  },
+  {
+   "t": 20097,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    74,
+    4261,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 20263,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    74,
+    4261,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 20465,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    74,
+    4261,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 20764,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 9 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 20877,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 21091,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 21345,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 21466,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 21662,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 21894,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 22061,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 22260,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 22459,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 22661,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 22860,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 23061,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 23268,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 23491,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 23661,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 23860,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 24060,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 24260,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 24461,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 24661,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 24859,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 25059,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    76,
+    4303,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 25271,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    1
+   ],
+   "da": 15960
+  },
+  {
+   "t": 25468,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 25669,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 25863,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 26060,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 26260,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 26460,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 26660,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 26860,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 27059,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 27260,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 27460,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 27692,
+   "fehlt": [
+    "4 Bäume und Bauten wachsen",
+    "1 Wald-Böden werden bepflanzt"
+   ],
+   "lk": [
+    "bauten:4",
+    "pflanzung:1"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 27872,
+   "fehlt": [
+    "5 Bäume werden gepflanzt"
+   ],
+   "lk": [
+    "pflanzung:5"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 28059,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 28262,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 28459,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 28662,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 28860,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 29059,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 29316,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 29459,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  },
+  {
+   "t": 29753,
+   "fehlt": [],
+   "lk": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    77,
+    4309,
+    0
+   ],
+   "da": 15960
+  }
+ ],
+ "lang": [
+  [
+   257,
+   304
+  ],
+  [
+   681,
+   786
+  ],
+  [
+   2381,
+   126
+  ],
+  [
+   2972,
+   1638
+  ],
+  [
+   4779,
+   1368
+  ],
+  [
+   6175,
+   136
+  ],
+  [
+   6312,
+   284
+  ],
+  [
+   6616,
+   369
+  ],
+  [
+   6985,
+   105
+  ],
+  [
+   7092,
+   578
+  ],
+  [
+   7685,
+   709
+  ],
+  [
+   8394,
+   132
+  ],
+  [
+   8527,
+   197
+  ],
+  [
+   8736,
+   530
+  ],
+  [
+   9274,
+   530
+  ],
+  [
+   9902,
+   736
+  ],
+  [
+   10657,
+   548
+  ],
+  [
+   11226,
+   635
+  ],
+  [
+   11902,
+   664
+  ],
+  [
+   12599,
+   652
+  ],
+  [
+   13421,
+   526
+  ],
+  [
+   13954,
+   287
+  ],
+  [
+   14250,
+   260
+  ],
+  [
+   14515,
+   262
+  ],
+  [
+   14789,
+   174
+  ],
+  [
+   14966,
+   115
+  ],
+  [
+   15085,
+   175
+  ],
+  [
+   15263,
+   56
+  ],
+  [
+   15587,
+   67
+  ],
+  [
+   15707,
+   69
+  ],
+  [
+   15975,
+   100
+  ],
+  [
+   16115,
+   130
+  ],
+  [
+   16257,
+   126
+  ],
+  [
+   16561,
+   62
+  ],
+  [
+   17115,
+   91
+  ],
+  [
+   17654,
+   77
+  ],
+  [
+   17758,
+   67
+  ],
+  [
+   18406,
+   114
+  ],
+  [
+   18590,
+   53
+  ],
+  [
+   18728,
+   84
+  ],
+  [
+   18813,
+   161
+  ],
+  [
+   18982,
+   103
+  ],
+  [
+   19086,
+   108
+  ],
+  [
+   19203,
+   173
+  ],
+  [
+   19379,
+   127
+  ],
+  [
+   19999,
+   58
+  ],
+  [
+   20292,
+   57
+  ],
+  [
+   20405,
+   58
+  ],
+  [
+   20637,
+   105
+  ],
+  [
+   20939,
+   121
+  ],
+  [
+   21203,
+   62
+  ],
+  [
+   21266,
+   79
+  ],
+  [
+   28976,
+   71
+  ],
+  [
+   29338,
+   62
+  ]
+ ],
+ "ev": [
+  [
+   2911,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   6177,
+   "_foundryRequestSettlement an",
+   ""
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "gt|1"
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "gt|7"
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "supersport|1"
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "supersport|7"
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "limousine|1"
+  ],
+  [
+   20618,
+   "_foundryVorrat ab",
+   "limousine|7"
+  ],
+  [
+   20619,
+   "_foundryVorrat ab",
+   "kompakt_fwd|1"
+  ],
+  [
+   20619,
+   "_foundryVorrat ab",
+   "kompakt_fwd|7"
+  ],
+  [
+   20619,
+   "_foundryVorrat ab",
+   "suv|1"
+  ],
+  [
+   20619,
+   "_foundryVorrat ab",
+   "suv|7"
+  ],
+  [
+   20745,
+   "_foundryVorrat an",
+   "gt|7"
+  ],
+  [
+   20778,
+   "_foundryVorrat an",
+   "gt|1"
+  ],
+  [
+   20801,
+   "_foundryVorrat an",
+   "supersport|1"
+  ],
+  [
+   20814,
+   "_foundryVorrat an",
+   "limousine|1"
+  ],
+  [
+   20878,
+   "_foundryVorrat an",
+   "supersport|7"
+  ],
+  [
+   20906,
+   "_foundryVorrat an",
+   "kompakt_fwd|7"
+  ],
+  [
+   20921,
+   "_foundryVorrat an",
+   "limousine|7"
+  ],
+  [
+   21060,
+   "_foundryVorrat an",
+   "kompakt_fwd|1"
+  ],
+  [
+   21060,
+   "_foundryVorrat an",
+   "suv|1"
+  ],
+  [
+   21061,
+   "_foundryVorrat an",
+   "suv|7"
+  ],
+  [
+   21061,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   21378,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "lf": {
+  "q": [
+   [
+    2884,
+    "build-asset#mensch|0|1|ov:d08c5185.321",
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    2911,
+    "export-settlement#undefined|undefined|undefined",
+    0,
+    1,
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    3863,
+    "build-asset#zacken|1|0",
+    44,
+    1,
+    0,
+    2,
+    0,
+    0
+   ],
+   [
+    3869,
+    "build-asset#feuerstelle|1|3",
+    52,
+    0,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    3869,
+    "build-asset#feuerstelle|1|1",
+    52,
+    0,
+    1,
+    3,
+    0,
+    0
+   ],
+   [
+    3966,
+    "build-asset#geisttor|1|3",
+    11,
+    1,
+    2,
+    3,
+    0,
+    0
+   ],
+   [
+    3966,
+    "build-asset#geisttor|1|2",
+    11,
+    1,
+    2,
+    4,
+    0,
+    0
+   ],
+   [
+    3969,
+    "build-asset#drachentor|1|3",
+    11,
+    1,
+    2,
+    5,
+    0,
+    0
+   ],
+   [
+    3969,
+    "build-asset#drachentor|1|2",
+    11,
+    1,
+    2,
+    6,
+    0,
+    0
+   ],
+   [
+    3970,
+    "build-asset#verkalkt|1|3",
+    11,
+    1,
+    2,
+    7,
+    0,
+    0
+   ],
+   [
+    3970,
+    "build-asset#verkalkt|1|2",
+    11,
+    1,
+    2,
+    8,
+    0,
+    0
+   ],
+   [
+    3972,
+    "build-asset#maschine|1|3",
+    11,
+    1,
+    2,
+    9,
+    0,
+    0
+   ],
+   [
+    3972,
+    "build-asset#maschine|1|2",
+    11,
+    1,
+    2,
+    10,
+    0,
+    0
+   ],
+   [
+    3974,
+    "build-asset#kathedrale|1|3",
+    11,
+    1,
+    2,
+    11,
+    0,
+    0
+   ],
+   [
+    3975,
+    "build-asset#kathedrale|1|2",
+    11,
+    1,
+    2,
+    12,
+    0,
+    0
+   ],
+   [
+    3976,
+    "build-asset#maurentor|1|3",
+    11,
+    1,
+    2,
+    13,
+    0,
+    0
+   ],
+   [
+    3976,
+    "build-asset#maurentor|1|2",
+    11,
+    1,
+    3,
+    13,
+    0,
+    0
+   ],
+   [
+    3977,
+    "build-asset#ruine|1|3",
+    11,
+    1,
+    4,
+    13,
+    0,
+    0
+   ],
+   [
+    3978,
+    "build-asset#ruine|1|2",
+    11,
+    1,
+    5,
+    13,
+    0,
+    0
+   ],
+   [
+    4005,
+    "build-asset#alemannisch|1|1|ov:170117b9.261",
+    19,
+    0,
+    6,
+    13,
+    0,
+    0
+   ],
+   [
+    4017,
+    "build-asset#gt|6|1",
+    19,
+    1,
+    7,
+    13,
+    0,
+    0
+   ],
+   [
+    4041,
+    "build-asset#alemannisch|1|3|ov:170117b9.261",
+    19,
+    0,
+    8,
+    13,
+    0,
+    0
+   ],
+   [
+    5391,
+    "build-asset#zacken|8|0",
+    46,
+    0,
+    4,
+    17,
+    0,
+    0
+   ],
+   [
+    5392,
+    "build-asset#zacken|10|0",
+    43,
+    0,
+    5,
+    17,
+    0,
+    0
+   ],
+   [
+    6415,
+    "build-asset#weide|1|1",
+    357,
+    0,
+    4,
+    6,
+    0,
+    0
+   ],
+   [
+    6430,
+    "build-asset#gras|2|1",
+    0,
+    1,
+    5,
+    6,
+    0,
+    0
+   ],
+   [
+    6431,
+    "build-asset#gras|1|1",
+    0,
+    1,
+    5,
+    7,
+    0,
+    0
+   ],
+   [
+    6432,
+    "build-asset#gras|2|2",
+    0,
+    1,
+    5,
+    8,
+    0,
+    0
+   ],
+   [
+    6432,
+    "build-asset#gras|1|2",
+    0,
+    1,
+    5,
+    9,
+    0,
+    0
+   ],
+   [
+    6805,
+    "build-asset#karst|1|1",
+    273,
+    0,
+    3,
+    5,
+    0,
+    0
+   ],
+   [
+    6806,
+    "build-asset#tanne|2|1",
+    271,
+    0,
+    4,
+    5,
+    0,
+    0
+   ],
+   [
+    7100,
+    "build-asset#tanne|1|1",
+    293,
+    0,
+    5,
+    5,
+    0,
+    0
+   ],
+   [
+    8493,
+    "build-asset#laterne|1|3",
+    116,
+    1,
+    3,
+    3,
+    0,
+    0
+   ],
+   [
+    8495,
+    "build-asset#laterne|1|1",
+    116,
+    1,
+    3,
+    4,
+    0,
+    0
+   ],
+   [
+    8507,
+    "build-asset#brunnen|1|3",
+    129,
+    1,
+    3,
+    5,
+    0,
+    0
+   ],
+   [
+    8508,
+    "build-asset#brunnen|1|1",
+    129,
+    1,
+    3,
+    6,
+    0,
+    0
+   ],
+   [
+    8509,
+    "build-asset#marktstand|1|3",
+    115,
+    1,
+    3,
+    7,
+    0,
+    0
+   ],
+   [
+    8510,
+    "build-asset#marktstand|1|1",
+    115,
+    1,
+    3,
+    8,
+    0,
+    0
+   ],
+   [
+    8854,
+    "build-asset#gotisch|12|2|ov:edcc8866.479",
+    106,
+    1,
+    0,
+    3,
+    0,
+    0
+   ],
+   [
+    8861,
+    "build-asset#alpenchalet|12|2|ov:e18295c.473",
+    116,
+    1,
+    0,
+    4,
+    0,
+    0
+   ],
+   [
+    8862,
+    "build-asset#wandlaterne|1|3",
+    111,
+    1,
+    0,
+    5,
+    0,
+    0
+   ],
+   [
+    8863,
+    "build-asset#wandlaterne|1|1",
+    111,
+    1,
+    0,
+    6,
+    0,
+    0
+   ],
+   [
+    8868,
+    "build-asset#schwarzwald|13|2|ov:8198aa54.471",
+    98,
+    1,
+    0,
+    7,
+    0,
+    0
+   ],
+   [
+    8874,
+    "build-asset#schwarzwald|4|2|ov:9935b486.473",
+    129,
+    1,
+    0,
+    8,
+    0,
+    0
+   ],
+   [
+    8879,
+    "build-asset#schwarzwald|6|2|ov:9077280.470",
+    126,
+    1,
+    0,
+    9,
+    0,
+    0
+   ],
+   [
+    8885,
+    "build-asset#schwarzwald|8|2|ov:49901c4e.473",
+    137,
+    1,
+    0,
+    10,
+    0,
+    0
+   ],
+   [
+    8889,
+    "build-asset#schwarzwald|13|2|ov:63183697.473",
+    83,
+    1,
+    0,
+    11,
+    0,
+    0
+   ],
+   [
+    8945,
+    "build-asset#strauch|1|1",
+    36,
+    1,
+    0,
+    12,
+    0,
+    0
+   ],
+   [
+    9132,
+    "build-asset#schwarzwald|13|3|ov:63183697.473",
+    83,
+    1,
+    0,
+    13,
+    0,
+    0
+   ],
+   [
+    9133,
+    "build-asset#schwarzwald|13|3|ov:8198aa54.471",
+    98,
+    1,
+    0,
+    14,
+    0,
+    0
+   ],
+   [
+    9133,
+    "build-asset#gotisch|12|3|ov:edcc8866.479",
+    106,
+    1,
+    0,
+    15,
+    0,
+    0
+   ],
+   [
+    9134,
+    "build-asset#alpenchalet|12|3|ov:e18295c.473",
+    116,
+    1,
+    0,
+    16,
+    0,
+    0
+   ],
+   [
+    9134,
+    "build-asset#schwarzwald|6|3|ov:9077280.470",
+    126,
+    1,
+    0,
+    17,
+    0,
+    0
+   ],
+   [
+    9135,
+    "build-asset#schwarzwald|4|3|ov:9935b486.473",
+    129,
+    1,
+    0,
+    18,
+    0,
+    0
+   ],
+   [
+    9135,
+    "build-asset#schwarzwald|8|3|ov:49901c4e.473",
+    137,
+    1,
+    0,
+    19,
+    0,
+    0
+   ],
+   [
+    10367,
+    "build-asset#tanne|3|1|ov:39ada8a4.15",
+    21,
+    1,
+    0,
+    12,
+    0,
+    0
+   ],
+   [
+    10475,
+    "build-asset#eiche|2|1",
+    26,
+    1,
+    0,
+    13,
+    0,
+    0
+   ],
+   [
+    10505,
+    "build-asset#fichte|1|1",
+    30,
+    1,
+    0,
+    14,
+    0,
+    0
+   ],
+   [
+    10521,
+    "build-asset#birke|2|1",
+    31,
+    1,
+    0,
+    15,
+    0,
+    0
+   ],
+   [
+    10906,
+    "build-asset#birke|3|1|ov:39ada8a4.15",
+    27,
+    1,
+    0,
+    10,
+    0,
+    0
+   ],
+   [
+    10943,
+    "build-asset#fichte|2|1",
+    33,
+    0,
+    0,
+    11,
+    0,
+    0
+   ],
+   [
+    10993,
+    "build-asset#fichte|3|1|ov:39ada8a4.15",
+    40,
+    1,
+    1,
+    11,
+    0,
+    0
+   ],
+   [
+    11344,
+    "build-asset#schwarzwald|15|2|ov:223f7a54.472",
+    90,
+    1,
+    0,
+    7,
+    0,
+    0
+   ],
+   [
+    11348,
+    "build-asset#schwarzwald|11|2|ov:3e3ed698.463",
+    89,
+    1,
+    0,
+    8,
+    0,
+    0
+   ],
+   [
+    11352,
+    "build-asset#alpenchalet|12|2|ov:1093e85c.473",
+    112,
+    1,
+    0,
+    9,
+    0,
+    0
+   ],
+   [
+    11361,
+    "build-asset#alpenchalet|9|2|ov:7323c079.472",
+    127,
+    1,
+    0,
+    10,
+    0,
+    0
+   ],
+   [
+    11365,
+    "build-asset#schwarzwald|3|2|ov:41948277.473",
+    97,
+    1,
+    0,
+    11,
+    0,
+    0
+   ],
+   [
+    11372,
+    "build-asset#schwarzwald|11|2|ov:cb5eca29.473",
+    116,
+    1,
+    0,
+    12,
+    0,
+    0
+   ],
+   [
+    11376,
+    "build-asset#skandinavisch|14|2|ov:519be5c6.477",
+    132,
+    1,
+    0,
+    13,
+    0,
+    0
+   ],
+   [
+    11381,
+    "build-asset#skandinavisch|6|2|ov:64a4c7f0.475",
+    65,
+    1,
+    0,
+    14,
+    0,
+    0
+   ],
+   [
+    11385,
+    "build-asset#zacken|3|0",
+    16,
+    1,
+    0,
+    15,
+    0,
+    0
+   ],
+   [
+    11387,
+    "build-asset#zacken|4|0",
+    58,
+    1,
+    0,
+    16,
+    0,
+    0
+   ],
+   [
+    11625,
+    "build-asset#skandinavisch|6|3|ov:64a4c7f0.475",
+    65,
+    1,
+    0,
+    17,
+    0,
+    0
+   ],
+   [
+    11625,
+    "build-asset#schwarzwald|11|3|ov:3e3ed698.463",
+    89,
+    1,
+    0,
+    18,
+    0,
+    0
+   ],
+   [
+    11626,
+    "build-asset#schwarzwald|15|3|ov:223f7a54.472",
+    90,
+    1,
+    0,
+    19,
+    0,
+    0
+   ],
+   [
+    11626,
+    "build-asset#schwarzwald|3|3|ov:41948277.473",
+    97,
+    1,
+    0,
+    20,
+    0,
+    0
+   ],
+   [
+    11626,
+    "build-asset#alpenchalet|12|3|ov:1093e85c.473",
+    112,
+    1,
+    0,
+    21,
+    0,
+    0
+   ],
+   [
+    11627,
+    "build-asset#schwarzwald|11|3|ov:cb5eca29.473",
+    116,
+    1,
+    0,
+    22,
+    0,
+    0
+   ],
+   [
+    11627,
+    "build-asset#alpenchalet|9|3|ov:7323c079.472",
+    127,
+    1,
+    0,
+    23,
+    0,
+    0
+   ],
+   [
+    11628,
+    "build-asset#skandinavisch|14|3|ov:519be5c6.477",
+    132,
+    1,
+    0,
+    24,
+    0,
+    0
+   ],
+   [
+    11628,
+    "build-asset#alpenchalet|16|3|ov:fd3882cb.472",
+    140,
+    1,
+    0,
+    25,
+    0,
+    0
+   ],
+   [
+    11629,
+    "build-asset#schwarzwald|9|3|ov:c5e87e4.474",
+    145,
+    1,
+    0,
+    26,
+    0,
+    0
+   ],
+   [
+    11651,
+    "build-asset#eiche|1|1",
+    74,
+    1,
+    0,
+    27,
+    0,
+    0
+   ],
+   [
+    12052,
+    "build-asset#birke|1|1",
+    82,
+    0,
+    0,
+    22,
+    0,
+    0
+   ],
+   [
+    12069,
+    "build-asset#zacken|16|0",
+    95,
+    0,
+    1,
+    22,
+    0,
+    0
+   ],
+   [
+    12070,
+    "build-asset#zacken|15|0",
+    88,
+    0,
+    2,
+    22,
+    0,
+    0
+   ],
+   [
+    12071,
+    "build-asset#kristalle|10|0",
+    64,
+    0,
+    3,
+    22,
+    0,
+    0
+   ],
+   [
+    12072,
+    "build-asset#zacken|14|0",
+    74,
+    0,
+    4,
+    22,
+    0,
+    0
+   ],
+   [
+    12074,
+    "build-asset#zacken|6|0",
+    72,
+    0,
+    5,
+    22,
+    0,
+    0
+   ],
+   [
+    12074,
+    "build-asset#zacken|9|0",
+    67,
+    0,
+    6,
+    22,
+    0,
+    0
+   ],
+   [
+    12075,
+    "build-asset#zacken|12|0",
+    73,
+    0,
+    7,
+    22,
+    0,
+    0
+   ],
+   [
+    12076,
+    "build-asset#feuerstelle|2|3",
+    63,
+    0,
+    8,
+    22,
+    0,
+    0
+   ],
+   [
+    12077,
+    "build-asset#feuerstelle|2|1",
+    63,
+    0,
+    9,
+    22,
+    0,
+    0
+   ],
+   [
+    12077,
+    "build-asset#zacken|5|0",
+    59,
+    0,
+    10,
+    22,
+    0,
+    0
+   ],
+   [
+    12078,
+    "build-asset#zacken|2|0",
+    55,
+    0,
+    11,
+    22,
+    0,
+    0
+   ],
+   [
+    12079,
+    "build-asset#zacken|11|0",
+    71,
+    0,
+    12,
+    22,
+    0,
+    0
+   ],
+   [
+    12623,
+    "build-asset#buche|2|1",
+    81,
+    0,
+    9,
+    17,
+    0,
+    0
+   ],
+   [
+    12625,
+    "build-asset#buche|1|1",
+    81,
+    0,
+    10,
+    17,
+    0,
+    0
+   ],
+   [
+    12829,
+    "build-asset#blume|2|0",
+    331,
+    0,
+    11,
+    17,
+    0,
+    0
+   ],
+   [
+    12831,
+    "build-asset#blume|1|0",
+    329,
+    0,
+    12,
+    17,
+    0,
+    0
+   ],
+   [
+    13493,
+    "build-asset#mammut|1|1",
+    88,
+    1,
+    12,
+    4,
+    0,
+    0
+   ],
+   [
+    14457,
+    "build-asset#eiche|3|1|ov:39ada8a4.15",
+    129,
+    0,
+    6,
+    3,
+    0,
+    0
+   ],
+   [
+    15312,
+    "build-asset#alpenchalet|16|2|ov:fd3882cb.472",
+    140,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    15573,
+    "build-asset#geroell|1|0",
+    66,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    15889,
+    "build-asset#blume|1|2",
+    16,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    15927,
+    "build-asset#blume|2|2",
+    16,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    15962,
+    "build-asset#deer|0|0",
+    -1,
+    1,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#deer|0|1",
+    -1,
+    1,
+    0,
+    1,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#wolf|0|0",
+    -1,
+    1,
+    0,
+    2,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#wolf|0|1",
+    -1,
+    1,
+    0,
+    3,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#fox|0|0",
+    -1,
+    1,
+    0,
+    4,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#fox|0|1",
+    -1,
+    1,
+    0,
+    5,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#bear|0|0",
+    -1,
+    1,
+    0,
+    6,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#bear|0|1",
+    -1,
+    1,
+    0,
+    7,
+    1,
+    0
+   ],
+   [
+    15962,
+    "build-asset#mensch|0|0|ov:d08c5185.321",
+    0,
+    1,
+    0,
+    8,
+    1,
+    0
+   ],
+   [
+    15963,
+    "build-asset#findling|1|0",
+    -1,
+    1,
+    0,
+    9,
+    1,
+    0
+   ],
+   [
+    15964,
+    "build-asset#findling|2|0",
+    -1,
+    1,
+    0,
+    10,
+    1,
+    0
+   ],
+   [
+    15964,
+    "build-asset#findling|3|0",
+    -1,
+    1,
+    0,
+    11,
+    1,
+    0
+   ],
+   [
+    15964,
+    "build-asset#findling|4|0",
+    -1,
+    1,
+    0,
+    12,
+    1,
+    0
+   ],
+   [
+    15964,
+    "build-asset#findling|5|0",
+    -1,
+    1,
+    0,
+    13,
+    1,
+    0
+   ],
+   [
+    15965,
+    "build-asset#findling|6|0",
+    -1,
+    1,
+    0,
+    14,
+    1,
+    0
+   ],
+   [
+    15965,
+    "build-asset#findling|7|0",
+    -1,
+    1,
+    0,
+    15,
+    1,
+    0
+   ],
+   [
+    15965,
+    "build-asset#findling|8|0",
+    -1,
+    1,
+    0,
+    16,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|9|0",
+    -1,
+    1,
+    0,
+    17,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|10|0",
+    -1,
+    1,
+    0,
+    18,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|11|0",
+    -1,
+    1,
+    0,
+    19,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|12|0",
+    -1,
+    1,
+    0,
+    20,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|13|0",
+    -1,
+    1,
+    0,
+    21,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|14|0",
+    -1,
+    1,
+    0,
+    22,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|15|0",
+    -1,
+    1,
+    0,
+    23,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#findling|16|0",
+    -1,
+    1,
+    0,
+    24,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#basalt|1|0",
+    -1,
+    1,
+    0,
+    25,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#basalt|2|0",
+    -1,
+    1,
+    0,
+    26,
+    1,
+    0
+   ],
+   [
+    15966,
+    "build-asset#basalt|3|0",
+    -1,
+    1,
+    0,
+    27,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|4|0",
+    -1,
+    1,
+    0,
+    28,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|5|0",
+    -1,
+    1,
+    0,
+    29,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|6|0",
+    -1,
+    1,
+    0,
+    30,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|7|0",
+    -1,
+    1,
+    0,
+    31,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|8|0",
+    -1,
+    1,
+    0,
+    32,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|9|0",
+    -1,
+    1,
+    0,
+    33,
+    1,
+    0
+   ],
+   [
+    15967,
+    "build-asset#basalt|10|0",
+    -1,
+    1,
+    0,
+    34,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|11|0",
+    -1,
+    1,
+    0,
+    35,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|12|0",
+    -1,
+    1,
+    0,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|13|0",
+    -1,
+    1,
+    1,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|14|0",
+    -1,
+    1,
+    2,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|15|0",
+    -1,
+    1,
+    3,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#basalt|16|0",
+    -1,
+    1,
+    4,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|1|0",
+    -1,
+    1,
+    5,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|2|0",
+    -1,
+    1,
+    6,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|3|0",
+    -1,
+    1,
+    7,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|4|0",
+    -1,
+    1,
+    8,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|5|0",
+    -1,
+    1,
+    9,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|6|0",
+    -1,
+    1,
+    10,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|7|0",
+    -1,
+    1,
+    11,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|8|0",
+    -1,
+    1,
+    12,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|9|0",
+    -1,
+    1,
+    13,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|11|0",
+    -1,
+    1,
+    14,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|12|0",
+    -1,
+    1,
+    15,
+    36,
+    1,
+    0
+   ],
+   [
+    15968,
+    "build-asset#kristalle|13|0",
+    -1,
+    1,
+    16,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#kristalle|14|0",
+    -1,
+    1,
+    17,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#kristalle|15|0",
+    -1,
+    1,
+    18,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#kristalle|16|0",
+    -1,
+    1,
+    19,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#zacken|7|0",
+    -1,
+    1,
+    20,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#zacken|13|0",
+    -1,
+    1,
+    21,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|1|0",
+    -1,
+    1,
+    22,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|2|0",
+    -1,
+    1,
+    23,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|3|0",
+    -1,
+    1,
+    24,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|4|0",
+    -1,
+    1,
+    25,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|5|0",
+    -1,
+    1,
+    26,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|6|0",
+    -1,
+    1,
+    27,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|7|0",
+    -1,
+    1,
+    28,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|8|0",
+    -1,
+    1,
+    29,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|9|0",
+    -1,
+    1,
+    30,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|10|0",
+    -1,
+    1,
+    31,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|11|0",
+    -1,
+    1,
+    32,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|12|0",
+    -1,
+    1,
+    33,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|13|0",
+    -1,
+    1,
+    34,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|14|0",
+    -1,
+    1,
+    35,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|15|0",
+    -1,
+    1,
+    36,
+    36,
+    1,
+    0
+   ],
+   [
+    15969,
+    "build-asset#sediment|16|0",
+    -1,
+    1,
+    37,
+    36,
+    1,
+    0
+   ],
+   [
+    16867,
+    "build-asset#gestruepp|1|1",
+    20,
+    1,
+    37,
+    36,
+    1,
+    0
+   ],
+   [
+    17118,
+    "build-asset#farn|2|1",
+    24,
+    1,
+    38,
+    36,
+    1,
+    0
+   ],
+   [
+    17212,
+    "build-asset#totstamm|1|1",
+    23,
+    1,
+    39,
+    36,
+    1,
+    0
+   ],
+   [
+    17212,
+    "build-asset#farn|1|1",
+    25,
+    1,
+    40,
+    36,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#gt|1|0|V",
+    -1,
+    1,
+    0,
+    0,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#gt|7|0|V",
+    -1,
+    1,
+    0,
+    1,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#supersport|1|0|V",
+    -1,
+    1,
+    0,
+    2,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#supersport|7|0|V",
+    -1,
+    1,
+    0,
+    3,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#limousine|1|0|V",
+    -1,
+    1,
+    0,
+    4,
+    1,
+    0
+   ],
+   [
+    20618,
+    "build-asset#limousine|7|0|V",
+    -1,
+    1,
+    0,
+    5,
+    1,
+    0
+   ],
+   [
+    20619,
+    "build-asset#kompakt_fwd|1|0|V",
+    -1,
+    1,
+    0,
+    6,
+    1,
+    0
+   ],
+   [
+    20619,
+    "build-asset#kompakt_fwd|7|0|V",
+    -1,
+    1,
+    0,
+    7,
+    1,
+    0
+   ],
+   [
+    20619,
+    "build-asset#suv|1|0|V",
+    -1,
+    1,
+    0,
+    8,
+    1,
+    0
+   ],
+   [
+    20619,
+    "build-asset#suv|7|0|V",
+    -1,
+    1,
+    0,
+    9,
+    1,
+    0
+   ],
+   [
+    21061,
+    "export-settlement#undefined|undefined|undefined",
+    0,
+    1,
+    0,
+    0,
+    1,
+    0
+   ]
+  ],
+  "s": [
+   [
+    0,
+    2884,
+    "rw1_1",
+    0,
+    1,
+    0
+   ],
+   [
+    1,
+    2911,
+    "stl-w2_2",
+    0,
+    1,
+    0
+   ],
+   [
+    2,
+    3864,
+    "r3",
+    44,
+    1,
+    0
+   ],
+   [
+    5,
+    3966,
+    "r4",
+    11,
+    1,
+    2
+   ],
+   [
+    6,
+    3966,
+    "r5",
+    11,
+    1,
+    2
+   ],
+   [
+    7,
+    3969,
+    "r6",
+    11,
+    1,
+    2
+   ],
+   [
+    8,
+    3969,
+    "r7",
+    11,
+    1,
+    2
+   ],
+   [
+    9,
+    3970,
+    "r8",
+    11,
+    1,
+    2
+   ],
+   [
+    10,
+    3970,
+    "r9",
+    11,
+    1,
+    2
+   ],
+   [
+    11,
+    3972,
+    "r10",
+    11,
+    1,
+    2
+   ],
+   [
+    12,
+    3972,
+    "r11",
+    11,
+    1,
+    2
+   ],
+   [
+    13,
+    3974,
+    "r12",
+    11,
+    1,
+    2
+   ],
+   [
+    14,
+    3975,
+    "r13",
+    11,
+    1,
+    2
+   ],
+   [
+    15,
+    4613,
+    "rw1_14",
+    11,
+    1,
+    8
+   ],
+   [
+    16,
+    4613,
+    "rw1_15",
+    11,
+    1,
+    7
+   ],
+   [
+    17,
+    4613,
+    "rw1_16",
+    11,
+    1,
+    6
+   ],
+   [
+    18,
+    4613,
+    "rw1_17",
+    11,
+    1,
+    5
+   ],
+   [
+    20,
+    4614,
+    "rw1_18",
+    19,
+    1,
+    4
+   ],
+   [
+    19,
+    6171,
+    "rw1_19",
+    19,
+    0,
+    5
+   ],
+   [
+    21,
+    6177,
+    "rw2_20",
+    19,
+    0,
+    4
+   ],
+   [
+    25,
+    6430,
+    "rw1_21",
+    0,
+    1,
+    5
+   ],
+   [
+    26,
+    6431,
+    "rw2_22",
+    0,
+    1,
+    5
+   ],
+   [
+    27,
+    6432,
+    "rw1_23",
+    0,
+    1,
+    5
+   ],
+   [
+    28,
+    6432,
+    "rw2_24",
+    0,
+    1,
+    5
+   ],
+   [
+    23,
+    6604,
+    "r25",
+    43,
+    0,
+    4
+   ],
+   [
+    22,
+    6615,
+    "rw2_26",
+    46,
+    0,
+    3
+   ],
+   [
+    3,
+    7671,
+    "r27",
+    52,
+    0,
+    5
+   ],
+   [
+    4,
+    7676,
+    "rw2_28",
+    52,
+    0,
+    4
+   ],
+   [
+    29,
+    7680,
+    "rw1_29",
+    122,
+    0,
+    3
+   ],
+   [
+    32,
+    8493,
+    "r30",
+    116,
+    1,
+    3
+   ],
+   [
+    33,
+    8495,
+    "rw1_31",
+    116,
+    1,
+    3
+   ],
+   [
+    34,
+    8507,
+    "rw2_32",
+    129,
+    1,
+    3
+   ],
+   [
+    35,
+    8508,
+    "r33",
+    129,
+    1,
+    3
+   ],
+   [
+    36,
+    8509,
+    "rw1_34",
+    115,
+    1,
+    3
+   ],
+   [
+    37,
+    8510,
+    "rw2_35",
+    115,
+    1,
+    3
+   ],
+   [
+    30,
+    8735,
+    "r36",
+    122,
+    0,
+    2
+   ],
+   [
+    24,
+    8736,
+    "rw1_37",
+    129,
+    0,
+    1
+   ],
+   [
+    31,
+    8736,
+    "rw2_38",
+    137,
+    0,
+    0
+   ],
+   [
+    38,
+    8854,
+    "r39",
+    106,
+    1,
+    0
+   ],
+   [
+    39,
+    8861,
+    "rw1_40",
+    116,
+    1,
+    0
+   ],
+   [
+    40,
+    8862,
+    "rw2_41",
+    111,
+    1,
+    0
+   ],
+   [
+    41,
+    8863,
+    "r42",
+    111,
+    1,
+    0
+   ],
+   [
+    42,
+    8868,
+    "rw1_43",
+    98,
+    1,
+    0
+   ],
+   [
+    43,
+    8874,
+    "rw2_44",
+    129,
+    1,
+    0
+   ],
+   [
+    44,
+    8879,
+    "r45",
+    126,
+    1,
+    0
+   ],
+   [
+    45,
+    8885,
+    "rw1_46",
+    137,
+    1,
+    0
+   ],
+   [
+    46,
+    8890,
+    "rw2_47",
+    83,
+    1,
+    0
+   ],
+   [
+    47,
+    8945,
+    "r48",
+    36,
+    1,
+    0
+   ],
+   [
+    48,
+    9132,
+    "rw1_49",
+    83,
+    1,
+    0
+   ],
+   [
+    49,
+    9133,
+    "rw2_50",
+    98,
+    1,
+    0
+   ],
+   [
+    50,
+    9133,
+    "r51",
+    106,
+    1,
+    0
+   ],
+   [
+    51,
+    9134,
+    "rw1_52",
+    116,
+    1,
+    0
+   ],
+   [
+    52,
+    9134,
+    "rw2_53",
+    126,
+    1,
+    0
+   ],
+   [
+    53,
+    9135,
+    "r54",
+    129,
+    1,
+    0
+   ],
+   [
+    54,
+    9135,
+    "rw1_55",
+    137,
+    1,
+    0
+   ],
+   [
+    55,
+    10367,
+    "rw2_56",
+    21,
+    1,
+    0
+   ],
+   [
+    56,
+    10475,
+    "r57",
+    26,
+    1,
+    0
+   ],
+   [
+    57,
+    10505,
+    "rw2_58",
+    30,
+    1,
+    0
+   ],
+   [
+    58,
+    10521,
+    "r59",
+    31,
+    1,
+    0
+   ],
+   [
+    59,
+    10906,
+    "r60",
+    27,
+    1,
+    0
+   ],
+   [
+    60,
+    10993,
+    "rw2_61",
+    37,
+    1,
+    1
+   ],
+   [
+    61,
+    10993,
+    "r62",
+    40,
+    1,
+    0
+   ],
+   [
+    62,
+    11344,
+    "rw2_63",
+    90,
+    1,
+    0
+   ],
+   [
+    63,
+    11349,
+    "rw1_64",
+    89,
+    1,
+    0
+   ],
+   [
+    64,
+    11352,
+    "rw2_65",
+    112,
+    1,
+    0
+   ],
+   [
+    65,
+    11361,
+    "rw1_66",
+    127,
+    1,
+    0
+   ],
+   [
+    66,
+    11365,
+    "rw2_67",
+    97,
+    1,
+    0
+   ],
+   [
+    67,
+    11372,
+    "r68",
+    116,
+    1,
+    0
+   ],
+   [
+    68,
+    11376,
+    "rw1_69",
+    132,
+    1,
+    0
+   ],
+   [
+    69,
+    11381,
+    "rw2_70",
+    65,
+    1,
+    0
+   ],
+   [
+    70,
+    11385,
+    "r71",
+    16,
+    1,
+    0
+   ],
+   [
+    71,
+    11387,
+    "rw1_72",
+    58,
+    1,
+    0
+   ],
+   [
+    72,
+    11625,
+    "rw2_73",
+    65,
+    1,
+    0
+   ],
+   [
+    73,
+    11625,
+    "r74",
+    89,
+    1,
+    0
+   ],
+   [
+    74,
+    11626,
+    "rw1_75",
+    90,
+    1,
+    0
+   ],
+   [
+    75,
+    11626,
+    "rw2_76",
+    97,
+    1,
+    0
+   ],
+   [
+    76,
+    11627,
+    "r77",
+    112,
+    1,
+    0
+   ],
+   [
+    77,
+    11627,
+    "rw1_78",
+    116,
+    1,
+    0
+   ],
+   [
+    78,
+    11627,
+    "rw2_79",
+    127,
+    1,
+    0
+   ],
+   [
+    79,
+    11628,
+    "r80",
+    132,
+    1,
+    0
+   ],
+   [
+    80,
+    11628,
+    "rw1_81",
+    140,
+    1,
+    0
+   ],
+   [
+    81,
+    11629,
+    "rw2_82",
+    145,
+    1,
+    0
+   ],
+   [
+    82,
+    11651,
+    "r83",
+    74,
+    1,
+    0
+   ],
+   [
+    94,
+    12568,
+    "rw1_84",
+    46,
+    1,
+    12
+   ],
+   [
+    89,
+    12569,
+    "rw1_85",
+    92,
+    1,
+    11
+   ],
+   [
+    85,
+    12569,
+    "rw1_86",
+    121,
+    1,
+    10
+   ],
+   [
+    90,
+    12569,
+    "rw2_87",
+    133,
+    1,
+    9
+   ],
+   [
+    83,
+    13254,
+    "rw1_88",
+    61,
+    1,
+    12
+   ],
+   [
+    100,
+    13493,
+    "r89",
+    88,
+    1,
+    12
+   ],
+   [
+    93,
+    13951,
+    "rw1_90",
+    59,
+    0,
+    11
+   ],
+   [
+    91,
+    13952,
+    "rw2_91",
+    63,
+    0,
+    10
+   ],
+   [
+    92,
+    13952,
+    "r92",
+    63,
+    0,
+    9
+   ],
+   [
+    86,
+    14242,
+    "rw2_93",
+    64,
+    0,
+    8
+   ],
+   [
+    97,
+    14243,
+    "r94",
+    65,
+    0,
+    7
+   ],
+   [
+    96,
+    14243,
+    "rw1_95",
+    65,
+    0,
+    6
+   ],
+   [
+    84,
+    14511,
+    "rw2_96",
+    71,
+    0,
+    6
+   ],
+   [
+    95,
+    14515,
+    "r97",
+    71,
+    0,
+    5
+   ],
+   [
+    101,
+    14778,
+    "rw2_98",
+    135,
+    1,
+    4
+   ],
+   [
+    88,
+    14778,
+    "r99",
+    72,
+    0,
+    3
+   ],
+   [
+    87,
+    14780,
+    "rw1_100",
+    74,
+    0,
+    2
+   ],
+   [
+    99,
+    14788,
+    "r101",
+    260,
+    0,
+    1
+   ],
+   [
+    98,
+    14963,
+    "rw1_102",
+    261,
+    0,
+    0
+   ],
+   [
+    102,
+    15312,
+    "r103",
+    140,
+    1,
+    0
+   ],
+   [
+    103,
+    15573,
+    "r104",
+    66,
+    1,
+    0
+   ],
+   [
+    104,
+    15889,
+    "r105",
+    16,
+    1,
+    0
+   ],
+   [
+    105,
+    15927,
+    "r106",
+    16,
+    1,
+    0
+   ],
+   [
+    106,
+    15962,
+    "r107",
+    -1,
+    1,
+    0
+   ],
+   [
+    107,
+    15962,
+    "rw1_108",
+    -1,
+    1,
+    0
+   ],
+   [
+    108,
+    15962,
+    "rw2_109",
+    -1,
+    1,
+    0
+   ],
+   [
+    109,
+    15962,
+    "r110",
+    -1,
+    1,
+    0
+   ],
+   [
+    110,
+    15962,
+    "rw1_111",
+    -1,
+    1,
+    0
+   ],
+   [
+    111,
+    15962,
+    "rw2_112",
+    -1,
+    1,
+    0
+   ],
+   [
+    112,
+    15962,
+    "r113",
+    -1,
+    1,
+    0
+   ],
+   [
+    113,
+    15962,
+    "rw1_114",
+    -1,
+    1,
+    0
+   ],
+   [
+    114,
+    15962,
+    "rw2_115",
+    0,
+    1,
+    0
+   ],
+   [
+    115,
+    15963,
+    "r116",
+    -1,
+    1,
+    0
+   ],
+   [
+    116,
+    15964,
+    "rw1_117",
+    -1,
+    1,
+    0
+   ],
+   [
+    117,
+    15964,
+    "rw2_118",
+    -1,
+    1,
+    0
+   ],
+   [
+    118,
+    15964,
+    "r119",
+    -1,
+    1,
+    0
+   ],
+   [
+    119,
+    15965,
+    "rw1_120",
+    -1,
+    1,
+    0
+   ],
+   [
+    120,
+    15965,
+    "rw2_121",
+    -1,
+    1,
+    0
+   ],
+   [
+    121,
+    15965,
+    "r122",
+    -1,
+    1,
+    0
+   ],
+   [
+    122,
+    15965,
+    "rw1_123",
+    -1,
+    1,
+    0
+   ],
+   [
+    123,
+    15966,
+    "rw2_124",
+    -1,
+    1,
+    0
+   ],
+   [
+    124,
+    15966,
+    "r125",
+    -1,
+    1,
+    0
+   ],
+   [
+    125,
+    15966,
+    "rw1_126",
+    -1,
+    1,
+    0
+   ],
+   [
+    126,
+    15966,
+    "rw2_127",
+    -1,
+    1,
+    0
+   ],
+   [
+    127,
+    15966,
+    "r128",
+    -1,
+    1,
+    0
+   ],
+   [
+    128,
+    15966,
+    "rw1_129",
+    -1,
+    1,
+    0
+   ],
+   [
+    129,
+    15966,
+    "rw2_130",
+    -1,
+    1,
+    0
+   ],
+   [
+    130,
+    15966,
+    "r131",
+    -1,
+    1,
+    0
+   ],
+   [
+    131,
+    15966,
+    "rw1_132",
+    -1,
+    1,
+    0
+   ],
+   [
+    132,
+    15966,
+    "rw2_133",
+    -1,
+    1,
+    0
+   ],
+   [
+    133,
+    15967,
+    "r134",
+    -1,
+    1,
+    0
+   ],
+   [
+    134,
+    15967,
+    "rw1_135",
+    -1,
+    1,
+    0
+   ],
+   [
+    135,
+    15967,
+    "rw2_136",
+    -1,
+    1,
+    0
+   ],
+   [
+    136,
+    15967,
+    "r137",
+    -1,
+    1,
+    0
+   ],
+   [
+    137,
+    15967,
+    "rw1_138",
+    -1,
+    1,
+    0
+   ],
+   [
+    138,
+    15967,
+    "rw2_139",
+    -1,
+    1,
+    0
+   ],
+   [
+    139,
+    15967,
+    "r140",
+    -1,
+    1,
+    0
+   ],
+   [
+    140,
+    15967,
+    "rw1_141",
+    -1,
+    1,
+    0
+   ],
+   [
+    141,
+    15968,
+    "rw2_142",
+    -1,
+    1,
+    0
+   ],
+   [
+    142,
+    16558,
+    "rw1_143",
+    -1,
+    1,
+    37
+   ],
+   [
+    180,
+    17653,
+    "r144",
+    19,
+    1,
+    40
+   ],
+   [
+    182,
+    17758,
+    "rw2_145",
+    23,
+    1,
+    39
+   ],
+   [
+    181,
+    17917,
+    "r146",
+    24,
+    1,
+    38
+   ],
+   [
+    183,
+    18009,
+    "rw2_147",
+    25,
+    1,
+    37
+   ],
+   [
+    143,
+    18192,
+    "rw1_148",
+    -1,
+    1,
+    36
+   ],
+   [
+    144,
+    18404,
+    "rw1_149",
+    -1,
+    1,
+    35
+   ],
+   [
+    145,
+    18405,
+    "rw1_150",
+    -1,
+    1,
+    34
+   ],
+   [
+    146,
+    18405,
+    "rw1_151",
+    -1,
+    1,
+    33
+   ],
+   [
+    147,
+    18405,
+    "rw1_152",
+    -1,
+    1,
+    32
+   ],
+   [
+    148,
+    18405,
+    "rw1_153",
+    -1,
+    1,
+    31
+   ],
+   [
+    149,
+    18405,
+    "rw1_154",
+    -1,
+    1,
+    30
+   ],
+   [
+    150,
+    18521,
+    "rw1_155",
+    -1,
+    1,
+    29
+   ],
+   [
+    151,
+    18521,
+    "rw1_156",
+    -1,
+    1,
+    28
+   ],
+   [
+    152,
+    18521,
+    "rw1_157",
+    -1,
+    1,
+    27
+   ],
+   [
+    153,
+    18522,
+    "rw1_158",
+    -1,
+    1,
+    26
+   ],
+   [
+    154,
+    18522,
+    "rw1_159",
+    -1,
+    1,
+    25
+   ],
+   [
+    155,
+    18522,
+    "rw1_160",
+    -1,
+    1,
+    24
+   ],
+   [
+    156,
+    18523,
+    "rw1_161",
+    -1,
+    1,
+    23
+   ],
+   [
+    157,
+    18523,
+    "rw1_162",
+    -1,
+    1,
+    22
+   ],
+   [
+    158,
+    18524,
+    "rw1_163",
+    -1,
+    1,
+    21
+   ],
+   [
+    159,
+    18525,
+    "rw1_164",
+    -1,
+    1,
+    20
+   ],
+   [
+    160,
+    18525,
+    "rw1_165",
+    -1,
+    1,
+    19
+   ],
+   [
+    161,
+    18526,
+    "rw1_166",
+    -1,
+    1,
+    18
+   ],
+   [
+    162,
+    18545,
+    "rw1_167",
+    -1,
+    1,
+    17
+   ],
+   [
+    163,
+    18546,
+    "rw1_168",
+    -1,
+    1,
+    16
+   ],
+   [
+    164,
+    18546,
+    "rw1_169",
+    -1,
+    1,
+    15
+   ],
+   [
+    165,
+    18546,
+    "rw1_170",
+    -1,
+    1,
+    14
+   ],
+   [
+    166,
+    18547,
+    "rw1_171",
+    -1,
+    1,
+    13
+   ],
+   [
+    167,
+    18547,
+    "rw1_172",
+    -1,
+    1,
+    12
+   ],
+   [
+    168,
+    18548,
+    "rw1_173",
+    -1,
+    1,
+    11
+   ],
+   [
+    169,
+    18549,
+    "rw1_174",
+    -1,
+    1,
+    10
+   ],
+   [
+    170,
+    18549,
+    "rw1_175",
+    -1,
+    1,
+    9
+   ],
+   [
+    171,
+    18550,
+    "rw1_176",
+    -1,
+    1,
+    8
+   ],
+   [
+    172,
+    18554,
+    "rw1_177",
+    -1,
+    1,
+    7
+   ],
+   [
+    173,
+    18590,
+    "rw1_178",
+    -1,
+    1,
+    6
+   ],
+   [
+    174,
+    18644,
+    "rw1_179",
+    -1,
+    1,
+    5
+   ],
+   [
+    175,
+    18645,
+    "rw1_180",
+    -1,
+    1,
+    4
+   ],
+   [
+    176,
+    18645,
+    "rw1_181",
+    -1,
+    1,
+    3
+   ],
+   [
+    177,
+    18646,
+    "rw1_182",
+    -1,
+    1,
+    2
+   ],
+   [
+    178,
+    18647,
+    "rw1_183",
+    -1,
+    1,
+    1
+   ],
+   [
+    179,
+    18648,
+    "rw1_184",
+    -1,
+    1,
+    0
+   ],
+   [
+    184,
+    20618,
+    "r185",
+    -1,
+    1,
+    0
+   ],
+   [
+    185,
+    20618,
+    "rw1_186",
+    -1,
+    1,
+    0
+   ],
+   [
+    186,
+    20618,
+    "rw2_187",
+    -1,
+    1,
+    0
+   ],
+   [
+    187,
+    20618,
+    "r188",
+    -1,
+    1,
+    0
+   ],
+   [
+    188,
+    20618,
+    "rw1_189",
+    -1,
+    1,
+    0
+   ],
+   [
+    189,
+    20619,
+    "rw2_190",
+    -1,
+    1,
+    0
+   ],
+   [
+    190,
+    20619,
+    "r191",
+    -1,
+    1,
+    0
+   ],
+   [
+    191,
+    20619,
+    "rw1_192",
+    -1,
+    1,
+    0
+   ],
+   [
+    192,
+    20619,
+    "rw2_193",
+    -1,
+    1,
+    0
+   ],
+   [
+    193,
+    20619,
+    "r194",
+    -1,
+    1,
+    0
+   ],
+   [
+    194,
+    21061,
+    "stl-195",
+    0,
+    1,
+    0
+   ]
+  ],
+  "an": [
+   [
+    4613,
+    "rw1_1",
+    "asset",
+    0,
+    7,
+    0,
+    0,
+    [
+     2884,
+     2885,
+     3872
+    ]
+   ],
+   [
+    6154,
+    "r3",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     4637,
+     4688,
+     4776
+    ]
+   ],
+   [
+    6156,
+    "r4",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4637,
+     4777,
+     4897
+    ]
+   ],
+   [
+    6157,
+    "rw1_14",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4614,
+     4625,
+     4929
+    ]
+   ],
+   [
+    6160,
+    "r5",
+    "asset",
+    0,
+    130,
+    0,
+    0,
+    [
+     4637,
+     4919,
+     4987
+    ]
+   ],
+   [
+    6162,
+    "rw1_15",
+    "asset",
+    0,
+    248,
+    0,
+    0,
+    [
+     4615,
+     4971,
+     5119
+    ]
+   ],
+   [
+    6163,
+    "r6",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4637,
+     5004,
+     5174
+    ]
+   ],
+   [
+    6164,
+    "rw1_16",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4617,
+     5135,
+     5243
+    ]
+   ],
+   [
+    6166,
+    "r7",
+    "asset",
+    0,
+    139,
+    0,
+    0,
+    [
+     4637,
+     5176,
+     5273
+    ]
+   ],
+   [
+    6169,
+    "rw1_17",
+    "asset",
+    0,
+    189,
+    0,
+    0,
+    [
+     4617,
+     5250,
+     5303
+    ]
+   ],
+   [
+    6170,
+    "rw1_18",
+    "asset",
+    0,
+    10,
+    0,
+    0,
+    [
+     4617,
+     5313,
+     5443
+    ]
+   ],
+   [
+    6172,
+    "r8",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4637,
+     5280,
+     5478
+    ]
+   ],
+   [
+    6175,
+    "r9",
+    "asset",
+    0,
+    244,
+    0,
+    0,
+    [
+     4637,
+     5484,
+     5570
+    ]
+   ],
+   [
+    6176,
+    "stl-w2_2",
+    "settlement",
+    0,
+    0,
+    0,
+    0,
+    null
+   ],
+   [
+    6597,
+    "r10",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4637,
+     5583,
+     5671
+    ]
+   ],
+   [
+    6599,
+    "r11",
+    "asset",
+    0,
+    140,
+    0,
+    0,
+    [
+     4637,
+     5672,
+     5710
+    ]
+   ],
+   [
+    6600,
+    "r12",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     4637,
+     5718,
+     5802
+    ]
+   ],
+   [
+    6604,
+    "r13",
+    "asset",
+    0,
+    293,
+    0,
+    0,
+    [
+     4637,
+     5807,
+     5853
+    ]
+   ],
+   [
+    6612,
+    "rw2_20",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     6183,
+     6210,
+     6361
+    ]
+   ],
+   [
+    6615,
+    "rw2_22",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6432,
+     6437,
+     6460
+    ]
+   ],
+   [
+    6615,
+    "rw2_24",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6432,
+     6462,
+     6466
+    ]
+   ],
+   [
+    7671,
+    "r25",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6604,
+     6608,
+     6624
+    ]
+   ],
+   [
+    7676,
+    "rw2_26",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6616,
+     6624,
+     6697
+    ]
+   ],
+   [
+    7680,
+    "rw1_19",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     6171,
+     6176,
+     6794
+    ]
+   ],
+   [
+    7680,
+    "rw1_21",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6800,
+     6818,
+     6838
+    ]
+   ],
+   [
+    7680,
+    "rw1_23",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     6800,
+     6843,
+     6851
+    ]
+   ],
+   [
+    8725,
+    "r27",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     7671,
+     7720,
+     7729
+    ]
+   ],
+   [
+    8726,
+    "rw2_28",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     7678,
+     7720,
+     7745
+    ]
+   ],
+   [
+    8731,
+    "rw1_29",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     7683,
+     7719,
+     8258
+    ]
+   ],
+   [
+    8735,
+    "r30",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8493,
+     8495,
+     8498
+    ]
+   ],
+   [
+    8735,
+    "rw1_31",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8495,
+     8495,
+     8500
+    ]
+   ],
+   [
+    8735,
+    "rw2_32",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8511,
+     8512,
+     8517
+    ]
+   ],
+   [
+    8735,
+    "r33",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8508,
+     8509,
+     8524
+    ]
+   ],
+   [
+    8736,
+    "rw1_34",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8511,
+     8518,
+     8528
+    ]
+   ],
+   [
+    8736,
+    "rw2_35",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8511,
+     8526,
+     8541
+    ]
+   ],
+   [
+    9271,
+    "rw1_37",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     8736,
+     8745,
+     8951
+    ]
+   ],
+   [
+    9273,
+    "r36",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     8735,
+     8745,
+     8991
+    ]
+   ],
+   [
+    9274,
+    "rw2_38",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     8736,
+     8745,
+     9070
+    ]
+   ],
+   [
+    9274,
+    "rw2_41",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9071,
+     9082,
+     9084
+    ]
+   ],
+   [
+    9821,
+    "r39",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8992,
+     8996,
+     9661
+    ]
+   ],
+   [
+    9821,
+    "r42",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     8993,
+     9674,
+     9676
+    ]
+   ],
+   [
+    9821,
+    "rw2_44",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     9072,
+     9085,
+     9682
+    ]
+   ],
+   [
+    9822,
+    "rw1_40",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8953,
+     8977,
+     9733
+    ]
+   ],
+   [
+    10654,
+    "r45",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8993,
+     9693,
+     10140
+    ]
+   ],
+   [
+    10655,
+    "rw2_47",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     9072,
+     9700,
+     10351
+    ]
+   ],
+   [
+    10655,
+    "r48",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8993,
+     10171,
+     10402
+    ]
+   ],
+   [
+    10656,
+    "rw1_43",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8953,
+     9745,
+     10508
+    ]
+   ],
+   [
+    10657,
+    "rw2_50",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9684,
+     10376,
+     10584
+    ]
+   ],
+   [
+    10657,
+    "r51",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9667,
+     10404,
+     10614
+    ]
+   ],
+   [
+    11209,
+    "rw2_53",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9684,
+     10586,
+     10727
+    ]
+   ],
+   [
+    11209,
+    "r54",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9667,
+     10616,
+     10729
+    ]
+   ],
+   [
+    11211,
+    "rw1_46",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     8953,
+     10524,
+     10967
+    ]
+   ],
+   [
+    11211,
+    "rw2_56",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     10375,
+     10730,
+     10980
+    ]
+   ],
+   [
+    11211,
+    "rw1_49",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9735,
+     10984,
+     11088
+    ]
+   ],
+   [
+    11212,
+    "rw2_58",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     10585,
+     10988,
+     11103
+    ]
+   ],
+   [
+    11862,
+    "rw2_61",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     11105,
+     11109,
+     11237
+    ]
+   ],
+   [
+    11863,
+    "rw1_52",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9736,
+     11091,
+     11249
+    ]
+   ],
+   [
+    11900,
+    "rw1_55",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     9736,
+     11258,
+     11413
+    ]
+   ],
+   [
+    11901,
+    "r57",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     10615,
+     10731,
+     11509
+    ]
+   ],
+   [
+    11901,
+    "rw1_64",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11413,
+     11417,
+     11542
+    ]
+   ],
+   [
+    11902,
+    "rw1_66",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11416,
+     11543,
+     11627
+    ]
+   ],
+   [
+    12568,
+    "rw2_63",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11344,
+     11345,
+     11894
+    ]
+   ],
+   [
+    12569,
+    "r59",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     10615,
+     11514,
+     11921
+    ]
+   ],
+   [
+    12571,
+    "rw1_69",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11416,
+     11632,
+     12021
+    ]
+   ],
+   [
+    12574,
+    "rw1_72",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     11416,
+     12054,
+     12140
+    ]
+   ],
+   [
+    12575,
+    "r60",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     11510,
+     11981,
+     12333
+    ]
+   ],
+   [
+    12575,
+    "rw1_75",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11628,
+     12156,
+     12413
+    ]
+   ],
+   [
+    12575,
+    "rw2_65",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11897,
+     11917,
+     12432
+    ]
+   ],
+   [
+    12576,
+    "r62",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     11511,
+     12358,
+     12514
+    ]
+   ],
+   [
+    12576,
+    "rw1_78",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11628,
+     12417,
+     12564
+    ]
+   ],
+   [
+    13254,
+    "rw1_81",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11629,
+     12568,
+     12643
+    ]
+   ],
+   [
+    13254,
+    "rw1_84",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     12644,
+     12645,
+     12663
+    ]
+   ],
+   [
+    13255,
+    "rw1_85",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     12644,
+     12669,
+     12679
+    ]
+   ],
+   [
+    13255,
+    "rw1_86",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     12644,
+     12680,
+     12691
+    ]
+   ],
+   [
+    13261,
+    "rw2_67",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11897,
+     12445,
+     12810
+    ]
+   ],
+   [
+    13262,
+    "r68",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11511,
+     12530,
+     12990
+    ]
+   ],
+   [
+    13262,
+    "r71",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     11511,
+     13007,
+     13023
+    ]
+   ],
+   [
+    13263,
+    "rw2_70",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     11897,
+     12817,
+     13042
+    ]
+   ],
+   [
+    13263,
+    "r74",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11923,
+     13024,
+     13079
+    ]
+   ],
+   [
+    13263,
+    "r77",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11923,
+     13080,
+     13171
+    ]
+   ],
+   [
+    13263,
+    "r80",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11923,
+     13171,
+     13229
+    ]
+   ],
+   [
+    13265,
+    "rw2_73",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11897,
+     13054,
+     13257
+    ]
+   ],
+   [
+    13375,
+    "rw2_76",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11898,
+     13261,
+     13374
+    ]
+   ],
+   [
+    13410,
+    "rw2_79",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11899,
+     13375,
+     13409
+    ]
+   ],
+   [
+    13951,
+    "r83",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     11923,
+     13230,
+     13655
+    ]
+   ],
+   [
+    13951,
+    "rw1_88",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     13257,
+     13261,
+     13658
+    ]
+   ],
+   [
+    13952,
+    "rw2_82",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     11899,
+     13418,
+     13688
+    ]
+   ],
+   [
+    13952,
+    "rw2_87",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     12812,
+     13688,
+     13704
+    ]
+   ],
+   [
+    13952,
+    "r89",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     13657,
+     13659,
+     13763
+    ]
+   ],
+   [
+    14242,
+    "rw2_91",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     13952,
+     13953,
+     13954
+    ]
+   ],
+   [
+    14243,
+    "r92",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     13952,
+     13953,
+     13962
+    ]
+   ],
+   [
+    14243,
+    "rw1_90",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     13952,
+     13952,
+     13963
+    ]
+   ],
+   [
+    14511,
+    "rw2_93",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     14242,
+     14243,
+     14251
+    ]
+   ],
+   [
+    14515,
+    "r94",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     14243,
+     14243,
+     14487
+    ]
+   ],
+   [
+    14778,
+    "rw2_96",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     14512,
+     14512,
+     14526
+    ]
+   ],
+   [
+    14778,
+    "r97",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     14515,
+     14516,
+     14528
+    ]
+   ],
+   [
+    14780,
+    "rw1_95",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     14243,
+     14244,
+     14716
+    ]
+   ],
+   [
+    14788,
+    "r99",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     14778,
+     14779,
+     14787
+    ]
+   ],
+   [
+    14963,
+    "rw1_100",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     14782,
+     14783,
+     14794
+    ]
+   ],
+   [
+    14964,
+    "r101",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     14788,
+     14795,
+     14821
+    ]
+   ],
+   [
+    15083,
+    "rw1_102",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     14964,
+     14966,
+     14993
+    ]
+   ],
+   [
+    15262,
+    "rw2_98",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     14778,
+     14778,
+     15136
+    ]
+   ],
+   [
+    15512,
+    "r103",
+    "asset",
+    0,
+    5,
+    0,
+    0,
+    [
+     15312,
+     15313,
+     15511
+    ]
+   ],
+   [
+    15655,
+    "r104",
+    "asset",
+    0,
+    16,
+    0,
+    0,
+    [
+     15573,
+     15573,
+     15605
+    ]
+   ],
+   [
+    15899,
+    "r105",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     15889,
+     15889,
+     15891
+    ]
+   ],
+   [
+    15936,
+    "r106",
+    "asset",
+    0,
+    2,
+    0,
+    0,
+    [
+     15927,
+     15927,
+     15928
+    ]
+   ],
+   [
+    16558,
+    "rw1_108",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     15962,
+     15963,
+     16463
+    ]
+   ],
+   [
+    17653,
+    "r107",
+    "asset",
+    0,
+    22,
+    0,
+    0,
+    [
+     15962,
+     15963,
+     17632
+    ]
+   ],
+   [
+    17758,
+    "rw2_109",
+    "asset",
+    0,
+    26,
+    0,
+    0,
+    [
+     15962,
+     15963,
+     17723
+    ]
+   ],
+   [
+    17917,
+    "r110",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     15962,
+     17647,
+     17903
+    ]
+   ],
+   [
+    18009,
+    "rw2_112",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     15962,
+     17741,
+     17987
+    ]
+   ],
+   [
+    18192,
+    "rw1_111",
+    "asset",
+    0,
+    32,
+    0,
+    0,
+    [
+     15962,
+     16485,
+     18171
+    ]
+   ],
+   [
+    18404,
+    "rw1_114",
+    "asset",
+    0,
+    6,
+    0,
+    0,
+    [
+     15962,
+     18185,
+     18362
+    ]
+   ],
+   [
+    18404,
+    "rw1_117",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16471,
+     18369,
+     18377
+    ]
+   ],
+   [
+    18405,
+    "rw1_120",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16471,
+     18378,
+     18383
+    ]
+   ],
+   [
+    18405,
+    "rw1_123",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16471,
+     18383,
+     18387
+    ]
+   ],
+   [
+    18405,
+    "rw1_126",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18387,
+     18392
+    ]
+   ],
+   [
+    18405,
+    "rw1_129",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18393,
+     18398
+    ]
+   ],
+   [
+    18520,
+    "rw1_132",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18399,
+     18413
+    ]
+   ],
+   [
+    18521,
+    "rw1_135",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18415,
+     18424
+    ]
+   ],
+   [
+    18521,
+    "rw1_138",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18425,
+     18432
+    ]
+   ],
+   [
+    18521,
+    "rw1_141",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     16472,
+     18432,
+     18438
+    ]
+   ],
+   [
+    18522,
+    "rw1_143",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18178,
+     18439,
+     18443
+    ]
+   ],
+   [
+    18522,
+    "rw1_148",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18364,
+     18443,
+     18449
+    ]
+   ],
+   [
+    18523,
+    "rw1_149",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18413,
+     18450,
+     18454
+    ]
+   ],
+   [
+    18523,
+    "rw1_150",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18413,
+     18455,
+     18459
+    ]
+   ],
+   [
+    18524,
+    "rw1_151",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18413,
+     18459,
+     18464
+    ]
+   ],
+   [
+    18524,
+    "rw1_152",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18414,
+     18465,
+     18470
+    ]
+   ],
+   [
+    18525,
+    "rw1_153",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18414,
+     18470,
+     18472
+    ]
+   ],
+   [
+    18525,
+    "rw1_154",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18414,
+     18472,
+     18474
+    ]
+   ],
+   [
+    18545,
+    "rw1_155",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18521,
+     18521,
+     18524
+    ]
+   ],
+   [
+    18546,
+    "rw1_156",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18521,
+     18526,
+     18527
+    ]
+   ],
+   [
+    18546,
+    "rw1_157",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18528,
+     18529
+    ]
+   ],
+   [
+    18546,
+    "rw1_158",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18530,
+     18532
+    ]
+   ],
+   [
+    18547,
+    "rw1_159",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18533,
+     18534
+    ]
+   ],
+   [
+    18547,
+    "rw1_160",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18535,
+     18536
+    ]
+   ],
+   [
+    18548,
+    "rw1_161",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18537,
+     18538
+    ]
+   ],
+   [
+    18548,
+    "rw1_162",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18524,
+     18539,
+     18541
+    ]
+   ],
+   [
+    18549,
+    "rw1_163",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18525,
+     18542,
+     18544
+    ]
+   ],
+   [
+    18549,
+    "rw1_164",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18525,
+     18545,
+     18548
+    ]
+   ],
+   [
+    18553,
+    "rw1_165",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18525,
+     18550,
+     18552
+    ]
+   ],
+   [
+    18589,
+    "rw1_166",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18527,
+     18573,
+     18575
+    ]
+   ],
+   [
+    18644,
+    "rw1_167",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18576,
+     18590
+    ]
+   ],
+   [
+    18645,
+    "rw1_168",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18593,
+     18595
+    ]
+   ],
+   [
+    18645,
+    "rw1_169",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18596,
+     18599
+    ]
+   ],
+   [
+    18646,
+    "rw1_170",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18600,
+     18605
+    ]
+   ],
+   [
+    18646,
+    "rw1_171",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18606,
+     18611
+    ]
+   ],
+   [
+    18648,
+    "rw1_172",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18548,
+     18612,
+     18617
+    ]
+   ],
+   [
+    18649,
+    "rw1_173",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18549,
+     18618,
+     18625
+    ]
+   ],
+   [
+    18649,
+    "rw1_174",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18549,
+     18627,
+     18632
+    ]
+   ],
+   [
+    18649,
+    "rw1_175",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18549,
+     18635,
+     18640
+    ]
+   ],
+   [
+    18679,
+    "rw1_176",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18550,
+     18641,
+     18646
+    ]
+   ],
+   [
+    18680,
+    "rw1_177",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18556,
+     18649,
+     18652
+    ]
+   ],
+   [
+    18680,
+    "rw1_178",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18590,
+     18653,
+     18657
+    ]
+   ],
+   [
+    18680,
+    "rw1_179",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18646,
+     18658,
+     18662
+    ]
+   ],
+   [
+    18681,
+    "rw1_180",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18646,
+     18663,
+     18667
+    ]
+   ],
+   [
+    18681,
+    "rw1_181",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18646,
+     18668,
+     18672
+    ]
+   ],
+   [
+    18681,
+    "rw1_182",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18646,
+     18673,
+     18677
+    ]
+   ],
+   [
+    18708,
+    "rw1_183",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18647,
+     18678,
+     18681
+    ]
+   ],
+   [
+    18708,
+    "rw1_184",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     18648,
+     18684,
+     18688
+    ]
+   ],
+   [
+    19202,
+    "r113",
+    "asset",
+    0,
+    27,
+    0,
+    0,
+    [
+     15962,
+     17910,
+     19125
+    ]
+   ],
+   [
+    19203,
+    "r116",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17638,
+     19142,
+     19151
+    ]
+   ],
+   [
+    19377,
+    "r119",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17638,
+     19188,
+     19199
+    ]
+   ],
+   [
+    19378,
+    "r122",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17638,
+     19203,
+     19211
+    ]
+   ],
+   [
+    19378,
+    "r125",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17639,
+     19218,
+     19225
+    ]
+   ],
+   [
+    19378,
+    "r128",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17639,
+     19226,
+     19234
+    ]
+   ],
+   [
+    19378,
+    "r131",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17639,
+     19235,
+     19265
+    ]
+   ],
+   [
+    19378,
+    "r134",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17639,
+     19269,
+     19290
+    ]
+   ],
+   [
+    19378,
+    "r137",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17639,
+     19295,
+     19313
+    ]
+   ],
+   [
+    19378,
+    "r140",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17640,
+     19320,
+     19327
+    ]
+   ],
+   [
+    19379,
+    "r144",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17905,
+     19329,
+     19335
+    ]
+   ],
+   [
+    19379,
+    "r146",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     19134,
+     19336,
+     19339
+    ]
+   ],
+   [
+    20464,
+    "rw2_115",
+    "asset",
+    0,
+    17,
+    0,
+    0,
+    [
+     15962,
+     17993,
+     20434
+    ]
+   ],
+   [
+    20464,
+    "rw2_118",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20442,
+     20448
+    ]
+   ],
+   [
+    20464,
+    "rw2_121",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20449,
+     20454
+    ]
+   ],
+   [
+    20464,
+    "rw2_124",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20455,
+     20463
+    ]
+   ],
+   [
+    20502,
+    "rw2_127",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20463,
+     20468
+    ]
+   ],
+   [
+    20502,
+    "rw2_130",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20469,
+     20474
+    ]
+   ],
+   [
+    20502,
+    "rw2_133",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20474,
+     20490
+    ]
+   ],
+   [
+    20502,
+    "rw2_136",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17732,
+     20491,
+     20502
+    ]
+   ],
+   [
+    20513,
+    "rw2_139",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17733,
+     20502,
+     20510
+    ]
+   ],
+   [
+    20523,
+    "rw2_142",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17733,
+     20510,
+     20515
+    ]
+   ],
+   [
+    20523,
+    "rw2_145",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     17989,
+     20515,
+     20517
+    ]
+   ],
+   [
+    20523,
+    "rw2_147",
+    "asset",
+    0,
+    1,
+    0,
+    0,
+    [
+     20436,
+     20518,
+     20519
+    ]
+   ],
+   [
+    20745,
+    "rw1_186",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20618,
+     20620,
+     20708
+    ]
+   ],
+   [
+    20778,
+    "r185",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20618,
+     20620,
+     20768
+    ]
+   ],
+   [
+    20801,
+    "rw2_187",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20618,
+     20620,
+     20787
+    ]
+   ],
+   [
+    20814,
+    "rw1_189",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20717,
+     20797
+    ]
+   ],
+   [
+    20877,
+    "r188",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20777,
+     20867
+    ]
+   ],
+   [
+    20906,
+    "rw1_192",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20813,
+     20891
+    ]
+   ],
+   [
+    20921,
+    "rw2_190",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20808,
+     20912
+    ]
+   ],
+   [
+    21060,
+    "r191",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20878,
+     20974
+    ]
+   ],
+   [
+    21060,
+    "rw2_193",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20919,
+     21000
+    ]
+   ],
+   [
+    21061,
+    "r194",
+    "asset",
+    0,
+    0,
+    1,
+    0,
+    [
+     20619,
+     20983,
+     21038
+    ]
+   ],
+   [
+    21378,
+    "stl-195",
+    "settlement",
+    0,
+    0,
+    0,
+    0,
+    null
+   ]
+  ],
+  "erf": [
+   [
+    0,
+    4614,
+    7
+   ],
+   [
+    2,
+    6154,
+    1
+   ],
+   [
+    5,
+    6156,
+    2
+   ],
+   [
+    15,
+    6158,
+    2
+   ],
+   [
+    6,
+    6160,
+    130
+   ],
+   [
+    16,
+    6163,
+    248
+   ],
+   [
+    7,
+    6163,
+    2
+   ],
+   [
+    17,
+    6164,
+    2
+   ],
+   [
+    8,
+    6166,
+    139
+   ],
+   [
+    18,
+    6169,
+    189
+   ],
+   [
+    20,
+    6171,
+    10
+   ],
+   [
+    9,
+    6172,
+    2
+   ],
+   [
+    10,
+    6175,
+    244
+   ],
+   [
+    1,
+    6177,
+    1
+   ],
+   [
+    11,
+    6597,
+    2
+   ],
+   [
+    12,
+    6599,
+    140
+   ],
+   [
+    13,
+    6601,
+    2
+   ],
+   [
+    14,
+    6604,
+    293
+   ],
+   [
+    21,
+    6612,
+    2
+   ],
+   [
+    26,
+    6615,
+    1
+   ],
+   [
+    28,
+    6615,
+    1
+   ],
+   [
+    23,
+    7671,
+    1
+   ],
+   [
+    22,
+    7676,
+    1
+   ],
+   [
+    19,
+    7680,
+    5
+   ],
+   [
+    25,
+    7680,
+    1
+   ],
+   [
+    27,
+    7680,
+    1
+   ],
+   [
+    3,
+    8726,
+    2
+   ],
+   [
+    4,
+    8726,
+    2
+   ],
+   [
+    29,
+    8731,
+    6
+   ],
+   [
+    32,
+    8735,
+    2
+   ],
+   [
+    33,
+    8735,
+    2
+   ],
+   [
+    34,
+    8735,
+    2
+   ],
+   [
+    35,
+    8736,
+    2
+   ],
+   [
+    36,
+    8736,
+    2
+   ],
+   [
+    37,
+    8736,
+    2
+   ],
+   [
+    24,
+    9271,
+    6
+   ],
+   [
+    30,
+    9273,
+    6
+   ],
+   [
+    31,
+    9274,
+    6
+   ],
+   [
+    40,
+    9274,
+    2
+   ],
+   [
+    38,
+    9821,
+    5
+   ],
+   [
+    41,
+    9821,
+    2
+   ],
+   [
+    43,
+    9821,
+    5
+   ],
+   [
+    39,
+    9822,
+    5
+   ],
+   [
+    44,
+    10654,
+    5
+   ],
+   [
+    46,
+    10655,
+    5
+   ],
+   [
+    47,
+    10655,
+    5
+   ],
+   [
+    42,
+    10656,
+    5
+   ],
+   [
+    49,
+    10657,
+    2
+   ],
+   [
+    50,
+    10657,
+    2
+   ],
+   [
+    52,
+    11209,
+    2
+   ],
+   [
+    53,
+    11209,
+    2
+   ],
+   [
+    45,
+    11211,
+    5
+   ],
+   [
+    55,
+    11211,
+    6
+   ],
+   [
+    48,
+    11211,
+    2
+   ],
+   [
+    57,
+    11212,
+    6
+   ],
+   [
+    60,
+    11862,
+    6
+   ],
+   [
+    51,
+    11863,
+    2
+   ],
+   [
+    54,
+    11901,
+    2
+   ],
+   [
+    56,
+    11901,
+    6
+   ],
+   [
+    63,
+    11901,
+    5
+   ],
+   [
+    65,
+    11902,
+    5
+   ],
+   [
+    62,
+    12569,
+    5
+   ],
+   [
+    58,
+    12569,
+    6
+   ],
+   [
+    68,
+    12571,
+    5
+   ],
+   [
+    71,
+    12574,
+    1
+   ],
+   [
+    59,
+    12575,
+    6
+   ],
+   [
+    74,
+    12575,
+    2
+   ],
+   [
+    64,
+    12575,
+    5
+   ],
+   [
+    61,
+    12576,
+    6
+   ],
+   [
+    77,
+    12576,
+    2
+   ],
+   [
+    80,
+    13254,
+    2
+   ],
+   [
+    94,
+    13255,
+    1
+   ],
+   [
+    89,
+    13255,
+    1
+   ],
+   [
+    85,
+    13256,
+    1
+   ],
+   [
+    66,
+    13262,
+    5
+   ],
+   [
+    67,
+    13262,
+    5
+   ],
+   [
+    70,
+    13262,
+    1
+   ],
+   [
+    69,
+    13263,
+    5
+   ],
+   [
+    73,
+    13263,
+    2
+   ],
+   [
+    76,
+    13263,
+    2
+   ],
+   [
+    79,
+    13263,
+    2
+   ],
+   [
+    72,
+    13265,
+    2
+   ],
+   [
+    75,
+    13375,
+    2
+   ],
+   [
+    78,
+    13410,
+    2
+   ],
+   [
+    82,
+    13951,
+    6
+   ],
+   [
+    83,
+    13952,
+    6
+   ],
+   [
+    81,
+    13952,
+    2
+   ],
+   [
+    90,
+    13952,
+    1
+   ],
+   [
+    100,
+    13952,
+    6
+   ],
+   [
+    91,
+    14242,
+    2
+   ],
+   [
+    92,
+    14243,
+    2
+   ],
+   [
+    93,
+    14243,
+    1
+   ],
+   [
+    86,
+    14511,
+    1
+   ],
+   [
+    97,
+    14515,
+    6
+   ],
+   [
+    84,
+    14778,
+    1
+   ],
+   [
+    95,
+    14778,
+    1
+   ],
+   [
+    96,
+    14780,
+    6
+   ],
+   [
+    88,
+    14788,
+    1
+   ],
+   [
+    87,
+    14963,
+    1
+   ],
+   [
+    99,
+    14964,
+    2
+   ],
+   [
+    98,
+    15083,
+    2
+   ],
+   [
+    101,
+    15262,
+    6
+   ],
+   [
+    102,
+    15512,
+    5
+   ],
+   [
+    103,
+    15655,
+    16
+   ],
+   [
+    104,
+    15899,
+    2
+   ],
+   [
+    105,
+    15936,
+    2
+   ],
+   [
+    107,
+    16558,
+    6
+   ],
+   [
+    106,
+    17653,
+    22
+   ],
+   [
+    108,
+    17758,
+    26
+   ],
+   [
+    109,
+    17917,
+    6
+   ],
+   [
+    111,
+    18009,
+    6
+   ],
+   [
+    110,
+    18193,
+    32
+   ],
+   [
+    113,
+    18404,
+    6
+   ],
+   [
+    116,
+    18405,
+    1
+   ],
+   [
+    119,
+    18405,
+    1
+   ],
+   [
+    122,
+    18405,
+    1
+   ],
+   [
+    125,
+    18405,
+    1
+   ],
+   [
+    128,
+    18406,
+    1
+   ],
+   [
+    131,
+    18521,
+    1
+   ],
+   [
+    134,
+    18521,
+    1
+   ],
+   [
+    137,
+    18521,
+    1
+   ],
+   [
+    140,
+    18522,
+    1
+   ],
+   [
+    142,
+    18522,
+    1
+   ],
+   [
+    143,
+    18523,
+    1
+   ],
+   [
+    144,
+    18523,
+    1
+   ],
+   [
+    145,
+    18524,
+    1
+   ],
+   [
+    146,
+    18524,
+    1
+   ],
+   [
+    147,
+    18525,
+    1
+   ],
+   [
+    148,
+    18525,
+    1
+   ],
+   [
+    149,
+    18526,
+    1
+   ],
+   [
+    150,
+    18546,
+    1
+   ],
+   [
+    151,
+    18546,
+    1
+   ],
+   [
+    152,
+    18546,
+    1
+   ],
+   [
+    153,
+    18547,
+    1
+   ],
+   [
+    154,
+    18547,
+    1
+   ],
+   [
+    155,
+    18548,
+    1
+   ],
+   [
+    156,
+    18548,
+    1
+   ],
+   [
+    157,
+    18549,
+    1
+   ],
+   [
+    158,
+    18549,
+    1
+   ],
+   [
+    159,
+    18550,
+    1
+   ],
+   [
+    160,
+    18554,
+    1
+   ],
+   [
+    161,
+    18590,
+    1
+   ],
+   [
+    162,
+    18645,
+    1
+   ],
+   [
+    163,
+    18645,
+    1
+   ],
+   [
+    164,
+    18646,
+    1
+   ],
+   [
+    165,
+    18646,
+    1
+   ],
+   [
+    166,
+    18647,
+    1
+   ],
+   [
+    167,
+    18648,
+    1
+   ],
+   [
+    168,
+    18649,
+    1
+   ],
+   [
+    169,
+    18649,
+    1
+   ],
+   [
+    170,
+    18650,
+    1
+   ],
+   [
+    171,
+    18680,
+    1
+   ],
+   [
+    172,
+    18680,
+    1
+   ],
+   [
+    173,
+    18680,
+    1
+   ],
+   [
+    174,
+    18680,
+    1
+   ],
+   [
+    175,
+    18681,
+    1
+   ],
+   [
+    176,
+    18681,
+    1
+   ],
+   [
+    177,
+    18681,
+    1
+   ],
+   [
+    178,
+    18708,
+    1
+   ],
+   [
+    179,
+    18708,
+    1
+   ],
+   [
+    112,
+    19202,
+    27
+   ],
+   [
+    115,
+    19203,
+    1
+   ],
+   [
+    118,
+    19377,
+    1
+   ],
+   [
+    121,
+    19378,
+    1
+   ],
+   [
+    124,
+    19378,
+    1
+   ],
+   [
+    127,
+    19378,
+    1
+   ],
+   [
+    130,
+    19378,
+    1
+   ],
+   [
+    133,
+    19378,
+    1
+   ],
+   [
+    136,
+    19378,
+    1
+   ],
+   [
+    139,
+    19378,
+    1
+   ],
+   [
+    180,
+    19379,
+    1
+   ],
+   [
+    181,
+    19379,
+    1
+   ],
+   [
+    114,
+    20464,
+    17
+   ],
+   [
+    117,
+    20464,
+    1
+   ],
+   [
+    120,
+    20464,
+    1
+   ],
+   [
+    123,
+    20464,
+    1
+   ],
+   [
+    126,
+    20502,
+    1
+   ],
+   [
+    129,
+    20502,
+    1
+   ],
+   [
+    132,
+    20502,
+    1
+   ],
+   [
+    135,
+    20502,
+    1
+   ],
+   [
+    138,
+    20513,
+    1
+   ],
+   [
+    141,
+    20523,
+    1
+   ],
+   [
+    182,
+    20523,
+    1
+   ],
+   [
+    183,
+    20523,
+    1
+   ],
+   [
+    185,
+    20745,
+    0
+   ],
+   [
+    184,
+    20778,
+    0
+   ],
+   [
+    186,
+    20801,
+    0
+   ],
+   [
+    188,
+    20814,
+    0
+   ],
+   [
+    187,
+    20878,
+    0
+   ],
+   [
+    191,
+    20906,
+    0
+   ],
+   [
+    189,
+    20921,
+    0
+   ],
+   [
+    190,
+    21060,
+    0
+   ],
+   [
+    192,
+    21060,
+    0
+   ],
+   [
+    193,
+    21061,
+    0
+   ],
+   [
+    194,
+    21378,
+    1
+   ]
+  ],
+  "satz": [
+   [
+    6476,
+    "verkalkt|1|3"
+   ],
+   [
+    6514,
+    "verkalkt|1|2"
+   ],
+   [
+    6517,
+    "geisttor|1|3"
+   ],
+   [
+    6518,
+    "maurentor|1|3"
+   ],
+   [
+    6526,
+    "geisttor|1|2"
+   ],
+   [
+    6541,
+    "maurentor|1|2"
+   ],
+   [
+    6543,
+    "ruine|1|3"
+   ],
+   [
+    6553,
+    "ruine|1|2"
+   ],
+   [
+    6917,
+    "gras|1|1"
+   ],
+   [
+    6917,
+    "gras|1|2"
+   ],
+   [
+    6918,
+    "maschine|1|3"
+   ],
+   [
+    6933,
+    "maschine|1|2"
+   ],
+   [
+    6935,
+    "kathedrale|1|3"
+   ],
+   [
+    6954,
+    "kathedrale|1|2"
+   ],
+   [
+    6955,
+    "drachentor|1|3"
+   ],
+   [
+    6963,
+    "drachentor|1|2"
+   ],
+   [
+    7659,
+    "gt|6|1"
+   ],
+   [
+    7660,
+    "zacken|1|0"
+   ],
+   [
+    7660,
+    "alemannisch|1|3|ov:170117b9.261"
+   ],
+   [
+    8374,
+    "gras|2|1"
+   ],
+   [
+    8374,
+    "gras|2|2"
+   ],
+   [
+    8378,
+    "alemannisch|1|1|ov:170117b9.261"
+   ],
+   [
+    8379,
+    "zacken|10|0"
+   ],
+   [
+    8379,
+    "zacken|8|0"
+   ],
+   [
+    9238,
+    "laterne|1|3"
+   ],
+   [
+    9239,
+    "laterne|1|1"
+   ],
+   [
+    9239,
+    "marktstand|1|3"
+   ],
+   [
+    9241,
+    "marktstand|1|1"
+   ],
+   [
+    9241,
+    "brunnen|1|3"
+   ],
+   [
+    9241,
+    "brunnen|1|1"
+   ],
+   [
+    9242,
+    "feuerstelle|1|3"
+   ],
+   [
+    9250,
+    "feuerstelle|1|1"
+   ],
+   [
+    9782,
+    "wandlaterne|1|3"
+   ],
+   [
+    9788,
+    "weide|1|1"
+   ],
+   [
+    9791,
+    "tanne|2|1"
+   ],
+   [
+    9793,
+    "karst|1|1"
+   ],
+   [
+    9796,
+    "tanne|1|1"
+   ],
+   [
+    10620,
+    "wandlaterne|1|1"
+   ],
+   [
+    10621,
+    "gotisch|12|2|ov:edcc8866.479"
+   ],
+   [
+    10623,
+    "alpenchalet|12|2|ov:e18295c.473"
+   ],
+   [
+    10624,
+    "schwarzwald|4|2|ov:9935b486.473"
+   ],
+   [
+    11184,
+    "strauch|1|1"
+   ],
+   [
+    11185,
+    "schwarzwald|13|2|ov:63183697.473"
+   ],
+   [
+    11185,
+    "schwarzwald|13|2|ov:8198aa54.471"
+   ],
+   [
+    11185,
+    "schwarzwald|13|3|ov:8198aa54.471"
+   ],
+   [
+    11185,
+    "gotisch|12|3|ov:edcc8866.479"
+   ],
+   [
+    11186,
+    "schwarzwald|6|2|ov:9077280.470"
+   ],
+   [
+    11825,
+    "tanne|3|1"
+   ],
+   [
+    11827,
+    "fichte|1|1"
+   ],
+   [
+    11827,
+    "schwarzwald|13|3|ov:63183697.473"
+   ],
+   [
+    11827,
+    "schwarzwald|6|3|ov:9077280.470"
+   ],
+   [
+    11827,
+    "schwarzwald|4|3|ov:9935b486.473"
+   ],
+   [
+    11828,
+    "schwarzwald|8|2|ov:49901c4e.473"
+   ],
+   [
+    12528,
+    "eiche|2|1"
+   ],
+   [
+    12530,
+    "fichte|2|1"
+   ],
+   [
+    12530,
+    "schwarzwald|11|2|ov:3e3ed698.463"
+   ],
+   [
+    12531,
+    "alpenchalet|12|3|ov:e18295c.473"
+   ],
+   [
+    12531,
+    "alpenchalet|9|2|ov:7323c079.472"
+   ],
+   [
+    12531,
+    "schwarzwald|8|3|ov:49901c4e.473"
+   ],
+   [
+    13196,
+    "birke|3|1"
+   ],
+   [
+    13198,
+    "fichte|3|1"
+   ],
+   [
+    13200,
+    "birke|2|1"
+   ],
+   [
+    13200,
+    "zacken|4|0"
+   ],
+   [
+    13201,
+    "schwarzwald|15|2|ov:223f7a54.472"
+   ],
+   [
+    13201,
+    "schwarzwald|15|3|ov:223f7a54.472"
+   ],
+   [
+    13201,
+    "alpenchalet|12|2|ov:1093e85c.473"
+   ],
+   [
+    13202,
+    "schwarzwald|11|3|ov:cb5eca29.473"
+   ],
+   [
+    13895,
+    "zacken|3|0"
+   ],
+   [
+    13895,
+    "zacken|2|0"
+   ],
+   [
+    13896,
+    "skandinavisch|6|2|ov:64a4c7f0.475"
+   ],
+   [
+    13896,
+    "skandinavisch|6|3|ov:64a4c7f0.475"
+   ],
+   [
+    13896,
+    "schwarzwald|11|3|ov:3e3ed698.463"
+   ],
+   [
+    13896,
+    "zacken|9|0"
+   ],
+   [
+    13897,
+    "schwarzwald|3|2|ov:41948277.473"
+   ],
+   [
+    13897,
+    "schwarzwald|3|3|ov:41948277.473"
+   ],
+   [
+    14198,
+    "eiche|1|1"
+   ],
+   [
+    14199,
+    "birke|1|1"
+   ],
+   [
+    14201,
+    "mammut|1|1"
+   ],
+   [
+    14201,
+    "alpenchalet|12|3|ov:1093e85c.473"
+   ],
+   [
+    14201,
+    "schwarzwald|11|2|ov:cb5eca29.473"
+   ],
+   [
+    14201,
+    "zacken|15|0"
+   ],
+   [
+    14201,
+    "alpenchalet|9|3|ov:7323c079.472"
+   ],
+   [
+    14202,
+    "skandinavisch|14|2|ov:519be5c6.477"
+   ],
+   [
+    14468,
+    "skandinavisch|14|3|ov:519be5c6.477"
+   ],
+   [
+    14468,
+    "zacken|12|0"
+   ],
+   [
+    14468,
+    "alpenchalet|16|3|ov:fd3882cb.472"
+   ],
+   [
+    14468,
+    "schwarzwald|9|3|ov:c5e87e4.474"
+   ],
+   [
+    14468,
+    "zacken|5|0"
+   ],
+   [
+    14468,
+    "feuerstelle|2|3"
+   ],
+   [
+    14468,
+    "feuerstelle|2|1"
+   ],
+   [
+    14766,
+    "kristalle|10|0"
+   ],
+   [
+    14767,
+    "buche|1|1"
+   ],
+   [
+    14949,
+    "buche|2|1"
+   ],
+   [
+    14949,
+    "zacken|16|0"
+   ],
+   [
+    14949,
+    "zacken|11|0"
+   ],
+   [
+    14949,
+    "zacken|6|0"
+   ],
+   [
+    15076,
+    "zacken|14|0"
+   ],
+   [
+    15076,
+    "blume|1|0"
+   ],
+   [
+    15255,
+    "blume|2|0"
+   ],
+   [
+    15318,
+    "eiche|3|1"
+   ],
+   [
+    15582,
+    "alpenchalet|16|2|ov:fd3882cb.472"
+   ],
+   [
+    15705,
+    "geroell|1|0"
+   ],
+   [
+    15935,
+    "blume|1|2"
+   ],
+   [
+    15969,
+    "blume|2|2"
+   ],
+   [
+    18518,
+    "findling|2|0"
+   ],
+   [
+    18518,
+    "findling|5|0"
+   ],
+   [
+    18518,
+    "findling|8|0"
+   ],
+   [
+    18542,
+    "findling|11|0"
+   ],
+   [
+    18542,
+    "findling|14|0"
+   ],
+   [
+    18542,
+    "basalt|1|0"
+   ],
+   [
+    18542,
+    "basalt|4|0"
+   ],
+   [
+    18543,
+    "basalt|7|0"
+   ],
+   [
+    18543,
+    "basalt|10|0"
+   ],
+   [
+    18543,
+    "basalt|12|0"
+   ],
+   [
+    18543,
+    "basalt|13|0"
+   ],
+   [
+    18586,
+    "basalt|14|0"
+   ],
+   [
+    18586,
+    "basalt|15|0"
+   ],
+   [
+    18586,
+    "basalt|16|0"
+   ],
+   [
+    18587,
+    "kristalle|1|0"
+   ],
+   [
+    18644,
+    "kristalle|2|0"
+   ],
+   [
+    18644,
+    "kristalle|3|0"
+   ],
+   [
+    18676,
+    "kristalle|4|0"
+   ],
+   [
+    18676,
+    "kristalle|5|0"
+   ],
+   [
+    18676,
+    "kristalle|6|0"
+   ],
+   [
+    18677,
+    "kristalle|7|0"
+   ],
+   [
+    18677,
+    "kristalle|8|0"
+   ],
+   [
+    18707,
+    "kristalle|9|0"
+   ],
+   [
+    18707,
+    "kristalle|11|0"
+   ],
+   [
+    18707,
+    "kristalle|12|0"
+   ],
+   [
+    18725,
+    "kristalle|13|0"
+   ],
+   [
+    18725,
+    "kristalle|14|0"
+   ],
+   [
+    18813,
+    "kristalle|15|0"
+   ],
+   [
+    18813,
+    "kristalle|16|0"
+   ],
+   [
+    18971,
+    "zacken|7|0"
+   ],
+   [
+    18971,
+    "zacken|13|0"
+   ],
+   [
+    18972,
+    "sediment|1|0"
+   ],
+   [
+    18972,
+    "sediment|2|0"
+   ],
+   [
+    18972,
+    "sediment|3|0"
+   ],
+   [
+    18972,
+    "sediment|4|0"
+   ],
+   [
+    18972,
+    "sediment|5|0"
+   ],
+   [
+    18972,
+    "sediment|6|0"
+   ],
+   [
+    19080,
+    "sediment|7|0"
+   ],
+   [
+    19081,
+    "sediment|8|0"
+   ],
+   [
+    19081,
+    "sediment|9|0"
+   ],
+   [
+    19081,
+    "sediment|10|0"
+   ],
+   [
+    19081,
+    "sediment|11|0"
+   ],
+   [
+    19081,
+    "sediment|12|0"
+   ],
+   [
+    19081,
+    "sediment|13|0"
+   ],
+   [
+    19081,
+    "sediment|14|0"
+   ],
+   [
+    19192,
+    "sediment|15|0"
+   ],
+   [
+    19192,
+    "sediment|16|0"
+   ],
+   [
+    19374,
+    "findling|1|0"
+   ],
+   [
+    19502,
+    "gestruepp|1|1"
+   ],
+   [
+    19502,
+    "farn|2|1"
+   ],
+   [
+    19502,
+    "findling|4|0"
+   ],
+   [
+    19502,
+    "findling|7|0"
+   ],
+   [
+    19503,
+    "findling|10|0"
+   ],
+   [
+    19503,
+    "findling|13|0"
+   ],
+   [
+    19503,
+    "findling|16|0"
+   ],
+   [
+    19503,
+    "basalt|3|0"
+   ],
+   [
+    19544,
+    "basalt|6|0"
+   ],
+   [
+    19545,
+    "basalt|9|0"
+   ],
+   [
+    20491,
+    "findling|3|0"
+   ],
+   [
+    20491,
+    "findling|6|0"
+   ],
+   [
+    20491,
+    "findling|9|0"
+   ],
+   [
+    20510,
+    "findling|12|0"
+   ],
+   [
+    20511,
+    "findling|15|0"
+   ],
+   [
+    20511,
+    "basalt|2|0"
+   ],
+   [
+    20523,
+    "basalt|5|0"
+   ],
+   [
+    20533,
+    "totstamm|1|1"
+   ],
+   [
+    20549,
+    "farn|1|1"
+   ],
+   [
+    20598,
+    "basalt|8|0"
+   ],
+   [
+    20618,
+    "basalt|11|0"
+   ]
+  ],
+  "grp": [
+   [
+    6469,
+    6.9,
+    "verkalkt",
+    3
+   ],
+   [
+    6476,
+    38.1,
+    "verkalkt",
+    2
+   ],
+   [
+    6516,
+    1,
+    "geisttor",
+    3
+   ],
+   [
+    6517,
+    1.1,
+    "maurentor",
+    3
+   ],
+   [
+    6518,
+    8.2,
+    "geisttor",
+    2
+   ],
+   [
+    6526,
+    14.6,
+    "maurentor",
+    2
+   ],
+   [
+    6542,
+    0.7,
+    "ruine",
+    3
+   ],
+   [
+    6543,
+    10.7,
+    "ruine",
+    2
+   ],
+   [
+    6915,
+    2.1,
+    "gras",
+    1
+   ],
+   [
+    6917,
+    0.1,
+    "gras",
+    2
+   ],
+   [
+    6917,
+    0.9,
+    "maschine",
+    3
+   ],
+   [
+    6918,
+    14.8,
+    "maschine",
+    2
+   ],
+   [
+    6933,
+    1.2,
+    "kathedrale",
+    3
+   ],
+   [
+    6935,
+    19.8,
+    "kathedrale",
+    2
+   ],
+   [
+    6955,
+    0.2,
+    "drachentor",
+    3
+   ],
+   [
+    6955,
+    7.9,
+    "drachentor",
+    2
+   ],
+   [
+    7639,
+    19.9,
+    "gt",
+    1
+   ],
+   [
+    7659,
+    0.8,
+    "zacken",
+    0
+   ],
+   [
+    7660,
+    0.2,
+    "alemannisch",
+    3
+   ],
+   [
+    8373,
+    0.5,
+    "gras",
+    1
+   ],
+   [
+    8374,
+    0.2,
+    "gras",
+    2
+   ],
+   [
+    8374,
+    4.3,
+    "alemannisch",
+    1
+   ],
+   [
+    8378,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    8379,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    9237,
+    0.3,
+    "laterne",
+    3
+   ],
+   [
+    9238,
+    1.4,
+    "laterne",
+    1
+   ],
+   [
+    9239,
+    0.1,
+    "marktstand",
+    3
+   ],
+   [
+    9240,
+    0.7,
+    "marktstand",
+    1
+   ],
+   [
+    9241,
+    0,
+    "brunnen",
+    3
+   ],
+   [
+    9241,
+    0.6,
+    "brunnen",
+    1
+   ],
+   [
+    9241,
+    0.2,
+    "feuerstelle",
+    3
+   ],
+   [
+    9242,
+    8.1,
+    "feuerstelle",
+    1
+   ],
+   [
+    9782,
+    0.2,
+    "wandlaterne",
+    3
+   ],
+   [
+    9782,
+    5.8,
+    "weide",
+    1
+   ],
+   [
+    9788,
+    2.8,
+    "tanne",
+    1
+   ],
+   [
+    9791,
+    2.2,
+    "karst",
+    1
+   ],
+   [
+    9793,
+    2.4,
+    "tanne",
+    1
+   ],
+   [
+    10620,
+    0.3,
+    "wandlaterne",
+    1
+   ],
+   [
+    10620,
+    1.1,
+    "gotisch",
+    2
+   ],
+   [
+    10622,
+    1.1,
+    "alpenchalet",
+    2
+   ],
+   [
+    10623,
+    0.8,
+    "schwarzwald",
+    2
+   ],
+   [
+    11182,
+    1.7,
+    "strauch",
+    1
+   ],
+   [
+    11184,
+    0.5,
+    "schwarzwald",
+    2
+   ],
+   [
+    11185,
+    0.5,
+    "schwarzwald",
+    2
+   ],
+   [
+    11185,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    11185,
+    0.2,
+    "gotisch",
+    3
+   ],
+   [
+    11185,
+    1,
+    "schwarzwald",
+    2
+   ],
+   [
+    11821,
+    4,
+    "tanne",
+    1
+   ],
+   [
+    11825,
+    1.9,
+    "fichte",
+    1
+   ],
+   [
+    11827,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    11827,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    11827,
+    0,
+    "schwarzwald",
+    3
+   ],
+   [
+    11827,
+    0.6,
+    "schwarzwald",
+    2
+   ],
+   [
+    12525,
+    3,
+    "eiche",
+    1
+   ],
+   [
+    12528,
+    2.1,
+    "fichte",
+    1
+   ],
+   [
+    12530,
+    0.4,
+    "schwarzwald",
+    2
+   ],
+   [
+    12530,
+    0.2,
+    "alpenchalet",
+    3
+   ],
+   [
+    12531,
+    0.4,
+    "alpenchalet",
+    2
+   ],
+   [
+    12531,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    13194,
+    2,
+    "birke",
+    1
+   ],
+   [
+    13196,
+    2.2,
+    "fichte",
+    1
+   ],
+   [
+    13198,
+    2.1,
+    "birke",
+    1
+   ],
+   [
+    13200,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    13200,
+    0.6,
+    "schwarzwald",
+    2
+   ],
+   [
+    13201,
+    0.2,
+    "schwarzwald",
+    3
+   ],
+   [
+    13201,
+    0.4,
+    "alpenchalet",
+    2
+   ],
+   [
+    13201,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    13895,
+    0.3,
+    "zacken",
+    0
+   ],
+   [
+    13895,
+    0,
+    "zacken",
+    0
+   ],
+   [
+    13896,
+    0.3,
+    "skandinavisch",
+    2
+   ],
+   [
+    13896,
+    0.2,
+    "skandinavisch",
+    3
+   ],
+   [
+    13896,
+    0,
+    "schwarzwald",
+    3
+   ],
+   [
+    13896,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    13896,
+    0.5,
+    "schwarzwald",
+    2
+   ],
+   [
+    13897,
+    0.1,
+    "schwarzwald",
+    3
+   ],
+   [
+    14196,
+    2,
+    "eiche",
+    1
+   ],
+   [
+    14198,
+    1.5,
+    "birke",
+    1
+   ],
+   [
+    14199,
+    1.5,
+    "mammut",
+    1
+   ],
+   [
+    14201,
+    0,
+    "alpenchalet",
+    3
+   ],
+   [
+    14201,
+    0.3,
+    "schwarzwald",
+    2
+   ],
+   [
+    14201,
+    0,
+    "zacken",
+    0
+   ],
+   [
+    14201,
+    0,
+    "alpenchalet",
+    3
+   ],
+   [
+    14201,
+    0.2,
+    "skandinavisch",
+    2
+   ],
+   [
+    14468,
+    0.1,
+    "skandinavisch",
+    3
+   ],
+   [
+    14468,
+    0,
+    "zacken",
+    0
+   ],
+   [
+    14468,
+    0.1,
+    "alpenchalet",
+    3
+   ],
+   [
+    14468,
+    0,
+    "schwarzwald",
+    3
+   ],
+   [
+    14468,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    14468,
+    0.1,
+    "feuerstelle",
+    3
+   ],
+   [
+    14468,
+    0.1,
+    "feuerstelle",
+    1
+   ],
+   [
+    14765,
+    0.7,
+    "kristalle",
+    0
+   ],
+   [
+    14766,
+    1.5,
+    "buche",
+    1
+   ],
+   [
+    14947,
+    2.2,
+    "buche",
+    1
+   ],
+   [
+    14949,
+    0,
+    "zacken",
+    0
+   ],
+   [
+    14949,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    14949,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    15075,
+    0.3,
+    "zacken",
+    0
+   ],
+   [
+    15076,
+    0.6,
+    "blume",
+    0
+   ],
+   [
+    15255,
+    0.2,
+    "blume",
+    0
+   ],
+   [
+    15316,
+    1.7,
+    "eiche",
+    1
+   ],
+   [
+    15582,
+    0.4,
+    "alpenchalet",
+    2
+   ],
+   [
+    15704,
+    1.1,
+    "geroell",
+    0
+   ],
+   [
+    15935,
+    0.2,
+    "blume",
+    2
+   ],
+   [
+    15969,
+    0.2,
+    "blume",
+    2
+   ],
+   [
+    18518,
+    0.2,
+    "findling",
+    0
+   ],
+   [
+    18518,
+    0,
+    "findling",
+    0
+   ],
+   [
+    18518,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    18542,
+    0.2,
+    "findling",
+    0
+   ],
+   [
+    18542,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    18542,
+    0.5,
+    "basalt",
+    0
+   ],
+   [
+    18542,
+    0.1,
+    "basalt",
+    0
+   ],
+   [
+    18542,
+    0.2,
+    "basalt",
+    0
+   ],
+   [
+    18543,
+    0.1,
+    "basalt",
+    0
+   ],
+   [
+    18543,
+    0.1,
+    "basalt",
+    0
+   ],
+   [
+    18543,
+    0.1,
+    "basalt",
+    0
+   ],
+   [
+    18586,
+    0.2,
+    "basalt",
+    0
+   ],
+   [
+    18586,
+    0.2,
+    "basalt",
+    0
+   ],
+   [
+    18586,
+    0,
+    "basalt",
+    0
+   ],
+   [
+    18586,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    18643,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    18644,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18676,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18676,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18676,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18676,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18677,
+    0,
+    "kristalle",
+    0
+   ],
+   [
+    18706,
+    0.3,
+    "kristalle",
+    0
+   ],
+   [
+    18707,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    18707,
+    0,
+    "kristalle",
+    0
+   ],
+   [
+    18725,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    18725,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18812,
+    0.2,
+    "kristalle",
+    0
+   ],
+   [
+    18813,
+    0.1,
+    "kristalle",
+    0
+   ],
+   [
+    18971,
+    0.2,
+    "zacken",
+    0
+   ],
+   [
+    18971,
+    0.1,
+    "zacken",
+    0
+   ],
+   [
+    18971,
+    0.5,
+    "sediment",
+    0
+   ],
+   [
+    18972,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    18972,
+    0,
+    "sediment",
+    0
+   ],
+   [
+    18972,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    18972,
+    0,
+    "sediment",
+    0
+   ],
+   [
+    18972,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19080,
+    0.4,
+    "sediment",
+    0
+   ],
+   [
+    19080,
+    0.2,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0,
+    "sediment",
+    0
+   ],
+   [
+    19081,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19192,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19192,
+    0.1,
+    "sediment",
+    0
+   ],
+   [
+    19374,
+    0.2,
+    "findling",
+    0
+   ],
+   [
+    19501,
+    0.3,
+    "gestruepp",
+    1
+   ],
+   [
+    19502,
+    0.1,
+    "farn",
+    1
+   ],
+   [
+    19502,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    19502,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    19502,
+    0.5,
+    "findling",
+    0
+   ],
+   [
+    19503,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    19503,
+    0,
+    "findling",
+    0
+   ],
+   [
+    19503,
+    0.3,
+    "basalt",
+    0
+   ],
+   [
+    19544,
+    0.3,
+    "basalt",
+    0
+   ],
+   [
+    19544,
+    0.2,
+    "basalt",
+    0
+   ],
+   [
+    20490,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    20491,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    20491,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    20510,
+    0.1,
+    "findling",
+    0
+   ],
+   [
+    20510,
+    0.2,
+    "findling",
+    0
+   ],
+   [
+    20511,
+    0,
+    "basalt",
+    0
+   ],
+   [
+    20522,
+    0.3,
+    "basalt",
+    0
+   ],
+   [
+    20533,
+    0.3,
+    "totstamm",
+    1
+   ],
+   [
+    20549,
+    0.1,
+    "farn",
+    1
+   ],
+   [
+    20598,
+    0.3,
+    "basalt",
+    0
+   ],
+   [
+    20618,
+    0.2,
+    "basalt",
+    0
+   ]
+  ],
+  "ofen": [
+   [
+    6100,
+    32.4
+   ],
+   [
+    16610,
+    12.5
+   ],
+   [
+    17673,
+    57.4
+   ],
+   [
+    17777,
+    48.6
+   ],
+   [
+    17937,
+    4.8
+   ],
+   [
+    18031,
+    7
+   ],
+   [
+    18206,
+    30.1
+   ],
+   [
+    18513,
+    4.5
+   ],
+   [
+    19311,
+    62.3
+   ],
+   [
+    20470,
+    20.2
+   ]
+  ],
+  "seele": [
+   [
+    6453,
+    15.1,
+    "human"
+   ],
+   [
+    20491,
+    10,
+    "human"
+   ]
+  ],
+  "tick": [
+   4590,
+   6098,
+   6452,
+   7637,
+   8372,
+   9234,
+   9777,
+   10619,
+   11180,
+   11818,
+   12523,
+   13192,
+   13891,
+   14195,
+   14763,
+   15254,
+   15652,
+   15959
+  ],
+  "atlas": 4625,
+  "offen": {
+   "build-asset#mensch|0|1|ov:d08c5185.321": [],
+   "export-settlement#undefined|undefined|undefined": [],
+   "build-asset#zacken|1|0": [],
+   "build-asset#feuerstelle|1|3": [],
+   "build-asset#feuerstelle|1|1": [],
+   "build-asset#geisttor|1|3": [],
+   "build-asset#geisttor|1|2": [],
+   "build-asset#drachentor|1|3": [],
+   "build-asset#drachentor|1|2": [],
+   "build-asset#verkalkt|1|3": [],
+   "build-asset#verkalkt|1|2": [],
+   "build-asset#maschine|1|3": [],
+   "build-asset#maschine|1|2": [],
+   "build-asset#kathedrale|1|3": [],
+   "build-asset#kathedrale|1|2": [],
+   "build-asset#maurentor|1|3": [],
+   "build-asset#maurentor|1|2": [],
+   "build-asset#ruine|1|3": [],
+   "build-asset#ruine|1|2": [],
+   "build-asset#alemannisch|1|1|ov:170117b9.261": [],
+   "build-asset#gt|6|1": [],
+   "build-asset#alemannisch|1|3|ov:170117b9.261": [],
+   "build-asset#zacken|8|0": [],
+   "build-asset#zacken|10|0": [],
+   "build-asset#weide|1|1": [],
+   "build-asset#gras|2|1": [],
+   "build-asset#gras|1|1": [],
+   "build-asset#gras|2|2": [],
+   "build-asset#gras|1|2": [],
+   "build-asset#karst|1|1": [],
+   "build-asset#tanne|2|1": [],
+   "build-asset#tanne|1|1": [],
+   "build-asset#laterne|1|3": [],
+   "build-asset#laterne|1|1": [],
+   "build-asset#brunnen|1|3": [],
+   "build-asset#brunnen|1|1": [],
+   "build-asset#marktstand|1|3": [],
+   "build-asset#marktstand|1|1": [],
+   "build-asset#gotisch|12|2|ov:edcc8866.479": [],
+   "build-asset#alpenchalet|12|2|ov:e18295c.473": [],
+   "build-asset#wandlaterne|1|3": [],
+   "build-asset#wandlaterne|1|1": [],
+   "build-asset#schwarzwald|13|2|ov:8198aa54.471": [],
+   "build-asset#schwarzwald|4|2|ov:9935b486.473": [],
+   "build-asset#schwarzwald|6|2|ov:9077280.470": [],
+   "build-asset#schwarzwald|8|2|ov:49901c4e.473": [],
+   "build-asset#schwarzwald|13|2|ov:63183697.473": [],
+   "build-asset#strauch|1|1": [],
+   "build-asset#schwarzwald|13|3|ov:63183697.473": [],
+   "build-asset#schwarzwald|13|3|ov:8198aa54.471": [],
+   "build-asset#gotisch|12|3|ov:edcc8866.479": [],
+   "build-asset#alpenchalet|12|3|ov:e18295c.473": [],
+   "build-asset#schwarzwald|6|3|ov:9077280.470": [],
+   "build-asset#schwarzwald|4|3|ov:9935b486.473": [],
+   "build-asset#schwarzwald|8|3|ov:49901c4e.473": [],
+   "build-asset#tanne|3|1|ov:39ada8a4.15": [],
+   "build-asset#eiche|2|1": [],
+   "build-asset#fichte|1|1": [],
+   "build-asset#birke|2|1": [],
+   "build-asset#birke|3|1|ov:39ada8a4.15": [],
+   "build-asset#fichte|2|1": [],
+   "build-asset#fichte|3|1|ov:39ada8a4.15": [],
+   "build-asset#schwarzwald|15|2|ov:223f7a54.472": [],
+   "build-asset#schwarzwald|11|2|ov:3e3ed698.463": [],
+   "build-asset#alpenchalet|12|2|ov:1093e85c.473": [],
+   "build-asset#alpenchalet|9|2|ov:7323c079.472": [],
+   "build-asset#schwarzwald|3|2|ov:41948277.473": [],
+   "build-asset#schwarzwald|11|2|ov:cb5eca29.473": [],
+   "build-asset#skandinavisch|14|2|ov:519be5c6.477": [],
+   "build-asset#skandinavisch|6|2|ov:64a4c7f0.475": [],
+   "build-asset#zacken|3|0": [],
+   "build-asset#zacken|4|0": [],
+   "build-asset#skandinavisch|6|3|ov:64a4c7f0.475": [],
+   "build-asset#schwarzwald|11|3|ov:3e3ed698.463": [],
+   "build-asset#schwarzwald|15|3|ov:223f7a54.472": [],
+   "build-asset#schwarzwald|3|3|ov:41948277.473": [],
+   "build-asset#alpenchalet|12|3|ov:1093e85c.473": [],
+   "build-asset#schwarzwald|11|3|ov:cb5eca29.473": [],
+   "build-asset#alpenchalet|9|3|ov:7323c079.472": [],
+   "build-asset#skandinavisch|14|3|ov:519be5c6.477": [],
+   "build-asset#alpenchalet|16|3|ov:fd3882cb.472": [],
+   "build-asset#schwarzwald|9|3|ov:c5e87e4.474": [],
+   "build-asset#eiche|1|1": [],
+   "build-asset#birke|1|1": [],
+   "build-asset#zacken|16|0": [],
+   "build-asset#zacken|15|0": [],
+   "build-asset#kristalle|10|0": [],
+   "build-asset#zacken|14|0": [],
+   "build-asset#zacken|6|0": [],
+   "build-asset#zacken|9|0": [],
+   "build-asset#zacken|12|0": [],
+   "build-asset#feuerstelle|2|3": [],
+   "build-asset#feuerstelle|2|1": [],
+   "build-asset#zacken|5|0": [],
+   "build-asset#zacken|2|0": [],
+   "build-asset#zacken|11|0": [],
+   "build-asset#buche|2|1": [],
+   "build-asset#buche|1|1": [],
+   "build-asset#blume|2|0": [],
+   "build-asset#blume|1|0": [],
+   "build-asset#mammut|1|1": [],
+   "build-asset#eiche|3|1|ov:39ada8a4.15": [],
+   "build-asset#alpenchalet|16|2|ov:fd3882cb.472": [],
+   "build-asset#geroell|1|0": [],
+   "build-asset#blume|1|2": [],
+   "build-asset#blume|2|2": [],
+   "build-asset#deer|0|0": [],
+   "build-asset#deer|0|1": [],
+   "build-asset#wolf|0|0": [],
+   "build-asset#wolf|0|1": [],
+   "build-asset#fox|0|0": [],
+   "build-asset#fox|0|1": [],
+   "build-asset#bear|0|0": [],
+   "build-asset#bear|0|1": [],
+   "build-asset#mensch|0|0|ov:d08c5185.321": [],
+   "build-asset#findling|1|0": [],
+   "build-asset#findling|2|0": [],
+   "build-asset#findling|3|0": [],
+   "build-asset#findling|4|0": [],
+   "build-asset#findling|5|0": [],
+   "build-asset#findling|6|0": [],
+   "build-asset#findling|7|0": [],
+   "build-asset#findling|8|0": [],
+   "build-asset#findling|9|0": [],
+   "build-asset#findling|10|0": [],
+   "build-asset#findling|11|0": [],
+   "build-asset#findling|12|0": [],
+   "build-asset#findling|13|0": [],
+   "build-asset#findling|14|0": [],
+   "build-asset#findling|15|0": [],
+   "build-asset#findling|16|0": [],
+   "build-asset#basalt|1|0": [],
+   "build-asset#basalt|2|0": [],
+   "build-asset#basalt|3|0": [],
+   "build-asset#basalt|4|0": [],
+   "build-asset#basalt|5|0": [],
+   "build-asset#basalt|6|0": [],
+   "build-asset#basalt|7|0": [],
+   "build-asset#basalt|8|0": [],
+   "build-asset#basalt|9|0": [],
+   "build-asset#basalt|10|0": [],
+   "build-asset#basalt|11|0": [],
+   "build-asset#basalt|12|0": [],
+   "build-asset#basalt|13|0": [],
+   "build-asset#basalt|14|0": [],
+   "build-asset#basalt|15|0": [],
+   "build-asset#basalt|16|0": [],
+   "build-asset#kristalle|1|0": [],
+   "build-asset#kristalle|2|0": [],
+   "build-asset#kristalle|3|0": [],
+   "build-asset#kristalle|4|0": [],
+   "build-asset#kristalle|5|0": [],
+   "build-asset#kristalle|6|0": [],
+   "build-asset#kristalle|7|0": [],
+   "build-asset#kristalle|8|0": [],
+   "build-asset#kristalle|9|0": [],
+   "build-asset#kristalle|11|0": [],
+   "build-asset#kristalle|12|0": [],
+   "build-asset#kristalle|13|0": [],
+   "build-asset#kristalle|14|0": [],
+   "build-asset#kristalle|15|0": [],
+   "build-asset#kristalle|16|0": [],
+   "build-asset#zacken|7|0": [],
+   "build-asset#zacken|13|0": [],
+   "build-asset#sediment|1|0": [],
+   "build-asset#sediment|2|0": [],
+   "build-asset#sediment|3|0": [],
+   "build-asset#sediment|4|0": [],
+   "build-asset#sediment|5|0": [],
+   "build-asset#sediment|6|0": [],
+   "build-asset#sediment|7|0": [],
+   "build-asset#sediment|8|0": [],
+   "build-asset#sediment|9|0": [],
+   "build-asset#sediment|10|0": [],
+   "build-asset#sediment|11|0": [],
+   "build-asset#sediment|12|0": [],
+   "build-asset#sediment|13|0": [],
+   "build-asset#sediment|14|0": [],
+   "build-asset#sediment|15|0": [],
+   "build-asset#sediment|16|0": [],
+   "build-asset#gestruepp|1|1": [],
+   "build-asset#farn|2|1": [],
+   "build-asset#totstamm|1|1": [],
+   "build-asset#farn|1|1": [],
+   "build-asset#gt|1|0|V": [],
+   "build-asset#gt|7|0|V": [],
+   "build-asset#supersport|1|0|V": [],
+   "build-asset#supersport|7|0|V": [],
+   "build-asset#limousine|1|0|V": [],
+   "build-asset#limousine|7|0|V": [],
+   "build-asset#kompakt_fwd|1|0|V": [],
+   "build-asset#kompakt_fwd|7|0|V": [],
+   "build-asset#suv|1|0|V": [],
+   "build-asset#suv|7|0|V": []
+  },
+  "stapel": []
+ },
+ "lfKey": {},
+ "kt": {
+  "zug": [
+   [
+    3867,
+    "zacken|1|0",
+    44,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3869,
+    "feuerstelle|1|3",
+    52,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3869,
+    "feuerstelle|1|1",
+    52,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3966,
+    "geisttor|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3967,
+    "geisttor|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3969,
+    "drachentor|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3969,
+    "drachentor|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3970,
+    "verkalkt|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3971,
+    "verkalkt|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3972,
+    "maschine|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3972,
+    "maschine|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3975,
+    "kathedrale|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3975,
+    "kathedrale|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3976,
+    "maurentor|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3977,
+    "maurentor|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    3978,
+    "ruine|1|3",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    3978,
+    "ruine|1|2",
+    11,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    4006,
+    "alemannisch|1|1|ov:170117b9.261",
+    19,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    4018,
+    "gt|6|1",
+    19,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    4042,
+    "alemannisch|1|3|ov:170117b9.261",
+    19,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    5392,
+    "zacken|8|0",
+    46,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    5393,
+    "zacken|10|0",
+    43,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    6418,
+    "weide|1|1",
+    357,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    6431,
+    "gras|2|1",
+    0,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahWiese<Object.run"
+   ],
+   [
+    6432,
+    "gras|1|1",
+    0,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahWiese<Object.run"
+   ],
+   [
+    6432,
+    "gras|2|2",
+    0,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahWiese<Object.run"
+   ],
+   [
+    6432,
+    "gras|1|2",
+    0,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahWiese<Object.run"
+   ],
+   [
+    6805,
+    "karst|1|1",
+    273,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    6806,
+    "tanne|2|1",
+    271,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    7101,
+    "tanne|1|1",
+    293,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    8495,
+    "laterne|1|3",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    8495,
+    "laterne|1|1",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8508,
+    "brunnen|1|3",
+    129,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    8508,
+    "brunnen|1|1",
+    129,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8510,
+    "marktstand|1|3",
+    115,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    8510,
+    "marktstand|1|1",
+    115,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8855,
+    "gotisch|12|2|ov:edcc8866.479",
+    106,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8862,
+    "alpenchalet|12|2|ov:e18295c.473",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8863,
+    "wandlaterne|1|3",
+    111,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    8863,
+    "wandlaterne|1|1",
+    111,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8868,
+    "schwarzwald|13|2|ov:8198aa54.471",
+    98,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8875,
+    "schwarzwald|4|2|ov:9935b486.473",
+    129,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8880,
+    "schwarzwald|6|2|ov:9077280.470",
+    126,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8885,
+    "schwarzwald|8|2|ov:49901c4e.473",
+    137,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8890,
+    "schwarzwald|13|2|ov:63183697.473",
+    83,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    8946,
+    "strauch|1|1",
+    36,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    9133,
+    "schwarzwald|13|3|ov:63183697.473",
+    83,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9133,
+    "schwarzwald|13|3|ov:8198aa54.471",
+    98,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9134,
+    "gotisch|12|3|ov:edcc8866.479",
+    106,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9134,
+    "alpenchalet|12|3|ov:e18295c.473",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9135,
+    "schwarzwald|6|3|ov:9077280.470",
+    126,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9135,
+    "schwarzwald|4|3|ov:9935b486.473",
+    129,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    9135,
+    "schwarzwald|8|3|ov:49901c4e.473",
+    137,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    10367,
+    "tanne|3|1",
+    21,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10476,
+    "eiche|2|1",
+    26,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10506,
+    "fichte|1|1",
+    30,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10522,
+    "birke|2|1",
+    31,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10907,
+    "birke|3|1",
+    27,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10944,
+    "fichte|2|1",
+    33,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    10994,
+    "fichte|3|1",
+    40,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    11345,
+    "schwarzwald|15|2|ov:223f7a54.472",
+    90,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11349,
+    "schwarzwald|11|2|ov:3e3ed698.463",
+    89,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11353,
+    "alpenchalet|12|2|ov:1093e85c.473",
+    112,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11362,
+    "alpenchalet|9|2|ov:7323c079.472",
+    127,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11366,
+    "schwarzwald|3|2|ov:41948277.473",
+    97,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11373,
+    "schwarzwald|11|2|ov:cb5eca29.473",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11377,
+    "skandinavisch|14|2|ov:519be5c6.477",
+    132,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11382,
+    "skandinavisch|6|2|ov:64a4c7f0.475",
+    65,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11386,
+    "zacken|3|0",
+    16,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11387,
+    "zacken|4|0",
+    58,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    11625,
+    "skandinavisch|6|3|ov:64a4c7f0.475",
+    65,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11626,
+    "schwarzwald|11|3|ov:3e3ed698.463",
+    89,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11626,
+    "schwarzwald|15|3|ov:223f7a54.472",
+    90,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11626,
+    "schwarzwald|3|3|ov:41948277.473",
+    97,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11627,
+    "alpenchalet|12|3|ov:1093e85c.473",
+    112,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11627,
+    "schwarzwald|11|3|ov:cb5eca29.473",
+    116,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11628,
+    "alpenchalet|9|3|ov:7323c079.472",
+    127,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11628,
+    "skandinavisch|14|3|ov:519be5c6.477",
+    132,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11629,
+    "alpenchalet|16|3|ov:fd3882cb.472",
+    140,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11629,
+    "schwarzwald|9|3|ov:c5e87e4.474",
+    145,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._archFoundryZiegel<AnazhRealm._archZiegelFern"
+   ],
+   [
+    11652,
+    "eiche|1|1",
+    74,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    12053,
+    "birke|1|1",
+    82,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    12069,
+    "zacken|16|0",
+    95,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12070,
+    "zacken|15|0",
+    88,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12071,
+    "kristalle|10|0",
+    64,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12073,
+    "zacken|14|0",
+    74,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12074,
+    "zacken|6|0",
+    72,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12075,
+    "zacken|9|0",
+    67,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12075,
+    "zacken|12|0",
+    73,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12077,
+    "feuerstelle|2|3",
+    63,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<Object.vor<AnazhRealm._foundryZug"
+   ],
+   [
+    12077,
+    "feuerstelle|2|1",
+    63,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12078,
+    "zacken|5|0",
+    59,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12078,
+    "zacken|2|0",
+    55,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12079,
+    "zacken|11|0",
+    71,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    12624,
+    "buche|2|1",
+    81,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    12625,
+    "buche|1|1",
+    81,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    12831,
+    "blume|2|0",
+    331,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._streuGesetzFit<http://127.0.0.1:7902/stamm/dienst.js?v=18.546.22:714:60"
+   ],
+   [
+    12831,
+    "blume|1|0",
+    329,
+    0,
+    1,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._streuGesetzFit<http://127.0.0.1:7902/stamm/dienst.js?v=18.546.22:714:60"
+   ],
+   [
+    13494,
+    "mammut|1|1",
+    88,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    14457,
+    "eiche|3|1",
+    129,
+    0,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._foundryBaumHoehe<AnazhRealm._foundrySichtHoehe"
+   ],
+   [
+    15313,
+    "alpenchalet|16|2|ov:fd3882cb.472",
+    140,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._rebuildArchitectureMesh<P.<computed>"
+   ],
+   [
+    15574,
+    "geroell|1|0",
+    66,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._streuGesetzFit<http://127.0.0.1:7902/stamm/dienst.js?v=18.546.22:714:60"
+   ],
+   [
+    15890,
+    "blume|1|2",
+    16,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahStreu<Object.run"
+   ],
+   [
+    15927,
+    "blume|2|2",
+    16,
+    1,
+    0,
+    "AnazhRealm._foundryFlattenFor<AnazhRealm._tickNahStreu<Object.run"
+   ]
+  ],
+  "zugEnde": [
+   [
+    6587,
+    "verkalkt|1|3",
+    1
+   ],
+   [
+    6588,
+    "verkalkt|1|2",
+    1
+   ],
+   [
+    6588,
+    "geisttor|1|3",
+    1
+   ],
+   [
+    6589,
+    "maurentor|1|3",
+    1
+   ],
+   [
+    6590,
+    "geisttor|1|2",
+    1
+   ],
+   [
+    6590,
+    "maurentor|1|2",
+    1
+   ],
+   [
+    6591,
+    "ruine|1|3",
+    1
+   ],
+   [
+    6591,
+    "ruine|1|2",
+    1
+   ],
+   [
+    6979,
+    "gras|1|1",
+    1
+   ],
+   [
+    6979,
+    "gras|1|2",
+    1
+   ],
+   [
+    6980,
+    "maschine|1|3",
+    1
+   ],
+   [
+    6980,
+    "maschine|1|2",
+    1
+   ],
+   [
+    6981,
+    "kathedrale|1|3",
+    1
+   ],
+   [
+    6982,
+    "kathedrale|1|2",
+    1
+   ],
+   [
+    6983,
+    "drachentor|1|3",
+    1
+   ],
+   [
+    6983,
+    "drachentor|1|2",
+    1
+   ],
+   [
+    7662,
+    "gt|6|1",
+    1
+   ],
+   [
+    7664,
+    "zacken|1|0",
+    1
+   ],
+   [
+    7665,
+    "alemannisch|1|3|ov:170117b9.261",
+    1
+   ],
+   [
+    8388,
+    "gras|2|1",
+    1
+   ],
+   [
+    8389,
+    "gras|2|2",
+    1
+   ],
+   [
+    8390,
+    "alemannisch|1|1|ov:170117b9.261",
+    1
+   ],
+   [
+    8390,
+    "zacken|10|0",
+    1
+   ],
+   [
+    8391,
+    "zacken|8|0",
+    1
+   ],
+   [
+    9257,
+    "laterne|1|3",
+    1
+   ],
+   [
+    9258,
+    "laterne|1|1",
+    1
+   ],
+   [
+    9259,
+    "marktstand|1|3",
+    1
+   ],
+   [
+    9260,
+    "marktstand|1|1",
+    1
+   ],
+   [
+    9261,
+    "brunnen|1|3",
+    1
+   ],
+   [
+    9262,
+    "brunnen|1|1",
+    1
+   ],
+   [
+    9263,
+    "feuerstelle|1|3",
+    1
+   ],
+   [
+    9264,
+    "feuerstelle|1|1",
+    1
+   ],
+   [
+    9797,
+    "wandlaterne|1|3",
+    1
+   ],
+   [
+    9799,
+    "weide|1|1",
+    1
+   ],
+   [
+    9800,
+    "tanne|2|1",
+    1
+   ],
+   [
+    9801,
+    "karst|1|1",
+    1
+   ],
+   [
+    9802,
+    "tanne|1|1",
+    1
+   ],
+   [
+    10628,
+    "wandlaterne|1|1",
+    1
+   ],
+   [
+    10630,
+    "gotisch|12|2|ov:edcc8866.479",
+    1
+   ],
+   [
+    10633,
+    "alpenchalet|12|2|ov:e18295c.473",
+    1
+   ],
+   [
+    10634,
+    "schwarzwald|4|2|ov:9935b486.473",
+    1
+   ],
+   [
+    11194,
+    "strauch|1|1",
+    1
+   ],
+   [
+    11197,
+    "schwarzwald|13|2|ov:63183697.473",
+    1
+   ],
+   [
+    11198,
+    "schwarzwald|13|2|ov:8198aa54.471",
+    1
+   ],
+   [
+    11200,
+    "schwarzwald|13|3|ov:8198aa54.471",
+    1
+   ],
+   [
+    11201,
+    "gotisch|12|3|ov:edcc8866.479",
+    1
+   ],
+   [
+    11202,
+    "schwarzwald|6|2|ov:9077280.470",
+    1
+   ],
+   [
+    11840,
+    "tanne|3|1",
+    1
+   ],
+   [
+    11845,
+    "fichte|1|1",
+    1
+   ],
+   [
+    11846,
+    "schwarzwald|13|3|ov:63183697.473",
+    1
+   ],
+   [
+    11852,
+    "schwarzwald|6|3|ov:9077280.470",
+    1
+   ],
+   [
+    11854,
+    "schwarzwald|4|3|ov:9935b486.473",
+    1
+   ],
+   [
+    11858,
+    "schwarzwald|8|2|ov:49901c4e.473",
+    1
+   ],
+   [
+    12544,
+    "eiche|2|1",
+    1
+   ],
+   [
+    12552,
+    "fichte|2|1",
+    1
+   ],
+   [
+    12554,
+    "schwarzwald|11|2|ov:3e3ed698.463",
+    1
+   ],
+   [
+    12556,
+    "alpenchalet|12|3|ov:e18295c.473",
+    1
+   ],
+   [
+    12559,
+    "alpenchalet|9|2|ov:7323c079.472",
+    1
+   ],
+   [
+    12561,
+    "schwarzwald|8|3|ov:49901c4e.473",
+    1
+   ],
+   [
+    13210,
+    "birke|3|1",
+    1
+   ],
+   [
+    13224,
+    "fichte|3|1",
+    1
+   ],
+   [
+    13228,
+    "birke|2|1",
+    1
+   ],
+   [
+    13232,
+    "zacken|4|0",
+    1
+   ],
+   [
+    13236,
+    "schwarzwald|15|2|ov:223f7a54.472",
+    1
+   ],
+   [
+    13240,
+    "schwarzwald|15|3|ov:223f7a54.472",
+    1
+   ],
+   [
+    13244,
+    "alpenchalet|12|2|ov:1093e85c.473",
+    1
+   ],
+   [
+    13248,
+    "schwarzwald|11|3|ov:cb5eca29.473",
+    1
+   ],
+   [
+    13915,
+    "zacken|3|0",
+    1
+   ],
+   [
+    13924,
+    "zacken|2|0",
+    1
+   ],
+   [
+    13928,
+    "skandinavisch|6|2|ov:64a4c7f0.475",
+    1
+   ],
+   [
+    13932,
+    "skandinavisch|6|3|ov:64a4c7f0.475",
+    1
+   ],
+   [
+    13935,
+    "schwarzwald|11|3|ov:3e3ed698.463",
+    1
+   ],
+   [
+    13938,
+    "zacken|9|0",
+    1
+   ],
+   [
+    13941,
+    "schwarzwald|3|2|ov:41948277.473",
+    1
+   ],
+   [
+    13944,
+    "schwarzwald|3|3|ov:41948277.473",
+    1
+   ],
+   [
+    14212,
+    "eiche|1|1",
+    1
+   ],
+   [
+    14225,
+    "birke|1|1",
+    1
+   ],
+   [
+    14227,
+    "mammut|1|1",
+    1
+   ],
+   [
+    14229,
+    "alpenchalet|12|3|ov:1093e85c.473",
+    1
+   ],
+   [
+    14232,
+    "schwarzwald|11|2|ov:cb5eca29.473",
+    1
+   ],
+   [
+    14234,
+    "zacken|15|0",
+    1
+   ],
+   [
+    14236,
+    "alpenchalet|9|3|ov:7323c079.472",
+    1
+   ],
+   [
+    14240,
+    "skandinavisch|14|2|ov:519be5c6.477",
+    1
+   ],
+   [
+    14481,
+    "skandinavisch|14|3|ov:519be5c6.477",
+    1
+   ],
+   [
+    14494,
+    "zacken|12|0",
+    1
+   ],
+   [
+    14497,
+    "alpenchalet|16|3|ov:fd3882cb.472",
+    1
+   ],
+   [
+    14501,
+    "schwarzwald|9|3|ov:c5e87e4.474",
+    1
+   ],
+   [
+    14504,
+    "zacken|5|0",
+    1
+   ],
+   [
+    14507,
+    "feuerstelle|2|3",
+    1
+   ],
+   [
+    14510,
+    "feuerstelle|2|1",
+    1
+   ],
+   [
+    14771,
+    "kristalle|10|0",
+    1
+   ],
+   [
+    14774,
+    "buche|1|1",
+    1
+   ],
+   [
+    14953,
+    "buche|2|1",
+    1
+   ],
+   [
+    14956,
+    "zacken|16|0",
+    1
+   ],
+   [
+    14959,
+    "zacken|11|0",
+    1
+   ],
+   [
+    14962,
+    "zacken|6|0",
+    1
+   ],
+   [
+    15079,
+    "zacken|14|0",
+    1
+   ],
+   [
+    15081,
+    "blume|1|0",
+    1
+   ],
+   [
+    15258,
+    "blume|2|0",
+    1
+   ],
+   [
+    15319,
+    "eiche|3|1",
+    1
+   ],
+   [
+    15585,
+    "alpenchalet|16|2|ov:fd3882cb.472",
+    1
+   ],
+   [
+    15705,
+    "geroell|1|0",
+    1
+   ],
+   [
+    15935,
+    "blume|1|2",
+    1
+   ],
+   [
+    15970,
+    "blume|2|2",
+    1
+   ]
+  ],
+  "kneu": [
+   [
+    4018,
+    "gt|6",
+    0
+   ],
+   [
+    8946,
+    "strauch|1",
+    0
+   ],
+   [
+    8969,
+    "weide|1",
+    0
+   ],
+   [
+    10368,
+    "tanne|3",
+    0
+   ],
+   [
+    10432,
+    "tanne|1",
+    0
+   ],
+   [
+    10476,
+    "eiche|2",
+    0
+   ],
+   [
+    10506,
+    "fichte|1",
+    0
+   ],
+   [
+    10522,
+    "birke|2",
+    0
+   ],
+   [
+    10909,
+    "birke|3",
+    0
+   ],
+   [
+    10944,
+    "fichte|2",
+    0
+   ],
+   [
+    10994,
+    "fichte|3",
+    0
+   ],
+   [
+    11337,
+    "karst|1",
+    0
+   ],
+   [
+    11443,
+    "tanne|2",
+    0
+   ],
+   [
+    12053,
+    "birke|1",
+    0
+   ],
+   [
+    12087,
+    "eiche|1",
+    0
+   ],
+   [
+    13494,
+    "mammut|1",
+    0
+   ],
+   [
+    14458,
+    "eiche|3",
+    0
+   ],
+   [
+    15131,
+    "buche|2",
+    0
+   ],
+   [
+    15133,
+    "buche|1",
+    0
+   ]
+  ],
+  "wp": [
+   [
+    6421,
+    1,
+    337
+   ]
+  ],
+  "wpLeer": [
+   [
+    15481,
+    1
+   ]
+  ],
+  "wald": [
+   [
+    3854,
+    1,
+    64,
+    120,
+    1,
+    8,
+    54
+   ],
+   [
+    3859,
+    2,
+    56,
+    120,
+    2,
+    54,
+    93
+   ],
+   [
+    6612,
+    3,
+    64,
+    481,
+    2,
+    52,
+    202
+   ],
+   [
+    6615,
+    4,
+    64,
+    425,
+    2,
+    202,
+    252
+   ],
+   [
+    7675,
+    5,
+    64,
+    850,
+    2,
+    52,
+    104
+   ],
+   [
+    7679,
+    6,
+    64,
+    786,
+    2,
+    105,
+    133
+   ],
+   [
+    8728,
+    7,
+    64,
+    1150,
+    2,
+    8,
+    78
+   ],
+   [
+    8730,
+    8,
+    64,
+    1150,
+    2,
+    78,
+    95
+   ],
+   [
+    9271,
+    9,
+    64,
+    1125,
+    2,
+    99,
+    114
+   ],
+   [
+    9273,
+    10,
+    64,
+    1061,
+    2,
+    114,
+    128
+   ],
+   [
+    9810,
+    11,
+    64,
+    1003,
+    2,
+    114,
+    141
+   ],
+   [
+    9820,
+    12,
+    64,
+    939,
+    2,
+    141,
+    153
+   ],
+   [
+    10641,
+    13,
+    64,
+    894,
+    2,
+    132,
+    164
+   ],
+   [
+    10653,
+    14,
+    64,
+    830,
+    2,
+    164,
+    179
+   ],
+   [
+    11208,
+    15,
+    64,
+    778,
+    2,
+    159,
+    191
+   ],
+   [
+    11210,
+    16,
+    64,
+    714,
+    2,
+    191,
+    212
+   ],
+   [
+    11868,
+    17,
+    64,
+    650,
+    2,
+    213,
+    234
+   ],
+   [
+    11900,
+    18,
+    64,
+    586,
+    2,
+    235,
+    256
+   ],
+   [
+    12570,
+    19,
+    64,
+    589,
+    2,
+    126,
+    260
+   ],
+   [
+    12574,
+    20,
+    64,
+    525,
+    2,
+    260,
+    275
+   ],
+   [
+    13254,
+    21,
+    64,
+    599,
+    2,
+    126,
+    202
+   ],
+   [
+    13261,
+    22,
+    64,
+    535,
+    2,
+    204,
+    282
+   ],
+   [
+    13301,
+    23,
+    64,
+    471,
+    2,
+    282,
+    297
+   ],
+   [
+    13359,
+    24,
+    64,
+    407,
+    2,
+    297,
+    311
+   ],
+   [
+    13408,
+    25,
+    64,
+    343,
+    2,
+    311,
+    325
+   ],
+   [
+    13949,
+    26,
+    64,
+    368,
+    2,
+    148,
+    202
+   ],
+   [
+    13950,
+    27,
+    64,
+    304,
+    2,
+    204,
+    334
+   ],
+   [
+    14245,
+    28,
+    64,
+    639,
+    2,
+    178,
+    232
+   ],
+   [
+    14249,
+    29,
+    64,
+    575,
+    2,
+    232,
+    272
+   ],
+   [
+    14513,
+    30,
+    64,
+    627,
+    2,
+    211,
+    277
+   ],
+   [
+    14514,
+    31,
+    64,
+    563,
+    2,
+    278,
+    304
+   ],
+   [
+    14779,
+    32,
+    64,
+    504,
+    2,
+    283,
+    325
+   ],
+   [
+    14780,
+    33,
+    64,
+    440,
+    2,
+    325,
+    340
+   ],
+   [
+    14965,
+    34,
+    64,
+    446,
+    2,
+    191,
+    334
+   ],
+   [
+    14966,
+    35,
+    64,
+    382,
+    2,
+    338,
+    350
+   ],
+   [
+    15084,
+    36,
+    64,
+    347,
+    2,
+    213,
+    358
+   ],
+   [
+    15261,
+    37,
+    64,
+    382,
+    2,
+    210,
+    294
+   ],
+   [
+    15262,
+    38,
+    64,
+    318,
+    2,
+    295,
+    365
+   ],
+   [
+    15321,
+    39,
+    64,
+    254,
+    2,
+    365,
+    383
+   ],
+   [
+    15361,
+    40,
+    64,
+    190,
+    2,
+    383,
+    408
+   ],
+   [
+    15402,
+    41,
+    62,
+    126,
+    2,
+    409,
+    467
+   ]
+  ],
+  "waldAn": [
+   [
+    6608,
+    1,
+    [
+     6165,
+     6330
+    ]
+   ],
+   [
+    6612,
+    2,
+    [
+     6330,
+     6404
+    ]
+   ],
+   [
+    7671,
+    3,
+    [
+     6612,
+     6671
+    ]
+   ],
+   [
+    7676,
+    4,
+    [
+     6671,
+     6744
+    ]
+   ],
+   [
+    8726,
+    5,
+    [
+     7677,
+     7759
+    ]
+   ],
+   [
+    8729,
+    6,
+    [
+     7759,
+     7823
+    ]
+   ],
+   [
+    9268,
+    7,
+    [
+     8728,
+     8851
+    ]
+   ],
+   [
+    9271,
+    8,
+    [
+     8851,
+     8961
+    ]
+   ],
+   [
+    9808,
+    9,
+    [
+     9271,
+     9416
+    ]
+   ],
+   [
+    9818,
+    10,
+    [
+     9416,
+     9511
+    ]
+   ],
+   [
+    10640,
+    11,
+    [
+     9810,
+     9944
+    ]
+   ],
+   [
+    10642,
+    12,
+    [
+     9944,
+     10038
+    ]
+   ],
+   [
+    11207,
+    13,
+    [
+     10641,
+     10694
+    ]
+   ],
+   [
+    11209,
+    14,
+    [
+     10694,
+     10777
+    ]
+   ],
+   [
+    11863,
+    15,
+    [
+     11211,
+     11262
+    ]
+   ],
+   [
+    11895,
+    16,
+    [
+     11262,
+     11311
+    ]
+   ],
+   [
+    12569,
+    17,
+    [
+     11874,
+     11932
+    ]
+   ],
+   [
+    12571,
+    18,
+    [
+     11933,
+     12029
+    ]
+   ],
+   [
+    13253,
+    19,
+    [
+     12571,
+     12629
+    ]
+   ],
+   [
+    13257,
+    20,
+    [
+     12629,
+     12695
+    ]
+   ],
+   [
+    13300,
+    21,
+    [
+     13254,
+     13300
+    ]
+   ],
+   [
+    13358,
+    22,
+    [
+     13300,
+     13358
+    ]
+   ],
+   [
+    13407,
+    23,
+    [
+     13358,
+     13407
+    ]
+   ],
+   [
+    13948,
+    24,
+    [
+     13407,
+     13468
+    ]
+   ],
+   [
+    13949,
+    25,
+    [
+     13468,
+     13519
+    ]
+   ],
+   [
+    14243,
+    26,
+    [
+     13949,
+     14005
+    ]
+   ],
+   [
+    14245,
+    27,
+    [
+     14005,
+     14050
+    ]
+   ],
+   [
+    14512,
+    28,
+    [
+     14245,
+     14304
+    ]
+   ],
+   [
+    14513,
+    29,
+    [
+     14304,
+     14361
+    ]
+   ],
+   [
+    14778,
+    30,
+    [
+     14513,
+     14557
+    ]
+   ],
+   [
+    14779,
+    31,
+    [
+     14557,
+     14608
+    ]
+   ],
+   [
+    14964,
+    32,
+    [
+     14779,
+     14845
+    ]
+   ],
+   [
+    14965,
+    33,
+    [
+     14845,
+     14899
+    ]
+   ],
+   [
+    15083,
+    34,
+    [
+     14966,
+     15017
+    ]
+   ],
+   [
+    15261,
+    35,
+    [
+     15017,
+     15084
+    ]
+   ],
+   [
+    15261,
+    36,
+    [
+     15085,
+     15128
+    ]
+   ],
+   [
+    15320,
+    37,
+    [
+     15261,
+     15307
+    ]
+   ],
+   [
+    15361,
+    38,
+    [
+     15307,
+     15350
+    ]
+   ],
+   [
+    15401,
+    39,
+    [
+     15350,
+     15395
+    ]
+   ],
+   [
+    15471,
+    40,
+    [
+     15395,
+     15442
+    ]
+   ],
+   [
+    15480,
+    41,
+    [
+     15443,
+     15480
+    ]
+   ]
+  ],
+  "wk": [
+   [
+    13434,
+    "-1,-1",
+    [
+     "zug:weide|1|1",
+     "waldplan#1",
+     "zug:karst|1|1",
+     "zug:tanne|2|1",
+     "zug:tanne|1|1",
+     "karte:weide|1",
+     "karte:karst|1",
+     "karte:tanne|1",
+     "zug:eiche|2|1",
+     "karte:tanne|2",
+     "zug:eiche|1|1",
+     "zug:fichte|2|1",
+     "karte:fichte|1",
+     "karte:fichte|2",
+     "karte:eiche|2",
+     "zug:buche|2|1",
+     "zug:buche|1|1",
+     "zug:birke|1|1",
+     "zug:birke|2|1",
+     "karte:strauch|1",
+     "zug:blume|2|0",
+     "zug:blume|1|0"
+    ]
+   ],
+   [
+    14600,
+    "0,-1",
+    [
+     "waldplan#1",
+     "karte:weide|1",
+     "karte:karst|1",
+     "karte:tanne|2",
+     "karte:fichte|1",
+     "karte:eiche|1",
+     "karte:fichte|2"
+    ]
+   ],
+   [
+    15020,
+    "-1,0",
+    [
+     "waldplan#1",
+     "karte:weide|1",
+     "karte:tanne|2",
+     "karte:fichte|1",
+     "karte:karst|1",
+     "karte:fichte|2",
+     "karte:eiche|1",
+     "karte:strauch|1",
+     "zug:blume|2|0",
+     "zug:blume|1|0"
+    ]
+   ],
+   [
+    15271,
+    "0,0",
+    [
+     "karte:birke|2",
+     "karte:buche|2",
+     "karte:buche|1",
+     "karte:birke|1",
+     "waldplan#1"
+    ]
+   ]
+  ],
+  "disp": [
+   [
+    15664,
+    "0,0",
+    1
+   ],
+   [
+    15778,
+    "-1,-1",
+    1
+   ],
+   [
+    15778,
+    "0,-1",
+    1
+   ],
+   [
+    15782,
+    "-1,0",
+    1
+   ]
+  ],
+  "rneu": [
+   [
+    6324,
+    "-1,-1"
+   ],
+   [
+    13960,
+    "0,-1"
+   ],
+   [
+    14791,
+    "-1,0"
+   ],
+   [
+    15091,
+    "0,0"
+   ],
+   [
+    15708,
+    "0,0"
+   ],
+   [
+    15810,
+    "-1,-1"
+   ],
+   [
+    15855,
+    "0,-1"
+   ],
+   [
+    15900,
+    "-1,0"
+   ]
+  ],
+  "rfertig": [
+   [
+    13434,
+    "-1,-1",
+    1,
+    150,
+    22
+   ],
+   [
+    14600,
+    "0,-1",
+    1,
+    205,
+    7
+   ],
+   [
+    15020,
+    "-1,0",
+    1,
+    205,
+    10
+   ],
+   [
+    15271,
+    "0,0",
+    1,
+    205,
+    5
+   ],
+   [
+    15746,
+    "0,0",
+    0,
+    205,
+    -1
+   ],
+   [
+    15844,
+    "-1,-1",
+    0,
+    205,
+    -1
+   ],
+   [
+    15887,
+    "0,-1",
+    0,
+    205,
+    -1
+   ],
+   [
+    15925,
+    "-1,0",
+    0,
+    205,
+    -1
+   ]
+  ],
+  "back": [
+   [
+    6817,
+    0.7,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    7205,
+    0.1,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    7916,
+    151.5,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    8971,
+    130.9,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    9456,
+    68.2,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    10158,
+    45.1,
+    "gt|6",
+    1,
+    0
+   ],
+   [
+    10782,
+    30.3,
+    "gt|6",
+    1,
+    1
+   ],
+   [
+    11451,
+    0,
+    "tanne|3",
+    1,
+    0
+   ],
+   [
+    11451,
+    126.8,
+    "tanne|1",
+    1,
+    0
+   ],
+   [
+    12124,
+    66.5,
+    "tanne|3",
+    1,
+    0
+   ],
+   [
+    12943,
+    13.7,
+    "tanne|3",
+    1,
+    1
+   ],
+   [
+    13549,
+    16.4,
+    "tanne|1",
+    1,
+    1
+   ],
+   [
+    14135,
+    11.3,
+    "eiche|2",
+    1,
+    1
+   ],
+   [
+    14370,
+    14.2,
+    "birke|3",
+    1,
+    1
+   ],
+   [
+    14607,
+    11.9,
+    "fichte|3",
+    1,
+    1
+   ],
+   [
+    14900,
+    13.1,
+    "eiche|1",
+    1,
+    1
+   ],
+   [
+    15026,
+    10.4,
+    "fichte|1",
+    1,
+    1
+   ],
+   [
+    15195,
+    14.4,
+    "birke|2",
+    1,
+    1
+   ],
+   [
+    15275,
+    12.4,
+    "strauch|1",
+    1,
+    1
+   ],
+   [
+    15328,
+    13.7,
+    "tanne|2",
+    1,
+    1
+   ],
+   [
+    15371,
+    12.4,
+    "fichte|2",
+    1,
+    1
+   ],
+   [
+    15408,
+    11.9,
+    "birke|1",
+    1,
+    1
+   ],
+   [
+    15442,
+    11.1,
+    "karst|1",
+    1,
+    1
+   ],
+   [
+    15562,
+    7.6,
+    "buche|1",
+    1,
+    1
+   ],
+   [
+    15603,
+    6.8,
+    "buche|2",
+    1,
+    1
+   ],
+   [
+    15673,
+    10.6,
+    "mammut|1",
+    1,
+    1
+   ],
+   [
+    15750,
+    8.8,
+    "weide|1",
+    1,
+    1
+   ],
+   [
+    15788,
+    8.9,
+    "eiche|3",
+    1,
+    1
+   ]
+  ],
+  "res": {
+   "zug:verkalkt|1|3": 6587,
+   "zug:verkalkt|1|2": 6588,
+   "zug:geisttor|1|3": 6588,
+   "zug:maurentor|1|3": 6589,
+   "zug:geisttor|1|2": 6590,
+   "zug:maurentor|1|2": 6590,
+   "zug:ruine|1|3": 6591,
+   "zug:ruine|1|2": 6591,
+   "zug:gras|1|1": 6979,
+   "zug:gras|1|2": 6979,
+   "zug:maschine|1|3": 6980,
+   "zug:maschine|1|2": 6980,
+   "zug:kathedrale|1|3": 6981,
+   "zug:kathedrale|1|2": 6982,
+   "zug:drachentor|1|3": 6983,
+   "zug:drachentor|1|2": 6983,
+   "zug:gt|6|1": 7662,
+   "zug:zacken|1|0": 7664,
+   "zug:alemannisch|1|3|ov:170117b9.261": 7665,
+   "zug:gras|2|1": 8388,
+   "zug:gras|2|2": 8389,
+   "zug:alemannisch|1|1|ov:170117b9.261": 8390,
+   "zug:zacken|10|0": 8390,
+   "zug:zacken|8|0": 8391,
+   "zug:laterne|1|3": 9257,
+   "zug:laterne|1|1": 9258,
+   "zug:marktstand|1|3": 9259,
+   "zug:marktstand|1|1": 9260,
+   "zug:brunnen|1|3": 9261,
+   "zug:brunnen|1|1": 9262,
+   "zug:feuerstelle|1|3": 9263,
+   "zug:feuerstelle|1|1": 9264,
+   "zug:wandlaterne|1|3": 9797,
+   "zug:weide|1|1": 9799,
+   "zug:tanne|2|1": 9800,
+   "zug:karst|1|1": 9801,
+   "zug:tanne|1|1": 9802,
+   "zug:wandlaterne|1|1": 10628,
+   "zug:gotisch|12|2|ov:edcc8866.479": 10630,
+   "zug:alpenchalet|12|2|ov:e18295c.473": 10633,
+   "zug:schwarzwald|4|2|ov:9935b486.473": 10634,
+   "karte:gt|6": 11182,
+   "zug:strauch|1|1": 11194,
+   "zug:schwarzwald|13|2|ov:63183697.473": 11196,
+   "zug:schwarzwald|13|2|ov:8198aa54.471": 11198,
+   "zug:schwarzwald|13|3|ov:8198aa54.471": 11200,
+   "zug:gotisch|12|3|ov:edcc8866.479": 11201,
+   "zug:schwarzwald|6|2|ov:9077280.470": 11202,
+   "zug:tanne|3|1": 11840,
+   "zug:fichte|1|1": 11845,
+   "zug:schwarzwald|13|3|ov:63183697.473": 11846,
+   "zug:schwarzwald|6|3|ov:9077280.470": 11852,
+   "zug:schwarzwald|4|3|ov:9935b486.473": 11854,
+   "zug:schwarzwald|8|2|ov:49901c4e.473": 11858,
+   "zug:eiche|2|1": 12544,
+   "zug:fichte|2|1": 12552,
+   "zug:schwarzwald|11|2|ov:3e3ed698.463": 12554,
+   "zug:alpenchalet|12|3|ov:e18295c.473": 12556,
+   "zug:alpenchalet|9|2|ov:7323c079.472": 12559,
+   "zug:schwarzwald|8|3|ov:49901c4e.473": 12561,
+   "karte:tanne|3": 13194,
+   "zug:birke|3|1": 13210,
+   "zug:fichte|3|1": 13224,
+   "zug:birke|2|1": 13228,
+   "zug:zacken|4|0": 13232,
+   "zug:schwarzwald|15|2|ov:223f7a54.472": 13236,
+   "zug:schwarzwald|15|3|ov:223f7a54.472": 13240,
+   "zug:alpenchalet|12|2|ov:1093e85c.473": 13244,
+   "zug:schwarzwald|11|3|ov:cb5eca29.473": 13248,
+   "karte:tanne|1": 13895,
+   "zug:zacken|3|0": 13915,
+   "zug:zacken|2|0": 13924,
+   "zug:skandinavisch|6|2|ov:64a4c7f0.475": 13928,
+   "zug:skandinavisch|6|3|ov:64a4c7f0.475": 13932,
+   "zug:schwarzwald|11|3|ov:3e3ed698.463": 13935,
+   "zug:zacken|9|0": 13938,
+   "zug:schwarzwald|3|2|ov:41948277.473": 13941,
+   "zug:schwarzwald|3|3|ov:41948277.473": 13944,
+   "karte:eiche|2": 14196,
+   "zug:eiche|1|1": 14212,
+   "zug:birke|1|1": 14225,
+   "zug:mammut|1|1": 14227,
+   "zug:alpenchalet|12|3|ov:1093e85c.473": 14229,
+   "zug:schwarzwald|11|2|ov:cb5eca29.473": 14232,
+   "zug:zacken|15|0": 14234,
+   "zug:alpenchalet|9|3|ov:7323c079.472": 14236,
+   "zug:skandinavisch|14|2|ov:519be5c6.477": 14240,
+   "karte:birke|3": 14468,
+   "zug:skandinavisch|14|3|ov:519be5c6.477": 14481,
+   "zug:zacken|12|0": 14494,
+   "zug:alpenchalet|16|3|ov:fd3882cb.472": 14497,
+   "zug:schwarzwald|9|3|ov:c5e87e4.474": 14501,
+   "zug:zacken|5|0": 14504,
+   "zug:feuerstelle|2|3": 14507,
+   "zug:feuerstelle|2|1": 14510,
+   "karte:fichte|3": 14765,
+   "zug:kristalle|10|0": 14771,
+   "zug:buche|1|1": 14774,
+   "karte:eiche|1": 14947,
+   "zug:buche|2|1": 14953,
+   "zug:zacken|16|0": 14956,
+   "zug:zacken|11|0": 14959,
+   "zug:zacken|6|0": 14962,
+   "karte:fichte|1": 15075,
+   "zug:zacken|14|0": 15079,
+   "zug:blume|1|0": 15081,
+   "karte:birke|2": 15255,
+   "zug:blume|2|0": 15258,
+   "karte:strauch|1": 15316,
+   "zug:eiche|3|1": 15319,
+   "karte:tanne|2": 15360,
+   "karte:fichte|2": 15401,
+   "karte:birke|1": 15431,
+   "karte:karst|1": 15470,
+   "waldplan#1": 15481,
+   "karte:buche|1": 15582,
+   "zug:alpenchalet|16|2|ov:fd3882cb.472": 15585,
+   "karte:buche|2": 15653,
+   "karte:mammut|1": 15704,
+   "zug:geroell|1|0": 15705,
+   "karte:weide|1": 15776,
+   "karte:eiche|3": 15809,
+   "zug:blume|1|2": 15935,
+   "zug:blume|2|2": 15970,
+   "zug:findling|2|0": 18518,
+   "zug:findling|5|0": 18518,
+   "zug:findling|8|0": 18518,
+   "zug:findling|11|0": 18543,
+   "zug:findling|14|0": 18543,
+   "zug:basalt|1|0": 18543,
+   "zug:basalt|4|0": 18543,
+   "zug:basalt|7|0": 18543,
+   "zug:basalt|10|0": 18543,
+   "zug:basalt|12|0": 18543,
+   "zug:basalt|13|0": 18543,
+   "zug:basalt|14|0": 18587,
+   "zug:basalt|15|0": 18587,
+   "zug:basalt|16|0": 18587,
+   "zug:kristalle|1|0": 18587,
+   "zug:kristalle|2|0": 18644,
+   "zug:kristalle|3|0": 18644,
+   "zug:kristalle|4|0": 18677,
+   "zug:kristalle|5|0": 18677,
+   "zug:kristalle|6|0": 18677,
+   "zug:kristalle|7|0": 18677,
+   "zug:kristalle|8|0": 18677,
+   "zug:kristalle|9|0": 18707,
+   "zug:kristalle|11|0": 18707,
+   "zug:kristalle|12|0": 18707,
+   "zug:kristalle|13|0": 18725,
+   "zug:kristalle|14|0": 18725,
+   "zug:kristalle|15|0": 18813,
+   "zug:kristalle|16|0": 18813,
+   "zug:zacken|7|0": 18972,
+   "zug:zacken|13|0": 18972,
+   "zug:sediment|1|0": 18972,
+   "zug:sediment|2|0": 18972,
+   "zug:sediment|3|0": 18972,
+   "zug:sediment|4|0": 18972,
+   "zug:sediment|5|0": 18972,
+   "zug:sediment|6|0": 18972,
+   "zug:sediment|7|0": 19081,
+   "zug:sediment|8|0": 19081,
+   "zug:sediment|9|0": 19081,
+   "zug:sediment|10|0": 19081,
+   "zug:sediment|11|0": 19081,
+   "zug:sediment|12|0": 19081,
+   "zug:sediment|13|0": 19081,
+   "zug:sediment|14|0": 19081,
+   "zug:sediment|15|0": 19192,
+   "zug:sediment|16|0": 19192,
+   "zug:findling|1|0": 19374,
+   "zug:gestruepp|1|1": 19503,
+   "zug:farn|2|1": 19503,
+   "zug:findling|4|0": 19503,
+   "zug:findling|7|0": 19503,
+   "zug:findling|10|0": 19503,
+   "zug:findling|13|0": 19503,
+   "zug:findling|16|0": 19503,
+   "zug:basalt|3|0": 19503,
+   "zug:basalt|6|0": 19545,
+   "zug:basalt|9|0": 19545,
+   "zug:findling|3|0": 20491,
+   "zug:findling|6|0": 20491,
+   "zug:findling|9|0": 20491,
+   "zug:findling|12|0": 20511,
+   "zug:findling|15|0": 20511,
+   "zug:basalt|2|0": 20511,
+   "zug:basalt|5|0": 20523,
+   "zug:totstamm|1|1": 20534,
+   "zug:farn|1|1": 20549,
+   "zug:basalt|8|0": 20598,
+   "zug:basalt|11|0": 20618
+  },
+  "ticks": [
+   6322,
+   6800,
+   7096,
+   8794,
+   11335,
+   11949,
+   12619,
+   13424,
+   13960,
+   14252,
+   14518,
+   14791,
+   14968,
+   15091,
+   15265,
+   15322,
+   15363,
+   15403,
+   15435,
+   15557,
+   15594,
+   15664,
+   15708,
+   15778,
+   15810,
+   15855,
+   15900,
+   15937
+  ],
+  "fehler": [],
+  "wq": {
+   "_forestPlantChunk<_populateVoxelChunkVegetation": [
+    246,
+    13,
+    3579,
+    10687
+   ],
+   "_waldPlanSteht<http://127.0.0.1:7902/stamm/vegetation-baum.js?v=18.546.22:911:23": [
+    2240,
+    545,
+    6420,
+    15168
+   ]
+  },
+  "wqSek": {
+   "3": 120,
+   "5": 48,
+   "6": 487,
+   "7": 394,
+   "8": 388,
+   "9": 6,
+   "10": 31,
+   "11": 36,
+   "12": 169,
+   "13": 89,
+   "14": 617,
+   "15": 101
+  }
+ },
+ "kosten": {
+  "Bauten": {
+   "2": 4.200000017881393,
+   "3": 35.30000004172325,
+   "4": 13.099999994039536,
+   "5": 1.5,
+   "6": 51.40000003576279,
+   "7": 3.4000000059604645,
+   "8": 27.799999803304672,
+   "9": 8.300000071525574,
+   "10": 279.3999999165535,
+   "11": 37.199999898672104,
+   "12": 30.900000005960464,
+   "13": 28.500000149011612,
+   "14": 41.30000019073486,
+   "15": 27.499999940395355,
+   "27": 8.699999839067459
+  },
+  "Buch": {
+   "2": 35.69999998807907
+  },
+  "Boden": {
+   "3": 607.0999999940395,
+   "4": 401.2999999821186,
+   "5": 177.9000000357628,
+   "7": 21.799999982118607,
+   "8": 5.500000029802322,
+   "9": 19.19999998807907,
+   "10": 25.300000071525574,
+   "11": 3.9000000059604645,
+   "12": 6.5,
+   "23": 15.799999922513962,
+   "25": 8.199999958276749
+  },
+  "Ort-Wahl": {
+   "6": 238.69999998807907,
+   "8": 73.30000001192093
+  },
+  "Streu": {
+   "6": 110.5,
+   "7": 100.40000000596046,
+   "8": 53.60000002384186,
+   "11": 67.5,
+   "12": 215.19999998807907,
+   "13": 110.90000000596046,
+   "14": 351.90000000596046,
+   "15": 235.79999995231628
+  },
+  "Gruppen-Bau": {
+   "6": 128.2000000178814,
+   "7": 20.900000035762787,
+   "8": 5.200000017881393,
+   "9": 24.800000071525574,
+   "10": 3.2999999821186066,
+   "11": 10.699999958276749,
+   "12": 6.100000023841858,
+   "13": 9.099999994039536,
+   "14": 10.499999970197678,
+   "15": 4.60000005364418,
+   "18": 5.200000017881393,
+   "19": 3.1999999582767487,
+   "20": 1.5999999642372131
+  },
+  "Dorf": {
+   "8": 42.999999940395355,
+   "11": 43.80000001192093
+  }
+ },
+ "auftrag": 2884,
+ "buchDa": 2908,
+ "weltbildDa": 15960,
+ "holz": "voll",
+ "version": "18.546.22",
+ "adapter": "nvidia pascal",
+ "ohne": [],
+ "bild": {
+  "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\n1910\\bwald\\roh\\A4.png",
+  "dc": 33,
+  "dreiecke": 218905
+ },
+ "zweit": false
+}

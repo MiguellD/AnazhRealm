@@ -1,0 +1,23 @@
+jobs 22
+success kopf
+success puls 2/2
+success puls 1/2
+success voll 7/18 cpu
+success voll 5/18 cpu
+success voll 9/18 gpu
+success voll 16/18 gpu
+success voll 8/18 gpu
+success voll 2/18 cpu
+success voll 1/18 cpu
+success voll 4/18 cpu
+success voll 6/18 cpu
+success voll 15/18 gpu
+success voll 13/18 gpu
+success voll 12/18 gpu
+success voll 3/18 cpu
+success voll 14/18 gpu
+success voll 17/18 gpu
+success voll 18/18 gpu
+success voll 11/18 gpu
+success voll 10/18 gpu
+skipped echt (GPU-Wände auf der Karte)

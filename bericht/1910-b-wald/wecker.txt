@@ -1,0 +1,59 @@
+# 1910 B-Wald: je Wecker einer Streu-Region vor dem Bild die letzten Zusagen (Ankunft s) — roh/<Lauf>.json kt.wk/kt.res
+A1 Wecker 12.65 Region -1,-1 (18 Zusagen): letzte karte:weide|1@15.10 zug:buche|2|1@15.07 karte:karst|1@15.05 · letzte waldplan 14.99
+A1 Wecker 14.19 Region 0,-1 (10 Zusagen): letzte karte:weide|1@15.10 karte:karst|1@15.05 waldplan#1@14.99 · letzte waldplan 14.99
+A1 Wecker 14.59 Region -1,0 (10 Zusagen): letzte karte:weide|1@15.10 karte:karst|1@15.05 waldplan#1@14.99 · letzte waldplan 14.99
+A1 Wecker 14.80 Region 0,0 (4 Zusagen): letzte zug:buche|2|1@15.07 karte:birke|1@15.02 waldplan#1@14.99 · letzte waldplan 14.99
+A1 Wecker 15.13 Region 0,0 (2 Zusagen): letzte karte:buche|1@15.29 karte:buche|2@15.22 · letzte waldplan –
+A1 Wecker 15.20 Region -1,-1 (2 Zusagen): letzte karte:buche|1@15.29 karte:buche|2@15.22 · letzte waldplan –
+A1 Wecker 15.25 Region 0,-1 (1 Zusagen): letzte karte:buche|1@15.29 · letzte waldplan –
+A1 Weltbild 15.52
+A2 Wecker 12.76 Region -1,-1 (9 Zusagen): letzte waldplan#1@15.29 karte:strauch|1@14.97 zug:blume|1|0@12.98 · letzte waldplan 15.29
+A2 Wecker 14.31 Region 0,-1 (12 Zusagen): letzte zug:buche|2|1@16.11 zug:buche|1|1@15.79 zug:geroell|1|0@15.65 · letzte waldplan 15.29
+A2 Wecker 14.74 Region -1,0 (8 Zusagen): letzte zug:geroell|1|0@15.65 karte:weide|1@15.49 karte:karst|1@15.35 · letzte waldplan 15.29
+A2 Wecker 15.03 Region 0,0 (4 Zusagen): letzte zug:buche|2|1@16.11 zug:buche|1|1@15.79 waldplan#1@15.29 · letzte waldplan 15.29
+A2 Wecker 15.44 Region -1,-1 (3 Zusagen): letzte zug:buche|2|1@16.11 zug:buche|1|1@15.79 karte:weide|1@15.49 · letzte waldplan –
+A2 Wecker 15.75 Region -1,0 (2 Zusagen): letzte zug:buche|2|1@16.11 zug:buche|1|1@15.79 · letzte waldplan –
+A2 Wecker 16.17 Region -1,-1 (2 Zusagen): letzte karte:buche|1@16.25 karte:buche|2@16.19 · letzte waldplan –
+A2 Wecker 16.23 Region 0,-1 (1 Zusagen): letzte karte:buche|1@16.25 · letzte waldplan –
+A2 Weltbild 16.40
+A3 Wecker 5.24 Region -1,-1 (8 Zusagen): letzte waldplan#1@15.58 zug:blume|2|0@15.15 zug:blume|1|0@15.15 · letzte waldplan 15.58
+A3 Wecker 13.48 Region 0,-1 (14 Zusagen): letzte waldplan#1@15.58 zug:buche|2|1@15.51 zug:buche|1|1@15.33 · letzte waldplan 15.58
+A3 Wecker 14.28 Region -1,0 (8 Zusagen): letzte waldplan#1@15.58 karte:fichte|2@15.54 karte:tanne|2@15.51 · letzte waldplan 15.58
+A3 Wecker 15.16 Region 0,0 (12 Zusagen): letzte waldplan#1@15.58 karte:birke|1@15.58 karte:fichte|2@15.54 · letzte waldplan 15.58
+A3 Wecker 15.65 Region -1,-1 (2 Zusagen): letzte karte:buche|1@15.78 karte:buche|2@15.74 · letzte waldplan –
+A3 Wecker 15.72 Region 0,-1 (2 Zusagen): letzte karte:buche|1@15.78 karte:buche|2@15.74 · letzte waldplan –
+A3 Wecker 15.77 Region -1,0 (1 Zusagen): letzte karte:buche|1@15.78 · letzte waldplan –
+A3 Weltbild 16.22
+A4 Wecker 13.43 Region -1,-1 (22 Zusagen): letzte karte:weide|1@15.78 waldplan#1@15.48 karte:karst|1@15.47 · letzte waldplan 15.48
+A4 Wecker 14.60 Region 0,-1 (7 Zusagen): letzte karte:weide|1@15.78 waldplan#1@15.48 karte:karst|1@15.47 · letzte waldplan 15.48
+A4 Wecker 15.02 Region -1,0 (10 Zusagen): letzte karte:weide|1@15.78 waldplan#1@15.48 karte:karst|1@15.47 · letzte waldplan 15.48
+A4 Wecker 15.27 Region 0,0 (5 Zusagen): letzte karte:buche|2@15.65 karte:buche|1@15.58 waldplan#1@15.48 · letzte waldplan 15.48
+A4 Weltbild 15.96
+B1 Wecker 12.96 Region -1,-1 (454 Zusagen): letzte karte:weide|1@15.63 karte:karst|1@15.52 karte:birke|1@15.49 · letzte waldplan 13.41
+B1 Wecker 14.78 Region 0,-1 (317 Zusagen): letzte karte:weide|1@15.63 karte:karst|1@15.52 karte:fichte|2@15.45 · letzte waldplan 14.95
+B1 Wecker 15.10 Region -1,0 (107 Zusagen): letzte karte:weide|1@15.63 karte:karst|1@15.52 karte:fichte|2@15.45 · letzte waldplan 15.15
+B1 Wecker 15.22 Region 0,0 (26 Zusagen): letzte karte:buche|2@15.56 karte:buche|1@15.54 karte:birke|1@15.49 · letzte waldplan 15.35
+B1 Weltbild 15.89
+B2 Wecker 12.03 Region -1,-1 (461 Zusagen): letzte karte:weide|1@15.89 karte:karst|1@15.75 zug:blume|2|0@15.70 · letzte waldplan 12.44
+B2 Wecker 14.53 Region 0,-1 (280 Zusagen): letzte karte:weide|1@15.89 karte:karst|1@15.75 karte:fichte|2@15.62 · letzte waldplan 14.88
+B2 Wecker 15.15 Region -1,0 (90 Zusagen): letzte karte:weide|1@15.89 karte:karst|1@15.75 karte:fichte|2@15.62 · letzte waldplan 15.46
+B2 Wecker 15.48 Region 0,0 (38 Zusagen): letzte karte:buche|2@15.80 karte:fichte|2@15.62 waldplan#802@15.58 · letzte waldplan 15.58
+B2 Wecker 15.87 Region 0,0 (1 Zusagen): letzte karte:buche|1@15.99 · letzte waldplan –
+B2 Wecker 15.97 Region -1,-1 (1 Zusagen): letzte karte:buche|1@15.99 · letzte waldplan –
+B2 Weltbild 16.23
+B3 Wecker 13.62 Region -1,-1 (434 Zusagen): letzte zug:buche|3|1@15.43 zug:buche|2|1@15.22 karte:weide|1@15.22 · letzte waldplan 13.91
+B3 Wecker 14.52 Region 0,-1 (325 Zusagen): letzte zug:buche|2|1@15.22 karte:weide|1@15.22 karte:karst|1@15.17 · letzte waldplan 14.75
+B3 Wecker 14.77 Region -1,0 (75 Zusagen): letzte karte:weide|1@15.22 karte:karst|1@15.17 karte:fichte|2@15.07 · letzte waldplan 14.89
+B3 Wecker 14.97 Region 0,0 (25 Zusagen): letzte zug:buche|2|1@15.22 waldplan#802@15.13 waldplan#803@15.13 · letzte waldplan 15.13
+B3 Wecker 15.29 Region 0,-1 (2 Zusagen): letzte karte:buche|1@15.42 karte:buche|2@15.32 · letzte waldplan –
+B3 Wecker 15.36 Region -1,0 (1 Zusagen): letzte karte:buche|1@15.42 · letzte waldplan –
+B3 Weltbild 15.64
+B4 Wecker 8.43 Region -1,-1 (468 Zusagen): letzte zug:blume|1|0@15.19 zug:blume|2|0@15.16 zug:tanne|2|1@13.52 · letzte waldplan 9.10
+B4 Wecker 14.31 Region 0,-1 (409 Zusagen): letzte zug:buche|2|1@15.58 karte:weide|1@15.48 karte:karst|1@15.45 · letzte waldplan 14.53
+B4 Wecker 14.73 Region -1,0 (108 Zusagen): letzte karte:weide|1@15.48 karte:karst|1@15.45 karte:fichte|2@15.34 · letzte waldplan 14.83
+B4 Wecker 14.93 Region 0,0 (54 Zusagen): letzte zug:buche|2|1@15.58 karte:eiche|3@15.50 karte:weide|1@15.48 · letzte waldplan 15.11
+B4 Wecker 15.30 Region -1,-1 (6 Zusagen): letzte zug:buche|2|1@15.58 karte:weide|1@15.48 karte:karst|1@15.45 · letzte waldplan –
+B4 Wecker 15.54 Region -1,0 (2 Zusagen): letzte zug:buche|2|1@15.58 karte:buche|1@15.58 · letzte waldplan –
+B4 Wecker 15.61 Region -1,-1 (1 Zusagen): letzte karte:buche|2@15.63 · letzte waldplan –
+B4 Weltbild 15.84
+Wecker mit Wald-Zusage, in denen eine waldplan-Zusage die LETZTE war: A 5 von 16 · B 0 von 16
