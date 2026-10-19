@@ -80,10 +80,7 @@ const BASIS = {
         ],
         // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
         ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
-        [
-            "if (entry.position && this.state.architectures && this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
-            "",
-        ],
+        ["this._hausGrundSetzen(entry, huelle);\n            this._grundrissRaeumen(entry);", "this._hausGrundSetzen(entry, huelle);"],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
