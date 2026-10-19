@@ -643,43 +643,57 @@ class AnazhRealm_gelaende_boden {
         return true;
     }
     // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
-    // der Worker, die Chunks, die Wege-Karte, das Wasser, die Bakes, der Save
+    // der Worker, die Chunks, die Wege-Karte, das Wasser, die Bakes, der Save. DIE WIRKUNG IST DER KASTEN (S4, Lehre 25): je
+    // Splat die Achsen-Box seiner gedrehten Fläche (Platte, Grund, frei) oder seiner Strecke (Trasse) samt der Reichweite des
+    // Terms (`ERDBAU.reichweiteM`: weiter liest weder `erdbauY` noch `erdbauWand` ihn); ein Chunk fällt in der Stufe, deren Gitter
+    // (Probe-Rand und Glätten: 3 Zellen über die Spanne) einen Kasten trifft, gezeichnet wird nur er neu. Bis S4 fiel der Kreis
+    // um den Umkreis-Kreis samt einem Chunk Rand: der Grund des Vorschau-Hauses am Tor (4,1 × 4,9 m) warf beim Boot 16
+    // gezeichnete Chunks um den Spieler, verändert hat er einen.
     _erdbauWirkt(splats, amWasser) {
         const G = globalThis.__gelaendeCore;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
-        let x0 = Infinity;
-        let x1 = -Infinity;
-        let z0 = Infinity;
-        let z1 = -Infinity;
-        for (const p of splats) {
-            const flaeche = p.art !== "trasse"; // platte und frei: ein Rechteck um (cx, cz)
-            const r = flaeche ? Math.hypot(p.ex, p.ez) : p.w / 2;
-            const xs = flaeche ? [p.cx] : [p.x0, p.x1];
-            const zs = flaeche ? [p.cz] : [p.z0, p.z1];
-            for (const x of xs) {
-                x0 = Math.min(x0, x - r);
-                x1 = Math.max(x1, x + r);
-            }
-            for (const z of zs) {
-                z0 = Math.min(z0, z - r);
-                z1 = Math.max(z1, z + r);
-            }
-        }
         const R = G.ERDBAU.reichweiteM;
+        const kaesten = splats.map((p) => {
+            if (p.art === "trasse") {
+                const w = p.w / 2;
+                return [Math.min(p.x0, p.x1) - w, Math.max(p.x0, p.x1) + w, Math.min(p.z0, p.z1) - w, Math.max(p.z0, p.z1) + w];
+            }
+            const [c, s] = [Math.abs(Math.cos(p.phi || 0)), Math.abs(Math.sin(p.phi || 0))];
+            const [hx, hz] = [p.ex * c + p.ez * s, p.ex * s + p.ez * c];
+            return [p.cx - hx, p.cx + hx, p.cz - hz, p.cz + hz];
+        });
+        const x0 = Math.min(...kaesten.map((k) => k[0]));
+        const x1 = Math.max(...kaesten.map((k) => k[1]));
+        const z0 = Math.min(...kaesten.map((k) => k[2]));
+        const z1 = Math.max(...kaesten.map((k) => k[3]));
         const { span } = this._voxelChunkConfig();
-        // die Chunks des Umkreises samt einem Chunk Rand (der Mesher liest eine Zelle in den Nachbarn), je Stufe
-        const ka = Math.floor((x0 - R) / span) - 1;
-        const kb = Math.floor((x1 + R) / span) + 1;
-        const la = Math.floor((z0 - R) / span) - 1;
-        const lb = Math.floor((z1 + R) / span) + 1;
+        const rand = [0, 1, 2, 3].map((lod) => 3 * this._voxelChunkConfig(lod).step);
+        // trifft das Gitter des Chunks (a, b) in der Stufe lod die Wirkung eines Splats?
+        const trifft = (a, b, lod) => {
+            const m = R + rand[lod];
+            const [u0, u1, v0, v1] = [a * span - m, (a + 1) * span + m, b * span - m, (b + 1) * span + m];
+            return kaesten.some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
+        };
+        const ka = Math.floor((x0 - R - rand[3]) / span);
+        const kb = Math.floor((x1 + R + rand[3]) / span);
+        const la = Math.floor((z0 - R - rand[3]) / span);
+        const lb = Math.floor((z1 + R + rand[3]) / span);
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
         const genKarte = this._erdbauGenKarte || (this._erdbauGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        const gezeichnet = this.state.voxelChunks;
+        if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
         for (let a = ka; a <= kb; a++)
             for (let b = la; b <= lb; b++) {
+                if (!trifft(a, b, 3)) continue;
+                const key = `${a},${b}`;
                 genKarte.set((a + 32768) * 65536 + (b + 32768), this._editGenZaehler);
-                for (const c of caches)
-                    if (c && c.size) for (let lod = 0; lod <= 3; lod++) c.delete(`${a},${b},${lod}`);
+                for (let lod = 0; lod <= 3; lod++)
+                    if (trifft(a, b, lod)) for (const c of caches) if (c && c.size) c.delete(`${key},${lod}`);
+                const ch = gezeichnet && gezeichnet.get(key);
+                if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
+                if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
         this._forestDartsFallen(x0, z0, x1, z1);
         // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
@@ -687,11 +701,6 @@ class AnazhRealm_gelaende_boden {
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
-        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
-        for (let a = Math.floor((cx - rad) / span); a <= Math.floor((cx + rad) / span); a++)
-            for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
-                this.state.grassDirtyChunks.add(`${a},${b}`);
-        this._remeshVoxelChunksAround(cx, cz, rad);
         // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): die Stufe, deren Fenster er trifft, malt
         // beim nächsten Takt neu — nur ein Grund mit einer Box, deren Boden der Grund ist, nie jede Platte und Trasse
         if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
