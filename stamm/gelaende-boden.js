@@ -662,6 +662,8 @@ class AnazhRealm_gelaende_boden {
             for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
                 this.state.grassDirtyChunks.add(`${a},${b}`);
         this._remeshVoxelChunksAround(cx, cz, rad);
+        // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): jede Stufe malt beim nächsten Takt neu
+        if (this.state.wegeKarte) for (const st of this.state.wegeKarte.stufen) st.grundNeu = true;
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
@@ -1015,7 +1017,14 @@ class AnazhRealm_gelaende_boden {
         // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
         // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
         // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
-        return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        // DER KELLER IST HOHL (S4, gelaende-core `erdbauHohl`): das Feld trägt den Raum des Hauses, das Gitter des Netzes nicht
+        return globalThis.__gelaendeCore.erdbauHohl(
+            this._erdbauLage(),
+            x,
+            y,
+            z,
+            this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z)
+        );
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
@@ -1467,6 +1476,9 @@ class AnazhRealm_gelaende_boden {
         );
         this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle);
+        // DER BODEN FÄLLT IM GRUND DES HAUSES (S4, gelaende-core `erdbauSchnitt`, derselbe Code wie im Voxel-Faden); ein eigener
+        // Sampler (die Schwebe-Insel) ist nicht der Boden
+        if (!densityFn) globalThis.__gelaendeCore.erdbauSchnitt(this._erdbauLage(), positions, indices, triZelle);
         if (positions.length === 0) return null;
         // Gradient-Normals nutzen das geteilte preDensity-Grid (statt ~18k Dichte-Calls);
         // _voxelGradientNormals interpoliert trilinear, Out-of-Bounds → sample().

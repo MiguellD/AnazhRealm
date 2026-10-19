@@ -1321,6 +1321,12 @@
     // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
     // keine Böschung (der Weg über das Welt-Wasser staut es nicht).
     const FREI_ZAHL = ["cx", "cz", "phi", "ex", "ez"];
+    // GRUND {cx, cz, phi, ex, ez, saum, y, boxen, keller} (S4, der Grund eines Hauses aus seinem Körper-Satz, fachwerk `grundVon`
+    // über `ortPlan`): der Rahmen des Hauses (welt = mitte + (lx·c + lz·s, −lx·s + lz·c)), seine Höhe y, je Box
+    // [x0, x1, z0, z1, boden] haus-lokal — jede wird eine Platte mit `saum`; boden 1: das Haus zeichnet dort seinen Boden, der
+    // gezeichnete Boden fällt in ihr (`erdbauSchnitt`); keller [x0, x1, z0, z1, y0, y1] (y über y) ist hohl (`erdbauHohl`);
+    // ex/ez = die Reichweite des Grunds um die Mitte (der Wirt räumt danach seine Caches).
+    const GRUND_ZAHL = ["cx", "cz", "phi", "ex", "ez", "saum", "y"];
     // Die NORMALFORM des Erdbaus: roh = die Splat-Liste (der Wirt fügt die Pläne seiner Orte in ihrer Reihenfolge an) →
     // { n, splats, zellen } mit einem Raster der Kante `zelleM` (je Zelle die Splats, deren Reichweite sie berührt). Fail-
     // closed: eine fremde Art oder eine fehlende Zahl wirft. Leer → null (der Term ruht).
@@ -1332,29 +1338,68 @@
         const Z = ERDBAU.zelleM;
         const splats = [];
         const zellen = new Map();
+        // DER GRUND DER HÄUSER (S4, `grund`): je Haus sein Körper-Satz und Keller im Rahmen des Hauses, mit einem eigenen Raster
+        // (`grundZellen`: die Zellen, die seine Boxen berühren) — die Leser des Grunds (`erdbauGrund`, `erdbauHohl`,
+        // `erdbauSchnitt`) fragen nur ihre Zelle
+        const gruende = [];
+        const grundZellen = new Map();
+        let hohl = 0;
+        let schnitt = 0;
+        const rastern = (karte, x0, x1, z0, z1, i) => {
+            for (let a = Math.floor(x0 / Z); a <= Math.floor(x1 / Z); a++)
+                for (let b = Math.floor(z0 / Z); b <= Math.floor(z1 / Z); b++) {
+                    const key = (a + 32768) * 65536 + (b + 32768);
+                    const liste = karte.get(key);
+                    if (liste) liste.push(i);
+                    else karte.set(key, [i]);
+                }
+        };
+        const platte = (cx, cz, c, sn, ex, ez, y, frei) => {
+            splats.push({ platte: !frei, frei, cx, cz, c, s: sn, ex, ez, y: frei ? NaN : y });
+            const hx = Math.abs(ex * c) + Math.abs(ez * sn) + (frei ? 0 : R);
+            const hz = Math.abs(ex * sn) + Math.abs(ez * c) + (frei ? 0 : R);
+            rastern(zellen, cx - hx, cx + hx, cz - hz, cz + hz, splats.length - 1);
+        };
         for (let i = 0; i < roh.length; i++) {
             const p = roh[i];
             const art = p && p.art;
-            const namen = art === "platte" ? ERDBAU_ZAHL : art === "trasse" ? TRASSE_ZAHL : art === "frei" ? FREI_ZAHL : null;
+            const namen =
+                art === "platte"
+                    ? ERDBAU_ZAHL
+                    : art === "trasse"
+                      ? TRASSE_ZAHL
+                      : art === "frei"
+                        ? FREI_ZAHL
+                        : art === "grund"
+                          ? GRUND_ZAHL
+                          : null;
             if (!namen) throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt die fremde Art " + art);
             for (const k of namen)
                 if (!Number.isFinite(p[k])) throw new Error("gelaende-core: Erdbau-Splat " + i + " ohne Zahl " + k);
-            let s;
-            let x0;
-            let x1;
-            let z0;
-            let z1;
-            if (art === "platte" || art === "frei") {
+            if (art === "grund") {
+                // je Box eine Platte mit Saum (die Höhe des Hauses, im Rahmen des Hauses), der Grund selbst ins eigene Raster
+                const ok = (z, n) => Array.isArray(z) && z.length === n && z.every((v) => Number.isFinite(v));
+                if (!Array.isArray(p.boxen) || !p.boxen.length || !p.boxen.every((b) => ok(b, 5) && b[1] > b[0] && b[3] > b[2]))
+                    throw new Error("gelaende-core: Erdbau-Splat " + i + " (grund) ohne Boxen [x0, x1, z0, z1, boden]");
+                if (p.keller != null && !(ok(p.keller, 6) && p.keller[1] > p.keller[0] && p.keller[3] > p.keller[2] && p.keller[5] > p.keller[4]))
+                    throw new Error("gelaende-core: Erdbau-Splat " + i + " (grund) mit Keller ohne [x0, x1, z0, z1, y0, y1]");
                 const c = Math.cos(p.phi);
                 const sn = Math.sin(p.phi);
-                const frei = art === "frei";
-                s = { platte: !frei, frei, cx: p.cx, cz: p.cz, c, s: sn, ex: p.ex, ez: p.ez, y: frei ? NaN : p.y };
-                const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn) + (frei ? 0 : R);
-                const hz = Math.abs(p.ex * sn) + Math.abs(p.ez * c) + (frei ? 0 : R);
-                x0 = p.cx - hx;
-                x1 = p.cx + hx;
-                z0 = p.cz - hz;
-                z1 = p.cz + hz;
+                const g = { cx: p.cx, cz: p.cz, c, s: sn, y: p.y, boxen: p.boxen, keller: p.keller || null, schnitt: 0 };
+                for (const b of p.boxen) {
+                    const lx = (b[0] + b[1]) / 2;
+                    const lz = (b[2] + b[3]) / 2;
+                    platte(p.cx + lx * c + lz * sn, p.cz - lx * sn + lz * c, c, sn, (b[1] - b[0]) / 2 + p.saum, (b[3] - b[2]) / 2 + p.saum, p.y, false); // prettier-ignore
+                    if (b[4]) g.schnitt++;
+                }
+                if (g.keller) hohl++;
+                schnitt += g.schnitt;
+                gruende.push(g);
+                const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn);
+                const hz = Math.abs(p.ex * sn) + Math.abs(p.ez * c);
+                rastern(grundZellen, p.cx - hx, p.cx + hx, p.cz - hz, p.cz + hz, gruende.length - 1);
+            } else if (art === "platte" || art === "frei") {
+                platte(p.cx, p.cz, Math.cos(p.phi), Math.sin(p.phi), p.ex, p.ez, p.y, art === "frei");
             } else {
                 const dx = p.x1 - p.x0;
                 const dz = p.z1 - p.z0;
@@ -1362,23 +1407,12 @@
                 if (p.weg != null && !Number.isFinite(p.weg))
                     throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt keinen Weg als Zahl");
                 const weg = p.weg == null ? -1 : p.weg;
-                s = { platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg };
+                splats.push({ platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg });
                 const m = p.w / 2 + R;
-                x0 = Math.min(p.x0, p.x1) - m;
-                x1 = Math.max(p.x0, p.x1) + m;
-                z0 = Math.min(p.z0, p.z1) - m;
-                z1 = Math.max(p.z0, p.z1) + m;
+                rastern(zellen, Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m, Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m, splats.length - 1); // prettier-ignore
             }
-            splats.push(s);
-            for (let a = Math.floor(x0 / Z); a <= Math.floor(x1 / Z); a++)
-                for (let b = Math.floor(z0 / Z); b <= Math.floor(z1 / Z); b++) {
-                    const key = (a + 32768) * 65536 + (b + 32768);
-                    const liste = zellen.get(key);
-                    if (liste) liste.push(i);
-                    else zellen.set(key, [i]);
-                }
         }
-        return { n: splats.length, splats, zellen };
+        return { n: splats.length, splats, zellen, gruende, grundZellen, hohl, schnitt };
     }
     // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`).
     function erdbauY(E, x, z, h) {
@@ -1448,6 +1482,179 @@
         if (!E) return null;
         const y = erdbauY(E, x, z, NaN);
         return y === y ? y : null;
+    }
+    // DER GRUND AM PUNKT (S4, der EINE Grundriss-Leser des Erdbaus): liegt (x, z) in einer Box eines Hauses (dem Körper-Satz
+    // seines Grunds, `rand` m über ihre Wand hinaus)? 1 oder 0. Leser: die Nah-Wiese (der Kreis jedes Büschels).
+    function erdbauGrund(E, x, z, rand) {
+        if (!E || !E.gruende || !E.gruende.length) return 0;
+        const Z = ERDBAU.zelleM;
+        const liste = E.grundZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (!liste) return 0;
+        const r = rand > 0 ? rand : 0;
+        for (let k = 0; k < liste.length; k++) {
+            const g = E.gruende[liste[k]];
+            const dx = x - g.cx;
+            const dz = z - g.cz;
+            const u = dx * g.c - dz * g.s;
+            const v = dx * g.s + dz * g.c;
+            for (const b of g.boxen) if (u > b[0] - r && u < b[1] + r && v > b[2] - r && v < b[3] + r) return 1;
+        }
+        return 0;
+    }
+    // DER KELLER IST HOHL (S4): die Dichte d an (x, y, z) mit dem Hohlraum jedes Kellers vereinigt — im Raum (ein Kasten) der
+    // Abstand zu seiner nächsten Wand, negativ: Luft; außen bleibt d (die Oberfläche neben dem Keller rückt nicht). Der Leib geht über die Treppe des Hauses hinab, sein Boden ist der
+    // Kellerboden des Hauses. Leser: das Feld des Wirts (`_terrainDensityAt`, `_fieldDensityAt` — Leib, Kollision, Wasser),
+    // nie das Gitter des Netzes: der gezeichnete Boden fällt im Grund des Hauses (`erdbauSchnitt`), das Haus zeichnet seinen
+    // Keller — ein Hohlraum im 1,8-m-Gitter risse eine Rinne vor die Wand.
+    function erdbauHohl(E, x, y, z, d) {
+        if (!E || !E.hohl) return d;
+        const Z = ERDBAU.zelleM;
+        const liste = E.grundZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (!liste) return d;
+        for (let k = 0; k < liste.length; k++) {
+            const g = E.gruende[liste[k]];
+            const K = g.keller;
+            if (!K) continue;
+            const dx = x - g.cx;
+            const dz = z - g.cz;
+            const u = dx * g.c - dz * g.s;
+            const v = dx * g.s + dz * g.c;
+            const a = Math.max(K[0] - u, u - K[1], K[2] - v, v - K[3], g.y + K[4] - y, y - g.y - K[5]);
+            if (a < 0 && a < d) d = a; // nur IM Raum: außen bleibt die Dichte des Grunds (die Oberfläche neben dem Keller rückt nicht)
+        }
+        return d;
+    }
+    // DER BODEN FÄLLT IM GRUND DES HAUSES (S4): das Netz eines Boden-Chunks (Positionen P [x, y, z …], Index I, je Dreieck T —
+    // die Zelle seiner Luft, optional) verliert jede Fläche in einer Box mit boden 1 — exakt an der Wand: ein Dreieck, das die
+    // Box schneidet, behält seine Stücke außen (konvexe Polygone, je Halbebene der Box abgetrennt, Fächer), die neuen Ecken
+    // liegen auf seinen Kanten (y linear, auf der Fläche des Dreiecks) und hängen an P. Läuft im Bau des Netzes VOR Normalen,
+    // Stoff, Himmels-Sicht und Stufen-Ziel (sie lesen die neuen Ecken wie jede andere) — im Voxel-Faden und im Sync-Bau, EIN
+    // Code. Ändert P, I und T an Ort und Stelle; true, wenn ein Dreieck fiel oder geschnitten wurde.
+    function erdbauSchnitt(E, P, I, T) {
+        if (!E || !E.schnitt || !P.length) return false;
+        let mx0 = Infinity;
+        let mx1 = -Infinity;
+        let mz0 = Infinity;
+        let mz1 = -Infinity;
+        for (let k = 0; k < P.length; k += 3) {
+            if (P[k] < mx0) mx0 = P[k];
+            if (P[k] > mx1) mx1 = P[k];
+            if (P[k + 2] < mz0) mz0 = P[k + 2];
+            if (P[k + 2] > mz1) mz1 = P[k + 2];
+        }
+        // die Boxen, deren Welt-Kasten den des Netzes berührt
+        const K = [];
+        const Z = ERDBAU.zelleM;
+        const gesehen = new Set();
+        for (let a = Math.floor(mx0 / Z); a <= Math.floor(mx1 / Z); a++)
+            for (let b = Math.floor(mz0 / Z); b <= Math.floor(mz1 / Z); b++) {
+                const liste = E.grundZellen.get((a + 32768) * 65536 + (b + 32768));
+                if (liste) for (const i of liste) gesehen.add(i);
+            }
+        for (const i of gesehen) {
+            const g = E.gruende[i];
+            for (const b of g.boxen) {
+                if (!b[4]) continue;
+                let wx0 = Infinity;
+                let wx1 = -Infinity;
+                let wz0 = Infinity;
+                let wz1 = -Infinity;
+                for (const [lx, lz] of [[b[0], b[2]], [b[1], b[2]], [b[0], b[3]], [b[1], b[3]]]) {
+                    const wx = g.cx + lx * g.c + lz * g.s;
+                    const wz = g.cz - lx * g.s + lz * g.c;
+                    wx0 = Math.min(wx0, wx);
+                    wx1 = Math.max(wx1, wx);
+                    wz0 = Math.min(wz0, wz);
+                    wz1 = Math.max(wz1, wz);
+                }
+                if (wx1 < mx0 || wx0 > mx1 || wz1 < mz0 || wz0 > mz1) continue;
+                K.push({ g, b, wx0, wx1, wz0, wz1 });
+            }
+        }
+        if (!K.length) return false;
+        // ein konvexes Polygon (Ecken {x, y, z, i}) an der Halbebene f(p) = s · (Koordinate − w) ≥ 0 teilen: [innen, außen]
+        const teile = (poly, f) => {
+            const vorn = [];
+            const hinten = [];
+            for (let k = 0; k < poly.length; k++) {
+                const A = poly[k];
+                const B = poly[(k + 1) % poly.length];
+                const fa = f(A);
+                const fb = f(B);
+                (fa >= 0 ? vorn : hinten).push(A);
+                if ((fa >= 0) !== (fb >= 0)) {
+                    const t = fa / (fa - fb);
+                    const N = { x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, z: A.z + (B.z - A.z) * t, i: -1 };
+                    vorn.push(N);
+                    hinten.push(N);
+                }
+            }
+            return [vorn.length >= 3 ? vorn : null, hinten.length >= 3 ? hinten : null];
+        };
+        const ecke = (p) => {
+            if (p.i < 0) {
+                p.i = P.length / 3;
+                P.push(p.x, p.y, p.z);
+            }
+            return p.i;
+        };
+        const nI = [];
+        const nT = T ? [] : null;
+        let fiel = false;
+        const n = I.length;
+        for (let t = 0; t < n; t += 3) {
+            const ia = I[t];
+            const ib = I[t + 1];
+            const ic = I[t + 2];
+            const tx0 = Math.min(P[ia * 3], P[ib * 3], P[ic * 3]);
+            const tx1 = Math.max(P[ia * 3], P[ib * 3], P[ic * 3]);
+            const tz0 = Math.min(P[ia * 3 + 2], P[ib * 3 + 2], P[ic * 3 + 2]);
+            const tz1 = Math.max(P[ia * 3 + 2], P[ib * 3 + 2], P[ic * 3 + 2]);
+            let stuecke = null;
+            for (const q of K) {
+                if (tx1 < q.wx0 || tx0 > q.wx1 || tz1 < q.wz0 || tz0 > q.wz1) continue;
+                if (!stuecke) {
+                    const v = (i) => ({ x: P[i * 3], y: P[i * 3 + 1], z: P[i * 3 + 2], i });
+                    stuecke = [[v(ia), v(ib), v(ic)]];
+                }
+                const { g, b } = q;
+                const u = (p) => (p.x - g.cx) * g.c - (p.z - g.cz) * g.s;
+                const w = (p) => (p.x - g.cx) * g.s + (p.z - g.cz) * g.c;
+                const seiten = [(p) => u(p) - b[0], (p) => b[1] - u(p), (p) => w(p) - b[2], (p) => b[3] - w(p)];
+                const neu = [];
+                for (const poly of stuecke) {
+                    let rest = poly;
+                    for (const f of seiten) {
+                        const [vorn, hinten] = teile(rest, f);
+                        if (hinten) neu.push(hinten); // außen vor dieser Wand: bleibt
+                        rest = vorn;
+                        if (!rest) break;
+                    }
+                    // rest: innen — fällt
+                }
+                stuecke = neu;
+                if (!stuecke.length) break;
+            }
+            if (!stuecke) {
+                nI.push(ia, ib, ic);
+                if (nT) nT.push(T[t / 3]);
+                continue;
+            }
+            fiel = true;
+            for (const poly of stuecke)
+                for (let k = 1; k + 1 < poly.length; k++) {
+                    nI.push(ecke(poly[0]), ecke(poly[k]), ecke(poly[k + 1]));
+                    if (nT) nT.push(T[t / 3]);
+                }
+        }
+        if (!fiel) return false;
+        I.length = 0;
+        for (let k = 0; k < nI.length; k++) I.push(nI[k]);
+        if (nT) {
+            T.length = 0;
+            for (let k = 0; k < nT.length; k++) T.push(nT[k]);
+        }
+        return true;
     }
     // DIE WAND DES ERDBAUS (K66, Augen-Runde 15.10.: die Stufen des Dorfs trugen den Wiesen-Stoff als Flecken auf steilen
     // Flächen): das Gewicht 0 … 1, mit dem der Punkt (x, y, z) eines Boden-Netzes der Lage L (ny das y seiner Normale) an der
@@ -3465,6 +3672,9 @@
         erdbauY: erdbauY,
         erdbauFlaeche: erdbauFlaeche,
         erdbauWand: erdbauWand,
+        erdbauGrund: erdbauGrund,
+        erdbauHohl: erdbauHohl,
+        erdbauSchnitt: erdbauSchnitt,
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,

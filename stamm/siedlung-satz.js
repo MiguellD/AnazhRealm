@@ -1487,7 +1487,7 @@ class AnazhRealm_siedlung_satz {
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
-        const rand = Math.max(AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        const rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1537,7 +1537,11 @@ class AnazhRealm_siedlung_satz {
                 this._wegeStufeMalen(stufe);
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
+            } else if (stufe.grundNeu) {
+                // ein Haus legte seinen Grund (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
+                this._wegeStufeMalen(stufe);
             }
+            stufe.grundNeu = false;
             if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
             // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
@@ -1654,6 +1658,23 @@ class AnazhRealm_siedlung_satz {
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
             for (const f of sd.formen) this._wegeKarteMale(stufe, f);
         }
+        // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes (der Erdbau `grund`, gelaende-core) malt Kanal 0 mit
+        // hartem Rand (ein halber Texel) — der Halm des Boden-Stoffs liest Erde statt Wiese, wo der Grund der Boden ist (der
+        // Turm) und an der Wand; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden ohnehin (`erdbauSchnitt`)
+        const E = this._erdbauLage();
+        if (E && E.gruende)
+            for (const g of E.gruende) {
+                if (Math.abs(g.cx - stufe.mitteX) > h + 64 || Math.abs(g.cz - stufe.mitteZ) > h + 64) continue;
+                for (const b of g.boxen) {
+                    const lx = (b[0] + b[1]) / 2;
+                    const lz = (b[2] + b[3]) / 2;
+                    const ax = g.cx + lx * g.c + lz * g.s;
+                    const az = g.cz - lx * g.s + lz * g.c;
+                    const phi = Math.atan2(g.s, g.c);
+                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
+                    this._wegeKarteMale(stufe, { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, rand: S.texelM / 2 }); // prettier-ignore
+                }
+            }
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
     }
 

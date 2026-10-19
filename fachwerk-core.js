@@ -2162,6 +2162,30 @@
     function huelleKapsel(a, b, r, farbe) {
         return { art: "kapsel", a: _hr3(a), b: _hr3(b), r: _hr(r), farbe: _hr3(farbe), rolle: "sicht" };
     }
+    // DAS GRUND-DATUM (S4): der Grund eines Baus ist sein KÖRPER-SATZ — je Masse, die auf dem Boden steht (Haupthaus, Anbau,
+    // Flügel, Hof-Arm, Turm, Rund), ihre Box haus-lokal [x0, x1, z0, z1, boden] auf dem Hüllen-Raster; boden 1: das Haus
+    // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
+    // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
+    // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), buildInstance (die Hülle), ortPlan (der Erdbau `grund`,
+    // gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
+    // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
+    var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
+    function grundVon(st) {
+        var H = st && st.H;
+        var M = (H && H.masse) || [];
+        var boxen = [];
+        var arten = [];
+        for (var i = 0; i < M.length; i++) {
+            var m = M[i];
+            if (!Object.prototype.hasOwnProperty.call(GRUND_BODEN, m.art) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
+            var boden = GRUND_BODEN[m.art] && !(m.art === "haupt" && m.y0 > 0.05) ? 1 : 0; // das Pfahlhaus (y0 über Grade) steht über dem Grund
+            boxen.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), boden]);
+            arten.push(m.art);
+        }
+        var k = H && H.cellar;
+        return { boxen: boxen, arten: arten, keller: k ? [_hr(k.x0), _hr(k.x1), _hr(k.z0), _hr(k.z1), _hr(k.floorY - 0.12), 0] : null };
+    }
     // Die Massen eines Stufe-0-Baus (`stapelBau`): die des Hauses, beim Turm-Stapel die des Aufsatzes um `off` gehoben.
     // DER KAMIN (die Spitze des Stapels, `H.chimney` — dieselbe Quelle wie B.chimney des Rauchs) gehört zu den Massen: jeder
     // Leser der Massen (Welt, Labor-Dorf, LOD-Sonde, Vertrag) trägt ihn, ohne B.chimney zu kennen.
@@ -3439,6 +3463,7 @@
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
+            grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot und die Hülle tragen es
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
@@ -3614,6 +3639,7 @@
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
+            geoms.__grund = grundVon(st); // das Grund-Datum (S4, ≡ massBau): die Hülle trägt es
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -3644,6 +3670,7 @@
             B.fragStufe = undefined;
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
+            geoms.__grund = B.grund;
         }
         return geoms;
     }
@@ -3721,6 +3748,9 @@
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
         }
+        // DAS GRUND-DATUM REIST MIT DER HÜLLE (S4, additiv, must-ignore): der Körper-Satz und der Keller (`grundVon`) — das
+        // gesetzte Haus (ohne Ort) legt daraus seinen Erdbau (`_hausGrundSetzen`)
+        if (g.userData.__huelle && gm.__grund) g.userData.__huelle.grund = gm.__grund;
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
         if (gm.__fern) {
@@ -5443,6 +5473,9 @@
                 // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
                 // null wenn massBau kein chimney (ROUND/modern/kuppel).
                 chimney: kaminSpitze(Bs[i].chimney),
+                // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
+                // legt daraus den Erdbau `grund` (gelaende-core)
+                grund: Bs[i].grund,
             });
         }
         return {
@@ -5876,6 +5909,7 @@
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
+            // DIE PLATTE DES HAUSES (K10): seine obb mit Saum — der ganze Umriss (Dach, Treppe, Vordach) steht auf EINER Höhe
             if (ob)
                 hausPlatten.push({
                     art: "platte",
@@ -5886,6 +5920,31 @@
                     ez: r6(ob.ez + O.saumM),
                     y: y,
                 });
+            // DER GRUND DES HAUSES (S4): die Platten aus ALLEN Boxen seines Körper-Satzes samt Keller (`grundVon` im Slot), im
+            // Rahmen des Hauses, auf derselben Höhe — der Erdbau `grund` (gelaende-core) schneidet den gezeichneten Boden, wo das
+            // Haus seinen Boden zeichnet, hält den Keller hohl und nennt der Wiese den Grund; die Höhe trägt er unter der obb nur
+            // mit (ein gesetztes Haus ohne obb trägt sie allein)
+            var gd = sl.grund && sl.grund.boxen && sl.grund.boxen.length ? sl.grund : null;
+            if (gd) {
+                var gex = 0;
+                var gez = 0;
+                for (k = 0; k < gd.boxen.length; k++) {
+                    gex = Math.max(gex, Math.abs(gd.boxen[k][0]), Math.abs(gd.boxen[k][1]));
+                    gez = Math.max(gez, Math.abs(gd.boxen[k][2]), Math.abs(gd.boxen[k][3]));
+                }
+                hausPlatten.push({
+                    art: "grund",
+                    cx: r6(ox + sl.x),
+                    cz: r6(oz + sl.z),
+                    phi: r6(sl.phi || 0),
+                    ex: r6(gex + O.saumM),
+                    ez: r6(gez + O.saumM),
+                    saum: O.saumM,
+                    y: y,
+                    boxen: gd.boxen,
+                    keller: gd.keller || null,
+                });
+            }
             if (hatTuer(sl) && isFinite(tu.w)) {
                 var ein = eingang(sl);
                 // DER VORPLATZ REICHT BIS ZUR GASSE (K10-6): beginnt die Fläche, deren Höhe das Haus trägt, erst hinter dem
@@ -6105,6 +6164,7 @@
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
         massBau: massBau,
+        grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,

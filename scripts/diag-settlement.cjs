@@ -84,10 +84,11 @@ function fingerprint(plan) {
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
 // (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
 // ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
-//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte), Median und Maximum;
+//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte; nie im hohlen Keller `grund.keller`, S4), Median
+//   und Maximum;
 //   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
-//   |Δh| ≤ STUFE, nie durch eine Wand) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
+//   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
 function ortUrteil(v2, hoehe, o) {
     o = o || {};
     const STUFE = o.stufeM || 0.4;
@@ -102,6 +103,12 @@ function ortUrteil(v2, hoehe, o) {
         const dz = z - b.cz;
         return Math.abs(dx * c - dz * s) <= b.ex + m && Math.abs(dx * s + dz * c) <= b.ez + m;
     };
+    const imKeller = (sl, x, z) => {
+        const K = sl.grund && sl.grund.keller; // der Raum des Grund-Datums im Rahmen des Hauses (plan-lokal)
+        const [c, s] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0)];
+        const [u, v] = [(x - sl.x) * c - (z - sl.z) * s, (x - sl.x) * s + (z - sl.z) * c];
+        return !!K && u >= K[0] && u <= K[1] && v >= K[2] && v <= K[3];
+    };
     const sockel = [];
     for (const sl of v2.slots) {
         const ob = sl.obb;
@@ -113,6 +120,7 @@ function ortUrteil(v2, hoehe, o) {
             for (let j = 0; j <= 8; j++) {
                 const lx = ob.ex * (i / 4 - 1);
                 const lz = ob.ez * (j / 4 - 1);
+                if (imKeller(sl, ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) continue;
                 mn = Math.min(mn, hoehe(ox + ob.cx + lx * c + lz * s, oz + ob.cz - lx * s + lz * c));
             }
         sockel.push(Math.max(0, sl.y - mn));
@@ -135,7 +143,7 @@ function ortUrteil(v2, hoehe, o) {
         if (z) return z;
         const x = i * G;
         const zz = j * G;
-        let zu = false;
+        let zu = v2.slots.some((sl) => imKeller(sl, x, zz));
         for (const b of waende)
             if (imRecht(b, x, zz, -0.1)) {
                 zu = true;
@@ -2098,6 +2106,7 @@ const FIXTURES = [
                             rolle: sl.rolle,
                             tuer: sl.tuer,
                             obb: ob,
+                            grund: sl.grund || null,
                         });
                     }
                     const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };

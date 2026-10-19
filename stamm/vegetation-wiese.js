@@ -51,6 +51,8 @@ class AnazhRealm_vegetation_wiese {
             AnazhRealm.Gesetz("terrain:groundCover", null) || AnazhRealm._kernPflichtBruch("terrain:groundCover");
         const WT = AnazhRealm.Gesetz("terrain:wiesenTint", null) || AnazhRealm._kernPflichtBruch("terrain:wiesenTint");
         const out = [];
+        const Gb = globalThis.__gelaendeCore;
+        const E = this._erdbauLage();
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
                 let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
@@ -83,8 +85,11 @@ class AnazhRealm_vegetation_wiese {
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
                 const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen;
                 if (wurf >= p) continue;
+                const sb = sk * (m > 0.8 ? 1.45 : 1);
+                // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
+                if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
-                out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung, f });
+                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f });
             }
         }
         // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).

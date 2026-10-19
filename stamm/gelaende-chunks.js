@@ -2040,7 +2040,14 @@ class AnazhRealm_gelaende_chunks {
     // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
     _fieldDensityAt(x, y, z, ctx) {
         const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
-        return base + this._voxelEditDeltaAt(x, y, z);
+        // der Keller ist hohl (S4, `erdbauHohl`) — dieselbe Dichte wie `_terrainDensityAt`
+        return globalThis.__gelaendeCore.erdbauHohl(
+            this._erdbauLage(),
+            x,
+            y,
+            z,
+            base + this._voxelEditDeltaAt(x, y, z)
+        );
     }
 
     _fieldSolid(x, y, z, ctx) {

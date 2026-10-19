@@ -268,8 +268,43 @@ class AnazhRealm_gelaende_kollision {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) {
+            this._hausGrundSetzen(entry, huelle);
             this._grundrissRaeumen(entry);
+        }
+    }
+
+    // DER GRUND DES GESETZTEN HAUSES (S4): ein Haus ohne Ort (gesetzt vom Spieler, der KI, einer Probe) legt seinen Erdbau aus
+    // dem Grund-Datum seiner Hülle (`__huelle.grund`, fachwerk `grundVon`) — derselbe Erdbau `grund` wie ein Haus im Ort
+    // (`ortPlan`), auf der Höhe seines Fußes (Position − 0,5, wie `_erdbauAltOrte`); ein Haus auf dem Erdbau eines Orts trägt
+    // ihn schon. Vorher stand das gesetzte Haus ohne Erdbau: Wiese im Anbau, Erde im Keller.
+    _hausGrundSetzen(entry, huelle) {
+        const gd = huelle && huelle.grund;
+        if (!gd || !Array.isArray(gd.boxen) || !gd.boxen.length || !entry.position) return false;
+        const { x, z } = entry.position;
+        if (!this._ortFrei(x, z, 0.01)) return false;
+        const k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
+        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
+        const boxen = gd.boxen.map((b) => [b[0] * k, b[1] * k, b[2] * k, b[3] * k, b[4]]);
+        let ex = 0;
+        let ez = 0;
+        for (const b of boxen) {
+            ex = Math.max(ex, Math.abs(b[0]), Math.abs(b[1]));
+            ez = Math.max(ez, Math.abs(b[2]), Math.abs(b[3]));
+        }
+        const splat = {
+            art: "grund",
+            cx: x,
+            cz: z,
+            phi: Number.isFinite(entry.rotationY) ? entry.rotationY : 0,
+            ex: ex + saum,
+            ez: ez + saum,
+            saum,
+            y: entry.position.y - 0.5,
+            boxen,
+            keller: gd.keller ? gd.keller.map((v) => v * k) : null,
+        };
+        return this._erdbauSetzen(`haus:${Math.round(x * 100)},${Math.round(z * 100)}`, [splat]);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
