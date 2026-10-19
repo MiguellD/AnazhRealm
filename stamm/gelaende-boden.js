@@ -656,7 +656,12 @@ class AnazhRealm_gelaende_boden {
         const kaesten = splats.map((p) => {
             if (p.art === "trasse") {
                 const w = p.w / 2;
-                return [Math.min(p.x0, p.x1) - w, Math.max(p.x0, p.x1) + w, Math.min(p.z0, p.z1) - w, Math.max(p.z0, p.z1) + w];
+                return [
+                    Math.min(p.x0, p.x1) - w,
+                    Math.max(p.x0, p.x1) + w,
+                    Math.min(p.z0, p.z1) - w,
+                    Math.max(p.z0, p.z1) + w,
+                ];
             }
             const [c, s] = [Math.abs(Math.cos(p.phi || 0)), Math.abs(Math.sin(p.phi || 0))];
             const [hx, hz] = [p.ex * c + p.ez * s, p.ex * s + p.ez * c];
