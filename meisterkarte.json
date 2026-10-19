@@ -256,6 +256,12 @@
       "kopf": "ffa8fac8",
       "summe": 28,
       "was": "S6 Rudel-Verband (Tiere K1 0→1: Zusammenhalt gemessen gehalten, Ausrichtung/Alarm/ID offen); Garage isoliert auf r184 (Studios K1 bleibt 0: 3 von 11 Seiten)"
+    },
+    {
+      "stand": "2026-10-19",
+      "kopf": "47c8b089",
+      "summe": 28,
+      "was": "Ankunfts-Paket B4+B5: Radeon kalt 7,89 -> 6,3-6,9 s (Ankunft K1 bleibt 0: Soll <= 5 s)"
     }
   ]
 }
