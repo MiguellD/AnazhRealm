@@ -1762,6 +1762,13 @@ class AnazhRealm_koerper_bewegung {
                 const tz = bz + sz;
                 camX += sx;
                 camZ += sz;
+                // der Übergang des Rigs gleitet den WUNSCH (`_kamGleiten`): Wurf und Arm unten halten die gleitende Kamera vor
+                // jedem Bau (gate:kamera-leib K2 — glitt die fertige Lage, stand sie nach dem Aufstieg im Haus neben dem Wagen)
+                const gw = this._kamGleiten(
+                    (this._kamP || (this._kamP = new THREE.Vector3())).set(camX, camY, camZ),
+                    currentTime
+                );
+                [camX, camY, camZ] = [gw.x, gw.y, gw.z];
                 // DER GLEITENDE ARM: ein Hindernis zieht die Kamera sofort heran (sie steht nie in Boden oder Bau), frei
                 // fährt sie gleitend hinaus — der Rest 1 − Ruhe^dt je Bild, im Ritt die Ruhe des Kern-Gesetzes
                 // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß `fx.bewegung.kamera.armRuhe`.
@@ -1778,12 +1785,9 @@ class AnazhRealm_koerper_bewegung {
                     arm += (t - arm) * (1 - Math.pow(ruhe, armDt));
                 }
                 this.state._kamArm = arm;
-                const kp = (this._kamP || (this._kamP = new THREE.Vector3())).set(
-                    tx + (camX - tx) * arm,
-                    ty + (camY - ty) * arm,
-                    tz + (camZ - tz) * arm
-                );
-                const { x: kx, y: ky, z: kz } = this._kamGleiten(kp, currentTime);
+                const kx = tx + (camX - tx) * arm;
+                const kz = tz + (camZ - tz) * arm;
+                const ky = ty + (camY - ty) * arm;
                 camera.position.set(kx, Math.max(ky, boden(kx, kz, ky)), kz);
                 camera.lookAt(tx, ty, tz);
                 const KD = AnazhRealm.KAMERA_DURCHSICHT;
