@@ -429,12 +429,15 @@ async function probeLeben(expected) {
                     sicht("third", false, true, 70);
                     bahnWache = null;
                     tasten(false);
-                    r.dismountArchitecture();
-                    e.rotationY += 1;
-                    r.mountArchitecture(e);
-                    for (let j = 0, s0; j < 8 && w.wiederauf == null; j++)
-                        if (((s0 = st._fixedSimTime), frame(i++), st._fixedSimTime === s0))
-                            w.wiederauf = wink(e.rotationY - r._rittGier(e, e._rideYaw));
+                    // das ERSTE Bild nach dem Aufstieg (1 ms, ohne Sim-Schritt; trug es doch einen, steigt er neu auf)
+                    for (let j = 0, s0; j < 3 && w.wiederauf == null; j++) {
+                        r.dismountArchitecture();
+                        e.rotationY += 1;
+                        r.mountArchitecture(e);
+                        [s0, tMs] = [st._fixedSimTime, tMs + 1];
+                        r._gameLoopTick(tMs);
+                        if (st._fixedSimTime === s0) w.wiederauf = wink(e.rotationY - r._rittGier(e, e._rideYaw));
+                    }
                     weg(e);
                 }
             } finally {

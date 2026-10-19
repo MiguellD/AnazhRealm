@@ -137,7 +137,8 @@ function wechselVerdict(m) {
     if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
         out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
     if (!(m.third > 0 && m.gesetz >= m.third)) out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
-    if (!(Number.isFinite(m.wiederauf) && m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
+    if (!Number.isFinite(m.wiederauf)) out.push("wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)");
+    else if (!(m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
     return out;
 }
 
@@ -1664,6 +1665,7 @@ function quellenAbgriff() {
             ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],
             ["die Chase-Cam liest kein Kern-Gesetz", { gesetz: 0 }, "gesetz"],
             ["der Wiederaufstieg zeigt die alte Gier (57°)", { wiederauf: 57 }, "wiederaufstieg"],
+            ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ]) {
             const v = wechselVerdict(Object.assign({}, wechsel, bruch));
