@@ -753,8 +753,7 @@ class AnazhRealm_koerper_fahrt {
         entry._fahrBodenFn = null;
         entry._fahrHuelleKette = null; // die Hülle als Körper (Q5) — je Aufstieg frisch aus dem Gesetz
         entry._rideHeave = 0; // frischer Squat-Zustand je Aufstieg
-        entry._kamYaw = null; // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen
-        entry._kamT = 0;
+        // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen: das neue Rig der Kamera beginnt frei (`_loopCamera`)
         // Der SITZ-Punkt des Bauplans (expliziter sitz-Punkt oder oberste flache Fläche) bestimmt, wo der
         // Charakter sitzt; am Entry gecacht, _tickMountedMovement liest ihn.
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
@@ -770,6 +769,9 @@ class AnazhRealm_koerper_fahrt {
         entry._fahrAchseX = !!(fzgM && fzgM.drive && fzgM.drive.huelle);
         entry._rideYaw =
             (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + (entry._fahrAchseX ? Math.PI / 2 : 0);
+        // ...und die Gier im Bild beginnt ohne Schweif (wie die Lage nach einem Teleport): das erste Bild ohne Sim-Schritt
+        // zeichnete sonst zwischen der Gier der letzten Fahrt und dieser (Spielgang 18.10., der Wiederaufstieg nach einem Stoß)
+        entry._gierVor = entry._rideYaw;
         if (fzgSitz && Number.isFinite(fzgSitz.y)) {
             entry._sitzHeight = Math.max(0.45, fzgSitz.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
         } else if (bp) {
@@ -1348,6 +1350,20 @@ class AnazhRealm_koerper_fahrt {
         this._blockerBewegt(entry);
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         entry.position.y = pm.y + 0.5 - sitz - (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
+        // DIE GIER IM BILD wie die Lage (F1): zwischen den zwei jüngsten Sim-Zuständen um den Rest des Akkumulators — die
+        // Sim-Gier stand je Bild um 0, 1 oder 2 Schritte weiter, der Wagen drehte im Bild ruckweise (Spielgang, Radeon, Kreis
+        // 3 m/s: Ruck der Kamera gegen den Wagen p95 0,10 m je Bild). Die Chase-Cam liest den gezeichneten Wagen. Ein Aufruf
+        // ohne Bild (eine Linse treibt den Ritt von Hand) zeichnet die Sim-Gier.
+        const a = this.state._bildAlpha;
+        this.state._bildAlpha = null;
+        const [g0, g1] = [entry._gierVor, entry._rideYaw];
+        if (Number.isFinite(g1))
+            entry.rotationY = this._rittGier(
+                entry,
+                Number.isFinite(a) && Number.isFinite(g0)
+                    ? g0 + Math.atan2(Math.sin(g1 - g0), Math.cos(g1 - g0)) * a
+                    : g1
+            );
         const v = this.state.playerVel;
         const sp = v ? Math.hypot(v.x(), v.z()) : 0;
         const fahrtGate = AnazhRealm._fahrGesetz().he.fahrtGate;
@@ -1774,8 +1790,7 @@ class AnazhRealm_koerper_fahrt {
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
-        this._tickMountedMovement(dt);
-        this._fahrAnzeige();
+        this._fahrAnzeige(); // der Ritt im Bild läuft vor der Kamera (`_tickMountedMovement`, startEternalLoop)
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
@@ -2219,7 +2234,7 @@ AnazhRealm._fahrSchrittGesetz = function () {
     const S = vc && vc.FAHR && vc.FAHR.schritt;
     if (
         S &&
-        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
+        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand", "chaseKamera"].every(
             (f) => typeof vc[f] === "function"
         ) &&
         ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>

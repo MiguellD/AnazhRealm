@@ -3040,6 +3040,39 @@
         const ok = grenze > 0 && neigung <= grenze;
         return { ok: ok, grund: ok ? null : "steil", eb: eb, neigung: neigung, grenze: grenze };
     }
+    // F1 (18.10., rein additiv — Praezedenz: kamera) — DIE CHASE-CAM ALS GESETZ: Azimut und Elevation der Kamera hinter dem
+    // Wagen, EINE Funktion fuer die Probefahrt (updateChaseCam) UND den Welt-Ritt (_loopCamera). Vorher zwei Kopien, die
+    // auseinanderliefen: das Lab federte einstufig auf FAHR.kamera.el zur WELT, die Welt zweistufig zur Fahrbahn (bergab stand
+    // die Welt-Elevation unter dem Hang hinter dem Wagen — Befund des Schoepfers 17.10., Spielgang p05 −3,3° ueber der Fahrbahn).
+    //   chaseKamera(c, gier, steig, dt, K) — c der Zustand {az, el, elF}: ohne az (frisch) oder dt <= 0 springt die Kamera
+    //     hinter den Wagen; gier die Fahrt-Gier (Konvention fahrZustand: der Bug +x nach (cos, −sin)), nicht-finit = sie folgt
+    //     nicht (das Lab, solange die Maus sie greift); steig die Steigung des Kerns (Bug hoeher > 0); K = FAHR.kamera bzw.
+    //     fahrprofil.kamera. Der Azimut folgt der Gier mit dem Rest 1 − azEase^dt; die Elevation steht K.el ueber der FAHRBAHN
+    //     (zur Welt K.el − steig) und folgt ihr als Feder mit Daempfer, zwei Stufen mit dem Rest 1 − elEase^dt (die Ebene der
+    //     Raeder springt je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter).
+    //     → der Ort der Kamera um die Lage des Wagens {x, y, z} (y traegt K.blickHoehe). REIN + THREE-frei.
+    function chaseKamera(c, gier, steig, dt, K) {
+        K = K || FAHR.kamera;
+        const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
+        if (Number.isFinite(gier)) {
+            if (!Number.isFinite(c.az) || !(dt > 0)) {
+                c.az = gier;
+                c.el = c.elF = elZ;
+            } else {
+                let d = gier - c.az;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                c.az += d * (1 - Math.pow(K.azEase, dt));
+                const k = 1 - Math.pow(K.elEase, dt);
+                if (!Number.isFinite(c.el)) c.el = elZ;
+                if (!Number.isFinite(c.elF)) c.elF = c.el;
+                c.elF += (elZ - c.elF) * k;
+                c.el += (c.elF - c.el) * k;
+            }
+        }
+        const ce = Math.cos(c.el);
+        return { x: -Math.cos(c.az) * ce * K.dist, y: K.blickHoehe + Math.sin(c.el) * K.dist, z: Math.sin(c.az) * ce * K.dist };
+    }
 
     const PARAMS = [
         {
@@ -3468,6 +3501,8 @@
         fahrStand: fahrStand,
         fahrKraefte: fahrKraefte,
         fahrSchritt: fahrSchritt,
+        // F1 (rein additiv) — die EINE Chase-Cam (Probefahrt UND Welt-Ritt)
+        chaseKamera: chaseKamera,
         // SCHAU 2 (rein additiv) — der Platz eines Wagens, den die Welt hinstellt (FAHR.platz)
         fahrPlatz: fahrPlatz,
         fahrPlatzGrenze: fahrPlatzGrenze,

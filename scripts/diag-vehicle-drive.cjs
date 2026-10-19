@@ -17,22 +17,19 @@
 //         Werten (die Formel reiste unverfaelscht durch Worker + Ingest).
 //     B-c _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (=== exportDrive);
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
-//         gefallen) wird an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen
-//         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
-//         byte-gleich gegen die emergente Formel nachgerechnet; floats ist beim
-//         Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10:
-//         exportDrive.huelle.dichte — bis 8f09227d schwamm der GT mit dem Spender).
+//         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
+//         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
 //   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
-//     die Instanz-Matrix (der EINE _archInstanceUpdate-Weg) + die Blocker (_populate-
-//     BlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot) die neue
-//     Position tragen; _archInstanceUpdate liest die EINE Flat-Quelle (Zähl-Spion: die
+//     die Blocker (_populateBlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot)
+//     die neue Position tragen (dass JEDE zeichnende Stufe in jedem Bild mitfährt, misst
+//     gate:fahr-leben T4 im echten Ritt); _archInstanceUpdate liest die EINE Flat-Quelle (Zähl-Spion: die
 //     Foundry-Gestalt, ohne Foundry der Bauplan), und der Kapsel-Chokepoint stößt den
 //     Reiter nie an sein eigenes Gefährt (am Lauf, mit und ohne dessen Boxen).
 //   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
 //     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert;
-//     (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
+//     (3) B2: „Eintrag bleibt stehen" → die Fahr-
 //     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -73,8 +70,6 @@ function driveVerdict(d) {
     if (!d || d.mounted !== true) out.push("mount");
     if (!d || !(d.dist > 1)) out.push("dist<=1m"); // die stehende Probe: > 1 m nach N Fahr-Ticks
     if (!d || d.seated !== true) out.push("seat"); // der Spieler sitzt darauf
-    if (!d || !Number.isFinite(d.visDX) || !Number.isFinite(d.visDZ) || d.visDX > 0.05 || d.visDZ > 0.05)
-        out.push("visual"); // Instanz-Matrix/Mesh zieht mit (die B2-Wurzel)
     if (!d || !Number.isFinite(d.blockerMax) || d.blockerMax > 8) out.push("blocker");
     if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
     if (!d || d.flatFoundry !== true || d.flatBauplan !== true) out.push("flat"); // die EINE Flat-Quelle der Instanz
@@ -87,17 +82,9 @@ function driveVerdict(d) {
     return out;
 }
 
-// ── B-e (W5 Gegenstände, 05.10.) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die
-// vier benannten Täter des Welt-Ritts, je eine Zahl:
-//   achse   ≤ 10°   — der Wagen fährt in seine Bug-Richtung (vorher 90°: das längs-x-Template drehte mit der
-//                     Fahrt-Gier, der GT fuhr quer)
-//   kontakt ≤ 0,12 m — die Räder stehen auf dem Boden (vorher 0,48 m darunter: die −0,5-Basis der Instanz-Matrix
-//                     fehlte im Ritt; am Hang dazu halbe Länge × Steigung aus max() + Nick)
-//   lenk    ≤ 1,8 g — die Quer-Kinematik v·ω bleibt in der Reifen-Grenze (vorher 3–5 g: die Lastverlagerung las die
-//                     Rotationskopplung als Bremsen, der Wagen drehte sich auf)
-//   schwimm ≤ 40°   — im vollen Einschlag läuft der Wagen nicht quer (größter Schwimmwinkel Bug-Achse ↔ Fahrt: die
-//                     Probefahrt des Labors schwingt auf der Ebene bis 14,5°, am Hang der Gate-Strecke 30°; der
-//                     aufdrehende Wagen stand mit 88° quer)
+// ── B-e (W5) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test), je Täter des Welt-Ritts eine Zahl:
+//   achse ≤ 10° der Wagen fährt in seine Bug-Richtung · kontakt ≤ 0,12 m die Räder stehen auf dem Boden · lenk ≤ 1,8 g
+//   die Quer-Kinematik v·ω bleibt in der Reifen-Grenze · schwimm ≤ 40° im vollen Einschlag läuft er nicht quer.
 const FAHR_GEFUEHL = { achseGrad: 10, kontaktM: 0.12, lenkSpitzeG: 1.8, schwimmGrad: 40 };
 function fahrGefuehlVerdict(g) {
     const out = [];
@@ -109,12 +96,9 @@ function fahrGefuehlVerdict(g) {
     return out;
 }
 
-// ── B-f (W5 Gegenstände, 05.10.) — DAS STAND-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Ein geparkter
-// Wagen steht, wie er fährt: auf der Ebene seiner vier Räder (`_fahrzeugStand` beim Spawn). Vorher stand er waagrecht
-// auf dem Boden unter seinem Ursprung — an der Mess-Wiese hob er am 20-%-Hang ein Rad 0,49 m (längs) bis 0,76 m (quer)
-// aus dem Boden oder versenkte es. Gemessen an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz:
-//   spalt ≤ 0,12 m — der größte |Rad-Spalt| über alle Hang-Proben (dieselbe Schwelle wie der Ritt-Kontakt)
-//   proben ≥ 4     — die Probe fand Hänge (längs UND quer geparkt), sonst ist sie leer
+// ── B-f (W5) — DAS STAND-VERDIKT: ein geparkter Wagen steht auf der Ebene seiner vier Räder (`_fahrzeugStand`), gemessen
+// an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz: spalt ≤ 0,12 m (der größte |Rad-Spalt|
+// über alle Hang-Proben), proben ≥ 4 (längs UND quer geparkt, sonst leer).
 const STAND = { spaltM: 0.12, probenMin: 4 };
 function standVerdict(s) {
     const out = [];
@@ -181,8 +165,6 @@ function staticLaws(garage) {
             mounted: true,
             dist: 14.4,
             seated: true,
-            visDX: 0.001,
-            visDZ: 0.001,
             blockerMax: 2.1,
             riderSkip: true,
             flatFoundry: true,
@@ -201,10 +183,6 @@ function staticLaws(garage) {
         check(
             "Selbst-Test 5 (B2): ‚der Eintrag bleibt stehen' → die Fahr-Linse feuert",
             driveVerdict(Object.assign({}, healthy, { dist: 0.0, snapDist: 0.0 })).length >= 1
-        );
-        check(
-            "Selbst-Test 6 (B2): ‚die Instanz-Matrix klebt am Spawn' → die Fahr-Linse feuert",
-            driveVerdict(Object.assign({}, healthy, { visDX: 14.4 })).length >= 1
         );
         // V6 (B-e, W5): das FAHR-GEFÜHL-Verdikt feuert auf jeden der vier gemessenen Täter des Vor-Stands.
         const gesund = { spawned: true, achseGrad: 2.1, kontaktM: 0.03, lenkSpitzeG: 1.45, schwimmGrad: 6 };
@@ -456,20 +434,6 @@ function staticLaws(garage) {
                     r.state.player.mountedArch === entry.id &&
                     Number.isFinite(entry._sitzHeight) &&
                     Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.06;
-                // Das VISUAL zieht mit (die B2-Wurzel: die Instanz-Matrix blieb am Spawn stehen).
-                if (entry.instanced && entry.instSlots && entry.instSlots.length) {
-                    const sl = entry.instSlots[0];
-                    const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(sl.key);
-                    if (g && g.mesh && typeof g.mesh.getMatrixAt === "function") {
-                        const mm = new THREE.Matrix4();
-                        g.mesh.getMatrixAt(sl.slot, mm);
-                        res.drive.visDX = Math.abs(mm.elements[12] - entry.position.x);
-                        res.drive.visDZ = Math.abs(mm.elements[14] - entry.position.z);
-                    }
-                } else if (entry.mesh) {
-                    res.drive.visDX = Math.abs(entry.mesh.position.x - entry.position.x);
-                    res.drive.visDZ = Math.abs(entry.mesh.position.z - entry.position.z);
-                }
                 // Blocker folgen (max. Zentrums-Abstand aller Boxen zur neuen Position) +
                 // blocken den eigenen Reiter nie (der riddenId-Skip im Kapsel-Chokepoint).
                 if (entry.blockerAABBs) {
@@ -766,11 +730,11 @@ function staticLaws(garage) {
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const dv = driveVerdict(out.drive);
     check(
-        "B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Spieler sitzt darauf · Instanz-Matrix + Blocker ziehen mit · Snapshot traegt es",
+        "B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Spieler sitzt darauf · Blocker ziehen mit · Snapshot traegt es",
         dv.length === 0,
         out.driveErr ||
             (out.drive
-                ? `kind=${out.drive.visualKind} dist=${(out.drive.dist || 0).toFixed(2)}m vis=${out.drive.visDX}${dv.length ? " fehlt:" + dv.join(",") : ""}`
+                ? `kind=${out.drive.visualKind} dist=${(out.drive.dist || 0).toFixed(2)}m${dv.length ? " fehlt:" + dv.join(",") : ""}`
                 : "keine Probe")
     );
     // B-e (W5): das Fahr-Gefühl im echten Bewegungs-Pfad — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).

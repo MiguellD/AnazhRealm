@@ -1612,29 +1612,52 @@ class AnazhRealm_koerper_bewegung {
             // wirft weiter in den Kaskaden; die Regel wohnt in _applyEgoSicht (EINE Quelle, der Ebenen-Schalter).
             player.visible = !(_fahrRitt && _fahrRitt.kabine);
             this._applyEgoSicht();
+            // DAS GEDÄCHTNIS DER KAMERA lebt mit ihrem RIG (Sicht × gerittenes Werk): der Arm der 3rd-Kamera, Azimut und Elevation der
+            // Chase-Cam und ihre Uhr gelten nur dem Rig, das sie schrieb — jeder Wechsel (Ego ↔ Third, Auf- und Abstieg, ein
+            // anderes Werk) beginnt frei. Befund des Schöpfers 17.10.: der Azimut lebte am Werk und nur der Third-Zweig schrieb
+            // ihn, zurückgesetzt nur beim Aufstieg — nach einer Fahrt in Ego begann Third aus der alten Richtung (Spielgang,
+            // Null-Renderer: 18° und 20° neben der Gier nach 10 Bildern, die Gier drehte in Ego 73° und 83°).
+            const rig = `${this.state.cameraMode}:${_fahrRitt ? _fahrRitt.ent.id : ""}`;
+            if (this.state._kamRig !== rig) {
+                this.state._kamRig = rig;
+                this.state._kamArm = this.state._kamChase = this.state._kamT = undefined;
+            }
             if (this.state.cameraMode === "third") {
+                // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
+                const kamT = this.state._kamT;
+                this.state._kamT = currentTime;
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
-                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: hinter dem Wagen (Kern-Azimut-Ease auf die Gier,
-                // feste Kern-Elevation/-Distanz, Blick auf blickHoehe); Boden-Clamp + Kollision unten gelten gleich.
+                // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: das EINE Gesetz des Kerns (`chaseKamera`, die Probefahrt der Garage
+                // liest es auch) — hinter dem Wagen, Azimut-Ease auf die Gier, Elevation über der Fahrbahn, feste Distanz; Boden-Clamp
+                // + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
                     const K = _fahrRitt.kam;
-                    const yawF = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
-                    let az = Number.isFinite(ent._kamYaw) ? ent._kamYaw : yawF;
-                    let d = yawF - az;
-                    while (d > Math.PI) d -= 2 * Math.PI;
-                    while (d < -Math.PI) d += 2 * Math.PI;
-                    const kDt = Math.min(0.1, Math.max(0.001, currentTime - (ent._kamT || currentTime)));
-                    ent._kamT = currentTime;
-                    az += d * (1 - Math.pow(K.azEase, kDt));
-                    ent._kamYaw = az;
-                    const ce = Math.cos(K.el);
-                    const se = Math.sin(K.el);
-                    camX = ent.position.x - Math.sin(az) * ce * K.dist;
-                    camZ = ent.position.z - Math.cos(az) * ce * K.dist;
-                    camY = ent.position.y + K.blickHoehe + se * K.dist;
+                    // die Gier des GEZEICHNETEN Wagens (`_tickMountedMovement` lief davor): Lage und Gier aus EINER Bild-Lage
+                    const yawF = Number.isFinite(ent.rotationY)
+                        ? ent.rotationY + (ent._fahrAchseX ? Math.PI / 2 : 0)
+                        : Number.isFinite(ent._rideYaw)
+                          ? ent._rideYaw
+                          : this.state.yaw;
+                    // DIE ELEVATION ZUR FAHRBAHN (F1, Befund des Schöpfers 17.10.: „am Steilhang bergab folgt die Kamera komisch"):
+                    // der Arm steht `el` über der Ebene der Räder (die Steigung des Kerns `steig`), nie über der Welt — bergab stand
+                    // die Welt-Elevation unter dem Hang hinter dem Wagen, der Boden-Deckel schob die Kamera über jede Welle
+                    // (Spielgang, Null-Renderer, Hang 0,49: p05 4,7° UNTER der Fahrbahn, Ruck p95 0,31 m je Bild); die Feder mit
+                    // Dämpfer (zwei Stufen) trägt der Kern. Gier des Kerns = Fahrt − π/2 (Studio-Wagen: Bug +x).
+                    const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
+                    const c = (this.state._kamChase = this.state._kamChase || {});
+                    const v = AnazhRealm._fahrSchrittGesetz().vc.chaseKamera(
+                        c,
+                        yawF - Math.PI / 2,
+                        ent._fahr ? ent._fahr.steig : 0,
+                        kDt,
+                        K
+                    );
+                    camX = ent.position.x + v.x;
+                    camZ = ent.position.z + v.z;
+                    camY = ent.position.y + v.y;
                 } else {
                     const dist = this.state.cameraThirdDistance;
                     const height = this.state.cameraThirdHeight;
@@ -1725,8 +1748,7 @@ class AnazhRealm_koerper_bewegung {
                 // die Feld-Proben je 3rd-Bild.
                 const wurf = this._fieldRaycast(tx, ty, tz, camX, camY, camZ, { durchPflanzen: true, radius: kr });
                 const t = wurf.t;
-                const armDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._kamArmT || currentTime)));
-                this.state._kamArmT = currentTime;
+                const armDt = Math.min(0.1, Math.max(0.0001, currentTime - (kamT || currentTime)));
                 let arm = this.state._kamArm;
                 if (!(arm >= 0) || t <= arm) arm = t;
                 else {
@@ -1807,7 +1829,6 @@ class AnazhRealm_koerper_bewegung {
                     this._egoBlick || (this._egoBlick = {})
                 );
                 camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
-                this.state._kamArm = undefined; // der Arm der 3rd-Kamera beginnt beim Wechsel frei
                 // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, der Strahl des Fadenkreuzes beginnt am Auge; die
                 // Nah-Kugel nimmt Laub und Boden-Streu (KAMERA_DURCHSICHT.ichM — ein Strauch, eine Krone, durch die der Leib
                 // geht), die Rinde, an der der Leib steht, bleibt ganz
