@@ -6,6 +6,7 @@ class AnazhRealm_dirigent_ankunft {
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
         this._ensureAssetFoundry(true); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
+        this._startDorfAmBuch(); // der erste Wartende am Buch: der Export des fälligen Start-Dorfs (B5)
         // Versions-Anzeige (title + .version) aus `AnazhRealm.VERSION` — EIN Wahrheits-Ort, kein
         // hartkodierter String in index.html.
         const versionLabel = `v${AnazhRealm.VERSION}`;
@@ -854,15 +855,13 @@ class AnazhRealm_dirigent_ankunft {
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
     }
-    // DIE KÖPFE DER ANKUNFTS-KETTEN gehen mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
+    // DER KOPF DER ANKUNFTS-KETTE geht mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
     // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
-    // zwölf Bäumen) und der Export des fälligen Start-Dorfs (`_startDorfBestellen` — bis B5 bestellte ihn der Takt im Leerlauf
-    // des Streamings, GTX kalt 1,7 s nach dem Buch). Die Reihe ist die Bestell-Reihe: der Leib wartet im Werk hinter dem
-    // Blatt-Atlas, der Export geht in einen Helfer.
+    // zwölf Bäumen); er wartet im Werk hinter dem Blatt-Atlas. Das Start-Dorf ist ein WARTENDER am Buch (`_startDorfAmBuch`,
+    // K22): rief der Ingest seinen Export, schloss die Dorf-Kette über die Ort-Wahl (`_ortPlanWarten`) einen Zeit-Kreis
+    // zurück in den Ingest (gate:v1-pfad W7).
     _buchKoepfe() {
-        const st = this.state;
-        if (st._deferredAvatarSoul) this._ofenSpielerVorlagen();
-        if (st.playerMesh) this._startDorfBestellen(st.playerMesh.position);
+        if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
     }
 
     // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl

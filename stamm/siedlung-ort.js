@@ -1235,7 +1235,7 @@ class AnazhRealm_siedlung_ort {
             f,
             "stl-",
             { type: "export-settlement", dp: dp || {} },
-            this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_buchKoepfe`, die Bahn ohne Arbeit)
+            this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
             45000,
             "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
         );
@@ -2348,8 +2348,8 @@ class AnazhRealm_siedlung_ort {
 
     // DAS START-DORF BESTELLEN (EIN Weg für das Buch und den Takt, B5): ist es fällig, geht sein Export hinaus — nur nahe des
     // Genesis-Orts (kein Fern-Spawn hinter dem Rücken), fail-closed + session-gemerkt (eine Welt ohne Fleck urteilt immer
-    // gleich). Der Kopf der Dorf-Kette geht mit dem Buch (`_buchKoepfe`): Befund B5 (OMEN 18.10., GTX kalt) — der Takt im
-    // Leerlauf des Streamings bestellte ihn 1,7 s nach dem Buch, die Kette (Export 3,4–5,4 s, Ort-Wahl, 33 Häuser) hielt
+    // gleich). Der Kopf der Dorf-Kette wartet auf das Buch (`_startDorfAmBuch`): Befund B5 (OMEN 18.10., GTX kalt) — der Takt
+    // im Leerlauf des Streamings bestellte ihn 1,7 s nach dem Buch, die Kette (Export 3,4–5,4 s, Ort-Wahl, 33 Häuser) hielt
     // „bauten" bis 16,07 s. true = bestellt.
     _startDorfBestellen(p) {
         if (!p || !this._dorfTaktLebt() || this._autoSettlementQueue || this._autoSettlementPendingKey) return false;
@@ -2361,6 +2361,21 @@ class AnazhRealm_siedlung_ort {
         }
         this._autoSettlementSpawnCell(0, 0, si);
         return true;
+    }
+    // DAS START-DORF WARTET AUF DAS BUCH (B5; K22: das Buch ist ein EREIGNIS, der Ingest ruft keinen Leser): EIN Wecker an
+    // `buchDa`, angemeldet mit der Geburt der Foundry (`init`) vor jedem anderen Wartenden — der Export geht als erster Auftrag
+    // nach dem Leib in die Bahn ohne Arbeit (`_foundryRang(0, kopf)`). Den Rest fängt der Takt (`_tickAutoSettlement`).
+    _startDorfAmBuch() {
+        const f = this._foundry;
+        if (!f || !f.buchDa) return;
+        this._foundryWecker(f.buchDa, "start-dorf", () => {
+            const pm = this.state.playerMesh;
+            try {
+                if (pm) this._startDorfBestellen(pm.position);
+            } catch (e) {
+                this._stoffBruch("das Start-Dorf (Export nach dem Buch)", e);
+            }
+        });
     }
 
     _tickAutoSettlement(playerPos) {
@@ -2424,7 +2439,7 @@ class AnazhRealm_siedlung_ort {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
-        // Start-Dorf zuerst (einmalig je Welt) — bestellt schon das Buch (`_startDorfBestellen`), der Takt fängt den Rest
+        // Start-Dorf zuerst (einmalig je Welt) — bestellt schon sein Wecker am Buch (`_startDorfAmBuch`), der Takt fängt den Rest
         if (this._startDorfBestellen(playerPos)) return; // EIN Dorf-Akt pro Tick
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         // ZENSUS 17.07. — DASSELBE Zell-Raster wie die Zell-Wahrheit

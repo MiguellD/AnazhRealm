@@ -212,7 +212,7 @@ class AnazhRealm_studio_bruecke {
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
-        // die Köpfe der Ankunfts-Ketten zuerst (`_buchKoepfe`: der Leib, das Start-Dorf mit seinem Gesetz) — vor jedem Baum
+        // der Kopf der Ankunfts-Kette zuerst (`_buchKoepfe`: der Leib) — vor jedem Baum; das Start-Dorf wartet auf `buchDa`
         this._buchKoepfe();
         // (Die Fracht des EINEN Blatt-Atlas reist nach dem Buch, `_foundryBlattAtlas`.)
         // das Ereignis für jeden, der auf das Buch wartet (`buchDa`); ein Buch ohne Rezepte bricht laut, die Wartenden

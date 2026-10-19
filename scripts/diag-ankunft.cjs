@@ -216,7 +216,7 @@ function ladeschirmVerdict(m) {
         }
         if (K.dorf.ohne) out.push(`das Start-Dorf beim Buch: ${K.dorf.ohne} (Vorbedingung)`);
         else if (K.dorf.export && !K.dorf.kopfRang) out.push("der Export des Start-Dorfs geht ohne Kopf-Rang in die Schlange — hinter ihm wartet jeder Auftrag seiner Bahn (_foundryRang)");
-        else if (!K.dorf.export) out.push(`mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus${K.dorf.kopf ? "" : " (kein `_buchKoepfe`)"} — er wartet auf den Siedlungs-Takt im Leerlauf des Streamings`);
+        else if (!K.dorf.export) out.push(`mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus${K.dorf.kopf ? "" : " (kein Wecker `_startDorfAmBuch` am Buch)"} — er wartet auf den Siedlungs-Takt im Leerlauf des Streamings`);
     }
     return out;
 }
@@ -809,12 +809,12 @@ async function probe(arg) {
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
                     await bis(() => memo.has(key(0)) && k.leib.baut.some((b) => b.startsWith("nach")), 90000, true);
-                    // das Dorf: fällig am Genesis-Ort, das Buch fragt seine Köpfe (`_buchKoepfe`)
+                    // das Dorf: fällig am Genesis-Ort, sein Wecker hing am echten Buch (`_startDorfAmBuch`) — ein frisches Buch weckt ihn
                     if (amOrt && kanal) {
                         const mD = [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue];
                         Object.assign(window, { __anazhAutoSettlement: true }) && Object.assign(wmD, { settlementCells: ohneStart });
                         Object.assign(r, { _autoSettlementStartHopeless: false, _autoSettlementPendingKey: null, _autoSettlementQueue: null, _foundryRequestSettlement: (dp, kopf) => ((k.dorf.export = !!dp), (k.dorf.kopfRang = kopf === true), Promise.resolve(null)) }); // prettier-ignore
-                        if ((k.dorf.kopf = typeof r._buchKoepfe === "function")) r._buchKoepfe();
+                        const [f, hoer] = [r._foundry, r._foundryHoerer && r._foundry && r._foundryHoerer.get(r._foundry.buchDa)]; if ((k.dorf.kopf = !!(hoer && hoer.has("start-dorf")))) { const da = f.buchDa; f.buchDa = Promise.resolve(); r._startDorfAmBuch(); f.buchDa = da; } // prettier-ignore
                         await sleep(0);
                         [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue] = mD; // prettier-ignore
                     } else k.dorf.ohne = m.ohneFall.dorfFaellig;
