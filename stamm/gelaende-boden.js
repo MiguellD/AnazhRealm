@@ -662,8 +662,13 @@ class AnazhRealm_gelaende_boden {
             for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
                 this.state.grassDirtyChunks.add(`${a},${b}`);
         this._remeshVoxelChunksAround(cx, cz, rad);
-        // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): jede Stufe malt beim nächsten Takt neu
-        if (this.state.wegeKarte) for (const st of this.state.wegeKarte.stufen) st.grundNeu = true;
+        // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): die Stufe, deren Fenster er trifft, malt
+        // beim nächsten Takt neu — nur ein Grund mit einer Box, deren Boden der Grund ist, nie jede Platte und Trasse
+        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
+            for (const st of this.state.wegeKarte.stufen) {
+                const h = st.S.fensterM / 2 + R;
+                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h) st.grundNeu = true;
+            }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
@@ -948,6 +953,9 @@ class AnazhRealm_gelaende_boden {
         out.hydroActive = hydroActive;
         out.hydroCarve = hydroCarve;
         out.lake = lake;
+        // DER KELLER DER SPALTE (S4): die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (`erdbauKeller`), sonst null —
+        // EINMAL je Spalte gefragt; das Feld (`_fieldDensityAt`) liest ihn je Probe als einen Blick. Das Gitter liest ihn nie.
+        out.keller = this._kellerLage(x, z);
         return out;
     }
 
@@ -1018,13 +1026,14 @@ class AnazhRealm_gelaende_boden {
         // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
         // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
         // DER KELLER IST HOHL (S4, gelaende-core `erdbauHohl`): das Feld trägt den Raum des Hauses, das Gitter des Netzes nicht
-        return globalThis.__gelaendeCore.erdbauHohl(
-            this._erdbauLage(),
-            x,
-            y,
-            z,
-            this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z)
-        );
+        const d = this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        const K = this._kellerLage(x, z);
+        return K ? globalThis.__gelaendeCore.erdbauHohl(K, x, y, z, d) : d;
+    }
+    // Die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (gelaende-core `erdbauKeller`), sonst null.
+    _kellerLage(x, z) {
+        const E = this._erdbauLage();
+        return E && E.hohl && globalThis.__gelaendeCore.erdbauKeller(E, x, z) ? E : null;
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in

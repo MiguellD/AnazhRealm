@@ -1340,9 +1340,11 @@
         const zellen = new Map();
         // DER GRUND DER HÄUSER (S4, `grund`): je Haus sein Körper-Satz und Keller im Rahmen des Hauses, mit einem eigenen Raster
         // (`grundZellen`: die Zellen, die seine Boxen berühren) — die Leser des Grunds (`erdbauGrund`, `erdbauHohl`,
-        // `erdbauSchnitt`) fragen nur ihre Zelle
+        // `erdbauSchnitt`) fragen nur ihre Zelle; die Keller tragen ein eigenes (`kellerZellen`: nur der Kasten des Raums) — der
+        // Heiß-Pfad des Felds (`erdbauHohl`, je Dichte-Probe) fragt im Dorf nicht jedes Haus
         const gruende = [];
         const grundZellen = new Map();
+        const kellerZellen = new Map();
         let hohl = 0;
         let schnitt = 0;
         const rastern = (karte, x0, x1, z0, z1, i) => {
@@ -1392,7 +1394,15 @@
                     platte(p.cx + lx * c + lz * sn, p.cz - lx * sn + lz * c, c, sn, (b[1] - b[0]) / 2 + p.saum, (b[3] - b[2]) / 2 + p.saum, p.y, false); // prettier-ignore
                     if (b[4]) g.schnitt++;
                 }
-                if (g.keller) hohl++;
+                if (g.keller) {
+                    hohl++;
+                    const K = g.keller;
+                    const [mx, mz] = [(K[0] + K[1]) / 2, (K[2] + K[3]) / 2];
+                    const kx = Math.abs(((K[1] - K[0]) / 2) * c) + Math.abs(((K[3] - K[2]) / 2) * sn);
+                    const kz = Math.abs(((K[1] - K[0]) / 2) * sn) + Math.abs(((K[3] - K[2]) / 2) * c);
+                    const [wx, wz] = [p.cx + mx * c + mz * sn, p.cz - mx * sn + mz * c];
+                    rastern(kellerZellen, wx - kx, wx + kx, wz - kz, wz + kz, gruende.length);
+                }
                 schnitt += g.schnitt;
                 gruende.push(g);
                 const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn);
@@ -1412,7 +1422,7 @@
                 rastern(zellen, Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m, Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m, splats.length - 1); // prettier-ignore
             }
         }
-        return { n: splats.length, splats, zellen, gruende, grundZellen, hohl, schnitt };
+        return { n: splats.length, splats, zellen, gruende, grundZellen, kellerZellen, hohl, schnitt };
     }
     // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`).
     function erdbauY(E, x, z, h) {
@@ -1512,7 +1522,7 @@
     function erdbauHohl(E, x, y, z, d) {
         if (!E || !E.hohl) return d;
         const Z = ERDBAU.zelleM;
-        const liste = E.grundZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        const liste = E.kellerZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
         if (!liste) return d;
         for (let k = 0; k < liste.length; k++) {
             const g = E.gruende[liste[k]];
@@ -1526,6 +1536,22 @@
             if (a < 0 && a < d) d = a; // nur IM Raum: außen bleibt die Dichte des Grunds (die Oberfläche neben dem Keller rückt nicht)
         }
         return d;
+    }
+    // DIE SPALTE ÜBER DEM KELLER (S4): liegt (x, z) im Grundriss eines Kellers? 1 oder 0 — eine Spalte ohne Keller trägt in jeder
+    // Höhe die Dichte des Grunds (`erdbauHohl` ändert dort nichts). Leser: das Feld des Wirts fragt EINMAL je Spalte
+    // (`_fieldDensityAt` mit dem Spalten-Kontext), nie je Probe.
+    function erdbauKeller(E, x, z) {
+        if (!E || !E.hohl) return 0;
+        const Z = ERDBAU.zelleM;
+        const liste = E.kellerZellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        for (let k = 0; liste && k < liste.length; k++) {
+            const g = E.gruende[liste[k]];
+            const K = g.keller;
+            const u = (x - g.cx) * g.c - (z - g.cz) * g.s;
+            const v = (x - g.cx) * g.s + (z - g.cz) * g.c;
+            if (u > K[0] && u < K[1] && v > K[2] && v < K[3]) return 1;
+        }
+        return 0;
     }
     // DER BODEN FÄLLT IM GRUND DES HAUSES (S4): das Netz eines Boden-Chunks (Positionen P [x, y, z …], Index I, je Dreieck T —
     // die Zelle seiner Luft, optional) verliert jede Fläche in einer Box mit boden 1 — exakt an der Wand: ein Dreieck, das die
@@ -3677,6 +3703,7 @@
         erdbauWand: erdbauWand,
         erdbauGrund: erdbauGrund,
         erdbauHohl: erdbauHohl,
+        erdbauKeller: erdbauKeller,
         erdbauSchnitt: erdbauSchnitt,
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,

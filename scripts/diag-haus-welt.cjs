@@ -571,13 +571,14 @@ async function proben(phasen) {
                 const [lx, lz] = [l.x / sc, l.z / sc];
                 return lx > m.x0 + rand && lx < m.x1 - rand && lz > m.z0 + rand && lz < m.z1 - rand;
             };
-            // der Spieler steht im Haupthaus, bis die Hülle und die Boden-Karten um das Haus stehen (mit `--bild`: Stufe 0 und die
+            // der Spieler steht im Haupthaus, bis die Hülle der Stufe 0 (ihre Treppe trägt den Leib in den Keller — ohne sie
+            // stand er in 3 von 8 Läufen auf der Diele, Fuß 0,64 m, oder auf halber Treppe, −1,81 m) und die Boden-Karten um das Haus stehen (mit `--bild` dazu die
             // Nah-Wiese um das Auge — sonst misst der Blick leere Luft)
             const ecken = boxen.flatMap((m) => [welt(e, m.x0 * sc, m.z0 * sc), welt(e, m.x1 * sc, m.z1 * sc), welt(e, m.x0 * sc, m.z1 * sc), welt(e, m.x1 * sc, m.z0 * sc)]); // prettier-ignore
             const [mx0, mx1] = [Math.min(...ecken.map((p) => p.x)), Math.max(...ecken.map((p) => p.x))];
             const [mz0, mz1] = [Math.min(...ecken.map((p) => p.z)), Math.max(...ecken.map((p) => p.z))];
             const kartenDa = () => r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1);
-            const steht = () => e._hausHuelle && kartenDa() && (!BILD || (e._servedLod === 0 && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0)); // prettier-ignore
+            const steht = () => e._hausHuelle && e._servedLod === 0 && kartenDa() && (!BILD || (s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0)); // prettier-ignore
             stell(e.position.x, e.position.y + 1, e.position.z);
             for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
                 await pumpe(5);

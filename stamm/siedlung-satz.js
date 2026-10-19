@@ -1658,14 +1658,16 @@ class AnazhRealm_siedlung_satz {
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
             for (const f of sd.formen) this._wegeKarteMale(stufe, f);
         }
-        // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes (der Erdbau `grund`, gelaende-core) malt Kanal 0 mit
-        // hartem Rand (ein halber Texel) — der Halm des Boden-Stoffs liest Erde statt Wiese, wo der Grund der Boden ist (der
-        // Turm) und an der Wand; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden ohnehin (`erdbauSchnitt`)
+        // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes, deren Boden der Grund ist (boden 0: der Turm, das Rund,
+        // das Pfahlhaus; der Erdbau `grund`, gelaende-core), malt Kanal 0 mit hartem Rand (ein halber Texel) — der Halm des
+        // Boden-Stoffs liest dort Erde statt Wiese; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden (`erdbauSchnitt`),
+        // dort malt keine Box (Radeon kalt: der Neu-Maler 1 → 17 ms, als jede Box malte)
         const E = this._erdbauLage();
         if (E && E.gruende)
             for (const g of E.gruende) {
                 if (Math.abs(g.cx - stufe.mitteX) > h + 64 || Math.abs(g.cz - stufe.mitteZ) > h + 64) continue;
                 for (const b of g.boxen) {
+                    if (b[4]) continue;
                     const lx = (b[0] + b[1]) / 2;
                     const lz = (b[2] + b[3]) / 2;
                     const ax = g.cx + lx * g.c + lz * g.s;
