@@ -356,14 +356,37 @@ async function probeLeben(expected) {
             r.setCameraMode("third");
             const e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
             const ck = VC.chaseKamera;
-            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], gesetz: 0, third: 0 });
+            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], deckung: [], abV: [], abSprung: [], gesetz: 0, third: 0 });
             if (ck) VC.chaseKamera = (...a) => (w.gesetz++, ck(...a));
             const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
             const [gleich, ruck, hoch, spur] = [[], [], [], []];
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
-            let [i, n, q, ausEgo] = [0, 0, [], false];
+            // DIE DECKUNG des Wagens (F1 a): je zeichnender Stufe (Primär + Band, ohne Wurf-Zwilling) der Anteil von 64 Dither-Werten,
+            // den das Blend-Gesetz (`__phytoCore.lodCrossfadeMask`) vom Auge der Maske je Blatt behält, über die Stufen summiert
+            const [LD, maske] = [r.constructor.LOD_DISTANCES, st.foundryCrossfade === true && st.lodMaskOn !== false];
+            const deckung = (lu = st.lodUniforms, auge = lu ? lu.uLodAuge.value : r._lodAuge(), summe = 0) => {
+                const [perf, ref] = lu ? [lu.uLodPerf.value, lu.uLodRef.value] : [r._lodPerfMul(), st.lodRef > 0 ? +st.lodRef : 14];
+                for (const liste of [e.instSlots, e.instSlotsBand]) {
+                    const gs = (liste || []).map((s) => [st.archInstanceGroups.get(s.key), s.slot]).filter(([g]) => g && !g.shadowTwin);
+                    for (const [g, slot] of gs) {
+                        const [at, a, mw] = [g.mesh.geometry.attributes, g.mesh.instanceMatrix.array, g.mesh.matrixWorld.elements];
+                        const [stufe, hL] = [at.aLodLevel ? at.aLodLevel.array[0] : 0, at.aH0L ? at.aH0L.array[slot] : -1];
+                        const d = Math.hypot(a[slot * 16 + 12] + mw[12] - auge.x, a[slot * 16 + 14] + mw[14] - auge.z) * perf;
+                        const k = (h) => d * Math.min(ref / Math.max(Math.abs(h), 1e-3), 1);
+                        let behalten = 64; // ungemaskt oder der Halt (aH0L < 0): voll
+                        for (let j = 0, m, dh; maske && stufe >= 1 && hL >= 0 && j < 64; j++) {
+                            [dh, m] = [(j + 0.5) / 64, { d0: LD.thresh01, d1: LD.thresh12, fade: LD.fade, fade0: LD.fade0 }];
+                            m = globalThis.__phytoCore.lodCrossfadeMask(k(at.aH0.array[slot]), dh, m, stufe - 1, false, k(hL));
+                            if (!(stufe >= 3 ? m.f1o < dh : m.keep)) behalten--;
+                        }
+                        summe += behalten / 64 / gs.length;
+                    }
+                }
+                return Math.min(1, summe);
+            };
+            let [i, n, q, ausEgo, dk] = [0, 0, [], false, []];
             const bild = () => {
                 const v = st.playerVel ? Math.hypot(st.playerVel.x(), st.playerVel.z()) : 0;
                 [st.keys.w, st.keys.s] = [v < 8, v > 11];
@@ -390,13 +413,14 @@ async function probeLeben(expected) {
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
                 if (++w.third && ++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
+                if (ausEgo && n <= 3 && dk.push(deckung()) === 3) w.deckung.push(+Math.min(...dk).toFixed(2));
                 q.push(dx * Math.cos(f) - dz * Math.sin(f));
                 if (n > 15) ruck.push(Math.abs(q[q.length - 1] - 2 * q[q.length - 2] + q[q.length - 3]));
                 const o = V.setFromMatrixColumn(M, 1).normalize();
                 hoch.push((Math.asin((dx * o.x + dy * o.y + dz * o.z) / Math.hypot(dx, dy, dz)) * 180) / Math.PI);
             };
             const sicht = (s, a, d, k) => {
-                [n, q, ausEgo] = [0, [], st.cameraMode === "first"];
+                [n, q, ausEgo, dk] = [0, [], st.cameraMode === "first", []];
                 r.setCameraMode(s);
                 [st.keys.a, st.keys.d] = [a, d];
                 if (s === "third") for (let j = 0; j < k; j++) bild();
@@ -418,6 +442,19 @@ async function probeLeben(expected) {
                     sicht("third", true, false, 70);
                     sicht("first", false, true);
                     sicht("third", false, true, 70);
+                    // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
+                    // Kamera je Bild, 3 Bilder vor bis 30 nach dem Abstieg
+                    for (const s of ["third", "first"]) {
+                        if (s === "first") [r.mountArchitecture(e), r.setCameraMode(s), Object.assign(st.keys, { a: false, d: false, w: true, s: false })];
+                        for (let j = 0; s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5; j++) frame(i++);
+                        const [c, p] = [st.camera.position, st.camera.position.clone()];
+                        let m = 0;
+                        for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
+                            if (j === 3) [w.abV.push(+Math.hypot(st.playerVel.x(), st.playerVel.z()).toFixed(1)), r.dismountArchitecture()];
+                            frame(i++);
+                        }
+                        w.abSprung.push(+m.toFixed(2));
+                    }
                     bahnWache = null;
                     tasten(false);
                     // das ERSTE Bild nach dem Aufstieg (1 ms, ohne Sim-Schritt; trug es doch einen, steigt er neu auf)
