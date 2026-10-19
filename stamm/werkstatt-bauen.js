@@ -788,6 +788,7 @@ class AnazhRealm_werkstatt_bauen {
             const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
             this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
         }
+        this._erdbauGrundFaellt(entry); // und sein Grund (S4): der Boden schließt sich, der Keller füllt sich
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).

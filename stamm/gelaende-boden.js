@@ -616,6 +616,36 @@ class AnazhRealm_gelaende_boden {
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
         const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
         wm.erdbau[key] = splats;
+        this._erdbauWirkt(splats, amWasser);
+        return true;
+    }
+    // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
+    // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
+    // `removeArchitecture` nimmt ihn mit, die Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt`). Die Platte des Orts
+    // (seine Fläche) bleibt. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
+    // ein Loch in der Welt, wo das Haus stand.
+    _erdbauGrundFaellt(entry) {
+        const wm = this.state.worldMeta;
+        const p = entry && entry.position;
+        if (!p || !wm || !wm.erdbau || typeof wm.erdbau !== "object") return false;
+        const sein = (q) => q && q.art === "grund" && Math.abs(q.cx - p.x) < 0.05 && Math.abs(q.cz - p.z) < 0.05;
+        const weg = [];
+        for (const k of Object.keys(wm.erdbau)) {
+            const liste = wm.erdbau[k];
+            if (!Array.isArray(liste) || !liste.some(sein)) continue;
+            for (const q of liste) if (sein(q)) weg.push(q);
+            const rest = liste.filter((q) => !sein(q));
+            if (rest.length) wm.erdbau[k] = rest;
+            else delete wm.erdbau[k];
+        }
+        if (!weg.length) return false;
+        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)));
+        return true;
+    }
+    // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
+    // der Worker, die Chunks, die Wege-Karte, das Wasser, die Bakes, der Save
+    _erdbauWirkt(splats, amWasser) {
+        const G = globalThis.__gelaendeCore;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
         let x0 = Infinity;
         let x1 = -Infinity;
@@ -673,7 +703,6 @@ class AnazhRealm_gelaende_boden {
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
-        return true;
     }
     // DAS WASSER DES ERDBAUS (K10): ändert der Erdbau E (die Normalform seiner Splats) den Grund an gezeichnetem Wasser? Die
     // Regel des Zell-Stempels — ein Bau weckt den Automaten nur, wenn er eine Wasser-Zelle berührt (gate:werk-im-wasser R:
