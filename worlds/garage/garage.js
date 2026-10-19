@@ -30,13 +30,14 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),
 floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
 const grid=new THREE.GridHelper(60,60,0x1c3340,0x0f1820);grid.position.y=0.001;grid.material.opacity=0.5;grid.material.transparent=true;scene.add(grid);
 
-// ── Licht ──
-const PI=Math.PI;
-scene.add(new THREE.HemisphereLight(0x7a8da0,0x0c1016,0.55*PI));
+// ── Licht ── (die Studio-Lichter sind unter r128 roh, also linear, eingestellt: `_lin` hält ihren Ton — als sRGB dekodiert
+// sättigten Füll-, Rand- und Himmelslicht den Lack cyan; der Lack selbst bleibt FARB-GESETZ des Kerns, sRGB → linear)
+const PI=Math.PI,_lin=h=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);
+scene.add(new THREE.HemisphereLight(_lin(0x7a8da0),_lin(0x0c1016),0.55*PI));
 const key=new THREE.DirectionalLight(0xffffff,2.6*PI);key.position.set(5,9,4);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.bias=-0.0001;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(0x4f8fa6,0.8*PI);fill.position.set(-6,4,-4);scene.add(fill);
-const rim=new THREE.DirectionalLight(0x6fd0e8,0.6*PI);rim.position.set(-2,3,6);scene.add(rim);
+const fill=new THREE.DirectionalLight(_lin(0x4f8fa6),0.8*PI);fill.position.set(-6,4,-4);scene.add(fill);
+const rim=new THREE.DirectionalLight(_lin(0x6fd0e8),0.6*PI);rim.position.set(-2,3,6);scene.add(rim);
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -141,7 +142,7 @@ const gSprung=new THREE.Group();vehicle.add(gSprung);   // gefederte Masse (Aufb
 
 function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose();
   if(o.isSprite&&o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
-function rebuild(){
+function rebuild(){_wecke();
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
   const H=hardpoints(P);const res=evalLehren(P);
   const ctx={M:M,bodyMat:bodyMat,doors:doors,corners:corners};   // der Kern baut MIT den Shell-Objekten (Tür-/Rad-Animation bleibt verdrahtet)
@@ -435,16 +436,24 @@ R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.prevent
   oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
 // ── Loop (r184: setAnimationLoop wartet auf renderer.init(), die Zeit reicht der Takt herein) ──
-let simT=0,tAlt=0;
+// DIE WERKSTATT ZEICHNET NUR BEI BEDARF (19.10.): wie ein Asset-Editor — nach einer Eingabe, einem Umbau, solange die Kugel
+// ausläuft oder eine Tür zieht, und in der Fahrt; in Ruhe staut die Seite keine Bilder vor der GPU (Befund garage-r184: unter
+// swiftshader hielt das Dauer-Zeichnen den geteilten Haupt-Faden 22–171 s fest, Portal-Konformanz Gruppe 8).
+var wachBis=0;function _wecke(){wachBis=performance.now()+600;}
+['pointerdown','pointermove','pointerup','wheel','keydown','keyup','input','change','click'].forEach(t=>addEventListener(t,_wecke,{capture:true,passive:true}));
+const _camAlt=new THREE.Matrix4(),_camGleich=()=>{const a=_camAlt.elements,b=cam.matrixWorld.elements;for(let i=0;i<16;i++)if(Math.abs(a[i]-b[i])>1e-6)return false;return true;};
+let simT=0,tAlt=0;wachBis=performance.now()+2000;                  // die ersten Bilder nach dem Laden (Stoffe, Panorama)
 function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit;simT+=dt;const t=simT;
   if(mode==='fahren'){readKeys();updateVehicle(dt,t);updateTrack(dt);updateSmoke(dt);updateChaseCam(dt,false);
     if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*FAHR.kmh);}  // Welle L: km/h aus der EINEN Kern-Zeile (×12 zeigte 3,33-fach)
   }else{werkOrbit();}
-  const open=kin?0.62:0;                                            // Türen — in beiden Modi animiert
-  doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;});
-  R.render(scene,cam);}
+  const open=kin?0.62:0;let tuerZieht=false;                        // Türen — in beiden Modi animiert
+  doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
+  cam.updateMatrixWorld();
+  if(mode!=='fahren'&&!tuerZieht&&performance.now()>wachBis&&_camGleich())return;
+  _camAlt.copy(cam.matrixWorld);R.render(scene,cam);}
 presetSetzen('gt');werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
+addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke für alle Welten (../huelle/huelle.js): ready einmal, die DSL spricht über die ECHTEN UI-Pfade (Button-click
