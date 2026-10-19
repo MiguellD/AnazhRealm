@@ -17,11 +17,8 @@
 //         Werten (die Formel reiste unverfaelscht durch Worker + Ingest).
 //     B-c _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (=== exportDrive);
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
-//         gefallen) wird an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen
-//         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
-//         byte-gleich gegen die emergente Formel nachgerechnet; floats ist beim
-//         Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10:
-//         exportDrive.huelle.dichte — bis 8f09227d schwamm der GT mit dem Spender).
+//         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
+//         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
 //   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
@@ -85,17 +82,9 @@ function driveVerdict(d) {
     return out;
 }
 
-// ── B-e (W5 Gegenstände, 05.10.) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die
-// vier benannten Täter des Welt-Ritts, je eine Zahl:
-//   achse   ≤ 10°   — der Wagen fährt in seine Bug-Richtung (vorher 90°: das längs-x-Template drehte mit der
-//                     Fahrt-Gier, der GT fuhr quer)
-//   kontakt ≤ 0,12 m — die Räder stehen auf dem Boden (vorher 0,48 m darunter: die −0,5-Basis der Instanz-Matrix
-//                     fehlte im Ritt; am Hang dazu halbe Länge × Steigung aus max() + Nick)
-//   lenk    ≤ 1,8 g — die Quer-Kinematik v·ω bleibt in der Reifen-Grenze (vorher 3–5 g: die Lastverlagerung las die
-//                     Rotationskopplung als Bremsen, der Wagen drehte sich auf)
-//   schwimm ≤ 40°   — im vollen Einschlag läuft der Wagen nicht quer (größter Schwimmwinkel Bug-Achse ↔ Fahrt: die
-//                     Probefahrt des Labors schwingt auf der Ebene bis 14,5°, am Hang der Gate-Strecke 30°; der
-//                     aufdrehende Wagen stand mit 88° quer)
+// ── B-e (W5) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test), je Täter des Welt-Ritts eine Zahl:
+//   achse ≤ 10° der Wagen fährt in seine Bug-Richtung · kontakt ≤ 0,12 m die Räder stehen auf dem Boden · lenk ≤ 1,8 g
+//   die Quer-Kinematik v·ω bleibt in der Reifen-Grenze · schwimm ≤ 40° im vollen Einschlag läuft er nicht quer.
 const FAHR_GEFUEHL = { achseGrad: 10, kontaktM: 0.12, lenkSpitzeG: 1.8, schwimmGrad: 40 };
 function fahrGefuehlVerdict(g) {
     const out = [];
@@ -107,12 +96,9 @@ function fahrGefuehlVerdict(g) {
     return out;
 }
 
-// ── B-f (W5 Gegenstände, 05.10.) — DAS STAND-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Ein geparkter
-// Wagen steht, wie er fährt: auf der Ebene seiner vier Räder (`_fahrzeugStand` beim Spawn). Vorher stand er waagrecht
-// auf dem Boden unter seinem Ursprung — an der Mess-Wiese hob er am 20-%-Hang ein Rad 0,49 m (längs) bis 0,76 m (quer)
-// aus dem Boden oder versenkte es. Gemessen an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz:
-//   spalt ≤ 0,12 m — der größte |Rad-Spalt| über alle Hang-Proben (dieselbe Schwelle wie der Ritt-Kontakt)
-//   proben ≥ 4     — die Probe fand Hänge (längs UND quer geparkt), sonst ist sie leer
+// ── B-f (W5) — DAS STAND-VERDIKT: ein geparkter Wagen steht auf der Ebene seiner vier Räder (`_fahrzeugStand`), gemessen
+// an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz: spalt ≤ 0,12 m (der größte |Rad-Spalt|
+// über alle Hang-Proben), proben ≥ 4 (längs UND quer geparkt, sonst leer).
 const STAND = { spaltM: 0.12, probenMin: 4 };
 function standVerdict(s) {
     const out = [];
