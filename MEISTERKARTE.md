@@ -394,7 +394,7 @@ Verhaltens-Studio zeigt mit den Couzin-Zonen als Reglern dieselbe Herde, die der
   laut Autor (unbestätigt) (80.lv/articles/mode-adaptive-neural-networks-for-quadruped-motion-control).
 
 **Kriterien**
-1. **Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm) — 1/2 (19.10., S6 auf main ffa8fac8: (a) Zusammenhalt Wandern 1,0 · Flucht 0,98 gemessen gehalten; (b) Ausrichtung, (c) Alarm-Kette, (d) Verbands-ID 600 s ungemessen).** *Messung:* Band herde an scheuen
+1. **Verband: Herde und Rudel als Datum (Zusammenhalt, Ausrichtung, Leittier, Flucht auf Alarm) — 1/2 (19.10., S6 auf main ffa8fac8: (a) Zusammenhalt Wandern 1,0 · Flucht 0,98 (Radeon) bzw. 1,000 gegen 0,805 (GTX), (b) Ausrichtung 0,973 gegen 0,751 (GTX, bericht/1810-s6-gtx.md) gemessen gehalten; (c) Alarm-Kette und (d) Verbands-ID 600 s ungemessen; Preis CPU-Takt p95 +0,1 ms, Täter in Arbeit).** *Messung:* Band herde an scheuen
    Hirschen (Wurf 3–7), wandernd UND fliehend: (a) Anteil der Glieder nach 60 s im Fenster fensterRaum × Paar-Raum um die Verbands-Mitte ≥
    0,9; (b) Ausrichtung in der Flucht Φ = |Σ v̂_i| / N ≥ 0,8; (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verband-ID hält
    600 s, fremde Rudel verschmelzen nie. Linse: Bühne herde in `scripts/lib/kreatur-proben.cjs`, heute nur Existenz (n > 0) am neugierigen
