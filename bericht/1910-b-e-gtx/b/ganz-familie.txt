@@ -1,0 +1,64 @@
+== PM1 klassen {"unbenannt":6668.5,"zeichne:bau":3141.4,"program":1739.4,"Streu":1281.1,"zeichne:rest":975.3,"Boden":718.2,"Bauten":461.8,"GC":387.8,"Ort-Wahl":284.9,"Gruppen-Bau":204.9,"Dorf":74.8,"Buch":36.5}
+Familie: _loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js 3820
+  _loopRender dirigent-takt.js > render three.webgpu.min.js 701
+  (program) 627
+  (anonym) dirigent-ankunft.js > _bootAnazhRealm dirigent-ankunft.js 397
+  nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js 336
+  (garbage collector) 305
+  tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js 250
+  tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js 165
+  _loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js 162
+  init dirigent-ankunft.js > _chatEcho feld-leben.js 116
+  tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js 98
+  (anonym) vegetation-wiese.js > _waldDartsAn vegetation-wiese.js 70
+  (anonym) dienst.js 63
+  (anonym) koerper-leib.js > _ofenVorlage koerper-leib.js 63
+  tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js 52
+  (anonym) siedlung-ort.js > _spawnSettlementErlebnis siedlung-ort.js 50
+  _loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js 36
+  tickArchitectureCulling vegetation-baum.js 31
+  applyPlayerSoul koerper-fahrt.js > build koerper-seele.js 20
+  _tickGenesisOrt siedlung-ort.js > _genesisPortalRing siedlung-ort.js 19
+  _ensureVibePass netz-identitaet.js > _renderVibePassUI netz-identitaet.js 16
+  _perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js 16
+  _tickGenesisOrt siedlung-ort.js > _portalApproachPrefetch siedlung-ort.js 16
+  _loopRender dirigent-takt.js > _ankunftsBild dirigent-ankunft.js 15
+  _loopAutoSave dirigent-takt.js > saveState dienst.js 14
+  loop dirigent-takt.js 13
+  init dirigent-ankunft.js > _holzWahl dirigent-regler.js 12
+  _loopRender dirigent-takt.js > _ensurePostProcessing bild-kosten.js 11
+  nach studio-gestalt.js 11
+  _loopRender dirigent-takt.js > _gpuKehraus bild-kosten.js 10
+Wurzel: e three.webgpu.min.js 5571 · (program) 627 · (anonym) dirigent-ankunft.js 397 · nach studio-gestalt.js 347 · (garbage collector) 305 · init dirigent-ankunft.js 132 · (anonym) vegetation-wiese.js 70 · (anonym) dienst.js 63 · (anonym) koerper-leib.js 63 · (anonym) siedlung-ort.js 50 · _ensureVibePass netz-identitaet.js 16 · worker.onmessage studio-bruecke.js 10
+== PG1 klassen {"unbenannt":6666.2,"zeichne:bau":2813.2,"zeichne:rest":2376.5,"program":1588.3,"Streu":1343.9,"Bauten":492,"GC":407.4,"Ort-Wahl":235.7,"Gruppen-Bau":190.4,"Boden":142.3,"Dorf":66.7,"Buch":33.5}
+Familie: _loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js 4158
+  _loopRender dirigent-takt.js > render three.webgpu.min.js 1656
+  (program) 597
+  (garbage collector) 324
+  (anonym) dirigent-ankunft.js > _bootAnazhRealm dirigent-ankunft.js 315
+  tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js 234
+  _loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js 166
+  init dirigent-ankunft.js > _chatEcho feld-leben.js 124
+  tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js 116
+  (anonym) koerper-leib.js > _ofenVorlage koerper-leib.js 106
+  nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js 105
+  _loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js 51
+  init dirigent-ankunft.js > _holzWahl dirigent-regler.js 51
+  (anonym) siedlung-ort.js > _spawnSettlementErlebnis siedlung-ort.js 49
+  tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js 45
+  (anonym) dienst.js 40
+  tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js 38
+  _perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js 27
+  _tickGenesisOrt siedlung-ort.js > _genesisPortalRing siedlung-ort.js 26
+  applyPlayerSoul koerper-fahrt.js > build koerper-seele.js 24
+  loop dirigent-takt.js 24
+  _tickGenesisOrt siedlung-ort.js > _portalApproachPrefetch siedlung-ort.js 22
+  _ensureVibePass netz-identitaet.js > _renderVibePassUI netz-identitaet.js 19
+  tickArchitectureCulling vegetation-baum.js 16
+  _loopAutoSave dirigent-takt.js > saveState dienst.js 15
+  _loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js 13
+  _loopRender dirigent-takt.js 12
+  _loopRender dirigent-takt.js > _ensurePostProcessing bild-kosten.js 9
+  tickStatsHud dirigent-kern.js 9
+  (anonym) studio-bruecke.js > _foundryCacheSet studio-gestalt.js 8
+Wurzel: e three.webgpu.min.js 6795 · (program) 597 · (garbage collector) 324 · (anonym) dirigent-ankunft.js 315 · init dirigent-ankunft.js 180 · nach studio-gestalt.js 106 · (anonym) koerper-leib.js 106 · (anonym) siedlung-ort.js 53 · (anonym) dienst.js 40 · _ensureVibePass netz-identitaet.js 21 · (anonym) studio-bruecke.js 15 · vscl phyto-core.js 2

@@ -1,0 +1,5882 @@
+{
+ "lauf": "PG1",
+ "WB": 16660,
+ "versatzMs": -39,
+ "eichKurve": [
+  [
+   -500,
+   10905
+  ],
+  [
+   -250,
+   10997
+  ],
+  [
+   0,
+   11350
+  ],
+  [
+   250,
+   10953
+  ],
+  [
+   500,
+   10725
+  ],
+  [
+   750,
+   10870
+  ],
+  [
+   1000,
+   10984
+  ],
+  [
+   1250,
+   10944
+  ],
+  [
+   1500,
+   10666
+  ],
+  [
+   1750,
+   10413
+  ],
+  [
+   2000,
+   10245
+  ],
+  [
+   2250,
+   9917
+  ],
+  [
+   2500,
+   9815
+  ],
+  [
+   2750,
+   9468
+  ],
+  [
+   3000,
+   9244
+  ],
+  [
+   3250,
+   9026
+  ],
+  [
+   3500,
+   8795
+  ],
+  [
+   3750,
+   8535
+  ],
+  [
+   4000,
+   8293
+  ]
+ ],
+ "fenster": [
+  {
+   "s": 0,
+   "belegt": 814,
+   "inLang": 601.7,
+   "klassen": {
+    "program": 582.3,
+    "unbenannt": 207.8,
+    "GC": 23.9
+   },
+   "klassenLang": {
+    "program": 465.4,
+    "unbenannt": 125.9,
+    "GC": 10.4
+   },
+   "selbst": [
+    [
+     "(program)",
+     582.3
+    ],
+    [
+     "grow phyto-core.js",
+     35
+    ],
+    [
+     "(garbage collector)",
+     23.9
+    ],
+    [
+     "tragen dirigent-kern.js",
+     13.6
+    ],
+    [
+     "vlen phyto-core.js",
+     10.4
+    ],
+    [
+     "_defaultBlueprints bau-vorlagen.js",
+     10.4
+    ],
+    [
+     "hebe phyto-core.js",
+     9.5
+    ],
+    [
+     "(anonym) gelaende-core.js",
+     9.4
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     7.6
+    ],
+    [
+     "(anonym) three.webgpu.min.js",
+     7.6
+    ],
+    [
+     "_phytoGrowSkeleton vegetation-streu.js",
+     7.4
+    ],
+    [
+     "vnorm phyto-core.js",
+     4.1
+    ],
+    [
+     "vrot phyto-core.js",
+     4.1
+    ],
+    [
+     "(anonym) bau-teile.js",
+     4
+    ],
+    [
+     "AnazhRealm dirigent-kern.js",
+     3.9
+    ],
+    [
+     "h phyto-core.js",
+     3.7
+    ],
+    [
+     "vadd phyto-core.js",
+     3.3
+    ],
+    [
+     "(anonym) three.core.min.js",
+     3.2
+    ],
+    [
+     "(anonym) dirigent-regler.js",
+     3.1
+    ],
+    [
+     "schaftHub phyto-core.js",
+     3.1
+    ],
+    [
+     "(anonym) vegetation-streu.js",
+     3.1
+    ],
+    [
+     "pulsSeite",
+     3.1
+    ],
+    [
+     "(anonym) netz-identitaet.js",
+     2.9
+    ],
+    [
+     "(anonym) three-bootstrap.js",
+     2.7
+    ],
+    [
+     "(anonym) kreatur-leben.js",
+     2.5
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "(program)",
+     465.4
+    ],
+    [
+     "grow phyto-core.js",
+     35
+    ],
+    [
+     "vlen phyto-core.js",
+     10.4
+    ],
+    [
+     "_defaultBlueprints bau-vorlagen.js",
+     10.4
+    ],
+    [
+     "(garbage collector)",
+     10.4
+    ],
+    [
+     "hebe phyto-core.js",
+     9.5
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     7.6
+    ],
+    [
+     "_phytoGrowSkeleton vegetation-streu.js",
+     7.4
+    ],
+    [
+     "vnorm phyto-core.js",
+     4.1
+    ],
+    [
+     "vrot phyto-core.js",
+     4.1
+    ],
+    [
+     "(anonym) bau-teile.js",
+     4
+    ],
+    [
+     "AnazhRealm dirigent-kern.js",
+     3.9
+    ],
+    [
+     "h phyto-core.js",
+     3.7
+    ],
+    [
+     "vadd phyto-core.js",
+     3.3
+    ],
+    [
+     "schaftHub phyto-core.js",
+     3.1
+    ],
+    [
+     "growSkeleton phyto-core.js",
+     2.3
+    ],
+    [
+     "(anonym) phyto-core.js",
+     2.2
+    ],
+    [
+     "(anonym) vegetation-streu.js",
+     2.1
+    ],
+    [
+     "_rockVariant bau-teile.js",
+     2
+    ],
+    [
+     "gnf phyto-core.js",
+     2
+    ],
+    [
+     "vlerp phyto-core.js",
+     1.8
+    ],
+    [
+     "_crystalVariant bau-teile.js",
+     1.5
+    ],
+    [
+     "_bootAnazhRealm dirigent-ankunft.js",
+     1.4
+    ],
+    [
+     "perp phyto-core.js",
+     1.1
+    ],
+    [
+     "vscl phyto-core.js",
+     1
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "(program)",
+     465.4
+    ],
+    [
+     "(anonym) dirigent-ankunft.js",
+     125.9
+    ],
+    [
+     "(garbage collector)",
+     10.4
+    ]
+   ],
+   "unbPfad": [
+    [
+     "(program)",
+     465.4
+    ],
+    [
+     "(anonym) dirigent-ankunft.js > _bootAnazhRealm dirigent-ankunft.js",
+     125.9
+    ],
+    [
+     "(garbage collector)",
+     10.4
+    ]
+   ]
+  },
+  {
+   "s": 1,
+   "belegt": 999.1,
+   "inLang": 401.1,
+   "klassen": {
+    "program": 598,
+    "unbenannt": 391.5,
+    "GC": 9.6
+   },
+   "klassenLang": {
+    "unbenannt": 389.2,
+    "GC": 9.6,
+    "program": 2.3
+   },
+   "selbst": [
+    [
+     "(program)",
+     598
+    ],
+    [
+     "_chatEcho feld-leben.js",
+     123.6
+    ],
+    [
+     "_holzWahl dirigent-regler.js",
+     51.8
+    ],
+    [
+     "grow phyto-core.js",
+     20.3
+    ],
+    [
+     "_renderVibePassUI netz-identitaet.js",
+     18.7
+    ],
+    [
+     "_compoundSymmetry bau-teile.js",
+     15.9
+    ],
+    [
+     "_loadPath bau-buch.js",
+     15
+    ],
+    [
+     "_blueprintProductVector bau-buch.js",
+     11.6
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "(anonym) bau-teile.js",
+     6.7
+    ],
+    [
+     "vlen phyto-core.js",
+     6.6
+    ],
+    [
+     "init dirigent-ankunft.js",
+     6.3
+    ],
+    [
+     "vnorm phyto-core.js",
+     5.8
+    ],
+    [
+     "_partWorldExtents bau-buch.js",
+     4.3
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     4.2
+    ],
+    [
+     "_specRenderBody werkstatt-bauen.js",
+     4.1
+    ],
+    [
+     "computePartTags bau-buch.js",
+     4.1
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     3.3
+    ],
+    [
+     "_isBodyShaped bau-teile.js",
+     3.1
+    ],
+    [
+     "perp phyto-core.js",
+     2.6
+    ],
+    [
+     "vadd phyto-core.js",
+     2.6
+    ],
+    [
+     "_convexHull2D bau-buch.js",
+     2.5
+    ],
+    [
+     "_defaultBlueprints bau-vorlagen.js",
+     2.1
+    ],
+    [
+     "_recipeRow werkstatt-hof.js",
+     2.1
+    ],
+    [
+     "renderRecipeBook werkstatt-hof.js",
+     2.1
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "_chatEcho feld-leben.js",
+     123.6
+    ],
+    [
+     "_holzWahl dirigent-regler.js",
+     50.7
+    ],
+    [
+     "grow phyto-core.js",
+     20.3
+    ],
+    [
+     "_renderVibePassUI netz-identitaet.js",
+     18.7
+    ],
+    [
+     "_compoundSymmetry bau-teile.js",
+     15.9
+    ],
+    [
+     "_loadPath bau-buch.js",
+     15
+    ],
+    [
+     "_blueprintProductVector bau-buch.js",
+     11.6
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "(anonym) bau-teile.js",
+     6.7
+    ],
+    [
+     "vlen phyto-core.js",
+     6.6
+    ],
+    [
+     "init dirigent-ankunft.js",
+     6.3
+    ],
+    [
+     "vnorm phyto-core.js",
+     5.8
+    ],
+    [
+     "_partWorldExtents bau-buch.js",
+     4.3
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     4.2
+    ],
+    [
+     "_specRenderBody werkstatt-bauen.js",
+     4.1
+    ],
+    [
+     "computePartTags bau-buch.js",
+     4.1
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     3.3
+    ],
+    [
+     "_isBodyShaped bau-teile.js",
+     3.1
+    ],
+    [
+     "perp phyto-core.js",
+     2.6
+    ],
+    [
+     "vadd phyto-core.js",
+     2.6
+    ],
+    [
+     "_convexHull2D bau-buch.js",
+     2.5
+    ],
+    [
+     "(program)",
+     2.3
+    ],
+    [
+     "_defaultBlueprints bau-vorlagen.js",
+     2.1
+    ],
+    [
+     "_recipeRow werkstatt-hof.js",
+     2.1
+    ],
+    [
+     "renderRecipeBook werkstatt-hof.js",
+     2.1
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "(anonym) dirigent-ankunft.js",
+     188.9
+    ],
+    [
+     "init dirigent-ankunft.js",
+     179.6
+    ],
+    [
+     "_ensureVibePass netz-identitaet.js",
+     20.7
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "(program)",
+     2.3
+    ]
+   ],
+   "unbPfad": [
+    [
+     "(anonym) dirigent-ankunft.js > _bootAnazhRealm dirigent-ankunft.js",
+     188.9
+    ],
+    [
+     "init dirigent-ankunft.js > _chatEcho feld-leben.js",
+     123.6
+    ],
+    [
+     "init dirigent-ankunft.js > _holzWahl dirigent-regler.js",
+     50.7
+    ],
+    [
+     "_ensureVibePass netz-identitaet.js > _renderVibePassUI netz-identitaet.js",
+     18.7
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "(program)",
+     2.3
+    ],
+    [
+     "init dirigent-ankunft.js",
+     2.1
+    ],
+    [
+     "init dirigent-ankunft.js > initWorldInfoUI werkstatt-sozial.js",
+     1.1
+    ],
+    [
+     "_ensureVibePass netz-identitaet.js",
+     1
+    ],
+    [
+     "_ensureVibePass netz-identitaet.js > journalAppendOnce dienst.js",
+     1
+    ],
+    [
+     "init dirigent-ankunft.js > initPhysics bild-himmel.js",
+     1
+    ],
+    [
+     "init dirigent-ankunft.js > log dienst.js",
+     1
+    ]
+   ]
+  },
+  {
+   "s": 2,
+   "belegt": 938.6,
+   "inLang": 291.7,
+   "klassen": {
+    "unbenannt": 542.6,
+    "program": 141,
+    "zeichne:bau": 116.2,
+    "Streu": 58.9,
+    "Buch": 33.5,
+    "GC": 21.4,
+    "zeichne:rest": 17.7,
+    "Bauten": 7.3
+   },
+   "klassenLang": {
+    "zeichne:bau": 116.2,
+    "unbenannt": 98.8,
+    "Streu": 58.9,
+    "zeichne:rest": 17.7,
+    "GC": 0.1
+   },
+   "selbst": [
+    [
+     "(program)",
+     141
+    ],
+    [
+     "(anonym) dienst.js",
+     32.2
+    ],
+    [
+     "build three.webgpu.min.js",
+     28.3
+    ],
+    [
+     "_voxelExtractSurfaceVertices gelaende-boden.js",
+     22.6
+    ],
+    [
+     "(garbage collector)",
+     21.4
+    ],
+    [
+     "_computeHydrosphere wasser-hydro.js",
+     20.5
+    ],
+    [
+     "_voxelChunkGeometry gelaende-boden.js",
+     19.6
+    ],
+    [
+     "flaeche gelaende-core.js",
+     17.6
+    ],
+    [
+     "_hydroRiverSpiegel wasser-hydro.js",
+     14.5
+    ],
+    [
+     "noise2D simplex-noise.js",
+     13.8
+    ],
+    [
+     "zufall gelaende-core.js",
+     11.7
+    ],
+    [
+     "_hydroPriorityFlood wasser-hydro.js",
+     11
+    ],
+    [
+     "_terrainColumnContextIn gelaende-boden.js",
+     10.7
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     10.3
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     10.1
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     9.8
+    ],
+    [
+     "(anonym) three.webgpu.min.js",
+     8.8
+    ],
+    [
+     "zelleNeu gelaende-core.js",
+     8.7
+    ],
+    [
+     "_rauschAtlasDaten daten.js",
+     8.5
+    ],
+    [
+     "removeChain three.webgpu.min.js",
+     8.1
+    ],
+    [
+     "log dienst.js",
+     7.7
+    ],
+    [
+     "_voxelEmitQuadIndices gelaende-boden.js",
+     7.6
+    ],
+    [
+     "segment gelaende-core.js",
+     7.3
+    ],
+    [
+     "_foundryAutoRegisterSpecies studio-bruecke.js",
+     7.3
+    ],
+    [
+     "ci three.webgpu.min.js",
+     6.6
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "_ensureFarWaterSheet gelaende-fern.js",
+     5.6
+    ],
+    [
+     "loop dirigent-takt.js",
+     5.2
+    ],
+    [
+     "_hydroRiverAt wasser-hydro.js",
+     5.1
+    ],
+    [
+     "get three.webgpu.min.js",
+     5.1
+    ],
+    [
+     "_atlasWaterLevelAt wasser-hydro.js",
+     4.2
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     3.1
+    ],
+    [
+     "_stepFixedSim dirigent-takt.js",
+     2.9
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     2.3
+    ],
+    [
+     "_dayNightApplyAugenLicht bild-himmel.js",
+     2.3
+    ],
+    [
+     "addVert gelaende-fern.js",
+     2.1
+    ],
+    [
+     "_tickVoxelChunkStreaming gelaende-chunks.js",
+     2.1
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     2.1
+    ],
+    [
+     "(anonym)",
+     2.1
+    ],
+    [
+     "_renderScene three.webgpu.min.js",
+     2.1
+    ],
+    [
+     "_getRenderPassDescriptor three.webgpu.min.js",
+     2.1
+    ],
+    [
+     "_loopPlayerMovement koerper-bewegung.js",
+     2.1
+    ],
+    [
+     "_hydroFor gelaende-boden.js",
+     2.1
+    ],
+    [
+     "run dirigent-takt.js",
+     2.1
+    ],
+    [
+     "update three.webgpu.min.js",
+     1.7
+    ],
+    [
+     "inRegion gelaende-fern.js",
+     1.7
+    ],
+    [
+     "_loopPhysicsSync dirigent-takt.js",
+     1.6
+    ],
+    [
+     "updateViewport three.webgpu.min.js",
+     1.5
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js",
+     1.5
+    ],
+    [
+     "_ensureSkyEnvironment bild-himmel.js",
+     1.5
+    ],
+    [
+     "getDynamicCacheKey three.webgpu.min.js",
+     1.5
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     116.4
+    ],
+    [
+     "(garbage collector)",
+     0.1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     57.3
+    ],
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     33.2
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     12.3
+    ],
+    [
+     "loop dirigent-takt.js",
+     5.2
+    ],
+    [
+     "tickPlayerBoosts koerper-seele.js > computeSpatialTags bau-buch.js",
+     2.1
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js",
+     1.5
+    ],
+    [
+     "_loopWeatherAndGrowth dirigent-takt.js > updateCreatures kreatur-verhalten.js",
+     1.1
+    ],
+    [
+     "_loopWeatherAndGrowth dirigent-takt.js",
+     1
+    ],
+    [
+     "tickStatsHud dirigent-kern.js",
+     1
+    ],
+    [
+     "_loopNexusUpdate dirigent-takt.js",
+     1
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js > _updateEmotionFeedback werkstatt-hud.js",
+     0.7
+    ],
+    [
+     "(garbage collector)",
+     0.1
+    ]
+   ]
+  },
+  {
+   "s": 3,
+   "belegt": 999.3,
+   "inLang": 958.7,
+   "klassen": {
+    "zeichne:bau": 431.1,
+    "unbenannt": 309.1,
+    "zeichne:rest": 88.4,
+    "Streu": 82.3,
+    "Bauten": 55.2,
+    "GC": 18.9,
+    "program": 14.3
+   },
+   "klassenLang": {
+    "zeichne:bau": 431.1,
+    "unbenannt": 282.8,
+    "zeichne:rest": 88.4,
+    "Streu": 82.3,
+    "Bauten": 55.2,
+    "GC": 18.9
+   },
+   "selbst": [
+    [
+     "build three.webgpu.min.js",
+     95.1
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     50.8
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     28.7
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     24.4
+    ],
+    [
+     "w.onmessage studio-bruecke.js",
+     19.4
+    ],
+    [
+     "_flussKarteMalen siedlung-satz.js",
+     19
+    ],
+    [
+     "(garbage collector)",
+     18.9
+    ],
+    [
+     "getData three.webgpu.min.js",
+     18.6
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     17.7
+    ],
+    [
+     "generate three.webgpu.min.js",
+     16.3
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     15.6
+    ],
+    [
+     "(program)",
+     14.3
+    ],
+    [
+     "getNodeType three.webgpu.min.js",
+     13.1
+    ],
+    [
+     "(anonym) three.webgpu.min.js",
+     12.8
+    ],
+    [
+     "isAssign three.webgpu.min.js",
+     11.2
+    ],
+    [
+     "Ai.ci.<computed> three.webgpu.min.js",
+     10.6
+    ],
+    [
+     "_hydroRiverAt wasser-hydro.js",
+     10.2
+    ],
+    [
+     "setHashNode three.webgpu.min.js",
+     10
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     9.9
+    ],
+    [
+     "analyze three.webgpu.min.js",
+     9.6
+    ],
+    [
+     "generateNodeType three.webgpu.min.js",
+     9.6
+    ],
+    [
+     "_tickWegeKarte siedlung-satz.js",
+     9.4
+    ],
+    [
+     "Worker.postMessage",
+     9.4
+    ],
+    [
+     "call three.webgpu.min.js",
+     9.1
+    ],
+    [
+     "getNodeProperties three.webgpu.min.js",
+     7.9
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "_getChildren three.webgpu.min.js",
+     32.2
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     24.4
+    ],
+    [
+     "_flussKarteMalen siedlung-satz.js",
+     19
+    ],
+    [
+     "(garbage collector)",
+     18.9
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     17.7
+    ],
+    [
+     "_hydroRiverAt wasser-hydro.js",
+     10.2
+    ],
+    [
+     "_tickWegeKarte siedlung-satz.js",
+     9.4
+    ],
+    [
+     "Worker.postMessage",
+     9.4
+    ],
+    [
+     "loop dirigent-takt.js",
+     6.8
+    ],
+    [
+     "_ensureFarWaterSheet gelaende-fern.js",
+     6.3
+    ],
+    [
+     "Os three.webgpu.min.js",
+     6.2
+    ],
+    [
+     "log dienst.js",
+     5.4
+    ],
+    [
+     "(anonym) dienst.js",
+     5.1
+    ],
+    [
+     "_waldPlanListe vegetation-wiese.js",
+     4.7
+    ],
+    [
+     "_tickFernRing bild-sicht.js",
+     4.6
+    ],
+    [
+     "setIndex three.core.min.js",
+     4.5
+    ],
+    [
+     "update three.webgpu.min.js",
+     4
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     3.5
+    ],
+    [
+     "updateNode three.webgpu.min.js",
+     3.2
+    ],
+    [
+     "Du three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "archProfile porta-core.js",
+     3.1
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     3.1
+    ],
+    [
+     "_archZiegelFern studio-bruecke.js",
+     3.1
+    ],
+    [
+     "updateTexture three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "_feldPassEnsure bild-sicht.js",
+     3.1
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     363.9
+    ],
+    [
+     "(garbage collector)",
+     18.9
+    ],
+    [
+     "(anonym) dienst.js",
+     5.1
+    ],
+    [
+     "(anonym) gelaende-chunks.js",
+     1.1
+    ],
+    [
+     "vi three.webgpu.min.js",
+     1.1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     148.2
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     98.5
+    ],
+    [
+     "_tickGenesisOrt siedlung-ort.js > _genesisPortalRing siedlung-ort.js",
+     26.2
+    ],
+    [
+     "_tickGenesisOrt siedlung-ort.js > _portalApproachPrefetch siedlung-ort.js",
+     22.2
+    ],
+    [
+     "(garbage collector)",
+     18.9
+    ],
+    [
+     "_loopRender dirigent-takt.js > _ensurePostProcessing bild-kosten.js",
+     9.1
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     7.2
+    ],
+    [
+     "loop dirigent-takt.js",
+     6.8
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     6.2
+    ],
+    [
+     "(anonym) dienst.js",
+     5.1
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     4.6
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     3.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     3.1
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > lookAt three.core.min.js",
+     2.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > _leuchtTakt dirigent-kern.js",
+     2.5
+    ]
+   ]
+  },
+  {
+   "s": 4,
+   "belegt": 999.3,
+   "inLang": 993.4,
+   "klassen": {
+    "zeichne:bau": 441.5,
+    "unbenannt": 246.2,
+    "Gruppen-Bau": 83,
+    "Boden": 59.9,
+    "GC": 53.8,
+    "zeichne:rest": 45.9,
+    "Streu": 40.9,
+    "Bauten": 20.9,
+    "program": 7.3
+   },
+   "klassenLang": {
+    "zeichne:bau": 441.5,
+    "unbenannt": 244.1,
+    "Gruppen-Bau": 83,
+    "Boden": 59.9,
+    "GC": 53.8,
+    "zeichne:rest": 45.9,
+    "Streu": 40.9,
+    "Bauten": 20.9,
+    "program": 3.5
+   },
+   "selbst": [
+    [
+     "build three.webgpu.min.js",
+     91.5
+    ],
+    [
+     "(garbage collector)",
+     53.8
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     38.9
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     36.2
+    ],
+    [
+     "_buildVoxelChunkDataFromWorkerMesh gelaende-chunks.js",
+     33.5
+    ],
+    [
+     "(anonym) dienst.js",
+     25.8
+    ],
+    [
+     "_foundryBuildMesh studio-gestalt.js",
+     22.4
+    ],
+    [
+     "generate three.webgpu.min.js",
+     21.6
+    ],
+    [
+     "_wasserNetz wasser-zellen.js",
+     18
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     16.5
+    ],
+    [
+     "getData three.webgpu.min.js",
+     15.2
+    ],
+    [
+     "getChildren three.webgpu.min.js",
+     14.9
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     14.5
+    ],
+    [
+     "analyze three.webgpu.min.js",
+     14.1
+    ],
+    [
+     "(anonym) three.webgpu.min.js",
+     13.8
+    ],
+    [
+     "setup three.webgpu.min.js",
+     12.9
+    ],
+    [
+     "setData three.webgpu.min.js",
+     12.2
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     12.2
+    ],
+    [
+     "generateNodeType three.webgpu.min.js",
+     11.6
+    ],
+    [
+     "_foundryBuildGroup studio-gestalt.js",
+     11.5
+    ],
+    [
+     "isMatrix three.webgpu.min.js",
+     10.9
+    ],
+    [
+     "Ai.ci.<computed> three.webgpu.min.js",
+     10.4
+    ],
+    [
+     "n three.webgpu.min.js",
+     10
+    ],
+    [
+     "_satzKernFuell siedlung-satz.js",
+     9.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     9.7
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "(garbage collector)",
+     53.8
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     36.2
+    ],
+    [
+     "(anonym) dienst.js",
+     25.8
+    ],
+    [
+     "_wasserNetz wasser-zellen.js",
+     14.7
+    ],
+    [
+     "_satzKernFuell siedlung-satz.js",
+     9.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     9.7
+    ],
+    [
+     "_chunkSatzViertel siedlung-bauten.js",
+     8.8
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     8.5
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     7.5
+    ],
+    [
+     "applyBoneTransform three.core.min.js",
+     7.3
+    ],
+    [
+     "_satzWerkbank siedlung-satz.js",
+     5.4
+    ],
+    [
+     "_ofenAssembleAsset koerper-leib.js",
+     5.3
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     5.1
+    ],
+    [
+     "_tickFernRing bild-sicht.js",
+     5
+    ],
+    [
+     "_hoehlenSicht bild-sicht.js",
+     4.9
+    ],
+    [
+     "copy three.core.min.js",
+     4.5
+    ],
+    [
+     "be.createRenderPipeline",
+     4.4
+    ],
+    [
+     "_hautGewicht stoff-instanz.js",
+     4.4
+    ],
+    [
+     "_chunkSatzGeometrie siedlung-bauten.js",
+     4.3
+    ],
+    [
+     "_placementDensityFactor vegetation-wiese.js",
+     4.1
+    ],
+    [
+     "_chunkSatzEin siedlung-bauten.js",
+     3.8
+    ],
+    [
+     "_leuchtStaerke dirigent-kern.js",
+     3.5
+    ],
+    [
+     "(program)",
+     3.5
+    ],
+    [
+     "_foundryBuildMesh studio-gestalt.js",
+     3.2
+    ],
+    [
+     "_archFoundryZiegel studio-bruecke.js",
+     3
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     209.9
+    ],
+    [
+     "(garbage collector)",
+     53.8
+    ],
+    [
+     "(anonym) koerper-leib.js",
+     46.3
+    ],
+    [
+     "(anonym) dienst.js",
+     25.8
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     3.5
+    ],
+    [
+     "(program)",
+     3.5
+    ],
+    [
+     "nach studio-gestalt.js",
+     3.1
+    ],
+    [
+     "(anonym) siedlung-ort.js",
+     1.4
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     122.9
+    ],
+    [
+     "(garbage collector)",
+     53.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     47
+    ],
+    [
+     "(anonym) koerper-leib.js > _ofenVorlage koerper-leib.js",
+     46.3
+    ],
+    [
+     "(anonym) dienst.js",
+     25.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     17.5
+    ],
+    [
+     "(anonym) studio-bruecke.js > _foundryCacheSet studio-gestalt.js",
+     3.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > _leuchtTakt dirigent-kern.js",
+     3.5
+    ],
+    [
+     "(program)",
+     3.5
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     3.1
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     3
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     2.9
+    ],
+    [
+     "tickAffordances koerper-fahrt.js > _tickPortalAffordance netz-portal.js",
+     2.4
+    ],
+    [
+     "_tickPortalMembranes siedlung-ort.js",
+     2.4
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     2
+    ]
+   ]
+  },
+  {
+   "s": 5,
+   "belegt": 999.8,
+   "inLang": 987.9,
+   "klassen": {
+    "zeichne:bau": 340,
+    "zeichne:rest": 266.6,
+    "Streu": 165.1,
+    "unbenannt": 150.4,
+    "GC": 47.4,
+    "Bauten": 13.9,
+    "program": 11.2,
+    "Gruppen-Bau": 5.1
+   },
+   "klassenLang": {
+    "zeichne:bau": 340,
+    "zeichne:rest": 266.6,
+    "Streu": 165.1,
+    "unbenannt": 144.3,
+    "GC": 47.4,
+    "Bauten": 13.9,
+    "program": 5.4,
+    "Gruppen-Bau": 5.1
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     124.7
+    ],
+    [
+     "build three.webgpu.min.js",
+     74.6
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     52.3
+    ],
+    [
+     "(garbage collector)",
+     47.4
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     36.5
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     30.1
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     26.5
+    ],
+    [
+     "_indexMaxBuchen stoff-instanz.js",
+     20
+    ],
+    [
+     "generate three.webgpu.min.js",
+     19.4
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     16.2
+    ],
+    [
+     "_fernRingHoch gelaende-fern.js",
+     15.9
+    ],
+    [
+     "getTerrainHeightAt gelaende-boden.js",
+     15.9
+    ],
+    [
+     "analyze three.webgpu.min.js",
+     15.6
+    ],
+    [
+     "noise2D simplex-noise.js",
+     15.2
+    ],
+    [
+     "_hydrosphereCarveAt gelaende-boden.js",
+     14.5
+    ],
+    [
+     "getClosestSubBuild three.webgpu.min.js",
+     13.2
+    ],
+    [
+     "getData three.webgpu.min.js",
+     12.3
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     12.1
+    ],
+    [
+     "(program)",
+     11.2
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     11
+    ],
+    [
+     "setHashNode three.webgpu.min.js",
+     10.6
+    ],
+    [
+     "_terrainColumnContextIn gelaende-boden.js",
+     10.4
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     9.9
+    ],
+    [
+     "getHash three.webgpu.min.js",
+     8.6
+    ],
+    [
+     "(anonym) three.webgpu.min.js",
+     8.1
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     124.7
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     52.3
+    ],
+    [
+     "(garbage collector)",
+     47.4
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     26.5
+    ],
+    [
+     "_indexMaxBuchen stoff-instanz.js",
+     20
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     16.3
+    ],
+    [
+     "_fernRingHoch gelaende-fern.js",
+     15.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     11
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     7.7
+    ],
+    [
+     "_chunkSatzHuelle siedlung-bauten.js",
+     6.4
+    ],
+    [
+     "(program)",
+     5.4
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     4.9
+    ],
+    [
+     "computeVertexNormals three.core.min.js",
+     4.9
+    ],
+    [
+     "_tickFernRing bild-sicht.js",
+     4.6
+    ],
+    [
+     "_tickKarteWelt stoff-instanz.js",
+     3.9
+    ],
+    [
+     "_fernRingOrt gelaende-fern.js",
+     3.8
+    ],
+    [
+     "addScaledVector three.core.min.js",
+     3.5
+    ],
+    [
+     "_foundryRewarmColdTrees studio-gestalt.js",
+     3.4
+    ],
+    [
+     "_bauSatzBlock siedlung-satz.js",
+     3.4
+    ],
+    [
+     "_fernRingEinhaengen gelaende-fern.js",
+     3.4
+    ],
+    [
+     "loop dirigent-takt.js",
+     3.2
+    ],
+    [
+     "S gelaende-fern.js",
+     3.1
+    ],
+    [
+     "_copyBufferToTexture three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "_fernRingY gelaende-fern.js",
+     3.1
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     3
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     404.2
+    ],
+    [
+     "(garbage collector)",
+     47.4
+    ],
+    [
+     "(program)",
+     5.4
+    ],
+    [
+     "nach studio-gestalt.js",
+     5.2
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     1.5
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     260.1
+    ],
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     109.7
+    ],
+    [
+     "(garbage collector)",
+     47.4
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     18.5
+    ],
+    [
+     "(program)",
+     5.4
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     5.2
+    ],
+    [
+     "loop dirigent-takt.js",
+     3.2
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > _kamZielSetzen koerper-bewegung.js",
+     2.9
+    ],
+    [
+     "(anonym) studio-bruecke.js > _foundryCacheSet studio-gestalt.js",
+     1.5
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     1.5
+    ],
+    [
+     "tickStatsHud dirigent-kern.js > getElementById",
+     1.1
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     1.1
+    ],
+    [
+     "_loopSelfAnalysis dirigent-takt.js > auraAt feld-leben.js",
+     1.1
+    ],
+    [
+     "tickDayNight bild-himmel.js > _uhrAnzeigen bild-himmel.js",
+     1.1
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     1
+    ]
+   ]
+  },
+  {
+   "s": 6,
+   "belegt": 986.5,
+   "inLang": 931.7,
+   "klassen": {
+    "zeichne:rest": 319.9,
+    "zeichne:bau": 224.9,
+    "Streu": 205.8,
+    "unbenannt": 159.4,
+    "program": 22.2,
+    "Gruppen-Bau": 20.1,
+    "GC": 17.7,
+    "Bauten": 16.6
+   },
+   "klassenLang": {
+    "zeichne:rest": 319.9,
+    "zeichne:bau": 224.9,
+    "Streu": 205.8,
+    "unbenannt": 120.9,
+    "Gruppen-Bau": 20.1,
+    "Bauten": 16.6,
+    "program": 14.8,
+    "GC": 8.7
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     232
+    ],
+    [
+     "build three.webgpu.min.js",
+     68.2
+    ],
+    [
+     "_chunkIdbPut gelaende-chunks.js",
+     25.8
+    ],
+    [
+     "(program)",
+     22.2
+    ],
+    [
+     "(garbage collector)",
+     17.7
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     16.6
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     16.2
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     13.6
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     13.1
+    ],
+    [
+     "noise2D simplex-noise.js",
+     11.3
+    ],
+    [
+     "analyze three.webgpu.min.js",
+     11
+    ],
+    [
+     "generate three.webgpu.min.js",
+     10.7
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     8.8
+    ],
+    [
+     "_kronenStreuMale siedlung-satz.js",
+     8.5
+    ],
+    [
+     "_terrainColumnContextIn gelaende-boden.js",
+     8.4
+    ],
+    [
+     "_sampleBakedField vegetation-streu.js",
+     8.3
+    ],
+    [
+     "getData three.webgpu.min.js",
+     8.3
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     7.7
+    ],
+    [
+     "_scatterFoundrySeed vegetation-streu.js",
+     7.6
+    ],
+    [
+     "getChildren three.webgpu.min.js",
+     7.5
+    ],
+    [
+     "_scatterPass vegetation-streu.js",
+     7.2
+    ],
+    [
+     "setHashNode three.webgpu.min.js",
+     7
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     6.5
+    ],
+    [
+     "_blockerFugen gelaende-kollision.js",
+     6.3
+    ],
+    [
+     "_waldPlanSteht vegetation-wiese.js",
+     6.3
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     232
+    ],
+    [
+     "(program)",
+     14.8
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     13.6
+    ],
+    [
+     "(garbage collector)",
+     8.7
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     7.7
+    ],
+    [
+     "renderer._renderObjectDirect bild-kosten.js",
+     6.2
+    ],
+    [
+     "_scatterFoundrySeed vegetation-streu.js",
+     6.1
+    ],
+    [
+     "createProgram three.webgpu.min.js",
+     5.2
+    ],
+    [
+     "get value three.webgpu.min.js",
+     5.1
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     4.5
+    ],
+    [
+     "get needsUpdate three.webgpu.min.js",
+     4.5
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     4.4
+    ],
+    [
+     "_chunkSatzHuelle siedlung-bauten.js",
+     4.3
+    ],
+    [
+     "allocateQueriesForContext three.webgpu.min.js",
+     4.3
+    ],
+    [
+     "_tickNahStreu vegetation-wiese.js",
+     4.3
+    ],
+    [
+     "_tickNahWiese vegetation-wiese.js",
+     4.1
+    ],
+    [
+     "setIndex three.core.min.js",
+     4
+    ],
+    [
+     "update three.webgpu.min.js",
+     3.9
+    ],
+    [
+     "get three.webgpu.min.js",
+     3.8
+    ],
+    [
+     "_updateDorfRauch siedlung-ort.js",
+     3.5
+    ],
+    [
+     "_update three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     3.1
+    ],
+    [
+     "renderObject three.webgpu.min.js",
+     3
+    ],
+    [
+     "(anonym) dienst.js",
+     3
+    ],
+    [
+     "_indexMaxBuchen stoff-instanz.js",
+     2.5
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     436.2
+    ],
+    [
+     "(program)",
+     14.8
+    ],
+    [
+     "(garbage collector)",
+     8.7
+    ],
+    [
+     "(anonym) dienst.js",
+     3
+    ],
+    [
+     "nach studio-gestalt.js",
+     1.5
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     288.4
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     105.9
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     18.5
+    ],
+    [
+     "(program)",
+     14.8
+    ],
+    [
+     "(garbage collector)",
+     8.7
+    ],
+    [
+     "_updateDorfRauch siedlung-ort.js",
+     3.5
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     3.2
+    ],
+    [
+     "(anonym) dienst.js",
+     3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     2.6
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     2.5
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js",
+     1.7
+    ],
+    [
+     "_loopRender dirigent-takt.js > _followCelestialBodies bild-himmel.js",
+     1.6
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     1.5
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     1.5
+    ]
+   ]
+  },
+  {
+   "s": 7,
+   "belegt": 999.9,
+   "inLang": 948.8,
+   "klassen": {
+    "zeichne:rest": 280.4,
+    "unbenannt": 265.4,
+    "zeichne:bau": 246.8,
+    "Streu": 129.6,
+    "GC": 46.8,
+    "program": 21.6,
+    "Gruppen-Bau": 5.1,
+    "Bauten": 4.2
+   },
+   "klassenLang": {
+    "zeichne:rest": 280.4,
+    "zeichne:bau": 246.8,
+    "unbenannt": 245.4,
+    "Streu": 129.6,
+    "GC": 19,
+    "program": 18.3,
+    "Gruppen-Bau": 5.1,
+    "Bauten": 4.2
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     194.1
+    ],
+    [
+     "build three.webgpu.min.js",
+     70
+    ],
+    [
+     "grow phyto-core.js",
+     51.4
+    ],
+    [
+     "(garbage collector)",
+     46.8
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     25.8
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     21.7
+    ],
+    [
+     "(program)",
+     21.6
+    ],
+    [
+     "flaeche gelaende-core.js",
+     11.8
+    ],
+    [
+     "vrot phyto-core.js",
+     11.6
+    ],
+    [
+     "generate three.webgpu.min.js",
+     11.1
+    ],
+    [
+     "vlen phyto-core.js",
+     10.9
+    ],
+    [
+     "_terrainColumnContextIn gelaende-boden.js",
+     10.4
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     10.4
+    ],
+    [
+     "getNodeType three.webgpu.min.js",
+     9.6
+    ],
+    [
+     "removeChain three.webgpu.min.js",
+     9.3
+    ],
+    [
+     "vscl phyto-core.js",
+     9
+    ],
+    [
+     "getChildren three.webgpu.min.js",
+     9
+    ],
+    [
+     "noise2D simplex-noise.js",
+     8.8
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     8.7
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     8
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     8
+    ],
+    [
+     "setup three.webgpu.min.js",
+     7.9
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     7.7
+    ],
+    [
+     "vcross phyto-core.js",
+     7.5
+    ],
+    [
+     "_foundryPresetFor studio-bruecke.js",
+     7.2
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     194.1
+    ],
+    [
+     "grow phyto-core.js",
+     51.4
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     21.7
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "(program)",
+     18.3
+    ],
+    [
+     "vrot phyto-core.js",
+     11.6
+    ],
+    [
+     "vlen phyto-core.js",
+     10.9
+    ],
+    [
+     "vscl phyto-core.js",
+     9
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     8
+    ],
+    [
+     "vcross phyto-core.js",
+     7.5
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     6.2
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     5.8
+    ],
+    [
+     "gnf phyto-core.js",
+     5.7
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     5.1
+    ],
+    [
+     "_baumGestaltTeile studio-gestalt.js",
+     4.4
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     4.4
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     3.7
+    ],
+    [
+     "renderer._renderObjectDirect bild-kosten.js",
+     3.7
+    ],
+    [
+     "clamp phyto-core.js",
+     3.7
+    ],
+    [
+     "beginRender three.webgpu.min.js",
+     3.4
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     3.4
+    ],
+    [
+     "updateNode three.webgpu.min.js",
+     3.4
+    ],
+    [
+     "_growTreeBlueprint vegetation-streu.js",
+     3.1
+    ],
+    [
+     "updateMatrix3 three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "draw three.webgpu.min.js",
+     3
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     519.1
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "(program)",
+     18.3
+    ],
+    [
+     "nach studio-gestalt.js",
+     5.1
+    ],
+    [
+     "vscl phyto-core.js",
+     1.5
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     256
+    ],
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     239.7
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "(program)",
+     18.3
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     5.9
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     5.1
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     4.4
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     3
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     1.5
+    ],
+    [
+     "vscl phyto-core.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     1.5
+    ],
+    [
+     "tickPlayerBoosts koerper-seele.js > computeSpatialTags bau-buch.js",
+     1.5
+    ],
+    [
+     "loop dirigent-takt.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     1.1
+    ],
+    [
+     "_weltStandTakt dirigent-takt.js",
+     1
+    ]
+   ]
+  },
+  {
+   "s": 8,
+   "belegt": 998.4,
+   "inLang": 985.2,
+   "klassen": {
+    "unbenannt": 450.1,
+    "Bauten": 167.7,
+    "zeichne:rest": 129.2,
+    "zeichne:bau": 115.4,
+    "Streu": 57.4,
+    "GC": 40.7,
+    "Boden": 18.9,
+    "program": 11.2,
+    "Ort-Wahl": 7.7
+   },
+   "klassenLang": {
+    "unbenannt": 439.1,
+    "Bauten": 167.7,
+    "zeichne:rest": 129.2,
+    "zeichne:bau": 115.4,
+    "Streu": 57.4,
+    "GC": 40.7,
+    "Boden": 18.9,
+    "program": 9.1,
+    "Ort-Wahl": 7.7
+   },
+   "selbst": [
+    [
+     "grow phyto-core.js",
+     123.8
+    ],
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     100.9
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     53
+    ],
+    [
+     "vlen phyto-core.js",
+     41
+    ],
+    [
+     "(garbage collector)",
+     40.7
+    ],
+    [
+     "build three.webgpu.min.js",
+     29.7
+    ],
+    [
+     "schaftHub phyto-core.js",
+     28.7
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     26.5
+    ],
+    [
+     "hebe phyto-core.js",
+     19.2
+    ],
+    [
+     "(anonym) foundry-core.js",
+     17.4
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     16.4
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     16.2
+    ],
+    [
+     "vscl phyto-core.js",
+     15.3
+    ],
+    [
+     "_baumGestaltTeile studio-gestalt.js",
+     13.2
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     13
+    ],
+    [
+     "vrot phyto-core.js",
+     12.7
+    ],
+    [
+     "growSkeleton phyto-core.js",
+     12
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     11.9
+    ],
+    [
+     "(program)",
+     11.2
+    ],
+    [
+     "vadd phyto-core.js",
+     10
+    ],
+    [
+     "perp phyto-core.js",
+     9.7
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     8.7
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     8.7
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     6.8
+    ],
+    [
+     "__wuchsDerStufe foundry-core.js",
+     6.3
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     100.9
+    ],
+    [
+     "grow phyto-core.js",
+     76.4
+    ],
+    [
+     "(garbage collector)",
+     40.7
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     34
+    ],
+    [
+     "vlen phyto-core.js",
+     28.1
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     26.5
+    ],
+    [
+     "schaftHub phyto-core.js",
+     17
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     16.4
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     13
+    ],
+    [
+     "perp phyto-core.js",
+     9.7
+    ],
+    [
+     "hebe phyto-core.js",
+     9.3
+    ],
+    [
+     "(program)",
+     9.1
+    ],
+    [
+     "_baumGestaltTeile studio-gestalt.js",
+     9.1
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     8.7
+    ],
+    [
+     "growSkeleton phyto-core.js",
+     7.1
+    ],
+    [
+     "vrot phyto-core.js",
+     7
+    ],
+    [
+     "vscl phyto-core.js",
+     6.6
+    ],
+    [
+     "(anonym) foundry-core.js",
+     6.6
+    ],
+    [
+     "vadd phyto-core.js",
+     6.5
+    ],
+    [
+     "_chunkSatzHuelle siedlung-bauten.js",
+     5.3
+    ],
+    [
+     "__wuchsDerStufe foundry-core.js",
+     5.3
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     4.8
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     4.6
+    ],
+    [
+     "_forestPlantChunk vegetation-baum.js",
+     4.4
+    ],
+    [
+     "_weltBakeErlaubt dienst.js",
+     4.4
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     567.4
+    ],
+    [
+     "(garbage collector)",
+     40.7
+    ],
+    [
+     "(program)",
+     9.1
+    ],
+    [
+     "(anonym) siedlung-ort.js",
+     0.8
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     360.9
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     115.8
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     76.7
+    ],
+    [
+     "(garbage collector)",
+     40.7
+    ],
+    [
+     "(program)",
+     9.1
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     4.3
+    ],
+    [
+     "_weltStandTakt dirigent-takt.js",
+     1.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     1.5
+    ],
+    [
+     "animatePlayerSoul koerper-seele.js > get koerper-seele.js",
+     1.5
+    ],
+    [
+     "loop dirigent-takt.js",
+     1.5
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     1
+    ],
+    [
+     "(anonym) siedlung-ort.js > _ortPlanWarten siedlung-ort.js",
+     0.8
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     0.7
+    ],
+    [
+     "_loopRender dirigent-takt.js > _gpuKehraus bild-kosten.js",
+     0.4
+    ]
+   ]
+  },
+  {
+   "s": 9,
+   "belegt": 1000.4,
+   "inLang": 988.6,
+   "klassen": {
+    "unbenannt": 635.4,
+    "Ort-Wahl": 215.3,
+    "zeichne:rest": 77.1,
+    "GC": 24.5,
+    "Boden": 14.5,
+    "program": 11.3,
+    "Bauten": 9.5,
+    "Streu": 6.9,
+    "Gruppen-Bau": 6
+   },
+   "klassenLang": {
+    "unbenannt": 625.5,
+    "Ort-Wahl": 215.3,
+    "zeichne:rest": 77.1,
+    "GC": 24.5,
+    "Boden": 14.5,
+    "Bauten": 9.5,
+    "program": 9.4,
+    "Streu": 6.9,
+    "Gruppen-Bau": 6
+   },
+   "selbst": [
+    [
+     "erdbauY gelaende-core.js",
+     123.7
+    ],
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     58.1
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     50.3
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     42.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     39.7
+    ],
+    [
+     "B gelaende-fern.js",
+     26.2
+    ],
+    [
+     "(garbage collector)",
+     24.5
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     22.3
+    ],
+    [
+     "_rebuildLodStitchBand gelaende-chunks.js",
+     20.1
+    ],
+    [
+     "noise2D simplex-noise.js",
+     19.5
+    ],
+    [
+     "S gelaende-fern.js",
+     18.8
+    ],
+    [
+     "computePartTags bau-buch.js",
+     18.1
+    ],
+    [
+     "vlen phyto-core.js",
+     16.7
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     16.6
+    ],
+    [
+     "_chunkSatzViertel siedlung-bauten.js",
+     14.3
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     13.7
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     13.3
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     12.8
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     12.3
+    ],
+    [
+     "(program)",
+     11.3
+    ],
+    [
+     "grow phyto-core.js",
+     11.3
+    ],
+    [
+     "_ortTraegt gelaende-boden.js",
+     10.7
+    ],
+    [
+     "cellDarts vegetation-baum.js",
+     10
+    ],
+    [
+     "flaeche gelaende-core.js",
+     8.2
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     7.7
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     58.1
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     42.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     39.7
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     39.2
+    ],
+    [
+     "B gelaende-fern.js",
+     26.2
+    ],
+    [
+     "(garbage collector)",
+     24.5
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     21.3
+    ],
+    [
+     "_rebuildLodStitchBand gelaende-chunks.js",
+     20.1
+    ],
+    [
+     "S gelaende-fern.js",
+     18.8
+    ],
+    [
+     "computePartTags bau-buch.js",
+     18.1
+    ],
+    [
+     "vlen phyto-core.js",
+     16.7
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     16.6
+    ],
+    [
+     "_chunkSatzViertel siedlung-bauten.js",
+     14.3
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     13.7
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     13.3
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     12.8
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     12.3
+    ],
+    [
+     "grow phyto-core.js",
+     11.3
+    ],
+    [
+     "cellDarts vegetation-baum.js",
+     10
+    ],
+    [
+     "(program)",
+     9.4
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     7.7
+    ],
+    [
+     "vnorm phyto-core.js",
+     7.3
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     6.9
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     6.6
+    ],
+    [
+     "_baumGestaltTeile studio-gestalt.js",
+     6.4
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     694.7
+    ],
+    [
+     "(garbage collector)",
+     24.5
+    ],
+    [
+     "(program)",
+     9.4
+    ],
+    [
+     "nach studio-gestalt.js",
+     6.9
+    ],
+    [
+     "vn2 phyto-core.js",
+     1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     585.6
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     72.6
+    ],
+    [
+     "(garbage collector)",
+     24.5
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     14.4
+    ],
+    [
+     "(program)",
+     9.4
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     6.9
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     4.5
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js",
+     3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     2.9
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     2.5
+    ],
+    [
+     "_updateDorfRauch siedlung-ort.js",
+     1.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > _leuchtTakt dirigent-kern.js",
+     1.6
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js > _updateEmotionFeedback werkstatt-hud.js",
+     1.6
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > P.<computed>",
+     1.6
+    ],
+    [
+     "tickStatsHud dirigent-kern.js",
+     1.1
+    ]
+   ]
+  },
+  {
+   "s": 10,
+   "belegt": 999.1,
+   "inLang": 944.8,
+   "klassen": {
+    "unbenannt": 495.1,
+    "Streu": 181.1,
+    "zeichne:rest": 131.2,
+    "Dorf": 66.7,
+    "program": 46.8,
+    "Bauten": 36.7,
+    "Gruppen-Bau": 15.2,
+    "Ort-Wahl": 12.7,
+    "GC": 7.4,
+    "Boden": 6.3
+   },
+   "klassenLang": {
+    "unbenannt": 475.1,
+    "Streu": 181.1,
+    "zeichne:rest": 131.2,
+    "Dorf": 66.7,
+    "Bauten": 36.7,
+    "Gruppen-Bau": 15.2,
+    "Ort-Wahl": 12.7,
+    "program": 12.4,
+    "GC": 7.4,
+    "Boden": 6.3
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     50
+    ],
+    [
+     "(program)",
+     46.8
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     30.2
+    ],
+    [
+     "S gelaende-fern.js",
+     21.9
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     21.4
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     21.1
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     19.3
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     17.3
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     16.2
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     16.1
+    ],
+    [
+     "_wegeFormAbstand siedlung-satz.js",
+     15.3
+    ],
+    [
+     "_architectureBuilders bau-buch.js",
+     15
+    ],
+    [
+     "_atlasWaterLevelAt wasser-hydro.js",
+     13.5
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     13.2
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     11.8
+    ],
+    [
+     "_foundryGestaltFor studio-gestalt.js",
+     11.5
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     11.3
+    ],
+    [
+     "_draw three.webgpu.min.js",
+     10.8
+    ],
+    [
+     "_wasserNetz wasser-zellen.js",
+     10.5
+    ],
+    [
+     "_hydroRiverAt wasser-hydro.js",
+     9.6
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     9.4
+    ],
+    [
+     "_scatterPass vegetation-streu.js",
+     8.9
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     8
+    ],
+    [
+     "B gelaende-fern.js",
+     7.8
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     7.5
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     50
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     30.2
+    ],
+    [
+     "S gelaende-fern.js",
+     21.9
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     21.1
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     12.6
+    ],
+    [
+     "(program)",
+     12.4
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     12.1
+    ],
+    [
+     "_wegeFormAbstand siedlung-satz.js",
+     11.8
+    ],
+    [
+     "_foundryGestaltFor studio-gestalt.js",
+     11.5
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     11.3
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     11
+    ],
+    [
+     "_architectureBuilders bau-buch.js",
+     11
+    ],
+    [
+     "_draw three.webgpu.min.js",
+     10.8
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     9.9
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     9.4
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     8.1
+    ],
+    [
+     "B gelaende-fern.js",
+     7.8
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     7.5
+    ],
+    [
+     "(garbage collector)",
+     7.4
+    ],
+    [
+     "finishRender three.webgpu.min.js",
+     7
+    ],
+    [
+     "vy three.webgpu.min.js",
+     7
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     6.1
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     5.9
+    ],
+    [
+     "renderer._renderScene bild-kosten.js",
+     5.8
+    ],
+    [
+     "quadratAbstand gelaende-chunks.js",
+     5.3
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     529.7
+    ],
+    [
+     "(anonym) siedlung-ort.js",
+     50.4
+    ],
+    [
+     "nach studio-gestalt.js",
+     20.6
+    ],
+    [
+     "(program)",
+     12.4
+    ],
+    [
+     "(garbage collector)",
+     7.4
+    ],
+    [
+     "(anonym) dienst.js",
+     4.6
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     349.4
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     84.6
+    ],
+    [
+     "(anonym) siedlung-ort.js > _spawnSettlementErlebnis siedlung-ort.js",
+     48.8
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     26.7
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     20.6
+    ],
+    [
+     "_loopAutoSave dirigent-takt.js > saveState dienst.js",
+     14.9
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     14.1
+    ],
+    [
+     "(program)",
+     12.4
+    ],
+    [
+     "(garbage collector)",
+     7.4
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     4.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     4.6
+    ],
+    [
+     "(anonym) dienst.js",
+     4.6
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js",
+     3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     2.6
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     2.5
+    ]
+   ]
+  },
+  {
+   "s": 11,
+   "belegt": 995,
+   "inLang": 680,
+   "klassen": {
+    "unbenannt": 592.4,
+    "zeichne:bau": 218,
+    "zeichne:rest": 81.2,
+    "Bauten": 35.9,
+    "Boden": 22.1,
+    "GC": 19.5,
+    "program": 19.1,
+    "Gruppen-Bau": 6.7
+   },
+   "klassenLang": {
+    "unbenannt": 341.9,
+    "zeichne:bau": 218,
+    "zeichne:rest": 71.3,
+    "Bauten": 21.2,
+    "GC": 13.7,
+    "Boden": 6,
+    "program": 4.6,
+    "Gruppen-Bau": 3.3
+   },
+   "selbst": [
+    [
+     "build three.webgpu.min.js",
+     66.5
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     39.8
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     39.2
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     37.9
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     20.6
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     20.2
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     19.9
+    ],
+    [
+     "(garbage collector)",
+     19.5
+    ],
+    [
+     "(program)",
+     19.1
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     17.8
+    ],
+    [
+     "_tickNahStreu vegetation-wiese.js",
+     16.1
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     14.7
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     12.3
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     11.6
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     11.3
+    ],
+    [
+     "_foundryPresetFor studio-bruecke.js",
+     10.9
+    ],
+    [
+     "_rebuildLodStitchBand gelaende-chunks.js",
+     10.4
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     9.8
+    ],
+    [
+     "_bodenSichtAt gelaende-boden.js",
+     9.8
+    ],
+    [
+     "generate three.webgpu.min.js",
+     9.4
+    ],
+    [
+     "(anonym) vegetation-wiese.js",
+     8.8
+    ],
+    [
+     "_foundryGestaltFor studio-gestalt.js",
+     8.6
+    ],
+    [
+     "_aufWeg vegetation-baum.js",
+     8.2
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     7.9
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     7.8
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "_closestPtTri gelaende-chunks.js",
+     25.8
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     16.2
+    ],
+    [
+     "(garbage collector)",
+     13.7
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     13.6
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     10.8
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     10.6
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     9.8
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     9
+    ],
+    [
+     "_aufWeg vegetation-baum.js",
+     8.2
+    ],
+    [
+     "_bodenSichtAt gelaende-boden.js",
+     8.2
+    ],
+    [
+     "_tickNahStreu vegetation-wiese.js",
+     8.2
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     8.2
+    ],
+    [
+     "_foundryPresetFor studio-bruecke.js",
+     8
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     7.9
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     7.5
+    ],
+    [
+     "quadratAbstand gelaende-chunks.js",
+     6.8
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     6.4
+    ],
+    [
+     "_flightRecorderGruppenKlassen dirigent-regler.js",
+     6.3
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     5.3
+    ],
+    [
+     "_foundryLodForEntry stoff-instanz.js",
+     4.7
+    ],
+    [
+     "_foundryKoerperKey studio-bruecke.js",
+     4.7
+    ],
+    [
+     "forestTooClose phyto-core.js",
+     4.7
+    ],
+    [
+     "(program)",
+     4.6
+    ],
+    [
+     "_foundryGestaltFor studio-gestalt.js",
+     4.6
+    ],
+    [
+     "_ensureFarWaterSheet gelaende-fern.js",
+     4.4
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     399.9
+    ],
+    [
+     "(garbage collector)",
+     13.7
+    ],
+    [
+     "nach studio-gestalt.js",
+     11.8
+    ],
+    [
+     "(program)",
+     4.6
+    ],
+    [
+     "_atlasWaterLevelAt wasser-hydro.js",
+     1.5
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     228.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     76.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     46.5
+    ],
+    [
+     "(garbage collector)",
+     13.7
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     11.8
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     6.3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     5.9
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     5.1
+    ],
+    [
+     "(program)",
+     4.6
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     4.2
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     4
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     4
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     3.1
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > P.<computed>",
+     2.1
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js > _updateEmotionFeedback werkstatt-hud.js",
+     2
+    ]
+   ]
+  },
+  {
+   "s": 12,
+   "belegt": 999.2,
+   "inLang": 961.8,
+   "klassen": {
+    "unbenannt": 844.7,
+    "zeichne:bau": 78.3,
+    "Bauten": 22.2,
+    "GC": 19,
+    "zeichne:rest": 13.8,
+    "Boden": 10.9,
+    "program": 9.3,
+    "Gruppen-Bau": 1
+   },
+   "klassenLang": {
+    "unbenannt": 809.6,
+    "zeichne:bau": 78.3,
+    "Bauten": 22.2,
+    "GC": 19,
+    "zeichne:rest": 13.8,
+    "Boden": 10.9,
+    "program": 7,
+    "Gruppen-Bau": 1
+   },
+   "selbst": [
+    [
+     "S gelaende-fern.js",
+     51.7
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     44
+    ],
+    [
+     "B gelaende-fern.js",
+     43.5
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     40.3
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     35.2
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     34.8
+    ],
+    [
+     "quadratAbstand gelaende-chunks.js",
+     31
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     27.4
+    ],
+    [
+     "computePartTags bau-buch.js",
+     22.2
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "tr gelaende-fern.js",
+     18.5
+    ],
+    [
+     "build three.webgpu.min.js",
+     14.9
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     14.8
+    ],
+    [
+     "_populateVoxelChunkVegetation vegetation-baum.js",
+     14.2
+    ],
+    [
+     "_forestPlantChunk vegetation-baum.js",
+     13.9
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     12.7
+    ],
+    [
+     "_vegetationSampleSpawn vegetation-baum.js",
+     11.8
+    ],
+    [
+     "AnazhRealm._geschlossenesVolumen koerper-leib.js",
+     11.7
+    ],
+    [
+     "_ofenAssembleAsset koerper-leib.js",
+     11.3
+    ],
+    [
+     "cellDarts vegetation-baum.js",
+     10.1
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     10.1
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     9.8
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     9.7
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     9.5
+    ],
+    [
+     "spawnArchitecture siedlung-satz.js",
+     9.4
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "S gelaende-fern.js",
+     51.7
+    ],
+    [
+     "B gelaende-fern.js",
+     43.5
+    ],
+    [
+     "_applyCrossLodGeomorph gelaende-chunks.js",
+     40.3
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     35.6
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     35.2
+    ],
+    [
+     "_closestPtTri gelaende-chunks.js",
+     34.8
+    ],
+    [
+     "quadratAbstand gelaende-chunks.js",
+     31
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     27.4
+    ],
+    [
+     "computePartTags bau-buch.js",
+     22.2
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "tr gelaende-fern.js",
+     18.5
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     14.8
+    ],
+    [
+     "_populateVoxelChunkVegetation vegetation-baum.js",
+     14.2
+    ],
+    [
+     "_forestPlantChunk vegetation-baum.js",
+     13.9
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     12.7
+    ],
+    [
+     "_vegetationSampleSpawn vegetation-baum.js",
+     11.8
+    ],
+    [
+     "AnazhRealm._geschlossenesVolumen koerper-leib.js",
+     11.7
+    ],
+    [
+     "_ofenAssembleAsset koerper-leib.js",
+     11.3
+    ],
+    [
+     "cellDarts vegetation-baum.js",
+     10.1
+    ],
+    [
+     "_finalizeVoxelChunkBuild gelaende-chunks.js",
+     10.1
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     9.7
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     9.5
+    ],
+    [
+     "spawnArchitecture siedlung-satz.js",
+     9.4
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     8.7
+    ],
+    [
+     "_ofenStarrBinden koerper-leib.js",
+     8.5
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     758.2
+    ],
+    [
+     "(anonym) koerper-leib.js",
+     59.9
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "(program)",
+     7
+    ],
+    [
+     "nach studio-gestalt.js",
+     4.2
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     1.1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     696.3
+    ],
+    [
+     "(anonym) koerper-leib.js > _ofenVorlage koerper-leib.js",
+     59.9
+    ],
+    [
+     "applyPlayerSoul koerper-fahrt.js > build koerper-seele.js",
+     24
+    ],
+    [
+     "(garbage collector)",
+     19
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     12.3
+    ],
+    [
+     "(program)",
+     7
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     5.3
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     4.2
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     3.6
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archKartenPreset studio-bruecke.js",
+     3
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     2.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     1.5
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     1.5
+    ]
+   ]
+  },
+  {
+   "s": 13,
+   "belegt": 998.7,
+   "inLang": 978.2,
+   "klassen": {
+    "unbenannt": 474.6,
+    "zeichne:rest": 262,
+    "Streu": 86.3,
+    "zeichne:bau": 46.4,
+    "Bauten": 36.4,
+    "Gruppen-Bau": 35.1,
+    "GC": 28.4,
+    "program": 20.7,
+    "Boden": 8.7
+   },
+   "klassenLang": {
+    "unbenannt": 465.1,
+    "zeichne:rest": 262,
+    "Streu": 86.3,
+    "zeichne:bau": 46.4,
+    "Bauten": 36.4,
+    "Gruppen-Bau": 35.1,
+    "GC": 28.4,
+    "program": 9.7,
+    "Boden": 8.7
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     180.5
+    ],
+    [
+     "(garbage collector)",
+     28.4
+    ],
+    [
+     "computePartTags bau-buch.js",
+     25.5
+    ],
+    [
+     "B gelaende-fern.js",
+     25.4
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     23.8
+    ],
+    [
+     "(program)",
+     20.7
+    ],
+    [
+     "erdbauY gelaende-core.js",
+     20.3
+    ],
+    [
+     "S gelaende-fern.js",
+     18.7
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     18.1
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     16.1
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     15.1
+    ],
+    [
+     "_populateBlockerAABBs gelaende-kollision.js",
+     13.6
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     13.2
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     13
+    ],
+    [
+     "_architectureBuilders bau-buch.js",
+     11.7
+    ],
+    [
+     "build three.webgpu.min.js",
+     11.5
+    ],
+    [
+     "_foundryFlattenFor studio-gestalt.js",
+     11.2
+    ],
+    [
+     "_terrainBaseDensityAtCol gelaende-boden.js",
+     10.9
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     9.9
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     9.5
+    ],
+    [
+     "_fieldDensityAt gelaende-chunks.js",
+     9.1
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     8.8
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     8.4
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     8.4
+    ],
+    [
+     "_blockerStampReach gelaende-kollision.js",
+     8.3
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     180.5
+    ],
+    [
+     "(garbage collector)",
+     28.4
+    ],
+    [
+     "computePartTags bau-buch.js",
+     25.5
+    ],
+    [
+     "B gelaende-fern.js",
+     25.4
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     23.8
+    ],
+    [
+     "erdbauY gelaende-core.js",
+     18.7
+    ],
+    [
+     "S gelaende-fern.js",
+     18.7
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     16.1
+    ],
+    [
+     "computeCompoundTags bau-buch.js",
+     13
+    ],
+    [
+     "_populateBlockerAABBs gelaende-kollision.js",
+     12.7
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     12.1
+    ],
+    [
+     "_architectureBuilders bau-buch.js",
+     11.7
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     11.2
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     9.9
+    ],
+    [
+     "(program)",
+     9.7
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     8.8
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     8.4
+    ],
+    [
+     "_blockerStampReach gelaende-kollision.js",
+     8.3
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     7.2
+    ],
+    [
+     "_indexMaxBuchen stoff-instanz.js",
+     6.7
+    ],
+    [
+     "_kronenStreuMale siedlung-satz.js",
+     6.2
+    ],
+    [
+     "_foundryFlattenFor studio-gestalt.js",
+     6.1
+    ],
+    [
+     "_blockerFugen gelaende-kollision.js",
+     5.8
+    ],
+    [
+     "_naturSetzen vegetation-baum.js",
+     5.7
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     5.6
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     702.6
+    ],
+    [
+     "(garbage collector)",
+     28.4
+    ],
+    [
+     "nach studio-gestalt.js",
+     16.7
+    ],
+    [
+     "(program)",
+     9.7
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     6.3
+    ],
+    [
+     "(anonym) dienst.js",
+     1.5
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     384.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     261.5
+    ],
+    [
+     "(garbage collector)",
+     28.4
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     25.6
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     15.2
+    ],
+    [
+     "(program)",
+     9.7
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     5.4
+    ],
+    [
+     "(anonym) studio-bruecke.js > P.<computed>",
+     3.3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     3.1
+    ],
+    [
+     "animatePlayerSoul koerper-seele.js > animate koerper-seele.js",
+     3.1
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     3.1
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     3
+    ],
+    [
+     "(anonym) studio-bruecke.js > _foundryCacheSet studio-gestalt.js",
+     3
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     2.6
+    ],
+    [
+     "(anonym) dienst.js",
+     1.5
+    ]
+   ]
+  },
+  {
+   "s": 14,
+   "belegt": 998.5,
+   "inLang": 986.8,
+   "klassen": {
+    "zeichne:bau": 324.3,
+    "unbenannt": 275,
+    "zeichne:rest": 169.1,
+    "Streu": 144.2,
+    "Bauten": 43.7,
+    "program": 26.2,
+    "GC": 9.6,
+    "Gruppen-Bau": 6.5
+   },
+   "klassenLang": {
+    "zeichne:bau": 324.3,
+    "unbenannt": 270.9,
+    "zeichne:rest": 169.1,
+    "Streu": 144.2,
+    "Bauten": 43.7,
+    "program": 18.7,
+    "GC": 9.6,
+    "Gruppen-Bau": 6.5
+   },
+   "selbst": [
+    [
+     "build three.webgpu.min.js",
+     87.7
+    ],
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     70.5
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     30.1
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     26.8
+    ],
+    [
+     "(program)",
+     26.2
+    ],
+    [
+     "S gelaende-fern.js",
+     23.6
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     21.1
+    ],
+    [
+     "_satzKernFuell siedlung-satz.js",
+     19.3
+    ],
+    [
+     "getData three.webgpu.min.js",
+     18.2
+    ],
+    [
+     "generate three.webgpu.min.js",
+     17.9
+    ],
+    [
+     "B gelaende-fern.js",
+     17.8
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     17.7
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     16.3
+    ],
+    [
+     "_blockerStampReach gelaende-kollision.js",
+     15.8
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     14.7
+    ],
+    [
+     "getChildren three.webgpu.min.js",
+     14.3
+    ],
+    [
+     "analyze three.webgpu.min.js",
+     11.5
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     10
+    ],
+    [
+     "generateNodeType three.webgpu.min.js",
+     9.9
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     9.4
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     9.2
+    ],
+    [
+     "getTerrainHeightAt gelaende-boden.js",
+     9.1
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     8.9
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     8.6
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     70.5
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     26.8
+    ],
+    [
+     "S gelaende-fern.js",
+     23.6
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     21.1
+    ],
+    [
+     "_satzKernFuell siedlung-satz.js",
+     19.3
+    ],
+    [
+     "(program)",
+     18.7
+    ],
+    [
+     "B gelaende-fern.js",
+     17.8
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     10
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     9.3
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     8.6
+    ],
+    [
+     "P.<computed>",
+     8.3
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     7.7
+    ],
+    [
+     "q.writeBuffer dirigent-ankunft.js",
+     5.9
+    ],
+    [
+     "T.updateTexture bild-kosten.js",
+     5.8
+    ],
+    [
+     "_fernRingTeilung gelaende-fern.js",
+     5.3
+    ],
+    [
+     "_fernRingRefresh gelaende-fern.js",
+     5.3
+    ],
+    [
+     "_tickBauSatz siedlung-satz.js",
+     5.1
+    ],
+    [
+     "_chunkSatzGeometrie siedlung-bauten.js",
+     4.6
+    ],
+    [
+     "renderer._renderObjectDirect bild-kosten.js",
+     4.6
+    ],
+    [
+     "_chunkDecktRing gelaende-fern.js",
+     4.5
+    ],
+    [
+     "_zeichenRang bild-kosten.js",
+     4.4
+    ],
+    [
+     "tr gelaende-fern.js",
+     4.4
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     4.2
+    ],
+    [
+     "_passSicht bild-kosten.js",
+     3.9
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     420.1
+    ],
+    [
+     "nach studio-gestalt.js",
+     19.8
+    ],
+    [
+     "(program)",
+     18.7
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     182.9
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     154.7
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     41.2
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     19.8
+    ],
+    [
+     "(program)",
+     18.7
+    ],
+    [
+     "(garbage collector)",
+     9.6
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     9.3
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+     8.8
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     7.4
+    ],
+    [
+     "tickStatsHud dirigent-kern.js",
+     3.5
+    ],
+    [
+     "_loopRender dirigent-takt.js > _ankunftsBild dirigent-ankunft.js",
+     2.7
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     1.5
+    ],
+    [
+     "loop dirigent-takt.js",
+     1.5
+    ],
+    [
+     "_loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js",
+     1.5
+    ],
+    [
+     "updateStatusPanel werkstatt-hud.js > renderAbilitiesList werkstatt-hud.js",
+     1.1
+    ]
+   ]
+  },
+  {
+   "s": 15,
+   "belegt": 996.7,
+   "inLang": 879.6,
+   "klassen": {
+    "zeichne:rest": 435.3,
+    "unbenannt": 275.4,
+    "Streu": 130.8,
+    "zeichne:bau": 100.9,
+    "Bauten": 22,
+    "program": 18.8,
+    "GC": 8.8,
+    "Gruppen-Bau": 4.7
+   },
+   "klassenLang": {
+    "zeichne:rest": 425.6,
+    "unbenannt": 178.5,
+    "Streu": 130.8,
+    "zeichne:bau": 100.9,
+    "Bauten": 20,
+    "program": 12.5,
+    "GC": 8.8,
+    "Gruppen-Bau": 2.6
+   },
+   "selbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     329.3
+    ],
+    [
+     "build three.webgpu.min.js",
+     26.2
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     22.3
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     21.3
+    ],
+    [
+     "_forestStehtFrei vegetation-baum.js",
+     20.1
+    ],
+    [
+     "(program)",
+     18.8
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     17.1
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     15.2
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     15
+    ],
+    [
+     "_forestCellDarts vegetation-wiese.js",
+     10.6
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     10.5
+    ],
+    [
+     "(anonym) vegetation-baum.js",
+     9.9
+    ],
+    [
+     "noise2D simplex-noise.js",
+     8.9
+    ],
+    [
+     "(garbage collector)",
+     8.8
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     8.6
+    ],
+    [
+     "getData three.webgpu.min.js",
+     8.1
+    ],
+    [
+     "_chunkSatzGeometrie siedlung-bauten.js",
+     7.6
+    ],
+    [
+     "_voxelSurfaceY gelaende-chunks.js",
+     7.3
+    ],
+    [
+     "_blockerStampReach gelaende-kollision.js",
+     7.3
+    ],
+    [
+     "erdbauY gelaende-core.js",
+     6.7
+    ],
+    [
+     "addNode three.webgpu.min.js",
+     6.3
+    ],
+    [
+     "_scatterPass vegetation-streu.js",
+     6.2
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     6
+    ],
+    [
+     "_tickNahStreu vegetation-wiese.js",
+     6
+    ],
+    [
+     "_fernRingOrt gelaende-fern.js",
+     5.5
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "AnazhRealm._diaetGang bild-kosten.js",
+     329.3
+    ],
+    [
+     "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+     21.3
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     15
+    ],
+    [
+     "(program)",
+     12.5
+    ],
+    [
+     "_waldPlanKasten vegetation-wiese.js",
+     10.9
+    ],
+    [
+     "(garbage collector)",
+     8.8
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     8.6
+    ],
+    [
+     "_chunkSatzGeometrie siedlung-bauten.js",
+     7.6
+    ],
+    [
+     "_fernRingKlassen gelaende-fern.js",
+     6
+    ],
+    [
+     "dazu siedlung-bauten.js",
+     5.2
+    ],
+    [
+     "(anonym) foundry-core.js",
+     4.7
+    ],
+    [
+     "AnazhRealm._diaetRefresh bild-kosten.js",
+     4.5
+    ],
+    [
+     "_fernRingOrt gelaende-fern.js",
+     4.4
+    ],
+    [
+     "_satzPacke siedlung-bauten.js",
+     4.2
+    ],
+    [
+     "_draw three.webgpu.min.js",
+     4
+    ],
+    [
+     "S gelaende-fern.js",
+     3.7
+    ],
+    [
+     "Os three.webgpu.min.js",
+     3.6
+    ],
+    [
+     "_forestDartSteht vegetation-baum.js",
+     3.5
+    ],
+    [
+     "_projectObject three.webgpu.min.js",
+     3.5
+    ],
+    [
+     "_foundryPresetIsTree studio-bruecke.js",
+     3.5
+    ],
+    [
+     "_satzSetze siedlung-bauten.js",
+     3.3
+    ],
+    [
+     "_instanzTausch siedlung-satz.js",
+     3.3
+    ],
+    [
+     "beginRender three.webgpu.min.js",
+     3.1
+    ],
+    [
+     "_growTreeBlueprintRich vegetation-streu.js",
+     3.1
+    ],
+    [
+     "getForRender three.webgpu.min.js",
+     3.1
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     589.2
+    ],
+    [
+     "(program)",
+     12.5
+    ],
+    [
+     "nach studio-gestalt.js",
+     11.4
+    ],
+    [
+     "(garbage collector)",
+     8.8
+    ],
+    [
+     "(anonym) studio-bruecke.js",
+     1.5
+    ],
+    [
+     "lerp phyto-core.js",
+     1.1
+    ],
+    [
+     "(anonym) dirigent-takt.js",
+     1
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     403.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     100.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+     29.3
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     28.9
+    ],
+    [
+     "(program)",
+     12.5
+    ],
+    [
+     "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+     11.4
+    ],
+    [
+     "(garbage collector)",
+     8.8
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     7.4
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     4.7
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+     3.7
+    ],
+    [
+     "loop dirigent-takt.js",
+     2.4
+    ],
+    [
+     "_loopRender dirigent-takt.js > _ankunftsBild dirigent-ankunft.js",
+     2.2
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > P.<computed>",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js > (anonym) vegetation-baum.js",
+     1.5
+    ],
+    [
+     "(anonym) studio-bruecke.js > P.<computed>",
+     1.5
+    ]
+   ]
+  },
+  {
+   "s": 16,
+   "belegt": 633.5,
+   "inLang": 235.7,
+   "klassen": {
+    "unbenannt": 351,
+    "zeichne:bau": 129.5,
+    "zeichne:rest": 58.6,
+    "Streu": 54.7,
+    "program": 27.1,
+    "GC": 10,
+    "Gruppen-Bau": 1.7,
+    "Boden": 0.9
+   },
+   "klassenLang": {
+    "zeichne:bau": 129.5,
+    "zeichne:rest": 43.2,
+    "unbenannt": 39.8,
+    "Streu": 15.6,
+    "program": 3.9,
+    "GC": 3.8
+   },
+   "selbst": [
+    [
+     "build three.webgpu.min.js",
+     40.6
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     34.8
+    ],
+    [
+     "(program)",
+     27.1
+    ],
+    [
+     "_bodenKarteAusMesh gelaende-boden.js",
+     26.3
+    ],
+    [
+     "_foundryEnabled studio-bruecke.js",
+     21.1
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     14.1
+    ],
+    [
+     "_tickScatterLod vegetation-streu.js",
+     14.1
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     12.2
+    ],
+    [
+     "(garbage collector)",
+     10
+    ],
+    [
+     "getChildren three.webgpu.min.js",
+     9.8
+    ],
+    [
+     "_tickNahStreu vegetation-wiese.js",
+     9.3
+    ],
+    [
+     "getDataFromNode three.webgpu.min.js",
+     9.3
+    ],
+    [
+     "_scatterCellTransform vegetation-streu.js",
+     9
+    ],
+    [
+     "_scatterMaterializeCell vegetation-streu.js",
+     8.3
+    ],
+    [
+     "_nassAt klang.js",
+     7.8
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     7.1
+    ],
+    [
+     "_foundryFernForm studio-bruecke.js",
+     6.8
+    ],
+    [
+     "_tickArchitectureLOD siedlung-bauten.js",
+     6.4
+    ],
+    [
+     "_streuGesetzSpawn dienst.js",
+     6.2
+    ],
+    [
+     "getCacheKey three.webgpu.min.js",
+     6.2
+    ],
+    [
+     "get three.webgpu.min.js",
+     5.9
+    ],
+    [
+     "generate three.webgpu.min.js",
+     5.9
+    ],
+    [
+     "_lodBandPartnerFor siedlung-bauten.js",
+     5.8
+    ],
+    [
+     "_bakeRegionFields vegetation-streu.js",
+     5.8
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     5.6
+    ]
+   ],
+   "unbSelbst": [
+    [
+     "getCacheKey three.webgpu.min.js",
+     6.2
+    ],
+    [
+     "_getChildren three.webgpu.min.js",
+     4.8
+    ],
+    [
+     "(program)",
+     3.9
+    ],
+    [
+     "(garbage collector)",
+     3.8
+    ],
+    [
+     "createAttribute three.webgpu.min.js",
+     3.6
+    ],
+    [
+     "getMaterialCacheKey three.webgpu.min.js",
+     3.3
+    ],
+    [
+     "_ortGestaltSame vegetation-baum.js",
+     3.1
+    ],
+    [
+     "fromBufferAttribute three.core.min.js",
+     3
+    ],
+    [
+     "get three.webgpu.min.js",
+     3
+    ],
+    [
+     "updateNode three.webgpu.min.js",
+     2.6
+    ],
+    [
+     "_copyBufferToTexture three.webgpu.min.js",
+     2.4
+    ],
+    [
+     "setPipeline three.webgpu.min.js",
+     2.3
+    ],
+    [
+     "_tickArchitectureLOD siedlung-bauten.js",
+     2.2
+    ],
+    [
+     "Os three.webgpu.min.js",
+     2.1
+    ],
+    [
+     "_weltBakeErlaubt dienst.js",
+     2.1
+    ],
+    [
+     "_runFrameScheduler dirigent-takt.js",
+     2.1
+    ],
+    [
+     "_streuGesetzSpawn dienst.js",
+     2
+    ],
+    [
+     "containsPoint three.core.min.js",
+     1.7
+    ],
+    [
+     "getDynamicCacheKey three.webgpu.min.js",
+     1.6
+    ],
+    [
+     "_horizontKarteTakt bild-kosten.js",
+     1.5
+    ],
+    [
+     "_streuWartet vegetation-streu.js",
+     1.5
+    ],
+    [
+     "getY three.core.min.js",
+     1.5
+    ],
+    [
+     "AnazhRealm._diaetObjektGang bild-kosten.js",
+     1.5
+    ],
+    [
+     "_archStufenGrenzen studio-bruecke.js",
+     1.5
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     1.5
+    ]
+   ],
+   "unbWurzel": [
+    [
+     "e three.webgpu.min.js",
+     83
+    ],
+    [
+     "(program)",
+     3.9
+    ],
+    [
+     "(garbage collector)",
+     3.8
+    ]
+   ],
+   "unbPfad": [
+    [
+     "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+     39.4
+    ],
+    [
+     "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+     23.8
+    ],
+    [
+     "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+     9.3
+    ],
+    [
+     "(program)",
+     3.9
+    ],
+    [
+     "(garbage collector)",
+     3.8
+    ],
+    [
+     "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+     3.1
+    ],
+    [
+     "_loopRender dirigent-takt.js",
+     1.5
+    ],
+    [
+     "tickArchitectureCulling vegetation-baum.js",
+     1.5
+    ],
+    [
+     "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+     1.3
+    ],
+    [
+     "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+     1
+    ],
+    [
+     "_loopRender dirigent-takt.js > _ankunftsBild dirigent-ankunft.js",
+     1
+    ],
+    [
+     "animatePlayerSoul koerper-seele.js > animate koerper-seele.js",
+     1
+    ]
+   ]
+  }
+ ],
+ "ganz": {
+  "klassen": {
+   "unbenannt": 6666.2,
+   "zeichne:bau": 2813.2,
+   "zeichne:rest": 2376.5,
+   "program": 1588.3,
+   "Streu": 1343.9,
+   "Bauten": 492,
+   "GC": 407.4,
+   "Ort-Wahl": 235.7,
+   "Gruppen-Bau": 190.4,
+   "Boden": 142.3,
+   "Dorf": 66.7,
+   "Buch": 33.5
+  },
+  "selbst": [
+   [
+    "(program)",
+    1588.3
+   ],
+   [
+    "AnazhRealm._diaetGang bild-kosten.js",
+    1340
+   ],
+   [
+    "build three.webgpu.min.js",
+    705
+   ],
+   [
+    "(garbage collector)",
+    407.4
+   ],
+   [
+    "grow phyto-core.js",
+    248.9
+   ],
+   [
+    "getDataFromNode three.webgpu.min.js",
+    230.9
+   ],
+   [
+    "_bodenKarteAusMesh gelaende-boden.js",
+    208.5
+   ],
+   [
+    "_fernRingKlassen gelaende-fern.js",
+    198.3
+   ],
+   [
+    "_getChildren three.webgpu.min.js",
+    186
+   ],
+   [
+    "_ortGestaltSame vegetation-baum.js",
+    168.6
+   ],
+   [
+    "erdbauY gelaende-core.js",
+    154.8
+   ],
+   [
+    "_applyCrossLodGeomorph gelaende-chunks.js",
+    153.3
+   ],
+   [
+    "_forestDartSteht vegetation-baum.js",
+    152.6
+   ],
+   [
+    "S gelaende-fern.js",
+    143.6
+   ],
+   [
+    "_waldPlanKasten vegetation-wiese.js",
+    140.5
+   ],
+   [
+    "createAttribute three.webgpu.min.js",
+    140.2
+   ],
+   [
+    "generate three.webgpu.min.js",
+    129.3
+   ],
+   [
+    "B gelaende-fern.js",
+    126.8
+   ],
+   [
+    "_chatEcho feld-leben.js",
+    123.6
+   ],
+   [
+    "noise2D simplex-noise.js",
+    109.2
+   ],
+   [
+    "getData three.webgpu.min.js",
+    103.3
+   ],
+   [
+    "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+    98.7
+   ],
+   [
+    "_closestPtTri gelaende-chunks.js",
+    97.1
+   ],
+   [
+    "vlen phyto-core.js",
+    88.9
+   ],
+   [
+    "_forestStehtFrei vegetation-baum.js",
+    88.2
+   ],
+   [
+    "computePartTags bau-buch.js",
+    85.8
+   ],
+   [
+    "_growTreeBlueprintRich vegetation-streu.js",
+    85.6
+   ],
+   [
+    "_terrainBaseDensityAtCol gelaende-boden.js",
+    84.9
+   ],
+   [
+    "getChildren three.webgpu.min.js",
+    84.5
+   ],
+   [
+    "(anonym) three.webgpu.min.js",
+    79.8
+   ],
+   [
+    "analyze three.webgpu.min.js",
+    79.4
+   ],
+   [
+    "_forestCellDarts vegetation-wiese.js",
+    79.1
+   ],
+   [
+    "_fieldDensityAt gelaende-chunks.js",
+    79.1
+   ],
+   [
+    "getCacheKey three.webgpu.min.js",
+    78.6
+   ],
+   [
+    "_runFrameScheduler dirigent-takt.js",
+    76.8
+   ],
+   [
+    "_voxelSurfaceY gelaende-chunks.js",
+    73.9
+   ],
+   [
+    "_bakeRegionFields vegetation-streu.js",
+    73.7
+   ],
+   [
+    "_satzPacke siedlung-bauten.js",
+    72.8
+   ],
+   [
+    "(anonym) dienst.js",
+    72.3
+   ],
+   [
+    "flaeche gelaende-core.js",
+    64.8
+   ]
+  ],
+  "unbSelbst": [
+   [
+    "AnazhRealm._diaetGang bild-kosten.js",
+    1340
+   ],
+   [
+    "(program)",
+    597.1
+   ],
+   [
+    "(garbage collector)",
+    323.8
+   ],
+   [
+    "grow phyto-core.js",
+    201.5
+   ],
+   [
+    "_fernRingKlassen gelaende-fern.js",
+    197.2
+   ],
+   [
+    "S gelaende-fern.js",
+    143.6
+   ],
+   [
+    "createAttribute three.webgpu.min.js",
+    136.7
+   ],
+   [
+    "B gelaende-fern.js",
+    126.8
+   ],
+   [
+    "_applyCrossLodGeomorph gelaende-chunks.js",
+    124.1
+   ],
+   [
+    "_chatEcho feld-leben.js",
+    123.6
+   ],
+   [
+    "_forestDartSteht vegetation-baum.js",
+    103.8
+   ],
+   [
+    "AnazhRealm._diaetGeteiltSchreiben bild-kosten.js",
+    97.2
+   ],
+   [
+    "_bodenKarteAusMesh gelaende-boden.js",
+    95.5
+   ],
+   [
+    "_closestPtTri gelaende-chunks.js",
+    83.7
+   ],
+   [
+    "computePartTags bau-buch.js",
+    78.9
+   ],
+   [
+    "getCacheKey three.webgpu.min.js",
+    78.6
+   ],
+   [
+    "vlen phyto-core.js",
+    76
+   ],
+   [
+    "_ortGestaltSame vegetation-baum.js",
+    69.7
+   ],
+   [
+    "_satzPacke siedlung-bauten.js",
+    69.6
+   ],
+   [
+    "_growTreeBlueprintRich vegetation-streu.js",
+    66.6
+   ],
+   [
+    "_getChildren three.webgpu.min.js",
+    66.6
+   ],
+   [
+    "_waldPlanKasten vegetation-wiese.js",
+    66.1
+   ],
+   [
+    "_runFrameScheduler dirigent-takt.js",
+    61.5
+   ],
+   [
+    "_fernRingTeilung gelaende-fern.js",
+    57.9
+   ],
+   [
+    "computeCompoundTags bau-buch.js",
+    55.9
+   ],
+   [
+    "_holzWahl dirigent-regler.js",
+    50.7
+   ],
+   [
+    "quadratAbstand gelaende-chunks.js",
+    46.8
+   ],
+   [
+    "_forestCellDarts vegetation-wiese.js",
+    43.7
+   ],
+   [
+    "_forestStehtFrei vegetation-baum.js",
+    42.6
+   ],
+   [
+    "_finalizeVoxelChunkBuild gelaende-chunks.js",
+    40.8
+   ],
+   [
+    "dazu siedlung-bauten.js",
+    40.2
+   ],
+   [
+    "(anonym) dienst.js",
+    40.1
+   ],
+   [
+    "_architectureBuilders bau-buch.js",
+    38.7
+   ],
+   [
+    "_indexMaxBuchen stoff-instanz.js",
+    35.2
+   ],
+   [
+    "tr gelaende-fern.js",
+    33.1
+   ],
+   [
+    "_terrainBaseDensityAtCol gelaende-boden.js",
+    32.8
+   ],
+   [
+    "_rebuildLodStitchBand gelaende-chunks.js",
+    32.1
+   ],
+   [
+    "_tickScatterLod vegetation-streu.js",
+    31.6
+   ],
+   [
+    "_chunkSatzHuelle siedlung-bauten.js",
+    31.3
+   ],
+   [
+    "_satzKernFuell siedlung-satz.js",
+    31
+   ]
+  ],
+  "unbWurzel": [
+   [
+    "e three.webgpu.min.js",
+    6794.6
+   ],
+   [
+    "(program)",
+    597.1
+   ],
+   [
+    "(garbage collector)",
+    323.8
+   ],
+   [
+    "(anonym) dirigent-ankunft.js",
+    314.8
+   ],
+   [
+    "init dirigent-ankunft.js",
+    179.6
+   ],
+   [
+    "nach studio-gestalt.js",
+    106.3
+   ],
+   [
+    "(anonym) koerper-leib.js",
+    106.2
+   ],
+   [
+    "(anonym) siedlung-ort.js",
+    52.6
+   ],
+   [
+    "(anonym) dienst.js",
+    40.1
+   ],
+   [
+    "_ensureVibePass netz-identitaet.js",
+    20.7
+   ],
+   [
+    "(anonym) studio-bruecke.js",
+    15
+   ],
+   [
+    "vscl phyto-core.js",
+    1.5
+   ],
+   [
+    "_atlasWaterLevelAt wasser-hydro.js",
+    1.5
+   ],
+   [
+    "(anonym) gelaende-chunks.js",
+    1.1
+   ],
+   [
+    "vi three.webgpu.min.js",
+    1.1
+   ],
+   [
+    "lerp phyto-core.js",
+    1.1
+   ],
+   [
+    "vn2 phyto-core.js",
+    1
+   ],
+   [
+    "(anonym) dirigent-takt.js",
+    1
+   ]
+  ],
+  "unbPfad": [
+   [
+    "_loopVoxelStreaming dirigent-takt.js > _runFrameScheduler dirigent-takt.js",
+    4157.5
+   ],
+   [
+    "_loopRender dirigent-takt.js > render three.webgpu.min.js",
+    1655.6
+   ],
+   [
+    "(program)",
+    597.1
+   ],
+   [
+    "(garbage collector)",
+    323.8
+   ],
+   [
+    "(anonym) dirigent-ankunft.js > _bootAnazhRealm dirigent-ankunft.js",
+    314.8
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js > _foundryPlatzBereit studio-gestalt.js",
+    233.9
+   ],
+   [
+    "_loopRender dirigent-takt.js > _tickChunkSatz siedlung-bauten.js",
+    166.2
+   ],
+   [
+    "init dirigent-ankunft.js > _chatEcho feld-leben.js",
+    123.6
+   ],
+   [
+    "tickDayNight bild-himmel.js > _applyDayNightToScene bild-himmel.js",
+    116.2
+   ],
+   [
+    "(anonym) koerper-leib.js > _ofenVorlage koerper-leib.js",
+    106.2
+   ],
+   [
+    "nach studio-gestalt.js > _foundryRewarmColdTrees studio-gestalt.js",
+    104.8
+   ],
+   [
+    "_loopFixedStep dirigent-takt.js > _stepFixedSim dirigent-takt.js",
+    51.2
+   ],
+   [
+    "init dirigent-ankunft.js > _holzWahl dirigent-regler.js",
+    50.7
+   ],
+   [
+    "(anonym) siedlung-ort.js > _spawnSettlementErlebnis siedlung-ort.js",
+    48.8
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js > _archZiegelFern studio-bruecke.js",
+    45.2
+   ],
+   [
+    "(anonym) dienst.js",
+    40.1
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js > _foundryRewarmColdTrees studio-gestalt.js",
+    38
+   ],
+   [
+    "_perfSenseFoldFrame dirigent-regler.js > _flightRecorderTick dirigent-regler.js",
+    26.7
+   ],
+   [
+    "_tickGenesisOrt siedlung-ort.js > _genesisPortalRing siedlung-ort.js",
+    26.2
+   ],
+   [
+    "applyPlayerSoul koerper-fahrt.js > build koerper-seele.js",
+    24
+   ],
+   [
+    "loop dirigent-takt.js",
+    23.9
+   ],
+   [
+    "_tickGenesisOrt siedlung-ort.js > _portalApproachPrefetch siedlung-ort.js",
+    22.2
+   ],
+   [
+    "_ensureVibePass netz-identitaet.js > _renderVibePassUI netz-identitaet.js",
+    18.7
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js",
+    15.6
+   ],
+   [
+    "_loopAutoSave dirigent-takt.js > saveState dienst.js",
+    14.9
+   ],
+   [
+    "_loopCamera koerper-bewegung.js > _ceilingHeadroom koerper-bewegung.js",
+    12.8
+   ],
+   [
+    "_loopRender dirigent-takt.js",
+    12
+   ],
+   [
+    "_loopRender dirigent-takt.js > _ensurePostProcessing bild-kosten.js",
+    9.1
+   ],
+   [
+    "tickStatsHud dirigent-kern.js",
+    8.8
+   ],
+   [
+    "(anonym) studio-bruecke.js > _foundryCacheSet studio-gestalt.js",
+    8.1
+   ],
+   [
+    "_loopRender dirigent-takt.js > _leuchtTakt dirigent-kern.js",
+    7.7
+   ],
+   [
+    "(anonym) studio-bruecke.js > P.<computed>",
+    7
+   ],
+   [
+    "_loopRender dirigent-takt.js > _ankunftsBild dirigent-ankunft.js",
+    7
+   ],
+   [
+    "_loopRender dirigent-takt.js > _gpuKehraus bild-kosten.js",
+    6
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js > _archKartenPreset studio-bruecke.js",
+    5.7
+   ],
+   [
+    "_updateDorfRauch siedlung-ort.js",
+    5.3
+   ],
+   [
+    "tickArchitectureCulling vegetation-baum.js > P.<computed>",
+    5.2
+   ],
+   [
+    "animatePlayerSoul koerper-seele.js > animate koerper-seele.js",
+    5.1
+   ],
+   [
+    "updateStatusPanel werkstatt-hud.js",
+    4.5
+   ],
+   [
+    "updateStatusPanel werkstatt-hud.js > _updateEmotionFeedback werkstatt-hud.js",
+    4.2
+   ]
+  ]
+ }
+}

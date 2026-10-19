@@ -1,0 +1,11 @@
+M (M1 M2 M3 M4): t(Weltbild) 16.01 (15.45–16.23) s · t(Leib) 5.77 (5.03–6.22) s · blockiert bis Bild 13.34 (13.06–13.73) s · benannt 6.51 (6.23–6.93) s · unbenannt 6.89 (6.24–7.28) s · Erst-Bau 3.57 (3.46–3.65) s · Streu 1.22 (1.13–1.44) s · Boden 0.67 (0.13–0.68) s · Bauten 0.53 (0.49–0.60) s · Ort-Wahl 0.27 (0.24–0.32) s · Gruppen-Bau 0.25 (0.22–0.35) s · Dorf 0.08 (0.07–0.10) s · Buch 0.04 (0.03–0.05) s
+M: Anteil unbenannt an blockiert 51 % · Erst-Bau 26 % · blockiert/t(Weltbild) 85 %
+M: unbenannt je Sekunde 3–14 s Mittel 448 ms/s
+M letzte Terme: M1: streu 15.45 · bauten 15.28 · karten 15.28 | M2: streu 16.09 · bauten 15.69 · karten 15.69 | M3: streu 16.23 · bauten 15.89 · karten 15.89 | M4: bauten 15.91 · streu 15.91 · karten 15.71
+G (G1 G2): t(Weltbild) 16.14 (15.97–16.31) s · t(Leib) 10.59 (9.26–11.92) s · blockiert bis Bild 13.30 (13.07–13.53) s · benannt 5.70 (5.61–5.79) s · unbenannt 7.60 (7.27–7.92) s · Erst-Bau 3.23 (2.95–3.50) s · Streu 1.19 (1.10–1.28) s · Boden 0.30 (0.14–0.46) s · Bauten 0.36 (0.29–0.43) s · Ort-Wahl 0.29 (0.25–0.32) s · Gruppen-Bau 0.22 (0.20–0.23) s · Dorf 0.08 (0.08–0.08) s · Buch 0.04 (0.04–0.04) s
+G: Anteil unbenannt an blockiert 57 % · Erst-Bau 24 % · blockiert/t(Weltbild) 82 %
+G: unbenannt je Sekunde 3–14 s Mittel 515 ms/s
+G letzte Terme: G1: boden 16.09 · streu 16.09 · horizont 15.81 | G2: horizont 15.97 · streu 15.71 · bauten 15.28
+PM1: Profil belegt bis Bild 15.97 s von 16.42 s = 97 %; Klassen {"unbenannt":6668.5,"zeichne:bau":3141.4,"program":1739.4,"Streu":1281.1,"zeichne:rest":975.3,"Boden":718.2,"Bauten":461.8,"GC":387.8,"Ort-Wahl":284.9,"Gruppen-Bau":204.9,"Dorf":74.8,"Buch":36.5}
+PG1: Profil belegt bis Bild 16.36 s von 16.66 s = 98 %; Klassen {"unbenannt":6666.2,"zeichne:bau":2813.2,"zeichne:rest":2376.5,"program":1588.3,"Streu":1343.9,"Bauten":492,"GC":407.4,"Ort-Wahl":235.7,"Gruppen-Bau":190.4,"Boden":142.3,"Dorf":66.7,"Buch":33.5}
+PM1: _runFrameScheduler (unbenannt, in LongTasks) 3820 ms / blockiert bis Bild 13908 ms = 27 %; Erst-Bau (Linse) 3572 ms = 26 %; PG1 _runFrameScheduler 4157 / 14075 = 30 %

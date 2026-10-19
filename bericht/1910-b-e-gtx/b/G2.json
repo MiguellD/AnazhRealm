@@ -1,0 +1,1746 @@
+{
+ "proben": [
+  {
+   "t": 578
+  },
+  {
+   "t": 1451,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 2175,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "da": 0
+  },
+  {
+   "t": 2609,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Dorf wird gegründet",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 2672,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Dorf wird gegründet",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 4037,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "10 Bäume und Bauten wachsen",
+    "das Dorf wird gegründet",
+    "1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    8,
+    629,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 5336,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "7 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    15,
+    1304,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 6602,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (3 %)",
+    "der Spieler erhält seinen Leib",
+    "22 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "9 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    24,
+    1577,
+    6
+   ],
+   "da": 0
+  },
+  {
+   "t": 7220,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "22 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    29,
+    1836,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 8270,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "22 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 15 im Werk · 0 im Bäcker",
+   "erst": [
+    31,
+    1926,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 9260,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "21 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    32,
+    2053,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 10387,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "66 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "14 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    40,
+    2242,
+    8
+   ],
+   "da": 0
+  },
+  {
+   "t": 11028,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "52 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "10 wartend · 29 im Werk · 0 im Bäcker",
+   "erst": [
+    41,
+    2306,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 11076,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "52 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "10 wartend · 29 im Werk · 0 im Bäcker",
+   "erst": [
+    41,
+    2306,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 11539,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "39 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "10 wartend · 26 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    2449,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 11856,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "36 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "10 wartend · 24 im Werk · 0 im Bäcker",
+   "erst": [
+    43,
+    2449,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 12433,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "48 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "11 wartend · 19 im Werk · 0 im Bäcker",
+   "erst": [
+    46,
+    2670,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 13136,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "51 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "10 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    46,
+    2670,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 13586,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (19 %)",
+    "31 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    47,
+    2717,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 13947,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (31 %)",
+    "20 Bäume und Bauten wachsen",
+    "1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "4 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 14262,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (39 %)",
+    "25 Bäume und Bauten wachsen",
+    "5 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 14798,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (54 %)",
+    "8 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "4 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 6 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 14928,
+   "fehlt": [
+    "der Horizont wächst (54 %)",
+    "4 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 3 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 15075,
+   "fehlt": [
+    "der Horizont wächst (62 %)",
+    "1 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 15278,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    49,
+    2743,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 15516,
+   "fehlt": [
+    "der Horizont wächst (78 %)",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    51,
+    2828,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 15707,
+   "fehlt": [
+    "der Horizont wächst (90 %)"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    51,
+    2828,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 15986,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "37 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    53,
+    2953,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 16392,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "37 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    55,
+    3081,
+    4
+   ],
+   "da": 15971
+  },
+  {
+   "t": 16780,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3245,
+    4
+   ],
+   "da": 15971
+  },
+  {
+   "t": 16932,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3245,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 17090,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3245,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 17290,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    56,
+    3245,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 17553,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "36 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    4
+   ],
+   "da": 15971
+  },
+  {
+   "t": 17709,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "35 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    4
+   ],
+   "da": 15971
+  },
+  {
+   "t": 17962,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "33 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    4
+   ],
+   "da": 15971
+  },
+  {
+   "t": 18099,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "33 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 18289,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "30 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 18495,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "5 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    2
+   ],
+   "da": 15971
+  },
+  {
+   "t": 18710,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 16 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    1
+   ],
+   "da": 15971
+  },
+  {
+   "t": 18879,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    57,
+    3298,
+    1
+   ],
+   "da": 15971
+  },
+  {
+   "t": 19183,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    59,
+    3424,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 19369,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    60,
+    3432,
+    3
+   ],
+   "da": 15971
+  },
+  {
+   "t": 19697,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 8 im Werk · 0 im Bäcker",
+   "erst": [
+    63,
+    3612,
+    5
+   ],
+   "da": 15971
+  },
+  {
+   "t": 20013,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    68,
+    3861,
+    8
+   ],
+   "da": 15971
+  },
+  {
+   "t": 20215,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    70,
+    3932,
+    5
+   ],
+   "da": 15971
+  },
+  {
+   "t": 20556,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    5
+   ],
+   "da": 15971
+  },
+  {
+   "t": 20848,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    1
+   ],
+   "da": 15971
+  },
+  {
+   "t": 20869,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    1
+   ],
+   "da": 15971
+  },
+  {
+   "t": 21066,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 21269,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 21477,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 21715,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 21878,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 22079,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 22265,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 22474,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 22671,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 22872,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 23071,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 23268,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 23471,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 23679,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 23865,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 24076,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 24265,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 24465,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 24666,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 24866,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 25066,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 25265,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 25465,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 25666,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    72,
+    4045,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 25871,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    1
+   ],
+   "da": 15971
+  },
+  {
+   "t": 26070,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 26266,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 26465,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 26665,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 26865,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 27071,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 27266,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 27471,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 27669,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 27868,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 28066,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 28265,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 28466,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 28670,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 28865,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 29066,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 29266,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 29466,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 29686,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 29865,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  },
+  {
+   "t": 30122,
+   "fehlt": [],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    73,
+    4053,
+    0
+   ],
+   "da": 15971
+  }
+ ],
+ "lang": [
+  [
+   254,
+   300
+  ],
+  [
+   682,
+   732
+  ],
+  [
+   2691,
+   1313
+  ],
+  [
+   4046,
+   1016
+  ],
+  [
+   5181,
+   150
+  ],
+  [
+   5338,
+   818
+  ],
+  [
+   6190,
+   91
+  ],
+  [
+   6287,
+   309
+  ],
+  [
+   6606,
+   605
+  ],
+  [
+   7243,
+   389
+  ],
+  [
+   7636,
+   131
+  ],
+  [
+   7768,
+   501
+  ],
+  [
+   8278,
+   798
+  ],
+  [
+   9076,
+   105
+  ],
+  [
+   9182,
+   57
+  ],
+  [
+   9261,
+   594
+  ],
+  [
+   9855,
+   164
+  ],
+  [
+   10019,
+   337
+  ],
+  [
+   10390,
+   628
+  ],
+  [
+   11192,
+   331
+  ],
+  [
+   11559,
+   285
+  ],
+  [
+   11856,
+   567
+  ],
+  [
+   12437,
+   443
+  ],
+  [
+   12888,
+   248
+  ],
+  [
+   13146,
+   272
+  ],
+  [
+   13426,
+   159
+  ],
+  [
+   13591,
+   86
+  ],
+  [
+   13682,
+   264
+  ],
+  [
+   13954,
+   298
+  ],
+  [
+   14262,
+   315
+  ],
+  [
+   14581,
+   216
+  ],
+  [
+   14801,
+   79
+  ],
+  [
+   14929,
+   60
+  ],
+  [
+   15301,
+   122
+  ],
+  [
+   15461,
+   54
+  ],
+  [
+   15517,
+   56
+  ],
+  [
+   15808,
+   176
+  ],
+  [
+   16087,
+   300
+  ],
+  [
+   16396,
+   232
+  ],
+  [
+   16664,
+   115
+  ],
+  [
+   16820,
+   80
+  ],
+  [
+   17421,
+   97
+  ],
+  [
+   17555,
+   89
+  ],
+  [
+   17845,
+   87
+  ],
+  [
+   18020,
+   56
+  ],
+  [
+   18337,
+   102
+  ],
+  [
+   18652,
+   55
+  ],
+  [
+   19005,
+   69
+  ],
+  [
+   19076,
+   107
+  ],
+  [
+   19185,
+   144
+  ],
+  [
+   19458,
+   114
+  ],
+  [
+   19573,
+   123
+  ],
+  [
+   19698,
+   107
+  ],
+  [
+   19810,
+   87
+  ],
+  [
+   19898,
+   114
+  ],
+  [
+   20014,
+   88
+  ],
+  [
+   20103,
+   111
+  ],
+  [
+   20217,
+   183
+  ],
+  [
+   20400,
+   155
+  ],
+  [
+   20561,
+   172
+  ],
+  [
+   20735,
+   113
+  ],
+  [
+   21410,
+   58
+  ],
+  [
+   21558,
+   89
+  ],
+  [
+   21647,
+   60
+  ],
+  [
+   29345,
+   64
+  ],
+  [
+   29710,
+   53
+  ]
+ ],
+ "ev": [
+  [
+   4208,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   7638,
+   "_foundryRequestSettlement an",
+   ""
+  ],
+  [
+   19396,
+   "_foundryVorrat ab",
+   "gt|1"
+  ],
+  [
+   19396,
+   "_foundryVorrat ab",
+   "gt|7"
+  ],
+  [
+   19396,
+   "_foundryVorrat ab",
+   "supersport|1"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "supersport|7"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "limousine|1"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "limousine|7"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "kompakt_fwd|1"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "kompakt_fwd|7"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "suv|1"
+  ],
+  [
+   19397,
+   "_foundryVorrat ab",
+   "suv|7"
+  ],
+  [
+   19573,
+   "_foundryVorrat an",
+   "supersport|1"
+  ],
+  [
+   19573,
+   "_foundryVorrat an",
+   "gt|1"
+  ],
+  [
+   19698,
+   "_foundryVorrat an",
+   "gt|7"
+  ],
+  [
+   19698,
+   "_foundryVorrat an",
+   "limousine|7"
+  ],
+  [
+   19698,
+   "_foundryVorrat an",
+   "supersport|7"
+  ],
+  [
+   19805,
+   "_foundryVorrat an",
+   "limousine|1"
+  ],
+  [
+   19810,
+   "_foundryVorrat an",
+   "suv|1"
+  ],
+  [
+   19810,
+   "_foundryVorrat an",
+   "kompakt_fwd|1"
+  ],
+  [
+   19898,
+   "_foundryVorrat an",
+   "kompakt_fwd|7"
+  ],
+  [
+   19898,
+   "_foundryVorrat an",
+   "suv|7"
+  ],
+  [
+   19898,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   20560,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "kosten": {
+  "Bauten": {
+   "2": 4.200000002980232,
+   "3": 51.49999998509884,
+   "4": 0.20000000298023224,
+   "5": 32.700000047683716,
+   "6": 12.69999997317791,
+   "7": 3.999999985098839,
+   "8": 173.20000000298023,
+   "9": 35.900000020861626,
+   "10": 11.39999994635582,
+   "11": 16.999999910593033,
+   "12": 15.500000029802322,
+   "13": 46.699999898672104,
+   "14": 26.199999928474426,
+   "15": 3
+  },
+  "Buch": {
+   "2": 37.8999999910593
+  },
+  "Boden": {
+   "2": 340.70000000298023,
+   "6": 34,
+   "9": 32.79999999701977,
+   "11": 24.200000002980232,
+   "12": 6.399999991059303,
+   "13": 8.599999979138374,
+   "14": 11.19999997317791,
+   "23": 10.40000006556511,
+   "24": 1.5,
+   "25": 1.7999999821186066,
+   "26": 6.999999970197678
+  },
+  "Streu": {
+   "4": 100.29999999701977,
+   "5": 282.7000000178814,
+   "6": 19.899999991059303,
+   "7": 199.3999999910593,
+   "8": 132.8999999910593,
+   "9": 12.900000005960464,
+   "10": 200.20000000298023,
+   "11": 17.200000002980232,
+   "12": 14.200000002980232,
+   "13": 145.79999999701977,
+   "15": 155.8999999910593
+  },
+  "Gruppen-Bau": {
+   "4": 122.5,
+   "5": 17.00000001490116,
+   "6": 3.8999999910593033,
+   "7": 7.600000008940697,
+   "9": 40.30000001192093,
+   "10": 13.19999997317791,
+   "11": 5.5,
+   "12": 3.5,
+   "13": 8.900000005960464,
+   "14": 5.899999991059303,
+   "15": 4.5,
+   "18": 9.500000014901161,
+   "19": 1
+  },
+  "Ort-Wahl": {
+   "7": 129,
+   "9": 188.69999998807907
+  },
+  "Dorf": {
+   "10": 79.20000003278255
+  }
+ },
+ "auftrag": 2561,
+ "buchDa": 2585,
+ "weltbildDa": 15971,
+ "holz": "voll",
+ "version": "18.546.20",
+ "adapter": "nvidia pascal",
+ "ohne": [],
+ "bild": {
+  "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\n1910\\be\\b\\roh\\G2.png",
+  "dc": 33,
+  "dreiecke": 194185
+ },
+ "zweit": false
+}
