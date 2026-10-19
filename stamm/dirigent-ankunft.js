@@ -6,6 +6,7 @@ class AnazhRealm_dirigent_ankunft {
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
         this._ensureAssetFoundry(true); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
+        this._startDorfAmBuch(); // der erste Wartende am Buch: der Export des fälligen Start-Dorfs (B5)
         // Versions-Anzeige (title + .version) aus `AnazhRealm.VERSION` — EIN Wahrheits-Ort, kein
         // hartkodierter String in index.html.
         const versionLabel = `v${AnazhRealm.VERSION}`;
@@ -854,6 +855,14 @@ class AnazhRealm_dirigent_ankunft {
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
     }
+    // DER KOPF DER ANKUNFTS-KETTE geht mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
+    // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
+    // zwölf Bäumen); er wartet im Werk hinter dem Blatt-Atlas. Das Start-Dorf ist ein WARTENDER am Buch (`_startDorfAmBuch`,
+    // K22): rief der Ingest seinen Export, schloss die Dorf-Kette über die Ort-Wahl (`_ortPlanWarten`) einen Zeit-Kreis
+    // zurück in den Ingest (gate:v1-pfad W7).
+    _buchKoepfe() {
+        if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
+    }
 
     // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl
     // jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die Höhen-Stufe L1 und
@@ -944,13 +953,11 @@ class AnazhRealm_dirigent_ankunft {
     _rangImErstenBlick(rang) {
         return !!this.state._weltbildDa || rang < AnazhRealm.ERSTER_BLICK.ausserD2;
     }
-    // Steht das Bild, fällt der Blick-Schlüssel aus jedem wartenden Rang: die Zahl einer Karte (ihr Bedarf) und jedes
-    // Auftrags, der sie trägt — ab jetzt gilt nah zuerst rundum.
+    // Steht das Bild, fällt der Blick-Schlüssel aus dem Bedarf jeder Karte — ab jetzt gilt nah zuerst rundum. Der Rang eines
+    // Auftrags, der eine solche Zahl trägt, misst sie frisch (`_foundryAuftragD2`, B5: in Schlange, Flug und Wächter derselbe).
     _ersterBlickAus() {
         const A = AnazhRealm.ERSTER_BLICK.ausserD2;
         const ab = (v) => (Number.isFinite(v) && v >= A ? v - A : v);
-        const f = this._foundry;
-        for (const a of (f && f.warte) || []) if (typeof a.wo === "number") a.wo = ab(a.wo);
         for (const z of this._impostorAtlas().zellen.values()) z._bedarfD2 = ab(z._bedarfD2);
     }
 

@@ -135,6 +135,9 @@ function urteil(z) {
             r.state.postProcessingFailed = true;
             const dlB = performance.now() + 120000;
             while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+            // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
+            // (B5, GTX: S2 false, die Reihe leer, an 4d5f1c0c im Selbsttest, an ab97f0a8 im Lauf)
+            while (!r.state.rendererReady && performance.now() < dlB) await sleep(100);
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
@@ -147,7 +150,7 @@ function urteil(z) {
                 const at = { zellen: new Map([["fern", { key: "fern", _bedarfD2: 400 }], ["nah", { key: "nah", _bedarfD2: 4 }]]) };
                 Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null) });
                 try { tick.call(r, at); } finally { for (const k of stubs) delete r[k]; r._impostorBakeQueue = q; }
-                return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern" };
+                return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
             };
             const S = sProbe(r._runFrameScheduler, r._tickKarteWelt);
             const sBruch = k.selbst && sProbe(() => 0, function (at) { for (const n of r._impostorBakeQueue) r._karteWeltBacken(at, at.zellen.get(n)); });
@@ -159,11 +162,7 @@ function urteil(z) {
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     taktFehlerN++;
-                    if (!taktFehler1)
-                        taktFehler1 = String((e && e.stack) || e)
-                            .split("\n")
-                            .slice(0, 3)
-                            .join(" | ");
+                    if (!taktFehler1) taktFehler1 = String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ");
                 }
                 await sleep(20);
             };
@@ -172,8 +171,7 @@ function urteil(z) {
                 const z = r._analogZensus();
                 return z ? z.nah.filter((a) => !a.schwindet || a.haengt) : null;
             };
-            const X = k.ort[0],
-                Z = k.ort[1];
+            const [X, Z] = k.ort;
             setze(X, Z);
             await tick();
             if (k.selbst) {
@@ -342,7 +340,7 @@ function urteil(z) {
         process.exit(ok ? 0 : 1);
     }
     const S = res.S.S1 && res.S.S2;
-    console.log(`${S ? "✅" : "❌"} S  am Ruf: der feste Takt ruft den Karten-Bäcker ${res.S.S1} · die Karte reist im Rang des Wartenden ${res.S.S2}`);
+    console.log(`${S ? "✅" : "❌"} S  am Ruf: der feste Takt ruft den Karten-Bäcker ${res.S.S1} · die Karte reist im Rang des Wartenden ${res.S.S2} (Reihe ${res.S.wo || "leer"}${res.S.bereit ? "" : " — der Renderer stand nicht (rendererReady)"})`);
     const E = res.frei !== null;
     const R = res.ruheMax === 0 && res.brueckenEnde.length === 0;
     const T = res.rampeNull !== null;

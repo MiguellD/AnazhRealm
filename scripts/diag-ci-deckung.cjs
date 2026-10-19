@@ -729,9 +729,10 @@ function selbsttestKlasse() {
 // EINE Befehl, der misst und verteilt. Ein Job ohne Matrix ist EINE Gruppe. Ein Schritt allein über dem Deckel steht allein
 // (sonst ALLEIN, eine eigene Karte) — er und jeder Schritt über GROSS_S stehen beim Namen in `gross`. (T) ALT (CW; die Waage
 // rechnete mit Medianen vom 14.10.): seit dem Kopf der Quelle tragen höchstens so viele Merges einen vollen Lauf, wie sie je
-// Schritt misst. (K61) PLÄTZE ≤ LAEUFER_PLAETZE (ein Job, auf den ein anderer wartet, endet vor ihm). Die WANDUHR — der längste
+// Schritt misst — ROT auf der Linie, deren Merges je einen vollen Lauf tragen (integ-probe, main, PR nach main: `LINIE`), auf einem
+// Arbeits-Zweig benannt (sein erster Eltern-Weg zählt seine eigenen Merges von integ-probe, B4: 10 gegen 7). (K61) PLÄTZE ≤ LAEUFER_PLAETZE (ein Job, auf den ein anderer wartet, endet vor ihm). Die WANDUHR — der längste
 // Weg, je Gruppe der größere von Plan und gemessener Job-Dauer bei gleichem Satz — steht als Zahl und sperrt nie.
-// → { v: Befunde, zeilen: je Gruppe „job g/N x,y (Schritte)", plaetze, wanduhr, gross, deckel }
+// → { v: Befunde, zeilen: je Gruppe „job g/N x,y (Schritte)", plaetze, wanduhr, gross, deckel, alt }
 const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
 // die Waage wiegt in Zehntel-Minuten, der Einheit ihrer Anzeige (ein Job-Median streut über die Läufe ±10 s)
 const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
@@ -740,8 +741,9 @@ const seitKopf = (kopf) =>
     /^[0-9a-f]{40}$/.test(String(kopf))
         ? Number(execSync(`git rev-list --count --first-parent --merges ${kopf}..HEAD`, { cwd: root, stdio: "pipe" }).toString())
         : NaN;
-function waage(doc, zeiten, alterVon = seitKopf) {
-    const v = [];
+const LINIE = [process.env.GITHUB_BASE_REF, process.env.GITHUB_REF_NAME || execSync("git rev-parse --abbrev-ref HEAD", { cwd: root, stdio: "pipe" }).toString().trim()].some((z) => z === "integ-probe" || z === "main"); // prettier-ignore
+function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
+    const [v, alt] = [[], []];
     const zeilen = [];
     const Z = (zeiten && zeiten.schritte) || {};
     const G = (zeiten && zeiten.gruppen) || {};
@@ -757,7 +759,7 @@ function waage(doc, zeiten, alterVon = seitKopf) {
     if (!(alter >= 0))
         v.push(`(T) ALT: der Kopf der Zeit-Quelle „${zeiten.kopf}" ist in der Geschichte nicht aufzulösen — keine Messung urteilt`);
     else if (!(alter <= Number(zeiten.je_schritt)))
-        v.push(
+        (sperrt ? v : alt).push(
             `(T) ALT: seit dem Kopf der Zeit-Quelle (${String(zeiten.kopf).slice(0, 8)}) trugen ${alter} Merges je einen vollen ` +
                 `Lauf, sie misst je Schritt ${zeiten.je_schritt} — älter als ihre Läufe (node scripts/ci-zeiten.cjs)`
         );
@@ -833,7 +835,7 @@ function waage(doc, zeiten, alterVon = seitKopf) {
     const wege = imLauf.map(([job]) => weg(job));
     const laengster = wege.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
     const voll = [...deckel].filter(([, k]) => k.art === "voll" && k.n > 1).map(([kl, k]) => `${kl} ${minuten(k.d)}`);
-    return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll };
+    return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll, alt };
 }
 
 // (Z) die Gate-Schritte zweier Stände: was fehlt nachher, was steht nachher öfter als vorher
@@ -1216,6 +1218,7 @@ function selbsttestWaage() {
         ["ein gemessener Satz, der nicht mehr gilt (die Lage zog um)", (d, z) => gemessen(z, 470) || (z.schritte.C.gruppe = "voll 2"), (w) => minuten(w.wanduhr[0]) === "6,2"],
         // (T) ALT (CW): die Quelle ist älter als ihre Läufe, oder ihr Kopf steht in keiner Geschichte
         ["die Quelle älter als ihre Läufe", () => {}, /\(T\) ALT: seit dem Kopf der Zeit-Quelle \(ffffffff\) trugen 8 Merges/, 8],
+        ["dieselbe auf einem Arbeits-Zweig (benannt, nie ROT)", () => {}, (w) => !w.v.length && /^\(T\) ALT: seit dem Kopf/.test(w.alt[0]), 8, false],
         ["der Kopf der Quelle nicht aufzulösen", () => {}, /\(T\) ALT: der Kopf der Zeit-Quelle „f+" ist in der Geschichte nicht/, "wurf"],
         // (T) PLÄTZE (K61): 1 Puls- und 20 Voll-Gruppen auf 20 Plätzen; der Kopf-Richter endet vor der Batterie
         ["mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)", (d) => gruppen(d, 20), /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/],
@@ -1242,14 +1245,14 @@ function selbsttestWaage() {
     const befundOk = (w) => w.v.length === soll.length && soll.every((r) => w.v.some((x) => r.test(x))) && minuten(w.wanduhr[0]) === "9,0";
     faelle.push([`der Befund vom 16.10. (${Z.vorher.ref.split(" ")[0]})`, befund, befundOk]);
     const f = [];
-    for (const [n, tat, soll, alter = 0] of faelle) {
+    for (const [n, tat, soll, alter = 0, sperrt = true] of faelle) {
         const d = doc(),
             z = zeiten();
         tat(d, z);
         const w = waage(d, z, () => {
             if (alter === "wurf") throw new Error("unbekannt");
             return alter;
-        });
+        }, sperrt);
         const u = w.v;
         const ok = typeof soll === "function" ? soll(w) : soll ? u.some((x) => soll.test(x)) : u.length === 0;
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
@@ -1560,6 +1563,7 @@ console.log(
             : "") +
         ` · ohne Workflow ${g.zahl.offen}`
 );
+if (w.alt && w.alt.length) console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
 console.log(`  Waage (Plan = Median samt Vorbereitung, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`);
 if (w.gross && w.gross.length) console.log(`  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`);
 if (w.wanduhr)

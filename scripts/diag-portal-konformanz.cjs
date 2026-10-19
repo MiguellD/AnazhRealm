@@ -20,7 +20,7 @@
 //   K4 wirkt      die Heimat schickt die chain-Form des Worts über ihren echten Weiterleiter (`_portalRouteDsl`): die
 //                 Welt wirkt sichtbar (Journal-Ereignis bzw. Zustand der UI) — bei begegnung der Ko-Präsenz-Eintritt
 //   K5 Esc        Esc in der Welt bringt den Spieler heim (die Heimat schließt das Overlay)
-//   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler
+//   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler, und die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung)
 //   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (W13 V2, der enter-Payload der Heimat): skeleton die
 //                 Seele, das eigene Material als TEXT (Markup im Namen bleibt Text) mit gesäuberter Farbe, das eigene
 //                 Werkzeug und den Vibe-Pass; fluid und terrain den Vibe-Pass am Namen des Reisenden
@@ -37,7 +37,7 @@
 //                                                        spricht wieder den Echo-Dialekt, die Hülle liest op[0] je
 //                                                        Element, skeleton und terrain ohne Manifest — der Server
 //                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
-//                                                        garage trägt eins ohne Soll-Zeile) → jede Wand wird rot und
+//                                                        garage trägt eins ohne Soll-Zeile und zerstört beim Neubau das Sprite-Quad) → jede Wand wird rot und
 //                                                        nennt den Täter; die TRÄGE klang (3 s Bau zwischen ihrer
 //                                                        ready und den enter) hält die Ratsche readyEcho — ein
 //                                                        Uhr-Fenster las an der fachwerk „ready 1 · enter 3"
@@ -48,6 +48,7 @@ const { statikServer, starteBrowser, halteBis } = require("./lib/welt-boot.cjs")
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -225,6 +226,8 @@ const TAETER = {
             'document.body.appendChild(new Image()).src = "/__traege.gif";\nwindow.addEventListener("message", function (ev) {\n    if (ev.source === window && ev.data && ev.data.__bau) for (var t1 = Date.now(); Date.now() - t1 < 500; );\n});\nsetTimeout(function () {\n    for (var t0 = Date.now(); Date.now() - t0 < 600; );\n    for (var b = 0; b < 6; b++) window.postMessage({ __bau: 1 }, "*");\n}, 0);\nAnazhHuelle.bruecke({\n    welt: "klang",',
         ],
     ],
+    // die garage vor dem Schnitt: ihr Neubau zerstört das EINE Sprite-Quad von three (r184 behält den zerstörten Puffer) → K6 rot
+    "worlds/garage/garage.js": [["if(o.geometry&&!o.isSprite)o.geometry.dispose();", "if(o.geometry)o.geometry.dispose();"]],
 };
 // Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
 // Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
@@ -681,6 +684,9 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
+    // K6 die GPU (`gpu-fehler`): nach einem Bild meldet jedes Gerät der Welt seine Arbeit — und mit ihr jede Prüfung, die einen Befehl verwarf;
+    // ein Gerät oder Bild, das 30 s nicht kommt, fällt mit seinem Namen (nie die äußere Frist der ganzen Linse)
+    const gpu = fr ? await fr.evaluate(async () => { const F = window.__gpuFehler; if (!F) return []; const frist = (p, wort) => Promise.race([p.then(() => null), new Promise((r) => setTimeout(r, 30000, wort))]); const bild = () => frist(new Promise((r) => requestAnimationFrame(r)), "die Welt zeichnet 30 s kein Bild"); const steht = (await bild()) || (await frist(Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone())), "ein Gerät gibt seine Arbeit 30 s nicht ab (onSubmittedWorkDone)")) || (await bild()); return F.device.map((e) => e.msg.split("\n")[0]).concat(steht ? [steht] : []); }) : []; // prettier-ignore
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
     const offen = fr ? (await schleuse(page, "esc", null)).offen : true;
@@ -689,7 +695,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         aus.notiz.push(fr ? "Esc bringt nicht heim" : "Welt-Frame nicht gefunden");
         await page.evaluate(() => window.anazhRealm._portalOverlay && window.anazhRealm.exitPortal());
     }
-    const fehler = fehlerLog.slice(fehlerVor);
+    const fehler = fehlerLog.slice(fehlerVor).concat(gpu.map((m) => "GPU: " + m.slice(0, 150)));
     aus.k.K6 = fehler.length === 0;
     if (!aus.k.K6) aus.notiz.push("Seiten-Fehler: " + fehler.slice(0, 2).join(" | "));
     return aus;
@@ -705,6 +711,7 @@ async function lauf(welten, taeter) {
     try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
+        await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL); // in jedem Frame: die Prüfung jedes GPU-Geräts beim Namen (K6)
         await page.evaluateOnNewDocument(() => {
             if (window.top !== window) return;
             window.__anazhHeadlessNullRenderer = true;
@@ -792,6 +799,7 @@ async function selbsttest() {
             by[id] ? by[id].notiz.filter((n) => /Manifest/.test(n)).join("") : "",
         ]),
         ["K1 rot: fluid meldet ihr Manifest ohne „flut“ (die Heimat lernt das Wort nicht)", by.fluid && by.fluid.k.K1 === false && by.fluid.notiz.some((n) => /es fehlen flut/.test(n)), by.fluid ? by.fluid.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
+        ["K6 rot: der Neubau der garage zerstört das Sprite-Quad — die GPU verwirft den Submit", by.garage && by.garage.k.K6 === false && by.garage.notiz.some((n) => /while destroyed/.test(n)), by.garage ? by.garage.notiz.filter((n) => /GPU/.test(n)).join("") : ""],
         ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
     ];

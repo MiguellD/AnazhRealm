@@ -140,7 +140,10 @@ let gFrame,gJoints,gBody,gCal,gNeg,gPackage,gWheels;const doors=[];
 const vehicle=new THREE.Group();scene.add(vehicle);
 const gSprung=new THREE.Group();vehicle.add(gSprung);   // gefederte Masse (Aufbau) — nickt/wankt/hebt auf den Federn
 
-function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose();
+// Ein Sprite besitzt nur Stoff und Bild: seine Geometrie ist das EINE Quad, das three allen Sprites teilt (verschränkt) —
+// r184 zerstört beim dispose den Puffer, behält ihn aber am InterleavedBuffer, und jedes spätere Schild zeichnet aus dem
+// zerstörten Puffer ("used in submit while destroyed", der Submit fällt, das Bild steht).
+function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry&&!o.isSprite)o.geometry.dispose();
   if(o.isSprite&&o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
 function rebuild(){_wecke();
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
