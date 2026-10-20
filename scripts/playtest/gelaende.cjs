@@ -3,14 +3,12 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const path = require("path");
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
@@ -19,9 +17,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasCarve = typeof r.carveVoxelSphere === "function";
-        out.hasRemesh = typeof r._remeshVoxelChunksAround === "function";
-        if (out.hasCarve && r.state.worldMeta) {
+        if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
             // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
             r.state.worldMeta.voxelEdits = [];
@@ -65,16 +61,12 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
             // sauber zurücklassen.
             r.state.worldMeta.voxelEdits = [];
-            if (typeof r.saveState === "function") r.saveState();
+            r.saveState();
         }
         return out;
     });
 
     if (voxelP3Results && !voxelP3Results.error) {
-        check(
-            "Voxel P3: carveVoxelSphere + _remeshVoxelChunksAround existieren",
-            voxelP3Results.hasCarve && voxelP3Results.hasRemesh
-        );
         check(
             "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
             voxelP3Results.carveSubtracts
@@ -92,13 +84,11 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
-        out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
         // Den Test-Voxel-Ring SYNC auffüllen, damit der Edit Chunks zum Markieren findet: ein Tick-Loop
         // ohne Event-Loop-Yield bekommt keine Worker-Antwort (Ring bliebe leer, Flake). Darum Worker AUS
         // → 3×3-Ring um den Spieler-Chunk sync bauen → Worker zurück.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        r._drainDirtyVoxelChunks();
         {
             const span940 = r._voxelChunkConfig(0).span;
             const pcx = Math.floor(pm.x / span940);
@@ -114,7 +104,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             }
             r.state.voxelWorker = savedW;
         }
-        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        r._drainDirtyVoxelChunks();
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             out.skip = true;
             return out;
@@ -199,10 +189,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
         check(
-            "V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren",
-            voxelV940cResults.hasTick && voxelV940cResults.hasDrain
-        );
-        check(
             "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
             voxelV940cResults.editMarksDirty,
             voxelV940cResults.telemetry
@@ -239,7 +225,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.voxelWorker = null;
         // Ring auffüllen.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        r._drainDirtyVoxelChunks();
         for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             out.skip = true;
@@ -403,8 +389,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasFill = typeof r.fillVoxelSphere === "function";
-        if (out.hasFill && r.state.worldMeta) {
+        if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
             // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
             r.state.worldMeta.voxelEdits = [];
@@ -446,13 +431,12 @@ async function checkBandVoxelP3AndInventory(ctx) {
             r.setGameMode(p3bMode);
             // sauber zurücklassen.
             r.state.worldMeta.voxelEdits = [];
-            if (typeof r.saveState === "function") r.saveState();
+            r.saveState();
         }
         return out;
     });
 
     if (voxelP3bResults && !voxelP3bResults.error) {
-        check("Voxel P3b: fillVoxelSphere-Methode existiert", voxelP3bResults.hasFill);
         check(
             "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
             voxelP3bResults.fillAdds
@@ -473,65 +457,57 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
-        out.hasConsume = typeof r._consumeAnyMaterial === "function";
-        out.hasGate = typeof r._voxelFillGate === "function";
-        if (out.hasConsume && out.hasGate) {
-            const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
-            const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
-            const wm = r.state.worldMeta;
-            const matTotal = () => {
-                let t = 0;
-                for (const s of r.state.player.inventory) {
-                    if (s && s.kind === "material") t += s.count || 0;
-                }
-                return t;
-            };
-            // _consumeAnyMaterial: genug → true + reduziert.
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 10);
-            out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
-            // zu wenig → false + unverändert.
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 2);
-            out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
-            // Gate in frieden → frei, kein Verbrauch.
-            r.setGameMode("frieden");
-            r.state.player.inventory = new Array(27).fill(null);
-            const gF = r._voxelFillGate();
-            out.gateFriedenFree = gF.ok === true && gF.free === true;
-            // Gate in pfad mit Material → ok + verbraucht.
-            r.setGameMode("pfad");
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 10);
-            const gP = r._voxelFillGate();
-            out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
-            // Gate in pfad ohne Material → abgelehnt.
-            r.state.player.inventory = new Array(27).fill(null);
-            out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
-            // Chat `voxel fill` in pfad ohne Material → kein Edit.
-            // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-            wm.voxelEdits = [];
-            r.processChatCommand("voxel fill");
-            out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
-            // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
-            r.addMaterialToInventory("stein", 10);
-            wm.voxelEdits = [];
-            r.processChatCommand("voxel fill");
-            out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
-            // sauber zurücklassen.
-            wm.voxelEdits = [];
-            r.state.player.inventory = invBackup;
-            r.setGameMode(modeBackup);
-            if (typeof r.saveState === "function") r.saveState();
-        }
+        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+        const wm = r.state.worldMeta;
+        const matTotal = () => {
+            let t = 0;
+            for (const s of r.state.player.inventory) {
+                if (s && s.kind === "material") t += s.count || 0;
+            }
+            return t;
+        };
+        // _consumeAnyMaterial: genug → true + reduziert.
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 10);
+        out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
+        // zu wenig → false + unverändert.
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 2);
+        out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
+        // Gate in frieden → frei, kein Verbrauch.
+        r.setGameMode("frieden");
+        r.state.player.inventory = new Array(27).fill(null);
+        const gF = r._voxelFillGate();
+        out.gateFriedenFree = gF.ok === true && gF.free === true;
+        // Gate in pfad mit Material → ok + verbraucht.
+        r.setGameMode("pfad");
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 10);
+        const gP = r._voxelFillGate();
+        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+        // Gate in pfad ohne Material → abgelehnt.
+        r.state.player.inventory = new Array(27).fill(null);
+        out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
+        // Chat `voxel fill` in pfad ohne Material → kein Edit.
+        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+        wm.voxelEdits = [];
+        r.processChatCommand("voxel fill");
+        out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
+        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+        r.addMaterialToInventory("stein", 10);
+        wm.voxelEdits = [];
+        r.processChatCommand("voxel fill");
+        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+        // sauber zurücklassen.
+        wm.voxelEdits = [];
+        r.state.player.inventory = invBackup;
+        r.setGameMode(modeBackup);
+        r.saveState();
         return out;
     });
 
     if (voxelP3cResults && !voxelP3cResults.error) {
-        check(
-            "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
-            voxelP3cResults.hasConsume && voxelP3cResults.hasGate
-        );
         check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
         check(
             "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
@@ -562,10 +538,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
-        if (typeof r._buildEmptyWorldSnapshot === "function") {
-            const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
-            out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
-        }
+        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+        out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
         out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
         out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
 
@@ -639,34 +613,28 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.setGameMode("frieden");
 
         // DSL-Op set_mode
-        if (typeof r.dslRun === "function") {
-            r.dslRun(["set_mode", "pfad"], { source: "test" });
-            out.dslSetModeWorks = r.getGameMode() === "pfad";
-            r.setGameMode("frieden");
-        }
+        r.dslRun(["set_mode", "pfad"], { source: "test" });
+        out.dslSetModeWorks = r.getGameMode() === "pfad";
+        r.setGameMode("frieden");
 
         // set_mode ist in NON_BROADCASTABLE_OPS
         out.setModeNonBroadcastable =
             r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
 
         // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
-        if (typeof r.parseChatToDsl === "function") {
-            const built = r.parseChatToDsl("setze modus pfad");
-            out.chatPfad =
-                built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
-            const built2 = r.parseChatToDsl("modus schöpfer");
-            out.chatSchoepfer =
-                built2 &&
-                Array.isArray(built2.program) &&
-                built2.program[0] === "set_mode" &&
-                built2.program[1] === "schöpfer";
-        }
+        const built = r.parseChatToDsl("setze modus pfad");
+        out.chatPfad =
+            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+        const built2 = r.parseChatToDsl("modus schöpfer");
+        out.chatSchoepfer =
+            built2 &&
+            Array.isArray(built2.program) &&
+            built2.program[0] === "set_mode" &&
+            built2.program[1] === "schöpfer";
 
         // describeProgram-Eintrag
-        if (typeof r.describeProgram === "function") {
-            const desc = r.describeProgram(["set_mode", "pfad"]);
-            out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
-        }
+        const desc = r.describeProgram(["set_mode", "pfad"]);
+        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
         out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
@@ -759,21 +727,16 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
 
         // DSL-Op add_to_inventory (damm — lebendes builtIn; der Name ist mechanik-egal)
-        if (typeof r.dslRun === "function") {
-            r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
-            const has = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
-            out.dslOpWorks = has;
-        }
+        r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
+        out.dslOpWorks = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
 
         // NON_BROADCASTABLE
         out.addToInventoryNonBroadcastable =
             r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
 
         // describeProgram-Eintrag
-        if (typeof r.describeProgram === "function") {
-            const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-            out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
-        }
+        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display
         out.overlayInDom = !!document.getElementById("inventory-overlay");
@@ -814,7 +777,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.selectInventorySlot(0);
 
         // tryAssignFromInventoryToHotbar legt in Hotbar ab
-        const hotbarBefore = r.state.hotbar.slice();
         const assignOk = r.tryAssignFromInventoryToHotbar(3);
         out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
         out.assignClearsSelection = r.state.inventorySelected === null;
@@ -843,7 +805,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.61 Ich-F (H.1) — die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
         out.ichHasNoReise = !document.getElementById("ich-reise");
         out.hofChronikInDom = !!document.getElementById("hof-chronik");
-        if (typeof r._renderHofChronik === "function") r._renderHofChronik();
+        r._renderHofChronik();
         out.hofChronikRenders = (() => {
             const h = document.getElementById("hof-chronik");
             return !!(h && h.childNodes.length > 0);
@@ -870,7 +832,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.65 — die EINE Selbst-Suche TREIBT das Ich (das Werkstatt-Loop search→Treffer, kein toter
         // Omnibox-Knopf): tippen filtert das Rezeptbuch UND dimmt Nicht-Treffer in der Habe; leer = alles
         // wieder sichtbar. KONSUM-Test: nicht „Knopf existiert", sondern „die Suche wirkt beobachtbar".
-        if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+        r.renderRecipeBook();
         out.recipeRowsRoleColor = (() => {
             const rows = document.querySelectorAll("#inventory-recipes .recipe-row");
             if (!rows.length) return true; // keine Rezepte → keine Verletzung
@@ -951,8 +913,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // nicht von Test-Verschmutzung verletzt werden.
         r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.state.player.inventory = new Array(27).fill(null);
-        if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
-        if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+        r._renderHotbarDOM();
+        r.renderInventoryUI();
 
         return out;
     });
@@ -1620,7 +1582,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 // Cleanup: den Test-Edit zurücknehmen + die Skirt drainen
                 if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits))
                     r.state.worldMeta.voxelEdits.pop();
-                if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                r._drainDirtyVoxelChunks();
             }
         }
 

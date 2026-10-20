@@ -254,7 +254,7 @@ async function checkBandRing2Extended(ctx) {
     // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (!r || typeof r.dslSelectByFitness !== "function") return null;
+        if (!r) return null;
         const out = {};
 
         // Seeded RNG für deterministische Tests.
@@ -491,7 +491,7 @@ async function checkBandV1722NexusEyes(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureLlm(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
@@ -503,11 +503,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const out = {};
 
         // 1. Methoden existieren
-        out.hasBuildPersona = typeof r._buildCreaturePersonaPrompt === "function";
-        out.hasFindByName = typeof r._findCreatureByName === "function";
         out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
-        out.hasParseAddress = typeof r._parseCreatureAddress === "function";
-        out.hasMaybeAnswerCreature = typeof r.maybeAnswerCreature === "function";
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
@@ -603,12 +599,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
         check(
-            "Welle 6.H P2E V1: alle 5 Methoden existieren (_buildCreaturePersonaPrompt + _findCreatureByName + llmCallCreature + _parseCreatureAddress + maybeAnswerCreature)",
-            wave6hP2eV1Results.hasBuildPersona &&
-                wave6hP2eV1Results.hasFindByName &&
-                wave6hP2eV1Results.hasLlmCallCreature &&
-                wave6hP2eV1Results.hasParseAddress &&
-                wave6hP2eV1Results.hasMaybeAnswerCreature
+            "Welle 6.H P2E V1: llmCallCreature existiert (die Suite ruft ihn nie)",
+            wave6hP2eV1Results.hasLlmCallCreature
         );
         check(
             "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
@@ -710,7 +702,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         cWesen.userData.name = "TestWesenV11";
         const cGeist = r.spawnCreatureAt(player.x + 620, player.y, player.z + 620, "happy", "baer");
         cGeist.userData.name = "TestGeistV11";
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-fuchs"));
         out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
@@ -801,7 +793,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
         out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
         out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
-        out.hasMethod = typeof r._creatureSpeakProactive === "function";
         out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
 
         // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
@@ -949,11 +940,10 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
         check(
-            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
+            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + Schalter im State",
             wave6hP2eV2Results.hasPhrases &&
                 wave6hP2eV2Results.gapPerCreature &&
                 wave6hP2eV2Results.gapGlobal &&
-                wave6hP2eV2Results.hasMethod &&
                 wave6hP2eV2Results.toggleInState
         );
         check(
@@ -1036,10 +1026,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.hasValidator = typeof r._isCreatureProposalAllowed === "function";
-        out.hasHandler = typeof r._handleCreatureProposedProgram === "function";
-        out.hasExecutor = typeof r._executeCreatureProgram === "function";
-        out.hasButtonRenderer = typeof r._renderCreatureProposalButtons === "function";
         out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
         out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
@@ -1187,13 +1173,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
+            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
                 wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.hasValidator &&
-                wave6hP2eV3Results.hasHandler &&
-                wave6hP2eV3Results.hasExecutor &&
-                wave6hP2eV3Results.hasButtonRenderer &&
                 wave6hP2eV3Results.hasRareEventTrigger &&
                 wave6hP2eV3Results.rareEventGap
         );
@@ -1274,7 +1256,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWorkshopPolishAndLlm(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
@@ -1287,13 +1269,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             // Methoden
-            out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
             out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
-            out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
             // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
             // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
             out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
-            out.hasUpdateTopBarState = typeof r._workshopUpdateTopBarState === "function";
             out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
@@ -1363,7 +1342,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1374,13 +1353,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v805Results && !v805Results.error) {
         check(
-            "V8.05 (V17.91): Werkstatt-Methoden existieren (Tool-Render/Drop + Stats + Top-Leisten-Akte + Del-Btn)",
-            v805Results.hasRenderTools &&
-                v805Results.hasHandleToolDrop &&
-                v805Results.hasRenderStats &&
-                v805Results.hasInstallActionBtns &&
-                v805Results.hasUpdateTopBarState &&
-                v805Results.hasInstallDelBtn
+            "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
+            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
         );
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
@@ -1435,7 +1409,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
-            out.hasDefaultSize = typeof r._workshopApplyDefaultSizeOnce === "function";
 
             // Rechte Spalte ist breiter (≥132px)
             const rightPalette = document.getElementById("workshop-side-palette-right");
@@ -1473,7 +1446,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1492,8 +1465,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.sevenButtonsInBar
         );
         check(
-            "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
-            v806Results.hasActionInstall && v806Results.hasDefaultSize
+            "V8.06: _workshopInstallActionButtons existiert (die Suite fährt ihn nicht)",
+            v806Results.hasActionInstall
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
@@ -1569,7 +1542,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1778,9 +1751,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
         // UI: Key-Row ist auch für ollama sichtbar (V7.94)
         if (r.state.llm) r.state.llm.provider = "ollama";
-        if (typeof r.llmRefreshProviderUI === "function") {
-            r.llmRefreshProviderUI();
-        }
+        r.llmRefreshProviderUI();
         const keyRow = document.getElementById("llm-key-row");
         out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
         const keyInput = document.getElementById("llm-key");
@@ -1965,15 +1936,15 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
         // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
         r.state.llm.provider = "ollama";
-        if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+        r.llmRefreshProviderUI();
         out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
         out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
         r.state.llm.provider = "google";
-        if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+        r.llmRefreshProviderUI();
         out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
         out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
         r.state.llm.provider = "ollama";
-        if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+        r.llmRefreshProviderUI();
 
         // 4. Provider-Hint enthält CORS-freundliche Provider-Liste
         if (proxyHint) {

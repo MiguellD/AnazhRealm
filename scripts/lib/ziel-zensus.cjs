@@ -234,7 +234,7 @@ function zielZensus(k) {
         await uhr.lesen();
         // DIE TEXTUREN: jede lebende des Renderers (three-Objekt → GPU-Textur) und jede GPU-Textur mit einem Zugriff.
         const eintraege = new Map();
-        for (const [t, v] of rend.info.memoryMap) {
+        for (const [t] of rend.info.memoryMap) {
             if (!t || !t.isTexture || !be.has(t)) continue;
             const d = be.get(t);
             for (const g of [d.texture, d.msaaTexture]) if (g && !eintraege.has(g)) eintraege.set(g, t);

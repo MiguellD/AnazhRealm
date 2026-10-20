@@ -111,7 +111,7 @@ async function checkBandV1749Adventure(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
@@ -120,7 +120,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // (Test-Isolation).
     await page.evaluate(() => {
         const r = window.anazhRealm;
-        if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
+        if (r && r.state && r.state.voxelChunks) {
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
@@ -128,187 +128,180 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasDensityAt = typeof r._terrainDensityAt === "function";
-        out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
-        out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
 
-        if (out.hasDensityAt) {
-            // Das Feld ist genuin 3D: bei festem (x,z) fällt die Dichte mit der Höhe — über mehrere
-            // Stichproben gemittelt, damit das 3D-Noise-Band die Monotonie nicht lokal kippt.
-            let lowerSum = 0;
-            let upperSum = 0;
-            for (let s = 0; s < 8; s++) {
-                const sx = s * 37 - 100;
-                const sz = s * 53 + 40;
-                lowerSum += r._terrainDensityAt(sx, -40, sz);
-                upperSum += r._terrainDensityAt(sx, 60, sz);
-            }
-            out.densityIs3D = lowerSum > upperSum;
-            // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0) vertikal zwischen festem Grund. Die
-            // Höhlen-Zone ist SURF-RELATIV (base-20 .. surf-16) → relativ zur lokalen Oberfläche scannen.
-            let foundCave = false;
-            for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
-                for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
-                    const surf = r._terrainMacroSurfaceY(sx, sz);
-                    for (let sy = (r.state.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) {
-                        if (
-                            r._terrainDensityAt(sx, sy, sz) < 0 &&
-                            r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
-                            r._terrainDensityAt(sx, sy + 6, sz) > 0
-                        ) {
-                            foundCave = true;
-                        }
-                    }
-                }
-            }
-            out.densityCanCave = foundCave;
-
-            // Der Voxel-Chunk fasst das ganze Oberflächen-Band: Boden überall fest, Decke überall Luft →
-            // keine Klipp-Löcher.
-            const cBase = r.state.terrainBaseHeight || 0;
-            let floorAllSolid = true;
-            let ceilAllAir = true;
-            for (let sx = -220; sx <= 220; sx += 20) {
-                for (let sz = -220; sz <= 220; sz += 20) {
-                    // SURF-RELATIV: Decke 30 m über surf = Luft. Der Boden-Sample liegt UNTER dem Höhlen-Band
-                    // (Kavernen reichen legitim bis ~surf-45): garantiert fest erst unter caveFloor (base-28) UND
-                    // dem Seeboden → `min(surf, base) - 40`.
-                    const surf = r._terrainMacroSurfaceY(sx, sz);
-                    if (r._terrainDensityAt(sx, Math.min(surf, cBase) - 40, sz) <= 0) floorAllSolid = false;
-                    if (r._terrainDensityAt(sx, surf + 30, sz) >= 0) ceilAllAir = false;
-                }
-            }
-            out.chunkContainsSurface = floorAllSolid && ceilAllAir;
-
-            // Höhlen entstehen mit der Welt: auf einem 3D-Raster ist eine Höhlen-Zelle Luft, 6 m darüber UND
-            // darunter fest umschlossen. Es gibt viele, aber als Minderheit des festen Volumens (die Welt ist
-            // nicht hohl); der Boden unter dem Höhlen-Band (base-44, unter caveFloor) bleibt überall fest.
-            let caveCells = 0;
-            let solidCells = 0;
-            let p4FloorSolid = true;
-            for (let sx = -200; sx <= 200; sx += 25) {
-                for (let sz = -200; sz <= 200; sz += 25) {
-                    // V14.7: SURF-RELATIV — der Boden UNTER der Höhlen-Zone (min aus
-                    // base-25 und surf-30) bleibt fest; das Höhlen-Band scannt bis surf.
-                    const surf = r._terrainMacroSurfaceY(sx, sz);
-                    if (r._terrainDensityAt(sx, Math.min(cBase - 25, surf - 30), sz) <= 0) p4FloorSolid = false;
-                    for (let sy = cBase - 26; sy <= surf + 4; sy += 5) {
-                        const dHere = r._terrainDensityAt(sx, sy, sz);
-                        if (dHere > 0) solidCells++;
-                        if (
-                            dHere < 0 &&
-                            r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
-                            r._terrainDensityAt(sx, sy + 6, sz) > 0
-                        ) {
-                            caveCells++;
-                        }
-                    }
-                }
-            }
-            out.cavesExist = caveCells >= 8;
-            out.worldNotHollow = caveCells * 3 < solidCells;
-            out.caveFloorSolid = p4FloorSolid;
+        // Das Feld ist genuin 3D: bei festem (x,z) fällt die Dichte mit der Höhe — über mehrere
+        // Stichproben gemittelt, damit das 3D-Noise-Band die Monotonie nicht lokal kippt.
+        let lowerSum = 0;
+        let upperSum = 0;
+        for (let s = 0; s < 8; s++) {
+            const sx = s * 37 - 100;
+            const sz = s * 53 + 40;
+            lowerSum += r._terrainDensityAt(sx, -40, sz);
+            upperSum += r._terrainDensityAt(sx, 60, sz);
         }
-
-        if (out.hasChunkGeometry) {
-            // V14.7: oy straddelt die ECHTE Oberfläche (vorher fix -24; die V14.7-
-            // Massive heben surf darüber → ein Tiefband läge ganz unter Grund → 0 Verts).
-            const geom = r._voxelChunkGeometry(0, Math.round(r._terrainMacroSurfaceY(18, 18)) - 20, 0, 20, 20, 20, 1.8);
-            out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
-            if (out.geomBuilt) {
-                const pos = geom.getAttribute("position");
-                out.geomVertexCount = pos.count;
-                let allFinite = true;
-                for (let v = 0; v < pos.count * 3; v++) {
-                    if (!Number.isFinite(pos.array[v])) allFinite = false;
-                }
-                out.geomFinite = allFinite;
-                out.geomHasNormals = !!geom.getAttribute("normal");
-                out.geomHasIndex = !!geom.getIndex();
-                // V9.16 — die Normalen kommen aus dem Dichte-
-                // Gradienten: jede ist ein endlicher Einheits-
-                // vektor (kein Facetten-Rauten-Muster).
-                const nrm = geom.getAttribute("normal");
-                let normalsUnit = !!nrm && nrm.count === pos.count;
-                if (nrm) {
-                    for (let v = 0; v < nrm.count; v++) {
-                        const nl = Math.sqrt(
-                            nrm.getX(v) * nrm.getX(v) + nrm.getY(v) * nrm.getY(v) + nrm.getZ(v) * nrm.getZ(v)
-                        );
-                        if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
-                            normalsUnit = false;
-                            break;
-                        }
+        out.densityIs3D = lowerSum > upperSum;
+        // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0) vertikal zwischen festem Grund. Die
+        // Höhlen-Zone ist SURF-RELATIV (base-20 .. surf-16) → relativ zur lokalen Oberfläche scannen.
+        let foundCave = false;
+        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
+            for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
+                const surf = r._terrainMacroSurfaceY(sx, sz);
+                for (let sy = (r.state.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) {
+                    if (
+                        r._terrainDensityAt(sx, sy, sz) < 0 &&
+                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                    ) {
+                        foundCave = true;
                     }
                 }
-                out.normalsUnit = normalsUnit;
-                // Kein Streck-Dreieck (Index-Aliasing): jede Kante ist lokal klein; ein Stray-Dreieck quer durch
-                // den Chunk hätte zig Zellen Kantenlänge. step=1.8 → Grenze 5×step=9.
-                if (out.geomHasIndex) {
-                    const ia = geom.getIndex().array;
-                    const pa = pos.array;
-                    let maxEdge = 0;
-                    const elen = (p, q) => Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
-                    for (let t = 0; t + 2 < ia.length; t += 3) {
-                        const a = ia[t] * 3;
-                        const b = ia[t + 1] * 3;
-                        const c = ia[t + 2] * 3;
-                        const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
-                        if (m > maxEdge) maxEdge = m;
-                    }
-                    out.geomMaxEdge = maxEdge;
-                    out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+            }
+        }
+        out.densityCanCave = foundCave;
 
-                    // Laplacian-Smooth: je Vertex die Y-Distanz zum Nachbar-Mittel, gemittelt über alle Vertices.
-                    // Ohne Smooth ~step/2 = 0.9 (Surface-Nets-Treppe); 1 Iteration mit Lambda 0.5 halbiert sie etwa
-                    // (der Vertex wandert 50 % zum Nachbar-Mittel).
-                    const neighborSets = new Array(pos.count);
-                    for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
-                    for (let t = 0; t + 2 < ia.length; t += 3) {
-                        const i0 = ia[t],
-                            i1 = ia[t + 1],
-                            i2 = ia[t + 2];
-                        neighborSets[i0].add(i1);
-                        neighborSets[i0].add(i2);
-                        neighborSets[i1].add(i0);
-                        neighborSets[i1].add(i2);
-                        neighborSets[i2].add(i0);
-                        neighborSets[i2].add(i1);
-                    }
-                    let totalDev = 0;
-                    let sampledVerts = 0;
-                    for (let v = 0; v < pos.count; v++) {
-                        const nbrs = neighborSets[v];
-                        if (nbrs.size < 2) continue;
-                        let sy = 0;
-                        for (const n of nbrs) sy += pa[n * 3 + 1];
-                        const avgY = sy / nbrs.size;
-                        totalDev += Math.abs(pa[v * 3 + 1] - avgY);
-                        sampledVerts++;
-                    }
-                    out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
-                    // step=1.8: ohne Smooth liegt die Mean-Dev typisch > 0.3 (steile Treppen), mit Lambda 0.5 < 0.25.
-                    out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
+        // Der Voxel-Chunk fasst das ganze Oberflächen-Band: Boden überall fest, Decke überall Luft →
+        // keine Klipp-Löcher.
+        const cBase = r.state.terrainBaseHeight || 0;
+        let floorAllSolid = true;
+        let ceilAllAir = true;
+        for (let sx = -220; sx <= 220; sx += 20) {
+            for (let sz = -220; sz <= 220; sz += 20) {
+                // SURF-RELATIV: Decke 30 m über surf = Luft. Der Boden-Sample liegt UNTER dem Höhlen-Band
+                // (Kavernen reichen legitim bis ~surf-45): garantiert fest erst unter caveFloor (base-28) UND
+                // dem Seeboden → `min(surf, base) - 40`.
+                const surf = r._terrainMacroSurfaceY(sx, sz);
+                if (r._terrainDensityAt(sx, Math.min(surf, cBase) - 40, sz) <= 0) floorAllSolid = false;
+                if (r._terrainDensityAt(sx, surf + 30, sz) >= 0) ceilAllAir = false;
+            }
+        }
+        out.chunkContainsSurface = floorAllSolid && ceilAllAir;
 
-                    // Alternierende Diagonalen (Schachbrett), 6 Indizes je Quad: a-c-Diagonale [a,b,c, a,c,d] →
-                    // erster Vertex beider Dreiecke gleich (a); b-d-Diagonale [a,b,d, b,c,d] → ZWEITER Vertex des
-                    // ersten == ERSTER des zweiten (b). Mit Schachbrett kommen beide Patterns vor.
-                    let acDiag = 0;
-                    let bdDiag = 0;
-                    for (let t = 0; t + 5 < ia.length; t += 6) {
-                        if (ia[t] === ia[t + 3]) acDiag++;
-                        else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+        // Höhlen entstehen mit der Welt: auf einem 3D-Raster ist eine Höhlen-Zelle Luft, 6 m darüber UND
+        // darunter fest umschlossen. Es gibt viele, aber als Minderheit des festen Volumens (die Welt ist
+        // nicht hohl); der Boden unter dem Höhlen-Band (base-44, unter caveFloor) bleibt überall fest.
+        let caveCells = 0;
+        let solidCells = 0;
+        let p4FloorSolid = true;
+        for (let sx = -200; sx <= 200; sx += 25) {
+            for (let sz = -200; sz <= 200; sz += 25) {
+                // V14.7: SURF-RELATIV — der Boden UNTER der Höhlen-Zone (min aus
+                // base-25 und surf-30) bleibt fest; das Höhlen-Band scannt bis surf.
+                const surf = r._terrainMacroSurfaceY(sx, sz);
+                if (r._terrainDensityAt(sx, Math.min(cBase - 25, surf - 30), sz) <= 0) p4FloorSolid = false;
+                for (let sy = cBase - 26; sy <= surf + 4; sy += 5) {
+                    const dHere = r._terrainDensityAt(sx, sy, sz);
+                    if (dHere > 0) solidCells++;
+                    if (
+                        dHere < 0 &&
+                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                    ) {
+                        caveCells++;
                     }
-                    out.diagonalAcCount = acDiag;
-                    out.diagonalBdCount = bdDiag;
-                    out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
                 }
+            }
+        }
+        out.cavesExist = caveCells >= 8;
+        out.worldNotHollow = caveCells * 3 < solidCells;
+        out.caveFloorSolid = p4FloorSolid;
+
+        // V14.7: oy straddelt die ECHTE Oberfläche (vorher fix -24; die V14.7-
+        // Massive heben surf darüber → ein Tiefband läge ganz unter Grund → 0 Verts).
+        const geom = r._voxelChunkGeometry(0, Math.round(r._terrainMacroSurfaceY(18, 18)) - 20, 0, 20, 20, 20, 1.8);
+        out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
+        if (out.geomBuilt) {
+            const pos = geom.getAttribute("position");
+            out.geomVertexCount = pos.count;
+            let allFinite = true;
+            for (let v = 0; v < pos.count * 3; v++) {
+                if (!Number.isFinite(pos.array[v])) allFinite = false;
+            }
+            out.geomFinite = allFinite;
+            out.geomHasNormals = !!geom.getAttribute("normal");
+            out.geomHasIndex = !!geom.getIndex();
+            // V9.16 — die Normalen kommen aus dem Dichte-
+            // Gradienten: jede ist ein endlicher Einheits-
+            // vektor (kein Facetten-Rauten-Muster).
+            const nrm = geom.getAttribute("normal");
+            let normalsUnit = !!nrm && nrm.count === pos.count;
+            if (nrm) {
+                for (let v = 0; v < nrm.count; v++) {
+                    const nl = Math.sqrt(
+                        nrm.getX(v) * nrm.getX(v) + nrm.getY(v) * nrm.getY(v) + nrm.getZ(v) * nrm.getZ(v)
+                    );
+                    if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
+                        normalsUnit = false;
+                        break;
+                    }
+                }
+            }
+            out.normalsUnit = normalsUnit;
+            // Kein Streck-Dreieck (Index-Aliasing): jede Kante ist lokal klein; ein Stray-Dreieck quer durch
+            // den Chunk hätte zig Zellen Kantenlänge. step=1.8 → Grenze 5×step=9.
+            if (out.geomHasIndex) {
+                const ia = geom.getIndex().array;
+                const pa = pos.array;
+                let maxEdge = 0;
+                const elen = (p, q) => Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
+                for (let t = 0; t + 2 < ia.length; t += 3) {
+                    const a = ia[t] * 3;
+                    const b = ia[t + 1] * 3;
+                    const c = ia[t + 2] * 3;
+                    const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
+                    if (m > maxEdge) maxEdge = m;
+                }
+                out.geomMaxEdge = maxEdge;
+                out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+
+                // Laplacian-Smooth: je Vertex die Y-Distanz zum Nachbar-Mittel, gemittelt über alle Vertices.
+                // Ohne Smooth ~step/2 = 0.9 (Surface-Nets-Treppe); 1 Iteration mit Lambda 0.5 halbiert sie etwa
+                // (der Vertex wandert 50 % zum Nachbar-Mittel).
+                const neighborSets = new Array(pos.count);
+                for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
+                for (let t = 0; t + 2 < ia.length; t += 3) {
+                    const i0 = ia[t],
+                        i1 = ia[t + 1],
+                        i2 = ia[t + 2];
+                    neighborSets[i0].add(i1);
+                    neighborSets[i0].add(i2);
+                    neighborSets[i1].add(i0);
+                    neighborSets[i1].add(i2);
+                    neighborSets[i2].add(i0);
+                    neighborSets[i2].add(i1);
+                }
+                let totalDev = 0;
+                let sampledVerts = 0;
+                for (let v = 0; v < pos.count; v++) {
+                    const nbrs = neighborSets[v];
+                    if (nbrs.size < 2) continue;
+                    let sy = 0;
+                    for (const n of nbrs) sy += pa[n * 3 + 1];
+                    const avgY = sy / nbrs.size;
+                    totalDev += Math.abs(pa[v * 3 + 1] - avgY);
+                    sampledVerts++;
+                }
+                out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
+                // step=1.8: ohne Smooth liegt die Mean-Dev typisch > 0.3 (steile Treppen), mit Lambda 0.5 < 0.25.
+                out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
+
+                // Alternierende Diagonalen (Schachbrett), 6 Indizes je Quad: a-c-Diagonale [a,b,c, a,c,d] →
+                // erster Vertex beider Dreiecke gleich (a); b-d-Diagonale [a,b,d, b,c,d] → ZWEITER Vertex des
+                // ersten == ERSTER des zweiten (b). Mit Schachbrett kommen beide Patterns vor.
+                let acDiag = 0;
+                let bdDiag = 0;
+                for (let t = 0; t + 5 < ia.length; t += 6) {
+                    if (ia[t] === ia[t + 3]) acDiag++;
+                    else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+                }
+                out.diagonalAcCount = acDiag;
+                out.diagonalBdCount = bdDiag;
+                out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
             }
         }
 
         // Die Kollision ist feld-nativ (Dichtefeld), es gibt kein per-Chunk-Kollisions-Artefakt —
         // geprüft wird nur der Mesh-in-Szene-Lebenszyklus von _spawnVoxelTestChunk.
-        if (out.hasSpawnTest && r.state.scene) {
+        if (r.state.scene) {
             const before = r.state.scene.children.length;
             const m1 = r._spawnVoxelTestChunk();
             const afterOne = r.state.scene.children.length;
@@ -328,9 +321,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     });
 
     if (voxelP1Results && !voxelP1Results.error) {
-        check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
-        check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
-        check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
         check("Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)", voxelP1Results.densityIs3D);
         check("Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)", voxelP1Results.densityCanCave);
         check(
@@ -393,264 +383,247 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
-        out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
-        out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
-        out.hasConfig = typeof r._voxelChunkConfig === "function";
-        out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
         // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
         // (state.voxelTerrainActive default true).
 
-        if (out.hasTick) {
-            // Der Game-Loop läuft headless gedrosselt (~1 Hz im Hintergrund-Tab) → den Voxel-Ring hier
-            // explizit synchron bauen; im Spiel-Pfad läuft alles asynchron.
-            const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-            // Der Spieler-Chunk baut async im Worker, dessen Callback im synchronen Test-Pump nie feuert →
-            // Worker temporär „nicht synced“: `_acquireVoxelChunkBuild` baut dann synchron (Stage-3-Fallback).
-            const _wgSynced = r.state.voxelWorkerWorldgenSynced;
-            r.state.voxelWorkerWorldgenSynced = false;
-            if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-            for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
-            r.state.voxelWorkerWorldgenSynced = _wgSynced;
-            // Gras ist deferred (enqueue im Finalize, Build ≤1/Frame im Loop): das Streaming enqueued nur,
-            // die Test-Naht drainet sofort — sonst sieht der Grass-Check leere Chunks.
-            if (typeof r._drainPendingGrass === "function") r._drainPendingGrass();
-            out.activated = r.state.voxelTerrainActive === true;
-            out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
-            // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
-            // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
+        // Der Game-Loop läuft headless gedrosselt (~1 Hz im Hintergrund-Tab) → den Voxel-Ring hier
+        // explizit synchron bauen; im Spiel-Pfad läuft alles asynchron.
+        const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        // Der Spieler-Chunk baut async im Worker, dessen Callback im synchronen Test-Pump nie feuert →
+        // Worker temporär „nicht synced“: `_acquireVoxelChunkBuild` baut dann synchron (Stage-3-Fallback).
+        const _wgSynced = r.state.voxelWorkerWorldgenSynced;
+        r.state.voxelWorkerWorldgenSynced = false;
+        r._drainDirtyVoxelChunks();
+        for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
+        r.state.voxelWorkerWorldgenSynced = _wgSynced;
+        // Gras ist deferred (enqueue im Finalize, Build ≤1/Frame im Loop): das Streaming enqueued nur,
+        // die Test-Naht drainet sofort — sonst sieht der Grass-Check leere Chunks.
+        r._drainPendingGrass();
+        out.activated = r.state.voxelTerrainActive === true;
+        out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
+        // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
+        // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
 
-            // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
-            out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
-            out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
-            let grassEntries = 0;
-            let grassBlades = 0;
-            if (r.state.voxelChunkGrass) {
-                for (const g of r.state.voxelChunkGrass.values()) {
-                    grassEntries++;
-                    if (g && g.isInstancedMesh) grassBlades += g.count;
+        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
+        let grassEntries = 0;
+        let grassBlades = 0;
+        if (r.state.voxelChunkGrass) {
+            for (const g of r.state.voxelChunkGrass.values()) {
+                grassEntries++;
+                if (g && g.isInstancedMesh) grassBlades += g.count;
+            }
+        }
+        out.voxelGrassBuilt = grassEntries > 0;
+        // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
+        // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf).
+        const T = window.THREE.TSL;
+        out.voxelGrassIsSurface =
+            grassEntries > 0 &&
+            grassBlades === 0 &&
+            window.__consumes(r, "_terrainGeologyAlbedo", r._rauschAtlas(), "ebene", [
+                T,
+                T.attribute("color", "vec3"),
+                T.positionWorld,
+            ]);
+        // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
+        // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
+        // 1,2 m unter dem gezeichneten Boden).
+        const sy = r._voxelSurfaceY(12, -8);
+        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+        out.voxelSurfaceIsBoundary =
+            out.voxelSurfaceFinite &&
+            r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
+            r._terrainDensityAt(12, sy + 0.6, -8) <= 0;
+
+        // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
+        const ringBefore = r.state.chunkRingRadius;
+        const activeBefore = r.state._activeRingRadius;
+        r.state.chunkRingRadius = 6;
+        // Der Lade-Ramp `_activeRingRadius` sitzt zwischen Slider und ringRadius (`min(target, active)`).
+        // Geprüft wird der STEADY-STATE → Ramp aufs Ziel setzen (ein langsamer Warmup ließe active < 6).
+        r.state._activeRingRadius = 6;
+        out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
+        r.state.chunkRingRadius = ringBefore;
+        r.state._activeRingRadius = activeBefore;
+        // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
+        // Aufruf für denselben Chunk spawnt nichts mehr.
+        r._populateVoxelChunkVegetation(777, 777);
+        out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
+        out.voxelVegMarksChunk = !!(r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777"));
+
+        // Die Höhen-Konsumenten sind voxel-aware: getTerrainHeightAt + findSurfaceAbove liefern die
+        // Voxel-Oberfläche.
+        const vsRef = r._voxelSurfaceY(10, 10);
+        const ghVoxel = r.getTerrainHeightAt(10, 10);
+        out.getTerrainHeightVoxelAware =
+            typeof vsRef === "number" &&
+            Number.isFinite(vsRef) &&
+            typeof ghVoxel === "number" &&
+            Math.abs(ghVoxel - vsRef) < 0.01;
+        const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
+        out.findSurfaceVoxelAware =
+            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+
+        // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
+        // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
+        // der Migrations-Genesis-Eintrag den folgenden „Journal nicht überflutet“-Test.
+        const origMeta = r.state.worldMeta;
+        const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
+        const origJournalSeen =
+            r.state.worldJournal && r.state.worldJournal.seen ? Object.assign({}, r.state.worldJournal.seen) : null;
+        // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
+        const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
+        r.state.worldMeta = oldMeta;
+        r.ensureWorldMeta();
+        out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
+        // V9.35 — explizit Heightfield-Opt-out wird auch
+        // zwangs-migriert (der Opt-out existiert nicht mehr).
+        const optOutMeta = {
+            worldId: "test-opt-out",
+            slug: "test-opt-out",
+            bornAt: 100,
+            seed: "test",
+            voxelTerrain: false,
+        };
+        r.state.worldMeta = optOutMeta;
+        r.ensureWorldMeta();
+        out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
+        r.state.worldMeta = origMeta;
+        if (r.state.worldJournal && origJournalEntries) {
+            r.state.worldJournal.entries = origJournalEntries;
+            if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+        }
+
+        // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
+        let anyColorAttr = false;
+        let colorMin = 1;
+        let colorMax = 0;
+        let skirtProven = false;
+        const cfg0 = r._voxelChunkConfig();
+        for (const e of r.state.voxelChunks.values()) {
+            if (!e || !e.mesh || !e.mesh.geometry) continue;
+            const col = e.mesh.geometry.getAttribute("color");
+            if (col) {
+                anyColorAttr = true;
+                for (let i = 0; i < col.count; i++) {
+                    const rr = col.getX(i);
+                    if (rr < colorMin) colorMin = rr;
+                    if (rr > colorMax) colorMax = rr;
                 }
             }
-            out.voxelGrassBuilt = grassEntries > 0;
-            // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
-            // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf).
-            const T = window.THREE.TSL;
-            out.voxelGrassIsSurface =
-                grassEntries > 0 &&
-                grassBlades === 0 &&
-                window.__consumes(r, "_terrainGeologyAlbedo", r._rauschAtlas(), "ebene", [T, T.attribute("color", "vec3"), T.positionWorld]);
-            // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
-            // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
-            // 1,2 m unter dem gezeichneten Boden).
-            const sy = r._voxelSurfaceY(12, -8);
-            out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
-            out.voxelSurfaceIsBoundary =
-                out.voxelSurfaceFinite &&
-                r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
-                r._terrainDensityAt(12, sy + 0.6, -8) <= 0;
+            const g = e.mesh.geometry;
+            g.computeBoundingBox();
+            const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
+            if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
+        }
+        out.voxelHasFieldColors = anyColorAttr;
+        out.voxelColorVaries = colorMax - colorMin > 0.05;
+        out.voxelSkirt = skirtProven;
 
-            // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
-            out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
-            out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
-            // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
-            const ringBefore = r.state.chunkRingRadius;
-            const activeBefore = r.state._activeRingRadius;
-            r.state.chunkRingRadius = 6;
-            // Der Lade-Ramp `_activeRingRadius` sitzt zwischen Slider und ringRadius (`min(target, active)`).
-            // Geprüft wird der STEADY-STATE → Ramp aufs Ziel setzen (ein langsamer Warmup ließe active < 6).
-            r.state._activeRingRadius = 6;
-            out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
-            r.state.chunkRingRadius = ringBefore;
-            r.state._activeRingRadius = activeBefore;
-            // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
-            // Aufruf für denselben Chunk spawnt nichts mehr.
-            r._populateVoxelChunkVegetation(777, 777);
-            out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
-            out.voxelVegMarksChunk = !!(r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777"));
+        // Streaming: alles abräumen, ein Tick baut wieder auf.
+        for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        // Ein Tick im synchronen Test erzeugt nur pending Worker-Requests, keine Chunk-Einträge →
+        // synchron bauen (Stage-3, Worker temporär „nicht synced“) wie der Pump oben; im Spiel läuft der
+        // Tick async.
+        const _wgSyncedTick = r.state.voxelWorkerWorldgenSynced;
+        r.state.voxelWorkerWorldgenSynced = false;
+        r._tickVoxelChunkStreaming(pos);
+        r.state.voxelWorkerWorldgenSynced = _wgSyncedTick;
+        out.tickBuilds = r.state.voxelChunks.size >= 1;
+        // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
+        // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
+        r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
+        out.pruneRemovesFar = r.state.voxelChunks.size === 0;
 
-            // Die Höhen-Konsumenten sind voxel-aware: getTerrainHeightAt + findSurfaceAbove liefern die
-            // Voxel-Oberfläche.
-            const vsRef = r._voxelSurfaceY(10, 10);
-            const ghVoxel = r.getTerrainHeightAt(10, 10);
-            out.getTerrainHeightVoxelAware =
-                typeof vsRef === "number" &&
-                Number.isFinite(vsRef) &&
-                typeof ghVoxel === "number" &&
-                Math.abs(ghVoxel - vsRef) < 0.01;
-            const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
-            out.findSurfaceVoxelAware =
-                typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+        // V9.35: nach dem Prune baut der Streaming-Ring den
+        // Spieler-Ring neu auf — wir restaurieren das hier
+        // direkt, damit nachfolgende Tests Voxel-Chunks haben.
+        r._tickVoxelChunkStreaming(pos);
 
-            // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
-            // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
-            // der Migrations-Genesis-Eintrag den folgenden „Journal nicht überflutet“-Test.
-            const origMeta = r.state.worldMeta;
-            const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
-            const origJournalSeen =
-                r.state.worldJournal && r.state.worldJournal.seen ? Object.assign({}, r.state.worldJournal.seen) : null;
-            // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
-            const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
-            r.state.worldMeta = oldMeta;
-            r.ensureWorldMeta();
-            out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
-            // V9.35 — explizit Heightfield-Opt-out wird auch
-            // zwangs-migriert (der Opt-out existiert nicht mehr).
-            const optOutMeta = {
-                worldId: "test-opt-out",
-                slug: "test-opt-out",
-                bornAt: 100,
-                seed: "test",
-                voxelTerrain: false,
-            };
-            r.state.worldMeta = optOutMeta;
-            r.ensureWorldMeta();
-            out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
-            r.state.worldMeta = origMeta;
-            if (r.state.worldJournal && origJournalEntries) {
-                r.state.worldJournal.entries = origJournalEntries;
-                if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+        // LOD-Pyramide: der Warmup läuft bei Ring 4 und erreicht LOD2/LOD3 (r≥9) nie, daher explizit:
+        // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6), (b) Zuweisung r2-8→LOD1, r9-10→2,
+        // r≥11→3, (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob — Surface-Nets +
+        // pad/crop müssen es tragen).
+        const cL2 = r._voxelChunkConfig(2);
+        const cL3 = r._voxelChunkConfig(3);
+        out.lodPyramidConfig =
+            cL2.dim === 6 &&
+            Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
+            Math.abs(cL2.dimY * cL2.step - 417.6) < 1e-6 &&
+            cL3.dim === 3 &&
+            Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
+            Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
+        // K51-2 (die Boden-Stufen nach dem Kasten-Abstand): der Spieler in der Mitte des Chunks 0,0 — Chunk rr liegt
+        // rr · 43,2 − 21,6 m weit (r ≤ 1 → L0, r2 → L1, r3–9 → L2, ab r10 → L3)
+        const lf = (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6);
+        out.lodPyramidBands =
+            lf(0) === 0 && lf(1) === 0 && lf(2) === 1 && lf(3) === 2 && lf(9) === 2 && lf(10) === 3 && lf(12) === 3;
+        let lod23Builds = true;
+        try {
+            for (const lod of [2, 3]) {
+                const cfg = r._voxelChunkConfig(lod);
+                const surfY = r._terrainMacroSurfaceY(2000, 2000);
+                const oy = Math.round(surfY - cfg.dimY * cfg.step * 0.4);
+                const g = r._voxelChunkGeometry(2000, oy, 2000, cfg.dim, cfg.dimY, cfg.dim, cfg.step, null, 1);
+                const posAttr = g && g.getAttribute && g.getAttribute("position");
+                if (!posAttr || posAttr.count === 0) lod23Builds = false;
             }
+        } catch (_e) {
+            lod23Builds = false;
+            out.lod23Err = String(_e && _e.message);
+        }
+        out.lod23Builds = lod23Builds;
 
-            // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
-            let anyColorAttr = false;
-            let colorMin = 1;
-            let colorMax = 0;
-            let skirtProven = false;
-            const cfg0 = r._voxelChunkConfig();
-            for (const e of r.state.voxelChunks.values()) {
-                if (!e || !e.mesh || !e.mesh.geometry) continue;
-                const col = e.mesh.geometry.getAttribute("color");
-                if (col) {
-                    anyColorAttr = true;
-                    for (let i = 0; i < col.count; i++) {
-                        const rr = col.getX(i);
-                        if (rr < colorMin) colorMin = rr;
-                        if (rr > colorMax) colorMax = rr;
-                    }
-                }
-                const g = e.mesh.geometry;
-                g.computeBoundingBox();
-                const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
-                if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
-            }
-            out.voxelHasFieldColors = anyColorAttr;
-            out.voxelColorVaries = colorMax - colorMin > 0.05;
-            out.voxelSkirt = skirtProven;
-
-            // Streaming: alles abräumen, ein Tick baut wieder auf.
-            for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
-            const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-            // Ein Tick im synchronen Test erzeugt nur pending Worker-Requests, keine Chunk-Einträge →
-            // synchron bauen (Stage-3, Worker temporär „nicht synced“) wie der Pump oben; im Spiel läuft der
-            // Tick async.
-            const _wgSyncedTick = r.state.voxelWorkerWorldgenSynced;
-            r.state.voxelWorkerWorldgenSynced = false;
-            r._tickVoxelChunkStreaming(pos);
-            r.state.voxelWorkerWorldgenSynced = _wgSyncedTick;
-            out.tickBuilds = r.state.voxelChunks.size >= 1;
-            // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
-            // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
-            r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
-            out.pruneRemovesFar = r.state.voxelChunks.size === 0;
-
-            // V9.35: nach dem Prune baut der Streaming-Ring den
-            // Spieler-Ring neu auf — wir restaurieren das hier
-            // direkt, damit nachfolgende Tests Voxel-Chunks haben.
-            r._tickVoxelChunkStreaming(pos);
-
-            // LOD-Pyramide: der Warmup läuft bei Ring 4 und erreicht LOD2/LOD3 (r≥9) nie, daher explizit:
-            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6), (b) Zuweisung r2-8→LOD1, r9-10→2,
-            // r≥11→3, (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob — Surface-Nets +
-            // pad/crop müssen es tragen).
-            const cL2 = r._voxelChunkConfig(2);
-            const cL3 = r._voxelChunkConfig(3);
-            out.lodPyramidConfig =
-                cL2.dim === 6 &&
-                Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
-                Math.abs(cL2.dimY * cL2.step - 417.6) < 1e-6 &&
-                cL3.dim === 3 &&
-                Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
-                Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
-            // K51-2 (die Boden-Stufen nach dem Kasten-Abstand): der Spieler in der Mitte des Chunks 0,0 — Chunk rr liegt
-            // rr · 43,2 − 21,6 m weit (r ≤ 1 → L0, r2 → L1, r3–9 → L2, ab r10 → L3)
-            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6);
-            out.lodPyramidBands =
-                lf(0) === 0 && lf(1) === 0 && lf(2) === 1 && lf(3) === 2 && lf(9) === 2 && lf(10) === 3 && lf(12) === 3;
-            let lod23Builds = true;
-            try {
-                for (const lod of [2, 3]) {
-                    const cfg = r._voxelChunkConfig(lod);
-                    const surfY = r._terrainMacroSurfaceY(2000, 2000);
-                    const oy = Math.round(surfY - cfg.dimY * cfg.step * 0.4);
-                    const g = r._voxelChunkGeometry(2000, oy, 2000, cfg.dim, cfg.dimY, cfg.dim, cfg.step, null, 1);
-                    const posAttr = g && g.getAttribute && g.getAttribute("position");
-                    if (!posAttr || posAttr.count === 0) lod23Builds = false;
-                }
-            } catch (_e) {
-                lod23Builds = false;
-                out.lod23Err = String(_e && _e.message);
-            }
-            out.lod23Builds = lod23Builds;
-
-            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
-            // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
-            // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
-            out.detailBandFn = typeof r._detailBand === "function";
-            if (out.detailBandFn) {
-                const b = (rr) => r._detailBand(rr);
-                // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
-                out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
-                const BS = r.constructor.BODEN_STUFEN;
-                const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
-                out.lodReadsBand =
-                    Object.isFrozen(BS) &&
-                    Object.isFrozen(BS.stufen) &&
-                    [0, 1, 2, 3, 9, 10, 12].every(
-                        (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
-                    );
-                // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
-                // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
-                // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
-                out.lodHysteresis =
-                    r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
-                    r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
-                    r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
-                    r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
-                    BS.halt > 0 &&
-                    BS.vorlauf > 0;
-                out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-                // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
-                // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
-                r._ensureAtmoUniforms();
-                out.hazeCouplesRing =
-                    r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
-                // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
-                // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
-                out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
-                r.updateCreatures(0.016);
-                out.creatureAiCached =
-                    r.state.creatures.length === 0 ||
-                    r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
-            }
+        // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+        // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
+        // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
+        out.detailBandFn = typeof r._detailBand === "function";
+        if (out.detailBandFn) {
+            const b = (rr) => r._detailBand(rr);
+            // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
+            out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
+            const BS = r.constructor.BODEN_STUFEN;
+            const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
+            out.lodReadsBand =
+                Object.isFrozen(BS) &&
+                Object.isFrozen(BS.stufen) &&
+                [0, 1, 2, 3, 9, 10, 12].every(
+                    (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
+                );
+            // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+            // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
+            // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
+            out.lodHysteresis =
+                r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
+                r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
+                r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
+                r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
+                BS.halt > 0 &&
+                BS.vorlauf > 0;
+            out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
+            // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
+            // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
+            r._ensureAtmoUniforms();
+            out.hazeCouplesRing = r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
+            // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+            // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
+            out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
+            r.updateCreatures(0.016);
+            out.creatureAiCached =
+                r.state.creatures.length === 0 ||
+                r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
         }
         return out;
     });
 
     if (voxelP2bResults && !voxelP2bResults.error) {
         check(
-            "Voxel P2b: alle Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/_voxelChunkConfig)",
-            voxelP2bResults.hasEnsure &&
-                voxelP2bResults.hasTick &&
-                voxelP2bResults.hasPrune &&
-                voxelP2bResults.hasConfig
-        );
-        check(
             "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
             voxelP2bResults.activated && voxelP2bResults.ringFilled
         );
         check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
         check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
-        check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
         check(
             "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
             voxelP2bResults.voxelHasFieldColors
@@ -707,10 +680,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             );
         }
         check(
-            "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
-            voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
-        );
-        check(
             "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
             voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
         );
@@ -718,10 +687,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check(
             "Voxel V9.22 (V18.492): die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
             voxelP2bResults.voxelGrassIsSurface
-        );
-        check(
-            "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
-            voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
         );
         check(
             "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
@@ -840,40 +805,31 @@ async function checkBandVoxelTerrainCore(ctx) {
         // V9.28: updateCreatures ist voxel-aware. Spawne eine
         // Kreatur an bekannter Position, lasse einen Frame laufen,
         // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
-        if (
-            typeof r.spawnCreatureAt === "function" &&
-            typeof r._voxelSurfaceY === "function" &&
-            typeof r.updateCreatures === "function"
-        ) {
-            const testX = 5;
-            const testZ = 5;
-            const voxelY = r._voxelSurfaceY(testX, testZ);
-            const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
-            // W-D/M-F1 (V18.170) — falls der Spieler nahe (5,5) steht, klemmt der
-            // Spawn weg; der Test misst den BODEN an (testX,testZ) → re-platzieren.
-            if (creature) creature.position.set(testX, 50, testZ);
-            if (creature && Number.isFinite(voxelY)) {
-                // _creatureGroundY hat ein 20-Scans-Budget je Tick und die Test-Kreatur ist die LETZTE im Array
-                // → ein Tick fiele seed-abhängig auf den Makro-Schätzwert. Drei Ticks erreichen sie
-                // deterministisch (der echte Budget+Cache-Pfad bleibt geprüft, kein Cache-Bypass).
-                r.updateCreatures(0.016);
-                r.updateCreatures(0.016);
-                r.updateCreatures(0.016);
-                // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
-                // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
-                // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
-                const karte = r._bodenSichtAt(testX, testZ);
-                const expected =
-                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND
-                        ? karte
-                        : voxelY;
-                const actual = creature.position.y;
-                out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
-                // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
-                const fallbackY = r.state.terrainBaseHeight || 0;
-                out.creatureNotAtFallback =
-                    Math.abs(voxelY - fallbackY) < 1.0 ? true : Math.abs(actual - fallbackY) > 0.5;
-            }
+        const testX = 5;
+        const testZ = 5;
+        const voxelY = r._voxelSurfaceY(testX, testZ);
+        const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
+        // W-D/M-F1 (V18.170) — falls der Spieler nahe (5,5) steht, klemmt der
+        // Spawn weg; der Test misst den BODEN an (testX,testZ) → re-platzieren.
+        if (creature) creature.position.set(testX, 50, testZ);
+        if (creature && Number.isFinite(voxelY)) {
+            // _creatureGroundY hat ein 20-Scans-Budget je Tick und die Test-Kreatur ist die LETZTE im Array
+            // → ein Tick fiele seed-abhängig auf den Makro-Schätzwert. Drei Ticks erreichen sie
+            // deterministisch (der echte Budget+Cache-Pfad bleibt geprüft, kein Cache-Bypass).
+            r.updateCreatures(0.016);
+            r.updateCreatures(0.016);
+            r.updateCreatures(0.016);
+            // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
+            // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
+            // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
+            const karte = r._bodenSichtAt(testX, testZ);
+            const expected =
+                Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
+            const actual = creature.position.y;
+            out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
+            // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
+            const fallbackY = r.state.terrainBaseHeight || 0;
+            out.creatureNotAtFallback = Math.abs(voxelY - fallbackY) < 1.0 ? true : Math.abs(actual - fallbackY) > 0.5;
         }
 
         // Selbst wenn ein Test-Setup `voxelTerrain = false` setzt, baut der Welt-Generator keine
@@ -1455,10 +1411,7 @@ async function checkBandV18132FerneSeen(ctx) {
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.machinery =
-            typeof r._hydroFor === "function" &&
-            typeof window.__gelaendeCore.kachelSchluessel === "function" &&
-            typeof r._ensureHydroTilesAround === "function";
+        out.machinery = typeof window.__gelaendeCore.kachelSchluessel === "function";
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
@@ -1535,10 +1488,7 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check(
-        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core kachelSchluessel/_ensure...)",
-        res.machinery
-    );
+    check("V18.132 Ferne Seen: gelaende-core kachelSchluessel steht", res.machinery);
     if (!res.unmeasurable) {
         check("V18.132 Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
         check(
@@ -1701,11 +1651,8 @@ async function checkBandGammaGenese(ctx) {
         try {
             if (!r.state.worldMeta) r.state.worldMeta = {};
             r.state.worldMeta.genVersion = 2;
-            // (1) Struktur: Funktionen da, Konstanten frozen.
-            out.struct =
-                typeof r._feuchteAt === "function" &&
-                typeof r._hydroDistAt === "function" &&
-                Object.isFrozen(A.FEUCHTE);
+            // (1) Struktur: Konstanten frozen.
+            out.struct = Object.isFrozen(A.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
             // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
             // mindestens den schilf-floor tragen; Legacy-Tor an derselben Stelle.
@@ -1814,7 +1761,7 @@ async function checkBandGammaGenese(ctx) {
         }
         return out;
     });
-    check("Γ Struktur: _feuchteAt/_hydroDistAt leben, FEUCHTE frozen", res.struct === true);
+    check("Γ Struktur: FEUCHTE frozen", res.struct === true);
     check(
         `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
         res.bankFound && res.feuchteBank >= 0.62
@@ -1854,11 +1801,7 @@ async function checkBandGammaGenese(ctx) {
         const r = window.anazhRealm;
         const G = window.__gelaendeCore;
         const out = {};
-        out.struct =
-            typeof G.grossform === "function" &&
-            Array.isArray(G.LANDFORM_REGLER) &&
-            typeof r._slopeAt === "function" &&
-            typeof r._rockExposureAt === "function";
+        out.struct = typeof G.grossform === "function" && Array.isArray(G.LANDFORM_REGLER);
         out.ankerTot =
             typeof r._macroAnker !== "function" &&
             typeof G.ankerAusSaat !== "function" &&
@@ -1899,10 +1842,7 @@ async function checkBandGammaGenese(ctx) {
     });
     const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : v);
     const f3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
-    check(
-        `Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER, _slopeAt + _rockExposureAt leben`,
-        resG4.struct === true
-    );
+    check(`Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER`, resG4.struct === true);
     check(
         `Γ4 (K16) der Ein-Massiv-Anker ist tot (_macroAnker · ankerAusSaat · ankerBeitrag · MACRO_ANKER)`,
         resG4.ankerTot === true
@@ -2042,7 +1982,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         const A = r.constructor;
         const out = {};
 
-        out.helperExists = typeof r._pathFieldAt === "function";
         // (A) Logik: fern jeden Flusses → kein Pfad
         out.farIsZero = r._pathFieldAt(99999, 99999, 10) === 0;
         // gebunden [0,1]
@@ -2087,15 +2026,9 @@ async function checkBandWahrerAnblickPfade(ctx) {
         out.pathSamples = samples;
         out.pathHits = hits;
 
-        out.versionStr = A.VERSION;
-        const pv = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 230);
         return out;
     });
 
-    check("Ω-OPSIS S2-Pfad (A1) _pathFieldAt Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check(
@@ -2106,7 +2039,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         `Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`,
         res.pathHits >= 0 && res.pathSamples > 0
     );
-    check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-
@@ -2791,7 +2723,6 @@ async function checkBandBewegungUnterLast(ctx) {
             s = r.state;
         const mesh = s.playerMesh;
         if (!mesh || !s.playerVel) return { error: "kein Spieler" };
-        if (typeof r._loopFixedStep !== "function") return { error: "Fixed-Timestep fehlt" };
         const span = r._voxelChunkConfig(0).span;
         const tick = (t) => {
             try {
