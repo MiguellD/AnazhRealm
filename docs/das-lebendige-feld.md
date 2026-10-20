@@ -256,7 +256,8 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 - Emotion-Kopplungen (`sorrow→rainy` u. ä.) sind noch feste Trigger statt aus Weltregeln emergent.
 - Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).
 - Die KI ist opt-in; der Co-Schöpfer spricht seit V18.493 die Studio-Rezepte (`spawn_studio`),
-  der echte Lauf mit Schlüssel steht aus (Drehbuch Schritt 18).
+  der echte Lauf braucht keinen Schlüssel: der KI-Korpus fährt ein lokales Modell (ollama) über den echten Chat-Pfad
+  (`scripts/diag-v1-pfad.cjs --korpus --echt`).
 - Wasser trägt noch zwei Naturen (statisches `L`-Substrat + CA) — die Vereinigung ist offen.
 
 ---

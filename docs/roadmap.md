@@ -17,8 +17,9 @@ v1.0 ist EIN gespielter Pfad, kein Feature-Katalog:
 3. **Bauen** — in der Werkstatt einen Bauplan wählen/formen und platzieren (≤ 3 Klicks).
 4. **Mit der KI erschaffen** — ein Satz wird über den Rezept-Katalog zu Foundry-Assets in der
    Welt. GEBAUT (V18.493: `spawn_studio` · `near_water` · Prompt mit den LIVE-Wörtern · Satz
-   ohne Schlüssel; Band `checkBandV18493CoSchoepferStudio`); den Lauf mit echtem Schlüssel prüft
-   Drehbuch-Schritt 18 (`docs/abnahme-drehbuch.md`).
+   ohne Schlüssel; Band `checkBandV18493CoSchoepferStudio`); den Lauf mit echtem Modell fährt der
+   KI-Korpus ohne Schlüssel (lokal ollama, `node scripts/diag-v1-pfad.cjs --korpus --echt`, 40 Sätze
+   `spec/abnahme/ki-korpus.json`; die CI spielt seinen Mitschnitt ab, `npm run gate:v1-pfad`).
 5. **Benutzen / teilen** — betreten · fahren · halten · als Bauplan teilen.
 
 **Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf JEDEM Standardgerät — der Richter ist das

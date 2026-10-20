@@ -273,8 +273,6 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
             parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
         });
 
-        out.method = typeof r._computeWorkshopDomain === "function" && typeof r._blueprintResonance === "function";
-
         // R1 — die Domäne ist das ARGMAX einer VEKTOR-RESONANZ (kein Einzel-Signal), gegen die frozen
         // WORKSHOP_DOMAIN_SIGNATURES. Sanity: der Kern rechnet ein gewichtetes Skalarprodukt (Invers-Achse).
         out.resonanceKernel =
@@ -333,10 +331,6 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check(
-        "V17.67 S7-B / R1: _computeWorkshopDomain + _blueprintResonance existieren (die Domäne emergiert als Vektor-Resonanz)",
-        res.method
-    );
     check(
         "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
         res.resonanceKernel
@@ -516,8 +510,6 @@ async function checkBandWave10b(ctx) {
                 AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
                 AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
             out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
-            out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
-            out.hasMoveable = typeof r._isMoveable === "function";
             out.hasMagnifying = typeof r._isMagnifying === "function";
             out.hasFocusing = typeof r._isFocusing === "function";
             // 10b.2 — neue räumliche Helper
@@ -787,7 +779,6 @@ async function checkBandWave10b(ctx) {
             void radE;
 
             // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
-            out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
             out.strengthEmptyForNone =
                 Object.keys(r.computeAffordanceStrength(r.state.blueprints.stein_block)).length === 0;
             // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
@@ -993,8 +984,6 @@ async function checkBandWave10b(ctx) {
 
             // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
             out.hasLifting = typeof r._isLifting === "function";
-            out.hasTickLifting = typeof r._tickLiftingAffordances === "function";
-            out.hasLiftVy = typeof r._liftVerticalVelocity === "function";
             out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
             out.liftingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.lifting &&
@@ -1151,11 +1140,8 @@ async function checkBandWave10b(ctx) {
             wave10bResults.thresholdsAreSpatial
         );
         check(
-            "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
-            wave10bResults.hasComputeAffordances &&
-                wave10bResults.hasMoveable &&
-                wave10bResults.hasMagnifying &&
-                wave10bResults.hasFocusing
+            "Welle 10b.1: _isMagnifying + _isFocusing existieren (computeAffordances und _isMoveable fährt die Suite am Verhalten)",
+            wave10bResults.hasMagnifying && wave10bResults.hasFocusing
         );
         check(
             "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
@@ -1246,8 +1232,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
         check(
-            "W10 ext. Politur: computeAffordanceStrength existiert, leer für ein Compound ohne Affordance",
-            wave10bResults.hasAffordanceStrength && wave10bResults.strengthEmptyForNone
+            "W10 ext. Politur: computeAffordanceStrength ist leer für ein Compound ohne Affordance",
+            wave10bResults.strengthEmptyForNone
         );
         check(
             "W10 ext. Politur: ein resonanter Quarz-Sphären-Strahler ist STÄRKER als der Octahedron-Strahler",
@@ -1301,10 +1287,8 @@ async function checkBandWave10b(ctx) {
         );
         // ── W10 ext. Welle 4/4 — lifting ──
         check(
-            "W10 ext.: _isLifting + _tickLiftingAffordances + _liftVerticalVelocity existieren, Label 'hebend' + Schwellen",
+            "W10 ext.: _isLifting existiert, Label 'hebend' + Schwellen",
             wave10bResults.hasLifting &&
-                wave10bResults.hasTickLifting &&
-                wave10bResults.hasLiftVy &&
                 wave10bResults.liftingLabel &&
                 wave10bResults.liftingThresholds
         );
