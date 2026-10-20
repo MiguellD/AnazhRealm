@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// DIE VENDOR-ANKER-WAND — gate:vendor-anker (GOLD 3, 19.07.)
+// DIE VENDOR-ANKER-WAND — gate:vendor-anker
 //
 // Der Stamm patcht/liest den minifizierten three-r184-Vendor zur Laufzeit an
 // seinen Organen (Observer-Diät + Kamera-Treue · Schatten-Diät · Schatten-Stoff ·
@@ -137,7 +137,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 'Sp(t).toStack(),null!==this.positionNode&&lc.assign(Gu(this.positionNode,"POSITION","vec3"))', organ: "AnazhRealm._weltNaht (setupPosition: die Zuweisung des positionNode steht im Stapel vor der Instanzierung)" },
     { file: "vendor/three.webgpu.min.js", sub: "const n=t.mul(lc).xyz;if(lc.assign(n)", organ: "AnazhRealm._weltNaht (InstanceNode.setup: die Instanz-Matrix wird erst im setup an den aktiven Stapel gehängt)" },
     { file: "vendor/three.webgpu.min.js", sub: "const a=this.nodes.filter(e=>-1===n.indexOf(e));for(const e of a)i(e)", organ: "AnazhRealm._weltNaht (StackNode.build: nachgereichte Knoten bauen NACH den ersten — positionNode vor der Instanz-Matrix)" },
-    // JEDE TEXTUR DES PROGRAMMS (Integration V18.542): die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
+    // JEDE TEXTUR DES PROGRAMMS: die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
     // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
     { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(t.isSampledTexture){const o=t.update(),u=t.texture,l=this.textures.get(u);o&&(this.textures.updateTexture(u)", organ: "AnazhRealm._diaetVorTextur (r184 lädt eine Textur nur im Binde-Gang hoch)" },
@@ -383,8 +383,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 'l.isPostProcessingRenderTarget=!0;const e=()=>{u.removeEventListener("dispose",e),l.dispose(),this._frameBufferTargets.delete(u)};u.addEventListener("dispose",e),this._frameBufferTargets.set(u,l)}', organ: "_rahmenZielAbschied (r184s Abschied des Rahmen-Ziels: Hörer ab, Ziel entsorgt, Eintrag fort)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._frameBufferTargets=new Map;", organ: "_rahmenZielAbschied (die Rahmen-Ziele je Ziel)" },
     // … und die Liste, aus der `_rahmenZielAbschied` den Hörer liest: der EventDispatcher von three.core hält die Hörer je Art in
-    // `this._listeners[art]`, und das Leinwand-Ziel des Renderers (`GS`) ist einer (0910-1 A, Gegenprüfung: der zweite Abschied
-    // stand ohne Wand). Die Drift-Probe in gate:post-kette (g) fährt den Zweig ohne Hörer.
+    // `this._listeners[art]`, und das Leinwand-Ziel des Renderers (`GS`) ist einer. Die Drift-Probe
+    // in gate:post-kette (g) fährt den Zweig ohne Hörer.
     { file: "vendor/three.core.min.js", sub: "addEventListener(t,e){void 0===this._listeners&&(this._listeners={});const i=this._listeners;void 0===i[t]&&(i[t]=[]),-1===i[t].indexOf(e)&&i[t].push(e)}", organ: "_rahmenZielAbschied (die Hörer je Art in `_listeners`)" },
     { file: "vendor/three.core.min.js", sub: "removeEventListener(t,e){const i=this._listeners;if(void 0===i)return;const s=i[t];if(void 0!==s){const t=s.indexOf(e);-1!==t&&s.splice(t,1)}}", organ: "_rahmenZielAbschied (der Hörer nimmt sich aus `_listeners`)" },
     { file: "vendor/three.webgpu.min.js", sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },

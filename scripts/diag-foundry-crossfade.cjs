@@ -873,7 +873,7 @@ async function runPartB() {
                     if (op.satzArt) op.gegenSatz = kettenLauf(op, "satz");
                 }
                 const echt = r._lodTreeVisHeight;
-                r._lodTreeVisHeight = () => 0; // die Gegenprobe: der Leser vor dem 04.10.
+                r._lodTreeVisHeight = () => 0; // die Gegenprobe: der alte Leser
                 // voll UND unter Last: der Perf-Streck verdeckt den rohen Leser teilweise (er rückt die Masken näher)
                 const g1 = lochSweep(1);
                 const g2 = lochSweep(fdMin);
@@ -1289,7 +1289,7 @@ async function runPartB() {
         if (!e) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(e);
         // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
-        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr; bis K69 plante die erste Frage am Stück)
+        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr)
         for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) {
             r._tickWaldPlan(Infinity);
             await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
@@ -1498,9 +1498,7 @@ async function main() {
             kehraus.nachL1 === kehraus.geoms,
         kehraus ? JSON.stringify(kehraus) : "Probe lief nicht"
     );
-    // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße: seit dem Budget-Gesetz (W8) faltet der Ofen die
-    // Tier- und Mensch-Gestalt auf ihre Zeile (Tier 13 → 8, Mensch 16 → 8 Meshes) — dieselbe Probe-Welt trägt 69
-    // statt 175 Masken-Meshes.
+    // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße.
     check(
         "ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie",
         attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 50,

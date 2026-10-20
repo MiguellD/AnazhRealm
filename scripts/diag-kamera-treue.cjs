@@ -13,7 +13,7 @@
 //   (g) VERSCHACHTELT — nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät wie der
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
-//   (i) SCHLÜSSEL (B-K1) — ein Stoff trägt nach der Erst-Zeichnung über die Welt-Bahn den Schlüssel seines Baus.
+//   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
 //   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph.
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
@@ -68,7 +68,7 @@ function urteil(z) {
     // (i) SCHLÜSSEL · (j) WURF
     const ks = z.schluessel || {},
         wu = z.wurf || {};
-    if (!ks.geprueft) v.push("SCHLÜSSEL: kein Render-Objekt — die Probe ist blind");
+    if (!ks.geprueft) v.push("SCHLÜSSEL: die Welt zeichnete kein Render-Objekt — die Probe ist blind");
     if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
@@ -131,7 +131,7 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
-        schluessel: { geprueft: true, veraltet: {}, kontrolle: true },
+        schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
         wurf: { leer: { verwirft: false }, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
@@ -183,6 +183,7 @@ function selbsttest() {
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
         { name: "Diät nach Anlage (B-K1)", z: mit("schluessel", { veraltet: { bauSatz: 1 } }), muss: /SCHLÜSSEL: bauSatz ×1/ },
         { name: "Schlüssel-Kontrolle blind", z: mit("schluessel", { kontrolle: false }), muss: /die Kontrolle ist blind/ },
+        { name: "Welt ohne Render-Objekt", z: mit("schluessel", { geprueft: 0 }), muss: /die Welt zeichnete kein Render-Objekt/ },
         { name: "alphaTest-0,5-Werfer verliert discard", z: mit("wurf.werfer.1", { wurf: false }), muss: /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/ },
         { name: "Farb-Graph im Wurf", z: mit("wurf.werfer.0", { farbe: true }), muss: /WURF: wurf:voll — ohne Ausschnitt/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
@@ -227,6 +228,29 @@ function buehne() {
             T = window.THREE,
             TSL = T.TSL;
         const rend = st.renderer;
+        // (i) SCHLÜSSEL: jedes Hauptpass-Render-Objekt der Welt (Welt-Szene, Senken über ihren Zeichner) trägt nach der
+        // Erst-Zeichnung den Schlüssel seines Baus; Kontrolle: die Aufzählbarkeit des Beobachters wechselt ihn.
+        const schluessel = { geprueft: 0, veraltet: {} };
+        {
+            const ros = new Set();
+            st.scene.traverse((o) => {
+                for (const q of [o, o.__zeichner])
+                    for (const ro of (q && q.__renderObjekte) || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
+            });
+            for (const ro of ros) {
+                const n = ro.material.name || ro.object.name || ro.object.type;
+                if (ro.initialCacheKey !== ro.getCacheKey()) schluessel.veraltet[n] = (schluessel.veraltet[n] || 0) + 1;
+            }
+            schluessel.geprueft = ros.size;
+            const ro = [...ros].find((x) => Object.getOwnPropertyDescriptor(x.material, "setupObserver"));
+            const d = ro && Object.getOwnPropertyDescriptor(ro.material, "setupObserver");
+            if (d) {
+                const k = ro.getCacheKey();
+                Object.defineProperty(ro.material, "setupObserver", { ...d, enumerable: !d.enumerable });
+                schluessel.kontrolle = ro.getCacheKey() !== k;
+                Object.defineProperty(ro.material, "setupObserver", d);
+            }
+        }
         if (typeof rend.setAnimationLoop === "function") rend.setAnimationLoop(null);
         // DER RUHENDE SPIEL-LOOP (Lauf-Kontrolle): für die Bühne nimmt der Renderer keinen Loop an; danach gilt der verlangte.
         const loopRoh = rend.setAnimationLoop;
@@ -740,33 +764,6 @@ function buehne() {
                 senke.blind = gleich(bildOhne, bildRef);
                 gruppe.remove(refA, refB);
             }
-            // (i) SCHLÜSSEL: ein frischer Stoff, zuerst im Hauptpass der Welt-Bahn (kein Werfer — die Kaskade diätete ihn vorher),
-            // trägt danach den Schlüssel seines Baus; Kontrolle: die Aufzählbarkeit des Beobachters wechselt ihn.
-            const schluessel = { veraltet: {} };
-            {
-                const kStoff = new T.MeshStandardNodeMaterial({ color: 0x8a6a4a, name: "kamera-treue:SCHLUESSEL" });
-                const kiste = Object.assign(new T.Mesh(new T.BoxGeometry(1.5, 1.5, 1.5), kStoff), { receiveShadow: true, frustumCulled: false });
-                gruppe.add(kiste);
-                const vor = [st.scene, rend._renderScene];
-                [st.scene, rend._renderScene] = [szene, spielSzene];
-                try {
-                    blick(1);
-                    await schuss();
-                } finally {
-                    [st.scene, rend._renderScene] = vor;
-                }
-                const ro = (kiste.__renderObjekte || []).find((o) => o.material === kStoff);
-                const d = Object.getOwnPropertyDescriptor(kStoff, "setupObserver");
-                schluessel.geprueft = !!ro;
-                if (ro && ro.initialCacheKey !== ro.getCacheKey()) schluessel.veraltet[kStoff.name] = 1;
-                if (ro && d) {
-                    const k = ro.getCacheKey();
-                    Object.defineProperty(kStoff, "setupObserver", { ...d, enumerable: !d.enumerable });
-                    schluessel.kontrolle = ro.getCacheKey() !== k;
-                    Object.defineProperty(kStoff, "setupObserver", d);
-                }
-                gruppe.remove(kiste);
-            }
             // (j) WURF: je Werfer Haupt- und Schatten-Fragment (nur der Knoten-Bau, kein kaltes Programm); Soll s. Kopf.
             const wurf = { werfer: [] };
             {
@@ -855,12 +852,12 @@ function buehne() {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        // Nur der Renderer muss stehen (die Welt selbst ist nicht die Bühne).
+        // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             while (performance.now() - t0 < 240000) {
                 const r = window.anazhRealm;
-                if (r && r.state && r.state.rendererReady && r.state.renderer && r.state.renderer.backend) {
+                if (r && r.state && r.state.rendererReady && r.state._weltbildDa && r.state.renderer && r.state.renderer.backend) {
                     r.state.renderer.setAnimationLoop(null);
                     const be = r.state.renderer.backend;
                     return {
@@ -874,9 +871,9 @@ function buehne() {
             }
             return { ok: false };
         });
-        if (!bereit.ok) throw new Error("der Renderer stand nach 240 s nicht");
+        if (!bereit.ok) throw new Error("das erste Weltbild stand nach 240 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
-        log(`Renderer bereit nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
+        log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         out = await page.evaluate(buehne);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +

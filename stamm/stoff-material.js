@@ -412,8 +412,8 @@ class AnazhRealm_stoff_material {
         const alt = mat.setupObserver;
         // EIN STOFF, EIN SCHLÜSSEL (B-K1): der Beobachter ist eine NICHT-aufzählbare eigene Eigenschaft. r184 schreibt jede
         // aufzählbare eigene Eigenschaft in den Bau-Schlüssel (`getMaterialCacheKey`: Object.keys, eine Funktion als Text), und
-        // die Erst-Zeichnung legt das Render-Objekt VOR der Diät an — ein aufzählbarer Beobachter machte dessen Schlüssel alt
-        // (Karte B-K1, Radeon: 27 von 70 Schlüsseln): jedes weitere Objekt des Stoffs baute neu, jeder Versions-Sprung baute neu.
+        // die Erst-Zeichnung legt das Render-Objekt VOR der Diät an — ein aufzählbarer Beobachter machte dessen Schlüssel alt:
+        // jedes weitere Objekt des Stoffs baute neu, jeder Versions-Sprung baute neu. Linse: gate:kamera-treue (i).
         Object.defineProperty(mat, "setupObserver", {
             configurable: true,
             writable: true,
@@ -444,7 +444,7 @@ class AnazhRealm_stoff_material {
     // OHNE Ausschnitt wirft jetzt mit dem Standard-Fragment des Schatten-Stoffs (vec4(0,0,0,1)); Lage (castShadowPositionNode
     // vor positionNode) und Tiefe (depthNode) bleiben, gemerkt je Paar. Ein Werfer MIT Ausschnitt (alphaTest · alphaTestNode
     // · alphaHash · alphaMap · Durchsicht · castShadowNode · Masken) wirft byte-alt (Lehre 26: der Schattenpass liest
-    // colorNode.a · map.a · maskShadowNode). Der EINE Rufer: `_configureRenderer`. Linse: gate:foundry-crossfade Teil (c).
+    // colorNode.a · map.a · maskShadowNode). Der EINE Rufer: `_configureRenderer`. Linse: gate:kamera-treue (j).
     _wurfOhneFarbe(renderer) {
         if (typeof renderer._getShadowNodes !== "function")
             return this.log("WURF OHNE FARBE: r184-Renderer._getShadowNodes nicht gefunden (Vendor-Drift)", "ERROR");
