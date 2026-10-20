@@ -142,6 +142,7 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
+        atem: { takte: 1, schritte: 7, gegen: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt wartet: archCull" },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -404,6 +405,18 @@ function selbsttest() {
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
+        [
+            "die Welt steht unter einem atmenden Regler nie (bis K-WANDUHR: jeder Gang brach die Ruhe, CI 39439645378)",
+            (b) => (b.atem = Object.assign(b.atem, { takte: undefined, fehler: "DIE WELT STEHT NICHT nach 300 Takten: Ruhe 9, zuletzt brach sie: Fege-Takt archCull" })),
+            /ATEM: unter einem atmenden Regler steht die Welt nie — DIE WELT STEHT NICHT nach 300 Takten/,
+        ],
+        [
+            "ein wartender Fege-Takt hält die Welt nicht wach",
+            (b) => (b.atem.gegen = "steht nach 31 Takten"),
+            /ATEM-GEGENPROBE: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen \(steht nach 31 Takten\)/,
+        ],
+        ["keine Atem-Phase", (b) => delete b.atem, /LEER: keine Atem-Phase/],
+        ["der Regler atmet nicht", (b) => (b.atem.schritte = 0), /LEER: der Regler atmete nur 0× — die Atem-Phase ist stumpf/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -476,6 +489,34 @@ const server = statikServer();
                 await window.__weltStehtNach(takt);
                 const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
+                // (A) ATEM (K-WANDUHR): ein Schritt des Cull-Radius je 10 Takte (1 mm, kein Eintrag kreuzt ihn — das Maß, das
+                // gate:takt-atem erlaubt) weckt Cull und Stufen-Wahl ohne Wirkung: die Welt steht doch. Gegenprobe: ein kalter
+                // Bau, den der Cull meldet (Offenes), hält sie wach — beim Namen des Fege-Takts.
+                const R0 = st.architectureCullingRadius;
+                let schritte = 0;
+                let atem = 0;
+                const atmet = () => {
+                    if (atem++ % 10 === 0) st.architectureCullingRadius = schritte++ % 2 ? R0 : R0 + 1e-3;
+                    takt();
+                };
+                aus.atem = {};
+                for (let i = 0; i < 60; i++) atmet(); // der Regler atmet schon, wenn die Frage kommt (6 Schritte)
+                try {
+                    aus.atem.takte = await window.__weltStehtNach(atmet, 300);
+                } catch (e) {
+                    aus.atem.fehler = String(e.message).slice(0, 200);
+                }
+                aus.atem.schritte = schritte;
+                r._foundryRewarmColdTrees = () => 1;
+                st.architectureCullingRadius = R0 + 2e-3;
+                try {
+                    aus.atem.gegen = `steht nach ${await window.__weltStehtNach(takt, 60)} Takten`;
+                } catch (e) {
+                    aus.atem.gegen = String(e.message).slice(0, 200);
+                } finally {
+                    delete r._foundryRewarmColdTrees;
+                    st.architectureCullingRadius = R0;
+                }
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
                 // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
@@ -1423,6 +1464,11 @@ const server = statikServer();
                     : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
+    if (befund.atem)
+        console.log(
+            `  Atem: ${befund.atem.schritte} Regler-Schritte — ${befund.atem.fehler || `die Welt steht nach ${befund.atem.takte} Takten`} · ` +
+                `Gegenprobe (ein kalter Bau): ${befund.atem.gegen}`
+        );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ STAND-TAKT ROT:\n  " + v.join("\n  "));

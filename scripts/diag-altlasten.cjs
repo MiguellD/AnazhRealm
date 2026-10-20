@@ -2905,18 +2905,54 @@ function scanStufenWand(srcRoh) {
 // DIE PORT-WAND (Integration W6, 06.10.): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
 // Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
 // übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
-function scanPortWand(dateien) {
+// K-WANDUHR: kein Gate steht auf den Ports der Server des Schöpfers (4312, 4313) außer im ANSCHLUSS (die Werkzeuge an seiner
+// offenen Welt; die Liste schrumpft nur) — der eigene Port ist welt-boot `eigenePorte`.
+const ANSCHLUSS = ["scripts/werkbank.cjs", "scripts/omen-messfolge.cjs", "scripts/leuchtturm.cjs"];
+const SCHOEPFER = [/\|\|\s*431[23]\b/, /(?:127\.0\.0\.1|localhost):431[23](?:\/index\.html|\/?["'`])/, /wss?:\/\/(?:127\.0\.0\.1|localhost):431[23]\b/];
+function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     const errs = [];
-    for (const [name, src] of dateien)
-        if (/process\.env\.DIAG_PORT\b/.test(stripComments(src)))
+    for (const [name, src] of dateien) {
+        const code = stripComments(src);
+        if (/process\.env\.DIAG_PORT\b/.test(code))
             errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
+        const m = SCHOEPFER.map((re) => code.match(re)).find(Boolean);
+        if (!m !== !anschluss.includes(name)) errs.push(`Port-Wand: ${name} ${m ? "steht auf " + m[0] : "steht im ANSCHLUSS ohne Port"}`);
+    }
     return errs;
+}
+// DIE WARTE-WAND (K-WANDUHR, Lehre 26): eine Schleife, die wartet, solange der Bau eines Eintrags fehlt (`!e.mesh`,
+// `!e.instanced`, `!(e._hausHuelle && …)`), ist ROT — das EINE Warten ist welt-boot `__gebautNach` (bis dahin 20 Schleifen mit
+// 3–90 s Wanduhr oder festen Takten; gate:fahr-leben F4 fuhr unter Last durch eine Kiefer ohne Körper).
+function scanWarteWand(dateien) {
+    const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
+    const errs = [];
+    for (const [name, src] of dateien) {
+        if (name === "scripts/lib/welt-boot.cjs" || !/instanced|mesh|instSlots|_hausHuelle/.test(src)) continue;
+        astGeh(src, (n) => {
+            if (!/^(For|While|DoWhile)Statement$/.test(n.type)) return;
+            let bau = null;
+            astGeh(n.test, (u) => u.operator === "!" && astGeh(u.argument, (x) => x.object && x.object.type === "Identifier" && BAU.test(x.property.name) && (bau = x.property.name)));
+            if (bau) errs.push(`Warte-Wand: ${name}:${n.loc.start.line} wartet selbst auf einen Bau (${bau}) — das EINE Warten ist \`__gebautNach\``);
+        });
+    }
+    return errs;
+}
+// der Gang über einen Baum (acorn, Zeilen) — ein Quelltext wird geparst, ein Knoten begangen
+function astGeh(n, f) {
+    if (typeof n === "string") n = require("acorn").parse(n.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true, locations: true });
+    if (!n || typeof n.type !== "string") return;
+    f(n);
+    for (const k in n) {
+        const v = n[k];
+        if (Array.isArray(v)) v.forEach((x) => astGeh(x, f));
+        else if (v && typeof v.type === "string") astGeh(v, f);
+    }
 }
 // DIE BOOT-WAND (Z2b-1, 14.10.): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
 // starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
 // ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
-// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(`, Kommentare und Texte zählen
-// nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
+// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
+// signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
 // nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
     // die Werkbank: ihr Steuer-Server ist der JSON-Kanal einer offenen Mess-Welt (kein Statik-Boot), ihre Seiten-Fehler sind das
@@ -2928,10 +2964,10 @@ const BOOT_REST = [
 function eigenBoots(dateien) {
     const acorn = require("acorn");
     const startet = (src) => {
-        if (!/\b(?:launch|createServer)\b/.test(src)) return false;
+        if (!/\b(?:launch|createServer|spawn)\b/.test(src)) return false;
         let ast;
         try {
-            ast = acorn.parse(src.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
+            ast = acorn.parse(src.replace(/^#!.*/, (m) => " ".repeat(m.length)), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
         } catch (_e) {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
@@ -2942,6 +2978,9 @@ function eigenBoots(dateien) {
                 const o = n.callee.object.name;
                 const p = n.callee.property.name;
                 if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) return (ja = true);
+            }
+            if (n.type === "CallExpression" && /spawn/.test(n.callee.name || (n.callee.property && n.callee.property.name))) {
+                if (/(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) return (ja = true);
             }
             for (const k in n) {
                 const v = n[k];
@@ -3414,7 +3453,20 @@ function main() {
         const portFeuert =
             scanPortWand(gates).length === 0 &&
             scanPortWand([["scripts/diag-x.cjs", `const PORT = Number(${geteilt} || 4400);\n`]]).length === 1 &&
-            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0;
+            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0 &&
+            scanPortWand([["scripts/diag-z.cjs", "const PORT = Number(process.env.Z_PORT || 4" + "312);\n"]]).length === 1 &&
+            scanPortWand([["scripts/werkbank.cjs", "const s = 1;\n"]]).length === 1;
+        // Die Warte-Wand muss feuern: die Bau-Schleife von gate:fahr-leben bis K-WANDUHR, ein eigener Server-Start; still bleibt das EINE Warten
+        const warte = (src) => scanWarteWand([["scripts/diag-w.cjs", src]]).length;
+        const warteFeuert =
+            scanWarteWand(gates).length === 0 &&
+            warte("async () => { for (let i = 0; i < 60 && !e.instanced && !e.mesh; i++) await sleep(50); };") === 1 &&
+            warte("for (let s = 0; s < g.mesh.count; s++) n++;") === 0 &&
+            eigenBoots([["scripts/diag-s.cjs", 'spawn("node", ["save-server.js"]);']]).length === 1;
+        if (!warteFeuert) {
+            console.log("❌ SELBST-TEST: die Warte-Wand feuert nicht (oder steht heute rot)", scanWarteWand(gates));
+            process.exit(1);
+        }
         if (!portFeuert) {
             console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", scanPortWand(gates));
             process.exit(1);
@@ -3920,6 +3972,7 @@ function main() {
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanWarteWand(gateDateien(root)))
         .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
