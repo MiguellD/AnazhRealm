@@ -36,7 +36,8 @@ class AnazhRealm_dienst {
     // DIE EINE TÜR ZUM MODELL — der Satz des Spielers hat Vorrang (KI H1, 20.10.): am lokalen Modell verweigerte sie 2 von 3
     // Sätzen („Anfrage läuft bereits", „Kurze Pause"), weil ein Ruf der Welt im Flug war — der Kommentar zum Journal, den die
     // Tat des vorigen Satzes auslöste, 30–60 s auf der CPU. Ein Ruf der Welt (`hintergrund`: Journal-Kommentar, Reflexion eines
-    // Wesens) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler wartet auf keins von beiden.
+    // Wesens, die geteilte Stimme eines Mitspielers) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler
+    // wartet auf keins von beiden. Ein zweiter Vordergrund-Ruf während des Abbruchs findet die Tür wieder besetzt (`while`).
     async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
@@ -48,7 +49,7 @@ class AnazhRealm_dienst {
             return {
                 error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
-        if (llm.inFlight) {
+        while (llm.inFlight) {
             if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
             this._llmHintergrund.abort();
             await this._llmFrei;
@@ -71,7 +72,7 @@ class AnazhRealm_dienst {
             // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
             // Pfad bleibt sonst identisch (Provider, Headers, Body, Parse).
             const system = systemPromptOverride || this.llmBuildSystemPrompt();
-            const userContent = def.buildUserContent(system, this.llmBuildContext(), this.llmBuildFewShot(), userText);
+            const userContent = def.buildUserContent(system, this.llmBuildContext(), userText);
             const url = def.endpoint(cfg.model, cfg.apiKey, cfg);
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
