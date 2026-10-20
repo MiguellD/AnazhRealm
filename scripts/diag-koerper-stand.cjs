@@ -29,6 +29,11 @@
 //       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
 //       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
+//   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
+//       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
+//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (das Reh im Stand je Bein), das Rad
+//       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
+//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`, cf9a07ba) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -165,7 +170,8 @@ function taeter(inj) {
                 this._bodenSichtAt = (x, z, g) => (streifen(x, z) ? null : P._bodenSichtAt.call(this, x, z, g));
             });
     // rolle (K8): der Fuß der Streu las das Gesetz bilinear im 8-m-Raster des Feld-Bakes (vor H5), die Pfote stand auf dem
-    // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz (vor H5)
+    // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz und sein Reifen wölbte 0,12 radR (0,2 Federweg) unter
+    // den Aufstand (vor H5)
     if (inj === "rolle") {
         r._streuFuss = (x, z) => {
             const [u, w] = [x / 8 - 0.5, z / 8 - 0.5];
@@ -177,9 +183,14 @@ function taeter(inj) {
             return { x, z, lage: y, lod: 3, y };
         };
         r._kreaturFussBoden = (g) => g.userData._traegerY;
-        ueber("_archRadMatrix", function () {
+        const rad = r._archRadMatrix;
+        r._archRadMatrix = function (e, lf, ewU, out) {
             this._bodenSichtAt = () => null;
-        });
+            rad.call(this, e, lf, ewU, out);
+            delete this._bodenSichtAt;
+            out.elements[13] -= 0.2 * e._fahrSatz.auf.hub;
+            return out;
+        };
     }
 }
 
@@ -802,11 +813,7 @@ async function proben(mitWiese, umfang) {
     return o;
 }
 
-// ── K8 EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22): an der Mess-Wiese und am 25°-Hang (der nächste trockene Hang 22–28°
-// um sie, am Gesetz gesucht) steht jeder Kontakt, den das Auge sieht, auf den gezeichneten Dreiecken (`__gezeichnet`): je Rolle
-// `n` Kontakte, p95 |Kontakt − Mesh| ≤ 3 cm — der Fuß des Spielers (der tiefste gezeichnete Vertex, den sein Knöchel trägt, im
-// Stand des Gangs), der Huf (das Reh, je Bein im Stand), das Rad (die tiefsten Vertices der Reifen des GT in Fahrt), der Fuß der
-// Streu (Ursprung jeder Instanz der Deko-Streu); die Feinform (das Mesh gegen das Gesetz `_voxelSurfaceY`) ≤ 5 cm. ──
+// ── K8 (Kopf der Datei) ──
 async function rollen(n) {
     const r = window.anazhRealm;
     const s = r.state;
@@ -855,7 +862,7 @@ async function rollen(n) {
     };
     const gehen = (je) => {
         const a = [];
-        for (let k = 0; k < 900 && a.length < n; k++) {
+        for (let k = 0; k < 1500 && a.length < n; k++) {
             takt();
             je(a);
         }
@@ -863,27 +870,12 @@ async function rollen(n) {
     };
     const o = {};
     const W = window.__messWiese;
-    // der 25°-Hang: der nächste Punkt um die Wiese, an dem fünf Neigungen (Mitte und ±4 m) zwischen 22 und 28° liegen, trocken
-    let hang = null;
+    // der 25°-Hang: der nächste trockene Hang 24–26° um die Wiese (das Gesetz über ± 4 m, die EINE Orts-Suche `__weltOrt`)
+    const hang = window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });
     const h = (x, z) => r._terrainMacroSurfaceY(x, z, true);
-    const neig = (x, z) =>
-        Math.atan(Math.hypot(h(x + 1, z) - h(x - 1, z), h(x, z + 1) - h(x, z - 1)) / 2) * (180 / Math.PI);
-    for (let d = 8; d <= 400 && !hang; d += 8)
-        for (let a = 0; a < 2 * Math.PI && !hang; a += 8 / d) {
-            const x = Math.round(W[0] + d * Math.cos(a));
-            const z = Math.round(W[1] + d * Math.sin(a));
-            const ok = [
-                [0, 0],
-                [4, 0],
-                [-4, 0],
-                [0, 4],
-                [0, -4],
-            ].every(([p, q]) => Math.abs(neig(x + p, z + q) - 25) <= 3);
-            if (ok && r._landAt(x, z, 0.4)) hang = [x, z];
-        }
     for (const [ort, X, Z] of [
         ["wiese", W[0], W[1]],
-        ["hang", ...(hang || [])],
+        ["hang", hang && Math.round(hang.x), hang && Math.round(hang.z)],
     ]) {
         if (!Number.isFinite(X)) continue;
         const setz = () => {
@@ -892,7 +884,7 @@ async function rollen(n) {
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         };
         await window.__weltStehtNach(() => (setz(), takt()));
-        const R = (o[ort] = { x: X, z: Z, neig: Math.round(neig(X, Z) * 10) / 10 });
+        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
         // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
         const fein = [];
         let saat = 7;

@@ -2,15 +2,15 @@
  "wiese": {
   "fein": 1.1,
   "streu": 0.5,
-  "fuss": 6.8,
-  "huf": 1.1,
-  "rad": 4.1
+  "fuss": 4.5,
+  "huf": 1.6,
+  "rad": 0.2
  },
  "hang": {
-  "fein": 4,
-  "streu": 0.8,
-  "fuss": 6.7,
-  "huf": 3.1,
-  "rad": 47.4
+  "fein": 4.3,
+  "streu": 1,
+  "fuss": 4.2,
+  "huf": 2.6,
+  "rad": 2.8
  }
 }

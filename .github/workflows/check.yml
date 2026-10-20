@@ -1041,7 +1041,7 @@ jobs:
               # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
               run: npm run gate:studio-begehen
 
-            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage, Rollen)
+            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
               if: matrix.gruppe == 7
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 der Leib
