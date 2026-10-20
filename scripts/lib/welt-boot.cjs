@@ -42,15 +42,17 @@ async function seitenTakt() {
 // DAS EINE EINSCHWINGEN jeder Linse (`await window.__weltStehtNach(takt, max)`): Takt um Takt, bis die Welt steht (A9
 // `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (die Ring-Zahl
 // steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
-// ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Headless hält der Regler, solange sie schwingt (der PID
-// atmet ohne Bildrate, die Welt stünde nie). Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
+// ein Takt). Mindestens ein Takt: ein Ortswechsel regt sich erst im Takt. Der Regler hält, solange sie schwingt — in JEDEM
+// Pfad: sein Schritt weckt die Fege-Takte, und die Welt steht erst, wenn jeder seine Runde zu Ende ging (bis K-WANDUHR hielt
+// er nur headless; unter swiftshader atmete der PID am Genesis-Ring, die Welt stand nie, CI 39439645378). Der Deckel `max`
+// zählt nur Takte ohne Offenes (`_weltOffen`, das Buch); dann wirft er.
 async function weltStehtNach(takt, max) {
     const r = window.anazhRealm;
     const st = r.state;
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
     const regler = st.perfRegulator;
-    if (st.renderer && st.renderer._isHeadlessNull) st.perfRegulator = false;
+    st.perfRegulator = false;
     let n = 0;
     try {
         for (let k = 0, o; !(n && steht()) && k < (max || 1800); n++) {
@@ -93,10 +95,13 @@ async function gebautNach(e, { takt, fertig, bau, max } = {}) {
     return n;
 }
 // DIE WELT IST DA (`await window.__weltDa((r) => bedingung)`): bis der Stamm lebt (`_gameLoopTick`) und die Bedingung gilt — ohne
-// Frist: hängt der Boot, nennt ihn die Stall-Akte (bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
+// Frist: hängt der Boot, nennt ihn die Stall-Akte samt der Bedingung, auf die er wartet (`__weltDaWartet`, im Puls jeder
+// Sekunde; bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
 async function weltDa(bed) {
+    window.__weltDaWartet = bed ? String(bed).replace(/s+/g, " ").slice(0, 160) : "den Stamm";
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r))); )
         await new Promise((ok) => setTimeout(ok, 50));
+    window.__weltDaWartet = null;
     return window.anazhRealm;
 }
 const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__weltDa = ${weltDa};`;
@@ -327,6 +332,7 @@ function pulsSeite() {
             const W = window.anazhRealm._weltStand; // worauf das Einschwingen wartet (`__weltStehtNach`), beim Namen
             if (W) t.push(`welt ${W.takte} Takte · Ruhe ${W.ruhe} · zuletzt ${W.grund}`);
         } else t.push("anazhRealm —");
+        if (window.__weltDaWartet) t.push(`__weltDa wartet auf ${window.__weltDaWartet}`);
         t.push(`programme ${Z.programme}`, `gl-sync ${Z.sync}`);
         if (Z.letzt) t.push(`zuletzt ${Z.letzt}`);
         return t.join(" · ");
@@ -834,6 +840,8 @@ async function selbsttest() {
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, die Foundry hat solange einen Auftrag offen —
     // das Warten hält (bis dahin gab gate:fahr-leben nach 3 s auf); TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
+    // REGLER: ein echter Renderer, der Regler atmet je Takt, solange er regelt — das Einschwingen hält ihn in jedem Pfad (die
+    // Welt steht nach 30 stillen Takten) und gibt ihn danach frei (bis K-WANDUHR hielt es nur headless: DIE WELT STEHT NICHT).
     // Sie läuft in der ruhigen Seite während ihrer 4,5 s (sie blockt nie: ihr Takt ist ein Versprechen).
     let bau = null;
     const bauProbe = async () => {
@@ -847,6 +855,13 @@ async function selbsttest() {
         const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
         r.offen = 0;
         aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then((n) => `steht nach ${n} Takten`, (x) => x.message);
+        let still = 0;
+        r.state = { renderer: {}, perfRegulator: true };
+        r._weltSteht = () => still >= 30;
+        r._bepflanzungWartet = () => false;
+        const atmet = async () => (still = r.state.perfRegulator === false ? still + 1 : 0);
+        aus.regler = await window.__weltStehtNach(atmet, 300).then((n) => `steht nach ${n} Takten`, (x) => x.message.slice(0, 60));
+        aus.frei = r.state.perfRegulator === true;
         return aus;
     };
     const ruhig = await fall("/ruhig.html", async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)])));
@@ -881,6 +896,7 @@ async function selbsttest() {
             `Bau LANGSAM (3,2 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
         [!!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot), `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`],
+        [!!bau && /^steht nach 30 /.test(bau.regler) && bau.frei, `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
     ];

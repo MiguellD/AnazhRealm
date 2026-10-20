@@ -597,16 +597,36 @@ function standUrteil(b) {
             `NACHSCHUB: ${N.warten.length} Streu-Regionen warten, obwohl die Schlange des Walds leer ist und kein Asset ` +
                 `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
         );
-    // (A) ATEM (K-WANDUHR): „die Welt steht" (A9) heißt keine Regung und nichts Offenes, nie „kein Fege-Takt geht" — ein
-    // atmender Regler weckt die Fege-Takte ohne Wirkung, die Welt steht doch; ein Fege-Takt mit Offenem hält sie wach beim Namen
+    // (A) ATEM (K-WANDUHR): ein atmender Regler weckt die Fege-Takte ohne Ende — das Einschwingen hält ihn (die Welt steht) und
+    // gibt ihn danach frei; ein Fege-Takt mit Offenem hält sie wach beim Namen
     const A = b.atem;
     if (!A) v.push("LEER: keine Atem-Phase");
     else {
         if (A.fehler) v.push(`ATEM: unter einem atmenden Regler steht die Welt nie — ${A.fehler}`);
         else if (!(A.schritte >= 6)) v.push(`LEER: der Regler atmete nur ${A.schritte | 0}× — die Atem-Phase ist stumpf`);
+        else if (!(A.frei > 0)) v.push("ATEM: nach dem Einschwingen atmet der Regler nicht mehr — es schaltete ihn ab, statt ihn zu halten");
         if (!/Fege-Takt[^]*archCull/.test(A.gegen || ""))
             v.push(`ATEM-GEGENPROBE: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${A.gegen || "—"})`);
     }
+    // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
+    // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
+    if (b.fixWach !== false)
+        v.push(
+            `FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend (${b.fixWach}) — Stufen-Wahl und Streu ` +
+                "gingen mitten in ihren Runden"
+        );
+    const fix = b.fix || [];
+    if (!fix.length) v.push("LEER: keine Fixpunkt-Phase");
+    else if (!fix.some((F) => F.wirkte > 0 || F.fehler)) v.push("LEER: der Regler-Schritt wirkte nicht — die Fixpunkt-Phase ist stumpf");
+    for (const F of fix)
+        if (F.fehler) v.push(`FIXPUNKT: nach dem Regler-Schritt steht die Welt nie — ${F.fehler}`);
+        else
+            for (const [n, t] of Object.entries(F.nach.takte))
+                if (t.summe > 0)
+                    v.push(
+                        `FIXPUNKT: die Welt stand nach ${F.takte} Takten, danach ging ${n} (${TAKTE[n]}) ohne Eingabe noch ${t.summe} ` +
+                            `Einheiten in ${t.mitArbeit} von ${F.nach.frames} Takten (${t.wirkt} Wirkungen) — „steht" mitten in seiner Runde`
+                    );
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
