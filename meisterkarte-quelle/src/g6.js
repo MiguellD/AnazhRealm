@@ -1,0 +1,346 @@
+// Gruppe VI — Fundament (Meisterkarte 2.0, Stand main dc6702ab)
+module.exports = {
+  gruppe: {
+    key: "fundament",
+    titel: "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
+    intro: "Das Fundament ist, was der Spieler nicht sieht, aber spürt: wie schnell er ankommt, ob die Welt vor ihm da ist, ob jeder Frame kommt, ob er hört, was er sieht, ob nichts verloren geht. AAAA heißt hier: gemessen in Bewegung, wie gespielt wird, auf Radeon 890M UND GTX 1060, von außen — nie aus der Eigenmeldung."
+  },
+  bereiche: [
+    {
+      key: "ankunft",
+      titel: "Ankunft — Klick, Bild, Wiederkehr, der erste Blick, das Lade-Bild",
+      dom: "`stamm/dirigent-ankunft.js` (`_weltbildSteht`, `_weltbildLuecken`) · `stamm/dirigent-takt.js` (`_kappeOffen`, Lade-Takt) · `stamm/bild-kosten.js` (Erst-Bau) · `stamm/studio-bruecke.js` (Platte) · `scripts/diag-boot-stage.cjs`",
+      v1: "v1 (ankommen) · B",
+      aaaa: "Ein Klick auf den Link: nach höchstens 5 s kalt (leere Platte, auch direkt nach einer Versions-Stufe) hält der Spieler die Kontrolle in einem GANZEN Bild, auf der Radeon 890M wie auf der GTX 1060 mit i7-8750H; warm höchstens 1,5 s. Das Lade-Bild friert nie (keine Aufgabe über 100 ms, eine Eingabe wird angenommen). Wer sich 2 s nach der Kontrolle umdreht oder 30 m hochschaut, sieht höchstens 2 % Lücke; und der erste Blick hält jede sichtbare Klasse im Soll. **Wo wir die Besten schlagen:** Spider-Man 2 braucht für die Schnellreise 1,33 s auf einer 5,5-GB/s-SSD — wir kommen im Browser an; die Index-Skripte wiegen 8,8 MB roh bzw. 2,7 MB gzip (64 Dateien am Baum dc6702ab), weit unter Pokis 10-MB-Schwelle; und das erste Weltbild folgt aus (Seed, Gesetz-SHA, Spawn) — vorab berechenbar, was kein Asset-Spiel kann.",
+      beste: [
+        "**Insomniac, Spider-Man** (GDC 2019 Ruskin; Cerny/Wired 2019): Schnellreise auf der PS4 Pro 8,10 s, am PS5-Devkit 0,83 s, in Spider-Man 2 1,33 s (IGN); das Streaming an das Bewegungstempo gebunden.",
+        "**Luminous, Forspoken** (GDC 2022, DirectStorage): eine Szene lädt von NVMe in 1,9 s, von SATA in 3,7 s, von der Festplatte in 21,5 s; der API-Wechsel bringt nur 2,1 → 1,9 s — das Medium und ein kleiner Arbeitssatz zählen.",
+        "**Web-Maß**: Core Web Vitals LCP ≤ 2,5 s und INP ≤ 200 ms (web.dev); Poki über 174 Web-Spiele: bei 10 MB Erst-Download spielen in den USA ≈ 80 % los (W3C Games Workshop 2018).",
+        "**Epic, UE5 PSO-Precaching**: Programme werden beim Laden eines Objekts geschätzt und vorkompiliert; fehlt eines, wird das Objekt übersprungen, statt den Frame anzuhalten."
+      ],
+      kriterien: [
+        {
+          name: "Kalt bis zur Kontrolle an beiden Geräten",
+          punkte: 0,
+          staffel: "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
+          messung: "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
+          beleg: "GTX kalt 15,87 s (b-wald, Merge 9c741e83, 19.10.), 15,25 s am Zweig b-blick (B-Plan 20.10.); Radeon 6,3–6,9 s (main 47c8b089). Beide Zahlen stammen aus der Eigenmeldung (`scripts/diag-boot-stage.cjs:297/:300` liest `state._weltbildDa`). In integ-probe (nicht main): b-strom-faden 85801a46 — Radeon „Boden vor dem Bild 614 → 73 ms, blockiert 12,7 → 7,7 s“.",
+          schlupfloch: "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest)."
+        },
+        {
+          name: "Das Bild bei der Kontrolle ist ganz, auch rundum",
+          punkte: 0,
+          staffel: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte",
+          messung: "Spielgang-Station ankunft: Ausgabe-Bild bei t(Kontrolle von außen) gegen dieselbe Pose nach 60 s Ruhe (`bild-diff.cjs`; Lücke = offener Bedarf im Bild plus Pixel-Diff), dazu 180°-Drehung nach 2 s und Blick aus 30 m.",
+          beleg: "GTX: die Ankunftsbilder M1–M4, G1, G2 wurden angesehen und sind ganz (`bericht/1910-b-e-gtx.md`) — aber zum Zeitpunkt `_weltbildDa`, der Eigenmeldung, ohne bild-diff; Radeon: 3 m vor dem Auge steht die beige Grobstufe eines Tors (`bericht/1910-radeon-s6-ankunft.md`); die Drehung nach der Kontrolle ist ungemessen, und b-blick schiebt alles außer Blick hinter die Kontrolle.",
+          schlupfloch: "Die Ankunfts-Pose auf Himmel richten oder alles außer Blick hinter die Kontrolle schieben: die Pose ist die des Spawns, die 180°-Drehung nach 2 s zählt mit demselben Soll.",
+          aenderung: "Die 1 der Synthese stand auf Bildern zur Zeit der Eigenmeldung (B65) → 0; die Messung von außen steht als Messschuld M10."
+        },
+        {
+          name: "Wiederkehr warm und nach der Versions-Stufe",
+          punkte: 0,
+          staffel: "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
+          messung: "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
+          beleg: "GTX zweit 11,98 s, nach der Versions-Stufe 12,81 s, obwohl 107–109 von 108–110 Lieferungen von der Platte kommen (`bericht/1810-b5-befund.md`); der Erst-Bau der Programme (3,57 s an der GTX, 84 % Knoten-Bau) läuft jedes Boot neu. Radeon warm ungemessen.",
+          schlupfloch: "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt."
+        },
+        {
+          name: "Der erste Blick ist AAAA: jede Klasse am Spawn",
+          punkte: 0,
+          staffel: "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
+          messung: "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
+          beleg: "Am Spawn misst die Tafel 3 von 12 Klassen (tor-fern, tor-bunt, tor-ziel), und diese tragen am Kopf dc6702ab kein Ist („ungemessen“); 4 sichtbare Klassen haben keine Zeile (SYSTEMKARTE §5 Genesis); S2 richter-spawn f4270382 (37/172 Zellen) ist ungemergt.",
+          schlupfloch: "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
+          aenderung: "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15)."
+        },
+        {
+          name: "Das Lade-Bild lebt, der Haupt-Faden atmet",
+          punkte: 0,
+          staffel: "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet",
+          messung: "CPU-Profil + LongTask-Trace des Kalt-Boots (`diag-boot-stage --kalt --echt`), ≥ 4 je Gerät: blockierte Summe bis zur Kontrolle, längste Aufgabe, Antwort auf eine Kamera-Drehung im Lade-Bild.",
+          beleg: "Die Lade-Aufgaben dauern 0,15–1,0 s (M1: Median 289 ms, p90 839 ms); `_kappeOffen` lässt jeden Leser nach der Frist sein Mindest-Stück setzen, die Fix-Takte nach dem Dispatcher haben keine Frist (`stamm/dirigent-takt.js:1102`, `:1257-1288`), LADE_BILD_MS 500 (`:1583`); GTX 13,07–13,74 s blockiert bis zum Bild (97 %; Erst-Bau 3,57 s, `_runFrameScheduler` 3,82 s); Radeon 400–940 ms je Sekunde.",
+          schlupfloch: "Die Arbeit in 49-ms-Stücke hacken: die Summe zählt mit; ein CSS-Spinner animiert ohne den Haupt-Faden: gemessen werden LongTask und Eingabe-Antwort.",
+          aenderung: "Architektur K1 (Haupt-Faden bis zur Kontrolle) maß dieselbe längste Aufgabe — zusammengeführt."
+        }
+      ],
+      hebel: [
+        { name: "b-blick zu Ende, dann die B-Plan-Karten 1, 3, 4, 5 (Programme, Bau am Ereignis, Lade-Scheibe, Streu im Blick)", k: ["ankunft.K5+1"], t: [3, 5], wurzel: "`stamm/dirigent-takt.js:_kappeOffen` (`:1102`) mit LADE_TAKT_MS (`:1581`: Scheibe 12 ms, Pumpe über MessageChannel) · `stamm/studio-gestalt.js:_foundryRewarmColdTrees` (`:485`) · `stamm/vegetation-streu.js:_scatterPass` (`:635`) · `stamm/stoff-material.js:_materialObserverDiaet`; Karte 2 (Chunk im Faden) steht schon in integ-probe (85801a46). Erwartung B-Plan: GTX 15,25 → ~13 s, Radeon → 4,6–5,5 s.", pflicht: "B", v1: true },
+        { name: "Der Programm-Abdruck je Gesetz-SHA: das erste Bild nicht neu bauen", k: ["ankunft.K3+1", "ankunft.K1+1"], t: [3, 4], wurzel: "`stamm/bild-kosten.js:_configureRenderer` (Erst-Bau, ERST_BAU_MS `:3437`): die WGSL-Ausgabe des r184-NodeBuilder je Stoff-Signatur unter dem Gesetz-SHA auf der Platte und als abgeleitetes Artefakt im Build — der Cache des EINEN Bauers, kein Zwilling; Byte-Beweis Abdruck = Lauf, eine Abweichung meldet laut (`_bruchMelden`) und baut über denselben Bauer neu. Spart an der GTX ≈ 3,0 s Knoten-Bau; zusammen mit H1 und Pipeline H4 erreicht K1 die 1 (Radeon ≤ 5, GTX ≤ 10).", pflicht: "B", v1: true }
+      ],
+      feststeck: {
+        versucht: "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. — ≥ 6 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
+        anders: "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (H2) und die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
+      }
+    },
+    {
+      key: "streaming",
+      titel: "Streaming und Fäden — die Welt kommt, bevor man sie braucht",
+      dom: "`stamm/gelaende-chunks.js` (Boden-Reihe) · `stamm/gelaende-boden.js` (`_voxelChunkLodFor`) · `stamm/vegetation-*.js` (Schlangen) · `stamm/studio-bruecke.js` (`_foundryRang`) · `stamm/dirigent-takt.js` (`_runFrameScheduler`) · `voxel-worker.js`",
+      v1: "v1 (laufen, fahren) · B · E",
+      aaaa: "Beim Sprint, beim schnellsten Wagen des Spiels auf Vollgas und mit der Kamera 30 m über Grund sieht der Spieler bis 384 m nie eine Lücke; die ferne Welt steht bis 8 km. Mindestens 99 % aller Dinge sind fertig, bevor sie in den Blick treten, aus EINEM Rang: Zeit bis Bedarf = Abstand entlang der Bahn ÷ Tempo — ihn lesen Boden, Wuchs, Streu, Bauten, Karten und Foundry. Ein Teleport um 1 km oder ein Tor hält die Bild-Kadenz, weil Bild und Welt auf zwei Fäden laufen. Kein Faden fällt still auf einen Ersatz im Haupt-Faden, und Bytes reisen per Transfer, nie als Kopie. **Wo wir die Besten schlagen:** UE5 hält lieber das Spiel an, als eine Lücke zu zeigen, MSFS streamt Petabytes; unser Voraus schaut entlang der GESETZE (Wegenetz, Flussnetz, Gelände-Kern) — jedes Ziel ist aus Seed und Gesetz bekannt, bevor eine Datei existiert, und der Welt-Faden braucht außer Edits und Lage keinen Zustand.",
+      beste: [
+        "**Insomniac, Spider-Man** (GDC 2019 Ruskin): auf der PS4 bremste die Platte das Schwing-Tempo; die Bewegung ist an den Datenstrom gebunden.",
+        "**Epic, UE5 World Partition**: Zellen laden nach Abstand zu den Streaming-Quellen, HLOD ersetzt Ungeladenes; hält der Strom nicht mit, hält die Engine lieber an (`wp.Runtime.BlockOnSlowStreaming`).",
+        "**Naughty Dog** (GDC 2015 Gyrling, „Parallelizing the Naughty Dog Engine Using Fibers“): TLOU Remastered lief mit 60 statt 30 fps, weil Spiel-Logik, Render-Vorbereitung und GPU überlappen.",
+        "**Hello Games, No Man's Sky** (GDC 2017 McKendrick): Voxel → Polygon → Textur → Population → Simulation als fortlaufende Pipeline vom Orbit bis zum Boden."
+      ],
+      kriterien: [
+        {
+          name: "Keine Lücke im Blick unter Tempo — bis zur Tempo-Decke des Spiels",
+          punkte: 0,
+          staffel: "1 = 0 Lücken-Bilder in 60 s bei Sprint und GT-vmax auf fester Bahn an einem Gerät · 2 = Tempo-Decke ≥ vmax des schnellsten Rezepts × 1,2 am Boden und 30 m darüber, auf einer Bahn aus dem geladenen Ring heraus, beide Geräte",
+          messung: "Spielgang-Station fahrt (echter Renderer): je Bild die offenen Bedarfe im Sichtkegel bis 384 m (Boden, Wuchs, Bauten, Karten) + bild-diff gegen das eingeschwungene Bild derselben Pose; Regler des Spielers (R8); der Bedarf kommt aus dem Gesetz (Kegel 384 m, Fern-Ring 8 km), nie aus dem Regler; das Soll-Tempo steigt im selben Commit mit der vmax.",
+          beleg: "Keine Linse misst Lücken in Fahrt (F5 fand der Schöpfer, 17.10.); der Boden-Voraus ist fest 1–2 Chunks à 43,2 m (`stamm/gelaende-chunks.js:2542-2565`), eingebaut wird höchstens EIN Chunk je Takt (`:2941`); GT vmax 16,0 m/s (`vehicle-core.js:2481` VMAX_REF 10).",
+          schlupfloch: "Langsam fahren, ins Offene legen, den Sichtradius per Regler schrumpfen: feste Bahn durch Wald und Dorf bei festem Tempo; „≥ 70 m/s“ war eine Pose, die kein Spiel-Fahrzeug hat (B67) — das Soll folgt der vmax des Gesetzes; eine Schleife im geladenen Ring: die Bahn führt heraus.",
+          aenderung: "Lücke und Tempo-Decke maßen dieselbe Linse über das Tempo → EIN Kriterium; Fahrzeug K2 zählt das Tempo nicht mehr (V27). Der Stufen-Pop zählt LOD K2 (V20)."
+        },
+        {
+          name: "Fertig vor Bedarf: EIN Rang, Zeit bis Bedarf",
+          punkte: 0,
+          staffel: "1 = ≥ 95 % der Chunks, Bäume, Bauten und Karten in der verlangten Stufe fertig vor dem Eintritt in den Sichtkegel, an einem Gerät · 2 = ≥ 99 % bei GT-Vollgas an beiden Geräten",
+          messung: "Ereignis-Zählung am Spieler-Weg je Ding: Zeit zwischen „fertig in der verlangten Stufe“ und „tritt in den Sichtkegel“; K1 prüft am Bild, dass fertig sichtbar ist.",
+          beleg: "Jede Schlange ordnet für sich: der Boden nach Chebyshev ohne Tempo (`stamm/gelaende-boden.js:_voxelChunkLodFor` `:2587-2596`), der Wuchs FIFO mit 4 je Frame (`stamm/vegetation-baum.js:_tickPendingVegSpawns` `:2041`), die Streu ohne Bild-Rang; nur die Foundry rangiert (`stamm/studio-bruecke.js:_foundryRang` `:772`). Der Tempo-Rang fahrt-vorausschau 1bb06b4e liegt ungemergt.",
+          schlupfloch: "„Fertig“ melden, sobald ein Platzhalter steht, oder eine Grobstufe, die nie verfeinert: fertig heißt die Stufe, die die Distanz verlangt."
+        },
+        {
+          name: "Der Sprung hält die Kadenz: Bild und Welt auf zwei Fäden",
+          punkte: 0,
+          staffel: "1 = beim Teleport um 1 km Frame p95 ≤ 50 ms an einem Gerät · 2 = Teleport und Tor-Durchgang: p95 ≤ 33 ms und keine Aufgabe > 50 ms im Bild-Faden, beide Geräte",
+          messung: "Spielgang-Station sprung: Kadenz des sichtbaren Bilds, während die Welt neu entsteht; Ankunft K2 (Bild ganz) gilt auch nach dem Sprung.",
+          beleg: "Bild und Welt teilen EINEN Faden; Knoten-Bau, Zeichnen und Welt-Arbeit laufen seriell; Worker haben nur Chunk-Mesh, Foundry, Buch und Klang (`stamm/gelaende-chunks.js:17/:368`, `studio-bruecke.js:84/:190`, `klang.js:123`); kein OffscreenCanvas, kein SharedArrayBuffer. Ungemessen.",
+          schlupfloch: "Beim Sprung einen Ladeschirm zeigen, der nichts zeichnet: gemessen wird die Kadenz des sichtbaren Bilds mit Ankunft K2 danach.",
+          aenderung: "Aus Architektur K5; der Bereich Architektur löste sich auf (seine Zerlegungen sind Spiegel ohne Punkte, B66, V26)."
+        },
+        {
+          name: "Kein stiller Ersatz im Haupt-Faden",
+          punkte: 0,
+          staffel: "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden` · 2 = 0 überall, beide Geräte",
+          messung: "Konsum-Zählung im Kalt-Boot und im Spiel: Chunk-Stoff, Hydrosphäre und Asset-Bau, die synchron im Haupt-Faden entstehen, obwohl ein Faden zuständig ist; jede neue forceSync-Stelle ist ROT beim Namen.",
+          beleg: "Am main baut der Strom vor dem init-Ack jeden Chunk still synchron (`stamm/gelaende-chunks.js:_acquireVoxelChunkBuild` `:1225`) — in integ-probe gefallen (b-strom-faden 85801a46: EIN Prädikat `_voxelFadenTraegt`, Radeon Boden vor dem Bild 614 → 73 ms), nicht in main; `_computeHydrosphere` läuft synchron (`stamm/wasser-hydro.js:54`, ≈ 0,5 s). Lehre 14 ist gebrochen.",
+          schlupfloch: "forceSync setzen oder den Rückfall umbenennen: forceSync nur an den drei benannten Stellen.",
+          aenderung: "Aus Architektur K3."
+        },
+        {
+          name: "Bytes reisen, nie Kopien",
+          punkte: 0,
+          staffel: "1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
+          messung: "Instrument am Empfang (onmessage), im Kalt-Boot und in 60 s Fahrt: per structured clone empfangene MB je Minute und Kopien nach dem Empfang (Byte-Summe, nicht Nachrichten-Zahl).",
+          beleg: "Die Foundry überträgt per Transfer (Lehre 24); der Chunk-Pfad kopiert am main 9–12 Attribute je Chunk (`stamm/gelaende-chunks.js:_buildVoxelChunkDataFromWorkerMesh` `:746`) — in integ-probe 12 → 1 (85801a46); `saveState` serialisiert im Haupt-Faden (`stamm/dienst.js:1186-1191`); das Instrument am Empfang fehlt.",
+          schlupfloch: "Klone in viele kleine Nachrichten zerlegen: die Byte-Summe je Minute.",
+          aenderung: "Aus Architektur K4; die 1 der Synthese war die Existenz des Foundry-Transfers (B68) → 0."
+        }
+      ],
+      hebel: [
+        { name: "Die Lücken-Linse am Spieler-Weg ROT, dann EIN Rang Zeit bis Bedarf (fahrt-vorausschau 1bb06b4e einfädeln)", k: ["streaming.K1+1", "streaming.K2+1"], t: [2, 3], wurzel: "`stamm/studio-bruecke.js:_foundryRang` (`:772`) als EINE Quelle; Leser `stamm/gelaende-chunks.js:_tickVoxelChunkStreaming` (`:2530`; Voraus = Abstand entlang der Bahn ÷ Tempo statt fest 1–2 Chunks), `stamm/gelaende-boden.js:_voxelChunkLodFor` (`:2587`), `stamm/vegetation-baum.js:_tickPendingVegSpawns` (`:2041`), `stamm/vegetation-streu.js:_scatterPass` (`:635`). Vorausschau entlang des Gesetzes (Wegenetz, Gelände), nicht entlang des Tempo-Vektors.", pflicht: "B · E", v1: true },
+        { name: "Grob zuerst, fein danach", k: ["streaming.K2+1"], t: [1, 1], wurzel: "`stamm/gelaende-chunks.js:_tickDirtyVoxelChunks` (`:2826`, bisher EIN Einbau je Takt) und `_voxelChunkLodFor`: die Ankunftszeit wählt die Stufe, weit voraus kommt erst die Grobstufe.", pflicht: "E", v1: true },
+        { name: "b-strom-faden nach main, die Hydrosphäre in den Faden, das Instrument am Empfang", k: ["streaming.K4+1", "streaming.K5+1"], t: [1.5, 2], wurzel: "Merge von 85801a46 nach main (steht in integ-probe); `stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.", pflicht: "B", v1: true },
+        { name: "Der Welt-Faden: alles, was Geometrie oder Platzierung rechnet, rechnet im Worker (Spike 1 Tag zuerst)", k: ["streaming.K3+2", "streaming.K4+1", "ankunft.K1+1"], t: [8, 12], wurzel: "Aus `stamm/dirigent-takt.js:_runFrameScheduler` (`:1257`) wandern nach `voxel-worker.js` (dort laufen gelaende-core und phyto-core schon): `_ensureVoxelChunkAt`-Geomorph (0,86 s), `_tickFernRing` (0,69 s), `_naturSetzen`-Skelett (0,59 s), `_forestPlantChunk` (0,36 s), `_rebuildVoxelChunk` (0,33 s), `_tickScatterLod` (0,26 s), `_scatterPass` (1,22 s); der Haupt-Faden lädt nur Transfer-Puffer hoch. Der Welt-Faden, kein Render-Worker: ein Render-Worker bräuchte einen Proxy-Zwilling jedes three-Objekts.", pflicht: "B · E", v1: true }
+      ],
+      feststeck: {
+        versucht: "Kein Wellen-Feststecken, sondern Liegenlassen: F5 (17.10.) und der Schnitt fahrt-vorausschau 1bb06b4e liegen seit drei Tagen neben integ, weil alle Wellen am Kalt-Boot hingen; fünf Ankunfts-Wellen schnitten am EINEN Faden und setzten freie Zeit nur zu ≤ 0,35 in ein früheres Bild um.",
+        anders: "Die Fahrt zuerst messen: die Lücken-Linse am Spieler-Weg steht vor jedem weiteren Ankunfts-Schnitt, weil sie denselben Rang richtet, den die Ankunft liest; und die Welt vom Faden trennen statt den Faden zu entlasten (H4)."
+      }
+    },
+    {
+      key: "profiband",
+      titel: "Das Profi-Band — Bild und Takt, wie der Spieler spielt",
+      dom: "`spec/profiband/haushalt.json` · `spec/profiband/ratsche-*.json` · `scripts/werkbank.cjs` (lauf, profil, band, haenger) · `stamm/bild-kosten.js` (Diät) · `stamm/dirigent-takt.js`",
+      v1: "v1 (p95 ≤ 33 ms auf jedem Standardgerät) · E",
+      aaaa: "Auf der Radeon 890M (iGPU) UND der GTX 1060 mit i7-8750H läuft das Spiel so, wie es gespielt wird: gehend, sprintend, im Wagen mit Sicht-Wechsel, im Sturm mit 50 Tieren, durch die Gasse einer Stadt, in Ego und Third, bei Tag und Nacht. Die Zahlen: Frame p95 ≤ 16,7 ms (der v1-Boden ≤ 33 ms), p99 ≤ 25 ms, 0 Frames über 100 ms; CPU-Takt p95 ≤ 5,8 ms stehend und ≤ 8 ms in Bewegung, gemessen als ganze Belegung; ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB VRAM, GPU p95 ≤ 12 ms; unter Regler voll und nach 20 min ohne Drift. **Wo wir die Besten schlagen:** Valorant verspricht 60 fps ab GT 730 mit bewusst schlichter Kunst, Fortnite hält auf der GTX 1060 54 fps in Ultra; wir zeichnen eine unendliche Gesetz-Welt im Browser mit ≈ 50 MB VRAM auf der iGPU, weil die Kosten am Schirm hängen, nie an der Weltgröße.",
+      beste: [
+        "**Riot, Valorant** (offizielle Spezifikation): 30 fps als Minimum (Intel HD 3000), 60 fps empfohlen (GT 730), 144+ fps High-End — ein festes Band je Geräteklasse.",
+        "**Epic, Fortnite/UE5**: GTX 1060 6 GB in 1080p ≈ 118 fps Low und 54 fps Ultra (CheckFPS, Schätzwerte) — feste Skalierungsstufen und PSO-Precaching.",
+        "**Babylon.js, WebGPU Snapshot Rendering**: Render-Bundles ersparen der CPU die Szenen-Wanderung je Frame, laut Doku bis ≈ 10× schneller bei statischen Szenen — derselbe Hebel wie unsere Bündel (Lehre 23).",
+        "**Digital Foundry**: das Urteil fällt am Bildsignal, mit Frame-Zeit-Graph und 1-%-Tiefs, in Bewegung durch die schwersten Stellen, nie im Stand."
+      ],
+      kriterien: [
+        {
+          name: "Flüssig in Bewegung",
+          punkte: 0,
+          staffel: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
+          messung: "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
+          beleg: "GTX 20.10. (`bericht/2010-buendel-abab.md`, f5b66780 ≈ Kopf): Genesis Third gehend 25,0–25,1 ms, Wiese Ego gehend 25,1 ms, Fahrt 35,4 ms — die Fahrt reißt den 33-ms-Boden; Radeon in Bewegung am Kopf ohne Zahl; Sturm und Stadt nie gemessen (die E-Messorte fahren mit dorfZug false, `spec/profiband/haushalt.json`).",
+          schlupfloch: "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
+          aenderung: "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63)."
+        },
+        {
+          name: "Der CPU-Takt, gemessen als ganze Belegung — stehend und bewegt",
+          punkte: 0,
+          staffel: "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
+          messung: "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
+          beleg: "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,0 → 6,3 (keine Seite hält 5,8), `_diaetRefresh` 1,99 → 2,02 ms; gehend 19,2–21,1, Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
+          schlupfloch: "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
+          aenderung: "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung ist Messschuld M12."
+        },
+        {
+          name: "Der GPU-Haushalt am Spieler-Bild",
+          punkte: 0,
+          staffel: "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
+          messung: "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
+          beleg: "Zuletzt hielt die GPU-Seite im Stand am 14.10./18.10. (VRAM 99,6–111,2 MB, Befehle 75–191, Dreiecke 286k–587k; GTX-Ratsche V18.546.2 vom 16.10.; Radeon VRAM 50 MB, GPU p50 8,35–8,4 ms am 19.10.). Das ABAB vom 20.10. zählte weder Befehle noch Dreiecke noch VRAM, und seither änderten S6, f1-rest, E-Diät und der Karten-Bake den Render-Pfad: am Kopf veraltet. In Bewegung zählt niemand.",
+          schlupfloch: "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
+          aenderung: "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung am Kopf ist Messschuld M13 (sie stellt wieder her, sie gewinnt nicht)."
+        },
+        {
+          name: "Glätte: keine Hänger",
+          punkte: 0,
+          staffel: "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
+          messung: "`werkbank haenger 60 --wandern kreis` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`).",
+          beleg: "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend 37,5–43,7 ms; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
+          schlupfloch: "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt."
+        },
+        {
+          name: "Ausdauer: 20 min ohne Drift",
+          punkte: 0,
+          staffel: "1 = an einem Gerät · 2 = an beiden",
+          messung: "Spielgang 20 min am Stück (ankommen, gehen, fahren, bauen, Tor, Nacht, Weg ≥ 5 km): p95 der letzten 5 min ≤ p95 der ersten 5 min × 1,05; VRAM-Drift ≤ 2 MB zurück am Start; `buf:ruhend` und `buf:verwaist` = 0 (`werkbank puffer`); Takt und Drossel beim Namen.",
+          beleg: "Ungemessen; die längste Band-Messung ist 30 s Lauf plus 300 s Ruhe; Lecks werden nur am Ort gezählt (gate:profiband, Lehre 27).",
+          schlupfloch: "Die Sitzung im Stand verbringen: feste Stationen mit Pflicht-Weg."
+        }
+      ],
+      hebel: [
+        { name: "Den bewegten Takt zerlegen und an EINER Kappe schneiden", k: ["profiband.K1+1", "profiband.K4+1"], t: [3, 4], wurzel: "Zuerst ein Profil gehend gegen stehend (`werkbank profil --gehen`), das die zusätzlichen 13–15 ms beim Namen nennt; dann `stamm/dirigent-takt.js:_runFrameScheduler` (`:1257`) mit `_kappeOffen` (`:1102`): jeder Strom- und Bau-Job im Spiel bekommt ein Frame-Budget, nah zuerst.", pflicht: "E", v1: true },
+        { name: "E-Bauart: die Diät hört zu, statt zu fragen", k: ["profiband.K2+1"], t: [2, 2], wurzel: "`stamm/bild-kosten.js:_diaetRefresh` (`:3868`) und `_diaetGeteiltSchreiben`: die Änderung meldet sich an der Schreib-Stelle, statt dass jedes Objekt geprüft wird (`auftrag/2010-omen-e-bauart.md`); GTX stehend dann ≤ 5,8 ms.", pflicht: "E", v1: true },
+        { name: "Weniger Render-Objekte: EIN Zeichner je Stoff und Chunk", k: ["profiband.K1+1"], t: [3, 5], wurzel: "`_instanzZeichner` und `_buendelReihe` (stoff-instanz): im Profil vom 19.10. kosten updateMatrixWorld, equals, _projectObject, get und _renderObjectDirect zusammen ≈ 0,71 ms je Frame stehend — Kosten je Objekt, die mit der Bewegung wachsen.", pflicht: "E", v1: true }
+      ],
+      feststeck: {
+        versucht: "Der CPU-Takt der GTX im Stand: 14.10. 6,0–7,8 ms, 17.10. 5,8–5,9, 19.10. Median 5,70, 20.10. 6,0 → 6,3; die E-Diät spart netto nichts (1,99 → 2,02 ms). Fünf Wellen rangen um 0,2 ms an einer Pose, die der Spieler selten hält, während gehend 19–21 ms und in Fahrt 31 ms stehen.",
+        anders: "Die Karte richtet den Takt in Bewegung: die Hebel sind die Welt-Arbeit, die in Bewegung in den Bild-Takt fällt (EINE Kappe, Welt-Faden), und die Kosten je Render-Objekt — nicht 5 % des Refresh-Gangs."
+      }
+    },
+    {
+      key: "klang",
+      titel: "Klang aus dem Gesetz — Ort, Kopplung, Raum, Körper, Kosten",
+      dom: "`klang-core.js` · `stamm/klang.js` · `scripts/diag-klang-zensus.cjs` · `worlds/klang`",
+      v1: "Feature-Stopp bis v1.0 — die Messungen sind Messschuld",
+      aaaa: "Was man hört, folgt aus dem, was dort ist und geschieht. Wind, Laub, Ufer, Fluss, Regen, Glut, Vögel und Grillen kommen aus der Lage am Ohr — und jeder Ruf hat einen Körper; die sichtbare Böe ist die hörbare (Kreuzkorrelation ≥ 0,6). Schritte klingen nach Stoff und Aufprall, der Motor nach Drehzahl und Last mit Doppler. Jede Quelle hat Richtung (HRTF), Entfernung, Verdeckung durch Hang und Haus (≥ 6 dB plus Tiefpass) und den Raum ihrer Umgebung (Wald, Dorf, Feld, Höhle im RT60 unterscheidbar) — über Uhr × Wetter × Bewegung, bei ≤ 0,2 ms Haupt-Faden und 0 Aussetzern. Die Musik liest das Feld (Affekt K5). **Wo wir die Besten schlagen:** Gears 4 (Triton) und Steam Audio backen oder tracen Geometrie aus Assets; bei uns ist die Akustik eine Funktion desselben Gelände-Kerns und Grundrisses, den das Auge sieht — auch in jeder nie gebauten Welt, ohne Bake.",
+      beste: [
+        "**Microsoft Project Acoustics/Triton** (Raghuvanshi & Snyder, SIGGRAPH 2014/2018; Gears of War 4, 2016): Wellen-Simulation je Level vorab; zur Laufzeit wenige Parameter je Quelle-Hörer-Paar (Verdeckung, Nass-Anteil, Nachhall, Richtung).",
+        "**Valve, Steam Audio** (2017): HRTF-Binaural, strahlverfolgte Verdeckung und Transmission, Hall in Echtzeit oder gebacken.",
+        "**Hello Games, No Man's Sky** (GDC 2017 Paul Weir): Tier-Stimmen aus den Parametern des Tiers synthetisiert (VocAlien).",
+        "**Farnell, „Designing Sound“** (MIT Press 2010) und **van den Doel/Kry/Pai, „FoleyAutomatic“** (SIGGRAPH 2001): Schritte, Wind, Feuer, Motoren und Kontakt-Klänge als Echtzeit-Synthese aus Physik."
+      ],
+      kriterien: [
+        {
+          name: "Der Ort klingt nach dem, was dort ist — und jeder Ruf hat einen Körper",
+          punkte: 0,
+          staffel: "1 = Mittag im Stand: jedes Soll je Ort hält, und jeder Pegel einer Quelle mit Körper (Vogel, Tier) hat einen Körper in der Welt · 2 = zusätzlich Nacht (Grillen), Regen, gehend und fahrend",
+          messung: "gate:klang-zensus (S)(L): Pegel je Oktavband am Master-Abgriff je Ort gegen das Soll des Gesetzes (Wiese wind ≥ −46 und vogel ≥ −52; Ufer ≥ −32 und ≥ wind + 6; Wald laub ≥ −44; Dorf glut ≥ −34; Lab = Welt); Konsum-Kette Ruf ← Leib für jede Quelle mit Körper (Luft und Wasser K1).",
+          beleg: "`scripts/diag-klang-zensus.cjs` (O)(S)(L): vier Orte aus dem Gesetz, der Lab-Ort hält dasselbe Soll; die Bühne nur Mittag, Sonne, Sommer, Tiere angehalten, Musik ruht. Das Wiesen-Soll hält mit einem Vogel ohne Körper: vogel|bird hat 0 Treffer in `stamm/` und `tetrapoda-core.js`, nur `klang-core.js` ruft ihn (12 Treffer).",
+          schlupfloch: "Den Master anheben, bis jede Schwelle fällt: das Soll ist ein Verhältnis (ufer ≥ wind + 6), die Spitzen-Wand liegt bei −1 dBFS; Leben hören, das man nie sieht, bricht „gesehen = gehört“: der Phantom-Vogel ist ROT.",
+          aenderung: "Synthese gab 1; das Wiesen-Soll hält nur mit einem Ruf ohne Körper (V05) → 0. Die Vogel-Schwelle wird nicht still gestrichen, sie wartet benannt auf den Körper."
+        },
+        {
+          name: "Gesehen = gehört",
+          punkte: 0,
+          staffel: "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
+          messung: "`werkbank bild --zeit` und Klang-Abgriff in derselben Sitzung (60 s, Wiese, Böen frei); Mindest-Varianz beider Signale.",
+          beleg: "Die Quelle ist EINE: `_windBoeAt` (`stamm/klang.js:251`) liest dieselbe WIND_BOE wie `_windSwayOffset` (`stoff-material.js:87`); die Kopplung ist nie gemessen.",
+          schlupfloch: "Den Wind konstant setzen: Mindest-Varianz beider Signale und die Böen-Zeitskala aus dem Gesetz.",
+          aenderung: "EIN Heim der Kopplung Bild ↔ Ohr (Vegetation K2 trägt sie nicht mehr; B16, V25)."
+        },
+        {
+          name: "Raum: Richtung, Verdeckung und Hall aus der Welt",
+          punkte: 0,
+          staffel: "1 = Richtung und Entfernung: links/rechts zu 100 % mit richtigem Vorzeichen (ILD/ITD am Stereo-Abgriff) · 2 = Verdeckung hinter Haus und Hang ≥ 6 dB plus Tiefpass, RT60 von Wald, Feld, Gasse und Höhle paarweise ≥ 30 % verschieden, und die Mutation (mehr Kronen-Deckung oder Bau-Dichte am selben Ort) ändert die RT60 monoton",
+          messung: "Station klang-raum: dieselbe Quelle (Tier-Ruf, Glut) vor und hinter Haus bzw. Hang, links und rechts; Mutations-Probe am Ort.",
+          beleg: "In `klang-core.js` und `stamm/klang.js` gibt es keinen PannerNode, kein HRTF, keinen ConvolverNode und keine Verdeckung (0 Treffer); der einzige Hall ist der Musik-Hall RAUM.hall mit fester impulseSec 3,4 (`klang-core.js:355-357`).",
+          schlupfloch: "Vier handgesetzte Hall-Voreinstellungen je Ort-Klasse bestünden „paarweise verschieden“ (B69): die Mutation am selben Ort verlangt, dass der Hall aus Gelände und Grundriss folgt.",
+          aenderung: "Mutations-Probe neu (B69)."
+        },
+        {
+          name: "Der Körper klingt aus Stoff und Bewegung",
+          punkte: 0,
+          staffel: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
+          messung: "Station gang + fahrt mit Klang-Abgriff: Schritte über Erde, Stein, Holz, Wasser; GT-Motor über die Drehzahl; Vorbeifahrt.",
+          beleg: "SCHRITT_TIMBRE (Farnell, `klang-core.js:308`) über `_schrittKlangTick` (`stamm/klang.js:484`); Motor und Abrollen aus FAHRT (`klang-core.js:1212-1260`); Treffer und Wasser über `_substanzKlang` (`stamm/klang.js:455`) — gebaut und gelesen, am Ausgang nichts spektral gemessen; Doppler fehlt.",
+          schlupfloch: "Ein Rausch-Burst je Schritt ohne Stoff-Bezug: die spektrale Distanz je Stoff.",
+          aenderung: "Die 1 der Synthese war die Existenz der Leser (B70) → 0."
+        },
+        {
+          name: "Kosten am Hörbaren, null Aussetzer",
+          punkte: 1,
+          staffel: "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
+          messung: "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
+          beleg: "(K) im Zensus: die Welt-Abfragen bleiben gleich bei 4000 fernen Bauten und 200 Fluss-Läufen (gate am Kopf); Stimmen und Tier-Rufe rechnet die Klang-Werkstatt im eigenen Worker, die Puffer kommen zero-copy (`stamm/klang.js:112-135`); ms in Bewegung und Aussetzer ungemessen.",
+          schlupfloch: "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung."
+        }
+      ],
+      hebel: [
+        { name: "Raum aus Gelände und Grundriss: HRTF, Verdeckung, Hall-Klasse", k: ["klang.K3+2"], t: [2, 3], wurzel: "`klang-core.js` RAUM (`:355`, heute nur Musik-Hall) wird EIN Raum-Gesetz: Verdeckung = Strahl Ohr → Quelle gegen hoehe (gelaende-core) und Grundriss; Hall-Klasse aus Kronen-Deckung (`_kronenStreuAt`), Bau-Dichte und Höhle; HRTF-Panner je Punkt-Quelle in `stamm/klang.js:_umweltKlangBauen` (`:73`) und `_tierRuf` (`:356`).", pflicht: "—", v1: false },
+        { name: "Doppler und Landung aus dem Gesetz", k: ["klang.K4+1"], t: [1, 1], wurzel: "`klang-core.js` FAHRT (`:1212`: Doppler-Faktor aus der Radialgeschwindigkeit) und SCHRITT_TIMBRE (`:308`: Landung nach Aufprall); vorher Messschuld M15 (spektral am Abgriff).", pflicht: "—", v1: false },
+        { name: "Klang-Takt in Bewegung und Aussetzer-Zähler", k: ["klang.K5+1"], t: [0.5, 0.5], wurzel: "Klang-Takt in `stamm/klang.js` plus ein Aussetzer-Zähler am AudioContext; Schnitt am Täter, falls die Messung ROT steht.", pflicht: "—", v1: false }
+      ],
+      feststeck: {
+        versucht: "Kein Wellen-Feststecken: der Zensus wurde gebaut und hält im Stand zu Mittag; Nacht, Regen, Bewegung und Raum maß nie jemand, und die Wiese klingt nach einem Vogel, den es nicht gibt.",
+        anders: "Den Zensus unter Uhr × Wetter × Bewegung fahren (Messschuld) und jede Quelle an einen Körper binden; der Raum folgt dem Gelände-Kern wie das Licht."
+      }
+    },
+    {
+      key: "speicher",
+      titel: "Speicher und Persistenz",
+      dom: "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
+      v1: "v1 (nichts geht verloren) · E (kein Frame)",
+      aaaa: "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
+      beste: [
+        "**Mojang, Minecraft** (Anvil-Format): 32×32 Chunks je Region-Datei, jeder Chunk einzeln komprimiert in 4-KiB-Sektoren, nur Geänderte werden geschrieben — die Datei wächst mit jedem besuchten Chunk.",
+        "**Bethesda, Creation Engine**: der Spielstand trägt nur ChangeForms, die Abweichung von den Master-Dateien.",
+        "**Wube, Factorio**: die Auto-Sicherung läuft unter Linux über fork() mit Copy-on-Write; das Spiel läuft weiter, während der Kind-Prozess schreibt.",
+        "**Web**: Origin Private File System mit createSyncAccessHandle im Worker (SQLite-Wasm nutzt es) — schnelles Schreiben abseits des Haupt-Fadens."
+      ],
+      kriterien: [
+        {
+          name: "Nichts geht verloren — auf dem Pfad des Spielers",
+          punkte: 0,
+          staffel: "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
+          messung: "gate:persistence (S), erweitert um den Tab-Tod: im 10-min-Spielgang wird der Prozess an 20 Punkten getötet (Vorlade-Haken an jedem Schreib-Aufruf plus zufällige Punkte), dann neu geladen — auf einem Host ohne save-server, wie der Spieler über den Link.",
+          beleg: "Der save-server schreibt ganz: SIGKILL an jedem Schreib-Punkt, danach liegt der alte ODER der neue Stand ganz da, `.bak` hält den Stand davor (`scripts/diag-persistence.cjs` (S), `save-server.js:913-964`). Aber abseits des lokalen Hosts wird der Auto-Save „übersprungen (kein lokaler save-server)“ (`stamm/werkstatt-sozial.js:474-490`): der Spieler über den Link speichert in localStorage/IDB mit `.bak` „best-effort“ (`stamm/dienst.js:1199-1206`). Der Tab-Tod ist ungemessen.",
+          schlupfloch: "Nur zwischen den Schreibern töten: Haken an jedem Schreib-Aufruf; den Server-Pfad prüfen, den der Spieler nie hat: der Host ohne save-server.",
+          aenderung: "Die 1 der Synthese stand auf dem Server-Pfad, den der Spieler über den Link nicht hat (B71) → 0."
+        },
+        {
+          name: "Speichern kostet keinen Frame",
+          punkte: 1,
+          staffel: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
+          messung: "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
+          beleg: "In den Frames ab p95 kostet `saveState` 0,12 ms (GTX, frische Welt, `bericht/1910-b-e-gtx.md` E; `stamm/dienst.js` seither unberührt) — dazu kommen 0,17 ms `saveToProjectFolder`, die nur der lokale Host zahlt (`stamm/werkstatt-sozial.js:474-490`). saveState baut den ganzen Stand (`buildStateSnapshot`, `speicher-welten.js:791`) und schreibt per JSON.stringify und bis zu 3 localStorage-Schreibern synchron im Haupt-Faden (`stamm/dienst.js:1186-1213`). Die große Welt ist ungemessen.",
+          schlupfloch: "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
+          aenderung: "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server steht als Messschuld M16."
+        },
+        {
+          name: "Die Datei wächst mit den Änderungen, nie mit dem Weg",
+          punkte: 0,
+          staffel: "1 = nach 30 min und 5 km Wanderung ohne Edit Δ ≤ 10 kB gegen die frische Welt · 2 = dazu ≤ 100 kB je 1000 Edits, roh und auf der Platte",
+          messung: "Station speichern: Größe roh (JSON) und auf der Platte.",
+          beleg: "Ungemessen; die Edits liegen als EINE Karte je Chunk in worldMeta.voxelEdits, der Stand selbst ist ein Voll-Abbild (`buildStateSnapshot`); ob Kreaturen, Bauten oder Strom-Zustand mit dem Weg wachsen, misst niemand.",
+          schlupfloch: "Komprimieren statt weniger speichern: die Grenze gilt auch roh."
+        },
+        {
+          name: "Die Wiederkehr zeigt dieselbe Welt",
+          punkte: 1,
+          staffel: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
+          messung: "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
+          beleg: "gate:persistence (L) am Kopf: 300 Schnitz-Kugeln stehen nach echtem Reload wieder (vorher 256 von 300); (K): ein Studio-Haus übersteht den Restore mit kaltem Buch; (U): der Boden-Umzug. Einen Bild-Rundlauf gibt es nicht.",
+          schlupfloch: "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild."
+        },
+        {
+          name: "Über Versionen hinweg",
+          punkte: 1,
+          staffel: "1 = eine Migrations-Klasse bewiesen · 2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe",
+          messung: "Korpus-Lauf über alle Stände; Bauten, Edits und Inventar gezählt. Der Bauplan zwischen Geräten zählt Tore K5.",
+          beleg: "`_migrateLegacySingleWorld` (`stamm/speicher-welten.js:292`); (U) lädt alte Böden durch loadState (gate am Kopf); es gibt keinen Korpus alter Stände.",
+          schlupfloch: "Nur den letzten Stand testen: der Korpus wächst mit jeder Versions-Stufe.",
+          aenderung: "Der Rundlauf zwischen Geräten wohnt in Tore K5 (V17)."
+        }
+      ],
+      hebel: [
+        { name: "Der Browser-Pfad schreibt wie der Server: atomar (tmp + Tausch + .bak) — mit Tab-Tod-Station", k: ["speicher.K1+2"], t: [1.5, 1.5], wurzel: "`stamm/dienst.js:saveState` (`:1177`, `.bak` heute best-effort `:1199-1206`): IDB-Transaktion mit Tausch-Schlüssel und sicherem .bak; Station Tab-Tod in der Familie `scripts/diag-persistence.cjs`.", pflicht: "—", v1: true },
+        { name: "Änderung statt Abbild, gespeichert im Worker", k: ["speicher.K2+1", "speicher.K3+2"], t: [3, 4], wurzel: "`stamm/dienst.js:saveState` (`:1177`) und `stamm/speicher-welten.js:buildStateSnapshot` (`:791`) werden ein Änderungs-Journal je Domäne (Edits, Bauten, Leib, Inventar), gemeldet an der Schreib-Stelle; Verdichten und Schreiben (IDB oder OPFS) übernimmt der Worker; der localStorage-Spiegel fällt als Zwilling.", pflicht: "E", v1: true }
+      ],
+      feststeck: {
+        versucht: "Kein Wellen-Feststecken: der Server-Pfad ist bewiesen und wurde als Beweis des Spieler-Pfads gelesen — der Spieler über den Link hat keinen save-server.",
+        anders: "Am Pfad des Spielers messen (Host ohne save-server) und dort atomar schreiben; danach das Abbild durch ein Journal ersetzen."
+      }
+    }
+  ]
+};
