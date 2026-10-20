@@ -2,8 +2,7 @@
 // WebGPU-Backend, das Geometrie und Stoffe mit der Welt teilt; das Backend-Gesetz (`_backendGesetz`: schmaler Index ·
 // Index-Wache · GPU-Wache) gilt an jedem. Die Chronik der Befunde steht in git.
 //
-// Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne — jede Bühne ein eigenes WebGPU-Backend, das Geometrie mit
-// der Welt teilt) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist für jeden Draw blind):
+// Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist blind):
 //   I  DER INDEX-ZENSUS: jeder Index-Puffer der Welt-GPU trägt das Format, das der Draw bindet (Bytes des Arrays ≤ Puffer)
 //   G  kein WebGPU-Validierungsfehler auf irgendeinem Device (eigener Hörer, unabhängig vom Spiel: `uncapturederror` jedes
 //      Device UND die THREE-Konsolenzeile, mit der r184 eine Validierung aus seinem offenen Pipeline-Fehler-Bereich meldet)
@@ -21,7 +20,7 @@
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
 //      Leib, der JS-Speicher fällt zurück
-//   P2 ein Index von 3 × Uint16 auf der Ich-Bühne lädt nach neuer Version nach — kein writeBuffer schief, kein Bruch
+//   P2 kein writeBuffer der Seite schief, auch kein Uint16-Index ungerader Länge der Ich-Bühne
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
@@ -29,8 +28,8 @@
 //   T3 ein writeBuffer von 6 Bytes → WebGPU wirft, die Puffer-Wache nennt Puffer, Länge, Aufrufer
 //
 // Zwei Wege, derselbe Prüfer:
-//   node scripts/diag-weltbild-frost.cjs          headless (swiftshader, ?holz=kienspan) — CI: der Spiel-Takt ruht (ein
-//                                                 Welt-Frame kostet dort Sekunden), die Welt-GPU zeichnet die PROBE-BÜHNE:
+//   node scripts/diag-weltbild-frost.cjs          headless (swiftshader, ?holz=kienspan) — CI: der Spiel-Takt ruht, die
+//                                                 Welt-GPU zeichnet die PROBE-BÜHNE:
 //                                                 einen Menschen und ein Tier aus denselben Bauern wie Spieler, Ich- und
 //                                                 Hof-Bühne (`_buildHumanGroup`, `_buildCreatureGroup` — geteilte Vorlagen)
 //   node scripts/diag-weltbild-frost.cjs --echt   sichtbares Chrome auf der echten GPU: der SPIELPFAD (Ankunft · dritte
@@ -108,12 +107,17 @@ function geraeteHoerer() {
         return zu.call(this);
     };
     // DIE PUFFER-WACHE: WebGPU verlangt Versatz und Länge jedes writeBuffer in 4-Byte-Schritten
-    const W = (H.puffer = { schief: [] });
+    const W = (H.puffer = { schief: [], n: 0 });
     const wb = GPUQueue.prototype.writeBuffer;
     GPUQueue.prototype.writeBuffer = function (buf, off, data, dOff, size) {
+        W.n++;
         const bytes = (size ?? (data.length ?? data.byteLength) - (dOff | 0)) * (data.BYTES_PER_ELEMENT || 1);
         if ((off | 0) % 4 || bytes % 4) {
-            const ruf = String(new Error().stack).split("\n").slice(2, 6).map((z) => z.trim().replace(/^at |\?v=[^:]*|https?:\/\/[^/]+\//g, "")).join(" < ");
+            const ruf = String(new Error().stack)
+                .split("\n")
+                .slice(2, 6)
+                .map((z) => z.trim().replace(/^at |\?v=[^:]*|https?:\/\/[^/]+\//g, ""))
+                .join(" < ");
             W.schief.push(`${buf.label} · ${data.constructor.name} · Versatz ${off} · ${bytes} B · ${ruf}`);
         }
         return wb.call(this, buf, off, data, dOff, size);
@@ -274,7 +278,15 @@ function pruefRaum(echt) {
                 const st = r && r.state;
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm (GTX 16.10.); headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
-                if (st && st.rendererReady && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= minChunks && (st._weltbildDa || !echt)) break;
+                if (
+                    st &&
+                    st.rendererReady &&
+                    st.playerMesh &&
+                    st.voxelChunks &&
+                    st.voxelChunks.size >= minChunks &&
+                    (st._weltbildDa || !echt)
+                )
+                    break;
                 await new Promise((res) => setTimeout(res, 300));
             }
             const r = window.anazhRealm;
@@ -658,82 +670,90 @@ function pruefRaum(echt) {
     // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne
     // 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
     const NEUBAU_MAX = 2;
-    const seelen = await page.evaluate(async (echt, max) => {
-        const r = window.anazhRealm;
-        const F = window.__frostWand;
-        const E = window.__frostEntsorgung;
-        let tausch = 0,
-            vorgelegt = 0;
-        // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) im Bericht: der CI-Runner rastert auf wenigen Kernen
-        const ms = { buehne: 0, leib: 0 };
-        const wechsle = async (holen, zeige) => {
-            const t = performance.now();
-            const alt = holen() && holen().pivot;
-            E.im("seelen", zeige);
-            if (alt && holen().pivot !== alt) {
-                tausch++;
-                alt.traverse((o) => o.geometry && vorgelegt++);
-            }
-            await E.warte(holen);
-            ms.buehne += performance.now() - t;
-        };
-        const durchgang = async () => {
-            r.toggleInventoryOverlay(true);
-            for (let k = 0; k < 3; k++)
-                for (const s of ["wolf", "human"]) {
-                    await wechsle(
-                        () => r.state.ichStage,
-                        () => r._ichStageShow(s)
-                    );
-                    const t = performance.now();
-                    await F.leibWechsel(s);
-                    ms.leib += performance.now() - t;
+    const seelen = await page.evaluate(
+        async (echt, max) => {
+            const r = window.anazhRealm;
+            const F = window.__frostWand;
+            const E = window.__frostEntsorgung;
+            let tausch = 0,
+                vorgelegt = 0;
+            // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) im Bericht: der CI-Runner rastert auf wenigen Kernen
+            const ms = { buehne: 0, leib: 0 };
+            const wechsle = async (holen, zeige) => {
+                const t = performance.now();
+                const alt = holen() && holen().pivot;
+                E.im("seelen", zeige);
+                if (alt && holen().pivot !== alt) {
+                    tausch++;
+                    alt.traverse((o) => o.geometry && vorgelegt++);
                 }
-            r.toggleInventoryOverlay(false);
-            r.toggleDrawer("kreaturen");
-            for (let k = 0; k < 2; k++)
-                for (const s of ["wolf", "fuchs", "baer", "wesen"])
-                    await wechsle(
-                        () => r.state.hofStage,
-                        () => r._hofStageShow(s)
-                    );
-            r.closeAllDrawers();
-            await E.leeren();
-            await F.zeichne(echt ? 8 : 2);
-        };
-        await durchgang();
-        const devs = {
-            welt: r.state.renderer.backend.device,
-            ich: r.state.ichStage && r.state.ichStage.renderer.backend.device,
-            hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
-        };
-        const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
-        // ein Haus, das im Fenster ankommt, kompiliert EINMAL, der Knoten-Bau der Seele bei JEDEM Wechsel: zeigt ein Durchgang
-        // Neubauten, urteilt ein weiterer
-        const messe = async () => {
-            const vor = alle();
-            await F.zeichne(echt ? 8 : 2);
-            const ruhe = alle();
-            const n0 = (devs.welt.__frostNamen || []).length;
+                await E.warte(holen);
+                ms.buehne += performance.now() - t;
+            };
+            const durchgang = async () => {
+                r.toggleInventoryOverlay(true);
+                for (let k = 0; k < 3; k++)
+                    for (const s of ["wolf", "human"]) {
+                        await wechsle(
+                            () => r.state.ichStage,
+                            () => r._ichStageShow(s)
+                        );
+                        const t = performance.now();
+                        await F.leibWechsel(s);
+                        ms.leib += performance.now() - t;
+                    }
+                r.toggleInventoryOverlay(false);
+                r.toggleDrawer("kreaturen");
+                for (let k = 0; k < 2; k++)
+                    for (const s of ["wolf", "fuchs", "baer", "wesen"])
+                        await wechsle(
+                            () => r.state.hofStage,
+                            () => r._hofStageShow(s)
+                        );
+                r.closeAllDrawers();
+                await E.leeren();
+                await F.zeichne(echt ? 8 : 2);
+            };
             await durchgang();
-            const nach = alle(), neubau = {}, d = (k, g) => nach[k][g] - ruhe[k][g] - (ruhe[k][g] - vor[k][g]);
-            for (const k of Object.keys(devs)) neubau[k] = { module: d(k, "module"), pipelines: d(k, "pipelines") };
-            return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6), offen: r._weltOffen().foundry };
-        };
-        const erst = await messe();
-        const ueber = Object.values(erst.neubau).some((n) => n.module > max || n.pipelines > max);
-        const { neubau, neu, offen } = ueber ? await messe() : erst;
-        return {
-            ...E.bericht("seelen"),
-            tausch,
-            vorgelegt,
-            ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
-            neubau,
-            neu,
-            erst: ueber ? `erster Durchgang Welt +${erst.neubau.welt.module}/+${erst.neubau.welt.pipelines} bei ${erst.offen} offenen Foundry-Aufträgen, einmalig` : null,
-            offen,
-        };
-    }, ECHT, NEUBAU_MAX);
+            const devs = {
+                welt: r.state.renderer.backend.device,
+                ich: r.state.ichStage && r.state.ichStage.renderer.backend.device,
+                hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
+            };
+            const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
+            // ein Haus, das im Fenster ankommt, kompiliert EINMAL, der Knoten-Bau der Seele bei JEDEM Wechsel: zeigt ein Durchgang
+            // Neubauten, urteilt ein weiterer
+            const messe = async () => {
+                const vor = alle();
+                await F.zeichne(echt ? 8 : 2);
+                const ruhe = alle();
+                const n0 = (devs.welt.__frostNamen || []).length;
+                await durchgang();
+                const nach = alle(),
+                    neubau = {},
+                    d = (k, g) => nach[k][g] - ruhe[k][g] - (ruhe[k][g] - vor[k][g]);
+                for (const k of Object.keys(devs)) neubau[k] = { module: d(k, "module"), pipelines: d(k, "pipelines") };
+                return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6), offen: r._weltOffen().foundry };
+            };
+            const erst = await messe();
+            const ueber = Object.values(erst.neubau).some((n) => n.module > max || n.pipelines > max);
+            const { neubau, neu, offen } = ueber ? await messe() : erst;
+            return {
+                ...E.bericht("seelen"),
+                tausch,
+                vorgelegt,
+                ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
+                neubau,
+                neu,
+                erst: ueber
+                    ? `erster Durchgang Welt +${erst.neubau.welt.module}/+${erst.neubau.welt.pipelines} bei ${erst.offen} offenen Foundry-Aufträgen, einmalig`
+                    : null,
+                offen,
+            };
+        },
+        ECHT,
+        NEUBAU_MAX
+    );
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 500)}`);
     entsorgtKeineWelt("S1 Seelenwechsel (Ich und Welt-Leib wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
     // nie vakuös: die Bühnen und der Leib tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
@@ -749,29 +769,6 @@ function pruefRaum(echt) {
             n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
             `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" ? (seelen.erst ? ` · ${seelen.erst}` : "") + (seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : "") : ""}`
         );
-
-    // P2 — DER ZWANG: ein Index ungerader Länge auf der Ich-Bühne, angelegt, neue Version (wie `_gpuAbschied`), EIN Bild
-    const p2 = await page.evaluate(() => {
-        const r = window.anazhRealm, T = window.THREE, W = window.__frostHoer.puffer, st = r.state.ichStage;
-        const g = new T.BufferGeometry().setIndex([0, 1, 2]);
-        g.index.name = "Ich-Bühne Probe-Index";
-        const m = new T.Mesh(g.setAttribute("position", new T.Float32BufferAttribute(new Array(9).fill(0), 3)));
-        m.frustumCulled = false;
-        st.scene.add(m);
-        const vor = W.schief.length;
-        let bruch = "";
-        try {
-            r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
-            g.index.needsUpdate = true;
-            r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
-        } catch (e) {
-            bruch = e.message;
-        }
-        st.scene.remove(m);
-        g.dispose();
-        return [...W.schief.slice(vor), bruch].filter(Boolean).join(" | ");
-    });
-    check("P2 die Ich-Bühne lädt einen Index ungerader Länge in 4-Byte-Schritten nach", !p2, p2);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
@@ -875,7 +872,9 @@ function pruefRaum(echt) {
         }
         const h = await cdp.send("Runtime.getHeapUsage");
         // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
-        return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(1);
+        return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(
+            1
+        );
     };
     // DAS FENSTER OHNE VERDICHTUNG (S5, S6): ein Welt-Satz schrumpft `ruheTakte` Render-Takte nach dem Beginn seiner Frist
     // (`_chunkSatzVerdichten`), die alte Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet — fiel
@@ -883,11 +882,18 @@ function pruefRaum(echt) {
     // `_queueDispose` zählt), danach nennt die Linse jeden Satz, der doch verdichtete.
     const fenster = (auf) =>
         page.evaluate((auf) => {
-            const r = window.anazhRealm, S = [...(r.state.chunkSaetze || new Map()).values()];
+            const r = window.anazhRealm,
+                S = [...(r.state.chunkSaetze || new Map()).values()];
             if (!auf) delete r._chunkSatzVerdichten;
             else if (typeof r._chunkSatzVerdichten !== "function") return ["_chunkSatzVerdichten fehlt"];
-            else [window.__frostFenster, r._chunkSatzVerdichten] = [new Map(S.map((s) => [s, s.verdichtet || 0])), () => false];
-            return [...(window.__frostFenster || [])].filter(([s, v]) => (s.verdichtet || 0) !== v).map(([s]) => s.mesh.name);
+            else
+                [window.__frostFenster, r._chunkSatzVerdichten] = [
+                    new Map(S.map((s) => [s, s.verdichtet || 0])),
+                    () => false,
+                ];
+            return [...(window.__frostFenster || [])]
+                .filter(([s, v]) => (s.verdichtet || 0) !== v)
+                .map(([s]) => s.mesh.name);
         }, auf);
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
@@ -916,7 +922,13 @@ function pruefRaum(echt) {
             let hoerer = 0;
             for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
             const MB = +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2);
-            return { memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0, geometrien: m.geometries || 0, MB, stoffe: stoffe.size, hoerer };
+            return {
+                memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
+                geometrien: m.geometries || 0,
+                MB,
+                stoffe: stoffe.size,
+                hoerer,
+            };
         };
         O.zug = async (i) => {
             if (probe === "frames") return E.leeren(); // Selbsttest Lauf F: nur Welt-Frames, kein Regler — GRÜN
@@ -957,13 +969,26 @@ function pruefRaum(echt) {
     else {
         entsorgtKeineWelt(`S5 Werkstatt-Ofen (Regler-Zug ${ofen.id}.${ofen.dial}, 20 Werte)`, ofen);
         const { vor, nach, ruhe } = ofen;
-        check("S5 das Ofen-Memo hält kein Regler-Einzelstück", nach.memo === vor.memo, `Memo ${vor.memo} → ${nach.memo} über 18 Werte`);
-        check("S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt", nach.geometrien <= vor.geometrien && nach.MB <= vor.MB + 0.5,
-            `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte`);
-        check("S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)", nach.hoerer <= vor.hoerer,
-            `${nach.stoffe} Stoffe, dispose-Hörer ${vor.hoerer} → ${nach.hoerer} über 18 Werte`);
-        check("S5 der JS-Speicher bleibt beschränkt (kein Welt-Satz verdichtet im Fenster)", ofen.heapNach - ofen.heapVor <= 10 && !ruhe.length,
-            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB)${ruhe.length ? ", im Fenster verdichtet " + ruhe.join(" · ") : ""}`);
+        check(
+            "S5 das Ofen-Memo hält kein Regler-Einzelstück",
+            nach.memo === vor.memo,
+            `Memo ${vor.memo} → ${nach.memo} über 18 Werte`
+        );
+        check(
+            "S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt",
+            nach.geometrien <= vor.geometrien && nach.MB <= vor.MB + 0.5,
+            `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte`
+        );
+        check(
+            "S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)",
+            nach.hoerer <= vor.hoerer,
+            `${nach.stoffe} Stoffe, dispose-Hörer ${vor.hoerer} → ${nach.hoerer} über 18 Werte`
+        );
+        check(
+            "S5 der JS-Speicher bleibt beschränkt (kein Welt-Satz verdichtet im Fenster)",
+            ofen.heapNach - ofen.heapVor <= 10 && !ruhe.length,
+            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB)${ruhe.length ? ", im Fenster verdichtet " + ruhe.join(" · ") : ""}`
+        );
     }
 
     // S6 — die Mitspieler-Erscheinungen: 10 Peers „human" mit je eigener Übergabe (height), jeder ein eigener Ofen-Guss (zwei
@@ -1005,12 +1030,21 @@ function pruefRaum(echt) {
         `\n[mitspieler-erscheinungen] ${zeit()} · ${JSON.stringify({ ...peers, memoVor: peersVor.memo, heapPeersVor, heapPeersNach }).slice(0, 400)}`
     );
     entsorgtKeineWelt("S6 Mitspieler-Erscheinungen (10 Peers human, Abschied)", peers);
-    check("S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen)", peers.leiber === 10 && peers.spitze >= peersVor.memo + 10,
-        `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`);
-    check("S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib", peers.memo <= peersVor.memo + peersVor.ruhend,
-        `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`);
-    check("S6 der JS-Speicher fällt mit dem Abschied zurück", heapPeersNach - heapPeersVor <= 20 && !ruhePeers.length,
-        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)${ruhePeers.length ? ", im Fenster verdichtet " + ruhePeers.join(" · ") : ""}`);
+    check(
+        "S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen)",
+        peers.leiber === 10 && peers.spitze >= peersVor.memo + 10,
+        `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`
+    );
+    check(
+        "S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib",
+        peers.memo <= peersVor.memo + peersVor.ruhend,
+        `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`
+    );
+    check(
+        "S6 der JS-Speicher fällt mit dem Abschied zurück",
+        heapPeersNach - heapPeersVor <= 20 && !ruhePeers.length,
+        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)${ruhePeers.length ? ", im Fenster verdichtet " + ruhePeers.join(" · ") : ""}`
+    );
 
     await page.evaluate(() => {
         const r = window.anazhRealm;
@@ -1036,6 +1070,37 @@ function pruefRaum(echt) {
             l.hoer ? `${l.hoer} Meldungen: ${l.hoerErste.join(" | ")}` : ""
         );
     }
+
+    // P2 — DER PFAD UND DER ZWANG: ein Index ungerader Länge der Ich-Bühne, neu (wie `_gpuAbschied`), ganz und ab Element 1
+    const p2 = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            T = window.THREE,
+            W = window.__frostHoer.puffer,
+            st = r.state.ichStage;
+        const g = new T.BufferGeometry().setIndex([0, 1, 2, 0, 1]);
+        g.index.name = "Ich-Bühne Probe-Index";
+        const m = new T.Mesh(g.setAttribute("position", new T.Float32BufferAttribute(new Array(9).fill(0), 3)));
+        m.frustumCulled = false;
+        st.scene.add(m);
+        let bruch = "";
+        try {
+            for (const k of [0, 1, 2]) {
+                if (k > 1) g.index.addUpdateRange(1, 3);
+                g.index.needsUpdate = k > 0;
+                r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
+            }
+        } catch (e) {
+            bruch = e.message;
+        }
+        st.scene.remove(m);
+        g.dispose();
+        return [...W.schief, bruch].filter(Boolean).join(" | ") || `${W.n} writeBuffer, keiner schief`;
+    });
+    check(
+        "P2 kein writeBuffer schief: der Pfad und ein Index ungerader Länge der Ich-Bühne",
+        /keiner schief$/.test(p2),
+        p2
+    );
 
     // DIE TÄTER — die Wand beweist sich an jedem Lauf.
     console.log("\n=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===");
@@ -1066,7 +1131,8 @@ function pruefRaum(echt) {
     );
     // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
     const t3 = await page.evaluate(() => {
-        const W = window.__frostHoer.puffer, dev = window.anazhRealm.state.renderer.backend.device;
+        const W = window.__frostHoer.puffer,
+            dev = window.anazhRealm.state.renderer.backend.device;
         const buf = dev.createBuffer({ label: "frost-taeter-puffer", size: 8, usage: GPUBufferUsage.COPY_DST });
         try {
             dev.queue.writeBuffer(buf, 0, new Uint16Array(3));
@@ -1077,7 +1143,11 @@ function pruefRaum(echt) {
         }
         return "nicht geworfen";
     });
-    check("T3 die Puffer-Wache nennt den schiefen writeBuffer beim Namen, WebGPU wirft", /frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B .*geworfen: \S/.test(t3), t3);
+    check(
+        "T3 die Puffer-Wache nennt den schiefen writeBuffer beim Namen, WebGPU wirft",
+        /frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B .*geworfen: \S/.test(t3),
+        t3
+    );
     selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     const t2 = await page.evaluate(() => {
         const r = window.anazhRealm;

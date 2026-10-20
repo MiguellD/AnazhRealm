@@ -2851,7 +2851,10 @@ class AnazhRealm_stoff_instanz {
         P.updateAttribute = function (attr) {
             const d = this.get(attr);
             if (d.__indexMax !== undefined) AnazhRealm._indexMaxBuchen(d, attr.array, attr.updateRanges);
-            return nachschreiben.call(this, attr);
+            const ba = attr.isInterleavedBufferAttribute ? attr.data : attr;
+            if (ba.array.BYTES_PER_ELEMENT >= 4 || this.get(ba)._force3to4BytesAlignment === true)
+                return nachschreiben.call(this, attr);
+            AnazhRealm._schreibWorte(this.device.queue, this.get(ba).buffer, ba);
         };
         const zeichnen = P.draw;
         P.draw = function (ro, info) {
@@ -2976,6 +2979,29 @@ class AnazhRealm_stoff_instanz {
                 if (v > m && v !== 4294967295) m = v;
             }
         d.__indexMax = m;
+    }
+    // DIE WORT-SCHRIFT (K-ICH-BÜHNE-PUFFER): WebGPU schreibt nur in 4-Byte-Wörtern (Versatz und Länge), r184 reicht ein
+    // schmales Array (der Uint16-Index des Gesetzes, unorm16/unorm8) beim Nachschreiben roh — ein Index ungerader Länge oder
+    // ein Bereich ab ungeradem Element warf (CI voll 14, 1 von ~15 Läufen: Mensch 8097 × Uint16 = 16 194 B nach
+    // `_gpuAbschied`). Darum schreibt die Hülle jedes Array unter 4 B je Element selbst: je Bereich Anfang ab-, Ende
+    // aufgerundet, das letzte halbe Wort als gepolsterte Kopie (r184 polstert den Puffer beim Anlegen auf 4 B).
+    static _schreibWorte(q, buf, ba) {
+        const a = ba.array,
+            b = a.BYTES_PER_ELEMENT,
+            voll = a.byteLength & ~3,
+            r = ba.updateRanges;
+        for (let k = 0; k < Math.max(1, r.length); k++) {
+            const von = r.length ? (r[k].start * b) & ~3 : 0;
+            const bis = r.length ? Math.min(a.byteLength, (r[k].start + r[k].count) * b) : a.byteLength;
+            const ganz = Math.min(voll, (bis + 3) & ~3);
+            if (ganz > von) q.writeBuffer(buf, von, a.buffer, a.byteOffset + von, ganz - von);
+            if (bis > voll) {
+                const rest = new Uint8Array(4);
+                rest.set(new Uint8Array(a.buffer, a.byteOffset + voll, a.byteLength - voll));
+                q.writeBuffer(buf, voll, rest, 0, 4);
+            }
+        }
+        ba.clearUpdateRanges();
     }
     static _indexSchmal(arr, nVertices) {
         return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
