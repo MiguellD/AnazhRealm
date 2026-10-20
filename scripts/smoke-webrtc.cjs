@@ -11,8 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
-const { spawn } = require("child_process");
+const { starteBrowser, ROOT, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
@@ -101,42 +100,8 @@ const W17JS_WORLD_HTML = `<!doctype html>
 </html>
 `;
 
-function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-}
-
-function startProc(script, readyRe) {
-    return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, script)], {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: Object.assign({}, process.env, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) }),
-        });
-        let ready = false;
-        const timeout = setTimeout(() => {
-            if (!ready) reject(new Error(`${script} startete nicht innerhalb 6 s`));
-        }, 6000);
-        proc.stdout.on("data", (chunk) => {
-            if (!ready && readyRe.test(chunk.toString())) {
-                ready = true;
-                clearTimeout(timeout);
-                resolve(proc);
-            }
-        });
-        proc.on("error", reject);
-    });
-}
-
 // Wartet, bis evalFn auf der Seite true liefert (oder Timeout). Zusätzliche
 // Argumente werden an page.evaluate durchgereicht.
-async function waitFor(page, evalFn, timeoutMs, label, ...args) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-        const ok = await page.evaluate(evalFn, ...args).catch(() => false);
-        if (ok) return true;
-        await sleep(200);
-    }
-    throw new Error(`Timeout: ${label}`);
-}
 
 (async () => {
     const failures = [];
@@ -146,8 +111,8 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
     }
 
     console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/);
-    const signaling = await startProc("signaling-server.js", /lauscht/);
+    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
 
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
 

@@ -21,9 +21,7 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, halteBis, ROOT } = require("./lib/welt-boot.cjs");
-const { spawn } = require("child_process");
-const path = require("path");
+const { starteBrowser, halteBis, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT).
@@ -33,41 +31,6 @@ const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
 const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
 const ROOM = "smoke-copresence-room";
 
-function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-}
-
-function startProc(script, readyRe) {
-    return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, script)], {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: Object.assign({}, process.env, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) }),
-        });
-        let ready = false;
-        const timeout = setTimeout(() => {
-            if (!ready) reject(new Error(`${script} startete nicht innerhalb 6 s`));
-        }, 6000);
-        proc.stdout.on("data", (chunk) => {
-            if (!ready && readyRe.test(chunk.toString())) {
-                ready = true;
-                clearTimeout(timeout);
-                resolve(proc);
-            }
-        });
-        proc.on("error", reject);
-    });
-}
-
-async function waitFor(page, evalFn, timeoutMs, label, ...args) {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-        const ok = await page.evaluate(evalFn, ...args).catch(() => false);
-        if (ok) return true;
-        await sleep(200);
-    }
-    throw new Error(`Timeout: ${label}`);
-}
-
 (async () => {
     const failures = [];
     function check(name, ok, detail = "") {
@@ -76,8 +39,8 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
     }
 
     console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/);
-    const signaling = await startProc("signaling-server.js", /lauscht/);
+    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
 
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
 

@@ -34,10 +34,8 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser, halteBis, ROOT } = require("./lib/welt-boot.cjs");
-const { spawn } = require("child_process");
+const { starteBrowser, halteBis, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
-const path = require("path");
 
 const PORT = Number(process.env.MP_SYNC_PORT || 4312);
 const SIGNAL_PORT = Number(process.env.MP_SYNC_SIGNAL_PORT || 4313);
@@ -100,39 +98,6 @@ const SCHUB_VOR_DEM_FENSTER = [
     [290, 20, 2],
 ].map(([dt, n, nach]) => ({ dt, n, nach, anschluss: true }));
 const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz, unter dem er aufgenommen wurde
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-function startProc(script, readyRe) {
-    return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, script)], {
-            cwd: ROOT,
-            stdio: ["ignore", "pipe", "pipe"],
-            env: Object.assign({}, process.env, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) }),
-        });
-        let ready = false;
-        const timer = setTimeout(() => {
-            if (!ready) reject(new Error(`${script} startete nicht innerhalb 8 s`));
-        }, 8000);
-        proc.stdout.on("data", (chunk) => {
-            if (!ready && readyRe.test(chunk.toString())) {
-                ready = true;
-                clearTimeout(timer);
-                resolve(proc);
-            }
-        });
-        proc.on("error", reject);
-    });
-}
-
-async function waitFor(page, fn, timeoutMs, label, ...args) {
-    const t0 = Date.now();
-    while (Date.now() - t0 < timeoutMs) {
-        if (await page.evaluate(fn, ...args).catch(() => false)) return Date.now() - t0;
-        await sleep(150);
-    }
-    throw new Error(`Zeitüberschreitung: ${label}`);
-}
 
 // Im Seiten-Kontext: Render ruht (zwei Seiten auf swiftshader verhungern sonst den Event-Loop, s. smoke-lockstep),
 // der Loop läuft voll über die Pumpe; die Probe hängt am Spiel-Takt `p2pTick` und am Empfang `_p2pMsgPos`.
@@ -297,7 +262,7 @@ function bericht(p) {
                 ` · fester Verzug max ${verzugMax} ${verzugMax > festGrenze ? ">" : "≤"} ${festGrenze}`
         );
     }
-    const saveServer = await startProc("save-server.js", /läuft/);
+    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
     let signaling = null;
     const browser = await starteBrowser({ art: "webgl", frist: 180000, zusatz: ["--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
     try {
@@ -334,7 +299,7 @@ function bericht(p) {
         const vorTuer = await pageA.evaluate(() => window.anazhRealm.state.p2p.enabled === true);
         await pageA.evaluate(() => window.anazhRealm.initP2PSync(null));
         await sleep(3000);
-        signaling = await startProc("signaling-server.js", /lauscht/);
+        signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
         const tAn = Date.now();
         let rejoinS = null;
         let ohnePlan = 0;
