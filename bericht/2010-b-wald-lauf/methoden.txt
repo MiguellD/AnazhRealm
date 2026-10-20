@@ -1,0 +1,5 @@
+Instrument A = n1910-f1b, Seite B = n1910-integ
+Methoden A 3496 · B 3496
+in B entfernt (0): keine
+in B neu (0): keine
+vom Instrument gerufen und in B fehlend (0): KEINE
