@@ -508,7 +508,12 @@ class AnazhRealm_dirigent_ankunft {
             this._applyDayNightToScene();
         }
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(
+            AnazhRealm.KAM_FOV_GRAD,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
         this.state.camera = camera;
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");

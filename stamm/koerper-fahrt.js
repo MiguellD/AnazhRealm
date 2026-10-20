@@ -1408,9 +1408,8 @@ class AnazhRealm_koerper_fahrt {
 
     // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
 
-    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
-    // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
-    // setZoomActive(false) stellt den Original-FOV wieder her.
+    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
+    // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
     // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
     // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
     _alleTastenLos() {
@@ -1421,27 +1420,9 @@ class AnazhRealm_koerper_fahrt {
     }
 
     setZoomActive(active) {
-        const cam = this.state.camera;
-        if (!cam) return false;
-        if (active) {
-            // Erst prüfen ob es ein magnifying-Target im Blick gibt
-            const hasMag = this._hasMagnifyingInSight();
-            if (!hasMag) return false;
-            if (!this.state._zoomActive) {
-                this.state._normalFov = cam.fov;
-                cam.fov = AnazhRealm.ZOOM_FOV_DEG;
-                cam.updateProjectionMatrix();
-                this.state._zoomActive = true;
-            }
-            return true;
-        }
-        // Zoom aus
-        if (this.state._zoomActive && typeof this.state._normalFov === "number") {
-            cam.fov = this.state._normalFov;
-            cam.updateProjectionMatrix();
-            this.state._zoomActive = false;
-        }
-        return false;
+        // das Fernglas steht nur mit einem magnifying-Target im Blick
+        this.state._zoomActive = !!active && !!this.state.camera && this._hasMagnifyingInSight() === true;
+        return this.state._zoomActive;
     }
 
     // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`): trifft er ein Sub-Mesh einer magnifying-Architektur in
@@ -2329,6 +2310,7 @@ Object.defineProperties(AnazhRealm, {
 });
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
+AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal), auf die `_kamFov` Tempo und Bogen-Auszug legt
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
 AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
 AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny

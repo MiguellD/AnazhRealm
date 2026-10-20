@@ -325,7 +325,7 @@ async function probeLeben(expected) {
         }
         if (gt) weg(gt);
         // (1b) T5 DAS TEMPO DER KAMERA (H3): ein GT aus dem Stand mit W in Third bis 12 m/s, dann zieht die Maus 10 Bilder
-        // (state.yaw/pitch wie das mousemove) und lässt los; dazu die FOV-Schreiber über __codeOf.
+        // (state.yaw/pitch wie das mousemove) und lässt los; dazu die FOV-Schreiber über den Absenz-Helfer (__fehlt).
         const sicht5 = st.cameraMode;
         r.setCameraMode("third");
         const g5 = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -343,8 +343,10 @@ async function probeLeben(expected) {
             m5.ende();
             weg(g5);
             for (const o of [P, r.constructor])
-                for (const k of Object.getOwnPropertyNames(o))
-                    if (/\.fov\s*=(?!=)/.test(window.__codeOf(Object.getOwnPropertyDescriptor(o, k).value))) m5.schreiber.push(k);
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    const f = Object.getOwnPropertyDescriptor(o, k).value;
+                    if (typeof f === "function" && !window.__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
+                }
         }
         r.setCameraMode(sicht5);
         // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der

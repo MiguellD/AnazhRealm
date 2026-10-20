@@ -2297,6 +2297,18 @@
             azEase: 0.0016,
             elEase: 0.02,
             posEase: 0.0016,
+            // H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO (chaseKamera): bei vmax waechst das FOV
+            // um fovV Grad und der Arm um distV, beide folgen dem Tempo-Anteil als Feder (Rest 1 − tempoEase^dt); der Azimut
+            // zielt um driftFolge × Drift-Winkel auf den Fahrtvektor (unter driftMinV m/s laengs zaehlt driftMinV); nach einem
+            // Maus-Orbit kehrt er in rueckS Sekunden zurueck; die Maus hebt die Elevation zwischen elMin und elMax.
+            fovV: 10,
+            distV: 0.2,
+            tempoEase: 0.1,
+            driftFolge: 0.8,
+            driftMinV: 2,
+            rueckS: 1.2,
+            elMin: 0.06,
+            elMax: 1.25,
         },
         // ── WELLE L (06.10., rein additive DATEN-Zeile — Praezedenz: kamera) — DER FAHR-SCHRITT (fahrSchritt unten):
         //    die Lab-Literale des alten updateVehicle (byte-gleich umgezogen: Brems-Schwelle, Rueckwaerts-Antrieb und
@@ -3051,27 +3063,57 @@
     //     (zur Welt K.el − steig) und folgt ihr als Feder mit Daempfer, zwei Stufen mit dem Rest 1 − elEase^dt (die Ebene der
     //     Raeder springt je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter).
     //     → der Ort der Kamera um die Lage des Wagens {x, y, z} (y traegt K.blickHoehe). REIN + THREE-frei.
-    function chaseKamera(c, gier, steig, dt, K) {
+    //   H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO: z (fahrZustand) und vmax (das Gesetz des
+    //     Wagens) geben den Tempo-Anteil |speed|/vmax (≤ 1) und den Drift-Winkel atan2(vlat, max(|vlong|, driftMinV)) — den
+    //     Fahrtvektor gegen den Bug, rueckwaerts bleibt die Kamera hinter dem Wagen; beide folgen als Feder (c.tF, c.dF). Der
+    //     Arm steht dist·(1 + distV·tF), das FOV waechst um fovPlus = fovV·tF Grad (der Wirt legt es auf seine Ruhe), der Azimut
+    //     zielt auf Gier + driftFolge·dF. Ohne z steht die Kamera wie zuvor (tF = dF = 0). DIE MAUS: Gier NaN = sie haelt
+    //     (`chaseGreif` dreht c um den Wagen); wird die Gier wieder finit, kehrt der Azimut als Smoothstep in rueckS zurueck
+    //     (vorher schnappte er mit azEase in 0,5 s hinter den Wagen, die Welt kannte keinen Orbit im Ritt).
+    function chaseKamera(c, gier, steig, dt, K, z, vmax) {
         K = K || FAHR.kamera;
         const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
+        const s = z && vmax > 0 ? Math.min(1, Math.abs(z.speed) / vmax) : 0;
+        const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
+        const frisch = !Number.isFinite(c.az) || !(dt > 0);
+        if (frisch || !Number.isFinite(c.tF)) [c.tF, c.dF] = [s, drift];
+        else {
+            const kT = 1 - Math.pow(K.tempoEase, dt);
+            c.tF += (s - c.tF) * kT;
+            c.dF += (drift - c.dF) * kT;
+        }
+        const winkel = (a) => Math.atan2(Math.sin(a), Math.cos(a));
         if (Number.isFinite(gier)) {
-            if (!Number.isFinite(c.az) || !(dt > 0)) {
-                c.az = gier;
+            const ziel = gier + K.driftFolge * c.dF;
+            if (frisch) {
+                c.az = ziel;
                 c.el = c.elF = elZ;
+                c.rueck = null;
             } else {
-                let d = gier - c.az;
-                while (d > Math.PI) d -= 2 * Math.PI;
-                while (d < -Math.PI) d += 2 * Math.PI;
-                c.az += d * (1 - Math.pow(K.azEase, dt));
+                if (c.frei) [c.frei, c.rueck] = [false, { t: 0, d0: winkel(c.az - ziel) }];
+                if (c.rueck) {
+                    c.rueck.t += dt;
+                    const u = Math.min(1, c.rueck.t / K.rueckS);
+                    c.az = ziel + c.rueck.d0 * (1 - u * u * (3 - 2 * u));
+                    if (u >= 1) c.rueck = null;
+                } else c.az += winkel(ziel - c.az) * (1 - Math.pow(K.azEase, dt));
                 const k = 1 - Math.pow(K.elEase, dt);
                 if (!Number.isFinite(c.el)) c.el = elZ;
                 if (!Number.isFinite(c.elF)) c.elF = c.el;
                 c.elF += (elZ - c.elF) * k;
                 c.el += (c.elF - c.el) * k;
             }
-        }
-        const ce = Math.cos(c.el);
-        return { x: -Math.cos(c.az) * ce * K.dist, y: K.blickHoehe + Math.sin(c.el) * K.dist, z: Math.sin(c.az) * ce * K.dist };
+        } else if (Number.isFinite(c.az)) c.frei = true;
+        const [ce, dist] = [Math.cos(c.el), K.dist * (1 + K.distV * c.tF)];
+        return { x: -Math.cos(c.az) * ce * dist, y: K.blickHoehe + Math.sin(c.el) * dist, z: Math.sin(c.az) * ce * dist, fovPlus: K.fovV * c.tF };
+    }
+    // chaseGreif(c, dAz, dEl, K) — der Griff der Maus (H3): dreht das Rig um den Wagen, die Elevation zwischen elMin und elMax.
+    //   Die Probefahrt (Zug der Maus) und der Welt-Ritt (das mousemove auf state.yaw/pitch) rufen ihn, dazu Gier NaN.
+    function chaseGreif(c, dAz, dEl, K) {
+        K = K || FAHR.kamera;
+        if (!Number.isFinite(c.az)) return;
+        c.az += dAz;
+        c.el = Math.max(K.elMin, Math.min(K.elMax, c.el + dEl));
     }
 
     const PARAMS = [
@@ -3503,6 +3545,7 @@
         fahrSchritt: fahrSchritt,
         // F1 (rein additiv) — die EINE Chase-Cam (Probefahrt UND Welt-Ritt)
         chaseKamera: chaseKamera,
+        chaseGreif: chaseGreif,
         // SCHAU 2 (rein additiv) — der Platz eines Wagens, den die Welt hinstellt (FAHR.platz)
         fahrPlatz: fahrPlatz,
         fahrPlatzGrenze: fahrPlatzGrenze,

@@ -1643,6 +1643,7 @@ class AnazhRealm_koerper_bewegung {
                 this.state._kamRig = rig;
                 this.state._kamArm = this.state._kamChase = this.state._kamT = this.state._smoothBodyY = undefined;
             }
+            let tempoFov = 0; // das Tempo der Chase-Cam (H3), nur im Ritt in Third
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
                 const kamT = this.state._kamT;
@@ -1650,8 +1651,8 @@ class AnazhRealm_koerper_bewegung {
                 // Orbit-Kamera hinter + über dem Spieler: Pitch hebt/senkt vertikal, Distanz konstant, Look-At auf
                 // die Brust. Pitch-Vorzeichen gegenüber 1st bewusst invertiert (3rd: Maus hoch = Kamera höher).
                 // Beim Gesetz-Fahrzeug-Ritt die Studio-CHASE-CAM: das EINE Gesetz des Kerns (`chaseKamera`, die Probefahrt der Garage
-                // liest es auch) — hinter dem Wagen, Azimut-Ease auf die Gier, Elevation über der Fahrbahn, feste Distanz; Boden-Clamp
-                // + Kollision unten gelten gleich.
+                // liest es auch) — hinter dem Wagen, Azimut-Ease auf den Fahrtvektor, Elevation über der Fahrbahn, Arm und FOV atmen das
+                // Tempo (H3); Boden-Clamp + Kollision unten gelten gleich.
                 let camX, camZ, camY;
                 if (_fahrRitt && _fahrRitt.kam) {
                     const ent = _fahrRitt.ent;
@@ -1669,13 +1670,25 @@ class AnazhRealm_koerper_bewegung {
                     // Dämpfer (zwei Stufen) trägt der Kern. Gier des Kerns = Fahrt − π/2 (Studio-Wagen: Bug +x).
                     const kDt = Math.min(0.1, Math.max(0.001, currentTime - (kamT || currentTime)));
                     const c = (this.state._kamChase = this.state._kamChase || {});
-                    const v = AnazhRealm._fahrSchrittGesetz().vc.chaseKamera(
+                    // DIE MAUS IM RITT (H3): was das mousemove seit dem letzten Bild an state.yaw/pitch drehte, greift das Rig
+                    // (`chaseGreif`, dieselbe Klemme wie die Probefahrt), in diesem Bild folgt der Azimut nicht (Gier NaN); lässt sie
+                    // los, kehrt es in `rueckS` zurück. Die Welt reicht Fahr-Zustand und vmax IHRES Gesetzes (`_fahrSatz`).
+                    const vc = AnazhRealm._fahrSchrittGesetz().vc;
+                    const greif = Number.isFinite(c.maus)
+                        ? [this.state.yaw - c.maus, c.mausP - this.state.pitch]
+                        : [0, 0];
+                    [c.maus, c.mausP] = [this.state.yaw, this.state.pitch];
+                    if (greif[0] || greif[1]) vc.chaseGreif(c, greif[0], greif[1], K);
+                    const v = vc.chaseKamera(
                         c,
-                        yawF - Math.PI / 2,
+                        greif[0] || greif[1] ? NaN : yawF - Math.PI / 2,
                         ent._fahr ? ent._fahr.steig : 0,
                         kDt,
-                        K
+                        K,
+                        ent._fahr,
+                        ent._fahrSatz && ent._fahrSatz.vmax
                     );
+                    tempoFov = v.fovPlus;
                     camX = ent.position.x + v.x;
                     camZ = ent.position.z + v.z;
                     camY = ent.position.y + v.y;
@@ -1868,6 +1881,7 @@ class AnazhRealm_koerper_bewegung {
                 const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
                 this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
+            this._kamFov(tempoFov);
             this._lodAugeGesetzt(); // das Rig setzte das Auge der Stufen (K36): die Maske und die Wahl messen von hier
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -1876,6 +1890,26 @@ class AnazhRealm_koerper_bewegung {
                 );
             }
         }
+    }
+
+    // DAS EINE SICHTFELD (H3): der EINZIGE Schreiber von camera.fov in der Welt, je Bild aus dem Rig gerufen — die Ruhe
+    // KAM_FOV_GRAD, dazu das Tempo der Chase-Cam (`chaseKamera` → fovPlus) und der Bogen-Auszug (fovZug − fovRuhe) × Anteil;
+    // das Fernglas (`_zoomActive`) steht auf ZOOM_FOV_DEG. Vorher schrieben `_tickBogenZug`, `_bogenRelease` und `setZoomActive`
+    // je ihr FOV und stellten eine gemerkte Ruhe zurück. Er schreibt nur, wenn sein Soll (auf 0,01° gerastert) sich ändert —
+    // eine Sonde, die für einen Schuss ein FOV setzt, behält es — und stellt die Kaskaden nach (CSMShadowNode: updateFrustums
+    // nach jeder Änderung der Kamera, wie der resize).
+    _kamFov(tempo) {
+        const st = this.state;
+        const d = st.player && st.player._bogenDraw;
+        const A = d && Number.isFinite(d.frac) ? AnazhRealm._arenaGesetz().bogen : null;
+        const roh = st._zoomActive
+            ? AnazhRealm.ZOOM_FOV_DEG
+            : AnazhRealm.KAM_FOV_GRAD + (tempo || 0) + (A ? (A.fovZug - A.fovRuhe) * d.frac : 0);
+        const soll = Math.round(roh * 100) / 100;
+        if (soll === this._kamFovSoll) return;
+        this._kamFovSoll = st.camera.fov = soll;
+        st.camera.updateProjectionMatrix();
+        if (st.csmNode && st.csmNode.camera) st.csmNode.updateFrustums();
     }
 
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem

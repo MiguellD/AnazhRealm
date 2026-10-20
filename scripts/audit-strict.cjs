@@ -326,7 +326,6 @@ async function auditStateAndMethods() {
                 "_pendingCreatureSnapshots",
                 "pendingImport",
                 "_zoomActive",
-                "_normalFov",
                 "inventorySelected",
                 "inventoryOpen",
                 "drag",
