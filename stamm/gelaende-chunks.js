@@ -1311,6 +1311,7 @@ class AnazhRealm_gelaende_chunks {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
+        this._streuFussNeu(cx, cz); // die Streu über ihm steht auf seiner Karte (Gelände H5)
         // DIE NEUEN ZELLEN TRAGEN DAS GESETZ (F3): Kappe und Quellen des Automaten leiten sich aus ihnen neu ab, und mit der
         // neuen Kappe legt `_ensureWaterCALevel` das Level auf das Gesetz. Bis F3 hielt der Automat die Kappe der alten Zellen,
         // wenn der Neubau nach dem Edit kam (über Budget baut der Fußabdruck im Worker): der Graben zeichnete trocken.
@@ -1596,6 +1597,7 @@ class AnazhRealm_gelaende_chunks {
             );
             entry.surfMap = karte && karte.hoehe;
             entry.gruenMap = karte && karte.gruen;
+            this._streuFussNeu(cx, cz);
         }
         this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`, nahtZiel);
     }

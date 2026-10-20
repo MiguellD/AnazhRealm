@@ -1662,7 +1662,7 @@
    "meshes": 1,
    "verts": 757,
    "tris": 1506,
-   "sha256": "f68686fd649a9bebcbaaac215f2498beb873188d4acbb3ad8e87bf0185a79241"
+   "sha256": "157b0a6ad197f0afa0b354588e32fd43c82c694d40e62673c998cc5a8bd22cd7"
   },
   "mensch-L0|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1806,7 +1806,7 @@
    "meshes": 1,
    "verts": 326,
    "tris": 644,
-   "sha256": "0e7ba6bbc5607d3c00ad9cb5e325c61999c72c9803e5136dd0001ab7aca643b8"
+   "sha256": "159cd3e94016fe58d0c7ac873f91c412be548abfe25eac630645f51bea1c4105"
   },
   "mensch-L1|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"

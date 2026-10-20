@@ -1,0 +1,16 @@
+{
+ "wiese": {
+  "fein": 1.1,
+  "streu": 0.5,
+  "fuss": 4.5,
+  "huf": 1.6,
+  "rad": 0.2
+ },
+ "hang": {
+  "fein": 4.3,
+  "streu": 1,
+  "fuss": 4.2,
+  "huf": 2.6,
+  "rad": 2.8
+ }
+}

@@ -7339,6 +7339,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         const stoffHuellen = [];
         const stoffAusHaut = [];
+        const sohlen = new Map(); // Hülle einer Zone mit Sohle → ihre Quellen (Gelände H5)
         // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
@@ -7382,6 +7383,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             const stoff = backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
             if (stoff) {
+                if (z.sohle) sohlen.set(stoff, quellen);
                 lebtInHuelle(quellen);
                 stoffHuellen.push(stoff);
                 // DER STOFF ERBT DIE HAUT (K45-2): die Zone sagt es (`erbt`, Oberteil und Hose — der Schuh folgt dem Fuß)
@@ -7450,7 +7452,23 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const vSrc = new THREE.Vector3();
         const vAkk = new THREE.Vector3();
         const vTmp = new THREE.Vector3();
+        // DIE SOHLE (Gelände H5): die Hülle einer Zone mit Sohle (der Schuh) reicht in der Ruhe-Pose nie unter ihre Quellen (den
+        // Fuß, dessen Unterkante der Stand trägt: footBelowAnkle unter dem Knöchel) — darunter liegt sie flach auf ihr. Bis H5
+        // wuchs der Schuh mit Feld, Unschärfe und Stoff-Abstand 7–11 cm unter den Fuß: die Sohle stand im Boden (K8 fuss). Unter
+        // 0,01 E über ihr staucht die Hülle ihre Wölbung auf 2 % (tiefste Stelle ≈ die Unterkante): eben gepresst lagen viele
+        // Dreiecke in EINER Ebene, die Band-Vereinfachung fand gleich teure Kanten, und ein ULP von hypot wählte (Plattform-Probe).
+        const sohleY = new Map();
+        for (const [mesh, quellen] of sohlen) {
+            let y = Infinity;
+            for (const q of quellen) {
+                const M = new THREE.Matrix4().multiplyMatrices(invChar, q.matrixWorld);
+                const qa = q.geometry.attributes.position;
+                for (let i = 0; i < qa.count; i++) y = Math.min(y, vTmp.fromBufferAttribute(qa, i).applyMatrix4(M).y);
+            }
+            if (y < Infinity) sohleY.set(mesh, y);
+        }
         for (const mesh of gebauteHuellen) {
+            const sohle = sohleY.has(mesh) ? sohleY.get(mesh) : -Infinity;
             const pa = mesh.geometry.attributes.position;
             const si = mesh.geometry.attributes.skinIndex;
             const sw = mesh.geometry.attributes.skinWeight;
@@ -7465,7 +7483,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     vTmp.copy(vSrc).applyMatrix4(deltaListe[siA[i * 4 + k]]);
                     vAkk.addScaledVector(vTmp, w);
                 }
-                pa.setXYZ(i, vAkk.x, vAkk.y, vAkk.z);
+                pa.setXYZ(i, vAkk.x, vAkk.y < sohle + 0.01 ? sohle + 0.01 + (vAkk.y - sohle - 0.01) * 0.02 : vAkk.y, vAkk.z);
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();

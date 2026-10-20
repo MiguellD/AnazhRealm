@@ -14,7 +14,9 @@ class AnazhRealm_gelaende_boden {
     // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
     // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
     // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt; welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
-    _bodenSichtAt(x, z, aus) {
+    // `stufe` (optional, 0…1) legt das Stufen-Gewicht fest, statt es am Auge zu messen: die Enden des Geomorphs, Lage (0) und
+    // Ziel (1), zwischen denen der Fuß der Streu dem Auge folgt (`_streuFuss`).
+    _bodenSichtAt(x, z, aus, stufe) {
         const vc = this.state.voxelChunks;
         if (!vc) return null;
         const span = this._voxelChunkConfig(0).span;
@@ -48,7 +50,7 @@ class AnazhRealm_gelaende_boden {
             const az = cz - (q >> 1);
             const E = q === 0 ? e : vc.get(`${ax},${az}`);
             if (E && E.surfMap && (E.lod || 0) !== lod) {
-                const v = this._bodenKarteBilinear(E, ax, az, x, z, aus);
+                const v = this._bodenKarteBilinear(E, ax, az, x, z, aus, stufe);
                 if (v !== null && v.y > fremd) {
                     fremd = v.y;
                     fremdG = v.gruen;
@@ -63,7 +65,7 @@ class AnazhRealm_gelaende_boden {
             const o = i + j * M;
             const g = aus ? E.gruenMap : null;
             // DER GEOMORPH DER STUFE (K51-2): im Übergangs-Band zeichnet der Stoff zwischen der Karte der Lage und der des Ziels
-            const st = this._bodenStufeMisch(E, ax, az, x, z);
+            const st = this._bodenStufeMisch(E, ax, az, x, z, stufe);
             const ka = st ? st(m, o) : m[o],
                 kb = st ? st(m, o + 1) : m[o + 1],
                 kc = st ? st(m, o + M) : m[o + M],
@@ -99,7 +101,7 @@ class AnazhRealm_gelaende_boden {
     }
     // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }
     // oder null (der Punkt liegt nicht über der Karte, eine Ecke ohne Boden). Der Leser der Stufen-Naht (`_bodenSichtAt`).
-    _bodenKarteBilinear(E, ax, az, x, z, aus) {
+    _bodenKarteBilinear(E, ax, az, x, z, aus, stufe) {
         const cfg = this._voxelChunkConfig(E.lod || 0);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
         const h = cfg.step / T;
@@ -112,7 +114,7 @@ class AnazhRealm_gelaende_boden {
         if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) return null;
         const m = E.surfMap;
         const o = i + j * M;
-        const st = this._bodenStufeMisch(E, ax, az, x, z);
+        const st = this._bodenStufeMisch(E, ax, az, x, z, stufe);
         const a = st ? st(m, o) : m[o],
             b = st ? st(m, o + 1) : m[o + 1],
             c = st ? st(m, o + M) : m[o + M],
@@ -132,11 +134,10 @@ class AnazhRealm_gelaende_boden {
     // gröberen Stufe, an der Naht der gröbere Nachbar), lazy beim ersten Leser im Übergangs-Band, neu nach jedem Naht-Morph
     // (`_applyCrossLodGeomorph` leert sie). Der Stoff zeichnet Lage + (Ziel − Lage) · Faktor; Naht + Stufe − Naht · Stufe ist in
     // der Stufe linear: die Karte der Lage (`surfMap`, Naht eingerechnet) und die des Ziels, gemischt mit dem Stufen-Gewicht.
-    // Liefert die Misch-Funktion (Karte, Index) → Höhe am Punkt (x, z), oder null, wo das Gewicht 0 ist.
-    _bodenStufeMisch(E, ax, az, x, z) {
+    // Liefert die Misch-Funktion (Karte, Index) → Höhe am Punkt (x, z), oder null, wo das Gewicht 0 ist; `stufe` legt es fest.
+    _bodenStufeMisch(E, ax, az, x, z, stufe) {
         if (!E || !E.mesh || !E.mesh.geometry || (E.lod || 0) >= 3) return null;
-        const U = this.state.atmoUniforms;
-        const w = this._stufeGewicht(E.lod || 0, x, z) * (U && U.geomorph ? U.geomorph.value : 1);
+        const w = stufe == null ? this._stufeGewichtAuge(E.lod || 0, x, z) : stufe;
         if (!(w > 0)) return null;
         if (!E.surfMapZiel) {
             const g = E.mesh.geometry;
@@ -2719,6 +2720,11 @@ class AnazhRealm_gelaende_boden {
         const gm = U && U.geomorph ? U.geomorph.value : 1;
         return (s + w - s * w) * gm;
     }
+    // das Gewicht, das der Stoff zeichnet: das der Stufe × der Geomorph-Regler (Leser: der Boden-Leser, der Fuß der Streu)
+    _stufeGewichtAuge(lod, x, z) {
+        const U = this.state.atmoUniforms;
+        return this._stufeGewicht(lod, x, z) * (U && U.geomorph ? U.geomorph.value : 1);
+    }
 
     // DAS AUGE DER STUFEN: der Spieler des Streaming-Takts — die Stufen-Wahl und der Boden-Stoff lesen denselben Punkt
     _stufeAugeTakt(p) {
@@ -2727,6 +2733,7 @@ class AnazhRealm_gelaende_boden {
         a.z = p.z;
         const U = this.state.atmoUniforms;
         if (U && U.stufeAuge) U.stufeAuge.value.set(p.x, p.z);
+        this._streuFussAuge(); // der Fuß der Streu folgt demselben Auge wie der Geomorph des Stoffs (Gelände H5)
     }
 
     // DAS ZIEL DER GRÖBEREN STUFE im Sync-Bau (Spiegel von `stufeZielNetz` im voxel-worker): das Netz der Stufe `grobLod` um

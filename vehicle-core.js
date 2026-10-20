@@ -626,10 +626,13 @@
             hubR = r * 0.18,
             Rin = r * 0.2,
             Rout = r * 0.6;
-        // Reifen: offene Lauffläche + zwei Flanken-Ringe (Felge sichtbar)
-        g.add(crownedTread(r, w, 0.12, M.tire));
+        // Reifen: offene Lauffläche + zwei Flanken-Ringe (Felge sichtbar). Der Scheitel der getonnten Lauffläche IST der Rad-Radius
+        // (die Nabe steht radR über dem Aufstand, die Rolle ist Weg/radR); die Schulter liegt um die Tonne darunter, die Flanke
+        // endet an ihr. Bis Gelände H5 wölbte die Tonne über radR hinaus: der Reifen stand 0,12 · radR (4 cm) im Boden (K8 rad).
+        const tonne = 0.12;
+        g.add(crownedTread(r, w, tonne, M.tire));
         for (const s of [-1, 1]) {
-            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, r, teil(36, 12)), M.tire);
+            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, r / (1 + tonne), teil(36, 12)), M.tire);
             sw.position.z = (s * w) / 2;
             g.add(sw);
         }
@@ -919,7 +922,8 @@
         me.castShadow = me.receiveShadow = true;
         return me;
     }
-    // getonnte Lauffläche: Radius wölbt zur Mitte (Tonnenprofil), Schultern runden ab — echter Reifen statt gerader Zylinder.
+    // getonnte Lauffläche: Radius wölbt zur Mitte (Tonnenprofil), Schultern runden ab — echter Reifen statt gerader Zylinder;
+    // der Scheitel trägt den Radius r, die Schulter r / (1 + crown).
     function crownedTread(r, w, crown, m) {
         const g = new THREE.CylinderGeometry(r, r, w, teil(40, 14), teil(8, 2), true);
         const pos = g.attributes.position;
@@ -927,7 +931,7 @@
             const x = pos.getX(i),
                 y = pos.getY(i),
                 z = pos.getZ(i);
-            const f = 1 + crown * (1 - Math.pow((2 * y) / w, 2));
+            const f = (1 + crown * (1 - Math.pow((2 * y) / w, 2))) / (1 + crown);
             pos.setX(i, x * f);
             pos.setZ(i, z * f);
         }
