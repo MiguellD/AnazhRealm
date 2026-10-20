@@ -695,19 +695,18 @@ class AnazhRealm_vegetation_streu {
                 const _legacyOrder = this.state.__scatterExactWater === true;
                 if (_legacyOrder && !this._landAt(tf.x, tf.z, 0.4)) continue;
                 const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
-                let lebendig, slope, moisture, surfY;
+                let lebendig, slope, moisture;
                 if (field) {
                     lebendig = field.lebendig;
                     slope = field.slope;
                     moisture = field.moisture;
-                    surfY = field.height;
                 } else {
                     const f = this.worldFieldAt ? this.worldFieldAt(tf.x, tf.z) : null;
                     lebendig = f ? f.lebendig : 0;
                     // V18.351 — die EINE Slope-Quelle statt `slope = 0` (der alte Fallback ließ Fels OHNE
                     // gebackenes Feld NIE durchbrechen [exposure∝slope] UND nie skippen [slope>slopeMax]).
                     slope = this._slopeAt ? this._slopeAt(tf.x, tf.z) : 0;
-                    surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : 0;
+                    const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : 0;
                     moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
                 }
                 if (slope > slopeMax) continue;
@@ -752,7 +751,6 @@ class AnazhRealm_vegetation_streu {
                         cellM,
                         tf,
                         distAuge,
-                        surfY,
                         species,
                         variantIndex,
                         visH,
@@ -817,6 +815,43 @@ class AnazhRealm_vegetation_streu {
         return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
     }
 
+    // DER FUSS DER STREU (Gelände H5, Lehre 22): jede Instanz steht auf dem, was das Auge sieht — der EINE Leser des gezeichneten
+    // Bodens (`_bodenSichtAt`), ohne Karte (kein Chunk-Mesh: der Fern-Ring) das Gesetz. Bis H5 las der Fuß die Höhe des 8-m-Feld-
+    // Bakes (bilinear): am 25°-Hang standen Bäume und Unterholz der Streu p95 0,62 m neben dem Mesh (gate:koerper-stand K8).
+    _streuFussY(x, z) {
+        const k = this._bodenSichtAt(x, z);
+        return Number.isFinite(k) ? k : this._voxelSurfaceY(x, z) || 0;
+    }
+    // DIE KARTE EINES CHUNKS STEHT NEU (Bau, Stufen-Wechsel, Naht): jede Streu-Instanz über ihm (und im Saum, den seine Karte
+    // den oberen Nachbarn leiht) setzt ihren Fuß nach — um den Versatz in jeder Scheibe. Leser: `_finalizeVoxelChunkBuild`,
+    // die Naht-Karte `_applyCrossLodGeomorph`.
+    _streuFussNeu(cx, cz) {
+        const R = this.state.scatterRegions;
+        if (!R || !R.size) return;
+        const C = this._voxelChunkConfig(0);
+        const SC = AnazhRealm.SCATTER;
+        const [x0, z0, x1, z1] = [cx * C.span, cz * C.span, (cx + 1) * C.span + 2 * C.step, (cz + 1) * C.span + 2 * C.step];
+        const M = this._archTmpStreuFussM || (this._archTmpStreuFussM = new THREE.Matrix4());
+        for (let rx = Math.floor(x0 / SC.regionM); rx <= Math.floor(x1 / SC.regionM); rx++)
+            for (let rz = Math.floor(z0 / SC.regionM); rz <= Math.floor(z1 / SC.regionM); rz++)
+                for (const c of (R.get(rx + "," + rz) || {}).cells || []) {
+                    if (!(c.x >= x0 && c.x < x1 && c.z >= z0 && c.z < z1) || !c.slots || !c.slots.length) continue;
+                    const d = this._streuFussY(c.x, c.z) - c.fussY;
+                    if (!(Math.abs(d) > 0.002)) continue;
+                    c.fussY += d;
+                    for (const ref of c.slots) {
+                        const g = this.state.archInstanceGroups.get(ref.key);
+                        if (!g || !(ref.slot >= 0)) continue;
+                        g.mesh.getMatrixAt(ref.slot, M);
+                        M.elements[13] += d;
+                        g.mesh.setMatrixAt(ref.slot, M);
+                        g.mesh.instanceMatrix.needsUpdate = true;
+                        g.mesh.boundingSphere = null;
+                        if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh);
+                    }
+                }
+    }
+
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
     // Instanz-Slots (Foundry-Flat oder Grammatik, inkl. Band-Partner + Tint) auf der gewünschten Stufe
     // → Zellen-Datensatz oder null (deferriert/ungemappt). Leser: Region-Bau + _tickScatterLod.
@@ -830,7 +865,6 @@ class AnazhRealm_vegetation_streu {
         cellM,
         tf,
         dist,
-        surfY,
         species,
         variantIndex,
         visH,
@@ -841,6 +875,7 @@ class AnazhRealm_vegetation_streu {
     ) {
         let bpName = null,
             foundryFlat = null;
+        const fussY = this._streuFussY(tf.x, tf.z);
         // EINE Quelle je Streu-Art: kennt die lebende Foundry die Art (Baum, Fels, Kiesel, Blume, Strauch),
         // kommt das ECHTE Studio-Asset — oder solange es lädt, bei Bäumen das Studio-Billboard (LOD2).
         // Ist beides nicht bereit: DEFERRIEREN, NIE Grammatik als Lückenbüßer. Nur eine wirklich
@@ -879,7 +914,7 @@ class AnazhRealm_vegetation_streu {
                               preset,
                               fseed,
                               tf.x,
-                              Number.isFinite(surfY) ? surfY : 0,
+                              fussY,
                               tf.z,
                               tf.yaw || 0,
                               tf.scale || 1
@@ -978,7 +1013,7 @@ class AnazhRealm_vegetation_streu {
         const slots = this._scatterInstanceAdd(
             bpName,
             tf.x,
-            Number.isFinite(surfY) ? surfY : 0,
+            fussY,
             tf.z,
             tf.yaw,
             tf.scale,
@@ -1014,7 +1049,7 @@ class AnazhRealm_vegetation_streu {
             for (const ps of this._scatterInstanceAdd(
                 "fscatter:" + foundryPreset + ":" + gestalt + ":" + partner.lod,
                 tf.x,
-                Number.isFinite(surfY) ? surfY : 0,
+                fussY,
                 tf.z,
                 tf.yaw,
                 tf.scale,
@@ -1048,6 +1083,7 @@ class AnazhRealm_vegetation_streu {
             // ihre Gestalt und Drehung (D10: der Spiegel liest ihre Krone im Kronen-Buch, nie eine zweite Rechnung)
             gestalt,
             yaw: tf.yaw,
+            fussY,
         };
     }
 
@@ -1184,9 +1220,6 @@ class AnazhRealm_vegetation_streu {
                 if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
                     continue;
             }
-            // dieselbe Oberflächen-Quelle wie der Erst-Bau (Feld → Voxel-Fallback)
-            const field = this._sampleBakedField ? this._sampleBakedField(cell.x, cell.z) : null;
-            const surfY = field ? field.height : this._voxelSurfaceY ? this._voxelSurfaceY(cell.x, cell.z) : 0;
             let layerSalt = 0;
             for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
             const comma = key.indexOf(",");
@@ -1203,7 +1236,6 @@ class AnazhRealm_vegetation_streu {
                 cell.cellM,
                 tf,
                 dist,
-                Number.isFinite(surfY) ? surfY : 0,
                 cell.species,
                 cell.variantIndex,
                 visH,
@@ -1232,6 +1264,7 @@ class AnazhRealm_vegetation_streu {
             cell.dient = rec.dient;
             cell.bandWunsch = rec.bandWunsch;
             cell.halt = rec.halt;
+            cell.fussY = rec.fussY;
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }

@@ -73,7 +73,8 @@ function taktVerdict(m, wegFahrtMinM) {
     if (Number.isFinite(m.luft) && m.luft !== 0) out.push(`luft ${m.luft}/${m.schritte}`);
     if (Number.isFinite(m.gierGrad) && !(m.gierGrad <= TAKT.gierGrad)) out.push(`gier ${m.gierGrad.toFixed(1)}°`);
     // DIE GERITTEN-WAND: der Eintrag steht auf dem Reiter (Distanz 0), seine Stufe ist 0 — nie die Karte unter dem Reiter
-    if (!(m.versatz <= TAKT.versatzM)) out.push(`versatz ${Number(m.versatz).toFixed(3)} m (der Eintrag folgt dem Reiter nicht)`);
+    if (!(m.versatz <= TAKT.versatzM))
+        out.push(`versatz ${Number(m.versatz).toFixed(3)} m (der Eintrag folgt dem Reiter nicht)`);
     if (m.stufe !== 0) out.push(`stufe ${m.stufe} (geritten nie Grob- oder Kartenstufe)`);
     return out;
 }
@@ -88,7 +89,17 @@ function haltVerdict(m) {
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
 // nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05, `chaseKamera` je Third-Bild.
-const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5 };
+const WECHSEL = {
+    stufeM: 0.2,
+    egoGrad: 70,
+    azGrad: 10,
+    ruckM: 0.07,
+    gleichMax: 0.2,
+    hochMin: 10,
+    wiederaufGrad: 1,
+    sprungM: 0.5,
+    abV: 7.5,
+};
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
@@ -100,14 +111,20 @@ function wechselVerdict(m) {
     if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
         out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
     if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM)))
-        out.push(`absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`);
+        out.push(
+            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`
+        );
     // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
-    if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
+    if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM))
+        out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
     if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
-        out.push(`gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`);
+        out.push(
+            `gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`
+        );
     if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
         out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
-    if (!(m.third > 0 && m.gesetz >= m.third)) out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
+    if (!(m.third > 0 && m.gesetz >= m.third))
+        out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
     if (!Number.isFinite(m.wiederauf)) out.push("wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)");
     else if (!(m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
     return out;
@@ -120,14 +137,27 @@ const fehlt = stammLib.fehlt; // der EINE Absenz-Helfer; dass der Ritt im Sim-Sc
 function fahrWand(q, garage) {
     return [
         ["K1b die Welt integriert keine Kopie des Fahr-Schritts", fehlt(null, /\bFlatF\b/, q), fehlt.wo],
-        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }), fehlt.wo],
+        [
+            "K1c die Probefahrt integriert keine Kopie",
+            fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }),
+            fehlt.wo,
+        ],
     ];
 }
 
 // ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer): EIN fail-closed Leser (`AnazhRealm._fahrSchrittGesetz`
 // → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn — kein stilles null, kein Literal-Zwilling der FAHR.schritt-Zeilen. ──
-const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrzeugStand", "_fahrNachlauf", "_fahrHuelle",
-    "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
+const FAHR_LESER = [
+    "_fahrSatz",
+    "_rittEbene",
+    "_rittSchritt",
+    "_fahrzeugStand",
+    "_fahrNachlauf",
+    "_fahrHuelle",
+    "_fahrHuelleKontakt",
+    "_archRadMatrix",
+    "_loopPlayerMovement",
+];
 function pflichtWand(q) {
     // ein Fahr-Leser ohne Definition wirft im Helfer: P1 nennt ihn, seine Absenz zählt nie als grün
     const tot = new Set();
@@ -143,8 +173,16 @@ function pflichtWand(q) {
     const ZWILLING = /__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/;
     const zwillinge = FAHR_LESER.filter((n) => !ohne(n, ZWILLING) && !tot.has(n));
     return [
-        ["P1 die Wand kennt jeden Fahr-Leser (den lauten Bruch beweist P4 im Spiel)", tot.size === 0, tot.size ? `ohne Körper: ${[...tot].join(", ")}` : ""],
-        ["P2 kein stiller Ausweg in `_fahrSatz` und `_rittEbene` (kein typeof → null)", still.length === 0, still.join(", ")],
+        [
+            "P1 die Wand kennt jeden Fahr-Leser (den lauten Bruch beweist P4 im Spiel)",
+            tot.size === 0,
+            tot.size ? `ohne Körper: ${[...tot].join(", ")}` : "",
+        ],
+        [
+            "P2 kein stiller Ausweg in `_fahrSatz` und `_rittEbene` (kein typeof → null)",
+            still.length === 0,
+            still.join(", "),
+        ],
         [
             "P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern",
             zwillinge.length === 0,
@@ -164,7 +202,11 @@ function huelleWand(q) {
             fehlt({ ausser: "_wandGleiten" }, /pl < AnazhRealm\.SLIDE_CLIP_PLANES/, q),
             fehlt.wo,
         ],
-        ["H6 EIN Leib je Tier (D2): kein zweiter Kreis im Wagen-Kontakt", fehlt("_fahrHuelleKontakt", /\bseparation\b|bodySize/, q), fehlt.wo],
+        [
+            "H6 EIN Leib je Tier (D2): kein zweiter Kreis im Wagen-Kontakt",
+            fehlt("_fahrHuelleKontakt", /\bseparation\b|bodySize/, q),
+            fehlt.wo,
+        ],
     ];
 }
 
@@ -409,10 +451,12 @@ function stationVerdict(s) {
     if (!pf) out.push("pflicht keine Probe");
     else if (pf.satz !== "bruch" || pf.ebene !== "bruch")
         out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
-    else if (pf.leser !== true) out.push("pflicht-leser: _fahrSatz/_rittEbene lesen den Kern nicht durch _fahrSchrittGesetz");
+    else if (pf.leser !== true)
+        out.push("pflicht-leser: _fahrSatz/_rittEbene lesen den Kern nicht durch _fahrSchrittGesetz");
     const hk = s.huelleKonsum || {};
     for (const k of ["gleiten", "kapsel", "leibWagen", "leibTier"])
-        if (hk[k] !== true) out.push(`huelle-konsum ${k}: ${s.huelleKonsum ? "der Leser ruft die EINE Quelle nicht" : "keine Probe"}`);
+        if (hk[k] !== true)
+            out.push(`huelle-konsum ${k}: ${s.huelleKonsum ? "der Leser ruft die EINE Quelle nicht" : "keine Probe"}`);
     const hg = s.huelleHang;
     if (!hg) out.push("huelle-hang keine Probe");
     else if (!(hg.schub >= 0.5)) out.push(`huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`);
@@ -611,9 +655,13 @@ function stationVerdict(s) {
         }
     if (!s.lockstep) out.push("lockstep keine Probe");
     else if (s.lockstep.ruhe !== true)
-        out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
+        out.push(
+            `lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`
+        );
     else if (s.lockstep.gleicherStart !== true)
-        out.push(`lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`);
+        out.push(
+            `lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`
+        );
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
             `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
@@ -1595,9 +1643,32 @@ function quellenAbgriff() {
             rollt.length === 2 && rollt[0].startsWith("rollt") && rollt[1].startsWith("gier"),
             rollt.join(" · ")
         );
-        const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8], third: 210, gesetz: 210 };
-        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0, abV: [9.1, 8.6], abSprung: [0.31, 0.2] });
-        check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
+        const wechsel = {
+            gestartet: true,
+            ort: [1, 2, 20],
+            stufeM: 0.01,
+            band: 90,
+            ego: [76, 77],
+            nach10: [4.1, 3.8],
+            third: 210,
+            gesetz: 210,
+        };
+        Object.assign(wechsel, {
+            ruckN: 165,
+            ruckP95: 0.02,
+            gleichN: 400,
+            gleichP95: 0.04,
+            hochN: 210,
+            hochP05: 17.4,
+            wiederauf: 0,
+            abV: [9.1, 8.6],
+            abSprung: [0.31, 0.2],
+        });
+        check(
+            "Selbst-Test T4: der gesunde Wechsel == 0 Täter",
+            wechselVerdict(wechsel).length === 0,
+            wechselVerdict(wechsel).join(" · ")
+        );
         for (const [name, bruch, soll] of [
             ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
             ["kein Band im Ritt", { band: 0 }, "band"],
@@ -1613,7 +1684,11 @@ function quellenAbgriff() {
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ]) {
             const v = wechselVerdict(Object.assign({}, wechsel, bruch));
-            check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
+            check(
+                `Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`,
+                v.length === 1 && v[0].startsWith(soll),
+                v.join(" · ")
+            );
         }
         // Die Stations-Linse.
         const gutS = {
@@ -2008,8 +2083,16 @@ function quellenAbgriff() {
                 { pflicht: { satz: "null", ebene: "null" } },
                 "pflicht still",
             ],
-            ["der Fahr-Satz liest den Kern vorbei am Pflicht-Leser", { pflicht: { satz: "bruch", ebene: "bruch", leser: false } }, "pflicht-leser"],
-            ["die Hülle gleitet in einer eigenen Schleife", { huelleKonsum: { kapsel: true, leibWagen: true, leibTier: true } }, "huelle-konsum gleiten"],
+            [
+                "der Fahr-Satz liest den Kern vorbei am Pflicht-Leser",
+                { pflicht: { satz: "bruch", ebene: "bruch", leser: false } },
+                "pflicht-leser",
+            ],
+            [
+                "die Hülle gleitet in einer eigenen Schleife",
+                { huelleKonsum: { kapsel: true, leibWagen: true, leibTier: true } },
+                "huelle-konsum gleiten",
+            ],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
             check(
@@ -2051,16 +2134,20 @@ function quellenAbgriff() {
             hGruen.every((w) => w[1]),
             hGruen.map((w) => w[2]).join(" | ")
         );
-        const hRot = huelleWand(
-            (t) => stammLib.ersetze(t, null,
+        const hRot = huelleWand((t) =>
+            stammLib.ersetze(
+                t,
+                null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) break;"
             )
         );
         check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
         // der Vor-Stand von D2: der Wagen-Kontakt rechnet den Kreis VERHALTEN.separation × bodySize statt des Leibs
-        const h6Rot = huelleWand(
-            (t) => stammLib.ersetze(t, null,
+        const h6Rot = huelleWand((t) =>
+            stammLib.ersetze(
+                t,
+                null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.raumKugel;"
             )
@@ -2070,10 +2157,13 @@ function quellenAbgriff() {
             !h6Rot[1][1],
             h6Rot[1][2]
         );
-        const pRot = pflichtWand(
-            (t) => stammLib.ersetze(t, [
-                [null, /(\n {4}_fahrSatz\([^)]*\) \{)/,
-                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'],
+        const pRot = pflichtWand((t) =>
+            stammLib.ersetze(t, [
+                [
+                    null,
+                    /(\n {4}_fahrSatz\([^)]*\) \{)/,
+                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;',
+                ],
                 [null, /(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;"],
             ])
         );
@@ -2284,8 +2374,7 @@ function quellenAbgriff() {
     console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of pflichtWand()) check(name, ok, detail);
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): Wand + der Kern selbst (Node) ===");
-    for (const [name, ok, detail] of fahrWand())
-        check(name, ok, detail);
+    for (const [name, ok, detail] of fahrWand()) check(name, ok, detail);
     require(path.join(root, "vehicle-core.js"));
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
 
@@ -2413,12 +2502,7 @@ function quellenAbgriff() {
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
         !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
         R
-            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` +
-                  ` · gegen den GEZEICHNETEN Boden (Sicht, nur gemessen — D1): ${
-                      R.sichtSchritte
-                          ? `p75 ${R.sichtP75.toFixed(3)} m, max ${R.sichtMax.toFixed(3)} m in ${R.sichtSchritte} Schritten`
-                          : "keine Boden-Karte"
-                  }`
+            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)}; gegen das Mesh: gate:koerper-stand K8)`
             : "keine Probe"
     );
     check(
