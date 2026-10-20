@@ -3255,22 +3255,9 @@ function main() {
             process.exit(1);
         }
         // Die Entsorgungs-Wand muss feuern — je Form ein Täter, jeder beim Namen (und ein Kommentar darf sie erzählen):
-        //   A die alte Ich-Schleife (traverse) · B Kind-Schleife for…of mit direktem geometry.dispose() · C children.forEach ·
+        //   A traverse-Schleife · B Kind-Schleife for…of mit direktem geometry.dispose() · C children.forEach ·
         //   D Zwischen-Variable · E reine Stoff-Schleife material.forEach · F for…of über die Stoff-Liste · G der Regel-
         //   Besitzer entsorgt einen Stoff (Stoffe nie) · H eine tote Zeile der Besitzer-Liste
-        const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
-        const kIch = stammLib.kopf(stamm, "_ichStageShow");
-        const iIch = kIch < 0 ? -1 : kIch + 1;
-        const jIch = iIch < 0 ? -1 : stamm.indexOf(ichNeu, iIch);
-        const formA =
-            jIch < 0
-                ? null
-                : stamm.slice(0, jIch) +
-                  "            stage.pivot.traverse((obj) => {\n" +
-                  "                if (obj.geometry) this._queueDispose(obj.geometry);\n" +
-                  "                if (obj.material) this._queueDispose(obj.material);\n" +
-                  "            });\n            stage.pivot = null;" +
-                  stamm.slice(jIch + ichNeu.length);
         const taeter = (name, rumpf) =>
             stammLib.ersetze(stamm, null,
                 "class AnazhRealm {\n",
@@ -3279,7 +3266,7 @@ function main() {
         const regelAnker =
             "            if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);";
         const formen = [
-            ["A", formA, /`_ichStageShow` entsorgt/],
+            ["A", taeter("_frostFormA", "        o.traverse((x) => x.geometry && this._queueDispose(x.geometry));"), /`_frostFormA` entsorgt Geometrie/],
             [
                 "B",
                 taeter("_frostFormB", "        for (const c of o.children) c.geometry.dispose();"),
