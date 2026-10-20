@@ -1,15 +1,9 @@
-// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost, 07.10.). Befund (Leben-Schau v1-Pfad, echte GPU, Radeon
-// 890M): nach Werkstatt und Tab stand das Weltbild — drei Bilder gleich, während der Spieler 50 m in den Fluss trieb und die
-// Uhr 00:00 → 12:21 lief; die Konsole: „Index range (count 13884, Uint32) does not fit in index buffer size (27768)" und
-// „Invalid CommandBuffer renderContext_4/5". Wurzel: r184 schreibt beim Anlegen eines Index die geweitete Form in das GETEILTE
-// Attribut zurück (`createAttribute`: `array = new Uint32Array(array)`), und der Draw bindet das Format nach dem Array-Typ.
-// Die Hülle des schmalen Index lag nur an der Welt-Instanz; das Backend der Ich-Bühne (Tab) weitete die Mensch-Vorlage
-// (`sharedGeom`), das der Hof-Bühne die Tier-Vorlagen — die Welt band uint32 auf 16-bit-Puffern, Dawn verwarf jeden
-// Render-Kontext der Welt. Der Schnitt: das Backend-Gesetz an der KLASSE (`_backendGesetz`: schmaler Index · Index-Wache ·
-// GPU-Wache).
+// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost): jede Bühne ist ein eigenes WebGPU-Backend, das Geometrie
+// mit der Welt teilt; das Backend-Gesetz an der KLASSE (`_backendGesetz`: schmaler Index · Index-Wache · GPU-Wache) hält
+// das Weltbild, während eine Bühne zeichnet (der Befund vom 07.10. steht in `git log`).
 //
-// Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne — jede Bühne ein eigenes WebGPU-Backend, das Geometrie mit
-// der Welt teilt) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist für jeden Draw blind):
+// Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist für
+// jeden Draw blind):
 //   I  DER INDEX-ZENSUS: jeder Index-Puffer der Welt-GPU trägt das Format, das der Draw bindet (Bytes des Arrays ≤ Puffer)
 //   G  kein WebGPU-Validierungsfehler auf irgendeinem Device (eigener Hörer, unabhängig vom Spiel: `uncapturederror` jedes
 //      Device UND die THREE-Konsolenzeile, mit der r184 eine Validierung aus seinem offenen Pipeline-Fehler-Bereich meldet)
@@ -23,7 +17,7 @@
 //   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
 //      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
-//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff.
+//      human↔`bp_koerper_wolf` je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff; der Wolf trägt den Leib der Welt.
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
@@ -673,13 +667,13 @@ function pruefRaum(echt) {
             ms.buehne += performance.now() - t;
         };
         const ich = {};
-        const ichLeib = (pivot) => {
+        const ichLeib = (F.ichLeib = (pivot, leib = r.state.playerMesh) => {
             const welt = new Set(),
                 b = [];
-            r.state.playerMesh.traverse((o) => o.isMesh && welt.add(o.geometry));
-            if (pivot) pivot.traverseVisible((o) => o.isMesh && b.push(o.geometry));
+            leib.traverse((o) => o.isMesh && welt.add(o.geometry));
+            if (pivot) for (const c of pivot.children) c.traverseVisible((o) => o.isMesh && b.push(o.geometry));
             return { meshe: b.length, fremd: b.filter((g) => !welt.has(g)).length, tri: b.reduce((n, g) => n + (g.index || g.attributes.position).count / 3, 0) };
-        };
+        });
         const durchgang = async () => {
             r.toggleInventoryOverlay(true);
             for (const s of Object.keys(r.constructor.TETRAPODA_SOUL_MAP).flatMap((a) => [a, "human"])) {
@@ -806,7 +800,7 @@ function pruefRaum(echt) {
     );
 
     // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann ein Peer, der seine Seele
-    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG,
+    // wechselt (human↔`bp_koerper_wolf` ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG und den Leib (Maß S1),
     // Neubauten deckt S2 (der Peer teilt seine Schlüssel mit stehenden Figuren).
     const peer = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
@@ -830,10 +824,16 @@ function pruefRaum(echt) {
         if (erster) erster.traverse((o) => o.geometry && vorgelegt++);
         zeigen(erster);
         await F.zeichne(echt ? 4 : 1);
+        let leib;
         const wechsel = async (s) => {
             const alt = e.mesh;
-            e.soulName = s;
+            [e.soulName, e.bodyParts] = s === "human" ? [s, null] : [s, r.state.blueprints.koerper_wolf.parts];
             E.im("peer", () => r._p2pApplyPeerSoul(e));
+            if (s !== "human") {
+                const tier = r._buildCreatureGroup("wolf");
+                leib = F.ichLeib(e.mesh, tier);
+                E.im("peer", () => r._disposeSoulGroup(tier));
+            }
             if (alt && alt.parent) alt.parent.remove(alt);
             zeigen(e.mesh);
             await F.zeichne(echt ? 2 : 1);
@@ -841,7 +841,7 @@ function pruefRaum(echt) {
         await wechsel("human");
         const zweiter = e.mesh !== erster && !!erster;
         for (let k = 0; k < 3; k++) {
-            await wechsel("wolf");
+            await wechsel("bp_koerper_wolf");
             await wechsel("human");
         }
         if (e.mesh) {
@@ -849,7 +849,7 @@ function pruefRaum(echt) {
             E.im("peer", () => r._disposeSoulGroup(e.mesh));
         }
         await E.leeren();
-        return { ...E.bericht("peer"), zweiter, vorgelegt };
+        return { ...E.bericht("peer"), zweiter, vorgelegt, leib };
     }, ECHT);
     console.log(`\n[mitspieler] ${zeit()} · ${JSON.stringify(peer).slice(0, 300)}`);
     entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel human↔wolf, Abschied)", peer);
@@ -858,6 +858,7 @@ function pruefRaum(echt) {
         peer.zweiter === true && peer.vorgelegt > 0,
         `zweiter Guss: ${peer.zweiter}, ${peer.vorgelegt} Geometrien vorgelegt`
     );
+    check("S4 Mitspieler als Wolf: der Leib der Welt-Kreatur", ichGut(peer.leib || {}), JSON.stringify(peer.leib));
 
     // Der JS-Speicher nach erzwungener Sammlung (CDP: HeapProfiler.collectGarbage, Runtime.getHeapUsage) — genau, ohne die
     // Rundung von performance.memory.
