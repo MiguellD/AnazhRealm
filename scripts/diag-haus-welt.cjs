@@ -46,8 +46,8 @@
 //       (wo der Grund der Boden der Box ist — der Turm —, zählt vom Boden nur der Halm). ABBAU: ein Dorf- und ein gesetztes
 //       Haus fallen — kein Grund bleibt, der Boden schließt sich, der Keller trägt Erde (Selbsttest abbau). PLAN: das gesetzte
 //       Haus trägt seinen Grund (Plan-Datum), bevor die Hülle seines Körpers ankommt (Selbsttest grundplan). WAISE: ein Bau sperrt
-//       den letzten Slot des Start-Dorfs — sein Grund fällt mit ihm, jeder Grund trägt einen Bau an seiner Mitte (Selbsttest
-//       waise); jeder andere Slot steht, die Ausstattung des Plans kommt nach den Häusern (Selbsttest ausstattung).
+//       den letzten Slot des Start-Dorfs, ein Haus verblasst (`_evictArchitecture`) — ihr Grund fällt mit, jeder Grund trägt
+//       einen Bau an seiner Mitte (Selbsttests waise, verblassen); jeder andere Slot steht, die Ausstattung weicht den Slots des Zugs (Selbsttest ausstattung).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
@@ -144,12 +144,18 @@ const BASIS = {
             "        const zu = () => false;",
         ],
     ],
-    // DIE AUSSTATTUNG VOR DEN HÄUSERN (W9 Ausstattung): der Dorf-Zug stellt Brunnen und Laternen bei der Ankunft auf
-    ausstattung: [
-        ["                this._spawnSettlementErlebnis(q.plan, q.origin, { key: q.cellKey });", ""],
+    // DAS VERBLASSEN NIMMT NUR DEN EINTRAG (W9 Waise): der Abbau am Horizont an `removeArchitecture` vorbei (V18.297)
+    verblassen: [
         [
-            "idx: 0, cellKey: key };",
-            "idx: 0, cellKey: key }; this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });",
+            "        if (entry) this.removeArchitecture(entry, { still: true });",
+            "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
+        ],
+    ],
+    // DIE AUSSTATTUNG SPERRT IHR HAUS (W9 Ausstattung): die Bau-Wand von Brunnen und Laterne kennt die Slots des Zugs nicht
+    ausstattung: [
+        [
+            "        const q = this._autoSettlementQueue;\n        const rund",
+            "        const q = null;\n        const rund",
         ],
     ],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
@@ -1786,7 +1792,7 @@ async function proben(phasen) {
         // W9 WAISE: kein Grund ohne Bau — das Start-Dorf (sein Takt, im Null-Renderer sonst aus) wächst, und wenn sein Zug
         // beginnt, steht ein Bau im letzten Slot (wie ein Spieler-Bau, der dem Dorf zuvorkommt): der Slot fällt geschlossen und
         // nimmt seinen Grund mit; danach trägt jeder Grund (Ort und gesetztes Haus) einen Bau an seiner Mitte. AUSSTATTUNG: jeder
-        // andere Slot steht — Brunnen, Laternen und Stände des Plans kommen nach den Häusern und sperren keins
+        // andere Slot steht — Brunnen, Laternen und Stände des Plans weichen den Slots, die der Zug noch stellt
         const takt = window.__anazhAutoSettlement;
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
@@ -1801,16 +1807,23 @@ async function proben(phasen) {
         for (let k = 0; k < 1200 && (r._autoSettlementQueue || !zellen().start); k++) await pumpe(1);
         window.__anazhAutoSettlement = takt;
         const an = (x, z) => (e) => e !== sperre && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 0.05;
+        const slots = q ? q.plan.slots : [];
+        const amSlot = (t) => s.architectures.find(an(q.origin.x + t.x, q.origin.z + t.z));
+        const haeuser = slots.filter(amSlot).length;
+        // DAS VERBLASSEN (die Deckelung der autonomen Bauten, `_capNexusStructures`): ein Haus des Dorfs verblasst, sein
+        // Grund fällt mit ihm
+        const verblasst = slots.map(amSlot).find(Boolean);
+        if (verblasst) r._evictArchitecture(verblasst);
         const gr = (r._erdbauLage() || {}).gruende || [];
         const ohne = gr.filter((g) => !s.architectures.some(an(g.cx, g.cz)));
-        const slots = q ? q.plan.slots : [];
         o.w9.waise = {
             start: !!zellen().start,
             gruende: gr.length,
             gesperrt: !!sperre,
             ohne: ohne.map((g) => `${Math.round(g.cx)}/${Math.round(g.cz)}`),
             slots: slots.length,
-            haeuser: slots.filter((t) => s.architectures.some(an(q.origin.x + t.x, q.origin.z + t.z))).length,
+            haeuser,
+            verblasst: !!verblasst,
             ms: Math.round(performance.now() - t0),
         };
     }
@@ -2092,8 +2105,10 @@ function urteil(o) {
                 `W9 Plan: das gesetzte Haus trägt bei der Ankunft seines Körpers ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Körper kam vor seinem Grund (der Grund wartete auf die Hülle), die Chunks um ihn bauen danach neu`
             );
         const wa = o.w9 && o.w9.waise;
-        if (!(wa && wa.start && wa.gruende && wa.gesperrt))
-            f.push("W9 Waise: blind — das Start-Dorf wuchs nicht, trägt keinen Grund oder kein Bau sperrt einen Slot");
+        if (!(wa && wa.start && wa.gruende && wa.gesperrt && wa.verblasst))
+            f.push(
+                "W9 Waise: blind — das Start-Dorf wuchs nicht, trägt keinen Grund, kein Bau sperrt, kein Haus verblasst"
+            );
         else if (wa.ohne.length)
             f.push(
                 `W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne.join(" ")}) — ein Loch ins Leere`
@@ -2226,6 +2241,7 @@ function zeile(o) {
                 grundplan: ["grund", "W9 Plan"],
                 waise: ["grund", "W9 Waise"],
                 ausstattung: ["grund", "W9 Ausstattung"],
+                verblassen: ["grund", "W9 Waise"],
             };
             selbst = Object.keys(soll)
                 .filter((k) => !NUR.length || NUR.includes(k))

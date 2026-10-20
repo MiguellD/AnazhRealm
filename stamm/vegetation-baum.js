@@ -2430,18 +2430,12 @@ class AnazhRealm_vegetation_baum {
         for (let i = 0; i < toEvict; i++) this._evictArchitecture(autos[i]);
     }
 
-    // V18.297 — eine Architektur vollständig entfernen (Mesh+Geometrie+Kollision via
-    // _cullArchitectureMesh, dann der Eintrag). Die EINE Eviction-Quelle.
+    // DAS VERBLASSEN IST DER ABBAU OHNE STIMME (S4, die EINE Abbau-Quelle `removeArchitecture`, still: kein Ping, kein
+    // Journal): Grund, Grundriss, Ziegel-Fernstufe, Krone, Tritt und Stempel fallen mit dem Eintrag. Bis S4-N3 nahm das
+    // Verblassen (V18.297) nur Mesh, Eintrag und Blocker: der Grund eines verblassten Dorf-Hauses schnitt ein Loch ins Leere
+    // (gate:haus-welt W9 Waise, das Dorf eines autonomen Akts −183/194).
     _evictArchitecture(entry) {
-        if (!entry) return;
-        if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-        const arches = this.state.architectures;
-        const idx = arches ? arches.indexOf(entry) : -1;
-        if (idx >= 0) {
-            arches.splice(idx, 1);
-            this._blockerAustritt(entry);
-        }
-        this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        if (entry) this.removeArchitecture(entry, { still: true });
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_vegetation_baum]);
