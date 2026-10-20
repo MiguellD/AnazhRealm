@@ -199,6 +199,70 @@ class AnazhRealm_koerper_leib {
         }
     }
 
+    // DAS VORWÄRMEN DER LEIBER (Lehre 14: im Leerlauf vorgebacken, nie synchron auf dem Interaktions-Pfad): der erste Wechsel
+    // in eine Seele, deren Leib die Welt nie zeichnete, baute seine Programme im Spiel-Pfad (GTX, Frost-Wand S2: +5 Module /
+    // +4 Pipelines — die Radeon hatte Wölfe schon gezeichnet). Liegt der Ofen-Vorrat (`_ofenVorratSteht`: jede Gattung warm im
+    // Memo, der Leib ein Klon ohne Guss) und steht die Welt, legt sie je Seele,
+    // die der Spieler annehmen kann (jede Tetrapoda-Art und der Mensch), EINEN Leib aus der EINEN Leib-Wahl in ihre Szene —
+    // auf Maßstab 0: kein Pixel, keine Schatten-Fläche — und lässt ihn über DIE Erst-Zeichnung bauen (je Render-Aufruf ein
+    // Knoten-Bau, die Pipeline asynchron, `_configureRenderer`). Hat jedes Teil in jedem seiner Pässe gezeichnet, geht er
+    // und der nächste kommt; `state._leibWarm` ist das Ereignis. Kienspan (das Holz der CPU-Raster-Linsen, ohne Schatten)
+    // wärmt nicht vor: der Software-Rasterer kompiliert dort Sekunden je Pipeline.
+    _leibVorwaermen() {
+        const st = this.state;
+        if (st._leibWarm || !st._weltbildDa || st._holzProfil === "kienspan" || !st.renderer.__anazhErstZeichnung)
+            return;
+        if (!st._leibVorwaermung) {
+            if (!this._ofenVorratSteht || !this._weltSteht()) return;
+            st._leibVorwaermung = {
+                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
+                leib: null,
+                takte: 0,
+            };
+        }
+        const V = st._leibVorwaermung;
+        if (V.leib) {
+            const gezeichnet = this._erstZeichnungStand().gezeichnet;
+            let fehlt = 0;
+            V.leib.traverseVisible((o) => {
+                const soll = o.isMesh
+                    ? +st.camera.layers.test(o.layers) + +(o.castShadow && st.renderer.shadowMap.enabled)
+                    : 0;
+                const p = gezeichnet.get(o);
+                if ((p ? p.size : 0) < soll) fehlt++;
+            });
+            // ein Leib, der in 600 Takten nicht ganz steht, ist ein Bruch der Erst-Zeichnung — laut, und der nächste kommt
+            if (fehlt && ++V.takte < 600) return;
+            if (fehlt)
+                this._bruchMelden(
+                    `LEIB-VORWÄRMEN: ${V.leib.name} steht nach ${V.takte} Takten nicht ganz (${fehlt} Teile)`
+                );
+            st.scene.remove(V.leib);
+            this._disposeSoulGroup(V.leib);
+            V.leib = null;
+        }
+        if (!this._ofenVorratSteht || !this._weltSteht()) return;
+        const name = V.offen.shift();
+        if (!name) {
+            st._leibWarm = true;
+            st._leibVorwaermung = null;
+            return;
+        }
+        // die Seele einer Art entsteht beim ersten Wechsel aus ihrem Bauplan (`applyPlayerSoulFromBlueprint`): dieselben Teile
+        const bp = this.state.blueprints && this.state.blueprints[name.slice(3)];
+        const leib = this._leibDerSeele(
+            name,
+            this._getSoulDef(name) || (bp && { bodyParts: bp.parts }),
+            "vorwaermen:" + name
+        );
+        if (!leib) return this._bruchMelden(`LEIB-VORWÄRMEN: kein Leib für „${name}"`);
+        leib.name = "vorwaermen:" + name;
+        leib.scale.setScalar(0);
+        leib.traverse((o) => (o.frustumCulled = false));
+        st.scene.add(leib);
+        Object.assign(V, { leib, takte: 0 });
+    }
+
     // DIE GELENK-GESTALT (S3, Lehre 19 — die Grobstufe ist gelenkig, das Standbild fiel an der Wurzel): EIN Wrap trägt
     // beide Klone; die Grobstufe (lod 1) bindet in der Ruhe-Pose an die Knochen der feinen — EIN Skelett je Gestalt (der
     // Ofen bindet jedes ihrer Teile, auch die starren mit Gewicht 1). Den Wurf liest sie aus der Kern-Zeile (`_ofenZeile`):
