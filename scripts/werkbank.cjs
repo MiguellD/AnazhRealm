@@ -3286,7 +3286,7 @@ async function starte() {
         for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
             await rufe("/umstellen", { ort, sicht: "ego" });
             const a = await rufe("/eval", {
-                code: `return await window.__tagKurve(${JSON.stringify({ uhren: LL.TAG_UHREN, achsen: LL.TAG_ACHSEN, png: !!opt("--ordner") })});`,
+                code: `return await window.__tagKurve(${JSON.stringify({ uhren: LL.TAG_UHREN, png: !!opt("--ordner") })});`,
             });
             welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
             for (const z of welt[ort].zeilen || []) {
