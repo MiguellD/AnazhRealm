@@ -112,12 +112,7 @@ async function probe(page, welt, mitAbdruck) {
                     .map((b) => b.toString(16).padStart(2, "0"))
                     .join("");
             };
-            const warteAck = (nachricht) =>
-                new Promise((res, rej) => {
-                    const id = s.voxelWorkerNextRequestId++;
-                    s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-                    s.voxelWorker.postMessage(Object.assign({}, nachricht, { requestId: id }));
-                });
+            const warteAck = (nachricht) => r._voxelFadenAuftrag(s.voxelWorker, nachricht);
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
@@ -557,127 +552,28 @@ async function probe(page, welt, mitAbdruck) {
     );
 }
 
-// TEIL S — KEIN CHUNK-STOFF IM HAUPT-FADEN (Lehre 14, B-K2): die Wache hängt sich VOR dem Boot an die Instanz (die Falle auf
-// `window.anazhRealm`, gesetzt vor `init()`) und zählt jeden Bau des Chunk-Stoffs im Haupt-Faden, den der Strom verlangt
-// (`_buildVoxelChunkData` unter `_acquireVoxelChunkBuild` ohne forceSync und ohne Faden-Dichte) — mit der Aufrufer-Kette —
-// und jeden vollen Zustand (init · state-set), der vor dem Ack des Fadens reist (jeder ist ein Klon der Welt im Haupt-Faden,
-// Lehre 24). Bis B-K2 fragte der Strom den Faden erst nach dem init-Ack und baute bis dahin jeden Chunk selbst (GTX kalt:
-// die Top-8 der Sekunde 3–4 ganz der Sync-Bau). Die Wache ruft die Urform über `W.acq`/`W.dichte` — der Selbsttest legt dort
-// den alten Pfad ein (Stufe 3 vor dem Ack · ein neuer init je Rechen-Auftrag vor dem Ack) und MUSS rot sehen.
-function stromWache() {
-    const W = (window.__stromWache = { sync: 0, syncListe: [], volle: [], stapel: [] });
-    let inst = null;
-    Object.defineProperty(window, "anazhRealm", {
-        configurable: true,
-        get() {
-            return inst;
-        },
-        set(v) {
-            inst = v;
-            if (!v || typeof v._acquireVoxelChunkBuild !== "function") return;
-            W.acq = v._acquireVoxelChunkBuild;
-            W.dichte = v._voxelWorkerComputeDensity;
-            const bau = v._buildVoxelChunkData;
-            const post = v._voxelZustandPost;
-            v._acquireVoxelChunkBuild = function (cx, cz, lod, opts) {
-                W.stapel.push(!(opts && opts.forceSync === true));
-                try {
-                    return W.acq.call(this, cx, cz, lod, opts);
-                } finally {
-                    W.stapel.pop();
-                }
-            };
-            v._voxelWorkerComputeDensity = function () {
-                return W.dichte.apply(this, arguments);
-            };
-            v._buildVoxelChunkData = function (cx, cz, lod, pre) {
-                if (W.stapel.length && W.stapel[W.stapel.length - 1] && pre == null) {
-                    W.sync++;
-                    if (W.syncListe.length < 3) {
-                        const s = this.state;
-                        const kette = String(new Error().stack || "")
-                            .split("\n")
-                            .slice(2, 9)
-                            .map((z) => (z.match(/at (?:AnazhRealm\.|Object\.|)([\w$.<>]+)/) || [])[1])
-                            .filter((n) => n && n !== "anonymous" && !/^v\._/.test(n));
-                        W.syncListe.push({
-                            chunk: `${cx},${cz} L${lod | 0}`,
-                            faden: !!s.voxelWorker,
-                            ack: !!s.voxelWorkerReady,
-                            welt: !!s.voxelWorkerWorldgenSynced,
-                            kette: kette.join(" ← "),
-                        });
-                    }
-                }
-                return bau.apply(this, arguments);
-            };
-            v._voxelZustandPost = function (msg) {
-                if (this.state.voxelWorker && msg && (msg.type === "init" || msg.type === "state-set"))
-                    W.volle.push({ op: msg.type, vorAck: !this.state.voxelWorkerReady });
-                return post.call(this, msg);
-            };
-        },
-    });
-}
-
-// Der Faden mit VERZÖGERTEM Ack (Teil S): der Strom fragt einen Chunk, den noch niemand baute (der Spieler-Chunk in der
-// gröbsten Stufe), und ein Rechen-Auftrag (die Dichte) reist, während der Ack aussteht — Soll: „pending", kein Bau im
-// Haupt-Faden, kein zweiter init-Klon. `schein` legt die Urform ein (Selbsttest).
-async function stromProbe(page, schein) {
-    return page.evaluate(async (schein) => {
+// TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Ack und Zusage hängen, der Strom fragt den
+// Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt nach dem Ack,
+// und der Boot meldete keinen VOXEL-FADEN-Bruch. `urform` (Selbsttest): Stufe 3 und ein init vor dem Ack, wie bis B-K2.
+const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0";
+async function strom(page, urform) {
+    return page.evaluate(async (urform) => {
         const r = window.anazhRealm;
         const s = r.state;
-        const W = window.__stromWache;
-        if (!W || !W.acq) return { fehler: "die Wache hängt nicht an der Instanz" };
-        const acq = W.acq;
-        const dichte = W.dichte;
-        if (schein) {
-            // die Urform: Stufe 1/2 erst nach dem Ack, davor Stufe 3 im Haupt-Faden; je Rechen-Auftrag vor dem Ack ein init
-            W.acq = function (cx, cz, lod, opts) {
-                if (!(opts && opts.forceSync === true) && !this.state.voxelWorkerReady)
-                    return this._buildVoxelChunkData(cx, cz, lod);
-                return acq.call(this, cx, cz, lod, opts);
-            };
-            W.dichte = function () {
-                if (!this.state.voxelWorkerReady) this._voxelWorkerSyncState();
-                return dichte.apply(this, arguments);
-            };
-        }
-        const p = s.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
-        const lod = 3;
-        const schluessel = `${p.cx},${p.cz},${lod}`;
-        if (s.voxelMeshCache) s.voxelMeshCache.delete(schluessel);
-        const vor = { sync: W.sync, volle: W.volle.length };
-        const ack = s.voxelWorkerReady;
-        let antwort;
-        let auftrag = null;
-        s.voxelWorkerReady = false; // der Ack steht aus
-        try {
-            antwort = r._acquireVoxelChunkBuild(p.cx, p.cz, lod, { forceSync: false });
-            auftrag = r._voxelWorkerComputeDensity(0, 0, 0, 2, 2, 2, 1.8);
-        } finally {
-            s.voxelWorkerReady = ack;
-            W.acq = acq;
-            W.dichte = dichte;
-        }
-        const art = antwort === "pending" ? "pending" : antwort && antwort.mesh ? "Bau im Haupt-Faden" : String(antwort);
-        if (antwort && antwort.mesh && antwort.mesh.geometry) antwort.mesh.geometry.dispose();
-        // der Auftrag kommt an (kein Hänger hinter einer Zusage, die nie fällt)
-        const t0 = performance.now();
-        let dichteDa = false;
-        if (auftrag)
-            await Promise.race([auftrag.then((d) => (dichteDa = !!(d && d.length))), new Promise((res) => setTimeout(res, 15000))]);
-        while (s.voxelMeshPending && s.voxelMeshPending.has(schluessel) && performance.now() - t0 < 15000)
-            await new Promise((res) => setTimeout(res, 16));
-        if (s.voxelMeshCache) s.voxelMeshCache.delete(schluessel);
-        const neu = W.volle.slice(vor.volle);
-        return {
-            antwort: art,
-            sync: W.sync - vor.sync,
-            inits: neu.filter((v) => v.op === "init").length,
-            dichteDa,
-        };
-    }, schein);
+        const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
+        const zusage = w.zusage;
+        let los;
+        w.zusage = new Promise((res) => (los = res));
+        s.voxelWorkerReady = false;
+        if (urform) r._voxelWorkerSyncState();
+        const a = urform ? r._buildVoxelChunkData(p.cx, p.cz, 3) : r._acquireVoxelChunkBuild(p.cx, p.cz, 3, {});
+        const d = r._voxelWorkerComputeDensity(0, 0, 0, 2, 2, 2, 1.8);
+        [s.voxelWorkerReady, w.zusage] = [ack, zusage];
+        los();
+        const da = (await Promise.race([d, new Promise((res) => setTimeout(res, 9000, []))])).length > 0;
+        const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("VOXEL-FADEN")).length;
+        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch}`;
+    }, urform);
 }
 
 // Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
@@ -687,12 +583,8 @@ async function verfaelsche(page, an) {
         const r = window.anazhRealm;
         const s = r.state;
         if (!an) return r._voxelWorkerSyncState({ op: "state-set" });
-        return new Promise((res, rej) => {
-            const id = s.voxelWorkerNextRequestId++;
-            s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-            const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
-            s.voxelWorker.postMessage({ type: "state-update", delta, requestId: id });
-        });
+        const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
+        return r._voxelFadenAuftrag(s.voxelWorker, { type: "state-update", delta });
     }, an);
 }
 
@@ -1754,7 +1646,6 @@ async function gebaut(page, fehler) {
         console.log("[PAGE-ERROR]", pageErr);
     });
     await nullRenderer(page);
-    await page.evaluateOnNewDocument(stromWache);
     const url = `http://127.0.0.1:${PORT}/index.html`;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.
@@ -1786,8 +1677,7 @@ async function gebaut(page, fehler) {
         rot = true;
     }
     let selbst = null;
-    const strom = [];
-    let selbstStrom = false;
+    let urform = "";
     for (const welt of WELTEN) {
         let weltArg = welt;
         if (welt === "buehne") {
@@ -1814,48 +1704,15 @@ async function gebaut(page, fehler) {
             continue;
         }
         console.log(`  Boot ${welt}: ${b.ms} ms (Seed ${b.seed})`);
-        // TEIL S am Kalt-Boot dieser Welt: kein Chunk-Stoff im Haupt-Faden, den der Strom verlangt; EIN voller Stand vor dem Ack
-        const kalt = await page.evaluate(() => {
-            const W = window.__stromWache;
-            return W && W.acq ? { sync: W.sync, liste: W.syncListe, volle: W.volle.filter((v) => v.vorAck) } : null;
-        });
-        if (!kalt) {
-            console.log(`  ⛔ STROM ${welt}: die Wache hing nicht an der Instanz`);
-            rot = true;
-        } else {
-            const inits = kalt.volle.filter((v) => v.op === "init").length;
-            const roh = kalt.volle.map((v) => v.op).join(" · ") || "keiner";
-            console.log(
-                `    Strom (Teil S): Chunk-Stoff im Haupt-Faden ohne forceSync ${kalt.sync} · volle Stände vor dem Ack ${kalt.volle.length} (${roh})`
-            );
-            for (const z of kalt.liste)
-                console.log(`      ${z.chunk} Faden ${z.faden} · Ack ${z.ack} · Welt ${z.welt} — ${z.kette}`);
-            if (kalt.sync > 0) {
-                console.log(`  ⛔ STROM ${welt}: _acquireVoxelChunkBuild Stufe 3 vor dem Ack: ${kalt.sync} Chunks im Haupt-Faden`);
-                rot = true;
-            }
-            if (kalt.volle.length > 1) {
-                console.log(`  ⛔ STROM ${welt}: ${kalt.volle.length} volle Stände vor dem Ack (Soll 1: der init) — ${roh}`);
-                rot = true;
-            }
-            strom.push({ welt, sync: kalt.sync, volleVorAck: kalt.volle.length, inits });
-        }
         if (welt === "standard") {
-            const sp = await stromProbe(page, false);
-            console.log(
-                `    Strom bei verzögertem Ack: ${sp.fehler || `Antwort ${sp.antwort} · Haupt-Faden-Bau ${sp.sync} · init-Klone ${sp.inits} · Dichte ${sp.dichteDa ? "da" : "fehlt"}`}`
-            );
-            if (sp.fehler || sp.antwort !== "pending" || sp.sync || sp.inits || !sp.dichteDa) {
-                console.log("  ⛔ STROM: der Strom wartet nicht auf den Faden (Soll: pending · 0 Bau · 0 init · die Dichte kommt)");
+            const ist = await strom(page, false);
+            console.log(`    Strom vor dem Ack (Teil S): ${ist}`);
+            if (ist !== STROM_SOLL) {
+                console.log(`  ⛔ STROM: _acquireVoxelChunkBuild vor dem Ack — Soll ${STROM_SOLL}`);
                 rot = true;
             }
-            if (SELBSTTEST) {
-                const sch = await stromProbe(page, true);
-                selbstStrom = !!(sch.fehler || sch.antwort !== "pending" || sch.sync || sch.inits);
-                console.log(
-                    `  SELBSTTEST Strom (die Urform: Stufe 3 und ein init je Auftrag vor dem Ack): Antwort ${sch.antwort} · Bau ${sch.sync} · init ${sch.inits} → ${selbstStrom ? "ROT gesehen" : "BLIND"}`
-                );
-            }
+            if (SELBSTTEST)
+                console.log(`  SELBSTTEST Strom (die Urform, Soll ROT): ${(urform = await strom(page, true))}`);
         }
         const rep = await probe(page, weltArg, !!ABDRUCK);
         rep.welt = welt;
@@ -1940,12 +1797,19 @@ async function gebaut(page, fehler) {
             `\n  Abdruck: ${ABDRUCK} (${abdruck.gitter.length} Gitter + Makro ${Object.keys(abdruck.saaten || {}).length} Saaten${abdruck.buehne ? " + Bühne" : ""})`
         );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst, strom }, null, 1));
+    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
-        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0 && selbst.wald > 0 && selbstStrom;
+        pass =
+            !rot &&
+            selbst &&
+            selbst.abweichend > 0 &&
+            selbst.ferne > 0 &&
+            selbst.wald > 0 &&
+            urform &&
+            urform !== STROM_SOLL;
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(

@@ -149,7 +149,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
             const st = r.state;
-            const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+            const worker = r._voxelFadenTraegt();
             st._bodenEinbau = null;
             let fin = 0;
             let sync = 0;
@@ -1734,109 +1734,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
 }
 
-// Worker-Foundation: `voxel-worker.js` liefert bit-identische Density-Grids zum Main-Thread. Jede
-// Density-Funktion im Worker (Spiegel) muss ihr Main-Pendant EXAKT reproduzieren, sonst driften
-// Worker- und Sync-gebaute Chunks sichtbar auseinander.
-async function checkBandWellePerf3cWorkerFoundation(ctx) {
-    const { page, check } = ctx;
-    // Worker-Determinismus braucht einen einmaligen async-Roundtrip: Worker
-    // spawnen, State sync, Density computen, mit Main vergleichen.
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        // 1) Worker-Helper existieren
-        out.hasGetWorker = typeof r._getVoxelWorker === "function";
-        out.hasComputeDensity = typeof r._voxelWorkerComputeDensity === "function";
-        if (!out.hasGetWorker || !out.hasComputeDensity) {
-            return { ...out, error: "voxel-worker helpers missing" };
-        }
-        // 2) Worker spawnen + initial state sync (returns Promise)
-        const worker = r._getVoxelWorker();
-        out.workerSpawned = !!worker;
-        if (!worker) return { ...out, error: "worker not spawned" };
-        // Initial-sync abwarten (returns true bei ack)
-        try {
-            await r._voxelWorkerSyncState({ op: "init" });
-        } catch (e) {
-            return { ...out, error: "init sync failed: " + e.message };
-        }
-        out.workerReady = r.state.voxelWorkerReady;
-        out.stateGen = r.state.voxelWorkerStateGen;
-        // 3) Determinismus-Sample: ein kleines Density-Grid via Worker + Main
-        // berechnen, bit-identisch vergleichen.
-        const cfg = r._voxelChunkConfig(0);
-        const base = r.state.terrainBaseHeight || 0;
-        const ox = 0;
-        const oy = base - cfg.floorDrop;
-        const oz = 0;
-        // Klein gewählt (8·8·8 Cells = 9·9·9 = 729 Vertices) — reicht für
-        // Determinismus-Beweis, hält den Test schnell.
-        const dimX = 8;
-        const dimY = 8;
-        const dimZ = 8;
-        const step = cfg.step;
-        let mainGrid;
-        try {
-            mainGrid = r._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, (x, y, z) =>
-                r._terrainDensityAt(x, y, z)
-            );
-        } catch (e) {
-            return { ...out, error: "main sampling failed: " + e.message };
-        }
-        let workerGrid;
-        try {
-            workerGrid = await r._voxelWorkerComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step);
-        } catch (e) {
-            return { ...out, error: "worker sampling failed: " + e.message };
-        }
-        out.mainLen = mainGrid.length;
-        out.workerLen = workerGrid.length;
-        out.lenMatch = mainGrid.length === workerGrid.length;
-        // Bit-identisch (Float32 — exakte Gleichheit; deterministisch da
-        // Worker + Main denselben Seed + denselben Algorithmus laufen).
-        let mismatches = 0;
-        let maxDelta = 0;
-        let firstMismatchIdx = -1;
-        for (let i = 0; i < mainGrid.length; i++) {
-            const m = mainGrid[i];
-            const w = workerGrid[i];
-            if (m !== w) {
-                if (mismatches === 0) firstMismatchIdx = i;
-                mismatches++;
-                const d = Math.abs(m - w);
-                if (d > maxDelta) maxDelta = d;
-            }
-        }
-        out.mismatches = mismatches;
-        out.maxDelta = maxDelta;
-        out.firstMismatchIdx = firstMismatchIdx;
-        out.bitIdentical = mismatches === 0;
-        // 4) Source-Probe: voxel-worker.js mirror-Funktionen existieren
-        out.workerHasNoise = !!r.state.voxelWorker;
-        return out;
-    });
-    if (res.error) {
-        check("Welle Perf-3.c V9.89: Worker-Foundation-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle Perf-3.c V9.89: _getVoxelWorker existiert", res.hasGetWorker);
-    check("Welle Perf-3.c V9.89: _voxelWorkerComputeDensity existiert", res.hasComputeDensity);
-    check("Welle Perf-3.c V9.89: Worker spawnt erfolgreich", res.workerSpawned);
-    check("Welle Perf-3.c V9.89: Worker ready nach init-sync", res.workerReady);
-    check("Welle Perf-3.c V9.89: voxelWorkerStateGen wurde inkrementiert", res.stateGen >= 1);
-    check(
-        "Welle Perf-3.c V9.89: Worker + Main Density-Grid haben identische Länge",
-        res.lenMatch,
-        `main=${res.mainLen}, worker=${res.workerLen}`
-    );
-    check(
-        "Welle Perf-3.c V9.89: Worker-Density-Grid ist BIT-IDENTISCH zum Main (Kern-Invariante)",
-        res.bitIdentical,
-        `mismatches=${res.mismatches}, maxDelta=${res.maxDelta}, firstMismatchIdx=${res.firstMismatchIdx}`
-    );
-}
-
 // Worker-Density im Streaming-Pfad: (1) Worker-State nach Worldgen synced (`voxelWorkerSynced-
 // HydroStateGen === voxelWorkerStateGen`); (2) `_fetchOrRequestChunkDensity` liefert (Cache/pending);
 // (3) Worker-Density-Build == Sync-Build; (4) voxelEdit notifiziert den Worker (state-gen bumpt).
@@ -2471,7 +2368,7 @@ async function checkBandCarveWorker(ctx) {
 }
 
 module.exports = {
-    checkBandVoxelP3AndInventory, checkBandWelleC3CellularReaction, checkBandWellePerf3cWorkerFoundation,
+    checkBandVoxelP3AndInventory, checkBandWelleC3CellularReaction,
     checkBandWellePerf3cPhase2Async, checkBandWellePerf3cPhase3FullMesh, checkBandV17118WorkerEngaged,
     checkBandPhaseAFundament, checkBandCarveWorker,
 };
