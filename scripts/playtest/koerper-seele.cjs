@@ -3579,7 +3579,7 @@ async function checkBandV18202GeruchFeld(ctx) {
     );
 }
 
-// Konsolidierungs-Band: Version-Floor · die vier Foundations leben (Mana-Drain · Geruch ·
+// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
 // Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;

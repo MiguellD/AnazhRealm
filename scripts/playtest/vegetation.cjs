@@ -1003,9 +1003,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             }
         }
 
-        // (S6) VERSION: AnazhRealm.VERSION + index.html-Cache-Buster; die Probe trägt einen FLOOR statt
-        // einer scharfen Zahl (Drift-Schutz).
-
         return out;
     });
 

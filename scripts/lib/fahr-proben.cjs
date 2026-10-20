@@ -421,12 +421,19 @@ async function probeLeben(expected) {
                     // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
                     // Kamera je Bild, 3 Bilder vor bis 30 nach dem Abstieg
                     for (const s of ["third", "first"]) {
-                        if (s === "first") [r.mountArchitecture(e), r.setCameraMode(s), Object.assign(st.keys, { a: false, d: false, w: true, s: false })];
+                        if (s === "first") {
+                            r.mountArchitecture(e);
+                            r.setCameraMode(s);
+                            Object.assign(st.keys, { a: false, d: false, w: true, s: false });
+                        }
                         for (let j = 0; s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
                         let m = 0;
                         for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
-                            if (j === 3) [w.abV.push(+Math.hypot(st.playerVel.x(), st.playerVel.z()).toFixed(1)), r.dismountArchitecture()];
+                            if (j === 3) {
+                                w.abV.push(+Math.hypot(st.playerVel.x(), st.playerVel.z()).toFixed(1));
+                                r.dismountArchitecture();
+                            }
                             frame(i++);
                         }
                         w.abSprung.push(+m.toFixed(2));
