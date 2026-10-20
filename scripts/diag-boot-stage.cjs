@@ -7,8 +7,8 @@
 //   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
 //   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
 // Zeitleiste t(Weltbild/Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock; t(Weltbild) = `state._weltbildDa` ab
-// Navigation (der Ladeschirm hält jede Taste: das ist die Kontrolle). --selftest: die wartende Spieler-Region und die
-// fehlende Regionen-Karte machen das Prädikat rot.   node scripts/diag-boot-stage.cjs [--selftest]
+// Navigation (der Ladeschirm hält jede Taste: das ist die Kontrolle). --selftest: die Bühnen-Wahrheit liest dieselbe Streu
+// (die wartende Region trägt gate:ankunft L2a).   node scripts/diag-boot-stage.cjs [--selftest]
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
@@ -185,8 +185,7 @@ async function kaltLauf() {
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
-            // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal) — bis K30-N1 las die
-            // Zeile `backend.adapter.info` und schrieb in jeder echten Rohdatei null
+            // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal)
             let adapter = null;
             try {
                 const i = st.renderer.backend.device.adapterInfo;
@@ -308,7 +307,6 @@ async function kaltLauf() {
                 const f = r._foundry;
                 const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                 // die EINE Antwort der Welt (`_streuWartet`): fehlend · aufgeschoben · Scheibe offen, je Region in Reichweite.
-                // Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte (der Streamer lief noch nie) als „steht".
                 const wartet = r._streuWartet(st.playerMesh ? st.playerMesh.position : null);
                 const q = r._impostorBakeQueue;
                 return {
@@ -357,24 +355,9 @@ async function kaltLauf() {
             };
             o.chunks = st.voxelChunks ? st.voxelChunks.size : 0;
             o.impostorRecords = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
-            // ── SELBST-TEST: die Spieler-Region wartet auf ihr Asset, und die Regionen-Karte fehlt (der Streamer lief noch
-            // nie, Befund 09.10.) — beide machen das Prädikat rot. Beide Fälle stehen in jedem Lauf: schließt die Bühne,
-            // steht die Spieler-Region (sie ist stets in Reichweite).
             if (selftest && mark.stage) {
-                const SC = r.constructor.SCATTER;
-                const p = st.playerMesh.position;
                 const map = st.scatterRegions;
-                const reg = map ? map.get(`${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`) : null;
-                o.selftest = { spielerRegion: !!reg };
-                if (reg) {
-                    reg._deferredFoundry = true;
-                    o.selftest.firesOnInject = terms().streu === false;
-                    delete reg._deferredFoundry;
-                }
-                delete st.scatterRegions;
-                o.selftest.firesOhneKarte = terms().streu === false;
-                st.scatterRegions = map;
-                o.selftest.healsOnClean = terms().streu === true;
+                o.selftest = {};
                 // die Bühnen-Wahrheit der Welt (`_buehneSteht`, das Prädikat live) liest dieselbe Antwort: ohne Regionen-Karte
                 // steht sie nicht, mit ihr steht sie — nicht-headless gerechnet; Latch, Uhr und Renderer-Marke kehren zurück
                 {
@@ -452,12 +435,6 @@ async function kaltLauf() {
     ];
     if (SELFTEST) {
         const s = out.selftest || {};
-        checks.push({
-            name:
-                "SELBST-TEST: die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot + es heilt " +
-                `(Spieler-Region ${s.spielerRegion ? "steht" : "FEHLT beim Schluss der Bühne"} · wartet → ${s.firesOnInject ? "rot" : "STUMPF"} · ohne Karte → ${s.firesOhneKarte ? "rot" : "STUMPF"} · heilt ${!!s.healsOnClean})`,
-            pass: !!(s.spielerRegion && s.firesOnInject && s.firesOhneKarte && s.healsOnClean),
-        });
         checks.push({
             name: `SELBST-TEST: die Bühnen-Wahrheit der Welt (\`_buehneSteht\`) liest dieselbe Streu — ohne Regionen-Karte ${s.buehneOhneKarte === false ? "steht sie nicht" : "STEHT sie"}, mit ihr ${s.buehneMitKarte ? "steht sie" : "steht sie NICHT"}`,
             pass: s.buehneOhneKarte === false && s.buehneMitKarte === true,

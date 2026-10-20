@@ -773,6 +773,16 @@ class AnazhRealm_studio_bruecke {
     _foundryRang(wo, kopf) {
         return wo && wo.rangSatz === true ? wo : { rangSatz: true, wo, kopf: kopf === true };
     }
+    // DAS BILD DER ANKUNFT (B-Blick, die EINE Frage): liegt der Leser (`wo`: Ort, Zahl d² mit Blick-Schlüssel oder ein
+    // Rang-Datensatz) im Bild der Ankunft — was die Ankunfts-Kamera sieht (`_foundryAuftragD2` trägt vor dem Bild den Blick,
+    // `_blickRang`), danach liegt alles darin? DIESE Menge rangiert vorn und nur sie hält das erste Weltbild. Leser: die Pumpe
+    // (`_foundryPumpe`), der Wecker der Streu (`_streuWeckerSpannen`, `_streuZelleWartet`) und der Ring unter dem Ladeschirm
+    // (`_tickVoxelChunkStreaming`). Mit Radius `r` (ein Stück Welt: ein Chunk) fragt sie den Blick mit seinem Rand wie die Terme.
+    _rangImBild(wo, r) {
+        const w = this._foundryRang(wo).wo;
+        if (r > 0 && w) return !!this.state._weltbildDa || this._imErstenBlick(w.x, w.z, r);
+        return this._rangImErstenBlick(this._foundryAuftragD2(w));
+    }
     // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
     // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
     // für immer (Zweig-CI 38453848494: „keine Vorschau-Gestalt" nach 90 s, der Körper lag längst im Cache), die Hand trug
@@ -1036,8 +1046,7 @@ class AnazhRealm_studio_bruecke {
         const darf = (a) =>
             a.rang.kopf
                 ? !!(leer || bahn)
-                : !!bahn &&
-                  (frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImErstenBlick(this._foundryAuftragD2(a.rang.wo)));
+                : !!bahn && (frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImBild(a.rang));
         const koepfe = f.koepfe || (f.koepfe = new Set());
         while (q.length) {
             const im = new Map();
