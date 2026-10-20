@@ -380,7 +380,7 @@ async function probeLeben(expected) {
             const sicht0 = st.cameraMode;
             r.setCameraMode("third");
             const e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
-            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], abV: [], abSprung: [] });
+            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], abV: [], abSprung: [], abFov: [] });
             const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
             const [gleich, ruck, hoch, spur] = [[], [], [], []];
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
@@ -442,7 +442,8 @@ async function probeLeben(expected) {
                     sicht("first", false, true);
                     sicht("third", false, true, 70);
                     // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
-                    // Kamera je Bild, 3 Bilder vor bis 30 nach dem Abstieg
+                    // Kamera und der größte Schritt ihres Sichtfelds (H3: das Tempo-FOV fällt nie in einem Bild) je Bild, 3 Bilder
+                    // vor bis 30 nach dem Abstieg
                     for (const s of ["third", "first"]) {
                         if (s === "first") {
                             r.mountArchitecture(e);
@@ -451,15 +452,18 @@ async function probeLeben(expected) {
                         }
                         for (let j = 0; s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
-                        let m = 0;
+                        let [m, mf, f] = [0, 0, st.camera.fov];
                         for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
                             if (j === 3) {
                                 w.abV.push(+Math.hypot(st.playerVel.x(), st.playerVel.z()).toFixed(1));
                                 r.dismountArchitecture();
                             }
                             frame(i++);
+                            mf = Math.max(mf, Math.abs(st.camera.fov - f));
+                            f = st.camera.fov;
                         }
                         w.abSprung.push(+m.toFixed(2));
+                        w.abFov.push(+mf.toFixed(2));
                     }
                     bahnWache = null;
                     tasten(false);
@@ -2414,7 +2418,8 @@ async function probeLeben(expected) {
 
 // ── T5 · K8 · G7 (H3) DAS TEMPO DER KAMERA (Meisterkarte Fahrzeug K3): bei vmax FOV ≥ +8° und Arm ≥ +15 %, im Drift der
 // Azimut ≤ 15° am Fahrtvektor, nach dem Maus-Orbit zurück in 1–1,25 s; im Ritt bei 10 m/s ≥ 3,2° (10/16 der Kurve mit dem
-// Nachlauf), camera.fov = Ruhe + Tempo, der Wirt reicht (z, vmax) SEINES Gesetzes, EIN FOV-Schreiber. ──
+// Nachlauf), camera.fov = Ruhe + Tempo, der Wirt reicht (z, vmax) SEINES Gesetzes, EIN FOV-Schreiber; die Drehrate knickt
+// nach dem Loslassen in der Kurve je Bild um ≤ 0,25 der Kurve. ──
 function tempoVerdict(m) {
     if (!m || !(m.n > 0)) return ["tempo: kein Aufruf der Chase-Cam (vakuös)"];
     const soll = [
@@ -2427,6 +2432,7 @@ function tempoVerdict(m) {
         ["schreiber", String(m.schreiber) === "_kamFov", `schreiber ${m.schreiber} (Soll EINER, _kamFov)`],
         ["orbit", m.orbit >= 20, `orbit ${m.orbit}°: die Maus dreht das Rig nicht`],
         ["rueck", !(m.orbit >= 20) || (m.rueck >= 1 && m.rueck <= 1.25), `rueck ${m.rueck} s nach dem Loslassen (Soll 1–1,25 s)`],
+        ["knick", m.knick <= 0.25, `knick: die Drehrate springt nach dem Loslassen um ${m.knick} der Kurve je Bild (Soll ≤ 0,25)`],
     ];
     return soll.filter(([k, ok]) => k in m && !ok).map((s) => s[2]);
 }
@@ -2471,7 +2477,18 @@ function kernTempo(VC) {
     const [v0, v1] = [lauf(c0, 300, 0, 0), lauf(c0, 300, 0, vmax)];
     lauf(cd, 300, 0, 8, 8);
     const drift = +((Math.abs(cd.az - Math.PI / 4) * 180) / Math.PI).toFixed(1);
-    return { fovMax: +(v1.fovPlus || 0).toFixed(2), arm: +(arm(v1) / arm(v0) - 1).toFixed(3), drift };
+    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte Sprung der
+    // Drehrate je Bild ab dem Loslassen, relativ zur Kurve (vorher 1,0 am Loslassen und 0,9 am Ende der Rückkehr)
+    const ck = {};
+    let [az, rate, knick] = [0, 0, 0];
+    for (let i = 0; i < 300; i++) {
+        if (i === 120) VC.chaseGreif(ck, 0.5, 0, K);
+        lauf(ck, 1, i >= 120 && i < 150 ? NaN : i * dt * 0.5, 8);
+        const r = (ck.az - az) / dt;
+        if (i >= 150) knick = Math.max(knick, Math.abs(r - rate) / 0.5);
+        [az, rate] = [ck.az, r];
+    }
+    return { fovMax: +(v1.fovPlus || 0).toFixed(2), arm: +(arm(v1) / arm(v0) - 1).toFixed(3), drift, knick: +knick.toFixed(2) };
 }
 
 module.exports = { probeLeben, tempoVerdict, tempoSpion, kernTempo };

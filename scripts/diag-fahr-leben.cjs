@@ -86,7 +86,7 @@ function haltVerdict(m) {
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
 // nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05.
-const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5 };
+const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5, fovGrad: 0.5 };
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
@@ -99,6 +99,8 @@ function wechselVerdict(m) {
         out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
     if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM)))
         out.push(`absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`);
+    if (!(m.abFov && m.abFov.length === 2 && m.abFov.every((x) => x <= W.fovGrad)))
+        out.push(`sichtfeld: der Abstieg in voller Fahrt springt ${m.abFov && m.abFov.join(" · ")}° je Bild (Third · Ego, Soll ≤ ${W.fovGrad})`);
     // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
     if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
     if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
@@ -1538,7 +1540,7 @@ function quellenAbgriff() {
             rollt.join(" · ")
         );
         const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8] };
-        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0, abV: [9.1, 8.6], abSprung: [0.31, 0.2] });
+        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0, abV: [9.1, 8.6], abSprung: [0.31, 0.2], abFov: [0.4, 0] });
         check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
         for (const [name, bruch, soll] of [
             ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
@@ -1546,6 +1548,7 @@ function quellenAbgriff() {
             ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
             ["Third beginnt aus der alten Richtung (18° / 20°)", { nach10: [18, 20] }, "kamera"],
             ["der Abstieg in Fahrt reißt die Kamera 4,1 m", { abSprung: [4.1, 0.2] }, "absteigen"],
+            ["das Tempo-FOV fällt beim Abstieg in einem Bild (5,06°)", { abFov: [5.06, 0] }, "sichtfeld"],
             ["Third ruckt quer (0,14 m)", { ruckP95: 0.14 }, "ruck"],
             ["das Bild läuft 0,9 neben der Physik", { gleichP95: 0.91 }, "gleichlauf"],
             ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],
@@ -1557,7 +1560,7 @@ function quellenAbgriff() {
             check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
         }
         // T5 (H3) das Tempo der Kamera: die Täter von integ-probe 20.10. beim Namen
-        const gut5 = { n: 9, quelle: true, fov: { 10: 5.4 }, zeigt: 0, schreiber: ["_kamFov"], orbit: 69, rueck: 1.08, fovMax: 10, arm: 0.2, drift: 9 };
+        const gut5 = { n: 9, quelle: true, fov: { 10: 5.4 }, zeigt: 0, schreiber: ["_kamFov"], orbit: 69, rueck: 1.08, fovMax: 10, arm: 0.2, drift: 9, knick: 0.08 };
         check("Selbst-Test T5: das gesunde Tempo == 0 Täter", tempoVerdict(gut5).length === 0, tempoVerdict(gut5).join(" · "));
         for (const [bruch, soll] of [
             [{ fovMax: 0 }, "fov"],
@@ -1569,6 +1572,7 @@ function quellenAbgriff() {
             [{ schreiber: ["_tickBogenZug", "_bogenRelease", "setZoomActive"] }, "schreiber"],
             [{ orbit: 0 }, "orbit"],
             [{ rueck: 0.54 }, "rueck"],
+            [{ knick: 0.98 }, "knick"],
         ]) {
             const v = tempoVerdict(Object.assign({}, gut5, bruch));
             check(`Selbst-Test T5: ${JSON.stringify(bruch)} → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
