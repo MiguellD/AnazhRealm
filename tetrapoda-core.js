@@ -910,7 +910,8 @@
     }
 
     // ULTRAGUSS U4 — DER CPG-PHASEN-SCHRITT (das Gang-Netz-Gesetz, verbatim aus
-    // dem Lab): phases[4] werden über die Kopplungs-Matrix + Gain 0.8 fortgeschrieben.
+    // dem Lab): phases[4] werden über die Kopplungs-Matrix + Gain 0.8 fortgeschrieben — mit der Folge der Gangart
+    // (GANG_FOLGE) zieht das Netz sie in deren Muster (cpgStep, unten).
     // ═══════════════════════════════════════════════════════════════════════
     // DIE FELL-STREU (V18.460) — DAS LOOK-GESETZ ALS DATEN: die komplette
     // Körper-Streu des Labs (Bein-Lokale/Tuben · Bauch/Brust/Hüft-Fuzz ·

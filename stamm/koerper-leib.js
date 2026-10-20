@@ -2995,7 +2995,7 @@ AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
 AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     schwimmen: Object.freeze({ kreatur: "schwimmen" }),
     jagd: Object.freeze({ kreatur: "hunt" }),
-    // die HETZE galoppiert wie die Flucht (Welle LF: der Sprint der Gestalt)
+    // die HETZE trägt die Haltung der Flucht (Welle LF: der Sprint der Gestalt; die Gangart wählt sein Tempo, GANG_FOLGE)
     hetzen: Object.freeze({ kreatur: "flee" }),
     flucht: Object.freeze({ kreatur: "flee" }),
     // koerper-Zustand kampf: frischer Schwung/Schuss (_koerperKampfZustand) wählt das Lab-Profil "fight"
