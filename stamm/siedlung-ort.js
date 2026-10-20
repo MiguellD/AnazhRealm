@@ -2304,10 +2304,9 @@ class AnazhRealm_siedlung_ort {
                 // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
                 // Alle Leser fragen nur Existenz (truthy).
                 wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
+                // die Häuser materialisieren budgetiert über die Ticks, die Ausstattung (Wege, Brunnen, Laternen) steht nach
+                // ihnen (`_tickAutoSettlement`)
                 this._autoSettlementQueue = { plan: v2, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
-                // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
-                // materialisieren budgetiert über die Ticks).
-                this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
                 if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
                 return v2;
             });
@@ -2410,6 +2409,10 @@ class AnazhRealm_siedlung_ort {
             }
             if (q.idx >= q.plan.slots.length) {
                 this._autoSettlementQueue = null;
+                // DIE HÄUSER VOR DER AUSSTATTUNG (S4, EIN Weg mit `spawnSettlement`): Wege, Brunnen, Laternen und Stände des
+                // Plans stehen nach dem letzten Haus — ihre Bau-Wand weicht dem Haus, nie das Haus ihr. Bis S4-N3 stellte der Zug
+                // sie bei der Ankunft auf: am Start-Dorf sperrte der Brunnen (57,2/115,2) das Alpenchalet seines eigenen Plans.
+                this._spawnSettlementErlebnis(q.plan, q.origin, { key: q.cellKey });
                 this.log(
                     `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
                     "INFO"
