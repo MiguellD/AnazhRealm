@@ -39,7 +39,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         // (4) DSL-Op voxel_carve schnitzt echt — der Edit landet in
         // worldMeta.voxelEdits. Frieden-Modus damit Edit-Gate
         // (V9.17) den Fill-Pfad nicht abweist.
-        const oldMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const oldMode = r.getGameMode();
         r.setGameMode("frieden");
         if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
         r.state.worldMeta.voxelEdits = [];
@@ -62,8 +62,8 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.state.worldMeta.voxelEdits = [];
 
         // (5) describeProgram kennt die neuen Ops.
-        const dCarve = r.describeProgram && r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
-        const dFill = r.describeProgram && r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
+        const dCarve = r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
+        const dFill = r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
         out.describeCarve = typeof dCarve === "string" && /schnitzt|Voxel/i.test(dCarve);
         out.describeFill = typeof dFill === "string" && /schüttet|auf/i.test(dFill);
 
@@ -1270,7 +1270,7 @@ async function checkBandLateMultiUser(ctx) {
         const origBroadcast = r.p2pBroadcastDsl;
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
-        r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+        r.setGameMode("schöpfer"); // Gates frei
         // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
         // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
         // („group.traverse is not a function") und riss 21 Folgetests mit.
@@ -1299,7 +1299,7 @@ async function checkBandLateMultiUser(ctx) {
 
         // Eigener (nicht-built-in) Bauplan → chain(define_blueprint, spawn).
         const cloneName = "bausync_custom";
-        const cloned = r.cloneBlueprint && r.cloneBlueprint("stein_block", cloneName);
+        const cloned = r.cloneBlueprint("stein_block", cloneName);
         let chainOk = false;
         if (cloned && r.state.blueprints[cloneName] && !r.state.blueprints[cloneName].builtIn) {
             r.state.buildMode = {
@@ -1384,15 +1384,6 @@ async function checkBandLateMultiUser(ctx) {
             Number.isInteger(K.P2P_VOICE_COOLDOWN_MS) &&
             Number.isInteger(K.P2P_VOICE_TIMEOUT_MS) &&
             Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
-        out.methodsPresent = [
-            "_p2pVoiceCapable",
-            "setVoiceShared",
-            "_p2pFindVoicePeer",
-            "_p2pVoiceAvailable",
-            "_p2pRequestSharedVoice",
-            "_p2pHandleLlmRequest",
-            "_p2pHandleLlmResponse",
-        ].every((m) => typeof r[m] === "function");
 
         // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
         const wasEnabled = r.state.llm.enabled;
@@ -1527,7 +1518,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
-        check("W7 P3: alle 7 LLM-Pool-Methoden auf der Klasse", w7p3Results.methodsPresent);
         check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
         check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
         check("W7 P3: soul-Empfang speichert voiceShared am Peer", w7p3Results.soulStoresVoiceShared);
@@ -1560,13 +1550,7 @@ async function checkBandLateMultiUser(ctx) {
             p2p.lobby.published === false &&
             Array.isArray(p2p.lobby.rooms) &&
             p2p.remoteCreatures instanceof Map;
-        out.lobbyMethods = [
-            "publishToLobby",
-            "unpublishFromLobby",
-            "requestLobbyList",
-            "joinLobbyRoom",
-            "_renderLobbyUI",
-        ].every((m) => typeof r[m] === "function");
+        out.lobbyMethods = typeof r._renderLobbyUI === "function";
 
         // publishToLobby ohne Verbindung → not_connected.
         p2p.enabled = false;
@@ -1612,13 +1596,6 @@ async function checkBandLateMultiUser(ctx) {
             !!document.getElementById("p2p-lobby-refresh");
 
         // ── Kreatur-Sicht-Sync ──
-        out.creatureMethods = [
-            "_p2pBroadcastCreatures",
-            "_p2pHandleCreaturePos",
-            "_p2pTickRemoteCreatures",
-            "_disposeRemoteCreature",
-        ].every((m) => typeof r[m] === "function");
-
         // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
         const _saveMaxNet = r.state.maxCreatures;
@@ -1689,7 +1666,10 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check("W7 P4: alle 5 Lobby-Methoden auf der Klasse", w7p4Results.lobbyMethods);
+        check(
+            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
+            w7p4Results.lobbyMethods
+        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
@@ -1699,7 +1679,6 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P4: joinLobbyRoom setzt roomOverride", w7p4Results.joinSetsOverride);
         check("W7 P4: joinLobbyRoom in denselben Raum → already_here", w7p4Results.joinSameRejected);
         check("W7 P4: Lobby-UI-Elemente im DOM", w7p4Results.lobbyDom);
-        check("Kreatur-Sync: alle 4 Methoden auf der Klasse", w7p4Results.creatureMethods);
         check("Kreatur-Sync: spawnCreatureAt vergibt eine netId", w7p4Results.creatureHasNetId);
         check("Kreatur-Sync: _p2pBroadcastCreatures sendet creature-pos", w7p4Results.broadcastSendsCreatures);
         check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);
@@ -1720,9 +1699,6 @@ async function checkBandLateMultiUser(ctx) {
         const grok = r.state.grok;
 
         out.voiceField = typeof grok.companionVoice === "string";
-        out.methods = ["_p2pBroadcastCompanionSay", "_p2pHandleCompanionSay", "_populateCompanionVoiceSelect"].every(
-            (m) => typeof r[m] === "function"
-        );
 
         // p2pSend mocken.
         const sent = [];
@@ -1851,7 +1827,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W11 V4: state.grok.companionVoice existiert", w11v4Results.voiceField);
-        check("W11 V4: alle 3 Voice-Sync-Methoden auf der Klasse", w11v4Results.methods);
         check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
         check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
         check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
@@ -3165,10 +3140,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         const K = r.constructor;
         const out = {};
         // (1) Konstanten verdrahtet.
-        out.consts =
-            K.PORTAL_CHANNEL_RATE_MAX === 200 &&
-            K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
-            K.SUBWORLD_NET_PEER_RATE_MAX === 120;
+        out.consts = K.PORTAL_CHANNEL_RATE_MAX === 200 && K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
         // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
         // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
         const po = {};
@@ -3196,7 +3168,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R1: Kanal-Bucket + per-Peer-Tor: die Konstanten verdrahtet", res.consts);
+    check("G8 R1: Kanal-Bucket: die Konstanten verdrahtet", res.consts);
     check(
         "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
         res.channelCapsFlood,

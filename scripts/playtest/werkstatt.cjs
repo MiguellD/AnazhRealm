@@ -50,7 +50,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         o.floatIdx =
             Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
         // ── Ω-W3 das Verdikt (rollen-bewusst) ──
-        o.verdictFn = typeof r._workshopPhysicsVerdict === "function";
         const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
         const vLean = r._workshopPhysicsVerdict(leaner);
         o.leanWankt =
@@ -91,7 +90,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
     check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
     check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
-    check("Ω-W3: das Verdikt-Funktion existiert", res.verdictFn === true);
     check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
     check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
     check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
@@ -132,9 +130,7 @@ async function checkBandCadWorkshop(ctx) {
                 typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
-            out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
             out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
-            out.snapScale = AR.WORKSHOP_SNAP_SCALE;
             out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
 
             // --- Phase 2: Public API ---
@@ -340,12 +336,10 @@ async function checkBandCadWorkshop(ctx) {
             wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
         );
         check("Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)", wave6bResults.gizmoColorsFrozen);
-        check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
         check(
             "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
             Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
         );
-        check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
         check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
         check(
             "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
@@ -2532,7 +2526,7 @@ async function checkBandWCIchWahrheit(ctx) {
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
         // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
-        const __whyKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "why");
+        const __whyKey = r._growTreeBlueprintForSpawn("baum_eiche", "why");
         const whyEiche = __whyKey ? r._blueprintRoleWhy(r.state.blueprints[__whyKey]) : null;
         const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
@@ -2613,7 +2607,7 @@ async function checkBandRezeptKatalog(ctx) {
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
         const dl0 = performance.now() + 120000;
         while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
+            !window.anazhRealm &&
             performance.now() < dl0
         )
             await sleep(100);

@@ -1875,6 +1875,31 @@ class AnazhRealm_koerper_fahrt {
         return this.forgeAvatar(name);
     }
 
+    // DIE EINE Leib-Wahl der Seele (Labor = Welt): der Spieler (`applyPlayerSoul`), die Ich-Bühne (`_ichStageShow`) und der
+    // Mitspieler (`_p2pApplyPeerSoul`) bauen den Leib einer Seele NUR hier. Ein Built-in mit build() (der Mensch) baut sich
+    // selbst; „werde wolf" IST der Wolf: `bp_koerper_<tier>` trägt DENSELBEN Studio-Baum wie die Welt-Kreatur
+    // (`_buildCreatureGroup`: bauTier + Gattungs-Dials + Gang; Tags/Stats lesen weiter die bodyParts); jede andere Seele baut
+    // ihr Bauplan. _stampSoulPartRefs leitet head/Arme/Flügel aus der EINEN Rollen-Quelle ab (1st-Person-Kopf-Hide +
+    // Hand-Anker). Kalter Tier-Kern → null, LAUT — nie der Block-Zwilling aus den Bauplan-Teilen.
+    _leibDerSeele(name, def, label) {
+        if (!def) return null;
+        if (typeof def.build === "function") return def.build();
+        const parts = Array.isArray(def.bodyParts) ? def.bodyParts : [];
+        const tier = typeof name === "string" ? name.match(/^bp_koerper_([a-z]+)$/) : null;
+        if (tier && Object.hasOwn(AnazhRealm.TETRAPODA_SOUL_MAP, tier[1])) {
+            const leib = this._buildCreatureGroup(tier[1]);
+            if (!leib) {
+                this.log(`Verkörperung „${name}" fiel aus (kalter Tier-Kern) — kein Leib.`, "ERROR");
+                return null;
+            }
+            this._stampSoulPartRefs(leib, (leib.userData && leib.userData._soulParts) || parts);
+            return leib;
+        }
+        const leib = this._buildFromBlueprint({ name: label || name, parts });
+        this._stampSoulPartRefs(leib, parts);
+        return leib;
+    }
+
     applyPlayerSoul(name) {
         const defs = this.playerSoulDefs;
         const key = typeof name === "string" ? name.toLowerCase().trim() : "";
@@ -1935,30 +1960,10 @@ class AnazhRealm_koerper_fahrt {
         }
         const def = this._getSoulDef(canonical);
         const old = this.state.playerMesh;
-        // Position + Scale + Rotation übernehmen (kein Sprung beim Soul-Wechsel). Nur der Mensch hat ein
-        // build() (Skinning-Rig); alle anderen bauen über _buildFromBlueprint aus bodyParts.
-        // _stampSoulPartRefs leitet head/Arme/Flügel aus der EINEN Rollen-Quelle ab → 1st-Person-Kopf-Hide
-        // + Hand-Anker für JEDE Compound-Seele.
-        let newGroup;
-        // „werde wolf" IST der Wolf: bp_koerper_<tier> trägt DENSELBEN Studio-Baum wie die Welt-Kreatur
-        // (bauTier + Gattungs-Dials + Gang); Tags/Stats lesen weiter def.bodyParts. Kalter Kern → LAUT,
-        // und der Mensch trägt (nie ein zweiter Tier-Körper).
-        const tierMatch = canonical.match(/^bp_koerper_([a-z]+)$/);
-        const tierKey = tierMatch && AnazhRealm.TETRAPODA_SOUL_MAP[tierMatch[1]] ? tierMatch[1] : null;
-        if (def && typeof def.build === "function") {
-            newGroup = def.build();
-        } else if (tierKey) {
-            newGroup = this._buildCreatureGroup(tierKey);
-            if (!newGroup) {
-                this.log(`Verkörperung „${canonical}" fiel aus (kalter Tier-Kern) — der Mensch trägt.`, "ERROR");
-                return this.applyPlayerSoul("human");
-            }
-            const effParts = (newGroup.userData && newGroup.userData._soulParts) || def.bodyParts || [];
-            this._stampSoulPartRefs(newGroup, effParts);
-        } else {
-            newGroup = this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
-            this._stampSoulPartRefs(newGroup, def.bodyParts || []);
-        }
+        // Position + Scale + Rotation übernehmen (kein Sprung beim Soul-Wechsel). Den Leib wählt die EINE Leib-Wahl der
+        // Seele (`_leibDerSeele`); fiel der Tier-Kern kalt aus (dort LAUT), trägt der Mensch — nie ein zweiter Tier-Körper.
+        const newGroup = this._leibDerSeele(canonical, def);
+        if (!newGroup) return canonical !== "human" && this.applyPlayerSoul("human");
         // Die Spieler-Gruppe ist IMMER YXZ (lokale Schwimm-Lehne im gedrehten Frame) —
         // UNBEDINGT am Chokepoint (vorher nur im old-Zweig: ein Boot-Restore einer
         // Compound-Seele bliebe sonst XYZ — die Abschieds-Welle hob es hierher).
