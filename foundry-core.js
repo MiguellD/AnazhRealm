@@ -7454,7 +7454,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const vTmp = new THREE.Vector3();
         // DIE SOHLE (Gelände H5): die Hülle einer Zone mit Sohle (der Schuh) reicht in der Ruhe-Pose nie unter ihre Quellen (den
         // Fuß, dessen Unterkante der Stand trägt: footBelowAnkle unter dem Knöchel) — darunter liegt sie flach auf ihr. Bis H5
-        // wuchs der Schuh mit Feld, Unschärfe und Stoff-Abstand 7–11 cm unter den Fuß: die Sohle stand im Boden (K8 fuss).
+        // wuchs der Schuh mit Feld, Unschärfe und Stoff-Abstand 7–11 cm unter den Fuß: die Sohle stand im Boden (K8 fuss). Unter
+        // 0,01 E über ihr staucht die Hülle ihre Wölbung auf 2 % (tiefste Stelle ≈ die Unterkante): eben gepresst lagen viele
+        // Dreiecke in EINER Ebene, die Band-Vereinfachung fand gleich teure Kanten, und ein ULP von hypot wählte (Plattform-Probe).
         const sohleY = new Map();
         for (const [mesh, quellen] of sohlen) {
             let y = Infinity;
@@ -7481,7 +7483,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     vTmp.copy(vSrc).applyMatrix4(deltaListe[siA[i * 4 + k]]);
                     vAkk.addScaledVector(vTmp, w);
                 }
-                pa.setXYZ(i, vAkk.x, Math.max(vAkk.y, sohle), vAkk.z);
+                pa.setXYZ(i, vAkk.x, vAkk.y < sohle + 0.01 ? sohle + 0.01 + (vAkk.y - sohle - 0.01) * 0.02 : vAkk.y, vAkk.z);
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
