@@ -773,7 +773,6 @@ function wasserUferFarbe(opts) {
         const st = r.state;
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const HC = r.constructor.HYDROSPHERE;
         const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const proben = [];
         for (const rv of h.rivers)
@@ -2458,7 +2457,6 @@ function wasserBank(opts) {
     const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
-    const HC = r.constructor.HYDROSPHERE;
     const G = r.constructor.TERRAIN_GEOLOGY;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
