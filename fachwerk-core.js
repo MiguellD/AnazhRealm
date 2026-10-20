@@ -5323,6 +5323,114 @@
         }
         return n;
     }
+    // DER BRUNNEN WEICHT DEM HAUS (S4-N4) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen ihn NACH
+    // dem Snap, VOR den Wandlaternen. Der Brunnen „je 8 Häuser" (`dorfLayout`) steht 0,6 m hinter dem Wegrand vor dem Haus, nach
+    // dem er gezogen wurde — geprüft gegen kein Haus, das später kam, und gegen keinen Gang: am Start-Dorf stand er vor der Tür
+    // des Alpenchalets (die Welt warf das Haus, 17/18, oder ihn, 0/1). Seine Trittfläche (`AUSSTATTUNG.brunnen.tritt.r`) liegt in
+    // keinem Grundriss und auf keinem Gang eines Hauses (Türbreite samt Saum vom Eingang bis an den Weg, `vorplatzFlaeche`), neben
+    // jedem Weg, fern jeder Laterne (2 m), jedes Hof-Baums (3,5 m), jedes Stands und jedes Ackers — die Regeln, nach denen das
+    // Layout sie um ihn stellte. Trifft er eins, rückt er zum nächsten freien Stand am Rand eines Wegs (wie gezogen: 0,6 m hinter
+    // dem Rand, je 0,5 m jedes Wegs, beide Seiten); findet er keinen, fällt er aus dem Plan (gezählt, nie still).
+    // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (brunnen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
+    function brunnenWeicht(dorfB, pl, lay) {
+        var O = ORT_GESETZ,
+            r = AUSSTATTUNG.brunnen.tritt.r,
+            st = AUSSTATTUNG.marktstand.tritt,
+            flaechen = [],
+            neu = [],
+            aus = { gerueckt: 0, gestrichen: 0 },
+            wege = (lay.roads || []).filter(function (rd) {
+                return rd.pts && rd.pts.length > 1;
+            }),
+            a,
+            i,
+            k;
+        // der Fußpunkt auf der Mitte eines Wegs: Abstand d, Bogenlänge s, Seite (+1 links der Laufrichtung)
+        var fuss = function (rd, x, z) {
+            var f = { d: Infinity, s: 0, seite: 1 },
+                s = 0;
+            for (var j = 0; j + 1 < rd.pts.length; j++) {
+                var A = rd.pts[j],
+                    dx = rd.pts[j + 1].x - A.x,
+                    dz = rd.pts[j + 1].z - A.z,
+                    L = Math.hypot(dx, dz);
+                if (!(L > 1e-9)) continue;
+                var t = Math.max(0, Math.min(1, ((x - A.x) * dx + (z - A.z) * dz) / (L * L))),
+                    d = Math.hypot(x - A.x - dx * t, z - A.z - dz * t);
+                if (d < f.d) f = { d: d, s: s + t * L, seite: dx * (z - A.z) - dz * (x - A.x) >= 0 ? 1 : -1 };
+                s += L;
+            }
+            return f;
+        };
+        // der Punkt der Bogenlänge s, um d quer zur Laufrichtung (links positiv); null jenseits der Enden
+        var quer = function (rd, s, d) {
+            if (s < 0) return null;
+            for (var j = 0; j + 1 < rd.pts.length; j++) {
+                var A = rd.pts[j],
+                    dx = rd.pts[j + 1].x - A.x,
+                    dz = rd.pts[j + 1].z - A.z,
+                    L = Math.hypot(dx, dz);
+                if (L > 1e-9 && s <= L) return { x: A.x + ((dx * s) / L) - (dz / L) * d, z: A.z + ((dz * s) / L) + (dx / L) * d };
+                s -= L;
+            }
+            return null;
+        };
+        var aufWeg = function (x, z, saum) {
+            for (var j = 0; j < wege.length; j++) if (fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
+            return false;
+        };
+        // die Flächen der Häuser: der Grundriss und der Gang vom Eingang bis an den Weg (mindestens ORT_GESETZ.vorplatzM)
+        for (i = 0; i < pl.length; i++) {
+            var q = pl[i],
+                B = dorfB[i];
+            if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
+            flaechen.push(q.obb);
+            var tu = B && B.dims && B.dims.tuer;
+            if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) continue;
+            var sl = { x: q.x, z: q.z, phi: q.phi || 0, kultur: B.p && B.p.kultur, ov: B.p || null };
+            sl.tuer = { x: tu.x, z: tu.z, w: tu.w, y: tu.y, W: B.dims.W, D: B.dims.D };
+            var ez = eingangVon(sl).z,
+                c = Math.cos(sl.phi),
+                s2 = Math.sin(sl.phi),
+                tief = O.vorplatzM;
+            for (var t = 0; t <= O.vorplatzM + O.gasseM; t += 0.25)
+                if (aufWeg(q.x + tu.x * c + (ez - t) * s2, q.z - tu.x * s2 + (ez - t) * c, 0)) {
+                    tief = Math.max(O.vorplatzM, t);
+                    break;
+                }
+            flaechen.push(vorplatzFlaeche(sl, tief));
+        }
+        var frei = function (x, z) {
+            if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
+            for (var j = 0; j < flaechen.length; j++) if (distPunktOBB(x, z, flaechen[j]) < r) return false;
+            for (j = 0; j < (lay.felder || []).length; j++) if (distPunktOBB(x, z, lay.felder[j]) < r) return false;
+            var nah = function (L, m) {
+                for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
+                return false;
+            };
+            return !nah(lay.laternen, 2) && !nah(lay.trees, 3.5) && !nah(lay.staende, r + Math.hypot(st.ex, st.ez)) && !nah(neu, 2 * r);
+        };
+        // die Stände am Rand jedes Wegs (je 0,5 m, beide Seiten), der nächste zuerst
+        var raender = [];
+        for (a = 0; a < wege.length; a++)
+            for (var u = 0, p = true; p; u += 0.5)
+                for (var sk = -1; sk <= 1; sk += 2) if ((p = quer(wege[a], u, sk * (wege[a].w / 2 + 0.6)))) raender.push(p);
+        for (k = 0; k < (lay.brunnen || []).length; k++) {
+            var b = lay.brunnen[k],
+                stand = frei(b.x, b.z) ? b : null;
+            if (!stand) {
+                var nach = raender.slice().sort(function (p1, p2) {
+                    return Math.hypot(p1.x - b.x, p1.z - b.z) - Math.hypot(p2.x - b.x, p2.z - b.z);
+                });
+                for (a = 0; !stand && a < nach.length; a++) if (frei(nach[a].x, nach[a].z)) stand = nach[a];
+            }
+            if (stand && stand !== b) aus.gerueckt++;
+            if (stand) neu.push({ x: stand.x, z: stand.z });
+            else aus.gestrichen++;
+        }
+        lay.brunnen = neu;
+        return aus;
+    }
     // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
     // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
     // Brandmauer (der Same erfährt es via hp.brandwand). dorfB: [{dims,q,p}] —
@@ -5442,6 +5550,7 @@
             }),
             plan.norm.gap
         );
+        brunnenWeicht(Bs, lay.pl, lay); // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie buildDorf
         wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
         var slots = [],
             slotVon = {};
@@ -6152,6 +6261,7 @@
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
+        brunnenWeicht: brunnenWeicht,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,

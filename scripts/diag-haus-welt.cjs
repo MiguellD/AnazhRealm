@@ -46,8 +46,10 @@
 //       (wo der Grund der Boden der Box ist — der Turm —, zählt vom Boden nur der Halm). ABBAU: ein Dorf- und ein gesetztes
 //       Haus fallen — kein Grund bleibt, der Boden schließt sich, der Keller trägt Erde (Selbsttest abbau). PLAN: das gesetzte
 //       Haus trägt seinen Grund (Plan-Datum), bevor die Hülle seines Körpers ankommt (Selbsttest grundplan). WAISE: ein Bau sperrt
-//       den letzten Slot des Start-Dorfs, ein Haus verblasst (`_evictArchitecture`) — ihr Grund fällt mit, jeder Grund trägt
-//       einen Bau an seiner Mitte (Selbsttests waise, verblassen); jeder andere Slot steht, die Ausstattung weicht den Slots des Zugs (Selbsttest ausstattung).
+//       den letzten Slot des Start-Dorfs, ein Reload fällt in den Zug, ein Haus verblasst (`_evictArchitecture`) — ihr Grund
+//       fällt mit, der Zug lebt nach dem Reload weiter, jeder Grund trägt einen Bau an seiner Mitte (Selbsttests waise,
+//       zugreload, verblassen). ZUG: jeder andere Slot steht. AUSSTATTUNG: Brunnen, Laternen und Stände des Plans stehen an
+//       ihrem Ort — der Plan stellt sie frei von seinen Häusern (Selbsttest ausstattung).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
@@ -151,11 +153,14 @@ const BASIS = {
             "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
         ],
     ],
-    // DIE AUSSTATTUNG SPERRT IHR HAUS (W9 Ausstattung): die Bau-Wand von Brunnen und Laterne kennt die Slots des Zugs nicht
-    ausstattung: [
+    // DER BRUNNEN VOR DER TÜR (W9 Zug): der Plan stellt den Brunnen „je 8 Häuser" ungeprüft vor das Haus — am Start-Dorf auf
+    // den Gang des Alpenchalets, die Welt wirft das Haus
+    ausstattung: [["/fachwerk-core.js", "        lay.brunnen = neu;\n        return aus;", "        return aus;"]],
+    // DER ZUG STIRBT MIT DER SEITE (W9 Waise): der Wege-Rebuild nach dem Reload reiht die offenen Slots nicht wieder ein
+    zugreload: [
         [
-            "        const q = this._autoSettlementQueue;\n        const rund",
-            "        const q = null;\n        const rund",
+            "                    const zug = this._autoSettlementQueue ? null : this._dorfZugOffen(plan2, c);",
+            "                    const zug = null;",
         ],
     ],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
@@ -1791,8 +1796,10 @@ async function proben(phasen) {
         }
         // W9 WAISE: kein Grund ohne Bau — das Start-Dorf (sein Takt, im Null-Renderer sonst aus) wächst, und wenn sein Zug
         // beginnt, steht ein Bau im letzten Slot (wie ein Spieler-Bau, der dem Dorf zuvorkommt): der Slot fällt geschlossen und
-        // nimmt seinen Grund mit; danach trägt jeder Grund (Ort und gesetztes Haus) einen Bau an seiner Mitte. AUSSTATTUNG: jeder
-        // andere Slot steht — Brunnen, Laternen und Stände des Plans weichen den Slots, die der Zug noch stellt
+        // nimmt seinen Grund mit; nach dem dritten Haus fällt der Zug wie mit der Seite (Reload: Erdbau, Bauten und Zelle reisen im
+        // Snapshot, der Zug nicht), der Wege-Rebuild der neuen Sitzung reiht die offenen Slots wieder ein; danach trägt jeder Grund
+        // (Ort und gesetztes Haus) einen Bau an seiner Mitte. ZUG: jeder andere Slot steht. AUSSTATTUNG: Brunnen, Laternen und
+        // Stände des Plans stehen an ihrem Ort (der Plan stellt sie frei von seinen Häusern)
         const takt = window.__anazhAutoSettlement;
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
@@ -1803,13 +1810,37 @@ async function proben(phasen) {
         const sl = q && q.plan.slots[q.plan.slots.length - 1];
         const ort = sl && { x: q.origin.x + sl.x, y: sl.y + 0.5, z: q.origin.z + sl.z };
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
-        // Takt für Takt: der Zug des Start-Dorfs ist leer, bevor der Takt ein nächstes Dorf beginnt (es stünde halb)
-        for (let k = 0; k < 1200 && (r._autoSettlementQueue || !zellen().start); k++) await pumpe(1);
+        for (let k = 0; k < 1200 && q && r._autoSettlementQueue === q && q.idx < 3; k++) await pumpe(1);
+        const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
+        if (reload) {
+            r._autoSettlementQueue = null;
+            r._stlWegeKeys.delete(q.cellKey);
+        }
+        // Takt für Takt: der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
+        const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
+        for (let k = 0; k < 1200 && (zugLebt() || !zellen().start); k++) await pumpe(1);
         window.__anazhAutoSettlement = takt;
         const an = (x, z) => (e) => e !== sperre && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 0.05;
         const slots = q ? q.plan.slots : [];
         const amSlot = (t) => s.architectures.find(an(q.origin.x + t.x, q.origin.z + t.z));
         const haeuser = slots.filter(amSlot).length;
+        const amOrt = (typ, x, z) =>
+            s.architectures.some(
+                (e) => e !== sperre && e.type === typ && Math.hypot(e.position.x - x, e.position.z - z) < 0.05
+            );
+        const zaehle = (liste, typ, kappe) => {
+            const l = (liste || []).filter(Boolean).slice(0, kappe);
+            return [l.filter((b) => amOrt(typ(b), q.origin.x + b.x, q.origin.z + b.z)).length, l.length];
+        };
+        const ausstattung = q && {
+            brunnen: zaehle(q.plan.brunnen, () => "brunnen_dorf", 5),
+            laternen: zaehle(
+                (q.plan.laternen || []).filter((l) => l && (!l.wand || (slots[l.slot] && amSlot(slots[l.slot])))),
+                (l) => (l.wand ? "wandlaterne_dorf" : "laterne_dorf"),
+                Infinity
+            ),
+            staende: zaehle(q.plan.staende, () => "marktstand_dorf", 3),
+        };
         // DAS VERBLASSEN (die Deckelung der autonomen Bauten, `_capNexusStructures`): ein Haus des Dorfs verblasst, sein
         // Grund fällt mit ihm
         const verblasst = slots.map(amSlot).find(Boolean);
@@ -1823,6 +1854,8 @@ async function proben(phasen) {
             ohne: ohne.map((g) => `${Math.round(g.cx)}/${Math.round(g.cz)}`),
             slots: slots.length,
             haeuser,
+            reload,
+            ausstattung,
             verblasst: !!verblasst,
             ms: Math.round(performance.now() - t0),
         };
@@ -2105,9 +2138,9 @@ function urteil(o) {
                 `W9 Plan: das gesetzte Haus trägt bei der Ankunft seines Körpers ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Körper kam vor seinem Grund (der Grund wartete auf die Hülle), die Chunks um ihn bauen danach neu`
             );
         const wa = o.w9 && o.w9.waise;
-        if (!(wa && wa.start && wa.gruende && wa.gesperrt && wa.verblasst))
+        if (!(wa && wa.start && wa.gruende && wa.gesperrt && wa.reload && wa.verblasst))
             f.push(
-                "W9 Waise: blind — das Start-Dorf wuchs nicht, trägt keinen Grund, kein Bau sperrt, kein Haus verblasst"
+                "W9 Waise: blind — das Start-Dorf wuchs nicht, trägt keinen Grund, kein Bau sperrt, kein Reload fällt in den Zug, kein Haus verblasst"
             );
         else if (wa.ohne.length)
             f.push(
@@ -2115,7 +2148,15 @@ function urteil(o) {
             );
         if (wa && wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(
-                `W9 Ausstattung: das Start-Dorf stellt ${wa.haeuser} von ${wa.slots - 1} freien Slots — die Ausstattung seines Plans sperrt ein eigenes Haus`
+                `W9 Zug: das Start-Dorf stellt ${wa.haeuser} von ${wa.slots - 1} freien Slots — die Ausstattung seines Plans sperrt ein eigenes Haus, oder der Zug fiel mit dem Reload`
+            );
+        const au = wa && wa.ausstattung;
+        const ausN = (k) => `${au[k][0]}/${au[k][1]}`;
+        if (wa && wa.start && !(au && au.brunnen[1] && au.laternen[1]))
+            f.push("W9 Ausstattung: blind — der Plan des Start-Dorfs stellt keinen Brunnen oder keine Laterne");
+        else if (au && ["brunnen", "laternen", "staende"].some((k) => au[k][0] < au[k][1]))
+            f.push(
+                `W9 Ausstattung: an ihrem Ort des Plans stehen Brunnen ${ausN("brunnen")}, Laternen ${ausN("laternen")}, Stände ${ausN("staende")} — die Welt warf, was der Plan stellt`
             );
         if (bleibt.length)
             f.push(
@@ -2144,7 +2185,7 @@ function zeile(o) {
                   .map((h) => h.keller.tiefM)
                   .join(
                       "/"
-                  )} m${o.w9.bild ? `, Büschel/Halm/Boden/Blicke ${["bueschel", "halm", "boden", "blicke"].map((k) => o.w9.haeuser.reduce((a, h) => a + (h.koerper || []).reduce((q, b) => q + b[k], 0), 0)).join("/")}, Gegenprobe ${o.w9.haeuser.flatMap((h) => (h.gegenprobe != null ? [h.gegenprobe] : [])).join("/")} px` : ""}, Abbau ${(o.w9.abbau || []).map((a) => a.art + " " + (a.fehler || `${a.vorher.offen}→${a.nachher.offen} offen, Gründe ${a.vorher.gruende}→${a.nachher.gruende}, Keller-Erde ${a.vorher.kellerErde}→${a.nachher.kellerErde}`)).join(" · ")}${o.w9.waise ? `, Waise ${o.w9.waise.ohne.length}/${o.w9.waise.gruende}, Start-Dorf ${o.w9.waise.haeuser}/${o.w9.waise.slots} (${o.w9.waise.ms} ms)` : ""}`
+                  )} m${o.w9.bild ? `, Büschel/Halm/Boden/Blicke ${["bueschel", "halm", "boden", "blicke"].map((k) => o.w9.haeuser.reduce((a, h) => a + (h.koerper || []).reduce((q, b) => q + b[k], 0), 0)).join("/")}, Gegenprobe ${o.w9.haeuser.flatMap((h) => (h.gegenprobe != null ? [h.gegenprobe] : [])).join("/")} px` : ""}, Abbau ${(o.w9.abbau || []).map((a) => a.art + " " + (a.fehler || `${a.vorher.offen}→${a.nachher.offen} offen, Gründe ${a.vorher.gruende}→${a.nachher.gruende}, Keller-Erde ${a.vorher.kellerErde}→${a.nachher.kellerErde}`)).join(" · ")}${o.w9.waise ? `, Waise ${o.w9.waise.ohne.length}/${o.w9.waise.gruende}, Start-Dorf ${o.w9.waise.haeuser}/${o.w9.waise.slots} (Reload nach ${o.w9.waise.reload}, ${o.w9.waise.ms} ms)${o.w9.waise.ausstattung ? `, Brunnen/Laternen/Stände ${["brunnen", "laternen", "staende"].map((k) => o.w9.waise.ausstattung[k].join("/")).join(" · ")}` : ""}` : ""}`
             : "") +
         ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
@@ -2240,7 +2281,8 @@ function zeile(o) {
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
                 waise: ["grund", "W9 Waise"],
-                ausstattung: ["grund", "W9 Ausstattung"],
+                ausstattung: ["grund", "W9 Zug"],
+                zugreload: ["grund", "W9 Waise", "W9 Zug"],
                 verblassen: ["grund", "W9 Waise"],
             };
             selbst = Object.keys(soll)

@@ -1254,7 +1254,13 @@ class AnazhRealm_siedlung_ort {
     // Chat-Akt „dorf" sein Dorf vor dem Spieler — an der Start-Plattform stand ein Haus 3,6 m tief in ihr (die Treppe
     // versperrt), ein zweites mit der Haustür an ihrer Wand (gate:haus-welt W1/W3/W7). Gibt false, wenn ein Bau im Weg ist.
     _bauFrei(x, z, ry, fp, tuer, bodenY) {
-        const flaechen = AnazhRealm._hausFlaechen(x, z, ry, fp, tuer);
+        const c = Math.cos(ry);
+        const s = Math.sin(ry);
+        const T = 0.05;
+        const flaeche = (lx, lz, hx, hz) => ({ cx: x + lx * c + lz * s, cz: z - lx * s + lz * c, hx, hz, c, s });
+        const flaechen = [flaeche(fp.ox, fp.oz, Math.max(0, fp.ex - T), Math.max(0, fp.ez - T))];
+        if (tuer && Number.isFinite(tuer.x) && Number.isFinite(tuer.z) && Number.isFinite(tuer.w))
+            flaechen.push(flaeche(tuer.x, tuer.z - 0.6, tuer.w / 2, 0.6 - T));
         const R = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const b2 = this._bauFreiBox || (this._bauFreiBox = { cx: 0, cz: 0, hx: 0, hz: 0, c: 1, s: 0 });
@@ -1320,38 +1326,12 @@ class AnazhRealm_siedlung_ort {
         return true;
     }
 
-    // DIE FLÄCHEN EINES HAUSES (die Bau-Wand): sein Grundriss `fp` (haus-lokal Mitte {ox, oz}, halbe Maße {ex, ez}) und der
-    // Vorplatz seiner Tür (1,2 m vor der Front −z, Türbreite), gedreht um ry am Ort x/z, je um 5 cm eingezogen (Berührung ist
-    // kein Überlapp). Leser: `_bauFrei` (das Haus gegen die Bauten) und `_bauFreiRund` (die Ausstattung gegen die Slots).
-    static _hausFlaechen(x, z, ry, fp, tuer) {
-        const c = Math.cos(ry);
-        const s = Math.sin(ry);
-        const T = 0.05;
-        const flaeche = (lx, lz, hx, hz) => ({ cx: x + lx * c + lz * s, cz: z - lx * s + lz * c, hx, hz, c, s });
-        const flaechen = [flaeche(fp.ox, fp.oz, Math.max(0, fp.ex - T), Math.max(0, fp.ez - T))];
-        if (tuer && Number.isFinite(tuer.x) && Number.isFinite(tuer.z) && Number.isFinite(tuer.w))
-            flaechen.push(flaeche(tuer.x, tuer.z - 0.6, tuer.w / 2, 0.6 - T));
-        return flaechen;
-    }
-
     // Die Bau-Wand für einen runden Bau des Dorfs (Brunnen, Laterne, Marktstand): das Quadrat in seinem Fußabdruck-Kreis
-    // (Radius aus dem Bauplan) — ein Nachbar, der den Kreis nur streift, sperrt nicht. DIE AUSSTATTUNG WEICHT DEM HAUS (S4):
-    // auch den Slots, die der Dorf-Zug noch stellt (`_autoSettlementQueue`, Grundriss und Tür-Vorplatz) — der Zug stellt sie
-    // bei der Ankunft auf, die Häuser über die Takte. Bis S4-N3 sperrte am Start-Dorf der Brunnen (57,2/115,2) das
-    // Alpenchalet seines eigenen Plans: der Slot fiel, sein Grund schnitt ein Loch ins Leere (gate:haus-welt W9 Ausstattung).
+    // (Radius aus dem Bauplan) — ein Nachbar, der den Kreis nur streift, sperrt nicht. Den Häusern seines eigenen Plans weicht
+    // die Ausstattung im Plan (fachwerk `brunnenWeicht`, S4-N4), nie hier.
     _bauFreiRund(type, x, z, bodenY) {
         const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);
-        if (!this._bauFrei(x, z, 0, { ex: R, ez: R, ox: 0, oz: 0 }, null, bodenY)) return false;
-        const q = this._autoSettlementQueue;
-        const rund = { cx: x, cz: z, hx: R, hz: R, c: 1, s: 0 };
-        for (let i = q && q.plan ? q.idx : 0; q && q.plan && i < q.plan.slots.length; i++) {
-            const sl = q.plan.slots[i];
-            const { fp } = AnazhRealm._slotGrundriss(sl);
-            const ort = [q.origin.x + sl.x, q.origin.z + sl.z, sl.phi || 0];
-            if (fp && AnazhRealm._hausFlaechen(...ort, fp, sl.tuer).some((a) => this._rechteckeSchneiden(a, rund)))
-                return false;
-        }
-        return true;
+        return this._bauFrei(x, z, 0, { ex: R, ez: R, ox: 0, oz: 0 }, null, bodenY);
     }
 
     // Schneiden sich zwei gedrehte Rechtecke der Ebene? Je Rechteck Mitte {cx, cz}, halbe Maße {hx, hz} und die Drehung
@@ -2327,7 +2307,7 @@ class AnazhRealm_siedlung_ort {
                 wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
                 this._autoSettlementQueue = { plan: v2, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
                 // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser materialisieren budgetiert über die
-                // Ticks) — die Bau-Wand der Ausstattung kennt die Slots, die der Zug noch stellt (`_bauFreiRund`)
+                // Ticks) — die Ausstattung des Plans steht frei von jedem seiner Häuser (fachwerk `brunnenWeicht`)
                 this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
                 if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
                 return v2;
@@ -2460,7 +2440,10 @@ class AnazhRealm_siedlung_ort {
                     epoche: this._siedlungEpoche(c.seed), // dieselbe EINE Epochen-Funktion (Rebuild-Treue)
                 }).then((plan2) => {
                     this._stlWegePending = false;
-                    if (plan2) this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
+                    if (!plan2) return;
+                    this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
+                    const zug = this._autoSettlementQueue ? null : this._dorfZugOffen(plan2, c);
+                    if (zug) this._autoSettlementQueue = { plan: zug, origin: { x: c.x, z: c.z }, idx: 0, cellKey: k };
                 });
                 return; // EIN Dorf-Akt pro Tick
             }
@@ -2502,6 +2485,37 @@ class AnazhRealm_siedlung_ort {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
+    }
+
+    // DER ZUG ÜBERLEBT DEN RELOAD (S4-N4): der Erdbau des Orts reist im Snapshot (`worldMeta.erdbau`) mit dem Grund JEDES Hauses
+    // seines Plans, der Zug (`_autoSettlementQueue`) nicht — ein Reload mitten im Zug ließ die Gründe der Slots, die er noch
+    // stellen sollte, als Löcher ohne Bau liegen (`settlementCells` hält die Zelle besetzt). Der Grund IST das Datum des Plans:
+    // jeder Slot des Exports `plan`, dessen Grund (`art: "grund"` an seiner Mitte, die Höhe y des Plans v2) liegt und an dessen
+    // Mitte sein Haus (sein Same) nicht steht, ist offen — was dort sonst steht, urteilt die Bau-Wand des Slots; der Wege-Rebuild der Zelle reiht ihn wieder in den Zug, mit seinen Wandlaternen. Ein Slot,
+    // der fiel, nahm seinen Grund mit (`_erdbauGrundFaellt`), ein abgebautes Haus ebenso — keiner kehrt zurück. Rückgabe: der
+    // Plan des offenen Zugs (`c` die Zelle: Anker x, z) oder null.
+    _dorfZugOffen(plan, c) {
+        const gruende = this._erdbauRoh().filter((g) => g && g.art === "grund");
+        const steht = (x, z, same) =>
+            this.state.architectures.some(
+                (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
+            );
+        const neu = new Map();
+        const slots = [];
+        (plan.slots || []).forEach((sl, i) => {
+            const x = c.x + sl.x;
+            const z = c.z + sl.z;
+            const g = gruende.find((q) => Math.abs(q.cx - x) < 0.05 && Math.abs(q.cz - z) < 0.05);
+            if (!g || steht(x, z, sl.seed >>> 0)) return;
+            neu.set(i, slots.length);
+            slots.push(Object.assign({}, sl, { y: g.y }));
+        });
+        if (!slots.length) return null;
+        // die Wandlaternen hängen an ihrem Slot im offenen Zug (die Reihe des Exports bleibt: ihr Same je Nummer)
+        const laternen = (plan.laternen || []).map((l) =>
+            l && l.wand ? Object.assign({}, l, { slot: neu.has(l.slot) ? neu.get(l.slot) : -1 }) : l
+        );
+        return Object.assign({}, plan, { slots, laternen });
     }
 
     // DER STAND DER GRUNDRISSE FÄLLT AM ORT (K51-5, Lehre 25): ein neuer oder gefallener Grundriss (Bau, Lichtung, Fläche eines
