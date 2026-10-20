@@ -1960,26 +1960,17 @@ async function checkBandV18219bisVollendung(ctx) {
         }
 
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
-        out.scatterMarkPromotedExists = typeof r._scatterMarkCellPromoted === "function";
-        out.scatterCounterExists = typeof r._scatterIncrementCounter === "function";
-        out.scatterRegisterExists = typeof r._scatterRegisterCell === "function";
-        if (out.scatterMarkPromotedExists) {
-            r._scatterMarkCellPromoted(100, 200, "tree");
-            out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
-            out.distantNotPromoted = r._scatterIsCellPromoted(500, 600, "tree") === false;
-        }
-        if (out.scatterRegisterExists) {
-            r._scatterRegisterCell(300, 400, "tree", "baum_birke", 7);
-            const look = r._scatterLookupCell(300, 400, "tree");
-            out.lookupSpecies = look && look.species === "baum_birke";
-            out.lookupVariantIndex = look && look.variantIndex === 7;
-        }
-        if (out.scatterCounterExists) {
-            const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
-            r._scatterIncrementCounter("tree");
-            out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
-            out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
-        }
+        r._scatterMarkCellPromoted(100, 200, "tree");
+        out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
+        out.distantNotPromoted = r._scatterIsCellPromoted(500, 600, "tree") === false;
+        r._scatterRegisterCell(300, 400, "tree", "baum_birke", 7);
+        const look = r._scatterLookupCell(300, 400, "tree");
+        out.lookupSpecies = look && look.species === "baum_birke";
+        out.lookupVariantIndex = look && look.variantIndex === 7;
+        const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
+        r._scatterIncrementCounter("tree");
+        out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
+        out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
 
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
@@ -2050,9 +2041,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
     // V18.220 Scatter-Bitmask + Cap + Lookup
-    check("V18.220 (S1) _scatterMarkCellPromoted Helper", res.scatterMarkPromotedExists === true);
-    check("V18.220 (S3) _scatterIncrementCounter Helper", res.scatterCounterExists === true);
-    check("V18.220 (S4) _scatterRegisterCell Helper", res.scatterRegisterExists === true);
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);

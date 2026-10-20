@@ -104,8 +104,10 @@ function wechselVerdict(m) {
         out.push(`ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`);
     if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
         out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
-    if (!(m.deckung.length === 2 && m.deckung.every((x) => x >= W.deckung))) out.push(`deckung ${m.deckung.join(" · ")} des Wagens in den ersten 3 Bildern nach Ego → Third (Soll ≥ ${W.deckung})`);
-    if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM))) out.push(`absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`);
+    if (!(m.deckung.length === 2 && m.deckung.every((x) => x >= W.deckung)))
+        out.push(`deckung ${m.deckung.join(" · ")} des Wagens in den ersten 3 Bildern nach Ego → Third (Soll ≥ ${W.deckung})`);
+    if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM)))
+        out.push(`absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`);
     // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
     if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
     if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
