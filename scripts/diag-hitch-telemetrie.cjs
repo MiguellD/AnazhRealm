@@ -1,25 +1,9 @@
 // diag-hitch-telemetrie.cjs — DIE HITCH-LINSE (das-feld-zeichnet §5.1): beweist
 // KONSUM der vier Flugschreiber-Zähler (LongTasks · GC/Heap-Delta ·
-// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5). Band 7
-// (Welle K): DIE ERST-ZEICHNUNG — die erste Zeichnung eines neuen Stoffs in der
-// Welt-Szene baut seine Knoten im Pass, je Render-Aufruf höchstens einen (weitere nur
-// unter ERST_BAU_MS), und lässt seine Pipeline asynchron entstehen; kein Frame trägt
-// eine synchrone Pipeline der Welt (die Hänger-Klasse: 1,4–4,2 s Warten an der
-// Radeon, „GPU: Pipeline synchron (haupt tier:baer)"). Die Probe stellt drei neue
-// Stoffe vor die Kamera (Konsum: alle drei zeichnen), der Gegen-Lauf derselben Probe
-// auf dem Vendor-Weg MUSS rot sein (synchrone Pipeline, mehrere Bauten in einem
-// Aufruf). Die BUNDLE-BÜRGER: ein Bürger, der in einer Aufnahme nicht zeichnen
-// kann, steht ≤ 2 Frames nach seiner fertigen Pipeline (r184-Zustand) wieder in der
-// Aufnahme — beim Neubau gegen eine offene Pipeline und bei hängendem Fehler-Scope;
-// mit stummer Anmeldung MUSS er fehlen.
-// Die BEWEIS-AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs) wirft bei einer nie
-// bereiten Pipeline und nennt sie beim Namen, nie ein stilles Bild. Die ABSAGE
-// einer Pipeline (r184 verschluckt sie) meldet sich als ERROR mit dem Stoff-Namen;
-// auf WebGL2 meldet sich kein Bürger an.
-// Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
-// KEIN Null-Renderer): der Boot SELBST ist der Konsum-Beweis (die Erst-Zeichnung
-// baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
-// erzeugt LongTasks).
+// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5), und DIE ERST-ZEICHNUNG: kein Frame trägt eine
+// synchrone Pipeline der Welt, ein Bundle-Bürger steht nach seiner fertigen Pipeline wieder in der Aufnahme, Beweis-
+// Aufnahme und Absage nennen ihren Täter — jede Probe mit ihrem Gegen-Lauf, der rot sein MUSS (die Bänder unten). Ein
+// ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
 //
 //   node scripts/diag-hitch-telemetrie.cjs --teil=1|2
 //   DIE ZWEI TEILE (je eine Welt, je eine CI-Gruppe): Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
@@ -41,6 +25,7 @@ const LAUFZEIT_MS = 15000;
 // 1–292 s je Pipeline), bevor die Wand den GPU-Prozess für hängend erklärt. HITCH_BAU_FRIST_S verkürzt sie für die Probe der
 // Wand selbst (die Summe einer Probe darf jede Frist übersteigen, solange jeder Bau sich erfüllt).
 const BAU_FRIST_MS = Number(process.env.HITCH_BAU_FRIST_S || 600) * 1000;
+const BUNDLE_FRAMES = 2;
 const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
 if (![1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
 const IN = (t) => TEIL === t;
@@ -106,7 +91,7 @@ function bauUhrInstall() {
 // DIE ERST-ZEICHNUNGS-WAND (Seite): Haken und Proben unter `window.__erstWand`; jede Probe ist ein eigener, benannter
 // Aufruf aus Node. Keine Probe trägt eine Sekunden-Frist: jede wartet auf ihr EREIGNIS (`bisEreignis`) und gibt nur auf,
 // wenn die Erst-Zeichnung still steht — dann kann nichts mehr kommen.
-function erstWandInstall() {
+function erstWandInstall(BUNDLE_FRAMES) {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -389,7 +374,17 @@ function erstWandInstall() {
             let je = traegt.get(bundle.bundleGroup);
             if (!je) traegt.set(bundle.bundleGroup, (je = new Map()));
             je.set(rb, new Set((d.renderObjects || []).map((ro) => ro.object)));
+            if (bundle.bundleGroup.userData.probe) bundle.bundleGroup.userData.probe.n++;
             return aus;
+        };
+        const travRoh = welt.traverse;
+        welt.traverse = function () {
+            szeneGang++;
+            try {
+                return travRoh.apply(this, arguments);
+            } finally {
+                szeneGang--;
+            }
         };
         const irRoh = P3.isReady;
         P3.isReady = function (ro) {
@@ -402,6 +397,7 @@ function erstWandInstall() {
         } finally {
             if (eigenRb) rend._renderBundle = rbRoh;
             else delete rend._renderBundle;
+            delete welt.traverse;
             P3.isReady = irRoh;
             traegt.clear();
             wartete.clear();
@@ -419,27 +415,25 @@ function erstWandInstall() {
         m.userData.__bundleProbe = true;
         return m;
     };
-    // K-CI-WACKLER: jede Versions-Marke am Proben-Bündel mit ihrem Schreiber (erste Stamm-Stelle im Laufzeit-Stapel) und
-    // dem Frame nach der fertigen Pipeline
-    const marken = new WeakMap();
-    const markenVon = (bg) => {
-        let m = marken.get(bg);
-        if (m) return m;
-        m = { liste: [], phase: -1 };
-        marken.set(bg, m);
+    // DAS PROBEN-BÜNDEL zählt jede Zeichnung (`n`) und nimmt nur Marken, die ihm gelten: eine Marke aus dem Gang über die
+    // ganze Szene (`traverse` — `_texturAbschied`, wenn ein Atlas wächst) gilt jedem Bündel, nie seinem Bürger; das Bündel
+    // schluckt sie und nennt ihren Schreiber (`fremd`), das Urteil gilt allein der Anmeldung
+    let szeneGang = 0;
+    const buendel = () => {
+        const bg = new T3.BundleGroup();
+        const P = (bg.userData.probe = { n: 0, fremd: [] });
         Object.defineProperty(bg, "needsUpdate", {
-            configurable: true,
             set(v) {
                 if (v !== true) return;
+                if (szeneGang === 0) return void this.version++;
                 const f = String(new Error().stack).match(/\/(stamm\/[^/?:]+\.js)(?:\?[^:]*)?:(\d+)/);
-                m.liste.push(`${f ? f[1] + ":" + f[2] : "Linse"}@${m.phase}`);
-                this.version++;
+                P.fremd.push(f ? f[1] + ":" + f[2] : "?");
             },
         });
-        return m;
+        return bg;
     };
-    // DER FREMDE NEUBAU: ein Atlas wächst, `_texturAbschied` markiert jedes Bündel der Szene (der echte Weg über
-    // `initTexture`) — im ersten Frame nach der fertigen Pipeline des Gegen-Laufs; HITCH_FREMDER_NEUBAU=0 nimmt ihn heraus
+    // DER FREMDE NEUBAU im Gegen-Lauf: ein Atlas wächst (der echte Weg über `initTexture`) im ersten Bild nach der fertigen
+    // Pipeline — am Läufer fiel er in dieses Fenster und spielte den Bürger ohne Anmeldung ins Bündel
     const atlasWaechst = () => {
         const t = new T3.DataTexture(new Uint8Array(16), 2, 2);
         t.needsUpdate = true;
@@ -449,17 +443,19 @@ function erstWandInstall() {
         rend.initTexture(t);
         t.dispose();
     };
-    // bis die Aufnahme des Bundles den Bürger trägt: gezählt die Frames ab der fertigen Pipeline (r184-Zustand); 30 Frames
-    // danach ist er unsichtbar. Bis die Pipeline steht, wartet die Probe auf ihr Ereignis (`bisEreignis`) — steht die
-    // Erst-Zeichnung still, ehe sie bereit ist, wird sie es nie, und der Bürger ist unsichtbar.
-    const bisSichtbar = async (bg, obj, fremd) => {
+    // bis die Aufnahme des Bundles den Bürger trägt. Bis seine Pipeline steht (r184-Zustand), wartet die Probe auf ihr
+    // Ereignis (`bisEreignis`) — steht die Erst-Zeichnung still, ehe sie bereit ist, wird sie es nie. Danach endet sie am
+    // Ereignis: der Bürger steht in der Aufnahme, oder r184 zeichnete das Bündel BUNDLE_FRAMES + 1 Bilder ohne ihn (die
+    // Anmeldung nimmt im ersten Bild danach neu auf); ein Bild, das das Bündel nicht zeichnet, zählt nie.
+    const bisSichtbar = async (bg, obj, atlas) => {
         const t0 = performance.now();
-        const mk = markenVon(bg);
-        const m0 = mk.liste.length;
-        mk.phase = -1;
+        const P = bg.userData.probe;
+        const f0 = P.fremd.length;
         let frames = 0,
             nachBereit = -1,
-            bereitMs = -1;
+            bereitMs = -1,
+            gezeichnet = 0,
+            leer = 0;
         const bereit = () => {
             const pipe = wartete.get(obj);
             if (!pipe) return false;
@@ -471,16 +467,14 @@ function erstWandInstall() {
             nachBereit = 0;
             bereitMs = Math.round(performance.now() - t0);
         }
-        let fremdN = 0;
-        while (nachBereit >= 0 && nachBereit < 30 && !traegtIn(bg, obj)) {
-            mk.phase = nachBereit;
-            if (fremd && nachBereit === 0 && window.__hitchFremderNeubau !== false) {
-                atlasWaechst();
-                fremdN++;
-            }
+        while (nachBereit >= 0 && !traegtIn(bg, obj) && gezeichnet <= BUNDLE_FRAMES && leer < STILL_BILDER) {
+            const n = P.n;
+            if (atlas && nachBereit === 0) atlasWaechst();
             bild();
             frames++;
             nachBereit++;
+            if (P.n === n) leer++;
+            else [leer, gezeichnet] = [0, gezeichnet + 1];
             await gpuTakt();
             await sleep(20);
         }
@@ -490,8 +484,8 @@ function erstWandInstall() {
             framesNachBereit: nachBereit,
             bereitMs,
             ms: Math.round(performance.now() - t0),
-            fremdN,
-            marken: mk.liste.slice(m0),
+            gezeichnet,
+            fremd: P.fremd.slice(f0),
         };
     };
     const stumm = () => {
@@ -507,10 +501,10 @@ function erstWandInstall() {
         serie++;
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.31, 0.47, 0.12 + 0.0011 * serie);
-        const b2 = new T3.BundleGroup();
+        const b2 = buendel();
         const B = probeMesh(M, 0.45, 4);
         b2.add(B);
-        const b1 = new T3.BundleGroup();
+        const b1 = buendel();
         const A = probeMesh(M, -0.45, 4);
         b1.add(A);
         welt.add(b2);
@@ -562,7 +556,7 @@ function erstWandInstall() {
         };
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.52, 0.18 + 0.0013 * serie, 0.61);
-        const bg = new T3.BundleGroup();
+        const bg = buendel();
         const C = probeMesh(M, 0, 3.5);
         bg.add(C);
         welt.add(bg);
@@ -906,8 +900,7 @@ function erstWandInstall() {
                 );
             return v;
         };
-        await page.evaluate(`(${erstWandInstall.toString()})()`);
-        if (process.env.HITCH_FREMDER_NEUBAU === "0") await page.evaluate(() => (window.__hitchFremderNeubau = false));
+        await page.evaluate(`(${erstWandInstall.toString()})(${BUNDLE_FRAMES})`);
         out.erst = await ruf("Stand", () => window.__erstWand.stand());
         if (IN(1)) {
             out.erst.probe = await ruf("Probe", (v) => window.__erstWand.probe(v), false);
@@ -1059,16 +1052,14 @@ function erstWandInstall() {
         `gezeichnet im nächsten Bild ${nb.sofort} · Neubauten ${nb.neubauN} · Gegen-Lauf ohne Gedächtnis gezeichnet ${nbg.sofort}`
     );
 
-    // Die Bundle-Bürger: nach der fertigen Pipeline trägt die Aufnahme den Bürger in höchstens 2 Frames; der Gegen-Lauf
-    // mit stummer Anmeldung verliert ihn (30 Frames nach der fertigen Pipeline unsichtbar) — sonst wäre die Wand blind.
-    const BUNDLE_FRAMES = 2;
+    // Die Bundle-Bürger: nach der fertigen Pipeline trägt die Aufnahme den Bürger in höchstens BUNDLE_FRAMES Bildern; der
+    // Gegen-Lauf mit stummer Anmeldung verliert ihn (r184 zeichnet das Bündel danach BUNDLE_FRAMES + 1 Bilder ohne ihn).
     const bn = ez.bundleNeubau || {},
         bng = ez.bundleNeubauGegen || {};
     const bnWeg = (x) =>
         `${x.sichtbar ? "sichtbar" : "UNSICHTBAR"} ${x.framesNachBereit} Frames nach der fertigen Pipeline (bereit nach ${x.bereitMs} ms, ` +
-        `${x.frames} Frames, ${x.ms} ms)` +
-        (x.fremdN ? ` · fremder Neubau ${x.fremdN}×` : "") +
-        (x.marken && x.marken.length ? ` · Neubau-Marken ${x.marken.join(" ")}` : "");
+        `${x.frames} Frames, ${x.ms} ms, danach gezeichnet ${x.gezeichnet}×)` +
+        (x.fremd && x.fremd.length ? ` · fremde Marken geschluckt: ${x.fremd.join(" ")}` : "");
     if (IN(1))
         band(
             bn.stand === true &&
@@ -1083,7 +1074,7 @@ function erstWandInstall() {
         );
     if (IN(2))
         band(
-            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0,
+            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0 && bng.gezeichnet > BUNDLE_FRAMES,
             "ERST-ZEICHNUNG Bundle-Neubau ohne Anmeldung (der Gegen-Lauf: ohne Anmeldung MUSS der Bürger fehlen)",
             `Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
         );
@@ -1097,6 +1088,7 @@ function erstWandInstall() {
             fs_.ruheOffen === 0 &&
             fsg.haengt >= 1 &&
             fsg.sichtbar === false &&
+            fsg.gezeichnet > BUNDLE_FRAMES &&
             fsg.bereitMs >= 0,
         `ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
         `popErrorScope hängend ${fs_.haengt}× · ${bnWeg(fs_)} · Ruhe offen ${fs_.ruheOffen} · Gegen-Lauf: hängend ${fsg.haengt}×, ${bnWeg(fsg)}`

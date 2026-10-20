@@ -1,9 +1,5 @@
-// gpu-fehler.cjs — DIE GPU-FEHLER-LINSE (Welle L, Befund V-D7): die WebGPU-Validierung beim NAMEN. Befund 06.10. (sichtbar
-// gespielt, Radeon 890M): EIN Ereignis, zwei Warnungen — „Vertex buffer slot 4 required by renderPipeline_MeshStandard-
-// NodeMaterial_77 was not set … DrawIndexed(1087932, …)" und „Invalid CommandBuffer from CommandEncoder renderContext_4": ein
-// ganzer Render-Kontext eines Frames verworfen; der Täter war nicht isoliert (Verdacht: der Boden-Satz, 5 Attribute).
-//
-// Zwei Augen:
+// gpu-fehler.cjs — DIE GPU-FEHLER-LINSE: die WebGPU-Validierung beim NAMEN (ein verworfener Render-Kontext nennt sonst keinen
+// Täter). Zwei Augen und die Abgabe (`GPU_ABGABE`):
 //   (1) die Device-Wahrheit: `uncapturederror` je GPUDevice — jede Meldung mit dem Pass, der zuletzt begann (Label);
 //   (2) die Vorab-Probe je Draw, SYNCHRON (die Device-Meldung kommt asynchron, ohne Objekt): `createRenderPipeline` merkt
 //       die Zahl der Vertex-Puffer je Pipeline, `setPipeline`/`setVertexBuffer` die gesetzten Slots je Pass-Encoder, und
@@ -11,12 +7,21 @@
 //       three-Objekt, das der Renderer gerade zeichnet (`backend.draw` → `renderObject.object`), im Protokoll.
 //
 // Gebrauch: `page.evaluateOnNewDocument(GPU_FEHLER_INSTALL)` vor jedem Seiten-Skript; nach dem Renderer-Init
-// `page.evaluate(GPU_FEHLER_OBJEKT)`; lesen: `window.__gpuFehler` ({device: […], draws: […], geraete: [GPUDevice]}).
+// `page.evaluate(GPU_FEHLER_OBJEKT)`; lesen: `window.__gpuFehler` ({device: […], draws: […], geraete: [GPUDevice]}) oder
+// `GPU_ABGABE(seite)`.
 "use strict";
 
 function gpuFehlerAbgriff() {
     if (typeof GPUDevice === "undefined" || window.__gpuFehler) return;
-    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [] });
+    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [], ein: 0, ab: 0 });
+    // jeder Submit zählt, bis sein Gerät ihn abgegeben hat — das Ereignis, an dem `GPU_ABGABE` urteilt
+    const sub = GPUQueue.prototype.submit;
+    GPUQueue.prototype.submit = function (b) {
+        F.ein++;
+        const r = sub.call(this, b);
+        this.onSubmittedWorkDone().then(() => F.ab++);
+        return r;
+    };
     const merke = (liste, e) => {
         if (liste.length < 200) liste.push(e);
     };
@@ -136,7 +141,30 @@ function gpuFehlerObjekt() {
     return true;
 }
 
+// DIE ABGABE (K6): nach einem Bild wartet `seite` (Page oder Frame), bis jedes Gerät seine Arbeit abgegeben hat — und mit ihr
+// jede Prüfung, die einen Befehl verwarf. Die Uhr ist die Abgabe, nie die Sekunde des Läufers (swiftshader gab dort 30 s
+// nichts ab): gewartet wird, solange frühere Submits abgegeben werden; erst `stillMs` ohne eine Abgabe nennt den Stillstand
+// beim Namen. → die Meldungen der Geräte
+async function gpuAbgabe(seite, stillMs = 600000) {
+    const lies = (neu) =>
+        seite.evaluate(async (neu) => {
+            const F = window.__gpuFehler;
+            if (!F) return { fertig: true, msg: [] };
+            const bild = () => new Promise((r) => requestAnimationFrame(r));
+            if (neu) F.abgabe = bild().then(() => Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone()))).then(bild);
+            const fertig = await Promise.race([F.abgabe.then(() => true), new Promise((r) => setTimeout(r, 1000, false))]);
+            return { fertig, ab: F.ab, ein: F.ein, msg: F.device.map((e) => e.msg.split("\n")[0]) };
+        }, neu);
+    let s = await lies(true);
+    for (let ab = -1, seit = 0; !s.fertig; s = await lies(false))
+        if (s.ab !== ab) [ab, seit] = [s.ab, Date.now()];
+        else if (Date.now() - seit > stillMs)
+            return s.msg.concat(`ein Gerät gibt ${stillMs / 1000} s keine Arbeit ab (onSubmittedWorkDone, abgegeben ${s.ab} von ${s.ein} Submits)`);
+    return s.msg;
+}
+
 module.exports = {
+    GPU_ABGABE: gpuAbgabe,
     GPU_FEHLER_INSTALL: gpuFehlerAbgriff,
     GPU_FEHLER_OBJEKT: gpuFehlerObjekt,
 };
