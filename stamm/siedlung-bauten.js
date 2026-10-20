@@ -441,9 +441,10 @@ class AnazhRealm_siedlung_bauten {
     // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die verdeckte Karte (`_lodSlotVoll` → der Slot-
     // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht — auch wo die Wahl keinen verlangt
     // (F1, 19.10.): die Wahl misst vom Auge VOR dem Rig, die Maske vom Auge danach; nach Ego → Third (das Auge 0 → 8,8 m) blendete
-    // der GT ein Bild lang zu einem Partner, den die Wahl nie setzte (gate:fahr-leben T4: Deckung 0,76 / 0,70). Ohne Partner
-    // weicht die Maske nur, wo sie ins Nichts blendete. `halt`: false (der Partner steht) · true (keiner steht, still) ·
-    // "wartet" (der Partner lädt: der Tick bleibt wach). true = der Stempel wechselte.
+    // der GT ein Bild lang zu einem Partner, den die Wahl nie setzte (Richter: gate:foundry-crossfade GEISTER-BAUM sprung,
+    // der gesetzte Bau und die Streu-Zelle). Ohne Partner weicht die Maske nur, wo sie ins Nichts blendete. `halt`: false
+    // (der Partner steht) · true (keiner steht, still) · "wartet" (der Partner lädt: der Tick bleibt wach). true = der
+    // Stempel wechselte.
     _lodHaltSetzen(entry, halt) {
         if (!entry) return false;
         entry._lodHaltWartet = halt === "wartet";

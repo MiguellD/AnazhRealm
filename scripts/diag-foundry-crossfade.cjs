@@ -23,9 +23,9 @@
 // Teil (b), headless (Null-Renderer, foundry-ON): die CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System — ein Foundry-Baum wird
 // über die Schwellen geschoben: im Band hält er Slots in BEIDEN Stufen-Gruppen, außerhalb in EXAKT einer, nie 0, die
 // Slot-Bilanz dicht; dazu die Stufen-Wahrheit (Stempel = CPU-Sichthöhe, kein Loch voll und unter Last), der Strauch, die
-// Kette des Gesetzbuchs (Wagen, Tor), der Geister-Baum (Auge, Halt, Schatten-Zwilling), der Kehraus des Wurfs, die
-// Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band) und die laute
-// Blende (ohne uLodD0 bricht der Stoff beim Namen).
+// Kette des Gesetzbuchs (Wagen, Tor), der Geister-Baum (Auge, Halt, Schatten-Zwilling, die Streu im Sprung), der Kehraus
+// des Wurfs, die Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band)
+// und die laute Blende (ohne uLodD0 bricht der Stoff beim Namen).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
@@ -376,6 +376,67 @@ async function runPartB() {
         }
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
+        // DIE STREU IM SPRUNG (F1 a, gemessen in (10)): die Geburt der Region vom Kopf des Spielers (der alte Ort der Wahl
+        // von Stufe und Band), die Kamera 24 m näher an ihren ersten Reihen (die Schicht füllt ihr Maß von z = 0 an; sie
+        // stehen 64–86 m vor dem Spieler, über der Karte ohne Partner). Stufen und Partner wärmen VOR der Baseline (die
+        // Schleife backt, was die Geburt bestellt; eine kalte L1 serviert still die Karte); die Messung räumt die Region.
+        const SC = A.SCATTER;
+        const [srx, srz] = [Math.floor(px / SC.regionM), Math.floor(pz / SC.regionM)];
+        const streuOrte = Array.from({ length: 12 }, (_, i) => srz * SC.regionM + 64 + 2 * i);
+        const streuGeburt = (z, ohneHalt) => {
+            st.playerMesh.position.set(px, py, z);
+            st.camera.position.set(px, py + 3, z - 24);
+            st.camera.updateMatrixWorld(true);
+            r._lodAuge = function () {
+                const p = this.state.playerMesh.position;
+                return new window.THREE.Vector3(p.x, p.y + A.EGO_AUGE_M, p.z);
+            };
+            // der Selbsttest: kein Slot trägt den Halt (der Stand vor F1 a — die Zelle ohne Partner dithert ins Nichts)
+            if (ohneHalt)
+                r._scatterInstanceAdd = function (bp, x, y, z2, yaw, s, tint, rk, flat) {
+                    return A.prototype._scatterInstanceAdd.call(this, bp, x, y, z2, yaw, s, tint, rk, flat, false);
+                };
+            try {
+                r._disposeScatterRegion(`${srx},${srz}`);
+                return r._scatterRegion(srx, srz, st.playerMesh.position);
+            } finally {
+                delete r._lodAuge;
+                delete r._scatterInstanceAdd;
+            }
+        };
+        const [streuCam, streuPm] = [st.camera.position.clone(), st.playerMesh.position.clone()];
+        const streuZurueck = () => {
+            r._disposeScatterRegion(`${srx},${srz}`);
+            st.camera.position.copy(streuCam);
+            st.camera.updateMatrixWorld(true);
+            st.playerMesh.position.copy(streuPm);
+        };
+        const dlS0 = performance.now() + 60000;
+        for (let kalt = true; kalt && performance.now() < dlS0; ) {
+            kalt = false;
+            for (const z of streuOrte) {
+                const reg = streuGeburt(z, false);
+                kalt = kalt || !reg || reg._deferredFoundry === true;
+                for (const c of (reg && reg.cells) || []) {
+                    if (!Number.isFinite(c.dient)) continue;
+                    const L = SC.layers.find((l) => l.name === c.layer);
+                    const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
+                    const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
+                    for (const l of [1, 2]) {
+                        const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
+                        kalt = kalt || !(fl && fl.instanceable);
+                    }
+                }
+            }
+            streuZurueck();
+            if (kalt) {
+                r._tickWaldPlan(Infinity);
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                await sleep(120);
+            }
+        }
         // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
         // eigener Sweep.
@@ -1053,6 +1114,47 @@ async function runPartB() {
                 res.geisterBaum.augeGesetz = augeLauf(null);
                 res.geisterBaum.gegenKamera = augeLauf("kamera");
                 res.geisterBaum.gegenSpieler = augeLauf("spieler");
+                // ════ (10c) DIE STREU IM SPRUNG (F1 a, ihre Hälfte): Geburt und Takt der Streu (`_scatterPass`,
+                // `_tickScatterLod(auge)` je Bild, 160 Zellen und 4 Umbauten) wählen Stufe und Band vom alten Ort; die Maske misst
+                // vom Auge. Besucht die Scheibe die Zelle spät (in voller Fahrt 24 m), dithert die Karte ohne verlangten Partner
+                // ins Nichts, wo sie nicht HÄLT (`_scatterMaterializeCell` bandHalt). Ein Sicht-Wechsel allein (9,6 m) erreicht
+                // sie in der Streu (ab 64 m) nie: die Karte weicht erst unter 22 m Wahrnehmung, die Wahl lässt sie ab 29 m ohne
+                // Partner (gemessen 20.10.: 0 Geister ohne Halt in 1706 Zellen). Je Ort die Deckung jeder Foundry-Baum-Zelle am
+                // Auge; geurteilt wird die Zelle ohne verlangten Partner, die Zelle mit Partner zählt mit.
+                const streuLauf = (ohneHalt) => {
+                    const o = { proben: 0, geister: 0, loecher: 0, orte: 0, mitPartner: 0, mitPartnerGeister: 0, beispiel: null };
+                    const zwVor = zwBekannt;
+                    try {
+                        for (const z0 of streuOrte) {
+                            const reg = streuGeburt(z0, ohneHalt);
+                            const auge = st.camera.getWorldPosition(new window.THREE.Vector3());
+                            o.orte++;
+                            for (const c of (reg && reg.cells) || []) {
+                                if (!Number.isFinite(c.dient) || !c.slots.length) continue;
+                                zwBekannt = false; // der Wurf-Zwilling zählt je Zelle, nie aus dem gesetzten Baum
+                                const z = deckungAm({ instSlots: c.slots }, auge);
+                                if (c.bandWunsch != null) {
+                                    o.mitPartner++;
+                                    if (z.geist || z.loch) o.mitPartnerGeister++;
+                                    continue;
+                                }
+                                o.proben++;
+                                if (z.geist) o.geister++;
+                                if (z.loch) o.loecher++;
+                                if ((z.geist || z.loch) && !o.beispiel) {
+                                    const dA = Math.hypot(c.x - auge.x, c.z - auge.z);
+                                    o.beispiel = { dA: +dA.toFixed(1), D: z.D, dient: c.dient, halt: c.halt };
+                                }
+                            }
+                        }
+                    } finally {
+                        zwBekannt = zwVor;
+                        streuZurueck();
+                    }
+                    return o;
+                };
+                res.geisterBaum.sprungStreu = streuLauf(false);
+                res.geisterBaum.gegenStreu = streuLauf(true);
                 res.geisterBaum.ms = Math.round(performance.now() - tGeist);
             } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask oder _lodPerfMul fehlt" };
             st._foliageDensityScale = fdVor;
@@ -1624,6 +1726,13 @@ async function main() {
         check("GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)", sauber(GB.karteLaedt), g(GB.karteLaedt));
         check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske, auch ohne Halt (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
         check("GEISTER-BAUM: die Wahl misst vom alten Ort (das Auge sprang, F1) — jede Stufe ohne gezeichneten Partner hält voll (der Täter: der Halt fällt, wo keiner verlangt ist)", sauber(GB.sprung), g(GB.sprung));
+        const gs = (o) =>
+            o
+                ? `${o.geister} Geister · ${o.loecher} Löcher in ${o.proben} Streu-Zellen ohne verlangten Partner an ${o.orte} Orten (mit Partner ${o.mitPartnerGeister} Geister in ${o.mitPartner})${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`
+                : "fehlt";
+        const SS = GB.sprungStreu;
+        check("GEISTER-BAUM sprung Streu: die Wahl vom alten Ort (die späte Scheibe, 24 m), die Maske vom Auge — jede Foundry-Streu-Zelle ohne verlangten Partner hält voll (der Täter: _scatterMaterializeCell ohne bandHalt)", !!SS && SS.proben >= 100 && SS.geister === 0 && SS.loecher === 0, gs(SS));
+        check("GEISTER-BAUM Selbsttest Streu: trägt kein Streu-Slot den Halt, zählt die Linse den Geist der Karte ohne Partner", !!GB.gegenStreu && GB.gegenStreu.geister + GB.gegenStreu.loecher > 0, gs(GB.gegenStreu));
         check("GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte", GB.gegenHalt.geister + GB.gegenHalt.loecher > 0, g(GB.gegenHalt));
         check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, ohne Halt, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
         check("GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum", GB.gegenSchatten.schatten > 0, g(GB.gegenSchatten));
