@@ -31,7 +31,12 @@ async function checkBandW3UiPuls(ctx) {
         r.state.maxCreatures = r.state.creatures.length + 16;
         const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
         const puls = (m, a) => !!c && window.__consumes(r, m, r, "_uiDirty", a);
-        out.hofPfade = [puls("assignCreatureTask", [c, "wait", {}, { silent: true }]), puls("_afterCreatureEquipChange", [c]), puls("damageCreature", [c, 0.01]), puls("removeCreature", [c])];
+        out.hofPfade = [
+            puls("assignCreatureTask", [c, "wait", {}, { silent: true }]),
+            puls("_afterCreatureEquipChange", [c]),
+            puls("damageCreature", [c, 0.01]),
+            puls("removeCreature", [c]),
+        ];
         r.state.maxCreatures = cap;
         // (6) der ON-OPEN-Render im Hof-Hook am Ruf (so darf die Insel isOpen-skippen); die Bühne ruht für die Probe.
         const eigenS = Object.prototype.hasOwnProperty.call(r, "_hofEnsureStage");
@@ -49,10 +54,7 @@ async function checkBandW3UiPuls(ctx) {
     // (4b) die Absenz über den EINEN Helfer: die direkte Aufruf-Krankheit der Mechanik-Pfade ist tot (sie melden
     // `_uiDirty("hof")`, s. hofPfade am Ruf); die Hof-UI selbst rendert ihre Liste weiter direkt.
     const srcOk = stammLib.fehlt(null, /if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/);
-    check(
-        "W3 UI-Puls: das EINE Organ trägt die Räume ich/hof",
-        res.registryRooms
-    );
+    check("W3 UI-Puls: das EINE Organ trägt die Räume ich/hof", res.registryRooms);
     check(
         "W3 UI-Puls: DEDUP — drei dirty-Rufe in einem Frame → EIN Puls, EIN Raum (Set dedupt; die Boost-Doppel-Krankheit strukturell tot)",
         res.dedup

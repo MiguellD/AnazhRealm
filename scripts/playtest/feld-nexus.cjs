@@ -942,9 +942,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         check(
             "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + Schalter im State",
             wave6hP2eV2Results.hasPhrases &&
-            wave6hP2eV2Results.gapPerCreature &&
-            wave6hP2eV2Results.gapGlobal &&
-            wave6hP2eV2Results.toggleInState
+                wave6hP2eV2Results.gapPerCreature &&
+                wave6hP2eV2Results.gapGlobal &&
+                wave6hP2eV2Results.toggleInState
         );
         check(
             "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
@@ -1175,9 +1175,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         check(
             "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
-            wave6hP2eV3Results.whitelistSize &&
-            wave6hP2eV3Results.hasRareEventTrigger &&
-            wave6hP2eV3Results.rareEventGap
+                wave6hP2eV3Results.whitelistSize &&
+                wave6hP2eV3Results.hasRareEventTrigger &&
+                wave6hP2eV3Results.rareEventGap
         );
         check(
             "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
@@ -1342,7 +1342,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r) r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1354,9 +1354,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     if (v805Results && !v805Results.error) {
         check(
             "V8.05 (V17.91): Tool-Drop, Aktions- und Lösch-Knopf existieren (die Suite fährt sie nicht)",
-            v805Results.hasHandleToolDrop &&
-            v805Results.hasInstallActionBtns &&
-            v805Results.hasInstallDelBtn
+            v805Results.hasHandleToolDrop && v805Results.hasInstallActionBtns && v805Results.hasInstallDelBtn
         );
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
@@ -1448,7 +1446,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r) r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1544,7 +1542,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r) r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {

@@ -457,55 +457,53 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
-        {
-            const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
-            const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
-            const wm = r.state.worldMeta;
-            const matTotal = () => {
-                let t = 0;
-                for (const s of r.state.player.inventory) {
-                    if (s && s.kind === "material") t += s.count || 0;
-                }
-                return t;
-            };
-            // _consumeAnyMaterial: genug → true + reduziert.
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 10);
-            out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
-            // zu wenig → false + unverändert.
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 2);
-            out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
-            // Gate in frieden → frei, kein Verbrauch.
-            r.setGameMode("frieden");
-            r.state.player.inventory = new Array(27).fill(null);
-            const gF = r._voxelFillGate();
-            out.gateFriedenFree = gF.ok === true && gF.free === true;
-            // Gate in pfad mit Material → ok + verbraucht.
-            r.setGameMode("pfad");
-            r.state.player.inventory = new Array(27).fill(null);
-            r.addMaterialToInventory("stein", 10);
-            const gP = r._voxelFillGate();
-            out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
-            // Gate in pfad ohne Material → abgelehnt.
-            r.state.player.inventory = new Array(27).fill(null);
-            out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
-            // Chat `voxel fill` in pfad ohne Material → kein Edit.
-            // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-            wm.voxelEdits = [];
-            r.processChatCommand("voxel fill");
-            out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
-            // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
-            r.addMaterialToInventory("stein", 10);
-            wm.voxelEdits = [];
-            r.processChatCommand("voxel fill");
-            out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
-            // sauber zurücklassen.
-            wm.voxelEdits = [];
-            r.state.player.inventory = invBackup;
-            r.setGameMode(modeBackup);
-            r.saveState();
-        }
+        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+        const wm = r.state.worldMeta;
+        const matTotal = () => {
+            let t = 0;
+            for (const s of r.state.player.inventory) {
+                if (s && s.kind === "material") t += s.count || 0;
+            }
+            return t;
+        };
+        // _consumeAnyMaterial: genug → true + reduziert.
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 10);
+        out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
+        // zu wenig → false + unverändert.
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 2);
+        out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
+        // Gate in frieden → frei, kein Verbrauch.
+        r.setGameMode("frieden");
+        r.state.player.inventory = new Array(27).fill(null);
+        const gF = r._voxelFillGate();
+        out.gateFriedenFree = gF.ok === true && gF.free === true;
+        // Gate in pfad mit Material → ok + verbraucht.
+        r.setGameMode("pfad");
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 10);
+        const gP = r._voxelFillGate();
+        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+        // Gate in pfad ohne Material → abgelehnt.
+        r.state.player.inventory = new Array(27).fill(null);
+        out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
+        // Chat `voxel fill` in pfad ohne Material → kein Edit.
+        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+        wm.voxelEdits = [];
+        r.processChatCommand("voxel fill");
+        out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
+        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+        r.addMaterialToInventory("stein", 10);
+        wm.voxelEdits = [];
+        r.processChatCommand("voxel fill");
+        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+        // sauber zurücklassen.
+        wm.voxelEdits = [];
+        r.state.player.inventory = invBackup;
+        r.setGameMode(modeBackup);
+        r.saveState();
         return out;
     });
 
@@ -540,10 +538,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
-        {
-            const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
-            out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
-        }
+        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+        out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
         out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
         out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
 
@@ -626,23 +622,19 @@ async function checkBandVoxelP3AndInventory(ctx) {
             r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
 
         // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
-        {
-            const built = r.parseChatToDsl("setze modus pfad");
-            out.chatPfad =
-                built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
-            const built2 = r.parseChatToDsl("modus schöpfer");
-            out.chatSchoepfer =
-                built2 &&
-                Array.isArray(built2.program) &&
-                built2.program[0] === "set_mode" &&
-                built2.program[1] === "schöpfer";
-        }
+        const built = r.parseChatToDsl("setze modus pfad");
+        out.chatPfad =
+            built && Array.isArray(built.program) && built.program[0] === "set_mode" && built.program[1] === "pfad";
+        const built2 = r.parseChatToDsl("modus schöpfer");
+        out.chatSchoepfer =
+            built2 &&
+            Array.isArray(built2.program) &&
+            built2.program[0] === "set_mode" &&
+            built2.program[1] === "schöpfer";
 
         // describeProgram-Eintrag
-        {
-            const desc = r.describeProgram(["set_mode", "pfad"]);
-            out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
-        }
+        const desc = r.describeProgram(["set_mode", "pfad"]);
+        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
         out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
@@ -735,21 +727,16 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
 
         // DSL-Op add_to_inventory (damm — lebendes builtIn; der Name ist mechanik-egal)
-        {
-            r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
-            const has = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
-            out.dslOpWorks = has;
-        }
+        r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
+        out.dslOpWorks = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
 
         // NON_BROADCASTABLE
         out.addToInventoryNonBroadcastable =
             r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
 
         // describeProgram-Eintrag
-        {
-            const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-            out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
-        }
+        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display
         out.overlayInDom = !!document.getElementById("inventory-overlay");

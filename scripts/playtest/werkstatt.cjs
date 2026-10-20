@@ -641,7 +641,7 @@ async function checkBandCadWorkshop(ctx) {
             }
             // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
             // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
-            if (r) r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -962,7 +962,7 @@ async function checkBandCadWorkshop(ctx) {
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r) r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -974,8 +974,7 @@ async function checkBandCadWorkshop(ctx) {
     if (v803Results && !v803Results.error) {
         check(
             "V8.03: die Material- und Farb-Palette existieren (die Suite fährt sie nicht)",
-            v803Results.hasMaterialRender &&
-            v803Results.hasColorRender
+            v803Results.hasMaterialRender && v803Results.hasColorRender
         );
         check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
@@ -1948,16 +1947,14 @@ async function checkBandV18134Social(ctx) {
             out.lwwRejected =
                 (await r._socialRatingReceive("peerX", await mk("welt:band134", 1, fremd.t - 5000))) === false;
             out.tamperRejected = (await r._socialRatingReceive("peerX", { ...fremd, s: 1 })) === false;
-            {
-                r.revokeKey(pubHex, { reason: "band134" });
-                const agg2 = r._feedRatingAgg("welt:band134");
-                out.revokeConsumed =
-                    agg2.count === 1 &&
-                    (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
-                // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
-                // einem Object still leer).
-                r.state.revokedKeys.delete(pubHex.toLowerCase());
-            }
+            r.revokeKey(pubHex, { reason: "band134" });
+            const agg2 = r._feedRatingAgg("welt:band134");
+            out.revokeConsumed =
+                agg2.count === 1 &&
+                (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
+            // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
+            // einem Object still leer).
+            r.state.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
             out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
         } finally {
@@ -2058,11 +2055,7 @@ async function checkBandV18142Follow(ctx) {
     }
     check(
         "V18.142 Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
-        res.toggleOn &&
-        res.persisted &&
-        res.toggleOff &&
-        res.garbageRejected &&
-        res.notInSnapshot
+        res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
     );
     check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
 }

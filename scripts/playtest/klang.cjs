@@ -107,8 +107,7 @@ async function checkBandW4LofiPad(ctx) {
         out.calmDuration4s = Math.abs(durCalm - baseExpected) < 1;
         out.sorrowSlowsTempo = durSad > durCalm && durSad <= baseExpected * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
-        if (r.state.symphony &&
-            r.state.symphony.enabled) {
+        if (r.state.symphony && r.state.symphony.enabled) {
             r.disposeSymphony();
         }
         emo.joy = 0;

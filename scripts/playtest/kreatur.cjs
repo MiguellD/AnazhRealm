@@ -1467,41 +1467,38 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 7. Stats-Stacking via equipped: eigener "magie-leitender" Werkzeug-Bauplan, Stats VOR/NACH equip
         // vergleichen (dieselbe computeCreatureStats-Pipeline).
-        {
-            const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
-            const baseStats = r.computeCreatureStats(c2).stats;
-            // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
-            // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
-            const toolBp = "test_tool_bp_p2f2";
-            if (r.cloneBlueprint("stein_block", toolBp)) {
-                const meta =
-                    r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive");
-                const reg =
-                    meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
-                        ? r.registerBlueprintAsTool(toolBp)
-                        : null;
-                if (reg && reg.ok) {
-                    // toolName === toolBp (Bauplan-Name)
-                    r.equipCreatureTool(c2, toolBp);
-                    const equipStats = r.computeCreatureStats(c2).stats;
-                    out.toolStatsChanged =
-                        Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
-                        Math.abs(equipStats.damage - baseStats.damage) > 0.1;
-                    out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
-                }
+        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+        const baseStats = r.computeCreatureStats(c2).stats;
+        // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
+        // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
+        const toolBp = "test_tool_bp_p2f2";
+        if (r.cloneBlueprint("stein_block", toolBp)) {
+            const meta = r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive");
+            const reg =
+                meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
+                    ? r.registerBlueprintAsTool(toolBp)
+                    : null;
+            if (reg && reg.ok) {
+                // toolName === toolBp (Bauplan-Name)
+                r.equipCreatureTool(c2, toolBp);
+                const equipStats = r.computeCreatureStats(c2).stats;
+                out.toolStatsChanged =
+                    Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
+                    Math.abs(equipStats.damage - baseStats.damage) > 0.1;
+                out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
             }
-            // Armor: stein_block-Clone + setBlueprintAsArmor
-            const armorBp = "test_armor_bp_p2f2";
-            if (r.cloneBlueprint("stein_block", armorBp)) {
-                r.setBlueprintAsArmor(armorBp);
-                // unequip first so stat-delta is clean
-                r.unequipCreatureSlot(c2, "armor");
-                const beforeArmorStats = r.computeCreatureStats(c2).stats;
-                r.equipCreatureArmor(c2, armorBp);
-                const armorStats = r.computeCreatureStats(c2).stats;
-                out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
-                out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
-            }
+        }
+        // Armor: stein_block-Clone + setBlueprintAsArmor
+        const armorBp = "test_armor_bp_p2f2";
+        if (r.cloneBlueprint("stein_block", armorBp)) {
+            r.setBlueprintAsArmor(armorBp);
+            // unequip first so stat-delta is clean
+            r.unequipCreatureSlot(c2, "armor");
+            const beforeArmorStats = r.computeCreatureStats(c2).stats;
+            r.equipCreatureArmor(c2, armorBp);
+            const armorStats = r.computeCreatureStats(c2).stats;
+            out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+            out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
         }
 
         // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
@@ -1677,8 +1674,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
         const tonicName = "test_tonic_p2f3";
         if (r.cloneBlueprint("stein_block", tonicName)) {
-            const meta =
-                r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2);
+            const meta = r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2);
             out.consumableMarkOk = !!(meta && meta.ok);
             // Trank-Compound-Tags lesen (kontrolle)
             const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);

@@ -1858,7 +1858,7 @@ async function checkBandTierSeparation(ctx) {
             steht.steuerSchritt = (st) => {
                 st.v = 0;
             };
-            const masse = (c) => (r._leibMasse(c));
+            const masse = (c) => r._leibMasse(c);
             const leib = {};
             const achse = (c) => {
                 r._kreaturLeib(c, 0, leib);
@@ -2961,8 +2961,7 @@ async function checkBandKreaturKosten(ctx) {
         o.g = (() => {
             const T3 = window.THREE;
             const R = A.KREATUR_RUHE;
-            if (!R)
-                return { fehler: "KREATUR_RUHE fehlt" };
+            if (!R) return { fehler: "KREATUR_RUHE fehlt" };
             const cam = s.camera;
             const blick = (dx, dz) => {
                 cam.position.set(pm.x, pm.y + 2, pm.z);

@@ -116,8 +116,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.state.p2p.enabled === "boolean" &&
             typeof r.state.p2p.url === "string" &&
             r.state.p2p.peers instanceof Map;
-        out.allMethodsPresent =
-            typeof r.initP2PUI === "function";
+        out.allMethodsPresent = typeof r.initP2PUI === "function";
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
         const savedWorldId = r.state.worldMeta.worldId;
@@ -306,8 +305,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Array.isArray(p2p.iceServers) &&
             p2p.iceServers.length > 0 &&
             typeof p2p.meshActive === "boolean";
-        out.w7MethodsPresent =
-            typeof r._p2pDrainIce === "function";
+        out.w7MethodsPresent = typeof r._p2pDrainIce === "function";
 
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
@@ -487,8 +485,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
         out.w7p2MethodsPresent =
-            typeof r._p2pSendChannelTo === "function" &&
-            typeof r._p2pHandleWorldPull === "function";
+            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();
@@ -651,7 +648,10 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
-        check("W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)", w7p2Results.w7p2MethodsPresent);
+        check(
+            "W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)",
+            w7p2Results.w7p2MethodsPresent
+        );
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
         check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
@@ -699,9 +699,7 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent =
-            typeof r._p2pFetchVendorBundle === "function" &&
-            typeof r.meshWorldInitDOM === "function";
+        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function" && typeof r.meshWorldInitDOM === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
@@ -1130,7 +1128,10 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check("W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)", w16Results.methodsPresent);
+        check(
+            "W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)",
+            w16Results.methodsPresent
+        );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -1233,9 +1234,7 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
         const origBuildMode = r.state.buildMode;
 
-        out.newArchIdUnique =
-            typeof r._newArchId() === "string" &&
-            r._newArchId() !== r._newArchId();
+        out.newArchIdUnique = typeof r._newArchId() === "string" && r._newArchId() !== r._newArchId();
 
         // spawnArchitecture mit opts.id → string-id; ohne → numerisch.
         const eShared = r.spawnArchitecture("stein_block", { x: 12, y: 4, z: 12 }, { id: "a-unit-1" });
@@ -1259,8 +1258,7 @@ async function checkBandLateMultiUser(ctx) {
         out.removeArchitectureSafe = r.state.architectures.length === cnt;
 
         // describeProgram kennt remove_architecture.
-        out.describeRemove =
-            /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
+        out.describeRemove = /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
 
         // spawn_blueprint + remove_architecture MÜSSEN broadcasten
         // (nicht in NON_BROADCASTABLE_OPS).
@@ -2396,9 +2394,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // SYNERGIE-WELLE — die Avatar-Aura ist gefallen: 5 lebende Methoden + die
         // explizite ABWESENHEIT der zwei Aura-Seiten (Sende + Peer-Sprite).
-        out.methodsExist =
-            typeof r._p2pEnsurePeerAura !== "function" &&
-            typeof r._p2pBroadcastAura !== "function";
+        out.methodsExist = typeof r._p2pEnsurePeerAura !== "function" && typeof r._p2pBroadcastAura !== "function";
 
         // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
@@ -3009,8 +3005,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
-            if (origSel &&
-                r.state.blueprints[origSel]) {
+            if (origSel && r.state.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }
@@ -3127,8 +3122,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const lrow = document.querySelector("#workshop-list .workshop-list-row");
             out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
             delete r.state.blueprints["_t839c"];
-            if (origSel &&
-                r.state.blueprints[origSel]) {
+            if (origSel && r.state.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }

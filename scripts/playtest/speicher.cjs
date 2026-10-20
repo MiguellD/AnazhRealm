@@ -1244,8 +1244,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const translatorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r.translatorInitDOM === "function";
+        out.methods = typeof r.translatorInitDOM === "function";
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
         const prompt = r._buildTranslatorPrompt();
@@ -1354,10 +1353,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (translatorResults && !translatorResults.error) {
-        check(
-            "KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)",
-            translatorResults.methods
-        );
+        check("KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)", translatorResults.methods);
         check(
             "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
             translatorResults.promptNamesSchema
@@ -1429,8 +1425,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     const transl2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._runWorldBuild === "function";
+        out.methods = typeof r._runWorldBuild === "function";
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
         // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
@@ -1594,10 +1589,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (transl2Results && !transl2Results.error) {
-        check(
-            "KI-Übersetzer P2: _runWorldBuild existiert (die Suite ruft ihn nie)",
-            transl2Results.methods
-        );
+        check("KI-Übersetzer P2: _runWorldBuild existiert (die Suite ruft ihn nie)", transl2Results.methods);
         check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
         check(
             "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",

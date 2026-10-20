@@ -164,53 +164,51 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
 
         // Build a PBR material directly
-        {
-            // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
-            const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
-            out.defaultMatBuilt = !!mDefault;
-            if (mDefault) {
-                out.defaultIsMeshStandard =
-                    mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
-                out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
-                out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
-                out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
-                out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
-                out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
-                if (typeof mDefault.dispose === "function") mDefault.dispose();
-            }
+        // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
+        const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
+        out.defaultMatBuilt = !!mDefault;
+        if (mDefault) {
+            out.defaultIsMeshStandard =
+                mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
+            out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
+            out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
+            out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
+            out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
+            out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
+            if (typeof mDefault.dispose === "function") mDefault.dispose();
+        }
 
-            // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
-            const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
-            if (mEisen) {
-                out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
-                out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
-                if (typeof mEisen.dispose === "function") mEisen.dispose();
-            }
+        // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
+        const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
+        if (mEisen) {
+            out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
+            out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
+            if (typeof mEisen.dispose === "function") mEisen.dispose();
+        }
 
-            // LAUB-Material (lebendig 0.95) → rauh, kein Metall
-            const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
-            if (mLaub) {
-                out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
-                out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
-                if (typeof mLaub.dispose === "function") mLaub.dispose();
-            }
+        // LAUB-Material (lebendig 0.95) → rauh, kein Metall
+        const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
+        if (mLaub) {
+            out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
+            out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
+            if (typeof mLaub.dispose === "function") mLaub.dispose();
+        }
 
-            // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
-            const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
-            if (mStein) {
-                out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
-                out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
-                if (typeof mStein.dispose === "function") mStein.dispose();
-            }
+        // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
+        const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
+        if (mStein) {
+            out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
+            out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
+            if (typeof mStein.dispose === "function") mStein.dispose();
+        }
 
-            // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
-            // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
-            const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
-            if (mGlut) {
-                out.glutEmissive = mGlut.emissiveIntensity > 0;
-                out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
-                if (typeof mGlut.dispose === "function") mGlut.dispose();
-            }
+        // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
+        // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
+        const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
+        if (mGlut) {
+            out.glutEmissive = mGlut.emissiveIntensity > 0;
+            out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
+            if (typeof mGlut.dispose === "function") mGlut.dispose();
         }
 
         // Dispatch-Behavior: Mode auf "pbr" setzen + Toon-Builder rufen → PBR-Material

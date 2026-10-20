@@ -974,14 +974,10 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
         check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
         check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-        check(
-            "Welle 6.C3: _loadKeybindings existiert",
-            wave6c3Results.hasLoad
-        );
+        check("Welle 6.C3: _loadKeybindings existiert", wave6c3Results.hasLoad);
         check(
             "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI existieren",
-            wave6c3Results.hasInitDOM &&
-            wave6c3Results.hasRenderUI
+            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI
         );
         check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
         check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);

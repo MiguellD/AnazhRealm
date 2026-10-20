@@ -192,23 +192,21 @@ async function checkBandHydrosphere(ctx) {
         // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
         out.waterLevelOceanOk = false;
         out.waterLevelLakeOk = false;
-        {
-            const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-            const erste = (h, kind) => {
-                const q = h.water.waterKind.indexOf(kind);
-                if (q < 0) return null;
-                return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
-            };
-            const m = meerOrt && erste(meerOrt.hydro, 1);
-            if (m) {
-                const lv = r._waterLevelAt(m[0], m[1]);
-                out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-            }
-            const s = seeOrt && erste(seeOrt.hydro, 2);
-            if (s) {
-                const lv = r._waterLevelAt(s[0], s[1]);
-                out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-            }
+        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+        const erste = (h, kind) => {
+            const q = h.water.waterKind.indexOf(kind);
+            if (q < 0) return null;
+            return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
+        };
+        const m = meerOrt && erste(meerOrt.hydro, 1);
+        if (m) {
+            const lv = r._waterLevelAt(m[0], m[1]);
+            out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
+        }
+        const s = seeOrt && erste(seeOrt.hydro, 2);
+        if (s) {
+            const lv = r._waterLevelAt(s[0], s[1]);
+            out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
         }
         // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs); der
         // Tarn-Pass (V9.51) ist gefallen. Je Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
@@ -2276,10 +2274,8 @@ async function checkBandScatterWasserAB(ctx) {
                     if (!r._landAt(x, z, 0.4)) nass++;
                     const sl = r._slopeAt ? r._slopeAt(x, z) : 0;
                     if (sl > 1.2) steep++;
-                    {
-                        const rv = r._hydroRiverAt(x, z);
-                        if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
-                    }
+                    const rv = r._hydroRiverAt(x, z);
+                    if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
                 }
             }
             return { shore, steep, river, nass, nulls, probes };

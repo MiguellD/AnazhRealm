@@ -833,52 +833,50 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
-        {
-            // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
-            // prüfe dass der referenzierte Bauplan überlebt.
-            const testKey = "grown_baum_eiche_testkey";
-            r.state.blueprints[testKey] = {
-                name: testKey,
-                label: "Test",
+        // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
+        // prüfe dass der referenzierte Bauplan überlebt.
+        const testKey = "grown_baum_eiche_testkey";
+        r.state.blueprints[testKey] = {
+            name: testKey,
+            label: "Test",
+            builtIn: true,
+            _isGrown: true,
+            _grownSpecies: "baum_eiche",
+            instanced: true,
+            parts: [
+                { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            ],
+        };
+        r.state.architectures = r.state.architectures || [];
+        const sentinelArch = {
+            id: "test-arch-v18210",
+            type: testKey,
+            position: { x: 0, y: 0, z: 0 },
+        };
+        r.state.architectures.push(sentinelArch);
+        // Saved Ring-State + Init
+        const savedRing = r._growTreeRing ? [...r._growTreeRing] : null;
+        r._growTreeRing = [testKey];
+        // Erzeuge 260+ Dummy-Bauplane, um CAP=256 zu überschreiten
+        for (let i = 0; i < 260; i++) {
+            const dummyKey = `grown_dummy_${i}`;
+            r.state.blueprints[dummyKey] = {
+                name: dummyKey,
                 builtIn: true,
                 _isGrown: true,
-                _grownSpecies: "baum_eiche",
-                instanced: true,
-                parts: [
-                    { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                ],
+                parts: [],
             };
-            r.state.architectures = r.state.architectures || [];
-            const sentinelArch = {
-                id: "test-arch-v18210",
-                type: testKey,
-                position: { x: 0, y: 0, z: 0 },
-            };
-            r.state.architectures.push(sentinelArch);
-            // Saved Ring-State + Init
-            const savedRing = r._growTreeRing ? [...r._growTreeRing] : null;
-            r._growTreeRing = [testKey];
-            // Erzeuge 260+ Dummy-Bauplane, um CAP=256 zu überschreiten
-            for (let i = 0; i < 260; i++) {
-                const dummyKey = `grown_dummy_${i}`;
-                r.state.blueprints[dummyKey] = {
-                    name: dummyKey,
-                    builtIn: true,
-                    _isGrown: true,
-                    parts: [],
-                };
-                r._growTreeRing.push(dummyKey);
-            }
-            // Trigger Eviction durch einen weiteren Spawn-Versuch
-            r._growTreeBlueprintForSpawn("baum_eiche", "trigger-eviction");
-            // Der referenzierte testKey muss überleben
-            out.a1EvictionRespectsActive = !!r.state.blueprints[testKey];
-            // Cleanup
-            r.state.architectures = r.state.architectures.filter((a) => a.id !== sentinelArch.id);
-            delete r.state.blueprints[testKey];
-            for (let i = 0; i < 260; i++) delete r.state.blueprints[`grown_dummy_${i}`];
-            r._growTreeRing = savedRing;
+            r._growTreeRing.push(dummyKey);
         }
+        // Trigger Eviction durch einen weiteren Spawn-Versuch
+        r._growTreeBlueprintForSpawn("baum_eiche", "trigger-eviction");
+        // Der referenzierte testKey muss überleben
+        out.a1EvictionRespectsActive = !!r.state.blueprints[testKey];
+        // Cleanup
+        r.state.architectures = r.state.architectures.filter((a) => a.id !== sentinelArch.id);
+        delete r.state.blueprints[testKey];
+        for (let i = 0; i < 260; i++) delete r.state.blueprints[`grown_dummy_${i}`];
+        r._growTreeRing = savedRing;
         // (Heilung #3) SPEZIES-DIVERSITÄT: 6 Arten erzeugen unterschiedliche Geometrie
         const species = ["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"];
         const sigs = new Set();
@@ -908,18 +906,16 @@ async function checkBandV18210Verdrahtung(ctx) {
         const au = r._ensureAtmoUniforms ? r._ensureAtmoUniforms() : null;
         out.a2UniformExists = !!(au && au.r5StructureBoost);
         // (A2c) Setter existiert + setzt Uniform + persistiert
-        {
-            const before = au.r5StructureBoost.value;
-            r.setStructureBoost(2.0);
-            out.a2SetterUpdatesUniform = au.r5StructureBoost.value === 2.0;
-            out.a2SetterPersists = r.state.atmosphere.r5StructureBoost === 2.0;
-            // Range clamp: 3.0 → 2.5 (cap), 0.1 → 0.5 (floor)
-            r.setStructureBoost(5.0);
-            out.a2SetterCapsHi = au.r5StructureBoost.value === 2.5;
-            r.setStructureBoost(0.1);
-            out.a2SetterCapsLo = au.r5StructureBoost.value === 0.5;
-            r.setStructureBoost(before); // restore
-        }
+        const before = au.r5StructureBoost.value;
+        r.setStructureBoost(2.0);
+        out.a2SetterUpdatesUniform = au.r5StructureBoost.value === 2.0;
+        out.a2SetterPersists = r.state.atmosphere.r5StructureBoost === 2.0;
+        // Range clamp: 3.0 → 2.5 (cap), 0.1 → 0.5 (floor)
+        r.setStructureBoost(5.0);
+        out.a2SetterCapsHi = au.r5StructureBoost.value === 2.5;
+        r.setStructureBoost(0.1);
+        out.a2SetterCapsLo = au.r5StructureBoost.value === 0.5;
+        r.setStructureBoost(before); // restore
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
@@ -1287,11 +1283,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         const r = window.anazhRealm;
         const s = r.state;
         const out = {};
-        if (
-            !s.playerMesh ||
-            !s.playerVel
-        )
-            return out;
+        if (!s.playerMesh || !s.playerVel) return out;
         const DT = 1 / 60;
         const mkFrames = (seq) => {
             const fr = [];
