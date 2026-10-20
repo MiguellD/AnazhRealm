@@ -33,7 +33,11 @@ class AnazhRealm_dienst {
         });
     }
 
-    async llmCall(userText, systemPromptOverride = null) {
+    // DIE EINE TÜR ZUM MODELL — der Satz des Spielers hat Vorrang (KI H1, 20.10.): am lokalen Modell verweigerte sie 2 von 3
+    // Sätzen („Anfrage läuft bereits", „Kurze Pause"), weil ein Ruf der Welt im Flug war — der Kommentar zum Journal, den die
+    // Tat des vorigen Satzes auslöste, 30–60 s auf der CPU. Ein Ruf der Welt (`hintergrund`: Journal-Kommentar, Reflexion eines
+    // Wesens) bricht ab, wenn der Spieler spricht, und hält die Ruhe-Lücke; der Spieler wartet auf keins von beiden.
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -44,12 +48,20 @@ class AnazhRealm_dienst {
             return {
                 error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
-        if (llm.inFlight) return { error: "Anfrage läuft bereits" };
+        if (llm.inFlight) {
+            if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
+            this._llmHintergrund.abort();
+            await this._llmFrei;
+        }
         const nowSec = performance.now() / 1000;
-        if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
+        if (hintergrund && nowSec - llm.lastResponseAt < llm.minGapSeconds) {
             return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
         }
         llm.inFlight = true;
+        const abbruch = new globalThis.AbortController();
+        this._llmHintergrund = hintergrund ? abbruch : null;
+        let frei;
+        this._llmFrei = new Promise((r) => (frei = r));
         // Wohin die Anfrage ging (der Fehler-Klassifizierer liest den Endpunkt-Host, V-D6).
         let zielUrl = null,
             zielLokal = false,
@@ -80,6 +92,7 @@ class AnazhRealm_dienst {
                 method: "POST",
                 headers: fetchHeaders,
                 body: fetchBody,
+                signal: abbruch.signal,
             });
             if (!res.ok) {
                 const text = await res.text().catch(() => "");
@@ -105,6 +118,7 @@ class AnazhRealm_dienst {
             llm.lastError = parsed.error || null;
             return parsed;
         } catch (err) {
+            if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
             // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
             // klaren Hinweis geben. „Failed to fetch" ist der typische
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
@@ -142,6 +156,8 @@ class AnazhRealm_dienst {
             return { error: llm.lastError };
         } finally {
             llm.inFlight = false;
+            this._llmHintergrund = null;
+            frei();
         }
     }
 

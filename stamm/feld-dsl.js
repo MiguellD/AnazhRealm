@@ -16,7 +16,7 @@ class AnazhRealm_feld_dsl {
             // Async ohne await: das Tick darf nicht blockieren. Erfolg/Fehler
             // werden im LLM-Status angezeigt; bei narrativer Antwort rendern
             // wir sie direkt.
-            this.llmCall(prompt)
+            this.llmCall(prompt, null, { hintergrund: true })
                 .then((reply) => {
                     if (reply && reply.say) {
                         grok.lastSpoke = performance.now() / 1000;
@@ -286,6 +286,11 @@ class AnazhRealm_feld_dsl {
         // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
         // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
+        const wert = AnazhRealm.DSL_WERTE[op];
+        if (wert && !wert[1](args[wert[0]])) {
+            ctx.log.push({ event: "invalid_wert", op: String(op), wert: args[wert[0]], grund: `das Gesetz von ${op}: ${wert[2]()}` });
+            return;
+        }
         if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
             return;
@@ -842,7 +847,6 @@ class AnazhRealm_feld_dsl {
                         ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
                     return;
                 }
-                if (!(name in AnazhRealm.WEATHER_INTENSITY)) return;
                 const ok = this._setWeather(name, quelle);
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
                 else if (ctx && ok === false) ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
@@ -1776,7 +1780,6 @@ class AnazhRealm_feld_dsl {
                 }
             },
             creatures_emotion: ([emotion]) => {
-                if (emotion !== "happy" && emotion !== "sad") return;
                 // V18.100 (G4-1) — der Op SETZT das Innenleben (deterministisch,
                 // wie sein alter Intent): ein klarer Achsen-Zustand statt eines
                 // Etikett-Stempels; die Projektion liefert das alte Verhalten.
@@ -2219,6 +2222,15 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     // Gesetzes-Faden: ein Gesetz, das binnen dieser Frist gefeuert hat, gilt als „feuert gerade"
     // (Live-Puls der Gesetze-Console); > ruleEverySecMax (5) → ein aktives Gesetz pulst durchgehend.
     threadRecentSec: 6,
+});
+// DAS GESETZ DER WERTE (KI H1, 20.10.): ein Op mit begrenztem Wert nennt ihn HIER — die KI liest ihn im Prompt
+// (`_dslVokabular`), `dslEval` weist einen Wert außerhalb benannt ab (`invalid_wert`, die Absage nennt das Gesetz). Bis 20.10.
+// verwarfen die Ops ihn still, der Chat sagte „Welt verändert" und nichts geschah (qwen3:4b-instruct am Korpus:
+// ["set_time_of_day","night"], ["weather","thunderstorm"]). Je Op: [Argument, Prüfung, Gesetz in Worten].
+AnazhRealm.DSL_WERTE = Object.freeze({
+    weather: [0, (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v), () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | ")],
+    set_time_of_day: [0, (v) => v != null && v !== "" && Number(v) >= 0 && Number(v) <= 1, () => "0–1 (0 Mitternacht, 0.25 Morgen, 0.5 Mittag, 0.75 Abend)"],
+    creatures_emotion: [0, (v) => v === "happy" || v === "sad", () => "happy | sad"],
 });
 AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",

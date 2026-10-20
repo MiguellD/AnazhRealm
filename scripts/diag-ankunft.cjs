@@ -1479,7 +1479,6 @@ async function probe(arg) {
         const ohne = Object.keys(defs).find((k) => defs[k].requiresKey);
         llm.provider = ohne;
         llm.enabled = true;
-        llm.lastResponseAt = -1e9;
         if (llm.providerConfig[ohne]) llm.providerConfig[ohne].apiKey = "";
         const n0 = zeilen().length;
         r.processChatCommand("lass mir ein paar birken und ein fachwerkhaus wachsen");
@@ -1492,7 +1491,6 @@ async function probe(arg) {
         llm.enabled = true;
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
         llm.providerConfig.ollama.useProxy = true;
-        llm.lastResponseAt = -1e9;
         const ant = await r.llmCall("hallo welt");
         m.proxyFehler = ant && ant.error ? String(ant.error) : "";
         llm.enabled = alt.enabled;

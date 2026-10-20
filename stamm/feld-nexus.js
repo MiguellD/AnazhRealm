@@ -864,6 +864,8 @@ class AnazhRealm_feld_nexus {
                 // OpenAI-kompatibler Body (model + messages + stream:false). Enthält der Endpoint
                 // /v1/chat/completions, entfällt options.num_predict (manche Server lehnen unbekannte Felder ab).
                 // Token-Limit 800: Reasoning-Models schreiben erst <think>, bei 400 riss das JSON ab.
+                // JSON UND FESTE TEMPERATUR (KI H1, 20.10., qwen3:4b-instruct am Korpus): `format: "json"` lässt das lokale Modell
+                // nur JSON schreiben (jeder Rufer liest JSON), Temperatur 0 — derselbe Satz, dieselbe Tat.
                 buildBody: (model, system, userContent, cfg) => {
                     const body = {
                         model,
@@ -876,10 +878,11 @@ class AnazhRealm_feld_nexus {
                     const ep = (cfg && cfg.endpoint) || "";
                     const isOpenAiCompat = /\/v1\//.test(ep);
                     if (!isOpenAiCompat) {
-                        body.options = { num_predict: 800, temperature: 0.7 };
+                        body.options = { num_predict: 800, temperature: 0 };
+                        body.format = "json";
                     } else {
                         body.max_tokens = 800;
-                        body.temperature = 0.7;
+                        body.temperature = 0;
                     }
                     return body;
                 },
@@ -965,7 +968,8 @@ class AnazhRealm_feld_nexus {
     // (`AnazhRealm.DSL_WELTAKTE`) als eigene Gruppe. Bis 16.10. sah sie `Object.keys(dslEffects).slice(0, 40)` — 40 von 70
     // Ops (when · repeat · delay · player_speed … fehlten), Orte und Bedingungen nur aus Beispielen. Wache: gate:weltakt-wache (K).
     _dslVokabular() {
-        const liste = (eintraege) => eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})`).join(", ");
+        const W = AnazhRealm.DSL_WERTE;
+        const liste = (eintraege) => eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2]()}]` : ""}`).join(", ");
         const ops = Object.entries(this.dslEffects);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
@@ -1019,21 +1023,19 @@ class AnazhRealm_feld_nexus {
             ms.intensity < 0.2
                 ? `Die Grundstimmung von ${playerName} ist über die Zeit ausgeglichen.`
                 : `Die Grundstimmung von ${playerName} ist über die Zeit: ${ms.label}.`;
+        // DER VERTRAG ZUERST, DAS SELBST-WISSEN ZULETZT (KI H1, 20.10.): ein Anbieter mit Prompt-Cache (ollama: der KV-Cache)
+        // rechnet nur ab dem ersten geänderten Token neu. Stand das Wechselnde vorn (Kreaturen-Zahl, Journal, Gemüt), rechnete das
+        // lokale Modell jeden Satz alle ~1 900 Token neu (CPU 29 s je Satz); der feste Vertrag vorn steht einmal im Cache.
         return [
             `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
-            `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
-            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
-            `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
-            moodLine,
-            moodBgLine,
-            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
-            "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
-            '  - say: ein bis zwei kurze deutsche Sätze, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
-            "  - program: ein optionales DSL-Programm als JSON-Array (oder null).",
-            "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
-            'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
-            '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
+            '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
+            "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
+            "    Programmen (mehrere Taten: chain). Beispiel-Antworten:",
+            '{"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
+            '{"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
+            '{"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
+            '{"say":"Das kann ich nicht tun.","program":null}',
             ...this._dslVokabular(),
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
@@ -1049,6 +1051,13 @@ class AnazhRealm_feld_nexus {
             "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
             "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
+            "",
+            `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
+            `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
+            `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
+            moodLine,
+            moodBgLine,
+            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
         ].join("\n");
     }
 

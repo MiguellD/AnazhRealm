@@ -1261,7 +1261,7 @@ class AnazhRealm_kreatur_leben {
         const fullPrompt = personaPrompt + "\n\n" + eventHint;
         const name = creature.userData.name || "Wesen";
         // Async-Call ohne await — V3 lebt mit Eventual-Render
-        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt)
+        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt, { hintergrund: true })
             .then((reply) => {
                 if (!reply || reply.error) return;
                 if (reply.say) {
