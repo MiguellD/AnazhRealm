@@ -815,7 +815,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
 
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
         r.state.worldMeta.voxelTerrain = true;

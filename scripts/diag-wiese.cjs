@@ -34,7 +34,6 @@ const server = statikServer();
 // Im Seiten-Kontext: ein Render in ein RT (Loop ruht, Mittag, Schatten frisch) → Pixel (+ PNG).
 const RENDER_FN = async (kam, W, H, png) => {
     const r = window.anazhRealm;
-    const THREE_ = window.THREE;
     const rend = r.state.renderer;
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer, jede Uhr des Bilds auf T (scripts/lib/ausgabe-aufnahme.cjs)

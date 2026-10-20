@@ -1125,7 +1125,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
         // Setze die aktuelle Welt auf einen bekannten Stand
         const beforeRoundTripCount = r.state.creatures.length;
-        const beforeNames = r.state.creatures.map((cr) => cr.userData.name).sort();
         const fullSnap = r.buildStateSnapshot();
         out.snapshotHasFullCreatures =
             Array.isArray(fullSnap.creatures) &&

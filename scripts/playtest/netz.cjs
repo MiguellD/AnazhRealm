@@ -21,12 +21,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     const w13p1Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        // Methoden-Existenz.
-        out.methods =
-            typeof r._ensureVibePass === "function" &&
-            typeof r._vibeSign === "function" &&
-            typeof r._vibeVerify === "function" &&
-            typeof r.vibePassId === "function";
         // Identität ist nach init bereit.
         const vp = r.state.vibePass;
         out.ready = !!vp && vp.ready === true;
@@ -96,7 +90,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13p1Results && !w13p1Results.error) {
-        check("W13 P1: _ensureVibePass/_vibeSign/_vibeVerify/vibePassId existieren", w13p1Results.methods);
         check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
         check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
         check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
@@ -123,11 +116,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     const w13p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r.signBlueprint === "function" &&
-            typeof r.verifyBlueprintSignature === "function" &&
-            typeof r._canonicalBlueprint === "function" &&
-            typeof r._fastHash === "function";
         // Einen eigenen Bauplan mit einem Part anlegen.
         if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
         r.createBlueprint("_w13p2", "W13P2-Werk");
@@ -207,10 +195,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w13p2Results && !w13p2Results.error) {
-        check(
-            "W13 P2: signBlueprint/verifyBlueprintSignature/_canonicalBlueprint/_fastHash existieren",
-            w13p2Results.methods
-        );
         check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
         check(
             "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
@@ -900,13 +884,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        out.methods =
-            typeof r._worldEntry === "function" &&
-            typeof r._libraryWorlds === "function" &&
-            typeof r._loadCustomWorlds === "function" &&
-            typeof r._sanitizeImportedManifest === "function" &&
-            typeof r.exportWorldManifest === "function" &&
-            typeof r.importWorldManifest === "function";
         // Vorzustand säubern.
         r.state.customWorlds = {};
         r.state.signedWorlds = r.state.signedWorlds || {};
@@ -1045,10 +1022,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     });
 
     if (w14p3Results && !w14p3Results.error) {
-        check(
-            "W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren",
-            w14p3Results.methods
-        );
         check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
         check(
             "W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)",
@@ -1125,7 +1098,6 @@ async function checkBandG8R0Sovereign(ctx) {
             S.excludedStateKeys.includes("p2p") &&
             S.privateStorageKeys.includes("anazh.vibePass") &&
             S.privateFields.includes("_privateKeyJwk");
-        out.auditMethod = typeof r._sovereignStateAudit === "function";
         // (2) Der Trennungs-Beweis: die Sonde meldet ok, keine Lecks.
         const audit = r._sovereignStateAudit();
         out.auditOk = !!audit && audit.ok === true && audit.leaks.length === 0;
@@ -1157,10 +1129,7 @@ async function checkBandG8R0Sovereign(ctx) {
         check("G8 R0: Sovereign-State-Sonde lief", false, "evaluate warf");
         return;
     }
-    check(
-        "G8 R0: SOVEREIGN_STATE benannt + eingefroren (der innerste Ring)",
-        res.frozen && res.namesRing && res.auditMethod
-    );
+    check("G8 R0: SOVEREIGN_STATE benannt + eingefroren (der innerste Ring)", res.frozen && res.namesRing);
     check("G8 R0: der Trennungs-Beweis (_sovereignStateAudit) ist sauber", res.auditOk, res.auditLeaks);
     check(
         "G8 R0: der Welt-Snapshot trägt KEINEN souveränen Slot + kein Privat-Feld",
@@ -1292,8 +1261,7 @@ async function checkBandG8R5LivingImmune(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.method = typeof r._robustnessCorpus === "function";
-        const corpus = out.method ? r._robustnessCorpus() : [];
+        const corpus = r._robustnessCorpus();
         out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
         out.allLive = corpus.every((c) => c.live === true);
         const mechs = corpus.map((c) => String(c.mechanism));
@@ -1307,7 +1275,7 @@ async function checkBandG8R5LivingImmune(ctx) {
     }
     check(
         "G8 R5: das Antikörper-Archiv ist enumeriert (_robustnessCorpus → vier Klassen)",
-        res.method && res.fourClasses,
+        res.fourClasses,
         res.classIds
     );
     check("G8 R5: jede Angriffsklasse hat eine LEBENDE Wand (alle Guards da)", res.allLive);
@@ -1565,11 +1533,17 @@ async function checkBandTailleGolden(ctx) {
             // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
             const H = r.constructor.P2P_MESSAGE_HANDLERS;
             const KANAL = { "social-rating": "_socialRatingReceive" };
-            const dead = g.envelopes.types.map((t) => t.type).filter((t) => {
-                const prov = KANAL[t] || H[t];
-                const roh = JSON.stringify({ type: t });
-                return !(typeof prov === "string" && typeof r[prov] === "function" && window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh]));
-            });
+            const dead = g.envelopes.types
+                .map((t) => t.type)
+                .filter((t) => {
+                    const prov = KANAL[t] || H[t];
+                    const roh = JSON.stringify({ type: t });
+                    return !(
+                        typeof prov === "string" &&
+                        typeof r[prov] === "function" &&
+                        window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh])
+                    );
+                });
             if (typeof r._p2pRemovePeer === "function") r._p2pRemovePeer("__golden");
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
@@ -1858,7 +1832,6 @@ async function checkBandPhiArchipelV2(ctx) {
             typeof onRes.currentRegionKey === "string" && /^r-?\d+_-?\d+$/.test(onRes.currentRegionKey);
         out.isActiveNow = r.isRegionsActive() === true;
 
-
         // (Q7) Übergangs-Detection: Spieler TIEF in eine neue Region setzen (≫ 10 m Hysterese-Margin) —
         // r2_2 hat Bounds 691.2–1036.8 je Achse, die Mitte 864 liegt 172.8 m von jeder Grenze.
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -1976,7 +1949,6 @@ async function checkBandPhiArchipelV2(ctx) {
         out.noPinOp = !r.dslEffects.pin_world;
         out.noRegionOp = !r.dslEffects.set_regions_active;
 
-
         return out;
     });
 
@@ -2024,10 +1996,7 @@ async function checkBandPhiArchipelV2(ctx) {
         "Φ4 (Q11): _p2pMsgWorldPresence schreibt in den Cache + worldPresence rechnet totalPeers korrekt",
         res.presenceCacheOk
     );
-    check(
-        "Φ4 (Q12): requestWorldPresence returnt false ohne p2p.connected",
-        res.requestNoConn
-    );
+    check("Φ4 (Q12): requestWorldPresence returnt false ohne p2p.connected", res.requestNoConn);
     check(
         "Φ4 (Q13): P2P_MESSAGE_HANDLERS trägt world-presence → _p2pMsgWorldPresence (additiv, §4 minor)",
         res.handlerRegistered
@@ -2206,7 +2175,6 @@ async function checkBandPhi7PortalHalls(ctx) {
         );
         const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta && a.portalMeta.worldAddress);
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
-
 
         // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).
         out.noCreateHallOp = !r.dslEffects.create_portal_hall;
@@ -2464,7 +2432,14 @@ async function checkBandPhi6ComputeSpende(ctx) {
 }
 
 module.exports = {
-    checkBandW13W14VibePassLibrary, checkBandG8R0Sovereign, checkBandG8R4Immunity, checkBandG8R5LivingImmune,
-    checkBandTailleOmega3, checkBandTailleGolden, checkBandPhiArchipel, checkBandPhiArchipelV2,
-    checkBandPhi7PortalHalls, checkBandPhi6ComputeSpende,
+    checkBandW13W14VibePassLibrary,
+    checkBandG8R0Sovereign,
+    checkBandG8R4Immunity,
+    checkBandG8R5LivingImmune,
+    checkBandTailleOmega3,
+    checkBandTailleGolden,
+    checkBandPhiArchipel,
+    checkBandPhiArchipelV2,
+    checkBandPhi7PortalHalls,
+    checkBandPhi6ComputeSpende,
 };

@@ -6,8 +6,6 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { starteBrowser } = require("./lib/welt-boot.cjs");
-const SK = require("./lib/shader-kosten.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
