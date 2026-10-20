@@ -63,8 +63,6 @@ function staticLaws(q) {
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -246,7 +244,6 @@ function staticLaws(q) {
         (String(out.f.key || "").split("|")[2] || "") === String(fSoll), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

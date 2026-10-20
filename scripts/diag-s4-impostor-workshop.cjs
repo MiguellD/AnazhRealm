@@ -23,8 +23,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
@@ -124,7 +122,6 @@ const server = statikServer();
         `    Vorschau-Gruppe: ${out.behavior.returnedGroup} · InstancedMesh: ${out.behavior.isInstanced} · Verts: ${out.behavior.vertCount} · Karten-Signatur(aKarte): ${out.behavior.hasKarte} ${JSON.stringify(out.behavior.karte)}`
     );
     if (out.behavior.err) console.log(`    (Behavioral-Notiz: ${out.behavior.err})`);
-    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 
     // ===== HARTE Invarianten (hardware-unabhängig) =====
     if (!out.probes.wsRoutesImpostor)
@@ -136,7 +133,6 @@ const server = statikServer();
             "B: die Werkstatt-L2-Vorschau baut den Impostor nicht über AnazhRealm._instanzMesh (Rotation/Skala aus der Instanz-Matrix, EIN Chokepoint)"
         );
     if (!out.probes.wsLod2) errs.push("B: der L2-Zweig (lod === 2) fehlt");
-    if (pageErrors.length) errs.push(`Seiten-Fehler: ${pageErrors.length}`);
     // Behavioral: wenn die Vorschau eine Gruppe lieferte, MUSS es die leichte Impostor-Geometrie sein.
     if (out.behavior.returnedGroup) {
         if (!out.behavior.isInstanced) errs.push("Behavioral: die L2-Vorschau ist keine InstancedMesh");

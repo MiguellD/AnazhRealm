@@ -16,8 +16,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true }); // der GATE-Kontext (kein GPU) — genau hier muss die Pipeline lesen · den Worker im Null-Renderer ERZWINGEN (W1-Beweis: liest die Pipeline headless?)
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Welt bereit (gameLoopTick als Funktion — renderer-unabhängig korrekt).
     await page.evaluate(async () => {
@@ -94,7 +92,6 @@ const server = statikServer();
     console.log(`  ready nach: ${S.readyMs} ms  ·  recipeCount: ${S.recipeCount}`);
     console.log(`  _foundryRequest("eiche",7,0): ${S.meshes} Meshes · ${S.verts} Verts`);
     if (S.err) console.log(`  Fehler: ${S.err}`);
-    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 
     const ok = S.workerEnabled && S.hasWorker && S.readyMs >= 0 && S.recipeCount > 0 && S.meshes > 0 && S.verts > 100;
     if (!ok) {

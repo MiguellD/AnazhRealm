@@ -464,8 +464,6 @@ async function blickStufe(check) {
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -828,7 +826,6 @@ async function blickStufe(check) {
             out.o.brueche.join(" | ") || "kein Bruch"
         );
     } else check("O: Block des Tors ohne Ziel erreicht", false, JSON.stringify(out.o || null));
-    check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
     if (!process.argv.includes("--ohne-blick")) await blickStufe(check);

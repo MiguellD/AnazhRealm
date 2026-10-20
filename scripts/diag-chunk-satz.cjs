@@ -414,8 +414,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     let out = null;
     try {
@@ -1664,7 +1662,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
-    check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);

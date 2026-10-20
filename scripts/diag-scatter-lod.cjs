@@ -55,8 +55,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -609,7 +607,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             `leckA=${out.f.leckA} leckB=${out.f.leckB}`
         );
     } else check("F: Fern-Diät-Block erreicht", false);
-    check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
     server.close();

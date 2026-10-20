@@ -342,15 +342,12 @@ async function jobSelbsttest(kaltIn) {
         window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
         window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkIdbInit)
     });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     // ===== BAND 1: KALT =====
     const kalt = await runJob(page, jobKalt, undefined, 240000);
     if (kalt.err) {
         console.error("ROT — Kalt-Lauf: " + kalt.err);
-        if (pageErrors.length) console.error("  Seiten-Fehler:", pageErrors.slice(0, 3));
         process.exit(1);
     }
 
@@ -359,7 +356,6 @@ async function jobSelbsttest(kaltIn) {
     const warm = await runJob(page, jobWarm, kalt, 240000);
     if (warm.err) {
         console.error("ROT — Warm-Lauf: " + warm.err);
-        if (pageErrors.length) console.error("  Seiten-Fehler:", pageErrors.slice(0, 3));
         process.exit(1);
     }
 
@@ -388,7 +384,6 @@ async function jobSelbsttest(kaltIn) {
         console.log(
             `  (4) SELBSTTEST: Einträge vor/nach verfälschtem Stempel: ${warm.countBefore}/${selbsttest.count} · Probe-Key weg: ${selbsttest.keyAWeg} · Stempel neu gesetzt: ${selbsttest.stampNeu}`
         );
-    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 
     const ok =
         kalt.idbCount > 1 && // Stempel + mindestens die Stiftungen

@@ -143,8 +143,6 @@ function urteil(S) {
     const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
@@ -181,9 +179,7 @@ function urteil(S) {
     );
     console.log(`  aus 500 m höher: ${S.sichtHoch} m · unter Wasser: ${S.sichtWasser} m`);
     console.log(`  Ring-Kante ${S.kanteM} m: Transmission ${S.tKante} · Fern-Ring-Kante 8 km: ${S.tFern}`);
-    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
     const rot = urteil(S);
-    if (pageErrors.length) rot.push("Seiten-Fehler: " + pageErrors[0]);
     if (selbst) {
         console.log(`  Selbsttest: 80-m-Wand → ${selbst.wand}`);
         console.log(`  Selbsttest: THREE.Fog → ${selbst.fog}`);

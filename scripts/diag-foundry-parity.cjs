@@ -176,8 +176,6 @@ const server = statikServer({ seiten: { "/": PAGE, "/__parity.html": PAGE } });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push(String((e && e.message) || e)));
     page.on("console", (m) => {
         const t = m.text();
         if (/error|Fehler|divergier/i.test(t)) console.log("  [seite]", t.slice(0, 200));
@@ -195,8 +193,7 @@ const server = statikServer({ seiten: { "/": PAGE, "/__parity.html": PAGE } });
     console.log("Presets:", S.presets, "· Fälle:", S.cases, "· identisch:", S.ok);
     console.log("Boot: iframe", S.bootIframeMs + " ms", "· Worker", S.bootWorkerMs + " ms");
     if (S.msIframe != null) console.log("Bau gesamt: iframe", S.msIframe + " ms", "· Worker", S.msWorker + " ms");
-    if (pageErrors.length) console.log("Seiten-Fehler:", pageErrors.slice(0, 3));
-    if (S.fails.length || pageErrors.length) {
+    if (S.fails.length) {
         console.error("\\n❌ ROT — erste Befunde:");
         for (const f of S.fails.slice(0, 5)) console.error("  • " + f);
         process.exit(1);

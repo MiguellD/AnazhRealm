@@ -29,8 +29,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     // KEIN Null-Renderer — die Augen brauchen den echten (WebGPU via swiftshader-Vulkan).
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
@@ -128,14 +126,13 @@ const server = statikServer();
 
     console.log("\n===== DIE AUGEN (T0) — RT-Readback-Schuss =====");
     if (!out || out.fatal) {
-        console.log("FEHLER:", out ? out.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("FEHLER:", out ? out.fatal : "?"); // die Seiten-Fehler nennt der EINE Sammler (welt-boot)
         process.exit(1);
     }
     console.log(`Renderer: ${out.rendererArt} · headlessNull=${out.headlessNull}`);
     const s = out.schuesse.haupt;
     if (out.headlessNull || !s) {
         console.log("KEIN SCHUSS — Renderer fiel auf Null zurück (WebGPU im Container nicht initialisierbar).");
-        console.log("Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
         process.exit(1);
     }
     if (!s.ok) {

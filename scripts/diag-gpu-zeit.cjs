@@ -45,8 +45,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     let out = null;
     try {
@@ -174,7 +172,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         console.log("FEHLER:", out ? out.error : "?");
         process.exit(1);
     }
-    check("(1) kein Wurf headless (trackTimestamp/resolve sind fail-soft)", pageErrors.length === 0, pageErrors[0] || "sauber");
     check(
         `(2) perfSense führt gpuMs als eigene Phase (EWMA ${out.senseGpuMs != null ? (+out.senseGpuMs).toFixed(2) : "—"} ms · max ${out.senseGpuMax != null ? (+out.senseGpuMax).toFixed(1) : "—"})`,
         Number.isFinite(out.senseGpuMs) && Number.isFinite(out.senseGpuMax)

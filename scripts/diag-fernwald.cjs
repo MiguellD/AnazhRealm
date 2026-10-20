@@ -46,8 +46,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt (K67),
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
@@ -713,7 +711,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
-    check("P keine Seiten-Fehler", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.join(", ")}`);
         process.exit(1);

@@ -35,8 +35,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -275,7 +273,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     check("(K) der soul-Broadcast trägt die Übergabe additiv, nur koerper", out.k.nurKoerper === true);
     check("(K) beim Peer-Guss führt die Übergabe des Senders vor der eigenen", out.k.peerFuehrt === true && out.k.eigen === true);
     check("(K) der Empfang klemmt durch DENSELBEN Validator (_studioUebergabeValidate)", out.k.einValidator === true);
-    check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);

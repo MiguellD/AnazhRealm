@@ -808,8 +808,6 @@ function buehne() {
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     const vendorDrift = [];
     page.on("console", (m) => {
         const t = m.text();
@@ -861,7 +859,6 @@ function buehne() {
         process.exit(1);
     }
     const v = urteil(out);
-    if (pageErrors.length) v.push(`${pageErrors.length} Seiten-Fehler: ${pageErrors[0]}`);
     for (const d of vendorDrift) v.push(`VENDOR-DRIFT: ${d}`);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
