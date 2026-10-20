@@ -3376,28 +3376,12 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
-// als reine Math-Helper, kein Welt-State-Mutation, kein Kreatur-KI-Hook noch.
+// als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
-
-        // (N1) SCENT frozen + helpers
-        out.scentConstExists = !!A.SCENT && Object.isFrozen(A.SCENT);
-        if (A.SCENT) {
-            const S = A.SCENT;
-            out.scentConstsSensible =
-                typeof S.rangeM === "number" &&
-                S.rangeM > 0 &&
-                typeof S.windFactor === "number" &&
-                S.windFactor >= 0 &&
-                S.windFactor <= 1 &&
-                typeof S.minDirectional === "number" &&
-                S.minDirectional >= 0 &&
-                S.minDirectional <= 1;
-        }
 
         // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
         const w1 = r._worldWindDirAt(0, 0, 0);
@@ -3421,16 +3405,6 @@ async function checkBandV18202GeruchFeld(ctx) {
         out.scentDistantWeaker = g20 > g50 && g50 > g100;
         out.scentFarVanishes = g300 < 0.05;
 
-        // (N4) Geruch akkumuliert über mehrere Quellen
-        const oneSource = [{ x: 0, z: 0, strength: 1 }];
-        const twoSources = [
-            { x: 0, z: 0, strength: 1 },
-            { x: 5, z: 0, strength: 1 },
-        ];
-        const g1 = r._scentAt(10, 0, oneSource);
-        const g2 = r._scentAt(10, 0, twoSources);
-        out.scentAccumulates = g2 > g1;
-
         // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
         const sx = 100,
             sz = 100;
@@ -3446,26 +3420,9 @@ async function checkBandV18202GeruchFeld(ctx) {
         out.downwindMagnitude = downG;
         out.upwindMagnitude = upG;
 
-        // (N6) Empty/null sources → 0
-        out.emptyArrayIsZero = r._scentAt(0, 0, []) === 0;
-        out.nullSourcesIsZero = r._scentAt(0, 0, null) === 0;
-        out.invalidSourceFiltered = r._scentAt(0, 0, [null, { x: 0, z: 0, strength: 1 }]) > 0;
-
-        // (N7) Negative/zero strength → ignoriert
-        const ignoreSrc = [
-            { x: 0, z: 0, strength: 0 },
-            { x: 0, z: 0, strength: -1 },
-        ];
-        out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
-
         return out;
     });
 
-    check("V18.202 (N1a) AnazhRealm.SCENT frozen + Konstanten existieren", res.scentConstExists === true);
-    check(
-        "V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])",
-        res.scentConstsSensible === true
-    );
     check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
     check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
     check(
@@ -3475,19 +3432,11 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
     check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
     check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
-    check("V18.202 (N4) Mehrere Quellen akkumulieren (2 sources > 1 source)", res.scentAccumulates === true);
     check(
         `V18.202 (N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
         res.downwindStronger === true
     );
     check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
-    check("V18.202 (N6a) Empty sources array → 0", res.emptyArrayIsZero === true);
-    check("V18.202 (N6b) null sources → 0 (kein Crash)", res.nullSourcesIsZero === true);
-    check("V18.202 (N6c) Ungültige Source-Einträge werden gefiltert", res.invalidSourceFiltered === true);
-    check(
-        "V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)",
-        res.zeroNegStrengthIgnored === true
-    );
 }
 
 // Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
