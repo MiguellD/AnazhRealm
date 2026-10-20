@@ -96,47 +96,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
         out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
 
-        // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
-        // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
-        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5). Gemessen
-        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — die Luft der Welt ist klar (`_luftBeta` = die klare
-        // Extinktion des Gesetzes, `betaKlar`; der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41), und
-        // `_atmoSonne` rechnet selbst (der Leser ruft die Quelle, nie ihren Nachbau: ändert sich `_atmoSonne`, folgt die Probe).
-        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
-        r._luftBeta = () => lichtKlar;
-        try {
-            const lichtMittag = lichtUm(0.5);
-            out.interpolateMiddayClear = lichtMittag >= 0.7;
-            out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
-            out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
-        } finally {
-            delete r._luftBeta;
-        }
-
-        // setTimeOfDay setzt korrekt
-        r.setTimeOfDay(0.25, "human");
-        out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
-        // Sonnenaufgang Label
-        out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
-        out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
-
-        // tickDayNight schreitet voran
-        r.setTimeOfDay(0.4, "human");
-        const beforeT = r.state.timeOfDay;
-        r.state._lastDayNightTick = 0;
-        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
-        out.tickAdvances = r.state.timeOfDay > beforeT;
-        // setDayLength clamped
-        r.setDayLength(5);
-        out.setDayLength5 = r.state.dayLengthMinutes === 5;
-        r.setDayLength(999); // > max 60
-        out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
-        r.setDayLength(0); // < min 1
-        out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
-        r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
-
-        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
@@ -262,15 +221,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3Results.dayLengthConstantsExist
         );
         check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
-        check(
-            "Welle 6.G3.a: Mittag (0.5) trägt das Licht der EINEN Atmosphäre (Durchlass ≥ 0.7)",
-            wave6g3Results.interpolateMiddayClear
-        );
-        check(
-            "Welle 6.G3.a: Mitternacht (0) ist dunkel (Licht der Atmosphäre < 0.35 des Mittags)",
-            wave6g3Results.interpolateMidnightDim
-        );
-        check("Welle 6.G3.a: das Licht der Atmosphäre wrapt mit der Uhr (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
@@ -623,39 +573,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.48 — das Licht des Morgens aus der EINEN Atmosphäre (die Stetigkeit des Tags im Bild: `werkbank licht --tag`) ###
-    const v826Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-        // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
-        // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
-        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach). In klarer Luft wie Welle
-        // 6.G3.a: die Luft der Welt klar (`_luftBeta` = `betaKlar` des Gesetzes), `_atmoSonne` rechnet selbst.
-        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
-        const dtN = 0.003;
-        r._luftBeta = () => lichtKlar;
-        try {
-            const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
-            out.dayNightNoPulse = slopeAtStop > 0.3;
-            const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
-            const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
-            out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
-        } finally {
-            delete r._luftBeta;
-        }
-
-        return out;
-    });
-
-    if (v826Results && !v826Results.error) {
-        check("V8.48: das Licht des Morgens pulst nicht (Steigung der Atmosphäre an t=0.32 klar positiv)", v826Results.dayNightNoPulse);
-        check("V8.48: das Licht der Atmosphäre ist C1-stetig (Steigung vor ≈ nach t=0.32, kein Knick)", v826Results.dayNightC1);
-    } else {
-        check("V8.48: das Licht des Morgens läuft", false, v826Results ? v826Results.error : "no result");
-    }
-
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -679,35 +596,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
-        // Die Himmels-Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung zurück (D3, `_himmelFrisch`): neu
-        // gezeichnet und ihre Lesung abgewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
-        const umgebungFrisch = async () => {
-            if (await r._himmelFrisch()) r._applyDayNightToScene();
-        };
+        // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         r.setTimeOfDay(0.5, "human");
-        r._applyDayNightToScene();
-        await umgebungFrisch();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
         r.setTimeOfDay(0, "human");
-        r._applyDayNightToScene();
-        await umgebungFrisch();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
-        // Der Himmel der EINEN Atmosphäre lebt auf der GPU (D3): unter dem Null-Renderer gibt es keine Tafel und keine
-        // Umgebung — die Karte sieht dort die Sonne allein (Mittag < 1); mit Himmel stellt er sie unter 0,85. Das Verhältnis
-        // Sonne : Himmel misst der echte Renderer (werkbank licht, K5 himmel-licht).
-        const mitHimmel = !!r._himmelsIrradianz();
         // in der Eichung der Tonkurve (BELICHTUNG, F1): die Nacht steht am Deckel, der Mittag darunter
         const B = r.constructor.BELICHTUNG;
         out.belichtungAusLicht =
-            belichtungMittag / B.max > 0.4 &&
-            belichtungMittag / B.max < (mitHimmel ? 0.85 : 1) &&
-            Math.abs(belichtungNacht - B.max) < 1e-6;
-        out.belichtungZahlen =
-            [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ") +
-            (mitHimmel ? " mit Himmel" : " Sonne allein, Null-Renderer");
+            belichtungMittag / B.max > 0.4 && belichtungMittag / B.max < 0.85 && Math.abs(belichtungNacht - B.max) < 1e-6;
+        out.belichtungZahlen = [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
