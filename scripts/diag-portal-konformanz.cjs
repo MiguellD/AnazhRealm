@@ -26,21 +26,12 @@
 //                 Werkzeug und den Vibe-Pass; fluid und terrain den Vibe-Pass am Namen des Reisenden
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
-//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm? (Synthese §0.1: 7 Studios lasen op[0] je
-//                  Element — aus "gt" wurde "g"; seit der Studio-Hülle K41 liest EIN Adapter das Programm ganz: 0/7)
-//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready (13 Brücken-Kopien, zwei Dialekte — seit der
-//                  Hülle EINE Brücke für 10 Welten, die ready einmal; 0/7)
+//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm?
+//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready
 // Eine Welt, die neu stumm oder neu Echo ist, ist rot; eine geheilte ebenfalls, bis ihre Zeile im selben Commit fällt.
 //
-//   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung,
-//                                                        die Heimat beantwortet JEDE ready und die Brücke der Hülle
-//                                                        spricht wieder den Echo-Dialekt, die Hülle liest op[0] je
-//                                                        Element, skeleton und terrain ohne Manifest — der Server
-//                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
-//                                                        garage trägt eins ohne Soll-Zeile und zerstört beim Neubau das Sprite-Quad) → jede Wand wird rot und
-//                                                        nennt den Täter; die TRÄGE klang (3 s Bau zwischen ihrer
-//                                                        ready und den enter) hält die Ratsche readyEcho — ein
-//                                                        Uhr-Fenster las an der fachwerk „ready 1 · enter 3"
+//   node scripts/diag-portal-konformanz.cjs --selftest     die alten Defekte eingespielt (`selbsttest`) → jede Wand rot beim Täter
+//   node scripts/diag-portal-konformanz.cjs --gegendruck   K6 unter dem Gegendruck des Läufers und am Mutanten (`gegendruck`)
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
@@ -229,8 +220,7 @@ const TAETER = {
     // die garage vor dem Schnitt: ihr Neubau zerstört das EINE Sprite-Quad von three (r184 behält den zerstörten Puffer) → K6 rot
     "worlds/garage/garage.js": [["if(o.geometry&&!o.isSprite)o.geometry.dispose();", "if(o.geometry)o.geometry.dispose();"]],
 };
-// Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
-// Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
+// Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 → K1 rot, die Welt beim Namen.
 const TAETER_WEG = ["worlds/skeleton/manifest.json", "worlds/terrain/manifest.json"];
 // Ein Manifest ohne Soll-Zeile: die garage (kein `manifest` in WELTEN) liefert eins → K1 rot.
 const TAETER_UNTER = { "worlds/garage/manifest.json": { schemaVersion: "1.0", id: "garage", label: "Garage", dsl: ["supersport"] } };
@@ -650,8 +640,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         : { type: "peer-join", peerId: "fremd-konformanz", name: "Fremder" };
     // Der Vorher-Zustand der UI-Wände (K3, Einzelwort) wird VOR der Tat gelesen (je EINE CDP-Rundreise): der Rück-Hörer
     // steht in der Hörer-Reihe der Welt HINTER ihrer Brücke (er kommt nach dem load) — las er „vor" beim Eintreffen der
-    // Nachricht, hatte die Brücke schon gewirkt. An der Studio-Hülle gesehen (K41): vor = nach = „Supersport", das
-    // wirkende Einzelwort galt als stumm, und K3 war am UI-Pfad blind (eine fremde chain-Form, die wirkt, las vor = nach).
+    // Nachricht, hatte die Brücke schon gewirkt.
     const vorK3 = await zustand(page, welt);
     const k3 = await schleuse(page, "fremd", welt, { fremd });
     aus.k.K3 = !wirkt(welt, vorK3, k3.nach) && k3.nach.journal === k3.vor.journal;
@@ -701,7 +690,19 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
     return aus;
 }
 
-async function lauf(welten, taeter) {
+// DER GEGENDRUCK DES LÄUFERS (K-CI-WACKLER): jede Abgabe (`onSubmittedWorkDone`) einer Welt-Seite kommt `ms` später, in
+// ihrer Reihenfolge — das Gerät gibt langsam ab; `ms` < 0 der Mutant: es gibt nie ab
+function gegendruckAbgriff(ms) {
+    if (typeof GPUQueue === "undefined" || !location.pathname.includes("/worlds/")) return;
+    const roh = GPUQueue.prototype.onSubmittedWorkDone;
+    GPUQueue.prototype.onSubmittedWorkDone = function () {
+        const p = roh.call(this);
+        if (ms < 0) return new Promise(() => {});
+        return p.then(() => new Promise((r) => setTimeout(r, ms)));
+    };
+}
+
+async function lauf(welten, taeter, opt = {}) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
@@ -712,6 +713,7 @@ async function lauf(welten, taeter) {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
         await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL); // in jedem Frame: die Prüfung jedes GPU-Geräts beim Namen (K6)
+        if (opt.gegendruckMs !== undefined) await page.evaluateOnNewDocument(gegendruckAbgriff, opt.gegendruckMs);
         await page.evaluateOnNewDocument(() => {
             if (window.top !== window) return;
             window.__anazhHeadlessNullRenderer = true;
@@ -811,8 +813,23 @@ async function selbsttest() {
     return ok;
 }
 
+// DIE GEGENDRUCK-PROBE (`--gegendruck`): K6 urteilt über die Arbeit des Geräts, nie über das Tempo des Läufers — die garage
+// gibt jede Arbeit 35 s spät ab: K6 grün; der Mutant gibt nie ab: K6 rot beim Namen
+async function gegendruck() {
+    let ok = true;
+    for (const [ms, soll] of [[35000, true], [-1, false]]) {
+        const [e] = (await lauf(WELTEN.filter((w) => w.id === "garage"), false, { gegendruckMs: ms })).ergebnisse;
+        const gut = e.k.K6 === soll && (soll || e.notiz.some((n) => /gibt seine Arbeit/.test(n)));
+        console.log(`${gut ? "✅" : "❌"} GEGENDRUCK ${ms < 0 ? "nie abgegeben: K6 rot" : ms / 1000 + " s spät: K6 grün"}`);
+        drucke(e);
+        ok = ok && gut;
+    }
+    return ok;
+}
+
 (async () => {
     if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
+    if (process.argv.includes("--gegendruck")) process.exit((await gegendruck()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
     console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht");
     ergebnisse.forEach(drucke);
