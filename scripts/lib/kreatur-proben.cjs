@@ -2035,53 +2035,60 @@ async function kreaturProben(r, T, opts) {
             );
         if (taeter === "jagd-duft") decke(restore, "_kreaturAasZug", () => () => false);
         const dt = 1 / 60;
-        // (A) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3; er ersetzt die Kampf-Schau und das Bissen ohne Tod): drei
-        // Wölfe gegen einen VERWUNDETEN Hirsch (ein Zehntel seines echten Lebens — ein gesunder braucht ~20 Bisse, jeder jagt ihn
-        // in die Flucht: 6 Bisse in 240 s, 20.10.); er fällt, sein Leib wird Kadaver (Fleisch in kg), Fressen verbraucht ihn, sein
-        // Geruch (`_scentAt`) ruft Fuchs und Bär, die beim Riss 35 m fern stehen. Der Spieler steht 150 m fern (nah jagte das
-        // Rudel IHN, jagd.radius).
-        s.creatureAnimationTime = 100;
-        r._creatureAiFrame = 0;
-        const o4 = frei(-60, 40, 25) || land(-60, 40);
-        pm.set(o4.x + 150, pm.y, o4.z + 20);
-        const beute = tier({ x: o4.x, y: o4.y, z: o4.z }, "wesen", 1);
-        ruhig(beute);
-        beute.userData.hp = 0.1 * r.computeCreatureStats(beute).stats.hpMax;
-        for (let i = 0; i < 3; i++)
-            ruhig(
-                tier(
-                    { x: o4.x - Math.cos(i * 0.6 - 0.6) * 20, y: o4.y, z: o4.z + Math.sin(i * 0.6 - 0.6) * 20 },
-                    "wolf"
-                )
-            );
-        r._kreaturVerbinden(s.creatures.filter((c) => c !== beute));
-        const R = { rissS: null, fleisch0: null, fleischEnde: null, gaeste: [] };
-        const zuK = (c) => Math.hypot(c.position.x - beute.position.x, c.position.z - beute.position.z);
-        for (let k = 0; k < 3600 + 2400 && (R.rissS !== null || k < 3600); k++) {
-            ruhigSpieler();
-            takt(dt);
-            if (R.rissS === null && s.leichname.includes(beute)) {
-                R.rissS = +(k * dt).toFixed(1);
-                R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
-                for (const [seele, dz] of [
-                    ["fuchs", 18],
-                    ["baer", -18],
-                ]) {
-                    const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
-                    ruhig(g);
-                    R.gaeste.push({ seele, c: g, d0: +zuK(g).toFixed(1), dMin: Infinity, frissS: 0 });
+        // (A) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3): drei Wölfe gegen einen GESUNDEN Hirsch (Tiere K2: ~20
+        // Bisse, jeder jagt ihn in die Flucht) an zehn Orten (die Mitte, ein Ring von 70 m) — die Riss-Quote. Der erste Riss
+        // trägt die Kette: der Leib wird Kadaver (Fleisch in kg), Fressen verbraucht ihn, sein Geruch (`_scentAt`) ruft Fuchs
+        // und Bär, 35 m fern beim Riss. Der Spieler steht 150 m fern (nah jagte das Rudel IHN, jagd.radius).
+        const R = { fensterS: 600, zeiten: [], rissS: null, fleisch0: null, fleischEnde: null, gaeste: [] };
+        for (let ort = 0; ort < 10; ort++) {
+            const w = (2 * Math.PI * (ort - 1)) / 9,
+                rO = ort ? 70 : 0;
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
+            const o4 = frei(-60 + Math.cos(w) * rO, 40 + Math.sin(w) * rO, 25) || land(-60, 40);
+            pm.set(o4.x + 150, pm.y, o4.z + 20);
+            const beute = tier({ x: o4.x, y: o4.y, z: o4.z }, "wesen", 1);
+            ruhig(beute);
+            if (taeter === "jagd-hp") beute.userData.hp *= 0.1; // der alte Schleichweg: die verwundete Beute
+            R.hp0 = Math.round(beute.userData.hp);
+            for (let i = 0; i < 3; i++)
+                ruhig(
+                    tier(
+                        { x: o4.x - Math.cos(i * 0.6 - 0.6) * 20, y: o4.y, z: o4.z + Math.sin(i * 0.6 - 0.6) * 20 },
+                        "wolf"
+                    )
+                );
+            r._kreaturVerbinden(s.creatures.filter((c) => c !== beute));
+            const kette = R.rissS === null;
+            const zuK = (c) => Math.hypot(c.position.x - beute.position.x, c.position.z - beute.position.z);
+            R.zeiten.push(null);
+            for (let k = 0, ende = R.fensterS * 60; k < ende; k++) {
+                ruhigSpieler();
+                takt(dt);
+                if (R.zeiten[ort] === null && s.leichname.includes(beute)) {
+                    R.zeiten[ort] = +(k * dt).toFixed(1);
+                    if (!kette) break;
+                    R.rissS = R.zeiten[ort];
+                    R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
+                    for (const [seele, dz] of [
+                        ["fuchs", 18],
+                        ["baer", -18],
+                    ]) {
+                        const g = tier(land(beute.position.x - 30 - P0.x, beute.position.z + dz - P0.z), seele);
+                        ruhig(g);
+                        R.gaeste.push({ seele, c: g, d0: +zuK(g).toFixed(1), dMin: Infinity, frissS: 0 });
+                    }
+                    ende = k + 7200;
                 }
-                R.ende = k + 2400;
+                for (const G of kette ? R.gaeste : []) {
+                    G.dMin = Math.min(G.dMin, +zuK(G.c).toFixed(1));
+                    if (G.c.userData._motionZustand === "fressen") G.frissS = +(G.frissS + dt).toFixed(3);
+                }
             }
-            for (const G of R.gaeste) {
-                G.dMin = Math.min(G.dMin, +zuK(G.c).toFixed(1));
-                if (G.c.userData._motionZustand === "fressen") G.frissS = +(G.frissS + dt).toFixed(3);
-            }
-            if (k === R.ende) break;
+            if (kette && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
+            for (const G of R.gaeste) delete G.c;
+            for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
         }
-        if (beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
-        for (const G of R.gaeste) delete G.c;
-        for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
         // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn — auf einer freien Bahn aus der Welt
         // (die Länge seines Laufs, der Wolf 6 m dahinter); keine freie Bahn ist ein Fehler, kein Ersatz-Ort
         const sprint = s.sprintSpeed;
@@ -2989,12 +2996,20 @@ function urteil(name, z) {
             `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
         );
         const R = z.riss;
-        soll(R.rissS !== null, "kein Riss: das Rudel fällt den verwundeten Hirsch nicht in 60 s");
+        soll(
+            R.rissS !== null,
+            `kein Riss: das Rudel fällt den gesunden Hirsch (${R.hp0} HP) an keinem der ${R.zeiten.length} Orte in ${R.fensterS} s`
+        );
+        const erst = Math.min(...R.zeiten.filter((x) => x !== null));
+        soll(
+            !(erst < 60),
+            `Beute ohne Leben: der erste Riss nach ${erst} s (ein gesunder Hirsch trägt ~20 Bisse, Tiere K2)`
+        );
         if (R.rissS !== null) {
             soll(R.fleisch0 > 0, "kein Kadaver: der gerissene Leib trägt kein Fleisch (_kreaturFaellt)");
             soll(
                 R.fleischEnde !== null && R.fleischEnde < R.fleisch0,
-                `Fressen verbraucht den Kadaver nicht: Fleisch ${R.fleisch0} → ${R.fleischEnde} kg in 40 s`
+                `Fressen verbraucht den Kadaver nicht: Fleisch ${R.fleisch0} → ${R.fleischEnde} kg in 120 s nach dem Riss bei ${R.rissS} s`
             );
             for (const G of R.gaeste)
                 soll(
@@ -3122,6 +3137,7 @@ const TAETER = {
         ["jagd-schritt", /Sprinter entkommt/],
         ["jagd-aas", /kein Kadaver/],
         ["jagd-duft", /kein Geruch/],
+        ["jagd-hp", /Beute ohne Leben/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],

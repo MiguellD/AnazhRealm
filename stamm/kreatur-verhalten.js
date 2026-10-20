@@ -3503,7 +3503,10 @@ AnazhRealm._verhaltenGesetz = function () {
             // DER KADAVER (Meisterkarte Tiere H3, Vertrags-Akt 20.10.)
             v.aas &&
             Number.isFinite(v.aas.fleischAnteil) &&
+            Number.isFinite(v.aas.magenAnteil) &&
+            Number.isFinite(v.aas.fressSec) &&
             Number.isFinite(v.aas.verdauSec) &&
+            Number.isFinite(v.aas.hungerAnteil) &&
             Number.isFinite(v.freude.hopHochM) &&
             Number.isFinite(v.freude.hopBasisM) &&
             Array.isArray(v.groessen) &&
