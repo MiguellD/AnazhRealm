@@ -394,10 +394,11 @@ function lauf(k) {
         // Haken zählt je gerendertem Frame die Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false, tVor = null, tRenderVor = null, gpuAm = r._gpuTsAtMs;
+        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs;
         rend.setAnimationLoop((t) => {
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
             window.__wetterHalten();
+            if (messen && k.spur) console.timeStamp("anazh-takt"); // DIE BELEGUNG: Anfang und Ende jedes Takts in der Spur
             const c0 = performance.now();
             const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const z = (uhr.frameZ = {});
@@ -411,9 +412,10 @@ function lauf(k) {
             const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
             if (!messen) {
                 if (gerendert) tRenderVor = t;
-                return void (tVor = t);
+                return;
             }
-            const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0, gerendert };
+            const p = { cpu: performance.now() - c0, gerendert };
+            if (k.spur) console.timeStamp(gerendert ? "anazh-bild" : "anazh-leer");
             if (gerendert) {
                 p.dtRender = tRenderVor == null ? null : t - tRenderVor;
                 tRenderVor = t;
@@ -435,7 +437,6 @@ function lauf(k) {
                     p.verzug = p.gpuFertig - cEnde;
                 });
             }
-            tVor = t;
             proben.push(p);
         });
         try {
@@ -481,6 +482,7 @@ function lauf(k) {
             const v0 = Object.assign({}, window.__vram || {});
             const wache = () => (window.__stempelWache ? window.__stempelWache() : null);
             const s0 = wache();
+            if (k.spur) await window.__spurAn();
             messen = uhr.messen = true;
             await sleep(k.sek * 1000);
             messen = uhr.messen = false;
@@ -495,7 +497,7 @@ function lauf(k) {
                 return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
-            const dt = spalte("dtRender"), takt = spalte("dt"), gpu = spalte("gpu");
+            const dt = spalte("dtRender"), gpu = spalte("gpu");
             const cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu);
             const zahl = (a) => ({ p50: quant(a, 0.5), p95: quant(a, 0.95), p99: quant(a, 0.99), max: quant(a, 1) });
             // Je gerendertem Frame: die Summe (Mittel · p95 · max — ihr p50 springt zwischen den Pass-Moden) und je Pass
@@ -524,7 +526,6 @@ function lauf(k) {
                 fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
                 frameMs: zahl(dt),
                 cpuTaktMs: zahl(cpu),
-                taktMs: zahl(takt),
                 leine: r._gpuLeine
                     ? { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length))
                         .toFixed(1), imFlug: r._gpuLeine.imFlug }
@@ -858,6 +859,8 @@ async function starte() {
     await adapterZeile(browser);
     const page = await browser.newPage();
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+    const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
+    await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
@@ -2893,13 +2896,28 @@ async function starte() {
                     }
                 }
                 if (req.url === "/lauf") {
-                    const o = await page.evaluate(lauf, {
-                        sek: Number(b.sek) || 20,
-                        ein: b.ein != null ? Number(b.ein) : 30,
-                        ruhe: Number(b.ruhe) || 0,
-                        regler: b.regler || "frei",
-                        tiere: b.tiere || "halten",
-                    });
+                    // DIE BELEGUNG (`belegungAuswerten`, scripts/lib/zerlege-linse.cjs): die Spur (CDP-Trace) nur im Mess-Fenster
+                    const cdp = await page.target().createCDPSession(), ev = [];
+                    cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
+                    let an = false, o;
+                    spur.an = () =>
+                        cdp.send("Tracing.start", { traceConfig: { includedCategories: ZL.BELEGUNG_SPUR } }).then(() => (an = true));
+                    try {
+                        o = await page.evaluate(lauf, {
+                            sek: Number(b.sek) || 20,
+                            ein: b.ein != null ? Number(b.ein) : 30,
+                            ruhe: Number(b.ruhe) || 0,
+                            regler: b.regler || "frei",
+                            tiere: b.tiere || "halten",
+                            spur: true,
+                        });
+                    } finally {
+                        spur.an = null;
+                        const fertig = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+                        if (an) await cdp.send("Tracing.end").then(() => fertig);
+                        await cdp.detach();
+                    }
+                    o.belegung = ZL.belegungAuswerten(ev);
                     if (o.stempel) o.stempel.warnung = stempelWarnung.n;
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
@@ -3640,9 +3658,10 @@ async function starte() {
         process.exit(0);
     } else if (cmd === "lauf") {
         if (argv.includes("--selbsttest")) {
-            const f = ZL.zweiGipfelSelbsttest();
+            const f = [...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest()];
             console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: die Pass-Teilung trennt zwei Gipfel " +
-                "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz");
+                "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
+                "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN");
             process.exit(f.length ? 1 : 0);
         }
         o = await rufe("/lauf", {
@@ -3652,10 +3671,13 @@ async function starte() {
             tiere: opt("--tiere", "halten"),
             ruhe: opt("--ruhe", 0),
         });
-        // Die Wetter-Wache: ein Lauf, der das Wetter nicht hält, endet mit Exit 1 und nennt den Täter.
-        if (o && o.wetterHalt && o.wetterHalt.urteil === "ROT") {
-            console.log(JSON.stringify(o, null, 1));
-            console.log(`WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`);
+        // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
+        const rot = [
+            o.wetterHalt && o.wetterHalt.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
+            o.belegung && o.belegung.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
+        ].filter(Boolean);
+        if (rot.length) {
+            console.log(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
             process.exit(1);
         }
     } else if (cmd === "profil")
