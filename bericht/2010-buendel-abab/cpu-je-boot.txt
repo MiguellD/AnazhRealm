@@ -1,0 +1,26 @@
+g-third-A1: vor dem Logger
+g-third-B1: vor dem Logger
+g-third-A2: 158 s · Leistung 145 % · Limit 100 %
+g-third-B2: 167 s · Leistung 149 % · Limit 100 %
+g-third-A3: 169 s · Leistung 151 % · Limit 100 %
+g-third-B3: 167 s · Leistung 149 % · Limit 100 %
+g-third-A4: 167 s · Leistung 151 % · Limit 100 %
+g-third-B4: 166 s · Leistung 152 % · Limit 100 %
+w-ego-A1: 140 s · Leistung 150 % · Limit 100 %
+w-ego-B1: 139 s · Leistung 151 % · Limit 100 %
+w-ego-A2: 139 s · Leistung 151 % · Limit 100 %
+w-ego-B2: 138 s · Leistung 152 % · Limit 100 %
+w-ego-A3: 138 s · Leistung 159 % · Limit 100 %
+w-ego-B3: 138 s · Leistung 153 % · Limit 100 %
+w-ego-A4: 141 s · Leistung 151 % · Limit 100 %
+w-ego-B4: 139 s · Leistung 153 % · Limit 100 %
+fahrt-A1: 112 s · Leistung 162 % · Limit 100 %
+fahrt-B1: 112 s · Leistung 157 % · Limit 100 %
+fahrt-A2: 112 s · Leistung 156 % · Limit 100 %
+fahrt-B2: 112 s · Leistung 154 % · Limit 100 %
+fahrt-A3: 112 s · Leistung 154 % · Limit 100 %
+fahrt-B3: 113 s · Leistung 153 % · Limit 100 %
+fahrt-A4: 113 s · Leistung 155 % · Limit 100 %
+fahrt-B4: 116 s · Leistung 153 % · Limit 100 %
+blick-B1: 107 s · Leistung 155 % · Limit 100 %
+blick-A1: 107 s · Leistung 154 % · Limit 100 %

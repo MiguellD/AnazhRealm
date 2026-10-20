@@ -1,0 +1,5 @@
+Instrument A = n1910-integ, Seite B = n2010-buendel
+Methoden A 3496 · B 3498
+in B entfernt (1): _streuSlotHalt
+in B neu (3): KAMERA_UEBERGANG, _diaetStoffVerpasst, _kamGleiten
+vom Instrument gerufen und in B fehlend (0): KEINE
