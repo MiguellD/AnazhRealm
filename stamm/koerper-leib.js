@@ -155,6 +155,35 @@ class AnazhRealm_koerper_leib {
         return this._buendelTraegt() ? new THREE.BundleGroup() : new THREE.Group();
     }
 
+    // DER STABILE KNOCHEN-NAME (dieselbe Klasse, die Haut): r184s SkinningNode liest die Knochen-Matrizen jeder
+    // SkinnedMesh über `referenceBuffer("skeleton.boneMatrices")` (für die Bewegungs-Spur der Zeit-Auflösung dazu
+    // `previousBoneMatrices`) — ohne Namen schreibt der WGSL-Builder `NodeBuffer_<Knoten-id>`, und jeder Knoten-Bau
+    // eines Leibs trug seinen EIGENEN Quelltext: der Seelenwechsel in ein Tier kompilierte in der Welt bei JEDEM Wechsel
+    // neu (Frost-Wand S2, Radeon +8 Module / +7 Pipelines je Durchgang, GTX +7/+6; zwei Wolf-Leiber unterschieden sich
+    // im Vertex-Quelltext nur in `NodeBuffer_512404` ↔ `NodeBuffer_546844`). Je Draw gibt es genau EINE Knochen-Reihe
+    // und ihre Vorgängerin → ein fester Name macht gleiche Gestalten gleich: ein Leib zeichnet mit den Programmen, die
+    // die Welt für dieselbe Gestalt schon hat. Die Klasse reicht der TSL-Bauer `skinning` (das Bündel exportiert sie
+    // nicht an window.THREE): sein Knoten an einer Probe-Haut mit einem Knochen.
+    _knochenPufferName() {
+        const probeHaut = new THREE.SkinnedMesh();
+        probeHaut.bind(new THREE.Skeleton([new THREE.Bone()]));
+        const SN = THREE.TSL.skinning(probeHaut).constructor;
+        if (typeof SN.prototype.getSkinnedPosition !== "function")
+            this.log(
+                "KNOCHEN-PUFFER-NAME: r184-SkinningNode.getSkinnedPosition nicht gefunden (Vendor-Drift)",
+                "ERROR"
+            );
+        else if (!SN.__anazhName) {
+            const lageRoh = SN.prototype.getSkinnedPosition;
+            SN.prototype.getSkinnedPosition = function (knochen = this.boneMatricesNode, lage = this.positionNode) {
+                if (knochen && knochen.name == null && typeof knochen.setName === "function")
+                    knochen.setName(knochen === this.previousBoneMatricesNode ? "knochenMatrixVor" : "knochenMatrix");
+                return lageRoh.call(this, knochen, lage);
+            };
+            SN.__anazhName = true;
+        }
+    }
+
     // DIE GELENK-GESTALT (S3, Lehre 19 — die Grobstufe ist gelenkig, das Standbild fiel an der Wurzel): EIN Wrap trägt
     // beide Klone; die Grobstufe (lod 1) bindet in der Ruhe-Pose an die Knochen der feinen — EIN Skelett je Gestalt (der
     // Ofen bindet jedes ihrer Teile, auch die starren mit Gewicht 1). Den Wurf liest sie aus der Kern-Zeile (`_ofenZeile`):
