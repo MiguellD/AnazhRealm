@@ -1391,7 +1391,9 @@
                 for (const b of p.boxen) {
                     const lx = (b[0] + b[1]) / 2;
                     const lz = (b[2] + b[3]) / 2;
-                    platte(p.cx + lx * c + lz * sn, p.cz - lx * sn + lz * c, c, sn, (b[1] - b[0]) / 2 + p.saum, (b[3] - b[2]) / 2 + p.saum, p.y, false); // prettier-ignore
+                    const hx = (b[1] - b[0]) / 2 + p.saum;
+                    const hz = (b[3] - b[2]) / 2 + p.saum;
+                    platte(p.cx + lx * c + lz * sn, p.cz - lx * sn + lz * c, c, sn, hx, hz, p.y, false);
                     if (b[4]) g.schnitt++;
                 }
                 if (g.keller) {
@@ -1419,7 +1421,9 @@
                 const weg = p.weg == null ? -1 : p.weg;
                 splats.push({ platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg });
                 const m = p.w / 2 + R;
-                rastern(zellen, Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m, Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m, splats.length - 1); // prettier-ignore
+                const [ax0, ax1] = [Math.min(p.x0, p.x1) - m, Math.max(p.x0, p.x1) + m];
+                const [az0, az1] = [Math.min(p.z0, p.z1) - m, Math.max(p.z0, p.z1) + m];
+                rastern(zellen, ax0, ax1, az0, az1, splats.length - 1);
             }
         }
         return { n: splats.length, splats, zellen, gruende, grundZellen, kellerZellen, hohl, schnitt };

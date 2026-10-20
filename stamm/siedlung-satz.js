@@ -1674,7 +1674,19 @@ class AnazhRealm_siedlung_satz {
                     const az = g.cz - lx * g.s + lz * g.c;
                     const phi = Math.atan2(g.s, g.c);
                     const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
-                    this._wegeKarteMale(stufe, { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, rand: S.texelM / 2 }); // prettier-ignore
+                    this._wegeKarteMale(stufe, {
+                        typ: "kasten",
+                        kanal: 0,
+                        ax,
+                        az,
+                        bx: ax,
+                        bz: az,
+                        ex,
+                        ez,
+                        phi,
+                        halb: 0,
+                        rand: S.texelM / 2,
+                    });
                 }
             }
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
