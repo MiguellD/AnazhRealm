@@ -2091,46 +2091,8 @@ async function kreaturProben(r, T, opts) {
             bisse,
         };
         for (const c of s.creatures.slice()) r.removeCreature(c);
-        // (C) DER KREISLAUF: ein Rudel aus drei Wölfen wittert einen erwachsenen Hirsch (er entkommt einem einzelnen Wolf
-        // im Sprint — so soll es sein), und ein einzelner Wolf wittert ein Kitz (bodySize 0,6, langsamer als er): beide
-        // Jagden beißen in 60 s.
-        const kreis = (woelfeN, hirschGroesse, ox, oz) => {
-            // die Kreatur-Uhr und der KI-Takt fest: jede Jagd beginnt im selben Takt, gleich welche Probe vorher lief
-            s.creatureAnimationTime = 100;
-            r._creatureAiFrame = 0;
-            const o3 = frei(ox, oz, 25) || land(ox, oz);
-            pm.set(o3.x + 45, pm.y, o3.z + 20);
-            const beute = tier({ x: o3.x, y: o3.y, z: o3.z }, "wesen", hirschGroesse);
-            ruhig(beute);
-            beute.userData.hp = 1e6;
-            const ws = [];
-            for (let i = 0; i < woelfeN; i++) {
-                const a = -0.6 + i * 0.6;
-                const w = tier({ x: o3.x - Math.cos(a) * 20, y: o3.y, z: o3.z + Math.sin(a) * 20 }, "wolf", 1);
-                ruhig(w);
-                ws.push(w);
-            }
-            r._kreaturVerbinden(ws); // das Rudel ist EIN Verband (S6) — wie aus dem Wurf
-            let zaehle = 0;
-            decke(
-                restore,
-                "damageCreature",
-                (alt) =>
-                    function (c, amount, opt) {
-                        if (c === beute && opt && opt.source === "jagd") zaehle++;
-                        return alt.call(this, c, amount, opt);
-                    }
-            );
-            for (let k = 0; k < 3600; k++) {
-                ruhigSpieler();
-                takt(dt);
-            }
-            for (const c of s.creatures.slice()) r.removeCreature(c);
-            return zaehle;
-        };
-        const rudelBisse = kreis(3, 1, -60, -40);
-        const kitzBisse = kreis(1, 0.6, 80, -20);
-        // (D) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3): dasselbe Rudel gegen einen Hirsch mit ECHTEM Leben —
+        // (C) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3; er ersetzt das Bissen ohne Tod): ein Rudel aus drei
+        // Wölfen gegen einen Hirsch mit ECHTEM Leben —
         // er fällt (der Riss), sein Leib wird ein Kadaver mit Zustand (Fleisch in kg, Alter), Fressen verbraucht ihn, und sein
         // Geruch (`_scentAt`) zieht Fuchs und Bär an, die im Moment des Risses 35 m fern stehen.
         const riss = () => {
@@ -2266,7 +2228,6 @@ async function kreaturProben(r, T, opts) {
         const abst1 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
         return {
             kampfSchau: A1,
-            kreislauf: { rudelGegenHirsch: rudelBisse, wolfGegenKitz: kitzBisse },
             riss: rissZahl,
             sprinter: {
                 sprintMs: +sprint.toFixed(2),
@@ -3135,11 +3096,6 @@ function urteil(name, z) {
             a.hinAnteil !== null && a.hinAnteil >= 0.8,
             `der Witterungs-Jäger läuft nicht zur Beute: ${a.hinAnteil} seiner Schritte zeigen auf sie (Soll ≥ 0,8)`
         );
-        const k = z.kreislauf;
-        soll(
-            k.rudelGegenHirsch >= 1 && k.wolfGegenKitz >= 1,
-            `der Kreislauf schließt sich nicht: das Rudel beißt den Hirsch ${k.rudelGegenHirsch}×, der Wolf das Kitz ${k.wolfGegenKitz}× in 3600 Takten (der einzelne Wolf am erwachsenen Hirsch: ${a.bisse})`
-        );
         soll(
             b.abstandEnde < b.abstand0 && b.bisse >= 1,
             `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
@@ -3277,7 +3233,7 @@ const TAETER = {
         ["abstand-spieler", /Leib im Spieler/],
     ],
     jagdkreis: [
-        ["jagd-gradient", /läuft nicht zur Beute|steht still|Kreislauf schließt sich nicht/],
+        ["jagd-gradient", /läuft nicht zur Beute|steht still|kein Riss/],
         ["jagd-schritt", /Sprinter entkommt/],
         ["jagd-aas", /kein Kadaver/],
         ["jagd-duft", /kein Geruch/],

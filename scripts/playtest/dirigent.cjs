@@ -715,7 +715,7 @@ async function checkBandV18177AAA(ctx) {
 }
 
 // Verdrahtungs-Band — KONSUM, nicht Existenz: A1 _growTreeBlueprintForSpawn (Worldgen-Hook) ·
-// A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 _creatureScentHuntDir +
+// A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 der Biss +
 // _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
 async function checkBandV18210Verdrahtung(ctx) {
     const { page, check } = ctx;
@@ -908,47 +908,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
-        // ============== A3: _scentAt KREATUR-KI ==============
-        // (A3a) Helper existieren
-        // (A3b) Konstanten gesetzt
-        // (Welle LF: die Witterung wählt die Beute an der Nase — der Proben-Schritt des Gradienten scentProbeM fiel;
-        // der Ring der Hetze hetzM und die Pirsch-Sicht sind Jagd-Gesetz)
-        out.a3ScentRangeM = A._verhaltenGesetz().jagd.scentRangeM;
-        out.a3ScentProbeM = A._verhaltenGesetz().jagd.hetzM;
-        out.a3ConstsOk =
-            typeof out.a3ScentRangeM === "number" &&
-            out.a3ScentRangeM >= 30 &&
-            typeof out.a3ScentProbeM === "number" &&
-            out.a3ScentProbeM > 0 &&
-            A._verhaltenGesetz().jagd.scentProbeM === undefined;
-        // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
-        // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
+        // ============== A3: der Biss der KREATUR-KI ==============
+        // (die Witterung urteilt gate:kreatur-takt jagdkreis am echten Takt)
         const savedMode = r.getGameMode();
         const savedCreatures = r.state.creatures;
         try {
             r.setGameMode("pfad");
-            // ein wildes Wesen und seine Beute 20 m östlich — ECHTE Leiber (Welle LF: das Beute-Urteil liest die EINE Masse
-            // des Leibs aus der Gestalt; der Wolf jagt, der Fuchs ist scheu und seine Beute)
-            const pmH = r.state.playerMesh.position;
-            const capH = r.state.maxCreatures;
-            r.state.maxCreatures = Math.max(capH || 0, savedCreatures.length + 2);
-            const optH = { precise: true, bodySize: 1 };
-            const predator = r.spawnCreatureAt(pmH.x + 380, pmH.y, pmH.z - 380, "calm", "wolf", optH);
-            const prey = predator && r.spawnCreatureAt(pmH.x + 400, pmH.y, pmH.z - 380, "calm", "fuchs", optH);
-            r.state.maxCreatures = capH;
-            if (predator && prey) {
-                prey.position.set(predator.position.x + 20, predator.position.y, predator.position.z);
-                r.state.creatures = [predator, prey];
-                const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
-                out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
-                // Ohne Beute → null
-                r.state.creatures = [predator];
-                const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
-                out.a3NoPreyNoDir = dirNoPrey === null;
-            }
-            r.state.creatures = savedCreatures;
-            if (predator) r.removeCreature(predator);
-            if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
@@ -1095,13 +1060,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
     check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
-    // A3 — Scent KI
-    check(
-        `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
-        res.a3ConstsOk === true
-    );
-    check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
-    check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
+    // A3 — der Biss
     check(
         "V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → der Biss trifft und stößt sie weg (echte Leiber, 0710-4)",
         res.a3StrikeHits === true,
@@ -1378,7 +1337,13 @@ async function checkBandPerfPanel(ctx) {
         const exp = r._exportPerfTrace();
         res.export = exp ? { name: exp.name, bytes: exp.bytes } : null;
         const trace = exp ? r._flightRecorderBuildTrace() : null;
-        res.trace = !!(trace && trace.session && trace.session.frames > 0 && "impostorZensus" in trace && trace.version);
+        res.trace = !!(
+            trace &&
+            trace.session &&
+            trace.session.frames > 0 &&
+            "impostorZensus" in trace &&
+            trace.version
+        );
         const saved = r.state.flightRecorder;
         r.state.flightRecorder = null;
         res.selbstTestKeinTrace = r._exportPerfTrace() === null;
@@ -1388,12 +1353,25 @@ async function checkBandPerfPanel(ctx) {
     });
     const o = out || {};
     const version = require(path.join(SKRIPTE, "..", "package.json")).version;
-    check("Perf-Panel (P) Kopf trägt fps + VERSION (Screenshot-Pflichtfeld)", /fps/.test(o.head) && String(o.head).includes("V" + version), String(o.head).slice(0, 60));
+    check(
+        "Perf-Panel (P) Kopf trägt fps + VERSION (Screenshot-Pflichtfeld)",
+        /fps/.test(o.head) && String(o.head).includes("V" + version),
+        String(o.head).slice(0, 60)
+    );
     check(
         "Perf-Panel (P) Grid trägt frame · draw-calls · tris · GPU (echt|proxy) · Impostor, die ms-Verteilung ihre 6 Eimer",
-        /frame ø/.test(o.grid) && /draw-calls/.test(o.grid) && /tris/.test(o.grid) && /GPU \((echt|proxy)\)/.test(o.grid) && /Impostor/.test(o.grid) && /ms-Verteilung/.test(o.buckets) && /<17/.test(o.buckets)
+        /frame ø/.test(o.grid) &&
+            /draw-calls/.test(o.grid) &&
+            /tris/.test(o.grid) &&
+            /GPU \((echt|proxy)\)/.test(o.grid) &&
+            /Impostor/.test(o.grid) &&
+            /ms-Verteilung/.test(o.buckets) &&
+            /<17/.test(o.buckets)
     );
-    check(`Perf-Panel (P) Sekunden-Ring rollt (${o.ringN}s) + Canvas ist GEMALT (${o.canvasPixel || 0} px)`, o.ringN >= 2 && (o.canvasPixel || 0) > 200);
+    check(
+        `Perf-Panel (P) Sekunden-Ring rollt (${o.ringN}s) + Canvas ist GEMALT (${o.canvasPixel || 0} px)`,
+        o.ringN >= 2 && (o.canvasPixel || 0) > 200
+    );
     check(
         "Perf-Panel (E) der Export liefert die Datei, ihr Trace trägt session/impostorZensus/version",
         !!(o.export && /^anazhRealmPerf-V[\d.]+-.*\.json$/.test(o.export.name) && o.export.bytes > 500 && o.trace),
@@ -1431,7 +1409,8 @@ async function checkBandExistenzBoden(ctx) {
             if (s.pendingWaterIso.size >= 6) break;
         }
         res.queueVor = s.pendingWaterIso.size;
-        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
+        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++)
+            r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
         res.queueNach = s.pendingWaterIso.size;
         // (c) SELBST-TEST: ein Sonde-Job prio 2 läuft auf einem Nicht-4er-Frame NICHT
         r._schedFrameNo = 1;
@@ -1469,11 +1448,28 @@ async function checkBandExistenzBoden(ctx) {
     });
     const o = out || { gesehen: {} };
     const g = o.gesehen;
-    check("Existenz-Boden (a) SUBSTANZ (waterIso) läuft JEDEN Frame trotz Budget 0, DEKO gedrosselt (jeden 4.)", g.laeufe > 0 && g.waterIso === g.laeufe && g.deko > 0 && g.deko <= Math.ceil(g.laeufe / 4) * 2, JSON.stringify(g));
-    check(`Existenz-Boden (b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
-    check("Existenz-Boden SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)", o.bodenIstBoden === true);
-    check("Existenz-Boden (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
-    check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
+    check(
+        "Existenz-Boden (a) SUBSTANZ (waterIso) läuft JEDEN Frame trotz Budget 0, DEKO gedrosselt (jeden 4.)",
+        g.laeufe > 0 && g.waterIso === g.laeufe && g.deko > 0 && g.deko <= Math.ceil(g.laeufe / 4) * 2,
+        JSON.stringify(g)
+    );
+    check(
+        `Existenz-Boden (b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${o.queueVor} → ${o.queueNach})`,
+        o.queueNach < o.queueVor
+    );
+    check(
+        "Existenz-Boden SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)",
+        o.bodenIstBoden === true
+    );
+    check(
+        "Existenz-Boden (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt",
+        o.dauerStromDeko >= 2,
+        `${o.dauerStromDeko} von 8 Takten`
+    );
+    check(
+        "Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)",
+        o.terrainZuerst === true
+    );
 }
 
 // Godrays (V8 Kür) — eingefaltet aus gate:godray (D3b): der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
@@ -1492,7 +1488,12 @@ async function checkBandGodray(ctx) {
         out.gateStorm = r._godrayFrameGate(0.9, r.constructor.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, calls, frameMs) => ({
+            loadScale: ls,
+            phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 },
+            renderCalls: calls,
+            frameMs,
+        });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = true;
             r._nexusPerfActuate(sense(0.0, 2000, 60));
@@ -1508,10 +1509,18 @@ async function checkBandGodray(ctx) {
         return out;
     });
     const g = o || {};
-    check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · 1,7° darüber auf (die Tag-Achse, keine eigene Schwelle) · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateTief > 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateTief} · ${g.gateStorm}`);
+    check(
+        "Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · 1,7° darüber auf (die Tag-Achse, keine eigene Schwelle) · Sturm < 0,05",
+        g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateTief > 0 && g.gateStorm != null && g.gateStorm < 0.05,
+        `${g.gateHigh} · ${g.gateBelow} · ${g.gateTief} · ${g.gateStorm}`
+    );
     check(
         "Godray (B) der Perf-Hebel: headless → MAX, Last → aus, Kopfraum → MAX, klar getrennt",
-        g.headlessScale != null && Math.abs(g.headlessScale - g.MAX) < 1e-6 && g.heavyScale < 0.1 && g.lightScale > g.MAX - 0.05 && g.heavyScale < g.lightScale - 0.4,
+        g.headlessScale != null &&
+            Math.abs(g.headlessScale - g.MAX) < 1e-6 &&
+            g.heavyScale < 0.1 &&
+            g.lightScale > g.MAX - 0.05 &&
+            g.heavyScale < g.lightScale - 0.4,
         `headless ${g.headlessScale} · heavy ${g.heavyScale} · light ${g.lightScale} (MAX ${g.MAX})`
     );
 }
@@ -1540,7 +1549,8 @@ async function checkBandSzeneSkala(ctx) {
         st._traa = traaWar;
         st.szeneSkala = skWar;
         // (2) _markFoliageLayer + die ECHTEN Gruppen über den realen Erzeugungs-Pfad (`_archInstanceGroupFor`)
-        const layersOf = (m) => ((m.layers.mask & 1) !== 0 ? "L0" : "") + ((m.layers.mask & (1 << LAYER)) !== 0 ? "+LAUB" : "");
+        const layersOf = (m) =>
+            ((m.layers.mask & 1) !== 0 ? "L0" : "") + ((m.layers.mask & (1 << LAYER)) !== 0 ? "+LAUB" : "");
         const mk = (regionKey, regional) => {
             const m = new THREE.Object3D();
             r._markFoliageLayer(m, regionKey, regional);
@@ -1559,7 +1569,12 @@ async function checkBandSzeneSkala(ctx) {
         // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
         const applyWar = r._applyRenderScale;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, calls, frameMs) => ({
+            loadScale: ls,
+            phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 },
+            renderCalls: calls,
+            frameMs,
+        });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = false;
             r._applyRenderScale = () => {};
@@ -1585,8 +1600,16 @@ async function checkBandSzeneSkala(ctx) {
         !!g.skala && g.skala.join("/") === [g.SKALA, g.MIN, 1, 0.85, 1].join("/"),
         g.skala ? g.skala.join("/") : ""
     );
-    check("Szenen-Skala (2) Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0 (Marke und echte Gruppe)", !!g.gruppe && [...g.marke, ...g.gruppe].join("/") === "L0+LAUB/L0/L0+LAUB/L0", [...(g.marke || []), ...(g.gruppe || [])].join("/"));
-    check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen, kein Laub-Faktor), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && g.laubFaktorLebt === false && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Laub-Faktor ${g.laubFaktorLebt} · Snapshot ${g.snapshotSkala}`);
+    check(
+        "Szenen-Skala (2) Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0 (Marke und echte Gruppe)",
+        !!g.gruppe && [...g.marke, ...g.gruppe].join("/") === "L0+LAUB/L0/L0+LAUB/L0",
+        [...(g.marke || []), ...(g.gruppe || [])].join("/")
+    );
+    check(
+        "Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen, kein Laub-Faktor), (4) der Snapshot nennt sie",
+        g.nachLast === 0.8 && g.nachRuhe === 0.8 && g.laubFaktorLebt === false && typeof g.snapshotSkala === "number",
+        `${g.nachLast} → ${g.nachRuhe} · Laub-Faktor ${g.laubFaktorLebt} · Snapshot ${g.snapshotSkala}`
+    );
 }
 
 // Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim (D3b): die ECHTE Kette `_perfSenseFoldFrame`
@@ -1806,10 +1829,7 @@ async function checkBandReglerSim(ctx) {
                     const { span } = r._voxelChunkConfig();
                     const kante = (st._activeRingRadius + 1) * span;
                     const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
-                    const laubZiel = Math.min(
-                        lerp(A.PERF_FOLIAGE_RADIUS_MIN, A.PERF_FOLIAGE_RADIUS_MAX, seed),
-                        kante
-                    );
+                    const laubZiel = Math.min(lerp(A.PERF_FOLIAGE_RADIUS_MIN, A.PERF_FOLIAGE_RADIUS_MAX, seed), kante);
                     const archZiel = lerp(A.ARCH_QUALITY_RADIUS_MIN, A.ARCH_QUALITY_RADIUS_MAX, seed);
                     o.s7 = {
                         seed,
@@ -1844,9 +1864,19 @@ async function checkBandReglerSim(ctx) {
     const o = out || {};
     const f2 = (v) => (typeof v === "number" ? +v.toFixed(3) : v);
     const s1 = o.s1 || { a: {}, b: {} };
-    check(`Regler-Sim S1 schwache GPU: der Regler DROSSELT und KONVERGIERT, das Studio-Regime baut nie neu (loadScale ${f2(s1.a.loadScale)}, Dichte ${f2(s1.a.density)})`, o.s1Throttled && o.s1Converged && o.s1NoRebuildLoop && o.s1EffectiveDensityOne, JSON.stringify(s1).slice(0, 160));
-    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
-    check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
+    check(
+        `Regler-Sim S1 schwache GPU: der Regler DROSSELT und KONVERGIERT, das Studio-Regime baut nie neu (loadScale ${f2(s1.a.loadScale)}, Dichte ${f2(s1.a.density)})`,
+        o.s1Throttled && o.s1Converged && o.s1NoRebuildLoop && o.s1EffectiveDensityOne,
+        JSON.stringify(s1).slice(0, 160)
+    );
+    check(
+        `Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`,
+        o.s2StreamSacred === true && o.s3Recovered === true
+    );
+    check(
+        `Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`,
+        o.s4Invariant === true
+    );
     check(
         "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
         o.s5Klassen === true && o.s5SeedKonsumiert === true && o.s5HeadlessAlt === true,
@@ -1854,17 +1884,41 @@ async function checkBandReglerSim(ctx) {
     );
     check(
         "Regler-Sim S6 Grenzzyklus-Schnitt: gepulster Kopfraum bewegt Laub- und Architektur-Radius NICHT, anhaltende Ruhe wächst",
-        o.s6PulsStill === true && o.s6RuheWaechst === true && o.s6ArchPulsStill === true && o.s6ArchRuheWaechst === true,
+        o.s6PulsStill === true &&
+            o.s6RuheWaechst === true &&
+            o.s6ArchPulsStill === true &&
+            o.s6ArchRuheWaechst === true,
         `Laub Δ ${o.s6PulsDelta} ${o.s6 ? o.s6.nachPuls + "→" + o.s6.nachRuhe : ""} · Bauten Δ ${o.s6ArchPulsDelta}`
     );
-    check("Regler-Sim S7 der Ladeschirm misst nichts: der PID hält den Seed, Laub und Bauten stehen nach zwei Lade-Bildern am Ziel", o.s7LoadHaelt === true && o.s7LaubAmZiel === true && o.s7ArchAmZiel === true, JSON.stringify(o.s7));
-    check("Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her", o.gpuAppliersDrove === true && o.restored === true);
+    check(
+        "Regler-Sim S7 der Ladeschirm misst nichts: der PID hält den Seed, Laub und Bauten stehen nach zwei Lade-Bildern am Ziel",
+        o.s7LoadHaelt === true && o.s7LaubAmZiel === true && o.s7ArchAmZiel === true,
+        JSON.stringify(o.s7)
+    );
+    check(
+        "Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her",
+        o.gpuAppliersDrove === true && o.restored === true
+    );
 }
 
 module.exports = {
-    checkInitialState, checkRing1Grok, checkBandV1778LadderCut, checkBandV18278LoopErrorBoundary,
-    checkBandWellePerfENexusGovernor, checkBandWaldbodenKaskade, checkBandTailleOmega5, checkBandV18149Statusbar,
-    checkBandV18163DetailTiefe, checkBandV18165KonsoleHeil, checkBandV18177AAA, checkBandV18210Verdrahtung,
-    checkBandRauschGesetz, checkBandV18331ReplayDeterminism, checkBandPerfPanel, checkBandExistenzBoden,
-    checkBandGodray, checkBandSzeneSkala, checkBandReglerSim,
+    checkInitialState,
+    checkRing1Grok,
+    checkBandV1778LadderCut,
+    checkBandV18278LoopErrorBoundary,
+    checkBandWellePerfENexusGovernor,
+    checkBandWaldbodenKaskade,
+    checkBandTailleOmega5,
+    checkBandV18149Statusbar,
+    checkBandV18163DetailTiefe,
+    checkBandV18165KonsoleHeil,
+    checkBandV18177AAA,
+    checkBandV18210Verdrahtung,
+    checkBandRauschGesetz,
+    checkBandV18331ReplayDeterminism,
+    checkBandPerfPanel,
+    checkBandExistenzBoden,
+    checkBandGodray,
+    checkBandSzeneSkala,
+    checkBandReglerSim,
 };

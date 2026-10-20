@@ -59,11 +59,24 @@ if (V) {
     );
     // SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf
     const tot = { ...V, stimmung: { ...V.stimmung, tot: { aktionen: ["gibtsnicht"], alle: [1, 2] } } };
-    check("SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf", stimmungLuecken(tot).join() === "tot:gibtsnicht");
+    check(
+        "SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf",
+        stimmungLuecken(tot).join() === "tot:gibtsnicht"
+    );
 
     const bekannt = new Set([
-        "freq", "bodyX", "bodyZ", "headX", "headY", "ear",
-        "tailAmp", "tailRate", "tension", "bob", "sway", "kpMul",
+        "freq",
+        "bodyX",
+        "bodyZ",
+        "headX",
+        "headY",
+        "ear",
+        "tailAmp",
+        "tailRate",
+        "tension",
+        "bob",
+        "sway",
+        "kpMul",
     ]);
     const fremd = [];
     for (const name in V.aktionen) {
@@ -72,56 +85,7 @@ if (V) {
         for (const k in p) if (!bekannt.has(k)) fremd.push(name + ":" + k);
     }
     check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
-    // Die Rezepte tragen die Seele (der Buch-Reise-Pfad, nicht nur der Alias).
-    const rec = core.PRESETS && core.PRESETS.wolf;
-    check(
-        "PRESETS.wolf.fx.verhalten reist im Rezept (der Buch-Pfad)",
-        !!(rec && rec.fx && rec.fx.verhalten && rec.fx.verhalten.aktionen)
-    );
-    // ── A3) DECKUNG: die KREATUR-SEELE reist (Spiegel-Zensus 17.07.) —
-    // jagd/furcht/temperament/wandern wohnen im Gesetzbuch, der Stamm liest
-    // sie über den EINEN _verhaltenGesetz-Leser (Paritäts-Wand: gate:studio-vertrag).
-    check(
-        "VERHALTEN trägt die Seelen-Blöcke jagd/furcht/temperament/wandern",
-        !!(
-            V.jagd &&
-            Number.isFinite(V.jagd.strikeCooldownSec) &&
-            V.furcht &&
-            Number.isFinite(V.furcht.fleeThreshold) &&
-            V.temperament &&
-            V.temperament.gattung &&
-            V.temperament.profile &&
-            V.wandern &&
-            Number.isFinite(V.wandern.leashBaseM)
-        )
-    );
-    // ── A4) SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke reisen:
-    // Stimmungs-Schwellen · freude (die Huepf-Hoehen
-    // sind das Sprung-Gesetz; sprung.impulsProM fiel, Welle L) · Größen-Bänder ·
-    // separation · aufgaben · herde · wasser.
-    check(
-        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser)",
-        !!(
-            Number.isFinite(V.herde && V.herde.fensterRaum) &&
-            V.stimmung.schwellen &&
-            Number.isFinite(V.stimmung.schwellen.weideDiet) &&
-            V.freude &&
-            Number.isFinite(V.freude.tempoMul) &&
-            Number.isFinite(V.freude.hopHochM) &&
-            Number.isFinite(V.freude.hopBasisM) &&
-            Array.isArray(V.groessen) &&
-            V.groessen.length >= 2 &&
-            V.groessen.every((k) => k && typeof k.name === "string" && k.min > 0 && k.min < k.max) &&
-            V.separation &&
-            Number.isFinite(V.separation.raumKugel) &&
-            V.aufgaben &&
-            Number.isFinite(V.aufgaben.followTempo) &&
-            V.herde &&
-            Number.isFinite(V.herde.gewicht) &&
-            V.wasser &&
-            Number.isFinite(V.wasser.uferBias)
-        )
-    );
+    // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
     // Die Größen-Bänder sind lückenlos aufsteigend (die letzte Zeile fängt den Rest).
     const gr = Array.isArray(V.groessen) ? V.groessen : [];
     let grOk = gr.length >= 2;
@@ -134,5 +98,5 @@ if (fails > 0) {
     process.exit(1);
 }
 console.log(
-    "\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jede Stimmung zeigt auf eine lebende Aktion, die Seelen-Blöcke reisen im Buch."
+    "\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jede Stimmung zeigt auf eine lebende Aktion, jedes Aktions-Profil auf ein Feld der Haltung."
 );

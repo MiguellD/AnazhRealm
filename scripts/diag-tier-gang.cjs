@@ -330,8 +330,8 @@ const LEIB = (k) => {
 // DIE SCHWERE DES GANGS (K07, dieselbe Linse): Schritt und Becken lesen die Schwere der Welt (state.gravity, die DSL setzt
 // sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen und
 // der des Wolfs im Schritt gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am
-// Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig, ein Trab-Muster neben
-// GANG_FOLGE im Tier-Gang). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
+// Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig; das Muster der Beine
+// urteilt die Gangart am Verhalten). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
     const r = window.anazhRealm,
         s = r.state,
@@ -389,8 +389,6 @@ const SCHWERE = (k) => {
     o.zwillinge = [];
     if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
-    if (!window.__fehlt(r._animateTierBaum, /\[\s*0\s*,\s*Math\.PI\s*\*/))
-        o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben GANG_FOLGE");
     return o;
 };
 
@@ -516,86 +514,17 @@ function gangart(ph) {
     const nach = (bein) => folge[(folge.indexOf(bein) + 1) % 4];
     return nach(HL) === FL && nach(HR) === FR ? "schritt-lateral" : "schritt-diagonal";
 }
-const GANG_WELT = (k) => {
-    // die Phasen der Beine gegen das erste, im Kreis gemittelt über die letzte Sekunde (ein Gang ist ein Muster über die Zeit;
-    // ein einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
-    const mittel = () => {
-        const c = [0, 0, 0, 0],
-            s = [0, 0, 0, 0];
-        return {
-            dazu: (ph) => {
-                for (let k = 0; k < 4; k++) {
-                    c[k] += Math.cos(ph[k] - ph[0]);
-                    s[k] += Math.sin(ph[k] - ph[0]);
-                }
-            },
-            ph: () => c.map((x, k) => Math.atan2(s[k], x)),
-        };
-    };
-    const r = window.anazhRealm,
-        s = r.state;
-    const core = window.__tetrapodaCore;
-    const echt = core.gangSchritt;
-    if (k.stub)
-        core.gangSchritt = function (...a) {
-            return Object.assign(echt.apply(this, a), { folge: k.stimmung });
-        };
-    const pm = s.playerMesh.position;
-    const zeilen = [];
-    try {
-        for (const vh of k.vh) {
-            const saveMax = s.maxCreatures;
-            s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
-            const cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", k.seele, { precise: true, bodySize: 1 });
-            s.maxCreatures = saveMax;
-            if (!cr || !cr.userData._tierBaum) return { fehler: "Spawn " + k.seele };
-            cr.userData.task = { name: "wait", args: {}, since: 0 };
-            cr.userData.emotions = null;
-            cr.rotation.set(0, Math.PI / 2, 0);
-            cr.userData._animFade = 1;
-            const tb = cr.userData._tierBaum;
-            const roles = r._motionRolesForSoul(cr.userData.soul);
-            const Z = r._gangZeile(false);
-            const g = Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g;
-            const L = tb.beinL * (cr.scale.x || 1);
-            const v = vh * Math.sqrt(g * L);
-            const M = mittel();
-            for (let i = 0, t = 0; i < 360; i++) {
-                cr.position.x += v / 60;
-                r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
-                if (i >= 300) M.dazu(tb._gang.ph);
-            }
-            zeilen.push({ vh, v: +v.toFixed(2), L: +L.toFixed(2), ph: M.ph() });
-            r.removeCreature(cr);
-        }
-    } finally {
-        core.gangSchritt = echt;
-    }
-    return { zeilen };
-};
-// das Labor (worlds/tetrapoda): dieselbe Gattung, dasselbe v̂ — der Gang-Takt des Labors (gangTakt) 6 s lang
-const GANG_LABOR = (k) => {
+// je Ort (k.labor: worlds/tetrapoda über seinen Gang-Takt gangTakt, sonst die Welt durch _animateCompoundMotion) die Phasen
+// der Beine gegen das erste, im Kreis gemittelt über die sechste Sekunde (ein Gang ist ein Muster über die Zeit; ein
+// einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
+const GANG = (k) => {
     /* eslint-disable no-undef */
-    // die Phasen der Beine gegen das erste, im Kreis gemittelt über die letzte Sekunde (ein Gang ist ein Muster über die Zeit;
-    // ein einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
-    const mittel = () => {
-        const c = [0, 0, 0, 0],
-            s = [0, 0, 0, 0];
-        return {
-            dazu: (ph) => {
-                for (let k = 0; k < 4; k++) {
-                    c[k] += Math.cos(ph[k] - ph[0]);
-                    s[k] += Math.sin(ph[k] - ph[0]);
-                }
-            },
-            ph: () => c.map((x, k) => Math.atan2(s[k], x)),
-        };
-    };
-    if (typeof gangTempo !== "function" || typeof gangTakt !== "function")
+    const core = window.__tetrapodaCore;
+    const r = window.anazhRealm;
+    if (k.labor && (typeof gangTempo !== "function" || typeof gangTakt !== "function"))
         return {
             fehler: "das Labor kennt kein Tempo: die Stimmung wählt den Gang (emo.set → MOTION.phases, der CPG-Sinus)",
         };
-    const core = window.__tetrapodaCore;
     const echt = core.gangSchritt;
     if (k.stub)
         core.gangSchritt = function (...a) {
@@ -603,17 +532,52 @@ const GANG_LABOR = (k) => {
         };
     const zeilen = [];
     try {
-        document.querySelector('#presets button[data-p="' + k.gattung + '"]').click();
+        if (k.labor) document.querySelector('#presets button[data-p="' + k.art + '"]').click();
         for (const vh of k.vh) {
-            gangTempo(vh);
-            const M = mittel();
-            for (let i = 0; i < 360; i++) {
-                gangTakt(1 / 60);
-                if (i >= 300) M.dazu(cpgPhase);
+            const c = [0, 0, 0, 0],
+                s = [0, 0, 0, 0];
+            const dazu = (ph) => {
+                for (let i = 0; i < 4; i++) {
+                    c[i] += Math.cos(ph[i] - ph[0]);
+                    s[i] += Math.sin(ph[i] - ph[0]);
+                }
+            };
+            let z = { vh };
+            if (k.labor) {
+                gangTempo(vh);
+                for (let i = 0; i < 360; i++) {
+                    gangTakt(1 / 60);
+                    if (i >= 300) dazu(cpgPhase);
+                }
+            } else {
+                const st = r.state,
+                    pm = st.playerMesh.position;
+                const saveMax = st.maxCreatures;
+                st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 4);
+                const cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", k.art, { precise: true, bodySize: 1 });
+                st.maxCreatures = saveMax;
+                if (!cr || !cr.userData._tierBaum) return { fehler: "Spawn " + k.art };
+                cr.userData.task = { name: "wait", args: {}, since: 0 };
+                cr.userData.emotions = null;
+                cr.rotation.set(0, Math.PI / 2, 0);
+                cr.userData._animFade = 1;
+                const tb = cr.userData._tierBaum;
+                const roles = r._motionRolesForSoul(cr.userData.soul);
+                const Z = r._gangZeile(false);
+                const L = tb.beinL * (cr.scale.x || 1);
+                const v = vh * Math.sqrt((Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g) * L);
+                for (let i = 0, t = 0; i < 360; i++) {
+                    cr.position.x += v / 60;
+                    r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
+                    if (i >= 300) dazu(tb._gang.ph);
+                }
+                z = { vh, v: +v.toFixed(2), L: +L.toFixed(2) };
+                r.removeCreature(cr);
             }
-            zeilen.push({ vh, ph: M.ph() });
+            z.ph = c.map((x, i) => Math.atan2(s[i], x));
+            zeilen.push(z);
         }
-        gangTempo(0);
+        if (k.labor) gangTempo(0);
     } finally {
         core.gangSchritt = echt;
     }
@@ -737,7 +701,7 @@ const GANG_LABOR = (k) => {
             for (const seele of ["wolf", "fuchs", "baer", "wesen"])
                 gangUrteil(
                     "Welt " + seele,
-                    await page.evaluate(GANG_WELT, { seele, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
+                    await page.evaluate(GANG, { art: seele, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
                 );
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
@@ -788,7 +752,13 @@ const GANG_LABOR = (k) => {
             for (const gattung of ["wolf", "fox", "bear", "deer"])
                 gangUrteil(
                     "Labor " + gattung,
-                    await tp.evaluate(GANG_LABOR, { gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
+                    await tp.evaluate(GANG, {
+                        art: gattung,
+                        labor: true,
+                        vh: VH,
+                        stub: SELBST,
+                        stimmung: STIMMUNG_FOLGE,
+                    })
                 );
         } finally {
             await sb.close();
