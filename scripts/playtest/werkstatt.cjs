@@ -1991,8 +1991,7 @@ async function checkBandV18135Bookmarks(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.helpers =
-            typeof r._loadFeedBookmarks === "function";
+        out.helpers = typeof r._loadFeedBookmarks === "function";
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
         const was = r._feedBookmarked(id);
@@ -2013,10 +2012,8 @@ async function checkBandV18135Bookmarks(ctx) {
         return;
     }
     check(
-        "V18.135 Lesezeichen: Toggle-Roundtrip + globale Persistenz",
-        res.toggleOn &&
-        res.persisted &&
-        res.toggleOff
+        "V18.135 Lesezeichen: _loadFeedBookmarks (die Suite ruft ihn nie) + Toggle-Roundtrip + globale Persistenz",
+        res.helpers && res.toggleOn && res.persisted && res.toggleOff
     );
 }
 
