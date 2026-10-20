@@ -164,10 +164,22 @@ function taeter(inj) {
             ueber(n, function () {
                 this._bodenSichtAt = (x, z, g) => (streifen(x, z) ? null : P._bodenSichtAt.call(this, x, z, g));
             });
-    // rolle (K8): der Fuß der Streu las den 8-m-Feld-Bake (vor H5), die Pfote stand auf dem Träger ihres Leibs (vor Welle LF)
+    // rolle (K8): der Fuß der Streu las das Gesetz bilinear im 8-m-Raster des Feld-Bakes (vor H5), die Pfote stand auf dem
+    // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz (vor H5)
     if (inj === "rolle") {
-        r._streuFussY = (x, z) => (r._sampleBakedField(x, z) || { height: r._voxelSurfaceY(x, z) }).height;
+        r._streuFuss = (x, z) => {
+            const [u, w] = [x / 8 - 0.5, z / 8 - 0.5];
+            const [i, j] = [Math.floor(u), Math.floor(w)];
+            const h = (a, b) => r._voxelSurfaceY((a + 0.5) * 8, (b + 0.5) * 8) || 0;
+            const y =
+                (h(i, j) * (i + 1 - u) + h(i + 1, j) * (u - i)) * (j + 1 - w) +
+                (h(i, j + 1) * (i + 1 - u) + h(i + 1, j + 1) * (u - i)) * (w - j);
+            return { x, z, lage: y, lod: 3, y };
+        };
         r._kreaturFussBoden = (g) => g.userData._traegerY;
+        ueber("_archRadMatrix", function () {
+            this._bodenSichtAt = () => null;
+        });
     }
 }
 
@@ -895,19 +907,22 @@ async function rollen(n) {
             if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) fein.push(g - l);
         }
         R.fein = mass(fein);
-        // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz)
+        // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz, ihr Ursprung
+        // liegt über der Zelle) gegen das Mesh, wie es JETZT gezeichnet ist — im Stand, nach dem Gang und nach der Fahrt, ohne
+        // Einschwingen (der Geomorph folgt dem Auge)
         const streu = [];
-        for (const reg of s.scatterRegions ? s.scatterRegions.values() : [])
-            for (const c of (reg && reg.cells) || []) {
-                const ref = c.slots && c.slots[0];
-                const g = ref && s.archInstanceGroups.get(ref.key);
-                if (g && g.mesh) g.mesh.getMatrixAt(ref.slot, M);
-                const y =
-                    g && g.mesh && v.setFromMatrixPosition(M).distanceTo(v.set(c.x, v.y, c.z)) < 0.05 ? v.y : null;
-                const b = y === null ? null : gez(c.x, c.z);
-                if (b !== null) streu.push(y - b);
-            }
-        R.streu = mass(streu);
+        const streuJetzt = () => {
+            for (const reg of s.scatterRegions ? s.scatterRegions.values() : [])
+                for (const c of (reg && reg.cells) || []) {
+                    const ref = c.slots && c.slots[0];
+                    const g = ref && s.archInstanceGroups.get(ref.key);
+                    if (!g || !g.mesh) continue;
+                    v.setFromMatrixPosition(g.mesh.getMatrixAt(ref.slot, M), M);
+                    const b = Math.hypot(v.x - c.x, v.z - c.z) < 0.05 ? gez(c.x, c.z) : null;
+                    if (b !== null) streu.push(v.y - b);
+                }
+        };
+        streuJetzt();
         // der Fuß des Spielers: er geht längs der Höhenlinie (die Füße im Stand: der Fuß-Lock der IK); vorwärts ist (sin, cos)
         const quer = Math.atan2(h(X, Z - 1) - h(X, Z + 1), h(X + 1, Z) - h(X - 1, Z));
         const rig = pm.userData.rig;
@@ -921,6 +936,7 @@ async function rollen(n) {
             })
         );
         s.keys.w = false;
+        streuJetzt();
         // der Huf: ein Reh 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0 ihres Ziels)
         const P = pm.position;
         const max = s.maxCreatures;
@@ -958,8 +974,10 @@ async function rollen(n) {
                 const pa = g.geom.attributes.position;
                 g.mesh.getMatrixAt(ref.slot, M);
                 let t = null;
-                for (let i = 0; i < pa.count; i++)
-                    if (!t || v.fromBufferAttribute(pa, i).applyMatrix4(M).y < t.y) t = v.clone();
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(M);
+                    if (!t || v.y < t.y) t = v.clone();
+                }
                 return t;
             };
             s.keys.w = true;
@@ -981,9 +999,11 @@ async function rollen(n) {
                 })
             );
             s.keys.w = false;
+            streuJetzt();
             r.dismountArchitecture();
             r.removeArchitecture(e);
         }
+        R.streu = mass(streu);
     }
     return o;
 }
@@ -1059,10 +1079,10 @@ function urteil(o) {
 // K8 je Ort × Rolle: Soll p95 in cm und der EINE Leser der Rolle (der Täter beim Namen)
 const K8_ROLLEN = Object.freeze({
     fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
-    streu: [3, "der Fuß der Streu (_scatterRegionBuild: surfY aus dem 8-m-Feld-Bake)"],
+    streu: [3, "der Fuß der Streu (_streuFuss: der gezeichnete Boden, dem Auge nach)"],
     fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
     huf: [3, "der Huf (_kreaturFussBoden)"],
-    rad: [3, "das Rad (die Reifen auf _fahrBoden, dem Gesetz)"],
+    rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
 // DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
 // schlechter werden (+ 15 % + 0,5 cm Streuung je Lauf); `--ratsche` schreibt den Lauf als neue Ratsche
@@ -1165,7 +1185,7 @@ function zeile(o) {
                 fuge: ["K4 Fuge"],
                 rand: ["K6 Leser im Rand-Streifen"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
-                rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang"],
+                rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o } = await lauf(inj, inj === "rolle");

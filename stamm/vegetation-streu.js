@@ -816,40 +816,105 @@ class AnazhRealm_vegetation_streu {
     }
 
     // DER FUSS DER STREU (Gelände H5, Lehre 22): jede Instanz steht auf dem, was das Auge sieht — der EINE Leser des gezeichneten
-    // Bodens (`_bodenSichtAt`), ohne Karte (kein Chunk-Mesh: der Fern-Ring) das Gesetz. Bis H5 las der Fuß die Höhe des 8-m-Feld-
-    // Bakes (bilinear): am 25°-Hang standen Bäume und Unterholz der Streu p95 0,62 m neben dem Mesh (gate:koerper-stand K8).
-    _streuFussY(x, z) {
-        const k = this._bodenSichtAt(x, z);
-        return Number.isFinite(k) ? k : this._voxelSurfaceY(x, z) || 0;
+    // Bodens (`_bodenSichtAt`), ohne Karte (kein Chunk-Mesh: der Fern-Ring) das Gesetz. Der gezeichnete Boden ist eine Funktion
+    // des Auges: im Übergangs-Band jeder Stufe morpht der Stoff Lage → Ziel mit dem Stufen-Gewicht (`_bodenStufeMisch`). Darum
+    // trägt der Fuß beide Enden (`lage`; `ziel` lazy, sobald das Gewicht greift) und die Stufe seines Chunks, `y` = Lage + (Ziel −
+    // Lage) · Gewicht wie im Stoff. Bis H5 las der Fuß die Höhe des 8-m-Feld-Bakes (bilinear): am 25°-Hang standen Bäume und
+    // Unterholz der Streu p95 0,62 m neben dem Mesh, im Gang ohne Nachsetzen im Band 11 cm (gate:koerper-stand K8).
+    _streuFuss(x, z) {
+        const span = this._voxelChunkConfig(0).span;
+        const e =
+            this.state.voxelChunks && this.state.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
+        const lage = this._bodenSichtAt(x, z, null, 0);
+        const f = Number.isFinite(lage)
+            ? { x, z, lage, ziel: undefined, lod: e ? e.lod || 0 : 0, y: lage }
+            : { x, z, lage: this._voxelSurfaceY(x, z) || 0, ziel: undefined, lod: 3, y: 0 };
+        f.y = this._streuFussJetzt(f);
+        return f;
+    }
+    _streuFussJetzt(f) {
+        const w = f.lod < 3 ? this._stufeGewichtAuge(f.lod, f.x, f.z) : 0;
+        if (!(w > 0)) return f.lage;
+        if (f.ziel === undefined) {
+            const z1 = this._bodenSichtAt(f.x, f.z, null, 1);
+            f.ziel = Number.isFinite(z1) ? z1 : f.lage;
+        }
+        return f.lage + (f.ziel - f.lage) * w;
+    }
+    // DER FUSS RÜCKT NACH: jede Instanz der Zellen, die `gilt`, setzt ihren Fuß neu — `karte` (die Karte ihres Chunks steht neu:
+    // Lage, Stufe, Ziel frisch) oder am Auge (dieselben Enden, das Gewicht neu) — um den Versatz in jeder Scheibe, je berührter
+    // Gruppe EIN Upload und EIN Bündel-Neubau. → die Zahl der berührten Gruppen.
+    _streuFussRuecken(regionen, gilt, karte) {
+        const M = this._archTmpStreuFussM || (this._archTmpStreuFussM = new THREE.Matrix4());
+        let gruppen = null;
+        for (const reg of regionen)
+            for (const c of (reg && reg.cells) || []) {
+                if (!c.fuss || !c.slots || !c.slots.length || !gilt(c)) continue;
+                const alt = c.fuss.y;
+                if (karte) c.fuss = this._streuFuss(c.x, c.z);
+                else c.fuss.y = this._streuFussJetzt(c.fuss);
+                const d = c.fuss.y - alt;
+                if (!(Math.abs(d) > 0.003)) {
+                    c.fuss.y = alt;
+                    continue;
+                }
+                for (const ref of c.slots) {
+                    const g = this.state.archInstanceGroups.get(ref.key);
+                    if (!g || !(ref.slot >= 0)) continue;
+                    g.mesh.getMatrixAt(ref.slot, M);
+                    M.elements[13] += d;
+                    g.mesh.setMatrixAt(ref.slot, M);
+                    (gruppen || (gruppen = new Set())).add(g);
+                }
+            }
+        for (const g of gruppen || []) {
+            g.mesh.instanceMatrix.needsUpdate = true;
+            g.mesh.boundingSphere = null;
+            if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh);
+        }
+        return gruppen ? gruppen.size : 0;
     }
     // DIE KARTE EINES CHUNKS STEHT NEU (Bau, Stufen-Wechsel, Naht): jede Streu-Instanz über ihm (und im Saum, den seine Karte
-    // den oberen Nachbarn leiht) setzt ihren Fuß nach — um den Versatz in jeder Scheibe. Leser: `_finalizeVoxelChunkBuild`,
-    // die Naht-Karte `_applyCrossLodGeomorph`.
+    // den oberen Nachbarn leiht) rückt nach. Leser: `_finalizeVoxelChunkBuild`, die Naht-Karte `_applyCrossLodGeomorph`.
     _streuFussNeu(cx, cz) {
         const R = this.state.scatterRegions;
-        if (!R || !R.size) return;
+        if (!R || !R.size) return 0;
         const C = this._voxelChunkConfig(0);
         const SC = AnazhRealm.SCATTER;
-        const [x0, z0, x1, z1] = [cx * C.span, cz * C.span, (cx + 1) * C.span + 2 * C.step, (cz + 1) * C.span + 2 * C.step];
-        const M = this._archTmpStreuFussM || (this._archTmpStreuFussM = new THREE.Matrix4());
+        const [x0, z0, x1, z1] = [
+            cx * C.span,
+            cz * C.span,
+            (cx + 1) * C.span + 2 * C.step,
+            (cz + 1) * C.span + 2 * C.step,
+        ];
+        const regionen = [];
         for (let rx = Math.floor(x0 / SC.regionM); rx <= Math.floor(x1 / SC.regionM); rx++)
             for (let rz = Math.floor(z0 / SC.regionM); rz <= Math.floor(z1 / SC.regionM); rz++)
-                for (const c of (R.get(rx + "," + rz) || {}).cells || []) {
-                    if (!(c.x >= x0 && c.x < x1 && c.z >= z0 && c.z < z1) || !c.slots || !c.slots.length) continue;
-                    const d = this._streuFussY(c.x, c.z) - c.fussY;
-                    if (!(Math.abs(d) > 0.002)) continue;
-                    c.fussY += d;
-                    for (const ref of c.slots) {
-                        const g = this.state.archInstanceGroups.get(ref.key);
-                        if (!g || !(ref.slot >= 0)) continue;
-                        g.mesh.getMatrixAt(ref.slot, M);
-                        M.elements[13] += d;
-                        g.mesh.setMatrixAt(ref.slot, M);
-                        g.mesh.instanceMatrix.needsUpdate = true;
-                        g.mesh.boundingSphere = null;
-                        if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh);
-                    }
-                }
+                regionen.push(R.get(rx + "," + rz));
+        return this._streuFussRuecken(regionen, (c) => c.x >= x0 && c.x < x1 && c.z >= z0 && c.z < z1, true);
+    }
+    // DAS AUGE DER STUFEN RÜCKT (`_stufeAugeTakt`, ≥ 0,1 m): jede Instanz im Übergangs-Band ihrer Stufe (am alten oder neuen
+    // Auge) rückt mit dem Gewicht nach, wie der Stoff unter ihr; innen (0) und jenseits der Grenze (1) ruht das Gewicht.
+    _streuFussAuge() {
+        const a = this.state.stufeAuge;
+        const R = this.state.scatterRegions;
+        if (!a || !R || !R.size) return 0;
+        const v = this._streuAugeVor || (this._streuAugeVor = { x: NaN, z: NaN });
+        const m = Math.max(Math.abs(a.x - v.x), Math.abs(a.z - v.z));
+        if (m < 0.1) return 0;
+        const rand = Number.isFinite(m) ? m : Infinity;
+        v.x = a.x;
+        v.z = a.z;
+        const S = AnazhRealm.BODEN_STUFEN.stufen;
+        return this._streuFussRuecken(
+            R.values(),
+            (c) => {
+                const st = S[c.fuss.lod];
+                const d = Math.max(Math.abs(c.x - a.x), Math.abs(c.z - a.z));
+                return c.fuss.lod < 3 && d > st.bis - st.band - rand && d < st.bis + rand;
+            },
+            false
+        );
     }
 
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
@@ -875,7 +940,7 @@ class AnazhRealm_vegetation_streu {
     ) {
         let bpName = null,
             foundryFlat = null;
-        const fussY = this._streuFussY(tf.x, tf.z);
+        const fuss = this._streuFuss(tf.x, tf.z);
         // EINE Quelle je Streu-Art: kennt die lebende Foundry die Art (Baum, Fels, Kiesel, Blume, Strauch),
         // kommt das ECHTE Studio-Asset — oder solange es lädt, bei Bäumen das Studio-Billboard (LOD2).
         // Ist beides nicht bereit: DEFERRIEREN, NIE Grammatik als Lückenbüßer. Nur eine wirklich
@@ -910,15 +975,7 @@ class AnazhRealm_vegetation_streu {
                     );
                 const feld =
                     fern === "gesetz" && this._weltMarchGezeichnet()
-                        ? this._streuGesetzSpawn(
-                              preset,
-                              fseed,
-                              tf.x,
-                              fussY,
-                              tf.z,
-                              tf.yaw || 0,
-                              tf.scale || 1
-                          )
+                        ? this._streuGesetzSpawn(preset, fseed, tf.x, fuss.y, tf.z, tf.yaw || 0, tf.scale || 1)
                         : null;
                 return {
                     cellX,
@@ -1013,7 +1070,7 @@ class AnazhRealm_vegetation_streu {
         const slots = this._scatterInstanceAdd(
             bpName,
             tf.x,
-            fussY,
+            fuss.y,
             tf.z,
             tf.yaw,
             tf.scale,
@@ -1049,7 +1106,7 @@ class AnazhRealm_vegetation_streu {
             for (const ps of this._scatterInstanceAdd(
                 "fscatter:" + foundryPreset + ":" + gestalt + ":" + partner.lod,
                 tf.x,
-                fussY,
+                fuss.y,
                 tf.z,
                 tf.yaw,
                 tf.scale,
@@ -1083,7 +1140,7 @@ class AnazhRealm_vegetation_streu {
             // ihre Gestalt und Drehung (D10: der Spiegel liest ihre Krone im Kronen-Buch, nie eine zweite Rechnung)
             gestalt,
             yaw: tf.yaw,
-            fussY,
+            fuss,
         };
     }
 
@@ -1264,7 +1321,7 @@ class AnazhRealm_vegetation_streu {
             cell.dient = rec.dient;
             cell.bandWunsch = rec.bandWunsch;
             cell.halt = rec.halt;
-            cell.fussY = rec.fussY;
+            cell.fuss = rec.fuss;
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
