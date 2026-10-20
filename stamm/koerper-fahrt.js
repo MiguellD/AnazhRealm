@@ -11,7 +11,7 @@ class AnazhRealm_koerper_fahrt {
         // Der getragene Avatar IST der Studio-Baum (bauMensch + Gelenk-Gruppen-Rig). parts.{leftArm,
         // rightArm,…} → WRIST-/HÜFT-Bones (equipHeld hängt das Gerät an die Hand; Kinder folgen dem Bone).
         const PLAYER_KH = AnazhRealm.PLAYER_KH, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
-            FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
+            FOOT_Y = -AnazhRealm.PLAYER_FOOT_OFFSET; // die Sohle der Kapsel unter dem Mesh-Ursprung (die Sohle des Leibs steht dort)
         // Gestalt-Dials aus dem Da-Vinci-Studio (LIVE über _koerperStudioDials); Dial→Genom über die
         // DATEN-Tabelle KOERPER_DIAL_MAP (khMul skaliert die EINE Kopfhöhen-Einheit). Hautton aus der
         // Studio-Palette, nie ein Literal. Kaltes Buch → Konstanten-Bau; Stempel `_koerperDials` null →

@@ -1866,8 +1866,9 @@ class AnazhRealm_siedlung_ort {
     // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
     // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
     // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
-    // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im Snapshot und zum Gast): als Sitzungs-Feld
-    // begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen deckungsgleichen zweiten Hain.
+    // Nexus, das Wort des Wetter-Zugs (Art "wetter"). Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
+    // Snapshot und zum Gast): als Sitzungs-Feld begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen
+    // deckungsgleichen zweiten Hain.
     _bauSame(art) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});

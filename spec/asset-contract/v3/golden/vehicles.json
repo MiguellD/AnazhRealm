@@ -5,87 +5,87 @@
     "gt-s7-L0": {
       "objects": 328,
       "vertices": 27274,
-      "sha256": "dd818792be719d3274ab0964fd156390e0db539fa698e7370429dd4d05f0361a"
+      "sha256": "90925d1e3cba4dcb253ac3761d776fd8c658bec78158529a458998ac423b5be4"
     },
     "gt-s12345-L0": {
       "objects": 328,
       "vertices": 27274,
-      "sha256": "921fda95ceb510f68421a48ab2251fd23ddd3a128bb93bb229f38afbcee276b0"
+      "sha256": "94f8c9e1c465b91cd4512c2ef93e16d9885205ad66fa2b698f2eeda9689e0672"
     },
     "supersport-s7-L0": {
       "objects": 328,
       "vertices": 26976,
-      "sha256": "d9f7aaa77598766bb142caaacc2bf605389eadbf7e0d683f16a0840494543359"
+      "sha256": "e3799657c58928f2c3363dbcd86dd811cc82281b86f523d460f37d5a584e4ab7"
     },
     "supersport-s12345-L0": {
       "objects": 328,
       "vertices": 26976,
-      "sha256": "fdd0608f41acf2b14cc8c75cd51021f83f7db87811da52dc1fc5d89368dda9c8"
+      "sha256": "b15533af976aced634b2d0475c7edfe5e3176c6e372d3fa9b2e8793083d27bc9"
     },
     "limousine-s7-L0": {
       "objects": 344,
       "vertices": 27544,
-      "sha256": "83fd96b3f6feff7f0855b7c261862f238b2aac8c8bc2b3fc82c6a22c3cfc8788"
+      "sha256": "eee332f2985649dd0955cf3c799d6209d53bee8601893dbc0790a929a503191f"
     },
     "limousine-s12345-L0": {
       "objects": 344,
       "vertices": 27544,
-      "sha256": "1f7c04fc9211a4d673d0b112b085e681d9826bd38323cfe3a6db5c57ec3e941e"
+      "sha256": "c24894e6ec140606ce504068ac436d655334c415347c233ce99313d7f6ff1c29"
     },
     "kompakt_fwd-s7-L0": {
       "objects": 359,
       "vertices": 27854,
-      "sha256": "ddd6f9d6620e99482ca2586ee10d394cc5b357880e0269f73fa5272fc8a85c63"
+      "sha256": "b7336e467c3bfe8a37c5d23a9a0a3530d479a07ff166d986803502c4d55dabab"
     },
     "kompakt_fwd-s12345-L0": {
       "objects": 359,
       "vertices": 27854,
-      "sha256": "e602707a982336dd2981fa8a75acac34d6c9da01cb5cb072282ebc9580e78f1e"
+      "sha256": "48f48b97eaa367a4cbd35769a562f7987e87141cc556c9b6832827e5b569f113"
     },
     "suv-s7-L0": {
       "objects": 355,
       "vertices": 29272,
-      "sha256": "3b999fa679d994f5719d15ac6110ac6b0985827ad924459424e665a4a29abc0b"
+      "sha256": "6581460ca342557071f950f2b2c05280ef0ac5d3e012429d8fa98740a78f6d6c"
     },
     "suv-s12345-L0": {
       "objects": 355,
       "vertices": 29272,
-      "sha256": "4638ecb7e9e18eb9bc8d62d3143d19a33c86d6865f826a598a508db1c063b590"
+      "sha256": "931285a4c1f2dcf86feb6b1248d942121ca5baaf1322de7a38ebfde87afe08a1"
     },
     "gt-s7-L1": {
       "objects": 328,
       "vertices": 13094,
-      "sha256": "b22e712b4ad33e47b0a1a10ea40ae70a2d87a3e3680fc73a8696034c3d6a7f18"
+      "sha256": "066c2752608ca06b34feda3c76d63bfeabd3b7f95acaa6a7d48f4a4fc9aaed68"
     },
     "supersport-s7-L1": {
       "objects": 328,
       "vertices": 12976,
-      "sha256": "538e1d843e76de3ce3b0f621a0618f1ba03a5158add95003561dcaf1ed75bb7d"
+      "sha256": "69d5dbf8b8274505785957c66bca27575e37c983068ffe6a6ca561f12e45cfaa"
     },
     "limousine-s7-L1": {
       "objects": 344,
       "vertices": 13372,
-      "sha256": "57be54e7294d60b29564d8d48793d24a15080a501c8531181d0bd67651619680"
+      "sha256": "00ee70eab208f912a458f2b0c63a3a73c24af0ff25b31da87ea577bee6c1d25a"
     },
     "kompakt_fwd-s7-L1": {
       "objects": 359,
       "vertices": 13664,
-      "sha256": "6952118c497537a97ba076b618492c77d81c8c1513187733be12cb32405fb270"
+      "sha256": "586057b34955709598f3218416b2e6de2c82e4e5373a901caf97c1ef45d7b2dc"
     },
     "suv-s7-L1": {
       "objects": 355,
       "vertices": 14020,
-      "sha256": "a582f0b4102a337420b886452f23c17f49652f4aeb158896950f1f87da82eb5a"
+      "sha256": "7c5354a38aa8a2089485ea3ea8229c35f417521bad1271be1ee2e9df98fa0a49"
     },
     "gt-s7-L0-ov_toro": {
       "objects": 387,
       "vertices": 29065,
-      "sha256": "9b401f23b0708528389bc7a0e02b60f0dad7607980ccc0e4e0bc089dbd0c3697"
+      "sha256": "4e5fd05957ebccf1cc64cdb03f08b30028830c416a331571493de0477c8d76b0"
     },
     "supersport-s7-L0-ov_cavallo": {
       "objects": 437,
       "vertices": 30125,
-      "sha256": "8f3070419319e3e4e2cbd15e19b08c74968d2d25d12a03aa9ae1b1e0cd0a8892"
+      "sha256": "645962db410f11199dac1ebadca580110478eb7cd83467a7bf9c15283d0371ca"
     }
   }
 }

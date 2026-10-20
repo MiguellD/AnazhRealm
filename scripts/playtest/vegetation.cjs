@@ -1866,34 +1866,8 @@ async function checkBandV18219bisVollendung(ctx) {
             }
         });
 
-        // ─── V18.219 GPU-FELD-BAKE ───────────────────────────────────
-        const cfg = r._bakeRegionConfig();
-        out.bakeConfigValid =
-            Number.isFinite(cfg.sizeM) && Number.isFinite(cfg.res) && Number.isFinite(cfg.channels);
-        const entry = r._bakeRegionFields(0, 0);
-        out.bakeReturnsEntry = !!(entry && entry.data && entry.data.length > 0);
-        if (entry) {
-            out.bakeDataLength = entry.data.length;
-            out.bakeDataSizeCorrect = entry.data.length === cfg.res * cfg.res * cfg.channels;
-            out.bakeNotDirty = entry.dirty === false;
-            out.bakeHasSamples = entry.sampleCount === cfg.res * cfg.res;
-        }
-        const sample = r._sampleBakedField(50, 50);
-        out.sampleReturnsAllChannels =
-            sample &&
-            "height" in sample &&
-            "slope" in sample &&
-            "moisture" in sample &&
-            "lebendig" in sample &&
-            "glut" in sample &&
-            "magie" in sample;
-        if (sample && typeof r._voxelSurfaceY === "function") {
-            const directH = r._voxelSurfaceY(50, 50);
-            if (Number.isFinite(directH) && Number.isFinite(sample.height)) {
-                out.bakeHeightError = Math.abs(sample.height - directH);
-                out.bakeHeightAccurate = out.bakeHeightError < 5.0;
-            }
-        }
+        // ─── V18.219 FELD-BAKE: die Invalidierung (den Bake selbst fährt jede Streu-Region, gate:scatter-ab) ───
+        r._bakeRegionFields(0, 0);
         r._invalidateBakedRegionsAround(0, 0, 6);
         const after = r.state.bakedRegionFields.get("0,0");
         out.invalidationSetDirty = after && after.dirty === true;
@@ -1913,9 +1887,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
-        if (out.snapshotCarriesPromoted) {
-            out.snapshotPromotedCount = snap.worldMeta.scatterPromoted.length;
-        }
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
@@ -1952,20 +1923,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.218.1 (L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
     check("V18.218.1 (L10) Zurück zu LOD0 (Form-Identität bewahrt)", res.lodSwitchedBack === true);
 
-    // V18.219 GPU-Feld-Bake
-    check("V18.219 (B4) _bakeRegionConfig liefert sizeM/res/channels", res.bakeConfigValid === true);
-    check("V18.219 (B5) Bake-Akt liefert entry mit data-Float32Array", res.bakeReturnsEntry === true);
-    check(
-        `V18.219 (B6) Bake-Data-Größe = res×res×channels (gemessen ${res.bakeDataLength})`,
-        res.bakeDataSizeCorrect === true
-    );
-    check("V18.219 (B7) Bake-Entry nach Build nicht dirty", res.bakeNotDirty === true);
-    check("V18.219 (B8) sampleCount = res×res", res.bakeHasSamples === true);
-    check("V18.219 (B9) _sampleBakedField liefert alle 6 Kanäle", res.sampleReturnsAllChannels === true);
-    check(
-        `V18.219 (B10) Bake-Höhe ≈ _voxelSurfaceY (Fehler ${res.bakeHeightError !== undefined ? res.bakeHeightError.toFixed(2) : "?"}m)`,
-        res.bakeHeightAccurate === true
-    );
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
     // V18.220 Scatter-Bitmask + Cap + Lookup
@@ -1977,10 +1934,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.220 (S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
 
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
-    check(
-        `V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`,
-        res.snapshotPromotedCount >= 0
-    );
 
     // V18.222 Canopy chunk-streaming
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
