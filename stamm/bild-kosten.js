@@ -3606,8 +3606,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
     // NACH EINGANG (E-Diät, 19.10.): ein FREMDER Verweis (festes Objekt, geteilte Uniform: Schatten-Bias · normalBias · Radius ·
     // mapSize · Kaskaden des Lichts) trägt EINEN Wert je Render-Abschnitt — der Gang stellt ihn (12), nie das Objekt; ein
-    // STOFF-Verweis, dessen Eigenschaft equals() prüft (r184 `refreshUniforms`), ist gleich, solange equals() gleich sagt. Die
-    // REGUNG ist der Rest (Lage, Knochen, Objekt-Verweise, jeder Knoten ohne Zuordnung). Gemessen am Kopf e93134f4 (Radeon,
+    // STOFF-Verweis, dessen Eigenschaft equals() prüft (r184 `refreshUniforms`), ist gleich, solange der Stoff-Stand seines
+    // Render-Objekts gleich ist (13 `_diaetStoffVerpasst` — equals() merkt je STOFF, nie je Render-Objekt). Die REGUNG ist der Rest (Lage, Knochen, Objekt-Verweise, jeder Knoten ohne Zuordnung). Gemessen am Kopf e93134f4 (Radeon,
     // Genesis Third, Stand): am Leib 28 Objekt-Knoten je Gang, 11 fremde und 5–9 Stoff-Verweise; 108 fremde Gänge je Frame für
     // ~12 Uniforms (Diät-Linse: Fremd 96 wiederholt).
     const objekt = nbs.updateNodes.filter((n) => n.getUpdateType() === "object");
@@ -3666,7 +3666,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
 // mit Knochen in Bild und Kaskade, Kopf, Plattform und Sonne. Jetzt stellt es seine Objekt-Knoten und lädt seine eigenen Gruppen.
 // NACH EINGANG (E-Diät): es stellt nur die REGUNG und vergleicht je eigenem Uniform-Puffer nur ihre Uniforms — ein Stoff-
-// Verweis behält, was sein Objekt zuletzt lud (equals() sagte gleich), Texturen und Sampler folgen ihrem Wächter (6). VOLL (der
+// Verweis behält, was sein Objekt zuletzt lud (sein Stoff-Stand (13) gleich), Texturen und Sampler folgen ihrem Wächter (6). VOLL (der
 // Textur-Grund, eine Gruppe mit Puffer-Speicher) lädt der Vendor jede Bindung und vergleicht jede Uniform gegen den Wert ihres
 // Knotens — darum stellt der volle Gang ALLE Objekt-Knoten (ein Stoff-Verweis trüge sonst den Wert des Render-Objekts, das ihn
 // zuletzt stellte). Gemessen am Kopf e93134f4 (Radeon, Genesis Third, Stand, Profil 200 µs): 0,381 ms je Frame.
@@ -3845,6 +3845,22 @@ AnazhRealm._diaetGetragen = function (A, a) {
     const v = A.get(a).version;
     return v !== undefined && v >= (a.isInterleavedBufferAttribute ? a.data.version : a.version);
 };
+// (13) DER STOFF JE RENDER-OBJEKT (E-Diät, Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id
+// (`getMaterialData`: `_renderId`, `_equal`), nie je Render-Objekt — wer den Render verpasst, in dem ein anderes Render-Objekt
+// die Änderung verbrauchte (verdeckt, außerhalb des Passes, eine zweite Sicht), hört danach „gleich“, und sein eigener Puffer
+// trägt den alten Wert (am Kopf 783fcdc1: zwei Boxen EINES Stoffs, B verdeckt beim Farbwechsel, danach B-Puffer alt; ein
+// stehendes Objekt schon an e93134f4). Der Stoff zählt jede verbrauchte Änderung (`_anazhStoffV`), jedes Render-Objekt den Stand
+// seines letzten Voll-Refreshs: ein Rückstand frischt EINMAL voll auf. `v` ist das Urteil des Vendors (equals() oder seine
+// Bahn), `vorR` die Render-Id der Stoff-Daten vor ihm — wechselte sie und steht `_equal` falsch, verbrauchte ER eine Änderung.
+AnazhRealm._diaetStoffVerpasst = function (obs, ro, md, vorR, v) {
+    if (!md) return v;
+    if (md._renderId !== vorR && md._equal === false) md._anazhStoffV = (md._anazhStoffV || 0) + 1;
+    const stand = md._anazhStoffV || 0;
+    const d = obs.getRenderObjectData(ro);
+    if ((d._anazhStoffV || 0) === stand) return v;
+    d._anazhStoffV = stand;
+    return true;
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
     // (8) eine neue VERSION desselben Attributs (Id gleich) ist ein Refresh-Grund nur, solange die GPU sie nicht trägt: der
@@ -3926,13 +3942,16 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     if (grund) return true;
     const rend = frame && frame.renderer;
+    const md = ro && ro.material ? obs.getMaterialData(ro.material) : null;
     if (
         !rend ||
         !obs.renderObjects.has(ro) ||
         obs.needsVelocity(rend) ||
         ro.getNodeBuilderState().updateAfterNodes.length > 0
-    )
-        return altNR.call(obs, ro, frame);
+    ) {
+        const vorR = md && md._renderId;
+        return AnazhRealm._diaetStoffVerpasst(obs, ro, md, vorR, altNR.call(obs, ro, frame));
+    }
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
         obs.renderId = rid;
@@ -3956,7 +3975,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         od.worldMatrix.copy(obj.matrixWorld);
         lage = true;
     }
-    if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
+    const vorR = md && md._renderId;
+    const anders = obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
+    if (AnazhRealm._diaetStoffVerpasst(obs, ro, md, vorR, anders)) return true;
     if (lage || verweis || textur || frei || obs.hasAnimation === true)
         AnazhRealm._diaetObjektGang(rend, ro, gang, textur);
     return false;
