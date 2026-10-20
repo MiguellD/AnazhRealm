@@ -1776,7 +1776,7 @@ class AnazhRealm_stoff_instanz {
                     o[oi + c * 4 + r] = a[r] * b0 + a[4 + r] * b1 + a[8 + r] * b2 + a[12 + r] * b3;
             }
         };
-        const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
+        const vier = (n) => Math.ceil(n / 4) * 4; // jede Kapazität ein Vielfaches von 4 Elementen
         // DIE RESIDENZ FOLGT DEM BILD — auch in der Arena (Lehre 27, das Gesetz des Kehraus `_gpuKehraus`): sie hält eine
         // Gestalt, solange ein Glied sie mit Instanzen trägt, und einen Instanz-Platz je Instanz, die ein Glied zieht —
         // GPU_KEHRAUS_MS über das letzte Mal hinaus, dann wird ihr Platz frei. Befund 16.10. (Prüfung Runde 2 und Messung
@@ -1822,16 +1822,14 @@ class AnazhRealm_stoff_instanz {
         // DIE QUELLE VERLÄSST DIE GPU: zog der Zeichner eines Glieds, bevor es eintrat, fallen seine Matrizen im Takt des
         // Eintritts (`_arenaTakt`) mit ihm (`_zeichnerFrisch`); jedes Bündel, das ihn trug, nimmt neu auf (`_arenaBuendel`).
         const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
-        // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
+        // in die Warteschlange vor dem Submit dieses Passes über die EINE Wort-Schrift; ohne GPU-Puffer lädt r184 beim
+        // ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
             if (!be || !be.device || !a || n <= 0 || !rend._attributes.has(a)) return;
-            const d = be.get(a);
-            if (!d.buffer) return;
-            const bpe = a.array.BYTES_PER_ELEMENT;
-            const s = Math.floor((start * bpe) / 4) * 4,
-                e = Math.min(vier((start + n) * bpe), a.array.byteLength);
-            be.device.queue.writeBuffer(d.buffer, s, a.array.buffer, a.array.byteOffset + s, e - s);
+            const d = be.get(a),
+                b = a.array.BYTES_PER_ELEMENT;
+            if (d.buffer) AnazhRealm._schreibWorte(be.device.queue, d.buffer, a.array, start * b, (start + n) * b);
         };
         // ein Puffer fällt erst nach dem Submit des Frames: ein offener Pass (das Hauptbild um den verschachtelten
         // Schatten-Render) trägt ihn noch in seinem Kommando-Paket („used in submit while destroyed")
@@ -2810,8 +2808,9 @@ class AnazhRealm_stoff_instanz {
     // Uint32. Befund (echte GPU, Mess-Wiese, Puffer-Linse): 113 von 114 Index-Puffern hätten 16 bit gereicht, 2,8 MB zu viel
     // — der Spieler allein 0,9 MB. Der EINE Weg jedes Index auf die GPU (`createIndexAttribute`) legt einen Uint16-Index
     // ungeweitet an: das Weiten fragt `normalized` (für einen Index bedeutungslos), die Hülle setzt es nur für das Anlegen.
-    // Ein 16-bit-Index, der danach teilweise neu schreibt, bräche an der 4-Byte-Ausrichtung von writeBuffer — die Sätze
-    // (die einzigen Index-Schreiber) tragen Uint32 (gate:vendor-anker pinnt beide Vendor-Stellen).
+    // Wer den Index schmal hält, schreibt ihn auch nach: jedes Nachschreiben eines Arrays unter 4 B je Element (der
+    // Uint16-Index, unorm16/unorm8 — ganz oder je Bereich) geht durch die EINE Wort-Schrift `_schreibWorte`, die auch
+    // die Arena ruft (gate:vendor-anker pinnt beide Vendor-Stellen, gate:weltbild-frost P2 jeden writeBuffer).
     //
     // DAS BACKEND-GESETZ (Frost 07.10.): die Hüllen des WebGPU-Backends sitzen an der KLASSE, nie an einer Instanz. Die
     // Seite trägt fünf WebGPU-Renderer (Welt · Werkstatt · Ich-, Hof-, Feed-Bühne), und sie TEILEN Geometrie (die Mensch-
@@ -2854,7 +2853,11 @@ class AnazhRealm_stoff_instanz {
             const ba = attr.isInterleavedBufferAttribute ? attr.data : attr;
             if (ba.array.BYTES_PER_ELEMENT >= 4 || this.get(ba)._force3to4BytesAlignment === true)
                 return nachschreiben.call(this, attr);
-            AnazhRealm._schreibWorte(this.device.queue, this.get(ba).buffer, ba);
+            const [q, buf, a] = [this.device.queue, this.get(ba).buffer, ba.array],
+                b = a.BYTES_PER_ELEMENT;
+            if (!ba.updateRanges.length) AnazhRealm._schreibWorte(q, buf, a, 0, a.byteLength);
+            for (const r of ba.updateRanges) AnazhRealm._schreibWorte(q, buf, a, r.start * b, (r.start + r.count) * b);
+            ba.clearUpdateRanges();
         };
         const zeichnen = P.draw;
         P.draw = function (ro, info) {
@@ -2983,25 +2986,21 @@ class AnazhRealm_stoff_instanz {
     // DIE WORT-SCHRIFT (K-ICH-BÜHNE-PUFFER): WebGPU schreibt nur in 4-Byte-Wörtern (Versatz und Länge), r184 reicht ein
     // schmales Array (der Uint16-Index des Gesetzes, unorm16/unorm8) beim Nachschreiben roh — ein Index ungerader Länge oder
     // ein Bereich ab ungeradem Element warf (CI voll 14, 1 von ~15 Läufen: Mensch 8097 × Uint16 = 16 194 B nach
-    // `_gpuAbschied`). Darum schreibt die Hülle jedes Array unter 4 B je Element selbst: je Bereich Anfang ab-, Ende
-    // aufgerundet, das letzte halbe Wort als gepolsterte Kopie (r184 polstert den Puffer beim Anlegen auf 4 B).
-    static _schreibWorte(q, buf, ba) {
-        const a = ba.array,
-            b = a.BYTES_PER_ELEMENT,
-            voll = a.byteLength & ~3,
-            r = ba.updateRanges;
-        for (let k = 0; k < Math.max(1, r.length); k++) {
-            const von = r.length ? (r[k].start * b) & ~3 : 0;
-            const bis = r.length ? Math.min(a.byteLength, (r[k].start + r[k].count) * b) : a.byteLength;
-            const ganz = Math.min(voll, (bis + 3) & ~3);
-            if (ganz > von) q.writeBuffer(buf, von, a.buffer, a.byteOffset + von, ganz - von);
-            if (bis > voll) {
-                const rest = new Uint8Array(4);
-                rest.set(new Uint8Array(a.buffer, a.byteOffset + voll, a.byteLength - voll));
-                q.writeBuffer(buf, voll, rest, 0, 4);
-            }
+    // `_gpuAbschied`). Darum ist dies der EINE Schreiber eines Array-Bereichs in die Queue — die Hülle (jedes Array unter
+    // 4 B je Element, ganz oder je updateRange) und die Arena (`schreib`) rufen ihn: die Bytes [von, bis) des Arrays an
+    // dieselbe Stelle des Puffers, Anfang ab-, Ende aufgerundet, das letzte halbe Wort als gepolsterte Kopie
+    // (r184 polstert jeden Puffer beim Anlegen auf 4 B).
+    static _schreibWorte(q, buf, a, von, bis) {
+        const voll = a.byteLength & ~3;
+        bis = Math.min(bis, a.byteLength);
+        von &= ~3;
+        const ganz = Math.min(voll, (bis + 3) & ~3);
+        if (ganz > von) q.writeBuffer(buf, von, a.buffer, a.byteOffset + von, ganz - von);
+        if (bis > voll) {
+            const rest = new Uint8Array(4);
+            rest.set(new Uint8Array(a.buffer, a.byteOffset + voll, a.byteLength - voll));
+            q.writeBuffer(buf, voll, rest, 0, 4);
         }
-        ba.clearUpdateRanges();
     }
     static _indexSchmal(arr, nVertices) {
         return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
