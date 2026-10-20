@@ -36,7 +36,15 @@ const FORBIDDEN = [
     { token: "_p2pMsgAura", fiel: "W1c — aura ist dem Dispatcher unbekannt" },
     { token: "_p2pEnsurePeerAura", fiel: "V18.448 — die Avatar-Aura" },
     { token: "_p2pBroadcastAura", fiel: "V18.448" },
-    ...["_nachtAnteil", "_celestialHorizonFade", "_daemmerung", "_himmelHell", "_himmelGrenzgroesse", "_interpolateDayNight", "DAY_NIGHT_STOPS"].map((token) => ({ token, fiel: "S7 — die EINE Tag-Achse (_tagAchse)" })),
+    ...[
+        "_nachtAnteil",
+        "_celestialHorizonFade",
+        "_daemmerung",
+        "_himmelHell",
+        "_himmelGrenzgroesse",
+        "_interpolateDayNight",
+        "DAY_NIGHT_STOPS",
+    ].map((token) => ({ token, fiel: "S7 — die EINE Tag-Achse (_tagAchse)" })),
     { token: "modify_terrain", fiel: "V9.36 — voxel_carve/voxel_fill; KI2 16.10.: der letzte Name in RULE_FORBIDDEN_EFFECT_OPS" },
     { token: "_chunksTouchedByDisc", fiel: "V9.36 — die Heightfield-Schicht von modify_terrain" },
     { token: "_appendChunkDeltaOp", fiel: "V9.36" },
@@ -1627,9 +1635,6 @@ const METHODEN_OHNE = [
     ["_workshopInstallShapeDragDrop", ["cards.forEach"]], // EIN delegierter Zieh-Hörer
     ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
     ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
-    // S7: der Himmel des Orts EINMAL (`_himmelsBestrahlung`), keine Schwelle neben der Tag-Achse
-    ["_dayNightApplyBelichtung", ["_himmelsIrradianz"]],
-    ["_waagrechtIrradianz", ["_himmelsIrradianz"]],
 ];
 function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
     const code = stripComments(srcRoh);

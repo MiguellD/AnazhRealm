@@ -28,9 +28,10 @@
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder aus 2 m, aus 6 m und der
 //       Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
-//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: der Himmel ohne Sternen-Licht. Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach
-//       Mittag und Mitternacht über den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`).
-//       Selbsttest: der Maler taub. Den Abend, die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse (`werkbank licht --tag`).
+//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: der
+//       Himmel ohne Sternen-Licht. Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
+//       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
+//       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt).
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -971,26 +972,15 @@ async function himmelProbe(page, taub) {
         S0_HIMMEL_TOL
     );
 }
-// DIE NACHT (D3-2, Prüfung D3 Runde 2: Wiese Mitternacht Luma 31,7 (integ-probe) → 4,9, abgesoffen 59 → 84 %; Dämmerung
-// 0,78 38,1 → 4,2): der Boden 1–3 m um die Feuerstelle im Schuss OHNE ihr Licht (der Pool leer) um Mitternacht ist lesbar
-// wie die Nacht von integ-probe an der Wiese: Luma (0–255) ≥ 30, abgesoffen (< 4, wie `bildMasse`) ≤ 5 %. An der Bühne selbst
-// soff der Boden unter integ-probe ab (Luma 2,0 / 89 %): die alte Nacht trug ihr Licht allein in der Kuppel. Die Nacht
-// ist ein Himmel mit Mond und Sternen-Licht in derselben Eichung (Lehre 21): ohne das Sternen-Licht (`_atmoSternenLicht`,
-// `ATMO_GESETZ.nacht.himmel`) trägt der Himmel der Nacht nur die Streuung des Mondes (Bühne: Umgebung 0,03 statt 0,29, Boden
-// Luma 25). Der Schein „sterne" (Selbsttest) nimmt es, die Probe MUSS ihn nennen. Den Kontrast der Post-Kette in der Nacht
-// wacht gate:post-kette (h). DIE NACHT DER EINEN KETTE (F6): die 30 von integ-probe trugen das gefallene Licht-Band (Nacht-Boden
-// und Mond-Saum nur auf Host-Stoffen, Bühne Mitternacht 36,1, Dämmerung 38,6). Sein Boden ist Ambient der EINEN Kette, die
-// Säume fallen: Mitternacht 30,3, Dämmerung 26,1, ohne Sternen-Licht 18,4 (Radeon) — die Schwelle 22 trennt die Nacht mit ihrem
-// Himmels-Licht von der ohne es.
-// DIE DÄMMERUNG (S7): derselbe Boden, die Sonne `daemmerGrad` tief, lesbar wie die Nacht.
-const S0_NACHT = {
-    daemmerGrad: -10,
-    nacht: { luma: 22, schwarz: 0.05 },
-    daemmerung: { luma: 22, schwarz: 0.05 },
-};
+// DIE NACHT (D3-2, F6): der Boden 1–3 m um die Feuerstelle im Schuss OHNE ihr Licht (der Pool leer) ist um Mitternacht lesbar
+// (Luma ≥ 22, abgesoffen < 4 wie `bildMasse` ≤ 5 %): die Nacht ist ein Himmel mit Mond und Sternen-Licht in derselben Eichung
+// (Lehre 21, Ambient der EINEN Kette) — ohne das Sternen-Licht (`_atmoSternenLicht`, `ATMO_GESETZ.nacht.himmel`) streut nur der
+// Mond (Radeon: Luma 18,4 gegen 30,3). Der Schein „sterne" (Selbsttest) nimmt es, die Probe MUSS ihn nennen; den Kontrast der
+// Nacht wacht gate:post-kette (h), die Dämmerung die Tag-Achse.
+const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(k, e, soll) {
     const b = [];
-    const wann = k === "daemmerung" ? `in der Dämmerung (Uhr ${e.uhr}, Sonne ${S0_NACHT.daemmerGrad}°)` : "um Mitternacht";
+    const wann = "um Mitternacht";
     const g = e.grund;
     if (!g) return [`S0 Nacht: kein Boden im Schuss ${wann} — die Probe ist blind`];
     if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return b;
@@ -1239,10 +1229,10 @@ async function lichtLauf() {
         // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten) — und im
         // Selbsttest das Feuer bis K11b, die Nacht ohne ihr Sternen-Licht und das Auge des Tages (K66). Die Nacht ohne Feuer ist
         // zugleich der Schein „der Pool leer" (der Kreis fällt ohne das Feuer): EIN Schuss, zwei Urteile
-        const schuesse = ergebnis.sauber ? [] : [false, "nacht", "daemmerung", ...(SELBSTTEST ? ["farbe", "sterne", "tag"] : [])];
+        const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "sterne", "tag"] : [])];
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
-                page.evaluate(async (schein, nahM, palette, daemmerGrad) => {
+                page.evaluate(async (schein, nahM, palette) => {
                     const r = window.anazhRealm;
                     const s = r.state;
                     const T = window.THREE;
@@ -1255,20 +1245,14 @@ async function lichtLauf() {
                         await r._himmelFrisch();
                         r._applyDayNightToScene();
                     };
-                    // Mitternacht oder die erste Uhr nach Mittag mit der Sonne `daemmerGrad`
-                    let zeit = 0;
-                    if (schein === "daemmerung") {
-                        const ziel = Math.sin((daemmerGrad * Math.PI) / 180);
-                        for (let t = 0.5; t < 1 && !zeit; t += 0.0002) if (r._dayNightSunDirection(r._sonnenWinkel(t)).y <= ziel) zeit = t;
-                        if (!zeit) return { fehler: `Dämmerung blind: keine Uhr mit der Sonne ${daemmerGrad}°` };
-                    }
+                    const zeit = 0;
                     const feuer = window.__s0Feuer;
                     const f = feuer.position;
                     const g = f.y - 0.5; // der Boden des Feuers: wo es steht (auf dem Grund oder auf der Genesis-Scheibe, K52)
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;
-                    const ohneFeuer = schein === "nacht" || schein === "daemmerung" || schein === "sterne";
+                    const ohneFeuer = schein === "nacht" || schein === "sterne";
                     if (ohneFeuer)
                         r._leuchtTakt = function () {
                             alt.call(this);
@@ -1461,7 +1445,7 @@ async function lichtLauf() {
                         boden: [...bodenWgsl.keys()],
                         png: cv.toDataURL("image/png"),
                     };
-                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette, S0_NACHT.daemmerGrad)
+                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
@@ -1547,7 +1531,6 @@ async function lichtLauf() {
         const wer = {
             sauber: "      ",
             nacht: "NACHT (ohne das Feuer)",
-            daemmerung: "DÄMMERUNG (ohne das Feuer)",
             farbe: "SCHEIN (das Feuer bis K11b)",
             sterne: "SCHEIN (die Nacht ohne Sternen-Licht)",
             tag: "SCHEIN (das Auge des Tages)",
@@ -1556,8 +1539,8 @@ async function lichtLauf() {
             `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
-    // DIE NACHT und DIE DÄMMERUNG ohne das Feuer (oben `S0_NACHT`)
-    for (const k of ["nacht", "daemmerung"])
+    // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
+    for (const k of ["nacht"])
         if (sauber && !sauber.fehler) {
             const e = ergebnis[k];
             if (!e) befunde.push(`S0 Nacht (${k}): der Schuss lief nicht`);
