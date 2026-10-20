@@ -44,6 +44,8 @@ const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = process.argv.includes("--selftest");
+const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
+const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
 // DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
 // `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst (Seite: `window.__eignerKarte`, Proben und Täter „rand").
@@ -74,6 +76,42 @@ function eignerKarte(r, x, z) {
     return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
 }
 
+// DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
+// Nachbarn — die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts), nie durch einen Leser, den ein
+// Schnitt heilt; null ohne Mesh. `steil`: die oberste Fläche des Strahls ist steil (ein Überhang: die Karte trägt dort die
+// Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks.
+function gezeichnet(r, x, z) {
+    const T = window.THREE;
+    const G = window.__gezeichnet;
+    const strahl = G.strahl || (G.strahl = new T.Raycaster());
+    const span = r._voxelChunkConfig(0).span;
+    let best = null;
+    let oben = -Infinity;
+    G.steil = false;
+    for (const [a, b] of [
+        [0, 0],
+        [-1, 0],
+        [0, -1],
+        [-1, -1],
+    ]) {
+        const e = r.state.voxelChunks
+            ? r.state.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`)
+            : null;
+        if (!e || !e.mesh || !e.mesh.geometry) continue;
+        G.meshe = (G.meshe | 0) + 1;
+        e.mesh.updateMatrixWorld(true);
+        strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+        const alle = strahl.intersectObject(e.mesh, false);
+        const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
+        if (h && (best === null || h.point.y > best)) best = h.point.y;
+        if (alle.length && alle[0].point.y > oben) {
+            oben = alle[0].point.y;
+            G.steil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
+        }
+    }
+    return best;
+}
+
 // DIE TÄTER DES SELBSTTESTS: je Defekt der Leser vor seiner Heilung als Laufzeit-Stub an der Welt (je Lauf ein eigener
 // Kontext, kein Rückbau) — installiert vor dem Einschwingen, die Wand muss jeden beim Namen rot nennen.
 function taeter(inj) {
@@ -93,9 +131,10 @@ function taeter(inj) {
     if (inj === "luft") r._gaitTick = (m, h, v, dt, o) => P._gaitTick.call(r, m, h, v, dt, o && { ...o, ik: true });
     if (inj === "hoehle") r._koerperBodenUnter = (x, _y, z) => r._voxelSurfaceY(x, z); // der Boden über der Höhle
     if (inj === "sicht") r._standSicht = (_x, _z, traegerY) => traegerY; // der Leib steht auf dem Gesetz, nie auf der Karte
-    if (inj === "tod") ueber("_tickLeichname", function () {
-        for (const c of this.state.leichname || []) if (c.userData.dying) c.userData.dying.hebe = null;
-    });
+    if (inj === "tod")
+        ueber("_tickLeichname", function () {
+            for (const c of this.state.leichname || []) if (c.userData.dying) c.userData.dying.hebe = null;
+        });
     if (inj === "fuge") {
         // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
         r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
@@ -103,9 +142,10 @@ function taeter(inj) {
     }
     // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
     // nichts (vor K21)
-    if (inj === "rand") ueber("_standSicht", function () {
-        this._bodenSichtAt = (x, z) => window.__eignerKarte(this, x, z);
-    });
+    if (inj === "rand")
+        ueber("_standSicht", function () {
+            this._bodenSichtAt = (x, z) => window.__eignerKarte(this, x, z);
+        });
     const C = r._voxelChunkConfig(0);
     const rest = (w) => w - Math.floor(w / C.span) * C.span;
     const streifen = (x, z) => rest(x) < C.step / 2 || rest(z) < C.step / 2;
@@ -590,42 +630,8 @@ async function proben(mitWiese, umfang) {
     // Boden 0,7 m hangab, 10–60 cm): ein stehender Wolf, Blick hangauf, Sohlen und Leib gegen die GEZEICHNETEN Dreiecke (ein
     // Strahl lotrecht auf das Mesh des Eigners und seiner unteren Nachbarn — nie durch den Leser, den der Schnitt heilt) ──
     {
-        const strahl = new T.Raycaster();
-        const ab = new T.Vector3(0, -1, 0);
-        const von = new T.Vector3();
-        let meshe = 0;
-        // die oberste Fläche des letzten Strahls jeder Art: ist sie steil, steht der Punkt unter einem Überhang (die Karte
-        // trägt dort die Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter — keine Frage des Rand-Streifens)
-        let obenY = -Infinity;
-        let obenSteil = false;
-        const gezeichnet = (x, z) => {
-            obenY = -Infinity;
-            obenSteil = false;
-            const cx = Math.floor(x / span);
-            const cz = Math.floor(z / span);
-            let best = null;
-            for (const [a, b] of [
-                [0, 0],
-                [-1, 0],
-                [0, -1],
-                [-1, -1],
-            ]) {
-                const e = s.voxelChunks ? s.voxelChunks.get(`${cx + a},${cz + b}`) : null;
-                if (!e || !e.mesh || !e.mesh.geometry) continue;
-                meshe++;
-                e.mesh.updateMatrixWorld(true);
-                strahl.set(von.set(x, 400, z), ab);
-                // die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts)
-                const alle = strahl.intersectObject(e.mesh, false);
-                const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
-                if (h && (best === null || h.point.y > best)) best = h.point.y;
-                if (alle.length && alle[0].point.y > obenY) {
-                    obenY = alle[0].point.y;
-                    obenSteil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
-                }
-            }
-            return best;
-        };
+        const G = window.__gezeichnet;
+        const gezeichnet = (x, z) => G(r, x, z);
         const cx0 = Math.floor(mitte.x / span);
         const cz0 = Math.floor(mitte.z / span);
         // DER LESER QUER DURCH DEN STREIFEN: je Rand-Streifen der Chunks um den Start (x- und z-Rand, alle 8 m) Punkte im Abstand
@@ -647,7 +653,7 @@ async function proben(mitWiese, umfang) {
                 [x0 + hR, z0 + hR],
             ]) {
                 const y = gezeichnet(px, pz);
-                if (y === null || obenSteil) return true;
+                if (y === null || G.steil) return true;
                 lo = Math.min(lo, y);
                 hi = Math.max(hi, y);
             }
@@ -663,7 +669,7 @@ async function proben(mitWiese, umfang) {
                     ]) {
                         const g = gezeichnet(x, z);
                         if (g === null || r._koerperWasser(x, z, g) > g) continue;
-                        if (obenSteil) {
+                        if (G.steil) {
                             leser.ueberhang++;
                             continue;
                         }
@@ -725,9 +731,9 @@ async function proben(mitWiese, umfang) {
                   z: rand.z,
                   fehlerCm: Math.round(rand.fehler * 1000) / 10,
                   neigGrad: Math.round(rand.neig * 10) / 10,
-                  meshe,
+                  meshe: G.meshe,
               }
-            : { meshe };
+            : { meshe: G.meshe };
         if (rand) {
             const saveMax = s.maxCreatures;
             s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
@@ -928,6 +934,204 @@ async function proben(mitWiese, umfang) {
     return o;
 }
 
+// ── K8 EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22): an der Mess-Wiese und am 25°-Hang (der nächste trockene Hang 22–28°
+// um sie, am Gesetz gesucht) steht jeder Kontakt, den das Auge sieht, auf den gezeichneten Dreiecken (`__gezeichnet`): je Rolle
+// `n` Kontakte, p95 |Kontakt − Mesh| ≤ 3 cm — der Fuß des Spielers (der tiefste gezeichnete Vertex, den sein Knöchel trägt, im
+// Stand des Gangs), der Huf (das Reh, je Bein im Stand), das Rad (die tiefsten Vertices der Reifen des GT in Fahrt), der Fuß der
+// Streu (Ursprung jeder Instanz der Deko-Streu); die Feinform (das Mesh gegen das Gesetz `_voxelSurfaceY`) ≤ 5 cm. ──
+async function rollen(n) {
+    const r = window.anazhRealm;
+    const s = r.state;
+    const T = window.THREE;
+    const pm = s.playerMesh;
+    const gez = (x, z) => window.__gezeichnet(r, x, z);
+    // die Uhr des Takts: je Takt ein Bild (16,7 ms) — der Gang schreitet gleich, wie schnell die Seite auch rechnet
+    let uhr = performance.now();
+    const takt = () => {
+        try {
+            r._gameLoopTick((uhr += 1000 / 60));
+        } catch (_e) {}
+    };
+    const cm = (a, f) => {
+        const b = a.slice().sort((x, y) => x - y);
+        return b.length ? Math.round(b[Math.min(b.length - 1, Math.floor(f * b.length))] * 1000) / 10 : null;
+    };
+    const mass = (a) => ({ n: a.length, p95: cm(a.map(Math.abs), 0.95), median: cm(a, 0.5) });
+    const v = new T.Vector3();
+    const M = new T.Matrix4();
+    // je Knochen die Vertices des gezeichneten Leibs (Ebene 0, vor der Ego-Maske), die er überwiegend trägt; die Sohle = der
+    // tiefste von ihnen nach den Knochen, gegen das Mesh unter ihm
+    const sohle = (leib, knochen) => {
+        const je = knochen.map(() => []);
+        leib.traverse((o) => {
+            const ebene = o.userData._maskeVorEgo !== undefined ? o.userData._maskeVorEgo : o.layers.mask;
+            if (!o.isSkinnedMesh || !(ebene & 1)) return;
+            const si = o.geometry.attributes.skinIndex;
+            const sw = o.geometry.attributes.skinWeight;
+            const bi = knochen.map((b) => o.skeleton.bones.indexOf(b));
+            for (let i = 0; i < si.count; i++)
+                for (let k = 0; k < 4; k++) {
+                    const j = bi.indexOf(si.getComponent(i, k));
+                    if (j >= 0 && sw.getComponent(i, k) > 0.5) je[j].push([o, i]);
+                }
+        });
+        return (j) => {
+            let t = null;
+            for (const [o, i] of je[j]) {
+                o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld);
+                if (!t || v.y < t.y) t = v.clone();
+            }
+            const g = t && gez(t.x, t.z);
+            return g === null || !t ? null : t.y - g;
+        };
+    };
+    const gehen = (je) => {
+        const a = [];
+        for (let k = 0; k < 900 && a.length < n; k++) {
+            takt();
+            je(a);
+        }
+        return a;
+    };
+    const o = {};
+    const W = window.__messWiese;
+    // der 25°-Hang: der nächste Punkt um die Wiese, an dem fünf Neigungen (Mitte und ±4 m) zwischen 22 und 28° liegen, trocken
+    let hang = null;
+    const h = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+    const neig = (x, z) =>
+        Math.atan(Math.hypot(h(x + 1, z) - h(x - 1, z), h(x, z + 1) - h(x, z - 1)) / 2) * (180 / Math.PI);
+    for (let d = 8; d <= 400 && !hang; d += 8)
+        for (let a = 0; a < 2 * Math.PI && !hang; a += 8 / d) {
+            const x = Math.round(W[0] + d * Math.cos(a));
+            const z = Math.round(W[1] + d * Math.sin(a));
+            const ok = [
+                [0, 0],
+                [4, 0],
+                [-4, 0],
+                [0, 4],
+                [0, -4],
+            ].every(([p, q]) => Math.abs(neig(x + p, z + q) - 25) <= 3);
+            if (ok && r._landAt(x, z, 0.4)) hang = [x, z];
+        }
+    for (const [ort, X, Z] of [
+        ["wiese", W[0], W[1]],
+        ["hang", ...(hang || [])],
+    ]) {
+        if (!Number.isFinite(X)) continue;
+        const setz = () => {
+            pm.position.set(X, r._voxelSurfaceY(X, Z) + 0.6, Z);
+            s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+        };
+        await window.__weltStehtNach(() => (setz(), takt()));
+        const R = (o[ort] = { x: X, z: Z, neig: Math.round(neig(X, Z) * 10) / 10 });
+        // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
+        const fein = [];
+        let saat = 7;
+        const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let k = 0; k < 20 * n && fein.length < n; k++) {
+            const w = zufall() * 2 * Math.PI;
+            const d = 3 + 27 * zufall();
+            const x = X + d * Math.cos(w);
+            const z = Z + d * Math.sin(w);
+            const g = gez(x, z);
+            const l = r._voxelSurfaceY(x, z);
+            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) fein.push(g - l);
+        }
+        R.fein = mass(fein);
+        // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz)
+        const streu = [];
+        for (const reg of s.scatterRegions ? s.scatterRegions.values() : [])
+            for (const c of (reg && reg.cells) || []) {
+                const ref = c.slots && c.slots[0];
+                const g = ref && s.archInstanceGroups.get(ref.key);
+                if (g && g.mesh) g.mesh.getMatrixAt(ref.slot, M);
+                const y =
+                    g && g.mesh && v.setFromMatrixPosition(M).distanceTo(v.set(c.x, v.y, c.z)) < 0.05 ? v.y : null;
+                const b = y === null ? null : gez(c.x, c.z);
+                if (b !== null) streu.push(y - b);
+            }
+        R.streu = mass(streu);
+        // der Fuß des Spielers: er geht längs der Höhenlinie (die Füße im Stand: der Fuß-Lock der IK); vorwärts ist (sin, cos)
+        const quer = Math.atan2(h(X, Z - 1) - h(X, Z + 1), h(X + 1, Z) - h(X - 1, Z));
+        const rig = pm.userData.rig;
+        const fuss = sohle(pm, [rig.legL.ankle, rig.legR.ankle]);
+        s.yaw = quer;
+        s.keys.w = true;
+        R.fuss = mass(
+            gehen((a) => {
+                const ik = pm.userData._gaitIK;
+                if (ik) [ik.lockL, ik.lockR].forEach((l, j) => l.on && (v.y = fuss(j)) !== null && a.push(v.y));
+            })
+        );
+        s.keys.w = false;
+        // der Huf: ein Reh 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0 ihres Ziels)
+        const P = pm.position;
+        const max = s.maxCreatures;
+        s.maxCreatures = Math.max(max || 0, s.creatures.length + 3);
+        const reh = r.spawnCreatureAt(P.x + 4, r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5, P.z + 3, "happy", "wesen");
+        s.maxCreatures = max;
+        const tb = reh && reh.userData._tierBaum;
+        if (tb) {
+            const huf = sohle(reh, [tb.teile.flP, tb.teile.frP, tb.teile.hlP, tb.teile.hrP]);
+            R.huf = mass(
+                gehen((a) => {
+                    const Zg = tb._gang && tb._gang.ziele;
+                    reh.updateMatrixWorld(true);
+                    for (let j = 0; Zg && j < 4; j++) if (Zg[j][3] === 0 && (v.y = huf(j)) !== null) a.push(v.y);
+                })
+            );
+            r.removeCreature(reh);
+        }
+        // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x)
+        const e = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
+            { silent: true, precise: true, rotationY: quer - Math.PI / 2 }
+        );
+        for (let k = 0; e && k < 200 && !e.instanced && !e.mesh; k++) {
+            r._rebuildArchitectureMesh(e);
+            await new Promise((q) => setTimeout(q, 100));
+        }
+        if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
+            for (let k = 0; k < 15; k++) takt();
+            // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
+            // in der Luft (`_fahr.luft`) und im Stand (ein Rad auf einem Stein) zählt kein Boden-Kontakt
+            const tief = (ref) => {
+                const g = s.archInstanceGroups.get(ref.key);
+                const pa = g.geom.attributes.position;
+                g.mesh.getMatrixAt(ref.slot, M);
+                let t = null;
+                for (let i = 0; i < pa.count; i++)
+                    if (!t || v.fromBufferAttribute(pa, i).applyMatrix4(M).y < t.y) t = v.clone();
+                return t;
+            };
+            s.keys.w = true;
+            R.rad = mass(
+                gehen((a) => {
+                    const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
+                    const flat = r._foundryFlattenFor(e, r._foundryPresetForEntry(e), lod);
+                    const naben = new Map();
+                    for (let i = 0; flat && !e._fahr.luft && e._fahr.speed > 1 && i < e.instSlots.length; i++) {
+                        const rd = flat.leaves[i] && flat.leaves[i].rad;
+                        const t = rd && tief(e.instSlots[i]);
+                        const k = rd && rd.hx + "," + rd.hz;
+                        if (t && !(naben.get(k) && naben.get(k).y <= t.y)) naben.set(k, t);
+                    }
+                    for (const t of naben.values()) {
+                        const g = gez(t.x, t.z);
+                        if (g !== null) a.push(t.y - g);
+                    }
+                })
+            );
+            s.keys.w = false;
+            r.dismountArchitecture();
+            r.removeArchitecture(e);
+        }
+    }
+    return o;
+}
+
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
@@ -1011,6 +1215,43 @@ function urteil(o) {
     return f;
 }
 
+// K8 je Ort × Rolle: Soll p95 in cm und der EINE Leser der Rolle (der Täter beim Namen)
+const K8_ROLLEN = Object.freeze({
+    fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
+    streu: [3, "der Fuß der Streu (_scatterRegionBuild: surfY aus dem 8-m-Feld-Bake)"],
+    fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
+    huf: [3, "der Huf (_kreaturFussBoden)"],
+    rad: [3, "das Rad (die Reifen auf _fahrBoden, dem Gesetz)"],
+});
+function urteilK8(o, umfang) {
+    if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
+    const f = [];
+    for (const ort of ["wiese", "hang"])
+        for (const [rolle, [soll, wer]] of Object.entries(K8_ROLLEN)) {
+            // die Deko-Streu über den Chunks (64–194 m) trägt an der Wiese (einer Aue) gut 100 Instanzen: die Hälfte des Umfangs
+            const m = o[ort][rolle];
+            const min = rolle === "streu" ? umfang / 2 : umfang;
+            if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
+            else if (!(m.p95 <= soll))
+                f.push(`K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}) — Täter: ${wer}`);
+        }
+    return f;
+}
+const zeileK8 = (o) =>
+    ["wiese", "hang"]
+        .map((ort) =>
+            o && o[ort]
+                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · ` +
+                  Object.keys(K8_ROLLEN)
+                      .map(
+                          (k) =>
+                              `${k} ${o[ort][k] ? o[ort][k].p95 + " (" + o[ort][k].median + ", n " + o[ort][k].n + ")" : "?"}`
+                      )
+                      .join(" · ")
+                : `K8 ${ort} ?`
+        )
+        .join(" | ");
+
 function zeile(o) {
     if (o.fehler) return o.fehler;
     const v = (x) => (x === null || x === undefined ? "?" : x);
@@ -1041,7 +1282,8 @@ function zeile(o) {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     let rot = 0;
     try {
-        const lauf = async (inj) => {
+        // `k8`: die Welt mit Foundry (Streu, Reh und GT tragen Studio-Gestalten), sie misst nur K8
+        const lauf = async (inj, k8) => {
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -1049,9 +1291,10 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await nullRenderer(page);
+            await nullRenderer(page, { foundry: k8 === true });
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
+            await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
             await warteAufWelt(page, 180000);
             if (inj) await page.evaluate(taeter, inj);
@@ -1063,7 +1306,9 @@ function zeile(o) {
                     } catch (_e) {}
                 })
             );
-            const o = await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
+            const o = k8
+                ? await page.evaluate(rollen, K8_UMFANG)
+                : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
             return { o, errs };
         };
@@ -1088,14 +1333,16 @@ function zeile(o) {
                 if (!ok) rot++;
             }
         }
-        const { o, errs } = await lauf(null);
-        console.log("  " + zeile(o));
-        const f = urteil(o);
+        const { o, errs } = NUR_K8 ? { o: null, errs: [] } : await lauf(null);
+        const k8 = await lauf(null, true);
+        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG)];
+        if (o) console.log("  " + zeile(o));
+        console.log("  " + zeileK8(k8.o));
         for (const x of f) console.log("  ❌ " + x);
-        if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
-        rot += f.length + (errs.length ? 1 : 0);
+        for (const e of [...errs, ...k8.errs].slice(0, 1)) console.log("  ❌ Seiten-Fehler: " + e);
+        rot += f.length + (errs.length || k8.errs.length ? 1 : 0);
         if (process.env.KOERPER_STAND_JSON)
-            fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify(o, null, 1));
+            fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify({ ...o, k8: k8.o }, null, 1));
     } finally {
         await browser.close();
         server.close();
