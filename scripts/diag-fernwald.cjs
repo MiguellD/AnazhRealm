@@ -252,8 +252,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     { x: o.x, y: o.surfaceY, z: o.z },
                     { silent: true }
                 );
+                delete r._hausGrundSetzen; // der Patch lebt nur im Setzen — auch, wenn es fehlschlägt
                 if (ohne) {
-                    delete r._hausGrundSetzen;
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
                     ohne.blockerAABBs = null;

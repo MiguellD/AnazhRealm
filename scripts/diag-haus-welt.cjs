@@ -45,7 +45,8 @@
 //       Treppe den Kellerboden (kellerY + 0,12 m); `--bild` (echter Renderer, GPU-Schloss): Halm- und Boden-Pixel je Box 0
 //       (wo der Grund der Boden der Box ist — der Turm —, zählt vom Boden nur der Halm). ABBAU: ein Dorf- und ein gesetztes
 //       Haus fallen — kein Grund bleibt, der Boden schließt sich, der Keller trägt Erde (Selbsttest abbau). PLAN: das gesetzte
-//       Haus trägt seinen Grund (Plan-Datum), bevor die Hülle seines Körpers ankommt (Selbsttest grundplan).
+//       Haus trägt seinen Grund (Plan-Datum), bevor die Hülle seines Körpers ankommt (Selbsttest grundplan). WAISE: wenn das
+//       Start-Dorf gewachsen ist, trägt jeder Grund einen Bau an seiner Mitte (Selbsttest waise).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
@@ -82,7 +83,10 @@ const BASIS = {
         ],
         // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
         ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
-        ["this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);", "this.state.architectures.includes(entry)) void 0;"],
+        [
+            "this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
+            "this.state.architectures.includes(entry)) void 0;",
+        ],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
@@ -133,6 +137,13 @@ const BASIS = {
     abbau: [["        this._erdbauGrundFaellt(entry);", "        "]],
     // DER GRUND WARTET AUF DIE HÜLLE (W9 Plan): das gesetzte Haus legt ihn nicht beim Setzen aus seinem Plan
     grundplan: [["        this._hausGrundSetzen(entry);\n        // DIE EINE RÄUMUNG", "        // DIE EINE RÄUMUNG"]],
+    // DER GRUND OHNE BAU (W9 Waise): der Slot, der geschlossen fällt, lässt seinen Grund liegen
+    waise: [
+        [
+            "        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);",
+            "        const zu = () => false;",
+        ],
+    ],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
@@ -337,7 +348,13 @@ async function proben(phasen) {
         for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
     };
     // die Orte auf Ringen um m (je 8 auf den Radien rs)
-    const ring = (m, rs) => rs.flatMap((rr) => Array.from({ length: 8 }, (_, a) => [m.x + Math.cos((a * Math.PI) / 4) * rr, m.z + Math.sin((a * Math.PI) / 4) * rr])); // prettier-ignore
+    const ring = (m, rs) =>
+        rs.flatMap((rr) =>
+            Array.from({ length: 8 }, (_, a) => [
+                m.x + Math.cos((a * Math.PI) / 4) * rr,
+                m.z + Math.sin((a * Math.PI) / 4) * rr,
+            ])
+        );
     // ein Haus des Rezepts `vor` (Kultur, Same, Stempel; `spawnArchitecture`, kein Ort) auf dem ersten der Orte mit Land und
     // ohne Ort im 14-m-Kreis, an dem `gut(x, z)` nach dem Bau der Boden-Karten gilt, samt Hülle; null: keiner
     const setze = async (vor, id, orte, gut = () => true) => {
@@ -349,7 +366,13 @@ async function proben(phasen) {
             // ein eigener Körper (der Steuer-Passagier `__w9` trennt den Schlüssel): das Haus wartet auf seinen Bau wie jedes neue
             const ov = { id, seed: vor.seed, studioOv: Object.assign({}, vor.studioOv, { __w9: id }), rotationY: 0.6 };
             const hs = r._hausHuelleSetzen; // W9 PLAN: die Gründe an seiner Mitte, wenn die Hülle seines Körpers ankommt
-            r._hausHuelleSetzen = function (en, hu) { if (en.id === id && !en._hausHuelle) en.__w9Plan = ((r._erdbauLage() || {}).gruende || []).filter((g) => Math.hypot(g.cx - en.position.x, g.cz - en.position.z) < 0.05).length; return hs.call(this, en, hu); }; // prettier-ignore
+            r._hausHuelleSetzen = function (en, hu) {
+                if (en.id === id && !en._hausHuelle)
+                    en.__w9Plan = ((r._erdbauLage() || {}).gruende || []).filter(
+                        (g) => Math.hypot(g.cx - en.position.x, g.cz - en.position.z) < 0.05
+                    ).length;
+                return hs.call(this, en, hu);
+            };
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
             for (let k = 0; k < 300 && e && !e._hausHuelle; k++) await pumpe(4);
             if (e && e._hausHuelle) return e;
@@ -569,7 +592,14 @@ async function proben(phasen) {
                 !solids.some((so) => [lx, ly, lz].every((q, k) => so.min[k] - m < q && q < so.max[k] + m));
             // die Boxen des Grund-Datums (fachwerk `grundVon`: der Körper-Satz, je Box ihr Boden-Bit — 0: der Grund ist ihr Boden)
             const gd = FC.grundVon({ H: Hh });
-            const boxen = gd.boxen.map((q, j) => ({ art: gd.arten[j], x0: q[0], x1: q[1], z0: q[2], z1: q[3], traegt: q[4] })); // prettier-ignore
+            const boxen = gd.boxen.map((q, j) => ({
+                art: gd.arten[j],
+                x0: q[0],
+                x1: q[1],
+                z0: q[2],
+                z1: q[3],
+                traegt: q[4],
+            }));
             // die Box, in der (x, z) liegt (Welt), mit `rand` m Abstand zu ihrer Wand (negativ: weiter drin)
             const inBox = (m, x, z, rand) => {
                 const l = lokal(e, x, z);
@@ -579,11 +609,20 @@ async function proben(phasen) {
             // der Spieler steht im Haupthaus, bis die Hülle der Stufe 0 (ihre Treppe trägt den Leib in den Keller — ohne sie
             // stand er in 3 von 8 Läufen auf der Diele, Fuß 0,64 m, oder auf halber Treppe, −1,81 m) und die Boden-Karten um das Haus stehen (mit `--bild` dazu die
             // Nah-Wiese um das Auge — sonst misst der Blick leere Luft)
-            const ecken = boxen.flatMap((m) => [welt(e, m.x0 * sc, m.z0 * sc), welt(e, m.x1 * sc, m.z1 * sc), welt(e, m.x0 * sc, m.z1 * sc), welt(e, m.x1 * sc, m.z0 * sc)]); // prettier-ignore
+            const ecken = boxen.flatMap((m) => [
+                welt(e, m.x0 * sc, m.z0 * sc),
+                welt(e, m.x1 * sc, m.z1 * sc),
+                welt(e, m.x0 * sc, m.z1 * sc),
+                welt(e, m.x1 * sc, m.z0 * sc),
+            ]);
             const [mx0, mx1] = [Math.min(...ecken.map((p) => p.x)), Math.max(...ecken.map((p) => p.x))];
             const [mz0, mz1] = [Math.min(...ecken.map((p) => p.z)), Math.max(...ecken.map((p) => p.z))];
             const kartenDa = () => r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1);
-            const steht = () => e._hausHuelle && e._servedLod === 0 && kartenDa() && (!BILD || (s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0)); // prettier-ignore
+            const steht = () =>
+                e._hausHuelle &&
+                e._servedLod === 0 &&
+                kartenDa() &&
+                (!BILD || (s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0));
             stell(e.position.x, e.position.y + 1, e.position.z);
             for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
                 await pumpe(5);
@@ -619,9 +658,20 @@ async function proben(phasen) {
                 // zwei Blicke je Box: über die Diagonalen (0,45 m vor der Wand), sonst aus der Mitte auf die Ecken; das Auge
                 // 1,3 m über seiner Diele, 0,25 m vor jedem festen Teil, die Sicht zum Ziel frei
                 const i = 0.45;
-                const E4 = [[m.x0 + i, m.z0 + i], [m.x1 - i, m.z1 - i], [m.x1 - i, m.z0 + i], [m.x0 + i, m.z1 - i]]; // prettier-ignore
+                const E4 = [
+                    [m.x0 + i, m.z0 + i],
+                    [m.x1 - i, m.z1 - i],
+                    [m.x1 - i, m.z0 + i],
+                    [m.x0 + i, m.z1 - i],
+                ];
                 const M0 = [(m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2];
-                const paare = [[E4[0], E4[1]], [E4[1], E4[0]], [E4[2], E4[3]], [E4[3], E4[2]], ...E4.map((q) => [M0, q])]; // prettier-ignore
+                const paare = [
+                    [E4[0], E4[1]],
+                    [E4[1], E4[0]],
+                    [E4[2], E4[3]],
+                    [E4[3], E4[2]],
+                    ...E4.map((q) => [M0, q]),
+                ];
                 const dm = Number.isFinite(diele(...M0)) ? diele(...M0) : 0.5;
                 for (const [[ax, az], [zx, zz]] of paare) {
                     if (b.blicke >= 2) break;
@@ -629,8 +679,13 @@ async function proben(phasen) {
                     const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
                     const ay = da + 1.3;
                     if (!frei(ax, ay, az, 0.25)) continue;
-                    const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((t) => [ax + (zx - ax) * t, ay + (dz - ay) * t, az + (zz - az) * t]); // prettier-ignore
-                    if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue; // prettier-ignore
+                    const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((t) => [
+                        ax + (zx - ax) * t,
+                        ay + (dz - ay) * t,
+                        az + (zz - az) * t,
+                    ]);
+                    if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02)))
+                        continue;
                     b.blicke++;
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
                     cam.position.set(p.x, base + ay * sc, p.z);
@@ -644,10 +699,17 @@ async function proben(phasen) {
                     b.innen = Math.max(b.innen || 0, innen.length);
                     const ohne = innen.length ? await schuss([], innen) : G;
                     // DIE MASKE ohne die Nah-Wiese: der Boden-Satz zeichnet unbeleuchtet (grün: grüne Albedo, sonst Magenta)
-                    const [TSL, senken, stoff] = [THREE.TSL, [...s.nahWiese.senken.values()].map((x) => x.mesh).filter(Boolean), s.chunkSaetze.get("boden").mesh.material]; // prettier-ignore
+                    const [TSL, senken, stoff] = [
+                        THREE.TSL,
+                        [...s.nahWiese.senken.values()].map((x) => x.mesh).filter(Boolean),
+                        s.chunkSaetze.get("boden").mesh.material,
+                    ];
                     const [alt, alb] = [stoff.outputNode, stoff.colorNode.xyz];
                     const gruen = alb.y.sub(alb.x.add(alb.z).mul(0.5)).greaterThan(0.02);
-                    [stoff.outputNode, stoff.needsUpdate] = [TSL.vec4(TSL.select(gruen, TSL.vec3(0, 1, 0), TSL.vec3(1, 0, 1)), 1), true]; // prettier-ignore
+                    [stoff.outputNode, stoff.needsUpdate] = [
+                        TSL.vec4(TSL.select(gruen, TSL.vec3(0, 1, 0), TSL.vec3(1, 0, 1)), 1),
+                        true,
+                    ];
                     let Mk;
                     try {
                         Mk = await schuss(senken, []);
@@ -657,7 +719,10 @@ async function proben(phasen) {
                     // trifft der Strahl des Pixels den gezeichneten Boden (`_bodenSichtAt`) 0,1 m innerhalb der Box? Das Auge
                     // steht in ihr: gerechnet bis zum Austritt aus der Box, Schritt 3 cm
                     const drinnen = (px, py) => {
-                        const v = new THREE.Vector3(((px + 0.5) / WB) * 2 - 1, 1 - ((py + 0.5) / HB) * 2, 0.5).unproject(cam).sub(cam.position).normalize(); // prettier-ignore
+                        const v = new THREE.Vector3(((px + 0.5) / WB) * 2 - 1, 1 - ((py + 0.5) / HB) * 2, 0.5)
+                            .unproject(cam)
+                            .sub(cam.position)
+                            .normalize();
                         for (let t = 0, ueber = false; t < 16; t += 0.03) {
                             const [x, y, z] = [
                                 cam.position.x + v.x * t,
@@ -677,7 +742,8 @@ async function proben(phasen) {
                         const [mr, mg, mb] = [Mk[k], Mk[k + 1], Mk[k + 2]];
                         const boden = (mg > mr + 60 && mg > mb + 60) || (mr > mg + 60 && mb > mg + 60);
                         // wo der Grund der Boden der Box ist (der Turm), zählt nur der Halm (die grüne Maske)
-                        if (boden && (m.traegt || mg > mr + 60) && drinnen((k / 4) % WB, Math.floor(k / 4 / WB))) b.boden++; // prettier-ignore
+                        if (boden && (m.traegt || mg > mr + 60) && drinnen((k / 4) % WB, Math.floor(k / 4 / WB)))
+                            b.boden++;
                     }
                     const cv = Object.assign(document.createElement("canvas"), { width: WB, height: HB });
                     cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(G), WB, HB), 0, 0);
@@ -1663,7 +1729,10 @@ async function proben(phasen) {
         o.w9.abbau = [];
         const dorf = H.find((e) => (gesetz(e) || {}).cellar) || H[0];
         const gesetzt = sbE || (await setze(dorf, "w9-abbau", ring(dorfMitte, [60, 90, 120, 160])));
-        for (const [art, e] of [["dorf", dorf], ["gesetzt", gesetzt]]) {
+        for (const [art, e] of [
+            ["dorf", dorf],
+            ["gesetzt", gesetzt],
+        ]) {
             const a = { art, plan: e && e.__w9Plan };
             o.w9.abbau.push(a);
             const Hh = e && gesetz(e);
@@ -1674,7 +1743,9 @@ async function proben(phasen) {
             const sc = (e.scale > 0 ? e.scale : 1) * (e._hausHuelleSkala > 0 ? e._hausHuelleSkala : 1);
             const base = e.position.y - 0.5;
             const gd = FC.grundVon({ H: Hh });
-            const mitten = gd.boxen.filter((q) => q[4]).map((q) => welt(e, ((q[0] + q[1]) / 2) * sc, ((q[2] + q[3]) / 2) * sc)); // prettier-ignore
+            const mitten = gd.boxen
+                .filter((q) => q[4])
+                .map((q) => welt(e, ((q[0] + q[1]) / 2) * sc, ((q[2] + q[3]) / 2) * sc));
             const ke = Hh.cellar;
             const kp = ke ? welt(e, ((ke.x0 + ke.x1) / 2) * sc, ((ke.z0 + ke.z1) / 2) * sc) : null;
             const ky = ke ? base + (ke.floorY + 0.3) * sc : 0;
@@ -1682,7 +1753,9 @@ async function proben(phasen) {
             const lage = () => {
                 const E = r._erdbauLage();
                 return {
-                    gruende: ((E && E.gruende) || []).filter((g) => Math.abs(g.cx - x) < 0.05 && Math.abs(g.cz - z) < 0.05).length, // prettier-ignore
+                    gruende: ((E && E.gruende) || []).filter(
+                        (g) => Math.abs(g.cx - x) < 0.05 && Math.abs(g.cz - z) < 0.05
+                    ).length,
                     offen: mitten.filter((p) => r._bodenSichtAt(p.x, p.z) == null).length,
                     kellerErde: kp ? +(r._terrainDensityAt(kp.x, ky, kp.z) > 0) : null,
                 };
@@ -1691,7 +1764,7 @@ async function proben(phasen) {
             stell(x, e.position.y + 1, z);
             for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
                 await pumpe(5);
-                ruhig = k >= 6 && r._bodenSichtChunks(x - 10, z - 10, x + 10, z + 10) ? ruhig + 1 : 0;
+                ruhig = k >= 6 && r._bodenSichtChunks(x - 10, z - 10, x + 10, z + 10) && lage().offen ? ruhig + 1 : 0;
             }
             a.vorher = lage();
             a.boxen = mitten.length;
@@ -1702,6 +1775,20 @@ async function proben(phasen) {
             }
             a.nachher = lage();
         }
+        // W9 WAISE: kein Grund ohne Bau — das Start-Dorf (sein Takt, im Null-Renderer sonst aus) wächst ganz, dann trägt jeder
+        // Grund des Erdbaus (Ort und gesetztes Haus) einen Bau an seiner Mitte; ein Slot, der fällt, nimmt seinen Grund mit
+        const takt = window.__anazhAutoSettlement;
+        const t0 = performance.now();
+        window.__anazhAutoSettlement = true;
+        stell(start.x, start.y + 1, start.z);
+        const zellen = () => (s.worldMeta && s.worldMeta.settlementCells) || {};
+        for (let k = 0; k < 300 && !(zellen().start && !r._autoSettlementQueue); k++) await pumpe(4);
+        window.__anazhAutoSettlement = takt;
+        const gr = (r._erdbauLage() || {}).gruende || [];
+        const bau = (g) =>
+            s.architectures.some((e) => e.position && Math.hypot(e.position.x - g.cx, e.position.z - g.cz) < 0.05);
+        const ohne = gr.filter((g) => !bau(g)).map((g) => `${Math.round(g.cx)}/${Math.round(g.cz)}`);
+        o.w9.waise = { start: !!zellen().start, gruende: gr.length, ohne, ms: Math.round(performance.now() - t0) };
     }
     pm.position.set(start.x, start.y, start.z);
     return o;
@@ -1929,7 +2016,10 @@ function urteil(o) {
     if (P.has("grund")) {
         const hs = ((o.w9 && o.w9.haeuser) || []).filter((h) => !h.fehler);
         const ohne = ((o.w9 && o.w9.haeuser) || []).filter((h) => h.ohneDatum).length;
-        if (ohne) f.push(`W9 Grund-Datum: ${ohne} Häuser ohne Körper-Satz — das Gesetzbuch trägt kein grundVon (fachwerk-core)`);
+        if (ohne)
+            f.push(
+                `W9 Grund-Datum: ${ohne} Häuser ohne Körper-Satz — das Gesetzbuch trägt kein grundVon (fachwerk-core)`
+            );
         const [boxen, mitK] = [hs.flatMap((h) => h.koerper), hs.filter((h) => h.keller)];
         const summe = (feld) => boxen.reduce((a, b) => a + (b[feld] || 0), 0);
         const je = (w) => JSON.stringify(boxen.reduce((m, b) => (w(b) && (m[b.art] = (m[b.art] || 0) + w(b)), m), {}));
@@ -1939,21 +2029,55 @@ function urteil(o) {
             boxen.filter((b) => b.blicke > 0),
             (b) => (b.halm + b.boden > 20 ? b.halm + b.boden : 0),
         ];
-        if (!boxen.length || !hs.some((h) => h.ring > 0)) f.push(`W9 Aufbau: blind — ${boxen.length} Boxen, kein Büschel des Gesetzes um ein Haus`); // prettier-ignore
+        if (!boxen.length || !hs.some((h) => h.ring > 0))
+            f.push(`W9 Aufbau: blind — ${boxen.length} Boxen, kein Büschel des Gesetzes um ein Haus`);
         if (!(o.w9 && o.w9.weite > 0)) f.push("W9 Weite: blind — keine Vorlage der Nah-Wiese gezeichnet");
-        if (summe("bueschel")) f.push(`W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes reichen in den Körper-Satz ${mit((b) => b.bueschel)} (${je((b) => b.bueschel)}, Weite der Vorlage ${o.w9.weite.toFixed(3)} m je Skala)`); // prettier-ignore
-        if (summe("dichte")) f.push(`W9 Dichte: ${summe("dichte")} von ${summe("proben")} Zellen über der Diele tragen Erde ${mit((b) => b.dichte)} (${je((b) => b.dichte)})`); // prettier-ignore
+        if (summe("bueschel"))
+            f.push(
+                `W9 Büschel: ${summe("bueschel")} Büschel des Gesetzes reichen in den Körper-Satz ${mit((b) => b.bueschel)} (${je((b) => b.bueschel)}, Weite der Vorlage ${o.w9.weite.toFixed(3)} m je Skala)`
+            );
+        if (summe("dichte"))
+            f.push(
+                `W9 Dichte: ${summe("dichte")} von ${summe("proben")} Zellen über der Diele tragen Erde ${mit((b) => b.dichte)} (${je((b) => b.dichte)})`
+            );
         if (!mitK.length) f.push("W9 Keller: blind — kein Haus mit Keller-Lauf im Gesetzbuch");
-        else if (oben.length) f.push(`W9 Keller: ${oben.length} von ${mitK.length} Leibern erreichen den Kellerboden nicht (tiefster Fuß ${[...new Set(oben.map((h) => h.keller.tiefM))].join("/")} m, Soll ${oben[0].keller.boden} m), Erde im Keller-Raum ${mitK.reduce((a, h) => a + h.keller.erde, 0)} von ${mitK.reduce((a, h) => a + h.keller.proben, 0)} Proben`); // prettier-ignore
+        else if (oben.length)
+            f.push(
+                `W9 Keller: ${oben.length} von ${mitK.length} Leibern erreichen den Kellerboden nicht (tiefster Fuß ${[...new Set(oben.map((h) => h.keller.tiefM))].join("/")} m, Soll ${oben[0].keller.boden} m), Erde im Keller-Raum ${mitK.reduce((a, h) => a + h.keller.erde, 0)} von ${mitK.reduce((a, h) => a + h.keller.proben, 0)} Proben`
+            );
         if (o.w9 && o.w9.bild && !gesehen.length) f.push("W9 Bild: blind — kein freies Auge in einer Box");
-        else if (o.w9 && o.w9.bild && (!o.w9.spieler || !hs.some((h) => h.gegenprobe > 0))) f.push(`W9 Bild: blind für den Halm — ${o.w9.spieler ? "vor dem Haus des Spielers ändert die Wiese kein Pixel (Gegenprobe)" : "kein Haus des Spielers auf der Wiese"}`); // prettier-ignore
-        if (o.w9 && o.w9.bild && gesehen.some(bildW)) f.push(`W9 Bild: ${gesehen.filter(bildW).length} von ${gesehen.length} Boxen ${mit(bildW)} zeigen Halm oder Boden (Halm ${summe("halm")} + Boden ${summe("boden")} px, je Körper ${je(bildW)})`); // prettier-ignore
+        else if (o.w9 && o.w9.bild && (!o.w9.spieler || !hs.some((h) => h.gegenprobe > 0)))
+            f.push(
+                `W9 Bild: blind für den Halm — ${o.w9.spieler ? "vor dem Haus des Spielers ändert die Wiese kein Pixel (Gegenprobe)" : "kein Haus des Spielers auf der Wiese"}`
+            );
+        if (o.w9 && o.w9.bild && gesehen.some(bildW))
+            f.push(
+                `W9 Bild: ${gesehen.filter(bildW).length} von ${gesehen.length} Boxen ${mit(bildW)} zeigen Halm oder Boden (Halm ${summe("halm")} + Boden ${summe("boden")} px, je Körper ${je(bildW)})`
+            );
         const ab = (o.w9 && o.w9.abbau) || [];
         const blind = ab.filter((a) => a.fehler || !(a.vorher.gruende > 0 && a.vorher.offen > 0));
-        const bleibt = ab.filter((a) => !a.fehler && (a.nachher.gruende || a.nachher.offen || a.nachher.kellerErde === 0));
-        if (ab.length < 2 || blind.length) f.push(`W9 Abbau: blind — ${ab.length < 2 ? "kein Abbau" : blind.map((a) => a.art + " " + (a.fehler || `ohne Grund vor dem Abbau (${a.vorher.gruende} Gründe, ${a.vorher.offen}/${a.boxen} Boxen geschnitten)`)).join(", ")}`); // prettier-ignore
-        if (ab.some((a) => a.art === "gesetzt" && !a.fehler && a.plan !== 1)) f.push(`W9 Plan: das gesetzte Haus trägt bei der Ankunft seines Körpers ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Körper kam vor seinem Grund (der Grund wartete auf die Hülle), die Chunks um ihn bauen danach neu`); // prettier-ignore
-        if (bleibt.length) f.push(`W9 Abbau: der Grund überlebt den Bau — ${bleibt.map((a) => `${a.art}: ${a.nachher.gruende} Gründe, ${a.nachher.offen} von ${a.boxen} Boxen ohne gezeichneten Boden, Keller ${a.nachher.kellerErde === 0 ? "hohl" : "voll"}`).join(" · ")} (ein Loch in der Welt, wo das Haus stand)`); // prettier-ignore
+        const bleibt = ab.filter(
+            (a) => !a.fehler && (a.nachher.gruende || a.nachher.offen || a.nachher.kellerErde === 0)
+        );
+        if (ab.length < 2 || blind.length)
+            f.push(
+                `W9 Abbau: blind — ${ab.length < 2 ? "kein Abbau" : blind.map((a) => a.art + " " + (a.fehler || `ohne Grund vor dem Abbau (${a.vorher.gruende} Gründe, ${a.vorher.offen}/${a.boxen} Boxen geschnitten)`)).join(", ")}`
+            );
+        if (ab.some((a) => a.art === "gesetzt" && !a.fehler && a.plan !== 1))
+            f.push(
+                `W9 Plan: das gesetzte Haus trägt bei der Ankunft seines Körpers ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Körper kam vor seinem Grund (der Grund wartete auf die Hülle), die Chunks um ihn bauen danach neu`
+            );
+        const wa = o.w9 && o.w9.waise;
+        if (!(wa && wa.start && wa.gruende))
+            f.push("W9 Waise: blind — das Start-Dorf wuchs nicht oder trägt keinen Grund");
+        else if (wa.ohne.length)
+            f.push(
+                `W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne.join(" ")}) — ein Loch ins Leere`
+            );
+        if (bleibt.length)
+            f.push(
+                `W9 Abbau: der Grund überlebt den Bau — ${bleibt.map((a) => `${a.art}: ${a.nachher.gruende} Gründe, ${a.nachher.offen} von ${a.boxen} Boxen ohne gezeichneten Boden, Keller ${a.nachher.kellerErde === 0 ? "hohl" : "voll"}`).join(" · ")} (ein Loch in der Welt, wo das Haus stand)`
+            );
     }
     return f;
 }
@@ -1977,7 +2101,7 @@ function zeile(o) {
                   .map((h) => h.keller.tiefM)
                   .join(
                       "/"
-                  )} m${o.w9.bild ? `, Büschel/Halm/Boden/Blicke ${["bueschel", "halm", "boden", "blicke"].map((k) => o.w9.haeuser.reduce((a, h) => a + (h.koerper || []).reduce((q, b) => q + b[k], 0), 0)).join("/")}, Gegenprobe ${o.w9.haeuser.flatMap((h) => (h.gegenprobe != null ? [h.gegenprobe] : [])).join("/")} px` : ""}, Abbau ${(o.w9.abbau || []).map((a) => a.art + " " + (a.fehler || `${a.vorher.offen}→${a.nachher.offen} offen, Gründe ${a.vorher.gruende}→${a.nachher.gruende}, Keller-Erde ${a.vorher.kellerErde}→${a.nachher.kellerErde}`)).join(" · ")}`
+                  )} m${o.w9.bild ? `, Büschel/Halm/Boden/Blicke ${["bueschel", "halm", "boden", "blicke"].map((k) => o.w9.haeuser.reduce((a, h) => a + (h.koerper || []).reduce((q, b) => q + b[k], 0), 0)).join("/")}, Gegenprobe ${o.w9.haeuser.flatMap((h) => (h.gegenprobe != null ? [h.gegenprobe] : [])).join("/")} px` : ""}, Abbau ${(o.w9.abbau || []).map((a) => a.art + " " + (a.fehler || `${a.vorher.offen}→${a.nachher.offen} offen, Gründe ${a.vorher.gruende}→${a.nachher.gruende}, Keller-Erde ${a.vorher.kellerErde}→${a.nachher.kellerErde}`)).join(" · ")}${o.w9.waise ? `, Waise ${o.w9.waise.ohne.length}/${o.w9.waise.gruende} (${o.w9.waise.ms} ms)` : ""}`
             : "") +
         ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
@@ -2072,6 +2196,7 @@ function zeile(o) {
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
+                waise: ["grund", "W9 Waise"],
             };
             selbst = Object.keys(soll)
                 .filter((k) => !NUR.length || NUR.includes(k))
@@ -2110,7 +2235,10 @@ function zeile(o) {
                 o.w9.haeuser.forEach((h, i) =>
                     (h.koerper || []).forEach((b, j) => {
                         for (const [v, png] of (b.png || []).entries())
-                            fs.writeFileSync(path.join(ROOT, `artifacts/haus-welt/grund-${i}-${j}-${b.art}-${v}.png`), Buffer.from(png.split(",")[1], "base64")); // prettier-ignore
+                            fs.writeFileSync(
+                                path.join(ROOT, `artifacts/haus-welt/grund-${i}-${j}-${b.art}-${v}.png`),
+                                Buffer.from(png.split(",")[1], "base64")
+                            );
                         delete b.png;
                     })
                 );

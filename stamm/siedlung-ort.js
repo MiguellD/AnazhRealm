@@ -1413,21 +1413,26 @@ class AnazhRealm_siedlung_ort {
             );
             return false;
         }
+        const wx = origin.x + slot.x;
+        const wz = origin.z + slot.z;
+        // DER GRUND FÄLLT MIT DEM SLOT (S4): der Erdbau des Orts trägt den Grund jedes Hauses seines Plans (`ortPlan`); fällt
+        // der Slot geschlossen, fällt sein Grund wie beim Abbau (`_erdbauGrundFaellt`) — die Platte des Plans bleibt. Bis S4-N3
+        // blieb er: am Start-Dorf schnitt der Grund des Alpenchalets, das am Brunnen des eigenen Plans fällt (Bau-Wand), ein
+        // Loch ins Leere (53,7/108,4, gate:haus-welt W9 Waise).
+        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
         const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
         const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
-        if (!name || !this.state.blueprints[name]) return false; // fail-closed
+        if (!name || !this.state.blueprints[name]) return zu(); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
         const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
-        const wx = origin.x + slot.x;
-        const wz = origin.z + slot.z;
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
         if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
-            return false;
-        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
+            return zu();
+        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu();
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
         // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
@@ -1462,7 +1467,7 @@ class AnazhRealm_siedlung_ort {
             }
         );
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
-        return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
+        return entry || zu(); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
     // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
