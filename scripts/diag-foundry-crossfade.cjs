@@ -27,7 +27,8 @@
 // des Wurfs, die Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band)
 // und die laute Blende (ohne uLodD0 bricht der Stoff beim Namen).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
-//   node scripts/diag-foundry-crossfade.cjs [--selftest]
+// Teil (c), echter Renderer (WebGPU, kienspan): DER WURF OHNE FARBE (B-K1) — s. runPartC; `--nur-wurf` fährt nur ihn.
+//   node scripts/diag-foundry-crossfade.cjs [--selftest | --nur-wurf]
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -308,6 +309,197 @@ const ABSENZEN = [
 function mitTaeter(glied, taeter) {
     const g = [].concat(glied || "_lodCrossfadeMaskNode")[0];
     return (t) => t.replace(new RegExp("(\\n {4}" + g + "\\([^)]*\\)\\s*\\{)"), "$1 " + taeter + ";");
+}
+
+// ===== TEIL (c) — DER WURF OHNE FARBE (B-K1, Lehre 26): echter Renderer, Knoten-Bau ohne Pipeline =====
+// r184 `_getShadowNodes` hängt den Farb-Graphen des Originals in den Schatten-Stoff (vec4(0, colorNode.a · map.a)); an einem
+// Werfer OHNE Ausschnitt (alphaTest 0, opak, ohne alphaMap/Masken/castShadowNode) schneidet diese Alpha nichts — der
+// Schatten-Stoff setzt sie auf 1, die Karte trägt keine Farbe (PCF) —, gebaut wurde sie trotzdem: je Werfer ein eigenes
+// Schatten-Programm aus seinem Farb-Graphen. Die Probe baut an einer eigenen Bühne je Werfer das Hauptpass- und das
+// Schatten-Fragment (WGSL, nur der Knoten-Bau — keine Pipeline, kein kaltes Programm) und urteilt:
+//   (1) ein Hauptpass-Fragment verwirft genau dann, wenn sein Schatten-Fragment verwirft (Ausschnitt in Bild und Wurf);
+//   (2) ein Werfer ohne Ausschnitt wirft mit dem Standard-Fragment des Schatten-Stoffs (gleich dem Wurf eines Stoffs ohne
+//       Farb-Graph und Karte) — sein Farb-Graph steht in keinem Schatten-Fragment.
+const PORT_C = Number(process.env.CROSSFADE_WURF_PORT || PORT + 1);
+function wurfUrteil(w) {
+    if (!w || w.err) return [`WURF: die Probe lief nicht (${w ? w.err : "?"})`];
+    const v = [];
+    const ws = w.werfer || [];
+    if (!ws.some((x) => x.ausschnitt && x.hauptVerwirft)) v.push("WURF: kein Werfer mit Ausschnitt verwirft im Hauptpass — die Probe ist blind");
+    if (!ws.some((x) => !x.ausschnitt)) v.push("WURF: kein Werfer ohne Ausschnitt an der Bühne — die Probe ist blind");
+    if (!w.leer || !(w.leer.zeilen > 0) || w.leer.wurfVerwirft !== false)
+        v.push("WURF: das Schatten-Fragment des Stoffs ohne Farb-Graph fehlt oder verwirft — die Probe ist blind");
+    for (const x of ws) {
+        if (x.hauptVerwirft !== x.wurfVerwirft)
+            v.push(
+                `WURF: ${x.name} — der Hauptpass ${x.hauptVerwirft ? "verwirft" : "verwirft nicht"}, das Schatten-Fragment ${x.wurfVerwirft ? "verwirft" : "verwirft nicht"}: der Schatten schneidet anders als das Bild`
+            );
+        if (!x.ausschnitt && x.wurfGleichLeer !== true)
+            v.push(
+                `WURF: ${x.name} — ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen ins Schatten-Fragment (${x.wurfZeilen} Zeilen statt ${w.leer ? w.leer.zeilen : "?"}): ein Schatten-Programm je Farb-Graph`
+            );
+    }
+    return v;
+}
+function wurfSelbsttest() {
+    const gruen = {
+        leer: { zeilen: 40, wurfVerwirft: false },
+        werfer: [
+            { name: "wurf:voll", ausschnitt: false, hauptVerwirft: false, wurfVerwirft: false, wurfGleichLeer: true, wurfZeilen: 40 },
+            { name: "wurf:ausschnitt", ausschnitt: true, hauptVerwirft: true, wurfVerwirft: true, wurfGleichLeer: false, wurfZeilen: 70 },
+        ],
+    };
+    const mit = (i, o) => {
+        const z = JSON.parse(JSON.stringify(gruen));
+        Object.assign(z.werfer[i], o);
+        return z;
+    };
+    const faelle = [
+        ["ein alphaTest-0,5-Werfer behält sein discard", mit(1, { wurfVerwirft: false }), /WURF: wurf:ausschnitt — der Hauptpass verwirft, das Schatten-Fragment verwirft nicht/],
+        ["ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen", mit(0, { wurfGleichLeer: false, wurfZeilen: 90 }), /WURF: wurf:voll — ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen/],
+        ["der Wurf verwirft ohne Bild-Ausschnitt", mit(0, { wurfVerwirft: true }), /WURF: wurf:voll — der Hauptpass verwirft nicht, das Schatten-Fragment verwirft/],
+        ["Ausschnitt-Probe blind", mit(1, { hauptVerwirft: false, wurfVerwirft: false }), /kein Werfer mit Ausschnitt verwirft/],
+    ];
+    check("Selbst-Test WURF: der grüne Lauf ist grün", wurfUrteil(gruen).length === 0, wurfUrteil(gruen).join(" · "));
+    for (const [name, z, muss] of faelle) {
+        const v = wurfUrteil(z);
+        check(`Selbst-Test WURF: „${name}" → die Linse nennt ihn`, v.some((s) => muss.test(s)), v.join(" · ") || "(nichts)");
+    }
+}
+async function runPartC() {
+    const server = statikServer();
+    await new Promise((r) => server.listen(PORT_C, "127.0.0.1", r));
+    const browser = await starteBrowser({ art: "linse", frist: 300000 });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 320, height: 240 });
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    let w;
+    try {
+        await page.goto(`http://127.0.0.1:${PORT_C}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        w = await page.evaluate(async () => {
+            const t0 = performance.now();
+            let r = null;
+            while (performance.now() - t0 < 240000) {
+                r = window.anazhRealm;
+                if (r && r.state && r.state.rendererReady && r.state.renderer && r.state.renderer.backend) break;
+                r = null;
+                await new Promise((res) => setTimeout(res, 100));
+            }
+            if (!r) return { err: "der Renderer stand nach 240 s nicht" };
+            const rend = r.state.renderer,
+                T = window.THREE,
+                TSL = T.TSL;
+            if (rend.backend.isWebGPUBackend !== true) return { err: "kein WebGPU-Backend (WGSL) — die Probe wäre blind" };
+            rend.setAnimationLoop(null);
+            const loopRoh = rend.setAnimationLoop;
+            rend.setAnimationLoop = () => {};
+            const schattenAlt = rend.shadowMap.enabled;
+            rend.shadowMap.enabled = true;
+            const szene = new T.Scene();
+            const licht = new T.DirectionalLight(0xffffff, 3);
+            licht.position.set(3, 8, 2);
+            licht.castShadow = true;
+            licht.shadow.mapSize.set(64, 64);
+            szene.add(licht, licht.target);
+            const karte = new T.DataTexture(new Uint8Array([255, 255, 255, 255, 40, 90, 40, 255, 40, 90, 40, 255, 255, 255, 255, 255]), 2, 2);
+            karte.needsUpdate = true;
+            const stoff = (o) => new T.MeshStandardNodeMaterial(o);
+            const ausschnitt = stoff({ alphaTest: 0.5 });
+            ausschnitt.colorNode = TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))));
+            const voll = stoff({});
+            voll.colorNode = TSL.vec4(TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.uv().x), 1.0);
+            const maske = stoff({});
+            maske.maskNode = TSL.uv().y.greaterThan(0.2);
+            const probe = [
+                ["wurf:leer", stoff({ color: 0x8a6a4a }), false],
+                ["wurf:voll", voll, false],
+                ["wurf:karte", stoff({ map: karte }), false],
+                ["wurf:ausschnitt", ausschnitt, true],
+                ["wurf:maske", maske, true],
+            ];
+            for (let i = 0; i < probe.length; i++) {
+                const [name, m] = probe[i];
+                m.name = name;
+                const o = new T.Mesh(new T.PlaneGeometry(2, 2), m);
+                o.position.set(-4 + i * 2, 1, 0);
+                o.castShadow = true;
+                o.receiveShadow = true;
+                o.frustumCulled = false;
+                szene.add(o);
+            }
+            const kam = new T.PerspectiveCamera(60, 4 / 3, 0.1, 50);
+            kam.position.set(0, 4, 8);
+            kam.lookAt(0, 0, 0);
+            kam.updateMatrixWorld(true);
+            // NUR DER KNOTEN-BAU: je Render-Objekt sein Fragment (WGSL); der Hauptpass startet über updateBefore den
+            // Schatten-Render (die Kaskade baut ihre Bürger durch dieselbe Bahn) — keine Pipeline, kein Draw.
+            const fang = [];
+            const odRoh = rend._renderObjectDirect;
+            rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+                const ro = this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId);
+                const wurf = material.isShadowPassMaterial === true;
+                fang.push({ name: object.material.name, wurf, frag: ro.getNodeBuilderState().fragmentShader || "" });
+                if (!wurf) this._nodes.updateBefore(ro);
+            };
+            const rt = new T.RenderTarget(16, 16, { depthBuffer: true, samples: 0 });
+            try {
+                rend.setRenderTarget(rt);
+                rend.render(szene, kam);
+            } catch (e) {
+                return { err: "Knoten-Bau: " + ((e && e.message) || e) };
+            } finally {
+                rend.setRenderTarget(null);
+                rend._renderObjectDirect = odRoh;
+                rend.shadowMap.enabled = schattenAlt;
+                rend.setAnimationLoop = loopRoh;
+            }
+            const verwirft = (f) => /\bdiscard\b/.test(f);
+            const frag = (name, wurf) => (fang.find((f) => f.name === name && f.wurf === wurf) || {}).frag;
+            const leerWurf = frag("wurf:leer", true);
+            const out = { leer: leerWurf ? { zeilen: leerWurf.split("\n").length, wurfVerwirft: verwirft(leerWurf) } : null, werfer: [], fang: fang.length };
+            for (const [name, , aus] of probe) {
+                if (name === "wurf:leer") continue;
+                const h = frag(name, false),
+                    s = frag(name, true);
+                if (h === undefined || s === undefined) return { err: `${name}: ${h === undefined ? "kein Hauptpass" : "kein Schatten-Fragment"} gebaut (${fang.length} Bauten)` };
+                out.werfer.push({
+                    name,
+                    ausschnitt: aus,
+                    hauptVerwirft: verwirft(h),
+                    wurfVerwirft: verwirft(s),
+                    wurfGleichLeer: s === leerWurf,
+                    wurfZeilen: s.split("\n").length,
+                });
+            }
+            for (const [, m] of probe) m.dispose();
+            karte.dispose();
+            rt.dispose();
+            return out;
+        });
+    } catch (e) {
+        w = { err: (e && e.message) || String(e) };
+    }
+    await browser.close();
+    server.close();
+    return { w, pageErrors };
+}
+
+async function teilC() {
+    console.log("--- Teil (c) — DER WURF OHNE FARBE: Haupt- und Schatten-Fragment je Werfer (echter Renderer, nur Knoten-Bau) ---");
+    {
+        const T0 = Date.now();
+        const { w, pageErrors: fc } = await runPartC();
+        const v = wurfUrteil(w);
+        for (const s of v) check(s, false);
+        if (!v.length)
+            check(
+                "WURF: jeder Werfer schneidet in Bild und Wurf gleich, kein Werfer ohne Ausschnitt trägt seinen Farb-Graphen ins Schatten-Fragment",
+                true,
+                (w.werfer || []).map((x) => `${x.name} ${x.ausschnitt ? "Ausschnitt" : "voll"} Wurf ${x.wurfZeilen} Z.`).join(" · ") + ` · Standard ${w.leer.zeilen} Z. · ${w.fang} Bauten · ${Math.round((Date.now() - T0) / 1000)} s`
+            );
+        if (fc.length) check(`WURF: ${fc.length} Seiten-Fehler`, false, fc[0]);
+    }
 }
 
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
@@ -1416,6 +1608,8 @@ async function main() {
             !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
             `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
         );
+        // V6: der Wurf ohne Farbe (Teil c) — das Urteil über einen grünen Lauf und je einen injizierten Täter.
+        wurfSelbsttest();
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1424,6 +1618,15 @@ async function main() {
         process.exit(0);
     }
 
+    if (process.argv.includes("--nur-wurf")) {
+        await teilC();
+        if (errs.length) {
+            console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
+            process.exit(1);
+        }
+        console.log("\n✅ GRÜN — DER WURF OHNE FARBE (Teil c).");
+        process.exit(0);
+    }
     console.log("=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ===");
     check(
         "Gesetz und Studio-Blende geladen (lodCrossfadeMask · lodDitherIGN · der Fragment-Satz für Rinde und Laub)",
@@ -1495,6 +1698,7 @@ async function main() {
     // (5) — DIE ABSENZEN DER BLENDE über den EINEN Helfer
     for (const [name, glied, re] of ABSENZEN) check(name, stammLib.fehlt(glied, re), stammLib.fehlt.wo || "");
 
+    await teilC();
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
     const { out, pageErrors, attrWand, gnade, kehraus, laut } = await runPartB();
     check(

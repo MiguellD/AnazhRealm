@@ -67,6 +67,18 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "e.alphaTest=i.alphaTest,e.alphaMap=i.alphaMap,e.transparent=", organ: "Schatten-Stoff je Objekt (renderObject setzt die Werte je Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "(l.version!==t.version||l.needsUpdate)&&(l.initialCacheKey!==l.getCacheKey()", organ: "Schatten-Stoff je Objekt (Version → Schlüssel-Prüfung je Bürger)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.material===s&&t.materialVersion===s.version", organ: "Schatten-Stoff je Objekt (Version → Pipeline-Prüfung je Bürger)" },
+    // DER WURF OHNE FARBE (B-K1): _getShadowNodes hängt colorNode.a · map.a des Originals in den Schatten-Stoff (sonst bleibt
+    // dessen Standard-Fragment vec4(0,0,0,1)); Lage = castShadowPositionNode vor positionNode, Tiefe = depthNode — die Hülle
+    // in _configureRenderer baut für Werfer ohne Ausschnitt dasselbe Paar ohne Farbe nach.
+    { file: "vendor/three.webgpu.min.js", sub: "_getShadowNodes(e){const t=e.version;let r=this._cacheShadowNodes.get(e);", organ: "Wurf ohne Farbe (die Hülle um _getShadowNodes)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const s=null!==e.map,i=e.colorNode&&e.colorNode.isNode,n=e.castShadowNode&&e.castShadowNode.isNode,a=e.maskShadowNode&&e.maskShadowNode.isNode||e.maskNode&&e.maskNode.isNode;", organ: "Wurf ohne Farbe (was der Vendor in den Wurf hängt: map · colorNode · castShadowNode · Masken)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.depthNode&&e.depthNode.isNode&&(l=e.depthNode),e.castShadowPositionNode&&e.castShadowPositionNode.isNode?o=e.castShadowPositionNode:e.positionNode&&e.positionNode.isNode&&(o=e.positionNode)", organ: "Wurf ohne Farbe (Lage und Tiefe, die die Hülle nachbaut)" },
+    { file: "vendor/three.webgpu.min.js", sub: "null!==t&&(e.colorNode=t),null!==r&&(e.depthNode=r),null!==s&&(e.positionNode=s)", organ: "Wurf ohne Farbe (colorNode null: der Schatten-Stoff behält sein Standard-Fragment)" },
+    { file: "vendor/three.webgpu.min.js", sub: 't.colorNode=Cn(0,0,0,1),t.isShadowPassMaterial=!0', organ: "Wurf ohne Farbe (das Standard-Fragment des Schatten-Stoffs)" },
+    // EIN STOFF, EIN SCHLÜSSEL (B-K1): der Bau-Schlüssel liest jede AUFZÄHLBARE eigene Eigenschaft des Stoffs (eine Funktion als
+    // Text) — die Diät hängt ihren Beobachter nicht-aufzählbar ein (`_materialObserverDiaet`), der Schlüssel bleibt der der Anlage.
+    { file: "vendor/three.webgpu.min.js", sub: "getMaterialCacheKey(){const{object:e,material:t,renderer:r}=this;let s=t.customProgramCacheKey();for(const e of function(e){const t=Object.keys(e);", organ: "_materialObserverDiaet (der Schlüssel liest aufzählbare Eigenschaften)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.initialCacheKey=this.getCacheKey()", organ: "_materialObserverDiaet (der Schlüssel der Anlage)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderObjectFunction=this._renderObjectFunction||this.renderObject", organ: "Schatten-Stoff je Objekt (renderObject am Renderer gelesen)" },
     // DIE DIÄT-BAHN am Programm (_diaetGeteiltSchreiben / _diaetRefresh): jede private Stelle, die sie ruft.
     { file: "vendor/three.webgpu.min.js", sub: "updateBefore(e){const t=e.getNodeBuilderState();for(const r of t.updateBeforeNodes)this.getNodeFrameForRender(e).updateBeforeNode(r)}", organ: "AnazhRealm._diaetGeteiltSchreiben (rend._nodes.updateBefore)" },

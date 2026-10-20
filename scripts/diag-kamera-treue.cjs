@@ -48,6 +48,9 @@
 //   Bühne (nicht im Spiel-Graph) ihre Geometrie-Puffer, ein Replay danach zeichnete das Bild davor (0,3064 = X gegen Y,
 //   die roten Läufe auf integ-probe unter Last; nachgestellt mit einem Spiel-Takt zwischen Aufnahme und Replay, ohne
 //   Kehraus 1,0).
+// EIN STOFF, EIN SCHLÜSSEL (B-K1, 20.10.): ein frischer Stoff, über die Welt-Bahn erst-gezeichnet, trägt danach den
+//   Schlüssel, unter dem er baute (`initialCacheKey === getCacheKey()` je Hauptpass-Render-Objekt) — die Diät schrieb ihren
+//   Beobachter aufzählbar ein, r184 las ihn als Text in den Schlüssel (an integ-probe 55da6efb ROT beim Stoff-Namen).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
 // Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
@@ -100,6 +103,17 @@ function urteil(z) {
         v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
         v.push(`SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`);
+    // EIN STOFF, EIN SCHLÜSSEL (B-K1): nach der Erst-Zeichnung gilt der Schlüssel, unter dem das Objekt baute.
+    const ks = z.schluessel || {};
+    if (!(ks.geprueft > 0)) v.push("SCHLÜSSEL: kein Hauptpass-Render-Objekt des frischen Stoffs geprüft — die Probe ist blind");
+    else if (Object.keys(ks.veraltet || {}).length)
+        v.push(
+            `SCHLÜSSEL: ${namen(ks.veraltet)} — der Stoff trägt nach seiner Erst-Zeichnung einen anderen Schlüssel als den, unter dem er baute (die Diät schrieb sich aufzählbar ein): jedes weitere Objekt baut neu, jeder Versions-Sprung baut neu`
+        );
+    if (Object.keys(ks.neu || {}).length)
+        v.push(`SCHLÜSSEL: ${namen(ks.neu)} — das Render-Objekt fiel nach der Erst-Zeichnung (alter Schlüssel) und wurde neu angelegt: ein zweiter Bau desselben Stoffs`);
+    if (ks.kontrolle !== true)
+        v.push("SCHLÜSSEL: ein Beobachter mit gewechselter Aufzählbarkeit wechselt den Schlüssel nicht — die Lauf-Kontrolle ist blind (oder der Stoff trägt keinen Diät-Beobachter)");
     // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
@@ -154,6 +168,7 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
+        schluessel: { geprueft: 1, veraltet: {}, neu: {}, kontrolle: true },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -202,6 +217,14 @@ function selbsttest() {
         { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
+        {
+            name: "Diät nach Anlage des Render-Objekts (B-K1)",
+            z: mit("schluessel", { veraltet: { bauSatz: 1 } }),
+            muss: /SCHLÜSSEL: bauSatz ×1 — der Stoff trägt nach seiner Erst-Zeichnung einen anderen Schlüssel/,
+        },
+        { name: "Schlüssel-Probe blind", z: mit("schluessel", { geprueft: 0 }), muss: /SCHLÜSSEL: kein Hauptpass-Render-Objekt/ },
+        { name: "Render-Objekt neu angelegt (B-K1)", z: mit("schluessel", { neu: { "kamera-treue:SCHLUESSEL": 1 } }), muss: /SCHLÜSSEL: kamera-treue:SCHLUESSEL ×1 — das Render-Objekt fiel/ },
+        { name: "Schlüssel-Kontrolle blind", z: mit("schluessel", { kontrolle: false }), muss: /SCHLÜSSEL: ein Beobachter mit gewechselter Aufzählbarkeit/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
         {
             name: "Stempel überlebt den verschachtelten Render",
@@ -776,7 +799,61 @@ function buehne() {
                 senke.blind = gleich(bildOhne, bildRef);
                 gruppe.remove(refA, refB);
             }
+            // (i) EIN STOFF, EIN SCHLÜSSEL (B-K1): die Erst-Zeichnung der Welt-Szene legt das Render-Objekt an und schreibt
+            // ERST DANACH den Stoff in die Diät (`_materialObserverDiaet`). r184 schlüsselt den Bau nach `initialCacheKey`
+            // (`getMaterialCacheKey` liest jede aufzählbare eigene Eigenschaft, eine Funktion als ihren Text): trägt die Diät
+            // ihren Beobachter aufzählbar ein, gilt der Schlüssel des Objekts danach nicht mehr — jedes weitere Objekt des
+            // Stoffs baut neu, jeder Versions-Sprung verwirft das Render-Objekt und baut neu. Die Probe zeichnet einen
+            // frischen Stoff über die Welt-Bahn (der Bühne gehört für diese Schüsse `state.scene`, gezählt werden sie nicht)
+            // und prüft nach der Erst-Zeichnung je Hauptpass-Render-Objekt `initialCacheKey === getCacheKey()`; nach dem
+            // zweiten Schuss zeichnet dasselbe Render-Objekt (r184 prüft den Schlüssel bei jeder Änderung des Objekts — ein
+            // alter Schlüssel verwirft es und baut es neu an). Sie baut kein kaltes Programm: der Stoff trägt den Bau einer
+            // Kiste. Lauf-Kontrolle: ein Beobachter mit gewechselter Aufzählbarkeit wechselt den Schlüssel.
+            const schluessel = { geprueft: 0, veraltet: {}, neu: {}, kontrolle: false };
+            {
+                const kStoff = new T.MeshStandardNodeMaterial({ color: 0x8a6a4a });
+                kStoff.name = "kamera-treue:SCHLUESSEL";
+                const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5, 1.5), kStoff);
+                kiste.position.set(4, 0.75, 5);
+                // KEIN Werfer: sonst zeichnet die Kaskade ihn zuerst (sie schreibt den Stoff in die Diät, bevor der Hauptpass sein
+                // Render-Objekt anlegt) — die Klasse trifft, wer zuerst im Hauptpass zeichnet (Boden-Satz, Arena, Karten-Bühne)
+                kiste.castShadow = false;
+                kiste.receiveShadow = true;
+                kiste.frustumCulled = false;
+                gruppe.add(kiste);
+                const haupt = () => (kiste.__renderObjekte || []).filter((ro) => ro.material === kStoff);
+                const plus = (o) => (o[kStoff.name] = (o[kStoff.name] || 0) + 1);
+                const szeneVor = st.scene,
+                    bahnVor = rend._renderScene;
+                st.scene = szene;
+                rend._renderScene = spielSzene;
+                let erst = [];
+                try {
+                    blick(1);
+                    await schuss();
+                    erst = haupt();
+                    for (const ro of erst) {
+                        schluessel.geprueft++;
+                        if (ro.initialCacheKey !== ro.getCacheKey()) plus(schluessel.veraltet);
+                    }
+                    await schuss();
+                } finally {
+                    st.scene = szeneVor;
+                    rend._renderScene = bahnVor;
+                }
+                for (const ro of haupt()) if (!erst.includes(ro)) plus(schluessel.neu);
+                const d = Object.getOwnPropertyDescriptor(kStoff, "setupObserver");
+                const ro0 = haupt()[0];
+                if (d && ro0) {
+                    const vor = ro0.getCacheKey();
+                    Object.defineProperty(kStoff, "setupObserver", Object.assign({}, d, { enumerable: !d.enumerable }));
+                    schluessel.kontrolle = ro0.getCacheKey() !== vor;
+                    Object.defineProperty(kStoff, "setupObserver", d);
+                }
+                gruppe.remove(kiste);
+            }
             return {
+                schluessel,
                 senke,
                 stand,
                 aufnahme,
@@ -851,6 +928,7 @@ function buehne() {
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
         );
         log(`Stand: ${JSON.stringify(out.stand)}`);
+        log(`Schlüssel: ${JSON.stringify(out.schluessel)}`);
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -872,6 +950,7 @@ function buehne() {
         `\n✅ GRÜN — LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
+            `SCHLÜSSEL: ${out.schluessel.geprueft} Hauptpass-Render-Objekt(e) eines frischen Welt-Stoffs tragen nach der Erst-Zeichnung den Schlüssel, unter dem sie bauten und zeichnen mit demselben Render-Objekt weiter (ein Beobachter mit gewechselter Aufzählbarkeit wechselt ihn: Kontrolle). ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
