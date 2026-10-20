@@ -2507,8 +2507,7 @@ async function checkBandPhasenBF(ctx) {
         const pp4 = r.state.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
         r.state.maxCreatures = cap4;
-        const liestTemperament =
-            !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
+        const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);
         out.d4Konsum =
             liestTemperament &&
@@ -2642,15 +2641,8 @@ async function checkBandPhasenBF(ctx) {
                     delete r._hydrosphereLakeAt;
                 }
             };
-            const meer = bau(0, false),
-                fluss = bau(1, false),
-                see = bau(0, true);
-            return (
-                meer.some((v) => v > 0.5) &&
-                fluss.length > 0 &&
-                fluss.every((v) => v === 0) &&
-                see.every((v) => v === 0)
-            );
+            const meer = bau(0, false), fluss = bau(1, false), see = bau(0, true);
+            return meer.some((v) => v > 0.5) && fluss.length > 0 && fluss.every((v) => v === 0) && see.every((v) => v === 0);
         })();
         // WASSER-SHEET-ANTI-STARVATION: reine Distanz-Priorität + Dauer-Nachschub naher Keys ließe FERNE
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
@@ -2724,9 +2716,7 @@ async function checkBandPhasenBF(ctx) {
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
             // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
-            const wagen = JSON.parse(
-                JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] })
-            );
+            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
             const panel = document.createElement("div");
             r._specRenderBody(panel, wagen);
             const line = panel.querySelector(".spec-motion-line");
@@ -2960,8 +2950,7 @@ async function checkBandPhasenBF(ctx) {
                 const wtF = r.state.weatherTransition;
                 r.state.wetterWort = sW.wort;
                 if (!zugRuft) return "Auto-Zug ruft _setWeather nicht";
-                if (!(gesetzt === true && wtF && wtF.from === "rainy" && wtF.to === "stormy"))
-                    return "_setWeather fadet nicht";
+                if (!(gesetzt === true && wtF && wtF.from === "rainy" && wtF.to === "stormy")) return "_setWeather fadet nicht";
                 return true;
             } finally {
                 if (!hatteStrom) delete r._faunaRng;
@@ -3336,9 +3325,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) r._setBlueprintWear(heldBp, 0.42);
         const unbekannt = (prog) =>
             !Object.hasOwn(r.dslEffects, prog[0]) &&
-            r
-                .dslRun(prog, { seed: 1, programId: "probe-r2" })
-                .log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
+            r.dslRun(prog, { seed: 1, programId: "probe-r2" }).log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
             (!heldBp || Math.abs(r._blueprintWear(heldBp) - 0.42) < 1e-9);
         out.noRepairOp = unbekannt(["repair_held"]);
         out.noSetWearOp = unbekannt(["set_wear", "_t_wear_spitz", 1]);
@@ -3487,12 +3474,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         window.__gelaendeCore = Object.assign({}, G);
         try {
             const p = r.state.playerMesh.position;
-            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [
-                p.x,
-                p.y,
-                p.z,
-                [0, 0, 0],
-            ]);
+            out.gamma6Snowband = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
         } finally {
             window.__gelaendeCore = G;
         }
@@ -3529,19 +3511,8 @@ async function checkBandV18209Konsolidierung(ctx) {
 }
 
 module.exports = {
-    checkBandV1757HeldSlot,
-    checkBandV1761ForgeImplement,
-    checkBandV1762ForgeMeaningful,
-    checkBandV1763ForgeArmor,
-    checkBandV1765BrewConsumable,
-    checkBandV1766FertigenFlow,
-    checkBandV1770WorkshopStationMark,
-    checkBandV1772Library,
-    checkBandV1773HeldMesh,
-    checkBandV1784AvatarFormFit,
-    checkBandWelle6DSoul,
-    checkBandPhasenBF,
-    checkBandW5Werkzeugabnutzung,
-    checkBandV18202GeruchFeld,
-    checkBandV18209Konsolidierung,
+    checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
+    checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
+    checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
+    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld, checkBandV18209Konsolidierung,
 };
