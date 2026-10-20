@@ -191,6 +191,10 @@ function ladeschirmVerdict(m) {
                     `auf ihr Asset — das erste Weltbild wartet mit ihr auf: ${liste}`
             );
     }
+    // DIE ZUSAGE DES WALD-PLANS (B-Wald): sie kommt mit den Zellen ihres Kastens, nie erst mit der leeren Schlange
+    const W = m.wald || {};
+    if (!(W.ferne > 0) || W.steht !== false || !W.zusage) out.push(`die Zusage des Wald-Plans: kein Fall (ferner Kasten ${W.ferne} Zellen, der Plan am Ort steht ${W.steht}, Zusage ${W.zusage}) (Vorbedingung)`);
+    else if (!(W.rest > 0)) out.push(`die Zusage des Wald-Plans kam ${W.kam ? "erst mit der leeren Schlange" : "nicht in 60 s"} — sie wartete auf ${W.ferne} Zellen außerhalb ihres Kastens (\`_waldPlanZusage\`)`);
     // DIE KÖPFE DER ANKUNFT UND DER BILD-RANG (B5): kein Leser im Blick bestellt ortlos, der Leib in der Ego-Sicht nur seine
     // Grobstufe (die feine nach dem Bild, dann der Tausch), das Buch den Export des fälligen Start-Dorfs
     const K = m.koepfe;
@@ -822,6 +826,20 @@ async function probe(arg) {
                     if (st._deferredAvatarSoul && !merk.soul) st._deferredAvatarSoul = merk.soul;
                     if (merk.held) (st.player.equipped.held = merk.held) && r._refreshHeldMesh();
                 }
+            }
+            // (12) DIE ZUSAGE DES WALD-PLANS (B-Wald): der Plan 30 m vor dem Spieler fällt (`_forestDartsFallen`), ein Kasten 400 m
+            // hinter ihm steht mit in der Schlange, der Takt schickt beide an den Faden — gezählt, was aussteht, wenn die Zusage kommt
+            {
+                const [w, C, o, f, Q] = [(m.wald = { kam: false, rest: -1 }), r.constructor.FOREST.cell, vorn(30), vorn(-400), r._waldPlanSchlange || (r._waldPlanSchlange = new Map())]; // prettier-ignore
+                r._forestDartsFallen(o.x, o.z, o.x, o.z);
+                r._forestDartsFallen(f.x - 6 * C, f.z - 6 * C, f.x + 6 * C, f.z + 6 * C);
+                const [gx, gz, vor] = [Math.floor(f.x / C), Math.floor(f.z / C), Q.size];
+                r._waldPlanKasten(gx - 6, gz - 6, gx + 6, gz + 6);
+                [w.ferne, w.steht] = [Q.size - vor, r._waldPlanSteht(o.x, o.z)];
+                const z = r._waldPlanZusage(o.x, o.z);
+                if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
+                // bis die Zusage kam, dann bis der ferne Kasten wieder steht (höchstens 60 s)
+                for (const dl = performance.now() + 60000; ((z && !w.kam) || Q.size) && performance.now() < dl; ) await tick(1, 30);
             }
             await sleep(800);
             if (!st._weltbildDa) r._weltbildSteht();
@@ -1682,6 +1700,7 @@ async function probe(arg) {
                     rundblick: { N: 240, loecher: 0, erstes: null },
                     ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
                     koepfe: { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } },
+                    wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
@@ -1701,6 +1720,8 @@ async function probe(arg) {
                     ["der Vorrat bestellt in der Warte-Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] } }, "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe"],
                     ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
+                    ["die Zusage wartet auf die ganze Schlange (B-Wald vorher, GTX kalt: 4 Wald-Stücke bis 14,8 s, zuletzt auf Zellen in 405–467 m)", { wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans kam erst mit der leeren Schlange"],
+                    ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans: kein Fall"],
                     [
                         "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
                         {
@@ -1930,6 +1951,7 @@ async function probe(arg) {
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
+            (m.wald ? ` · Wald-Zusage ${m.wald.kam ? `kam, ${m.wald.rest} von ${m.wald.ferne} fernen Zellen offen` : "kam nicht"}` : "") +
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );

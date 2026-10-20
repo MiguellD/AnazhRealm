@@ -1003,13 +1003,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             }
         }
 
-        // (S6) VERSION: AnazhRealm.VERSION + index.html-Cache-Buster; die Probe trägt einen FLOOR statt
-        // einer scharfen Zahl (Drift-Schutz).
-        const vparts2 = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionBumped = vparts2[0] > 18 || (vparts2[0] === 18 && vparts2[1] >= 217);
-
         return out;
     });
 
@@ -1037,7 +1030,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         "V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)",
         res.snapshotGrownEntrySmall === true
     );
-    check(`V18.211 (S6) VERSION floor ≥ 18.217.0 (walk-with-code, V18.217 Varianten-Pool)`, res.versionBumped === true);
 }
 
 // Gigant-Restsubschritte: Ω-K2 Baum-Füße · Ω-W vertieftes Wind · Ω-H Promotion-Provenienz ·
@@ -1387,13 +1379,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 
         out.candidatesHasKarst = (A.FELD_WURF || []).includes("baum_karst"); // die Liste der Würfe des Felds (K10-6)
 
-        // ─── (F) Version + walk-with-code ───
-        // Spätere Wellen bumpen die Version → FLOOR-Prüfung (semver-Form 18.MMM.PPP), keine scharfe Zahl.
-        out.versionString = A.VERSION;
-        const parts = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18216 = parts.length >= 2 && (parts[0] > 18 || (parts[0] === 18 && parts[1] >= 216));
         out.genVersionFresh9 = !!(r.state.worldMeta && r.state.worldMeta.genVersion >= 9);
 
         return out;
@@ -1439,8 +1424,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     // (E) Source-Integration
     check("V18.216 (E1) baum_karst in _vegetationSampleSpawn-candidates", res.candidatesHasKarst === true);
 
-    // (F) Version
-    check(`V18.216 (F1) VERSION floor ≥ 18.216.0 (gemessen ${res.versionString})`, res.versionFloor18216 === true);
     check("V18.216 (F2) Fresh-Welt genVersion ≥ 9 (V18.216 Routing)", res.genVersionFresh9 === true);
 }
 
@@ -1596,13 +1579,6 @@ async function checkBandV18217VariantenPool(ctx) {
             out.poolSizeUnder30K = json.length < 30000;
         }
 
-        // ─── (H) Version + walk-with-code ────────────────────────────
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18217 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 217);
-
         return out;
     });
 
@@ -1648,9 +1624,6 @@ async function checkBandV18217VariantenPool(ctx) {
 
     // (G) Performance
     check(`V18.217 (G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
-
-    // (H) Version
-    check(`V18.217 (H1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionFloor18217 === true);
 }
 
 // LOD-Stufen: 3 LODs pro Variante (Hero/Mittel/Far) — Geometrie-Beschneidung + Variant-LOD-Builder
@@ -1814,13 +1787,6 @@ async function checkBandV18218LODStufen(ctx) {
             });
         }
 
-        // ─── (G) Version + walk-with-code ────────────────────────────
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18218 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 218);
-
         return out;
     });
 
@@ -1878,9 +1844,6 @@ async function checkBandV18218LODStufen(ctx) {
     // (F) V17.16-Tag-Wand
     check("V18.218 (F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
     check("V18.218 (F2) LOD0 + LOD2 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD02 === true);
-
-    // (G) Version
-    check(`V18.218 (G1) VERSION floor ≥ 18.218.0 (gemessen ${res.versionStr})`, res.versionFloor18218 === true);
 }
 
 // Gigant-Vollendung (eine Wand-Funktion): LOD-Activation per Frame · GPU-Feld-Bake-Region-Cache ·
@@ -1960,26 +1923,17 @@ async function checkBandV18219bisVollendung(ctx) {
         }
 
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
-        out.scatterMarkPromotedExists = typeof r._scatterMarkCellPromoted === "function";
-        out.scatterCounterExists = typeof r._scatterIncrementCounter === "function";
-        out.scatterRegisterExists = typeof r._scatterRegisterCell === "function";
-        if (out.scatterMarkPromotedExists) {
-            r._scatterMarkCellPromoted(100, 200, "tree");
-            out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
-            out.distantNotPromoted = r._scatterIsCellPromoted(500, 600, "tree") === false;
-        }
-        if (out.scatterRegisterExists) {
-            r._scatterRegisterCell(300, 400, "tree", "baum_birke", 7);
-            const look = r._scatterLookupCell(300, 400, "tree");
-            out.lookupSpecies = look && look.species === "baum_birke";
-            out.lookupVariantIndex = look && look.variantIndex === 7;
-        }
-        if (out.scatterCounterExists) {
-            const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
-            r._scatterIncrementCounter("tree");
-            out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
-            out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
-        }
+        r._scatterMarkCellPromoted(100, 200, "tree");
+        out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
+        out.distantNotPromoted = r._scatterIsCellPromoted(500, 600, "tree") === false;
+        r._scatterRegisterCell(300, 400, "tree", "baum_birke", 7);
+        const look = r._scatterLookupCell(300, 400, "tree");
+        out.lookupSpecies = look && look.species === "baum_birke";
+        out.lookupVariantIndex = look && look.variantIndex === 7;
+        const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
+        r._scatterIncrementCounter("tree");
+        out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
+        out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
 
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
@@ -2009,13 +1963,6 @@ async function checkBandV18219bisVollendung(ctx) {
                 if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
             }
         }
-
-        // ─── VERSION ─────────────────────────────────────────────────
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18222 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 222);
 
         return out;
     });
@@ -2050,9 +1997,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
     // V18.220 Scatter-Bitmask + Cap + Lookup
-    check("V18.220 (S1) _scatterMarkCellPromoted Helper", res.scatterMarkPromotedExists === true);
-    check("V18.220 (S3) _scatterIncrementCounter Helper", res.scatterCounterExists === true);
-    check("V18.220 (S4) _scatterRegisterCell Helper", res.scatterRegisterExists === true);
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
@@ -2078,9 +2022,6 @@ async function checkBandV18219bisVollendung(ctx) {
         "V18.222 (C12) Disposal entfernt das Mesh aus der Map",
         res.canopyDisposed === true && res.canopyMeshGoneFromMap === true
     );
-
-    // Version
-    check(`V18.222 (V1) VERSION floor ≥ 18.222.0 (gemessen ${res.versionStr})`, res.versionFloor18222 === true);
 }
 
 // Echter Scatter + echte Promotion: ferner Wald als InstancedMesh-Streu (Dichte-Band) + Touch→Real-
@@ -2251,13 +2192,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
         // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
 
-        // ─── (G) Version ──────────────────────────────────────────────
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18224 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 224);
-
         return out;
     });
 
@@ -2352,9 +2286,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
 
     // (F) Streaming + Cleanup
-
-    // (G) Version
-    check(`V18.224 (V1) VERSION floor ≥ 18.224.0 (gemessen ${res.versionStr})`, res.versionFloor18224 === true);
 }
 
 // Fels-Welle: prozeduraler Fels (Box-Samen → noise-verschobener Ikosaeder) + Kiesel-Streu, wo Fels
@@ -2419,12 +2350,6 @@ async function checkBandWahrerAnblickFels(ctx) {
         );
 
 
-        // (F) Version
-        out.versionStr = A.VERSION;
-        const pv = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 227);
         return out;
     });
 
@@ -2445,8 +2370,6 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
-
-    check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // Laub-Vertiefung: Rinden-Maserung (axiale Borke-Bänder + radialer Streifen) + blatt-geformte Card.
@@ -2493,11 +2416,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
         out.cardOk = cardOk;
         out.taperProven = taperProven;
 
-        out.versionStr = A.VERSION;
-        const pv = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 229);
         return out;
     });
 
@@ -2507,7 +2425,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
         "V18.386 Neues Kleid (B3) die Blatt-Form lebt in der Atlas-Silhouette (Cluster-Quad, uv-geroutet)",
         res.taperProven === true
     );
-    check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice (D3b): `_scatterRegion` baut mit Deadline in ZEIT-
@@ -2639,7 +2556,7 @@ async function checkBandScatterScheibe(ctx) {
             const fremde = new Set();
             r._streuWartetAuf = function (z) {
                 if (this._streuSammler && z && !zus.includes(z))
-                    fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                    fremde.add([...(this._waldZusagen || new Map()).values()].some((e) => e.zusage === z) ? "wald" : "fremd");
                 return altWartet.call(this, z);
             };
             wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
@@ -2651,8 +2568,8 @@ async function checkBandScatterScheibe(ctx) {
                 r._streuWartetAuf = altWartet;
             }
             wecker.fremde = [...fremde];
-            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die leere Schlange
-            // (`_waldPlanZusage`, K60-4): die Linse leert sie zuerst (der Takt schickt sie an den Faden) — danach steht
+            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die Zellen ihrer Kästen
+            // (`_waldPlanZusage`, B-Wald): die Linse leert die Schlange zuerst (der Takt schickt sie an den Faden) — danach steht
             // die Region NUR noch auf ihren zwei Zusagen
             for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
                 r._tickWaldPlan(Infinity);

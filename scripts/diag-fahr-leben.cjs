@@ -88,7 +88,7 @@ function haltVerdict(m) {
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
 // nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05, `chaseKamera` je Third-Bild.
-const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1 };
+const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5 };
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
@@ -99,6 +99,8 @@ function wechselVerdict(m) {
         out.push(`ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`);
     if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
         out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
+    if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM)))
+        out.push(`absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`);
     // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
     if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM)) out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
     if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
@@ -1594,13 +1596,14 @@ function quellenAbgriff() {
             rollt.join(" · ")
         );
         const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8], third: 210, gesetz: 210 };
-        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0 });
+        Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0, abV: [9.1, 8.6], abSprung: [0.31, 0.2] });
         check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
         for (const [name, bruch, soll] of [
             ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
             ["kein Band im Ritt", { band: 0 }, "band"],
             ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
             ["Third beginnt aus der alten Richtung (18° / 20°)", { nach10: [18, 20] }, "kamera"],
+            ["der Abstieg in Fahrt reißt die Kamera 4,1 m", { abSprung: [4.1, 0.2] }, "absteigen"],
             ["Third ruckt quer (0,14 m)", { ruckP95: 0.14 }, "ruck"],
             ["das Bild läuft 0,9 neben der Physik", { gleichP95: 0.91 }, "gleichlauf"],
             ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],

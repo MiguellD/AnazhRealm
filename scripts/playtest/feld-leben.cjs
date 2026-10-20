@@ -899,13 +899,6 @@ async function checkBandWelle6APolish(ctx) {
         const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
         const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
         const savedPlayerPos = r.state.playerMesh.position.clone();
-        const savedBuild = JSON.parse(
-            JSON.stringify({
-                active: r.state.buildMode.active,
-                slotIndex: r.state.buildMode.slotIndex,
-                blueprintName: r.state.buildMode.blueprintName,
-            })
-        );
 
         // Garantiert flache Test-Oberfläche: Tempel-Dach (Normal-Y ~1) statt prozeduralem Heightfield.
         // Spawn-Y=200 hebt den Tempel über die Voxel-Chunks (Surface ≤ base+64), sonst träfe der Raycast

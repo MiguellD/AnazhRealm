@@ -1,4 +1,4 @@
-// diag-gpu-fehler.cjs — DER SELBSTTEST DER GPU-FEHLER-LINSE (Welle L, Befund V-D7; scripts/lib/gpu-fehler.cjs). Die Linse
+// diag-gpu-fehler.cjs — DER SELBSTTEST DER GPU-FEHLER-LINSE (scripts/lib/gpu-fehler.cjs). Die Linse
 // muss einen Draw ohne gesetzten Vertex-Slot SYNCHRON mit Pipeline und Pass nennen und die Device-Meldung fangen — sonst
 // wäre jede „0 Fehler"-Zahl der Werkbank vakuös. Eine nackte WebGPU-Seite (swiftshader, kein Spiel): eine Pipeline mit
 // ZWEI Vertex-Puffern, gesetzt nur Slot 0, ein drawIndexed → die Linse nennt Slot 1; dieselbe Pipeline mit beiden Slots →
@@ -7,7 +7,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
+const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
@@ -62,9 +62,21 @@ async function probe() {
     return { nachLuecke, nachVoll, draw: F.draws[0] || null, device: F.device.slice(0, 2) };
 }
 
+// DER GEGENDRUCK: das Gerät `name` reicht laufend ein und gibt jeden Submit `spaet` ms spät ab (< 0: nie)
+async function gegendruck([name, spaet]) {
+    const dev = await (await navigator.gpu.requestAdapter()).requestDevice({ label: name });
+    const q = dev.queue;
+    const roh = q.onSubmittedWorkDone;
+    q.onSubmittedWorkDone = () =>
+        spaet < 0 ? new Promise(() => {}) : roh.call(q).then(() => new Promise((r) => setTimeout(r, spaet)));
+    setInterval(() => q.submit([dev.createCommandEncoder().finish()]), 50);
+}
+
 (async () => {
     if (!process.argv.includes("--selftest")) {
-        console.log("Gebrauch: node scripts/diag-gpu-fehler.cjs --selftest (die Linse selbst fährt in der Werkbank: gpu-fehler)");
+        console.log(
+            "Gebrauch: node scripts/diag-gpu-fehler.cjs --selftest (die Linse selbst fährt in der Werkbank: gpu-fehler)"
+        );
         process.exit(0);
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
@@ -75,6 +87,24 @@ async function probe() {
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });
     const out = await page.evaluate(probe);
+    // DIE ABGABE (K6), Stillstand 1,5 s: 3 s spät, aber laufend abgegeben, wartet sie; ohne Bild nennt sie das Bild; hängt
+    // ein Gerät, während ein zweites weiter abgibt, nennt sie das hängende
+    const abgabe = async (t0 = Date.now()) => ({
+        m: await Promise.race([
+            GPU_ABGABE(page, 1500),
+            new Promise((r) => setTimeout(r, 20000, ["wartet 20 s ohne Namen"])),
+        ]),
+        s: (Date.now() - t0) / 1000,
+    });
+    await page.evaluate(gegendruck, ["spaet", 3000]);
+    await new Promise((r) => setTimeout(r, 3500));
+    const spaet = await abgabe();
+    await page.evaluate(() => ((window.__raf = requestAnimationFrame), (window.requestAnimationFrame = () => 0)));
+    const ohneBild = await abgabe();
+    await page.evaluate(() => (window.requestAnimationFrame = window.__raf));
+    await page.evaluate(gegendruck, ["haengt", -1]);
+    await new Promise((r) => setTimeout(r, 500));
+    const zwei = await abgabe();
     await browser.close();
     server.close();
     if (out.err) check("Probe lief", false, out.err);
@@ -82,7 +112,11 @@ async function probe() {
         const d = out.draw || {};
         check(
             "der Draw ohne Slot 1 steht mit Pipeline und Pass im Protokoll",
-            out.nachLuecke === 1 && Array.isArray(d.fehlt) && d.fehlt.join() === "1" && d.pipeline === "probe_zwei_puffer" && d.pass === "probe_pass_luecke",
+            out.nachLuecke === 1 &&
+                Array.isArray(d.fehlt) &&
+                d.fehlt.join() === "1" &&
+                d.pipeline === "probe_zwei_puffer" &&
+                d.pass === "probe_pass_luecke",
             JSON.stringify(d)
         );
         check("der Draw mit beiden Slots bleibt still", out.nachVoll === 1, `Einträge ${out.nachVoll}`);
@@ -92,6 +126,18 @@ async function probe() {
             JSON.stringify(out.device[0] || null).slice(0, 240)
         );
     }
+    const still = (a) => a.m.filter((x) => / s (kein|ohne)/.test(x)).join(" | ");
+    check(`ABGABE: 3 s spät, aber laufend abgegeben — sie wartet ${spaet.s} s`, spaet.s > 1.5 && !still(spaet));
+    check(
+        "ABGABE: die Welt zeichnet kein Bild — rot beim Bild, nie beim Gerät",
+        /^1.5 s kein Bild vor/.test(still(ohneBild)),
+        still(ohneBild)
+    );
+    check(
+        "ABGABE: ein Gerät hängt, ein zweites gibt ab — rot beim hängenden",
+        /^Gerät 3 haengt gibt [^|]*$/.test(still(zwei)),
+        still(zwei)
+    );
     if (errs.length) {
         console.error("\n❌ SELBST-TEST ROT — die GPU-Fehler-Linse ist vakuös.");
         process.exit(1);

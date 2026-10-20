@@ -231,42 +231,10 @@ self.onmessage = function (e) {
                 [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
         } else if (msg.type === "wald-darts") {
-            // DER STOFF DES WALDS (K60-3): die geborenen Darts der Wald-Zellen (phyto-core `planForestCell`) mit den Lesern
-            // DIESES Fadens — derselbe Plan wie `_forestCellDarts` im Main, Wort für Wort (gate:worker-dichte Teil W), am
-            // Zustand, der vor dem Auftrag reiste (Hydro-Kacheln, Erdbau, Edits). Gepackt per Transfer: je Dart WALD_FELDER
-            // Zahlen, die Art als Index in `arten`; der Main legt sie ins Dart-Gedächtnis seines Stands (`_waldDartsAn`).
-            const z = msg.zellen;
-            const n = (z.length / 2) | 0;
-            const ctx = waldCtx(msg);
-            const arten = [];
-            const artIdx = new Map();
-            const zahl = [];
-            const anzahl = new Int32Array(n);
-            for (let k = 0; k < n; k++) {
-                const out = self.__phytoCore.planForestCell(z[k * 2], z[k * 2 + 1], msg.seedInt, ctx);
-                anzahl[k] = out.length;
-                for (const d of out) {
-                    let ai = artIdx.get(d.sp);
-                    if (ai === undefined) {
-                        ai = arten.length;
-                        arten.push(d.sp);
-                        artIdx.set(d.sp, ai);
-                    }
-                    zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
-                    zahl.push(d.surfaceY == null ? NaN : d.surfaceY);
-                }
-            }
-            const werte = new Float64Array(zahl);
-            self.postMessage(
-                {
-                    type: "wald-darts-result",
-                    requestId: msg.requestId,
-                    anzahl: anzahl.buffer,
-                    werte: werte.buffer,
-                    arten,
-                },
-                [anzahl.buffer, werte.buffer]
-            );
+            // DIE SCHLANGE IM FADEN (B-Wald): der Auftrag wartet in `waldAuftraege`, der Faden rechnet je Takt den nächsten
+            // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
+            waldAuftraege.push(msg);
+            waldWecken();
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -279,6 +247,78 @@ self.onmessage = function (e) {
         });
     }
 };
+
+// DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,
+// alle Aufträge im Flug); hier wartet jeder Auftrag, und der Faden rechnet je Takt EINEN — den mit dem kleinsten `rang` (der
+// Abstand² seiner nächsten Zelle zum Spieler beim Senden; ohne Rang 0, eine Frage) — und kehrt danach in seine Nachrichten
+// zurück: jede neue Nachricht des Zustands und jeder neue Auftrag kommen vor dem nächsten an. In der Reihe der Ankunft (alle
+// im Flug, ohne diese Schlange) warteten GTX kalt die nahen Zellen (8–54 m) 3,8 s hinter 712 fernen (p3/n1910/bwald, B0).
+const waldAuftraege = [];
+const waldTakt = new self.MessageChannel();
+let waldWach = false;
+function waldWecken() {
+    if (waldWach || !waldAuftraege.length) return;
+    waldWach = true;
+    waldTakt.port2.postMessage(0);
+}
+waldTakt.port1.onmessage = () => {
+    waldWach = false;
+    let i = 0;
+    for (let k = 1; k < waldAuftraege.length; k++)
+        if ((waldAuftraege[k].rang || 0) < (waldAuftraege[i].rang || 0)) i = k;
+    const msg = waldAuftraege.splice(i, 1)[0];
+    try {
+        waldDarts(msg);
+    } catch (err) {
+        self.postMessage({
+            type: "error",
+            op: msg.type,
+            requestId: msg.requestId || null,
+            message: String(err && err.message ? err.message : err),
+        });
+    }
+    waldWecken();
+};
+
+// DER STOFF DES WALDS (K60-3): die geborenen Darts der Wald-Zellen (phyto-core `planForestCell`) mit den Lesern DIESES Fadens
+// — derselbe Plan wie `_forestCellDarts` im Main, Wort für Wort (gate:worker-dichte Teil W), am Zustand, wenn er rechnet:
+// mindestens dem, der vor dem Auftrag reiste (Hydro-Kacheln, Erdbau, Edits; einen Erdbau seit dem Auftrag verwirft der Main).
+// Gepackt per Transfer: je Dart WALD_FELDER Zahlen, die Art als Index in `arten`; der Main legt sie ins Dart-Gedächtnis
+// seines Stands (`_waldDartsAn`).
+function waldDarts(msg) {
+    const z = msg.zellen;
+    const n = (z.length / 2) | 0;
+    const ctx = waldCtx(msg);
+    const arten = [];
+    const artIdx = new Map();
+    const zahl = [];
+    const anzahl = new Int32Array(n);
+    for (let k = 0; k < n; k++) {
+        const out = self.__phytoCore.planForestCell(z[k * 2], z[k * 2 + 1], msg.seedInt, ctx);
+        anzahl[k] = out.length;
+        for (const d of out) {
+            let ai = artIdx.get(d.sp);
+            if (ai === undefined) {
+                ai = arten.length;
+                arten.push(d.sp);
+                artIdx.set(d.sp, ai);
+            }
+            zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
+            zahl.push(d.surfaceY == null ? NaN : d.surfaceY);
+        }
+    }
+    const werte = new Float64Array(zahl);
+    self.postMessage(
+        {
+            type: "wald-darts-result",
+            requestId: msg.requestId,
+            anzahl: anzahl.buffer,
+            werte: werte.buffer,
+            arten,
+        },
+        [anzahl.buffer, werte.buffer]
+    );
+}
 
 // =============================================================================
 // DIE LESER DES WALDS (K60-3) — Mirror der Welt-Leser, die `_forestCellDarts` dem Wald-Plan reicht (Oberfläche · Wasser ·

@@ -654,7 +654,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.state.architectures = savedArch;
         p.inventory = new Array(27).fill(null);
         p.equipped = savedEquipped;
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         r.setGameMode(savedMode);
         return out;
     });
@@ -830,8 +830,7 @@ async function checkBandV1772Library(ctx) {
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
         const savedSoul = (p && p.soul) || "mensch";
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
-        else r.state.worldMeta.gameMode = "schöpfer";
+        r.setGameMode("schöpfer");
 
         const fg = r.fertigeBlueprint("_t_v1772");
         out.geraetForged = fg.ok === true && p.equipped.held === "_t_v1772";
@@ -843,8 +842,7 @@ async function checkBandV1772Library(ctx) {
         out.avatarEmbodied = fv.ok === true;
 
         // restore — kein dangling Held/Soul/Boost für die nächsten Bands
-        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-        else r.state.worldMeta.gameMode = savedMode;
+        r.setGameMode(savedMode);
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"]; // V17.74 — kein Soul-Leck für spätere Bands
         for (const bn of ["_t_v1772", "ruestung_brustpanzer", "trank_lebenssaft", "koerper_human"]) {
             if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
@@ -855,7 +853,7 @@ async function checkBandV1772Library(ctx) {
             p.boosts = savedBoosts;
         }
         delete blu._t_v1772; // Test-Blueprint aufräumen (kein Katalog-Leck)
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -970,7 +968,7 @@ async function checkBandV1773HeldMesh(ctx) {
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
         delete r.state.blueprints._t_v1773; // Test-Blueprint aufräumen
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -1060,7 +1058,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
         // restore
         p.soul = savedSoul;
         r.state.customSouls = savedCustom;
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -1082,7 +1080,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
@@ -1231,7 +1229,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-
         // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
@@ -1260,7 +1257,6 @@ async function checkBandWelle6DSoul(ctx) {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
-
 
         // (2) Chat-Pattern für damage
         const dmgPattern = r.parseChatToDsl("schade mir 42");
@@ -1315,7 +1311,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul("human"); // restore
 
         // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
-        const beforeSprintBug = r.state.sprintSpeed;
         r.dslRun(["player_speed", 20], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
@@ -1392,7 +1387,7 @@ async function checkBandWelle6DSoul(ctx) {
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
         // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
-        if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+        r.setGameMode("pfad");
         r.state.blueprints.wound_test_bp = {
             name: "wound_test_bp",
             label: "Test",
@@ -1557,8 +1552,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
-        out.hasEquipTool = typeof r.equipTool === "function";
-        out.hasEquipArmor = typeof r.equipArmor === "function";
         out.hasEquippedState =
             r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
         // SYNERGIE-WELLE — die Hue-Map ist mit der Avatar-Aura gefallen (Abwesenheit).
@@ -1677,8 +1670,6 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
-        check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
-        check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
         check(
             "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
             wave6d3bResults.hasEquippedState
@@ -1740,7 +1731,7 @@ async function checkBandWelle6DSoul(ctx) {
         const out = {};
         // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
-        if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+        r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
         // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
@@ -1756,7 +1747,6 @@ async function checkBandWelle6DSoul(ctx) {
         if (savedSoul !== "human") r.applyPlayerSoul("human");
         r.state.player.respawnGraceUntil = -Infinity;
 
-        const hpMax = r.state.player.hpMax;
         const hpBefore = r.state.player.hp;
         r.damagePlayer(20, "test");
         out.hpDropped = r.state.player.hp === hpBefore - 20;
@@ -2214,7 +2204,7 @@ async function checkBandWelle6DSoul(ctx) {
         })();
 
         // UI-Dropdown enthält die neue Seele
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const select = document.getElementById("player-soul-select");
         out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
 
@@ -2247,7 +2237,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.customSouls = {};
         r.state.player.soul = savedSoul;
         r.applyPlayerSoul(savedSoul);
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
 
         return out;
     });
@@ -2600,7 +2590,7 @@ async function checkBandPhasenBF(ctx) {
                 eq.held = save.held;
                 eq.offhand = save.offhand;
                 r.recomputePlayerStats();
-                if (typeof r._refreshHeldMesh === "function") r._refreshHeldMesh();
+                r._refreshHeldMesh();
             }
         })();
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
@@ -2731,24 +2721,21 @@ async function checkBandPhasenBF(ctx) {
         out.e3ManaHud = (() => {
             const row = document.getElementById("stats-hud-mana-row");
             if (!row) return false;
-            const savedMode = typeof r.getGameMode === "function" ? r.getGameMode() : r.state.gameMode;
+            const savedMode = r.getGameMode();
             const savedMana = r.state.player.mana;
             try {
-                if (typeof r.setGameMode === "function") r.setGameMode("pfad");
-                else r.state.gameMode = "pfad";
+                r.setGameMode("pfad");
                 r.state.player.mana = 7;
                 r.state._statsHudLastTick = 0;
                 r.tickStatsHud(1e9);
                 const visOk = !row.hidden;
                 const txt = document.getElementById("stats-hud-mana-text").textContent;
-                if (typeof r.setGameMode === "function") r.setGameMode("frieden");
-                else r.state.gameMode = "frieden";
+                r.setGameMode("frieden");
                 r.state._statsHudLastTick = 0;
                 r.tickStatsHud(2e9);
                 return visOk && /^7\//.test(txt) && row.hidden === true;
             } finally {
-                if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-                else r.state.gameMode = savedMode;
+                r.setGameMode(savedMode);
                 r.state.player.mana = savedMana;
             }
         })();
@@ -2774,7 +2761,6 @@ async function checkBandPhasenBF(ctx) {
         // unten sichtbar), darüber BackSide. Behavioral mit Restore (zustands-neutral): der Spiegel wird einmal über,
         // einmal unter die Kamera gelegt.
         out.b5Underwater = (() => {
-            if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
             if (!mat) return false;
             try {
@@ -3261,7 +3247,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) {
             // wear bewusst niedrig setzen; im schöpfer-Modus ist forge gratis (_forgeMaterialAndFreeze ruft
             // _makeCostGate → free=true) — das deckt den frieden-Pfad mit ab.
-            if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+            r.setGameMode("schöpfer");
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             const forgeRes = r.forgeBlueprint(heldName);
             out.forgeRefilled = !!(forgeRes && forgeRes.ok && r._blueprintWear(heldBp) > 0.99);
@@ -3284,12 +3270,10 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
                 const wearAfter = r._blueprintWear(heldBp);
                 out.strikeReducesWear = wearAfter < wearBefore && wearBefore - wearAfter < 0.1;
                 // Aufräumen — die Test-Architektur entfernen.
-                if (typeof r.removeArchitecture === "function") {
-                    try {
-                        r.removeArchitecture(testEntry);
-                    } catch {
-                        /* defensive */
-                    }
+                try {
+                    r.removeArchitecture(testEntry);
+                } catch {
+                    /* defensive */
                 }
             } else {
                 out.strikeReducesWear = false;
@@ -3307,12 +3291,10 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
                 const wearAfter = r._blueprintWear(heldBp);
                 out.kaputtWand = result === false && wearAfter === AR.WEAR_KAPUTT_SCHWELLE - 0.01;
                 // Aufräumen — das Bauwerk steht noch (wir konnten nicht hauen).
-                if (typeof r.removeArchitecture === "function") {
-                    try {
-                        r.removeArchitecture(testEntry);
-                    } catch {
-                        /* defensive */
-                    }
+                try {
+                    r.removeArchitecture(testEntry);
+                } catch {
+                    /* defensive */
                 }
             }
         }
@@ -3321,7 +3303,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) {
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             // schöpfer-Modus für free-Repair (Material-Tor umgangen).
-            if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+            r.setGameMode("schöpfer");
             const repRes = r.repairHeldDevice();
             out.repairOk = !!(repRes && repRes.ok && repRes.before === 0.3 && repRes.after === 1.0 && repRes.free);
             out.repairWearReset = r._blueprintWear(heldBp) === 1;
@@ -3386,7 +3368,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) r._setBlueprintWear(heldBp, 1);
         r.equipHeld(null);
         delete r.state.blueprints._t_wear_spitz;
-        if (typeof r.setGameMode === "function") r.setGameMode("frieden");
+        r.setGameMode("frieden");
 
         return out;
     });
@@ -3466,8 +3448,6 @@ async function checkBandV18202GeruchFeld(ctx) {
                 S.minDirectional >= 0 &&
                 S.minDirectional <= 1;
         }
-        out.windHelperExists = typeof r._worldWindDirAt === "function";
-        out.scentHelperExists = typeof r._scentAt === "function";
 
         // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
         if (r._worldWindDirAt) {
@@ -3551,10 +3531,6 @@ async function checkBandV18202GeruchFeld(ctx) {
         "V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])",
         res.scentConstsSensible === true
     );
-    check(
-        "V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren",
-        res.windHelperExists === true && res.scentHelperExists === true
-    );
     check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
     check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
     check(
@@ -3579,7 +3555,7 @@ async function checkBandV18202GeruchFeld(ctx) {
     );
 }
 
-// Konsolidierungs-Band: Version-Floor · die vier Foundations leben (Mana-Drain · Geruch ·
+// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
 // Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
@@ -3587,15 +3563,6 @@ async function checkBandV18209Konsolidierung(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.216.0"
-        out.versionStr = A.VERSION;
-        // V18.217 — Floor (semver-Form): die Wand wandert mit jeder Welle,
-        // muss aber nicht jedes Mal hier verschoben werden (Drift-Schutz).
-        const vparts = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionMatches = vparts[0] > 18 || (vparts[0] === 18 && vparts[1] >= 217);
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -3641,7 +3608,6 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionMatches === true);
     check(
         "V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)",
         res.allFoundationsAlive === true

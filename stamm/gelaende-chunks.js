@@ -2427,10 +2427,15 @@ class AnazhRealm_gelaende_chunks {
             q.ob.hz = ob.hz + r;
             q.obb = q.ob;
         } else q.obb = null;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
-        if (!h || h.t > 0) return h;
+        // DER START IN BERÜHRUNG (F1 b, 19.10.): eine Mitte, die die aufgeblasene Box erst nach weniger als 1 mm betritt, steht
+        // schon an ihr (die Schulter der 3rd-Kamera rückt bis r vor eine Wand, `_fieldRaycast` mit `radius`) — sie gilt als
+        // Start in der Box. Bis hier hielt ihr Arm dort bei t = 0: neben dem geparkten GT schnappte die Kamera in die Brust
+        // und flatterte (2,4–6,9 m je Bild, gate:fahr-leben T4), wo der Strahl nur einen Splitter der Hülle streifte.
+        if (!h || h.t * len > 1e-3) return h;
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
-        if (g) g.t = Math.max(0, g.t - r / Math.sqrt(dx * dx + dy * dy + dz * dz));
+        if (g) g.t = Math.max(0, g.t - r / len);
         return g;
     }
 

@@ -8,7 +8,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 // V9.52-b Sub-Welle b — Band-Funktion (W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW4LofiPad(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
@@ -107,13 +107,13 @@ async function checkBandW4LofiPad(ctx) {
         out.calmDuration4s = Math.abs(durCalm - baseExpected) < 1;
         out.sorrowSlowsTempo = durSad > durCalm && durSad <= baseExpected * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
-        if (r.state.symphony && r.state.symphony.enabled && typeof r.disposeSymphony === "function") {
+        if (r.state.symphony && r.state.symphony.enabled) {
             r.disposeSymphony();
         }
         emo.joy = 0;
         emo.hope = 0;
         emo.sorrow = 0;
-        if (typeof r.initSymphony === "function") r.initSymphony();
+        r.initSymphony();
         const sym = r.state.symphony;
         out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
         if (out.symphonyReady) {
@@ -453,7 +453,7 @@ async function checkBandSchrittKlang(ctx) {
         const p = s.player;
         if (!p || !s.playerMesh) return { error: "kein Spieler" };
         const savedSoul = p.soul;
-        if (!s.playerMesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        if (!s.playerMesh.userData.rig) r.applyPlayerSoul("human");
         const pmesh = s.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         const saved = {
@@ -636,7 +636,7 @@ async function checkBandSchrittKlang(ctx) {
         s._fieldVy = saved.fieldVy;
         s._schrittKlang = saved.schritt;
         p._hitStopUntil = saved.hitStop;
-        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+        if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
     
         return o;
     });

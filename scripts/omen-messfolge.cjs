@@ -181,10 +181,6 @@ function schalterUrteil(bloecke, toleranz = 0.005) {
     const befunde = [];
     const verworfen = [];
     const mittel = (w) => w.reduce((a, b) => a + b, 0) / w.length;
-    const sd = (w) => {
-        const m = mittel(w);
-        return Math.sqrt(w.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, w.length - 1));
-    };
     const B = bloecke.map((b, i) => {
         const roh = (b.baender || []).filter((x) => Number.isFinite(x));
         const dauer = roh.slice(1);

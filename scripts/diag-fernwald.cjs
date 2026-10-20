@@ -625,7 +625,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         x.draussen.partner === null &&
         x.draussen.stufe === 2 &&
         x.drinnen.gleich &&
-        !x.drinnen.voll &&
+        x.drinnen.voll === (x.drinnen.partner === null) && // voll heißt der Halt: die Karte ohne Partner (K36, F1)
         x.drinnen.stufe === 2;
     check(
         "D ÜBERGANG",

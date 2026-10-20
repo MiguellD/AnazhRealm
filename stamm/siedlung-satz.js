@@ -2186,7 +2186,7 @@ class AnazhRealm_siedlung_satz {
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
         // DER HALT AB GEBURT (K36): eine neue Primär-Stufe hält VOLL, bis die Band-Pflege ihren Partner geurteilt hat
-        // (`_updateFoundryLodBand` löst ihn, wo der Partner steht oder keiner verlangt ist). Bis K36 blendete sie vom ersten
+        // (`_updateFoundryLodBand` löst ihn nur, wo der Partner steht). Bis K36 blendete sie vom ersten
         // Bild an — und urteilte die schlafende Stufen-Wahl nie über sie, stand die L1 vor der ungebackenen Karte halb
         // durchsichtig (Genesis-Ankunft, echte GPU: 5 Bäume nach 71 Takten).
         if (!(opts && opts.band)) {

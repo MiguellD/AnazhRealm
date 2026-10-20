@@ -59,7 +59,6 @@ const server = statikServer();
             res.headlessNull = !!rend._isHeadlessNull;
             if (rend._isHeadlessNull) return res; // ehrlich: ohne echten Renderer kein Schuss
 
-            const THREE_ = window.THREE;
             const cam = r.state.camera;
             const scene = r.state.scene;
             if (!cam || !scene) return { fatal: "kein cam/scene" };

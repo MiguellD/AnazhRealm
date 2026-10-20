@@ -165,7 +165,7 @@ async function checkBandWellePerfDBudget(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Ring 6 architectureTemplates V1 + 6.3 Kollisions-Body + 6.4 Bauplan-Datenschicht + 6.5 Hotbar + 6.6 Werkstatt-Tab + 6 V2 Distance-Culling/Fraktal/Counter/Bau-Cursor).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing6Workshop(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 6 — architectureTemplates V1 ###
@@ -1664,8 +1664,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.tagNeverHigherThanTree = neverHigher;
         }
 
-
-
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
         // und das Entry trägt blockerAABBs (V13.10-Solidität).
         const before = r.state.architectures.length;
@@ -1706,11 +1704,9 @@ async function checkBandV18213MeshMerge(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
-
 
         // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ───
         // Test-Subjekt ist ein ECHTER _isGrown-Bauplan der warmen Welt, der NICHT moveable/magnifying ist
@@ -1881,8 +1877,6 @@ async function checkBandV18265ShadowDistance(ctx) {
         const r = window.anazhRealm;
         const st = r.state;
         const out = {};
-        out.hasMethod = typeof r._archGroupCastsShadow === "function";
-        if (!out.hasMethod) return out;
         // UNIT: L0 UND L1 werfen Schatten (sonst verlöre jeder Baum ab thresh01 seinen Schatten mitten im
         // Sichtfeld); NUR die Fernstufe L2 wirft nie. Bauten (kein _lodN) werfen weiter.
         out.lod0Casts = r._archGroupCastsShadow("grown_baum_eiche_v3") === true;

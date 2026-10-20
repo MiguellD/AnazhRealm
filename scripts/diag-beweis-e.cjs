@@ -114,7 +114,6 @@ const SICHT_FN = async (a) => {
 // Im Seiten-Kontext: EIN Schuss mit der gegebenen Kamera + die Zahlen dieses Renders.
 const SCHUSS_FN = async (kam) => {
     const r = window.anazhRealm;
-    const THREE_ = window.THREE;
     const rend = r.state.renderer;
     const cam = r.state.camera;
     const scene = r.state.scene;
