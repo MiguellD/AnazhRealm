@@ -1,0 +1,24 @@
+F1.json: Weltbild 16.07 · Leib 5.95 · Buch 2.64 · Streu-Ticks vor dem Bild 29 (ab Buch 29) · längste Lücke ab Buch 7.98 → 10.04 (2.06 s)
+  ab Buch bis Bild: 35 Takte (Lade-Takt 35) · Planer Σ 3754 ms · Strom Σ 1922 ms (Ring neu 117, neu-Stufe 0, Laub-Saaten 24) · Wasser Σ 2 · Wald-Plan Σ 311 · Deko lief 29× (Σ 1518 ms), aus 6× (davon %4 6×) · Budget nach dem Strom ≤ 0: 6×
+  in der Lücke 7.98–10.04: 2 Takte (Lade-Takt 2) · Planer Σ 371 ms · Strom Σ 321 ms (Ring neu 6, neu-Stufe 0, Laub-Saaten 6) · Wasser Σ 0 · Wald-Plan Σ 0 · Deko lief 1× (Σ 50 ms), aus 1× (davon %4 1×) · Budget nach dem Strom ≤ 0: 2×
+  s 6: LongTask 362 ms | Bauten 47 · Ort-Wahl 132 · Streu 99 · Streu-Takt 99 · Gruppen-Bau 56
+  s 7: LongTask 2132 ms | Bauten 15 · Wald-Plan 218 · Streu 99 · Streu-Takt 116 · Gruppen-Bau 29
+  s 8: LongTask 0 ms | Bauten 167 · Gruppen-Bau 7 · Dorf 17
+  s 9: LongTask 1266 ms | Bauten 9 · Boden 20 · Laub-Saat 86 · Strom 321 · Gruppen-Bau 13
+  s 10: LongTask 591 ms | Bauten 26 · Boden 17 · Laub-Saat 58 · Strom 213 · Streu 38 · Streu-Takt 48 · Gruppen-Bau 6 · Dorf 10
+  s 11: LongTask 1264 ms | Bauten 17 · Boden 22 · Laub-Saat 121 · Strom 251 · Wald-Plan 47 · Streu 25 · Streu-Takt 46 · Gruppen-Bau 12 · Dorf 21
+  Dreh-Blick: 15192 ms nach der Kontrolle, rundum fehlt [] · Streu [] · warte 0 · Züge 0 · Karten 0
+
+F2.json: Weltbild 15.71 · Leib 5.06 · Buch 2.39 · Streu-Ticks vor dem Bild 33 (ab Buch 33) · längste Lücke ab Buch 5.21 → 7.81 (2.60 s)
+  ab Buch bis Bild: 38 Takte (Lade-Takt 38) · Planer Σ 3324 ms · Strom Σ 1066 ms (Ring neu 178, neu-Stufe 0, Laub-Saaten 24) · Wasser Σ 3 · Wald-Plan Σ 481 · Deko lief 33× (Σ 1774 ms), aus 5× (davon %4 5×) · Budget nach dem Strom ≤ 0: 5×
+  in der Lücke 5.21–7.81: 4 Takte (Lade-Takt 4) · Planer Σ 1085 ms · Strom Σ 699 ms (Ring neu 15, neu-Stufe 0, Laub-Saaten 15) · Wasser Σ 1 · Wald-Plan Σ 331 · Deko lief 1× (Σ 54 ms), aus 3× (davon %4 3×) · Budget nach dem Strom ≤ 0: 4×
+  s 4: LongTask 790 ms | Strom 229 · Wald-Plan 5 · Boden 20 · Laub-Saat 17
+  s 5: LongTask 1169 ms | Bauten 33 · Strom 197 · Wald-Plan 210 · Streu 72 · Streu-Takt 72 · Boden 32 · Laub-Saat 60 · Gruppen-Bau 63
+  s 6: LongTask 512 ms | Bauten 25 · Strom 184 · Wald-Plan 70 · Laub-Saat 21 · Gruppen-Bau 80
+  s 7: LongTask 1535 ms | Strom 347 · Wald-Plan 51 · Streu 52 · Streu-Takt 52 · Boden 13 · Laub-Saat 96
+  s 8: LongTask 489 ms | Bauten 154 · Strom 100 · Wald-Plan 61 · Boden 8 · Laub-Saat 55 · Gruppen-Bau 9 · Ort-Wahl 234
+  Dreh-Blick: 3716 ms nach der Kontrolle, rundum fehlt [] · Streu [] · warte 0 · Züge 11 · Karten 0
+  Takte ab Buch: 37 in 13.32 s, im Takt Σ 9976 ms (75 %) | _runFrameScheduler 6051 · _loopRender 2948 · _scatterRegion 1511 · _finalizeVoxelChunkBuild 1336 · tickArchitectureCulling 770 · _tickImpostorBake 749 · _karteWeltBacken 744 · _tickFernRing 551 · _tickDirtyVoxelChunks 437 · _tickScatterLod 143 · _tickArchitectureLOD 86 · _loopFixedStep 28
+  außerhalb der Takte (ab Buch): _ortWahlScheibe 250 · _foundryBuildGroup 215 · _waldDartsAn 96 · applyPlayerSoul 13 · _foundryAntwort 9
+  Pausen > 300 ms zwischen Takten: 0, Σ 0 ms: 
+  Chunks ab Buch (Ring-Boden 2, Spieler-Chunk 0,0, span 43.2): ens >Boden Bild: 27× 0 ms · ens >Boden außer: 29× 0 ms · ens ≤Boden Bild: 82× 686 ms · ens ≤Boden außer: 40× 371 ms · fin ≤Boden Bild: 34× 924 ms · fin ≤Boden außer: 10× 412 ms · pop ≤Boden Bild: 32× 149 ms · pop ≤Boden außer: 10× 101 ms · reb ≤Boden Bild: 35× 377 ms · reb ≤Boden außer: 28× 59 ms

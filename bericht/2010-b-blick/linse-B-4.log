@@ -1,0 +1,50 @@
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand
+  ✅ W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)
+  ✅ W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)
+  ✅ W8 das Buch fragt die Köpfe der Ankunft (`_buchKoepfe` in `_foundryIngestBook`, B5)
+  ✅ W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (`getWorldDirection`)
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ diag-ankunft.cjs · Seite #3 http://127.0.0.1:7905/index.html · der Puls steht seit 20.4 s
+[stall-akte] offen evaluate(probe) seit 51.8 s
+[stall-akte] Puls 27×, zuletzt vor 20.4 s — complete · renderer bereit · weltbild da · frames 333 · welt 333 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 3 · gl-sync 0 · zuletzt gpu.createRenderPipeline #3 renderPipeline_outputColorTransform_543
+[stall-akte] Stempel 17:05:32.841 gpu.createRenderPipeline #1 renderPipeline_LineBasicMaterial_514
+[stall-akte] Stempel 17:05:32.845 gpu.createRenderPipeline #2 renderPipeline_LineBasicMaterial_513
+[stall-akte] Stempel 17:05:32.856 gpu.createRenderPipeline #3 renderPipeline_outputColorTransform_543
+[stall-akte] CPU (2 s) renderer 14532 102 % · GPU 13496 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 05:06 gpu 92/r 226 · 05:08 gpu 21/r 161 · 05:10 gpu 42/r 517 · 05:12 gpu 6/r 410 · 05:14 gpu 7/r 117 · 05:16 gpu 3/r 63 · 05:18 gpu 14/r 84 · 05:20 gpu 4/r 20 · 05:22 gpu 4/r 25 · 05:25 gpu 3/r 15 · 05:27 gpu 5/r 34 · 05:29 gpu 3/r 32 · 05:31 gpu 2/r 119 · 05:33 gpu 50/r 93 · 05:35 gpu 83/r 112 · 05:37 gpu 4/r 102 · 05:39 gpu 2/r 108 · 05:41 gpu 2/r 105 · 05:43 gpu 2/r 107 · 05:45 gpu 2/r 102 · 05:47 gpu 2/r 102 · 05:49 gpu 2/r 104 · 05:51 gpu 2/r 102 · 05:53 gpu 2/r 101 · 05:55 gpu 2/r 115 · 05:57 gpu 2/r 101
+[stall-akte] Stapel applyMatrix4 :6 < applyBoneTransform :6 < getVertexPosition :6 < Na :6 < _computeIntersections :6 < raycast :6 < fd :6 < intersectObjects :6
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Wissen hinzugefügt: chat - hilfe
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Wissen hinzugefügt: chat - help
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Wissen hinzugefügt: chat - ?
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Wissen hinzugefügt: chat - blubbern sie laut
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Wissen hinzugefügt: chat - setze uhrzeit mittag
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Pointer-Lock: Inaktiv
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.26] [INFO] Ausgestiegen
+[stall-akte] Stderr [2668:14928:1020/190517.440:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2668:14928:1020/190517.463:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2668:14928:1020/190517.471:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2668:14928:1020/190541.790:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in applyMatrix4 :6
+[stall-akte] Seite #3: der Puls kehrt zurück nach 60.5 s — complete · renderer bereit · weltbild da · frames 334 · welt 334 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 3 · gl-sync 0 · zuletzt gpu.createRenderPipeline #3 renderPipeline_outputColorTransform_543
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] gotisch L2: [{"feld":"tris","ist":10232,"soll":7250}]
+=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===
+  ✅ L2a das erste Bild ist der Ladeschirm, er weicht dem Weltbild im BLICK (Boden, Horizont, Leib; Bäume, Bauten, Streu und Karten im Blick), der Rundblick danach ohne Loch — im HTML true · z 2147483000 · ohneBoden: bleibt („der Boden wächst (25 Stücke im Bild)") · bodenHinten: weicht („der Boden wächst (25 Stücke im Bild)") · baumUngebaut: bleibt („1 Bäume und Bauten wachsen") · baumHinten: weicht („1 Bäume und Bauten wachsen") · streuNie: bleibt („4 Wald-Stücke warten auf ihre Gestalt") · karteOffen: bleibt („1 ferne Bäume werden gemalt") · karteHinten: weicht („1 ferne Bäume werden gemalt") · weltFehlt: bleibt („die Welt entsteht") · leibFehlt: bleibt („der Spieler erhält seinen Leib") · buchZu: bleibt („das Buch der Studios öffnet sich") · pflanzung: bleibt („1 Bäume werden gepflanzt") · pflanzungHinten: weicht („1 Bäume werden gepflanzt") · saat: bleibt („1 Wald-Böden werden bepflanzt") · horizont: bleibt („der Horizont wächst (0 %)") · dorfExport: bleibt („das Dorf wird geplant") · dorfSchlange: bleibt („1 Häuser des Dorfs wachsen") · dorfFaellig: bleibt („das Dorf wird gegründet") · allesSteht: weicht („das Dorf wird gegründet") · lueckeRuht: weicht („das Dorf wird gegründet") + WARN · lueckeArbeitet: bleibt („das Buch der Studios öffnet sich") · lueckeFlackert: weicht („das Buch der Studios öffnet sich") + WARN · Baum 30.1 m · Rundblick 0 Löcher in 120 Takten, rundum ganz ab Takt 1 · Pumpe vor dem Bild „blick", danach „hinten,blick,vorrat" · Wald-Zusage kam, 157 von 169 fernen Zellen offen · Bild true/null · Takt 4 · Köpfe (B5): Bild-Rang 5/5 im Blick, Leib bestellt vor L1 Kopf · nach L0, baut vor 1 · nach 0, Dorf-Export mit dem Buch true · hinter dem Ladeschirm: W ruht, Enter → BODY, Strg+K → Omnibox zu
+  ✅ L1 das Fadenkreuz steht in der Bildmitte und weicht der Schublade — da true · Mitte 0/0 px · mit Werkstatt false · danach true
+  ✅ L2b „hilfe" nennt die EINEN Tafeln und die Tasten — „hilfe": 0 fehlen · „help": 0 fehlen · „?": 0 fehlen
+  ✅ L3 Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf — Enter → chat-input · gesendet true · danach BODY · W true · Esc → BODY · Enter auf dem Knopf → knopf
+  ✅ L7 der Start-Gurt liest den Katalog (je Studio-Art ein Werk) — baum_eiche · fahrzeug_gt · tor_drachentor · haus_alemannisch (Arten im Katalog: tree, vehicle, gate, haus)
+=== LK — DIE KAMERA UND DER BAUM ===
+  ✅ LK die 3rd-Kamera rückt nur vor Boden und Bau ein, gleitet hinaus, jeder Pflanzen-Stoff trägt die Durchsicht — baum_tanne · Stamm × 3.493 (Welt × 3.493) · fuss: 496 Proben, Pflanze hält 0, Arm 6.11/6.11 m (Ist/Soll), < 3 m 0, Sprünge 0 (Soll 0, hinaus 0) · ritt: 496 Proben, Pflanze hält 0, Arm 9.38/9.38 m (Ist/Soll), < 3 m 0, Sprünge 0 (Soll 0, hinaus 0) · Pflanzen-Stoffe 33, ohne Durchsicht 0, Ziel 0.6 m neben der Brust, Fadenkreuz 0.6 m neben der Brust · Fadenkreuz-Strahl: 96 Stellungen, hinter dem Spieler {}, Kreatur vorn 384/384, Ziel neben dem Blick 0 m · Durchsicht: 1st 0/8 Anläufe mit fallender Rinde (Auge 0.36/0.35/0.35/0.34/0.37/0.37/0.12/0.35 m), 3rd vor dem Spieler 0/4, zwischen Kamera und Spieler fällt 96/96
+=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===
+  ✅ D8 der Spieler-Chat trägt Worte, das Log die Zahlen — 6 Zeilen · Log true
+  ✅ D6 die KI nennt die Ursache (Dienst · Schlüssel · Proxy) — Status „Fehler (Ollama (lokal oder gehostet)): Keine Antwort von 127" · ohne Schlüssel „(Grok schweigt: für Claude (Anthropic, kostet) fehlt der Sch" · Proxy http://127.0.0.1:7905/api/proxy/llm
+  ✅ D9 das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort — 24 Häuser (Log: 24 platziert, 0 übersprungen) · hinten 0 · außer Bild 0 · gesperrter Slot steht false, laut true · „„Villaalto" steht vor dir: 24 Häuser." · baue dorf hier: 42.3–79.4 m, beim Mitspieler 0 m daneben (Häuser 14 / 14)
+
+✅ GRÜN — die Ankunft trägt ihre benannten Schnitte.
+EXIT=0

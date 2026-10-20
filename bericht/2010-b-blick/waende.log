@@ -1,0 +1,22 @@
+19:12:28 WÄNDE Kopf=1c2ec1a8 Status: 0 Dateien offen
+19:12:28 START check
+19:15:21 check EXIT=0
+19:15:21 START lint
+19:15:34 lint EXIT=0
+19:15:35 START stamm:lint
+19:15:39 stamm:lint EXIT=0
+19:15:39 START gate:worker-dichte
+19:16:08 gate:worker-dichte EXIT=0
+19:16:08 START gate:takt
+19:16:28 gate:takt EXIT=0
+19:16:28 START playtest:fast
+19:16:42 playtest:fast EXIT=0
+19:16:42 START diag-atlas
+19:16:44 diag-atlas EXIT=0
+19:16:44 START gate:boot-stage
+19:16:56 gate:boot-stage EXIT=0
+19:16:56 START gate:betriebsgesetz
+19:17:00 gate:betriebsgesetz EXIT=0
+19:17:00 START playtest
+19:18:49 playtest EXIT=0
+19:18:50 WÄNDE ENDE

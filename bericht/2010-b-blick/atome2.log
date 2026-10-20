@@ -1,0 +1,23 @@
+# 20.10. WEITER 3: Atome am Kopf 4517832e (Inhalt = 1c2ec1a8), nur gemessen
+== node scripts/diag-betriebsgesetz.cjs --grund dc6702ab --kopf HEAD
+gate:betriebsgesetz GRÜN — Pflicht-OFFEN 3/5 · Stand 13/40 Zeilen · Wachstum --grund: Prüf -117 / Spiel +1545 Atome · scripts -125 Atome 0 Dat. · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + Wachstums-Wand + Zitat-Wand + Stripper-Wand (224 Skripte, EIN Stripper, Tafel) stehen (Do
+EXIT=0
+== node scripts/diag-betriebsgesetz.cjs --grund 8ba1510d --kopf HEAD
+gate:betriebsgesetz ROT
+  - DECKE (--grund): scripts/ wuchs um 964 Atome / 0 Dateien, scripts/diag-pruefbuehne.cjs +2725, scripts/playtest/bild.cjs +2116, scripts/playtest/gelaende.cjs +993 — sie sinkt nur, Pressen zahlt nichts
+  - WACHSTUMS-WAND (--grund): scripts/ + spec/ +144 Atome bei Spiel -13840 — erlaubt die Hälfte (0)
+EXIT=1
+== merge-base HEAD 8ba1510d = dc6702ab (= Grund der Wand im Zweig-Modus)
+== 8ba1510d..HEAD zweipunkt zählt die 76 integ-Commits rückwärts (diag-pruefbuehne/bild/gelaende sind integ-Arbeit), kein Maß des Zweigs
+== gedachter Merge (git merge-file je Datei, nicht gemergt): 6 gemeinsame Dateien, 0 Konflikte; scripts diag-ankunft +273, diag-boot-stage -398 = -125
+
+# 21.10. ~01:10: fremder Kopf 0739b555 (Merge integ-probe 80585b1b auf 4517832e, nicht von mir) — gemessen am Kopf 0739b555
+== --grund 80585b1b --kopf HEAD
+gate:betriebsgesetz GRÜN — Pflicht-OFFEN 3/5 · Stand 13/40 Zeilen · Wachstum --grund: Prüf -117 / Spiel +1545 Atome · scripts -125 Atome 0 Dat. · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + Wachstums-Wand + Zitat-Wand + Stripper-Wand (224 Skripte, EIN Stripper, Tafel) stehen (Do
+EXIT=0
+== --grund dc6702ab --kopf HEAD
+gate:betriebsgesetz GRÜN — Pflicht-OFFEN 3/5 · Stand 13/40 Zeilen · Wachstum --grund: Prüf -1247 / Spiel +24578 Atome · scripts -1435 Atome 0 Dat. · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + Wachstums-Wand + Zitat-Wand + Stripper-Wand (224 Skripte, EIN Stripper, Tafel) stehen 
+EXIT=0
+== Zweig-Modus (ohne --grund):
+gate:betriebsgesetz GRÜN — Pflicht-OFFEN 3/5 · Stand 13/40 Zeilen · Wachstum Merge-Basis mit origin/integ-probe: Prüf -117 / Spiel +1545 Atome · scripts -125 Atome 0 Dat. · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + Wachstums-Wand + Zitat-Wand + Stripper-Wand (224 Skripte, EIN 
+EXIT=0
