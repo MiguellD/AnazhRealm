@@ -60,25 +60,24 @@
     // ── Die vier Gattungen (byte-treu Lab Z.62): fuenf allometrische Dials je Art ──
     // prettier-ignore
     var GATTUNGEN = {wolf:{size:2.4,neck:0.263,leg:0.22,diet:1.0,build:0.42},fox:{size:1.5,neck:0.290,leg:0.22,diet:1.0,build:0.22},bear:{size:3.2,neck:0.180,leg:0.20,diet:0.5,build:0.70},deer:{size:2.8,neck:0.330,leg:0.28,diet:0.0,build:0.28}};
-    // ── Das CPG-Kopplungsnetz (byte-treu Lab Z.80) + die Stand-Pose (Z.96) ──
-    // prettier-ignore
-    var CPG_COUPLING = [[0,-0.5,0.5,0],[-0.5,0,0,0.5],[0.5,0,0,-0.5],[0,0.5,-0.5,0]];
+    // ── Die Stand-Pose (byte-treu Lab Z.96; das CPG-Kopplungsnetz Z.80 fiel mit dem Pass-Netz, Tiere H3) ──
     // prettier-ignore
     var STAND_POSE = [[0.02,-0.03,0.05,0.02],[0.02,-0.03,0.05,0.02],[-0.02,0.02,0.05,-0.02],[-0.02,0.02,0.05,-0.02]];
-    // ── Die Emotions-Bewegungsprofile (byte-treu Lab Z.130–135) — das motion-Feld ──
+    // ── Die Emotions-Bewegungsprofile (byte-treu Lab Z.130–135) — das motion-Feld: die HALTUNG der Stimmung. Die Fußfolge
+    //    (phases) fiel mit der Gangart aus dem Tempo (GANG_FOLGE, Meisterkarte Tiere H3): das Muster folgt der Physik ──
     // prettier-ignore
     var MOTION = {
-    idle:{freq:0.25,stride:0,bodyX:0,bodyZ:0,headX:-0.01,headY:0,ear:0.15,tailAmp:0.10,tailRate:0.5,tension:0.9,bob:0.002,sway:0.006,kpMul:1.0,phases:[0,0,0,0]},
-    joy:{freq:3.2,stride:0.06,bodyX:-0.04,bodyZ:0.02,headX:0.04,headY:0,ear:0.05,tailAmp:0.38,tailRate:5.5,tension:1.0,bob:0.020,sway:0.025,kpMul:0.55,phases:[0,Math.PI*0.75,Math.PI*1.5,Math.PI*0.25]},
-    hunt:{freq:0.9,stride:0.018,bodyX:0.10,bodyZ:0,headX:-0.12,headY:0,ear:0.0,tailAmp:0.02,tailRate:0.15,tension:1.6,bob:0.002,sway:0.002,kpMul:1.8,phases:[0,Math.PI*0.75,Math.PI*1.5,Math.PI*0.25]},
-    flee:{freq:9.0,stride:0.18,bodyX:0.05,bodyZ:0,headX:0.01,headY:0,ear:-0.22,tailAmp:0.006,tailRate:11.0,tension:1.5,bob:0.030,sway:0.010,kpMul:1.5,phases:[0,Math.PI,Math.PI,0]},
-    alert:{freq:0.08,stride:0,bodyX:-0.03,bodyZ:0,headX:-0.06,headY:0,ear:0.08,tailAmp:0.04,tailRate:0.6,tension:1.2,bob:0.001,sway:0.001,kpMul:1.3,phases:[0,0,0,0]},
-    showcase:{freq:0.1,stride:0,bodyX:0,bodyZ:0,headX:-0.02,headY:0,ear:0.12,tailAmp:0.16,tailRate:0.4,tension:0.9,bob:0.002,sway:0.012,kpMul:1.0,phases:[0,0,0,0]},
-    // SCHWIMM-HEIMAT (rein additive DATEN-Zeile): der PADDEL-GANG — Trab-Phasen
-    // [0,pi,pi,0], Nase ueber Wasser (headX +), Schwanz als Ruder (tailAmp/Rate),
+    idle:{freq:0.25,bodyX:0,bodyZ:0,headX:-0.01,headY:0,ear:0.15,tailAmp:0.10,tailRate:0.5,tension:0.9,bob:0.002,sway:0.006,kpMul:1.0},
+    joy:{freq:3.2,bodyX:-0.04,bodyZ:0.02,headX:0.04,headY:0,ear:0.05,tailAmp:0.38,tailRate:5.5,tension:1.0,bob:0.020,sway:0.025,kpMul:0.55},
+    hunt:{freq:0.9,bodyX:0.10,bodyZ:0,headX:-0.12,headY:0,ear:0.0,tailAmp:0.02,tailRate:0.15,tension:1.6,bob:0.002,sway:0.002,kpMul:1.8},
+    flee:{freq:9.0,bodyX:0.05,bodyZ:0,headX:0.01,headY:0,ear:-0.22,tailAmp:0.006,tailRate:11.0,tension:1.5,bob:0.030,sway:0.010,kpMul:1.5},
+    alert:{freq:0.08,bodyX:-0.03,bodyZ:0,headX:-0.06,headY:0,ear:0.08,tailAmp:0.04,tailRate:0.6,tension:1.2,bob:0.001,sway:0.001,kpMul:1.3},
+    showcase:{freq:0.1,bodyX:0,bodyZ:0,headX:-0.02,headY:0,ear:0.12,tailAmp:0.16,tailRate:0.4,tension:0.9,bob:0.002,sway:0.012,kpMul:1.0},
+    // SCHWIMM-HEIMAT (rein additive DATEN-Zeile): der PADDEL-GANG — die Paddel-Folge
+    // traegt GANG_FOLGE.paddeln, Nase ueber Wasser (headX +), Schwanz als Ruder (tailAmp/Rate),
     // gedaempftes Bob (das Wasser traegt). Der Wirt schaltet ihn ueber den
     // Koerper-ZUSTAND "schwimmen" (_motionProfileName, nie ueber Emotionen).
-    schwimmen:{freq:2.2,stride:0.05,bodyX:0.06,bodyZ:0,headX:0.08,headY:0,ear:-0.05,tailAmp:0.28,tailRate:2.4,tension:1.1,bob:0.004,sway:0.02,kpMul:0.9,phases:[0,Math.PI,Math.PI,0]}
+    schwimmen:{freq:2.2,bodyX:0.06,bodyZ:0,headX:0.08,headY:0,ear:-0.05,tailAmp:0.28,tailRate:2.4,tension:1.1,bob:0.004,sway:0.02,kpMul:0.9}
     };
 
     // ── KREATUR-LEBEN (rein additive DATEN-Zeilen): die VERHALTENS-SEELE des
@@ -99,18 +98,20 @@
     // (_animateTierBaum). must-ignore: fremde Leser ueberlesen das Feld.
     var VERHALTEN = {
         aktionen: {
-            playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: 0.35, headX: 0.3, tailAmp: 0.5, tailRate: 6 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: Verbeugung senkt die FRONT (bodyX war -0.35 = Heck im Boden)
-            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: true, tempo: 1.3 },
-            spin: { dauer: 1.1, profil: { freq: 4.0, stride: 0.06 }, dreh: 6.283, tempo: 0.2 },
-            stalk: { dauer: 2.6, profil: { freq: 0.7, stride: 0.014, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
-            freeze: { dauer: 1.4, profil: { freq: 0.02, stride: 0, tension: 1.8 }, tempo: 0 },
-            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: true, tempo: 1.6 },
-            scan: { dauer: 1.8, profil: { freq: 0.06, stride: 0, headX: -0.08 }, kopfSweep: 0.5, tempo: 0 },
+            playbow: { dauer: 1.2, profil: { freq: 0.3, bodyX: 0.35, headX: 0.3, tailAmp: 0.5, tailRate: 6 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: Verbeugung senkt die FRONT (bodyX war -0.35 = Heck im Boden)
+            bound: { dauer: 0.9, profil: { freq: 5.5, bob: 0.05 }, hop: true, tempo: 1.3 },
+            spin: { dauer: 1.1, profil: { freq: 4.0 }, dreh: 6.283, tempo: 0.2 },
+            stalk: { dauer: 2.6, profil: { freq: 0.7, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
+            freeze: { dauer: 1.4, profil: { freq: 0.02, tension: 1.8 }, tempo: 0 },
+            pounce: { dauer: 0.7, profil: { freq: 6.0, bodyX: 0.2, bob: 0.06 }, hop: true, tempo: 1.6 },
+            scan: { dauer: 1.8, profil: { freq: 0.06, headX: -0.08 }, kopfSweep: 0.5, tempo: 0 },
             snap: { dauer: 0.5, profil: { headX: 0.22, freq: 1.5 } },
-            shake: { dauer: 0.8, profil: { freq: 0.2, stride: 0 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
-            yawn: { dauer: 1.3, profil: { headX: -0.3, freq: 0.05, stride: 0 }, tempo: 0 },
-            grasen: { dauer: 6.0, profil: { headX: 0.95, freq: 0.12, stride: 0.008, tailAmp: 0.18, tailRate: 1.2 }, tempo: 0.15 }, // SCHAU-BEFUND 17.07.: 0.4 = Maul 23 Grad ueber dem Boden; 0.95 senkt die Nase ins Gras
-            ruhen: { dauer: 16, profil: { freq: 0.04, stride: 0, bodyX: 0.05, headX: 0.2, tailAmp: 0.03, tailRate: 0.3 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: -0.08 hob die Brust; Ruhe senkt Rumpf+Kopf leicht
+            shake: { dauer: 0.8, profil: { freq: 0.2 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
+            yawn: { dauer: 1.3, profil: { headX: -0.3, freq: 0.05 }, tempo: 0 },
+            grasen: { dauer: 6.0, profil: { headX: 0.95, freq: 0.12, tailAmp: 0.18, tailRate: 1.2 }, tempo: 0.15 }, // SCHAU-BEFUND 17.07.: 0.4 = Maul 23 Grad ueber dem Boden; 0.95 senkt die Nase ins Gras
+            // DER KADAVER WIRD GEFRESSEN (Meisterkarte Tiere H3): der Kopf senkt sich in den Riss, der Leib steht
+            fressen: { dauer: 4, profil: { headX: 0.95, freq: 0.1, bodyX: 0.08, tailAmp: 0.12, tailRate: 1.6 }, tempo: 0 },
+            ruhen: { dauer: 16, profil: { freq: 0.04, bodyX: 0.05, headX: 0.2, tailAmp: 0.03, tailRate: 0.3 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: -0.08 hob die Brust; Ruhe senkt Rumpf+Kopf leicht
         },
         stimmung: {
             joy: { aktionen: ["playbow", "bound", "spin"], alle: [4, 9] },
@@ -119,6 +120,7 @@
             idle: { aktionen: ["scan", "shake", "yawn"], alle: [7, 16] },
             tag: { aktionen: ["grasen", "scan"], alle: [10, 22] },
             nacht: { aktionen: ["ruhen", "yawn"], alle: [8, 18] },
+            fressen: { aktionen: ["fressen"], alle: [0, 0.4] },
             // SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-Zeile):
             // die SCHWELLEN des Verhaltens-Ticks — ab wann das Gemuet die
             // Stimmung waehlt (chaos→alert, joy→joy), wann die Nacht ruht
@@ -160,6 +162,20 @@
             // 335 kg bei Groesse 1) — ein grosser Fleischfresser schlaegt Beute um seine eigene Masse und darueber (Carbone
             // et al. 2007): der Wolf (64 kg) den Hirsch (94 kg), nie den Baeren (335 kg).
             beuteMasse: 2.0, // × die eigene Masse (kg) — schwerer ist keine Beute
+        },
+        // DER KREISLAUF SCHLIESST SICH (Meisterkarte Tiere H3, VERTRAGS-AKT 20.10.): ein gefallener Leib ist ein KADAVER mit
+        // Zustand — sein Fleisch (kg: fleischAnteil × die EINE Masse des Leibs; Huftiere ~60 % essbar) und sein Alter (die
+        // Uhr seines Falls). Jeder Nicht-Pflanzenfresser (diet ueber temperament.gattung.pflanzDiet) wittert ihn ueber das
+        // Geruch-Feld (_scentAt, Quelle = das Fleisch, Reichweite jagd.scentRangeM), geht hin und frisst: in fressSec fuellt ein
+        // leerer Magen (magenAnteil × die eigene Masse; Mech 2003: ein Wolf frisst bis ~20 % seiner Masse) — ein Kadaver ohne
+        // Fleisch sinkt in die Erde. Der Magen leert sich in verdauSec; erst unter hungerAnteil jagt und frisst das Tier
+        // wieder (satt jagt keine Beute). Vorher lag der Riss 90 s ohne Zustand und sank, kein Tier sah ihn an.
+        aas: {
+            fleischAnteil: 0.6, // × die Masse des Leibs (kg) — das Fleisch des Kadavers
+            magenAnteil: 0.2, // × die eigene Masse (kg) — so viel frisst ein Tier auf einmal
+            fressSec: 60, // s — so lange fuellt ein leerer Magen
+            verdauSec: 600, // s — so lange leert sich ein voller
+            hungerAnteil: 0.5, // unter diesem Anteil des Magens jagt und frisst das Tier
         },
         furcht: {
             noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
@@ -353,7 +369,6 @@
                     place: { mode: "none" },
                     motion: {
                         presets: JSON.parse(JSON.stringify(MOTION)),
-                        cpgCoupling: JSON.parse(JSON.stringify(CPG_COUPLING)),
                         standPose: JSON.parse(JSON.stringify(STAND_POSE)),
                     },
                     // KREATUR-LEBEN — die Verhaltens-Seele reist im Rezept (additiv, must-ignore).
@@ -892,7 +907,8 @@
     }
 
     // ULTRAGUSS U4 — DER CPG-PHASEN-SCHRITT (das Gang-Netz-Gesetz, verbatim aus
-    // dem Lab): phases[4] werden über die Kopplungs-Matrix + Gain 0.8 fortgeschrieben.
+    // dem Lab): phases[4] werden über die Kopplungs-Matrix + Gain 0.8 fortgeschrieben — mit der Folge der Gangart
+    // (GANG_FOLGE) zieht das Netz sie in deren Muster (cpgStep, unten).
     // ═══════════════════════════════════════════════════════════════════════
     // DIE FELL-STREU (V18.460) — DAS LOOK-GESETZ ALS DATEN: die komplette
     // Körper-Streu des Labs (Bein-Lokale/Tuben · Bauch/Brust/Hüft-Fuzz ·
@@ -1312,8 +1328,11 @@
     // ebener Zwei-Knochen-IK auf dieses Ziel (die Pfote bleibt waagrecht) — der Fuß steht, wo das Gesetz ihn hinstellt.
     var GANG_GESETZ = Object.freeze({
         g: 9.81,
-        schrittBasis: 1.2,
-        schrittFroude: 2.0,
+        // DIE SCHRITT-LÄNGE DER VIERBEINER (Meisterkarte Tiere H3): λ/L = schrittBasis + schrittFroude · v̂, an Alexander & Jayes
+        // 1983 gelegt (λ/L ≈ 2,3 · v̂^0,6 — v̂ 1,2: 2,6 · v̂ 3,5: 4,9): der Wolf galoppiert bei 8,7 m/s mit 2,8 Schritten je
+        // Sekunde (Natur ~3). Vorher 1,2 + 2,0 · v̂ (8,2 L im Galopp, 1,7 Schritte je Sekunde, langsamer als sein Trab).
+        schrittBasis: 1.4,
+        schrittFroude: 1.0,
         tastgrad: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
         hub: 0.12, // × h — die Schwung-Höhe des Fußes
@@ -1324,7 +1343,47 @@
         falte: 0.6, // rad — die Pfote faltet im Schwung
         stand: 0.05, // m/s — darunter steht das Tier
         vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
+        // DER TASTGRAD DES GALOPPS (Meisterkarte Tiere H3): im Galopp steht jeder Fuß kürzer — der Tastgrad fällt mit der
+        // Froude-Zahl über die Schwelle des Galopps (GANG_FOLGE.froudeGalopp) bis tastgradLauf, höchstens bis die Kontaktzeit
+        // den Fußweg des Bein-Winkels trägt (Weyand 2000); der Schritt wächst mit der Schwebe. Vorher stand der Fuß in jeder
+        // Gangart den halben Takt: der Wolf galoppierte bei v̂ 3,5 mit 7,7 Schritten je Sekunde (Natur ~3), acht Bilder je
+        // Schritt, und die Grenze des Beins hob jeden Fuß vor der Zeit.
+        tastgradLauf: 0.3,
     });
+    // DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3, VERTRAGS-AKT 20.10.): die Fußfolge folgt der Froude-Zahl Fr = v̂² =
+    // v²/(g·L), nie der Stimmung — unter froudeTrab der Schritt in lateraler Folge (nach jedem Hinterfuß der Vorderfuß
+    // derselben Seite, je ein Viertel-Takt: Hildebrand 1965), bis froudeGalopp der Trab (die Diagonalen gemeinsam), darüber
+    // der Dreh-Galopp der Hunde (die Hinterfüße, dann die Vorderfüße, im Paar je 0,15 Takt versetzt — nie genau gegenphasig
+    // zum Trab: ein Wechsel aus der Gegenphase bliebe im instabilen Gleichgewicht des Netzes stehen). Säuger jeder
+    // Größe wechseln bei Fr ≈ 0,5 in den Trab und bei Fr ≈ 2–3 in den Galopp (Alexander & Jayes 1983, dynamische
+    // Ähnlichkeit). folge = die Phasen-Versätze der Beine [VL, VR, HL, HR] (rad; der Stand beginnt bei Phase π, ein größerer
+    // Versatz setzt früher auf); paddeln = die Folge im Wasser (das Medium, kein Gemüt: der Paddel-Gang diagonal);
+    // kopplung (je rad des Takts) zieht die Beine in das Muster (cpgStep mit folge): der Zug wächst mit dem Takt, ein Wechsel
+    // schließt in etwa einem Schritt — stärker (fest 4/s) zog er im Schritt die stehenden Füße mit (Stand-Schlupf am Querhang
+    // 0,03 → 0,06), schwächer (fest 1/s) hielt der Fuchs-Galopp sein Muster nicht gegen die Grenze des Beins. Vorher
+    // wählte die Stimmung das Muster (MOTION.phases, gesetzt beim Profil-Wechsel), und das Netz zog jedes in den Pass.
+    var GANG_FOLGE = Object.freeze({
+        froudeTrab: 0.5,
+        froudeGalopp: 2.5,
+        schritt: Object.freeze([0, Math.PI, 0.5 * Math.PI, 1.5 * Math.PI]),
+        trab: Object.freeze([0, Math.PI, Math.PI, 0]),
+        galopp: Object.freeze([0, 0.3 * Math.PI, 1.2 * Math.PI, 0.9 * Math.PI]),
+        paddeln: Object.freeze([0, Math.PI, Math.PI, 0]),
+        kopplung: 0.3,
+        // DIE HYSTERESE DES WECHSELS: wer geht, wechselt erst über froudeTrab × (1 + hysterese) in den Trab, wer trabt, erst
+        // unter froudeTrab × (1 − hysterese) zurück (ebenso am Galopp) — ein Folger, der um die Schwelle pendelt, wechselt
+        // nicht je Takt (Säuger wechseln hinauf später als hinab; Hoyt & Taylor 1981)
+        hysterese: 0.2,
+    });
+    // die Gangart zur Froude-Wurzel v̂; mit der Gangart des Vor-Takts (vorher) über die Hysterese
+    function gangArt(vh, vorher) {
+        var fr = vh * vh,
+            h = GANG_FOLGE.hysterese,
+            rang = vorher === "galopp" ? 2 : vorher === "trab" ? 1 : vorher ? 0 : -1;
+        var fT = GANG_FOLGE.froudeTrab * (rang < 0 ? 1 : rang >= 1 ? 1 - h : 1 + h),
+            fG = GANG_FOLGE.froudeGalopp * (rang < 0 ? 1 : rang >= 2 ? 1 - h : 1 + h);
+        return fr < fT ? "schritt" : fr < fG ? "trab" : "galopp";
+    }
     // DIE ZEILE DES GESETZES (K07, additiv): gangSchritt und gangFuss sind das EINE Gang-Gesetz für Vier- und Zweibeiner —
     // die Zeile Z trägt die Zahlen der Gestalt (der Mensch: koerper-core fx.bewegung.gang), ohne Zeile gilt GANG_GESETZ
     // (die Tiere, byte-gleich). Fehlt der Zeile ein Feld (g, stand, vMax), trägt GANG_GESETZ. Der Tastgrad wandert mit der
@@ -1333,31 +1392,37 @@
     // Tastgrad (tast), den gangFuss als Anteil des Stands am Zyklus liest, und der Hub des Schwungs (× L) — er wandert mit
     // demselben Wechsel zu hubLauf, wo die Zeile ihn nennt (der laufende Fuß schwingt hoch, der gehende knapp). Die Schwere g
     // der Zeile ist die EINE Schwere des Gangs (Schritt und Becken lesen sie; der Wirt setzt die seiner Welt) — ohne Schwere
-    // (g ≤ 0) trägt kein Bein: kein Gang, der Leib schwebt.
+    // (g ≤ 0) trägt kein Bein: kein Gang, der Leib schwebt. Zurück kommt auch die GANGART (art, folge — GANG_FOLGE): ein
+    // stehender Leib trägt die Folge des Schritts, aus der er anläuft; vorher (die Gangart des Vor-Takts) legt die Hysterese an.
     function gangZahl(Z, k) {
         return Z && typeof Z[k] === "number" ? Z[k] : GANG_GESETZ[k];
     }
-    function gangSchritt(v, L, Z) {
+    function gangSchritt(v, L, Z, vorher) {
         var G = Z || GANG_GESETZ;
         var tast = gangZahl(G, "tastgrad"),
             hub = gangZahl(G, "hub");
         var g = gangZahl(G, "g");
-        if (!(v > gangZahl(G, "stand")) || !(L > 0) || !(g > 0)) return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub };
+        if (!(v > gangZahl(G, "stand")) || !(L > 0) || !(g > 0))
+            return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub, art: "stand", folge: GANG_FOLGE.schritt };
         var vv = Math.min(v, gangZahl(G, "vMax"));
         var vh = vv / Math.sqrt(g * L);
         var sMax = 2 * L * Math.tan(gangZahl(G, "maxWinkel"));
         var lamF = L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh);
-        if (G.tastgradLauf > 0 && G.laufFroude > 0) {
-            var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * G.laufFroude) / (0.6 * G.laufFroude)));
+        // die Zeile ohne eigenen Wechsel (die Tiere) läuft ab der Schwelle des Galopps
+        var tL = gangZahl(G, "tastgradLauf"),
+            fL = G.laufFroude > 0 ? G.laufFroude : GANG_FOLGE.froudeGalopp;
+        if (tL > 0 && fL > 0) {
+            var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * fL) / (0.6 * fL)));
             w = w * w * (3 - 2 * w);
             // im Lauf fegt das Bein höchstens seinen Winkel: der Fußweg bleibt bei sMax, der Tastgrad fällt mit dem Tempo
             // (die Kontaktzeit = sMax / v — Weyand 2000), der Schritt wächst weiter mit der Froude-Zahl
-            tast += (Math.min(G.tastgradLauf, sMax / lamF) - tast) * w;
+            tast += (Math.min(tL, sMax / lamF) - tast) * w;
             if (G.hubLauf > 0) hub += (G.hubLauf - hub) * w;
         }
         var lamMax = sMax / tast;
         var lam = Math.min(lamF, lamMax);
-        return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub };
+        var art = gangArt(vh, vorher);
+        return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub, art: art, folge: GANG_FOLGE[art] };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
     // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π (byte-gleich zum Tier-Gang).
@@ -1690,12 +1755,16 @@
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
     }
 
-    function cpgStep(phases, freq, coupling, dt) {
+    // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
+    // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
+    // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
+    // Galopp in einem verdrehten Zustand stecken). Das alte Netz (CPG_COUPLING, sein Gleichgewicht der Pass) fiel ganz.
+    function cpgStep(phases, freq, dt, folge) {
         var d = [0, 0, 0, 0];
         for (var i = 0; i < 4; i++) {
             var c = 0;
-            for (var j = 0; j < 4; j++) c += coupling[i][j] * Math.sin(phases[j] - phases[i]);
-            d[i] = freq + c * 0.8;
+            for (var j = 0; j < 4; j++) if (j !== i) c += Math.sin(phases[j] - phases[i] - (folge[j] - folge[i]));
+            d[i] = freq * (1 + c * GANG_FOLGE.kopplung);
         }
         for (var k = 0; k < 4; k++) phases[k] += d[k] * dt;
         return phases;
@@ -3090,6 +3159,7 @@
         fellFarbe: fellFarbe,
         ANATOMIE_SOLL: ANATOMIE_SOLL,
         GANG_GESETZ: GANG_GESETZ,
+        GANG_FOLGE: GANG_FOLGE,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
         gangBecken: gangBecken,
@@ -3116,7 +3186,6 @@
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GATTUNGEN: GATTUNGEN,
         MOTION: MOTION,
-        CPG_COUPLING: CPG_COUPLING,
         STAND_POSE: STAND_POSE,
         VERHALTEN: VERHALTEN,
         fellStreu: fellStreu,
