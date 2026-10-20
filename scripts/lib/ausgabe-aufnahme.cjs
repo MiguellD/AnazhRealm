@@ -342,7 +342,8 @@ async function weltStehtWarten(max) {
         if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
     };
-    const n = await window.__weltStehtNach(takt, max);
+    // steht sie schon, schießt die Bühne ohne Takt (ein Takt rendert und tickt, was die Linse für den Schuss gesetzt hat)
+    const n = r._weltSteht() ? 0 : await window.__weltStehtNach(takt, max);
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne

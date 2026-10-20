@@ -818,10 +818,6 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
-        // DAS WARTEN AUF DEN BAU (K-WANDUHR): eine Welt im Kleinen — der Bau steht ab `e.ab` (Wanduhr der Seite), die Foundry
-        // meldet `offen` Aufträge
-        "/bau.html":
-            "<!doctype html><script>window.anazhRealm={_weltStand:{takte:0},offen:0,_gameLoopTick:function(){this._weltStand.takte++},_archIsRendered:function(e){return !!(e&&e.mesh)},_rebuildArchitectureMesh:function(e){if(e.ab!=null&&performance.now()>=e.ab)e.mesh={}},_weltOffen:function(){return{foundry:this.offen,chunks:0,wald:0}}}</script>",
     };
     const server = statikServer({ seiten });
     await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -836,31 +832,29 @@ async function selbsttest() {
         return akten.filter((a) => a.seite === id);
     };
     const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-    const ruhig = await fall("/ruhig.html", () => warte(4500));
+    // LANGSAM (K-WANDUHR): eine Welt im Kleinen, ihr Bau steht nach 3,2 s Wanduhr, die Foundry hat solange einen Auftrag offen —
+    // das Warten hält (bis dahin gab gate:fahr-leben nach 3 s auf); TOT: nichts ist offen, der Bau steht nie — ROT beim Namen.
+    // Sie läuft in der ruhigen Seite während ihrer 4,5 s (sie blockt nie: ihr Takt ist ein Versprechen).
+    let bau = null;
+    const bauProbe = async () => {
+        const r = (window.anazhRealm = { _weltStand: { takte: 0 }, offen: 1, _gameLoopTick() {}, _archIsRendered: (e) => !!e.mesh });
+        r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
+        r._weltOffen = () => ({ foundry: r.offen, chunks: 0, wald: 0 });
+        const takt = () => new Promise((ok) => setTimeout(ok, 10));
+        const langsam = { type: "langsam", id: 1, ab: performance.now() + 3200 };
+        const t0 = performance.now();
+        const takte = await window.__gebautNach(langsam, { max: 5, takt });
+        const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
+        r.offen = 0;
+        aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then((n) => `steht nach ${n} Takten`, (x) => x.message);
+        return aus;
+    };
+    const ruhig = await fall("/ruhig.html", async (p) => ([bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)])));
     const schleife = await fall("/schleife.html", async () => {
         for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await warte(500);
         await warte(500);
     });
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
-    // LANGSAM: der Bau braucht 4 s Wanduhr, die Foundry hat solange einen Auftrag offen — das Warten hält (bis K-WANDUHR gab
-    // gate:fahr-leben nach 3 s auf); TOT: nichts ist offen, der Bau steht nie — ROT beim Namen
-    let bau = null;
-    await fall("/bau.html", async (p) => {
-        bau = await p.evaluate(async () => {
-            const r = window.anazhRealm;
-            r.offen = 1;
-            const langsam = { type: "langsam", id: 1, ab: performance.now() + 4000 };
-            const t0 = performance.now();
-            const takte = await window.__gebautNach(langsam, { max: 5 });
-            const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
-            r.offen = 0;
-            aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5 }).then(
-                (n) => `steht nach ${n} Takten`,
-                (x) => x.message
-            );
-            return aus;
-        });
-    });
     await browser.close();
     server.close();
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
@@ -883,8 +877,8 @@ async function selbsttest() {
         ],
         [haenger.length > 0 && /^AWAIT/.test(haenger[haenger.length - 1].urteil), `Versprechen: ${haenger.length ? haenger[haenger.length - 1].urteil : "KEINE Akte"}`],
         [
-            !!bau && bau.langsam.steht && bau.langsam.ms >= 3500,
-            `Bau LANGSAM (4 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
+            !!bau && bau.langsam.steht && bau.langsam.ms >= 3000,
+            `Bau LANGSAM (3,2 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
         [!!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot), `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
