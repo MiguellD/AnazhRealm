@@ -12,7 +12,7 @@ ordnet die Hebel und nennt, welche Pflicht jeder trägt.
 
 ---
 
-## Punktestand: 29 / 90 (Verlauf: 18.10. 27 · 19.10. 28 S6 · 19.10. 29 F1 — main e93134f4)
+## Punktestand: 30 / 90 (Verlauf: 18.10. 27 · 19.10. 28 S6 · 19.10. 29 F1 · 20.10. 30 f1-rest — main 5768586a)
 
 | Bereich | Punkte | K1 | K2 | K3 | K4 | K5 | nächster Hebel |
 |---|---|---|---|---|---|---|---|
@@ -21,7 +21,7 @@ ordnet die Hebel und nennt, welche Pflicht jeder trägt.
 | 3 Siedlung und Bauen | **3**/10 | 1 | 0 | 1 | 1 | 0 | Stadt-Tor + Export mit Rang (+3 · 1¾ d) |
 | 4 Tiere, Herden, Rudel | **3**/10 | 1 | 1 | 1 | 0 | 0 | Den Verband ganz messen: Ausrichtung, Alarm-Kette, ID (+1 · ½ d; S6 auf main ffa8fac8) |
 | 5 Menschen und NPC | **2**/10 | 0 | 0 | 0 | 1 | 1 | Bewohner = Kreatur mit Menschen-Leib (+2 · 1 d) |
-| 6 Fahrzeug, Fahrgefühl, Kamera | **4**/10 | 1 | 0 | 1 | 1 | 1 | Absteigen in Fahrt + Durchschein 2 Bilder (+1) · Tempo mit Welt F5 |
+| 6 Fahrzeug, Fahrgefühl, Kamera | **5**/10 | 1 | 0 | 1 | 2 | 1 | Tempo mit Welt F5 (Vorausschau aus dem EINEN Rang) |
 | 7 Licht, Atmosphäre, Ferne | **3**/10 | 1 | 0 | 1 | 1 | 0 | EINE Tag-Achse S7 (+3 · 1½ d · A) |
 | 8 Studios und Werkzeug-UI | **4**/10 | 0 | 1 | 1 | 1 | 1 | Sitzung mit A/B + Griff→Bild-Linse (+1 · 1½ d) |
 | 9 Ankunft, Streaming, Leistung | **2**/10 | 0 | 1 | 1 | 0 | 0 | S3 EIN Rang + freier Haupt-Faden (+1 · 2½ d · B) |
@@ -612,7 +612,7 @@ ersten Bild AAAA-getunt; das kann eine kuratierte Welt nicht.
    sind fest (FAHR.kamera dist 9,6, `vehicle-core.js:2290-2297`; kein v-Term, `:3071`); der Azimut folgt der Gier des Bugs, nicht dem
    Fahrtvektor; die Welt übergibt die Gier immer finit, Maus-Orbit im Ritt gibt es nicht; das FOV hat 4 Schreiber (`kampf.js:857/869/908`,
    `koerper-fahrt.js:1416`), ein Tempo-FOV wäre ein fünfter.
-4. **Übergänge unter Bewegung — 1/2 (19.10., F1 auf main e93134f4: Azimut 6,3° nach 10 Bildern, jede Stufe 0 m an der Physik, Wagen in Third im Bild, Ruck p95 0,017 m, Wiederaufstieg 0°; offen: Absteigen in voller Fahrt ungemessen, 2 Bilder nach Ego → Third durchscheinend; GTX bericht/1910-f1-gtx.md).** *Messung:* SG1-Linse am Spielgang: nach Ego → Third in voller Fahrt steht der Azimut binnen 10
+4. **Übergänge unter Bewegung — 2/2 (20.10., f1-rest auf main 5768586a: Absteigen in Fahrt 0,25/0,21 m je Bild, Deckung nach Ego → Third 1/1, GTX GT deckend; vorher 19.10., F1 auf main e93134f4: Azimut 6,3° nach 10 Bildern, jede Stufe 0 m an der Physik, Wagen in Third im Bild, Ruck p95 0,017 m, Wiederaufstieg 0°; offen: Absteigen in voller Fahrt ungemessen, 2 Bilder nach Ego → Third durchscheinend; GTX bericht/1910-f1-gtx.md).** *Messung:* SG1-Linse am Spielgang: nach Ego → Third in voller Fahrt steht der Azimut binnen 10
    Bildern ≤ 10° an der Gier; jede zeichnende Stufe des Wagens liegt ≤ 2 m an der Physik-Lage, Bild-Deckung des Wagens in Third > 0; Auf-
    und Absteigen in Fahrt und am Hang bergab ohne Kamera-Sprung > 0,5 m je Bild. *Beleg:* Schöpfer-Befund 17.10.: wechselt man in der Fahrt
    die Sicht, ist der Wagen in Third unsichtbar oder steht an alter Stelle, und Third ruckelt. Ursache: `_kamChase` wird nur beim Aufstieg

@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-19",
+  "stand": "2026-10-20",
   "bereiche": [
     {
       "key": "gelaende",
@@ -139,7 +139,7 @@
     {
       "key": "fahrzeug",
       "titel": "Fahrzeuge, Fahrgefühl und Kamera",
-      "punkte": 4,
+      "punkte": 5,
       "kriterien": [
         {
           "name": "Das Fahr-Gesetz: Reifen · Boden · Takt",
@@ -155,7 +155,7 @@
         },
         {
           "name": "Übergänge unter Bewegung",
-          "punkte": 1
+          "punkte": 2
         },
         {
           "name": "Rückmeldung: der Körper fühlt die Fahrt",
@@ -268,6 +268,12 @@
       "kopf": "e93134f4",
       "summe": 29,
       "was": "F1 Kamera-Rig (Fahrzeug K4 0→1: Azimut 6,3° nach 10 Bildern, Stufe 0 m an der Physik, Ruck p95 0,017 m, GTX nicht langsamer; offen Absteigen in Fahrt, 2 Bilder durchscheinend)"
+    },
+    {
+      "stand": "2026-10-20",
+      "kopf": "5768586a",
+      "summe": 30,
+      "was": "f1-rest (Fahrzeug K4 1→2: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; OMEN-ABAB GTX nicht langsamer, GT deckend statt Geist)"
     }
   ]
 }
