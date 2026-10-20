@@ -21,8 +21,7 @@ async function checkBandV1774UseByRole(ctx) {
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
         const savedHotbar = r.state.hotbar.slice(0, 9);
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
-        else r.state.worldMeta.gameMode = "schöpfer";
+        r.setGameMode("schöpfer");
         // V17.74 — falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
@@ -84,15 +83,15 @@ async function checkBandV1774UseByRole(ctx) {
         // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
-        if (typeof r.renderPlayerEquipUI === "function") r.renderPlayerEquipUI();
-        if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+        r.renderPlayerEquipUI();
+        r.renderRecipeBook();
         out.heldDeviceListed = [...document.querySelectorAll("#inventory-recipes .recipe-row")].some((row) =>
             /spitzhacke/i.test(row.textContent || "")
         );
 
         // (6) Die Seele-Select listet den Bauplan-Avatar, Verkörpern registriert ihn; Studio-Sicht:
         // koerper_human (Alt-Doppel) fehlt, die Studio-Gruppe trägt koerper_wolf mit Studio-Namen.
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
         out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "_t_avatar74");
         out.studioSicht =
@@ -107,7 +106,7 @@ async function checkBandV1774UseByRole(ctx) {
             emb.ok === true &&
             p.soul === "bp__t_avatar74" &&
             !!(r.state.customSouls && r.state.customSouls["bp__t_avatar74"]);
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =
             !!soulSel2 &&
@@ -154,8 +153,7 @@ async function checkBandV1774UseByRole(ctx) {
         }
 
         // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
-        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-        else r.state.worldMeta.gameMode = savedMode;
+        r.setGameMode(savedMode);
         r._clearBuildMode();
         if (r.state.customSouls) {
             delete r.state.customSouls["bp_koerper_human"];
@@ -167,9 +165,9 @@ async function checkBandV1774UseByRole(ctx) {
         for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
         delete blu._t_v1774; // Test-Blueprints aufräumen
         delete blu._t_avatar74;
-        if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r._renderHotbarDOM();
+        r._refreshSoulSelect();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -260,16 +258,14 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         if (!Array.isArray(p.tools)) p.tools = [];
         if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
         const savedMode = r.getGameMode();
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
-        else r.state.worldMeta.gameMode = "schöpfer"; // keine Stamina-Reibung im Test
+        r.setGameMode("schöpfer"); // keine Stamina-Reibung im Test
         const opR = r.applyOpToPart("wp_work", 0, "schmiede-hammer");
         const chain = r.state.blueprints["wp_work"].parts[0].opChain || [];
         const lastCap = chain.length ? chain[chain.length - 1].cap : 0;
         out.konsum = opR.ok === true && lastCap > 0.8 && lastCap >= esseP - 1e-6;
 
         // restore
-        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-        else r.state.worldMeta.gameMode = savedMode;
+        r.setGameMode(savedMode);
         const ai = r.state.architectures.indexOf(esseEntry);
         if (ai >= 0) r.state.architectures.splice(ai, 1);
         delete r.state.blueprints["wp_soft"];
@@ -352,7 +348,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         const blu = r.state.blueprints;
         const mkBlade = (name, mat) => {
             delete blu[name];
@@ -438,7 +434,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
                 delete r.state.blueprintEditHistory[n];
         }
         r.selectBlueprintForEdit("stein_block");
-        if (r.setGameMode) r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         return out;
     });
     check(
@@ -472,7 +468,7 @@ async function checkBandV1790Recalibration(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const blade = (m, k = 1) => ({
@@ -570,7 +566,7 @@ async function checkBandV1790Recalibration(ctx) {
         }
         out.cssHistory = cssHistory;
 
-        if (r.setGameMode) r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         return out;
     });
     check(
@@ -616,7 +612,7 @@ async function checkBandV1790Recalibration(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A6 (Maus-Aktionen + Resonanz-Abklang) + 6.C3 V2/Tastenbelegung).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6Keybindings(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Maus-Aktionen (abbauen + platzieren) ###
@@ -728,7 +724,7 @@ async function checkBandWelle6Keybindings(ctx) {
         out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
 
         // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
-        if (typeof r.initSymphony === "function") r.initSymphony();
+        r.initSymphony();
         const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
         out.symphonyReady = !!ctxOk;
         if (!ctxOk) return out;
@@ -883,16 +879,8 @@ async function checkBandWelle6Keybindings(ctx) {
 
         // Methoden-Existenz
         out.hasLoad = typeof r._loadKeybindings === "function";
-        out.hasSave = typeof r._saveKeybindings === "function";
-        out.hasSet = typeof r.setKeybinding === "function";
-        out.hasReset = typeof r.resetKeybindings === "function";
-        out.hasEventToCode = typeof r._eventToBindingCode === "function";
-        out.hasActionFor = typeof r._actionForBindingCode === "function";
-        out.hasBeginRebind = typeof r.beginKeybindRebind === "function";
-        out.hasCancelRebind = typeof r.cancelKeybindRebind === "function";
         out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
         out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
-        out.hasFormatCode = typeof r._formatBindingCode === "function";
 
         // setKeybinding ändert state
         const before = r.state.keybindings.confirmBuild;
@@ -986,25 +974,10 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
         check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
         check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
+        check("Welle 6.C3: _loadKeybindings existiert", wave6c3Results.hasLoad);
         check(
-            "Welle 6.C3: _loadKeybindings + _saveKeybindings existieren",
-            wave6c3Results.hasLoad && wave6c3Results.hasSave
-        );
-        check(
-            "Welle 6.C3: setKeybinding + resetKeybindings existieren",
-            wave6c3Results.hasSet && wave6c3Results.hasReset
-        );
-        check(
-            "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
-            wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
-        );
-        check(
-            "Welle 6.C3: beginKeybindRebind + cancelKeybindRebind existieren",
-            wave6c3Results.hasBeginRebind && wave6c3Results.hasCancelRebind
-        );
-        check(
-            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI + _formatBindingCode existieren",
-            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI && wave6c3Results.hasFormatCode
+            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI existieren",
+            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI
         );
         check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
         check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
@@ -1043,9 +1016,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        out.hasFlatten = typeof r._archFlattenBlueprint === "function";
-        out.hasEntryMatrix = typeof r._archEntryWorldMatrix === "function";
-        if (!out.hasFlatten || !out.hasEntryMatrix) return out;
 
         // Gate: ein gewachsener Baum (Grammatik) ist instancbar. Er ist _isMerged (Bark+Foliage = 2 Leaves);
         // die Per-Part-Matrix-/Farb-Gleichheit braucht eine non-merged Klon-Fixture (1 Leaf je Part,
@@ -1099,12 +1069,12 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         }
         out.maxMatrixDelta = maxMatrixDelta;
         out.maxColorDelta = maxColorDelta;
-        if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
+        r._disposeSoulGroup(group);
 
         // --- Cutover: instancbarer Spawn geht in die Registry ---
         // UNIT-RICHTER: Prüf-Gegenstand ist die GRAMMATIK-Instancing-Registry (`baum_kiefer#0`-Gruppe +
         // Slot/Cull/Pick); foundry-ON setzt derselbe Spawn Studio-Instanzen (f:-Gruppen) → __withNoFoundry.
-        if (r.state.playerMesh && typeof r.spawnArchitecture === "function") {
+        if (r.state.playerMesh) {
             window.__withNoFoundry(() => {
                 const pp = r.state.playerMesh.position;
                 const origRadius = r.state.architectureCullingRadius;
@@ -1149,7 +1119,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                 // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
                 //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
                 //     via instanceId → slotEntry). ---
-                if (r.state.camera && typeof r._pickArchitectureAtCrosshair === "function") {
+                if (r.state.camera) {
                     const tcx = pp.x + 6;
                     const tcz = pp.z + 6;
                     const pe = r.spawnArchitecture(
@@ -1188,8 +1158,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         check("V12.0-perf.c.1: Architektur-Instancing-Band (realm)", false, res.error);
         return;
     }
-    check("V12.0-perf.c.1: _archFlattenBlueprint existiert", res.hasFlatten);
-    check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check(
         "V12.0-perf.c.1: baum_kiefer instancbar (gewachsene Krone, ≥1 Leaf je Part)",
         res.kieferInstanceable === true && res.kieferLeaves >= 1, // V18.259: gewachsene Krone → variable Part-Zahl (statt fixe 7)
@@ -1250,7 +1218,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.X.1 — Audit-Fixes ###
@@ -1260,12 +1228,11 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1285,7 +1252,7 @@ async function checkBandWelle6XAudit(ctx) {
         const builtS = r.confirmBuild();
         out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
 
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setGameMode("frieden");
 
         // --- A3a: Umwidmen nimmt Baupläne mit emergenter Rolle auf.
@@ -1329,13 +1296,13 @@ async function checkBandWelle6XAudit(ctx) {
             out._a3bEquipped = !!(equipResult && equipResult.ok);
             // V18.61 Ich-F — das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
-            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
+            r._ichRenderSpecSheet();
             const container = document.getElementById("ich-stage-spec");
             out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
             out.statsShowsArmorRow = !!container && /⛨|audit_armor_real/.test(container.textContent || "");
             r.equipArmor(null);
             delete r.state.blueprints["audit_armor_real"];
-            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
+            r._ichRenderSpecSheet();
         } else {
             out.statsShowsArmorRow = false;
         }
@@ -1364,7 +1331,7 @@ async function checkBandWelle6XAudit(ctx) {
                 r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
 
         return out;
     });
@@ -1440,7 +1407,6 @@ async function checkBandWelle6XAudit(ctx) {
         out.architectureActionsRemoved = !document.getElementById("architecture-actions");
         // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
 
-
         // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
         if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
         r.selectHotbarSlot(0);
@@ -1453,7 +1419,7 @@ async function checkBandWelle6XAudit(ctx) {
         out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
         r.selectHotbarSlot((0 - 1 + 9) % 9);
         out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
 
         return out;
     });
@@ -1587,7 +1553,7 @@ async function checkBandWelle6XAudit(ctx) {
             ],
         };
         r.applyPlayerSoul("leichtprobe");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
         out._phoenixTags = r.state.player.statTags
             ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
@@ -1595,7 +1561,7 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- C3: Slope + pfad + Wolf-Körper → kann NICHT springen (dichte hoch)
         r.applyPlayerSoul("wolf");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
         out._dragonTags = r.state.player.statTags
             ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
@@ -1604,7 +1570,7 @@ async function checkBandWelle6XAudit(ctx) {
         // Cleanup
         delete r.state.customSouls.leichtprobe;
         r.applyPlayerSoul("human");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         r.state.onSteepSlope = false;
         r.setGameMode("frieden");
 
@@ -1695,7 +1661,6 @@ async function checkBandWelle6XAudit(ctx) {
         // Reset auf Defaults
         r.state.grok.companionName = "Grok";
         r.state.player.name = "Schöpfer";
-
 
         // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
         delete r.state._groundedCache;

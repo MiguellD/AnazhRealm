@@ -956,7 +956,6 @@ const FORBIDDEN = [
             "scripts/diag-boot-stage.cjs",
             "scripts/diag-fluss.cjs",
             "scripts/diag-p2p-gestalt.cjs",
-            "scripts/diag-parity.cjs",
             "scripts/diag-praegung-welt.cjs",
             "scripts/diag-regler-wirkt.cjs",
             "scripts/diag-reload-treue.cjs",
@@ -1019,6 +1018,7 @@ function scan(files) {
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
 // das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
 const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
+const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
@@ -1231,6 +1231,14 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
         fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
     },
+    // ein Array-Bereich geht EINMAL in die Queue (`einmal`: der erste Fund im Gesetzbuch ist das Gesetz)
+    {
+        muster: /\.writeBuffer\([^;]*\.byteOffset\s*\+/,
+        gesetzbuch: WORT_BUCH,
+        einmal: true,
+        verboten: STAMM,
+        fiel: "K-ICH-BÜHNE-PUFFER — die Arena rundete neben der EINEN Wort-Schrift (_schreibWorte)",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
@@ -1289,10 +1297,11 @@ function scanZwillinge(ersatz = {}) {
         for (const f of z.verboten) {
             if (!finde(z, lies(f))) continue;
             const src = ohneKommentar(f);
-            const hit = finde(z, src);
+            const ab = z.einmal && f === z.gesetzbuch ? (finde(z, src) || { at: src.length }).at + 1 : 0;
+            const hit = finde(z, src.slice(ab));
             if (!hit) continue;
-            const zeile = src.slice(0, hit.at).split("\n").length;
-            errs.push(`Zwillings-Wand: ${f}:${zeile} trägt wieder „${hit.was}" (fiel: ${z.fiel})`);
+            const zeile = (i) => src.slice(0, i).split("\n").length;
+            errs.push(`Zwillings-Wand: ${f}:${zeile(ab + hit.at)} trägt wieder „${hit.was}"${ab ? ` neben ${zeile(ab)}` : ""} (fiel: ${z.fiel})`);
         }
     }
     return errs;
@@ -1716,17 +1725,6 @@ function scanNormalWand(srcRoh) {
 // Grund und Bild-Leser in STOFF_ZWEIGE (eine tote Zeile ist rot). Im Stoff ist auch jede stille Frage ein Fang: `"x" in T`,
 // `!!T.x` frei, `T.x?.(…)`, ein aus TSL gezogenes Glied (`const { pass } = TSL; if (!pass)`), das Ergebnis eines
 // Stoff-Bauers (`if (_su)`).
-// DIE LISTE (an integ-probe bb554abf ROT mit 95 Fängen: F catch · V Fehler-Variable · W Ausstattungs-Wenn · N Null-Knoten):
-//   _buildPbrNodeMaterial F4 N2 V2 W14 · _foundryTreeMaterial F1 N3 W6 · _substanceCharacter F1 V1 W5 · _grassInstanceMat
-//   F2 N1 W4 · _applySubstanceResponse F1 V1 W4 · _applyVegetationResponse F1 V1 W2 · _terrainGeologyAlbedo F1 V1 W2 ·
-//   _membranBauFor F2 W1 · _ensureLodUniforms F1 W1 · _ensurePostProcessing F1 W1 · init (CSM) F1 · _kameraDurchsichtNode
-//   N1 W1 · _ensureAtmoUniforms N1 W1 · _ensureSeasonUniforms N1 W1 · _windSwayOffset N1 · _impostorAtlas N1 ·
-//   _weltMarchEnsure N1 · createGalaxySkybox W2 · je W1 _buildStarField _configureRenderer _uniformHeimatTeilen
-//   _materialObserverDiaet _ensureWindCoupling _ensureHydroSurfaceMaterial _fernKroneNahEnsure _feldPassEnsure
-//   _tickPortalMembranes _ensureRainSystem _phantomTint _wegeKarteEnsure _blattAtlasProbe · je V1 _uiDirty (UI-Puls: ERROR
-//   beim Namen des Raums) _addConnectionLines _tickImpostorBake (nach dem dritten Versuch: `_stoffBruch`).
-// Jeder catch wirft über `_stoffBruch` (die Post-Kette meldet ihn und zeichnet direkt), jede Fenster-Variable fiel, jedes
-// Wenn um ein TSL-Glied fiel (der Uniform-Satz kommt aus seinem ensure), jeder Knoten-Bauer liefert oder bricht.
 // DIE NACHBESSERUNG (13.10., am Kopf f1528195 ROT mit 29: F22 · N7): die Wand maß den Render-Bau am Rumpf-Text (blind für
 // vier ihrer eigenen Schnitte) und kannte den Render-Lauf nicht. Laut brechen jetzt _loopRender (der Render-Lauf der
 // Post-Kette, r184 baut sie dort) · _tickBootFernDeko · _fernRingGpuMal · _feldPanoramaMal · verifyComputeContribution ·
@@ -3875,10 +3873,11 @@ function main() {
             feuert("worlds/terrain/phytogenesis.js", "const t = lit * 0.5 + (1 - wet) * 0.5;", "Wiesen-Tint") &&
             feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
-            still(STAMM[0], maske);
+            still(STAMM[0], maske) &&
+            feuert(WORT_BUCH, "q.writeBuffer(b, 0, a.buffer, a.byteOffset + 0, 4);".repeat(2), "neben 2 .*Wort-Schrift");
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);

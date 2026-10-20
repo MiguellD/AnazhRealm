@@ -36,15 +36,6 @@ async function checkBandV1755HarvestEffort(ctx) {
             return s;
         };
 
-        // (1) die Methoden existieren
-        out.methods = [
-            "_heldMinePower",
-            "_architectureResistance",
-            "_harvestFitness",
-            "_strikeArchitecture",
-            "_tickHarvest",
-        ].every((m) => typeof r[m] === "function");
-
         // (2) minePower: die bloße Faust schwach, ein hartes Werkzeug stark (das gehaltene Ding zählt)
         p.equipped.held = null;
         const handPower = r._heldMinePower();
@@ -117,10 +108,6 @@ async function checkBandV1755HarvestEffort(ctx) {
         return out;
     });
     check(
-        "V17.55 W1: die Harvest-Methoden existieren (_heldMinePower/_architectureResistance/_harvestFitness/_strikeArchitecture/_tickHarvest)",
-        res.methods
-    );
-    check(
         "V17.55 W1: minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
         res.toolBeatsHand
     );
@@ -164,13 +151,6 @@ async function checkBandV1755W2Profile(ctx) {
         // eine spitze KLINGE (octahedron) vs ein stumpfer KLOTZ (box).
         blu.__w2_blade = { parts: [{ shape: "octahedron", material: "stein", size: { x: 0.3, y: 1.4, z: 0.3 } }] };
         blu.__w2_maul = { parts: [{ shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 } }] };
-
-        out.methods = [
-            "_heldImplementBlueprint",
-            "_blueprintPointedFraction",
-            "_implementProfile",
-            "_harvestFitnessFromResist",
-        ].every((m) => typeof r[m] === "function");
 
         // (2) die FORM treibt das Profil — gleiche Materie, andere Form → Klinge schneidet, Klotz wuchtet
         p.equipped.held = null;
@@ -243,10 +223,6 @@ async function checkBandV1755W2Profile(ctx) {
         return out;
     });
     check(
-        "V17.56 W2: die Profil-Methoden existieren (_heldImplementBlueprint/_blueprintPointedFraction/_implementProfile/_harvestFitnessFromResist)",
-        res.methods
-    );
-    check(
         "V17.56 W2: die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
         res.formDrivesProfile
     );
@@ -308,8 +284,6 @@ async function checkBandV1759CapabilityReadout(ctx) {
             ],
         };
 
-        out.method = typeof r._blueprintCapabilityHints === "function";
-
         const bladeHints = r._blueprintCapabilityHints(blu.__cap_blade);
         const maulHints = r._blueprintCapabilityHints(blu.__cap_maul);
         const structHints = r._blueprintCapabilityHints(blu.__cap_struct);
@@ -339,7 +313,6 @@ async function checkBandV1759CapabilityReadout(ctx) {
         delete blu.__cap_struct;
         return out;
     });
-    check("V17.59 S1: die Fähigkeits-Methode _blueprintCapabilityHints existiert", res.method);
     check("V17.59 S1: ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
     check("V17.59 S1: ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
     check(
@@ -366,8 +339,7 @@ async function checkBandV1775MakeActCost(ctx) {
         const out = {};
         const p = r.state.player;
         const setMode = (m) => {
-            if (typeof r.setGameMode === "function") r.setGameMode(m);
-            else r.state.worldMeta.gameMode = m;
+            r.setGameMode(m);
         };
 
         // Snapshot
@@ -407,7 +379,7 @@ async function checkBandV1775MakeActCost(ctx) {
         // KÖRPER GANZ (T6): koerper_human ist aus der Sicht (Alt-Doppel) — der Marker wird
         // am STUDIO-Eintrag gemessen (koerper_wolf, un-verkörpert → Kosten-Suffix am Namen).
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_wolf"];
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
         const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "koerper_wolf") : null;
         out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
@@ -434,9 +406,9 @@ async function checkBandV1775MakeActCost(ctx) {
             p.equipped = savedEquip;
         }
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
-        if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r._refreshSoulSelect();
+        r.renderInventoryUI();
+        r.recomputePlayerStats();
         return out;
     });
     check("V17.75: _makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);

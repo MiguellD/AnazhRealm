@@ -4,7 +4,6 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
@@ -51,7 +50,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         o.floatIdx =
             Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
         // ── Ω-W3 das Verdikt (rollen-bewusst) ──
-        o.verdictFn = typeof r._workshopPhysicsVerdict === "function";
         const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
         const vLean = r._workshopPhysicsVerdict(leaner);
         o.leanWankt =
@@ -92,7 +90,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
     check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
     check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
-    check("Ω-W3: das Verdikt-Funktion existiert", res.verdictFn === true);
     check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
     check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
     check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
@@ -103,7 +100,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandCadWorkshop(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
@@ -133,9 +130,7 @@ async function checkBandCadWorkshop(ctx) {
                 typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
-            out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
             out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
-            out.snapScale = AR.WORKSHOP_SNAP_SCALE;
             out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
 
             // --- Phase 2: Public API ---
@@ -341,12 +336,10 @@ async function checkBandCadWorkshop(ctx) {
             wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
         );
         check("Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)", wave6bResults.gizmoColorsFrozen);
-        check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
         check(
             "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
             Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
         );
-        check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
         check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
         check(
             "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
@@ -442,8 +435,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            out.hasInstallMethod = typeof r.installResizeHandles === "function";
-            out.hasInternalMethod = typeof r._installResizeHandle === "function";
             // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
             // top-right statt bottom-right (unten verdeckt von
             // Hotbar + Stats-HUD).
@@ -499,10 +490,6 @@ async function checkBandCadWorkshop(ctx) {
 
     if (resizeResults && !resizeResults.error) {
         check(
-            "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
-            resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
-        );
-        check(
             "V18.83 Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
         );
@@ -533,7 +520,7 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            out.methodsExist = typeof r._installOmnibox === "function" && typeof r._omniboxSearch === "function";
+            out.methodsExist = typeof r._installOmnibox === "function";
             // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
             const cmd = r._omniboxSearch("c:wetter");
             out.cmdAllBefehl =
@@ -550,7 +537,7 @@ async function checkBandCadWorkshop(ctx) {
             if (out.gehFindsRoom) {
                 rooms[0].run();
                 out.gehOpensWorkshop = r.state.uiActiveDrawer === "werkstatt";
-                if (typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+                r.closeAllDrawers();
             }
             // (4) Freitext ohne Präfix → der Nexus-Pfad als Fallback (letzter Treffer)
             const free = r._omniboxSearch("mach es nacht");
@@ -577,7 +564,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: _installOmnibox + _omniboxSearch existieren", omniResults.methodsExist);
+        check("V18.45 Omnibox: _installOmnibox existiert (die Suite ruft ihn nie)", omniResults.methodsExist);
         check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
@@ -599,9 +586,6 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // _wrapDrawerScroll + _workshopSyncCanvasSize existieren
-            out.hasWrapMethod = typeof r._wrapDrawerScroll === "function";
-            out.hasSyncMethod = typeof r._workshopSyncCanvasSize === "function";
             // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
             const drawers = document.querySelectorAll(".drawer[data-drawer]");
             let allWrapped = drawers.length > 0;
@@ -651,7 +635,7 @@ async function checkBandCadWorkshop(ctx) {
             }
             // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
             // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -661,10 +645,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v801Results && !v801Results.error) {
-        check(
-            "V8.01: _wrapDrawerScroll + _workshopSyncCanvasSize existieren",
-            v801Results.hasWrapMethod && v801Results.hasSyncMethod
-        );
         check(
             `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
             v801Results.allDrawersWrapped
@@ -696,11 +676,6 @@ async function checkBandCadWorkshop(ctx) {
         try {
             // Methoden existieren
             out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
-            out.hasShapeDropHandler = typeof r._workshopHandleShapeDrop === "function";
-            out.hasConnectClick = typeof r._workshopHandleConnectClick === "function";
-            out.hasOpenPopover = typeof r._workshopOpenConnectPopover === "function";
-            out.hasClosePopover = typeof r._workshopCloseConnectPopover === "function";
-            out.hasApplyConn = typeof r._workshopApplyConnection === "function";
 
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
@@ -822,13 +797,8 @@ async function checkBandCadWorkshop(ctx) {
 
     if (v802Results && !v802Results.error) {
         check(
-            "V8.02 Phase 3: alle 6 Methoden existieren (DragDrop-Install + Drop-Handler + Connect-Click/Open/Close/Apply)",
-            v802Results.hasShapeDnDInstall &&
-                v802Results.hasShapeDropHandler &&
-                v802Results.hasConnectClick &&
-                v802Results.hasOpenPopover &&
-                v802Results.hasClosePopover &&
-                v802Results.hasApplyConn
+            "V8.02 Phase 3: _workshopInstallShapeDragDrop existiert (die Suite fährt ihn nicht)",
+            v802Results.hasShapeDnDInstall
         );
         check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
         check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
@@ -882,12 +852,8 @@ async function checkBandCadWorkshop(ctx) {
         const out = {};
         try {
             // Helper-Methoden existieren
-            out.hasWorldPoint = typeof r._workshopWorldPointAtCursor === "function";
-            out.hasRaycastPartIdx = typeof r._workshopRaycastPartIdxAt === "function";
             out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
             out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
-            out.hasMaterialDrop = typeof r._workshopHandleMaterialDrop === "function";
-            out.hasColorDrop = typeof r._workshopHandleColorDrop === "function";
 
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -990,7 +956,7 @@ async function checkBandCadWorkshop(ctx) {
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -1001,13 +967,8 @@ async function checkBandCadWorkshop(ctx) {
 
     if (v803Results && !v803Results.error) {
         check(
-            "V8.03: 6 neue Helper-Methoden existieren (WorldPoint/PartIdxAt + Render×2 + Drop×2)",
-            v803Results.hasWorldPoint &&
-                v803Results.hasRaycastPartIdx &&
-                v803Results.hasMaterialRender &&
-                v803Results.hasColorRender &&
-                v803Results.hasMaterialDrop &&
-                v803Results.hasColorDrop
+            "V8.03: die Material- und Farb-Palette existieren (die Suite fährt sie nicht)",
+            v803Results.hasMaterialRender && v803Results.hasColorRender
         );
         check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
@@ -1047,7 +1008,7 @@ async function checkBandCadWorkshop(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandEarlyRingsAndUi(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 3 – Player-Emotionen → Welt ###
@@ -1609,7 +1570,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.closeButtonHidesDrawer = hofDrawer && hofDrawer.hidden === true;
 
         // Cleanup: zurück zum Default-Blick (alle Drawer zu, UI-Putz: kein Welt-Tab mehr).
-        if (typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+        r.closeAllDrawers();
 
         return out;
     });
@@ -1980,18 +1941,14 @@ async function checkBandV18134Social(ctx) {
             out.lwwRejected =
                 (await r._socialRatingReceive("peerX", await mk("welt:band134", 1, fremd.t - 5000))) === false;
             out.tamperRejected = (await r._socialRatingReceive("peerX", { ...fremd, s: 1 })) === false;
-            if (typeof r.revokeKey === "function") {
-                r.revokeKey(pubHex, { reason: "band134" });
-                const agg2 = r._feedRatingAgg("welt:band134");
-                out.revokeConsumed =
-                    agg2.count === 1 &&
-                    (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
-                // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
-                // einem Object still leer).
-                r.state.revokedKeys.delete(pubHex.toLowerCase());
-            } else {
-                out.revokeConsumed = true;
-            }
+            r.revokeKey(pubHex, { reason: "band134" });
+            const agg2 = r._feedRatingAgg("welt:band134");
+            out.revokeConsumed =
+                agg2.count === 1 &&
+                (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
+            // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
+            // einem Object still leer).
+            r.state.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
             out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
         } finally {
@@ -2025,10 +1982,7 @@ async function checkBandV18135Bookmarks(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.helpers =
-            typeof r._feedBookmarked === "function" &&
-            typeof r._toggleFeedBookmark === "function" &&
-            typeof r._loadFeedBookmarks === "function";
+        out.helpers = typeof r._loadFeedBookmarks === "function";
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
         const was = r._feedBookmarked(id);
@@ -2049,7 +2003,7 @@ async function checkBandV18135Bookmarks(ctx) {
         return;
     }
     check(
-        "V18.135 Lesezeichen: Helfer + Toggle-Roundtrip + globale Persistenz",
+        "V18.135 Lesezeichen: _loadFeedBookmarks (die Suite ruft ihn nie) + Toggle-Roundtrip + globale Persistenz",
         res.helpers && res.toggleOn && res.persisted && res.toggleOff
     );
 }
@@ -2062,10 +2016,6 @@ async function checkBandV18142Follow(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.helpers =
-            typeof r._feedFollowed === "function" &&
-            typeof r._toggleFeedFollow === "function" &&
-            typeof r._loadFeedFollows === "function";
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
         const was = r._feedFollowed(pub);
@@ -2098,8 +2048,8 @@ async function checkBandV18142Follow(ctx) {
         return;
     }
     check(
-        "V18.142 Folgen: Helfer + Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
-        res.helpers && res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
+        "V18.142 Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
+        res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
     );
     check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
 }
@@ -2169,7 +2119,7 @@ async function checkBandV18143Comments(ctx) {
         out.xssWall = !!tx && tx.textContent === X && tx.children.length === 0 && !panel.querySelector("img, b");
         // restore
         r.state.socialComments = saved;
-        if (typeof r._saveSocialComments === "function") r._saveSocialComments();
+        r._saveSocialComments();
         return out;
     });
     if (!res) {
@@ -2405,7 +2355,7 @@ async function checkBandM4SuchKern(ctx) {
             }
             ws.selectedBlueprint = savedSel;
             // (c) Ich-Rezeptbuch — die Zeile trägt den Heuhaufen, der Filter den Kern.
-            if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+            r.renderRecipeBook();
             const ichSearch = document.getElementById("ich-search");
             if (ichSearch) {
                 ichSearch.value = "bauwerk eisen";
@@ -2507,7 +2457,6 @@ async function checkBandWCIchWahrheit(ctx) {
         const out = {};
         // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand, V17.31).
         out.formatter =
-            typeof r._machTorHint === "function" &&
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /⚒/.test(r._machTorHint({ ok: false, reason: "no_workshop_station", neededDomain: "forging" }));
@@ -2577,7 +2526,7 @@ async function checkBandWCIchWahrheit(ctx) {
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
         // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
-        const __whyKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "why");
+        const __whyKey = r._growTreeBlueprintForSpawn("baum_eiche", "why");
         const whyEiche = __whyKey ? r._blueprintRoleWhy(r.state.blueprints[__whyKey]) : null;
         const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
@@ -2658,7 +2607,7 @@ async function checkBandRezeptKatalog(ctx) {
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
         const dl0 = performance.now() + 120000;
         while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
+            !window.anazhRealm &&
             performance.now() < dl0
         )
             await sleep(100);

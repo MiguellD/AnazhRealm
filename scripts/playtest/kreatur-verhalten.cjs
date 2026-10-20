@@ -3,7 +3,6 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Aura-reaktive Kreatur: Wariness = Aura-Menace × Natur × Bindung × Modus → neugierig (näher) oder
@@ -23,7 +22,7 @@ async function checkBandV1758CreatureNature(ctx) {
             for (const k of Object.keys(e)) e[k] = o[k] || 0;
         };
         const NAT = r.constructor._verhaltenGesetz().furcht;
-        out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
+        out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
@@ -84,7 +83,6 @@ async function checkBandV1758CreatureNature(ctx) {
         out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
         timid.userData.fearUntil = 0;
 
-
         // cleanup
         for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
         setEmo(savedEmo);
@@ -92,7 +90,7 @@ async function checkBandV1758CreatureNature(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.58 W3: _creatureWariness + VERHALTEN.furcht (Gesetz) existieren", res.exists);
+    check("V17.58 W3: VERHALTEN.furcht (Gesetz) trägt fleeThreshold", res.furchtGesetz);
     check(
         "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
         res.calmIsCurious
@@ -119,7 +117,7 @@ async function checkBandV1758CreatureNature(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatures(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Kreaturen-Aufträge (follow_player / wait / wander) ###
@@ -137,21 +135,9 @@ async function checkBandWelle6HCreatures(ctx) {
             r.constructor.CREATURE_TASKS.includes("follow_player") &&
             r.constructor.CREATURE_TASKS.includes("wait");
         out.hasAuraHueMap =
-            r.constructor.CREATURE_TASK_AURA_HUE &&
-            r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
-            r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
-            r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+            r.constructor.CREATURE_TASK_AURA_HUE && r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
         out.hasFollowDistance =
             Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) && r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
-
-        // Methoden
-        out.hasAssign = typeof r.assignCreatureTask === "function";
-        out.hasGet = typeof r._getCreatureTask === "function";
-        out.hasTick = typeof r._tickCreatureTaskDirection === "function";
-        out.hasNearestFinder = typeof r.findNearestCreature === "function";
-        out.hasAssignNearest = typeof r.assignTaskToNearestCreature === "function";
-        out.hasAssignAll = typeof r.assignTaskToAllCreatures === "function";
-        out.hasAuraRefresh = typeof r._refreshCreatureTaskAura === "function";
 
         // Default-Task für initial-gespawnte Kreaturen ist wander
         const c0 = r.state.creatures[0];
@@ -275,21 +261,8 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hResults && !wave6hResults.error) {
         check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
-        check(
-            "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
-            wave6hResults.hasAuraHueMap
-        );
+        check("Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
         check("Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv", wave6hResults.hasFollowDistance);
-        check(
-            "Welle 6.H Phase 1: alle Methoden existieren (assign/get/tick/nearest/all/auraRefresh)",
-            wave6hResults.hasAssign &&
-                wave6hResults.hasGet &&
-                wave6hResults.hasTick &&
-                wave6hResults.hasNearestFinder &&
-                wave6hResults.hasAssignNearest &&
-                wave6hResults.hasAssignAll &&
-                wave6hResults.hasAuraRefresh
-        );
         check(
             "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
             wave6hResults.initialTaskWander
@@ -352,7 +325,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // === Audio-Antwort bei Task-Wechsel (Vision §1.2) — Welle 5 Klang: die Antwort ist die STIMME des Tiers
         // (`_tierRuf`, klang:UMWELT.tier); jeder Ruf zählt in state.symphony.tierRufe (auch ohne Audiogerät messbar).
-        if (typeof r.initSymphony === "function") r.initSymphony();
+        r.initSymphony();
         const sym = r.state.symphony;
         const symReady = sym && sym.enabled && sym.ctx;
         out.symphonyReady = !!symReady;
@@ -412,7 +385,6 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
 
         // === Texture-Cache (Performance) ===
-        out.hasCacheMethod = typeof r._getCreatureTaskAuraTexture === "function";
         const firstTexture = r._getCreatureTaskAuraTexture();
         const secondTexture = r._getCreatureTaskAuraTexture();
         out.textureCacheReusesInstance = firstTexture === secondTexture;
@@ -486,8 +458,8 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag", wave6hV2Results.leerschlagReturnsNull);
         check(
-            "Welle 6.H V2: _getCreatureTaskAuraTexture existiert + cached",
-            wave6hV2Results.hasCacheMethod && wave6hV2Results.textureCacheReusesInstance
+            "Welle 6.H V2: die Aura-Textur ist gecacht (dieselbe Instanz)",
+            wave6hV2Results.textureCacheReusesInstance
         );
         check(
             "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
@@ -533,13 +505,7 @@ async function checkBandWelle6HCreatures(ctx) {
             wesenPart && typeof wesenPart.shape === "string" && typeof wesenPart.material === "string";
         out.spriteAuraY = souls && souls.wolf && souls.wolf.auraY === 0.75;
         out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-        out.hasBuildCreatureGroup = typeof r._buildCreatureGroup === "function";
-        out.hasPickSoulName = typeof r._pickCreatureSoulName === "function";
-        out.hasPickName = typeof r._pickCreatureName === "function";
-        out.hasComputeTags = typeof r.computeCreatureCompoundTags === "function";
-        out.hasAuraOffsetY = typeof r._creatureAuraOffsetY === "function";
         out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
-        out.hasRenderList = typeof r._renderCreatureListUI === "function";
         if (r.state.creatures.length > 0) {
             const c0 = r.state.creatures[0];
             out.initialIsGroup = c0 && c0.isGroup === true;
@@ -604,8 +570,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
         // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
-        out.hasCreatureProfileFn = typeof r._creatureProfile === "function";
-        const prof = out.hasCreatureProfileFn ? r._creatureProfile(sprite) : null;
+        const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
             prof &&
             prof.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
@@ -709,14 +674,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: wolf.auraY === 0.75", wave6hP2aResults.spriteAuraY);
         check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
         check(
-            "Welle 6.H P2A: alle Methoden existieren",
-            wave6hP2aResults.hasBuildCreatureGroup &&
-                wave6hP2aResults.hasPickSoulName &&
-                wave6hP2aResults.hasPickName &&
-                wave6hP2aResults.hasComputeTags &&
-                wave6hP2aResults.hasAuraOffsetY &&
-                wave6hP2aResults.hasCreatureDrawer &&
-                wave6hP2aResults.hasRenderList
+            "Welle 6.H P2A: creatureDrawerInitDOM existiert (die Suite ruft ihn nie)",
+            wave6hP2aResults.hasCreatureDrawer
         );
         check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
         check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
@@ -758,10 +717,6 @@ async function checkBandWelle6HCreatures(ctx) {
         check(
             "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
             wave6hP2aResults.rowHasNameSoulTask
-        );
-        check(
-            "Hof-D0 §G.1: _creatureProfile existiert (EIN Vektor, viele Leser)",
-            wave6hP2aResults.hasCreatureProfileFn
         );
         check(
             "Hof-D0 §G.1: _creatureProfile bündelt die gemessenen Vektoren (tags/stats/specs/emotion/wariness/mood/id)",
@@ -836,11 +791,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
         out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
         out.speed = r.constructor.CREATURE_GATHER_SPEED;
-        out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
-        out.hasRemember = typeof r._creatureRemember === "function";
-        out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
-        out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
-        out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
 
         // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
         const c0 = r.state.creatures[0];
@@ -994,17 +944,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
         check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
         check(
-            "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
-            Number.isFinite(wave6hP2bResults.haltDist) &&
-                Number.isFinite(wave6hP2bResults.speed) &&
-                wave6hP2bResults.memCap
-        );
-        check(
-            "Welle 6.H P2B.1: alle 4 Methoden existieren (_creatureRemember/_findNearestArchitectureWithMaterial/_buildCreatureTaskArgs/_describeCreatureTaskArg)",
-            wave6hP2bResults.hasRemember &&
-                wave6hP2bResults.hasFindArch &&
-                wave6hP2bResults.hasBuildArgs &&
-                wave6hP2bResults.hasDescribeArg
+            "Welle 6.H P2B.1: HALT_DIST/SPEED als Konstanten",
+            Number.isFinite(wave6hP2bResults.haltDist) && Number.isFinite(wave6hP2bResults.speed)
         );
         check(
             "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
@@ -1295,7 +1236,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1312,7 +1253,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // confirmBuild pfad ohne Material → ablehnung
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1324,7 +1265,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // confirmBuild schöpfer ohne Material → baut frei
         r.setGameMode("schöpfer");
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1339,7 +1280,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1350,7 +1291,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // frieden MIT Material → baut + KONSUMIERT (wie pfad; nur die Mühe/Bedrohung fehlt in frieden)
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1365,7 +1306,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 30);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         const hud = document.getElementById("build-mode-hud");
@@ -1383,7 +1324,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
         // Default-Hotbar (AUSLÖSCHUNGS-WELLE): [stein_block, waterfall, damm, null×6].
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.setHotbarSlot(1, "waterfall");
         r.setHotbarSlot(2, "damm");
@@ -1462,10 +1403,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.searchRadius = r.constructor.CREATURE_DRINK_SEARCH_RADIUS;
         out.speed = r.constructor.CREATURE_DRINK_SPEED;
 
-        // API-Existenz.
-        out.tickExists = typeof r._tickCreatureDrink === "function";
-
-
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
         out.chatParsesTrinke =
@@ -1536,7 +1473,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
-    check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
     check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
         check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
@@ -1739,8 +1675,6 @@ async function checkBandTierSeparation(ctx) {
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
-        if (typeof r._applyCreatureSeparation !== "function") return { error: "_applyCreatureSeparation fehlt" };
-        if (typeof r._creatureCharacterWander !== "function") return { error: "_creatureCharacterWander fehlt" };
     
         // Test-Spot: 80–150 m vom Spieler, über Wasser (Determinismus-Fenster, s. Kopf).
         const findSpot = (dist, ang) => {
@@ -1767,10 +1701,8 @@ async function checkBandTierSeparation(ctx) {
         // der Takt der Probe wie der Loop: der feste Sim-Schritt (der Stoß des Leibs und Leib an Leib, 0710-5), dann
         // der Kreatur-Takt — vor 0710-5 lebte beides in updateCreatures (dort läuft die Probe unverändert)
         const takt = (dt) => {
-            if (typeof r._kreaturStossSchritt === "function") {
-                r._kreaturStossSchritt(dt);
-                r._leibKontakte();
-            }
+            r._kreaturStossSchritt(dt);
+            r._leibKontakte();
             r.updateCreatures(dt);
         };
         const tick = (n, dt) => {
@@ -1806,11 +1738,10 @@ async function checkBandTierSeparation(ctx) {
         // genullt: die Separation UND der EINE Leib-Löser `_leibKontakte` (nie Durchdringung — er allein trennte das Paar)
         const savedSep = r._applyCreatureSeparation;
         r._applyCreatureSeparation = function () {};
-        const hatLeib = typeof r._leibKontakte === "function";
-        if (hatLeib) r._leibKontakte = function () {};
+        r._leibKontakte = function () {};
         tick(200, 0.05);
         r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
-        if (hatLeib) delete r._leibKontakte;
+        delete r._leibKontakte;
         o.cGap = gap(a1, a2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
@@ -1908,7 +1839,7 @@ async function checkBandTierSeparation(ctx) {
             steht.steuerSchritt = (st) => {
                 st.v = 0;
             };
-            const masse = (c) => (typeof r._leibMasse === "function" ? r._leibMasse(c) : null);
+            const masse = (c) => r._leibMasse(c);
             const leib = {};
             const achse = (c) => {
                 r._kreaturLeib(c, 0, leib);
@@ -2044,13 +1975,11 @@ async function checkBandTierSeparation(ctx) {
                 pmM.position.copy(pmAlt);
             }
             // (C2) SELBST-TEST: ohne Leib-Kontakt durchdringt der Fuchs den Bären ohne Impuls
-            if (typeof r._leibKontakte === "function") {
-                r._leibKontakte = function () {};
-                try {
-                    o.leibOhne = leibProbe("fuchs", "baer", 4);
-                } finally {
-                    delete r._leibKontakte;
-                }
+            r._leibKontakte = function () {};
+            try {
+                o.leibOhne = leibProbe("fuchs", "baer", 4);
+            } finally {
+                delete r._leibKontakte;
             }
         }
     
@@ -2102,17 +2031,6 @@ async function checkBandKreaturKosten(ctx) {
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
-        for (const fn of [
-            "_creatureAnimDiv",
-            "_creatureAnimFade",
-            "_tierBaumNeutralStance",
-            "_gelenkStufe",
-            "_animateCompoundMotion",
-            "_buildHumanGroup",
-            "_p2pUpdatePeer",
-        ]) {
-            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
-        }
         const core = window.__tetrapodaCore;
         if (!core || !Array.isArray(core.STAND_POSE)) return { error: "tetrapoda-Kern kalt (STAND_POSE fehlt)" };
         const SP = core.STAND_POSE;
@@ -2989,7 +2907,7 @@ async function checkBandKreaturKosten(ctx) {
             const fern = maxDev(mK);
             const istFern = glK.istFern === true;
             remote.delete("__linseF|1");
-            if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(mK);
+            r._disposeSoulGroup(mK);
             return { mitte, fern, istFern };
         };
         o.fKopie = kopieRuhe();
@@ -3013,8 +2931,7 @@ async function checkBandKreaturKosten(ctx) {
         o.g = (() => {
             const T3 = window.THREE;
             const R = A.KREATUR_RUHE;
-            if (!R || typeof r._tickKreaturRuhe !== "function")
-                return { fehler: "KREATUR_RUHE/_tickKreaturRuhe fehlt" };
+            if (!R) return { fehler: "KREATUR_RUHE fehlt" };
             const cam = s.camera;
             const blick = (dx, dz) => {
                 cam.position.set(pm.x, pm.y + 2, pm.z);

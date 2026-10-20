@@ -3,13 +3,12 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // V9.52-b Sub-Welle b — Band-Funktion (Voxel V9.36 + Ring 11 V1 + W7 P1/P2 — Mesh-Compute-Sharing).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing11AndW7Mesh(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
@@ -40,7 +39,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         // (4) DSL-Op voxel_carve schnitzt echt — der Edit landet in
         // worldMeta.voxelEdits. Frieden-Modus damit Edit-Gate
         // (V9.17) den Fill-Pfad nicht abweist.
-        const oldMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const oldMode = r.getGameMode();
         r.setGameMode("frieden");
         if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
         r.state.worldMeta.voxelEdits = [];
@@ -63,8 +62,8 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.state.worldMeta.voxelEdits = [];
 
         // (5) describeProgram kennt die neuen Ops.
-        const dCarve = r.describeProgram && r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
-        const dFill = r.describeProgram && r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
+        const dCarve = r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
+        const dFill = r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
         out.describeCarve = typeof dCarve === "string" && /schnitzt|Voxel/i.test(dCarve);
         out.describeFill = typeof dFill === "string" && /schüttet|auf/i.test(dFill);
 
@@ -117,17 +116,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             typeof r.state.p2p.enabled === "boolean" &&
             typeof r.state.p2p.url === "string" &&
             r.state.p2p.peers instanceof Map;
-        out.allMethodsPresent =
-            typeof r.initP2PSync === "function" &&
-            typeof r.shutdownP2PSync === "function" &&
-            typeof r.p2pSend === "function" &&
-            typeof r.p2pHandleMessage === "function" &&
-            typeof r.p2pTick === "function" &&
-            typeof r.p2pLoadPersisted === "function" &&
-            typeof r.p2pPersist === "function" &&
-            typeof r.p2pGenerateId === "function" &&
-            typeof r.initP2PUI === "function" &&
-            typeof r.p2pUpdateStatus === "function";
+        out.allMethodsPresent = typeof r.initP2PUI === "function";
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
         const savedWorldId = r.state.worldMeta.worldId;
@@ -269,7 +258,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
-        check("Ring 11 V1: alle P2P-Methoden auf der Klasse vorhanden", ring11Results.allMethodsPresent);
+        check("Ring 11 V1: initP2PUI auf der Klasse (die Suite ruft ihn nie)", ring11Results.allMethodsPresent);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
@@ -316,16 +305,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Array.isArray(p2p.iceServers) &&
             p2p.iceServers.length > 0 &&
             typeof p2p.meshActive === "boolean";
-        out.w7MethodsPresent =
-            typeof r._p2pSignal === "function" &&
-            typeof r._p2pMeshReady === "function" &&
-            typeof r._p2pConnectToPeer === "function" &&
-            typeof r._p2pCreatePeerConnection === "function" &&
-            typeof r._p2pWireChannel === "function" &&
-            typeof r._p2pHandleChannelMessage === "function" &&
-            typeof r._p2pCloseRtcPeer === "function" &&
-            typeof r._p2pUpdateMeshActive === "function" &&
-            typeof r._p2pDrainIce === "function";
+        out.w7MethodsPresent = typeof r._p2pDrainIce === "function";
 
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
@@ -464,7 +444,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
-        check("W7 P1: alle WebRTC-Methoden auf der Klasse vorhanden", w7Results.w7MethodsPresent);
+        check("W7 P1: _p2pDrainIce auf der Klasse (die Suite ruft ihn nie)", w7Results.w7MethodsPresent);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
         check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
@@ -505,12 +485,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
             Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
             r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
         out.w7p2MethodsPresent =
-            typeof r._p2pApplyWorldSnapshot === "function" &&
-            typeof r._p2pSendChannelTo === "function" &&
-            typeof r._p2pChunkXferId === "function" &&
-            typeof r._p2pRequestWorldResync === "function" &&
-            typeof r._p2pHandleWorldPull === "function" &&
-            typeof r._p2pHandleWorldChunk === "function";
+            typeof r._p2pSendChannelTo === "function" && typeof r._p2pHandleWorldPull === "function";
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();
@@ -673,7 +648,10 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
-        check("W7 P2: alle Welt-Transfer-Methoden auf der Klasse", w7p2Results.w7p2MethodsPresent);
+        check(
+            "W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)",
+            w7p2Results.w7p2MethodsPresent
+        );
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
         check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
@@ -702,7 +680,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (W16 P1 + P2 — Mesh-Welt-Verteilung + Welt-Katalog).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW16Distribution(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### W16 Phase 1 — Mesh-Welt-Verteilung ###
@@ -721,18 +699,7 @@ async function checkBandW16Distribution(ctx) {
             p2p._bundleServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
             r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
-        out.methodsPresent =
-            typeof r._p2pFetchVendorBundle === "function" &&
-            typeof r.requestWorldBundleFromPeer === "function" &&
-            typeof r._p2pHandleWorldBundlePull === "function" &&
-            typeof r._p2pHandleWorldBundleChunk === "function" &&
-            typeof r._p2pHandleWorldBundleFail === "function" &&
-            typeof r._renderMeshWorldCatalog === "function" &&
-            typeof r._p2pBuildCatalog === "function" &&
-            typeof r._p2pSanitizeCatalog === "function" &&
-            typeof r._haveWorldByHashOrId === "function" &&
-            typeof r._runMeshWorldGet === "function" &&
-            typeof r.meshWorldInitDOM === "function";
+        out.methodsPresent = typeof r._p2pFetchVendorBundle === "function" && typeof r.meshWorldInitDOM === "function";
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
@@ -1161,7 +1128,10 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check("W16: alle Mesh-Welt-Methoden auf der Klasse", w16Results.methodsPresent);
+        check(
+            "W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)",
+            w16Results.methodsPresent
+        );
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -1251,7 +1221,7 @@ async function checkBandW16Distribution(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (Bau-Sync + W7 P3/P4 + W11 P4 + Ring 11 V2/V2.1/11.5).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandLateMultiUser(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
@@ -1264,10 +1234,7 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
         const origBuildMode = r.state.buildMode;
 
-        out.newArchIdUnique =
-            typeof r._newArchId === "function" &&
-            typeof r._newArchId() === "string" &&
-            r._newArchId() !== r._newArchId();
+        out.newArchIdUnique = typeof r._newArchId() === "string" && r._newArchId() !== r._newArchId();
 
         // spawnArchitecture mit opts.id → string-id; ohne → numerisch.
         const eShared = r.spawnArchitecture("stein_block", { x: 12, y: 4, z: 12 }, { id: "a-unit-1" });
@@ -1291,9 +1258,7 @@ async function checkBandLateMultiUser(ctx) {
         out.removeArchitectureSafe = r.state.architectures.length === cnt;
 
         // describeProgram kennt remove_architecture.
-        out.describeRemove =
-            typeof r.describeProgram === "function" &&
-            /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
+        out.describeRemove = /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
 
         // spawn_blueprint + remove_architecture MÜSSEN broadcasten
         // (nicht in NON_BROADCASTABLE_OPS).
@@ -1305,7 +1270,7 @@ async function checkBandLateMultiUser(ctx) {
         const origBroadcast = r.p2pBroadcastDsl;
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
-        r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+        r.setGameMode("schöpfer"); // Gates frei
         // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
         // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
         // („group.traverse is not a function") und riss 21 Folgetests mit.
@@ -1334,7 +1299,7 @@ async function checkBandLateMultiUser(ctx) {
 
         // Eigener (nicht-built-in) Bauplan → chain(define_blueprint, spawn).
         const cloneName = "bausync_custom";
-        const cloned = r.cloneBlueprint && r.cloneBlueprint("stein_block", cloneName);
+        const cloned = r.cloneBlueprint("stein_block", cloneName);
         let chainOk = false;
         if (cloned && r.state.blueprints[cloneName] && !r.state.blueprints[cloneName].builtIn) {
             r.state.buildMode = {
@@ -1419,15 +1384,6 @@ async function checkBandLateMultiUser(ctx) {
             Number.isInteger(K.P2P_VOICE_COOLDOWN_MS) &&
             Number.isInteger(K.P2P_VOICE_TIMEOUT_MS) &&
             Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
-        out.methodsPresent = [
-            "_p2pVoiceCapable",
-            "setVoiceShared",
-            "_p2pFindVoicePeer",
-            "_p2pVoiceAvailable",
-            "_p2pRequestSharedVoice",
-            "_p2pHandleLlmRequest",
-            "_p2pHandleLlmResponse",
-        ].every((m) => typeof r[m] === "function");
 
         // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
         const wasEnabled = r.state.llm.enabled;
@@ -1562,7 +1518,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
-        check("W7 P3: alle 7 LLM-Pool-Methoden auf der Klasse", w7p3Results.methodsPresent);
         check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
         check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
         check("W7 P3: soul-Empfang speichert voiceShared am Peer", w7p3Results.soulStoresVoiceShared);
@@ -1595,13 +1550,7 @@ async function checkBandLateMultiUser(ctx) {
             p2p.lobby.published === false &&
             Array.isArray(p2p.lobby.rooms) &&
             p2p.remoteCreatures instanceof Map;
-        out.lobbyMethods = [
-            "publishToLobby",
-            "unpublishFromLobby",
-            "requestLobbyList",
-            "joinLobbyRoom",
-            "_renderLobbyUI",
-        ].every((m) => typeof r[m] === "function");
+        out.lobbyMethods = typeof r._renderLobbyUI === "function";
 
         // publishToLobby ohne Verbindung → not_connected.
         p2p.enabled = false;
@@ -1647,13 +1596,6 @@ async function checkBandLateMultiUser(ctx) {
             !!document.getElementById("p2p-lobby-refresh");
 
         // ── Kreatur-Sicht-Sync ──
-        out.creatureMethods = [
-            "_p2pBroadcastCreatures",
-            "_p2pHandleCreaturePos",
-            "_p2pTickRemoteCreatures",
-            "_disposeRemoteCreature",
-        ].every((m) => typeof r[m] === "function");
-
         // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
         const _saveMaxNet = r.state.maxCreatures;
@@ -1707,7 +1649,7 @@ async function checkBandLateMultiUser(ctx) {
 
         // Cleanup
         for (const [key, rcx] of p2p.remoteCreatures) r._disposeRemoteCreature(key, rcx);
-        if (testC && typeof r.removeCreature === "function") r.removeCreature(testC);
+        if (testC) r.removeCreature(testC);
         p2p.lobby.rooms = [];
         p2p.lobby.published = false;
         p2p.roomOverride = "";
@@ -1724,7 +1666,10 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check("W7 P4: alle 5 Lobby-Methoden auf der Klasse", w7p4Results.lobbyMethods);
+        check(
+            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
+            w7p4Results.lobbyMethods
+        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
@@ -1734,7 +1679,6 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P4: joinLobbyRoom setzt roomOverride", w7p4Results.joinSetsOverride);
         check("W7 P4: joinLobbyRoom in denselben Raum → already_here", w7p4Results.joinSameRejected);
         check("W7 P4: Lobby-UI-Elemente im DOM", w7p4Results.lobbyDom);
-        check("Kreatur-Sync: alle 4 Methoden auf der Klasse", w7p4Results.creatureMethods);
         check("Kreatur-Sync: spawnCreatureAt vergibt eine netId", w7p4Results.creatureHasNetId);
         check("Kreatur-Sync: _p2pBroadcastCreatures sendet creature-pos", w7p4Results.broadcastSendsCreatures);
         check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);
@@ -1755,9 +1699,6 @@ async function checkBandLateMultiUser(ctx) {
         const grok = r.state.grok;
 
         out.voiceField = typeof grok.companionVoice === "string";
-        out.methods = ["_p2pBroadcastCompanionSay", "_p2pHandleCompanionSay", "_populateCompanionVoiceSelect"].every(
-            (m) => typeof r[m] === "function"
-        );
 
         // p2pSend mocken.
         const sent = [];
@@ -1886,7 +1827,6 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W11 V4: state.grok.companionVoice existiert", w11v4Results.voiceField);
-        check("W11 V4: alle 3 Voice-Sync-Methoden auf der Klasse", w11v4Results.methods);
         check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
         check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
         check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
@@ -1909,7 +1849,6 @@ async function checkBandLateMultiUser(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-
 
         // p2pSend mocken, um zu prüfen WAS gesendet würde
         const sent = [];
@@ -2417,7 +2356,7 @@ async function checkBandLateMultiUser(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (V8.34 Soul-Sync (Ring 11 V3) + V8.35 Substanz-Rolle + V8.36 Browser-Fixes + V8.37-V8.39 Werkstatt + Werkzeug-Klassen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8SoulRoleAndWorkshop(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### V8.34 — Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
@@ -2430,14 +2369,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // SYNERGIE-WELLE — die Avatar-Aura ist gefallen: 5 lebende Methoden + die
         // explizite ABWESENHEIT der zwei Aura-Seiten (Sende + Peer-Sprite).
-        out.methodsExist =
-            typeof r._p2pBuildPlaceholderMesh === "function" &&
-            typeof r._p2pApplyPeerSoul === "function" &&
-            typeof r._p2pBuildNameLabel === "function" &&
-            typeof r._p2pUpdatePeer === "function" &&
-            typeof r._p2pEnsurePeerAura !== "function" &&
-            typeof r._p2pBroadcastSoul === "function" &&
-            typeof r._p2pBroadcastAura !== "function";
+        out.methodsExist = typeof r._p2pEnsurePeerAura !== "function" && typeof r._p2pBroadcastAura !== "function";
 
         // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
@@ -2603,7 +2535,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v834Results && !v834Results.error) {
-        check("V8.34 (SYNERGIE): Soul-Sync-Methoden (5 leben, Aura-Paar geschnitten)", v834Results.methodsExist);
+        check("V8.34 (SYNERGIE): das Aura-Paar bleibt geschnitten", v834Results.methodsExist);
         check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
@@ -2637,11 +2569,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             size: { x: 1, y: 1, z: 1 },
             position: { x, y, z },
         });
-
-        out.methodsExist =
-            typeof r._compoundSymmetry === "function" &&
-            typeof r._isBodyShaped === "function" &&
-            typeof r._isFoodLike === "function";
 
         // --- Körper-Form → Seele: Torso+Kopf auf der Achse, Glieder als Spiegel-Paar ---
         // Ein GLIED ist GESTRECKT — gespiegelte BLOBS sind keine Glieder (sonst würde die Eiche zur Seele).
@@ -2740,7 +2667,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         // Aufräumen
         if (r.state.player.boosts) {
             r.state.player.boosts = r.state.player.boosts.filter((b) => b.source !== "consume:_t835_food_reg");
-            if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+            r.recomputePlayerStats();
         }
         delete r.state.blueprints["_t835_body_reg"];
         delete r.state.blueprints["_t835_food_reg"];
@@ -2749,10 +2676,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v835Results && !v835Results.error) {
-        check(
-            "V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)",
-            v835Results.methodsExist
-        );
         check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
         check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
         check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
@@ -2838,7 +2761,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         {
             if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
             r.createBlueprint("_t836", "T836");
-            if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t836");
+            r.selectBlueprintForEdit("_t836");
             const before = (r.state.blueprints["_t836"].parts || []).length;
             r._workshopHandleShapeDrop("box");
             const parts = r.state.blueprints["_t836"].parts || [];
@@ -2889,7 +2812,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                     color: 0x888888,
                 },
             ];
-            if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t837a");
+            r.selectBlueprintForEdit("_t837a");
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             const txt = panel ? panel.textContent : "";
@@ -3046,7 +2969,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             out.connHasMarker = conn.some((c) => c.isMesh);
             out.connDepthTestOff = conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);
             // _workshopRebuildPreviewMesh zählt Verbindungen NICHT als Part.
-            if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t838d");
+            r.selectBlueprintForEdit("_t838d");
             r._workshopEnsurePreview();
             r._workshopRebuildPreviewMesh();
             const pre = r.state.workshop && r.state.workshop.preview;
@@ -3057,7 +2980,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
-            if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+            if (origSel && r.state.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }
@@ -3121,7 +3044,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // Aufwand: Stamina skaliert mit Werkzeug-cap (pfad-Modus).
         {
-            const prevMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+            const prevMode = r.getGameMode();
             r.setGameMode("pfad");
             if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
             r.createBlueprint("_t839s", "T839S");
@@ -3148,7 +3071,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             delete r.state.blueprints["_t839s"];
         }
 
-
         // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
         {
             const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
@@ -3165,7 +3087,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                     opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
                 },
             ];
-            if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t839c");
+            r.selectBlueprintForEdit("_t839c");
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             const chip = panel ? panel.querySelector(".role-chip") : null;
@@ -3175,7 +3097,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const lrow = document.querySelector("#workshop-list .workshop-list-row");
             out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
             delete r.state.blueprints["_t839c"];
-            if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+            if (origSel && r.state.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }
@@ -3217,12 +3139,8 @@ async function checkBandG8R1DampedChannel(ctx) {
         const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
-        // (1) Methoden + Konstanten verdrahtet.
-        out.methods = typeof r._portalChannelAdmit === "function" && typeof r._p2pPeerRateAdmit === "function";
-        out.consts =
-            K.PORTAL_CHANNEL_RATE_MAX === 200 &&
-            K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
-            K.SUBWORLD_NET_PEER_RATE_MAX === 120;
+        // (1) Konstanten verdrahtet.
+        out.consts = K.PORTAL_CHANNEL_RATE_MAX === 200 && K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
         // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
         // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
         const po = {};
@@ -3250,7 +3168,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R1: Kanal-Bucket + per-Peer-Tor verdrahtet (Methoden + Konstanten)", res.methods && res.consts);
+    check("G8 R1: Kanal-Bucket: die Konstanten verdrahtet", res.consts);
     check(
         "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
         res.channelCapsFlood,

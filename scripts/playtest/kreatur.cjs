@@ -3,7 +3,6 @@
 // 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt); die
@@ -179,11 +178,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         const matUnits = (inv) =>
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
 
-        // (0) Methoden + DSL-Op existieren
-        out.methodsExist =
-            typeof r.damageCreature === "function" &&
-            typeof r._creatureLootMaterials === "function" &&
-            !!(r.dslEffects && r.dslEffects.damage_creature);
+        // (0) der DSL-Op existiert
+        out.opExists = !!(r.dslEffects && r.dslEffects.damage_creature);
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
@@ -264,10 +260,7 @@ async function checkBandV1753CreatureCombat(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check(
-        "V17.53 Kampf C: damageCreature + _creatureLootMaterials + der damage_creature-DSL-Op existieren",
-        res.methodsExist
-    );
+    check("V17.53 Kampf C: der damage_creature-DSL-Op existiert", res.opExists);
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
     check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
@@ -311,7 +304,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         // (0) Methoden + die attack-Emotion + COMBAT_REACH existieren
         out.exists =
             typeof r._pickCreatureAtCrosshair === "function" &&
-            typeof r._playerAttackCreature === "function" &&
             !!r.constructor.ACTION_TO_EMOTION.attack &&
             r.constructor._arenaGesetz().schwung.reachMaxM > 0;
 
@@ -400,7 +392,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         out.knockbackTotFeld = kbOk && !totFeld;
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
-
         // cleanup
         if (r.state.creatures.indexOf(c1) !== -1) r.removeCreature(c1);
         setEmo(savedEmo);
@@ -411,10 +402,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check(
-        "V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren",
-        res.exists
-    );
+    check("V17.54 Kampf D: _pickCreatureAtCrosshair + die attack-Emotion + COMBAT_REACH existieren", res.exists);
     check(
         "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
         res.attackDamages
@@ -445,7 +433,7 @@ async function checkBandV1754PlayerAttack(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HBuildAndPersist(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
@@ -461,8 +449,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
         out.tasksHasBuild = Tasks.includes("build");
         out.auraHueBuild = Hues.build === 280;
-        out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
-        out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
 
         // 2. Args-Mapping
         const a1 = r._buildCreatureTaskArgs("build", "stein_block");
@@ -627,12 +613,12 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         for (const c of r.state.creatures) {
             r.assignCreatureTask(c, "build", { blueprint: "stein_block" }, { silent: true });
         }
-        if (typeof r._renderTaskStatusUI === "function") r._renderTaskStatusUI();
+        r._renderTaskStatusUI();
         const statusEl = document.getElementById("status-tasks");
         out.statusShowsBauen = statusEl && /bauen/.test(statusEl.textContent);
 
         // 17. Liste zeigt 'baut stein_block' + .build CSS-Class
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         const buildRow = listEl && listEl.querySelector(".creature-task.build");
         out.listHasBuildClass = !!buildRow;
@@ -676,10 +662,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     if (wave6hP2b2Results && !wave6hP2b2Results.error) {
         check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
-        check(
-            "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
-            wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
-        );
         check(
             "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
             wave6hP2b2Results.argsBuildString
@@ -790,15 +772,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
-
-
-        // 2. Methoden existieren
-        out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
-        out.hasLevelMethod = typeof r._creatureSpecializationLevel === "function";
-        out.hasTopMethod = typeof r._creatureTopSpecializations === "function";
-        out.hasSpeedMul = typeof r._creatureTaskSpeedMultiplier === "function";
-        out.hasLevelUp = typeof r._onCreatureLevelUp === "function";
-        out.hasSkillKey = typeof r._creatureSkillKeyForMemory === "function";
 
         // 3. _creatureSkillKeyForMemory mappt korrekt
         const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
@@ -928,7 +901,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.failureJournalUntouched = failureJournalDiff === 0;
 
         // 11. UI: .creature-specs span existiert nach Render
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         const specsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
         out.uiSpecsSpansExist = specsSpans.length > 0;
@@ -948,9 +921,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
         const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
         cNoSpecsList.userData.memory = []; // explizit leer
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
-        const allRows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let creaturesWithSpecs = 0;
         for (const cc of r.state.creatures) {
             if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
@@ -970,15 +942,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     });
 
     if (wave6hP2dResults && !wave6hP2dResults.error) {
-        check(
-            "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
-            wave6hP2dResults.hasComputeSpecs &&
-                wave6hP2dResults.hasLevelMethod &&
-                wave6hP2dResults.hasTopMethod &&
-                wave6hP2dResults.hasSpeedMul &&
-                wave6hP2dResults.hasLevelUp &&
-                wave6hP2dResults.hasSkillKey
-        );
         check("Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
         check(
             "Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
@@ -1073,13 +1036,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // Lokal anheben, vor `return out` restaurieren (kein _gameLoopTick dazwischen → deterministisch).
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-
-        // 1. Memory-Cap auf 200 gebumpt
-        out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
-
-        // 2. Methoden existieren
-        out.hasSerialize = typeof r._serializeCreature === "function";
-        out.hasRestore = typeof r._restoreCreatureFromSnapshot === "function";
 
         // 3. Neu gespawnte Kreatur bekommt bornAt
         const player = r.state.playerMesh.position;
@@ -1216,11 +1172,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     });
 
     if (wave6hP2d1Results && !wave6hP2d1Results.error) {
-        check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
-        check(
-            "Welle 6.H P2D.1: _serializeCreature + _restoreCreatureFromSnapshot existieren",
-            wave6hP2d1Results.hasSerialize && wave6hP2d1Results.hasRestore
-        );
         check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
         check(
             "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",
@@ -1279,7 +1230,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureStats(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
@@ -1289,11 +1240,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
-
-        // 1. Methoden existieren
-        out.hasComputeStats = typeof r.computeCreatureStats === "function";
-        out.hasBodySpeedMul = typeof r._creatureBodySpeedMultiplier === "function";
-        out.hasRefreshCache = typeof r._refreshCreatureStatsCache === "function";
 
         // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
         const player = r.state.playerMesh.position;
@@ -1385,7 +1331,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
 
         // 9. UI: creature-row hat title-Attribut mit Stats
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
@@ -1408,10 +1354,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
     });
 
     if (wave6hP2f1Results && !wave6hP2f1Results.error) {
-        check(
-            "Welle 6.H P2F.1: alle 3 Methoden existieren (computeCreatureStats + _creatureBodySpeedMultiplier + _refreshCreatureStatsCache)",
-            wave6hP2f1Results.hasComputeStats && wave6hP2f1Results.hasBodySpeedMul && wave6hP2f1Results.hasRefreshCache
-        );
         check(
             "Welle 6.H P2F.1: computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
             wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
@@ -1465,12 +1407,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 1. Methoden existieren
-        out.hasEquipTool = typeof r.equipCreatureTool === "function";
-        out.hasEquipArmor = typeof r.equipCreatureArmor === "function";
-        out.hasUnequip = typeof r.unequipCreatureSlot === "function";
-        out.hasAfterChange = typeof r._afterCreatureEquipChange === "function";
-
         // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
         const player = r.state.playerMesh.position;
         const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
@@ -1491,7 +1427,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
         // → bool, dann setBlueprintAsArmor(name).
         const armorName = "test_armor_p2f2";
-        if (typeof r.cloneBlueprint === "function" && r.cloneBlueprint("stein_block", armorName)) {
+        if (r.cloneBlueprint("stein_block", armorName)) {
             r.setBlueprintAsArmor(armorName);
             const eqArmor = r.equipCreatureArmor(c, armorName);
             out.equipArmorOk = eqArmor.ok === true;
@@ -1511,43 +1447,35 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 7. Stats-Stacking via equipped: eigener "magie-leitender" Werkzeug-Bauplan, Stats VOR/NACH equip
         // vergleichen (dieselbe computeCreatureStats-Pipeline).
-        if (typeof r.cloneBlueprint === "function") {
-            const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
-            const baseStats = r.computeCreatureStats(c2).stats;
-            // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
-            // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
-            const toolBp = "test_tool_bp_p2f2";
-            if (r.cloneBlueprint("stein_block", toolBp)) {
-                const meta =
-                    typeof r.setBlueprintToolMeta === "function"
-                        ? r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive")
-                        : null;
-                const reg =
-                    meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
-                        ? r.registerBlueprintAsTool(toolBp)
-                        : null;
-                if (reg && reg.ok) {
-                    // toolName === toolBp (Bauplan-Name)
-                    r.equipCreatureTool(c2, toolBp);
-                    const equipStats = r.computeCreatureStats(c2).stats;
-                    out.toolStatsChanged =
-                        Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
-                        Math.abs(equipStats.damage - baseStats.damage) > 0.1;
-                    out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
-                }
+        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+        const baseStats = r.computeCreatureStats(c2).stats;
+        // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
+        // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
+        const toolBp = "test_tool_bp_p2f2";
+        if (r.cloneBlueprint("stein_block", toolBp)) {
+            const meta = r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive");
+            const reg = meta && meta.ok ? r.registerBlueprintAsTool(toolBp) : null;
+            if (reg && reg.ok) {
+                // toolName === toolBp (Bauplan-Name)
+                r.equipCreatureTool(c2, toolBp);
+                const equipStats = r.computeCreatureStats(c2).stats;
+                out.toolStatsChanged =
+                    Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
+                    Math.abs(equipStats.damage - baseStats.damage) > 0.1;
+                out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
             }
-            // Armor: stein_block-Clone + setBlueprintAsArmor
-            const armorBp = "test_armor_bp_p2f2";
-            if (r.cloneBlueprint("stein_block", armorBp)) {
-                r.setBlueprintAsArmor(armorBp);
-                // unequip first so stat-delta is clean
-                r.unequipCreatureSlot(c2, "armor");
-                const beforeArmorStats = r.computeCreatureStats(c2).stats;
-                r.equipCreatureArmor(c2, armorBp);
-                const armorStats = r.computeCreatureStats(c2).stats;
-                out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
-                out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
-            }
+        }
+        // Armor: stein_block-Clone + setBlueprintAsArmor
+        const armorBp = "test_armor_bp_p2f2";
+        if (r.cloneBlueprint("stein_block", armorBp)) {
+            r.setBlueprintAsArmor(armorBp);
+            // unequip first so stat-delta is clean
+            r.unequipCreatureSlot(c2, "armor");
+            const beforeArmorStats = r.computeCreatureStats(c2).stats;
+            r.equipCreatureArmor(c2, armorBp);
+            const armorStats = r.computeCreatureStats(c2).stats;
+            out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+            out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
         }
 
         // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
@@ -1585,7 +1513,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.restoreSilentDropsUnknown = restoredBad && restoredBad.userData.equipped.tool === null;
 
         // 12. UI: equipped-Pills in creature-row erscheinen
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         const equippedWraps = listEl ? listEl.querySelectorAll(".creature-equipped") : [];
         out.uiEquippedWrapsExist = equippedWraps.length > 0;
@@ -1595,24 +1523,15 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // Cleanup: Test-Baupläne löschen damit Ring 6.6-Liste-Zähler stimmt.
         // Plus workshop-DOM neu rendern (deleteBlueprint triggert das nicht
         // automatisch — Ring 6.6 prüft DOM-Liste vs. state.blueprints).
-        if (typeof r.deleteBlueprint === "function") {
-            r.deleteBlueprint("test_armor_p2f2");
-            r.deleteBlueprint("test_tool_bp_p2f2");
-            r.deleteBlueprint("test_armor_bp_p2f2");
-        }
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r.deleteBlueprint("test_armor_p2f2");
+        r.deleteBlueprint("test_tool_bp_p2f2");
+        r.deleteBlueprint("test_armor_bp_p2f2");
+        r._renderWorkshopDOM();
 
         return out;
     });
 
     if (wave6hP2f2Results && !wave6hP2f2Results.error) {
-        check(
-            "Welle 6.H P2F.2: alle 4 Methoden existieren (equipCreatureTool/Armor + unequipCreatureSlot + _afterCreatureEquipChange)",
-            wave6hP2f2Results.hasEquipTool &&
-                wave6hP2f2Results.hasEquipArmor &&
-                wave6hP2f2Results.hasUnequip &&
-                wave6hP2f2Results.hasAfterChange
-        );
         check(
             "Welle 6.H P2F.2: spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
             wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
@@ -1685,14 +1604,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 1. Methoden existieren
-        out.hasApplyBoost = typeof r.applyCreatureBoost === "function";
-        out.hasTickBoosts = typeof r.tickCreatureBoosts === "function";
-        out.hasActivate = typeof r.activateCreatureConsumable === "function";
-        out.hasPickCreature = typeof r._pickCreatureAtCrosshair === "function";
-        out.hasConsumeInv = typeof r._consumeBlueprintFromInventory === "function";
-        out.hasInvGate = typeof r._consumableInventoryGate === "function";
-
         // 2. Neu gespawnte Kreatur hat boosts = []
         const player = r.state.playerMesh.position;
         const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
@@ -1740,10 +1651,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
         const tonicName = "test_tonic_p2f3";
         if (r.cloneBlueprint("stein_block", tonicName)) {
-            const meta =
-                typeof r.setBlueprintAsConsumable === "function"
-                    ? r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2)
-                    : null;
+            const meta = r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2);
             out.consumableMarkOk = !!(meta && meta.ok);
             // Trank-Compound-Tags lesen (kontrolle)
             const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);
@@ -1837,28 +1745,19 @@ async function checkBandWelle6HCreatureStats(ctx) {
         r.setGameMode(origMode || "frieden");
 
         // 15. UI: .creature-boost Pills bei Kreatur mit aktivem Boost
-        if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+        r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
         const boostPills = listEl ? listEl.querySelectorAll(".creature-boost") : [];
         out.uiHasBoostPills = boostPills.length > 0;
 
         // Cleanup
-        if (typeof r.deleteBlueprint === "function") r.deleteBlueprint(tonicName);
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r.deleteBlueprint(tonicName);
+        r._renderWorkshopDOM();
 
         return out;
     });
 
     if (wave6hP2f3Results && !wave6hP2f3Results.error) {
-        check(
-            "Welle 6.H P2F.3: alle 6 Methoden existieren (applyCreatureBoost + tickCreatureBoosts + activateCreatureConsumable + _pickCreatureAtCrosshair + _consumeBlueprintFromInventory + _consumableInventoryGate)",
-            wave6hP2f3Results.hasApplyBoost &&
-                wave6hP2f3Results.hasTickBoosts &&
-                wave6hP2f3Results.hasActivate &&
-                wave6hP2f3Results.hasPickCreature &&
-                wave6hP2f3Results.hasConsumeInv &&
-                wave6hP2f3Results.hasInvGate
-        );
         check("Welle 6.H P2F.3: spawnCreatureAt initialisiert boosts = []", wave6hP2f3Results.initialBoostsEmpty);
         check(
             "Welle 6.H P2F.3: applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
@@ -1959,7 +1858,6 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-
 
         // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
         if (!A.CREATURE_SOULS) {

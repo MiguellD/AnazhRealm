@@ -5,7 +5,7 @@
 // Replay (Pfad szene › replay › Prüfung › Gang › Vorher-Knoten des Schattens), netto 5–9 ms bei 1,3–1,4 Kaskaden je
 // Frame, die Diät selbst netto 0,7 (Prüfung) + 1,0 (Gang) ms, der Replay 0,1 ms. Die Linse zählt und zieht jeden
 // verschachtelten Bereich vom äußeren ab:
-//   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen
+//   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten, geteilte Gruppen und fremde Verweise
 //                  (und wie viele davon einen Knoten oder eine Gruppe im SELBEN Render-Abschnitt wiederholen) · Uploads geteilter
 //                  und eigener Gruppen · writeBuffer · Replay-Bürger · Renders
 //   Netto je Frame: Prüfung · Gang · Replay · Aufnahme · Voll-Refresh (Knoten · Bindungen · Geometrie) · Schatten-
@@ -27,27 +27,19 @@ function diaetLauf(opts) {
         const rend = st.renderer;
         const be = rend.backend;
         const nf = rend._nodes.nodeFrame;
-        const nfP = Object.getPrototypeOf(nf);
-        const roh = {
-            refresh: A._diaetRefresh,
-            schreib: A._diaetGeteiltSchreiben,
-            szene: rend._renderScene,
-            bundle: rend._renderBundle,
-            nUpd: rend._nodes.updateForRender,
-            bUpd: rend._bindings.updateForRender,
-            gUpd: rend._geometries.updateForRender,
-            bu: rend._bindings._update,
-            ubEigen: Object.prototype.hasOwnProperty.call(be, "updateBinding"),
-            ub: be.updateBinding,
-            wb: be.device.queue.writeBuffer,
-            cb: be.device.createBuffer,
-            wt: be.device.queue.writeTexture,
-            ubsEigen: Object.prototype.hasOwnProperty.call(be, "updateBindings"),
-            ubs: be.updateBindings,
+        // JEDER Haken über EINEN Setzer: er merkt den Vorbestand (eigen oder geerbt), das finally stellt jeden zurück.
+        const roh = {};
+        const zurueck = [];
+        const haken = (name, wo, k, fn) => {
+            const eigen = Object.prototype.hasOwnProperty.call(wo, k);
+            const alt = (roh[name] = wo[k]);
+            zurueck.push(() => (eigen ? (wo[k] = alt) : delete wo[k]));
+            wo[k] = fn;
         };
         let c = null;
         const stapel = [];
         let imGang = 0;
+        let imOG = 0;
         // DER REFRESH OHNE ÄNDERUNG (K71): ein Voll-Refresh, der nichts Neues zur GPU trägt — kein Upload einer Gruppe (r184
         // lädt eine Gruppe nur bei geändertem Wert), kein neuer Puffer, und jedes geschriebene Byte gleicht dem, was an dieser
         // Stelle schon liegt (eine Version, die ein Schreiber ohne Änderung hob). Je Refresh offen bis zum Ende seiner
@@ -110,50 +102,60 @@ function diaetLauf(opts) {
             zaehle("gang" + art);
             if (v > 1) zaehle("wiederholt" + art);
         };
-        A._diaetRefresh = function (obs, ro, frame, altNR) {
+        haken("refresh", A, "_diaetRefresh", function (obs, ro, frame, altNR) {
             const v = rahmen("pruef", () => roh.refresh(obs, ro, frame, altNR));
             zaehle("pruef");
             if (frame) c && c.rids.add(frame.renderId);
             if (v && c) offen.set(ro, { name: nameVon(ro), wirkung: 0 });
             if (v && c) {
                 zaehle("voll");
-                const obj = ro && ro.object;
-                let nm = (obj && (obj.name || obj.type)) || "?";
-                for (let p = obj && obj.parent, i = 0; p && i < 4; p = p.parent, i++)
-                    if (p.name) {
-                        nm = p.name + "/" + nm;
-                        break;
-                    }
-                c.grund[nm] = (c.grund[nm] || 0) + 1;
+                c.grund[nameVon(ro)] = (c.grund[nameVon(ro)] || 0) + 1;
             }
             return v;
-        };
-        A._diaetGeteiltSchreiben = function (rr, ro, rid) {
+        });
+        haken("schreib", A, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
             imGang++;
             try {
                 return rahmen("gang", () => roh.schreib(rr, ro, rid));
             } finally {
                 imGang--;
             }
-        };
-        nf.updateNode = function (n) {
-            if (imGang) besuch("Knoten", n.id);
-            return nfP.updateNode.call(this, n);
-        };
-        nf.updateBeforeNode = function (n) {
+        });
+        // DER FREMDE VERWEIS (E-Diät, 19.10.): ein Verweis auf ein festes Objekt (Schatten-Bias · Radius · Kaskaden des Lichts)
+        // speist eine GETEILTE Uniform — EIN Wert je Render-Abschnitt; der Objekt-Gang stellte ihn je Objekt (Fremd).
+        const fremd = (n) =>
+            n.isMaterialReferenceNode !== true &&
+            typeof n.getValueFromReference === "function" &&
+            n.object != null &&
+            n.count === null &&
+            !!(n.node && n.node.groupNode && n.node.groupNode.shared === true);
+        haken("og", A, "_diaetObjektGang", function (...a) {
+            imOG++;
+            try {
+                return rahmen("objektGang", () => roh.og.apply(this, a));
+            } finally {
+                imOG--;
+            }
+        });
+        haken("knoten", nf, "updateNode", function (n) {
+            if ((imGang || imOG) && fremd(n)) besuch("Fremd", n.node.id);
+            else if (imGang) besuch("Knoten", n.id);
+            return roh.knoten.call(this, n);
+        });
+        haken("vorher", nf, "updateBeforeNode", function (n) {
             if (imGang) besuch("Vorher", n.id);
-            return nfP.updateBeforeNode.call(this, n);
-        };
-        rend._bindings._update = function (g, alle) {
+            return roh.vorher.call(this, n);
+        });
+        haken("bu", rend._bindings, "_update", function (g, alle) {
             if (imGang) besuch("Gruppe", g.id);
             return roh.bu.call(this, g, alle);
-        };
-        be.updateBinding = function (b) {
+        });
+        haken("ub", be, "updateBinding", function (b) {
             zaehle(b && b.groupNode && b.groupNode.shared === true ? "uploadGeteilt" : "uploadEigen");
             wirkt();
             return roh.ub.call(this, b);
-        };
-        be.device.queue.writeBuffer = function (buf, off, data, dOff, size) {
+        });
+        haken("wb", be.device.queue, "writeBuffer", function (buf, off, data, dOff, size) {
             zaehle("writeBuffer");
             zaehle("writeBufferBytes", size != null ? size * (data.BYTES_PER_ELEMENT || 1) : data.byteLength || 0);
             // die Bytes dieses Schreibens gegen das, was an dieser Stelle zuletzt lag (auch im Einschwingen gemerkt)
@@ -185,35 +187,37 @@ function diaetLauf(opts) {
                 wirkt();
             }
             return roh.wb.call(this, buf, off, data, dOff, size);
-        };
+        });
         // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) und ein Voll-Refresh sind nie
         // der Gang: ihre Knoten-Besuche zählen nicht als Wiederholung des äußeren Gangs.
         const ohneGang = (fn) => {
             const alt = imGang;
-            imGang = 0;
+            const altOG = imOG;
+            imGang = imOG = 0;
             try {
                 return fn();
             } finally {
                 imGang = alt;
+                imOG = altOG;
             }
         };
-        rend._renderScene = function (scene, camera, fb) {
+        haken("szene", rend, "_renderScene", function (scene, camera, fb) {
             const schatten = !!(scene && scene.overrideMaterial && scene.overrideMaterial.isShadowPassMaterial);
             zaehle(schatten ? "schattenRenders" : "szenen");
             return ohneGang(() => rahmen(schatten ? "schattenRender" : "szene", () => roh.szene.call(this, scene, camera, fb)));
-        };
-        rend._renderBundle = function (bundle, sceneRef, lightsNode) {
+        });
+        haken("bundle", rend, "_renderBundle", function (bundle, sceneRef, lightsNode) {
             const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
             const d = this.backend.get(rb);
             const replay = d.bundleGPU !== undefined && bundle.bundleGroup.version === d.version;
             if (replay) zaehle("replayBuerger", d.renderObjects ? d.renderObjects.length : 0);
             else zaehle("aufnahmen");
             return rahmen(replay ? "replay" : "aufnahme", () => roh.bundle.call(this, bundle, sceneRef, lightsNode));
-        };
-        rend._nodes.updateForRender = function (ro) {
+        });
+        haken("nUpd", rend._nodes, "updateForRender", function (ro) {
             return mitRo(ro, () => ohneGang(() => rahmen("vollKnoten", () => roh.nUpd.call(this, ro))));
-        };
-        rend._bindings.updateForRender = function (ro) {
+        });
+        haken("bUpd", rend._bindings, "updateForRender", function (ro) {
             try {
                 return mitRo(ro, () => ohneGang(() => rahmen("vollBindung", () => roh.bUpd.call(this, ro))));
             } finally {
@@ -226,23 +230,23 @@ function diaetLauf(opts) {
                     }
                 }
             }
-        };
-        rend._geometries.updateForRender = function (ro) {
+        });
+        haken("gUpd", rend._geometries, "updateForRender", function (ro) {
             return mitRo(ro, () => rahmen("vollGeo", () => roh.gUpd.call(this, ro)));
-        };
+        });
         // ein neuer Puffer, eine Textur, eine neue Bindegruppe tragen immer eine Änderung
-        be.device.createBuffer = function (d) {
+        haken("cb", be.device, "createBuffer", function (d) {
             wirkt();
             return roh.cb.call(this, d);
-        };
-        be.device.queue.writeTexture = function (...a) {
+        });
+        haken("wt", be.device.queue, "writeTexture", function (...a) {
             wirkt();
             return roh.wt.apply(this, a);
-        };
-        be.updateBindings = function (...a) {
+        });
+        haken("ubs", be, "updateBindings", function (...a) {
             wirkt();
             return roh.ubs.apply(this, a);
-        };
+        });
         const N = Number(o.frames) || 90;
         const modus = o.modus || "ruhe";
         if (typeof window.__buehne === "function") window.__buehne();
@@ -286,23 +290,7 @@ function diaetLauf(opts) {
                 });
             });
         } finally {
-            A._diaetRefresh = roh.refresh;
-            A._diaetGeteiltSchreiben = roh.schreib;
-            delete nf.updateNode;
-            delete nf.updateBeforeNode;
-            rend._bindings._update = roh.bu;
-            if (roh.ubEigen) be.updateBinding = roh.ub;
-            else delete be.updateBinding;
-            be.device.queue.writeBuffer = roh.wb;
-            be.device.createBuffer = roh.cb;
-            be.device.queue.writeTexture = roh.wt;
-            if (roh.ubsEigen) be.updateBindings = roh.ubs;
-            else delete be.updateBindings;
-            rend._renderScene = roh.szene;
-            rend._renderBundle = roh.bundle;
-            rend._nodes.updateForRender = roh.nUpd;
-            rend._bindings.updateForRender = roh.bUpd;
-            rend._geometries.updateForRender = roh.gUpd;
+            for (const z of zurueck) z();
             st.perfTargetMs = decke;
             if (modus === "drehen") st.yaw = gier0;
             if (modus === "gehen" && pos0) st.playerMesh.position.copy(pos0);
@@ -342,10 +330,11 @@ function diaetUrteil(e) {
     const z = e.zahl || {};
     if (!(z.pruef > 0)) v.push("DIÄT: keine Diät-Prüfung gezählt — die Linse ist blind");
     if (e.modus === "ruhe") {
-        const w = (z.wiederholtKnoten || 0) + (z.wiederholtVorher || 0) + (z.wiederholtGruppe || 0);
+        const arten = ["Knoten", "Vorher", "Gruppe", "Fremd"];
+        const w = arten.reduce((s, k) => s + (z["wiederholt" + k] || 0), 0);
         if (w > 0)
             v.push(
-                `RUHE: ${Math.round(w * 10) / 10} wiederholte Gänge je Frame (Knoten ${z.wiederholtKnoten || 0} · Vorher ${z.wiederholtVorher || 0} · Gruppe ${z.wiederholtGruppe || 0}) — dieselbe Arbeit je Programm statt EINMAL je Render`
+                `RUHE: ${Math.round(w * 10) / 10} wiederholte Gänge je Frame (${arten.map((k) => k + " " + (z["wiederholt" + k] || 0)).join(" · ")}) — dieselbe Arbeit je Programm statt EINMAL je Render`
             );
         // K71: im Stand trägt jeder Voll-Refresh eine Änderung zur GPU — ein Refresh ohne Änderung nennt sein Objekt
         if (z.ohne > 0)
@@ -361,7 +350,7 @@ function selbsttest() {
     const gruen = { modus: "ruhe", frames: 60, zahl: { pruef: 120, gangKnoten: 66, wiederholtKnoten: 0 } };
     if (diaetUrteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + diaetUrteil(gruen).join(" · "));
     const faelle = [
-        ["Gang je Programm", Object.assign({}, gruen, { zahl: { pruef: 120, wiederholtKnoten: 850, wiederholtGruppe: 70 } }), /RUHE: 920 wiederholte Gänge/],
+        ["Gang je Programm, Fremd je Objekt", Object.assign({}, gruen, { zahl: { pruef: 120, wiederholtKnoten: 850, wiederholtGruppe: 70, wiederholtFremd: 40 } }), /RUHE: 960 wiederholte Gänge .*Gruppe 70 · Fremd 40/],
         ["blind (kein Frame)", { modus: "ruhe", frames: 0, zahl: {} }, /kein gerenderter Frame/],
         ["blind (keine Prüfung)", Object.assign({}, gruen, { zahl: { pruef: 0 } }), /keine Diät-Prüfung/],
         [

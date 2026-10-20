@@ -1618,9 +1618,30 @@ class AnazhRealm_koerper_bewegung {
             // ihn, zurückgesetzt nur beim Aufstieg — nach einer Fahrt in Ego begann Third aus der alten Richtung (Spielgang,
             // Null-Renderer: 18° und 20° neben der Gier nach 10 Bildern, die Gier drehte in Ego 73° und 83°).
             const rig = `${this.state.cameraMode}:${_fahrRitt ? _fahrRitt.ent.id : ""}`;
+            // DER ÜBERGANG (F1 b, 19.10.): ein Auf- oder Abstieg in DERSELBEN Sicht setzt die Kamera nie um — sie gleitet von dort,
+            // wo sie stand (`_kamGleiten`), und zu Fuß in Third blickt sie, wohin die Chase-Cam blickte: Gier und Neigung übernehmen
+            // Azimut und Elevation ihres Blicks (der Orbit steht dann `cameraThirdDistance` hinter der Brust, so hoch, dass er aus
+            // derselben Elevation auf sie blickt — am Steilhang über dem Hang, nie im Boden). Bis hier sprang sie beim Abstieg in
+            // voller Fahrt 14,4 m (Third, auf die alte Gier der Maus) bzw. 1,55 m (Ego, vom Sitz neben den Wagen) in einem Bild
+            // (gate:fahr-leben T4). Ein Sicht-Wechsel bleibt ein Schnitt.
             if (this.state._kamRig !== rig) {
+                const gleiten = String(this.state._kamRig).startsWith(this.state.cameraMode + ":");
+                this.state._kamVon = gleiten ? (this.state._kamVon || new THREE.Vector3()).copy(camera.position) : null;
+                this.state._kamVersatz = null;
+                const blick =
+                    gleiten &&
+                    !_fahrRitt &&
+                    this.state.cameraMode === "third" &&
+                    camera.getWorldDirection(new THREE.Vector3());
+                if (blick && blick.x * blick.x + blick.z * blick.z > 1e-6) {
+                    this.state.yaw = Math.atan2(blick.x, blick.z);
+                    // tan e = (Höhe − 1 − d · sin p) / (d · cos p) ⇔ p = asin((Höhe − 1) · cos e / d) − e (e = Elevation des Blicks)
+                    const e = -Math.asin(Math.max(-1, Math.min(1, blick.y)));
+                    const a = (this.state.cameraThirdHeight - 1.0) / this.state.cameraThirdDistance;
+                    this.state.pitch = Math.asin(Math.max(-1, Math.min(1, a * Math.cos(e)))) - e;
+                }
                 this.state._kamRig = rig;
-                this.state._kamArm = this.state._kamChase = this.state._kamT = undefined;
+                this.state._kamArm = this.state._kamChase = this.state._kamT = this.state._smoothBodyY = undefined;
             }
             if (this.state.cameraMode === "third") {
                 // die Uhr des Rigs: EIN Takt-Abstand für den Azimut der Chase-Cam und den gleitenden Arm
@@ -1741,6 +1762,13 @@ class AnazhRealm_koerper_bewegung {
                 const tz = bz + sz;
                 camX += sx;
                 camZ += sz;
+                // der Übergang des Rigs gleitet den WUNSCH (`_kamGleiten`): Wurf und Arm unten halten die gleitende Kamera vor
+                // jedem Bau (gate:kamera-leib K2 — glitt die fertige Lage, stand sie nach dem Aufstieg im Haus neben dem Wagen)
+                const gw = this._kamGleiten(
+                    (this._kamP || (this._kamP = new THREE.Vector3())).set(camX, camY, camZ),
+                    currentTime
+                );
+                [camX, camY, camZ] = [gw.x, gw.y, gw.z];
                 // DER GLEITENDE ARM: ein Hindernis zieht die Kamera sofort heran (sie steht nie in Boden oder Bau), frei
                 // fährt sie gleitend hinaus — der Rest 1 − Ruhe^dt je Bild, im Ritt die Ruhe des Kern-Gesetzes
                 // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß `fx.bewegung.kamera.armRuhe`.
@@ -1822,13 +1850,18 @@ class AnazhRealm_koerper_bewegung {
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
                 }
-                camera.position.set(player.position.x, eyeY, player.position.z);
+                const ep = (this._kamP || (this._kamP = new THREE.Vector3())).set(
+                    player.position.x,
+                    eyeY,
+                    player.position.z
+                );
+                camera.position.copy(this._kamGleiten(ep, currentTime));
                 const blick = this._blickVorn(
                     this.state.yaw,
                     this.state.pitch,
                     this._egoBlick || (this._egoBlick = {})
                 );
-                camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
+                camera.lookAt(camera.position.x + blick.x, camera.position.y + blick.y, camera.position.z + blick.z);
                 // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, der Strahl des Fadenkreuzes beginnt am Auge; die
                 // Nah-Kugel nimmt Laub und Boden-Streu (KAMERA_DURCHSICHT.ichM — ein Strauch, eine Krone, durch die der Leib
                 // geht), die Rinde, an der der Leib steht, bleibt ganz
@@ -1843,6 +1876,28 @@ class AnazhRealm_koerper_bewegung {
                 );
             }
         }
+    }
+
+    // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem
+    // ersten Ort des neuen Rigs schwindet je Bild mit der Ruhe `KAMERA_UEBERGANG.ruheS`, höchstens `vMax` × dt — die Kamera
+    // reist je Bild nie weiter als ihr Rig plus dieser Deckel. `p` (der Ort des Rigs) wird verschoben zurückgegeben.
+    _kamGleiten(p, t) {
+        const st = this.state;
+        const U = AnazhRealm.KAMERA_UEBERGANG;
+        if (st._kamVon) {
+            const o = st._kamVon.clone().sub(p);
+            st._kamVersatz = o.length() <= U.maxM ? { o, t } : null; // weiter ist ein Sprung des Spielers: ein Schnitt
+            st._kamVon = null;
+        }
+        const g = st._kamVersatz;
+        if (!g) return p;
+        const dt = Math.min(0.1, Math.max(0, t - g.t));
+        g.t = t;
+        const l = g.o.length();
+        const rest = l - Math.min(U.vMax * dt, l * (1 - Math.exp(-dt / U.ruheS)));
+        if (!(rest > 0.01)) st._kamVersatz = null;
+        else p.add(g.o.multiplyScalar(rest / l));
+        return p;
     }
 
     // DAS ERSTE WELTBILD ALS EREIGNIS: wer darauf wartet (der Vorrat, K30), wartet auf dieses Versprechen, nie auf die Uhr.
@@ -2053,6 +2108,9 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 AnazhRealm.FIXED_DT = 1 / 60;
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// Der Übergang des Rigs (`_kamGleiten`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
+// der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt.
+AnazhRealm.KAMERA_UEBERGANG = Object.freeze({ ruheS: 0.15, vMax: 6, maxM: 20 });
 
 // Kapsel-Maße des Spielers, am 1-m-Box-Collider geeicht: footDrop = halbe Box-Höhe (Füße =
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.

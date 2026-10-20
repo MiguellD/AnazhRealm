@@ -350,10 +350,10 @@ class AnazhRealm_vegetation_streu {
     // Deko-Instanz in die GETEILTEN HISM-Gruppen (kein Architektur-Eintrag): derselbe
     // _archInstanceGroupFor/_archGroupAlloc-Pfad wie echte Bäume → ein Draw-Call, kein Sprung bei
     // Promotion. Liefert die belegten {key, slot}-Paare zum Freigeben.
-    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint, regionKey, flatOverride) {
+    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint, regionKey, flatOverride, voll) {
         // `flatOverride` reicht einen FERTIGEN Foundry-Flat herein (dieselben leaves wie
         // _archFlattenBlueprint) — der Fern-Scatter serviert das Studio-Asset (nah = fern = Studio).
-        // Ohne Override der Blueprint-Flat (Fels/Kiesel/Fallback).
+        // Ohne Override der Blueprint-Flat (Fels/Kiesel/Fallback). `voll` = der Halt (K36) im ersten Stempel jedes Slots.
         const flat = flatOverride || this._archFlattenBlueprint(blueprintName);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || flat.leaves.length === 0) return null;
         const ew = this._archTmpScatterEntryM || (this._archTmpScatterEntryM = new THREE.Matrix4());
@@ -395,7 +395,7 @@ class AnazhRealm_vegetation_streu {
             }
             g.mesh.boundingSphere = null;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (reverse-J-Skala), die Karte ihre Schicht.
-            this._lodSlotStamp(g, slot, scale, false, leaf);
+            this._lodSlotStamp(g, slot, scale, voll === true, leaf);
             slots.push(ref);
         }
         return slots;
@@ -965,6 +965,35 @@ class AnazhRealm_vegetation_streu {
             s: _tl,
             v: Math.min(1.08, Math.max(0, _tl - _tw)),
         };
+        // Der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN Stufen — dieselbe Partner-Quelle wie die
+        // Architektur (_lodBandPartnerFor); Partner-Slots reisen in cell.slots (Region-Dispose räumt beide). Steht der
+        // Partner nicht (er lädt, die Karte bäckt) oder ist keiner verlangt, HÄLT die Primär-Stufe voll (K36, F1: die Maske
+        // misst vom Auge nach dem Rig, die Zelle wählte vom Auge davor) — der Halt reist im ersten Slot-Stempel
+        // (`_lodSlotStamp`), nie in einem zweiten; die Zelle merkt Wunsch und Halt, der LOD-Tick pflegt das Band
+        // (`_streuBandWechsel`).
+        let bandDient = null,
+            bandWunsch = null,
+            bandHalt = false,
+            partner = null;
+        if (
+            foundryFlat &&
+            this.state.foundryCrossfade === true &&
+            foundryPreset &&
+            this._foundryPresetIsTree(foundryPreset)
+        ) {
+            const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
+            bandDient = _curLod;
+            bandHalt = true;
+            const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
+            if (_partner != null && _partner !== _curLod) {
+                bandWunsch = _partner;
+                const pf0 = this._foundryFlattenFor({ seed: fseed, wo: tf }, foundryPreset, _partner);
+                const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
+                bandHalt = !(pf && pf.instanceable) ? (pf0 === null ? "wartet" : true) : false;
+                if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod)
+                    partner = pf;
+            }
+        }
         const slots = this._scatterInstanceAdd(
             bpName,
             tf.x,
@@ -995,49 +1024,24 @@ class AnazhRealm_vegetation_streu {
             // die Counts. Bäume bleiben GLOBAL (V18.390-Weisheit — ihr Fern-Wal
             // ist per _tickScatterLod aufs Billboard geheilt).
             this.state.useRegionFoliageCull !== false && layer.kind !== "tree" ? regX + "," + regZ : null,
-            foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
+            foundryFlat, // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
+            !!bandHalt
         );
         if (!slots) return null;
-        // Der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN Stufen — dieselbe Partner-Quelle wie die
-        // Architektur (_lodBandPartnerFor); Partner-Slots reisen in cell.slots (Region-Dispose räumt beide). Steht der
-        // Partner nicht (er lädt, die Karte bäckt), HÄLT die Primär-Stufe voll (K36, `_lodSlotStamp`): die Zelle merkt
-        // Wunsch und Halt, der LOD-Tick pflegt das Band (`_streuBandWechsel`).
-        let bandDient = null,
-            bandWunsch = null,
-            bandHalt = false;
-        if (
-            foundryFlat &&
-            this.state.foundryCrossfade === true &&
-            foundryPreset &&
-            this._foundryPresetIsTree(foundryPreset)
-        ) {
-            const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
-            bandDient = _curLod;
-            const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
-            if (_partner != null && _partner !== _curLod) {
-                bandWunsch = _partner;
-                const pf0 = this._foundryFlattenFor({ seed: fseed, wo: tf }, foundryPreset, _partner);
-                const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
-                bandHalt = !(pf && pf.instanceable) ? (pf0 === null ? "wartet" : true) : false;
-                if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
-                    const pSlots = this._scatterInstanceAdd(
-                        "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
-                        tf.x,
-                        Number.isFinite(surfY) ? surfY : 0,
-                        tf.z,
-                        tf.yaw,
-                        tf.scale,
-                        tint,
-                        null, // Bäume sind GLOBAL instanziert (V18.390-Weisheit)
-                        pf
-                    );
-                    if (pSlots) for (const ps of pSlots) slots.push(ps);
-                    else bandHalt = true;
-                }
-            }
-            // die Primär-Slots (die Liste trägt bis hier nur sie, der Partner hängt dahinter) halten voll
-            if (bandHalt) for (const ref of slots) this._streuSlotHalt(ref, tf.scale);
-        }
+        // der Partner hängt hinter den Primär-Slots (sein Flat trägt Blätter: das Setzen liefert sie)
+        if (partner)
+            for (const ps of this._scatterInstanceAdd(
+                "fscatter:" + foundryPreset + ":" + gestalt + ":" + partner.lod,
+                tf.x,
+                Number.isFinite(surfY) ? surfY : 0,
+                tf.z,
+                tf.yaw,
+                tf.scale,
+                tint,
+                null, // Bäume sind GLOBAL instanziert (V18.390-Weisheit)
+                partner
+            ))
+                slots.push(ps);
         return {
             dient: bandDient, // die gelieferte Stufe des Bands (K36)
             bandWunsch,
@@ -1269,12 +1273,6 @@ class AnazhRealm_vegetation_streu {
         const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex, cell.species, tf);
         const pf = preset && seed !== null ? this._foundryFlattenFor({ seed, wo: tf }, preset, wunsch) : null;
         return !!(pf && pf.instanceable);
-    }
-
-    // Der Halt eines Streu-Slots (K36): die Primär-Stufe ohne Partner zeichnet voll (`_lodSlotStamp`, Vorzeichen).
-    _streuSlotHalt(ref, scale) {
-        const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
-        if (g) this._lodSlotStamp(g, ref.slot, scale, true);
     }
 
     _disposeScatterRegion(key) {

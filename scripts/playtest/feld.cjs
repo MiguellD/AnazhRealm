@@ -4,7 +4,6 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
-const { checkBandPhasenBF } = require("./koerper-seele.cjs");
 
 // Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
 // Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
@@ -24,7 +23,7 @@ async function checkRing2Dsl(ctx) {
             depthBudgetEnforced: false,
             delayScheduled: false,
         };
-        if (!r || !r.state || typeof r.dslRun !== "function") return out;
+        if (!r || !r.state) return out;
         const m = r.state.worldMeta || {};
         out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
@@ -189,33 +188,29 @@ async function checkBandV1723Harmony(ctx) {
         r.state.skyTintStrength = 0;
         r.dslRun(["skybox_color", "#d4a3ff"], { source: "test" });
         out.skyTintSet = !!r.state.skyTint && r.state.skyTintTarget > 0;
-        if (typeof r._dayNightApplySkybox === "function") {
-            const t0 = r.state.skyTintTarget;
-            const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
-            for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
-            out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
-            out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
-            r.state.skyTint = null; // Restore — kein Leak
-            r.state.skyTintTo = null;
-            r.state.skyTintTarget = 0;
-            r.state.skyTintStrength = 0;
-        }
+        const t0 = r.state.skyTintTarget;
+        const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
+        for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
+        out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
+        out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
+        r.state.skyTint = null; // Restore — kein Leak
+        r.state.skyTintTo = null;
+        r.state.skyTintTarget = 0;
+        r.state.skyTintStrength = 0;
         // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
-        if (typeof r._dayNightApplySkybox === "function") {
-            r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
-            r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
-            const beforeHex = r.state.skyTint.getHex();
-            for (let i = 0; i < 25; i++) r._dayNightApplySkybox({ skyR: 0.2, skyG: 0.3, skyB: 0.5 });
-            const afterHex = r.state.skyTint.getHex();
-            out.colorCrossFades =
-                (afterHex & 0xff) > (beforeHex & 0xff) && ((afterHex >> 16) & 0xff) < ((beforeHex >> 16) & 0xff);
-            r.state.skyTint = null; // Restore
-            r.state.skyTintTo = null;
-            r.state.skyTintTarget = 0;
-            r.state.skyTintStrength = 0;
-        }
+        r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
+        r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
+        const beforeHex = r.state.skyTint.getHex();
+        for (let i = 0; i < 25; i++) r._dayNightApplySkybox({ skyR: 0.2, skyG: 0.3, skyB: 0.5 });
+        const afterHex = r.state.skyTint.getHex();
+        out.colorCrossFades =
+            (afterHex & 0xff) > (beforeHex & 0xff) && ((afterHex >> 16) & 0xff) < ((beforeHex >> 16) & 0xff);
+        r.state.skyTint = null; // Restore
+        r.state.skyTintTo = null;
+        r.state.skyTintTarget = 0;
+        r.state.skyTintStrength = 0;
         // drei Wesen am Spieler: sie stehen im Ring um ihn (4–6,5 m), nie auf ihm und nie gestapelt
         const pmR = r.state.playerMesh.position;
         const capR = r.state.maxCreatures,
@@ -332,14 +327,9 @@ async function checkBandV1733WorldRules(ctx) {
         const now = () => performance.now() / 1000;
 
         // --- Verdrahtung ---
-        out.cfgWired =
-            !!K.WORLD_RULES &&
-            K.WORLD_RULES.cap === 64 &&
-            K.WORLD_RULES.budgetPerFrame === 4 &&
-            typeof K.WORLD_RULES.minEverySec === "number";
+        out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
         out.ruleOp = typeof r.dslEffects.rule === "function";
-        out.tickDefined = typeof r._tickWorldRules === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
@@ -454,7 +444,7 @@ async function checkBandV1733WorldRules(ctx) {
 
     check(
         "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
-        res.cfgWired && res.registryArray && res.ruleOp && res.tickDefined && res.tickWired
+        res.cfgWired && res.registryArray && res.ruleOp && res.tickWired
     );
     check(
         "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
@@ -655,10 +645,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         out.cfgWired =
             typeof cfg.composeRuleProb === "number" &&
             typeof cfg.renewFitness === "number" &&
-            typeof cfg.costBudgetMs === "number" &&
-            typeof r.dslComposeRule === "function" &&
-            typeof r._worldRuleFitness === "function" &&
-            typeof r._composeNexusRule === "function";
+            typeof cfg.costBudgetMs === "number";
 
         // --- (A) dslComposeRule: gueltige Regel-Struktur ---
         const prog = r.dslComposeRule(rng);
@@ -790,10 +777,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.35 Nexus-Regeln: Konfig + dslComposeRule + _worldRuleFitness + _composeNexusRule verdrahtet",
-        res.cfgWired
-    );
+    check("V17.35 Nexus-Regeln: die Konfig trägt composeRuleProb + renewFitness + costBudgetMs", res.cfgWired);
     check(
         "V17.35 Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
         res.composeStruct
@@ -849,13 +833,7 @@ async function checkBandV1736HumanRules(ctx) {
         };
 
         // --- Verdrahtung ---
-        out.wired =
-            typeof r._chatTryRuleCommand === "function" &&
-            typeof r._chatTryRulesListCommand === "function" &&
-            typeof r._parseChatCondition === "function" &&
-            typeof r._parseChatEffect === "function" &&
-            typeof r._isRuleEffectAllowed === "function" &&
-            K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
+        out.wired = K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
         const cRain = r._parseChatCondition("es regnet");
@@ -947,10 +925,7 @@ async function checkBandV1736HumanRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.36 Mensch-Regeln: _chatTryRuleCommand/_parseChatCondition/_parseChatEffect/Whitelist verdrahtet",
-        res.wired
-    );
+    check("V17.36 Mensch-Regeln: die Sperrliste RULE_FORBIDDEN_EFFECT_OPS ist ein Set", res.wired);
     check(
         "V17.36 Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
         res.condParse
@@ -985,7 +960,6 @@ async function checkBandV1737RulesUI(ctx) {
         const out = {};
         const host = document.getElementById("status-worldrules");
         out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
-        out.renderWired = typeof r.renderWorldRulesList === "function";
         out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
 
         // Save state
@@ -1088,10 +1062,7 @@ async function checkBandV1737RulesUI(ctx) {
         res.nexusValueChipSorted
     );
     check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
-    check(
-        "V17.37 Gesetze-UI: renderWorldRulesList + _initCollapsibleDrawer existieren",
-        res.renderWired && res.collapsibleWired
-    );
+    check("V17.37 Gesetze-UI: _initCollapsibleDrawer existiert", res.collapsibleWired);
     check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     check(
         "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
@@ -1122,8 +1093,6 @@ async function checkBandV1739RulesUX(ctx) {
             r._statusRefs.worldrulesSignature = "";
             r.renderWorldRulesList();
         };
-
-        out.wired = typeof r._worldRuleStatusLabel === "function";
 
         // Save state
         const savedRules = r.state.worldRules.slice();
@@ -1234,7 +1203,6 @@ async function checkBandV1739RulesUX(ctx) {
         return out;
     });
 
-    check("V17.39 Gesetze-UX: _worldRuleStatusLabel verdrahtet", res.wired);
     check("V17.39 Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert", res.labels);
     check("V17.39 Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
     check(
@@ -1307,7 +1275,6 @@ async function checkBandV1740LlmRules(ctx) {
         const llmRow = host.querySelector(".ability-row.source-llm");
         out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
 
-
         // restore
         r.state.worldRules = savedRules;
         r.state.weather = savedWeather;
@@ -1344,7 +1311,6 @@ async function checkBandV1741RuleThread(ctx) {
         const savedSeen = { ...r.state.worldJournal.seen };
 
         // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
-        out.wired = typeof r._worldRuleActivityLabel === "function";
         const tNow = now();
         const mk = (over) => Object.assign({ fires: 0, lastFired: -Infinity, disabled: false }, over);
         out.labelRuht = r._worldRuleActivityLabel(mk({}), tNow) === "ruht";
@@ -1437,7 +1403,7 @@ async function checkBandV1741RuleThread(ctx) {
 
     check(
         "V17.41 Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)",
-        res.wired && res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
+        res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
     );
     check(
         'V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum',
@@ -1550,7 +1516,6 @@ async function checkBandV1743RuleFitness(ctx) {
         ];
         r._evictWorldRule(rr2);
         out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
-
 
         // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
         r.state.worldRules = [];
@@ -2165,7 +2130,6 @@ async function checkBandG8R2SovereignWall(ctx) {
             SA.includes("sign_manifest") &&
             SA.includes("change_identity") &&
             SA.includes("grant_capability");
-        out.helpers = typeof r._isSovereignAction === "function" && typeof r._sovereignGesture === "function";
         // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
         // NON_BROADCASTABLE_OPS, oder im Nexus-Auto-Pool (dslComposeAtomic).
         const effects = r.dslEffects;
@@ -2208,7 +2172,7 @@ async function checkBandG8R2SovereignWall(ctx) {
         check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen && res.helpers);
+    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte)", res.frozen);
     check(
         "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
         res.notDslOp && res.notBroadcast && res.notComposed

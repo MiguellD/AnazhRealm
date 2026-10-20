@@ -22,8 +22,6 @@ async function checkBandW17Multiplayer(ctx) {
         const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
         const CAP = r.constructor.SUBWORLD_NET_RATE_MAX;
 
-        out.methodsPresent = typeof r._portalNetReceive === "function" && typeof r._portalNetDeliver === "function";
-
         // _sanitizePortalMeta — das multiplayer-Flag (Phase-A-Erbe).
         const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
         out.sanitizeDefaultsFalse = sanDefault.multiplayer === false;
@@ -218,7 +216,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17bResults && w17bResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 B: _portalNetReceive + _portalNetDeliver existieren", w17bResults.methodsPresent);
         check("W17 B: _sanitizePortalMeta — multiplayer Default false", w17bResults.sanitizeDefaultsFalse);
         check("W17 B: _sanitizePortalMeta bewahrt multiplayer:true", w17bResults.sanitizeKeepsTrue);
         check(
@@ -752,13 +749,6 @@ async function checkBandW17Multiplayer(ctx) {
         if (!r) return null;
         const out = {};
 
-        out.methodsPresent =
-            typeof r._resolvePortalWorldId === "function" &&
-            typeof r._p2pBroadcastPortalInvite === "function" &&
-            typeof r._p2pHandlePortalInvite === "function" &&
-            typeof r.joinPortalInvite === "function" &&
-            typeof r.dismissPortalInvite === "function" &&
-            typeof r._renderPortalInviteBanner === "function";
         out.pendingInviteInit = r.state.p2p.pendingInvite === null;
         out.bannerInDom = !!document.getElementById("portal-invite-banner");
 
@@ -895,7 +885,6 @@ async function checkBandW17Multiplayer(ctx) {
             (w17cResults && w17cResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("W17 C: alle 6 Gruppen-Portal-Methoden existieren", w17cResults.methodsPresent);
         check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
         check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
         check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
@@ -1326,9 +1315,6 @@ async function checkBandW12WorldPortal(ctx) {
         const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
         out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         // Overlay-Methoden.
 
         // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
@@ -1382,12 +1368,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
         out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.stein_block).isPortal;
 
-        out.methods =
-            typeof r.enterPortal === "function" &&
-            typeof r.exitPortal === "function" &&
-            typeof r._tickPortalAffordance === "function" &&
-            typeof r._tryEnterPortalAtPlayer === "function";
-
         // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
         const pm = r.state.playerMesh.position;
         r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
@@ -1424,7 +1404,6 @@ async function checkBandW12WorldPortal(ctx) {
         const badEnter = r.enterPortal({ type: "stein_block", affordances: {} });
         out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
 
-
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist. Spieler AUF die Portal-Position
         // setzen: Zwischen-Ticks lassen ihn sonst zu Boden aus PORTAL_REACH (4,5 m, 3D inkl. y) driften.
         if (portalEntry && pm && pm.set) {
@@ -1445,9 +1424,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
         out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         return out;
     });
 
@@ -1455,7 +1431,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
         check("W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)", w12c3Results.affPortalExclusive);
         check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
-        check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
         check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);
         check("W12 P1 C3: enterPortal baut das iframe-Overlay", w12c3Results.enterBuildsOverlay);
         check("W12 P1 C3: enterPortal lehnt Doppel-Eintritt ab", w12c3Results.rejectsDoubleEnter);
@@ -1484,9 +1459,6 @@ async function checkBandW12WorldPortal(ctx) {
     const w12p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
@@ -1594,9 +1566,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.bodyClassCleared = !document.body.classList.contains("in-portal");
         if (entry) r.removeArchitecture(entry);
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         return out;
     });
 
@@ -1624,9 +1593,6 @@ async function checkBandW12WorldPortal(ctx) {
     const w12terrainResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
@@ -1700,7 +1666,6 @@ async function checkBandW12WorldPortal(ctx) {
             wp.portalMeta.world === REG.skeleton.world &&
             ws.portalMeta.dsl.includes("sturm") &&
             wt.portalMeta.dsl.includes("wald");
-
 
         // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
         r.state.blueprints.test_portal_ring = {
@@ -1872,7 +1837,6 @@ async function checkBandW12WorldPortal(ctx) {
         const out = {};
         const journal = () => r.state.worldJournal.entries;
         const lastEntry = () => journal()[journal().length - 1];
-        out.methodExists = typeof r._portalReceiveEvent === "function";
         // Stub-Overlay: _portalReceiveEvent braucht nur _portalOverlay-Truthiness.
         r._portalOverlay = { label: "Test-Welt", world: "worlds/skeleton/index.html", dsl: null };
         const ok = r._portalReceiveEvent({ type: "event", text: "Ein Sturm zog auf." });
@@ -1952,7 +1916,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p3aResults && !w12p3aResults.error) {
-        check("W12 P3a: _portalReceiveEvent existiert", w12p3aResults.methodExists);
         check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
         check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
         check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
@@ -1972,10 +1935,6 @@ async function checkBandW12WorldPortal(ctx) {
     } else {
         check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
-
-    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
-    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
@@ -2057,9 +2016,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
-    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
-    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 }
 
 // G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
@@ -2070,7 +2026,6 @@ async function checkBandG8R3Locality(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r._portalSandboxAttr === "function" && typeof r._localityAudit === "function";
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
         // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
         // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
@@ -2092,7 +2047,6 @@ async function checkBandG8R3Locality(ctx) {
         check("G8 R3: Lokalitäts-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R3: Sandbox-Attribut-Quelle + Lokalitäts-Audit verdrahtet", res.methods);
     check(
         "G8 R3: sandboxed → allow-scripts ALLEIN (null-origin) · trusted → + same-origin",
         res.sandboxedAttr && res.trustedAttr
@@ -2130,7 +2084,11 @@ async function checkBandW18CoPresence(ctx) {
         // Empfänger-Rate-Wand je Peer (das _cpRate-Muster).
         out.channelAllowed = window.__consumes(r, "_p2pHandleChannelMessage", r, "_p2pMsgSubworldPose", [
             "peerKonsumPose",
-            JSON.stringify({ type: "subworld-pose", worldId: "worlds/begegnung/index.html", pose: { x: 0, y: 0, z: 0, yaw: 0 } }),
+            JSON.stringify({
+                type: "subworld-pose",
+                worldId: "worlds/begegnung/index.html",
+                pose: { x: 0, y: 0, z: 0, yaw: 0 },
+            }),
         ]);
         out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
         // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
@@ -2185,7 +2143,10 @@ async function checkBandW18CoPresence(ctx) {
             sent.length = 0;
             const M = r.constructor.SUBWORLD_POSE_PEER_RATE_MAX;
             for (let i = 0; i < M + 5; i++)
-                r._p2pMsgSubworldPose({ peerId: "peer-flut-pose", worldId: msg.worldId, pose: { x: i, y: 0, z: 0, yaw: 0 } }, r.state.p2p);
+                r._p2pMsgSubworldPose(
+                    { peerId: "peer-flut-pose", worldId: msg.worldId, pose: { x: i, y: 0, z: 0, yaw: 0 } },
+                    r.state.p2p
+                );
             out.peerRate = sent.filter((m) => m.type === "peer-state").length === M;
             if (r._portalOverlay.poseTimer) {
                 clearInterval(r._portalOverlay.poseTimer);
@@ -2531,6 +2492,11 @@ async function checkBandR6Capability(ctx) {
 }
 
 module.exports = {
-    checkBandW17Multiplayer, checkBandW12WorldPortal, checkBandG8R3Locality, checkBandW18CoPresence,
-    checkBandW18InputBridge, checkBandW18Dwell, checkBandR6Capability,
+    checkBandW17Multiplayer,
+    checkBandW12WorldPortal,
+    checkBandG8R3Locality,
+    checkBandW18CoPresence,
+    checkBandW18InputBridge,
+    checkBandW18Dwell,
+    checkBandR6Capability,
 };

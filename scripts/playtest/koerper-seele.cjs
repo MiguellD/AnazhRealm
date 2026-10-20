@@ -86,7 +86,6 @@ async function checkBandV1757HeldSlot(ctx) {
         // keine getrennte Waffen-Zeile. V18.66 Ich-J2: der „In der Hand"-DROPDOWN ist geschnitten (Parallel-Pfad
         // zur Hotbar); das Wechseln läuft in der Hand (Hotbar) + Rezeptbuch (wieldBlueprint). Test wandert mit.
         out.heldDropdownCut = typeof r._equipAppendHeldRow !== "function";
-        out.wieldMergedPath = typeof r.wieldBlueprint === "function";
         out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
 
         // cleanup
@@ -119,8 +118,8 @@ async function checkBandV1757HeldSlot(ctx) {
     );
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
     check(
-        "V18.66 Ich-J2: kein Rollen-Schloss — der EINE merged Halte-Pfad (wieldBlueprint), keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
-        res.wieldMergedPath && res.noWeaponRow && res.heldDropdownCut
+        "V18.66 Ich-J2: kein Rollen-Schloss — keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
+        res.noWeaponRow && res.heldDropdownCut
     );
 }
 
@@ -137,8 +136,6 @@ async function checkBandV1761ForgeImplement(ctx) {
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
-
-        out.method = typeof r.forgeBlueprint === "function";
 
         // F2 — die Präzision moduliert die Welt-Kraft: gleiche Form/Materie, aber ein hoch-präziser
         // opChain ergibt ein stärkeres Gerät als ein grob-präziser (die Rekursion: besseres Crafting
@@ -213,7 +210,6 @@ async function checkBandV1761ForgeImplement(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.61 S3: forgeBlueprint (der Werk-Akt) existiert", res.method);
     check(
         "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
         res.precisionModulatesMine
@@ -243,8 +239,6 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
-
-        out.method = typeof r.wieldBlueprint === "function";
 
         // (2) Persistenz: forgedPrecision überlebt serialize → deserialize (geschmiedet bleibt geschmiedet)
         blu.__wield_persist = {
@@ -309,7 +303,6 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.62 S3-B: wieldBlueprint (der bedeutsame Spieler-Pfad) existiert", res.method);
     check(
         "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
         res.forgedPrecisionPersists
@@ -346,10 +339,6 @@ async function checkBandV1763ForgeArmor(ctx) {
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
         const savedArmor = p.equipped.armor;
-
-        out.methods = ["forgeArmor", "wearArmor", "fertigeBlueprint", "_forgeMaterialAndFreeze"].every(
-            (m) => typeof r[m] === "function"
-        );
 
         // ein dichtes Rüstungs-Compound (stein → dichte+härte = Schutz)
         blu.__arm = {
@@ -431,10 +420,6 @@ async function checkBandV1763ForgeArmor(ctx) {
         return out;
     });
     check(
-        "V17.63 S4: die Methoden (forgeArmor/wearArmor/fertigeBlueprint/_forgeMaterialAndFreeze) existieren",
-        res.methods
-    );
-    check(
         "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
         res.forgeArmorRequiresRole && res.markedArmor
     );
@@ -471,8 +456,6 @@ async function checkBandV1765BrewConsumable(ctx) {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
-
-        out.method = typeof r.brewConsumable === "function";
 
         blu.__trank = {
             name: "__trank",
@@ -537,7 +520,6 @@ async function checkBandV1765BrewConsumable(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.65 S6: brewConsumable existiert", res.method);
     check(
         "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
         res.brewRequiresConsumable && res.markedConsumable
@@ -575,11 +557,8 @@ async function checkBandV1766FertigenFlow(ctx) {
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
 
-        // --- die Methoden da ---
-        out.methods =
-            typeof r._workshopAppendFertigenRow === "function" &&
-            typeof r._makeStationGate === "function" &&
-            typeof r._stationLabelForDomain === "function";
+        // --- _stationLabelForDomain: das Band fährt es nicht (Mutant still) — die Existenz-Probe ist seine einzige Wache
+        out.stationLabel = typeof r._stationLabelForDomain === "function";
 
         // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
         // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
@@ -654,14 +633,11 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.state.architectures = savedArch;
         p.inventory = new Array(27).fill(null);
         p.equipped = savedEquipped;
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         r.setGameMode(savedMode);
         return out;
     });
-    check(
-        "V17.66 S7: die FERTIGEN-/Station-Methoden existieren (_workshopAppendFertigenRow/_makeStationGate/_stationLabelForDomain)",
-        res.methods
-    );
+    check("V17.66 S7: _stationLabelForDomain existiert", res.stationLabel);
     check(
         "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
         res.oldButtonsGone
@@ -698,8 +674,6 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         const savedArch = r.state.architectures.slice();
         const savedMode = r.getGameMode();
-
-        out.method = typeof r.setBlueprintAsWorkshopStation === "function";
 
         // ein eigener Apparat: ein Quarz-Gefäß (durchsichtig → alchemy-Domäne, R1)
         if (blu.__ws_vessel) delete blu.__ws_vessel;
@@ -765,7 +739,6 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.70 R3-Schluss: setBlueprintAsWorkshopStation existiert", res.method);
     check(
         "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
         res.markSetsRole && res.notStationBeforeMark
@@ -830,8 +803,7 @@ async function checkBandV1772Library(ctx) {
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
         const savedSoul = (p && p.soul) || "mensch";
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
-        else r.state.worldMeta.gameMode = "schöpfer";
+        r.setGameMode("schöpfer");
 
         const fg = r.fertigeBlueprint("_t_v1772");
         out.geraetForged = fg.ok === true && p.equipped.held === "_t_v1772";
@@ -843,8 +815,7 @@ async function checkBandV1772Library(ctx) {
         out.avatarEmbodied = fv.ok === true;
 
         // restore — kein dangling Held/Soul/Boost für die nächsten Bands
-        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-        else r.state.worldMeta.gameMode = savedMode;
+        r.setGameMode(savedMode);
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"]; // V17.74 — kein Soul-Leck für spätere Bands
         for (const bn of ["_t_v1772", "ruestung_brustpanzer", "trank_lebenssaft", "koerper_human"]) {
             if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
@@ -855,7 +826,7 @@ async function checkBandV1772Library(ctx) {
             p.boosts = savedBoosts;
         }
         delete blu._t_v1772; // Test-Blueprint aufräumen (kein Katalog-Leck)
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -970,7 +941,7 @@ async function checkBandV1773HeldMesh(ctx) {
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
         delete r.state.blueprints._t_v1773; // Test-Blueprint aufräumen
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -1060,7 +1031,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
         // restore
         p.soul = savedSoul;
         r.state.customSouls = savedCustom;
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.recomputePlayerStats();
         return out;
     });
     check(
@@ -1082,7 +1053,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6DSoul(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
@@ -1231,7 +1202,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-
         // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
         // Spec-Sheet-Render arbeitet ohne Crash
@@ -1260,7 +1230,6 @@ async function checkBandWelle6DSoul(ctx) {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
-
 
         // (2) Chat-Pattern für damage
         const dmgPattern = r.parseChatToDsl("schade mir 42");
@@ -1315,7 +1284,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul("human"); // restore
 
         // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
-        const beforeSprintBug = r.state.sprintSpeed;
         r.dslRun(["player_speed", 20], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
@@ -1392,7 +1360,7 @@ async function checkBandWelle6DSoul(ctx) {
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
         // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
-        if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+        r.setGameMode("pfad");
         r.state.blueprints.wound_test_bp = {
             name: "wound_test_bp",
             label: "Test",
@@ -1557,8 +1525,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
-        out.hasEquipTool = typeof r.equipTool === "function";
-        out.hasEquipArmor = typeof r.equipArmor === "function";
         out.hasEquippedState =
             r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
         // SYNERGIE-WELLE — die Hue-Map ist mit der Avatar-Aura gefallen (Abwesenheit).
@@ -1677,8 +1643,6 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
-        check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
-        check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
         check(
             "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
             wave6d3bResults.hasEquippedState
@@ -1740,14 +1704,12 @@ async function checkBandWelle6DSoul(ctx) {
         const out = {};
         // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
-        if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+        r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
         // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
-        out.hasTriggerPhoenixMethod = typeof r[window.__anker.todRespawn] === "function";
-        out.hasTickPhoenixMethod = typeof r[window.__anker.vitalsTick] === "function";
         out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
@@ -1756,7 +1718,6 @@ async function checkBandWelle6DSoul(ctx) {
         if (savedSoul !== "human") r.applyPlayerSoul("human");
         r.state.player.respawnGraceUntil = -Infinity;
 
-        const hpMax = r.state.player.hpMax;
         const hpBefore = r.state.player.hp;
         r.damagePlayer(20, "test");
         out.hpDropped = r.state.player.hp === hpBefore - 20;
@@ -1887,11 +1848,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d3aResults && !wave6d3aResults.error) {
         // Tod-Behandlung
-        check(
-            "Welle 6.D Etappe 3a (NULL): _playerDeathRespawn existiert (Phönix-Maschine gefallen)",
-            wave6d3aResults.hasTriggerPhoenixMethod
-        );
-        check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals existiert", wave6d3aResults.hasTickPhoenixMethod);
         check(
             "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt, phoenixUntil ist gefallen",
             wave6d3aResults.hasPhoenixState
@@ -2214,7 +2170,7 @@ async function checkBandWelle6DSoul(ctx) {
         })();
 
         // UI-Dropdown enthält die neue Seele
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const select = document.getElementById("player-soul-select");
         out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
 
@@ -2247,7 +2203,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.customSouls = {};
         r.state.player.soul = savedSoul;
         r.applyPlayerSoul(savedSoul);
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
 
         return out;
     });
@@ -2600,7 +2556,7 @@ async function checkBandPhasenBF(ctx) {
                 eq.held = save.held;
                 eq.offhand = save.offhand;
                 r.recomputePlayerStats();
-                if (typeof r._refreshHeldMesh === "function") r._refreshHeldMesh();
+                r._refreshHeldMesh();
             }
         })();
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
@@ -2731,24 +2687,21 @@ async function checkBandPhasenBF(ctx) {
         out.e3ManaHud = (() => {
             const row = document.getElementById("stats-hud-mana-row");
             if (!row) return false;
-            const savedMode = typeof r.getGameMode === "function" ? r.getGameMode() : r.state.gameMode;
+            const savedMode = r.getGameMode();
             const savedMana = r.state.player.mana;
             try {
-                if (typeof r.setGameMode === "function") r.setGameMode("pfad");
-                else r.state.gameMode = "pfad";
+                r.setGameMode("pfad");
                 r.state.player.mana = 7;
                 r.state._statsHudLastTick = 0;
                 r.tickStatsHud(1e9);
                 const visOk = !row.hidden;
                 const txt = document.getElementById("stats-hud-mana-text").textContent;
-                if (typeof r.setGameMode === "function") r.setGameMode("frieden");
-                else r.state.gameMode = "frieden";
+                r.setGameMode("frieden");
                 r.state._statsHudLastTick = 0;
                 r.tickStatsHud(2e9);
                 return visOk && /^7\//.test(txt) && row.hidden === true;
             } finally {
-                if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
-                else r.state.gameMode = savedMode;
+                r.setGameMode(savedMode);
                 r.state.player.mana = savedMana;
             }
         })();
@@ -2774,7 +2727,6 @@ async function checkBandPhasenBF(ctx) {
         // unten sichtbar), darüber BackSide. Behavioral mit Restore (zustands-neutral): der Spiegel wird einmal über,
         // einmal unter die Kamera gelegt.
         out.b5Underwater = (() => {
-            if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
             if (!mat) return false;
             try {
@@ -3261,7 +3213,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) {
             // wear bewusst niedrig setzen; im schöpfer-Modus ist forge gratis (_forgeMaterialAndFreeze ruft
             // _makeCostGate → free=true) — das deckt den frieden-Pfad mit ab.
-            if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+            r.setGameMode("schöpfer");
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             const forgeRes = r.forgeBlueprint(heldName);
             out.forgeRefilled = !!(forgeRes && forgeRes.ok && r._blueprintWear(heldBp) > 0.99);
@@ -3284,12 +3236,10 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
                 const wearAfter = r._blueprintWear(heldBp);
                 out.strikeReducesWear = wearAfter < wearBefore && wearBefore - wearAfter < 0.1;
                 // Aufräumen — die Test-Architektur entfernen.
-                if (typeof r.removeArchitecture === "function") {
-                    try {
-                        r.removeArchitecture(testEntry);
-                    } catch {
-                        /* defensive */
-                    }
+                try {
+                    r.removeArchitecture(testEntry);
+                } catch {
+                    /* defensive */
                 }
             } else {
                 out.strikeReducesWear = false;
@@ -3307,12 +3257,10 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
                 const wearAfter = r._blueprintWear(heldBp);
                 out.kaputtWand = result === false && wearAfter === AR.WEAR_KAPUTT_SCHWELLE - 0.01;
                 // Aufräumen — das Bauwerk steht noch (wir konnten nicht hauen).
-                if (typeof r.removeArchitecture === "function") {
-                    try {
-                        r.removeArchitecture(testEntry);
-                    } catch {
-                        /* defensive */
-                    }
+                try {
+                    r.removeArchitecture(testEntry);
+                } catch {
+                    /* defensive */
                 }
             }
         }
@@ -3321,7 +3269,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) {
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             // schöpfer-Modus für free-Repair (Material-Tor umgangen).
-            if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+            r.setGameMode("schöpfer");
             const repRes = r.repairHeldDevice();
             out.repairOk = !!(repRes && repRes.ok && repRes.before === 0.3 && repRes.after === 1.0 && repRes.free);
             out.repairWearReset = r._blueprintWear(heldBp) === 1;
@@ -3386,7 +3334,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) r._setBlueprintWear(heldBp, 1);
         r.equipHeld(null);
         delete r.state.blueprints._t_wear_spitz;
-        if (typeof r.setGameMode === "function") r.setGameMode("frieden");
+        r.setGameMode("frieden");
 
         return out;
     });
@@ -3466,82 +3414,65 @@ async function checkBandV18202GeruchFeld(ctx) {
                 S.minDirectional >= 0 &&
                 S.minDirectional <= 1;
         }
-        out.windHelperExists = typeof r._worldWindDirAt === "function";
-        out.scentHelperExists = typeof r._scentAt === "function";
 
         // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
-        if (r._worldWindDirAt) {
-            const w1 = r._worldWindDirAt(0, 0, 0);
-            const w2 = r._worldWindDirAt(0, 0, 0);
-            out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
-            out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
-            // Variiert über große Distanzen (1000m) — nicht-konstant
-            const w3 = r._worldWindDirAt(2000, 0, 0);
-            const dot13 = w1.x * w3.x + w1.z * w3.z;
-            out.windVariesOverDistance = Math.abs(dot13) < 0.999; // < 1 → unterschiedliche Richtung
-        }
+        const w1 = r._worldWindDirAt(0, 0, 0);
+        const w2 = r._worldWindDirAt(0, 0, 0);
+        out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
+        out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
+        // Variiert über große Distanzen (1000m) — nicht-konstant
+        const w3 = r._worldWindDirAt(2000, 0, 0);
+        const dot13 = w1.x * w3.x + w1.z * w3.z;
+        out.windVariesOverDistance = Math.abs(dot13) < 0.999;
 
         // (N3) Geruch: einzelne Quelle, Distanz-Decay
-        if (r._scentAt) {
-            const src = [{ x: 0, z: 0, strength: 1.0 }];
-            // Verschiedene Distanzen — Geruch fällt monoton
-            const g0 = r._scentAt(0.5, 0.5, src); // sehr nah
-            const g20 = r._scentAt(20, 0, src);
-            const g50 = r._scentAt(50, 0, src);
-            const g100 = r._scentAt(100, 0, src);
-            const g300 = r._scentAt(300, 0, src); // jenseits 4×range
-            out.scentNearStrong = g0 > 0.3; // nah > 0.3 (rangeM=80, exp(-0)≈1, modifiziert von wind)
-            out.scentDistantWeaker = g20 > g50 && g50 > g100;
-            out.scentFarVanishes = g300 < 0.05;
-        }
+        const src = [{ x: 0, z: 0, strength: 1.0 }];
+        // Verschiedene Distanzen — Geruch fällt monoton
+        const g0 = r._scentAt(0.5, 0.5, src); // sehr nah
+        const g20 = r._scentAt(20, 0, src);
+        const g50 = r._scentAt(50, 0, src);
+        const g100 = r._scentAt(100, 0, src);
+        const g300 = r._scentAt(300, 0, src); // jenseits 4×range
+        out.scentNearStrong = g0 > 0.3; // nah > 0.3 (rangeM=80, exp(-0)≈1, modifiziert von wind)
+        out.scentDistantWeaker = g20 > g50 && g50 > g100;
+        out.scentFarVanishes = g300 < 0.05;
 
         // (N4) Geruch akkumuliert über mehrere Quellen
-        if (r._scentAt) {
-            const oneSource = [{ x: 0, z: 0, strength: 1 }];
-            const twoSources = [
-                { x: 0, z: 0, strength: 1 },
-                { x: 5, z: 0, strength: 1 },
-            ];
-            const g1 = r._scentAt(10, 0, oneSource);
-            const g2 = r._scentAt(10, 0, twoSources);
-            out.scentAccumulates = g2 > g1;
-        }
+        const oneSource = [{ x: 0, z: 0, strength: 1 }];
+        const twoSources = [
+            { x: 0, z: 0, strength: 1 },
+            { x: 5, z: 0, strength: 1 },
+        ];
+        const g1 = r._scentAt(10, 0, oneSource);
+        const g2 = r._scentAt(10, 0, twoSources);
+        out.scentAccumulates = g2 > g1;
 
-        // (N5) Wind-Modulation: downwind > upwind
-        if (r._scentAt && r._worldWindDirAt) {
-            // Such einen Punkt mit klarem Wind-Vektor
-            // Test-Trick: konstruiere Wind via einer Source an einer fixen Position,
-            // dann samplen wir EXAKT downwind und upwind
-            const sx = 100,
-                sz = 100;
-            const wind = r._worldWindDirAt(sx, sz, 0);
-            // Downwind = in Wind-Richtung von Source aus
-            const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
-            const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
-            const src = [{ x: sx, z: sz, strength: 1 }];
-            const downG = r._scentAt(dRecv.x, dRecv.z, src);
-            const upG = r._scentAt(uRecv.x, uRecv.z, src);
-            out.downwindStronger = downG > upG;
-            out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
-            out.downwindMagnitude = downG;
-            out.upwindMagnitude = upG;
-        }
+        // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
+        const sx = 100,
+            sz = 100;
+        const wind = r._worldWindDirAt(sx, sz, 0);
+        // Downwind = in Wind-Richtung von Source aus
+        const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
+        const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
+        const quelle = [{ x: sx, z: sz, strength: 1 }];
+        const downG = r._scentAt(dRecv.x, dRecv.z, quelle);
+        const upG = r._scentAt(uRecv.x, uRecv.z, quelle);
+        out.downwindStronger = downG > upG;
+        out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
+        out.downwindMagnitude = downG;
+        out.upwindMagnitude = upG;
 
         // (N6) Empty/null sources → 0
-        if (r._scentAt) {
-            out.emptyArrayIsZero = r._scentAt(0, 0, []) === 0;
-            out.nullSourcesIsZero = r._scentAt(0, 0, null) === 0;
-            out.invalidSourceFiltered = r._scentAt(0, 0, [null, { x: 0, z: 0, strength: 1 }]) > 0;
-        }
+        out.emptyArrayIsZero = r._scentAt(0, 0, []) === 0;
+        out.nullSourcesIsZero = r._scentAt(0, 0, null) === 0;
+        out.invalidSourceFiltered = r._scentAt(0, 0, [null, { x: 0, z: 0, strength: 1 }]) > 0;
 
         // (N7) Negative/zero strength → ignoriert
-        if (r._scentAt) {
-            const ignoreSrc = [
-                { x: 0, z: 0, strength: 0 },
-                { x: 0, z: 0, strength: -1 },
-            ];
-            out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
-        }
+        const ignoreSrc = [
+            { x: 0, z: 0, strength: 0 },
+            { x: 0, z: 0, strength: -1 },
+        ];
+        out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
 
         return out;
     });
@@ -3550,10 +3481,6 @@ async function checkBandV18202GeruchFeld(ctx) {
     check(
         "V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])",
         res.scentConstsSensible === true
-    );
-    check(
-        "V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren",
-        res.windHelperExists === true && res.scentHelperExists === true
     );
     check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
     check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
@@ -3579,7 +3506,7 @@ async function checkBandV18202GeruchFeld(ctx) {
     );
 }
 
-// Konsolidierungs-Band: Version-Floor · die vier Foundations leben (Mana-Drain · Geruch ·
+// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
 // Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
@@ -3588,22 +3515,8 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.216.0"
-        out.versionStr = A.VERSION;
-        // V18.217 — Floor (semver-Form): die Wand wandert mit jeder Welle,
-        // muss aber nicht jedes Mal hier verschoben werden (Drift-Schutz).
-        const vparts = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionMatches = vparts[0] > 18 || (vparts[0] === 18 && vparts[1] >= 217);
-
-        // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
-        // beim Konsolidieren (alles bleibt lauffähig):
-        out.manaDrainExists = typeof r._drainMana === "function" && typeof r._canPayMana === "function";
-        out.scentExists = typeof r._scentAt === "function" && typeof r._worldWindDirAt === "function";
-        out.growTreeExists = typeof r._growTreeBlueprint === "function";
+        // (K2) die R5-Konstante steht (Mana-Drain, Geruch und Baum-Grammatik fahren ihre Bänder am Verhalten)
         out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-        out.allFoundationsAlive = out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
 
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
@@ -3620,9 +3533,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
         out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
-        out.gamma1Nose = typeof r._scentAt === "function";
         out.gamma3Char = !!A.FIELD_CHARACTER;
-        out.gamma7Grammar = typeof r._growTreeBlueprint === "function";
         out.gammaBogenKomplett =
             out.gamma4Anker &&
             out.gamma6Snowband &&
@@ -3630,9 +3541,7 @@ async function checkBandV18209Konsolidierung(ctx) {
             out.gammaMLichen &&
             out.gammaMIronBands &&
             out.gamma2Totholz &&
-            out.gamma1Nose &&
-            out.gamma3Char &&
-            out.gamma7Grammar;
+            out.gamma3Char;
 
         // (K5) MANA-SYMMETRIE Foundation:
         out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
@@ -3641,12 +3550,11 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
     check(
-        "V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)",
-        res.allFoundationsAlive === true
+        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
+        res.gammaBogenKomplett === true
     );
-    check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check(
         "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
         res.manaMaxFn && res.manaRegenConst
