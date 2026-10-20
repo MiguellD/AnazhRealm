@@ -56,16 +56,7 @@ function check(name, ok) {
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
             // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
-            const dl = performance.now() + 60000;
-            while (
-                (!window.anazhRealm ||
-                    !window.anazhRealm.state ||
-                    !window.anazhRealm.state.rendererReady ||
-                    typeof window.anazhRealm._gameLoopTick !== "function" ||
-                    !window.anazhRealm.state.blueprints) &&
-                performance.now() < dl
-            )
-                await new Promise((r) => setTimeout(r, 100));
+            await window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {

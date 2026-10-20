@@ -30,6 +30,15 @@ const { ohneKommentare } = require("./stamm.cjs");
 // Bis D3a baute jede Linse ihr eigenes (18 Einbauten); die Wand: gate:betriebsgesetz STRIPPER-WAND.
 // `window.__fehlt(fn, re)` ist der EINE Absenz-Helfer (D3d, Zwilling `stammLib.fehlt`): true = das Muster fehlt im Code ohne
 // Kommentare, `fn` eine Funktion oder eine Liste davon; was keine Funktion ist, wirft (eine Absenz an einem Toten misst nichts).
+// DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: eine Wand urteilt in Bau-Ereignissen, nie in Wanduhr-Sekunden) — drei
+// Seiten-Funktionen, als Text in jede Seite (`WARTEN_SEITE`, in CODE_OF_SEITE und der Ausgabe-Aufnahme):
+// `window.__seitenTakt()` ist der Takt der Seite: ein Bild ihres Loops, ruht er, ein Takt von Hand.
+async function seitenTakt() {
+    const r = window.anazhRealm;
+    const vor = r._weltStand ? r._weltStand.takte : -1;
+    await new Promise((ok) => requestAnimationFrame(ok));
+    if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
+}
 // DAS EINE EINSCHWINGEN jeder Linse (`await window.__weltStehtNach(takt, max)`): Takt um Takt, bis die Welt steht (A9
 // `_weltSteht`) und das Buch da ist (`_bepflanzungWartet`) — nie eine eigene Heuristik (die Ring-Zahl
 // steht, während die Nah-Wiese auf ihr Gras wartet). `takt(n)` ist der Takt der Linse; ohne ihn der Takt der Seite (ein Bild ihres Loops, ruht er,
@@ -40,17 +49,12 @@ async function weltStehtNach(takt, max) {
     const st = r.state;
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
-    const seite = async () => {
-        const vor = W().takte;
-        await new Promise((ok) => requestAnimationFrame(ok));
-        if (W().takte === vor) r._gameLoopTick(performance.now());
-    };
     const regler = st.perfRegulator;
     if (st.renderer && st.renderer._isHeadlessNull) st.perfRegulator = false;
     let n = 0;
     try {
         for (let k = 0, o; !(n && steht()) && k < (max || 1800); n++) {
-            await (takt || seite)(n);
+            await (takt || window.__seitenTakt)(n);
             o = r._weltOffen();
             if (!(o.foundry + o.chunks + o.wald) && !r._bepflanzungWartet()) k++;
             if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
@@ -65,7 +69,38 @@ async function weltStehtNach(takt, max) {
         );
     return n;
 }
-const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); window.__weltStehtNach = ${weltStehtNach};`;
+// DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis der Bau steht
+// (`fertig()`, sonst `_archIsRendered(e)`) — vor jedem Takt ruft `bau(n)` ihn (sonst `_rebuildArchitectureMesh(e)`, der
+// Rewarm-Weg von Hand); `takt(n)` wie oben. Der Deckel `max` zählt nur Takte, in denen die Foundry nichts offen hat
+// (`_weltOffen`): solange ein Auftrag fliegt, wartet der Bau auf sein Ereignis, nie auf die Uhr; steht er danach nicht, wirft er
+// beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212).
+async function gebautNach(e, { takt, fertig, bau, max } = {}) {
+    const r = window.anazhRealm;
+    const steht = fertig || (() => r._archIsRendered(e));
+    let n = 0;
+    for (let k = 0; !steht() && k < (max || 120); n++) {
+        if (bau) bau(n);
+        else r._rebuildArchitectureMesh(e);
+        if (steht()) break;
+        await (takt || window.__seitenTakt)(n);
+        await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
+        if (!r._weltOffen().foundry) k++;
+    }
+    if (!steht())
+        throw new Error(
+            `DER BAU STEHT NICHT: ${e ? `${e.type}#${e.id}` : "kein Eintrag"} nach ${n} Takten — die Foundry hat nichts mehr offen`
+        );
+    return n;
+}
+// DIE WELT IST DA (`await window.__weltDa((r) => bedingung)`): bis der Stamm lebt (`_gameLoopTick`) und die Bedingung gilt — ohne
+// Frist: hängt der Boot, nennt ihn die Stall-Akte (bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
+async function weltDa(bed) {
+    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r))); )
+        await new Promise((ok) => setTimeout(ok, 50));
+    return window.anazhRealm;
+}
+const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__weltDa = ${weltDa};`;
+const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -702,20 +737,43 @@ function pruefer() {
     return { errs, check };
 }
 
-// DER DIENST ALS KIND (die Mehrspieler-Linsen: save-server, signaling-server): `script` (relativ zur Wurzel) mit den Variablen
-// `env` über der Umgebung, bereit, sobald seine Ausgabe `bereit` trifft — ohne Meldung binnen `frist` ms ROT. Bis S4-N4 trugen
-// gate:mp-sync und die drei Mehrspieler-Rauchproben je eine eigene Kopie samt `waitFor` und `sleep`.
-function startProc(script, bereit, env = {}, frist = 8000) {
+// DER DIENST ALS KIND (save-server, signaling-server): `script` (relativ zur Wurzel, `vor` davor, in `cwd`) mit `env` — bereit,
+// sobald seine Ausgabe `bereit` trifft; endet er vorher, ROT mit seinem Fehler-Wort (EADDRINUSE). Das Urteil fällt am Ereignis,
+// nie an einer Frist (K-WANDUHR).
+function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
     return new Promise((resolve, reject) => {
-        const proc = require("child_process").spawn("node", [path.join(ROOT, script)], {
-            cwd: ROOT,
+        const proc = require("child_process").spawn(process.execPath, [...vor, path.resolve(ROOT, script)], {
+            cwd,
             stdio: ["ignore", "pipe", "pipe"],
             env: Object.assign({}, process.env, env),
         });
-        const uhr = setTimeout(() => reject(new Error(`${script} startete nicht innerhalb ${frist / 1000} s`)), frist);
-        proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (clearTimeout(uhr), resolve(proc)));
+        let fehler = "";
+        proc.stderr.on("data", (c) => (fehler = (fehler + c).slice(-2000)));
+        const ende = (code) => {
+            const wort = fehler.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/);
+            reject(new Error(`${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`));
+        };
+        proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (proc.off("exit", ende), resolve(proc)));
+        proc.on("exit", ende);
         proc.on("error", reject);
     });
+}
+// DIE EIGENEN PORTS einer Linse mit eigenem Server: je ihre Variable, sonst ein freier des Systems (alle zugleich gehalten) — nie
+// 4312/4313, die Server des Schöpfers (lief `npm start`, fiel gate:taille nach 5 s mit „server timeout").
+async function eigenePorte(...variablen) {
+    const halt = [];
+    const frei = () =>
+        new Promise((ok, nein) => {
+            const s = require("net").createServer();
+            halt.push(s);
+            s.on("error", nein);
+            s.listen(0, "127.0.0.1", () => ok(s.address().port));
+        });
+    try {
+        return await Promise.all(variablen.map((v) => (Number(process.env[v]) > 0 ? Number(process.env[v]) : frei())));
+    } finally {
+        await Promise.all(halt.map((s) => new Promise((ok) => s.close(() => ok()))));
+    }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // wartet, bis `fn(...args)` in der Seite wahr ist (je 150 ms), und gibt die Wartezeit zurück; nach `frist` ms ROT mit `label`
@@ -734,7 +792,7 @@ module.exports = {
     REZEPTE,
     GPU_REZEPTE,
     CODE_OF_SEITE,
-    weltStehtNach,
+    WARTEN_SEITE,
     statikServer,
     starteBrowser,
     oeffneWelt,
@@ -745,6 +803,7 @@ module.exports = {
     uferStellen,
     pruefer,
     startProc,
+    eigenePorte,
     sleep,
     waitFor,
     selbsttest: (name) => (sammlung.selbsttest = name),
@@ -759,6 +818,10 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
+        // DAS WARTEN AUF DEN BAU (K-WANDUHR): eine Welt im Kleinen — der Bau steht ab `e.ab` (Wanduhr der Seite), die Foundry
+        // meldet `offen` Aufträge
+        "/bau.html":
+            "<!doctype html><script>window.anazhRealm={_weltStand:{takte:0},offen:0,_gameLoopTick:function(){this._weltStand.takte++},_archIsRendered:function(e){return !!(e&&e.mesh)},_rebuildArchitectureMesh:function(e){if(e.ab!=null&&performance.now()>=e.ab)e.mesh={}},_weltOffen:function(){return{foundry:this.offen,chunks:0,wald:0}}}</script>",
     };
     const server = statikServer({ seiten });
     await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -779,8 +842,39 @@ async function selbsttest() {
         await warte(500);
     });
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
+    // LANGSAM: der Bau braucht 4 s Wanduhr, die Foundry hat solange einen Auftrag offen — das Warten hält (bis K-WANDUHR gab
+    // gate:fahr-leben nach 3 s auf); TOT: nichts ist offen, der Bau steht nie — ROT beim Namen
+    let bau = null;
+    await fall("/bau.html", async (p) => {
+        bau = await p.evaluate(async () => {
+            const r = window.anazhRealm;
+            r.offen = 1;
+            const langsam = { type: "langsam", id: 1, ab: performance.now() + 4000 };
+            const t0 = performance.now();
+            const takte = await window.__gebautNach(langsam, { max: 5 });
+            const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
+            r.offen = 0;
+            aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5 }).then(
+                (n) => `steht nach ${n} Takten`,
+                (x) => x.message
+            );
+            return aus;
+        });
+    });
     await browser.close();
     server.close();
+    // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
+    // die eigenen Ports der Linsen sind nie 4312/4313
+    const besetzt = require("net").createServer();
+    const [belegt, frei] = await eigenePorte("WELT_BOOT_NIE_GESETZT_A", "WELT_BOOT_NIE_GESETZT_B");
+    await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
+    const t1 = Date.now();
+    const start = await startProc("save-server.js", /läuft/, { PORT: String(belegt) }).then(
+        (p) => (p.kill(), "bereit"),
+        (x) => x.message
+    );
+    const startMs = Date.now() - t1;
+    besetzt.close();
     const urteile = [
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
@@ -788,11 +882,22 @@ async function selbsttest() {
             `Schleife: ${schleife.length ? `${schleife[0].urteil} · Stapel ${schleife[0].stapel}` : "KEINE Akte"}`,
         ],
         [haenger.length > 0 && /^AWAIT/.test(haenger[haenger.length - 1].urteil), `Versprechen: ${haenger.length ? haenger[haenger.length - 1].urteil : "KEINE Akte"}`],
+        [
+            !!bau && bau.langsam.steht && bau.langsam.ms >= 3500,
+            `Bau LANGSAM (4 s, die Foundry offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
+        ],
+        [!!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot), `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`],
+        [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
     ];
     console.log("=== STALL-AKTE SELBSTTEST (gate:welt-boot) ===");
     for (const [ok, text] of urteile) console.log(`  ${ok ? "✅" : "❌"} ${text}`);
     const rot = urteile.filter(([ok]) => !ok).length;
-    console.log(rot ? `ROT — ${rot} Fall/Fälle ohne Täter-Namen` : "GRÜN — die Akte nennt Schleife und Versprechen beim Namen, ein kurzer Block bleibt still");
+    console.log(
+        rot
+            ? `ROT — ${rot} Fall/Fälle ohne Täter-Namen`
+            : "GRÜN — die Akte nennt Schleife und Versprechen beim Namen, ein kurzer Block bleibt still; das Warten auf den Bau und der Start eines Servers urteilen am Ereignis"
+    );
     process.exitCode = rot ? 1 : 0;
 }
 

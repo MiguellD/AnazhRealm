@@ -514,13 +514,7 @@ async function verdeckungPhase(opts) {
                 if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
                 r.removeArchitecture(e);
             });
-            const dlB = performance.now() + (opts.wagenMs || 90000);
-            while (!e.instanced && !e.mesh && performance.now() < dlB) {
-                r._rebuildArchitectureMesh(e);
-                if (e.instanced || e.mesh) break;
-                takt();
-                await warte(50);
-            }
+            await window.__gebautNach(e, { takt });
             const tasten = (w, sb) => {
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
                 st.keys.w = !!w;

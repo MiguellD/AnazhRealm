@@ -221,7 +221,7 @@ const SCHUSS_FN = async (kam) => {
     const boot = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         let stable = 0,
@@ -239,8 +239,7 @@ const SCHUSS_FN = async (kam) => {
         const rend = r.state.renderer;
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
-        const dlB = performance.now() + 90000;
-        while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den
         // GPU-Puffer, oder eine offene updateRange über ein genulltes/kürzeres Array — Befund 30.09.:
         // entlassene Batch-Stagings), sprengt queue.writeBuffer („Number of bytes to write is too large")

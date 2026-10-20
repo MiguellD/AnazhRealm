@@ -29,18 +29,16 @@
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Der
 // Selbsttest von (c) läuft im Hauptlauf gleich nach (c): B wendet jede Graben-Nachricht doppelt an (`_p2pMsgDsl` zweimal)
 // → (c) ROT an der Länge; die erste Fassung aus K23 fragte nur „jeder Edit von A auch bei B“ und blieb dabei grün.
-// Ports: MP_SYNC_PORT (save-server, Default 4312), MP_SYNC_SIGNAL_PORT (signaling, Default 4313). `--roh <datei>`
+// Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems. `--roh <datei>`
 // schreibt die Zahlen als JSON.
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser, halteBis, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 
-const PORT = Number(process.env.MP_SYNC_PORT || 4312);
-const SIGNAL_PORT = Number(process.env.MP_SYNC_SIGNAL_PORT || 4313);
-const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+// die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "mp-sync-raum";
 const SELBSTTEST = process.argv.includes("--selftest");
 const ROH = (() => {
@@ -244,6 +242,9 @@ function bericht(p) {
 
 (async () => {
     const fehler = [];
+    [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
     const roh = { selbsttest: SELBSTTEST, port: PORT, signalPort: SIGNAL_PORT };
     const check = (name, ok, detail = "") => {
         console.log(`  ${ok ? "OK  " : "ROT "} ${name}${detail ? " — " + detail : ""}`);

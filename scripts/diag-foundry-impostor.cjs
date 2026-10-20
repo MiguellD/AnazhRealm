@@ -29,14 +29,7 @@ async function bootPage(browser, nullRenderer) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                typeof window.anazhRealm._foundryEnsureImpostorRecord !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && typeof r._foundryEnsureImpostorRecord === "function");
     });
     return { page, pageErrors };
 }
@@ -117,7 +110,7 @@ async function driveImpostor(page) {
         try {
             const f = r._ensureAssetFoundry();
             const dl = performance.now() + 60000;
-            while (f && !f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+            await window.__weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";

@@ -855,12 +855,7 @@ async function probe(arg) {
     const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while (
-        (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
-        performance.now() < dl0
-    )
-        await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -1385,8 +1380,7 @@ async function probe(arg) {
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
         const dl = performance.now() + 60000;
-        while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche))
-            await sleep(80);
+        await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche));
         // Das Welt-Auge steht beim Spieler (der Loop spiegelt es je Frame) — dort, wo der neue Spieler die Werkstatt öffnet.
         await tick(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
@@ -1671,7 +1665,7 @@ async function probe(arg) {
             if (art === "rezept") r.selectStudioRecipeForView(id);
             else r.selectBlueprintForEdit(id);
             const dl = performance.now() + 20000;
-            while (performance.now() < dl && r._wsStudioPending) await sleep(40);
+            await window.__weltDa(() => !(r._wsStudioPending));
             e.ms = Math.round(performance.now() - ti);
             if (r._wsStudioPending) {
                 e.frist = true;

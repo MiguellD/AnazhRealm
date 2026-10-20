@@ -63,20 +63,11 @@ async function runJob(page, fn, arg, timeoutMs) {
 async function jobKalt() {
     /* eslint-disable no-undef */
     const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht" };
     const st = r.state;
-    while ((!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced) && performance.now() < dl0)
-        await new Promise((res) => setTimeout(res, 100));
+    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
     // IDB-Schicht EXPLIZIT initialisieren (memoisiert — die Pumpe fände sie
@@ -176,20 +167,11 @@ async function jobKalt() {
 async function jobWarm(kaltIn) {
     /* eslint-disable no-undef */
     const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (warm)" };
     const st = r.state;
-    while ((!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced) && performance.now() < dl0)
-        await new Promise((res) => setTimeout(res, 100));
+    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
         return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (warm)" };
     if (st.worldMeta.seed !== kaltIn.seed)
@@ -293,15 +275,7 @@ async function jobWarm(kaltIn) {
 async function jobSelbsttest(kaltIn) {
     /* eslint-disable no-undef */
     const dl0 = performance.now() + 120000;
-    while (
-        (!window.anazhRealm ||
-            !window.anazhRealm.state ||
-            typeof window.anazhRealm._gameLoopTick !== "function" ||
-            !window.anazhRealm.state.worldMeta ||
-            !window.anazhRealm.state.worldMeta.seed) &&
-        performance.now() < dl0
-    )
-        await new Promise((r) => setTimeout(r, 100));
+    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const r = window.anazhRealm;
     if (!r || !r.state) return { err: "Welt bootete nicht (Selbsttest)" };
     await r._chunkIdbInit(); // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear

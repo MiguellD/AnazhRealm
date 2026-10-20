@@ -55,16 +55,11 @@ const server = statikServer();
     const out = await page.evaluate(async () => {
         const res = {};
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
+        await window.__weltDa(() => !(!window.anazhRealm ||
                 !window.anazhRealm.state ||
                 !window.anazhRealm.state.scene ||
                 !window.anazhRealm.state.playerMesh ||
-                !window.anazhRealm.state.worldMeta) &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+                !window.anazhRealm.state.worldMeta));
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.scene) return { fatal: "anazhRealm/scene kam nie" };
         const F = r.constructor.FERN_RING;
@@ -433,8 +428,7 @@ const server = statikServer();
         // Umgebungs-Proben sind takt-gecacht). `_gameLoopTick` wird erst bei
         // Renderer-Ready zugewiesen — erst darauf warten, dann DETERMINISTISCH
         // pumpen BIS die Bedingung steht (kein Ritt auf dem ~1-Hz-Headless-RAF).
-        const dlLoop = performance.now() + 30000;
-        while (typeof r._gameLoopTick !== "function" && performance.now() < dlLoop) await sleep(200);
+        await window.__weltDa();
         if (typeof r._gameLoopTick !== "function") res.loopFehler = "_gameLoopTick kam nie (Renderer-Ready)";
         // DIE LUFT TRÄGT (V18.530): kein Wald-Nebel mehr — die Sichtweite (Koschmieder 2 %) ist am Boden ≥ 5 km
         // und wächst mit der Höhe (Dunst-Skalenhöhe). Gelesen nach echten Loop-Takten (Tag-Nacht schreibt die Luft).

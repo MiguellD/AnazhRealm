@@ -1378,6 +1378,8 @@ class AnazhRealm_dienst {
                 leer: 0,
                 ruht: 0,
                 arbeit: 0,
+                wirkung: 0,
+                offen: false,
             };
             W.takte.set(name, t);
         }
@@ -1416,13 +1418,15 @@ class AnazhRealm_dienst {
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
-    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach — und die Welt steht nicht, `_weltStandTakt`).
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
+        t.offen = !!offen;
         if (gewirkt) {
             t.leer = 0;
+            t.wirkung++;
             if (t.bau) this._bauRegt();
         } else if (offen) t.leer = 0;
         else t.leer += besucht;

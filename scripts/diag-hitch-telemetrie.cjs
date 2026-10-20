@@ -702,7 +702,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = {};
         const dl = performance.now() + 300000;
-        while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl) await sleep(200);
+        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).

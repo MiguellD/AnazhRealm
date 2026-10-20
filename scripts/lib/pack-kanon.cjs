@@ -181,14 +181,7 @@ async function bootRealm(port) {
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {
         const dl = performance.now() + 60000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                typeof window.anazhRealm._gameLoopTick !== "function" ||
-                !window.anazhRealm.state.blueprints) &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.blueprints);
     });
     const close = async () => {
         try {
@@ -209,12 +202,11 @@ async function waitFoundryReady(page, timeoutMs) {
         if (!f) return out;
         const t0 = performance.now();
         const dl = t0 + tmo;
-        while (!f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
+        await window.__weltDa(() => !(!f.ready));
         out.ready = !!f.ready;
         out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
         if (!f.ready) return out;
-        const dlR = performance.now() + 30000;
-        while (!(f.recipeCount > 0) && performance.now() < dlR) await new Promise((res) => setTimeout(res, 100));
+        await window.__weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;
     }, timeoutMs || 90000);
@@ -227,10 +219,7 @@ async function waitLibraryWarm(page, timeoutMs) {
         const r = window.anazhRealm;
         const f = r._foundry;
         const dl = performance.now() + tmo;
-        while (performance.now() < dl) {
-            if (f && f.cache && f.cache.size > 0 && f._vorrat === false) break;
-            await new Promise((res) => setTimeout(res, 200));
-        }
+        await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
         return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
     }, timeoutMs || 180000);

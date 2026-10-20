@@ -319,9 +319,7 @@ async function runPartB() {
         const res = { samples: [], err: null };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ── Boot + Foundry abwarten ──
-        const dl0 = performance.now() + 60000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { err: "anazhRealm nicht gebootet" };
         const st = r.state;
@@ -330,8 +328,7 @@ async function runPartB() {
         const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (der Stamm liest das Kern-Gesetz)
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 50000;
-        while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
+        await window.__weltDa(() => f && f.ready);
         res.foundryReady = !!(f && f.ready);
         if (!res.foundryReady) return res;
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
@@ -509,8 +506,7 @@ async function runPartB() {
             if (oE) r.removeArchitecture(oE);
         }
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
-        const dl3 = performance.now() + 20000;
-        while (f.pending && f.pending.size > 0 && performance.now() < dl3) await sleep(100);
+        await window.__weltDa(() => !(f.pending && f.pending.size > 0));
         res.pendingAtSweep = f.pending ? f.pending.size : -1;
 
         // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════

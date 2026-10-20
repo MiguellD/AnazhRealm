@@ -91,19 +91,11 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_vorrat =====
-        const dl0 = performance.now() + 150000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._studioUebergabeEmpfang !== "function") &&
-            performance.now() < dl0
-        )
-            await sleep(100);
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._studioUebergabeEmpfang !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
-        while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat) break;
-            await sleep(120);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
         res.warm.ready = !!(f && f.ready);
         res.warm.mensch = !!(f && f.recipes && f.recipes.mensch);
         res.warm.wolf = !!(f && f.recipes && f.recipes.wolf);

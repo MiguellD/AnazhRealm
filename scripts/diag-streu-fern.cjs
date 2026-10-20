@@ -74,10 +74,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const AR = r.constructor;
         const f = r._ensureAssetFoundry();
         const dl1 = performance.now() + 90000;
-        while (performance.now() < dl1) {
-            if (f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod) break;
-            await sleep(100);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         const cfg = AR._studioRenderConfig;
         const B = cfg && cfg.lod && cfg.lod.budget;
         res.buch = !!B;

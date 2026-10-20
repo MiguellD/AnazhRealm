@@ -387,8 +387,7 @@ const server = statikServer();
 async function probe(arg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0) await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
@@ -1152,12 +1151,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
             const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
             if (gt) {
-                const dlG = performance.now() + 45000;
-                while (!gt.instanced && !gt.mesh && performance.now() < dlG) {
-                    r._rebuildArchitectureMesh(gt);
-                    if (gt.instanced || gt.mesh) break;
-                    await sleep(200);
-                }
+                await window.__gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
                 if (mr && mr.ok) {
                     weg(

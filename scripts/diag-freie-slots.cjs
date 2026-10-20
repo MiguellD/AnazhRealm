@@ -68,8 +68,7 @@ async function welt() {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = { boot: false };
         const t0 = performance.now();
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() - t0 < 90000)
-            await sleep(100);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return o;
         o.boot = true;

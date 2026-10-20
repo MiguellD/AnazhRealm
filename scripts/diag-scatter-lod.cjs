@@ -59,21 +59,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._tickScatterLod !== "function"));
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const f = r._ensureAssetFoundry();
-        const dl1 = performance.now() + 60000;
-        while (performance.now() < dl1) {
-            if (f && f.ready) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
         // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.

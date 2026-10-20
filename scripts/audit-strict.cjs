@@ -25,8 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
-const { spawn } = require("child_process");
+const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -135,22 +134,9 @@ function auditSoftDefaults() {
 // ============================================================
 async function auditStateAndMethods() {
     console.log("\n=== State-Field-Audit (Headless) ===");
-    const server = spawn("node", ["save-server.js"], { cwd: ROOT, stdio: "pipe" });
-    await new Promise((r, j) => {
-        let resolved = false;
-        server.stdout.on("data", (d) => {
-            if (!resolved && d.toString().includes("Save-Server")) {
-                resolved = true;
-                r();
-            }
-        });
-        setTimeout(() => {
-            if (!resolved) {
-                resolved = true;
-                r();
-            }
-        }, 3000);
-    });
+    // der eigene save-server auf dem eigenen Port (AUDIT_PORT, sonst ein freier des Systems — nie 4312), bereit am Ereignis
+    const [port] = await eigenePorte("AUDIT_PORT");
+    const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
 
     const browser = await starteBrowser({ art: "standard", zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     try {
@@ -162,8 +148,10 @@ async function auditStateAndMethods() {
         // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
         await nullRenderer(page);
-        await page.goto("http://127.0.0.1:4312/", { waitUntil: "load" });
-        await new Promise((r) => setTimeout(r, 12000));
+        await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "load" });
+        // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — bis K-WANDUHR 12 s Wanduhr
+        await warteAufWelt(page);
+        await page.evaluate(() => window.__weltStehtNach());
 
         // (a) State-Pfade live sammeln
         const liveState = await page.evaluate(() => {

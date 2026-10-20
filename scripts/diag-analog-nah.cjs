@@ -110,14 +110,7 @@ function urteil(z) {
     const res = await page.evaluate(
         async (k) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-            const dl0 = performance.now() + 300000;
-            while (
-                (!window.anazhRealm ||
-                    !window.anazhRealm.state ||
-                    typeof window.anazhRealm._gameLoopTick !== "function") &&
-                performance.now() < dl0
-            )
-                await sleep(200);
+            await window.__weltDa((r) => r.state);
             const r = window.anazhRealm;
             if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
             if (typeof r._analogZensus !== "function") return { fatal: "_analogZensus fehlt" };
@@ -133,11 +126,10 @@ function urteil(z) {
             rend.render = function () {};
             if (typeof rend.renderAsync === "function") rend.renderAsync = () => Promise.resolve();
             r.state.postProcessingFailed = true;
-            const dlB = performance.now() + 120000;
-            while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+            await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
             // (B5, GTX: S2 false, die Reihe leer, an 4d5f1c0c im Selbsttest, an ab97f0a8 im Lauf)
-            while (!r.state.rendererReady && performance.now() < dlB) await sleep(100);
+            await window.__weltDa(() => !(!r.state.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge

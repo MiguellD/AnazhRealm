@@ -1,57 +1,72 @@
 // End-to-End-Test: zwei WS-Clients gegen signaling-server.js
 // Bestätigt dass welcome/peer-join/pos wirklich durchläuft.
-const { spawn } = require("child_process");
-const path = require("path");
+// Der Broker ist ein eigener (welt-boot `startProc`) auf dem eigenen Port (MULTIUSER_PORT, sonst ein freier des Systems — nie
+// 4313, der Signal-Server des Schöpfers); bis K-WANDUHR startete die Probe einen festen Pfad (/home/user/AnazhRealm) und wartete
+// nach jeder Sendung 100–500 ms Wanduhr. Jetzt wartet sie an der SCHRANKE: jeder offene Socket fragt den Broker nach `stats` —
+// die Antwort kommt nach allem, was der Broker ihm vorher schickte (ein Faden, eine Reihenfolge je Verbindung).
+const { startProc, eigenePorte } = require("./lib/welt-boot.cjs");
 
-const SERVER = path.join("/home/user/AnazhRealm", "signaling-server.js");
-const URL = "ws://127.0.0.1:4313";
-
-const server = spawn("node", [SERVER], { stdio: ["ignore", "pipe", "pipe"] });
-server.stdout.on("data", (d) => process.stdout.write(`[srv] ${d}`));
-server.stderr.on("data", (d) => process.stderr.write(`[srv-err] ${d}`));
-
-async function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-}
+let server = null;
 
 async function run() {
-    await sleep(500);
+    const [port] = await eigenePorte("MULTIUSER_PORT");
+    server = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: String(port) });
+    const BROKER = `ws://127.0.0.1:${port}`;
     const events = { a: [], b: [] };
-    const wsA = new WebSocket(URL);
-    const wsB = new WebSocket(URL);
+    const schranken = new Map();
+    const offen = new Set();
+    const hoere = (ws, liste) =>
+        ws.addEventListener("message", (e) => {
+            const m = JSON.parse(e.data);
+            const q = schranken.get(ws);
+            if (m.type === "stats" && q && q.length) return q.shift()();
+            liste().push(m);
+        });
+    const ping = (ws) =>
+        new Promise((ok) => {
+            if (!schranken.has(ws)) schranken.set(ws, []);
+            schranken.get(ws).push(ok);
+            ws.send(JSON.stringify({ type: "stats" }));
+        });
+    const sync = async () => {
+        for (const ws of offen) await ping(ws);
+    };
+    const wsA = new WebSocket(BROKER);
+    const wsB = new WebSocket(BROKER);
 
-    wsA.addEventListener("message", (e) => events.a.push(JSON.parse(e.data)));
-    wsB.addEventListener("message", (e) => events.b.push(JSON.parse(e.data)));
+    hoere(wsA, () => events.a);
+    hoere(wsB, () => events.b);
 
     await Promise.all([
         new Promise((r) => wsA.addEventListener("open", r)),
         new Promise((r) => wsB.addEventListener("open", r)),
     ]);
+    offen.add(wsA).add(wsB);
     console.log("Both sockets open");
 
     // A joins first
     wsA.send(JSON.stringify({ type: "join", room: "test-room", peerId: "peerA" }));
-    await sleep(150);
+    await sync();
     // B joins
     wsB.send(JSON.stringify({ type: "join", room: "test-room", peerId: "peerB" }));
-    await sleep(250);
+    await sync();
     // A sends pos
     wsA.send(JSON.stringify({ type: "pos", x: 1.5, y: 2.5, z: 3.5, yaw: 0.5 }));
-    await sleep(150);
+    await sync();
     // B sends pos
     wsB.send(JSON.stringify({ type: "pos", x: 10, y: 20, z: 30, yaw: 1.5 }));
-    await sleep(150);
+    await sync();
 
     // Ring 11 V2: DSL-AST-Broadcast. A sendet voxel_carve → B sollte
     // dasselbe Programm zugestellt bekommen, mit peerId-Stempel des Servers.
     const sampleDsl = ["voxel_carve", 4.2, -3.5, 6, 2.5];
     wsA.send(JSON.stringify({ type: "dsl", program: sampleDsl }));
-    await sleep(150);
+    await sync();
     // Defensive: kaputte dsl-Pakete werden ignoriert (Array-Check + Length-Cap)
     wsA.send(JSON.stringify({ type: "dsl", program: "not-an-array" }));
     wsA.send(JSON.stringify({ type: "dsl", program: [] }));
     wsA.send(JSON.stringify({ type: "dsl", program: new Array(300).fill("over_cap") }));
-    await sleep(150);
+    await sync();
 
     // Ring 11 V3: Soul-Sync. A teilt seine Seele + Aura → B bekommt beides
     // mit dem peerId-Stempel des Servers.
@@ -69,63 +84,63 @@ async function run() {
     // ALTLASTEN-NULL: aura ist aus dem Protokoll gefallen — der Broker MUSS
     // den unbekannten Typ still verwerfen (§4 must-ignore, hier bewiesen).
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
-    await sleep(150);
+    await sync();
     // Defensive: soul ohne soulName wird verworfen.
     wsA.send(JSON.stringify({ type: "soul" }));
-    await sleep(150);
+    await sync();
 
     // W13 Phase 3: Vibe-Pass-Identität. A teilt vibePassId + proof → B
     // bekommt beides mit dem peerId-Stempel des Servers. (Die echte
     // ed25519-Verifikation prüft der Playtest — hier nur der Relay.)
     wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:" + "ab".repeat(32), proof: "cd".repeat(64) }));
-    await sleep(150);
+    await sync();
     // Defensive: vibe ohne proof bzw. ganz leer werden verworfen.
     wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:abc" }));
     wsA.send(JSON.stringify({ type: "vibe" }));
-    await sleep(150);
+    await sync();
 
     // W7 Phase 1: WebRTC-Signaling. A sendet einen rtc-offer an B (targeted),
     // B antwortet mit rtc-answer an A, A schickt einen ICE-Kandidaten an B.
     // Server stempelt die Sender-peerId + reicht zielgerichtet durch.
     wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB", sdp: { type: "offer", sdp: "v=0..." } }));
-    await sleep(120);
+    await sync();
     wsB.send(JSON.stringify({ type: "rtc-answer", to: "peerA", sdp: { type: "answer", sdp: "v=0..." } }));
-    await sleep(120);
+    await sync();
     wsA.send(
         JSON.stringify({ type: "rtc-ice", to: "peerB", candidate: { candidate: "candidate:1 ...", sdpMid: "0" } })
     );
-    await sleep(120);
+    await sync();
     // Defensive: rtc-offer ohne `to` bzw. ohne `sdp` wird verworfen.
     wsA.send(JSON.stringify({ type: "rtc-offer", sdp: { type: "offer", sdp: "x" } }));
     wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB" }));
-    await sleep(120);
+    await sync();
 
     // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
     // und B) sehen den Snapshot nicht doppelt.
     wsB.send(JSON.stringify({ type: "world-request" }));
-    await sleep(150);
+    await sync();
     // A simuliert Host-Antwort: snapshot mit to=peerB
     wsA.send(JSON.stringify({ type: "world-snapshot", to: "peerB", state: { hello: "world", v: 1 } }));
-    await sleep(200);
+    await sync();
 
     // W7 Phase 4: Public-Lobby. A veröffentlicht test-room, B browst die
     // Lobby → bekommt eine lobby-rooms-Antwort mit A's Raum.
     wsA.send(JSON.stringify({ type: "lobby-publish", label: "Anazhs Probe-Raum" }));
-    await sleep(120);
+    await sync();
     wsB.send(JSON.stringify({ type: "lobby-list" }));
-    await sleep(150);
+    await sync();
 
     // Kreatur-Sicht-Sync: A streamt eine creature-pos-Liste, B empfängt sie.
     wsA.send(JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 4, y: 6, z: 4, yaw: 0, soul: "wesen" }] }));
-    await sleep(150);
+    await sync();
 
     // W11 Phase 4: Voice-Sync. A's Begleiter spricht → B empfängt companion-say.
     // Defensive: companion-say ohne text wird verworfen.
     wsA.send(JSON.stringify({ type: "companion-say", text: "Ich träume mit dir.", voice: "Aria" }));
     wsA.send(JSON.stringify({ type: "companion-say", voice: "Aria" }));
-    await sleep(150);
+    await sync();
 
     // W17 Phase B-Relay: der Sub-Welt-Verkehr eines Multiplayer-Portals.
     // A's ws-send fliesst als subworld-net durchs Mesh → B empfängt es.
@@ -133,30 +148,32 @@ async function run() {
     wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html", data: "subnet-payload" }));
     wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html" }));
     wsA.send(JSON.stringify({ type: "subworld-net", data: "subnet-payload" }));
-    await sleep(150);
+    await sync();
 
     // W17 Phase C: das Gruppen-Portal. A öffnet ein Multiplayer-Portal →
     // B bekommt die portal-invite. Defensive: ohne worldId wird verworfen.
     wsA.send(JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" }));
     wsA.send(JSON.stringify({ type: "portal-invite", label: "ohne worldId" }));
-    await sleep(150);
+    await sync();
 
     // M8 (V18.161) — das Makro-Fenster: der Broker antwortet dem Anfrager
     // mit der Knoten-Gesamtzahl (Räume + Peers), kein Broadcast.
     wsA.send(JSON.stringify({ type: "stats" }));
-    await sleep(150);
+    await sync();
 
     // Φ4 (V18.189) — Anwesenheits-Schicht: ein dritter WS joint die
     // Bubble `test-room:r0_0` (eine Region-Bubble derselben Welt), dann
     // fragt A world-presence: der Broker liefert {regions: [{region:"",
     // peers:2}, {region:"r0_0", peers:1}]} (oder gleichwertige Reihenfolge).
-    const wsC = new WebSocket(URL);
-    wsC.addEventListener("message", (e) => (events.c = (events.c || []).concat(JSON.parse(e.data))));
+    const wsC = new WebSocket(BROKER);
+    events.c = [];
+    hoere(wsC, () => events.c);
     await new Promise((r) => wsC.addEventListener("open", r));
+    offen.add(wsC);
     wsC.send(JSON.stringify({ type: "join", room: "test-room:r0_0", peerId: "peerC" }));
-    await sleep(120);
+    await sync();
     wsA.send(JSON.stringify({ type: "world-presence", worldId: "test-room" }));
-    await sleep(180);
+    await sync();
 
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
@@ -346,17 +363,20 @@ async function run() {
     console.log("Φ4 world-presence: NUR A bekommt die Antwort (kein Broadcast):", phi4OnlyAGotIt);
 
     // C disconnects
+    offen.delete(wsC);
     wsC.close();
-    await sleep(120);
 
-    // B disconnects
+    // B disconnects — A sieht den Abschied (das Ereignis, nie eine Pause)
+    offen.delete(wsB);
+    const abschied = new Promise((ok) =>
+        wsA.addEventListener("message", (e) => (({ type, peerId }) => type === "peer-leave" && peerId === "peerB" && ok())(JSON.parse(e.data)))
+    );
     wsB.close();
-    await sleep(200);
+    await Promise.race([abschied, new Promise((ok) => wsA.addEventListener("close", ok))]);
     const aSawBLeave = events.a.some((e) => e.type === "peer-leave" && e.peerId === "peerB");
     console.log("V1 A sees B-leave on disconnect:", aSawBLeave);
 
     wsA.close();
-    await sleep(100);
 
     const allOk =
         aSawWelcome &&
@@ -409,6 +429,6 @@ async function run() {
 
 run().catch((err) => {
     console.error(err);
-    server.kill();
+    if (server) server.kill();
     process.exit(1);
 });

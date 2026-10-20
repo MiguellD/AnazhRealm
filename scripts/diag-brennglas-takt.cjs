@@ -28,8 +28,8 @@
 //   (N) DIE NÄHE (K54, OMEN 1410-2: der CPU-Takt p95 +1,0–1,6 ms an allen vier Orten, je Takt jeder Strahler gegen jeden
 //       Mast des Bestands): Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
 //       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
-//       ferne Menge derselben Namen (300–3 000 je Name) lässt ihre Zeit je Ruf stehen (WELTGRÖSSE rot ab 2× + 3 µs), die Gegenprobe
-//       (das Orakel mit der Menge) muss wachsen (sonst BLIND);
+//       ferne Menge derselben Namen (300–3 000 je Name) greift kein Takt an (WELTGRÖSSE rot ab dem ersten Griff je Ruf, gezählt
+//       an ihrem Platz und ihrer Zellen-Marke, nie an der Uhr), die Gegenprobe (das Orakel) greift jeden ihres Namens (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
 //       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
 //       `_spiegel…`) gehört der Klasse;
@@ -1050,16 +1050,13 @@ async function probe() {
     const haeuser = st.architectures.filter((e) => e && e.tuer && e.position);
     const echt = { x: st.playerMesh.position.x, y: st.playerMesh.position.y, z: st.playerMesh.position.z };
     // wie ein Spieler: zum Haus gehen, bis die Mesh-Zone es zeichnet (`tickArchitectureCulling` → seine Instanz, asynchron
-    // über die Werkstatt) — höchstens 6 s
+    // über die Werkstatt; das EINE Warten auf den Bau, welt-boot `__gebautNach`)
     let haus = haeuser.find((e) => e.instSlots) || null;
     if (!haus && haeuser.length) {
         const ziel = haeuser[0];
         stelle(ziel.position.x + 5, ziel.position.z);
-        for (let i = 0; i < 60 && !ziel.instSlots; i++) {
-            r.tickArchitectureCulling();
-            await new Promise((res) => setTimeout(res, 100));
-        }
-        if (ziel.instSlots) haus = ziel;
+        await window.__gebautNach(ziel, { fertig: () => !!ziel.instSlots, bau: () => r.tickArchitectureCulling() });
+        haus = ziel;
     }
     aus.tuer = { haeuser: haeuser.length, mitInstanz: haeuser.filter((e) => e.instSlots).length };
     if (haus) {
@@ -1098,7 +1095,7 @@ async function probe() {
 
 // (N) DIE NÄHE — läuft in der Seite (Teil von `probe`, über toString mitgereicht).
 function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
-    const aus = { proben: 0, abw: 0, fehler: [], wirkung: {}, zeit: {}, menge: 0 };
+    const aus = { proben: 0, abw: 0, fehler: [], wirkung: {}, arbeit: {}, menge: 0 };
     // DAS ORAKEL: die vier Takte von main 9fb869a5 (der Stamm dort) im Wortlaut — je Takt jeder Eintrag des Verzeichnisses
     const O = {
         _tickRadiatingAffordances(dt) {
@@ -1262,8 +1259,11 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         tor: w[5] != null,
         strahler: w[6].filter((k) => /^radiating/.test(k)).length,
     };
-    // die Zeit je Takt am Platz: je Glied 5 Bündel à 60 Rufe, der Median (die Uhr der Seite ist grob — gebündelt gemessen)
-    const zeit = (T) => {
+    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilte unter Last falsch, CI 39471460860: die
+    // Gegenprobe „balancieren" 0,0117 → 0,0253 ms, BLIND): jeder Griff eines Takts an einen Eintrag der fernen Menge — sein
+    // Platz (`position`) oder die Marke der Zellen-Frage (`_blockerFrage`) — zählt; ein Ruf nach einem Ruf zum Anwärmen.
+    let griffe = 0;
+    const arbeit = (T) => {
         stelle(cx, cz);
         const glieder = {
             strahlen: () => T._tickRadiatingAffordances.call(r, 1 / 60),
@@ -1275,25 +1275,19 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         r.journalAppendOnce = () => {};
         try {
             for (const [name, f] of Object.entries(glieder)) {
-                for (let i = 0; i < 10; i++) f();
-                const b = [];
-                for (let k = 0; k < 5; k++) {
-                    const t = performance.now();
-                    for (let i = 0; i < 300; i++) f();
-                    b.push((performance.now() - t) / 300);
-                }
-                b.sort((a, c) => a - c);
-                out[name] = b[2];
+                f();
+                griffe = 0;
+                f();
+                out[name] = griffe;
             }
         } finally {
             delete r.journalAppendOnce;
         }
         return out;
     };
-    aus.zeit.ohne = zeit(P);
-    aus.zeit.orakelOhne = zeit(O);
-    // DIE FERNE MENGE, 300–900 m vom Platz (jenseits jeder Reichweite): je 300 Strahler und Masten (das Paar wächst im Produkt),
-    // 1 500 Balancierer, je 3 000 Heber und Portale (ihre Schleifen wachsen linear — erst so viele heben sie über die Uhr)
+    // DIE FERNE MENGE, 300–900 m vom Platz (jenseits jeder Reichweite): je 300 Strahler und Masten, 1 500 Balancierer, je 3 000
+    // Heber und Portale — jeder Eintrag zählt seine Griffe
+    const fern = [];
     for (let i = 0; i < 3000; i++) {
         const x = cx - 300 - (i % 60) * 10,
             z = cz - 250 + Math.floor(i / 60) * 10;
@@ -1307,11 +1301,18 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
                 markiere(x, z, { radiating: true }, { radiating: 0.5 }),
                 markiere(x + 7, z + 7, { broadcasting: true }, { broadcasting: 0.8 })
             );
-        aus.menge += neu.filter(Boolean).length;
+        for (const e of neu) if (e) fern.push(e);
     }
+    aus.menge = fern.length;
+    aus.fern = { strahlen: 300, balancieren: 1500, heben: 3000, portal: 3000 };
     vergleiche("mit der fernen Menge");
-    aus.zeit.mit = zeit(P);
-    aus.zeit.orakelMit = zeit(O); // die Gegenprobe: der alte Takt mit der fernen Menge muss wachsen (sonst ist die Linse blind)
+    for (const e of fern)
+        for (const k of ["position", "_blockerFrage"]) {
+            let v = e[k];
+            Object.defineProperty(e, k, { configurable: true, enumerable: true, get: () => (griffe++, v), set: (x) => void (v = x) });
+        }
+    aus.arbeit.takt = arbeit(P);
+    aus.arbeit.orakel = arbeit(O); // die Gegenprobe: der Takt von main greift jeden fernen Eintrag seines Namens (sonst ist die Linse blind)
     aus.verzeichnis = {
         radiating: r._blockerMit("radiating").length,
         broadcasting: r._blockerMit("broadcasting").length,
@@ -1319,16 +1320,12 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
     return aus;
 }
 
-// (N) die Zeit eines Nähe-Takts wächst, wenn er mit der fernen Menge mehr als das Doppelte plus diesen Boden kostet (die Uhr
-// der Seite ist auf 100 µs vergröbert; in Bündeln zu 300 Rufen gemessen trägt sie 0,3 µs je Ruf)
-const NAEHE_BODEN_MS = 0.003;
 const NAEHE_RUFER = {
     strahlen: "_tickRadiatingAffordances",
     balancieren: "_tickBalancingAffordances",
     heben: "_tickLiftingAffordances",
     portal: "_findNearestAffordanceEntry (der Portal-Takt)",
 };
-const ms = (x) => (Number.isFinite(x) ? x.toFixed(4) : String(x));
 
 function urteil(S, stamm, pageErrors) {
     const rot = [];
@@ -1392,7 +1389,7 @@ function urteil(S, stamm, pageErrors) {
             rot.push(`(H) die Nähe-Liste der Türen ist nicht der Filter über den Bestand (${H.liste} ≠ ${H.soll})`);
     }
     if (!(S.rauch.quellen > 0)) rot.push(`(D) DORF-RAUCH: kein Kamin in der Welt (vakuös)`);
-    const Nn = S.naehe || { fehler: [], zeit: {}, wirkung: {} };
+    const Nn = S.naehe || { fehler: [], arbeit: {}, wirkung: {} };
     if (Nn.abw)
         rot.push(
             `(N) DIE NÄHE: ${Nn.abw} von ${Nn.proben} Proben urteilen anders als die Schleife über das Verzeichnis — ` +
@@ -1404,21 +1401,20 @@ function urteil(S, stamm, pageErrors) {
             `(N) DIE NÄHE ist vakuös (zwei Strahler am Platz, einer nur durch den Mast; Balancieren, Heben, ein Portal): ` +
                 JSON.stringify(Wk)
         );
-    const Z = Nn.zeit || {};
-    const waechst = (mit, ohne) => !(mit <= 2 * ohne + NAEHE_BODEN_MS);
-    for (const g of Object.keys(Z.ohne || {})) {
-        if (waechst(Z.mit[g], Z.ohne[g]))
+    const Z = Nn.arbeit || {};
+    for (const g of Object.keys(Z.takt || {})) {
+        if (Z.takt[g] > 0)
             rot.push(
-                `(N) WELTGRÖSSE: der Takt „${g}" wächst mit der fernen Menge (${Nn.menge} Einträge jenseits jeder Reichweite): ` +
-                    `${ms(Z.ohne[g])} → ${ms(Z.mit[g])} ms je Ruf — Rufer ${NAEHE_RUFER[g]}`
+                `(N) WELTGRÖSSE: der Takt „${g}" greift die ferne Menge (${Nn.menge} Einträge jenseits jeder Reichweite): ` +
+                    `${Z.takt[g]} Griffe je Ruf — Rufer ${NAEHE_RUFER[g]}`
             );
-        if (!waechst(Z.orakelMit[g], Z.orakelOhne[g]))
+        if (!(Z.orakel[g] >= Nn.fern[g]))
             rot.push(
-                `(N) BLIND: die Gegenprobe (der Takt von main mit der fernen Menge) wächst für „${g}" nicht ` +
-                    `(${ms(Z.orakelOhne[g])} → ${ms(Z.orakelMit[g])} ms) — die Linse sähe den Täter nicht`
+                `(N) BLIND: die Gegenprobe (der Takt von main) greift für „${g}" ${Z.orakel[g]} von ${Nn.fern[g]} fernen ` +
+                    `Einträgen seines Namens — die Linse sähe den Täter nicht`
             );
     }
-    if (!Object.keys(Z.ohne || {}).length) rot.push(`(N) DIE NÄHE lief nicht (keine Zeit gemessen)`);
+    if (!Object.keys(Z.takt || {}).length) rot.push(`(N) DIE NÄHE lief nicht (keine Arbeit gezählt)`);
     for (const b of stamm) rot.push(`(Q) QUELLE: ${b}`);
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
@@ -1434,15 +1430,7 @@ function urteil(S, stamm, pageErrors) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
-        const dl = performance.now() + 120000;
-        while (
-            (!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.player ||
-                typeof window.anazhRealm._gameLoopTick !== "function") &&
-            performance.now() < dl
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa((r) => r.state && r.state.player);
     });
     await page.evaluate(`window.__naeheProbe = ${naeheProbe.toString()};`);
     const S = await page.evaluate(probe);
@@ -1491,16 +1479,15 @@ function urteil(S, stamm, pageErrors) {
         `  Fernziel: ${F.art} ×${F.skala}, ${F.abstand} m vom Glas, Platz ±${F.reichweite} m · volle Frage ${F.voll}, ` +
             `halbe ${F.halb} · erwärmt ${F.heiz}× · Beweger: nur über die Beweger ${B.mitBewegern && !B.ohneBeweger} · erwärmt ${B.heiz}×`
     );
-    const Nz = (S.naehe && S.naehe.zeit) || {};
+    const Nz = (S.naehe && S.naehe.arbeit) || {};
     console.log(
         `  Nähe: ${S.naehe ? S.naehe.proben : 0} Proben gegen das Orakel, Abweichungen ${S.naehe ? S.naehe.abw : "?"} · ` +
             `Wirkung ${JSON.stringify(S.naehe && S.naehe.wirkung)} · ferne Menge ${S.naehe ? S.naehe.menge : 0} ` +
             `(Verzeichnis ${JSON.stringify(S.naehe && S.naehe.verzeichnis)})`
     );
-    for (const g of Object.keys(Nz.ohne || {}))
+    for (const g of Object.keys(Nz.takt || {}))
         console.log(
-            `    ${g.padEnd(11)} ms je Ruf: ohne ${ms(Nz.ohne[g])} · mit der fernen Menge ${ms(Nz.mit[g])} · ` +
-                `main ohne sie ${ms(Nz.orakelOhne[g])}, mit ihr ${ms(Nz.orakelMit[g])}`
+            `    ${g.padEnd(11)} Griffe je Ruf an die ferne Menge: Takt ${Nz.takt[g]} · main ${Nz.orakel[g]} (${S.naehe.fern[g]} ihres Namens)`
         );
     const rot = urteil(S, stamm, pageErrors);
     if (rot.length) {

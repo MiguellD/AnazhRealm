@@ -7,10 +7,10 @@
 // (beide booten die seed-deterministische Default-Welt → identisches Dichtefeld).
 // Plus: der Ghost treibt B's Peer-Avatar (glatt statt 30-Hz-Snaps), pos-Nachrichten sind
 // zur Drift-Autorität umgeleitet, kein Ent-Seeden während des Laufs.
-const { starteBrowser, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 
-const PAGE_URL = "http://127.0.0.1:4312/index.html";
-const SIGNALING_URL = "ws://127.0.0.1:4313";
+// die eigenen Ports: LOCKSTEP_PORT und LOCKSTEP_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313
+let PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-lockstep-room";
 
 (async () => {
@@ -21,8 +21,11 @@ const ROOM = "smoke-lockstep-room";
     }
 
     console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/);
-    const signaling = await startProc("signaling-server.js", /lauscht/);
+    const [PORT, SIGNAL_PORT] = await eigenePorte("LOCKSTEP_PORT", "LOCKSTEP_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
 
     const browser = await starteBrowser({ art: "webgl", frist: 240000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
 

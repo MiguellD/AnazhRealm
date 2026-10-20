@@ -285,13 +285,12 @@ const server = statikServer();
 async function buehneBauen() {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const dl = performance.now() + 300000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl)
-        await sleep(200);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     if (!st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
     const f = r._ensureAssetFoundry();
-    while (!(f && f.ready && f.recipeCount > 0) && performance.now() < dl) await sleep(200);
+    await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
     const bx = -893.8,
         bz = -844.9;
     st.playerMesh.position.set(bx - 3, r._voxelSurfaceY(bx - 3, bz) + 1.8, bz);
@@ -576,8 +575,12 @@ async function probe(cfg) {
         const e = r.spawnArchitecture(typ, { x, y: boden(x, z) + 0.5, z }, { silent: true, rotationY: rotY || 0 });
         if (!e) return null;
         // die nahe Stufe (die Stufen-Wahl der Bauten geht vom Spieler aus; ein Impostor-Slot trägt keinen Schatten-Leib)
-        for (let t = 0; t < 240 && !((e.instSlots || e.mesh) && (e._lodLevel == null || e._lodLevel === 0)); t++)
-            await halten(1);
+        await window.__gebautNach(e, {
+            fertig: () => !!((e.instSlots || e.mesh) && (e._lodLevel == null || e._lodLevel === 0)),
+            bau: () => {},
+            takt: () => halten(1),
+            max: 240,
+        });
         await halten(10);
         return e;
     };

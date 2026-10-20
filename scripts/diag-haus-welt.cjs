@@ -353,7 +353,7 @@ async function proben(phasen) {
                 return hs.call(this, en, hu);
             };
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
-            for (let k = 0; k < 300 && e && !e._hausHuelle; k++) await pumpe(4);
+            if (e) await window.__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 }).catch(() => null);
             if (e && e._hausHuelle) return e;
         }
         return null;
@@ -1663,7 +1663,7 @@ async function proben(phasen) {
                 const weg = welt(e, fu.ox, fu.oz - abstand);
                 stell(weg.x, (r0(weg.x, weg.z) || e.position.y) + 3, weg.z);
                 const soll = abstand > 40 ? 2 : 1;
-                for (let q = 0; q < 60 && !(e._hausHuelle && e._servedLod === soll); q++) await pumpe(10);
+                await window.__gebautNach(e, { fertig: () => e._hausHuelle && e._servedLod === soll, bau: () => {}, takt: () => pumpe(10), max: 60 }).catch(() => null);
                 w.fern.push({ stufe: e._servedLod, huelle: huelleVon(e), drinM: anlauf(e) });
             }
         }

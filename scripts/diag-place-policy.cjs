@@ -37,22 +37,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, d: {}, e: {}, st: {} };
-        const dl0 = performance.now() + 60000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._placePolicyFor !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._placePolicyFor !== "function"));
         const r = window.anazhRealm;
         if (!r) return { fatal: "anazhRealm bootet nicht" };
         const A = r.constructor;
         // Worker + Rezeptbuch abwarten (get-recipes folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.eiche) break;
-            await new Promise((res2) => setTimeout(res2, 80));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche);
         if (!f || !f.recipes || !f.recipes.eiche) return { fatal: "kein Rezeptbuch (Worker nicht ready?)" };
         const BASE = { eiche: 1, fichte: 1, tanne: 1, birke: 1, weide: 1, mammut: 1 };
         // Die ALTE Regel (direkter placeExtra-Griff, Stand N1) als REFERENZ im Test nachgerechnet —

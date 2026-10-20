@@ -320,30 +320,32 @@ class AnazhRealm_dirigent_takt {
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben und nichts mehr baut (`_weltOffen`): kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
-    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr — und kein Fege-Takt der Stand-Wache geht noch (ihre Arbeit
-    // steht: ein Takt, der auf ein Budget wartet, hält sich wach, ohne die Welt zu regen; A9 Zweit-Boot an der Mess-Wiese: die
+    // schmutzig oder im Bau, der Wald plant und pflanzt nicht mehr — und kein Fege-Takt der Stand-Wache meldet Offenes (ein Takt,
+    // der auf ein Budget oder ein Asset wartet, hält sich wach, ohne die Welt zu regen; A9 Zweit-Boot an der Mess-Wiese: die
     // Stufen-Wahl tauschte die nahen Bäume noch Karte → Mesh, als die Stempel schon 30 Takte standen — boden-nah 2,418 statt
-    // 1,830). Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
+    // 1,830) — und keiner wirkte (er änderte die Welt). Ein Fege-Takt, der nur GEHT (ein atmender Regler weckt ihn, er wirkt
+    // nichts und wartet auf nichts), regt die Welt nicht: bis K-WANDUHR brach jeder Gang die Ruhe, und unter Last (swiftshader, CI 39439645378 · 39449804810 · 39452595795)
+    // stand die Welt am Genesis-Ring nie — „Fege-Takt archCull" nach 2 344 Takten, „Ruhe 16 … archLod".
+    // Gezählt in Takten des Loops, nie in Wanduhr: ein Bild der stehenden Welt ist dasselbe Bild in jeder Sitzung.
     // Die Bühne wartet vor jedem Schuss darauf, jede Linse, die eine stehende Welt braucht, fragt dieses Wort.
     // `grund` nennt, was die Ruhe zuletzt brach (die Regung, der Fege-Takt beim Namen, das Offene) — wer auf das Wort wartet
     // und es nicht bekommt, bricht beim Namen des Täters.
     _weltStandTakt() {
         const W =
-            this._weltStand ||
-            (this._weltStand = { welt: -1, bau: -1, karte: -1, arbeit: -1, je: new Map(), ruhe: 0, takte: 0 });
+            this._weltStand || (this._weltStand = { welt: -1, bau: -1, karte: -1, je: new Map(), ruhe: 0, takte: 0 });
         W.takte++;
         const welt = this._weltRegung | 0,
             bau = this._bauRegung | 0,
             karte = this._karteRegung | 0;
-        let arbeit = 0,
-            geht = null;
+        let wirkt = null,
+            wartet = null;
         if (this._standWache)
             for (const [n, t] of this._standWache.takte) {
-                arbeit += t.arbeit;
-                if (W.je.get(n) !== t.arbeit) {
-                    W.je.set(n, t.arbeit);
-                    geht = geht ? `${geht}, ${n}` : n;
+                if (W.je.get(n) !== t.wirkung) {
+                    W.je.set(n, t.wirkung);
+                    wirkt = wirkt ? `${wirkt}, ${n}` : n;
                 }
+                if (t.offen) wartet = wartet ? `${wartet}, ${n}` : n;
             }
         const o = this._weltOffen();
         const grund =
@@ -353,20 +355,21 @@ class AnazhRealm_dirigent_takt {
                   ? "Bau-Regung"
                   : karte !== W.karte
                     ? "Karten-Regung"
-                    : arbeit !== W.arbeit
-                      ? `Fege-Takt ${geht}`
-                      : o.foundry
-                        ? `Foundry offen ${o.foundry}`
-                        : o.chunks
-                          ? `Chunks offen ${o.chunks}`
-                          : o.wald
-                            ? `Wald offen ${o.wald}`
-                            : null;
+                    : wirkt
+                      ? `Fege-Takt wirkt: ${wirkt}`
+                      : wartet
+                        ? `Fege-Takt wartet: ${wartet}`
+                        : o.foundry
+                          ? `Foundry offen ${o.foundry}`
+                          : o.chunks
+                            ? `Chunks offen ${o.chunks}`
+                            : o.wald
+                              ? `Wald offen ${o.wald}`
+                              : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
             W.karte = karte;
-            W.arbeit = arbeit;
             W.grund = grund;
             W.ruhe = 0;
         } else W.ruhe++;

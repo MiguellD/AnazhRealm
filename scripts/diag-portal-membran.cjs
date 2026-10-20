@@ -468,21 +468,12 @@ async function blickStufe(check) {
 
     const out = await page.evaluate(async () => {
         const res = { boot: false, warm: false };
-        const dl0 = performance.now() + 90000;
-        while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
-            performance.now() < dl0
-        )
-            await new Promise((r) => setTimeout(r, 100));
+        await window.__weltDa(() => !(!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function"));
         const r = window.anazhRealm;
         if (!r) return res;
         res.boot = true;
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 60000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.geisttor) break;
-            await new Promise((r2) => setTimeout(r2, 100));
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
         res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
 
         // ── Bühne: ein Welt-Portal (geisttor-Gestalt) direkt vor dem Spieler ──
@@ -590,12 +581,10 @@ async function blickStufe(check) {
         p.x = ex;
         p.z = ez + 2.0;
         p.y = ey + 1.0;
-        const dlF = performance.now() + 90000;
-        while (!(entry.instanced && entry._lodLevel === 0) && performance.now() < dlF) {
-            if (entry.instanced) r._tickArchitectureLOD(99, r._lodAuge());
-            else r._rebuildArchitectureMesh(entry);
-            await new Promise((r2) => setTimeout(r2, 300));
-        }
+        await window.__gebautNach(entry, {
+            fertig: () => entry.instanced && entry._lodLevel === 0,
+            bau: () => (entry.instanced ? r._tickArchitectureLOD(99, r._lodAuge()) : r._rebuildArchitectureMesh(entry)),
+        });
         res.fInstanced = entry.instanced === true;
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);

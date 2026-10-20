@@ -169,16 +169,12 @@ const triasStaticLaws = () => [
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
         let dl = performance.now() + 90000;
-        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl)
-            await sleep(150);
+        await window.__weltDa();
         const r = window.anazhRealm;
         if (!r) return { fatal: "kein anazhRealm" };
         const f = r._ensureAssetFoundry();
         dl = performance.now() + 60000;
-        while (performance.now() < dl) {
-            if (f && f.ready && f.recipes && f.recipes.alemannisch) break;
-            await sleep(100);
-        }
+        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
         if (!res.bookReady) return res;
 
@@ -267,8 +263,7 @@ const triasStaticLaws = () => [
             .slice(0, 3);
         for (const h of near3) {
             tp(h.position.x + 6, h.position.z);
-            const d2 = performance.now() + 25000;
-            while (!h.instanced && performance.now() < d2) await pumpRender(8);
+            await window.__gebautNach(h, { fertig: () => h.instanced, bau: () => {}, takt: () => pumpRender(8) });
         }
         res.nearBuilt = hausStats();
         res.nearHeavy = near3.every((h) => h.instanced); // die 3 stehen (Voraussetzung)

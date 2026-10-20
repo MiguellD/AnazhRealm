@@ -11,16 +11,14 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
-const PORT = Number(process.env.WEBRTC_PORT || 4312);
-const SIGNAL_PORT = Number(process.env.WEBRTC_SIGNAL_PORT || 4313);
-const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
+// die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
@@ -105,6 +103,9 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
 (async () => {
     const failures = [];
+    [PORT, SIGNAL_PORT] = await eigenePorte("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT");
+    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
     function check(name, ok, detail = "") {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
         if (!ok) failures.push(name);

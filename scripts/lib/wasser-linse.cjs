@@ -1467,8 +1467,7 @@ function wasserWagen(opts) {
         const S = see.level;
         const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
         const dl = performance.now() + (o.warteMs || 90000);
-        while (!(st.blueprints && st.blueprints.fahrzeug_gt) && performance.now() < dl)
-            await new Promise((res) => setTimeout(res, 250));
+        await window.__weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
         if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
         const BOOT = "__wasser_boot";
         st.blueprints[BOOT] = {

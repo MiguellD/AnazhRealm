@@ -306,9 +306,7 @@ const server = statikServer();
 async function probe(argW) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
-    const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
-        await sleep(100);
+    await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
     const tick = async (n, ms) => {
