@@ -3069,20 +3069,26 @@
     //     Arm steht dist·(1 + distV·tF), das FOV waechst um fovPlus = fovV·tF Grad (der Wirt legt es auf seine Ruhe), der Azimut
     //     zielt auf Gier + driftFolge·dF. Ohne z steht die Kamera wie zuvor (tF = dF = 0). DIE MAUS: Gier NaN = sie haelt
     //     (`chaseGreif` dreht c um den Wagen); wird die Gier wieder finit, kehrt der Azimut als Smoothstep in rueckS zurueck
-    //     (vorher schnappte er mit azEase in 0,5 s hinter den Wagen, die Welt kannte keinen Orbit im Ritt).
+    //     (vorher schnappte er mit azEase in 0,5 s hinter den Wagen, die Welt kannte keinen Orbit im Ritt). Der Smoothstep
+    //     liegt als Versatz auf dem GEGLAETTETEN Azimut (c.rueck.az folgt dem Ziel mit azEase wie ohne Maus): am Ende der
+    //     Rueckkehr laeuft die Drehrate stetig in die Feder weiter (lag er auf dem Ziel, fiel sie in der Kurve in einem Bild).
+    function winkelPi(a) {
+        return Math.atan2(Math.sin(a), Math.cos(a));
+    }
     function chaseKamera(c, gier, steig, dt, K, z, vmax) {
         K = K || FAHR.kamera;
         const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
         const s = z && vmax > 0 ? Math.min(1, Math.abs(z.speed) / vmax) : 0;
         const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
         const frisch = !Number.isFinite(c.az) || !(dt > 0);
-        if (frisch || !Number.isFinite(c.tF)) [c.tF, c.dF] = [s, drift];
-        else {
+        if (frisch || !Number.isFinite(c.tF)) {
+            c.tF = s;
+            c.dF = drift;
+        } else {
             const kT = 1 - Math.pow(K.tempoEase, dt);
             c.tF += (s - c.tF) * kT;
             c.dF += (drift - c.dF) * kT;
         }
-        const winkel = (a) => Math.atan2(Math.sin(a), Math.cos(a));
         if (Number.isFinite(gier)) {
             const ziel = gier + K.driftFolge * c.dF;
             if (frisch) {
@@ -3090,13 +3096,19 @@
                 c.el = c.elF = elZ;
                 c.rueck = null;
             } else {
-                if (c.frei) [c.frei, c.rueck] = [false, { t: 0, d0: winkel(c.az - ziel) }];
-                if (c.rueck) {
-                    c.rueck.t += dt;
-                    const u = Math.min(1, c.rueck.t / K.rueckS);
-                    c.az = ziel + c.rueck.d0 * (1 - u * u * (3 - 2 * u));
+                const kA = 1 - Math.pow(K.azEase, dt);
+                if (c.frei) {
+                    c.frei = false;
+                    c.rueck = { t: 0, d0: winkelPi(c.az - ziel), az: ziel };
+                }
+                const r = c.rueck;
+                if (r) {
+                    r.az += winkelPi(ziel - r.az) * kA;
+                    r.t += dt;
+                    const u = Math.min(1, r.t / K.rueckS);
+                    c.az = r.az + r.d0 * (1 - u * u * (3 - 2 * u));
                     if (u >= 1) c.rueck = null;
-                } else c.az += winkel(ziel - c.az) * (1 - Math.pow(K.azEase, dt));
+                } else c.az += winkelPi(ziel - c.az) * kA;
                 const k = 1 - Math.pow(K.elEase, dt);
                 if (!Number.isFinite(c.el)) c.el = elZ;
                 if (!Number.isFinite(c.elF)) c.elF = c.el;
@@ -3104,8 +3116,14 @@
                 c.el += (c.elF - c.el) * k;
             }
         } else if (Number.isFinite(c.az)) c.frei = true;
-        const [ce, dist] = [Math.cos(c.el), K.dist * (1 + K.distV * c.tF)];
-        return { x: -Math.cos(c.az) * ce * dist, y: K.blickHoehe + Math.sin(c.el) * dist, z: Math.sin(c.az) * ce * dist, fovPlus: K.fovV * c.tF };
+        const ce = Math.cos(c.el);
+        const dist = K.dist * (1 + K.distV * c.tF);
+        return {
+            x: -Math.cos(c.az) * ce * dist,
+            y: K.blickHoehe + Math.sin(c.el) * dist,
+            z: Math.sin(c.az) * ce * dist,
+            fovPlus: K.fovV * c.tF,
+        };
     }
     // chaseGreif(c, dAz, dEl, K) — der Griff der Maus (H3): dreht das Rig um den Wagen, die Elevation zwischen elMin und elMax.
     //   Die Probefahrt (Zug der Maus) und der Welt-Ritt (das mousemove auf state.yaw/pitch) rufen ihn, dazu Gier NaN.

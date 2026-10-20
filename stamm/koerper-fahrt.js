@@ -463,6 +463,14 @@ class AnazhRealm_koerper_fahrt {
         });
     }
 
+    // DIE CHASE-CAM EINES BUCHS (H3), fail-closed: sie trägt JEDES Feld des Kern-Satzes `FAHR.kamera` endlich und dist > 0 —
+    // ein Satz ohne die Tempo-Felder rechnete im Rig NaN (vorher prüfte je Leser eine Wand nur el und dist); er bricht laut.
+    _kamSatz(km) {
+        const F = AnazhRealm._fahrSchrittGesetz().vc.FAHR.kamera;
+        if (km.dist > 0 && Object.keys(F).every((n) => Number.isFinite(km[n]))) return km;
+        return AnazhRealm._kernPflichtBruch("vehicle:fahrprofil.kamera (jedes Feld von FAHR.kamera)");
+    }
+
     // Fahr-Profil emergiert aus der SUBSTANZ (kein Typ-Enum): Räder tragen TEMPO (+12 % je Rad, Cap
     // +60 %) und rollen aus (niedriges Brems-k), Beine einen Ritt-Schritt; das Hüll-Volumen
     // (_compoundSizeFactor) macht träge. Am Entry gecacht (die Bauplan-Form ist frozen).
@@ -582,10 +590,8 @@ class AnazhRealm_koerper_fahrt {
                 }
                 // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DENSELBEN Fahr-Schritt wie die Probefahrt
                 // (vehicle-core fahrSchritt, `_fahrSatz`). NaN-Wand: nur mit den tragenden Größen — ohne sie trägt das
-                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-
-                // Elevation/-Distanz/-Eases).
-                const _km = _fp.kamera;
-                if (_km && Number.isFinite(_km.el) && Number.isFinite(_km.dist) && _km.dist > 0) prof.kamera = _km;
+                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, `_kamSatz`).
+                if (_fp.kamera) prof.kamera = this._kamSatz(_fp.kamera);
                 const _zs = _fp.zweispur;
                 if (
                     _zs &&
@@ -663,9 +669,7 @@ class AnazhRealm_koerper_fahrt {
                         ) {
                             prof.zweispur = _zs2;
                         }
-                        const _km2 = drv.kamera;
-                        if (_km2 && Number.isFinite(_km2.el) && Number.isFinite(_km2.dist) && _km2.dist > 0)
-                            prof.kamera = _km2;
+                        if (drv.kamera) prof.kamera = this._kamSatz(drv.kamera);
                         if (!prof.spring && drv.spring && Number.isFinite(drv.spring.k) && drv.spring.k > 0)
                             prof.spring = drv.spring;
                         if (!Number.isFinite(prof.cgH) && Number.isFinite(drv.cgH) && drv.cgH > 0) prof.cgH = drv.cgH;
@@ -2220,9 +2224,16 @@ AnazhRealm._fahrSchrittGesetz = function () {
     const S = vc && vc.FAHR && vc.FAHR.schritt;
     if (
         S &&
-        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand", "chaseKamera"].every(
-            (f) => typeof vc[f] === "function"
-        ) &&
+        [
+            "fahrGesetz",
+            "fahrZustand",
+            "fahrEbene",
+            "fahrStand",
+            "fahrKraefte",
+            "fahrAufstand",
+            "chaseKamera",
+            "chaseGreif",
+        ].every((f) => typeof vc[f] === "function") &&
         ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>
             Number.isFinite(S[k])
         )
