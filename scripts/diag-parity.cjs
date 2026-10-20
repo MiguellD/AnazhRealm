@@ -7,11 +7,10 @@
 //   3) ANALYSE (2D-Canvas, GPU-frei): Himmel-/Boden-Palette · Grün-Deckung · Vergleichs-Tabelle.
 // Die Bilder sind das GATE der Vollendungs-Welle; die Zahlen sind die Zwischen-Linse.
 //   node scripts/diag-parity.cjs [--skip-studio] [--skip-anazh]
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const PORT = Number(process.env.PARITY_PORT || 4399);
-const root = path.resolve(__dirname, "..");
 const ART = path.join(root, "artifacts");
 const server = statikServer();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

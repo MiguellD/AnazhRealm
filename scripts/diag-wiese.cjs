@@ -11,12 +11,11 @@
 //   node scripts/diag-wiese.cjs [--tag name] [--out DIR] [--stelle x,z]
 "use strict";
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
     const i = process.argv.indexOf(k);
     return i > 0 ? process.argv[i + 1] : d;

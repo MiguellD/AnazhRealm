@@ -50,12 +50,11 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
-const root = path.resolve(__dirname, "..");
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 

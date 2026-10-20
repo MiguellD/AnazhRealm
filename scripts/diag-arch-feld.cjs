@@ -26,13 +26,12 @@
 // plus die vier D-Schüsse (artifacts/beweis-e/arch-feld-licht-*.png) aus der EINEN Aufnahme fürs Auge.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
     const i = process.argv.indexOf(k);
     return i > 0 ? process.argv[i + 1] : d;

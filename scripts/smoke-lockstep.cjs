@@ -7,11 +7,10 @@
 // (beide booten die seed-deterministische Default-Welt → identisches Dichtefeld).
 // Plus: der Ghost treibt B's Peer-Avatar (glatt statt 30-Hz-Snaps), pos-Nachrichten sind
 // zur Drift-Autorität umgeleitet, kein Ent-Seeden während des Laufs.
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const ROOT = path.resolve(__dirname, "..");
 const PAGE_URL = "http://127.0.0.1:4312/index.html";
 const SIGNALING_URL = "ws://127.0.0.1:4313";
 const ROOM = "smoke-lockstep-room";

@@ -34,12 +34,11 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser, halteBis } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, ROOT } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.MP_SYNC_PORT || 4312);
 const SIGNAL_PORT = Number(process.env.MP_SYNC_SIGNAL_PORT || 4313);
 const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;

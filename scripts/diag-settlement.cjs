@@ -28,13 +28,12 @@
 // Re-Mint 30.09.2026 (V18.492, begründet): der Export trägt je Slot additiv `chimney`
 //   (die Schornstein-Position, die der Rauch des fachwerk-Gesetzes liest); das Layout
 //   (Kulturen · Anker · Drehung · ov) blieb gegen das alte Golden feld-für-feld gleich.
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 

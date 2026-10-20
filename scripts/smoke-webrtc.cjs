@@ -11,14 +11,13 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
-const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.WEBRTC_PORT || 4312);
 const SIGNAL_PORT = Number(process.env.WEBRTC_SIGNAL_PORT || 4313);
 const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;

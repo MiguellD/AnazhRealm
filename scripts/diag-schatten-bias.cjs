@@ -32,13 +32,12 @@
 //   ohne Urteil: tiefe Sonne 11° für die Werfer, Nacht, die Nah-Wiese als Empfänger, Hang 20°/35°, Übergang k0→k1)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
-const root = path.resolve(__dirname, "..");
 const ECHT = process.argv.includes("--echt");
 const TAG = (() => {
     const i = process.argv.indexOf("--tag");

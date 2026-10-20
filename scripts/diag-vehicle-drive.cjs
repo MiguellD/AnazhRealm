@@ -32,13 +32,12 @@
 //     (3) B2: „Eintrag bleibt stehen" → die Fahr-
 //     Verdikt-Linse feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.DRIVE_PORT || 4411);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
