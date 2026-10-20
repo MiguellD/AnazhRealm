@@ -314,7 +314,7 @@ function bildUhren() {
 }
 
 // DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
-// sie verweigert (die Uhr-Wache liest ihn); Tor und Regen, die im Takt schreiben, lesen sie einmal beim Halt.
+// sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
     const r = window.anazhRealm;
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
@@ -323,7 +323,6 @@ function uhrHalten() {
     const get = Object.assign(() => S.T, { __buehne: true });
     Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
     r._tickPortalMembranes(performance.now() / 1000);
-    r._tickRain();
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie in Takten, nie in Wanduhr (ruht der Loop, schaltet
@@ -360,17 +359,20 @@ async function weltStehtWarten(max) {
     return takte() - t0;
 }
 
-function buehne() {
+function buehne(o) {
     const r = window.anazhRealm;
     const st = r.state;
+    const w = (o && o.wetter) || "sunny";
     window.__weltaktSpion();
     st.autoSeason = false;
-    if (typeof r.setSeason === "function") r.setSeason("sommer");
+    const s = r.setSeason((o && o.saison) || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
-    // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
-    window.__wetterSetzen("sunny");
+    // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
+    // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
+    if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
+    r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
@@ -399,7 +401,8 @@ function membranOhneFilm(an) {
         const mat = rec.mesh && rec.mesh.material;
         if (!mat) continue;
         n++;
-        const G = typeof r._membranGraph === "function" && rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+        const G =
+            typeof r._membranGraph === "function" && rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
         if (G && G.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;

@@ -152,7 +152,7 @@ function pruefRaum(echt) {
     Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
     if (echt) {
         F.wurzel = r.state.scene;
-        // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr; sonst zählte S2 Erst-Bauten)
+        // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
         F.leibWechsel = async () => {
             for (let t = performance.now(), fehlt = 1; fehlt && performance.now() - t < 60000; ) {
                 await F.zeichne(1);
@@ -291,7 +291,7 @@ function pruefRaum(echt) {
                     !st._deferredAvatarSoul &&
                     st.voxelChunks &&
                     st.voxelChunks.size >= minChunks &&
-                    (st._weltbildDa || !echt)
+                    (st._leibWarm || !echt)
                 )
                     break;
                 await new Promise((res) => setTimeout(res, 300));
@@ -303,6 +303,7 @@ function pruefRaum(echt) {
                 webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
                 chunks: r && r.state.voxelChunks ? r.state.voxelChunks.size : -1,
                 weltbild: r && r.state._weltbildDa ? `${(r.state._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
+                warm: !!(r && r.state._leibWarm),
             };
         },
         { minChunks: ECHT ? 25 : 9, echt: ECHT }
@@ -310,7 +311,7 @@ function pruefRaum(echt) {
     console.log(
         `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
-    if (!boot.bereit || !boot.webgpu || (ECHT && boot.weltbild === "fehlt")) {
+    if (!boot.bereit || !boot.webgpu || (ECHT && !boot.warm)) {
         check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, JSON.stringify(boot));
         await browser.close();
         server.close();
@@ -730,7 +731,7 @@ function pruefRaum(echt) {
             const programmZwillinge = [r.state.renderer, r.state.ichStage.renderer, r.state.hofStage.renderer].map((x) =>
                 zwillinge([...x._pipelines.programs.vertex.keys()])
             );
-            const zwillingSelbst = zwillinge(["a NodeBuffer_12 b", "a NodeBuffer_3 b", "a knochenMatrix b"]);
+            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
             r.state.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
             // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele

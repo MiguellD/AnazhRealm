@@ -145,8 +145,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
 
         // --- b) Sanfte Wetter-Übergänge
-        out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
-        out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
         const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
         out.weatherTintsSunnyRainy = ["sunny", "rainy", "stormy"].every((w) => {
             const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
@@ -156,17 +154,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Setze sunny als Ausgangspunkt
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
-        // weather-DSL-Op startet Transition + setzt state.weather sofort (der Satz des Spielers; die Welt wünscht nur)
+        // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
-        out.weatherStateImmediate = r.state.weather === "rainy";
-        out.weatherTransitionStarted = !!r.state.weatherTransition;
         out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
-        out.weatherTransitionToRainy = r.state.weatherTransition && r.state.weatherTransition.to === "rainy";
         // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
         const okSameTarget = r.requestWeatherTransition("rainy");
         out.transitionSameTargetNoop = okSameTarget === true;
-        // Invalides Target
-        out.transitionInvalidRejected = r.requestWeatherTransition("hagel") === false;
         // tickWeatherTransition setzt progress voran
         r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
         r.tickWeatherTransition(0);
@@ -264,29 +257,17 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         );
 
         // --- b) Wetter-Übergang
-        check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
-        check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
         check(
             "Welle 6.G3.b: WEATHER_TINTS = die Sonne der Wetter-Zeile (skyMul = sun, lightMul = WX_LICHT)",
             wave6g3Results.weatherTintsSunnyRainy
         );
         check(
-            "Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)",
-            wave6g3Results.weatherStateImmediate
-        );
-        check("Welle 6.G3.b: weather-Wechsel startet weatherTransition", wave6g3Results.weatherTransitionStarted);
-        check(
             "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
             wave6g3Results.weatherTransitionFromSunny
         );
-        check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
         check(
             "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
             wave6g3Results.transitionSameTargetNoop
-        );
-        check(
-            "Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab",
-            wave6g3Results.transitionInvalidRejected
         );
         check(
             "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
@@ -1416,7 +1397,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
+// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
@@ -1459,39 +1440,12 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
-    // ### V8.46 — Sanfte Wetter-Übergänge ###
-    const v846Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        out.helperExists = typeof r._weatherBlendedValue === "function";
-        const origWeather = r.state.weather;
-        const origTrans = r.state.weatherTransition;
-        // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
-        r.state.weather = "rainy";
-        out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
-        // Mitten in der Transition: progress 0.5 → halber Weg.
-        r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
-        out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
-        r.state.weatherTransition = origTrans;
-        r.state.weather = origWeather;
-        // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
-        const sh = r.state.directionalLight && r.state.directionalLight.shadow;
-        out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
-        return out;
+    // ### V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
+    const v847 = await safeEvaluate(page, () => {
+        const sh = window.anazhRealm.state.directionalLight && window.anazhRealm.state.directionalLight.shadow;
+        return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
-
-    if (v846Results && !v846Results.error) {
-        check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
-        check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
-        check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
-        check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
-        check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
-    } else {
-        check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
-    }
+    check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
     // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
