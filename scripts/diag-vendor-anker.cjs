@@ -67,18 +67,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "e.alphaTest=i.alphaTest,e.alphaMap=i.alphaMap,e.transparent=", organ: "Schatten-Stoff je Objekt (renderObject setzt die Werte je Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "(l.version!==t.version||l.needsUpdate)&&(l.initialCacheKey!==l.getCacheKey()", organ: "Schatten-Stoff je Objekt (Version → Schlüssel-Prüfung je Bürger)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.material===s&&t.materialVersion===s.version", organ: "Schatten-Stoff je Objekt (Version → Pipeline-Prüfung je Bürger)" },
-    // DER WURF OHNE FARBE (B-K1): _getShadowNodes hängt colorNode.a · map.a des Originals in den Schatten-Stoff (sonst bleibt
-    // dessen Standard-Fragment vec4(0,0,0,1)); Lage = castShadowPositionNode vor positionNode, Tiefe = depthNode — die Hülle
-    // in _configureRenderer baut für Werfer ohne Ausschnitt dasselbe Paar ohne Farbe nach.
-    { file: "vendor/three.webgpu.min.js", sub: "_getShadowNodes(e){const t=e.version;let r=this._cacheShadowNodes.get(e);", organ: "Wurf ohne Farbe (die Hülle um _getShadowNodes)" },
-    { file: "vendor/three.webgpu.min.js", sub: "const s=null!==e.map,i=e.colorNode&&e.colorNode.isNode,n=e.castShadowNode&&e.castShadowNode.isNode,a=e.maskShadowNode&&e.maskShadowNode.isNode||e.maskNode&&e.maskNode.isNode;", organ: "Wurf ohne Farbe (was der Vendor in den Wurf hängt: map · colorNode · castShadowNode · Masken)" },
-    { file: "vendor/three.webgpu.min.js", sub: "e.depthNode&&e.depthNode.isNode&&(l=e.depthNode),e.castShadowPositionNode&&e.castShadowPositionNode.isNode?o=e.castShadowPositionNode:e.positionNode&&e.positionNode.isNode&&(o=e.positionNode)", organ: "Wurf ohne Farbe (Lage und Tiefe, die die Hülle nachbaut)" },
-    { file: "vendor/three.webgpu.min.js", sub: "null!==t&&(e.colorNode=t),null!==r&&(e.depthNode=r),null!==s&&(e.positionNode=s)", organ: "Wurf ohne Farbe (colorNode null: der Schatten-Stoff behält sein Standard-Fragment)" },
-    { file: "vendor/three.webgpu.min.js", sub: 't.colorNode=Cn(0,0,0,1),t.isShadowPassMaterial=!0', organ: "Wurf ohne Farbe (das Standard-Fragment des Schatten-Stoffs)" },
-    // EIN STOFF, EIN SCHLÜSSEL (B-K1): der Bau-Schlüssel liest jede AUFZÄHLBARE eigene Eigenschaft des Stoffs (eine Funktion als
-    // Text) — die Diät hängt ihren Beobachter nicht-aufzählbar ein (`_materialObserverDiaet`), der Schlüssel bleibt der der Anlage.
-    { file: "vendor/three.webgpu.min.js", sub: "getMaterialCacheKey(){const{object:e,material:t,renderer:r}=this;let s=t.customProgramCacheKey();for(const e of function(e){const t=Object.keys(e);", organ: "_materialObserverDiaet (der Schlüssel liest aufzählbare Eigenschaften)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.initialCacheKey=this.getCacheKey()", organ: "_materialObserverDiaet (der Schlüssel der Anlage)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.depthNode&&e.depthNode.isNode&&(l=e.depthNode),e.castShadowPositionNode&&e.castShadowPositionNode.isNode?o=e.castShadowPositionNode:e.positionNode&&e.positionNode.isNode&&(o=e.positionNode)", organ: "_wurfOhneFarbe" },
+    { file: "vendor/three.webgpu.min.js", sub: "customProgramCacheKey();for(const e of function(e){const t=Object.keys(e);", organ: "_materialObserverDiaet" },
     { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderObjectFunction=this._renderObjectFunction||this.renderObject", organ: "Schatten-Stoff je Objekt (renderObject am Renderer gelesen)" },
     // DIE DIÄT-BAHN am Programm (_diaetGeteiltSchreiben / _diaetRefresh): jede private Stelle, die sie ruft.
     { file: "vendor/three.webgpu.min.js", sub: "updateBefore(e){const t=e.getNodeBuilderState();for(const r of t.updateBeforeNodes)this.getNodeFrameForRender(e).updateBeforeNode(r)}", organ: "AnazhRealm._diaetGeteiltSchreiben (rend._nodes.updateBefore)" },
@@ -140,10 +130,10 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
     { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
-    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1, Integration V18.547): `setupPosition` legt die Zuweisung des
+    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1): `setupPosition` legt die Zuweisung des
     // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
     // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
-    // positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht` (stoffe las es 1310-18 umgekehrt).
+    // positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht`.
     { file: "vendor/three.webgpu.min.js", sub: 'Sp(t).toStack(),null!==this.positionNode&&lc.assign(Gu(this.positionNode,"POSITION","vec3"))', organ: "AnazhRealm._weltNaht (setupPosition: die Zuweisung des positionNode steht im Stapel vor der Instanzierung)" },
     { file: "vendor/three.webgpu.min.js", sub: "const n=t.mul(lc).xyz;if(lc.assign(n)", organ: "AnazhRealm._weltNaht (InstanceNode.setup: die Instanz-Matrix wird erst im setup an den aktiven Stapel gehängt)" },
     { file: "vendor/three.webgpu.min.js", sub: "const a=this.nodes.filter(e=>-1===n.indexOf(e));for(const e of a)i(e)", organ: "AnazhRealm._weltNaht (StackNode.build: nachgereichte Knoten bauen NACH den ersten — positionNode vor der Instanz-Matrix)" },
@@ -151,7 +141,7 @@ const ANKER = [
     // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
     { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(t.isSampledTexture){const o=t.update(),u=t.texture,l=this.textures.get(u);o&&(this.textures.updateTexture(u)", organ: "AnazhRealm._diaetVorTextur (r184 lädt eine Textur nur im Binde-Gang hoch)" },
-    // DER RENDER-ABSCHNITT (Gegenprüfung 07.10.): der Stempel des Gangs ist (Render-Id, info.calls) — jeder betretene
+    // DER RENDER-ABSCHNITT: der Stempel des Gangs ist (Render-Id, info.calls) — jeder betretene
     // Render zählt info.calls hoch und nimmt ihn als Render-Id, das Verlassen gibt die äußere Id zurück (Anker der
     // Bundle-Wahrheit), info.reset lässt info.calls stehen. So wechselt das Paar beim Betreten UND Verlassen.
     { file: "vendor/three.webgpu.min.js", sub: "this.info.calls++,this.info.render.calls++,this.info.render.frameCalls++,i.renderId=this.info.calls", organ: "AnazhRealm._diaetGeteiltSchreiben (Render-Abschnitt: jeder betretene Render zählt info.calls, die Render-Id folgt)" },
@@ -412,7 +402,7 @@ const ANKER = [
     // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen jedes nicht-normierte 8-/16-bit-Attribut auf 32 bit — auch den Index;
     // `_backendGesetz` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
     // nach dem Array-Typ als uint16. Das Haut-Gewicht reist als normiertes Uint16 (unorm16x4, nie geweitet).
-    // DER FROST (07.10.): das Weiten schreibt die geweitete Form in das GETEILTE Attribut zurück (`r.array=o`) — darum sitzt
+    // DER FROST: das Weiten schreibt die geweitete Form in das GETEILTE Attribut zurück (`r.array=o`) — darum sitzt
     // die Hülle an der KLASSE (jedes Backend der Seite: Welt + Bühnen), und Index-Wache und GPU-Wache hängen an Draw und init.
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===e.normalized)if(o.constructor===Int16Array||o.constructor===Int8Array)o=new Int32Array(o);else if((o.constructor===Uint16Array||o.constructor===Uint8Array)&&(o=new Uint32Array(o),t&GPUBufferUsage.INDEX))", organ: "_backendGesetz (das Weiten fragt normalized — die Hülle setzt es nur für das Anlegen)" },
     { file: "vendor/three.webgpu.min.js", sub: "for(let e=0;e<o.length;e++)65535===o[e]&&(o[e]=4294967295);if(r.array=o,", organ: "_backendGesetz (das Weiten schreibt in das geteilte Attribut zurück — die Hülle gilt jedem Backend)" },
@@ -454,7 +444,7 @@ const ANKER = [
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
 // Semantik: EIN Beobachter und EINE geteilte Gruppe je Programm, mehrere Objekte je Programm, die Vendor-Bahn
 // (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest tauschen den VERSORGER am geladenen Objekt,
-// nie den Text: "abkuerzung" kürzt jedes bekannte Objekt ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518),
+// nie den Text: "abkuerzung" kürzt jedes bekannte Objekt ohne Schreiben ab,
 // "ohneGetragen" macht jede neue Version zum Grund
 // für jedes Render-Objekt (der Stand vor K71), "getragenImmer" hält jede Version für getragen (ein Attribut, das nur
 // ein Pass liest, lüde nie hoch). Ruft die Diät einen Versorger nicht, bleibt die Manipulation wirkungslos und der
@@ -689,12 +679,11 @@ function scheinPuffer(uniforms) {
         uniforms,
     };
 }
-// (13) DER STOFF JE RENDER-OBJEKT (Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id, der Puffer
+// (13) DER STOFF JE RENDER-OBJEKT: r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id, der Puffer
 // des Stoff-Verweises liegt je Render-Objekt. Fünf Objekte EINES Stoffs: D (eine Senke) frischt im Render des Farbwechsels
 // aus eigenem Grund VOR A, A verbraucht ihn, B und C fehlen (verdeckt), E (ein Programm ohne Stoff-Verweis, der Schatten-
-// Pass) fehlt auch; danach bewegt sich B, C steht. Gemessen: welche Puffer danach den alten Wert tragen (`alt`, Soll keiner;
-// 783fcdc1 B+C, e93134f4 C) und wer ohne Änderung voll frischt (`ueber`, Soll keiner; c7225684 D+E — ein Stoff-Stand, der
-// nur zwei Ausgänge der Diät kannte).
+// Pass) fehlt auch; danach bewegt sich B, C steht. Gemessen: welche Puffer den alten Wert tragen (`alt`) und
+// wer ohne Änderung voll frischt (`ueber`) — Soll je keiner.
 function stoffLauf(fn) {
     const stoff = { farbe: 1 };
     const obs = scheinBeobachter({ _renderId: -1, _equal: false, farbe: 1 }, stoff);

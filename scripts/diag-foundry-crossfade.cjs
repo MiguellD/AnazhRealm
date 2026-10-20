@@ -1,18 +1,18 @@
-// diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN (Paritäts-Vollendung W5.3+W5.4): das EINE Masken-Gesetz
+// diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN: das EINE Masken-Gesetz
 // `__phytoCore.lodCrossfadeMask` (phyto-core) gegen die Studio-Blende, das Fenster der Instanz-Wahl und die lebende Welt.
 // Teil (a), Node an der GELADENEN Klasse (`stammLib.ladeKlasse`: die Kerne wie index.html, dann der Stamm) — nie ein
-// Quelltext-Zitat (PFLICHT-OFFEN D3):
+// Quelltext-Zitat:
 //   (1) DIE STUDIO-BLENDE LÄUFT: der Fragment-Satz, den foundry-core `injectWind` dem Labor-Stoff einsetzt (Rinde und Laub,
 //       mit der Bindung des Wirts aus `PORTAL_RENDER_CONFIG.lod` wie foundry-bruecke), läuft als JS auf dem 64×64-Raster
 //       × Band × beiden Metriken (vLodDL = vLodD und 1,6·vLodD) × 2 uDitherT-Phasen: der Dither (`lodDitherIGN`) und jedes
 //       keep der Stufen L0/L1 gleichen ihm, Abweichung 0. Ändert das Studio seine Blende, wird die Linse rot.
 //   (2) DIE INVARIANTEN DES GESETZES: Rinde = exakte Partition im Partitions-Band (L1 ∪ Karte im Fern-Band, das Billboard
-//       liegt tiefen-versetzt), Laub = überlappende Rampen (FIX v37: Union lückenlos, ≥ max der Einzel-Deckung, Band-Anfang
+//       liegt tiefen-versetzt), Laub = überlappende Rampen (Union lückenlos, ≥ max der Einzel-Deckung, Band-Anfang
 //       ~100 % L0, Band-Ende ~100 % Karte, monoton — auch bei divergenter Blatt-Metrik).
-//   (3) DAS FENSTER DER INSTANZ-WAHL (W7): die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
+//   (3) DAS FENSTER DER INSTANZ-WAHL: die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
 //       Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz × Distanz-Intervall,
 //       Dither-Raster 256 — kein Loch; der Überschuss steht als Zahl.
-//   (4) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das echte `_instanzFenster` über eine Birke und eine
+//   (4) DIE STUFE OHNE BILD: das echte `_instanzFenster` über eine Birke und eine
 //       Eiche, 0–60 m, je Stufe — keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält, keine
 //       fehlt, die es behält.
 //   (5) DIE ABSENZEN DER BLENDE über den EINEN Helfer `stammLib.fehlt`: kein Maß von der Licht-Kamera, zum Fragment oder
@@ -27,8 +27,7 @@
 // des Wurfs, die Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band)
 // und die laute Blende (ohne uLodD0 bricht der Stoff beim Namen).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
-// Teil (c), echter Renderer (WebGPU, kienspan): DER WURF OHNE FARBE (B-K1) — s. runPartC; `--nur-wurf` fährt nur ihn.
-//   node scripts/diag-foundry-crossfade.cjs [--selftest | --nur-wurf]
+//   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -311,197 +310,6 @@ function mitTaeter(glied, taeter) {
     return (t) => t.replace(new RegExp("(\\n {4}" + g + "\\([^)]*\\)\\s*\\{)"), "$1 " + taeter + ";");
 }
 
-// ===== TEIL (c) — DER WURF OHNE FARBE (B-K1, Lehre 26): echter Renderer, Knoten-Bau ohne Pipeline =====
-// r184 `_getShadowNodes` hängt den Farb-Graphen des Originals in den Schatten-Stoff (vec4(0, colorNode.a · map.a)); an einem
-// Werfer OHNE Ausschnitt (alphaTest 0, opak, ohne alphaMap/Masken/castShadowNode) schneidet diese Alpha nichts — der
-// Schatten-Stoff setzt sie auf 1, die Karte trägt keine Farbe (PCF) —, gebaut wurde sie trotzdem: je Werfer ein eigenes
-// Schatten-Programm aus seinem Farb-Graphen. Die Probe baut an einer eigenen Bühne je Werfer das Hauptpass- und das
-// Schatten-Fragment (WGSL, nur der Knoten-Bau — keine Pipeline, kein kaltes Programm) und urteilt:
-//   (1) ein Hauptpass-Fragment verwirft genau dann, wenn sein Schatten-Fragment verwirft (Ausschnitt in Bild und Wurf);
-//   (2) ein Werfer ohne Ausschnitt wirft mit dem Standard-Fragment des Schatten-Stoffs (gleich dem Wurf eines Stoffs ohne
-//       Farb-Graph und Karte) — sein Farb-Graph steht in keinem Schatten-Fragment.
-const PORT_C = Number(process.env.CROSSFADE_WURF_PORT || PORT + 1);
-function wurfUrteil(w) {
-    if (!w || w.err) return [`WURF: die Probe lief nicht (${w ? w.err : "?"})`];
-    const v = [];
-    const ws = w.werfer || [];
-    if (!ws.some((x) => x.ausschnitt && x.hauptVerwirft)) v.push("WURF: kein Werfer mit Ausschnitt verwirft im Hauptpass — die Probe ist blind");
-    if (!ws.some((x) => !x.ausschnitt)) v.push("WURF: kein Werfer ohne Ausschnitt an der Bühne — die Probe ist blind");
-    if (!w.leer || !(w.leer.zeilen > 0) || w.leer.wurfVerwirft !== false)
-        v.push("WURF: das Schatten-Fragment des Stoffs ohne Farb-Graph fehlt oder verwirft — die Probe ist blind");
-    for (const x of ws) {
-        if (x.hauptVerwirft !== x.wurfVerwirft)
-            v.push(
-                `WURF: ${x.name} — der Hauptpass ${x.hauptVerwirft ? "verwirft" : "verwirft nicht"}, das Schatten-Fragment ${x.wurfVerwirft ? "verwirft" : "verwirft nicht"}: der Schatten schneidet anders als das Bild`
-            );
-        if (!x.ausschnitt && x.wurfGleichLeer !== true)
-            v.push(
-                `WURF: ${x.name} — ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen ins Schatten-Fragment (${x.wurfZeilen} Zeilen statt ${w.leer ? w.leer.zeilen : "?"}): ein Schatten-Programm je Farb-Graph`
-            );
-    }
-    return v;
-}
-function wurfSelbsttest() {
-    const gruen = {
-        leer: { zeilen: 40, wurfVerwirft: false },
-        werfer: [
-            { name: "wurf:voll", ausschnitt: false, hauptVerwirft: false, wurfVerwirft: false, wurfGleichLeer: true, wurfZeilen: 40 },
-            { name: "wurf:ausschnitt", ausschnitt: true, hauptVerwirft: true, wurfVerwirft: true, wurfGleichLeer: false, wurfZeilen: 70 },
-        ],
-    };
-    const mit = (i, o) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        Object.assign(z.werfer[i], o);
-        return z;
-    };
-    const faelle = [
-        ["ein alphaTest-0,5-Werfer behält sein discard", mit(1, { wurfVerwirft: false }), /WURF: wurf:ausschnitt — der Hauptpass verwirft, das Schatten-Fragment verwirft nicht/],
-        ["ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen", mit(0, { wurfGleichLeer: false, wurfZeilen: 90 }), /WURF: wurf:voll — ein Werfer ohne Ausschnitt trägt seinen Farb-Graphen/],
-        ["der Wurf verwirft ohne Bild-Ausschnitt", mit(0, { wurfVerwirft: true }), /WURF: wurf:voll — der Hauptpass verwirft nicht, das Schatten-Fragment verwirft/],
-        ["Ausschnitt-Probe blind", mit(1, { hauptVerwirft: false, wurfVerwirft: false }), /kein Werfer mit Ausschnitt verwirft/],
-    ];
-    check("Selbst-Test WURF: der grüne Lauf ist grün", wurfUrteil(gruen).length === 0, wurfUrteil(gruen).join(" · "));
-    for (const [name, z, muss] of faelle) {
-        const v = wurfUrteil(z);
-        check(`Selbst-Test WURF: „${name}" → die Linse nennt ihn`, v.some((s) => muss.test(s)), v.join(" · ") || "(nichts)");
-    }
-}
-async function runPartC() {
-    const server = statikServer();
-    await new Promise((r) => server.listen(PORT_C, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 300000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    let w;
-    try {
-        await page.goto(`http://127.0.0.1:${PORT_C}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        w = await page.evaluate(async () => {
-            const t0 = performance.now();
-            let r = null;
-            while (performance.now() - t0 < 240000) {
-                r = window.anazhRealm;
-                if (r && r.state && r.state.rendererReady && r.state.renderer && r.state.renderer.backend) break;
-                r = null;
-                await new Promise((res) => setTimeout(res, 100));
-            }
-            if (!r) return { err: "der Renderer stand nach 240 s nicht" };
-            const rend = r.state.renderer,
-                T = window.THREE,
-                TSL = T.TSL;
-            if (rend.backend.isWebGPUBackend !== true) return { err: "kein WebGPU-Backend (WGSL) — die Probe wäre blind" };
-            rend.setAnimationLoop(null);
-            const loopRoh = rend.setAnimationLoop;
-            rend.setAnimationLoop = () => {};
-            const schattenAlt = rend.shadowMap.enabled;
-            rend.shadowMap.enabled = true;
-            const szene = new T.Scene();
-            const licht = new T.DirectionalLight(0xffffff, 3);
-            licht.position.set(3, 8, 2);
-            licht.castShadow = true;
-            licht.shadow.mapSize.set(64, 64);
-            szene.add(licht, licht.target);
-            const karte = new T.DataTexture(new Uint8Array([255, 255, 255, 255, 40, 90, 40, 255, 40, 90, 40, 255, 255, 255, 255, 255]), 2, 2);
-            karte.needsUpdate = true;
-            const stoff = (o) => new T.MeshStandardNodeMaterial(o);
-            const ausschnitt = stoff({ alphaTest: 0.5 });
-            ausschnitt.colorNode = TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))));
-            const voll = stoff({});
-            voll.colorNode = TSL.vec4(TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.uv().x), 1.0);
-            const maske = stoff({});
-            maske.maskNode = TSL.uv().y.greaterThan(0.2);
-            const probe = [
-                ["wurf:leer", stoff({ color: 0x8a6a4a }), false],
-                ["wurf:voll", voll, false],
-                ["wurf:karte", stoff({ map: karte }), false],
-                ["wurf:ausschnitt", ausschnitt, true],
-                ["wurf:maske", maske, true],
-            ];
-            for (let i = 0; i < probe.length; i++) {
-                const [name, m] = probe[i];
-                m.name = name;
-                const o = new T.Mesh(new T.PlaneGeometry(2, 2), m);
-                o.position.set(-4 + i * 2, 1, 0);
-                o.castShadow = true;
-                o.receiveShadow = true;
-                o.frustumCulled = false;
-                szene.add(o);
-            }
-            const kam = new T.PerspectiveCamera(60, 4 / 3, 0.1, 50);
-            kam.position.set(0, 4, 8);
-            kam.lookAt(0, 0, 0);
-            kam.updateMatrixWorld(true);
-            // NUR DER KNOTEN-BAU: je Render-Objekt sein Fragment (WGSL); der Hauptpass startet über updateBefore den
-            // Schatten-Render (die Kaskade baut ihre Bürger durch dieselbe Bahn) — keine Pipeline, kein Draw.
-            const fang = [];
-            const odRoh = rend._renderObjectDirect;
-            rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
-                const ro = this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId);
-                const wurf = material.isShadowPassMaterial === true;
-                fang.push({ name: object.material.name, wurf, frag: ro.getNodeBuilderState().fragmentShader || "" });
-                if (!wurf) this._nodes.updateBefore(ro);
-            };
-            const rt = new T.RenderTarget(16, 16, { depthBuffer: true, samples: 0 });
-            try {
-                rend.setRenderTarget(rt);
-                rend.render(szene, kam);
-            } catch (e) {
-                return { err: "Knoten-Bau: " + ((e && e.message) || e) };
-            } finally {
-                rend.setRenderTarget(null);
-                rend._renderObjectDirect = odRoh;
-                rend.shadowMap.enabled = schattenAlt;
-                rend.setAnimationLoop = loopRoh;
-            }
-            const verwirft = (f) => /\bdiscard\b/.test(f);
-            const frag = (name, wurf) => (fang.find((f) => f.name === name && f.wurf === wurf) || {}).frag;
-            const leerWurf = frag("wurf:leer", true);
-            const out = { leer: leerWurf ? { zeilen: leerWurf.split("\n").length, wurfVerwirft: verwirft(leerWurf) } : null, werfer: [], fang: fang.length };
-            for (const [name, , aus] of probe) {
-                if (name === "wurf:leer") continue;
-                const h = frag(name, false),
-                    s = frag(name, true);
-                if (h === undefined || s === undefined) return { err: `${name}: ${h === undefined ? "kein Hauptpass" : "kein Schatten-Fragment"} gebaut (${fang.length} Bauten)` };
-                out.werfer.push({
-                    name,
-                    ausschnitt: aus,
-                    hauptVerwirft: verwirft(h),
-                    wurfVerwirft: verwirft(s),
-                    wurfGleichLeer: s === leerWurf,
-                    wurfZeilen: s.split("\n").length,
-                });
-            }
-            for (const [, m] of probe) m.dispose();
-            karte.dispose();
-            rt.dispose();
-            return out;
-        });
-    } catch (e) {
-        w = { err: (e && e.message) || String(e) };
-    }
-    await browser.close();
-    server.close();
-    return { w, pageErrors };
-}
-
-async function teilC() {
-    console.log("--- Teil (c) — DER WURF OHNE FARBE: Haupt- und Schatten-Fragment je Werfer (echter Renderer, nur Knoten-Bau) ---");
-    {
-        const T0 = Date.now();
-        const { w, pageErrors: fc } = await runPartC();
-        const v = wurfUrteil(w);
-        for (const s of v) check(s, false);
-        if (!v.length)
-            check(
-                "WURF: jeder Werfer schneidet in Bild und Wurf gleich, kein Werfer ohne Ausschnitt trägt seinen Farb-Graphen ins Schatten-Fragment",
-                true,
-                (w.werfer || []).map((x) => `${x.name} ${x.ausschnitt ? "Ausschnitt" : "voll"} Wurf ${x.wurfZeilen} Z.`).join(" · ") + ` · Standard ${w.leer.zeilen} Z. · ${w.fang} Bauten · ${Math.round((Date.now() - T0) / 1000)} s`
-            );
-        if (fc.length) check(`WURF: ${fc.length} Seiten-Fehler`, false, fc[0]);
-    }
-}
-
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
@@ -532,7 +340,7 @@ async function runPartB() {
         while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
         res.foundryReady = !!(f && f.ready);
         if (!res.foundryReady) return res;
-        // ── der Proben-Baum (das V18.218.1-Band-Muster: gewachsener Bauplan, ferner Fix-Spot) ──
+        // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const px = 12345,
             pz = 6789;
@@ -658,7 +466,7 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE DES GESETZBUCHS (K43-3; vorher „die Kette ohne Partner", 06.10. F-D3/V-D3): Wagen und Tor tragen ihre
+        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre
         // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
         // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
         // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
@@ -791,7 +599,7 @@ async function runPartB() {
                     band: Number.isFinite(entry._lodBandLevel) ? entry._lodBandLevel : null,
                 });
             }
-            // ════ DIE STUFEN-WAHRHEIT (04.10.): die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
+            // ════ DIE STUFEN-WAHRHEIT: die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
             // Je Probe: die residenten Stufen (Primär + Band) mit IHREN Fassaden-Stempeln (aH0/aH0L je Slot), die
             // Masken-Distanz roh × Perf-Streck × min(lodRef/Stempel, 1), die Maske __phytoCore.lodCrossfadeMask über
             // 64 Dither-Werte je Rinde/Laub — ein Wert, den KEINE residente Stufe behält, ist ein LOCH (der Spieler
@@ -802,8 +610,8 @@ async function runPartB() {
             const cfgM = { d0: cfg.thresh01, d1: cfg.thresh12, fade: cfg.fade, fade0: cfg.fade0 };
             // Je residentem Slot: der Fassaden-Stempel (aH0/aH0L) und die Maske, die sein Stoff fährt — aLodLevel 1 =
             // L0-Formel · 2 = L1-Formel · 3 = die einzige Nah-Stufe (nur die Fern-Ausblendung f1o) · 0 = frei; das
-            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (seit 04.10. die Höhe der L1; seit dem
-            // Karten-Atlas W6 reist er als |aKarte.w| in der EINEN Atlas-Gruppe).
+            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (die Höhe der L1, als |aKarte.w| in der EINEN
+            // Atlas-Gruppe).
             // Der Schatten-Zwilling (SHADOW_TWIN_LAYER) zählt nicht: die Kamera sieht ihn nie.
             const stempelVon = (ref) => {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
@@ -1230,7 +1038,7 @@ async function runPartB() {
                 // Kamera, wie geboren, fern vom Spieler — der kopflose Boot) steht es im Kopf des Spielers; nach der Setzung reist
                 // es mit dem Sprung des Spielers, bis das Rig nachzieht; setzt eine Sonde die Kamera, IST sie das Auge; die Geburt
                 // trägt die Distanz vom Auge (die Verfolger-Kamera 9,6 m hinter dem Spieler). Selbsttest im selben Lauf: das
-                // Auge = die Kamera allein (der Stand d6fd4047) bzw. der Spieler — die Linse MUSS falsche Wahlen zählen.
+                // Auge = die Kamera allein bzw. der Spieler — die Linse MUSS falsche Wahlen zählen.
                 const augeLauf = (gegen) => {
                     const T3 = window.THREE;
                     const o = { proben: 0, falsch: 0, geburten: 0, geburtFalsch: 0, beispiel: [] };
@@ -1311,7 +1119,7 @@ async function runPartB() {
                 // vom Auge. Besucht die Scheibe die Zelle spät (in voller Fahrt 24 m), dithert die Karte ohne verlangten Partner
                 // ins Nichts, wo sie nicht HÄLT (`_scatterMaterializeCell` bandHalt). Ein Sicht-Wechsel allein (9,6 m) erreicht
                 // sie in der Streu (ab 64 m) nie: die Karte weicht erst unter 22 m Wahrnehmung, die Wahl lässt sie ab 29 m ohne
-                // Partner (gemessen 20.10.: 0 Geister ohne Halt in 1706 Zellen). Je Ort die Deckung jeder Foundry-Baum-Zelle am
+                // Partner. Je Ort die Deckung jeder Foundry-Baum-Zelle am
                 // Auge; geurteilt wird die Zelle ohne verlangten Partner, die Zelle mit Partner zählt mit.
                 const streuLauf = (ohneHalt) => {
                     const o = { proben: 0, geister: 0, loecher: 0, orte: 0, mitPartner: 0, mitPartnerGeister: 0, beispiel: null };
@@ -1354,13 +1162,8 @@ async function runPartB() {
             st.architectures = savedArchs;
             r._archLODCursor = savedCursor;
         }
-        // ════ TEIL Z (AUSLÖSCHUNGS-WELLE, Feld B) — DER STUFEN-ZENSUS: bei Studio-
-        // äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der Studio-Wald.
-        // Studio-CPU-Formel (phytogenesis Z.2739-2750): dn = dr·min(HREF/bh, 1)
-        // UNGEDECKELT (kein visStretchMax) · Blatt-Kappe bh_L = min(bh, 24) (Z.2392) —
-        // der Host-`_lodPerceptionDistance`/-Partner MUSS dieselben Zahlen liefern
-        // (Zahl je Distanz-Band × Sichthöhe; vor der Kalibrierung: Deckel 15 m +
-        // Kappe 12 m = doppelt so frühe Demotion, der „nicht wie in der Vorlage"-Riss).
+        // ════ TEIL Z — DER STUFEN-ZENSUS: bei Studio-äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der
+        // Studio-Wald (dn = dr·min(HREF/bh, 1) ungedeckelt · Blatt-Kappe bh_L = min(bh, 24)), je Distanz-Band × Sichthöhe.
         res.zensus = [];
         const hrefZ = cfg.lodRef;
         const stageStudio = (dr, bh) => {
@@ -1408,12 +1211,10 @@ async function runPartB() {
         return res;
     });
 
-    // ── ATTRIBUT-WAND (18.07., Schöpfer-Konsole: „Vertex attribute aH0/aH0L/aLodLevel
-    // not found" im Dauer-Takt): JEDER Konsument eines Masken-Materials (userData.
+    // ── ATTRIBUT-WAND: JEDER Konsument eines Masken-Materials (userData.
     // foundryCrossfade) MUSS die Stempel-Attribute tragen — der Null-Stempel sitzt am
     // EINEN Konversions-Chokepoint (_foundryBuildMesh); der Gruppen-Bau überschreibt
-    // mit echten Stufen. Vor der Wand: 957 ungestempelte Meshes (Kreatur-Ofen +
-    // Direkt-Konsumenten) → three warnte je RenderObject. ──
+    // mit echten Stufen. ──
     const attrWand = await page.evaluate(() => {
         const r = window.anazhRealm;
         let geprueft = 0,
@@ -1431,9 +1232,7 @@ async function runPartB() {
         return { geprueft, verstoesse };
     });
 
-    // ── DIE GNADENFRIST DES LEER-DISPOSE (18.07., zweiter Schöpfer-Trace: +366
-    // Gruppen-Re-Mints in 176 s — Familien oszillieren um liveCount 0, der Sofort-
-    // Reap machte jede Oszillation zum Voll-Dispose + Re-Mint). Vier Sätze:
+    // ── DIE GNADENFRIST DES LEER-DISPOSE (Familien oszillieren um liveCount 0). Vier Sätze:
     // headless reapt SOFORT (byte-alte Gates) · echt hält die Frist die Hülle ·
     // Realloc in der Frist mintet NICHT neu · der Reaper räumt nach Ablauf. ──
     const gnade = await page.evaluate(async () => {
@@ -1477,7 +1276,7 @@ async function runPartB() {
         return o;
     });
 
-    // ── DER KEHRAUS DES WURFS (Gegenprüfung S3 R2, 09.10.): die L0 trägt DIESELBEN Zwillings-Leaves wie ihre Wurf-Stufe
+    // ── DER KEHRAUS DES WURFS: die L0 trägt DIESELBEN Zwillings-Leaves wie ihre Wurf-Stufe
     // (L1) — räumt die L0-Gruppe, fällt keine Geometrie der lebenden L1 (r184 zerstörte sonst die GPU-Puffer des Wurfs
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
@@ -1608,8 +1407,6 @@ async function main() {
             !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
             `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
         );
-        // V6: der Wurf ohne Farbe (Teil c) — das Urteil über einen grünen Lauf und je einen injizierten Täter.
-        wurfSelbsttest();
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1618,15 +1415,6 @@ async function main() {
         process.exit(0);
     }
 
-    if (process.argv.includes("--nur-wurf")) {
-        await teilC();
-        if (errs.length) {
-            console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-            process.exit(1);
-        }
-        console.log("\n✅ GRÜN — DER WURF OHNE FARBE (Teil c).");
-        process.exit(0);
-    }
     console.log("=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ===");
     check(
         "Gesetz und Studio-Blende geladen (lodCrossfadeMask · lodDitherIGN · der Fragment-Satz für Rinde und Laub)",
@@ -1698,7 +1486,6 @@ async function main() {
     // (5) — DIE ABSENZEN DER BLENDE über den EINEN Helfer
     for (const [name, glied, re] of ABSENZEN) check(name, stammLib.fehlt(glied, re), stammLib.fehlt.wo || "");
 
-    await teilC();
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
     const { out, pageErrors, attrWand, gnade, kehraus, laut } = await runPartB();
     check(
@@ -1861,8 +1648,6 @@ async function main() {
         // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
         // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
         // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
-        // Vorher (06.10., „die Kette ohne Partner"): die L0 dithert zu einer L1, die es nicht gibt — GT voll 27 von 27 Proben
-        // mit Loch; bis K43-3 erwartete die Linse Wagen und Tor nur als L0 und las nur Instanz-Gruppen (das Tor: 0 Proben).
         const zk = (o) =>
             o
                 ? `${o.proben} Proben · Löcher ${o.loecher} (leer ${o.leer}) · Satz-Zellen ${o.satzZellen} (fehlt ${o.zelleFehlt}, Ecke≠ ${o.eckeUngleich}) · Stempel≠CPU ${o.stempelUngleich} · Stufen ${JSON.stringify(o.stufen)} · Perf ×${o.perf} · alter Leser ${o.altLoecher} Löcher${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}${o.fehltBeispiel ? " — Zelle fehlt z. B. " + JSON.stringify(o.fehltBeispiel) : ""}`
