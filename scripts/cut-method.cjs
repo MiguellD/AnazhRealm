@@ -74,16 +74,9 @@ try {
 
 // Alle MethodDefinition-Knoten (jeder Klasse) mit passendem Namen sammeln.
 const hits = [];
-const walk = (node) => {
-    if (!node || typeof node.type !== "string") return;
+stammLib.wandere(ast, (node) => {
     if (node.type === "MethodDefinition" && node.key && node.key.name === name) hits.push(node);
-    for (const k of Object.keys(node)) {
-        const v = node[k];
-        if (Array.isArray(v)) v.forEach((c) => c && typeof c.type === "string" && walk(c));
-        else if (v && typeof v.type === "string") walk(v);
-    }
-};
-walk(ast);
+});
 
 if (hits.length === 0) {
     console.error(`⛔ Keine Methode '${name}' in ${fileArg} gefunden.`);

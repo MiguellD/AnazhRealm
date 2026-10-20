@@ -35,21 +35,7 @@ const MUTIERER = /^(add|delete|clear|set|push|pop|splice|shift|unshift|sort|reve
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f, eltern) => {
-        f(n, eltern);
-        for (const k of kinder(n)) lauf(k, f, n);
-    };
+    const lauf = (n, f, eltern) => (f(n, eltern), stammLib.kinder(n, (c) => lauf(c, f, n)));
     const befunde = [];
     const methoden = new Map();
     lauf(ast, (m) => {

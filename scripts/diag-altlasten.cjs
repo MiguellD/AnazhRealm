@@ -15,7 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { scanWarteWand } = require("./lib/warte-wand.cjs");
+const { scanWarteWand } = require("./lib/welt-boot.cjs");
 
 // Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
 // fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
@@ -1002,6 +1002,7 @@ function checkAliasArten(core) {
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
 const stripComments = stammLib.ohneKommentare;
+const { kinder } = stammLib;
 
 // `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
 // trägt eigene Namen, die im Stamm gefallen sind).
@@ -1450,15 +1451,6 @@ const ENTSORGUNG_BESITZER = {
 function entsorgungen(srcRoh) {
     const acorn = require("acorn");
     const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n, f) => {
-        for (const k in n) {
-            if (k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const c of v) if (c && typeof c.type === "string") f(c);
-            } else if (v && typeof v.type === "string") f(v);
-        }
-    };
     const ueberall = (n, f) => {
         f(n);
         kinder(n, (c) => ueberall(c, f));
@@ -1843,15 +1835,6 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         locations: true,
         onComment: (_block, _text, start, end) => kommentare.push({ start, end }),
     });
-    const kinder = (n, f) => {
-        for (const k in n) {
-            if (k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const c of v) if (c && typeof c.type === "string") f(c);
-            } else if (v && typeof v.type === "string") f(v);
-        }
-    };
     const gehe = (n, f, eltern = null) => {
         f(n, eltern);
         kinder(n, (c) => gehe(c, f, n));
@@ -2935,33 +2918,19 @@ const BOOT_REST = [
 ];
 // Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {
-    const acorn = require("acorn");
     const startet = (src) => {
         if (!/\b(?:launch|createServer|spawn)\b/.test(src)) return false;
-        let ast;
+        let ja = false;
         try {
-            ast = acorn.parse(src.replace(/^#!.*/, (m) => " ".repeat(m.length)), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
+            stammLib.wandere(stammLib.ast(src), (n) => {
+                const c = n.callee || {};
+                const [o, p] = [c.object && c.object.name, c.property && c.property.name];
+                if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) ja = true;
+                if (/spawn/.test(c.name || p) && /(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) ja = true;
+            });
         } catch (_e) {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
-        let ja = false;
-        const geh = (n) => {
-            if (ja || !n || typeof n.type !== "string") return;
-            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed) {
-                const o = n.callee.object.name;
-                const p = n.callee.property.name;
-                if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) return (ja = true);
-            }
-            if (n.type === "CallExpression" && /spawn/.test(n.callee.name || (n.callee.property && n.callee.property.name))) {
-                if (/(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) return (ja = true);
-            }
-            for (const k in n) {
-                const v = n[k];
-                if (Array.isArray(v)) v.forEach(geh);
-                else if (v && typeof v.type === "string") geh(v);
-            }
-        };
-        geh(ast);
         return ja;
     };
     return dateien.filter(([name, src]) => name !== "scripts/lib/welt-boot.cjs" && startet(src)).map(([name]) => name);
@@ -3639,13 +3608,7 @@ function main() {
                 }
                 if (k && /this\._(stoffBruch|blendeBruch)\(/.test(stamm.slice(k.start, k.end)))
                     brueche.push({ k, zeile: ort.loc.start.line });
-                for (const key in n) {
-                    if (key === "loc") continue;
-                    const v = n[key];
-                    if (Array.isArray(v)) {
-                        for (const c of v) if (c && typeof c.type === "string") geh(c);
-                    } else if (v && typeof v.type === "string") geh(v);
-                }
+                kinder(n, geh);
             };
             geh(ast);
             // nur die äußeren Rümpfe: ein innerer Bruch fällt mit seinem äußeren

@@ -128,21 +128,7 @@ const FREI = {
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const kinder = (n) => {
-        const out = [];
-        for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) {
-                for (const x of v) if (x && typeof x.type === "string") out.push(x);
-            } else if (v && typeof v.type === "string") out.push(v);
-        }
-        return out;
-    };
-    const lauf = (n, f) => {
-        f(n);
-        for (const k of kinder(n)) lauf(k, f);
-    };
+    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const feld = (m) =>
         m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
     const text = (n) => quelle.slice(n.start, n.end).replace(/\s+/g, "");

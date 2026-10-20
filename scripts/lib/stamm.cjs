@@ -552,15 +552,19 @@ function zeileVon(t, i) {
     }
     return lo + 1;
 }
-function wandere(n, f, ahnen = []) {
-    if (f(n, ahnen) === false) return;
-    ahnen.push(n);
+// DER EINE Kinder-Gang eines AST-Knotens (jedes Kind, das ein Knoten ist, ohne `loc`) — wandere und jede Linse lesen ihn
+function kinder(n, f) {
     for (const k in n) {
         const v = n[k];
         if (Array.isArray(v)) {
-            for (const c of v) if (c && typeof c.type === "string") wandere(c, f, ahnen);
-        } else if (v && typeof v.type === "string" && k !== "loc") wandere(v, f, ahnen);
+            for (const c of v) if (c && typeof c.type === "string") f(c);
+        } else if (v && typeof v.type === "string" && k !== "loc") f(v);
     }
+}
+function wandere(n, f, ahnen = []) {
+    if (f(n, ahnen) === false) return;
+    ahnen.push(n);
+    kinder(n, (c) => wandere(c, f, ahnen));
     ahnen.pop();
 }
 const schluesselVon = (t, n) =>
@@ -1022,6 +1026,7 @@ function fehlt(glied, re, quelle) {
 }
 
 module.exports = {
+    kinder,
     ohneKommentare,
     fehlt,
     stripperTafel,

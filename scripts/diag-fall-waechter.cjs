@@ -106,16 +106,7 @@ function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
     const befunde = [];
     const gefunden = new Set();
     const benanntGesehen = new Set();
-    const lauf = (n, f) => {
-        if (!n || typeof n.type !== "string") return;
-        f(n);
-        for (const k in n) {
-            if (k === "type" || k === "loc" || k === "start" || k === "end") continue;
-            const v = n[k];
-            if (Array.isArray(v)) for (const x of v) lauf(x, f);
-            else if (v && typeof v.type === "string") lauf(v, f);
-        }
-    };
+    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const name = (m) => (m && m.type === "MemberExpression" && !m.computed && m.property ? m.property.name : null);
     lauf(ast, (n) => {
         if (n.type !== "MethodDefinition" || !n.key) return;
