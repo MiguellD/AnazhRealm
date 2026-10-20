@@ -41,8 +41,6 @@
         "gate:weltgrenze": "node scripts/diag-weltgrenze.cjs --selftest",
         "gate:boot-rettung": "node scripts/diag-boot-rettung.cjs --selftest",
         "diag:boot-stage": "node scripts/diag-boot-stage.cjs",
-        "diag:parity": "node scripts/diag-parity.cjs",
-        "diag:parity-selftest": "node scripts/diag-parity.cjs --selftest --skip-studio --skip-anazh",
         "gate:phyto-tree": "node scripts/diag-phyto-tree.cjs",
         "gate:phyto-core": "node scripts/diag-phyto-core-parity.cjs",
         "gate:seam": "node scripts/diag-chunk-seam.cjs --gate",
