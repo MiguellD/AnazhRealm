@@ -1623,11 +1623,12 @@ class AnazhRealm_koerper_bewegung {
             // Azimut und Elevation ihres Blicks (der Orbit steht dann `cameraThirdDistance` hinter der Brust, so hoch, dass er aus
             // derselben Elevation auf sie blickt — am Steilhang über dem Hang, nie im Boden). Bis hier sprang sie beim Abstieg in
             // voller Fahrt 14,4 m (Third, auf die alte Gier der Maus) bzw. 1,55 m (Ego, vom Sitz neben den Wagen) in einem Bild
-            // (gate:fahr-leben T4). Ein Sicht-Wechsel bleibt ein Schnitt.
+            // (gate:fahr-leben T4). Ein Sicht-Wechsel bleibt ein Schnitt des Orts; das Sichtfeld gleitet bei JEDEM Wechsel des
+            // Rigs (`_kamFov`) — Ego → Third in voller Fahrt setzte das Tempo-FOV sonst in einem Bild (T4 sichtfeld).
             if (this.state._kamRig !== rig) {
                 const gleiten = String(this.state._kamRig).startsWith(this.state.cameraMode + ":");
                 this.state._kamVon = gleiten ? (this.state._kamVon || new THREE.Vector3()).copy(camera.position) : null;
-                this.state._kamFovVon = gleiten ? camera.fov : null; // das Sichtfeld gleitet mit dem Ort (`_kamFov`)
+                this.state._kamFovVon = this._kamFovSoll; // was `_kamFov` zuletzt schrieb (eine Sonde mit eigenem FOV bleibt)
                 this.state._kamVersatz = this.state._kamFovVersatz = null;
                 const blick =
                     gleiten &&
@@ -1900,8 +1901,8 @@ class AnazhRealm_koerper_bewegung {
     // das Fernglas (`_zoomActive`) steht auf ZOOM_FOV_DEG. Vorher schrieben `_tickBogenZug`, `_bogenRelease` und `setZoomActive`
     // je ihr FOV und stellten eine gemerkte Ruhe zurück. Er schreibt nur, wenn sein Soll (auf 0,01° gerastert) sich ändert —
     // eine Sonde, die für einen Schuss ein FOV setzt, behält es — und stellt die Kaskaden nach (CSMShadowNode: updateFrustums
-    // nach jeder Änderung der Kamera, wie der resize). DER ÜBERGANG (F1 b wie der Ort): wechselt das Rig in derselben Sicht
-    // (Auf- und Abstieg), gleitet der Versatz zwischen dem Sichtfeld, das die Kamera trug (`_kamFovVon`), und dem Soll des
+    // nach jeder Änderung der Kamera, wie der resize). DER ÜBERGANG (F1 b wie der Ort): wechselt das Rig (Auf- und Abstieg,
+    // der Sicht-Wechsel), gleitet der Versatz zwischen dem Sichtfeld, das die Kamera trug (`_kamFovVon`), und dem Soll des
     // neuen Rigs mit dem Gesetz des Übergangs (`_kamRest`, höchstens fovGradS je Sekunde) — beim Abstieg in voller Fahrt
     // fiel das Tempo-FOV in EINEM Bild auf die Ruhe (gate:fahr-leben T4: 5,06° je Bild bei 8,4 m/s, Third).
     _kamFov(tempo, t) {

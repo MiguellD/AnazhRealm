@@ -464,7 +464,8 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // DIE CHASE-CAM EINES BUCHS (H3), fail-closed: sie trägt JEDES Feld des Kern-Satzes `FAHR.kamera` endlich und dist > 0 —
-    // ein Satz ohne die Tempo-Felder rechnete im Rig NaN (vorher prüfte je Leser eine Wand nur el und dist); er bricht laut.
+    // ein Satz ohne die Tempo-Felder rechnete im Rig NaN (vorher prüfte je Leser eine Wand nur el und dist); er bricht laut
+    // (der Fang von `_vehicleProfile` meldet ihn über `_bruchMelden`, gate:fahr-leben T5 laut).
     _kamSatz(km) {
         const F = AnazhRealm._fahrSchrittGesetz().vc.FAHR.kamera;
         if (km.dist > 0 && Object.keys(F).every((n) => Number.isFinite(km[n]))) return km;
@@ -611,7 +612,11 @@ class AnazhRealm_koerper_fahrt {
                     prof.zweispur = _zs;
                 }
             }
-        } catch (_e) {}
+        } catch (e) {
+            // FAIL-CLOSED HEISST LAUT (`_kamSatz`, Prüfer R2): ein unlesbarer Satz des Rezepts meldet beim EINEN Melder, das Werk
+            // fährt ohne ihn — vorher schluckte ein leerer Fang den Bruch still
+            this._bruchMelden(`FAHR-PROFIL „${entry.type}": ${(e && e.message) || e}`);
+        }
         // JEDES rädrige Werk fährt DASSELBE Gesetz: ohne Studio-Rezept leitet der Host den P-Vektor aus der
         // eigenen Part-Hülle ab (L/B/H, Rad-Radius, in die Regler-Domäne geklemmt) und ruft DIESELBE
         // exportDrive-Formel. Konsumiert nur Lenkung/Zweispur/Feder/Geometrie/Kamera — Tempo-Identität bleibt
@@ -679,7 +684,9 @@ class AnazhRealm_koerper_fahrt {
                             prof.spur = drv.spur;
                     }
                 }
-            } catch (_e4) {}
+            } catch (e) {
+                this._bruchMelden(`FAHR-PROFIL „${entry.type}" (aus der Hülle): ${(e && e.message) || e}`);
+            }
         }
         entry._vehicleProfile = prof;
         return prof;
@@ -1424,9 +1431,11 @@ class AnazhRealm_koerper_fahrt {
     }
 
     setZoomActive(active) {
-        // das Fernglas steht nur mit einem magnifying-Target im Blick
-        this.state._zoomActive = !!active && !!this.state.camera && this._hasMagnifyingInSight() === true;
-        return this.state._zoomActive;
+        // das Fernglas setzt nur mit einem magnifying-Target im Blick an und steht dann, bis Z losgelassen wird — idempotent: das
+        // Auto-Repeat von Z kippt es nie (gate:fahr-leben T5 zoom)
+        const st = this.state;
+        st._zoomActive = !!active && !!st.camera && (st._zoomActive === true || this._hasMagnifyingInSight() === true);
+        return st._zoomActive;
     }
 
     // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`): trifft er ein Sub-Mesh einer magnifying-Architektur in
