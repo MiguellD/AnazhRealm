@@ -3782,6 +3782,7 @@ async function starte() {
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));
+    if (o && o.fehler) process.exit(1);
 })().catch((e) => {
     console.error("WERKBANK-FEHLER:", (e && e.message) || e);
     process.exit(1);

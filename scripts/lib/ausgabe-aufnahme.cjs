@@ -314,8 +314,7 @@ function bildUhren() {
 }
 
 // DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
-// sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt (den Regen tickt die
-// Bühne nach jedem Wort).
+// sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
     const r = window.anazhRealm;
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
@@ -363,17 +362,15 @@ async function weltStehtWarten(max) {
 function buehne(o) {
     const r = window.anazhRealm;
     const st = r.state;
-    const [wetter, saison] = [(o && o.wetter) || "sunny", (o && o.saison) || "sommer"];
+    const w = (o && o.wetter) || "sunny";
     window.__weltaktSpion();
     st.autoSeason = false;
-    if (!r.setSeason(saison)) throw new Error(`DIE BÜHNE kennt die Saison „${saison}" nicht`);
+    const s = r.setSeason((o && o.saison) || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
     // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
-    // EINEN Schreiber, dann eingefroren (`__wetterSetzen`); ein Wort, das nicht gilt, bricht laut (nie still Sonne unter
-    // falscher Beschriftung), und der Regen-Kasten folgt ihm zur gehaltenen Bild-Uhr, wie ihn das Spiel im Takt zeigt
-    if (window.__wetterSetzen(wetter) !== wetter)
-        throw new Error(`DIE BÜHNE: das Wetter „${wetter}" gilt nicht (es gilt ${st.weather})`);
+    // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
+    if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)

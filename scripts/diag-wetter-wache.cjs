@@ -38,8 +38,7 @@
 //   (U) UHR (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit`, der Loop läuft drei Frames weiter — jeder Leser
 //       (`__bildUhren`: Himmel, Wasser, Wind, Böe, Regen, Tor, Fell) steht mit ihr, jede Shader-Zeit zeichnet zu T, sonst steht
 //       er beim Namen; die Leser jeder Welt (Himmel, Wind, Böe — auch im Null-Renderer) stehen in der Liste, und der Loop schrieb
-//       die Bild-Uhr (verweigert); das Wort des Spielers (Regen, Winter) zeichnet die Bühne, wie das Spiel es zeigt (der
-//       Regen-Kasten steht nach dem Wort), ein falsches Wort bricht laut;
+//       die Bild-Uhr (verweigert); die Bühne zeichnet das Wort Regen, ein falsches bricht laut;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
@@ -76,8 +75,7 @@ if (process.argv.includes("--selftest")) {
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];
-        const nach = Object.assign({}, vor, { wind: b });
-        return { T: 2, vor, nach, verweigert: n, regen: ohne !== "regen", laut: ohne === "laut" ? 1 : 2 };
+        return { T: 2, vor, nach: Object.assign({}, vor, { wind: b }), verweigert: n, wort: ohne === "wort" ? 2 : 3 };
     };
     if (
         uhrRot(U(2, 3)).length ||
@@ -85,11 +83,10 @@ if (process.argv.includes("--selftest")) {
         uhrRot(U(2, 0)).length !== 1 ||
         !uhrRot(U(2, 3, "himmel")).length ||
         uhrRot(U(2, 3, "T")).length !== 1 ||
-        uhrRot(U(2, 3, "regen")).length !== 1 ||
-        uhrRot(U(2, 3, "laut")).length !== 1
+        uhrRot(U(2, 3, "wort")).length !== 1
     )
         v.push(
-            "uhr: die stehende Uhr ist nicht grün, der laufende Leser, der stumme Loop, der fehlende, der Leser neben T, die Bühne ohne Regen oder das stille Wort nicht rot"
+            "uhr: die stehende Uhr ist nicht grün, der laufende Leser, der stumme Loop, der fehlende, der Leser neben T oder das stille Wort nicht rot"
         );
     const Z = (...f) => ({ zuege: 2, laeufe: f.map((x, i) => [`L${i}`, { folge: x, fade: x.split(" ").length }]) });
     const [g, s] = ["rainy sunny", "stormy sunny"];
@@ -215,7 +212,7 @@ function probe(o) {
     r._gameLoopTick(performance.now());
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
-    const regen = !!(r._rainSystem && r._rainSystem.mesh.visible);
+    let wort = +!!(r._rainSystem && r._rainSystem.mesh.visible);
     r._loopRender();
     const uhren = () => Object.fromEntries(window.__bildUhren().map(([n, o, k]) => [n, o[k]]));
     const vor = uhren();
@@ -225,13 +222,13 @@ function probe(o) {
         if (nf) nf.update();
         r._gameLoopTick(performance.now() + 700 * k);
     }
-    aus.uhren = { T: r._bildZeit, vor, nach: uhren(), verweigert: window.__buehneUhr.verweigert - z0, regen, laut: 0 };
     for (const k of [{ wetter: "regen" }, { saison: "sommerX" }])
         try {
             window.__buehne(k);
         } catch {
-            aus.uhren.laut++;
+            wort++;
         }
+    aus.uhren = { T: r._bildZeit, vor, nach: uhren(), verweigert: window.__buehneUhr.verweigert - z0, wort };
     return aus;
 }
 
@@ -268,9 +265,7 @@ function uhrRot(U) {
     for (const n of ["himmel", "wind", "böe"])
         if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
     if (!(U.verweigert > 0)) rot.push(`(U) die Bild-Uhr: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
-    if (!U.regen)
-        rot.push("(U) WORT: die Bühne sagt Regen und zeichnet keinen (der Regen-Kasten tickt nicht mit dem Wort)");
-    if (U.laut !== 2) rot.push(`(U) WORT: die Bühne nimmt ein falsches Wort still hin (${U.laut} von 2 brechen laut)`);
+    if (U.wort !== 3) rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
     return rot;
 }
 
