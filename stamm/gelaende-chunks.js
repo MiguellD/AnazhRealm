@@ -776,7 +776,10 @@ class AnazhRealm_gelaende_chunks {
             "aNormalZiel",
             attr((lod | 0) < 3 ? meshData.normalZiel : new Float32Array(meshData.normals), 3)
         );
-        geom.setAttribute("aFarbeZiel", attr((lod | 0) < 3 ? meshData.farbeZiel : new Float32Array(meshData.colors), 3));
+        geom.setAttribute(
+            "aFarbeZiel",
+            attr((lod | 0) < 3 ? meshData.farbeZiel : new Float32Array(meshData.colors), 3)
+        );
         // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
         // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
         const H = meshData.hoehle;
