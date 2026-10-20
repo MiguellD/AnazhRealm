@@ -1,15 +1,15 @@
 {
-  "stand": "2026-10-20",
-  "kopf": "dc6702ab",
-  "version": "V18.546.26",
+  "stand": "2026-10-21",
+  "kopf": "f2904a72",
+  "version": "V18.546.35",
   "skala": "2.0",
-  "summe": 16,
+  "summe": 17,
   "max": 330,
   "gruppen": [
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 5,
+      "summe": 6,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -132,7 +132,7 @@
           "punkte": 0,
           "staffel": "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           "messung": "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          "beleg": "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf dc6702ab veraltet (K5). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
+          "beleg": "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf f2904a72 veraltet (K5; die Tafel trägt seit dc6702ab kein neues Ist). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
           "schlupfloch": "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
           "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09)."
         },
@@ -234,7 +234,7 @@
         }
       ],
       "feststeck": {
-        "versucht": "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main dc6702ab trägt der 48er-Kegel weiter an vier Stellen. Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
+        "versucht": "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main f2904a72 trägt der 48er-Kegel weiter an vier Stellen (`stamm/gelaende-boden.js:1201/1240`, `voxel-worker.js:612/734`). Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
         "anders": "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (H2). Punkte nur mit Welt-Byte."
       }
     },
@@ -242,8 +242,8 @@
       "key": "wetter",
       "titel": "Wetter und Klima — Front, Nässe, Kreislauf, Schnee, Wind",
       "gruppe": "physis",
-      "punkte": 1,
-      "pfad": "Feature-Stopp bis v1.0 — außer H1 (Messbarkeit jeder Pose)",
+      "punkte": 2,
+      "pfad": "Feature-Stopp bis v1.0 — der Hebel der Messbarkeit (Wetter und Saison als Spieler-Wort) ist gemergt (428fb6fe)",
       "dateien": "`phyto-core.js` WX_GESETZ · `foundry-core.js` REGEN_GESETZ · `stamm/bild-himmel.js` · `stamm/dirigent-takt.js` · `stamm/feld-leben.js`",
       "aaaa": "Wetter ist ein Feld des Kerns über Ort × Zeit × Saat, plus die Schreib-Akte (Spieler-Wort, DSL-Regeln, der Wunsch der Emotion über die Weltregeln). Eine Regenfront zieht mit dem Wind; vom Hügel sieht der Spieler den Vorhang 2 km entfernt, und jeder Mitspieler sieht denselben Himmel. Regen benetzt, was er trifft: poröser Boden fällt auf 0,5–0,8 × Albedo, die Rauheit sinkt, Pfützen in Mulden spiegeln den Himmel, unter dem Dach bleibt es trocken, und nach dem Schauer trocknet es in 5–15 min. Regen speist die Bäche (Pegel +0,2–1 m, verzögert um die Laufzeit des Einzugsgebiets), Dürre leert sie. Die Jahreszeit ist Temperatur: Schnee-Decke mit Tiefe, in der der Fuß einsinkt. Wind ist EIN Feld, vom Gelände geformt (Lee, Tal-Düse), gelesen von allem, was sich bewegt. Wetter ≤ 1 ms GPU, ≤ 0,3 ms CPU auf beiden Geräten. **Wo wir die Besten schlagen:** RDR2 und Forza Horizon 4 bauen Wetter-Regionen und Jahreszeiten je Karte von Hand; bei uns kommt das Wetter aus demselben Gesetz wie das Gelände — die Front füllt das Flussnetz, das sie quert, und die Klimazonen folgen der Höhe des Gesetzes in einer unendlichen Welt.",
       "beste": [
@@ -255,10 +255,10 @@
       "kriterien": [
         {
           "name": "Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte — für alle gleich, nie aus der Wanduhr",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
           "messung": "werkbank eval über einen Spielzeit-Sprung (Ereignis-Takte, nie Wanduhr), zwei Orte 3 km auseinander, 20 min Spielzeit; gleiche Saat → gleiche Folge, andere Saat → andere. Die Emotion schreibt nur über eine DSL-Regel mit Quelle (Affekt K2), nie als fester Trigger. Die Gleichheit über Peers zählt Feld K2.",
-          "beleg": "Das Wetter ist ein globales Wort (`stamm/bild-himmel.js:2654` `_setWeather`). Der Auto-Zug wählt aus Sinus über die Wanduhr (`stamm/dirigent-takt.js:972-975`, performance.now) und liest den Wunsch `wetterWunsch` (Nexus, Gesetze, Emotion; `:956/:966`); im Netz reist kein Wetter (`stamm/netz-p2p.js`: 0 Treffer). Die Welt kennt 3 der 5 Zeilen von WX_GESETZ (`phyto-core.js:3289` ⇄ `stamm/daten.js:56-80`). Gut gebaut ist die Form: EINE Tafel, EIN Schreiber-Gesetz (`_himmelSchreiber`).",
+          "beleg": "1 seit main f2904a72 (wetter-saat, Merge 428fb6fe): der Auto-Zug zieht je Takt den nächsten Samen der Welt (`stamm/dirigent-takt.js:975-978` `_bauSame(\"wetter\")`, der Zähler reist im Snapshot) statt drei Sinus über performance.now; `wetterWunsch` bleibt Schreib-Akt. gate:wetter-wache (Z) über 20 min Spiel-Zeit, Saat × Ort (3 km) × Wanduhr (steht oder geht 120 s je Takt): an 7eadd2b2 ROT 3 (die Folge hing an der Wanduhr, saat-b = saat-a), am Kopf GRÜN (saat-a an beiden Orten und Uhren gleich, saat-b anders; 61d735a4 → 04266b35; CI 39498582018 voll 18/18 an f2904a72). Offen für die 2: das Wetter bleibt EIN globales Wort (`_setWeather`), keine Front am Ort; die Welt kennt 3 der 5 Zeilen von WX_GESETZ (`phyto-core.js:3289` ⇄ `stamm/daten.js:56-80`).",
           "schlupfloch": "Eine zweite regionale Wort-Tafel oder das Senden des Worts an die Peers erfüllte Teile ohne Gesetz; die Front muss aus EINER Kern-Funktion kommen (die Mutation zieht beide Orte). Den Wunsch der Emotion zu STREICHEN, um Saat-Reinheit zu gewinnen, ist verboten: er bleibt Schreib-Akt (V03).",
           "aenderung": "Der Synthese-Satz „gleiche Zustände allein aus der Saat“ hätte belohnt, die Kopplung an die Emotion zu streichen (V03); die Peer-Gleichheit zählt Feld K2 (B12); die Staffel ist neu (B02)."
         },
@@ -299,22 +299,6 @@
         }
       ],
       "hebel": [
-        {
-          "name": "Wetter aus Saat und Schreib-Akt statt Wanduhr — Wetter, Saison und Uhr als Spieler-Wort der Spielgang-Bühne",
-          "bewegt": [
-            "wetter.K1+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            0.5,
-            0.5
-          ],
-          "p_je_tag": 2,
-          "wurzel": "`stamm/dirigent-takt.js:948-985`: die Wort-Wahl aus FNV über worldId + Spielzeit-Takt (wie `_worldRuleSeed`, `stamm/feld-dsl.js:717`), `wetterWunsch` bleibt Schreib-Akt; werkbank bekommt --wetter/--saison als Spieler-Wort statt `__wetterHalten` für die Suche.",
-          "pflicht": "— (öffnet die Regen-, Nacht- und Winter-Spalte jedes Kriteriums, R9; deterministisch für den Mitspieler)",
-          "v1": true,
-          "oeffnet": 6
-        },
         {
           "name": "Wetter als Kern-Feld wetterAt(saat, x, z, t) ⊕ Akte",
           "bewegt": [
@@ -393,7 +377,7 @@
       ],
       "feststeck": {
         "versucht": "Keine wiederholten Wellen, sondern Blindheit: jede Bild-Sonde hält Mittag, Sonne und Sommer (Lehre 17, `__wetterHalten`), und gate:season-meadow schreibt fest, dass die Saison eine Farbe ist. So konnte kein Wetter-Punkt entstehen oder fallen.",
-        "anders": "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Erster Schritt H1, ½ Tag."
+        "anders": "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Der erste Schritt steht seit main f2904a72 (wetter-saat, 428fb6fe): das Wetter zieht aus der Saat, `werkbank bild --wetter/--saison` setzt Wetter und Saison als Spieler-Wort."
       }
     },
     {
@@ -573,7 +557,7 @@
           "name": "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
           "punkte": 0,
           "staffel": "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
-          "messung": "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H5).",
+          "messung": "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H4).",
           "beleg": "Lava, Basalt und Schnee sind statische Boden-Farben (`stamm/gelaende-boden.js:2392-2437`, `voxel-worker.js:2613-2628`); glut ist eine eingefrorene Feld-Achse (`docs/das-lebendige-feld.md` §4.1); im Stamm gibt es keine Temperatur (nur die Lichtfarbe `kelvin`).",
           "schlupfloch": "Eine Eis-Textur ohne Tragkraft bestünde das Bild: der Körper auf dem Eis und die Schmelze im Pegel sind Pflicht.",
           "aenderung": "EIN Heim für Eis und Schmelze (vorher auch Wetter K4; B15, V24)."
@@ -624,12 +608,12 @@
             4
           ],
           "p_je_tag": 0.5,
-          "wurzel": "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H3).",
+          "wurzel": "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H2).",
           "pflicht": "—",
           "v1": false
         },
         {
-          "name": "Phasen am Temperatur-Feld (nach Wetter H5)",
+          "name": "Phasen am Temperatur-Feld (nach Wetter H4)",
           "bewegt": [
             "stoffe.K3+2"
           ],
@@ -644,7 +628,7 @@
           "v1": false
         },
         {
-          "name": "Alter = Zeit × Nässe (nach Wetter H3)",
+          "name": "Alter = Zeit × Nässe (nach Wetter H2)",
           "bewegt": [
             "stoffe.K4+2"
           ],
@@ -708,7 +692,7 @@
           "punkte": 1,
           "staffel": "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen · 2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort",
           "messung": "gate:mp-sync + gate:reload-treue, erweitert: zwei Clients 20 min Spielzeit mit Auto-Wetter, Wasser und Feuer; Zustands-Nachrichten außer Schreib-Akten sind verboten (Netz-Log). Gleichheit ist eine Eigenschaft der Funktion — zwei Seiten einer Maschine genügen hier; Latenz und Bild des Peers zählen Tore K4.",
-          "beleg": "gate:mp-sync in der CI (`.github/workflows/check.yml:1299`): Graben reist, Ursprung 0, Rejoin ≤ 31 s (`scripts/diag-mp-sync.cjs:1-20`); Edits atomar je Chunk (`_voxelEditKarte`); Regel-RNG aus FNV über worldId + Regel + Feuer-Index (`stamm/feld-dsl.js:717-722`). Aber das Wetter kommt aus der Wanduhr (`stamm/dirigent-takt.js:972-975`) und reist nicht (`stamm/netz-p2p.js`: 0 Treffer) — zwei Peers sehen verschiedenes Wetter, und die Tier-Laune liest es.",
+          "beleg": "gate:mp-sync in der CI (`.github/workflows/check.yml:1299`): Graben reist, Ursprung 0, Rejoin ≤ 31 s (`scripts/diag-mp-sync.cjs:1-20`); Edits atomar je Chunk (`_voxelEditKarte`); Regel-RNG aus FNV über worldId + Regel + Feuer-Index (`stamm/feld-dsl.js:717-722`). Das Wetter zieht seit main f2904a72 aus der Saat (Wetter K1, gate:wetter-wache (Z)); ob zwei Peers ohne Zustands-Nachricht denselben Zug sehen, ist ungemessen (der Samen-Zähler reist zum Gast, `stamm/dirigent-takt.js:975`), Pegel, Overlays und Brand ebenso.",
           "schlupfloch": "Den Zustand je Takt zu senden machte die Peers gleich, ohne dass die Welt eine Funktion ist: darum keine Zustands-Nachricht außer Schreib-Akten.",
           "aenderung": "EIN Heim der Gleichheit für alle Teil-Simulationen, auch das Wetter (B12)."
         },
@@ -785,7 +769,7 @@
           "v1": true
         },
         {
-          "name": "Die Wetter-Kette schließen (nach Wetter H3/H4, Fahrzeug H1)",
+          "name": "Die Wetter-Kette schließen (nach Wetter H2/H3, Fahrzeug H1)",
           "bewegt": [
             "feld.K1+2"
           ],
@@ -800,7 +784,7 @@
           "v1": false
         },
         {
-          "name": "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H2)",
+          "name": "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H1)",
           "bewegt": [
             "feld.K2+1"
           ],
@@ -841,7 +825,7 @@
           "punkte": 0,
           "staffel": "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           "messung": "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          "beleg": "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf dc6702ab veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`).",
+          "beleg": "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf f2904a72 veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`).",
           "schlupfloch": "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           "aenderung": "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1."
         },
@@ -868,7 +852,7 @@
           "punkte": 0,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "24 von 25 Häusern sind innen grün, 119 Büschel stehen im Anbau (SYSTEMKARTE D2, 18.10.); Halm und Nah-Wiese lesen keinen Grundriss, `_grundSchnitt` hat am Kopf 0 Treffer; die Vorlage wiese-im-haus 69498f91 (24/25 → 0) ist ungemergt.",
+          "beleg": "Seit main f2904a72 ist der Grund jedes Hauses Plan-Datum (S4 grund-datum, Merge 10ac79b0 / V18.546.30 e076ff8f): gate:haus-welt W9 headless 24 Häuser, Büschel und Dichte in den Boxen 0, Waise 0/52 (CI 39498582018 grün an f2904a72) — eine Zählung am Gesetz, kein Bild. Das Bild (`diag-haus-welt --phasen=grund --bild`, Halm- und Boden-Pixel je Box aus dem Ausgabe-Pfad) gab 0/0/0 in 48 Blicken an der Radeon — am Zweig-Stand f0082575, vor 9c5b4220 (der Erdbau wirft nur die getroffenen Chunks), 7e95bfd4/c4681791 (der Grund des gesetzten Hauses aus dem Plan) und 1794d878: der gemessene Pfad änderte sich danach, am Kopf ungemessen (Messschuld M24). Vorher 24 von 25 Häusern innen grün, 119 Büschel im Anbau (SYSTEMKARTE D2, 18.10.). Wasser ungemessen.",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20)."
         },
@@ -876,7 +860,7 @@
           "name": "Die Jahreszeit als Gestalt: Laub und Wiese",
           "punkte": 0,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
-          "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (Wetter H1). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
+          "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
           "beleg": "Im Code steht wörtlich „DIE SAISON IST EINE FARBE“ (`stamm/bild-himmel.js:777-790`): EINE Uniform uSeasonMul, jeder Körper Golden-Sommer gebacken; Laubfall und Wiesen-Höhe fehlen.",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum)."
@@ -897,21 +881,6 @@
           "p_je_tag": 1.14,
           "wurzel": "`stamm/daten.js:NAH_WIESE`: Ringe bis 40 m, die ferne Kachel mit doppelter Kante bei gleicher Büschelzahl; `stamm/vegetation-wiese.js` baut die Kacheln; die Parallax-Halm-Schicht (`stamm/stoff-material.js:1856ff`) liest `_windSwayOffset` (`:87`) als Scherung. Vorher Messschuld M3 (feste Ringe ROT).",
           "pflicht": "A (boden-nah) · E (nahWiese ≤ 4/80k; GTX Third 83 716)",
-          "v1": true
-        },
-        {
-          "name": "Die Natur-Wand aus dem EINEN Grundriss (S4)",
-          "bewegt": [
-            "vegetation.K4+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            2,
-            3
-          ],
-          "p_je_tag": 0.8,
-          "wurzel": "`gelaende-core.js` + `voxel-worker.js`: `_grundSchnitt` aus der Vorlage 69498f91 (Lehre 14); Leser Halm (`stamm/stoff-material.js`), Nah-Wiese (`stamm/vegetation-wiese.js`), Räumer `stamm/vegetation-baum.js:_naturRaeumen`; die Linse steht vorher ROT mit 119 Büscheln im Anbau.",
-          "pflicht": "A (boden-nah im Haus)",
           "v1": true
         },
         {
@@ -978,7 +947,7 @@
           "punkte": 0,
           "staffel": "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           "messung": "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          "beleg": "Pirsch, Ring-Platz, Umstellen und Hetze stehen (`stamm/kreatur-verhalten.js:_kreaturJagdZug` `:382`); im Band C beißen 3 Wölfe den Hirsch binnen 60 s — aber die Beute trägt dort hp = 1e6 (`scripts/lib/kreatur-proben.cjs:2033/2092`): diese Beute gibt es im Spiel nicht, ein Riss ist nie gemessen; kadaver|aas|fressen 0 Treffer.",
+          "beleg": "Seit main f2904a72 (tiere-kreislauf, V18.546.33 5bef501f) reißt das Rudel mit echtem Leben: gate:kreatur-takt jagdkreis (A) — 3 Wölfe gegen einen gesunden Hirsch (168 HP) an 10 Orten einer Saat, Riss 403–585 s an 7/10 in 600 s (5311e7f1; Täter jagd-hp, die verwundete Beute, ROT mit Riss 6,5 s); der Leib wird Kadaver (56,5 → 0 kg in 120 s), Fuchs und Bär kommen aus 35 m und fressen 34,8 / 21,5 s (`scripts/lib/kreatur-proben.cjs:2037-2098`; CI 39498582018 grün an f2904a72). Die 1 trägt das nicht: die Quote ist Riss je 600-s-Fenster an Orten statt je Jagd über ≥ 10 Saaten, gemessen nur mit 3 Wölfen gegen den Erwachsenen, und 70 % liegt über dem Band 20–40 % (MacNulty); 1 Wolf und Kitz ungemessen. Fressen < 60 s, kein Bild.",
           "schlupfloch": "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
           "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27)."
         },
@@ -987,7 +956,7 @@
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05) + NEUE Gangart-Linse: Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Tastgrad Schritt 0,6–0,7, Galopp ≈ 0,3; im Labor worlds/tetrapoda dieselbe Fußfolge (Phasen-Diff ≤ 0,05 Zyklus); Kreuz-Probe Stimmung × Tempo.",
-          "beleg": "Das Gang-Gesetz steht: Schrittlänge aus Froude, IK, Ratsche 0,05 in gate:tier-gang (an jedem Push). Die Fußfolge hängt aber an der Stimmung: MOTION.flee hat Trab-Phasen [0,π,π,0] auch im Galopp-Tempo (`tetrapoda-core.js:70-80`), der Tastgrad ist fest 0,5; der Labor-Gang ist ein eigener CPG (`worlds/tetrapoda/tetrapoda.js:17-25`).",
+          "beleg": "Der Fuß steht: Schlupf ≤ 0,05 in gate:tier-gang an jedem Push (die 1). Seit main f2904a72 (tiere-kreislauf, 5bef501f/5244293a) wählt die Froude-Zahl die Fußfolge (GANG_FOLGE, Schritt lateral → Trab → Dreh-Galopp, Hysterese), die Stimmung trägt nur die Haltung: gate:tier-gang Gangart je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor 32/32 (Basis 0/24, die Stimmungs-Folge im Selbsttest ROT; CI 39498582018 grün an f2904a72); der CPG-Pass-Zweig fiel. Für die 2 fehlen: Tastgrad im Band als Urteil (tastgradLauf 0,3 ist eine Zeile, kein Ist), der Querhang 20° (gemessen Querhang-Schlupf 0,028/0,029 ohne benannte Neigung) und das Third-Bild aus 10 m auf beiden Geräten (Messschuld M25).",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text."
         },
         {
@@ -995,7 +964,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
           "messung": "Familie diag-kreatur-leben: 200 Würfe über das Gelände (Landform aus dem Gelände-Kern: Hirsch Wiese und Waldrand, Wolf Wald, Bär Fluss und Hang); Zeitraffer über 24 Spielstunden (die Uhr ist Spieler-Wort).",
-          "beleg": "Die Art wählt `_pickFaunaSoulAtPlayer` über Tags × Feld mit 0,15 Rauschen (`stamm/kreatur-leben.js:1439-1458`); weil die Seelen bewusst tag-identisch sind (Lehre 8), entscheidet praktisch das Rauschen; lebensraum 0 Treffer; hunger|durst 0 Treffer.",
+          "beleg": "Die Art wählt `_pickFaunaSoulAtPlayer` über Tags × Feld mit 0,15 Rauschen (`stamm/kreatur-leben.js:1439-1458`); weil die Seelen bewusst tag-identisch sind (Lehre 8), entscheidet praktisch das Rauschen; lebensraum 0 Treffer; Hunger nur als Magen des Räubers am Kadaver (tiere-kreislauf), Durst 0 Treffer.",
           "schlupfloch": "Arten von Hand an Koordinaten zu setzen oder einen Zeitplan zu skripten erfüllte Anteile ohne Gesetz: Seed-Wechsel und Bedürfnis-Mutante beweisen das Lesen.",
           "aenderung": "Staffel neu (B28)."
         },
@@ -1025,32 +994,17 @@
           "v1": false
         },
         {
-          "name": "Den Jagd-Kreislauf schließen: HP aus dem Leib, Riss, Kadaver als Geruchs-Quelle",
+          "name": "Die Jagd ins Band: Riss-Quote je Jagd über 20 Saaten (1 Wolf, 4 Wölfe, Kitz — MacNulty), Fressen ≥ 60 s, Wolfsrevier im Bild",
           "bewegt": [
             "tiere.K2+2"
           ],
           "punkte": 2,
           "tage": [
-            1.5,
+            1,
             1.5
           ],
-          "p_je_tag": 1.33,
-          "wurzel": "`stamm/kreatur-verhalten.js:_kreaturJagdZug` → Riss → Kadaver-Zustand als `_scentAt`-Quelle; Band C mit HP aus `_leibMasse`.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
-          "name": "Die Gangart aus dem Tempo, das Labor ruft gangSchritt",
-          "bewegt": [
-            "tiere.K3+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 1,
-          "wurzel": "`tetrapoda-core.js` MOTION/gangSchritt wählt die Fußfolge nach Fr statt nach Stimmung, tastgradLauf in der Tier-Zeile; `worlds/tetrapoda/tetrapoda.js:updateCPG` fällt (Lehre 11, Byte-Beweis).",
+          "p_je_tag": 1.6,
+          "wurzel": "Riss, Kadaver und Geruch stehen seit tiere-kreislauf (5bef501f); `scripts/lib/kreatur-proben.cjs` jagdkreis (A) zählt heute Orte einer Saat in 600 s — die Quote je Jagd über Saaten und Rudel-Größe, dann `stamm/kreatur-verhalten.js:_kreaturJagdZug` (Ausdauer der Hetze, Abbruch) ins Band.",
           "pflicht": "—",
           "v1": false
         },
@@ -1110,7 +1064,7 @@
           "punkte": 0,
           "staffel": "1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds · 2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT",
           "messung": "Zeitraffer-Linse (Familie diag-kreatur-leben), 6 Spielstunden je Szenario in einem Tal mit echten Regeln, ≥ 8 Seeds je Szenario, deterministisch je Seed.",
-          "beleg": "Es gibt keine Bestände: Geburten sind gedeckelt (FAUNA_MAX 20, maxCreatures 20; `stamm/daten.js:125-130`, `stamm/dirigent-kern.js:254`), der Tod kommt nur aus dem Alter (`stamm/kreatur-leben.js:1759`); Fraß und Verbiss fehlen (hunger|durst|kadaver 0 Treffer).",
+          "beleg": "Es gibt keine Bestände: Geburten sind gedeckelt (FAUNA_MAX 20, maxCreatures 20; `stamm/daten.js:125-130`, `stamm/dirigent-kern.js:254`), der Tod kommt nur aus dem Alter (`stamm/kreatur-leben.js:1759`); Verbiss fehlt; der Räuber frisst seit tiere-kreislauf den Kadaver in den Magen (satt jagt er keine Beute), aber kein Fraß ändert eine Geburt.",
           "schlupfloch": "Ein Skript-Zähler „Wölfe < 1 → Hirsche++“ täuscht die Kaskade vor: die Mutanten-Probe verlangt echte Leser. Bei 20 Tieren wären +30 % zwei Tiere — Rauschen: darum ≥ 8 Seeds und ein Intervall (B33).",
           "aenderung": "Aus Leben-Feld K3; unentscheidbar, solange der Deckel den Bestand setzt (B33) — K2 kommt zuerst."
         },
@@ -1119,7 +1073,7 @@
           "punkte": 0,
           "staffel": "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
           "messung": "werkbank eval über Spielzeit-Sprünge, Gegenlauf mit halbierter Nahrung; Kosten im Zerleger (updateCreatures) in derselben Sitzung.",
-          "beleg": "Der Deckel ist heute der Bestand (FAUNA_MAX 20); geboren wird ≥ 130 m fern außerhalb des Blicks; keine Nahrung, kein Hunger im Gesetz.",
+          "beleg": "Der Deckel ist heute der Bestand (FAUNA_MAX 20); geboren wird ≥ 130 m fern außerhalb des Blicks; die Nahrung des Räubers (Kadaver, Magen; tiere-kreislauf, 5bef501f) lenkt nur sein Verhalten, nie Geburt oder Tod.",
           "schlupfloch": "Den Deckel zu heben (20 → 150) bläht nur die Zahl und belastet E: die Mutante verlangt das Gesetz (V32).",
           "aenderung": "Neu als EIN Bestands-Gesetz statt zweier Bauten (Tiere H4 hob den Deckel, Leben-Feld H3 ersetzte ihn; V32)."
         },
@@ -1279,7 +1233,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf dc6702ab kein Ist („gesicht ungemessen“, sollTafelUrteil). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
+          "beleg": "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf f2904a72 kein Ist („gesicht ungemessen“, sollTafelUrteil). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29)."
         },
@@ -1696,7 +1650,7 @@
           "punkte": 0,
           "staffel": "1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU · 2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte",
           "messung": "werkbank zerlegen/takt an einer Prüfbühne mit festem Schwarm.",
-          "beleg": "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H5 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
+          "beleg": "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H4 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
           "schlupfloch": "Schwärme nur außerhalb des Blicks: die Prüfbühne zählt den Schwarm im Bild."
         }
       ],
@@ -1759,7 +1713,7 @@
             1.5
           ],
           "p_je_tag": 1.6,
-          "wurzel": "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H5).",
+          "wurzel": "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H4).",
           "pflicht": "—",
           "v1": false
         }
@@ -1789,9 +1743,9 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll · 2 = beide Geräte, Ego UND Third",
           "messung": "werkbank licht --tag (die S7-Linse, gate:tag-achse:echt), erweitert: Uhr 0…1 in Schritten von 0,01 (um den Horizont 0,002), Spawn und Mess-Wiese, Ego UND Third, Ausgabe-Pfad, ≤ 3 min je Gerät. Soll: Mittag absolut verankert (18-%-Karte Luma 110–130); Sprung ≤ 0,1 EV je Schritt; keine Stunde > Mittag + 0,15 EV; Sonne 10° morgens und abends einzeln −0,5…−1,0 EV und R/B ≥ 1,3× Mittag; Nacht −3…−5 EV bei Luma ≥ 22; die Kurve folgt einer REF-Kurve aus realen HDR-Zeitraffern (Datei in spec/farbe) auf ±0,3 EV.",
-          "beleg": "Am main dc6702ab ist die Kurve invertiert (Uhr 0,27 +1,34 EV über Mittag, `stamm/bild-himmel.js:2056`). S7 ist in integ-probe gemergt (6e0f1a4a, nicht in main): EINE Tag-Achse, Belichtung synchron aus der Bestrahlungs-Tafel, Dämmerungs-Sprung 2,57 → 0,42 EV. Am Kopf von integ-probe (`spec/farbe/tag-kurve.json` kopf, Radeon, Mess-Wiese, Ego) liegt Uhr 0,33 (28,7°) bei Y 0,221 gegen Mittag 0,115 = +0,94 EV ÜBER Mittag (Luma 118,8 gegen 87,4): die Linse urteilt SPRUNG, PUMPE, EINBRUCH und das Fenster der Dämmerung, nicht die Monotonie der ganzen Bahn. Third und GTX sind ungemessen.",
+          "beleg": "S7 ist auf main (Merge 6e0f1a4a in f2904a72): EINE Tag-Achse, Belichtung synchron aus der Bestrahlungs-Tafel, Dämmerungs-Sprung 2,57 → 0,42 EV; gate:tag-achse:echt (SPRUNG, PUMPE, EINBRUCH) GRÜN im echt-Job an der GTX (CI 39498582018 an f2904a72). Die goldene Stunde trifft an der GTX: Mess-Wiese Ego, gleiche Pose, Uhr 0,27 gegen Mittag Helligkeit 63,7 gegen 81,3 (−22 %) an 8ba1510d, an dc6702ab 111,9 (+37 %) (OMEN, koordination `bericht/2010-buendel2-abab.md`). Die ganze Bahn hält nicht: am S7-Kopf (`spec/farbe/tag-kurve.json` kopf, Radeon, Mess-Wiese, Ego) liegt Uhr 0,33 (28,7°) bei Y 0,221 gegen Mittag 0,115 = +0,94 EV ÜBER Mittag (Luma 118,8 gegen 87,4) — die Linse urteilt das Fenster der Dämmerung, nicht die Monotonie; eine REF-Kurve aus HDR-Zeitraffern gibt es in spec/farbe nicht; Third ungemessen. → 0, das Vorher von H1 (M21).",
           "schlupfloch": "Das Fenster-Urteil (TAG_SOLL tief [−18; 15]°) ließ den Buckel darüber durch; Grenzen nur relativ zum Mittag bestünde, wer jede Nicht-Mittags-Stunde abdunkelt (B34) — darum der absolute Anker und die REF-Kurve; eine Kurve nur in Ego an einem Blick ist über die Richtung zur Sonne stellbar — darum Ego UND Third, zwei Orte, Luma nur aus dem Ausgabe-Bild.",
-          "aenderung": "Mittag-Anker und REF-Kurve neu (B34); S7 zählt erst nach dem Merge nach main, und sein Buckel ist das Vorher von H1."
+          "aenderung": "Mittag-Anker und REF-Kurve neu (B34); S7 ist seit f2904a72 auf main, sein Buckel ist das Vorher von H1."
         },
         {
           "name": "Licht-Bilanz an einer Kugel in der Szene: Sonne zu Himmel je Stunde und Wetter",
@@ -1831,7 +1785,7 @@
       ],
       "hebel": [
         {
-          "name": "S7 nach main und das Urteil über die GANZE Bahn: Mittag-Anker, REF-Kurve, der Buckel bei Uhr 0,33 fällt",
+          "name": "Das Urteil über die GANZE Bahn: Mittag-Anker, REF-Kurve, der Buckel bei Uhr 0,33 fällt",
           "bewegt": [
             "licht.K1+2"
           ],
@@ -1841,7 +1795,7 @@
             2
           ],
           "p_je_tag": 1.14,
-          "wurzel": "`stamm/bild-himmel.js:_dayNightApplyBelichtung` (EV-Gesetz mit Kompensations-Steigung 0,5–0,7 statt 1, der Weg von Frostbite/UE5; die Tag-Achse `_tagAchse` aus 6e0f1a4a) + `scripts/lib/licht-linsen.cjs` tagKurveUrteil über −18…90°; ABAB beider Geräte.",
+          "wurzel": "`stamm/bild-himmel.js:_dayNightApplyBelichtung` (EV-Gesetz mit Kompensations-Steigung 0,5–0,7 statt 1, der Weg von Frostbite/UE5; die Tag-Achse `_tagAchse` steht seit 6e0f1a4a auf main) + `scripts/lib/licht-linsen.cjs` tagKurveUrteil über −18…90°; ABAB beider Geräte.",
           "pflicht": "A (himmel-licht)",
           "v1": true
         },
@@ -1876,7 +1830,7 @@
           "v1": false
         },
         {
-          "name": "Purkinje, das Licht des Wetters und die Übergangs-Linse (nach Wetter H1)",
+          "name": "Purkinje, das Licht des Wetters und die Übergangs-Linse",
           "bewegt": [
             "licht.K5+1"
           ],
@@ -1892,7 +1846,7 @@
         }
       ],
       "feststeck": {
-        "versucht": "Drei Wellen drehten an der Belichtung — V18.507 (01.10.), D3-N2 und D3 Nachbesserung 2 (15.10.) —, jede mit grüner 18-%-Karte, und das Bild blieb invertiert: die Belohnung „die Karte steht zu jeder Stunde auf Mittelgrau +1 EV“ belohnte das Glätten des Tags. S7 (14 Commits, jetzt in integ-probe) heilt die Dämmerung, urteilt aber im Fenster −18…15° und lässt Uhr 0,33 mit +0,94 EV über Mittag durch — dieselbe Falle eine Etage höher, gemessen nur an der Mess-Wiese, Ego, Radeon.",
+        "versucht": "Drei Wellen drehten an der Belichtung — V18.507 (01.10.), D3-N2 und D3 Nachbesserung 2 (15.10.) —, jede mit grüner 18-%-Karte, und das Bild blieb invertiert: die Belohnung „die Karte steht zu jeder Stunde auf Mittelgrau +1 EV“ belohnte das Glätten des Tags. S7 (14 Commits, seit f2904a72 auf main) heilt die Dämmerung — an der GTX ist Uhr 0,27 golden (−22 % gegen Mittag statt +37 %) —, urteilt aber im Fenster −18…15° und lässt Uhr 0,33 mit +0,94 EV über Mittag durch — dieselbe Falle eine Etage höher, die ganze Bahn gemessen nur an der Mess-Wiese, Ego, Radeon.",
         "anders": "Die Kamera wird ein Gesetz (EV100 aus der Szenen-Bestrahlung mit Kompensations-Steigung 0,5–0,7 statt 1, der Weg von UE5 und Frostbite); Richter ist die Bildkurve der GANZEN Sonnenbahn gegen eine REF aus realen HDR-Zeitraffern (der Weg von Forza) mit absolutem Mittag-Anker, in Ego und Third, auf beiden Geräten — nie wieder eine Zahl der Belichtung selbst."
       }
     },
@@ -1949,7 +1903,7 @@
           "name": "Die Ferne im Wetter: Sicht, Vorhang, Dunst",
           "punkte": 0,
           "staffel": "1 = im Sturm Sicht 1,5 km ±15 % im Bild an einem Gerät · 2 = der Regenvorhang einer Front (Wetter K1) ist aus 2 km sichtbar, Nebel im Tal folgt dem Gelände, beide Geräte",
-          "messung": "Station Hügel mit Wetter als Spieler-Wort (Wetter H1): Kontrast-Abfall gegen Distanz im Sturm; Vorhang als Luma-Kante am Ort der Front.",
+          "messung": "Station Hügel mit Wetter als Spieler-Wort (steht seit wetter-saat, 428fb6fe): Kontrast-Abfall gegen Distanz im Sturm; Vorhang als Luma-Kante am Ort der Front.",
           "beleg": "Das Gesetz der Luft liest das Wetter (`_luftBeta`, `stamm/bild-himmel.js:2221-2228`, Sichtweiten aus LUFT); kein Bild im Wetter gemessen; einen sichtbaren Vorhang gibt es nicht, weil das Wetter ein globales Wort ist.",
           "schlupfloch": "Nur bei klarem Mittag gemessen trägt jede Ferne: der Sturm ist Pflicht; ein Vorhang als Billboard ohne Front wäre Kulisse: er muss am Ort der Front aus Wetter K1 stehen.",
           "aenderung": "Die F6-Hälfte (Karte/Gestalt je Uhr) zählte Licht K3 doppelt; hier bleibt das Wetter."
@@ -2003,7 +1957,7 @@
           "v1": false
         },
         {
-          "name": "Die Sicht im Wetter aus EINEM Medium (nach Wetter H1/H2)",
+          "name": "Die Sicht im Wetter aus EINEM Medium (nach Wetter H1)",
           "bewegt": [
             "ferne.K5+1"
           ],
@@ -2873,7 +2827,7 @@
           "punkte": 0,
           "staffel": "1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 % · 2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub",
           "messung": "Setzen am Hang über die echte UI; Byte-Vergleich Grund-Datum; Dichte über der Diele 0 Zellen; Gang des Leibs in den Keller (kellerY −2,40 m). Halm-Pixel im Grundriss zählen Vegetation K4.",
-          "beleg": "confirmBuild (`stamm/werkstatt-bauen.js:364-420`) ruft spawnArchitecture direkt: kein ortPlan (`fachwerk-core.js:5490`), kein Erdbau (ERDBAU `gelaende-core.js:1319` kennt nur die Platten der Orte), 0 Treffer „keller“ in gelaende-core.js; die Vorlage wiese-im-haus 69498f91 ist ungemergt.",
+          "beleg": "Seit main f2904a72 (S4 grund-datum, Merge 10ac79b0) legt jedes gesetzte Haus beim Setzen seinen Erdbau `grund` aus dem Plan seines Gesetzbuchs — derselbe Erdbau wie ein Haus im Ort, mit hohlem Keller (`stamm/gelaende-kollision.js:284` `_hausGrundSetzen`, fachwerk `grundPlan` 640/640 byte-gleich dem Mass-Bau, 7e95bfd4; gate:haus-welt W9 headless: Keller-Fuß −2,28 m 6/6, der Abbau nimmt den Grund mit). Die 1 trägt das nicht: der Vorplatz entsteht nur im ortPlan der Orte (`fachwerk-core.js:5382-5401` vorplatzFlaeche), kein Byte-Vergleich gegen einen Dorf-Slot, Setzen am Hang ≥ 15 % über die echte UI ungemessen (W9 setzt per Methode auf der Wiese).",
           "schlupfloch": "Erdbau als Bild-Kosmetik (Boden-Tint): gemessen werden die Dichte über der Diele und der Gang des Leibs; eine flache Pose zählt nicht.",
           "aenderung": "EIN Heim (vorher auch Siedlung K4; B53, V18)."
         },
@@ -2921,17 +2875,17 @@
           "v1": true
         },
         {
-          "name": "confirmBuild wird ein Ein-Slot-Ort (S4): EIN Grund-Datum, Erdbau mit Keller, Slot im Plan",
+          "name": "Das gesetzte Haus als Slot: Vorplatz und Gasse aus dem ortPlan, am Hang über die echte UI (Grund und Keller stehen seit S4)",
           "bewegt": [
             "bauen.K2+2"
           ],
           "punkte": 2,
           "tage": [
-            2.5,
-            3
+            1.5,
+            2
           ],
-          "p_je_tag": 0.73,
-          "wurzel": "`stamm/werkstatt-bauen.js:364` confirmBuild → `fachwerk-core.js:5490` ortPlan mit Box-Liste (FOOTPRINT `:443`, Anbau `:455/:1138`) → `gelaende-core.js:1319` ERDBAU grund + keller; geteilt mit Vegetation H2 (der Grundriss-Schnitt) und Siedlung H4 (Keller).",
+          "p_je_tag": 1.14,
+          "wurzel": "`stamm/gelaende-kollision.js:_hausGrundSetzen` (Grund und Keller aus fachwerk `grundPlan`, 7e95bfd4) → `fachwerk-core.js` ortPlan als Ein-Slot-Ort mit vorplatzFlaeche (`:5382-5401`), der Byte-Vergleich gegen den Dorf-Slot derselben Gestalt; geteilt mit Siedlung H4 (Keller über die Treppe).",
           "pflicht": "A (Wiese im Haus)",
           "v1": true
         },
@@ -2982,7 +2936,7 @@
         }
       ],
       "feststeck": {
-        "versucht": "Bauen stand in jeder Karte bei ≈ 55 %. Die zwei Heilungen, die Punkte tragen, liegen gemessen auf Zweigen — hoch-bauen 9d987a93 (69,5-m-Turm) und wiese-im-haus 69498f91 (24/25 → 0) — und warten auf die „richtige“ Wurzel, den Kern-Schnitt S5/S4 mit 4–7 Tagen.",
+        "versucht": "Bauen stand in jeder Karte bei ≈ 55 %. Die zwei Heilungen, die Punkte tragen, liegen gemessen auf Zweigen — hoch-bauen 9d987a93 (69,5-m-Turm) und wiese-im-haus 69498f91 (24/25 → 0) — und warteten auf die „richtige“ Wurzel, den Kern-Schnitt S5/S4 mit 4–7 Tagen. S4 kam am 20.10. als Grund-Datum nach main (f2904a72); hoch-bauen wartet weiter auf S5.",
         "anders": "Lehre 4: erst einfädeln, was gemessen hält — aber als EINE Funktion im Kern, nicht als zweiter Weg: editForm wandert nach gelaende-core, der Zweig ist die Byte-Referenz (maxDiff 0). Danach trägt dieselbe Bahn S5."
       }
     },
@@ -3015,7 +2969,7 @@
           "punkte": 0,
           "staffel": "1 = an einer Pose und einem Gerät: Spearman r ≥ 0,5 zwischen Membran und Ankunfts-Bild, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch · 2 = Ego und Third, mittags und nachts, beide Geräte, jedes Tor",
           "messung": "Station tor, zwei Bilder aus dem Ausgabe-Pfad: die Membran mit dem Spieler 3 m vor der Apertur und das Ausgabe-Bild der Welt-Engine nach der ersten angenommenen Eingabe, die die Kamera ≥ 1° gedreht hat (ein Overlay-Bild ist im Selbsttest ROT); ein Panorama mit veraltetem Stempel ist ROT (H5 sperrt).",
-          "beleg": "Die Klassen tor-fern, tor-bunt und tor-ziel tragen am Kopf dc6702ab kein Ist („ungemessen“, sollTafelUrteil); zuletzt grün an je einer Mittag-Pose (Radeon, zielTreue 0,685 gegen die gebackene Postkarte `worlds/tor-ziele.json`, gebacken auf ANGLE D3D11). Am main-Abzug gemessen (diag-studio-huelle): 6 von 10 Panoramen an den Quellen, garage, schmiede, koerperstudio und tetrapoda veraltet — „benannt, sperrt nicht“ (`scripts/diag-studio-huelle.cjs:159`), ein fail-softes Tor.",
+          "beleg": "Die Klassen tor-fern, tor-bunt und tor-ziel tragen am Kopf f2904a72 kein Ist („ungemessen“, sollTafelUrteil); zuletzt grün an je einer Mittag-Pose (Radeon, zielTreue 0,685 gegen die gebackene Postkarte `worlds/tor-ziele.json`, gebacken auf ANGLE D3D11). Am main-Abzug gemessen (diag-studio-huelle): 6 von 10 Panoramen an den Quellen, garage, schmiede, koerperstudio und tetrapoda veraltet — „benannt, sperrt nicht“ (`scripts/diag-studio-huelle.cjs:159`), ein fail-softes Tor.",
           "schlupfloch": "zielTreue gegen die Postkarte belohnte die Postkarte — veraltet und aus fremder Engine, grün, während der Spieler woanders ankommt; ist das erste Bild nach dem Durchgang das Panorama selbst (Lade-Hintergrund), wäre r = 1 ohne Kontinuität (B56): Referenz ist das Welt-Bild nach gedrehter Kamera.",
           "aenderung": "Die 1 der Synthese stand auf Tafel-Zeilen ohne Ist (B03, B45) → 0; das Panorama-Bild zählt nur hier."
         },
@@ -3278,7 +3232,7 @@
           "punkte": 0,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Das Gesetz trägt die Form: Treppen-Norm, Herd, Möbel (fachwerk-core), Türen 16/16, Sockel 0 m (K10, PFLICHT C fiel am 15.10.). Der Keller hat keinen Hohlraum (`gelaende-core.js:1338`), der Anti-Clip hebt den Spieler heraus (`stamm/koerper-bewegung.js:862-877`).",
+          "beleg": "Das Gesetz trägt die Form: Treppen-Norm, Herd, Möbel (fachwerk-core), Türen 16/16, Sockel 0 m (K10, PFLICHT C fiel am 15.10.). Seit main f2904a72 (S4 grund-datum) ist der Keller hohl, und der Leib geht per W-Taste die Keller-Treppe hinab: gate:haus-welt W9 Keller-Fuß −2,28 m in 6/6 (Null-Renderer, Mechanik). Die 1 fehlt: der Dachboden, der Vertikal-Sprung je Frame und die Tür sind ungemessen, der Anti-Clip steht weiter (`stamm/koerper-bewegung.js:868`).",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22)."
         },
@@ -3366,17 +3320,17 @@
           "v1": false
         },
         {
-          "name": "Der Keller als Erdbau-Art mit Hohlraum, der Anti-Clip fällt",
+          "name": "Das Haus von innen als Station: Tür → Treppe → Keller → Dachboden, der Anti-Clip fällt (der Keller ist seit S4 hohl)",
           "bewegt": [
             "siedlung.K1+1"
           ],
           "punkte": 1,
           "tage": [
-            2,
-            2
+            1,
+            1.5
           ],
-          "p_je_tag": 0.5,
-          "wurzel": "`gelaende-core.js` Erdbau/Keller (`:1338`) + `stamm/koerper-bewegung.js` Anti-Clip (`:862-877`); geteilt mit Bauen H2.",
+          "p_je_tag": 0.8,
+          "wurzel": "`stamm/koerper-bewegung.js` Anti-Clip (`:868`) + der Dachboden-Zugang im fachwerk-Plan; der Keller-Gang von W9 (`scripts/diag-haus-welt.cjs`) wird die Station haus mit Sprung-Wand je Frame; geteilt mit Bauen H2.",
           "pflicht": "—",
           "v1": true
         },
@@ -3943,7 +3897,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "GTX kalt 15,87 s (b-wald, Merge 9c741e83, 19.10.), 15,25 s am Zweig b-blick (B-Plan 20.10.); Radeon 6,3–6,9 s (main 47c8b089). Beide Zahlen stammen aus der Eigenmeldung (`scripts/diag-boot-stage.cjs:297/:300` liest `state._weltbildDa`). In integ-probe (nicht main): b-strom-faden 85801a46 — Radeon „Boden vor dem Bild 614 → 73 ms, blockiert 12,7 → 7,7 s“.",
+          "beleg": "GTX kalt 4+4 (OMEN, koordination `bericht/2010-buendel2-abab.md`): t(Weltbild) Median 16,08 → 15,33 s, t(Leib) 6,60 → 4,95 s, dc6702ab → 8ba1510d (b-strom-faden, S7, S4, b-programme, Leib-Wahl); Radeon 6,3–6,9 s (main 47c8b089), unter Last 9,0–10,0 s (1794d878, 4bde519b). Alle Zahlen stammen aus der Eigenmeldung (`scripts/diag-boot-stage.cjs:297/:300` liest `state._weltbildDa`), und nach 8ba1510d kamen tiere-kreislauf, leib-wechsel R2 und wetter-saat; das Weltbild bleibt an der GTX dreimal über dem Soll.",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest)."
         },
         {
@@ -3968,7 +3922,7 @@
           "punkte": 0,
           "staffel": "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
           "messung": "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
-          "beleg": "Am Spawn misst die Tafel 3 von 12 Klassen (tor-fern, tor-bunt, tor-ziel), und diese tragen am Kopf dc6702ab kein Ist („ungemessen“); 4 sichtbare Klassen haben keine Zeile (SYSTEMKARTE §5 Genesis); S2 richter-spawn f4270382 (37/172 Zellen) ist ungemergt.",
+          "beleg": "Am Spawn misst die Tafel 3 von 12 Klassen (tor-fern, tor-bunt, tor-ziel), und diese tragen am Kopf f2904a72 kein Ist („ungemessen“); 4 sichtbare Klassen haben keine Zeile (SYSTEMKARTE §5 Genesis); S2 richter-spawn f4270382 (37/172 Zellen) ist ungemergt.",
           "schlupfloch": "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
           "aenderung": "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15)."
         },
@@ -3977,24 +3931,24 @@
           "punkte": 0,
           "staffel": "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet",
           "messung": "CPU-Profil + LongTask-Trace des Kalt-Boots (`diag-boot-stage --kalt --echt`), ≥ 4 je Gerät: blockierte Summe bis zur Kontrolle, längste Aufgabe, Antwort auf eine Kamera-Drehung im Lade-Bild.",
-          "beleg": "Die Lade-Aufgaben dauern 0,15–1,0 s (M1: Median 289 ms, p90 839 ms); `_kappeOffen` lässt jeden Leser nach der Frist sein Mindest-Stück setzen, die Fix-Takte nach dem Dispatcher haben keine Frist (`stamm/dirigent-takt.js:1102`, `:1257-1288`), LADE_BILD_MS 500 (`:1583`); GTX 13,07–13,74 s blockiert bis zum Bild (97 %; Erst-Bau 3,57 s, `_runFrameScheduler` 3,82 s); Radeon 400–940 ms je Sekunde.",
+          "beleg": "Seit main f2904a72 baut kein Chunk-Stoff mehr im Haupt-Faden vor dem Faden-Ack (b-strom-faden 85801a46: Radeon kalt Boden vor dem Bild 614 → 73 ms, blockiert 12,7 → 7,7 s — über dem Soll 4 s), b-programme kürzt den Erst-Bau (Radeon 1741 → 1305 ms, 4bde519b; GTX beim Bild 3,46–3,66 → 2,50–2,58 s, Bündel 2), leib-wechsel R2 legt 25 Einzel-Aufgaben von 66–99 ms in die 10 s NACH der Ankunft (1b28df95, benannt offen). Die Lade-Aufgaben dauern 0,15–1,0 s (M1: Median 289 ms, p90 839 ms); `_kappeOffen` lässt jeden Leser nach der Frist sein Mindest-Stück setzen, die Fix-Takte nach dem Dispatcher haben keine Frist (`stamm/dirigent-takt.js:1102`, `:1257-1288`), LADE_BILD_MS 500 (`:1583`); GTX 13,07–13,74 s blockiert bis zum Bild (97 %; Erst-Bau 3,57 s, `_runFrameScheduler` 3,82 s); Radeon 400–940 ms je Sekunde.",
           "schlupfloch": "Die Arbeit in 49-ms-Stücke hacken: die Summe zählt mit; ein CSS-Spinner animiert ohne den Haupt-Faden: gemessen werden LongTask und Eingabe-Antwort.",
           "aenderung": "Architektur K1 (Haupt-Faden bis zur Kontrolle) maß dieselbe längste Aufgabe — zusammengeführt."
         }
       ],
       "hebel": [
         {
-          "name": "b-blick zu Ende, dann die B-Plan-Karten 1, 3, 4, 5 (Programme, Bau am Ereignis, Lade-Scheibe, Streu im Blick)",
+          "name": "b-blick zu Ende, dann die B-Plan-Karten 3, 4, 5 (Bau am Ereignis, Lade-Scheibe, Streu im Blick)",
           "bewegt": [
             "ankunft.K5+1"
           ],
           "punkte": 1,
           "tage": [
-            3,
-            5
+            2.5,
+            4
           ],
-          "p_je_tag": 0.25,
-          "wurzel": "`stamm/dirigent-takt.js:_kappeOffen` (`:1102`) mit LADE_TAKT_MS (`:1581`: Scheibe 12 ms, Pumpe über MessageChannel) · `stamm/studio-gestalt.js:_foundryRewarmColdTrees` (`:485`) · `stamm/vegetation-streu.js:_scatterPass` (`:635`) · `stamm/stoff-material.js:_materialObserverDiaet`; Karte 2 (Chunk im Faden) steht schon in integ-probe (85801a46). Erwartung B-Plan: GTX 15,25 → ~13 s, Radeon → 4,6–5,5 s.",
+          "p_je_tag": 0.31,
+          "wurzel": "`stamm/dirigent-takt.js:_kappeOffen` (`:1102`) mit LADE_TAKT_MS (`:1581`: Scheibe 12 ms, Pumpe über MessageChannel) · `stamm/studio-gestalt.js:_foundryRewarmColdTrees` (`:485`) · `stamm/vegetation-streu.js:_scatterPass` (`:635`) · `stamm/stoff-material.js:_materialObserverDiaet`; Karte 1 (Programme, 4bde519b) und Karte 2 (Chunk im Faden, 85801a46) stehen seit f2904a72 auf main, die GTX kalt 16,08 → 15,33 s. Erwartung B-Plan: GTX ~13 s, Radeon → 4,6–5,5 s.",
           "pflicht": "B",
           "v1": true
         },
@@ -4016,7 +3970,7 @@
         }
       ],
       "feststeck": {
-        "versucht": "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. — ≥ 6 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
+        "versucht": "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. (b-blick), 15,33 s an 8ba1510d (Bündel 2 mit b-strom-faden und b-programme) — ≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
         "anders": "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (H2) und die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
       }
     },
@@ -4066,7 +4020,7 @@
           "punkte": 0,
           "staffel": "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden` · 2 = 0 überall, beide Geräte",
           "messung": "Konsum-Zählung im Kalt-Boot und im Spiel: Chunk-Stoff, Hydrosphäre und Asset-Bau, die synchron im Haupt-Faden entstehen, obwohl ein Faden zuständig ist; jede neue forceSync-Stelle ist ROT beim Namen.",
-          "beleg": "Am main baut der Strom vor dem init-Ack jeden Chunk still synchron (`stamm/gelaende-chunks.js:_acquireVoxelChunkBuild` `:1225`) — in integ-probe gefallen (b-strom-faden 85801a46: EIN Prädikat `_voxelFadenTraegt`, Radeon Boden vor dem Bild 614 → 73 ms), nicht in main; `_computeHydrosphere` läuft synchron (`stamm/wasser-hydro.js:54`, ≈ 0,5 s). Lehre 14 ist gebrochen.",
+          "beleg": "Seit main f2904a72 (b-strom-faden, Merge 85801a46) baut der Strom vor dem Faden-Ack keinen Chunk mehr still synchron: EIN Prädikat `_voxelFadenTraegt` (`stamm/gelaende-chunks.js:310`), Stufe 3 nur ohne Faden und laut (`_bruchMelden` VOXEL-FADEN); gate:worker-dichte Teil S am Kopf pending + 0 (Basis Stufe 3 + 1 voller Stand), Radeon Boden vor dem Bild 614 → 73 ms. Die 1 fehlt: `_computeHydrosphere` läuft weiter synchron im Haupt-Faden (`stamm/wasser-hydro.js:54`, ≈ 0,5 s), und keine Zählung aller synchronen Bauten im Spiel steht. Lehre 14 bleibt gebrochen.",
           "schlupfloch": "forceSync setzen oder den Rückfall umbenennen: forceSync nur an den drei benannten Stellen.",
           "aenderung": "Aus Architektur K3."
         },
@@ -4075,7 +4029,7 @@
           "punkte": 0,
           "staffel": "1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
           "messung": "Instrument am Empfang (onmessage), im Kalt-Boot und in 60 s Fahrt: per structured clone empfangene MB je Minute und Kopien nach dem Empfang (Byte-Summe, nicht Nachrichten-Zahl).",
-          "beleg": "Die Foundry überträgt per Transfer (Lehre 24); der Chunk-Pfad kopiert am main 9–12 Attribute je Chunk (`stamm/gelaende-chunks.js:_buildVoxelChunkDataFromWorkerMesh` `:746`) — in integ-probe 12 → 1 (85801a46); `saveState` serialisiert im Haupt-Faden (`stamm/dienst.js:1186-1191`); das Instrument am Empfang fehlt.",
+          "beleg": "Die Foundry überträgt per Transfer (Lehre 24); der Chunk-Pfad übernimmt seit main f2904a72 die übertragenen Arrays (`_buildVoxelChunkDataFromWorkerMesh`, 12 → 1 Kopien je Chunk, 85801a46); `saveState` serialisiert im Haupt-Faden (`stamm/dienst.js:1186-1191`); das Instrument am Empfang fehlt.",
           "schlupfloch": "Klone in viele kleine Nachrichten zerlegen: die Byte-Summe je Minute.",
           "aenderung": "Aus Architektur K4; die 1 der Synthese war die Existenz des Foundry-Transfers (B68) → 0."
         }
@@ -4113,18 +4067,18 @@
           "v1": true
         },
         {
-          "name": "b-strom-faden nach main, die Hydrosphäre in den Faden, das Instrument am Empfang",
+          "name": "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)",
           "bewegt": [
             "streaming.K4+1",
             "streaming.K5+1"
           ],
           "punkte": 2,
           "tage": [
-            1.5,
-            2
+            1,
+            1.5
           ],
-          "p_je_tag": 1.14,
-          "wurzel": "Merge von 85801a46 nach main (steht in integ-probe); `stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.",
+          "p_je_tag": 1.6,
+          "wurzel": "`stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.",
           "pflicht": "B",
           "v1": true
         },
@@ -4171,7 +4125,7 @@
           "punkte": 0,
           "staffel": "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           "messung": "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          "beleg": "GTX 20.10. (`bericht/2010-buendel-abab.md`, f5b66780 ≈ Kopf): Genesis Third gehend 25,0–25,1 ms, Wiese Ego gehend 25,1 ms, Fahrt 35,4 ms — die Fahrt reißt den 33-ms-Boden; Radeon in Bewegung am Kopf ohne Zahl; Sturm und Stadt nie gemessen (die E-Messorte fahren mit dorfZug false, `spec/profiband/haushalt.json`).",
+          "beleg": "GTX an 8ba1510d (Bündel 2, koordination `bericht/2010-buendel2-abab.md`): Genesis Third gehend 27,1 → 25,0 ms, Wiese Ego gehend 25,1 ↔ 25,1 ms, Fahrt nicht gefahren; an f5b66780 (`bericht/2010-buendel-abab.md`) Fahrt 35,4 ms — die Fahrt reißt den 33-ms-Boden; Radeon in Bewegung am Kopf ohne Zahl; Sturm und Stadt nie gemessen (die E-Messorte fahren mit dorfZug false, `spec/profiband/haushalt.json`).",
           "schlupfloch": "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           "aenderung": "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63)."
         },
@@ -4180,7 +4134,7 @@
           "punkte": 0,
           "staffel": "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           "messung": "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          "beleg": "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,0 → 6,3 (keine Seite hält 5,8), `_diaetRefresh` 1,99 → 2,02 ms; gehend 19,2–21,1, Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
+          "beleg": "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,1 → 6,3 ms (Bündel 2 an 8ba1510d; 5,8 hält A in 1 von 4 Boots, B in 0), `_diaetRefresh` 1,99 → 1,94 ms; gehend Genesis Third 21,1 → 20,3, Wiese Ego 19,8 → 19,5 (`bericht/2010-buendel2-abab.md`); Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
           "schlupfloch": "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
           "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung ist Messschuld M12."
         },
@@ -4198,7 +4152,7 @@
           "punkte": 0,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --wandern kreis` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`).",
-          "beleg": "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend 37,5–43,7 ms; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
+          "beleg": "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend Genesis Third 47,4 → 37,5 ms (Bündel 2, 8ba1510d; Frames > 100 ms nicht gezählt), schwere Boots auf beiden Seiten als Sitzungs-Zustand benannt; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt."
         },
         {
@@ -4687,8 +4641,8 @@
     {
       "id": "M21",
       "kriterium": "licht.K1",
-      "messung": "S7 nach dem Merge nach main: die GANZE Bahn, beide Geräte, Ego und Third",
-      "erwartung": "ROT (Uhr 0,33 +0,94 EV) — das Vorher von Licht H1"
+      "messung": "S7 am Kopf f2904a72: die GANZE Bahn, beide Geräte, Ego und Third, gegen eine REF-Kurve",
+      "erwartung": "ROT (Radeon Uhr 0,33 +0,94 EV über Mittag; GTX Uhr 0,27 −22 % golden) — das Vorher von Licht H1"
     },
     {
       "id": "M22",
@@ -4701,23 +4655,21 @@
       "kriterium": "haar.K1",
       "messung": "Klasse fell (externe REF) auf Armlänge und im Third",
       "erwartung": "offen"
+    },
+    {
+      "id": "M24",
+      "kriterium": "vegetation.K4",
+      "messung": "`diag-haus-welt --phasen=grund --bild` am Kopf f2904a72, Radeon: Halm- und Boden-Pixel je Haus-Box aus dem Ausgabe-Pfad, Ego im Haus und Third davor",
+      "erwartung": "1 (0/0/0 in 48 Blicken am Zweig-Stand f0082575; W9 headless Büschel 0 am Kopf)"
+    },
+    {
+      "id": "M25",
+      "kriterium": "tiere.K3",
+      "messung": "Tastgrad im Band und Querhang 20° als Urteil in gate:tier-gang, Third-Bild aus 10 m im Gang, beide Geräte",
+      "erwartung": "2, wenn Tastgrad und Querhang halten (Fußfolge aus Fr 32/32 Welt und Labor)"
     }
   ],
   "top5": [
-    {
-      "bereich": "wetter",
-      "hebel": "Wetter aus Saat und Schreib-Akt statt Wanduhr — Wetter, Saison und Uhr als Spieler-Wort der Spielgang-Bühne",
-      "bewegt": [
-        "wetter.K1+1"
-      ],
-      "punkte": 1,
-      "tage": [
-        0.5,
-        0.5
-      ],
-      "p_je_tag": 2,
-      "pflicht": "— (öffnet die Regen-, Nacht- und Winter-Spalte jedes Kriteriums, R9; deterministisch für den Mitspieler)"
-    },
     {
       "bereich": "fahrzeug",
       "hebel": "Die Kamera atmet das Tempo: chaseKamera bekommt v und vlat, EIN FOV-Schreiber",
@@ -4776,63 +4728,85 @@
       ],
       "p_je_tag": 1.71,
       "pflicht": "—"
+    },
+    {
+      "bereich": "licht",
+      "hebel": "EIN Licht-Baustein für Feld-Pass, Panorama und Wasser",
+      "bewegt": [
+        "licht.K3+2"
+      ],
+      "punkte": 2,
+      "tage": [
+        1,
+        1.5
+      ],
+      "p_je_tag": 1.6,
+      "pflicht": "A"
     }
   ],
   "verlauf": [
     {
+      "skala": "1.0",
+      "max": 90,
       "stand": "2026-10-18",
       "kopf": "ff88b82d",
-      "summe": 27,
-      "skala": "1.0",
-      "max": 90
+      "summe": 27
     },
     {
+      "skala": "1.0",
+      "max": 90,
       "stand": "2026-10-19",
       "kopf": "ffa8fac8",
       "summe": 28,
-      "was": "S6 Rudel-Verband (Tiere K1 0→1: Zusammenhalt gemessen gehalten, Ausrichtung/Alarm/ID offen); Garage isoliert auf r184 (Studios K1 bleibt 0: 3 von 11 Seiten)",
-      "skala": "1.0",
-      "max": 90
+      "was": "S6 Rudel-Verband (Tiere K1 0→1: Zusammenhalt gemessen gehalten, Ausrichtung/Alarm/ID offen); Garage isoliert auf r184 (Studios K1 bleibt 0: 3 von 11 Seiten)"
     },
     {
+      "skala": "1.0",
+      "max": 90,
       "stand": "2026-10-19",
       "kopf": "47c8b089",
       "summe": 28,
-      "was": "Ankunfts-Paket B4+B5: Radeon kalt 7,89 -> 6,3-6,9 s (Ankunft K1 bleibt 0: Soll <= 5 s)",
-      "skala": "1.0",
-      "max": 90
+      "was": "Ankunfts-Paket B4+B5: Radeon kalt 7,89 -> 6,3-6,9 s (Ankunft K1 bleibt 0: Soll <= 5 s)"
     },
     {
+      "skala": "1.0",
+      "max": 90,
       "stand": "2026-10-19",
       "kopf": "e93134f4",
       "summe": 29,
-      "was": "F1 Kamera-Rig (Fahrzeug K4 0→1: Azimut 6,3° nach 10 Bildern, Stufe 0 m an der Physik, Ruck p95 0,017 m, GTX nicht langsamer; offen Absteigen in Fahrt, 2 Bilder durchscheinend)",
-      "skala": "1.0",
-      "max": 90
+      "was": "F1 Kamera-Rig (Fahrzeug K4 0→1: Azimut 6,3° nach 10 Bildern, Stufe 0 m an der Physik, Ruck p95 0,017 m, GTX nicht langsamer; offen Absteigen in Fahrt, 2 Bilder durchscheinend)"
     },
     {
+      "skala": "1.0",
+      "max": 90,
       "stand": "2026-10-20",
       "kopf": "5768586a",
       "summe": 30,
-      "was": "f1-rest (Fahrzeug K4 1→2: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; OMEN-ABAB GTX nicht langsamer, GT deckend statt Geist)",
-      "skala": "1.0",
-      "max": 90
+      "was": "f1-rest (Fahrzeug K4 1→2: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; OMEN-ABAB GTX nicht langsamer, GT deckend statt Geist)"
     },
     {
+      "skala": "2.0",
+      "max": 330,
       "stand": "2026-10-20",
       "kopf": "dc6702ab",
       "summe": 16,
+      "was": "Meisterkarte 2.0 (neue Skala, 33 Bereiche × 10): das Lineal misst, was der Spieler erlebt — ungemessen = 0, Frische am Kopf, Bewegung statt Stand, EIN Heim je Kriterium, der Apparat zählt nie; neue Bereiche Physik, Stoffe, Feld, Ökologie, Affekt, Haar, Luft und Wasser, Leib, Halten, Spielgang, Ultiversum. Kein Rückschritt der Welt: 30/90 und 16/330 messen verschiedene Dinge."
+    },
+    {
+      "stand": "2026-10-21",
+      "kopf": "f2904a72",
+      "summe": 17,
       "max": 330,
       "skala": "2.0",
-      "was": "Meisterkarte 2.0 (neue Skala, 33 Bereiche × 10): das Lineal misst, was der Spieler erlebt — ungemessen = 0, Frische am Kopf, Bewegung statt Stand, EIN Heim je Kriterium, der Apparat zählt nie; neue Bereiche Physik, Stoffe, Feld, Ökologie, Affekt, Haar, Luft und Wasser, Leib, Halten, Spielgang, Ultiversum. Kein Rückschritt der Welt: 30/90 und 16/330 messen verschiedene Dinge."
+      "was": "Nachgezogen am main-Vorlauf dc6702ab..f2904a72 (b-strom-faden, S7 tag-achse, S4 grund-datum, b-programme, ich-bühne-wolf, leib-wechsel R1 und R2, tiere-kreislauf, wetter-saat; OMEN-Bündel-2-ABAB an 8ba1510d): Wetter K1 0 → 1 als Schnitt mit Welt-Byte (wetter-saat 04266b35, `stamm/dirigent-takt.js`: der Zug zieht den Samen der Welt; gate:wetter-wache (Z) ROT 3 → GRÜN, CI 39498582018 an f2904a72). Kein weiterer Wechsel: Licht K1 bleibt 0 (Uhr 0,33 +0,94 EV über Mittag, keine REF-Kurve), Tiere K2 0 (Riss 7/10 Orte in 600 s mit 3 Wölfen — keine Quote je Jagd im Band), Tiere K3 1 (Fußfolge aus Fr 32/32, das Third-Bild fehlt), Vegetation K4 0 (das Bild 0/0/0 nur am Zweig-Stand f0082575), Bauen K2, Siedlung K1, Ankunft, Streaming und Profiband 0 (GTX kalt 15,33 s, stehend 6,3 ms). Gemergte Hebel fallen (in der Zählung vom 20.10. Wetter H1, Tiere H3, Vegetation H2), sechs schrumpfen auf ihren Rest (Licht H1, Tiere H2, Bauen H2, Siedlung H4, Streaming H3, Ankunft H1); neue Messschuld M24 und M25."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 20.10.2026, Kopf main dc6702ab (V18.546.26)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 21.10.2026, Kopf main f2904a72 (V18.546.35)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
-      "Die Meisterkarte ist die Belohnung: was sie zählt, wird gebaut. Version 2.0 zählt, was der SPIELER erlebt oder was ein ECHTER LESER im Spiel verbraucht — nie, was der Prüf-Apparat über sich selbst meldet. Für jeden Bereich steht die 10/10 (AAAA), die Besten mit ihrem Weg, fünf Kriterien mit Staffel, Messung, Beleg und geschlossenem Schlupfloch, dann die Hebel nach Punkten je Tag und das ehrliche Feststecken mit dem anderen Weg. Es zählt, was am Kopf main dc6702ab im Code steht UND gemessen ist; ein Zweig zählt erst nach dem Merge nach main (W0). integ-probe f7f90201 trägt schon S7 (Tag-Achse, 6e0f1a4a), b-strom-faden (Chunk im Faden, 85801a46) und ich-bühne-wolf — sie zählen nach dem Merge, ihre Messung steht in der Messschuld.",
+      "Die Meisterkarte ist die Belohnung: was sie zählt, wird gebaut. Version 2.0 zählt, was der SPIELER erlebt oder was ein ECHTER LESER im Spiel verbraucht — nie, was der Prüf-Apparat über sich selbst meldet. Für jeden Bereich steht die 10/10 (AAAA), die Besten mit ihrem Weg, fünf Kriterien mit Staffel, Messung, Beleg und geschlossenem Schlupfloch, dann die Hebel nach Punkten je Tag und das ehrliche Feststecken mit dem anderen Weg. Es zählt, was am Kopf main f2904a72 im Code steht UND gemessen ist; ein Zweig zählt erst nach dem Merge nach main (W0). integ-probe 80585b1b trägt schon boden-rolle (Gelände H5, EINE Boden-Höhe je Rolle, c393726c) — es zählt nach dem Merge nach main.",
       "Der Scope bleibt `docs/PFLICHT-OFFEN.md` (A AAAA je Klasse · B Ankunft ≤ 5 s · E Profi-Band); die Karte setzt keinen Eintrag, sie ordnet die Hebel und nennt, welche Pflicht jeder trägt. Bis v1.0 gilt der Feature-Stopp: die TOP-5 wählt nur Hebel auf dem v1-Pfad oder mit Pflicht. Die Daten stehen in `meisterkarte.json` (Schema der Karte 1.0, erweitert); `node gen.cjs render` schreibt diese Datei aus der json, `node gen.cjs check` prüft Summen, Staffeln und die EINE Hebel-Tafel."
     ],
     "aaaaKopf": [
@@ -4877,7 +4851,7 @@
       ],
       [
         "R9 Uhr, Wetter, Saison als Spieler-Wort",
-        "Regen, Nacht und Winter sind Spalten der Posen-Liste, gesetzt über das Spieler-Wort aus der Saat — nie aus der Wanduhr; kein Kriterium baut einen eigenen Wetter-Schalter in seine Linse (Wetter H1 baut ihn EINMAL). Die Mittags-Bühne (Lehre 17) dient dem Vergleich vorher ↔ nachher, nie der Suche."
+        "Regen, Nacht und Winter sind Spalten der Posen-Liste, gesetzt über das Spieler-Wort aus der Saat — nie aus der Wanduhr; kein Kriterium baut einen eigenen Wetter-Schalter in seine Linse (wetter-saat 428fb6fe baute ihn EINMAL: `werkbank bild --wetter/--saison`). Die Mittags-Bühne (Lehre 17) dient dem Vergleich vorher ↔ nachher, nie der Suche."
       ],
       [
         "R10 Ungemessen = 0",
@@ -4891,22 +4865,22 @@
     "feststeck": [
       [
         "B · die Ankunft an der GTX",
-        "≥ 6 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan): 28 s (13.10.) → 16,6 (18.10.) → 15,87 (19.10.) → 15,25 s (20.10.); jede zog 0,3–1 s ab, keine brachte einen Punkt; freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt, der B-Plan rechnet selbst eine Untergrenze ≈ 8 s auf EINEM Faden; der Richter liest die Eigenmeldung `_weltbildDa`",
+        "≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme): 28 s (13.10.) → 16,6 (18.10.) → 15,87 (19.10.) → 15,25 s (20.10.) → 15,33 s am Bündel 2 (8ba1510d: b-strom-faden, b-programme; gegen 16,08 an dc6702ab); jede zog 0,3–1 s ab, keine brachte einen Punkt; freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt, der B-Plan rechnet selbst eine Untergrenze ≈ 8 s auf EINEM Faden; der Richter liest die Eigenmeldung `_weltbildDa`",
         "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (Ankunft H2) und der Welt-Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, die Zahl ist Haupt-Faden-ms und t(Bild) an der GTX); der Richter misst von außen (M10). Ehrlich: erst B-Plan + Abdruck + Welt-Faden zusammen reichen rechnerisch an 5 s auf der GTX."
       ],
       [
         "E · der CPU-Takt der GTX",
-        "Stehend 6,0–7,8 (14.10.) → 5,70 (19.10.) → 6,0/6,3 ms (20.10.); fünf Wellen um 0,2 ms an einer Pose, die der Spieler selten hält; die E-Diät spart netto nichts (1,99 → 2,02 ms), während gehend 19–21 ms und in Fahrt 31 ms stehen",
+        "Stehend 6,0–7,8 (14.10.) → 5,70 (19.10.) → 6,0/6,3 ms (20.10.) → 6,1/6,3 ms (Bündel 2, 8ba1510d: A hält 5,8 in 1 von 4 Boots, B in 0); fünf Wellen um 0,2 ms an einer Pose, die der Spieler selten hält; die E-Diät spart netto nichts (`_diaetRefresh` 1,99 → 2,02 → 1,94 ms), während gehend 19,5–20,3 ms und in Fahrt 31 ms stehen",
         "Den Takt in Bewegung richten: Profil gehend gegen stehend beim Namen, EINE Kappe für Strom- und Bau-Jobs (Profiband H1), Kosten je Render-Objekt (EIN Zeichner je Stoff und Chunk, Profiband H3), die Welt-Arbeit auf den Welt-Faden."
       ],
       [
         "S7 · die Tag-Achse",
-        "Drei Belichtungs-Wellen (V18.507, D3-N2, D3 N2) mit grüner 18-%-Karte, das Bild blieb invertiert; S7 (14 Commits, jetzt in integ-probe) heilt die Dämmerung, urteilt aber im Fenster −18…15° — Uhr 0,33 bleibt +0,94 EV über Mittag, gemessen nur an der Mess-Wiese, Ego, Radeon",
+        "Drei Belichtungs-Wellen (V18.507, D3-N2, D3 N2) mit grüner 18-%-Karte, das Bild blieb invertiert; S7 (14 Commits, seit f2904a72 auf main) heilt die Dämmerung — an der GTX ist Uhr 0,27 golden, −22 % gegen Mittag statt +37 % (OMEN Bündel 2) —, urteilt aber im Fenster −18…15° — Uhr 0,33 bleibt +0,94 EV über Mittag, die ganze Bahn gemessen nur an der Mess-Wiese, Ego, Radeon",
         "Die Kamera wird ein Gesetz (EV100 mit Kompensations-Steigung 0,5–0,7, der Weg von Frostbite/UE5); Richter ist die Kurve der GANZEN Bahn gegen eine REF aus realen HDR-Zeitraffern mit absolutem Mittag-Anker, Ego UND Third, beide Geräte (Licht H1)."
       ],
       [
         "A · die Klassen",
-        "Seit 15.10. das Maß: 7 von 8 ROT → 17.10. 11 von 12 GRÜN — je an EINER Mittag-Pose, die der Messer wählte (laub-kante steil von unten, tor-fern aus 90 m, wasser 640×360); am Kopf dc6702ab 12/12 veraltet oder ohne Ist; S2 (richter-spawn) als Apparat ungemergt",
+        "Seit 15.10. das Maß: 7 von 8 ROT → 17.10. 11 von 12 GRÜN — je an EINER Mittag-Pose, die der Messer wählte (laub-kante steil von unten, tor-fern aus 90 m, wasser 640×360); am Kopf f2904a72 12/12 veraltet oder ohne Ist (die Tafel trägt seit dc6702ab kein neues Ist); S2 (richter-spawn) als Apparat ungemergt",
         "Nicht die Klasse wählt ihre Pose, der Spielgang wählt die Bilder: EIN fester Pfad des v1-Spielers (≈ 24 Bilder je Gerät, ≤ 3 min), die Posen-Matrix ist Bürgschaft ohne eigene Punkte, die Kamera ist die des Spiels, die Leinwand die Ausgabe."
       ],
       [
@@ -5026,7 +5000,7 @@
         "Wetter/Uhr/Saison",
         "unmessbar",
         "keine Wetter-Pose, Wanduhr",
-        "eingearbeitet: R9 und Wetter H1 (½ d, TOP-5 #1)"
+        "eingearbeitet: R9 und der Saat-Hebel (½ d, TOP-5 #1) — gemergt als wetter-saat 428fb6fe"
       ],
       [
         "B07",
@@ -5786,6 +5760,7 @@
       "Ein gemergter Hebel fällt aus seiner Liste; ein neuer Hebel nennt die Kriterien, die er bewegt, Aufwand, Wurzel und Pflicht. Neue Pflicht-Einträge setzt nur der Schöpfer; die Karte setzt keinen."
     ],
     "nichtWeiss": [
+      "Am Kopf f2904a72 nachgezogen: je Kriterium, das ein Merge seit dc6702ab berührt, die Merge-Message, die Linse am Kopf (CI 39498582018: voll 18/18 und echt grün an f2904a72) und das OMEN-Bündel-2-ABAB (`bericht/2010-buendel2-abab.md`, an 8ba1510d — vor tiere-kreislauf, leib-wechsel R2 und wetter-saat: seine Zahlen beschreiben den Kopf nur, wo diese drei den Pfad nicht berühren). Die Leib-Wahl (ich-bühne-wolf, leib-wechsel) hat kein Heim-Kriterium und bewegt keinen Punkt.",
       "Die Punkte sind Lese- und Mess-Urteile am Kopf dc6702ab über zwei Synthese-Durchgänge und zwei Kritiker; wo ein Kriterium eine NEUE Linse verlangt, ist die 1 erst vergebbar, wenn die Linse steht und am Vorher ROT oder GRÜN gemessen hat.",
       "Die Radeon-Zeilen fehlen am Kopf für Ankunft, Profi-Band in Bewegung, Hänger und fast jedes Bild; jedes „2 an beiden Geräten“ wartet auf diese Messung.",
       "Der Aufwand ist die Schätzung der Synthese; Richter ist der gemergte Stand mit seiner Zahl, nicht die Schätzung. Die P/d der TOP-5 ändern sich mit jeder Messschuld, die ein Vorher ROT oder GRÜN nennt.",

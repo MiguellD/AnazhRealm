@@ -25,7 +25,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           messung: "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          beleg: "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf dc6702ab veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`).",
+          beleg: "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf f2904a72 veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`).",
           schlupfloch: "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           aenderung: "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1."
         },
@@ -52,7 +52,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           messung: "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          beleg: "24 von 25 Häusern sind innen grün, 119 Büschel stehen im Anbau (SYSTEMKARTE D2, 18.10.); Halm und Nah-Wiese lesen keinen Grundriss, `_grundSchnitt` hat am Kopf 0 Treffer; die Vorlage wiese-im-haus 69498f91 (24/25 → 0) ist ungemergt.",
+          beleg: "Seit main f2904a72 ist der Grund jedes Hauses Plan-Datum (S4 grund-datum, Merge 10ac79b0 / V18.546.30 e076ff8f): gate:haus-welt W9 headless 24 Häuser, Büschel und Dichte in den Boxen 0, Waise 0/52 (CI 39498582018 grün an f2904a72) — eine Zählung am Gesetz, kein Bild. Das Bild (`diag-haus-welt --phasen=grund --bild`, Halm- und Boden-Pixel je Box aus dem Ausgabe-Pfad) gab 0/0/0 in 48 Blicken an der Radeon — am Zweig-Stand f0082575, vor 9c5b4220 (der Erdbau wirft nur die getroffenen Chunks), 7e95bfd4/c4681791 (der Grund des gesetzten Hauses aus dem Plan) und 1794d878: der gemessene Pfad änderte sich danach, am Kopf ungemessen (Messschuld M24). Vorher 24 von 25 Häusern innen grün, 119 Büschel im Anbau (SYSTEMKARTE D2, 18.10.). Wasser ungemessen.",
           schlupfloch: "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           aenderung: "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20)."
         },
@@ -60,7 +60,7 @@ module.exports = {
           name: "Die Jahreszeit als Gestalt: Laub und Wiese",
           punkte: 0,
           staffel: "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
-          messung: "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (Wetter H1). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
+          messung: "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
           beleg: "Im Code steht wörtlich „DIE SAISON IST EINE FARBE“ (`stamm/bild-himmel.js:777-790`): EINE Uniform uSeasonMul, jeder Körper Golden-Sommer gebacken; Laubfall und Wiesen-Höhe fehlen.",
           schlupfloch: "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           aenderung: "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum)."
@@ -68,7 +68,6 @@ module.exports = {
       ],
       hebel: [
         { name: "Die Wiese bis zum Saum: das Tsushima-Kachel-Gesetz in festen Ringen, Wind im Relief", k: ["vegetation.K1+1", "vegetation.K2+1"], t: [1.5, 2], wurzel: "`stamm/daten.js:NAH_WIESE`: Ringe bis 40 m, die ferne Kachel mit doppelter Kante bei gleicher Büschelzahl; `stamm/vegetation-wiese.js` baut die Kacheln; die Parallax-Halm-Schicht (`stamm/stoff-material.js:1856ff`) liest `_windSwayOffset` (`:87`) als Scherung. Vorher Messschuld M3 (feste Ringe ROT).", pflicht: "A (boden-nah) · E (nahWiese ≤ 4/80k; GTX Third 83 716)", v1: true },
-        { name: "Die Natur-Wand aus dem EINEN Grundriss (S4)", k: ["vegetation.K4+2"], t: [2, 3], wurzel: "`gelaende-core.js` + `voxel-worker.js`: `_grundSchnitt` aus der Vorlage 69498f91 (Lehre 14); Leser Halm (`stamm/stoff-material.js`), Nah-Wiese (`stamm/vegetation-wiese.js`), Räumer `stamm/vegetation-baum.js:_naturRaeumen`; die Linse steht vorher ROT mit 119 Büscheln im Anbau.", pflicht: "A (boden-nah im Haus)", v1: true },
         { name: "Saison als Gestalt: laubDeckung als zweiter Kanal der EINEN Uniform", k: ["vegetation.K5+1"], t: [2, 2], wurzel: "`foundry-core.js:SAISON_GESETZ` bekommt laubDeckung(phase, art); `stamm/bild-himmel.js:_tickSeason` (kein Neubau).", pflicht: "—", v1: false },
         { name: "Der Wald von innen: Licht-Flecken und Strahlen aus der Kaskade, Unterholz aus planForestCell", k: ["vegetation.K3+1"], t: [2, 3], wurzel: "Schatten-Kaskade unter Kronen (`stamm/bild-kosten.js` SCHATTEN_KASKADE) + Strahlen über die EINE Luft (`stamm/bild-himmel.js` Luft-Knoten); Unterholz-Schicht aus `phyto-core.js:planForestCell`.", pflicht: "—", v1: false }
       ],
@@ -103,7 +102,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           messung: "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          beleg: "Pirsch, Ring-Platz, Umstellen und Hetze stehen (`stamm/kreatur-verhalten.js:_kreaturJagdZug` `:382`); im Band C beißen 3 Wölfe den Hirsch binnen 60 s — aber die Beute trägt dort hp = 1e6 (`scripts/lib/kreatur-proben.cjs:2033/2092`): diese Beute gibt es im Spiel nicht, ein Riss ist nie gemessen; kadaver|aas|fressen 0 Treffer.",
+          beleg: "Seit main f2904a72 (tiere-kreislauf, V18.546.33 5bef501f) reißt das Rudel mit echtem Leben: gate:kreatur-takt jagdkreis (A) — 3 Wölfe gegen einen gesunden Hirsch (168 HP) an 10 Orten einer Saat, Riss 403–585 s an 7/10 in 600 s (5311e7f1; Täter jagd-hp, die verwundete Beute, ROT mit Riss 6,5 s); der Leib wird Kadaver (56,5 → 0 kg in 120 s), Fuchs und Bär kommen aus 35 m und fressen 34,8 / 21,5 s (`scripts/lib/kreatur-proben.cjs:2037-2098`; CI 39498582018 grün an f2904a72). Die 1 trägt das nicht: die Quote ist Riss je 600-s-Fenster an Orten statt je Jagd über ≥ 10 Saaten, gemessen nur mit 3 Wölfen gegen den Erwachsenen, und 70 % liegt über dem Band 20–40 % (MacNulty); 1 Wolf und Kitz ungemessen. Fressen < 60 s, kein Bild.",
           schlupfloch: "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
           aenderung: "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27)."
         },
@@ -112,7 +111,7 @@ module.exports = {
           punkte: 1,
           staffel: "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           messung: "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05) + NEUE Gangart-Linse: Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Tastgrad Schritt 0,6–0,7, Galopp ≈ 0,3; im Labor worlds/tetrapoda dieselbe Fußfolge (Phasen-Diff ≤ 0,05 Zyklus); Kreuz-Probe Stimmung × Tempo.",
-          beleg: "Das Gang-Gesetz steht: Schrittlänge aus Froude, IK, Ratsche 0,05 in gate:tier-gang (an jedem Push). Die Fußfolge hängt aber an der Stimmung: MOTION.flee hat Trab-Phasen [0,π,π,0] auch im Galopp-Tempo (`tetrapoda-core.js:70-80`), der Tastgrad ist fest 0,5; der Labor-Gang ist ein eigener CPG (`worlds/tetrapoda/tetrapoda.js:17-25`).",
+          beleg: "Der Fuß steht: Schlupf ≤ 0,05 in gate:tier-gang an jedem Push (die 1). Seit main f2904a72 (tiere-kreislauf, 5bef501f/5244293a) wählt die Froude-Zahl die Fußfolge (GANG_FOLGE, Schritt lateral → Trab → Dreh-Galopp, Hysterese), die Stimmung trägt nur die Haltung: gate:tier-gang Gangart je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor 32/32 (Basis 0/24, die Stimmungs-Folge im Selbsttest ROT; CI 39498582018 grün an f2904a72); der CPG-Pass-Zweig fiel. Für die 2 fehlen: Tastgrad im Band als Urteil (tastgradLauf 0,3 ist eine Zeile, kein Ist), der Querhang 20° (gemessen Querhang-Schlupf 0,028/0,029 ohne benannte Neigung) und das Third-Bild aus 10 m auf beiden Geräten (Messschuld M25).",
           schlupfloch: "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text."
         },
         {
@@ -120,7 +119,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
           messung: "Familie diag-kreatur-leben: 200 Würfe über das Gelände (Landform aus dem Gelände-Kern: Hirsch Wiese und Waldrand, Wolf Wald, Bär Fluss und Hang); Zeitraffer über 24 Spielstunden (die Uhr ist Spieler-Wort).",
-          beleg: "Die Art wählt `_pickFaunaSoulAtPlayer` über Tags × Feld mit 0,15 Rauschen (`stamm/kreatur-leben.js:1439-1458`); weil die Seelen bewusst tag-identisch sind (Lehre 8), entscheidet praktisch das Rauschen; lebensraum 0 Treffer; hunger|durst 0 Treffer.",
+          beleg: "Die Art wählt `_pickFaunaSoulAtPlayer` über Tags × Feld mit 0,15 Rauschen (`stamm/kreatur-leben.js:1439-1458`); weil die Seelen bewusst tag-identisch sind (Lehre 8), entscheidet praktisch das Rauschen; lebensraum 0 Treffer; Hunger nur als Magen des Räubers am Kadaver (tiere-kreislauf), Durst 0 Treffer.",
           schlupfloch: "Arten von Hand an Koordinaten zu setzen oder einen Zeitplan zu skripten erfüllte Anteile ohne Gesetz: Seed-Wechsel und Bedürfnis-Mutante beweisen das Lesen.",
           aenderung: "Staffel neu (B28)."
         },
@@ -135,8 +134,7 @@ module.exports = {
       ],
       hebel: [
         { name: "Den Verband ganz messen und halten: Φ im Band, Alarm-Kette ≤ 1 s, ID 600 s, Herde am Hang im Bild", k: ["tiere.K1+1"], t: [1, 1], wurzel: "`scripts/lib/kreatur-proben.cjs` Bühne herde (Φ, Δt Alarm, ID) + `stamm/kreatur-verhalten.js:_kreaturVerbandAlarm` (Kette über Sichtweite).", pflicht: "—", v1: false },
-        { name: "Den Jagd-Kreislauf schließen: HP aus dem Leib, Riss, Kadaver als Geruchs-Quelle", k: ["tiere.K2+2"], t: [1.5, 1.5], wurzel: "`stamm/kreatur-verhalten.js:_kreaturJagdZug` → Riss → Kadaver-Zustand als `_scentAt`-Quelle; Band C mit HP aus `_leibMasse`.", pflicht: "—", v1: false },
-        { name: "Die Gangart aus dem Tempo, das Labor ruft gangSchritt", k: ["tiere.K3+1"], t: [1, 1], wurzel: "`tetrapoda-core.js` MOTION/gangSchritt wählt die Fußfolge nach Fr statt nach Stimmung, tastgradLauf in der Tier-Zeile; `worlds/tetrapoda/tetrapoda.js:updateCPG` fällt (Lehre 11, Byte-Beweis).", pflicht: "—", v1: false },
+        { name: "Die Jagd ins Band: Riss-Quote je Jagd über 20 Saaten (1 Wolf, 4 Wölfe, Kitz — MacNulty), Fressen ≥ 60 s, Wolfsrevier im Bild", k: ["tiere.K2+2"], t: [1, 1.5], wurzel: "Riss, Kadaver und Geruch stehen seit tiere-kreislauf (5bef501f); `scripts/lib/kreatur-proben.cjs` jagdkreis (A) zählt heute Orte einer Saat in 600 s — die Quote je Jagd über Saaten und Rudel-Größe, dann `stamm/kreatur-verhalten.js:_kreaturJagdZug` (Ausdauer der Hetze, Abbruch) ins Band.", pflicht: "—", v1: false },
         { name: "Lebensraum und Tages-Budget im Gesetzbuch", k: ["tiere.K4+2"], t: [1.5, 1.5], wurzel: "`tetrapoda-core.js` VERHALTEN.lebensraum (Gattung × Landform aus gelaende-core) + Bedürfnis-Pegel Hunger, Durst, Ruhe; `stamm/kreatur-leben.js:_pickFaunaSoulAtPlayer` wählt nach Ort; die Tags bleiben neutral (Lehre 8).", pflicht: "—", v1: false },
         { name: "Begegnung im Bild: ferne Verbände als EIN Agent, Ratsche tier, Dichte über die Kappe am Schirm", k: ["tiere.K5+1"], t: [2, 2.5], wurzel: "Separation über das FLOCK_CELL-Gitter statt O(n²) (`stamm/kreatur-verhalten.js`); ein ferner Verband rechnet nur über sein Leittier (aiDiv-Band); Prüfbühne mit fester Herde; die Bestands-Zahl kommt aus Ökologie H1, nicht aus einem höheren Deckel.", pflicht: "— (Last: E, der CPU-Takt reißt heute schon)", v1: false }
       ],
@@ -163,7 +161,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds · 2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT",
           messung: "Zeitraffer-Linse (Familie diag-kreatur-leben), 6 Spielstunden je Szenario in einem Tal mit echten Regeln, ≥ 8 Seeds je Szenario, deterministisch je Seed.",
-          beleg: "Es gibt keine Bestände: Geburten sind gedeckelt (FAUNA_MAX 20, maxCreatures 20; `stamm/daten.js:125-130`, `stamm/dirigent-kern.js:254`), der Tod kommt nur aus dem Alter (`stamm/kreatur-leben.js:1759`); Fraß und Verbiss fehlen (hunger|durst|kadaver 0 Treffer).",
+          beleg: "Es gibt keine Bestände: Geburten sind gedeckelt (FAUNA_MAX 20, maxCreatures 20; `stamm/daten.js:125-130`, `stamm/dirigent-kern.js:254`), der Tod kommt nur aus dem Alter (`stamm/kreatur-leben.js:1759`); Verbiss fehlt; der Räuber frisst seit tiere-kreislauf den Kadaver in den Magen (satt jagt er keine Beute), aber kein Fraß ändert eine Geburt.",
           schlupfloch: "Ein Skript-Zähler „Wölfe < 1 → Hirsche++“ täuscht die Kaskade vor: die Mutanten-Probe verlangt echte Leser. Bei 20 Tieren wären +30 % zwei Tiere — Rauschen: darum ≥ 8 Seeds und ein Intervall (B33).",
           aenderung: "Aus Leben-Feld K3; unentscheidbar, solange der Deckel den Bestand setzt (B33) — K2 kommt zuerst."
         },
@@ -172,7 +170,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
           messung: "werkbank eval über Spielzeit-Sprünge, Gegenlauf mit halbierter Nahrung; Kosten im Zerleger (updateCreatures) in derselben Sitzung.",
-          beleg: "Der Deckel ist heute der Bestand (FAUNA_MAX 20); geboren wird ≥ 130 m fern außerhalb des Blicks; keine Nahrung, kein Hunger im Gesetz.",
+          beleg: "Der Deckel ist heute der Bestand (FAUNA_MAX 20); geboren wird ≥ 130 m fern außerhalb des Blicks; die Nahrung des Räubers (Kadaver, Magen; tiere-kreislauf, 5bef501f) lenkt nur sein Verhalten, nie Geburt oder Tod.",
           schlupfloch: "Den Deckel zu heben (20 → 150) bläht nur die Zahl und belastet E: die Mutante verlangt das Gesetz (V32).",
           aenderung: "Neu als EIN Bestands-Gesetz statt zweier Bauten (Tiere H4 hob den Deckel, Leben-Feld H3 ersetzte ihn; V32)."
         },
@@ -260,7 +258,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           messung: "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          beleg: "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf dc6702ab kein Ist („gesicht ungemessen“, sollTafelUrteil). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
+          beleg: "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf f2904a72 kein Ist („gesicht ungemessen“, sollTafelUrteil). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
           schlupfloch: "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           aenderung: "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29)."
         },
@@ -474,7 +472,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU · 2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte",
           messung: "werkbank zerlegen/takt an einer Prüfbühne mit festem Schwarm.",
-          beleg: "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H5 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
+          beleg: "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H4 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
           schlupfloch: "Schwärme nur außerhalb des Blicks: die Prüfbühne zählt den Schwarm im Bild."
         }
       ],
@@ -482,7 +480,7 @@ module.exports = {
         { name: "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (nach Studios H4)", k: ["luftwasser.K1+2", "luftwasser.K2+1", "klang.K1+1"], t: [4, 5], wurzel: "Neues Gesetzbuch nach Vertrag v1.2 (PARAMS_BY_KIND, KIND_POLICY); Schwarm über `verbandZug`; der Klang-Vogel liest den Leib.", pflicht: "—", v1: false },
         { name: "Fische in der Strömung", k: ["luftwasser.K3+2"], t: [2, 2], wurzel: "Strömung aus `_waterLevelAt`/F1-Chokepoint als Leser der Fisch-Ausrichtung.", pflicht: "—", v1: false },
         { name: "Bestäuber als Leser von auraAt", k: ["luftwasser.K4+1"], t: [2, 2], wurzel: "`stamm/feld-leben.js:auraAt` lebendig/Blüte am Ort.", pflicht: "—", v1: false },
-        { name: "Schwarm als EIN Agent", k: ["luftwasser.K5+2"], t: [1, 1.5], wurzel: "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H5).", pflicht: "—", v1: false }
+        { name: "Schwarm als EIN Agent", k: ["luftwasser.K5+2"], t: [1, 1.5], wurzel: "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H4).", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie begonnen; benannt nach den acht Studios (Gedächtnis studio-vollendung: als Nächstes Motorrad, Vögel, Aufzug). Die Wiese klingt heute nach Vögeln, die es nicht gibt.",

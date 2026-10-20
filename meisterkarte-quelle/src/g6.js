@@ -24,7 +24,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           messung: "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          beleg: "GTX kalt 15,87 s (b-wald, Merge 9c741e83, 19.10.), 15,25 s am Zweig b-blick (B-Plan 20.10.); Radeon 6,3–6,9 s (main 47c8b089). Beide Zahlen stammen aus der Eigenmeldung (`scripts/diag-boot-stage.cjs:297/:300` liest `state._weltbildDa`). In integ-probe (nicht main): b-strom-faden 85801a46 — Radeon „Boden vor dem Bild 614 → 73 ms, blockiert 12,7 → 7,7 s“.",
+          beleg: "GTX kalt 4+4 (OMEN, koordination `bericht/2010-buendel2-abab.md`): t(Weltbild) Median 16,08 → 15,33 s, t(Leib) 6,60 → 4,95 s, dc6702ab → 8ba1510d (b-strom-faden, S7, S4, b-programme, Leib-Wahl); Radeon 6,3–6,9 s (main 47c8b089), unter Last 9,0–10,0 s (1794d878, 4bde519b). Alle Zahlen stammen aus der Eigenmeldung (`scripts/diag-boot-stage.cjs:297/:300` liest `state._weltbildDa`), und nach 8ba1510d kamen tiere-kreislauf, leib-wechsel R2 und wetter-saat; das Weltbild bleibt an der GTX dreimal über dem Soll.",
           schlupfloch: "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest)."
         },
         {
@@ -49,7 +49,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
           messung: "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
-          beleg: "Am Spawn misst die Tafel 3 von 12 Klassen (tor-fern, tor-bunt, tor-ziel), und diese tragen am Kopf dc6702ab kein Ist („ungemessen“); 4 sichtbare Klassen haben keine Zeile (SYSTEMKARTE §5 Genesis); S2 richter-spawn f4270382 (37/172 Zellen) ist ungemergt.",
+          beleg: "Am Spawn misst die Tafel 3 von 12 Klassen (tor-fern, tor-bunt, tor-ziel), und diese tragen am Kopf f2904a72 kein Ist („ungemessen“); 4 sichtbare Klassen haben keine Zeile (SYSTEMKARTE §5 Genesis); S2 richter-spawn f4270382 (37/172 Zellen) ist ungemergt.",
           schlupfloch: "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
           aenderung: "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15)."
         },
@@ -58,17 +58,17 @@ module.exports = {
           punkte: 0,
           staffel: "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet",
           messung: "CPU-Profil + LongTask-Trace des Kalt-Boots (`diag-boot-stage --kalt --echt`), ≥ 4 je Gerät: blockierte Summe bis zur Kontrolle, längste Aufgabe, Antwort auf eine Kamera-Drehung im Lade-Bild.",
-          beleg: "Die Lade-Aufgaben dauern 0,15–1,0 s (M1: Median 289 ms, p90 839 ms); `_kappeOffen` lässt jeden Leser nach der Frist sein Mindest-Stück setzen, die Fix-Takte nach dem Dispatcher haben keine Frist (`stamm/dirigent-takt.js:1102`, `:1257-1288`), LADE_BILD_MS 500 (`:1583`); GTX 13,07–13,74 s blockiert bis zum Bild (97 %; Erst-Bau 3,57 s, `_runFrameScheduler` 3,82 s); Radeon 400–940 ms je Sekunde.",
+          beleg: "Seit main f2904a72 baut kein Chunk-Stoff mehr im Haupt-Faden vor dem Faden-Ack (b-strom-faden 85801a46: Radeon kalt Boden vor dem Bild 614 → 73 ms, blockiert 12,7 → 7,7 s — über dem Soll 4 s), b-programme kürzt den Erst-Bau (Radeon 1741 → 1305 ms, 4bde519b; GTX beim Bild 3,46–3,66 → 2,50–2,58 s, Bündel 2), leib-wechsel R2 legt 25 Einzel-Aufgaben von 66–99 ms in die 10 s NACH der Ankunft (1b28df95, benannt offen). Die Lade-Aufgaben dauern 0,15–1,0 s (M1: Median 289 ms, p90 839 ms); `_kappeOffen` lässt jeden Leser nach der Frist sein Mindest-Stück setzen, die Fix-Takte nach dem Dispatcher haben keine Frist (`stamm/dirigent-takt.js:1102`, `:1257-1288`), LADE_BILD_MS 500 (`:1583`); GTX 13,07–13,74 s blockiert bis zum Bild (97 %; Erst-Bau 3,57 s, `_runFrameScheduler` 3,82 s); Radeon 400–940 ms je Sekunde.",
           schlupfloch: "Die Arbeit in 49-ms-Stücke hacken: die Summe zählt mit; ein CSS-Spinner animiert ohne den Haupt-Faden: gemessen werden LongTask und Eingabe-Antwort.",
           aenderung: "Architektur K1 (Haupt-Faden bis zur Kontrolle) maß dieselbe längste Aufgabe — zusammengeführt."
         }
       ],
       hebel: [
-        { name: "b-blick zu Ende, dann die B-Plan-Karten 1, 3, 4, 5 (Programme, Bau am Ereignis, Lade-Scheibe, Streu im Blick)", k: ["ankunft.K5+1"], t: [3, 5], wurzel: "`stamm/dirigent-takt.js:_kappeOffen` (`:1102`) mit LADE_TAKT_MS (`:1581`: Scheibe 12 ms, Pumpe über MessageChannel) · `stamm/studio-gestalt.js:_foundryRewarmColdTrees` (`:485`) · `stamm/vegetation-streu.js:_scatterPass` (`:635`) · `stamm/stoff-material.js:_materialObserverDiaet`; Karte 2 (Chunk im Faden) steht schon in integ-probe (85801a46). Erwartung B-Plan: GTX 15,25 → ~13 s, Radeon → 4,6–5,5 s.", pflicht: "B", v1: true },
+        { name: "b-blick zu Ende, dann die B-Plan-Karten 3, 4, 5 (Bau am Ereignis, Lade-Scheibe, Streu im Blick)", k: ["ankunft.K5+1"], t: [2.5, 4], wurzel: "`stamm/dirigent-takt.js:_kappeOffen` (`:1102`) mit LADE_TAKT_MS (`:1581`: Scheibe 12 ms, Pumpe über MessageChannel) · `stamm/studio-gestalt.js:_foundryRewarmColdTrees` (`:485`) · `stamm/vegetation-streu.js:_scatterPass` (`:635`) · `stamm/stoff-material.js:_materialObserverDiaet`; Karte 1 (Programme, 4bde519b) und Karte 2 (Chunk im Faden, 85801a46) stehen seit f2904a72 auf main, die GTX kalt 16,08 → 15,33 s. Erwartung B-Plan: GTX ~13 s, Radeon → 4,6–5,5 s.", pflicht: "B", v1: true },
         { name: "Der Programm-Abdruck je Gesetz-SHA: das erste Bild nicht neu bauen", k: ["ankunft.K3+1", "ankunft.K1+1"], t: [3, 4], wurzel: "`stamm/bild-kosten.js:_configureRenderer` (Erst-Bau, ERST_BAU_MS `:3437`): die WGSL-Ausgabe des r184-NodeBuilder je Stoff-Signatur unter dem Gesetz-SHA auf der Platte und als abgeleitetes Artefakt im Build — der Cache des EINEN Bauers, kein Zwilling; Byte-Beweis Abdruck = Lauf, eine Abweichung meldet laut (`_bruchMelden`) und baut über denselben Bauer neu. Spart an der GTX ≈ 3,0 s Knoten-Bau; zusammen mit H1 und Pipeline H4 erreicht K1 die 1 (Radeon ≤ 5, GTX ≤ 10).", pflicht: "B", v1: true }
       ],
       feststeck: {
-        versucht: "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. — ≥ 6 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
+        versucht: "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. (b-blick), 15,33 s an 8ba1510d (Bündel 2 mit b-strom-faden und b-programme) — ≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
         anders: "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (H2) und die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
       }
     },
@@ -116,7 +116,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden` · 2 = 0 überall, beide Geräte",
           messung: "Konsum-Zählung im Kalt-Boot und im Spiel: Chunk-Stoff, Hydrosphäre und Asset-Bau, die synchron im Haupt-Faden entstehen, obwohl ein Faden zuständig ist; jede neue forceSync-Stelle ist ROT beim Namen.",
-          beleg: "Am main baut der Strom vor dem init-Ack jeden Chunk still synchron (`stamm/gelaende-chunks.js:_acquireVoxelChunkBuild` `:1225`) — in integ-probe gefallen (b-strom-faden 85801a46: EIN Prädikat `_voxelFadenTraegt`, Radeon Boden vor dem Bild 614 → 73 ms), nicht in main; `_computeHydrosphere` läuft synchron (`stamm/wasser-hydro.js:54`, ≈ 0,5 s). Lehre 14 ist gebrochen.",
+          beleg: "Seit main f2904a72 (b-strom-faden, Merge 85801a46) baut der Strom vor dem Faden-Ack keinen Chunk mehr still synchron: EIN Prädikat `_voxelFadenTraegt` (`stamm/gelaende-chunks.js:310`), Stufe 3 nur ohne Faden und laut (`_bruchMelden` VOXEL-FADEN); gate:worker-dichte Teil S am Kopf pending + 0 (Basis Stufe 3 + 1 voller Stand), Radeon Boden vor dem Bild 614 → 73 ms. Die 1 fehlt: `_computeHydrosphere` läuft weiter synchron im Haupt-Faden (`stamm/wasser-hydro.js:54`, ≈ 0,5 s), und keine Zählung aller synchronen Bauten im Spiel steht. Lehre 14 bleibt gebrochen.",
           schlupfloch: "forceSync setzen oder den Rückfall umbenennen: forceSync nur an den drei benannten Stellen.",
           aenderung: "Aus Architektur K3."
         },
@@ -125,7 +125,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
           messung: "Instrument am Empfang (onmessage), im Kalt-Boot und in 60 s Fahrt: per structured clone empfangene MB je Minute und Kopien nach dem Empfang (Byte-Summe, nicht Nachrichten-Zahl).",
-          beleg: "Die Foundry überträgt per Transfer (Lehre 24); der Chunk-Pfad kopiert am main 9–12 Attribute je Chunk (`stamm/gelaende-chunks.js:_buildVoxelChunkDataFromWorkerMesh` `:746`) — in integ-probe 12 → 1 (85801a46); `saveState` serialisiert im Haupt-Faden (`stamm/dienst.js:1186-1191`); das Instrument am Empfang fehlt.",
+          beleg: "Die Foundry überträgt per Transfer (Lehre 24); der Chunk-Pfad übernimmt seit main f2904a72 die übertragenen Arrays (`_buildVoxelChunkDataFromWorkerMesh`, 12 → 1 Kopien je Chunk, 85801a46); `saveState` serialisiert im Haupt-Faden (`stamm/dienst.js:1186-1191`); das Instrument am Empfang fehlt.",
           schlupfloch: "Klone in viele kleine Nachrichten zerlegen: die Byte-Summe je Minute.",
           aenderung: "Aus Architektur K4; die 1 der Synthese war die Existenz des Foundry-Transfers (B68) → 0."
         }
@@ -133,7 +133,7 @@ module.exports = {
       hebel: [
         { name: "Die Lücken-Linse am Spieler-Weg ROT, dann EIN Rang Zeit bis Bedarf (fahrt-vorausschau 1bb06b4e einfädeln)", k: ["streaming.K1+1", "streaming.K2+1"], t: [2, 3], wurzel: "`stamm/studio-bruecke.js:_foundryRang` (`:772`) als EINE Quelle; Leser `stamm/gelaende-chunks.js:_tickVoxelChunkStreaming` (`:2530`; Voraus = Abstand entlang der Bahn ÷ Tempo statt fest 1–2 Chunks), `stamm/gelaende-boden.js:_voxelChunkLodFor` (`:2587`), `stamm/vegetation-baum.js:_tickPendingVegSpawns` (`:2041`), `stamm/vegetation-streu.js:_scatterPass` (`:635`). Vorausschau entlang des Gesetzes (Wegenetz, Gelände), nicht entlang des Tempo-Vektors.", pflicht: "B · E", v1: true },
         { name: "Grob zuerst, fein danach", k: ["streaming.K2+1"], t: [1, 1], wurzel: "`stamm/gelaende-chunks.js:_tickDirtyVoxelChunks` (`:2826`, bisher EIN Einbau je Takt) und `_voxelChunkLodFor`: die Ankunftszeit wählt die Stufe, weit voraus kommt erst die Grobstufe.", pflicht: "E", v1: true },
-        { name: "b-strom-faden nach main, die Hydrosphäre in den Faden, das Instrument am Empfang", k: ["streaming.K4+1", "streaming.K5+1"], t: [1.5, 2], wurzel: "Merge von 85801a46 nach main (steht in integ-probe); `stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.", pflicht: "B", v1: true },
+        { name: "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)", k: ["streaming.K4+1", "streaming.K5+1"], t: [1, 1.5], wurzel: "`stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.", pflicht: "B", v1: true },
         { name: "Der Welt-Faden: alles, was Geometrie oder Platzierung rechnet, rechnet im Worker (Spike 1 Tag zuerst)", k: ["streaming.K3+2", "streaming.K4+1", "ankunft.K1+1"], t: [8, 12], wurzel: "Aus `stamm/dirigent-takt.js:_runFrameScheduler` (`:1257`) wandern nach `voxel-worker.js` (dort laufen gelaende-core und phyto-core schon): `_ensureVoxelChunkAt`-Geomorph (0,86 s), `_tickFernRing` (0,69 s), `_naturSetzen`-Skelett (0,59 s), `_forestPlantChunk` (0,36 s), `_rebuildVoxelChunk` (0,33 s), `_tickScatterLod` (0,26 s), `_scatterPass` (1,22 s); der Haupt-Faden lädt nur Transfer-Puffer hoch. Der Welt-Faden, kein Render-Worker: ein Render-Worker bräuchte einen Proxy-Zwilling jedes three-Objekts.", pflicht: "B · E", v1: true }
       ],
       feststeck: {
@@ -159,7 +159,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           messung: "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          beleg: "GTX 20.10. (`bericht/2010-buendel-abab.md`, f5b66780 ≈ Kopf): Genesis Third gehend 25,0–25,1 ms, Wiese Ego gehend 25,1 ms, Fahrt 35,4 ms — die Fahrt reißt den 33-ms-Boden; Radeon in Bewegung am Kopf ohne Zahl; Sturm und Stadt nie gemessen (die E-Messorte fahren mit dorfZug false, `spec/profiband/haushalt.json`).",
+          beleg: "GTX an 8ba1510d (Bündel 2, koordination `bericht/2010-buendel2-abab.md`): Genesis Third gehend 27,1 → 25,0 ms, Wiese Ego gehend 25,1 ↔ 25,1 ms, Fahrt nicht gefahren; an f5b66780 (`bericht/2010-buendel-abab.md`) Fahrt 35,4 ms — die Fahrt reißt den 33-ms-Boden; Radeon in Bewegung am Kopf ohne Zahl; Sturm und Stadt nie gemessen (die E-Messorte fahren mit dorfZug false, `spec/profiband/haushalt.json`).",
           schlupfloch: "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           aenderung: "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63)."
         },
@@ -168,7 +168,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           messung: "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          beleg: "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,0 → 6,3 (keine Seite hält 5,8), `_diaetRefresh` 1,99 → 2,02 ms; gehend 19,2–21,1, Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
+          beleg: "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,1 → 6,3 ms (Bündel 2 an 8ba1510d; 5,8 hält A in 1 von 4 Boots, B in 0), `_diaetRefresh` 1,99 → 1,94 ms; gehend Genesis Third 21,1 → 20,3, Wiese Ego 19,8 → 19,5 (`bericht/2010-buendel2-abab.md`); Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
           schlupfloch: "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
           aenderung: "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung ist Messschuld M12."
         },
@@ -186,7 +186,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           messung: "`werkbank haenger 60 --wandern kreis` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`).",
-          beleg: "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend 37,5–43,7 ms; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
+          beleg: "GTX gehend: ein Hänger von 258 ms in 1 von 4 Sitzungen (`bericht/1610-nachmessen-210fe8a7.md`), CPU p99 gehend Genesis Third 47,4 → 37,5 ms (Bündel 2, 8ba1510d; Frames > 100 ms nicht gezählt), schwere Boots auf beiden Seiten als Sitzungs-Zustand benannt; Fahrt Frame p99 62,5–64,6 ms (`bericht/2010-buendel-abab.md`); die Fahrt-Bahn lebt nur in koordination; Radeon ungemessen. Gefallen ist die Programm-Hänger-Klasse (gate:hitch-telemetrie).",
           schlupfloch: "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt."
         },
         {

@@ -41,7 +41,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           messung: "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          beleg: "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf dc6702ab veraltet (K5). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
+          beleg: "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf f2904a72 veraltet (K5; die Tafel trägt seit dc6702ab kein neues Ist). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
           schlupfloch: "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
           aenderung: "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09)."
         },
@@ -72,7 +72,7 @@ module.exports = {
         { name: "EINE Boden-Höhe je Rolle unter Ratsche (Huf, Rad, Streu-Fuß UND der Fuß des Spielers)", k: ["gelaende.K5+2", "leib.K2+1"], t: [1.5, 2], wurzel: "`stamm/gelaende-boden.js:536` `_terrainMacroSurfaceY`, `_bodenSichtAt`, `stamm/koerper-bewegung.js:857-887` ⇄ `stamm/kreatur-leben.js:1357`: Sichtbares liest `_bodenSichtAt`, der Leib das Feld, Ferne und Hydro das Gesetz.", pflicht: "—", v1: true }
       ],
       feststeck: {
-        versucht: "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main dc6702ab trägt der 48er-Kegel weiter an vier Stellen. Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
+        versucht: "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main f2904a72 trägt der 48er-Kegel weiter an vier Stellen (`stamm/gelaende-boden.js:1201/1240`, `voxel-worker.js:612/734`). Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
         anders: "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (H2). Punkte nur mit Welt-Byte."
       }
     },
@@ -80,7 +80,7 @@ module.exports = {
       key: "wetter",
       titel: "Wetter und Klima — Front, Nässe, Kreislauf, Schnee, Wind",
       dom: "`phyto-core.js` WX_GESETZ · `foundry-core.js` REGEN_GESETZ · `stamm/bild-himmel.js` · `stamm/dirigent-takt.js` · `stamm/feld-leben.js`",
-      v1: "Feature-Stopp bis v1.0 — außer H1 (Messbarkeit jeder Pose)",
+      v1: "Feature-Stopp bis v1.0 — der Hebel der Messbarkeit (Wetter und Saison als Spieler-Wort) ist gemergt (428fb6fe)",
       aaaa: "Wetter ist ein Feld des Kerns über Ort × Zeit × Saat, plus die Schreib-Akte (Spieler-Wort, DSL-Regeln, der Wunsch der Emotion über die Weltregeln). Eine Regenfront zieht mit dem Wind; vom Hügel sieht der Spieler den Vorhang 2 km entfernt, und jeder Mitspieler sieht denselben Himmel. Regen benetzt, was er trifft: poröser Boden fällt auf 0,5–0,8 × Albedo, die Rauheit sinkt, Pfützen in Mulden spiegeln den Himmel, unter dem Dach bleibt es trocken, und nach dem Schauer trocknet es in 5–15 min. Regen speist die Bäche (Pegel +0,2–1 m, verzögert um die Laufzeit des Einzugsgebiets), Dürre leert sie. Die Jahreszeit ist Temperatur: Schnee-Decke mit Tiefe, in der der Fuß einsinkt. Wind ist EIN Feld, vom Gelände geformt (Lee, Tal-Düse), gelesen von allem, was sich bewegt. Wetter ≤ 1 ms GPU, ≤ 0,3 ms CPU auf beiden Geräten. **Wo wir die Besten schlagen:** RDR2 und Forza Horizon 4 bauen Wetter-Regionen und Jahreszeiten je Karte von Hand; bei uns kommt das Wetter aus demselben Gesetz wie das Gelände — die Front füllt das Flussnetz, das sie quert, und die Klimazonen folgen der Höhe des Gesetzes in einer unendlichen Welt.",
       beste: [
         "**Red Dead Redemption 2** (Rockstar 2018; Fabian Bauer, SIGGRAPH 2019 Advances „Creating the Atmospheric World of RDR2“): Wolken, Nebel und Licht in EINEM Froxel-Volumen, Wetter je Region über die Staaten der Karte, Nässe, Schlamm und Schnee an Kleidung und Pferd, verformbarer Schnee.",
@@ -91,10 +91,10 @@ module.exports = {
       kriterien: [
         {
           name: "Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte — für alle gleich, nie aus der Wanduhr",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
           messung: "werkbank eval über einen Spielzeit-Sprung (Ereignis-Takte, nie Wanduhr), zwei Orte 3 km auseinander, 20 min Spielzeit; gleiche Saat → gleiche Folge, andere Saat → andere. Die Emotion schreibt nur über eine DSL-Regel mit Quelle (Affekt K2), nie als fester Trigger. Die Gleichheit über Peers zählt Feld K2.",
-          beleg: "Das Wetter ist ein globales Wort (`stamm/bild-himmel.js:2654` `_setWeather`). Der Auto-Zug wählt aus Sinus über die Wanduhr (`stamm/dirigent-takt.js:972-975`, performance.now) und liest den Wunsch `wetterWunsch` (Nexus, Gesetze, Emotion; `:956/:966`); im Netz reist kein Wetter (`stamm/netz-p2p.js`: 0 Treffer). Die Welt kennt 3 der 5 Zeilen von WX_GESETZ (`phyto-core.js:3289` ⇄ `stamm/daten.js:56-80`). Gut gebaut ist die Form: EINE Tafel, EIN Schreiber-Gesetz (`_himmelSchreiber`).",
+          beleg: "1 seit main f2904a72 (wetter-saat, Merge 428fb6fe): der Auto-Zug zieht je Takt den nächsten Samen der Welt (`stamm/dirigent-takt.js:975-978` `_bauSame(\"wetter\")`, der Zähler reist im Snapshot) statt drei Sinus über performance.now; `wetterWunsch` bleibt Schreib-Akt. gate:wetter-wache (Z) über 20 min Spiel-Zeit, Saat × Ort (3 km) × Wanduhr (steht oder geht 120 s je Takt): an 7eadd2b2 ROT 3 (die Folge hing an der Wanduhr, saat-b = saat-a), am Kopf GRÜN (saat-a an beiden Orten und Uhren gleich, saat-b anders; 61d735a4 → 04266b35; CI 39498582018 voll 18/18 an f2904a72). Offen für die 2: das Wetter bleibt EIN globales Wort (`_setWeather`), keine Front am Ort; die Welt kennt 3 der 5 Zeilen von WX_GESETZ (`phyto-core.js:3289` ⇄ `stamm/daten.js:56-80`).",
           schlupfloch: "Eine zweite regionale Wort-Tafel oder das Senden des Worts an die Peers erfüllte Teile ohne Gesetz; die Front muss aus EINER Kern-Funktion kommen (die Mutation zieht beide Orte). Den Wunsch der Emotion zu STREICHEN, um Saat-Reinheit zu gewinnen, ist verboten: er bleibt Schreib-Akt (V03).",
           aenderung: "Der Synthese-Satz „gleiche Zustände allein aus der Saat“ hätte belohnt, die Kopplung an die Emotion zu streichen (V03); die Peer-Gleichheit zählt Feld K2 (B12); die Staffel ist neu (B02)."
         },
@@ -135,7 +135,6 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Wetter aus Saat und Schreib-Akt statt Wanduhr — Wetter, Saison und Uhr als Spieler-Wort der Spielgang-Bühne", k: ["wetter.K1+1"], t: [0.5, 0.5], wurzel: "`stamm/dirigent-takt.js:948-985`: die Wort-Wahl aus FNV über worldId + Spielzeit-Takt (wie `_worldRuleSeed`, `stamm/feld-dsl.js:717`), `wetterWunsch` bleibt Schreib-Akt; werkbank bekommt --wetter/--saison als Spieler-Wort statt `__wetterHalten` für die Suche.", pflicht: "— (öffnet die Regen-, Nacht- und Winter-Spalte jedes Kriteriums, R9; deterministisch für den Mitspieler)", v1: true, oeffnet: 6 },
         { name: "Wetter als Kern-Feld wetterAt(saat, x, z, t) ⊕ Akte", k: ["wetter.K1+1"], t: [2, 2], wurzel: "`phyto-core.js:3289` WX_GESETZ wird eine Funktion: Fronten als Rausch-Zellen der Saat, die mit `_windDirAt` driften; Leser `stamm/bild-himmel.js:2614` `_weatherFieldFor(x,z)`.", pflicht: "—", v1: false },
         { name: "EINE Nässe als Feld-Achse: Dach, Mulde, Trocknen, Leser im Stoff", k: ["wetter.K2+2"], t: [2.5, 2.5], wurzel: "Nässe-Achse im Feld-Overlay (`stamm/feld-leben.js`, auraAt-Familie, 2-m-Zellen, lazy-decay = Trocknen); Verdeckung von oben (Kaskade oder Blocker-Netz); Leser `_terrainGeologyAlbedo` (`stamm/stoff-material.js:1755`) und `_substanceCharacter` (`:1578`), Pfützen im `_wasserBlick` (`stamm/wasser-hydro.js:1538`); Regen-Fall 42 → ≤ 9 m/s (`foundry-core.js:171`).", pflicht: "—", v1: false },
         { name: "Der Pegel ist eine Funktion des Regens", k: ["wetter.K3+2"], t: [3, 3], wurzel: "`gelaende-core.js:1177` flussLaeufe (A, Lauflänge) + `stamm/wasser-hydro.js:54`: pegel(x,z,t) = Basis + Abfluss(∫ Regen-Feld über A, Lag ∝ Lauflänge) in geschlossener Form — die Welt bleibt eine Funktion.", pflicht: "—", v1: false },
@@ -144,7 +143,7 @@ module.exports = {
       ],
       feststeck: {
         versucht: "Keine wiederholten Wellen, sondern Blindheit: jede Bild-Sonde hält Mittag, Sonne und Sommer (Lehre 17, `__wetterHalten`), und gate:season-meadow schreibt fest, dass die Saison eine Farbe ist. So konnte kein Wetter-Punkt entstehen oder fallen.",
-        anders: "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Erster Schritt H1, ½ Tag."
+        anders: "Regen, Nacht und Winter werden Spalten der Posen-Liste jedes Kriteriums (Schöpfer 17.10.: Extreme × Wechselwirkung); die Bühne hält das Wetter nur noch für vorher↔nachher, nie für die Suche. Der erste Schritt steht seit main f2904a72 (wetter-saat, 428fb6fe): das Wetter zieht aus der Saat, `werkbank bild --wetter/--saison` setzt Wetter und Saison als Spieler-Wort."
       }
     },
     {
@@ -250,7 +249,7 @@ module.exports = {
           name: "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
           punkte: 0,
           staffel: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
-          messung: "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H5).",
+          messung: "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H4).",
           beleg: "Lava, Basalt und Schnee sind statische Boden-Farben (`stamm/gelaende-boden.js:2392-2437`, `voxel-worker.js:2613-2628`); glut ist eine eingefrorene Feld-Achse (`docs/das-lebendige-feld.md` §4.1); im Stamm gibt es keine Temperatur (nur die Lichtfarbe `kelvin`).",
           schlupfloch: "Eine Eis-Textur ohne Tragkraft bestünde das Bild: der Körper auf dem Eis und die Schmelze im Pegel sind Pflicht.",
           aenderung: "EIN Heim für Eis und Schmelze (vorher auch Wetter K4; B15, V24)."
@@ -276,9 +275,9 @@ module.exports = {
       ],
       hebel: [
         { name: "EINE Stoff-Tafel in SI im Kern", k: ["stoffe.K1+1"], t: [2, 2], wurzel: "`foundry-core.js` neben dem FARB-GESETZ: die Zeilen der Albedo-Tafel bekommen ρ, μ, c, T_zünd, T_schmelz, Wasser-Aufnahme; `schmiede-core.js:2519` und die [0,1]-Achsen aus `stamm/bau-buch.js:2507-2596` werden Leser, ihre eigenen Zahlen fallen im selben Commit.", pflicht: "—", v1: false },
-        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+2"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H3).", pflicht: "—", v1: false },
-        { name: "Phasen am Temperatur-Feld (nach Wetter H5)", k: ["stoffe.K3+2"], t: [2, 2], wurzel: "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.", pflicht: "—", v1: false },
-        { name: "Alter = Zeit × Nässe (nach Wetter H3)", k: ["stoffe.K4+2"], t: [2, 2], wurzel: "`fachwerk-core.js:3864` verwitterung und `gelaende-core.js:2132-2142` (Moos) lesen das Alter seit dem Bau × Nässe-Achse statt eines Reglers; der Trampelpfad aus einer Lauf-Achse, die die Nah-Wiese liest.", pflicht: "—", v1: false },
+        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+2"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H2).", pflicht: "—", v1: false },
+        { name: "Phasen am Temperatur-Feld (nach Wetter H4)", k: ["stoffe.K3+2"], t: [2, 2], wurzel: "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.", pflicht: "—", v1: false },
+        { name: "Alter = Zeit × Nässe (nach Wetter H2)", k: ["stoffe.K4+2"], t: [2, 2], wurzel: "`fachwerk-core.js:3864` verwitterung und `gelaende-core.js:2132-2142` (Moos) lesen das Alter seit dem Bau × Nässe-Achse statt eines Reglers; der Trampelpfad aus einer Lauf-Achse, die die Nah-Wiese liest.", pflicht: "—", v1: false },
         { name: "Nährstoff, Nachwuchs, Sukzession", k: ["stoffe.K5+2"], t: [3, 3], wurzel: "Nährstoff-Achse neben `_feuchteAt` (`stamm/gelaende-boden.js:1333`); `_tickScatterRegrow` (`stamm/vegetation-wiese.js:1083`) und die Pflanz-Schlange lesen sie, `treeParams(alter)` (phyto-core) liefert den Jungwuchs.", pflicht: "—", v1: false }
       ],
       feststeck: {
@@ -313,7 +312,7 @@ module.exports = {
           punkte: 1,
           staffel: "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen · 2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort",
           messung: "gate:mp-sync + gate:reload-treue, erweitert: zwei Clients 20 min Spielzeit mit Auto-Wetter, Wasser und Feuer; Zustands-Nachrichten außer Schreib-Akten sind verboten (Netz-Log). Gleichheit ist eine Eigenschaft der Funktion — zwei Seiten einer Maschine genügen hier; Latenz und Bild des Peers zählen Tore K4.",
-          beleg: "gate:mp-sync in der CI (`.github/workflows/check.yml:1299`): Graben reist, Ursprung 0, Rejoin ≤ 31 s (`scripts/diag-mp-sync.cjs:1-20`); Edits atomar je Chunk (`_voxelEditKarte`); Regel-RNG aus FNV über worldId + Regel + Feuer-Index (`stamm/feld-dsl.js:717-722`). Aber das Wetter kommt aus der Wanduhr (`stamm/dirigent-takt.js:972-975`) und reist nicht (`stamm/netz-p2p.js`: 0 Treffer) — zwei Peers sehen verschiedenes Wetter, und die Tier-Laune liest es.",
+          beleg: "gate:mp-sync in der CI (`.github/workflows/check.yml:1299`): Graben reist, Ursprung 0, Rejoin ≤ 31 s (`scripts/diag-mp-sync.cjs:1-20`); Edits atomar je Chunk (`_voxelEditKarte`); Regel-RNG aus FNV über worldId + Regel + Feuer-Index (`stamm/feld-dsl.js:717-722`). Das Wetter zieht seit main f2904a72 aus der Saat (Wetter K1, gate:wetter-wache (Z)); ob zwei Peers ohne Zustands-Nachricht denselben Zug sehen, ist ungemessen (der Samen-Zähler reist zum Gast, `stamm/dirigent-takt.js:975`), Pegel, Overlays und Brand ebenso.",
           schlupfloch: "Den Zustand je Takt zu senden machte die Peers gleich, ohne dass die Welt eine Funktion ist: darum keine Zustands-Nachricht außer Schreib-Akten.",
           aenderung: "EIN Heim der Gleichheit für alle Teil-Simulationen, auch das Wetter (B12)."
         },
@@ -347,8 +346,8 @@ module.exports = {
         { name: "Das Feld wird gesehen: die Vegetation liest auraAt", k: ["feld.K5+1"], t: [1, 1.5], wurzel: "`stamm/feld-leben.js:auraAt` wird die EINE Lese-API der 7 frozen Leser (`vegetation-wiese.js:510/1111/1139`, `vegetation-streu.js:102/705`, `vegetation-baum.js:1310`); eine Overlay-Änderung weckt nur die berührte 16-m-Zelle (`_weltRegt`, Kachel.zustand = null).", pflicht: "—", v1: false },
         { name: "Die Tat bleibt: Narbe in Spielzeit, Ernte und Fällung im Speicher, Nachwuchs aus lebendig", k: ["feld.K4+2"], t: [1.5, 1.5], wurzel: "`stamm/feld-leben.js:_depositLife`: eine Narbe je Tat-Klasse in Spielzeit statt 87 s Halbwertszeit; scatterHarvested und gefällte Bäume atomar in den Speicher (`stamm/speicher-laden.js`); der Nachwuchs folgt lebendig statt FORAGE.regrowMs.", pflicht: "—", v1: false },
         { name: "Ruhe = 0: der Automat schläft am Fixpunkt, langsame Sims ticken nur in berührten Zellen", k: ["feld.K3+2"], t: [2, 2], wurzel: "`stamm/wasser-zellen.js:2141/2268` (48 → 0 Takte); die Overlays zerfallen lazy beim Lesen statt im Takt.", pflicht: "E (Takt im Stand)", v1: true },
-        { name: "Die Wetter-Kette schließen (nach Wetter H3/H4, Fahrzeug H1)", k: ["feld.K1+2"], t: [1, 1.5], wurzel: "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.", pflicht: "—", v1: false },
-        { name: "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H2)", k: ["feld.K2+1"], t: [1, 1], wurzel: "gate:mp-sync-Erweiterung mit Auto-Wetter, Pegel und Overlays; Verbot von Zustands-Nachrichten im Netz-Log.", pflicht: "—", v1: false }
+        { name: "Die Wetter-Kette schließen (nach Wetter H2/H3, Fahrzeug H1)", k: ["feld.K1+2"], t: [1, 1.5], wurzel: "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.", pflicht: "—", v1: false },
+        { name: "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H1)", k: ["feld.K2+1"], t: [1, 1], wurzel: "gate:mp-sync-Erweiterung mit Auto-Wetter, Pegel und Overlays; Verbot von Zustands-Nachrichten im Netz-Log.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Das Feld ist seit Monaten der wahre Norden („wer eine neue lebendige Wirkung baut, liest HIER — kein neues _tickX“, `docs/das-lebendige-feld.md` §4.1); trotzdem entstand jede langsame Simulation daneben, mit eigenem Zustand und eigener Uhr (`_tickWorldWaterCA`, `_tickRain`, `_tickSeason`, `_tickScatterRegrow`, `_tickHarvest`). Gemessen wurde das Feld als Existenz (21 headless Checks in `scripts/playtest/feld-leben.cjs`, „LIFE_FIELD-Konstante existiert“).",

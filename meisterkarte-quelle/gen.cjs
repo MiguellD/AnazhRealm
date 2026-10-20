@@ -43,7 +43,7 @@ function bauen() {
     messschuld: meta.messschuld.map(([id, kriterium, messung, erwartung]) => ({ id, kriterium, messung, erwartung })),
     top5: [],
     verlauf: [
-      ...meta.verlaufAlt.map((v) => ({ ...v, skala: "1.0", max: 90 })),
+      ...meta.verlaufAlt.map((v) => ({ skala: "1.0", max: 90, ...v })),
       { stand: meta.stand, kopf: meta.kopf, summe, max: bereiche.length * 10, skala: "2.0", was: meta.verlaufNeuWas }
     ],
     text: {
@@ -122,9 +122,13 @@ function render(j) {
   P(); P("---"); P();
   const alt = j.verlauf.filter((v) => v.skala === "1.0");
   const a = alt[alt.length - 1];
+  const neu = j.verlauf.filter((v) => v.skala === "2.0");
+  const tag = (v) => v.stand.slice(8, 10) + "." + v.stand.slice(5, 7) + ".";
   P("## Punktestand: " + j.summe + " / " + j.max); P();
-  P("Verlauf — alte Skala (9 Bereiche, max 90): " + alt.map((v) => v.stand.slice(8, 10) + "." + v.stand.slice(5, 7) + ". " + v.summe).join(" · ") + " (letzter Stand " + a.summe + "/90 an " + a.kopf + "). Neue Skala (" + j.bereiche.length + " Bereiche, max " + j.max + "): " + j.stand.slice(8, 10) + "." + j.stand.slice(5, 7) + ". **" + j.summe + "/" + j.max + "** an " + j.kopf + ". " + T.messschuldErwartung);
+  P("Verlauf — alte Skala (9 Bereiche, max 90): " + alt.map((v) => tag(v) + " " + v.summe).join(" · ") + " (letzter Stand " + a.summe + "/90 an " + a.kopf + "). Neue Skala (" + j.bereiche.length + " Bereiche, max " + j.max + "): " + neu.map((v, i) => (i === neu.length - 1 ? tag(v) + " **" + v.summe + "/" + v.max + "** an " + v.kopf : tag(v) + " " + v.summe + " an " + v.kopf)).join(" · ") + ". " + T.messschuldErwartung);
   P();
+  for (const v of neu.slice(1)) P("- **" + tag(v) + " " + v.kopf + " — " + v.summe + "/" + v.max + ".** " + v.was);
+  if (neu.length > 1) P();
   P("| # | Bereich | Punkte | K1 | K2 | K3 | K4 | K5 | Pfad · Pflicht | nächster Hebel (P/d) |");
   P("|---|---|---|---|---|---|---|---|---|---|");
   for (const g of j.gruppen) {
