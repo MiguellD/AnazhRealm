@@ -1077,13 +1077,10 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const chatOutput = document.getElementById("chat-output");
 
         // Test schöpfer-Auto (Gegenprüfung uhr-wetter): das Wesen handelt VON SELBST — ohne Zusage des Spielers ist es Welt
-        // (`_himmelSchreiber`): gegen das stehende Wort des Spielers hält das Wetter (der Hinweis sagt es), ohne Wort wünscht
-        // das Wesen das nächste Wort, und der Wetter-Zug zieht es (die Welt ändert sich beobachtbar). Vorher schrieb es als
-        // „creature:" wie ein Gesetz des Spielers und nahm ihm sein Wort (sunny/sunny → rainy/rainy).
+        // (`_himmelSchreiber`): gegen das stehende Wort des Spielers hält das Wetter (der Hinweis sagt es); ohne Wort
+        // wünscht es nur (gate:wetter-wache (G)/(B)).
         r.setGameMode("schöpfer");
-        const __wort0 = r.state.wetterWort;
-        const __wunsch0 = r.state.wetterWunsch;
-        const __zugUhr0 = r.state.weatherEffectTime;
+        const [__wort0, __zugUhr0] = [r.state.wetterWort, r.state.weatherEffectTime];
         r.state.weatherEffectTime = 0;
         r.dslRun(["weather", "sunny"], { source: "human" });
         const beforeAuto = chatOutput ? chatOutput.children.length : 0;
@@ -1093,20 +1090,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.autoChatLineAdded = afterAuto > beforeAuto;
         out.autoHinweisWort =
             !!chatOutput && /hält dein Wort/.test((chatOutput.lastElementChild || {}).textContent || "");
-        r.dslRun(["weather", "frei"], { source: "human" });
-        r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", "rainy"]);
-        const __wunsch = r.state.wetterWunsch;
-        out.autoWuenscht =
-            r.state.weather === "sunny" &&
-            !!__wunsch &&
-            __wunsch.wort === "rainy" &&
-            __wunsch.quelle === "creature:TestProgramKreatur";
-        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK + 0.5;
-        r._loopWeatherAndGrowth(0);
-        out.autoExecutedInSchöpfer = r.state.weather === "rainy";
-        r.state.wetterWort = __wort0;
-        r.state.wetterWunsch = __wunsch0;
-        r.state.weatherEffectTime = __zugUhr0;
+        [r.state.wetterWort, r.state.weatherEffectTime] = [__wort0, __zugUhr0];
         // Memory-Eintrag: auto_executed_action
         const memTypes = (c.userData.memory || []).map((m) => m.type);
         out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
@@ -1212,14 +1196,12 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 wave6hP2eV3Results.promptMentionsModus
         );
         check(
-            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter (Hinweis), ohne Wort wünscht das Wesen und der Wetter-Zug zieht es + chat-Hinweis-Zeile + Memory auto_executed_action",
+            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter (Hinweis) + chat-Hinweis-Zeile + Memory auto_executed_action",
             wave6hP2eV3Results.autoHaeltWort &&
                 wave6hP2eV3Results.autoHinweisWort &&
-                wave6hP2eV3Results.autoWuenscht &&
-                wave6hP2eV3Results.autoExecutedInSchöpfer &&
                 wave6hP2eV3Results.autoChatLineAdded &&
                 wave6hP2eV3Results.memoryHasAutoExecuted,
-            `hält ${wave6hP2eV3Results.autoHaeltWort} · Hinweis ${wave6hP2eV3Results.autoHinweisWort} · wünscht ${wave6hP2eV3Results.autoWuenscht} · Zug zieht ${wave6hP2eV3Results.autoExecutedInSchöpfer}`
+            `hält ${wave6hP2eV3Results.autoHaeltWort} · Hinweis ${wave6hP2eV3Results.autoHinweisWort}`
         );
         check(
             "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",

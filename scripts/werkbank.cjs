@@ -17,6 +17,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
 //                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
+//                                      [--wetter rainy] [--saison winter] das Wort des Spielers statt Sonne und Sommer
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
 //                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
@@ -1124,7 +1125,7 @@ async function starte() {
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
-            window.__buehne();
+            window.__buehne(k);
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
             // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
             if (Number.isFinite(k.uhr)) {
@@ -3073,6 +3074,8 @@ async function starte() {
             lz: a[5],
             datei: opt("--datei"),
             uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
+            wetter: opt("--wetter"),
+            saison: opt("--saison"),
             w: Number(opt("--w", 640)),
             h: Number(opt("--h", 360)),
             ziel: opt("--ziel"),
@@ -3779,6 +3782,7 @@ async function starte() {
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));
+    if (o && o.fehler) process.exit(1);
 })().catch((e) => {
     console.error("WERKBANK-FEHLER:", (e && e.message) || e);
     process.exit(1);
