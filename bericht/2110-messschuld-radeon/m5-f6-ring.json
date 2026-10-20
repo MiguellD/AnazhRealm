@@ -1,0 +1,112 @@
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -10.4,
+   "sonneGrad": 5,
+   "hoehe": 0.7,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.36745,
+     "L": 67.09,
+     "C": 36.79,
+     "pixel": 19136
+    },
+    "karte": {
+     "Y": 0.39548,
+     "L": 69.15,
+     "C": 29.51,
+     "pixel": 4568
+    },
+    "verhaeltnis": 1.076,
+    "dL": 2.06,
+    "dC": -7.28
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -10.4,
+   "sonneGrad": 5,
+   "hoehe": 0.7,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03112,
+     "L": 20.49,
+     "C": 14.27,
+     "pixel": 19136
+    },
+    "karte": {
+     "Y": 0.05022,
+     "L": 26.8,
+     "C": 12.78,
+     "pixel": 4568
+    },
+    "verhaeltnis": 1.614,
+    "dL": 6.31,
+    "dC": -1.49
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -10.4,
+   "sonneGrad": 5,
+   "hoehe": 0.7,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03,
+     "L": 20.05,
+     "C": 13.82,
+     "pixel": 19136
+    },
+    "karte": {
+     "Y": 0.03282,
+     "L": 21.14,
+     "C": 9.63,
+     "pixel": 4568
+    },
+    "verhaeltnis": 1.094,
+    "dL": 1.09,
+    "dC": -4.19
+   }
+  }
+ },
+ "zeilen": [
+  {
+   "art": "ring@0.5",
+   "stufe": "bodenSatz → fern-ring",
+   "mittag": 1.076,
+   "dL": 2.06,
+   "dC": -7.28
+  },
+  {
+   "art": "ring@0.27",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.5,
+   "dL": 4.25,
+   "dC": 1.33,
+   "mittag": 1.076
+  },
+  {
+   "art": "ring@0.05",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.017,
+   "dL": -0.97,
+   "dC": -1.46,
+   "mittag": 1.076
+  }
+ ]
+}
+LAUB-LICHT ROT: FERN ring@0.27: fern/nah gegen Mittag (bodenSatz → fern-ring) Luma 1.5 (ΔL* 4.25, ΔC* 1.33) — außerhalb ±10 % / ΔC* 3
+EXIT=1

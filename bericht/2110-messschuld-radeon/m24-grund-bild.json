@@ -1,0 +1,772 @@
+{
+ "haeuser": [],
+ "phasen": [
+  "grund",
+  "bild"
+ ],
+ "dorfOrt": {
+  "x": -129,
+  "z": -94,
+  "hang": 0.598
+ },
+ "startOrt": {
+  "x": 0,
+  "z": 0
+ },
+ "startDorfWarten": {
+  "takte": 0,
+  "start": true,
+  "queue": false
+ },
+ "gesamt": 18,
+ "hausOrte": [
+  [
+   "haus_gotisch",
+   24,
+   103,
+   false
+  ],
+  [
+   "haus_alpenchalet",
+   -16,
+   115,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   -7,
+   98,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   14,
+   128,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   30,
+   122,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   -5,
+   137,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   -7,
+   82,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   13,
+   89,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   23,
+   86,
+   false
+  ],
+  [
+   "haus_alpenchalet",
+   37,
+   106,
+   false
+  ],
+  [
+   "haus_alpenchalet",
+   -21,
+   138,
+   false
+  ],
+  [
+   "haus_alpenchalet",
+   -23,
+   125,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   -23,
+   95,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   12,
+   144,
+   false
+  ],
+  [
+   "haus_schwarzwald",
+   -31,
+   112,
+   false
+  ],
+  [
+   "haus_skandinavisch",
+   44,
+   124,
+   false
+  ],
+  [
+   "haus_alpenchalet",
+   54,
+   108,
+   false
+  ],
+  [
+   "haus_skandinavisch",
+   6,
+   65,
+   false
+  ]
+ ],
+ "w9": {
+  "bild": true,
+  "haeuser": [
+   {
+    "x": 24,
+    "z": 103,
+    "typ": "haus_gotisch",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "turm",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 5,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 945,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 2
+   },
+   {
+    "x": -16,
+    "z": 115,
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2183,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": -7,
+    "z": 98,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 14,
+    "z": 128,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1947,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 30,
+    "z": 122,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1767,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 928,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": -5,
+    "z": 137,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1715,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 900,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": -7,
+    "z": 82,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 13,
+    "z": 89,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 253,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 1
+   },
+   {
+    "x": 23,
+    "z": 86,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 525,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 37,
+    "z": 106,
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1683,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 884,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 6
+   },
+   {
+    "x": -21,
+    "z": 138,
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1683,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": -23,
+    "z": 125,
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 399,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 220,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": -23,
+    "z": 95,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 972,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 12,
+    "z": 144,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1961,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 1026,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 14
+   },
+   {
+    "x": -31,
+    "z": 112,
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1739,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 44,
+    "z": 124,
+    "typ": "haus_skandinavisch",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 825,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "auge": [
+       1.6,
+       0.1
+      ]
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 442,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 3
+   },
+   {
+    "x": 54,
+    "z": 108,
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1505,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": {
+     "boden": -2.28,
+     "erde": 0,
+     "proben": 792,
+     "startM": 0.64,
+     "tiefM": -2.28
+    },
+    "stufe": 0,
+    "steht": true,
+    "ring": 18
+   },
+   {
+    "x": 6,
+    "z": 65,
+    "typ": "haus_skandinavisch",
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 299,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1015,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 0
+   },
+   {
+    "x": 48,
+    "z": 0,
+    "typ": "haus_gotisch",
+    "spieler": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "turm",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 5,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 945,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "innen": 0
+     }
+    ],
+    "keller": null,
+    "stufe": 0,
+    "steht": true,
+    "ring": 301,
+    "gegenprobe": 58113
+   }
+  ],
+  "suche": {
+   "typ": "haus_gotisch",
+   "orte": [
+    [
+     48,
+     0,
+     372
+    ]
+   ]
+  },
+  "spieler": {
+   "typ": "haus_gotisch",
+   "x": 48,
+   "z": 0,
+   "wiese": 372
+  },
+  "weite": 0.6828020898649549,
+  "abbau": [
+   {
+    "art": "dorf",
+    "vorher": {
+     "gruende": 1,
+     "offen": 1,
+     "kellerErde": 0
+    },
+    "boxen": 1,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": 1
+    }
+   },
+   {
+    "art": "gesetzt",
+    "plan": 1,
+    "vorher": {
+     "gruende": 1,
+     "offen": 2,
+     "kellerErde": null
+    },
+    "boxen": 2,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": null
+    }
+   }
+  ],
+  "waise": {
+   "start": true,
+   "gruende": 42,
+   "gesperrt": false,
+   "ohne": [],
+   "slots": 0,
+   "haeuser": 0,
+   "reload": 0,
+   "ausstattung": null,
+   "verblasst": false,
+   "ms": 3
+  }
+ },
+ "fernOrt": {
+  "x": 212,
+  "z": 212
+ }
+}

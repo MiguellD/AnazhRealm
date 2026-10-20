@@ -119,12 +119,12 @@ module.exports = {
         },
         {
           name: "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
-          punkte: 1,
+          punkte: 2,
           staffel: "1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
           messung: "gate:fahr-leben T4 (Mechanik) + Station fahrt im Bild: nach Ego → Third in voller Fahrt steht der Azimut binnen 10 Bildern ≤ 10° an der Gier, jede zeichnende Stufe ≤ 2 m an der Physik-Lage, Bild-Deckung in Third 1; Auf- und Absteigen in Fahrt und am Hang ohne Kamera-Sprung > 0,5 m je Bild.",
-          beleg: "f1-rest auf main 5768586a: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; T4 stand vorher ROT (2daec674). Im Bild belegt nur an der GTX (Bündel-ABAB 20.10. an f5b66780: der GT steht an B deckend in der Bildmitte; f5b66780 → dc6702ab ändert nur Karten-Bake und siedlung-bauten, die Fahrt-Quellen sind unberührt). T4 selbst läuft auf dem Null-Renderer (`scripts/diag-fahr-leben.cjs:2298-2304`); das Radeon-Bild fehlt; gemessen bei 6–10 m/s.",
+          beleg: "f1-rest auf main 5768586a: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; T4 stand vorher ROT (2daec674). Im Bild belegt nur an der GTX (Bündel-ABAB 20.10. an f5b66780: der GT steht an B deckend in der Bildmitte; f5b66780 → dc6702ab ändert nur Karten-Bake und siedlung-bauten, die Fahrt-Quellen sind unberührt). T4 selbst läuft auf dem Null-Renderer (`scripts/diag-fahr-leben.cjs:2298-2304`); gemessen bei 6–10 m/s. Das Radeon-Bild am Kopf f2904a72 (21.10., Messschuld M8, derselbe Blick wie an der GTX: koordination `bericht/2010-buendel-abab/blick.js` über `werkbank eval`, echte GPU, 1920×1080, Steilhang −61,6/−37,3 17,4°, bergab 7,7–8,2 m/s): Third 70 Bilder → Ego 76° gedreht → Third — in den Bildern 1–3 nach dem Wechsel steht der GT deckend in der Bildmitte (ndc 0/−0,08, im Bild 3/3, Abstand 9,96 m), Azimut gegen den Kurs 0 · 3,5 · 5,2°, jede zeichnende Stufe 1,71 m an der Physik-Lage (Roh: koordination `bericht/2110-messschuld-radeon/m8-*`). Der Fahrt-Pfad seit f5b66780 ist unberührt (koerper-fahrt.js nur die Leib-Wahl `_leibDerSeele`). Im Bild gesehen: Wiesen-Halme stehen durch die Kabine des GT (die Natur-Wand des Wagens, kein Punkt hier).",
           schlupfloch: "Bei 6–10 m/s gemessen könnte derselbe Rig bei höherer vmax brechen: die 2 fällt automatisch, wenn eine neue vmax-Stufe ohne T4 im Bild gemergt wird.",
-          aenderung: "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57)."
+          aenderung: "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57); das Radeon-Bild am Kopf 21.10. → 2 (M8)."
         },
         {
           name: "Rückmeldung: der Körper fühlt die Fahrt",

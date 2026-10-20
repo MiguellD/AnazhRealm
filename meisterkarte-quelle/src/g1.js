@@ -38,12 +38,12 @@ module.exports = {
         },
         {
           name: "Wasser-Bild aus dem Gesetz an jeder Pose des Spielers",
-          punkte: 0,
+          punkte: 1,
           staffel: "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           messung: "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          beleg: "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf f2904a72 veraltet (K5; die Tafel trägt seit dc6702ab kein neues Ist). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
+          beleg: "Gemessen am Kopf f2904a72 (21.10., Radeon 890M --echt, Messschuld M1): spiegelTreue 0,830 (wasserSatz, 35 190 px, spiegelEbene 0,89) in 1920×1080 aus dem Ausgabe-Pfad an einer Ego-Pose des Spiels am See — der Spieler steht am Ufer 1866,6/−6193,9, Gier −1,309, Neigung 0, die Kamera kommt aus `_loopCamera` (1866,6/3,928/−6193,9, Blick −0,966/0/0,259) und wird mit `werkbank bild --wahl 0` genau so geschossen (Pose im Begleit-JSON gleich); Bühne Mittag, Sommer, klar. Ohne `--wahl 0` verschob die Blick-Wahl der Werkbank die Pose um 26 m (0,760), am ersten Spieler-Ort 1870/−6168 verdeckt eine Eiche < 2 m (ABNAHME ROT, kein Bild). Roh: koordination `bericht/2110-messschuld-radeon/m1-*`. Third, Nacht, Regen, die GTX und der Fluss mit Gefälle ungemessen; Fließ-Detail ohne Soll.",
           schlupfloch: "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
-          aenderung: "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09)."
+          aenderung: "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09); gemessen 21.10. in Ausgabe-Größe an der Kamera des Spiels 0 → 1 (M1)."
         },
         {
           name: "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",

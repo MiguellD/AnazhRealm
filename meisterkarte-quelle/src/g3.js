@@ -42,7 +42,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           messung: "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          beleg: "Der Feld-Pass hat einen eigenen Licht-Term `0.3 + 0.7·N·L/max(sun.y,0.2)` ohne Himmels-Tafel (`stamm/bild-sicht.js:917-921`), das Panorama eine WGSL-Lambert-Kopie (`:1843-1851`), das Wasser uIrr (`:1078-1081`). F6 maß nur die Karte: Nacht 2,18 → 1,11 (GTX 18.10., `bericht/1810-f6-gtx.md`); seither änderte sich der Karten-Bake (`stamm/stoff-instanz.js`, 47 Zeilen zwischen f5b66780 und dc6702ab): veraltet.",
+          beleg: "Der Feld-Pass hat einen eigenen Licht-Term `0.3 + 0.7·N·L/max(sun.y,0.2)` ohne Himmels-Tafel (`stamm/bild-sicht.js:917-921`), das Panorama eine WGSL-Lambert-Kopie (`:1843-1851`), das Wasser uIrr (`:1078-1081`). F6 maß nur die Karte: Nacht 2,18 → 1,11 (GTX 18.10., `bericht/1810-f6-gtx.md`); seither änderte sich der Karten-Bake (`stamm/stoff-instanz.js`, 47 Zeilen zwischen f5b66780 und dc6702ab). Gemessen am Kopf f2904a72 (21.10., Radeon 890M --echt, Messschuld M5, ROT): der Fern-Ring gegen den Boden-Satz am Messort dorf (`werkbank licht --laub ring --karte --uhr 0.5,0.27,0.05`) — Mittag 1,076, Uhr 0,27 1,614 (gegen Mittag 1,50, ΔL* +4,25), Uhr 0,05 1,094 (1,017): in der Dämmerung steht die Ferne 50 % heller als die Nähe, außerhalb 0,9–1,1. Die Karten-Zeilen (fichte, tanne) hingen im selben Lauf nach fichte@0,5 über 12 min ohne Ergebnis (Welt-Loop aus, Ring 2 von 4) und wurden abgebrochen — ungemessen. Roh: koordination `bericht/2110-messschuld-radeon/m5-*`.",
           schlupfloch: "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           aenderung: "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier."
         },
@@ -161,7 +161,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           messung: "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          beleg: "`spec/farbe/albedo-tafel.json`: 8 von 10 Zeilen im ±10-%-Band, Haut (0,857) und Lack (1,138) außerhalb; die Labor-Seite nicht echt gemessen (gemessen.labor.echt false, ANGLE D3D11), nur Radeon, am Kopf veraltet (haus/fels-Quellen geändert).",
+          beleg: "`spec/farbe/albedo-tafel.json`: 8 von 10 Zeilen im ±10-%-Band, Haut (0,857) und Lack (1,138) außerhalb; die Labor-Seite nicht echt gemessen (gemessen.labor.echt false, ANGLE D3D11), nur Radeon, am Kopf veraltet (haus/fels-Quellen geändert). Die Welt-Seite am Kopf f2904a72 (21.10., Radeon --echt, `werkbank albedo --tafel`, Messschuld M22, ROT): fels 1,03, haus 0,95, klinge 0,95 im Band; lack 0,04, tor 3,07, haut 0,25, fell 0,67 über der Ratsche; rinde, laub und boden stumm (kein Zug am Exemplar). Roh: koordination `bericht/2110-messschuld-radeon/m22-*`.",
           schlupfloch: "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt."
         },
         {
@@ -296,7 +296,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           messung: "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          beleg: "fimp:atlas:L2 hat kante 0,2635 > 0,22, die Gestalten 0,16–0,18 (Radeon, 9c8cfab8); am Kopf veraltet (phyto-core geändert); GTX ungemessen.",
+          beleg: "fimp:atlas:L2 hat kante 0,2635 > 0,22, die Gestalten 0,16–0,18 (Radeon, 9c8cfab8); am Kopf veraltet (phyto-core geändert); GTX ungemessen. Am Kopf f2904a72 an der Tafel-Pose gemessen (21.10., Radeon --echt, Messschuld M6, ROT): fimp:atlas:L2 0,2604 > 0,22, f:fichte:L1 0,180, f:tanne:L0 0,167, f:tanne:L1 0,172 — das Vorher von LOD H1; ein Spielgang-Bild ungemessen. Roh: koordination `bericht/2110-messschuld-radeon/m6-*`.",
           schlupfloch: "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           aenderung: "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21)."
         },

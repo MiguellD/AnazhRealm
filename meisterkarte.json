@@ -3,13 +3,13 @@
   "kopf": "f2904a72",
   "version": "V18.546.35",
   "skala": "2.0",
-  "summe": 17,
+  "summe": 20,
   "max": 330,
   "gruppen": [
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 6,
+      "summe": 7,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -23,7 +23,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 2,
+      "summe": 3,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -66,7 +66,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 2,
+      "summe": 3,
       "max": 70,
       "bereiche": [
         "tore",
@@ -99,7 +99,7 @@
       "key": "gelaende",
       "titel": "Gelände, Boden und Wasser — Hydrosphäre, Graben, Damm",
       "gruppe": "physis",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (laufen, bauen) · A (wasser)",
       "dateien": "`gelaende-core.js` · `stamm/gelaende-*.js` · `stamm/wasser-*.js` · `voxel-worker.js`",
       "aaaa": "Jeder Hügel, jede Klamm, jeder Fluss, jeder See und jeder Spatenstich ist EINE Funktion des Kerns (`gelaende-core`: hoehe + dichte + editForm + Wasser-Spiegel); Stamm, Worker und Studio rechnen sie bit-gleich. Der Spieler gräbt am Bach, und binnen ≤ 2 s steht EINE Wasserfläche im Graben. Er schüttet einen 3-m-Damm, und der Stausee steigt bis zur Überlaufhöhe ±0,1 m, während der Bach stromab weiterläuft; Fern-Ring und Hydro-Raster zeigen den Edit binnen 1 s. Das Wasser spiegelt Ufer und Wolke (spiegelTreue ≥ 0,6) aus Ego und Third, mittags, nachts und im Regen, und es fließt sichtbar längs seines Gefälles. Jeder Leser (Pflanze, Tier, Klang, Körper) liest EINEN Spiegel. Huf, Rad und Streu-Fuß stehen auf dem gezeichneten Boden (≤ 3 cm). Alles im Haushalt boden (≤ 12 Befehle, ≤ 120k Dreiecke) auf Radeon 890M und GTX 1060. **Wo wir die Besten schlagen:** From Dust koppelt nur auf kleinen geschlossenen Inseln, Timberborn staut auf 1-m-Blöcken, Horizon backt seine Wellen, Enshrouded gräbt einen Kontinent ohne Hydrologie. Bei uns entsteht das Flussnetz zuerst aus dem Gesetz (Stream-Power, garantierte Entwässerung, unendlich); weil Edit und Wasser dasselbe Gesetz lesen, wird jeder Graben ein Fluss-Ereignis und jeder Damm ein See — deterministisch für jeden Mitspieler.",
@@ -129,12 +129,12 @@
         },
         {
           "name": "Wasser-Bild aus dem Gesetz an jeder Pose des Spielers",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           "messung": "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          "beleg": "spiegelTreue 0,829 an EINER Pose — bei Leinwand 640×360 (spec/abnahme/soll-tafel.json, 17.10., 6ae0a003) und am Kopf f2904a72 veraltet (K5; die Tafel trägt seit dc6702ab kein neues Ist). Die Third-Pose der Tafel ist eine handgeschriebene Kamera („4 m Höhe hinter dem Spieler“), nicht die des Spiels. Fließ-Detail am See 0,0496 ohne Soll. Karte 1.0 führte noch 0,43–0,56 vom alten Lineal.",
+          "beleg": "Gemessen am Kopf f2904a72 (21.10., Radeon 890M --echt, Messschuld M1): spiegelTreue 0,830 (wasserSatz, 35 190 px, spiegelEbene 0,89) in 1920×1080 aus dem Ausgabe-Pfad an einer Ego-Pose des Spiels am See — der Spieler steht am Ufer 1866,6/−6193,9, Gier −1,309, Neigung 0, die Kamera kommt aus `_loopCamera` (1866,6/3,928/−6193,9, Blick −0,966/0/0,259) und wird mit `werkbank bild --wahl 0` genau so geschossen (Pose im Begleit-JSON gleich); Bühne Mittag, Sommer, klar. Ohne `--wahl 0` verschob die Blick-Wahl der Werkbank die Pose um 26 m (0,760), am ersten Spieler-Ort 1870/−6168 verdeckt eine Eiche < 2 m (ABNAHME ROT, kein Bild). Roh: koordination `bericht/2110-messschuld-radeon/m1-*`. Third, Nacht, Regen, die GTX und der Fluss mit Gefälle ungemessen; Fließ-Detail ohne Soll.",
           "schlupfloch": "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
-          "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09)."
+          "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09); gemessen 21.10. in Ausgabe-Größe an der Kamera des Spiels 0 → 1 (M1)."
         },
         {
           "name": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
@@ -808,7 +808,7 @@
       "key": "vegetation",
       "titel": "Vegetation — Wiese, Böe, Wald von innen, Natur-Wand, Jahreszeit",
       "gruppe": "leben",
-      "punkte": 0,
+      "punkte": 1,
       "pfad": "v1 (laufen und sehen) · A (boden-nah) · E (nahWiese)",
       "dateien": "`phyto-core.js` (treeParams, planForestCell) · `stamm/vegetation-*.js` · `stamm/stoff-material.js` (Halm, Wind) · `stamm/daten.js` NAH_WIESE",
       "aaaa": "Vom Halm am Stiefel bis zum Wald am Hang ist jede Pflanze EINE Funktion von Ort und Zeit. Die Wiese steht in jedem Ring von 0 bis 40 m mit LAI ≥ 1,7 und einer Farbton-Streuung ≥ 10,7°, ohne Saum bei 14–18 m. Jede Böe wandert sichtbar über Gras und Kronen. Im Wald steht der Spieler zwischen Stämmen mit Unterholz, und die Sonne fällt in Flecken durch die Kronen, im Gegenlicht in Strahlen. Kein Halm steht im Haus oder im Wasser. Das Jahr ändert die Gestalt, nicht nur die Farbe: Laubkronen tragen im Winter ≤ 30 % Deckung, die Wiese ist niedriger. Alles im Profi-Band (nahWiese ≤ 4 Befehle / 80k Dreiecke, baum ≤ 40 / 150k). **Wo wir die Besten schlagen:** Tsushima und Horizon malen Dichte-Karten, Forza Horizon 4 baut vier Saison-Fassungen, Nanite verlangt Asset-Ketten; bei uns lesen Stufe, Saison und Wuchs dieselbe Ableitung (treeParams · planForestCell · wiesenTint) — der Setzling vor der Nase und der Baum am Hang sind dieselbe Zahl, im Browser auf einer iGPU.",
@@ -825,7 +825,7 @@
           "punkte": 0,
           "staffel": "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           "messung": "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          "beleg": "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf f2904a72 veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`).",
+          "beleg": "Gemessen ist EINE Pose: Radeon, Ego, Mess-Wiese, laiWirk 1,855 (Ringe 2,05 / 1,54 / 1,66), farbtonStreuung 11,10 — am Stand cbc222cc+geaendert und am Kopf f2904a72 veraltet. Nach dem neuen Lineal ist schon diese Pose ROT: der Ring 5–10 m trägt LAI 1,54 < 1,7 (Täter der Tafel: „5–10 m vor dem Auge: Lücke 0,05 → LAI 1,55“). An Genesis zeichnet die Nah-Wiese 0–3 Befehle / 0–1 764 Dreiecke (spec/profiband/ratsche-genesis-*.json); an der Wiese überzieht GTX Third das Budget mit 83 716 > 80k Dreiecken. Die Büschel enden bei NAH_WIESE radius 14 + rand 4 m (`stamm/daten.js:447`). Am Kopf f2904a72 gemessen (21.10., Radeon --echt, Mess-Wiese Ego −278/−1038, `werkbank bild --wahl 0 --abstand`, Messschuld M3, ROT): laiWirk je Band 2–5 m 2,04 · 5–10 m 1,51 · 10–14 m 1,58 · 14–30 m 0,09 · 30–80 m 0,00 (Nilson, G 0,5, Halm = nahWiese + streuSatz, Grund = bodenSatz) — der Ring 5–10 m und alles jenseits der Nah-Wiese liegen unter 1,7; die Bänder der Linse sind nicht die festen Ringe 10–20/20–40 m, die fallen aber schon mit 14–30 m. Roh: koordination `bericht/2110-messschuld-radeon/m3-*`.",
           "schlupfloch": "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           "aenderung": "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1."
         },
@@ -849,12 +849,12 @@
         },
         {
           "name": "Die Natur-Wand: kein Halm im Haus, kein Halm im Wasser",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Seit main f2904a72 ist der Grund jedes Hauses Plan-Datum (S4 grund-datum, Merge 10ac79b0 / V18.546.30 e076ff8f): gate:haus-welt W9 headless 24 Häuser, Büschel und Dichte in den Boxen 0, Waise 0/52 (CI 39498582018 grün an f2904a72) — eine Zählung am Gesetz, kein Bild. Das Bild (`diag-haus-welt --phasen=grund --bild`, Halm- und Boden-Pixel je Box aus dem Ausgabe-Pfad) gab 0/0/0 in 48 Blicken an der Radeon — am Zweig-Stand f0082575, vor 9c5b4220 (der Erdbau wirft nur die getroffenen Chunks), 7e95bfd4/c4681791 (der Grund des gesetzten Hauses aus dem Plan) und 1794d878: der gemessene Pfad änderte sich danach, am Kopf ungemessen (Messschuld M24). Vorher 24 von 25 Häusern innen grün, 119 Büschel im Anbau (SYSTEMKARTE D2, 18.10.). Wasser ungemessen.",
+          "beleg": "Seit main f2904a72 ist der Grund jedes Hauses Plan-Datum (S4 grund-datum, Merge 10ac79b0 / V18.546.30 e076ff8f): gate:haus-welt W9 headless 24 Häuser, Büschel und Dichte in den Boxen 0, Waise 0/52 (CI 39498582018 grün an f2904a72) — eine Zählung am Gesetz, kein Bild. Das Bild (`diag-haus-welt --phasen=grund --bild`, Halm- und Boden-Pixel je Box aus dem Ausgabe-Pfad) gab 0/0/0 in 48 Blicken an der Radeon — am Zweig-Stand f0082575, vor 9c5b4220 (der Erdbau wirft nur die getroffenen Chunks), 7e95bfd4/c4681791 (der Grund des gesetzten Hauses aus dem Plan) und 1794d878: der gemessene Pfad änderte sich danach. Gemessen am Kopf f2904a72 (21.10., Radeon 890M, Messschuld M24, in vier Läufen gleich): das Start-Dorf (18 Häuser um 12/110, vor dem Akt gebaut) und das gesetzte Haus des Spielers auf der Wiese (48/0, 372 Büschel im 16-m-Kreis) — 27 Boxen, 52 Blicke aus dem Ausgabe-Pfad: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 in 27/27, gezeichnete Büschel in der Box 0 in 26/26 (der verdeckte Halm existiert nicht); die Gegenprobe vor der Tür sieht 58 113 Halm-Pixel (der Blick ist nicht blind). Offen benannt: eine Box (haus_skandinavisch 44/124, haupt) hat kein freies Auge, auch nicht bei 1,0/1,6 m mit 0,1 m Rand; das Auge steht 1,3 m über der Diele (Werkzeug), Third davor ungemessen; W9 Waise und Ausstattung sind im Bild-Lauf blind (der Zug des Start-Dorfs lief vor der Phase). Roh: koordination `bericht/2110-messschuld-radeon/m24-*`. Vorher 24 von 25 Häusern innen grün, 119 Büschel im Anbau (SYSTEMKARTE D2, 18.10.). Wasser ungemessen.",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
-          "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20)."
+          "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24)."
         },
         {
           "name": "Die Jahreszeit als Gestalt: Laub und Wiese",
@@ -1233,7 +1233,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf f2904a72 kein Ist („gesicht ungemessen“, sollTafelUrteil). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
+          "beleg": "Der EINE Mensch steht und wird als Spieler-Leib konsumiert (bauMensch); mensch-kopf wurde an der Radeon geheilt (Gesicht 0,5 → 1, V18.546.9), trägt aber am Kopf f2904a72 kein Ist („gesicht ungemessen“, sollTafelUrteil). Messschuld M7 (21.10., gelesen statt geschossen): an der Third-Kamera des Spiels ist das Gesicht nie im Bild — `_loopCamera` dreht den Leib auf die Gier (`player.rotation.y = yaw`) und stellt die Kamera zu Fuß `cameraThirdDistance` HINTER ihn (`stamm/koerper-bewegung.js:1595` und `:1686-1687`, camX = x − sin(yaw)·d); die Tafel-Pose `--gesicht 0.7` steht vor dem Kopf und ist keine Pose des Spiels. Die 1 verlangt eine Spieler-Pose mit Blick von vorn (Mitspieler, Ich-Bühne, Spiegel). `_rollHumanoidGenome` (`stamm/koerper-leib.js:5`) hat keinen Aufrufer: Vielfalt 0, Kosten einer Menge ungemessen.",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29)."
         },
@@ -1761,7 +1761,7 @@
           "punkte": 0,
           "staffel": "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           "messung": "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          "beleg": "Der Feld-Pass hat einen eigenen Licht-Term `0.3 + 0.7·N·L/max(sun.y,0.2)` ohne Himmels-Tafel (`stamm/bild-sicht.js:917-921`), das Panorama eine WGSL-Lambert-Kopie (`:1843-1851`), das Wasser uIrr (`:1078-1081`). F6 maß nur die Karte: Nacht 2,18 → 1,11 (GTX 18.10., `bericht/1810-f6-gtx.md`); seither änderte sich der Karten-Bake (`stamm/stoff-instanz.js`, 47 Zeilen zwischen f5b66780 und dc6702ab): veraltet.",
+          "beleg": "Der Feld-Pass hat einen eigenen Licht-Term `0.3 + 0.7·N·L/max(sun.y,0.2)` ohne Himmels-Tafel (`stamm/bild-sicht.js:917-921`), das Panorama eine WGSL-Lambert-Kopie (`:1843-1851`), das Wasser uIrr (`:1078-1081`). F6 maß nur die Karte: Nacht 2,18 → 1,11 (GTX 18.10., `bericht/1810-f6-gtx.md`); seither änderte sich der Karten-Bake (`stamm/stoff-instanz.js`, 47 Zeilen zwischen f5b66780 und dc6702ab). Gemessen am Kopf f2904a72 (21.10., Radeon 890M --echt, Messschuld M5, ROT): der Fern-Ring gegen den Boden-Satz am Messort dorf (`werkbank licht --laub ring --karte --uhr 0.5,0.27,0.05`) — Mittag 1,076, Uhr 0,27 1,614 (gegen Mittag 1,50, ΔL* +4,25), Uhr 0,05 1,094 (1,017): in der Dämmerung steht die Ferne 50 % heller als die Nähe, außerhalb 0,9–1,1. Die Karten-Zeilen (fichte, tanne) hingen im selben Lauf nach fichte@0,5 über 12 min ohne Ergebnis (Welt-Loop aus, Ring 2 von 4) und wurden abgebrochen — ungemessen. Roh: koordination `bericht/2110-messschuld-radeon/m5-*`.",
           "schlupfloch": "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           "aenderung": "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier."
         },
@@ -1997,7 +1997,7 @@
           "punkte": 0,
           "staffel": "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           "messung": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          "beleg": "`spec/farbe/albedo-tafel.json`: 8 von 10 Zeilen im ±10-%-Band, Haut (0,857) und Lack (1,138) außerhalb; die Labor-Seite nicht echt gemessen (gemessen.labor.echt false, ANGLE D3D11), nur Radeon, am Kopf veraltet (haus/fels-Quellen geändert).",
+          "beleg": "`spec/farbe/albedo-tafel.json`: 8 von 10 Zeilen im ±10-%-Band, Haut (0,857) und Lack (1,138) außerhalb; die Labor-Seite nicht echt gemessen (gemessen.labor.echt false, ANGLE D3D11), nur Radeon, am Kopf veraltet (haus/fels-Quellen geändert). Die Welt-Seite am Kopf f2904a72 (21.10., Radeon --echt, `werkbank albedo --tafel`, Messschuld M22, ROT): fels 1,03, haus 0,95, klinge 0,95 im Band; lack 0,04, tor 3,07, haut 0,25, fell 0,67 über der Ratsche; rinde, laub und boden stumm (kein Zug am Exemplar). Roh: koordination `bericht/2110-messschuld-radeon/m22-*`.",
           "schlupfloch": "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt."
         },
         {
@@ -2277,7 +2277,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "fimp:atlas:L2 hat kante 0,2635 > 0,22, die Gestalten 0,16–0,18 (Radeon, 9c8cfab8); am Kopf veraltet (phyto-core geändert); GTX ungemessen.",
+          "beleg": "fimp:atlas:L2 hat kante 0,2635 > 0,22, die Gestalten 0,16–0,18 (Radeon, 9c8cfab8); am Kopf veraltet (phyto-core geändert); GTX ungemessen. Am Kopf f2904a72 an der Tafel-Pose gemessen (21.10., Radeon --echt, Messschuld M6, ROT): fimp:atlas:L2 0,2604 > 0,22, f:fichte:L1 0,180, f:tanne:L0 0,167, f:tanne:L1 0,172 — das Vorher von LOD H1; ein Spielgang-Bild ungemessen. Roh: koordination `bericht/2110-messschuld-radeon/m6-*`.",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21)."
         },
@@ -3088,7 +3088,7 @@
       "key": "fahrzeug",
       "titel": "Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung",
       "gruppe": "wege",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (benutzen: fahren)",
       "dateien": "`vehicle-core.js` (fahrSchritt, chaseKamera, LACK_GESETZ) · `stamm/koerper-fahrt.js` · `stamm/koerper-bewegung.js` (FIXED_DT, `_loopCamera`) · `worlds/garage` · `scripts/diag-fahr-leben.cjs`",
       "aaaa": "Ein Wagen aus dem Gesetz (vehicle-core) fährt auf dem Wegenetz durch Wiese, Wald und Dorf, ohne steckenzubleiben. Die Reifen haben eine Kurve mit Spitze bei 6–10° und ≥ 15 % Abfall und greifen auf Weg, Gras, Schotter, Nässe und Schnee anders (Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×), aus derselben Stoff-Zeile, die den Boden malt; der Kern rechnet mit ≥ 240 Hz. Die Rig-Kamera aus dem Kern atmet das Tempo (FOV +≥ 8°, Arm +≥ 15 %, Azimut auf dem Fahrtvektor), jeder Übergang — Ego↔Third, Auf- und Absteigen in Fahrt, Hang — bleibt ohne Sprung. Klang, Federung, Spur, Staub, Spritzwasser und Rumble lesen denselben Fahr-Zustand. Lücken und Tempo-Decke richtet Streaming, das Band Profiband. **Wo wir die Besten schlagen:** Forza und BeamNG tunen jeden Wagen und jede Strecke einzeln; bei uns folgen Kamera und Grip aus den Maßen und dem Boden-Gesetz — jedes prozedurale Fahrzeug ist ab dem ersten Bild getunt.",
@@ -3128,12 +3128,12 @@
         },
         {
           "name": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
           "messung": "gate:fahr-leben T4 (Mechanik) + Station fahrt im Bild: nach Ego → Third in voller Fahrt steht der Azimut binnen 10 Bildern ≤ 10° an der Gier, jede zeichnende Stufe ≤ 2 m an der Physik-Lage, Bild-Deckung in Third 1; Auf- und Absteigen in Fahrt und am Hang ohne Kamera-Sprung > 0,5 m je Bild.",
-          "beleg": "f1-rest auf main 5768586a: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; T4 stand vorher ROT (2daec674). Im Bild belegt nur an der GTX (Bündel-ABAB 20.10. an f5b66780: der GT steht an B deckend in der Bildmitte; f5b66780 → dc6702ab ändert nur Karten-Bake und siedlung-bauten, die Fahrt-Quellen sind unberührt). T4 selbst läuft auf dem Null-Renderer (`scripts/diag-fahr-leben.cjs:2298-2304`); das Radeon-Bild fehlt; gemessen bei 6–10 m/s.",
+          "beleg": "f1-rest auf main 5768586a: Absteigen in Fahrt 14,4/1,55 → 0,25/0,21 m je Bild, Deckung nach Ego→Third 0,76/0,70 → 1/1, Streu-Geister 9 → 0; T4 stand vorher ROT (2daec674). Im Bild belegt nur an der GTX (Bündel-ABAB 20.10. an f5b66780: der GT steht an B deckend in der Bildmitte; f5b66780 → dc6702ab ändert nur Karten-Bake und siedlung-bauten, die Fahrt-Quellen sind unberührt). T4 selbst läuft auf dem Null-Renderer (`scripts/diag-fahr-leben.cjs:2298-2304`); gemessen bei 6–10 m/s. Das Radeon-Bild am Kopf f2904a72 (21.10., Messschuld M8, derselbe Blick wie an der GTX: koordination `bericht/2010-buendel-abab/blick.js` über `werkbank eval`, echte GPU, 1920×1080, Steilhang −61,6/−37,3 17,4°, bergab 7,7–8,2 m/s): Third 70 Bilder → Ego 76° gedreht → Third — in den Bildern 1–3 nach dem Wechsel steht der GT deckend in der Bildmitte (ndc 0/−0,08, im Bild 3/3, Abstand 9,96 m), Azimut gegen den Kurs 0 · 3,5 · 5,2°, jede zeichnende Stufe 1,71 m an der Physik-Lage (Roh: koordination `bericht/2110-messschuld-radeon/m8-*`). Der Fahrt-Pfad seit f5b66780 ist unberührt (koerper-fahrt.js nur die Leib-Wahl `_leibDerSeele`). Im Bild gesehen: Wiesen-Halme stehen durch die Kabine des GT (die Natur-Wand des Wagens, kein Punkt hier).",
           "schlupfloch": "Bei 6–10 m/s gemessen könnte derselbe Rig bei höherer vmax brechen: die 2 fällt automatisch, wenn eine neue vmax-Stufe ohne T4 im Bild gemergt wird.",
-          "aenderung": "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57)."
+          "aenderung": "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57); das Radeon-Bild am Kopf 21.10. → 2 (M8)."
         },
         {
           "name": "Rückmeldung: der Körper fühlt die Fahrt",
@@ -4134,9 +4134,9 @@
           "punkte": 0,
           "staffel": "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           "messung": "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          "beleg": "Radeon stehend 2,8–3,0 ms — aber gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,1 → 6,3 ms (Bündel 2 an 8ba1510d; 5,8 hält A in 1 von 4 Boots, B in 0), `_diaetRefresh` 1,99 → 1,94 ms; gehend Genesis Third 21,1 → 20,3, Wiese Ego 19,8 → 19,5 (`bericht/2010-buendel2-abab.md`); Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
+          "beleg": "Gemessen am Kopf f2904a72 (21.10., Radeon 890M --echt, Messschuld M12, ROT): Mess-Wiese Ego stehend, Regler voll, Tiere frei, ruhige Maschine. Der Trace je Bild (CDP devtools.timeline, Top-Level-Aufgaben des Haupt-Fadens zwischen zwei Bildern, das Bild markiert an `getCurrentTexture`; 15 s, 1 074 Bilder, 71,6 Bilder/s) nennt die Belegung p50 7,74 · p95 10,43 · p99 11,8 ms je Bild (55 % des Fadens), während derselbe Lauf `_gameLoopTick` p95 5,1 ms meldet; das CPU-Profil (`werkbank profil 10`, 200 µs) zerlegt das Mittel 8,9 ms je Bild in den Spiel-Loop 5,9 ms (`_loopRender` 3,1) und Browser-Arbeit außerhalb von JS 2,8 ms (`(program)` 20 %). Die Takt-Funktion sieht gut die Hälfte der Belegung. Ein früherer Trace unter fremder Last (drei `diag-fahr-leben`, drei `diag-brennglas-takt`, `diag-stand-takt` eines anderen Arbeiters, 37–58 Bilder/s) zählt nicht. Roh: koordination `bericht/2110-messschuld-radeon/m12-*`. Vorher: Radeon stehend 2,8–3,0 ms — gemessen als `cpu = performance.now() − c0` um `_gameLoopTick` (`scripts/werkbank.cjs:395-407`, `scripts/lib/takt-linse.cjs:87-93`), nicht als Belegung; GTX Genesis Third stehend 6,1 → 6,3 ms (Bündel 2 an 8ba1510d; 5,8 hält A in 1 von 4 Boots, B in 0), `_diaetRefresh` 1,99 → 1,94 ms; gehend Genesis Third 21,1 → 20,3, Wiese Ego 19,8 → 19,5 (`bericht/2010-buendel2-abab.md`); Fahrt 30,7–31,5 (`bericht/2010-buendel-abab.md`).",
           "schlupfloch": "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
-          "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung ist Messschuld M12."
+          "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung (M12) gemessen 21.10.: p95 10,4 ms je Bild, ROT — das Vorher."
         },
         {
           "name": "Der GPU-Haushalt am Spieler-Bild",
@@ -4519,22 +4519,10 @@
   },
   "messschuld": [
     {
-      "id": "M1",
-      "kriterium": "gelaende.K3",
-      "messung": "Wasser-Bild in 1920×1080 an der Kamera des Spiels, Radeon, Ego",
-      "erwartung": "1 (0,829 bei 640×360 am 17.10.)"
-    },
-    {
       "id": "M2",
       "kriterium": "gelaende.K2",
       "messung": "Graben-Bild (a): EINE Fläche ≤ 2 s, nie über dem Spiegel, Radeon",
       "erwartung": "1 (F3 hält mechanisch)"
-    },
-    {
-      "id": "M3",
-      "kriterium": "vegetation.K1",
-      "messung": "feste Ringe 2–5/5–10/10–20/20–40 m an Mess-Wiese und Genesis",
-      "erwartung": "ROT am Ring 5–10 m — das Vorher von Vegetation H1"
     },
     {
       "id": "M4",
@@ -4545,26 +4533,14 @@
     {
       "id": "M5",
       "kriterium": "licht.K3",
-      "messung": "F6 am Kopf: Karte und Fern-Ring je Uhr 0,5/0,27/0,05",
-      "erwartung": "1 (Nacht 1,11 am 18.10.)"
-    },
-    {
-      "id": "M6",
-      "kriterium": "lod.K1",
-      "messung": "laub-kante am Kopf, Tafel-Pose und Spielgang-Bild",
-      "erwartung": "ROT (0,2635) — das Vorher von LOD H1"
+      "messung": "F6 am Kopf: die Karten-Zeilen (fichte, tanne) je Uhr 0,5/0,27/0,05",
+      "erwartung": "gemessen 21.10. (Radeon): der Fern-Ring ROT — Uhr 0,27 1,50 gegen Mittag; die Karten-Zeilen hingen nach fichte@0,5 (Welt-Loop aus, Ring 2 von 4), offen"
     },
     {
       "id": "M7",
       "kriterium": "mensch.K4",
-      "messung": "mensch-kopf im Third an der Kamera des Spiels, Radeon",
-      "erwartung": "1 (Gesicht 0,5 → 1, V18.546.9)"
-    },
-    {
-      "id": "M8",
-      "kriterium": "fahrzeug.K4",
-      "messung": "Ego→Third in Fahrt im Bild der Radeon",
-      "erwartung": "2 (GTX hält)"
+      "messung": "mensch-kopf an einer Spieler-Pose mit Blick von vorn (Mitspieler, Ich-Bühne, Spiegel), Radeon",
+      "erwartung": "gelesen 21.10.: an der Third-Kamera des Spiels ist das Gesicht nie im Bild (der Leib dreht auf die Gier, die Kamera steht dahinter) — die Pose der Staffel ist so nicht messbar"
     },
     {
       "id": "M9",
@@ -4581,14 +4557,8 @@
     {
       "id": "M11",
       "kriterium": "ankunft.K3",
-      "messung": "Radeon warm, frischer Prozess, ≥ 4 Boots",
-      "erwartung": "1, wenn ≤ 5 s"
-    },
-    {
-      "id": "M12",
-      "kriterium": "profiband.K2",
-      "messung": "Radeon stehend als ganze Haupt-Faden-Belegung (Trace)",
-      "erwartung": "1 (2,8–3,0 ms als Takt-Funktion)"
+      "messung": "Radeon warm, frischer Prozess, ≥ 4 Boots, t von außen (angenommene Eingabe UND Bild nach K2)",
+      "erwartung": "1, wenn ≤ 5 s — am 21.10. nicht gemessen: das Werkzeug fehlt (`bild-diff.cjs` gibt es nicht, `diag-boot-stage` liest `_weltbildDa`), und die Radeon trug fremde Gate-Last"
     },
     {
       "id": "M13",
@@ -4647,20 +4617,14 @@
     {
       "id": "M22",
       "kriterium": "material.K1",
-      "messung": "Albedo-Tafel --echt auf beiden Seiten, beide Geräte",
-      "erwartung": "ROT (Haut 0,857, Lack 1,138) — das Vorher von Material H1"
+      "messung": "Albedo-Tafel --echt: Labor-Seite an der Radeon, beide Seiten an der GTX",
+      "erwartung": "Welt-Seite Radeon gemessen 21.10. ROT (lack 0,04, tor 3,07, haut 0,25, fell 0,67; rinde, laub, boden stumm) — das Vorher von Material H1"
     },
     {
       "id": "M23",
       "kriterium": "haar.K1",
       "messung": "Klasse fell (externe REF) auf Armlänge und im Third",
       "erwartung": "offen"
-    },
-    {
-      "id": "M24",
-      "kriterium": "vegetation.K4",
-      "messung": "`diag-haus-welt --phasen=grund --bild` am Kopf f2904a72, Radeon: Halm- und Boden-Pixel je Haus-Box aus dem Ausgabe-Pfad, Ego im Haus und Third davor",
-      "erwartung": "1 (0/0/0 in 48 Blicken am Zweig-Stand f0082575; W9 headless Büschel 0 am Kopf)"
     },
     {
       "id": "M25",
@@ -4793,12 +4757,20 @@
       "was": "Meisterkarte 2.0 (neue Skala, 33 Bereiche × 10): das Lineal misst, was der Spieler erlebt — ungemessen = 0, Frische am Kopf, Bewegung statt Stand, EIN Heim je Kriterium, der Apparat zählt nie; neue Bereiche Physik, Stoffe, Feld, Ökologie, Affekt, Haar, Luft und Wasser, Leib, Halten, Spielgang, Ultiversum. Kein Rückschritt der Welt: 30/90 und 16/330 messen verschiedene Dinge."
     },
     {
+      "skala": "2.0",
+      "max": 330,
       "stand": "2026-10-21",
       "kopf": "f2904a72",
       "summe": 17,
+      "was": "Nachgezogen am main-Vorlauf dc6702ab..f2904a72 (b-strom-faden, S7 tag-achse, S4 grund-datum, b-programme, ich-bühne-wolf, leib-wechsel R1 und R2, tiere-kreislauf, wetter-saat; OMEN-Bündel-2-ABAB an 8ba1510d): Wetter K1 0 → 1 als Schnitt mit Welt-Byte (wetter-saat 04266b35, `stamm/dirigent-takt.js`: der Zug zieht den Samen der Welt; gate:wetter-wache (Z) ROT 3 → GRÜN, CI 39498582018 an f2904a72). Kein weiterer Wechsel: Licht K1 bleibt 0 (Uhr 0,33 +0,94 EV über Mittag, keine REF-Kurve), Tiere K2 0 (Riss 7/10 Orte in 600 s mit 3 Wölfen — keine Quote je Jagd im Band), Tiere K3 1 (Fußfolge aus Fr 32/32, das Third-Bild fehlt), Vegetation K4 0 (das Bild 0/0/0 nur am Zweig-Stand f0082575), Bauen K2, Siedlung K1, Ankunft, Streaming und Profiband 0 (GTX kalt 15,33 s, stehend 6,3 ms). Gemergte Hebel fallen (in der Zählung vom 20.10. Wetter H1, Tiere H3, Vegetation H2), sechs schrumpfen auf ihren Rest (Licht H1, Tiere H2, Bauen H2, Siedlung H4, Streaming H3, Ankunft H1); neue Messschuld M24 und M25."
+    },
+    {
+      "stand": "2026-10-21",
+      "kopf": "f2904a72",
+      "summe": 20,
       "max": 330,
       "skala": "2.0",
-      "was": "Nachgezogen am main-Vorlauf dc6702ab..f2904a72 (b-strom-faden, S7 tag-achse, S4 grund-datum, b-programme, ich-bühne-wolf, leib-wechsel R1 und R2, tiere-kreislauf, wetter-saat; OMEN-Bündel-2-ABAB an 8ba1510d): Wetter K1 0 → 1 als Schnitt mit Welt-Byte (wetter-saat 04266b35, `stamm/dirigent-takt.js`: der Zug zieht den Samen der Welt; gate:wetter-wache (Z) ROT 3 → GRÜN, CI 39498582018 an f2904a72). Kein weiterer Wechsel: Licht K1 bleibt 0 (Uhr 0,33 +0,94 EV über Mittag, keine REF-Kurve), Tiere K2 0 (Riss 7/10 Orte in 600 s mit 3 Wölfen — keine Quote je Jagd im Band), Tiere K3 1 (Fußfolge aus Fr 32/32, das Third-Bild fehlt), Vegetation K4 0 (das Bild 0/0/0 nur am Zweig-Stand f0082575), Bauen K2, Siedlung K1, Ankunft, Streaming und Profiband 0 (GTX kalt 15,33 s, stehend 6,3 ms). Gemergte Hebel fallen (in der Zählung vom 20.10. Wetter H1, Tiere H3, Vegetation H2), sechs schrumpfen auf ihren Rest (Licht H1, Tiere H2, Bauen H2, Siedlung H4, Streaming H3, Ankunft H1); neue Messschuld M24 und M25."
+      "was": "Gemessen am Kopf f2904a72 an der Radeon 890M (--echt, Messschuld, kein Schnitt): Gelände K3 0 → 1 (spiegelTreue 0,830 in 1920×1080 an einer Ego-Pose des Spiels am See, Kamera aus `_loopCamera`), Vegetation K4 0 → 1 (Start-Dorf und gesetztes Haus: 27 Boxen, 52 Blicke aus dem Ausgabe-Pfad, Halm 0 und Boden 0 px, gezeichnete Büschel in der Box 0, Gegenprobe 58 113 px; eine Box ohne freies Auge benannt), Fahrzeug K4 1 → 2 (Ego → Third in Fahrt am Steilhang 17,4°: der GT deckend in der Bildmitte 3/3, Azimut 0–5,2°, Stufe 1,71 m an der Physik — mit dem GTX-Bild vom 20.10. beide Geräte). ROT gemessen, das Vorher: Profiband K2 Belegung p95 10,4 ms je Bild (Trace, ruhig; die Takt-Funktion meldet 5,1), Licht K3 Fern-Ring bei Uhr 0,27 1,50 gegen Mittag, LOD K1 fimp:atlas:L2 0,2604, Vegetation K1 LAI 1,51 im Ring 5–10 m, Material K1 Welt-Seite (lack, tor, haut, fell). Mensch K4: an der Third-Kamera des Spiels ist das Gesicht nie im Bild. Messschuld M1, M3, M6, M8, M12, M24 fallen; M5, M7, M11, M22 tragen ihr Ergebnis. Roh: koordination `bericht/2110-messschuld-radeon/`."
     }
   ],
   "text": {

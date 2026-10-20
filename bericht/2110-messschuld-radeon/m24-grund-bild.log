@@ -1,0 +1,13 @@
+[linse-gpu] amd/rdna-3
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] gotisch L2: [{"feld":"tris","ist":10232,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] alpenchalet L0: [{"feld":"tris","ist":170178,"soll":132000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] schwarzwald L0: [{"feld":"tris","ist":170972,"soll":132000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] schwarzwald L0: [{"feld":"tris","ist":161166,"soll":132000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] schwarzwald L0: [{"feld":"tris","ist":175412,"soll":132000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] schwarzwald L0: [{"feld":"tris","ist":136158,"soll":132000}]
+  Dorf-Ort -129/-94 (Gefälle 0.598, der Spieler bei 0/0) · 0 Häuser () · W1 Tür 0/0 (Vorplatz über der Diele  m) · W2 Diele  cm · W3 Treppe  m · W4 Natur im Grundriss ? · W4 Weg ? · W4c Überstand  m · W4b (fern 212/212) Streu vorher ? Zellen im Dorf-Kreis, unter den Häusern ?, fern ? Streu, nah ? Natur + ? Streu, Neubau ?, Nah-Streu ?, Promotion ? (? Häuser) · W5 Optik  % · W9 {"haeuser":19,"weite":0.6828020898649549,"keller":[-2.28,-2.28,-2.28,-2.28,-2.28,-2.28,-2.28,-2.28],"summe":[0,0,0,0,52],"gegenprobe":[57875],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":43,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"ausstattung":null,"verblasst":false,"ms":3}} · W8 Lichtung ? · W7 Bau im Bau ? · W6 Tür frontal 
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,43,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 4 zugleich, 274 s
+❌ gate:haus-welt ROT (2)
+EXIT=1
