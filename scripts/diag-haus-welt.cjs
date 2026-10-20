@@ -44,7 +44,8 @@
 //       ihrer Geometrie gemessen — nie das `reich` des Gesetzes, das sie bewacht), keine Erde 5 cm über der Diele, der Leib erreicht über die Keller-
 //       Treppe den Kellerboden (kellerY + 0,12 m); `--bild` (echter Renderer, GPU-Schloss): Halm- und Boden-Pixel je Box 0
 //       (wo der Grund der Boden der Box ist — der Turm —, zählt vom Boden nur der Halm). ABBAU: ein Dorf- und ein gesetztes
-//       Haus fallen — kein Grund bleibt, der Boden schließt sich, der Keller trägt Erde (Selbsttest abbau).
+//       Haus fallen — kein Grund bleibt, der Boden schließt sich, der Keller trägt Erde (Selbsttest abbau). PLAN: das gesetzte
+//       Haus trägt seinen Grund (Plan-Datum), bevor die Hülle seines Körpers ankommt (Selbsttest grundplan).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
@@ -347,8 +348,9 @@ async function proben(phasen) {
             if (!gut(x, z)) continue;
             // ein eigener Körper (der Steuer-Passagier `__w9` trennt den Schlüssel): das Haus wartet auf seinen Bau wie jedes neue
             const ov = { id, seed: vor.seed, studioOv: Object.assign({}, vor.studioOv, { __w9: id }), rotationY: 0.6 };
+            const hs = r._hausHuelleSetzen; // W9 PLAN: die Gründe an seiner Mitte, wenn die Hülle seines Körpers ankommt
+            r._hausHuelleSetzen = function (en, hu) { if (en.id === id && !en._hausHuelle) en.__w9Plan = ((r._erdbauLage() || {}).gruende || []).filter((g) => Math.hypot(g.cx - en.position.x, g.cz - en.position.z) < 0.05).length; return hs.call(this, en, hu); }; // prettier-ignore
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
-            if (e) e.__w9Plan = ((r._erdbauLage() || {}).gruende || []).filter((g) => Math.hypot(g.cx - e.position.x, g.cz - e.position.z) < 0.05).length; // prettier-ignore
             for (let k = 0; k < 300 && e && !e._hausHuelle; k++) await pumpe(4);
             if (e && e._hausHuelle) return e;
         }
@@ -1244,9 +1246,7 @@ async function proben(phasen) {
     }
     // das ferne Dorf (W4b) steht 300 m vom Start — W6 meidet seinen Ort auch, wenn W4b nicht läuft. Die Richtung kommt aus der
     // Regel der Welt: jede Streu-Region unter ihm (±40 m) liegt in der Reichweite des Spielers am Start
-    // (`_streuRegionInReichweite`), der Ort ist Land. Bis K16 stand es 300 m östlich: der Start lag bei 36/0, seit K16 bei 0/0
-    // — die Regionen 1,−1 und 1,0 (Kante 256 m) fielen aus der Reichweite, die Streu stand nie (W4b Aufbau rot, der Selbsttest
-    // „streuwand" blind).
+    // (`_streuRegionInReichweite`), der Ort ist Land.
     let fx = start.x + 300;
     let fz = start.z;
     const fernKandidaten = [];
@@ -1952,7 +1952,7 @@ function urteil(o) {
         const blind = ab.filter((a) => a.fehler || !(a.vorher.gruende > 0 && a.vorher.offen > 0));
         const bleibt = ab.filter((a) => !a.fehler && (a.nachher.gruende || a.nachher.offen || a.nachher.kellerErde === 0));
         if (ab.length < 2 || blind.length) f.push(`W9 Abbau: blind — ${ab.length < 2 ? "kein Abbau" : blind.map((a) => a.art + " " + (a.fehler || `ohne Grund vor dem Abbau (${a.vorher.gruende} Gründe, ${a.vorher.offen}/${a.boxen} Boxen geschnitten)`)).join(", ")}`); // prettier-ignore
-        if (ab.some((a) => a.art === "gesetzt" && !a.fehler && a.plan !== 1)) f.push(`W9 Plan: das gesetzte Haus trägt beim Setzen ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Grund wartet auf die Hülle des gebauten Hauses, die Chunks um ihn bauen danach neu`); // prettier-ignore
+        if (ab.some((a) => a.art === "gesetzt" && !a.fehler && a.plan !== 1)) f.push(`W9 Plan: das gesetzte Haus trägt bei der Ankunft seines Körpers ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Körper kam vor seinem Grund (der Grund wartete auf die Hülle), die Chunks um ihn bauen danach neu`); // prettier-ignore
         if (bleibt.length) f.push(`W9 Abbau: der Grund überlebt den Bau — ${bleibt.map((a) => `${a.art}: ${a.nachher.gruende} Gründe, ${a.nachher.offen} von ${a.boxen} Boxen ohne gezeichneten Boden, Keller ${a.nachher.kellerErde === 0 ? "hohl" : "voll"}`).join(" · ")} (ein Loch in der Welt, wo das Haus stand)`); // prettier-ignore
     }
     return f;
