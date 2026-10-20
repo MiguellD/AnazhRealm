@@ -15,9 +15,6 @@ async function checkBandV1738RulePersistence(ctx) {
         const out = {};
         const now = () => performance.now() / 1000;
 
-        out.wired =
-            typeof r._loadStateRestoreWorldRules === "function" && typeof r._fusionMergeWorldRules === "function";
-
         const savedRules = r.state.worldRules.slice();
         const savedWeather = r.state.weather;
 
@@ -111,7 +108,6 @@ async function checkBandV1738RulePersistence(ctx) {
         return out;
     });
 
-    check("V17.38 Persistenz: _loadStateRestoreWorldRules + _fusionMergeWorldRules verdrahtet", res.wired);
     check(
         "V17.38 Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
         res.snapSerializes
@@ -284,7 +280,7 @@ async function checkBandRing8(ctx) {
 
         // Player-Übernahme: aktueller Spieler-Soul + Tools wandern (ALTLASTEN-
         // NULL: der getragene Wolf-Körper — custom soul — reist mit).
-        r.applyPlayerSoul && r.applyPlayerSoul("wolf");
+        r.applyPlayerSoul("wolf");
         // Phantasy-eigenes Tool im player-Inventory damit Übernahme prüfbar
         if (!r.state.tools["übernahme-marker"]) {
             r.state.tools["übernahme-marker"] = {

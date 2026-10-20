@@ -22,7 +22,7 @@ async function checkBandV1758CreatureNature(ctx) {
             for (const k of Object.keys(e)) e[k] = o[k] || 0;
         };
         const NAT = r.constructor._verhaltenGesetz().furcht;
-        out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
+        out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
@@ -90,7 +90,7 @@ async function checkBandV1758CreatureNature(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.58 W3: _creatureWariness + VERHALTEN.furcht (Gesetz) existieren", res.exists);
+    check("V17.58 W3: VERHALTEN.furcht (Gesetz) trägt fleeThreshold", res.furchtGesetz);
     check(
         "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
         res.calmIsCurious
@@ -576,8 +576,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
         // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
-        out.hasCreatureProfileFn = typeof r._creatureProfile === "function";
-        const prof = out.hasCreatureProfileFn ? r._creatureProfile(sprite) : null;
+        const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
             prof &&
             prof.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
@@ -724,10 +723,6 @@ async function checkBandWelle6HCreatures(ctx) {
         check(
             "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
             wave6hP2aResults.rowHasNameSoulTask
-        );
-        check(
-            "Hof-D0 §G.1: _creatureProfile existiert (EIN Vektor, viele Leser)",
-            wave6hP2aResults.hasCreatureProfileFn
         );
         check(
             "Hof-D0 §G.1: _creatureProfile bündelt die gemessenen Vektoren (tags/stats/specs/emotion/wariness/mood/id)",
@@ -1250,7 +1245,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1267,7 +1262,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // confirmBuild pfad ohne Material → ablehnung
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1279,7 +1274,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // confirmBuild schöpfer ohne Material → baut frei
         r.setGameMode("schöpfer");
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1294,7 +1289,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
         r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1305,7 +1300,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // frieden MIT Material → baut + KONSUMIERT (wie pfad; nur die Mühe/Bedrohung fehlt in frieden)
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1320,7 +1315,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 30);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         const hud = document.getElementById("build-mode-hud");
@@ -1338,7 +1333,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
         // Default-Hotbar (AUSLÖSCHUNGS-WELLE): [stein_block, waterfall, damm, null×6].
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.setHotbarSlot(1, "waterfall");
         r.setHotbarSlot(2, "damm");
@@ -1418,7 +1413,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.speed = r.constructor.CREATURE_DRINK_SPEED;
 
         // API-Existenz.
-        out.tickExists = typeof r._tickCreatureDrink === "function";
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
@@ -1490,7 +1484,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
-    check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
     check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
         check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
@@ -1756,11 +1749,10 @@ async function checkBandTierSeparation(ctx) {
         // genullt: die Separation UND der EINE Leib-Löser `_leibKontakte` (nie Durchdringung — er allein trennte das Paar)
         const savedSep = r._applyCreatureSeparation;
         r._applyCreatureSeparation = function () {};
-        const hatLeib = typeof r._leibKontakte === "function";
-        if (hatLeib) r._leibKontakte = function () {};
+        r._leibKontakte = function () {};
         tick(200, 0.05);
         r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
-        if (hatLeib) delete r._leibKontakte;
+        delete r._leibKontakte;
         o.cGap = gap(a1, a2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
@@ -2050,17 +2042,6 @@ async function checkBandKreaturKosten(ctx) {
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
-        for (const fn of [
-            "_creatureAnimDiv",
-            "_creatureAnimFade",
-            "_tierBaumNeutralStance",
-            "_gelenkStufe",
-            "_animateCompoundMotion",
-            "_buildHumanGroup",
-            "_p2pUpdatePeer",
-        ]) {
-            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
-        }
         const core = window.__tetrapodaCore;
         if (!core || !Array.isArray(core.STAND_POSE)) return { error: "tetrapoda-Kern kalt (STAND_POSE fehlt)" };
         const SP = core.STAND_POSE;

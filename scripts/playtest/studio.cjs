@@ -311,16 +311,14 @@ async function checkBandFoundrySpeicherFlach(ctx) {
             await sleep(6);
         }
         const r = window.anazhRealm;
-        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const f = r._ensureAssetFoundry();
         const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
         // dichten Wald streamen.
-        for (let it = 0; it < 300; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); const pp = r.state.playerMesh && r.state.playerMesh.position; if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp); } catch (_e) {} await sleep(6); }
+        for (let it = 0; it < 300; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); const pp = r.state.playerMesh && r.state.playerMesh.position; if (pp) r._tickScatterStreaming(pp); } catch (_e) {} await sleep(6); }
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
-        let maxRefsAtDispose = 0, disposeCalls = 0, hasMethod = typeof r._disposeFoundryGroupGeom === "function";
-        if (hasMethod) {
-            const orig = r._disposeFoundryGroupGeom.bind(r);
-            r._disposeFoundryGroupGeom = function (g) { disposeCalls++; const refs = (g && g._liveRefs) || 0; if (refs > maxRefsAtDispose) maxRefsAtDispose = refs; return orig(g); };
-        }
+        let maxRefsAtDispose = 0, disposeCalls = 0;
+        const orig = r._disposeFoundryGroupGeom.bind(r);
+        r._disposeFoundryGroupGeom = function (g) { disposeCalls++; const refs = (g && g._liveRefs) || 0; if (refs > maxRefsAtDispose) maxRefsAtDispose = refs; return orig(g); };
         const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
         // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
         // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.
@@ -346,12 +344,11 @@ async function checkBandFoundrySpeicherFlach(ctx) {
             cycles.push(snap());
         }
         r.constructor.FOUNDRY_CACHE_CAP = CAP0;
-        return { hasMethod, maxRefsAtDispose, disposeCalls, cycles, capacity: 32 };
+        return { maxRefsAtDispose, disposeCalls, cycles, capacity: 32 };
     });
     const fails = [];
     if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
     else {
-        if (!out.hasMethod) fails.push("_disposeFoundryGroupGeom fehlt");
         const live = out.cycles.map((c) => c.built - c.disposed);
         const growth = live[3] - live[1]; // Zyklus 4 vs Zyklus 2
         if (out.cycles[3].disposed <= 0) fails.push("kein Dispose gefeuert (der LRU räumt nicht / Cap nicht überschritten — die Geom wird nie frei)");
@@ -375,7 +372,7 @@ async function checkBandKristallKleid(ctx) {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
-        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const f = r._ensureAssetFoundry();
         const b0 = performance.now();
         while (performance.now() - b0 < 60000 && !(f && f.ready && f.recipes && f.recipes.feuerstelle)) await sleep(100);
         const bp = r.state.blueprints || {};
@@ -426,8 +423,8 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
             await sleep(6);
         }
         const r = window.anazhRealm;
-        const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : "nomethod" };
-        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const o = { foundryEnabled: r._foundryEnabled() };
+        const f = r._ensureAssetFoundry();
         const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
@@ -436,7 +433,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
-                if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp);
+                if (pp) r._tickScatterStreaming(pp);
             } catch (_e) {}
             await sleep(10);
         }
@@ -647,7 +644,7 @@ async function checkBandLeistungsVertrag(ctx) {
             // still zurück in die GB-Klasse wachsen lassen (die 819-MB-Messung
             // VOR der Batch-Klein-Münze ist die Referenz; das Band liegt mit
             // Kopfraum darunter).
-            const hz = r._flightRecorderHeapZensus ? r._flightRecorderHeapZensus() : null;
+            const hz = r._flightRecorderHeapZensus();
             o.szeneMB = hz ? hz.szeneMB : null;
             // ── V1 + V3: STAND-FENSTER (Spieler steht, 400 Ticks im Regime) ──
             const mints0 = r._archGruppenMints || 0;
@@ -739,7 +736,7 @@ async function checkBandLeistungsVertrag(ctx) {
             st.renderer._isHeadlessNull = _oH;
             r._foundryTreeMaterial = _oTM;
             // ── V4: LINSEN-KONSUM im gebauten Trace ──
-            const trace = r._flightRecorderBuildTrace ? r._flightRecorderBuildTrace() : null;
+            const trace = r._flightRecorderBuildTrace();
             const ss = trace && trace.steadyState;
             o.v4Linsen = !!(
                 ss &&

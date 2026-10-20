@@ -334,7 +334,6 @@ async function checkBandV1733WorldRules(ctx) {
             typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
         out.ruleOp = typeof r.dslEffects.rule === "function";
-        out.tickDefined = typeof r._tickWorldRules === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
@@ -449,7 +448,7 @@ async function checkBandV1733WorldRules(ctx) {
 
     check(
         "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
-        res.cfgWired && res.registryArray && res.ruleOp && res.tickDefined && res.tickWired
+        res.cfgWired && res.registryArray && res.ruleOp && res.tickWired
     );
     check(
         "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
@@ -650,10 +649,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         out.cfgWired =
             typeof cfg.composeRuleProb === "number" &&
             typeof cfg.renewFitness === "number" &&
-            typeof cfg.costBudgetMs === "number" &&
-            typeof r.dslComposeRule === "function" &&
-            typeof r._worldRuleFitness === "function" &&
-            typeof r._composeNexusRule === "function";
+            typeof cfg.costBudgetMs === "number";
 
         // --- (A) dslComposeRule: gueltige Regel-Struktur ---
         const prog = r.dslComposeRule(rng);
@@ -786,7 +782,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
     });
 
     check(
-        "V17.35 Nexus-Regeln: Konfig + dslComposeRule + _worldRuleFitness + _composeNexusRule verdrahtet",
+        "V17.35 Nexus-Regeln: die Konfig trägt composeRuleProb + renewFitness + costBudgetMs",
         res.cfgWired
     );
     check(
@@ -844,13 +840,7 @@ async function checkBandV1736HumanRules(ctx) {
         };
 
         // --- Verdrahtung ---
-        out.wired =
-            typeof r._chatTryRuleCommand === "function" &&
-            typeof r._chatTryRulesListCommand === "function" &&
-            typeof r._parseChatCondition === "function" &&
-            typeof r._parseChatEffect === "function" &&
-            typeof r._isRuleEffectAllowed === "function" &&
-            K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
+        out.wired = K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
         const cRain = r._parseChatCondition("es regnet");
@@ -943,7 +933,7 @@ async function checkBandV1736HumanRules(ctx) {
     });
 
     check(
-        "V17.36 Mensch-Regeln: _chatTryRuleCommand/_parseChatCondition/_parseChatEffect/Whitelist verdrahtet",
+        "V17.36 Mensch-Regeln: die Sperrliste RULE_FORBIDDEN_EFFECT_OPS ist ein Set",
         res.wired
     );
     check(
@@ -980,7 +970,6 @@ async function checkBandV1737RulesUI(ctx) {
         const out = {};
         const host = document.getElementById("status-worldrules");
         out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
-        out.renderWired = typeof r.renderWorldRulesList === "function";
         out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
 
         // Save state
@@ -1084,8 +1073,8 @@ async function checkBandV1737RulesUI(ctx) {
     );
     check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
     check(
-        "V17.37 Gesetze-UI: renderWorldRulesList + _initCollapsibleDrawer existieren",
-        res.renderWired && res.collapsibleWired
+        "V17.37 Gesetze-UI: _initCollapsibleDrawer existiert",
+        res.collapsibleWired
     );
     check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     check(
@@ -1117,8 +1106,6 @@ async function checkBandV1739RulesUX(ctx) {
             r._statusRefs.worldrulesSignature = "";
             r.renderWorldRulesList();
         };
-
-        out.wired = typeof r._worldRuleStatusLabel === "function";
 
         // Save state
         const savedRules = r.state.worldRules.slice();
@@ -1229,7 +1216,6 @@ async function checkBandV1739RulesUX(ctx) {
         return out;
     });
 
-    check("V17.39 Gesetze-UX: _worldRuleStatusLabel verdrahtet", res.wired);
     check("V17.39 Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert", res.labels);
     check("V17.39 Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
     check(
@@ -1338,7 +1324,6 @@ async function checkBandV1741RuleThread(ctx) {
         const savedSeen = { ...r.state.worldJournal.seen };
 
         // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
-        out.wired = typeof r._worldRuleActivityLabel === "function";
         const tNow = now();
         const mk = (over) => Object.assign({ fires: 0, lastFired: -Infinity, disabled: false }, over);
         out.labelRuht = r._worldRuleActivityLabel(mk({}), tNow) === "ruht";
@@ -1431,7 +1416,7 @@ async function checkBandV1741RuleThread(ctx) {
 
     check(
         "V17.41 Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)",
-        res.wired && res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
+        res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
     );
     check(
         'V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum',

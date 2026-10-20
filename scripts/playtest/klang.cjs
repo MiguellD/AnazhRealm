@@ -425,19 +425,6 @@ async function checkBandSchrittKlang(ctx) {
             s = r.state,
             A = r.constructor;
         const o = { checks: {} };
-        for (const fn of [
-            "_schrittKlangTick",
-            "_schrittKlangEreignis",
-            "_schrittMaterialAt",
-            "_schrittKlangParams",
-            "_playSchrittOneShot",
-            "_gaitGesetz",
-            "_terrainMaterialAt",
-            "_koerperWasser",
-            "animatePlayerSoul",
-        ]) {
-            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
-        }
         if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
         const T = A.SCHRITT_KLANG;
     

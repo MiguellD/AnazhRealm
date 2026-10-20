@@ -50,7 +50,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         o.floatIdx =
             Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
         // ── Ω-W3 das Verdikt (rollen-bewusst) ──
-        o.verdictFn = typeof r._workshopPhysicsVerdict === "function";
         const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
         const vLean = r._workshopPhysicsVerdict(leaner);
         o.leanWankt =
@@ -91,7 +90,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
     check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
     check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
-    check("Ω-W3: das Verdikt-Funktion existiert", res.verdictFn === true);
     check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
     check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
     check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
@@ -2532,7 +2530,7 @@ async function checkBandWCIchWahrheit(ctx) {
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
         // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
-        const __whyKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "why");
+        const __whyKey = r._growTreeBlueprintForSpawn("baum_eiche", "why");
         const whyEiche = __whyKey ? r._blueprintRoleWhy(r.state.blueprints[__whyKey]) : null;
         const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
@@ -2613,7 +2611,7 @@ async function checkBandRezeptKatalog(ctx) {
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
         const dl0 = performance.now() + 120000;
         while (
-            (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
+            !window.anazhRealm &&
             performance.now() < dl0
         )
             await sleep(100);

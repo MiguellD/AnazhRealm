@@ -578,42 +578,39 @@ async function checkBandVoxelTerrainCore(ctx) {
         // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
         // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
         // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
-        out.detailBandFn = typeof r._detailBand === "function";
-        if (out.detailBandFn) {
-            const b = (rr) => r._detailBand(rr);
-            // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
-            out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
-            const BS = r.constructor.BODEN_STUFEN;
-            const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
-            out.lodReadsBand =
-                Object.isFrozen(BS) &&
-                Object.isFrozen(BS.stufen) &&
-                [0, 1, 2, 3, 9, 10, 12].every(
-                    (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
-                );
-            // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
-            // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
-            // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
-            out.lodHysteresis =
-                r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
-                r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
-                r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
-                r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
-                BS.halt > 0 &&
-                BS.vorlauf > 0;
-            out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-            // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
-            // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
-            r._ensureAtmoUniforms();
-            out.hazeCouplesRing = r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
-            // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
-            // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
-            out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
-            r.updateCreatures(0.016);
-            out.creatureAiCached =
-                r.state.creatures.length === 0 ||
-                r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
-        }
+        const b = (rr) => r._detailBand(rr);
+        // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
+        out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
+        const BS = r.constructor.BODEN_STUFEN;
+        const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
+        out.lodReadsBand =
+            Object.isFrozen(BS) &&
+            Object.isFrozen(BS.stufen) &&
+            [0, 1, 2, 3, 9, 10, 12].every(
+                (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
+            );
+        // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+        // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
+        // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
+        out.lodHysteresis =
+            r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
+            r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
+            r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
+            r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
+            BS.halt > 0 &&
+            BS.vorlauf > 0;
+        out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
+        // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
+        // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
+        r._ensureAtmoUniforms();
+        out.hazeCouplesRing = r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
+        // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+        // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
+        out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
+        r.updateCreatures(0.016);
+        out.creatureAiCached =
+            r.state.creatures.length === 0 ||
+            r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
         return out;
     });
 
@@ -648,37 +645,32 @@ async function checkBandVoxelTerrainCore(ctx) {
             `Welle E (E1): ein LOD2- + LOD3-Chunk meshet ohne Crash (grobe dim 6/3)${voxelP2bResults.lod23Err ? " — " + voxelP2bResults.lod23Err : ""}`,
             voxelP2bResults.lod23Builds
         );
+
         check(
-            "V17.114 U1: _detailBand (die Detail-Kaskade) ist die EINE Distanz-Quelle",
-            voxelP2bResults.detailBandFn === true
+            "K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)",
+            voxelP2bResults.bandLods === true
         );
-        if (voxelP2bResults.detailBandFn) {
-            check(
-                "K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)",
-                voxelP2bResults.bandLods === true
-            );
-            check(
-                "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
-                voxelP2bResults.lodReadsBand === true
-            );
-            check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
-                voxelP2bResults.lodHysteresis === true
-            );
-            check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
-            check(
-                "V17.114 U1 §2 → V18.530: kein Ring-gekoppelter Schleier mehr (hazeFar + _syncAtmoToViewDistance fort)",
-                voxelP2bResults.hazeCouplesRing === true
-            );
-            check(
-                "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
-                voxelP2bResults.bandAiDiv === true
-            );
-            check(
-                "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
-                voxelP2bResults.creatureAiCached === true
-            );
-        }
+        check(
+            "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
+            voxelP2bResults.lodReadsBand === true
+        );
+        check(
+            "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
+            voxelP2bResults.lodHysteresis === true
+        );
+        check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
+        check(
+            "V17.114 U1 §2 → V18.530: kein Ring-gekoppelter Schleier mehr (hazeFar + _syncAtmoToViewDistance fort)",
+            voxelP2bResults.hazeCouplesRing === true
+        );
+        check(
+            "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
+            voxelP2bResults.bandAiDiv === true
+        );
+        check(
+            "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
+            voxelP2bResults.creatureAiCached === true
+        );
         check(
             "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
             voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
@@ -1014,13 +1006,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 typeof r._buildWaterPlane === "function" &&
                 window.__fehlt(r._buildWaterPlane, /this\._terrainHeightAtWorld\s*\(/),
             // (10) Voxel-Pendants leben weiter (Vision-Anker)
-            voxelGrassAlive: typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
-            voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
-            voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
-            // (11) Die geteilten Helper bleiben: `_vegetationSampleSpawn` (per-Sample-Spawn-Kern) +
-            // `_attachVoxelFieldColors` (Voxel-Affinitäts-Färbung).
-            sampleSpawnAlive: typeof r._vegetationSampleSpawn === "function",
-            attachVoxelFieldColorsAlive: typeof r._attachVoxelFieldColors === "function",
+            voxelGrassAlive: r.state.voxelChunkGrass instanceof Map,
         };
     });
 
@@ -1046,18 +1032,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check(
             "Voxel V9.39: Voxel-Gras-Pendant lebt weiter (_buildVoxelChunkGrass + state.voxelChunkGrass)",
             voxelV939Results.voxelGrassAlive
-        );
-        check(
-            "Voxel V9.39: Voxel-Vegetations-Pendant lebt weiter (_populateVoxelChunkVegetation)",
-            voxelV939Results.voxelVegetationAlive
-        );
-        check(
-            "Voxel V9.39: _voxelSurfaceY lebt weiter (Höhen-Quelle für getTerrainHeightAt)",
-            voxelV939Results.voxelSurfaceYAlive
-        );
-        check(
-            "Voxel V9.39: _vegetationSampleSpawn + _attachVoxelFieldColors leben weiter (geteilte Vision-Helper)",
-            voxelV939Results.sampleSpawnAlive && voxelV939Results.attachVoxelFieldColorsAlive
         );
     }
 }
@@ -1085,15 +1059,13 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
         out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
-        out.hasLodHelper = typeof r._voxelChunkLodFor === "function";
-        if (out.hasLodHelper) {
-            // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
-            out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
-            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
-            out.lodFar = r._voxelChunkLodFor(3, 0, 21.6, 21.6); // r=3 (108 m) → LOD 2
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 21.6, 21.6); // r=4 → LOD 2
-        }
+
+        // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+        out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
+        out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
+        out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
+        out.lodFar = r._voxelChunkLodFor(3, 0, 21.6, 21.6); // r=3 (108 m) → LOD 2
+        out.lodVeryFar = r._voxelChunkLodFor(4, 0, 21.6, 21.6); // r=4 → LOD 2
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
         // sync, ferner frischer Chunk, lod=1 explizit).
@@ -1151,14 +1123,11 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
         `ratio=${res.cellsRatio.toFixed(2)}`
     );
-    check("Welle Perf-3.b V9.88: _voxelChunkLodFor existiert", res.hasLodHelper);
-    if (res.hasLodHelper) {
-        check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
-        check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
-        check("K51 Boden-Stufen: r=2 (jenseits der Nah-Zone 3×3) → LOD 1", res.lodMidRing === 1);
-        check("K51 Boden-Stufen: r=3 → LOD 2", res.lodFar === 2);
-        check("K51 Boden-Stufen: r=4 (sehr ferner Chunk) → LOD 2", res.lodVeryFar === 2);
-    }
+    check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
+    check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
+    check("K51 Boden-Stufen: r=2 (jenseits der Nah-Zone 3×3) → LOD 1", res.lodMidRing === 1);
+    check("K51 Boden-Stufen: r=3 → LOD 2", res.lodFar === 2);
+    check("K51 Boden-Stufen: r=4 (sehr ferner Chunk) → LOD 2", res.lodVeryFar === 2);
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
     if (res.lod0CellsLen !== null && res.lod1CellsLen !== null) {
@@ -1987,7 +1956,7 @@ async function checkBandWahrerAnblickPfade(ctx) {
         // gebunden [0,1]
         let bounded = true;
         for (let gx = -200; gx <= 200; gx += 37) {
-            const sy = r._voxelSurfaceY ? r._voxelSurfaceY(gx, 0) : 10;
+            const sy = r._voxelSurfaceY(gx, 0);
             const v = r._pathFieldAt(gx, 0, sy);
             if (!(v >= 0 && v <= 1)) bounded = false;
         }
@@ -2019,7 +1988,7 @@ async function checkBandWahrerAnblickPfade(ctx) {
         for (let gx = -300; gx <= 300; gx += 20) {
             for (let gz = -300; gz <= 300; gz += 20) {
                 samples++;
-                const sy = r._voxelSurfaceY ? r._voxelSurfaceY(gx, gz) : 10;
+                const sy = r._voxelSurfaceY(gx, gz);
                 if (r._pathFieldAt(gx, gz, sy) > 0.1) hits++;
             }
         }
@@ -2248,7 +2217,6 @@ async function checkBandTodZensus(ctx) {
                 "_kreaturLaufTakt",
                 "_animateCompoundMotion",
             ]) {
-                if (typeof r[name] !== "function") continue;
                 decke(
                     name,
                     (alt) =>

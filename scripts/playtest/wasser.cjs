@@ -634,7 +634,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.cellStateSolid = STATE && STATE.SOLID;
         out.cellStateFrozen = STATE && Object.isFrozen(STATE);
         // 2) Methode `_buildVoxelChunkWaterCells` existiert
-        out.hasMethod = typeof r._buildVoxelChunkWaterCells === "function";
+
         // 3) Streaming-aktiver Chunk hat waterCells (die LOD wandert pro Chunk — Entry-LOD lesen, nicht
         // den Default-`_voxelChunkConfig()`-Snapshot).
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
@@ -761,7 +761,6 @@ async function checkBandWelleC1WaterCells(ctx) {
         "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
         res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
     );
-    check("Welle C.1 V9.71: _buildVoxelChunkWaterCells existiert", res.hasMethod);
     check("Welle C.1 V9.71: streaming-aktiver gefüllter Chunk gefunden (Vorbedingung)", res.foundFilledChunk);
     if (!res.foundFilledChunk) return;
     check("Welle C.1 V9.71: entry.waterCells ist Uint8Array", res.hasWaterCells);
@@ -804,7 +803,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
         out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
         out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
-        // 2) Methoden existieren
+        // 2) Build + Dispose: der Takt hier fährt sie nicht (Mutant still) — ihre Existenz-Probe ist die einzige Wache
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
@@ -1074,10 +1073,6 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm/chunks" };
         const out = {};
-        out.hasEnqueue = typeof r._enqueueWaterIso === "function";
-        out.hasTick = typeof r._tickPendingWaterIso === "function";
-        out.hasDrain = typeof r._drainPendingWaterIso === "function";
-        if (!out.hasEnqueue || !out.hasTick || !out.hasDrain) return out;
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
         // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
         if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
@@ -1126,10 +1121,6 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         check("V12.0-perf.h: Wasser-Iso-Queue-Band (realm)", false, res.error);
         return;
     }
-    check(
-        "V12.0-perf.h: _enqueueWaterIso/_tickPendingWaterIso/_drainPendingWaterIso existieren",
-        res.hasEnqueue && res.hasTick && res.hasDrain
-    );
     check(
         "V18.530-Integration: die Wasser-Schlange baut erst die LÜCKE (ein fernerer Chunk ohne Sheet vor der Auffrischung eines näheren)",
         res.lueckeZuerst === true,
@@ -1278,8 +1269,6 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const THREE = window.THREE;
         const out = {};
-        out.fnExists = typeof r._creatureWaterContextAt === "function";
-        if (!out.fnExists) return out;
 
         // Mock-Kreatur ist EIN Objekt mit `position`-Vector3. Wir wandern es
         // im 20×20-Grid um Spawn herum und sammeln zwei Stichproben — eine
@@ -1347,34 +1336,31 @@ async function checkBandWelleV11D1WaterContext(ctx) {
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
-        out.groundCacheFn = typeof r._creatureGroundY === "function";
-        if (out.groundCacheFn) {
-            // der Leib trägt seine Gier (der Boden blickt längs ihr voraus, Leben-Schau 2) — eine Kreatur ist eine Group
-            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), rotation: new THREE.Euler(), userData: {} });
-            r._creatureGroundBudget = 5;
-            const m = mk(12, 12);
-            const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
-            out.gFirstScan = r._creatureGroundBudget === 4;
-            const g2 = r._creatureGroundY(m); // gleiche Position → Cache-Hit (Budget bleibt 4)
-            out.gCacheHit = r._creatureGroundBudget === 4 && g2 === g1;
-            m.position.x += 0.3; // < 0.5 m bewegt → Cache-Hit
-            const g3 = r._creatureGroundY(m);
-            out.gCacheNear = r._creatureGroundBudget === 4 && g3 === g1;
-            m.position.x += 1.0; // jetzt > 0.5 m vom Cache-Punkt → Refresh: Budget 4→3
-            r._creatureGroundY(m);
-            out.gRefreshOnMove = r._creatureGroundBudget === 3;
-            r._creatureGroundBudget = 0; // Budget erschöpft
-            m.position.x += 1.0; // eine bekannte Kreatur, > 0.5 m gewandert: ohne Budget trägt ihr Cache
-            const gm = r._creatureGroundY(m);
-            const fresh = mk(800, 800);
-            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → EIN Scan ohne Budget (Welle L, Höhle)
-            out.gBudgetBound =
-                r._creatureGroundBudget === 0 &&
-                gm === m.userData.cachedGroundY &&
-                typeof gf === "number" &&
-                Number.isFinite(gf) &&
-                fresh.userData.cachedGroundY === gf;
-        }
+        // der Leib trägt seine Gier (der Boden blickt längs ihr voraus, Leben-Schau 2) — eine Kreatur ist eine Group
+        const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), rotation: new THREE.Euler(), userData: {} });
+        r._creatureGroundBudget = 5;
+        const m = mk(12, 12);
+        const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
+        out.gFirstScan = r._creatureGroundBudget === 4;
+        const g2 = r._creatureGroundY(m); // gleiche Position → Cache-Hit (Budget bleibt 4)
+        out.gCacheHit = r._creatureGroundBudget === 4 && g2 === g1;
+        m.position.x += 0.3; // < 0.5 m bewegt → Cache-Hit
+        const g3 = r._creatureGroundY(m);
+        out.gCacheNear = r._creatureGroundBudget === 4 && g3 === g1;
+        m.position.x += 1.0; // jetzt > 0.5 m vom Cache-Punkt → Refresh: Budget 4→3
+        r._creatureGroundY(m);
+        out.gRefreshOnMove = r._creatureGroundBudget === 3;
+        r._creatureGroundBudget = 0; // Budget erschöpft
+        m.position.x += 1.0; // eine bekannte Kreatur, > 0.5 m gewandert: ohne Budget trägt ihr Cache
+        const gm = r._creatureGroundY(m);
+        const fresh = mk(800, 800);
+        const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → EIN Scan ohne Budget (Welle L, Höhle)
+        out.gBudgetBound =
+            r._creatureGroundBudget === 0 &&
+            gm === m.userData.cachedGroundY &&
+            typeof gf === "number" &&
+            Number.isFinite(gf) &&
+            fresh.userData.cachedGroundY === gf;
 
         return out;
     });
@@ -1382,8 +1368,6 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         check("Welle V11.0-d.1: Wasser-Kontext-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle V11.0-d.1: _creatureWaterContextAt existiert als Methode", res.fnExists);
-    if (!res.fnExists) return;
 
     check(
         "Welle V11.0-d.1: Land-Stichprobe gefunden (≥1 Spalte mit inWater=false)",
@@ -1423,17 +1407,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
         res.ohneZweiteWahrheit === true
     );
-    check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
-    if (res.groundCacheFn) {
-        check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
-        check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
-        check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
-        check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
-        check(
-            "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
-            res.gBudgetBound === true
-        );
-    }
+    check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
+    check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
+    check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
+    check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
+    check(
+        "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
+        res.gBudgetBound === true
+    );
 }
 
 // Tiefen-Scheue + Schwimm-Surface: der wander-Loop konsumiert `_creatureWaterContextAt`, biast die
@@ -1688,7 +1669,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             const x = (rng() - 0.5) * 800;
             const z = (rng() - 0.5) * 800;
             const y = r._terrainMacroSurfaceY(x, z, false);
-            const wY = r._waterLevelAt ? r._waterLevelAt(x, z) : -3;
+            const wY = r._waterLevelAt(x, z);
             if (y <= wY + 0.5) continue;
             const sn = schneeAt(y, x, z);
             snowSum += sn;
@@ -2122,19 +2103,16 @@ async function checkBandWasserWahrheit(ctx) {
             }
             return { gerissen, capDeck: cap[4], capSee: cap[0], capLand: cap[5] };
         };
-        if (typeof r._ensureWaterCALevel !== "function") fail("F5: _ensureWaterCALevel existiert nicht");
-        else {
-            const f5 = runRuhe(r._ensureWaterCALevel);
-            o.ruhe = f5;
-            if (f5.gerissen !== 0) fail(`F5: der erwachte Automat riss ${f5.gerissen} ruhende Spalte(n) (Soll 0)`);
-            // KONSUM am Ruf: der Welt-Tick holt das Level über diesen Chokepoint und reicht dessen Kappe an den Automaten.
-            kappe = null;
-            if (!weltTick("_ensureWaterCALevel") || kappe !== capS)
-                fail("F5: _tickWorldWaterCA holt das Level nicht über _ensureWaterCALevel oder reicht dessen Kappe nicht weiter");
-            // Selbst-Test F5: die Kappe eine Zeile über der Ruhe (der alte Raum) → die Deck-Spalte MUSS reißen.
-            o.ruheBroken = runRuhe(r._ensureWaterCALevel, true).gerissen;
-            if (!(o.ruheBroken > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
-        }
+        const f5 = runRuhe(r._ensureWaterCALevel);
+        o.ruhe = f5;
+        if (f5.gerissen !== 0) fail(`F5: der erwachte Automat riss ${f5.gerissen} ruhende Spalte(n) (Soll 0)`);
+        // KONSUM am Ruf: der Welt-Tick holt das Level über diesen Chokepoint und reicht dessen Kappe an den Automaten.
+        kappe = null;
+        if (!weltTick("_ensureWaterCALevel") || kappe !== capS)
+            fail("F5: _tickWorldWaterCA holt das Level nicht über _ensureWaterCALevel oder reicht dessen Kappe nicht weiter");
+        // Selbst-Test F5: die Kappe eine Zeile über der Ruhe (der alte Raum) → die Deck-Spalte MUSS reißen.
+        o.ruheBroken = runRuhe(r._ensureWaterCALevel, true).gerissen;
+        if (!(o.ruheBroken > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
     
         // ── FIXTURE 6 (F6) — DIE GELEERTE SPALTE IST TROCKEN: nie ein Dach 14 m unter dem Spiegel ──
         // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1). Bis K37
@@ -2216,20 +2194,17 @@ async function checkBandWasserWahrheit(ctx) {
             const h1 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
             return { h0, h1 };
         };
-        if (typeof r._wasserNetz !== "function") fail("F7: _wasserNetz existiert nicht");
-        else {
-            const f7 = runNetz(r._wasserNetz);
-            o.netz = f7;
-            if (!(f7.h0 === 8 && f7.h1 === 8))
-                fail(`F7: das gezeichnete Wasser nach dem Verdichten des Satzes ${f7.h1} statt ${f7.h0} (Soll 8)`);
-            // KONSUM: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt` → `_wasserNetz`.
-            // KONSUM am Ruf: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt`, das Bild über das Netz.
-            const pm = r.state.playerMesh.position;
-            if (!(window.__consumes(r, "_nassAt", r, "_wasserBildAt", [pm.x, pm.z]) && window.__consumes(r, "_wasserBildAt", r, "_wasserNetz", [pm.x, pm.z])))
-                fail("F7: _nassAt liest das Netz nicht (über _wasserBildAt)");
-            o.netzBroken = runNetz(r._wasserNetz, true).h1;
-            if (o.netzBroken === 8) fail("F7-Selbsttest: mit dem gehaltenen View blieb das Netz richtig — Linse blind");
-        }
+        const f7 = runNetz(r._wasserNetz);
+        o.netz = f7;
+        if (!(f7.h0 === 8 && f7.h1 === 8))
+            fail(`F7: das gezeichnete Wasser nach dem Verdichten des Satzes ${f7.h1} statt ${f7.h0} (Soll 8)`);
+        // KONSUM: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt` → `_wasserNetz`.
+        // KONSUM am Ruf: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt`, das Bild über das Netz.
+        const pm = r.state.playerMesh.position;
+        if (!(window.__consumes(r, "_nassAt", r, "_wasserBildAt", [pm.x, pm.z]) && window.__consumes(r, "_wasserBildAt", r, "_wasserNetz", [pm.x, pm.z])))
+            fail("F7: _nassAt liest das Netz nicht (über _wasserBildAt)");
+        o.netzBroken = runNetz(r._wasserNetz, true).h1;
+        if (o.netzBroken === 8) fail("F7-Selbsttest: mit dem gehaltenen View blieb das Netz richtig — Linse blind");
         return o;
     })) || { fails: ["keine Antwort der Seite"] };
     check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
@@ -2272,7 +2247,7 @@ async function checkBandScatterWasserAB(ctx) {
                     }
                     if (Math.abs(sy - (wy + 0.4)) < 3) shore++;
                     if (!r._landAt(x, z, 0.4)) nass++;
-                    const sl = r._slopeAt ? r._slopeAt(x, z) : 0;
+                    const sl = r._slopeAt(x, z);
                     if (sl > 1.2) steep++;
                     const rv = r._hydroRiverAt(x, z);
                     if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
@@ -2431,7 +2406,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             try {
                 r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
-                if (r._drainPendingWaterIso) r._drainPendingWaterIso();
+                r._drainPendingWaterIso();
             } catch (_e) {
                 /* */
             }

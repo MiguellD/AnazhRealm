@@ -348,7 +348,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         const blu = r.state.blueprints;
         const mkBlade = (name, mat) => {
             delete blu[name];
@@ -434,7 +434,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
                 delete r.state.blueprintEditHistory[n];
         }
         r.selectBlueprintForEdit("stein_block");
-        if (r.setGameMode) r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         return out;
     });
     check(
@@ -468,7 +468,7 @@ async function checkBandV1790Recalibration(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const blade = (m, k = 1) => ({
@@ -566,7 +566,7 @@ async function checkBandV1790Recalibration(ctx) {
         }
         out.cssHistory = cssHistory;
 
-        if (r.setGameMode) r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         return out;
     });
     check(
@@ -1016,9 +1016,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        out.hasFlatten = typeof r._archFlattenBlueprint === "function";
-        out.hasEntryMatrix = typeof r._archEntryWorldMatrix === "function";
-        if (!out.hasFlatten || !out.hasEntryMatrix) return out;
 
         // Gate: ein gewachsener Baum (Grammatik) ist instancbar. Er ist _isMerged (Bark+Foliage = 2 Leaves);
         // die Per-Part-Matrix-/Farb-Gleichheit braucht eine non-merged Klon-Fixture (1 Leaf je Part,
@@ -1161,8 +1158,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         check("V12.0-perf.c.1: Architektur-Instancing-Band (realm)", false, res.error);
         return;
     }
-    check("V12.0-perf.c.1: _archFlattenBlueprint existiert", res.hasFlatten);
-    check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check(
         "V12.0-perf.c.1: baum_kiefer instancbar (gewachsene Krone, ≥1 Leaf je Part)",
         res.kieferInstanceable === true && res.kieferLeaves >= 1, // V18.259: gewachsene Krone → variable Part-Zahl (statt fixe 7)
@@ -1237,7 +1232,7 @@ async function checkBandWelle6XAudit(ctx) {
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
@@ -1257,7 +1252,7 @@ async function checkBandWelle6XAudit(ctx) {
         const builtS = r.confirmBuild();
         out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
 
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
         r.setGameMode("frieden");
 
         // --- A3a: Umwidmen nimmt Baupläne mit emergenter Rolle auf.
@@ -1301,13 +1296,13 @@ async function checkBandWelle6XAudit(ctx) {
             out._a3bEquipped = !!(equipResult && equipResult.ok);
             // V18.61 Ich-F — das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
-            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
+            r._ichRenderSpecSheet();
             const container = document.getElementById("ich-stage-spec");
             out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
             out.statsShowsArmorRow = !!container && /⛨|audit_armor_real/.test(container.textContent || "");
             r.equipArmor(null);
             delete r.state.blueprints["audit_armor_real"];
-            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
+            r._ichRenderSpecSheet();
         } else {
             out.statsShowsArmorRow = false;
         }
@@ -1336,7 +1331,7 @@ async function checkBandWelle6XAudit(ctx) {
                 r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
 
         return out;
     });
@@ -1424,7 +1419,7 @@ async function checkBandWelle6XAudit(ctx) {
         out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
         r.selectHotbarSlot((0 - 1 + 9) % 9);
         out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
-        r._clearBuildMode && r._clearBuildMode();
+        r._clearBuildMode();
 
         return out;
     });
@@ -1558,7 +1553,7 @@ async function checkBandWelle6XAudit(ctx) {
             ],
         };
         r.applyPlayerSoul("leichtprobe");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
         out._phoenixTags = r.state.player.statTags
             ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
@@ -1566,7 +1561,7 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- C3: Slope + pfad + Wolf-Körper → kann NICHT springen (dichte hoch)
         r.applyPlayerSoul("wolf");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
         out._dragonTags = r.state.player.statTags
             ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
@@ -1575,7 +1570,7 @@ async function checkBandWelle6XAudit(ctx) {
         // Cleanup
         delete r.state.customSouls.leichtprobe;
         r.applyPlayerSoul("human");
-        r.recomputePlayerStats && r.recomputePlayerStats();
+        r.recomputePlayerStats();
         r.state.onSteepSlope = false;
         r.setGameMode("frieden");
 

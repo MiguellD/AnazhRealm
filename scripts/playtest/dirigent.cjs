@@ -204,12 +204,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
-        out.hasGovernor = typeof r._nexusAdaptiveQuality === "function";
-        out.hasRegulate = typeof r._nexusPerfRegulate === "function";
-        out.hasActuate = typeof r._nexusPerfActuate === "function";
-        out.hasSenseFold = typeof r._perfSenseFoldFrame === "function";
-        out.hasEstimate = typeof r._estimatePerfCost === "function";
-        if (!out.hasGovernor || !out.hasRegulate || !out.hasActuate) return out;
         out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
         out.noParallelGovernor = window.__fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
@@ -390,11 +384,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         check("V18.263: Perf-Regelkreis-Band (realm)", false, res.error);
         return;
     }
-    check(
-        "V18.263: _nexusAdaptiveQuality (fps-Eingang) + _nexusPerfRegulate (PID) + _nexusPerfActuate existieren",
-        res.hasGovernor && res.hasRegulate && res.hasActuate
-    );
-    check("V18.263: Perf-Sense-Fold + Kosten-Schätzung existieren", res.hasSenseFold && res.hasEstimate);
     check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster in selfAwarenessAnalyze", res.noGravityPflaster);
     check(
         "V18.263: KEIN Parallel-Governor — selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT (EIN Regler)",
@@ -738,7 +727,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         // (A1b) gen-Default für FRESH ist 9 (V18.216 KARST + Büsche)
-        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18214") : null;
+        const newMeta = r._generateFreshWorldMeta("test-v18214");
         out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 9;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -790,9 +779,9 @@ async function checkBandV18210Verdrahtung(ctx) {
             // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
             // Cache-Size 1; nochmal rufen mit der gleichen Soul, Cache-Size bleibt 1.
             if (r._scentSizeBySoul) r._scentSizeBySoul.clear();
-            const sm0 = r.getGameMode ? r.getGameMode() : "frieden";
+            const sm0 = r.getGameMode();
             try {
-                if (r.setGameMode) r.setGameMode("pfad");
+                r.setGameMode("pfad");
                 // ECHTE Leiber (Welle LF): die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
                 // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
                 // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
@@ -823,13 +812,13 @@ async function checkBandV18210Verdrahtung(ctx) {
                 if (Pred) r.removeCreature(Pred);
                 if (Prey) r.removeCreature(Prey);
             } finally {
-                if (r.setGameMode) r.setGameMode(sm0);
+                r.setGameMode(sm0);
             }
         }
 
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
-        const snap = r.buildStateSnapshot ? r.buildStateSnapshot() : null;
+        const snap = r.buildStateSnapshot();
         out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
@@ -903,7 +892,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
         // (A2b) Live-Uniform existiert in atmoUniforms
-        const au = r._ensureAtmoUniforms ? r._ensureAtmoUniforms() : null;
+        const au = r._ensureAtmoUniforms();
         out.a2UniformExists = !!(au && au.r5StructureBoost);
         // (A2c) Setter existiert + setzt Uniform + persistiert
         const before = au.r5StructureBoost.value;
@@ -934,10 +923,10 @@ async function checkBandV18210Verdrahtung(ctx) {
             A._verhaltenGesetz().jagd.scentProbeM === undefined;
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
-        const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const savedMode = r.getGameMode();
         const savedCreatures = r.state.creatures;
         try {
-            if (r.setGameMode) r.setGameMode("pfad");
+            r.setGameMode("pfad");
             // ein wildes Wesen und seine Beute 20 m östlich — ECHTE Leiber (Welle LF: das Beute-Urteil liest die EINE Masse
             // des Leibs aus der Gestalt; der Wolf jagt, der Fuchs ist scheu und seine Beute)
             const pmH = r.state.playerMesh.position;
@@ -1003,14 +992,14 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a3Error = String((e && e.message) || e);
         } finally {
             r.state.creatures = savedCreatures;
-            if (r.setGameMode) r.setGameMode(savedMode);
+            r.setGameMode(savedMode);
         }
 
         // ============== A4: MANA-KONSUMENT γ ==============
         // (A4a) Konstante existiert
         out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
-        const sm = r.getGameMode ? r.getGameMode() : "frieden";
+        const sm = r.getGameMode();
         // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
         // SCHNAPPEN (Stat-Felder + tools-Liste), nachher EXAKT restaurieren.
         const savedManaA4 = r.state.player.mana;
@@ -1019,7 +1008,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         const savedStamMaxA4 = r.state.player.staminaMax;
         const savedToolsA4 = Array.isArray(r.state.player.tools) ? [...r.state.player.tools] : [];
         try {
-            if (r.setGameMode) r.setGameMode("pfad");
+            r.setGameMode("pfad");
             r.state.player.manaMax = 100;
             r.state.player.mana = 50;
             r.state.player.staminaMax = 100;
@@ -1062,7 +1051,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a4HandsZiehtStamina = r.state.player.stamina < stamBeforeStam;
             out.a4HandsManaUntouched = r.state.player.mana === manaBeforeStam;
             // Schöpfer-Modus: keine Kosten
-            if (r.setGameMode) r.setGameMode("schöpfer");
+            r.setGameMode("schöpfer");
             r.state.player.mana = 50;
             r.state.player.stamina = 50;
             const result3 = r.applyOpToPart(bpName, 0, "ritueller-stab");
@@ -1073,7 +1062,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         } catch (e) {
             out.a4Error = String(e && (e.message || e));
         } finally {
-            if (r.setGameMode) r.setGameMode(sm);
+            r.setGameMode(sm);
             // V18.210 (Audit-Heilung #5) — exakt restaurieren, damit
             // nachfolgende Bands den Spieler frisch sehen (sonst leaken
             // ritueller-stab im Werkzeug-Inventar + Stat-Drift).
@@ -1190,10 +1179,6 @@ async function checkBandRauschGesetz(ctx) {
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
-            if (typeof A._rauschAtlasDaten !== "function") {
-                out.falsch = out.packung = "kein Rausch-Atlas";
-                return out;
-            }
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
             const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;

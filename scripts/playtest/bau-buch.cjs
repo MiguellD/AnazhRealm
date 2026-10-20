@@ -21,10 +21,7 @@ async function checkBandV1769RoleResonance(ctx) {
             position: { x, y, z },
         });
 
-        out.methods =
-            typeof r._blueprintProductVector === "function" &&
-            typeof r._computeFormRole === "function" &&
-            !!r.constructor.FORM_ROLE_SIGNATURES;
+        out.signaturen = !!r.constructor.FORM_ROLE_SIGNATURES;
 
         // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags.
         // AUSLÖSCHUNGS-WELLE — der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
@@ -59,8 +56,8 @@ async function checkBandV1769RoleResonance(ctx) {
         out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
         // Bäume sind ARCHITECTURE: die bulk-Achse (span/8) nimmt dem Riesen-Laub die consumable-Resonanz.
         // Geprüft am GEWACHSENEN Baum (_growTreeBlueprintForSpawn; statische Baum-Baupläne gibt es nicht).
-        const __rrEiche = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "rr|eiche");
-        const __rrKiefer = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "rr|kiefer");
+        const __rrEiche = r._growTreeBlueprintForSpawn("baum_eiche", "rr|eiche");
+        const __rrKiefer = r._growTreeBlueprintForSpawn("baum_kiefer", "rr|kiefer");
         out.baeumeArchitecture =
             !!__rrEiche &&
             !!__rrKiefer &&
@@ -121,10 +118,7 @@ async function checkBandV1769RoleResonance(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check(
-        "V17.69 R2/R3: die Methoden existieren (_blueprintProductVector/_computeFormRole/FORM_ROLE_SIGNATURES)",
-        res.methods
-    );
+    check("V17.69 R2/R3: FORM_ROLE_SIGNATURES steht", res.signaturen);
     check(
         "V17.69 R2: der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
         res.vectorHasSpatial
@@ -164,7 +158,7 @@ async function checkBandV1771ToolOpFromForm(ctx) {
             parts: [{ shape, material: mat, size: { x: 0.6, y: 1.2, z: 0.6 }, position: { x: 0, y: 0, z: 0 } }],
         });
 
-        out.methods = typeof r._computeToolOpFromForm === "function" && !!r.constructor.OP_CLASS_SIGNATURES;
+        out.signaturen = !!r.constructor.OP_CLASS_SIGNATURES;
         // R2-Erweiterung: der Produkt-Vektor trägt jetzt auch die Katalysator-Geometrie (pointedFraction)
         out.vectorHasPointed = "pointedFraction" in r._blueprintProductVector(mk("cone", "eisen"));
 
@@ -208,8 +202,8 @@ async function checkBandV1771ToolOpFromForm(ctx) {
         return out;
     });
     check(
-        "V17.71 S10: _computeToolOpFromForm + OP_CLASS_SIGNATURES existieren; der Produkt-Vektor trägt pointedFraction",
-        res.methods && res.vectorHasPointed
+        "V17.71 S10: OP_CLASS_SIGNATURES steht; der Produkt-Vektor trägt pointedFraction",
+        res.signaturen && res.vectorHasPointed
     );
     check(
         "V17.71 S10 KONSUM: die Op EMERGIERT aus der Form — scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange (+ leer→subtractive)",
@@ -237,8 +231,6 @@ async function checkBandOmegaPhi1CoM(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        out.exists = typeof r._compoundCenterOfMass === "function";
-        if (!out.exists) return out;
         const mats = r.state.materials || {};
         let dense = null,
             light = null,
@@ -294,7 +286,6 @@ async function checkBandOmegaPhi1CoM(ctx) {
         out.emptySafe = r._compoundCenterOfMass({ parts: [] }).mass === 0 && r._compoundCenterOfMass(null).mass === 0;
         return out;
     });
-    check("Ω-Φ1 (wahrerbauplan): _compoundCenterOfMass existiert (der fehlende Grundstein)", res.exists === true);
     check("Ω-Φ1: symmetrischer Bauplan → CoM zentriert (x≈0)", res.symCentered === true);
     check("Ω-Φ1: größeres Teil → CoM verschiebt sich dorthin (Volumen→Masse)", res.volShiftsCoM === true);
     check("Ω-Φ1: dichteres Material → CoM verschiebt sich dorthin (dichte→Masse)", res.dichteShiftsCoM === true);
@@ -333,7 +324,6 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         });
         const o = {};
         // ── Ω-Φ2 Stützpolygon + Stabilität (SSF) ──
-        o.phi2Exists = typeof r._stability === "function" && typeof r._supportPolygon === "function";
         const table = P([
             pt(-2, 0, -2, 0.4, 1, 0.4),
             pt(2, 0, -2, 0.4, 1, 0.4),
@@ -347,7 +337,6 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.tippyTips = tp.margin === 0 && tp.inside === false;
         o.mastUnstable = r._stability(P([pt(0, 0, 0, 0.3, 6, 0.3)])).margin < 0.15;
         // ── Ω-Φ3 Steifigkeit + Versagen ──
-        o.phi3Exists = typeof r._bendingStiffness === "function" && typeof r._failsUnderLoad === "function";
         o.boardAniso = r._bendingStiffness(P([pt(0, 0, 0, 6, 0.3, 0.6)])).anisotropy > 3;
         const ring = P([
             pt(-1.5, 0, -1.5, 1, 1, 1),
@@ -361,7 +350,6 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.slenderBuckles = r._failsUnderLoad(P([pt(0, 0, 0, 0.2, 5, 0.2)])).buckles === true;
         o.stockyHolds = r._failsUnderLoad(P([pt(0, 0, 0, 1, 5, 1)])).buckles === false;
         // ── Ω-Φ4 Hebel + Schwung ──
-        o.phi4Exists = typeof r._swingDynamics === "function";
         const headHeavy = P([pt(0, 0.3, 0, 0.2, 0.6, 0.2, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)]);
         const balanced = P([pt(0, 0.3, 0, 0.5, 0.6, 0.5, dense), pt(0, 3, 0, 0.2, 4, 0.2, light)]);
         const sh = r._swingDynamics(headHeavy),
@@ -369,7 +357,6 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.headHeavier = sh.balance > sb.balance;
         o.balancedFaster = sb.swingSpeed > sh.swingSpeed;
         // ── Ω-Φ5 Lastpfad + Schneide ──
-        o.phi5Exists = typeof r._loadPath === "function" && typeof r._edgeContinuity === "function";
         o.stackIntact =
             r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 2, 0, 1, 1, 1)])).intact === true;
         const ft = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)]));
@@ -420,23 +407,22 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
         return o;
     });
-    check("Ω-Φ2 (wahrerbauplan): _stability/_supportPolygon existieren", res.phi2Exists === true);
     check(
         "Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0",
         res.tableStable && res.tippyTips && res.mastUnstable
     );
     check(
         "Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)",
-        res.phi3Exists && res.boardAniso && res.hollowEfficient
+        res.boardAniso && res.hollowEfficient
     );
     check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
     check(
         "Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller",
-        res.phi4Exists && res.headHeavier && res.balancedFaster
+        res.headHeavier && res.balancedFaster
     );
     check(
         "Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad",
-        res.phi5Exists && res.stackIntact && res.floatBreaks
+        res.stackIntact && res.floatBreaks
     );
     check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);
     check("Ω-L1: die Physik-Achsen sind im Produkt-Vektor, alle [0,1]", res.l1AxesPresent && res.l1AxesBounded);
@@ -826,7 +812,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         out.cloneCarriesTool = clone && clone.role === "tool";
         delete r.state.blueprints["_v1785_clone"];
         // (#1) removePartOp — die Op rückgängig (Mechanik + Rolle re-emergiert)
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         r.setGameMode("schöpfer"); // keine Stamina-Kosten
         const savedTools = Array.isArray(r.state.player.tools) ? r.state.player.tools.slice() : [];
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
@@ -976,7 +962,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const prevMode = r.getGameMode();
         // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
         const tools = r.state.tools || {};
         out.handOnlyStarter =
@@ -1028,7 +1014,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         out.friedenAppliesAfterPlacement = apF1.ok === true;
         // restore
         r.state.architectures = (r.state.architectures || []).filter((e) => !(e && e.__v88));
-        if (r.setGameMode) r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         delete r.state.blueprints["_wp88"];
         if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_wp88"];
         return out;
@@ -1485,8 +1471,8 @@ async function checkBandWave4(ctx) {
         // Die Werkstatt ist 3D-zentrisch: Werkzeuge/Prozesse sind ziehbare Karten der WERKZEUGE-Palette
         // (auf einen Part ziehen wendet die Op an); der Readout (Präzision/Qualität) lebt im
         // #workshop-stats-panel.
-        const prevModeP3 = r.getGameMode ? r.getGameMode() : "frieden";
-        if (r.setGameMode) r.setGameMode("schöpfer");
+        const prevModeP3 = r.getGameMode();
+        r.setGameMode("schöpfer");
         r.selectBlueprintForEdit("test-precision");
         r._renderWorkshopDOM();
         out.uiStatsPanel = !!document.querySelector("#workshop-stats-panel .spec-header");
@@ -1497,7 +1483,7 @@ async function checkBandWave4(ctx) {
         out.uiToolCards = document.querySelectorAll("#workshop-tool-palette .workshop-tool-card").length >= 1;
         // in schöpfer erscheinen die besessenen Werkstatt-Prozesse als ziehbare Station-Karten (Drehbank u.a.)
         out.uiStationCards = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
-        if (r.setGameMode) r.setGameMode(prevModeP3);
+        r.setGameMode(prevModeP3);
 
         // Save-Roundtrip: playerTools persistiert
         const snap = r.buildStateSnapshot();
@@ -3408,7 +3394,7 @@ async function checkBandM2RollenWahrheit(ctx) {
         out.vehiclePlace =
             r._blueprintUseKind(blu._t_m2_wagen) === "place" && r._blueprintUseKind(blu.reittier_holzross) === "place";
         // V18.257 — baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
-        const __ukKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "usekind");
+        const __ukKey = r._growTreeBlueprintForSpawn("baum_eiche", "usekind");
         out.baumPlace = !!__ukKey && r._blueprintUseKind(blu[__ukKey]) === "place";
 
         // (3) die KONJUNKTION hält: ein toter Stein-Stuhl (sitz-Anker, KEIN Antrieb →

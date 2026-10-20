@@ -270,7 +270,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Restore.
         r._buildVoxelChunkData = origBuild;
         r.state.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
-        if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+        r._drainDirtyVoxelChunks();
         return out;
     });
 
@@ -422,7 +422,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
             // frieden — damit das V9.17-Füll-Gate frei ist.
             // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-            const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
+            const p3bMode = r.getGameMode();
             r.setGameMode("frieden");
             r.state.worldMeta.voxelEdits = [];
             r.processChatCommand("voxel fill");
@@ -458,7 +458,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
         const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
-        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+        const modeBackup = r.getGameMode();
         const wm = r.state.worldMeta;
         const matTotal = () => {
             let t = 0;
@@ -784,8 +784,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.57 Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
         // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
         // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
-        out.hasSelfProfileFn = typeof r._selfProfile === "function";
-        const sp = out.hasSelfProfileFn ? r._selfProfile() : null;
+        const sp = r._selfProfile();
         out.selfProfileBundles = !!(
             sp &&
             sp.soul &&
@@ -925,7 +924,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
         check(
             "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/boosts)",
-            wave6c1Results.hasSelfProfileFn && wave6c1Results.selfProfileBundles
+            wave6c1Results.selfProfileBundles
         );
         check(
             "V18.57 Ich: die Selbst-Bühne (Canvas) + das geteilte Spec-Sheet im Overlay",
@@ -1363,7 +1362,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const mx = scx * span + span / 2;
                 const mz = scz * span + span / 2;
                 const m = r._terrainMacroSurfaceY(mx, mz, false);
-                const vy = r._voxelSurfaceY ? r._voxelSurfaceY(mx, mz) : m;
+                const vy = r._voxelSurfaceY(mx, mz);
                 if (Number.isFinite(m) && m > wlDam + 4 && Number.isFinite(vy) && vy < m + 3) {
                     if (!foundFlat) {
                         testCx = scx;
@@ -1482,7 +1481,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 // Wirklich isolierter, flacher Spot (Voxel nah Makro): `_atlasWaterLevelAt(…, -Infinity)` ist nur
                 // ohne Ozean/See/Fluss in Reichweite -Infinity — geprüft über den Carve-Radius, nicht nur am
                 // Zentrum. Sonst öffnet der r=12-Carve echtes Wasser und der Test misst verbundenes Wasser.
-                const vyc = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : m;
+                const vyc = r._voxelSurfaceY(x, z);
                 const isolated =
                     !Number.isFinite(r._atlasWaterLevelAt(x, z, -Infinity)) &&
                     !Number.isFinite(r._atlasWaterLevelAt(x + 16, z, -Infinity)) &&
@@ -1558,7 +1557,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const [kx, kz] = key.split(",").map(Number);
                 const mx = kx * span + span / 2,
                     mz = kz * span + span / 2;
-                const my = r._voxelSurfaceY ? r._voxelSurfaceY(mx, mz) : null;
+                const my = r._voxelSurfaceY(mx, mz);
                 if (!Number.isFinite(my)) continue;
                 const d = Math.abs(kx) + Math.abs(kz);
                 if (d < bestD) {
@@ -1600,7 +1599,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
             out.t2NoMorphError = zM.brueche.length === 0 && !!(mM && mM.positionNode); // der Geomorph baut (K22-Zeuge)
             if (mM && typeof mM.dispose === "function") mM.dispose();
         }
-        out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
         let t2HasAttrs = false,
             t2ChunksWithMorph = 0;
         if (r.state.voxelChunks) {
@@ -1618,35 +1616,32 @@ async function checkBandWelleC3CellularReaction(ctx) {
 
         // T4 Wasser-Automat: `_tickWaterCA` ist die reine Fluss-Funktion (Level pro Zelle). Behavioral:
         // ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob fällt). Voller Beweis: `diag-water-flow-ca.cjs`.
-        out.t4HasTickCA = typeof r._tickWaterCA === "function";
-        if (out.t4HasTickCA) {
-            const SOLID = r.constructor.CELL_STATE.SOLID;
-            const d = 4,
-                dy = 10;
-            const cells = new Uint8Array(d * d * dy); // AIR=0 default
-            for (let c = 0; c < d * d; c++) cells[c] = SOLID; // Boden j=0
-            const level = new Float64Array(d * d * dy);
-            level[8 * d * d + 5] = 1.0; // ein Blob hoch oben
-            let s0 = 0;
-            for (let n = 0; n < level.length; n++) s0 += level[n];
-            for (let t = 0; t < 40; t++) r._tickWaterCA(level, cells, d, dy);
-            let s1 = 0,
-                cw = 0;
-            for (let j = 0; j < dy; j++)
-                for (let c = 0; c < d * d; c++) {
-                    const v = level[j * d * d + c];
-                    s1 += v;
-                    cw += v * j;
-                }
-            // V18.93 — der Distanz-Decay (CA_FLOW_KEEP) dissipiert LATERAL bewusst:
-            // die Invariante ist KEINE SCHÖPFUNG + begrenzter Schwund (der Blob fällt
-            // verlustfrei, spreizt dann mit Decay — Σ fällt begrenzt, steigt nie).
-            out.t4Conserves = s1 <= s0 + 1e-4 && s1 >= s0 * 0.3;
-            out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
-        }
+        const SOLID = r.constructor.CELL_STATE.SOLID;
+        const d = 4,
+            dy = 10;
+        const cells = new Uint8Array(d * d * dy); // AIR=0 default
+        for (let c = 0; c < d * d; c++) cells[c] = SOLID; // Boden j=0
+        const level = new Float64Array(d * d * dy);
+        level[8 * d * d + 5] = 1.0; // ein Blob hoch oben
+        let s0 = 0;
+        for (let n = 0; n < level.length; n++) s0 += level[n];
+        for (let t = 0; t < 40; t++) r._tickWaterCA(level, cells, d, dy);
+        let s1 = 0,
+            cw = 0;
+        for (let j = 0; j < dy; j++)
+            for (let c = 0; c < d * d; c++) {
+                const v = level[j * d * d + c];
+                s1 += v;
+                cw += v * j;
+            }
+        // V18.93 — der Distanz-Decay (CA_FLOW_KEEP) dissipiert LATERAL bewusst:
+        // die Invariante ist KEINE SCHÖPFUNG + begrenzter Schwund (der Blob fällt
+        // verlustfrei, spreizt dann mit Decay — Σ fällt begrenzt, steigt nie).
+        out.t4Conserves = s1 <= s0 + 1e-4 && s1 >= s0 * 0.3;
+        out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
-        out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
+        out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function";
 
         // V18.224 — der Streu-Takt kehrt zurück (Test-Isolation aufräumen)
         delete r._tickScatterStreaming;
@@ -1725,13 +1720,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
         res.t3DcConstants
     );
     // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
-    check("T4 (Wasser-CA): _tickWaterCA existiert (der Fluss-Automat-Kern)", res.t4HasTickCA);
-    if (res.t4HasTickCA) {
-        check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
-        check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
-    }
+    check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
+    check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
-    check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
+    check("T4a-2 (Wasser-CA): _tickWorldWaterCA existiert (Welt-Verdrahtung)", res.t4HasWorldTick);
 }
 
 // Worker-Foundation: `voxel-worker.js` liefert bit-identische Density-Grids zum Main-Thread. Jede
@@ -1745,12 +1737,6 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        // 1) Worker-Helper existieren
-        out.hasGetWorker = typeof r._getVoxelWorker === "function";
-        out.hasComputeDensity = typeof r._voxelWorkerComputeDensity === "function";
-        if (!out.hasGetWorker || !out.hasComputeDensity) {
-            return { ...out, error: "voxel-worker helpers missing" };
-        }
         // 2) Worker spawnen + initial state sync (returns Promise)
         const worker = r._getVoxelWorker();
         out.workerSpawned = !!worker;
@@ -1820,8 +1806,6 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
         check("Welle Perf-3.c V9.89: Worker-Foundation-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.89: _getVoxelWorker existiert", res.hasGetWorker);
-    check("Welle Perf-3.c V9.89: _voxelWorkerComputeDensity existiert", res.hasComputeDensity);
     check("Welle Perf-3.c V9.89: Worker spawnt erfolgreich", res.workerSpawned);
     check("Welle Perf-3.c V9.89: Worker ready nach init-sync", res.workerReady);
     check("Welle Perf-3.c V9.89: voxelWorkerStateGen wurde inkrementiert", res.stateGen >= 1);
@@ -1987,10 +1971,9 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        out.hasComputeChunkMesh = typeof r._voxelWorkerComputeChunkMesh === "function";
         out.hasMeshCache = "voxelMeshCache" in r.state;
         out.hasMeshPending = "voxelMeshPending" in r.state;
-        if (!out.hasComputeChunkMesh) return { ...out, error: "Phase 3 methods missing" };
+
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
         // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
         const worker = r._getVoxelWorker();
@@ -2153,7 +2136,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         check("Welle Perf-3.c V9.91: Phase-3-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.91: _voxelWorkerComputeChunkMesh existiert", res.hasComputeChunkMesh);
     check("Welle Perf-3.c V9.91: state.voxelMeshCache existiert", res.hasMeshCache);
     check("Welle Perf-3.c V9.91: state.voxelMeshPending existiert", res.hasMeshPending);
     check("Welle Perf-3.c V9.91: Worker-State synced (worldgenSynced)", res.workerSynced);
@@ -2313,7 +2295,7 @@ async function checkBandPhaseAFundament(ctx) {
                 const surf = r._voxelSurfaceY(ex, ez);
                 if (typeof surf === "number") {
                     r.carveVoxelSphere(ex, surf - 0.5, ez, 1.5);
-                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+                    r._drainDirtyVoxelChunks();
                     const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
                     const rInf = 1.5 + 4 * 1.8;
                     let changedOutside = 0,
