@@ -1733,12 +1733,12 @@ class AnazhRealm {
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
-    // auf der Tag-Achse der Welt: der Nacht-Anteil der Sonne (`_nachtAnteil`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
     // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
     _lichtZeitplan(z) {
         if (!z) return 1;
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const n = this._nachtAnteil(this._sonnenWinkel(t));
+        const n = this._tagAchse(this._dayNightSunDirection(this._sonnenWinkel(t)).y).nacht;
         const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
         return n <= 0.5
             ? z.mittag + (daemmer - z.mittag) * (n / 0.5)

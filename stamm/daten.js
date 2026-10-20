@@ -6,37 +6,6 @@ class AnazhRealm_daten {
     // „die nächste Kreatur“ meinte beim Empfänger eine andere.
 
     // ### Welt-Lebendigkeit ###
-    // Tag-Nacht-Stops: timeOfDay 0..1 → {sky}; 0 Mitternacht, 0.25 Aufgang, 0.5 Mittag,
-    // 0.75 Untergang. Dicht an den Übergängen + smoothstep in _interpolateDayNight — sonst springt die
-    // Farbe (violett→orange in 10 % Zeit). Der Sky-Tint wird mit dem Wetter-Tint kombiniert.
-    static get DAY_NIGHT_STOPS() {
-        // Der MITTAGS-Stop (t=0.5) folgt LIVE dem Studio-Himmel (`_studioSky.top`/`.sun` via
-        // get-world-params); der restliche Tag/Nacht-Zyklus bleibt AnazhRealms. Fallback = Vorlagen-Werte.
-        const sk = AnazhRealm._studioSky;
-        const noonSky = (sk && typeof sk.top === "number" && sk.top) || 0x6a9ed0;
-        return Object.freeze([
-            Object.freeze({ t: 0.0, sky: 0x161830 }),
-            Object.freeze({ t: 0.15, sky: 0x1e1e3a }),
-            Object.freeze({ t: 0.22, sky: 0x3a2c54 }),
-            Object.freeze({ t: 0.27, sky: 0x6a4258 }),
-            Object.freeze({ t: 0.32, sky: 0xa05a52 }),
-            Object.freeze({ t: 0.38, sky: 0xc88060 }),
-            // Stop 0.44 = sanfter Vormittag zwischen warmem Aufgang und blauem Mittag (sonst R-Sprung). Die Tafel trägt kein
-            // Licht (D3-N2): Farbe und Stärke der Sonne über den Tag rechnet die EINE Atmosphäre (`_atmoSonne`, E0).
-            Object.freeze({ t: 0.44, sky: 0x8e9bb8 }),
-            // Vorlage phytogenesis Z.1248: Mittags-Himmel = weiches Dunst-Blau (uTop 0x6a9ed0,
-            // NICHT das gesättigte 0x4b75c2) — der Himmel-Anker folgt LIVE dem Studio.
-            Object.freeze({ t: 0.5, sky: noonSky }),
-            // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
-            Object.freeze({ t: 0.56, sky: 0x7ba0c8 }),
-            Object.freeze({ t: 0.62, sky: 0x9078b0 }),
-            Object.freeze({ t: 0.68, sky: 0xc04a7a }),
-            Object.freeze({ t: 0.74, sky: 0x804060 }),
-            Object.freeze({ t: 0.82, sky: 0x3a2c54 }),
-            Object.freeze({ t: 0.9, sky: 0x1e1e3a }),
-            Object.freeze({ t: 1.0, sky: 0x161830 }),
-        ]);
-    }
     // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert (Multiply-Blend). Er ist die SONNE der Wetter-Zeile
     // (WEATHER_FIELD ← phyto-core WX_GESETZ): der Himmel trägt sie selbst (skyMul = sun), das Richtlicht dieselbe Rechnung wie
     // das Labor (lightMul = WX_LICHT.sockel + WX_LICHT.sonne · sun). K2: hier stand die alte Sonnen-Spalte als zweite Tafel

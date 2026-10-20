@@ -26,16 +26,11 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         const THREE = window.THREE;
         if (THREE && THREE.Color) {
-            const mkStop = () => ({
-                sky: new THREE.Color(0.4, 0.5, 0.7),
-                light: new THREE.Color(1, 1, 1),
-                intensity: 1,
-            });
             for (const k of Object.keys(e)) e[k] = 0;
-            const cold = r._dayNightComputeTint(mkStop());
+            const cold = r._dayNightComputeTint();
             for (const k of Object.keys(e)) e[k] = 0;
             e.joy = 0.9;
-            const warm = r._dayNightComputeTint(mkStop());
+            const warm = r._dayNightComputeTint();
             out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
             out.coldR = cold.skyColor.r;
             out.warmR = warm.skyColor.r;
@@ -434,21 +429,16 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
-        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `himmelTint`
+        // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
         if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
-            const mkStopG3 = () => ({
-                sky: new THREE_g3.Color(0.4, 0.5, 0.7),
-                light: new THREE_g3.Color(1, 1, 1),
-                intensity: 1,
-            });
             const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
             r.state.player.emotions.awe = 0;
             r.state.player.emotions.sorrow = 0;
-            const satG3Zero = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
             r.state.player.emotions.sorrow = 1.0;
-            const satG3High = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            const satG3High = satG3(r._dayNightComputeTint().skyColor);
             out.sorrowReducesSaturation = satG3High < satG3Zero;
         } else {
             out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
@@ -2275,7 +2265,7 @@ async function checkBandLookPhysik(ctx) {
 
 // Himmelskörper-Tag (V18.530) — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
 // Planet aus Math.random, MeshBasic, Tag wie Nacht voll sichtbar). Jetzt sind die Wandelsterne die hellsten PUNKTE des Sternfelds,
-// die Dämmerung setzt die Grenzgröße (`_himmelGrenzgroesse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
+// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
 // Unendlich-Knoten (K16). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
@@ -2285,14 +2275,18 @@ async function checkBandHimmelTag(ctx) {
         const r = window.anazhRealm;
         const st = r.state;
         const T = window.THREE;
-        const sauber = { grenze: r._himmelGrenzgroesse };
         let kugel = null;
         if (stoerung === "kugel") {
             kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
             kugel.userData.skyOffset = new T.Vector3(200, 300, 100);
             st.scene.add(kugel);
         }
-        if (stoerung === "grenze") r._himmelGrenzgroesse = () => -3;
+        if (stoerung === "grenze") {
+            const achse = Object.getPrototypeOf(r)._tagAchse;
+            r._tagAchse = function (e) {
+                return Object.assign({}, achse.call(this, e), { grenze: -3 });
+            };
+        }
         if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
@@ -2340,7 +2334,7 @@ async function checkBandHimmelTag(ctx) {
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
-        r._himmelGrenzgroesse = sauber.grenze;
+        if (stoerung === "grenze") delete r._tagAchse;
         zeit(zeitWar);
         return out;
     };

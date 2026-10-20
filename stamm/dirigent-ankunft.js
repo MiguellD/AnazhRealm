@@ -493,8 +493,8 @@ class AnazhRealm_dirigent_ankunft {
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
         // HemisphereLight: skyColor oben, groundColor unten, gemischt über normal.y → Tiefe ohne dynamische
-        // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Sky aus DAY_NIGHT_STOPS,
-        // Ground aus worldFieldAt).
+        // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Farbe der Nachthimmel des
+        // Gesetzes, Ground aus worldFieldAt).
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
