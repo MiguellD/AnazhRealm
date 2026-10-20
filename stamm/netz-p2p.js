@@ -1923,8 +1923,8 @@ class AnazhRealm_netz_p2p {
     }
 
     _p2pMsgSoul(msg, p2p) {
-        // Soul-Sync: aus der Peer-Seele den Avatar bauen (Built-in via def.build, Custom via
-        // _buildFromBlueprint). KEIN DSL-Pfad — eine Peer-Seele ist Darstellung, keine Welt-Mutation.
+        // Soul-Sync: aus der Peer-Seele den Avatar bauen (die EINE Leib-Wahl `_leibDerSeele` in _p2pApplyPeerSoul).
+        // KEIN DSL-Pfad — eine Peer-Seele ist Darstellung, keine Welt-Mutation.
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         const entry = this._p2pEnsurePeerEntry(pid);
@@ -2197,41 +2197,32 @@ class AnazhRealm_netz_p2p {
         return group;
     }
 
-    // Platzhalter durch die echte Peer-Seele ersetzen: Built-ins (Mensch/Phönix/Drache) via def.build()
-    // (userData.parts → voll animierbar); Custom-Seelen via _buildFromBlueprint aus den bodyParts.
+    // Platzhalter durch die echte Peer-Seele ersetzen — über die EINE Leib-Wahl (`_leibDerSeele`): Built-ins mit build()
+    // (userData.parts → voll animierbar), der Tier-Leib (`bp_koerper_<tier>` + bodyParts im soul-Kanal) als Studio-Baum der
+    // Welt-Kreatur, jede andere Seele aus ihren bodyParts (Built-ins ohne Hand-Skelett aus den lokal bekannten).
     _p2pApplyPeerSoul(entry) {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        const def = entry.soulName && this.playerSoulDefs[entry.soulName];
-        let group = null;
-        let kind = "placeholder";
-        if (def && typeof def.build === "function") {
-            // Der Peer-Guss FÜHRT die Übergabe des SENDERS (entry.uebergabe.koerper): transient gesetzt, damit
-            // der EINE Leser _koerperStudioDials sie wählt; try/finally räumt sie IMMER (kein Leck).
-            // Nie null übergeben: der Merge fiele sonst auf die EIGENE state.studioUebergabe des Betrachters —
-            // das leere Objekt ist der Sentinel "Peer ohne Wahl" → Anker-Default, auf allen Clients gleich.
-            // Nur der human-Guss liest das Feld.
-            const peerU = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : {};
-            const savedActive = this._activePeerUebergabe;
-            this._activePeerUebergabe = peerU;
-            try {
-                group = def.build();
-            } finally {
-                this._activePeerUebergabe = savedActive;
-            }
-            kind = "soul";
-        } else if (def && Array.isArray(def.bodyParts) && def.bodyParts.length > 0) {
-            // Built-ins OHNE Hand-Skelett (Phönix/Drache) baut der Peer LOKAL aus den bekannten def.bodyParts
-            // und bewegt sie über den EINEN Compound-Pfad; bodyParts wandern in den Entry (Rollen-Ableitung).
-            group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: def.bodyParts });
-            this._stampSoulPartRefs(group, def.bodyParts);
-            entry.bodyParts = def.bodyParts;
-            kind = "soul-custom";
-        } else if (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0) {
-            group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: entry.bodyParts });
-            this._stampSoulPartRefs(group, entry.bodyParts);
-            kind = "soul-custom";
+        const bekannt = entry.soulName && this.playerSoulDefs[entry.soulName];
+        const def =
+            bekannt ||
+            (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0 ? { bodyParts: entry.bodyParts } : null);
+        if (!def) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
+        // Der Peer-Guss FÜHRT die Übergabe des SENDERS (entry.uebergabe.koerper): transient gesetzt, damit der EINE Leser
+        // _koerperStudioDials sie wählt; try/finally räumt sie IMMER (kein Leck). Nie null übergeben: der Merge fiele sonst
+        // auf die EIGENE state.studioUebergabe des Betrachters — das leere Objekt ist der Sentinel "Peer ohne Wahl" →
+        // Anker-Default, auf allen Clients gleich. Nur der human-Guss liest das Feld.
+        const savedActive = this._activePeerUebergabe;
+        this._activePeerUebergabe = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : {};
+        let group;
+        try {
+            group = this._leibDerSeele(entry.soulName, def, `peer:${entry.peerId}`);
+        } finally {
+            this._activePeerUebergabe = savedActive;
         }
-        if (!group) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
+        if (!group) return; // kalter Tier-Kern (LAUT gemeldet) → der Platzhalter bleibt
+        const kind = typeof def.build === "function" ? "soul" : "soul-custom";
+        // die bodyParts wandern in den Entry (Rollen-Ableitung des EINEN Compound-Pfads, der Tier-Baum geht dort seinen Gang)
+        if (kind === "soul-custom") entry.bodyParts = def.bodyParts;
         // Die EINE Schwimm-Lehnen-Regel braucht die lokale x-Achse im gedrehten
         // Frame — die Spieler-Gruppen-Konvention (YXZ) gilt auch dem Peer-Mesh.
         group.rotation.order = "YXZ";
@@ -2393,6 +2384,16 @@ class AnazhRealm_netz_p2p {
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
         let posY = entry.y + yOff;
+        // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe`, Grenze aus der Kern-Zeile);
+        // dahinter ruht auch der Rig-Tick. Jede Gelenk-Gestalt (Mensch, Tier-Leib der Seele) trägt `_gelenk`.
+        let fernAktiv = false;
+        const gl = mesh.userData && mesh.userData._gelenk;
+        if (gl) {
+            const pp = this.state.playerMesh && this.state.playerMesh.position;
+            fernAktiv = pp
+                ? this._gelenkStufe(mesh, (entry.x - pp.x) * (entry.x - pp.x) + (entry.z - pp.z) * (entry.z - pp.z))
+                : gl.istFern;
+        }
         if (entry.meshKind === "soul-custom") {
             // Peer-Custom-Seelen erben die emergente Bewegung: Rollen aus den per soul gereisten bodyParts,
             // Phase aus dem Positions-Stream (keine Extra-Bandbreite).
@@ -2422,16 +2423,6 @@ class AnazhRealm_netz_p2p {
         // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
         // dem Positions-Stream — keine Extra-Bandbreite.
         if (entry.meshKind === "soul") {
-            // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe`, Grenze aus der
-            // Kern-Zeile); dahinter ruht auch der Rig-Tick. Jede Gelenk-Gestalt (Mensch, Tier-Seele) trägt `_gelenk`.
-            let fernAktiv = false;
-            const gl = mesh.userData && mesh.userData._gelenk;
-            if (gl) {
-                const pp = this.state.playerMesh && this.state.playerMesh.position;
-                fernAktiv = pp
-                    ? this._gelenkStufe(mesh, (entry.x - pp.x) * (entry.x - pp.x) + (entry.z - pp.z) * (entry.z - pp.z))
-                    : gl.istFern;
-            }
             const def = this.playerSoulDefs[entry.soulName];
             if (!fernAktiv && def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
                 if (underwater) {

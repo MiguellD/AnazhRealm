@@ -829,9 +829,9 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   dieselben Tabellen. Editiert der Schöpfer die Tabelle, folgen BEIDE Leser.
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
-  `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],
-standPose?: zahl[][] }` — die Achsen sind Lab-eigene Regler (freq · stride ·
-  tension · kpMul · Gelenk-Ziele …); der Host interpretiert sie NIE als
+  `motion { presets: { <name>: { <achse>: zahl … } }, standPose?: zahl[][] }` —
+  die Achsen sind Lab-eigene Regler (freq · tension · kpMul · Gelenk-Ziele …;
+  die Fußfolge wählt das Tempo, gangSchritt); der Host interpretiert sie NIE als
   zweites Animations-System (M4): der EINE Konsument ist der bestehende
   `_animateCompoundMotion`-/Rig-Bogen (wahrerguss Säule II — der Andock-Punkt
   ist benannt, der Konsum der bewusste Folge-Schritt). Spender heute:
@@ -951,7 +951,10 @@ DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `p
 die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DER ORT (K10): DER ERDBAU `ERDBAU` der Siedlungs-Pläne
 (Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY`, der
 Fläche `erdbauFlaeche` und seiner Wand `erdbauWand` (K66: Böschung und Kante zwischen zwei Flächen tragen im Fels-Stoff den
-Schutt), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
+Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der Keller eines Hauses aus fachwerk `grundVon`; das gesetzte Haus fragt ihn beim Setzen als
+Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
+seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
+Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),

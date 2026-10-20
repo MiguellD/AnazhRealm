@@ -472,6 +472,19 @@ const foundryKanal = (() => {
             __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
         }
     }
+    // DER GRUND-PLAN (S4): der Grund eines gesetzten Hauses als reine DATEN — GENERISCH wie __replySettlement liefert ihn
+    // der ERSTE Manifest-Kern mit einer grundPlan-Formel (fachwerk: der Körper-Satz und der Keller aus dem Plan des Hauses).
+    // Er rechnet im Faden: im Haupt-Faden malte sein erster Ruf die Karten des Studios (Radeon kalt 1,18 s).
+    function __replyGrundPlan(msg) {
+        let grund = null;
+        for (const zk of __zweitKerne()) {
+            if (typeof zk.kern.grundPlan === "function") {
+                grund = zk.kern.grundPlan(msg.presetId, msg.seed, msg.ov || null);
+                break;
+            }
+        }
+        __post({ type: "grund", world: "terrain", reqId: msg.reqId, grund }, "*");
+    }
     // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
     // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
     // der ERSTE Manifest-Kern mit einer SIEDLUNG-Daten-Zeile (fachwerk-core:
@@ -1138,6 +1151,8 @@ const foundryKanal = (() => {
         // Kern-spezifisches Literal (M8: Tabelle vor if). Fail-soft: kein Kern/Fehler
         // -> plan null, der Host behandelt das geschlossen.
         "export-settlement": __replySettlement,
+        // DER GRUND-PLAN-KANAL (S4): der Grund eines gesetzten Hauses aus seinem Plan, vor seinem Bau (`_hausGrundSetzen`)
+        "grund-plan": __replyGrundPlan,
     };
     return (msg) => {
         if (!msg || typeof msg !== "object" || !Object.prototype.hasOwnProperty.call(KANAL, msg.type)) return false;

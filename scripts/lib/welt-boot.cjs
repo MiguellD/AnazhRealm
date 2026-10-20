@@ -691,6 +691,43 @@ async function buehne(page) {
     await page.evaluate(() => window.__buehne());
 }
 
+// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`
+// (bis 18.10. stand derselbe Fünfzeiler in 43 Linsen).
+function pruefer() {
+    const errs = [];
+    const check = (name, ok, detail) => {
+        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) errs.push(name);
+    };
+    return { errs, check };
+}
+
+// DER DIENST ALS KIND (die Mehrspieler-Linsen: save-server, signaling-server): `script` (relativ zur Wurzel) mit den Variablen
+// `env` über der Umgebung, bereit, sobald seine Ausgabe `bereit` trifft — ohne Meldung binnen `frist` ms ROT. Bis S4-N4 trugen
+// gate:mp-sync und die drei Mehrspieler-Rauchproben je eine eigene Kopie samt `waitFor` und `sleep`.
+function startProc(script, bereit, env = {}, frist = 8000) {
+    return new Promise((resolve, reject) => {
+        const proc = require("child_process").spawn("node", [path.join(ROOT, script)], {
+            cwd: ROOT,
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, env),
+        });
+        const uhr = setTimeout(() => reject(new Error(`${script} startete nicht innerhalb ${frist / 1000} s`)), frist);
+        proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (clearTimeout(uhr), resolve(proc)));
+        proc.on("error", reject);
+    });
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// wartet, bis `fn(...args)` in der Seite wahr ist (je 150 ms), und gibt die Wartezeit zurück; nach `frist` ms ROT mit `label`
+async function waitFor(page, fn, frist, label, ...args) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < frist) {
+        if (await page.evaluate(fn, ...args).catch(() => false)) return Date.now() - t0;
+        await sleep(150);
+    }
+    throw new Error(`Zeitüberschreitung: ${label}`);
+}
+
 module.exports = {
     ROOT,
     MIME,
@@ -706,6 +743,10 @@ module.exports = {
     halteBis,
     buehne,
     uferStellen,
+    pruefer,
+    startProc,
+    sleep,
+    waitFor,
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
 

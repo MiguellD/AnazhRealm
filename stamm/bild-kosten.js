@@ -50,6 +50,8 @@ class AnazhRealm_bild_kosten {
             };
             IN.__anazhName = true;
         }
+        // DER STABILE KNOCHEN-NAME: dieselbe Klasse für die Haut jedes Leibs (`_knochenPufferName`)
+        this._knochenPufferName();
         // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
         // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
         // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame
@@ -407,6 +409,8 @@ class AnazhRealm_bild_kosten {
             };
             renderer.__anazhSchattenStoff = true;
         }
+        // DER WURF OHNE FARBE (B-K1): ein Werfer ohne Ausschnitt wirft ohne seinen Farb-Graphen (die Hülle um _getShadowNodes)
+        this._wurfOhneFarbe(renderer);
         // DIE ERST-ZEICHNUNG (Welle K — die Hänger-Klasse „ein Frame trägt synchron eine schwere Arbeit"; r184 gelesen):
         // `_renderObjectDirect` baut beim ERSTEN Zeichnen eines RenderObjects synchron, was ihm fehlt — den Knoten-Graphen
         // seines Stoffs (`needsRefresh` → `getNodeBuilderState`) und die GPU-Pipeline (`updateForRender` →

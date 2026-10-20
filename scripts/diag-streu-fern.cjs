@@ -49,19 +49,13 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "webgl", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
@@ -637,7 +631,6 @@ function check(name, ok, detail) {
         out.bNachher && out.bNachher.n === 0,
         out.bNachher ? `${out.bNachher.n}` : "—"
     );
-    check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     // ── H — VOR DEM BUCH: eine eigene Seite, deren Buch-Nachricht zurückgehalten wird (die Welt oben bleibt unberührt) ──
     const hPage = await browser.newPage();

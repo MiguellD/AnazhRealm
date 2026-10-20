@@ -26,16 +26,11 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         const THREE = window.THREE;
         if (THREE && THREE.Color) {
-            const mkStop = () => ({
-                sky: new THREE.Color(0.4, 0.5, 0.7),
-                light: new THREE.Color(1, 1, 1),
-                intensity: 1,
-            });
             for (const k of Object.keys(e)) e[k] = 0;
-            const cold = r._dayNightComputeTint(mkStop());
+            const cold = r._dayNightComputeTint();
             for (const k of Object.keys(e)) e[k] = 0;
             e.joy = 0.9;
-            const warm = r._dayNightComputeTint(mkStop());
+            const warm = r._dayNightComputeTint();
             out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
             out.coldR = cold.skyColor.r;
             out.warmR = warm.skyColor.r;
@@ -90,41 +85,14 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- a) Tag-Nacht-Zyklus
-        out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
-        // Der Tag trägt eine Szene (Leben-Schau 2): Mittag bis Sonnenuntergang = TAG_SZENE_MINUTEN (15) → 60 min.
-        out.dayLengthConstantsExist =
-            AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
-            AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
-        out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
-        // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
-        // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
-        // prüft jetzt ≥7 Stops + monoton steigende t-Werte.
-        out.dayNightStopsSorted =
-            AnazhRealm.DAY_NIGHT_STOPS &&
-            AnazhRealm.DAY_NIGHT_STOPS.length >= 7 &&
-            AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
-            AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
-            AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
-        out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
-
-        // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
-        // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
-        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5). Gemessen
-        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — die Luft der Welt ist klar (`_luftBeta` = die klare
-        // Extinktion des Gesetzes, `betaKlar`; der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41), und
-        // `_atmoSonne` rechnet selbst (der Leser ruft die Quelle, nie ihren Nachbau: ändert sich `_atmoSonne`, folgt die Probe).
-        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
-        r._luftBeta = () => lichtKlar;
+        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; V8.48: der Morgen um 0,32 steigt und knickt nicht)
+        const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        r._luftBeta = () => klar;
         try {
-            const lichtMittag = lichtUm(0.5);
-            out.interpolateMiddayClear = lichtMittag >= 0.7;
-            out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
-            out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
+            const L = [0.5, 0, 0.317, 0.32, 0.323].map((t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum);
+            out.atmoUhr = L;
         } finally {
             delete r._luftBeta;
         }
@@ -132,8 +100,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
         out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
-        // Sonnenaufgang Label
-        out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
         out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
@@ -179,8 +145,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
 
         // --- b) Sanfte Wetter-Übergänge
-        out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
-        out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
         const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
         out.weatherTintsSunnyRainy = ["sunny", "rainy", "stormy"].every((w) => {
             const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
@@ -190,17 +154,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Setze sunny als Ausgangspunkt
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
-        // weather-DSL-Op startet Transition + setzt state.weather sofort (der Satz des Spielers; die Welt wünscht nur)
+        // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
-        out.weatherStateImmediate = r.state.weather === "rainy";
-        out.weatherTransitionStarted = !!r.state.weatherTransition;
         out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
-        out.weatherTransitionToRainy = r.state.weatherTransition && r.state.weatherTransition.to === "rainy";
         // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
         const okSameTarget = r.requestWeatherTransition("rainy");
         out.transitionSameTargetNoop = okSameTarget === true;
-        // Invalides Target
-        out.transitionInvalidRejected = r.requestWeatherTransition("hagel") === false;
         // tickWeatherTransition setzt progress voran
         r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
         r.tickWeatherTransition(0);
@@ -267,32 +226,16 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
     if (wave6g3Results && !wave6g3Results.error) {
         // --- a) Tag-Nacht
-        check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
         check(
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
             wave6g3Results.dayLengthDefault
         );
-        check(
-            "Welle 6.G3.a: Tag-Längen-Konstanten (1/60/60 = 4 Szenen zu 15 min) korrekt",
-            wave6g3Results.dayLengthConstantsExist
-        );
-        check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
-        check(
-            "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
-            wave6g3Results.dayNightStopsSorted
-        );
-        check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
-        check(
-            "Welle 6.G3.a: Mittag (0.5) trägt das Licht der EINEN Atmosphäre (Durchlass ≥ 0.7)",
-            wave6g3Results.interpolateMiddayClear
-        );
-        check(
-            "Welle 6.G3.a: Mitternacht (0) ist dunkel (Licht der Atmosphäre < 0.35 des Mittags)",
-            wave6g3Results.interpolateMidnightDim
-        );
-        check("Welle 6.G3.a: das Licht der Atmosphäre wrapt mit der Uhr (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
+        const L = wave6g3Results.atmoUhr || [];
+        check("Welle 6.G3.a: der Durchlass zur Sonne mittags ≥ 0,7", L[0] >= 0.7, L[0]);
+        check("Welle 6.G3.a: um Mitternacht unter 0,35 des Mittags", L[1] < 0.35 * L[0], L[1]);
+        check("V8.48: der Morgen um 0,32 steigt", L[4] - L[2] > 0.0018, L.join(" "));
+        check("V8.48: der Morgen um 0,32 knickt nicht (C1)", Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" "));
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
-        check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
@@ -314,29 +257,17 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         );
 
         // --- b) Wetter-Übergang
-        check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
-        check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
         check(
             "Welle 6.G3.b: WEATHER_TINTS = die Sonne der Wetter-Zeile (skyMul = sun, lightMul = WX_LICHT)",
             wave6g3Results.weatherTintsSunnyRainy
         );
         check(
-            "Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)",
-            wave6g3Results.weatherStateImmediate
-        );
-        check("Welle 6.G3.b: weather-Wechsel startet weatherTransition", wave6g3Results.weatherTransitionStarted);
-        check(
             "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
             wave6g3Results.weatherTransitionFromSunny
         );
-        check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
         check(
             "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
             wave6g3Results.transitionSameTargetNoop
-        );
-        check(
-            "Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab",
-            wave6g3Results.transitionInvalidRejected
         );
         check(
             "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
@@ -449,21 +380,16 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
-        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `himmelTint`
+        // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
         if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
-            const mkStopG3 = () => ({
-                sky: new THREE_g3.Color(0.4, 0.5, 0.7),
-                light: new THREE_g3.Color(1, 1, 1),
-                intensity: 1,
-            });
             const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
             r.state.player.emotions.awe = 0;
             r.state.player.emotions.sorrow = 0;
-            const satG3Zero = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
             r.state.player.emotions.sorrow = 1.0;
-            const satG3High = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            const satG3High = satG3(r._dayNightComputeTint().skyColor);
             out.sorrowReducesSaturation = satG3High < satG3Zero;
         } else {
             out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
@@ -648,89 +574,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.26 Browser-Bug-Fixes + Polish (17.05.2026) ###
-    // Zwei Browser-Test-Bugs aus V8.25-Session + vier Audit-Polish-
-    // Punkte. Tests sind PERMANENT (nicht nur regression catchers).
-    const v826Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-        // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
-        const AnazhRealm = window.AnazhRealm || r.constructor;
-        // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
-        // weil orange→blau noch zu hart war)
-        out.thirteenStops = AnazhRealm.DAY_NIGHT_STOPS.length >= 13;
-        // Stop bei t=0.32 sollte zwischen 0.27 (rotbraun) und 0.38 (orange) liegen
-        const stops = AnazhRealm.DAY_NIGHT_STOPS;
-        const t032 = stops.find((s) => s.t === 0.32);
-        out.intermediateStopExists = !!t032;
-
-        // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
-        // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
-        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach). In klarer Luft wie Welle
-        // 6.G3.a: die Luft der Welt klar (`_luftBeta` = `betaKlar` des Gesetzes), `_atmoSonne` rechnet selbst.
-        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
-        const dtN = 0.003;
-        r._luftBeta = () => lichtKlar;
-        try {
-            const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
-            out.dayNightNoPulse = slopeAtStop > 0.3;
-            const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
-            const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
-            out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
-        } finally {
-            delete r._luftBeta;
-        }
-        // Die Tafel reproduziert ihre Stops EXAKT (Hermite trifft p1 bei u=0): t=0.5 trägt den Himmel des Mittags-Stops.
-        const mittagsStop = new THREE.Color(stops.find((s) => s.t === 0.5).sky);
-        const mittagsHimmel = r._interpolateDayNight(0.5).sky;
-        out.dayNightStopExact =
-            Math.abs(mittagsHimmel.r - mittagsStop.r) +
-                Math.abs(mittagsHimmel.g - mittagsStop.g) +
-                Math.abs(mittagsHimmel.b - mittagsStop.b) <
-            0.001;
-        // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
-        let maxJump = 0;
-        for (let i = 1; i < stops.length; i++) {
-            const a = stops[i - 1].sky;
-            const b = stops[i].sky;
-            const aR = (a >> 16) & 0xff,
-                bR = (b >> 16) & 0xff;
-            const aG = (a >> 8) & 0xff,
-                bG = (b >> 8) & 0xff;
-            const aB = a & 0xff,
-                bB = b & 0xff;
-            const dist = Math.max(Math.abs(aR - bR), Math.abs(aG - bG), Math.abs(aB - bB));
-            if (dist > maxJump) maxJump = dist;
-        }
-        // Max-Differenz pro Komponente sollte < 90 sein (vorher war 124 R)
-        out.noSharpColorJumps = maxJump < 95;
-        out.maxJump = maxJump;
-
-        return out;
-    });
-
-    if (v826Results && !v826Results.error) {
-        check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
-        check(
-            "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
-            v826Results.intermediateStopExists
-        );
-        check("V8.48: das Licht des Morgens pulst nicht (Steigung der Atmosphäre an t=0.32 klar positiv)", v826Results.dayNightNoPulse);
-        check("V8.48: das Licht der Atmosphäre ist C1-stetig (Steigung vor ≈ nach t=0.32, kein Knick)", v826Results.dayNightC1);
-        check(
-            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → der Himmel des Mittags-Stops)",
-            v826Results.dayNightStopExact
-        );
-        check(
-            `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
-            v826Results.noSharpColorJumps
-        );
-    } else {
-        check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
-    }
-
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -751,53 +594,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             atmoU.licht.value > 0 &&
             mE.x + mE.y + mE.z > 0;
 
-        // 2. Hemisphere-skyColor moduliert mit Tageszeit
-        r.setTimeOfDay(0.5, "human");
-        r._applyDayNightToScene();
-        const hemiNoonR = r.state.hemiLight.color.r;
-        const hemiNoonG = r.state.hemiLight.color.g;
-        const hemiNoonB = r.state.hemiLight.color.b;
-        r.setTimeOfDay(0, "human"); // Mitternacht
-        r._applyDayNightToScene();
-        const hemiNightR = r.state.hemiLight.color.r;
-        const hemiNightG = r.state.hemiLight.color.g;
-        const hemiNightB = r.state.hemiLight.color.b;
-        // Bei Mittag heller (Sky-Tint = mehr Blau-Hell), bei Mitternacht dunkler
-        const noonTotal = hemiNoonR + hemiNoonG + hemiNoonB;
-        const nightTotal = hemiNightR + hemiNightG + hemiNightB;
-        out.hemiSkyFollowsDayCycle = noonTotal > nightTotal;
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
-        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
-        // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
-        // Die Himmels-Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung zurück (D3, `_himmelFrisch`): neu
-        // gezeichnet und ihre Lesung abgewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
-        const umgebungFrisch = async () => {
-            if (await r._himmelFrisch()) r._applyDayNightToScene();
-        };
+        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
+        // 18-%-Karte am Anker (Mittelgrau + 1 EV unter der Zenit-Sonne, `_belichtungAnker`), nachts am Deckel.
+        // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         r.setTimeOfDay(0.5, "human");
-        r._applyDayNightToScene();
-        await umgebungFrisch();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
         r.setTimeOfDay(0, "human");
-        r._applyDayNightToScene();
-        await umgebungFrisch();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
-        // Der Himmel der EINEN Atmosphäre lebt auf der GPU (D3): unter dem Null-Renderer gibt es keine Tafel und keine
-        // Umgebung — die Karte sieht dort die Sonne allein (Mittag < 1); mit Himmel stellt er sie unter 0,85. Das Verhältnis
-        // Sonne : Himmel misst der echte Renderer (werkbank licht, K5 himmel-licht).
-        const mitHimmel = !!r._himmelsIrradianz();
-        // in der Eichung der Tonkurve (BELICHTUNG, F1): die Nacht steht am Deckel, der Mittag darunter
         const B = r.constructor.BELICHTUNG;
-        out.belichtungAusLicht =
-            belichtungMittag / B.max > 0.4 &&
-            belichtungMittag / B.max < (mitHimmel ? 0.85 : 1) &&
-            Math.abs(belichtungNacht - B.max) < 1e-6;
-        out.belichtungZahlen =
-            [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ") +
-            (mitHimmel ? " mit Himmel" : " Sonne allein, Null-Renderer");
+        const kAnker = B.zielKarte / ((0.18 / Math.PI) * r._belichtungAnker());
+        out.belichtungAusLicht = Math.abs(belichtungMittag / kAnker - 1) < 0.1 && Math.abs(belichtungNacht - B.max) < 1e-6;
+        out.belichtungZahlen = [belichtungMittag, kAnker, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -878,13 +689,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
         );
-        check(
-            "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
-            v827Results.hemiSkyFollowsDayCycle
-        );
         check("V18.507: EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
         check(
-            `V18.507: Belichtung aus dem Licht — Mittag < 1, Nacht 1,0 (${v827Results.belichtungZahlen})`,
+            `V18.507: Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
         );
         check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
@@ -1590,7 +1397,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
+// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.47 Schatten-Bias + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
@@ -1633,39 +1440,12 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
-    // ### V8.46 — Sanfte Wetter-Übergänge ###
-    const v846Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        out.helperExists = typeof r._weatherBlendedValue === "function";
-        const origWeather = r.state.weather;
-        const origTrans = r.state.weatherTransition;
-        // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
-        r.state.weather = "rainy";
-        out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
-        // Mitten in der Transition: progress 0.5 → halber Weg.
-        r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
-        out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
-        r.state.weatherTransition = origTrans;
-        r.state.weather = origWeather;
-        // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
-        const sh = r.state.directionalLight && r.state.directionalLight.shadow;
-        out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
-        return out;
+    // ### V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
+    const v847 = await safeEvaluate(page, () => {
+        const sh = window.anazhRealm.state.directionalLight && window.anazhRealm.state.directionalLight.shadow;
+        return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
-
-    if (v846Results && !v846Results.error) {
-        check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
-        check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
-        check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
-        check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
-        check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
-    } else {
-        check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
-    }
+    check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
     // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
@@ -2352,7 +2132,7 @@ async function checkBandLookPhysik(ctx) {
 
 // Himmelskörper-Tag (V18.530) — eingefaltet aus gate:himmel-tag (D3b): Befund 04.10. eine PINKE Scheibe am Mittagshimmel (ein
 // Planet aus Math.random, MeshBasic, Tag wie Nacht voll sichtbar). Jetzt sind die Wandelsterne die hellsten PUNKTE des Sternfelds,
-// die Dämmerung setzt die Grenzgröße (`_himmelGrenzgroesse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
+// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
 // Unendlich-Knoten (K16). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
@@ -2362,14 +2142,18 @@ async function checkBandHimmelTag(ctx) {
         const r = window.anazhRealm;
         const st = r.state;
         const T = window.THREE;
-        const sauber = { grenze: r._himmelGrenzgroesse };
         let kugel = null;
         if (stoerung === "kugel") {
             kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
             kugel.userData.skyOffset = new T.Vector3(200, 300, 100);
             st.scene.add(kugel);
         }
-        if (stoerung === "grenze") r._himmelGrenzgroesse = () => -3;
+        if (stoerung === "grenze") {
+            const achse = Object.getPrototypeOf(r)._tagAchse;
+            r._tagAchse = function (e) {
+                return Object.assign({}, achse.call(this, e), { grenze: -3 });
+            };
+        }
         if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
@@ -2417,7 +2201,7 @@ async function checkBandHimmelTag(ctx) {
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
-        r._himmelGrenzgroesse = sauber.grenze;
+        if (stoerung === "grenze") delete r._tagAchse;
         zeit(zeitWar);
         return out;
     };

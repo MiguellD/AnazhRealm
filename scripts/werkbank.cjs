@@ -17,6 +17,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
 //                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
+//                                      [--wetter rainy] [--saison winter] das Wort des Spielers statt Sonne und Sommer
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
 //                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
@@ -190,7 +191,7 @@
 // bzw. `(lx,lz)` (z. B. `+1.6`). Die Bilder sind dieselbe Aufnahme wie die Beweis-Sonden
 // (`scripts/lib/ausgabe-aufnahme.cjs`: Bühne Mittag · Sonne · Sommer, Ausgabe-Pfad).
 "use strict";
-const { statikServer } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -216,7 +217,6 @@ const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
-const root = path.resolve(__dirname, "..");
 // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
@@ -341,6 +341,15 @@ function rufe(weg, nutzlast) {
         req.setTimeout(0);
         req.end(body);
     });
+}
+// `--eigen`: die Welt als Kind von `start`, bereit, wenn die Steuerung antwortet (erst nach dem Boot)
+async function eigeneWelt() {
+    const k = require("child_process").spawn(process.execPath, [__filename, "start", "--port", String(PORT)], { stdio: "inherit" });
+    for (let t = 0; !(await rufe("/status").then(() => true, () => false)); t++) {
+        if (k.exitCode != null || t > 600) throw new Error(`die eigene Werkbank steht nicht (Exit ${k.exitCode})`);
+        await new Promise((r) => setTimeout(r, 1000));
+    }
+    return () => rufe("/stop");
 }
 
 // Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form) aus dem Quelltext schneiden.
@@ -1116,7 +1125,7 @@ async function starte() {
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
-            window.__buehne();
+            window.__buehne(k);
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
             // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
             if (Number.isFinite(k.uhr)) {
@@ -3065,6 +3074,8 @@ async function starte() {
             lz: a[5],
             datei: opt("--datei"),
             uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
+            wetter: opt("--wetter"),
+            saison: opt("--saison"),
             w: Number(opt("--w", 640)),
             h: Number(opt("--h", 360)),
             ziel: opt("--ziel"),
@@ -3276,6 +3287,35 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
+    } else if (cmd === "licht" && argv.includes("--tag")) {
+        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
+        // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
+        // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
+        const LL = require("./lib/licht-linsen.cjs");
+        const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        const welt = {};
+        if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
+        const kurve = (uhren, png) => rufe("/eval", { code: `return await window.__tagKurve(${JSON.stringify({ uhren, png })});` });
+        try {
+            for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
+                await rufe("/umstellen", { ort, sicht: "ego" });
+                const a = await kurve(argv.includes("--kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
+                const m = (welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" });
+                for (const z of m.zeilen || []) {
+                    if (z.png) fs.writeFileSync(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), Buffer.from(z.png.split(",")[1], "base64"));
+                    delete z.png;
+                }
+                const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
+                if (f) (m.fein = f.zeilen), Object.assign(m.schreiber, f.schreiber);
+            }
+        } finally {
+            if (halt) await halt();
+        }
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(welt, null, 1));
+        const u = LL.tagKurveUrteil(welt);
+        console.log(JSON.stringify(u.kurven, null, 1));
+        console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
         // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
@@ -3329,6 +3369,7 @@ async function starte() {
                 [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.03, A: 0.164, tau: [0.5, 1] } } } }).urteil, "ROT"],
                 [LL.kronenObenUrteil({ welt: { fichte: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
                 [LL.kronenObenUrteil({}).urteil, "ROT"],
+                ...LL.tagKurveSelbsttest(),
             ];
             const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
             console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
@@ -3741,6 +3782,7 @@ async function starte() {
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));
+    if (o && o.fehler) process.exit(1);
 })().catch((e) => {
     console.error("WERKBANK-FEHLER:", (e && e.message) || e);
     process.exit(1);

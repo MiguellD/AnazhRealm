@@ -1326,8 +1326,9 @@ class AnazhRealm_siedlung_ort {
         return true;
     }
 
-    // Die Bau-Wand für einen runden Bau des Dorfs (Brunnen, Marktstand): das Quadrat in seinem Fußabdruck-Kreis (Radius aus
-    // dem Bauplan) — ein Nachbar, der den Kreis nur streift, sperrt nicht.
+    // Die Bau-Wand für einen runden Bau des Dorfs (Brunnen, Laterne, Marktstand): das Quadrat in seinem Fußabdruck-Kreis
+    // (Radius aus dem Bauplan) — ein Nachbar, der den Kreis nur streift, sperrt nicht. Den Häusern seines eigenen Plans weicht
+    // die Ausstattung im Plan (fachwerk `brunnenWeicht`, S4-N4), nie hier.
     _bauFreiRund(type, x, z, bodenY) {
         const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);
         return this._bauFrei(x, z, 0, { ex: R, ez: R, ox: 0, oz: 0 }, null, bodenY);
@@ -1413,21 +1414,26 @@ class AnazhRealm_siedlung_ort {
             );
             return false;
         }
+        const wx = origin.x + slot.x;
+        const wz = origin.z + slot.z;
+        // DER GRUND FÄLLT MIT DEM SLOT (S4): der Erdbau des Orts trägt den Grund jedes Hauses seines Plans (`ortPlan`); fällt
+        // der Slot geschlossen, fällt sein Grund wie beim Abbau (`_erdbauGrundFaellt`) — die Platte des Plans bleibt. Bis S4-N3
+        // blieb er: am Start-Dorf schnitt der Grund des Alpenchalets, das am Brunnen des eigenen Plans fällt (Bau-Wand), ein
+        // Loch ins Leere (53,7/108,4, gate:haus-welt W9 Waise).
+        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
         const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
         const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
-        if (!name || !this.state.blueprints[name]) return false; // fail-closed
+        if (!name || !this.state.blueprints[name]) return zu(); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
         const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
-        const wx = origin.x + slot.x;
-        const wz = origin.z + slot.z;
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
         if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
-            return false;
-        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
+            return zu();
+        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu();
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
         // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
@@ -1462,7 +1468,7 @@ class AnazhRealm_siedlung_ort {
             }
         );
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
-        return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
+        return entry || zu(); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
     // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
@@ -1860,8 +1866,9 @@ class AnazhRealm_siedlung_ort {
     // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
     // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
     // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
-    // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im Snapshot und zum Gast): als Sitzungs-Feld
-    // begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen deckungsgleichen zweiten Hain.
+    // Nexus, das Wort des Wetter-Zugs (Art "wetter"). Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
+    // Snapshot und zum Gast): als Sitzungs-Feld begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen
+    // deckungsgleichen zweiten Hain.
     _bauSame(art) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
@@ -2300,8 +2307,8 @@ class AnazhRealm_siedlung_ort {
                 // Alle Leser fragen nur Existenz (truthy).
                 wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
                 this._autoSettlementQueue = { plan: v2, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
-                // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
-                // materialisieren budgetiert über die Ticks).
+                // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser materialisieren budgetiert über die
+                // Ticks) — die Ausstattung des Plans steht frei von jedem seiner Häuser (fachwerk `brunnenWeicht`)
                 this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
                 if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
                 return v2;
@@ -2434,7 +2441,10 @@ class AnazhRealm_siedlung_ort {
                     epoche: this._siedlungEpoche(c.seed), // dieselbe EINE Epochen-Funktion (Rebuild-Treue)
                 }).then((plan2) => {
                     this._stlWegePending = false;
-                    if (plan2) this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
+                    if (!plan2) return;
+                    this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
+                    const zug = this._autoSettlementQueue ? null : this._dorfZugOffen(plan2, c);
+                    if (zug) this._autoSettlementQueue = { plan: zug, origin: { x: c.x, z: c.z }, idx: 0, cellKey: k };
                 });
                 return; // EIN Dorf-Akt pro Tick
             }
@@ -2476,6 +2486,37 @@ class AnazhRealm_siedlung_ort {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
+    }
+
+    // DER ZUG ÜBERLEBT DEN RELOAD (S4-N4): der Erdbau des Orts reist im Snapshot (`worldMeta.erdbau`) mit dem Grund JEDES Hauses
+    // seines Plans, der Zug (`_autoSettlementQueue`) nicht — ein Reload mitten im Zug ließ die Gründe der Slots, die er noch
+    // stellen sollte, als Löcher ohne Bau liegen (`settlementCells` hält die Zelle besetzt). Der Grund IST das Datum des Plans:
+    // jeder Slot des Exports `plan`, dessen Grund (`art: "grund"` an seiner Mitte, die Höhe y des Plans v2) liegt und an dessen
+    // Mitte sein Haus (sein Same) nicht steht, ist offen — was dort sonst steht, urteilt die Bau-Wand des Slots; der Wege-Rebuild der Zelle reiht ihn wieder in den Zug, mit seinen Wandlaternen. Ein Slot,
+    // der fiel, nahm seinen Grund mit (`_erdbauGrundFaellt`), ein abgebautes Haus ebenso — keiner kehrt zurück. Rückgabe: der
+    // Plan des offenen Zugs (`c` die Zelle: Anker x, z) oder null.
+    _dorfZugOffen(plan, c) {
+        const gruende = this._erdbauRoh().filter((g) => g && g.art === "grund");
+        const steht = (x, z, same) =>
+            this.state.architectures.some(
+                (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
+            );
+        const neu = new Map();
+        const slots = [];
+        (plan.slots || []).forEach((sl, i) => {
+            const x = c.x + sl.x;
+            const z = c.z + sl.z;
+            const g = gruende.find((q) => Math.abs(q.cx - x) < 0.05 && Math.abs(q.cz - z) < 0.05);
+            if (!g || steht(x, z, sl.seed >>> 0)) return;
+            neu.set(i, slots.length);
+            slots.push(Object.assign({}, sl, { y: g.y }));
+        });
+        if (!slots.length) return null;
+        // die Wandlaternen hängen an ihrem Slot im offenen Zug (die Reihe des Exports bleibt: ihr Same je Nummer)
+        const laternen = (plan.laternen || []).map((l) =>
+            l && l.wand ? Object.assign({}, l, { slot: neu.has(l.slot) ? neu.get(l.slot) : -1 }) : l
+        );
+        return Object.assign({}, plan, { slots, laternen });
     }
 
     // DER STAND DER GRUNDRISSE FÄLLT AM ORT (K51-5, Lehre 25): ein neuer oder gefallener Grundriss (Bau, Lichtung, Fläche eines

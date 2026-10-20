@@ -1359,19 +1359,9 @@ class AnazhRealm_werkstatt_hof {
         }
         stage.soul = soul || null;
         if (!soul) return;
-        // V18.61 Ich-G — die ECHTE Avatar-Form: ein Built-in nutzt seinen `build()` (Mensch/Phönix/Drache mit
-        // Gliedern), eine Custom-Seele die bodyParts (kein generischer „Block" mehr).
-        const def = this._getSoulDef(soul);
-        let group = null;
-        if (def && typeof def.build === "function") {
-            try {
-                group = def.build();
-            } catch {
-                group = null;
-            }
-        }
-        if (!group && def && Array.isArray(def.bodyParts) && def.bodyParts.length)
-            group = this._buildFromBlueprint({ name: `self_${soul}`, parts: def.bodyParts });
+        // Labor = Welt: die Bühne zeigt den Leib, den die Welt der Seele baut — die EINE Leib-Wahl (`_leibDerSeele`; der
+        // Wolf ist der Studio-Baum der Welt-Kreatur, nie der Block aus seinen Bauplan-Teilen).
+        const group = this._leibDerSeele(soul, this._getSoulDef(soul), `self_${soul}`);
         if (!group) return;
         const box = new THREE.Box3().setFromObject(group);
         const center = box.getCenter(new THREE.Vector3());

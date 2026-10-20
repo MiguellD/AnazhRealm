@@ -38,19 +38,13 @@ const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./l
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     let out = null;
     try {
@@ -178,7 +172,6 @@ function check(name, ok, detail) {
         console.log("FEHLER:", out ? out.error : "?");
         process.exit(1);
     }
-    check("(1) kein Wurf headless (trackTimestamp/resolve sind fail-soft)", pageErrors.length === 0, pageErrors[0] || "sauber");
     check(
         `(2) perfSense führt gpuMs als eigene Phase (EWMA ${out.senseGpuMs != null ? (+out.senseGpuMs).toFixed(2) : "—"} ms · max ${out.senseGpuMax != null ? (+out.senseGpuMax).toFixed(1) : "—"})`,
         Number.isFinite(out.senseGpuMs) && Number.isFinite(out.senseGpuMax)

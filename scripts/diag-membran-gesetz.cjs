@@ -22,11 +22,7 @@ global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "porta-core.js"));
 const PC = globalThis.__portaCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 function eq(a, b, tol) {
     if (Array.isArray(a) && Array.isArray(b))
         return a.length === b.length && a.every((v, i) => eq(v, b[i], tol));

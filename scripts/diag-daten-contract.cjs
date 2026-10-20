@@ -32,11 +32,7 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des

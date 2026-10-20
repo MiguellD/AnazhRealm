@@ -1,57 +1,22 @@
 #!/usr/bin/env node
-// ─────────────────────────────────────────────────────────────────────────
-// diag-kamera-treue.cjs — DIE KAMERA-TREUE-WAND der Region-Bundles (gate:kamera-treue, 04.10.)
-//
-// Befund (echte GPU, Mess-Wiese −900/−850, Werkbank, EINE Welt): die Region-RenderBundles trugen die Kamera nicht.
-// r184 hält `_currentRenderBundle` ohne Stapel; das erste lichtempfangende Objekt im Hauptbild startet über
-// ShadowNode.updateBefore den Schatten-Render, dessen eigene Aufnahme den Zeiger auf null setzt — gemessen 107 von 237
-// aufgenommenen Draws verfolgt; der Replay refresht nur Verfolgte, der Rest zeigte die Kamera seiner Aufnahme. Und der
-// Replay refresht seine Bürger AUSSERHALB von renderObject: im Schatten-Render gegen den geteilten Override-Stoff, der
-// den Zustand des zuletzt direkt gezeichneten Werfers trägt (alphaTest) — die ausgeschnittenen Blätter warfen volle
-// Karten (81 % gleiche Pixel, Rauschboden 90 %). Der Chokepoint `_renderScene` (_configureRenderer) stapelt den Zeiger
-// und sammelt unter einem overrideMaterial keine Bundles.
-//
-// Die Wand fährt den ECHTEN Renderer des Spiels (swiftshader, Software-Holz `kienspan`, mit eingeschaltetem
-// Schatten) an einer eigenen Bühne: eine BundleGroup trägt einen lichtempfangenden Boden, ausgeschnittene Karten
-// (alphaTest, jede ihr eigenes Programm) und Kisten; ein Richtungslicht wirft Schatten. Sie nennt jeden Täter:
-//   (a) STAPEL — eine Aufnahme mit Schatten-Render verfolgt jeden aufgenommenen Draw (verfolgt = gezeichnet).
-//   (b) OVERRIDE — kein Bundle wird unter einem overrideMaterial gesammelt (der Schatten-Render zeichnet direkt).
-//   (c) BILD — Blick Y als Replay einer Aufnahme an Blick X gleicht dem direkten Pfad bei Y (≥ 0,999, Zeit fest), und
-//       das auch, wenn der geteilte Schatten-Stoff vor dem Replay einen fremden alphaTest trägt (der Zustand, den der
-//       letzte direkte Werfer hinterlässt).
-//   LAUF-KONTROLLEN (sonst ist die Wand blind und rot): ohne den Chokepoint klebt der Replay an Blick X, und ein
-//   Schatten-Replay mit fremdem Stoff wirft anders (je < 0,98); Blick X und Y sind verschiedene Bilder (< 0,9).
-// DIE STAND-WAND (Welle K, 07.10.): was die Diät im Stand arbeitet, am selben echten Renderer.
-//   (d) TEILEN — die acht Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen EINE geteilte Gruppe (der
-//       EINE Knoten je Quelle, _configureRenderer). V18.534: 8 Gruppen, jede lud Kamera und Schatten für sich.
-//   (e) STAND — je Pfad (direkt · Replay) vier Frames ohne Änderung: kein Voll-Refresh, kein Upload einer geteilten
-//       Gruppe, kein zweiter Gang über einen Knoten, Vorher-Knoten oder eine geteilte Gruppe im selben Render (ein
-//       verschachtelter Render ist nie der Gang). V18.534: 136 wiederholte Gänge je Render.
-//       DER SATZ (K71): ein Diät-Objekt wechselt seinen Ausschnitt (drawRange) je Pass wie ein Chunk-Satz der Welt — der
-//       Ausschnitt ist ein Draw-Parameter, kein Refresh-Grund (am Kopf vor K71: SATZ ×2 je Render, an Genesis Third jeder
-//       Satz in jedem Render). EINMAL: eine Attribut-Änderung trägt je Bürger EINEN Voll-Refresh, der Frame danach keinen
-//       (vor K71: KISTE ×1 — der Vendor-Vergleich prüfte die Geometrie ein zweites Mal).
-//   (f) ÄNDERUNG — im Stand rückt eine Kiste, ein Blatt dreht: das Bild der Diät gleicht dem Bild, in dem jedes Objekt
-//       voll refresht (≥ 0,999); Lauf-Kontrolle: eine Diät, die nie refresht, weicht ab (< 0,98). So fiel der gemerkte
-//       Node-Frame (Hauptbild mit der Schatten-Kamera: 0,10) beim Bau des Gangs auf.
-//   (g) VERSCHACHTELT — ein verschachtelter Render, der die geteilten Kamera-Knoten über die VENDOR-Bahn auf SEINE Kamera
-//       stellt (ein Werfer ohne Diät), macht jeden Stempel des äußeren Renders alt. Eigene Bühne (in (f) wirft jeder als
-//       Diät-Stoff und stempelt neu — dort ist die Klasse unsichtbar): ein Diät-Stoff ohne Schatten zuerst (er stellt die
-//       Kamera-Knoten), der Diät-Boden (sein Schatten startet den verschachtelten Render), ein Werfer ohne Diät. Die Diät
-//       zeichnet wie der volle Refresh (≥ 0,999); Lauf-Kontrollen: ein verschachtelter Render lief, und der Gang mit
-//       einem Stempel nur aus der Render-Id (er überlebt den verschachtelten Render) weicht ab (< 0,98). Gegenprüfung
-//       07.10.: der Gang von 181d3c9e zeichnete hier 0,11.
-//   Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`): nach einem verschachtelten Render stellt
-//   der äußere seine Knoten zu Recht ein zweites Mal.
-//   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein), und die Wand zählt
-//   nach: LAUF — kein Bild der Spiel-Szene, kein Puffer des GPU-Kehraus während der Bühne. Ein Spiel-Frame nimmt der
-//   Bühne (nicht im Spiel-Graph) ihre Geometrie-Puffer, ein Replay danach zeichnete das Bild davor (0,3064 = X gegen Y,
-//   die roten Läufe auf integ-probe unter Last; nachgestellt mit einem Spiel-Takt zwischen Aufnahme und Replay, ohne
-//   Kehraus 1,0).
-// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
-// Täter — jeder fällt rot und wird genannt.
-//   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
-// ─────────────────────────────────────────────────────────────────────────
+// diag-kamera-treue.cjs — DIE KAMERA-TREUE-WAND (gate:kamera-treue): der echte Renderer (WebGPU, kienspan, Schatten an) an
+// einer eigenen Bühne (BundleGroup: Boden, ausgeschnittene Karten, Kisten, ein werfendes Richtungslicht); die Chronik ist git.
+//   (a) STAPEL — eine Aufnahme mit Schatten-Render verfolgt jeden aufgenommenen Draw (`_renderScene` stapelt den Zeiger).
+//   (b) OVERRIDE — kein Bundle wird unter einem overrideMaterial gesammelt.
+//   (c) BILD — der Replay einer Aufnahme an Blick X zeichnet Blick Y wie der direkte Pfad (≥ 0,999), auch mit fremdem
+//       alphaTest am geteilten Schatten-Stoff; Kontrollen: ohne Chokepoint und mit Schatten-Bundle < 0,98, X ≠ Y (< 0,9).
+//   (d) TEILEN — Programme gleicher Quellen tragen EINE geteilte Gruppe.
+//   (e) STAND — je Pfad vier Frames ohne Änderung: kein Voll-Refresh (auch nicht für einen Ausschnitt je Pass, K71), kein
+//       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
+//       Bürger einmal auf, der Frame danach nicht.
+//   (f) ÄNDERUNG — eine Änderung im Stand zeichnet wie der volle Refresh (≥ 0,999); Kontrolle: nie-Refresh < 0,98.
+//   (g) VERSCHACHTELT — nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät wie der
+//       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
+//   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
+//   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
+//   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph.
+//   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
+//   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
@@ -69,7 +34,7 @@ function urteil(z) {
     const l = z.lauf || {};
     if (l.spielBilder !== 0 || l.kehraus !== 0)
         v.push(
-            `LAUF: ${l.spielBilder} Spiel-Bilder während der Bühne, der GPU-Kehraus nahm ${l.kehraus} Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig`
+            `LAUF: ${l.spielBilder} Spiel-Bilder während der Bühne, der GPU-Kehraus nahm ${l.kehraus} Geometrie-Puffer — der Spiel-Loop lief hinein, der Lauf ist ungültig`
         );
     const a = z.aufnahme || {};
     if (!(a.gezeichnet > 0)) v.push("STAPEL: die Bühne nahm kein Bundle auf (die Probe ist blind)");
@@ -100,6 +65,18 @@ function urteil(z) {
         v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
         v.push(`SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`);
+    // (i) SCHLÜSSEL · (j) WURF
+    const ks = z.schluessel || {},
+        wu = z.wurf || {};
+    if (!ks.geprueft) v.push("SCHLÜSSEL: die Welt zeichnete kein Render-Objekt — die Probe ist blind");
+    if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
+    if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
+    if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
+    if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
+    for (const x of wu.werfer || []) {
+        if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
+        if (!x.aus && x.farbe) v.push(`WURF: ${x.name} — ohne Ausschnitt trägt der Wurf den Farb-Graphen`);
+    }
     // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
@@ -154,6 +131,8 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
+        schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
+        wurf: { leer: { verwirft: false }, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -202,6 +181,11 @@ function selbsttest() {
         { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
+        { name: "Diät nach Anlage (B-K1)", z: mit("schluessel", { veraltet: { bauSatz: 1 } }), muss: /SCHLÜSSEL: bauSatz ×1/ },
+        { name: "Schlüssel-Kontrolle blind", z: mit("schluessel", { kontrolle: false }), muss: /die Kontrolle ist blind/ },
+        { name: "Welt ohne Render-Objekt", z: mit("schluessel", { geprueft: 0 }), muss: /die Welt zeichnete kein Render-Objekt/ },
+        { name: "alphaTest-0,5-Werfer verliert discard", z: mit("wurf.werfer.1", { wurf: false }), muss: /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/ },
+        { name: "Farb-Graph im Wurf", z: mit("wurf.werfer.0", { farbe: true }), muss: /WURF: wurf:voll — ohne Ausschnitt/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
         {
             name: "Stempel überlebt den verschachtelten Render",
@@ -244,11 +228,31 @@ function buehne() {
             T = window.THREE,
             TSL = T.TSL;
         const rend = st.renderer;
+        // (i) SCHLÜSSEL: jedes Hauptpass-Render-Objekt der Welt (Welt-Szene, Senken über ihren Zeichner) trägt nach der
+        // Erst-Zeichnung den Schlüssel seines Baus; Kontrolle: die Aufzählbarkeit des Beobachters wechselt ihn.
+        const schluessel = { geprueft: 0, veraltet: {} };
+        {
+            const ros = new Set();
+            st.scene.traverse((o) => {
+                for (const q of [o, o.__zeichner])
+                    for (const ro of (q && q.__renderObjekte) || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
+            });
+            for (const ro of ros) {
+                const n = ro.material.name || ro.object.name || ro.object.type;
+                if (ro.initialCacheKey !== ro.getCacheKey()) schluessel.veraltet[n] = (schluessel.veraltet[n] || 0) + 1;
+            }
+            schluessel.geprueft = ros.size;
+            const ro = [...ros].find((x) => Object.getOwnPropertyDescriptor(x.material, "setupObserver"));
+            const d = ro && Object.getOwnPropertyDescriptor(ro.material, "setupObserver");
+            if (d) {
+                const k = ro.getCacheKey();
+                Object.defineProperty(ro.material, "setupObserver", { ...d, enumerable: !d.enumerable });
+                schluessel.kontrolle = ro.getCacheKey() !== k;
+                Object.defineProperty(ro.material, "setupObserver", d);
+            }
+        }
         if (typeof rend.setAnimationLoop === "function") rend.setAnimationLoop(null);
-        // DER RUHENDE SPIEL-LOOP (Lauf-Kontrolle, Welle K): die Welt bootet nach „Renderer bereit" weiter und setzt ihren
-        // Loop selbst — er renderte dann mitten in die Bühne (info sprang zurück, gemessen 2 von 4 Läufen unter Last), und
-        // unter einer Täter-Diät zeichnete die Welt ohne Upload (setIndexBuffer ohne Puffer). Für die Bühne nimmt der
-        // Renderer keinen Loop an; danach gilt der zuletzt verlangte.
+        // DER RUHENDE SPIEL-LOOP (Lauf-Kontrolle): für die Bühne nimmt der Renderer keinen Loop an; danach gilt der verlangte.
         const loopRoh = rend.setAnimationLoop;
         let loopVerlangt = null;
         rend.setAnimationLoop = (f) => {
@@ -386,13 +390,8 @@ function buehne() {
                 this._currentRenderBundle = a;
             }
         };
-        // DER SPIEL-FRAME IN DER BÜHNE (Lauf-Kontrolle, Gegenprüfung 07.10.): ein Hauptbild der Spiel-Szene während der
-        // Bühne ist ein Spiel-Frame — sein GPU-Kehraus (`_gpuKehraus`) nimmt jedem Geometrie-Puffer die GPU, den der Spiel-
-        // Graph nicht trägt, also der ganzen Bühne; ein Bundle-Replay danach lädt keine Geometrie neu (r184 refresht im
-        // Replay nur Knoten und Bindungen), sein Pass verfällt, das Ziel behält das Bild davor. Nachgestellt (ein Spiel-
-        // Takt zwischen Aufnahme an X und Replay an Y): der Replay zeichnete Blick X (0,3064 gegen Y — die roten Läufe auf
-        // integ-probe unter Last, deren Bühne den Loop der bootenden Welt noch annahm), ohne Kehraus 1,0. Die Bühne nimmt
-        // keinen Spiel-Loop an; die Wand zählt nach (Spiel-Bilder, Puffer des Kehraus) und nennt einen Lauf ungültig.
+        // DER SPIEL-FRAME IN DER BÜHNE (Lauf-Kontrolle): sein GPU-Kehraus nähme der Bühne die Geometrie-Puffer, ein Replay
+        // danach zeichnete das Bild davor — die Wand zählt Spiel-Bilder und Kehraus-Puffer und nennt einen Lauf ungültig.
         let spielBilder = 0;
         const kehrausVor = st._gpuKehrausN || 0;
         const zaehlUm = (bahn) =>
@@ -472,10 +471,7 @@ function buehne() {
             rend._renderScene = zaehlUm(nurStapel);
             const bSchatten = await replay(fremderStoff);
             rend._renderScene = zaehlUm(spielSzene);
-            // (d)(e)(f)(g) DIE STAND-WAND (Welle K): die Diät-Arbeit je Render am echten Renderer — Prüfungen, Voll-Refreshs,
-            // die Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen (je Render-Abschnitt: Render-Id und
-            // `info.calls` — nach einem verschachtelten Render stellt der äußere seine Knoten zu Recht neu), die Uploads
-            // geteilter Gruppen.
+            // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt.
             const A = r.constructor;
             const diaetRoh = A._diaetRefresh,
                 schreibRoh = A._diaetGeteiltSchreiben;
@@ -585,9 +581,7 @@ function buehne() {
                     const vollWer = {};
                     for (const k in zs.wer) vollWer[k] = zs.wer[k] / 4;
                     const still = { pruef: zs.pruef / 4, voll: zs.voll / 4, vollWer, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
-                    // EINMAL JE ÄNDERUNG (K71): ein Attribut der Kiste hebt seine Version — der Frame trägt je Bürger (Haupt-
-                    // und Schatten-Pass) EINEN Voll-Refresh, der Frame danach keinen (der Vendor-Vergleich der Geometrie frischte
-                    // ihn ein zweites Mal auf).
+                    // EINMAL JE ÄNDERUNG (K71): ein Attribut hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
                     kisten[2].name = "KISTE";
                     kisten[2].geometry.attributes.uv.needsUpdate = true;
                     Object.assign(zs, { voll: 0, wer: {} });
@@ -640,10 +634,8 @@ function buehne() {
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
                 stand.aenderung = bild;
-                // (g) VERSCHACHTELT (Gegenprüfung 07.10.): eine eigene Bühne, in deren Schatten-Render KEIN Diät-Stoff wirft —
-                // die geteilten Kamera-Knoten stellt dort nur die Vendor-Bahn des Werfers ohne Diät. Ein Diät-Stoff ohne
-                // Schatten zeichnet zuerst (renderOrder −1: er stellt und stempelt die Kamera-Knoten), dann startet der
-                // Diät-Boden den Schatten; seine erstmals geladene Gruppe trägt die Kamera, die die Knoten JETZT halten.
+                // (g) VERSCHACHTELT: im Schatten-Render wirft nur ein Werfer ohne Diät (die Vendor-Bahn stellt die Kamera-Knoten);
+                // ein Diät-Stoff ohne Schatten zeichnet zuerst (renderOrder −1), dann startet der Diät-Boden den Schatten.
                 const szene2 = new T.Scene();
                 const licht2 = new T.DirectionalLight(0xffffff, 3);
                 licht2.position.set(6, 12, 4);
@@ -682,9 +674,7 @@ function buehne() {
                 werfer.receiveShadow = false;
                 werfer.frustumCulled = false;
                 gruppe2.add(werfer);
-                // Der Täter (Lauf-Kontrolle): derselbe Gang, dem `info.calls` stehen bleibt (er liest die Render-Id) — sein
-                // Stempel ist nur die Render-Id und überlebt den verschachtelten Render. Liest der Gang seinen Abschnitt
-                // anderswo, gleicht der Täter dem Gang und die Kontrolle fällt rot (nie still). Ohne eval (die CSP der Seite).
+                // Der Täter (Kontrolle): derselbe Gang mit stehendem `info.calls` — sein Stempel ist nur die Render-Id.
                 const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
                 const mit2 = async (refresh, gang) => {
                     const altR = A._diaetRefresh,
@@ -722,10 +712,8 @@ function buehne() {
                 if (ubEigen) be.updateBinding = ubRoh;
                 else delete be.updateBinding;
             }
-            // (h) DIE SENKE (1410-1): zwei Senken EINES Stoffs und EINER Geometrie (`_instanzMesh`) zeichnen über ihre
-            // Zeichner aus EINEM Knoten-Zustand — r184 hängt an jede InstancedMesh ihre uuid, zwei r184-InstancedMesh desselben
-            // Stoffs tragen zwei (Lauf-Kontrolle). Und die Senke zeichnet wie r184s InstancedMesh: Lage, Drehung, Farbe und
-            // Wurf je Instanz (Bild gegen eine InstancedMesh mit denselben Matrizen); ohne die Senke weicht das Bild ab.
+            // (h) DIE SENKE (1410-1): zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei)
+            // und wie r184s InstancedMesh derselben Matrizen; ohne die Senke weicht das Bild ab.
             const senke = {};
             {
                 gruppe.isBundleGroup = false;
@@ -776,7 +764,48 @@ function buehne() {
                 senke.blind = gleich(bildOhne, bildRef);
                 gruppe.remove(refA, refB);
             }
+            // (j) WURF: je Werfer Haupt- und Schatten-Fragment (nur der Knoten-Bau, kein kaltes Programm); Soll s. Kopf.
+            const wurf = { werfer: [] };
+            {
+                const wSzene = new T.Scene();
+                const wl = new T.DirectionalLight(0xffffff, 3);
+                wl.castShadow = true;
+                wSzene.add(wl, wl.target);
+                const karte = new T.DataTexture(new Uint8Array(16).fill(200), 2, 2);
+                const stoff = (name, o, colorNode) => Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
+                const probe = [
+                    stoff("wurf:leer", {}),
+                    stoff("wurf:voll", {}, TSL.vec4(TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.uv().x), 1)),
+                    stoff("wurf:karte", { map: karte }),
+                    stoff("wurf:ausschnitt", { alphaTest: 0.5 }, TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))))),
+                ];
+                for (const m of probe) wSzene.add(Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), m), { castShadow: true, receiveShadow: true, frustumCulled: false }));
+                const fang = [];
+                const odVor = rend._renderObjectDirect;
+                rend._renderObjectDirect = function (object, material, sc, camera, lightsNode, group, clip, passId) {
+                    const ro = this._objects.get(object, material, sc, camera, lightsNode, this._currentRenderContext, clip, passId);
+                    const w = material.isShadowPassMaterial === true;
+                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader]);
+                    if (!w) this._nodes.updateBefore(ro); // der Hauptpass startet die Kaskade
+                };
+                try {
+                    rend.setRenderTarget(rt);
+                    rend.render(wSzene, kam);
+                } finally {
+                    rend.setRenderTarget(null);
+                    rend._renderObjectDirect = odVor;
+                }
+                const frag = (n, w) => (fang.find((f) => f[0] === n && f[1] === w) || [])[2] || "";
+                const verwirft = (f) => /\bdiscard\b/.test(f);
+                const leer = frag("wurf:leer", true);
+                wurf.leer = leer && { verwirft: verwirft(leer) };
+                for (const { name, alphaTest } of probe.slice(1))
+                    wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
+                for (const m of probe) m.dispose();
+            }
             return {
+                wurf,
+                schluessel,
                 senke,
                 stand,
                 aufnahme,
@@ -808,8 +837,6 @@ function buehne() {
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     const vendorDrift = [];
     page.on("console", (m) => {
         const t = m.text();
@@ -823,12 +850,12 @@ function buehne() {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        // Nur der Renderer muss stehen (die Welt selbst ist nicht die Bühne).
+        // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             while (performance.now() - t0 < 240000) {
                 const r = window.anazhRealm;
-                if (r && r.state && r.state.rendererReady && r.state.renderer && r.state.renderer.backend) {
+                if (r && r.state && r.state.rendererReady && r.state._weltbildDa && r.state.renderer && r.state.renderer.backend) {
                     r.state.renderer.setAnimationLoop(null);
                     const be = r.state.renderer.backend;
                     return {
@@ -842,15 +869,16 @@ function buehne() {
             }
             return { ok: false };
         });
-        if (!bereit.ok) throw new Error("der Renderer stand nach 240 s nicht");
+        if (!bereit.ok) throw new Error("das erste Weltbild stand nach 240 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
-        log(`Renderer bereit nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
+        log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         out = await page.evaluate(buehne);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
         );
         log(`Stand: ${JSON.stringify(out.stand)}`);
+        log(`B-K1 ${JSON.stringify([out.schluessel, out.wurf])}`);
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -861,7 +889,6 @@ function buehne() {
         process.exit(1);
     }
     const v = urteil(out);
-    if (pageErrors.length) v.push(`${pageErrors.length} Seiten-Fehler: ${pageErrors[0]}`);
     for (const d of vendorDrift) v.push(`VENDOR-DRIFT: ${d}`);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
@@ -872,6 +899,7 @@ function buehne() {
         `\n✅ GRÜN — LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
+            `SCHLÜSSEL · WURF halten. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`

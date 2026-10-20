@@ -24,10 +24,9 @@
 // und Aufrufstelle. Befund am Kopf 516e704a: unter Node 24 grün, unter Node 22 16 von 16 Fällen rot (three r128
 // CatmullRomCurve3 'centripetal' und convertSRGBToLinear rufen Math.pow mit gebrochenem Exponenten).
 //   node scripts/diag-porta-contract.cjs
-const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { probeWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v4/golden");
@@ -38,53 +37,7 @@ const KERN = path.join(root, "porta-core.js");
 require(KERN);
 const PC = globalThis.__portaCore;
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
-
-// ── Der kanonische Fingerabdruck einer gebauten Gruppe (exakt die v3-Form) ──
-function fingerprint(group) {
-    const h = crypto.createHash("sha256");
-    let objects = 0;
-    let vertices = 0;
-    group.updateMatrixWorld(true);
-    group.traverse((o) => {
-        const geo = o.geometry;
-        if (!geo || !geo.attributes || !geo.attributes.position) return;
-        objects++;
-        vertices += geo.attributes.position.count;
-        h.update(String(o.type));
-        h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
-        const m = o.material;
-        if (m) {
-            h.update(
-                JSON.stringify({
-                    c: m.color ? m.color.getHex() : null,
-                    e: m.emissive ? m.emissive.getHex() : null,
-                    r: typeof m.roughness === "number" ? m.roughness : null,
-                    mt: typeof m.metalness === "number" ? m.metalness : null,
-                    o: typeof m.opacity === "number" ? m.opacity : null,
-                    t: !!m.transparent,
-                })
-            );
-        }
-        for (const name of Object.keys(geo.attributes).sort()) {
-            const a = geo.attributes[name];
-            const arr = a.array;
-            h.update(name);
-            h.update(String(a.itemSize));
-            h.update(Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength));
-        }
-        if (geo.index) {
-            const ia = geo.index.array;
-            h.update("index");
-            h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
-        }
-    });
-    return { objects, vertices, sha256: h.digest("hex") };
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];
@@ -111,22 +64,6 @@ function caseKey(c) {
     return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 }
 
-// Reine Vergleichs-Funktion (auch der Selbst-Test ruft sie) → Abweichungsliste.
-function compare(golden, actual) {
-    const bad = [];
-    for (const k in golden.cases) {
-        const g = golden.cases[k];
-        const a = actual[k];
-        if (!a) {
-            bad.push(`${k}: fehlt im Ist`);
-            continue;
-        }
-        if (g.sha256 !== a.sha256)
-            bad.push(`${k}: sha256 weicht ab (${g.sha256.slice(0, 12)}… != ${a.sha256.slice(0, 12)}…)`);
-        else if (g.objects !== a.objects || g.vertices !== a.vertices) bad.push(`${k}: objects/vertices weichen ab`);
-    }
-    return bad;
-}
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v4 — Tore (porta-core.js buildInstance) ===");

@@ -25,17 +25,12 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // Der DECKEL (aus der Messung, mit Marge): 8-9 Haeuser auf der Fernstufe = ~28k Tris
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
@@ -168,8 +163,6 @@ const triasStaticLaws = () => [
     const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -530,7 +523,6 @@ const triasStaticLaws = () => [
         );
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

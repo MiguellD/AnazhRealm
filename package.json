@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.26",
+    "version": "18.546.36",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -178,6 +178,7 @@
         "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
+        "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4492",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
         "lens:wiese": "node scripts/diag-wiese.cjs"
     },

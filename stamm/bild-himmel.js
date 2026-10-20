@@ -55,7 +55,7 @@ class AnazhRealm_bild_himmel {
 
     // DIE LIVE-UNIFORMS DES HIMMELS (einmal je Welt): die Zeit (Drift der Wolken), die Deckung des Wetters, die Sonne und ihr
     // Farbton — DSL, Tag-Nacht und Loop schreiben hier hinein (`.value`), die Kuppel und der Spiegel des Wassers lesen dieselben
-    // (`_himmelSicht`). `himmelTint` ist der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter,
+    // (`_himmelSicht`). `himmelTint` ist der TRÄGER der Tönung (kein Knoten der Kuppel): der Himmel des Studios mit Wetter,
     // Feld, Gefühl und DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3). Sie reisen in
     // der GETEILTEN renderGroup (`_uniformHeimatTeilen`): der Wasser-Satz trägt die Diät, als Objekt-Uniform fror sein Spiegel
     // die Wolken des ersten Bilds ein (A1-n1: die Wolken-Uhr im Puffer des Wassers 74,8 gegen 228,0 am Knoten).
@@ -234,7 +234,7 @@ class AnazhRealm_bild_himmel {
     // ~2800 Sterne deterministisch aus worldMeta.seed; Größe + Hue je Stern (O/B bläulich ↔ K/M gelblich);
     // Sidereal-Rotation mit timeOfDay um eine geneigte Achse, Position folgt der Kamera; AdditiveBlending.
     // DIE SICHTBARKEIT IST PHYSIK (V18.530): jeder Punkt trägt seine scheinbare Helligkeit als Größenklasse
-    // (`aMag`), die Dämmerung setzt die Grenzgröße (`_himmelGrenzgroesse`) — mittags ist NICHTS sichtbar,
+    // (`aMag`), die Dämmerung setzt die Grenzgröße (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`) — mittags ist NICHTS sichtbar,
     // in der Dämmerung erscheint zuerst der Abendstern, dann die hellen Sterne, in tiefer Nacht alle.
     // DIE WANDELSTERNE (`HIMMEL.wandelsterne`) sind die hellsten Punkte desselben Feldes — keine Kugeln.
     // Befund 04.10. (Blick-Tour 7-birke): drei Math.random-Kugeln (10–30 m auf 400 m = 3–8° — 6–16 Monde
@@ -312,7 +312,7 @@ class AnazhRealm_bild_himmel {
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
-        // Die Grenzgröße des Himmels (`_himmelGrenzgroesse`): ein Punkt leuchtet, wenn er heller ist als sie
+        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn er heller ist als sie
         // (weich über ±0,5 Größenklassen).
         const uGrenze = uniform(-10);
 
@@ -647,8 +647,8 @@ class AnazhRealm_bild_himmel {
     }
 
     // DIE UMGEBUNG ZURÜCK AUF DIE CPU (je Neuzeichnung, asynchron): die Equirekt-Tafel als lineare Leuchtdichte je Texel
-    // (`_skyEnvData`, Float32 rgba, Zeile 0 = Nadir wie three sie sampelt) — der Leser `_himmelsIrradianz` (Belichtung,
-    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere (wer auf die frühere wartet, wartet auf sie). DIE LESUNG DIESER MALUNG ist ein Versprechen
+    // (`_skyEnvData`, Float32 rgba, Zeile 0 = Nadir wie three sie sampelt) — der Leser `_himmelsIrradianz` (Feld-Pass,
+    // Luft unter Wasser). Eine spätere Lesung überholt eine frühere (wer auf die frühere wartet, wartet auf sie). DIE LESUNG DIESER MALUNG ist ein Versprechen
     // (`state._skyEnvLesung`, true sobald sie liegt): wer nach einem Sprung der Uhr die Bestrahlung der neuen Stunde braucht,
     // wartet auf sie — die CPU sieht den Himmel EINE Lesung nach der Malung, nie davor. Ein echter Renderer ohne Rücklesung
     // bricht laut (bis zur Nachbesserung kehrte die Lesung still zurück, und jeder Leser sah keinen Himmel).
@@ -929,77 +929,59 @@ class AnazhRealm_bild_himmel {
 
     // ### 6.G3.a — Tag-Nacht-Zyklus ###
 
-    // V8.48 — ein-Segment Catmull-Rom-Hermite. Liefert den interpolierten
-    // Skalar zwischen v1 (bei u=0) und v2 (bei u=1). Die Tangenten m1/m2
-    // sind die nicht-uniformen Catmull-Rom-Tangenten aus den Nachbarn
-    // p0/p3 — daher ist die Gesamtkurve über alle Stops hinweg C1-stetig.
-    _catmullDayNight(v0, v1, v2, v3, t0, t1, t2, t3, u) {
-        const h = t2 - t1;
-        const m1 = t2 - t0 !== 0 ? (v2 - v0) / (t2 - t0) : 0;
-        const m2 = t3 - t1 !== 0 ? (v3 - v1) / (t3 - t1) : 0;
-        const u2 = u * u;
-        const u3 = u2 * u;
-        const h00 = 2 * u3 - 3 * u2 + 1;
-        const h10 = u3 - 2 * u2 + u;
-        const h01 = -2 * u3 + 3 * u2;
-        const h11 = u3 - u2;
-        return h00 * v1 + h10 * h * m1 + h01 * v2 + h11 * h * m2;
-    }
-
-    // Interpoliert DAY_NIGHT_STOPS nach timeOfDay 0..1 → {sky} (THREE.Color).
-    // Catmull-Rom über die periodische Kurve (C1-stetig): kein Pulsen an den Stops wie bei smoothstep;
-    // die Werte AN den Stops bleiben exakt (Hermite reproduziert p1 bei u=0, p2 bei u=1).
-    // DIE TAFEL TRÄGT KEIN LICHT (D3-N2): Farbe und Stärke der Sonne über den Tag rechnet die EINE Atmosphäre (`_atmoSonne`,
-    // die Himmels-Sicht in E0) — die Licht-Kurve der Tafel daneben dimmte die Physik ein zweites Mal (Wiese, Uhr 0,72, Sonne
-    // 10°: Sonne × 0,29, Himmel × 0,68; E 0,50, die 18-%-Karte −3,5 EV unter Mittelgrau + 1 — der Abend sah aus wie Nacht).
-    _interpolateDayNight(t) {
-        const stops = this.constructor.DAY_NIGHT_STOPS;
-        const n = stops.length; // 15, mit stops[0] ≡ stops[n-1] (periodisch)
-        const uniq = n - 1; // 14 eindeutige Knoten
-        const tWrap = ((t % 1) + 1) % 1; // 0..1 sicher
-        let i = 0;
-        for (let k = 0; k < n - 1; k++) {
-            if (tWrap >= stops[k].t && tWrap <= stops[k + 1].t) {
-                i = k;
-                break;
-            }
-        }
-        const p1 = stops[i];
-        const p2 = stops[i + 1];
-        // p0/p3 sind die periodischen Nachbarn; der Index-Wrap überspringt
-        // das Duplikat (stops[0] ≡ stops[n-1]).
-        const p0 = stops[(i - 1 + uniq) % uniq];
-        const p3 = stops[(i + 2) % uniq];
-        let t0 = p0.t;
-        const t1 = p1.t;
-        const t2 = p2.t;
-        let t3 = p3.t;
-        // periodisch korrigieren, damit t0 < t1 < t2 < t3 monoton ist
-        if (t0 > t1) t0 -= 1.0;
-        if (t3 < t2) t3 += 1.0;
-        const span = t2 - t1;
-        const u = span > 0 ? (tWrap - t1) / span : 0;
-        const c0 = new THREE.Color(p0.sky);
-        const c1 = new THREE.Color(p1.sky);
-        const c2 = new THREE.Color(p2.sky);
-        const c3 = new THREE.Color(p3.sky);
-        const clamp01 = (x) => Math.max(0, Math.min(1, x));
-        const sky = new THREE.Color(
-            clamp01(this._catmullDayNight(c0.r, c1.r, c2.r, c3.r, t0, t1, t2, t3, u)),
-            clamp01(this._catmullDayNight(c0.g, c1.g, c2.g, c3.g, t0, t1, t2, t3, u)),
-            clamp01(this._catmullDayNight(c0.b, c1.b, c2.b, c3.b, t0, t1, t2, t3, u))
-        );
-        return { sky };
+    // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) der
+    // Richtung, die leuchtet (`_dayNightSunDirection`) — nie der Uhr, nie eine eigene Schwelle je Anwender. Die Anker sind die
+    // Dämmerungs-Anker des Himmels (`HIMMEL.grenzgroesse`: die Grenzgröße der Sterne je Sonnenhöhe). Die Kanäle:
+    //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
+    //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
+    //   tag         das Auge zwischen Tag-Gesetz und geeichter Nacht (`_dayNightApplyBelichtung`, das Nacht-Auge der Post-Kette):
+    //               1 über dem ersten Ersatz-Licht der Nacht (wo `nacht` beginnt, ~14,5°), linear über die Höhe der Sonne bis
+    //               `BELICHTUNG.nachtGrad` auf 0 — die Gleitung beginnt, wo die Nacht beginnt, nie erst am Horizont;
+    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 ab ~14,5°, 1 am
+    //               Horizont und darunter;
+    //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
+    // Bis S7 rechnete jeder Anwender seine eigene Achse (die Tafel nach der Uhr, der Horizont-Fade der Körper, der Nacht-Anteil
+    // aus dem Sinus des Winkels, die Dämmerung aus der Grenzgröße, die Himmels-Helligkeit) — die Dämmerung (Uhr 0,27, Sonne 7°)
+    // stand heller als der Mittag, und um 0,75 brach die Belichtung um 2,1 EV ein. Die Sonne selbst fadet nie: ihr Licht trägt
+    // der Durchlass der EINEN Atmosphäre (`_atmoSonne`), der Mond derselbe Durchlass in seiner Höhe.
+    _tagAchse(e) {
+        const c = this._tagAchseWert;
+        if (c && c.e === e) return c;
+        const A = AnazhRealm.HIMMEL.grenzgroesse;
+        const s = Math.max(-1, Math.min(1, e));
+        const h = (Math.asin(s) * 180) / Math.PI;
+        let grenze = A[A.length - 1][1];
+        if (h >= A[0][0]) grenze = A[0][1];
+        else
+            for (let i = 1; i < A.length; i++)
+                if (h >= A[i][0]) {
+                    const t = (h - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
+                    grenze = A[i - 1][1] + (A[i][1] - A[i - 1][1]) * t;
+                    break;
+                }
+        const mTag = A[0][1],
+            mNacht = A[A.length - 1][1];
+        const q = Math.max(0, Math.min(1, (s + 0.18) / 0.6));
+        const nachtE = 0.25; // die Sonnenhöhe (sin), unter der die Ersatz-Lichter der Nacht beginnen
+        const hN = (Math.asin(nachtE) * 180) / Math.PI;
+        const nG = AnazhRealm.BELICHTUNG.nachtGrad;
+        return (this._tagAchseWert = {
+            e,
+            grenze,
+            daemmerung: (mNacht - grenze) / (mNacht - mTag),
+            tag: Math.max(0, Math.min(1, (h - nG) / (hN - nG))),
+            nacht: 1 - Math.max(0, Math.min(1, s / nachtE)),
+            hell: 0.045 + 0.955 * q * q * (3 - 2 * q),
+        });
     }
 
     // [ATMOSPHERE] Wendet timeOfDay + Wetter + Welt-Feld + Emotionen auf Lights + Skybox an.
-    // Drei Modulations-Schichten über den Basis-Stops: Wetter-Multiplier, Welt-Feld-Tint
+    // Drei Modulations-Schichten über dem Himmel: Wetter-Multiplier, Welt-Feld-Tint
     // (Affinität am Spieler), Emotion-Tint (siehe _dayNightComputeTint).
     _applyDayNightToScene() {
         if (!this.state.directionalLight) return; // Pre-init safe
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const stop = this._interpolateDayNight(t);
-        const tint = this._dayNightComputeTint(stop);
+        const tint = this._dayNightComputeTint();
         // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
         const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
@@ -1009,16 +991,18 @@ class AnazhRealm_bild_himmel {
         // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
         const moonDir = this._dayNightSunDirection(angle + Math.PI);
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
+        // DIE EINE TAG-ACHSE (S7): jeder Anwender liest dieselben Kanäle derselben Sonnenhöhe
+        const achse = this._tagAchse(sunDir.y);
         // DIE EINE ATMOSPHÄRE (D3): der Durchlass zur Sonne EINMAL je Anwendung (das Richtlicht), die Tafeln im Takt ihrer
         // Änderung (Medium, Stufe der Sonne, Mond, Auge) — Kuppel, Umgebung und Luft lesen dieselbe Himmels-Sicht.
         const atm = this._atmoSonne(sunDir.y);
         this._atmoTakt(sunDir, moonDir, tint);
         this._dayNightApplySkybox(tint);
-        this._dayNightApplyStarField(t, tint.skyMul);
-        this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm);
-        this._dayNightApplyAmbient(angle);
-        this._updateCelestialBodies(angle, tint.lightMul);
-        this._dayNightApplyHemiUndLuft(angle, tint);
+        this._dayNightApplyStarField(achse, tint.skyMul);
+        this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse);
+        this._dayNightApplyAmbient(achse);
+        this._updateCelestialBodies(angle, tint.lightMul, achse);
+        this._dayNightApplyHemiUndLuft(achse, tint);
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
         // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
@@ -1028,14 +1012,14 @@ class AnazhRealm_bild_himmel {
         this._himmelSprung = false;
         if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
         this._dayNightApplyWaterMaterials(lightDir);
-        this._dayNightApplyBelichtung(sunDir.y);
+        this._dayNightApplyBelichtung(achse);
         this._dayNightApplyAugenLicht();
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
     // lightIntensity der vorigen): 1) Wetter (WEATHER_TINTS/Transition) 2) Welt-Feld 3) Emotion.
     // Liefert Tint + skyR/G/B (HemiFog braucht sie); geteilte Variablen → EINE Methode.
-    _dayNightComputeTint(stop) {
+    _dayNightComputeTint() {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
@@ -1051,7 +1035,11 @@ class AnazhRealm_bild_himmel {
             skyMul = currentTint.skyMul;
             lightMul = currentTint.lightMul;
         }
-        const skyColor = stop.sky.clone();
+        // DER NENNER DER TÖNUNG (D3, S7): der Himmel des Studios (`_studioSky.top`, Vorlage 0x6a9ed0) — EINE Farbe, keine
+        // Tafel nach der Uhr: der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre, die Schichten tönen ihn relativ.
+        const sk = AnazhRealm._studioSky;
+        const basis = new THREE.Color((sk && typeof sk.top === "number" && sk.top) || 0x6a9ed0);
+        const skyColor = basis.clone();
         // das Licht beginnt weiß bei Stärke 1: was die Sonne über den Tag tut, trägt die Atmosphäre (`_atmoSonne`, E0)
         const lightColor = new THREE.Color(1, 1, 1);
         let lightIntensity = lightMul;
@@ -1146,7 +1134,7 @@ class AnazhRealm_bild_himmel {
             skyR: skyColor.r * skyMul,
             skyG: skyColor.g * skyMul,
             skyB: skyColor.b * skyMul,
-            basis: stop.sky, // der Himmel des Tag-Nacht-Stops ohne Wetter, Feld und Gefühl: der Nenner der Tönung (D3)
+            basis, // der Himmel des Studios ohne Wetter, Feld und Gefühl: der Nenner der Tönung (D3)
         };
     }
 
@@ -1229,15 +1217,15 @@ class AnazhRealm_bild_himmel {
         return this._dayNightSunDirection(this._sonnenWinkel(t));
     }
 
-    // Reine Godray-Stärke aus Sonnenhöhe (smoothstep knapp über 0) × Wetter-Klarheit (`weatherSun`,
-    // auf [0..1] remappt); keine this-Reads → headless verifizierbar.
+    // Reine Godray-Stärke aus Sonnenhöhe × Wetter-Klarheit (`weatherSun`, auf [0..1] remappt): über dem Horizont blenden sie
+    // im Maß der EINEN Tag-Achse auf (1 − `nacht`, geglättet: 0 am Horizont, voll ab ~14,5°) — keine eigene Schwelle.
     // Der Screen-Sichtbarkeits-Gate (Sonne im Bild) sitzt separat in `_loopRender`.
     _godrayFrameGate(sunDirY, weatherSun) {
         const sm = (a, b, x) => {
             const k = Math.max(0, Math.min(1, (x - a) / (b - a)));
             return k * k * (3 - 2 * k);
         };
-        const horizon = sm(0.04, 0.3, sunDirY); // knapp über dem Horizont aufblenden, hoch = voll
+        const horizon = sm(0, 1, 1 - this._tagAchse(sunDirY).nacht);
         const clarity = sm(0.5, 0.95, Number.isFinite(weatherSun) ? weatherSun : 1); // Sturm→0, sunny→1
         return horizon * clarity;
     }
@@ -1302,22 +1290,12 @@ class AnazhRealm_bild_himmel {
         return Math.max(0, AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (tint ? tint.lightIntensity : 1));
     }
 
-    // DIE EINE DÄMMERUNG (D3-2): 1 im hellen Tag … 0 in astronomischer Nacht, aus der Grenzgröße der Sterne
-    // (`HIMMEL.grenzgroesse`, `_himmelGrenzgroesse`; e = sin Höhe der Sonne). Die Belichtung hebt in ihrem Maß über den
-    // Nacht-Deckel, das Sternen-Licht leuchtet in ihrem Rest — wie die Sterne erscheinen, erscheint ihr Licht.
-    _daemmerung(e) {
-        const A = AnazhRealm.HIMMEL.grenzgroesse;
-        const mTag = A[0][1],
-            mNacht = A[A.length - 1][1];
-        return (mNacht - this._himmelGrenzgroesse(e)) / (mNacht - mTag);
-    }
-
     // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (`ATMO_GESETZ.nacht.himmel`, Welt-Einheiten) im
-    // Maß der Nacht (1 − Dämmerung). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
+    // Maß der Nacht (1 − Dämmerung der EINEN Tag-Achse, `_tagAchse`: wie die Sterne erscheinen, erscheint ihr Licht). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
     // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
     _atmoSternenLicht(e) {
         const N = this._atmoGesetz().nacht.himmel;
-        const w = Math.max(0, Math.min(1, 1 - this._daemmerung(e)));
+        const w = Math.max(0, Math.min(1, 1 - this._tagAchse(e).daemmerung));
         const o = this._atmoNacht || (this._atmoNacht = [0, 0, 0]);
         o[0] = N[0] * w;
         o[1] = N[1] * w;
@@ -1384,6 +1362,7 @@ class AnazhRealm_bild_himmel {
         const rtMS = ziel(Z.mehrfach[0], Z.mehrfach[1], null, "atmo-mehrfach");
         const rtSV = ziel(Z.himmel[0], Z.himmel[1], THREE.RepeatWrapping, "atmo-himmel");
         const rtEq = ziel(Z.umgebung[0], Z.umgebung[1], THREE.RepeatWrapping, "himmel-umgebung");
+        const rtBS = ziel(Z.bestrahlung[0], Z.bestrahlung[1], null, "atmo-bestrahlung");
         rtEq.texture.mapping = THREE.EquirectangularReflectionMapping;
         // ── das Medium als Knoten (h in km über dem Bezug) ──
         const dichteO = (h) =>
@@ -1589,15 +1568,18 @@ class AnazhRealm_bild_himmel {
                 .fract();
             return vec2(u, subUv(select(el.greaterThanEqual(hz), oben, unten), Z.himmel[1]));
         };
-        const marsch = (v) => {
+        // DER MARSCH längs v: die Quellen (Richtung, Gewicht in Einheiten von E0 — die Sonne 1, der Mond `mondE`) und das
+        // Sternen-Licht (`nacht`, in E0). Die Himmels-Sicht ruft ihn mit Sonne, Mond und Sternen, die Bestrahlungs-Tafel mit
+        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln.
+        const marsch = (v, quellen, nacht) => {
             const r0 = U.hKm.add(RG).toVar();
             const mu = v.y;
             const boden = amBoden(r0, mu).toVar();
             const tMax = select(boden, zumBoden(r0, mu), zumRand(r0, mu)).toVar();
-            const nuS = dot(v, U.sonne);
-            const nuM = dot(v, U.mond);
-            const pS = vec2(phaseR(nuS), phaseM(nuS)).toVar();
-            const pM = vec2(phaseR(nuM), phaseM(nuM)).toVar();
+            const ph = quellen.map((q) => {
+                const nu = dot(v, q.dir);
+                return vec2(phaseR(nu), phaseM(nu)).toVar();
+            });
             const thr = vec3(1).toVar();
             const L = vec3(0).toVar();
             const tAlt = float(0).toVar();
@@ -1613,18 +1595,15 @@ class AnazhRealm_bild_himmel {
                 const sR = streuR(hi).toVar();
                 const sM = streuM(hi).toVar();
                 const sca = sR.add(sM).toVar();
-                const muS = dot(p, U.sonne).div(ri).toVar();
-                const muM = dot(p, U.mond).div(ri).toVar();
-                const S = durchlass(ri, muS)
-                    .mul(sR.mul(pS.x).add(sM.mul(pS.y)))
-                    .add(mehrfach(hi, muS).mul(sca))
-                    .add(
-                        U.mondE.mul(
-                            durchlass(ri, muM)
-                                .mul(sR.mul(pM.x).add(sM.mul(pM.y)))
-                                .add(mehrfach(hi, muM).mul(sca))
-                        )
-                    )
+                const S = quellen
+                    .map((q, i) => {
+                        const muQ = dot(p, q.dir).div(ri).toVar();
+                        const s = durchlass(ri, muQ)
+                            .mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)))
+                            .add(mehrfach(hi, muQ).mul(sca));
+                        return q.gewicht ? q.gewicht.mul(s) : s;
+                    })
+                    .reduce((a, b) => a.add(b))
                     .toVar();
                 const e = max(ext(hi), vec3(1e-7)).toVar();
                 const tr = exp(e.negate().mul(dt)).toVar();
@@ -1637,17 +1616,19 @@ class AnazhRealm_bild_himmel {
             If(boden.not(), () => {
                 const q = r0.div(RG + G.nacht.glutHoeheM / 1000);
                 const vanRhijn = float(1).div(sqrt(max(float(1).sub(q.mul(q).mul(float(1).sub(mu.mul(mu)))), 1e-4)));
-                L.addAssign(U.nachtE.mul(vanRhijn).mul(thr));
+                L.addAssign(nacht.mul(vanRhijn).mul(thr));
             });
             If(boden, () => {
                 const gp = vec3(v.x.mul(tMax), r0.add(v.y.mul(tMax)), v.z.mul(tMax)).toVar();
                 const n = gp.div(length(gp)).toVar();
                 const gr = length(gp).toVar();
-                const ls = max(dot(n, U.sonne), 0).toVar();
-                const lm = max(dot(n, U.mond), 0).toVar();
-                const E = durchlass(gr, ls)
-                    .mul(ls)
-                    .add(U.mondE.mul(durchlass(gr, lm)).mul(lm));
+                const E = quellen
+                    .map((q) => {
+                        const l = max(dot(n, q.dir), 0).toVar();
+                        const e = durchlass(gr, l).mul(l);
+                        return q.gewicht ? q.gewicht.mul(e) : e;
+                    })
+                    .reduce((a, b) => a.add(b));
                 L.addAssign(
                     thr
                         .mul(E)
@@ -1669,10 +1650,11 @@ class AnazhRealm_bild_himmel {
                 hz.sub(c.mul(c).mul(float(PI / 2).add(hz)))
             ).toVar();
             const ce = el.cos().toVar();
-            return vec4(marsch(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
+            const v = vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar();
+            return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
-        // (Wetter, Feld, Gefühl, DSL — relativ zum Tag-Nacht-Stop, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
+        // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
         const himmelFarbe = (dir) =>
             texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
@@ -1685,6 +1667,38 @@ class AnazhRealm_bild_himmel {
             const el = q.y.sub(0.5).mul(PI).toVar();
             const ce = el.cos().toVar();
             return vec4(himmelFarbe(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
+        });
+        // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
+        // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
+        // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
+        // Einheit `nachtE`. Gezeichnet je Medium und Höhe des Auges, EINMAL zurückgelesen (`_himmelsTafelLesen`): die CPU kennt
+        // den Himmel jeder Stunde synchron (`_himmelsBestrahlung`), nie eine Lesung nach der Malung.
+        const BW = Z.bestrahlung[0];
+        const [NT, NP] = Z.richtungen;
+        const passBestrahlung = Fn(() => {
+            const i = uv().x.mul(BW).floor().toVar();
+            const stern = i.greaterThanEqual(BW - 1).toVar();
+            const c = i
+                .div(BW - 2)
+                .mul(2)
+                .sub(1)
+                .toVar();
+            const mus = clamp(c.mul(c.abs()), -1, 1).toVar();
+            const sonne = select(stern, vec3(0, -1, 0), vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0)).toVar();
+            const nacht = select(stern, float(1), float(0)).toVar();
+            const E = vec3(0).toVar();
+            Loop({ start: 0, end: NT * NP, type: "float", name: "k" }, ({ k }) => {
+                const a = k.div(NP).floor();
+                const ct = sqrt(float(1).sub(a.add(0.5).div(NT))).toVar();
+                const sv = sqrt(max(float(1).sub(ct.mul(ct)), 0)).toVar();
+                const phi = k
+                    .sub(a.mul(NP))
+                    .add(0.5)
+                    .mul((2 * PI) / NP)
+                    .toVar();
+                E.addAssign(marsch(vec3(sv.mul(phi.cos()), ct, sv.mul(phi.sin())).toVar(), [{ dir: sonne }], nacht));
+            });
+            return vec4(E.mul(PI / (NT * NP)), 1);
         });
         // DER PASS: ein Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv [0,-1 ·
         // 0,1 · 2,1], Ortho-Kamera ±1) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet, in beiden Backends.
@@ -1716,6 +1730,9 @@ class AnazhRealm_bild_himmel {
             qMS: quad(passMehrfach, "atmo-mehrfach"),
             qSV: quad(passHimmel, "atmo-himmel"),
             qEq: quad(passUmgebung, "atmo-umgebung"),
+            rtBS,
+            qBS: quad(passBestrahlung, "atmo-bestrahlung"),
+            tafelSchluessel: null,
             himmelFarbe,
             durchlass,
             RG,
@@ -1763,8 +1780,14 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
-        const M = this._atmoMediumJetzt();
-        if (A.mediumBeta !== this._atmoMBeta) {
+        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`_himmelsAnker`, der Himmel der Karte
+        // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
+        // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
+        const anker = this._himmelsAnker == null && !(st.renderer && st.renderer._isHeadlessNull);
+        const klar = anker ? this._atmoRechnung().betaKlar(this._atmoGesetz()) : 0;
+        const M = anker ? this._atmoMedium(klar) : this._atmoMediumJetzt();
+        const mB = anker ? klar : this._atmoMBeta;
+        if (A.mediumBeta !== mB) {
             U.betaR.value.fromArray(M.betaR);
             U.HR.value = M.HR;
             U.HM.value = M.HM;
@@ -1773,10 +1796,10 @@ class AnazhRealm_bild_himmel {
             U.g.value = M.g;
             U.ozon.value.fromArray(M.ozon);
             U.albedo.value.fromArray(M.albedo);
-            A.mediumBeta = this._atmoMBeta;
+            A.mediumBeta = mB;
             A.tafelnFrisch = false;
         }
-        const h = Math.max(0.001, Math.round(this._atmoAugeKm() * 100) / 100);
+        const h = anker ? 0.001 : Math.max(0.001, Math.round(this._atmoAugeKm() * 100) / 100);
         U.hKm.value = h;
         U.sonne.value.copy(sunDir).normalize();
         U.mond.value.copy(moonDir).normalize();
@@ -1803,16 +1826,90 @@ class AnazhRealm_bild_himmel {
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
         }
+        // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
+        const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
+        if (A.tafelSchluessel !== tafel) {
+            this._atmoZeichne(A.qBS, A.rtBS);
+            A.tafelSchluessel = tafel;
+            // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
+            this._himmelsTafel = null;
+            this._himmelsTafelLesen();
+        }
         this._horizontKarteTakt();
         return A;
     }
 
-    // V18.377 — die Helligkeit eines Himmelskörpers fadet smooth auf 0, sobald er den Horizont
-    // erreicht (`h` = seine Höhe = sunDir.y für die Sonne, −sunDir.y für den Mond). So ist der
-    // Sonne↔Mond-Richtungswechsel bei y=0 unsichtbar (beide dort dunkel) — kein Schatten-Pop.
-    _celestialHorizonFade(h) {
-        const t = Math.max(0, Math.min(1, h / 0.14));
-        return t * t * (3 - 2 * t);
+    // DIE BESTRAHLUNGS-TAFEL AUF DIE CPU (je Neuzeichnung, EINMAL je Medium und Höhe): je Sonnenhöhe die Bestrahlung einer
+    // waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht je Einheit `nachtE`. Eine
+    // spätere Lesung überholt eine frühere. Die erste Tafel der klaren Luft am Boden (`_atmoTakt` zeichnet sie zuerst) trägt den
+    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`_himmelsAnker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
+    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden).
+    _himmelsTafelLesen() {
+        const st = this.state;
+        const A = st.atmoLut;
+        const r = st.renderer;
+        if (typeof r.readRenderTargetPixelsAsync !== "function")
+            throw new Error(
+                "Die Bestrahlung: der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)"
+            );
+        const W = A.rtBS.width;
+        const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz()) && A.U.hKm.value < 0.05;
+        const nr = (this._himmelsTafelNr = (this._himmelsTafelNr || 0) + 1);
+        return r.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then(
+            (px) => {
+                if (nr !== this._himmelsTafelNr) return false;
+                const halb = px instanceof Uint16Array;
+                const w = new Float32Array(W * 3);
+                for (let i = 0; i < W; i++)
+                    for (let c = 0; c < 3; c++)
+                        w[i * 3 + c] = halb ? AnazhRealm._halbZuFloat(px[i * 4 + c]) : px[i * 4 + c];
+                this._himmelsTafel = { W, werte: w };
+                if (klar && this._himmelsAnker == null)
+                    this._himmelsAnker =
+                        0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
+                return true;
+            },
+            (e) => {
+                this._bruchMelden(
+                    `STOFF: die Bestrahlungs-Tafel kam nicht zurück — der Himmel des Orts fehlt (${e && e.message})`
+                );
+                return false;
+            }
+        );
+    }
+
+    // DER HIMMEL ÜBER DEM ORT, SYNCHRON (S7; rgb, E einer waagrechten Fläche): die Bestrahlungs-Tafel an der Sonne und am Mond
+    // jetzt, das Sternen-Licht — in derselben Zusammensetzung wie die Farbe des Himmels (`himmelFarbe`: E0 × Tönung, der Mond
+    // in `mondE`, die Sterne in `nachtE`, die Uniforms dieser Anwendung). Jede Stunde liest sie im selben Takt, in dem das Licht
+    // steht; die zurückgelesene Umgebung (`_himmelsIrradianz`) bleibt die Quelle des Feld-Passes, der dieselbe IBL zeigt wie die
+    // Stoffe. Der Null-Renderer malt keinen Himmel (Lehre 16): dort 0. Bis die erste Tafel liegt (der erste Takt der
+    // Atmosphäre unter dem Ladeschirm): null — kein Leser schreibt dann.
+    _himmelsBestrahlung(out) {
+        const st = this.state;
+        out[0] = out[1] = out[2] = 0;
+        if (st.renderer && st.renderer._isHeadlessNull) return out;
+        const A = st.atmoLut;
+        const T = this._himmelsTafel;
+        if (!A || !T) return null;
+        const U = A.U;
+        const W = T.W,
+            w = T.werte;
+        const lies = (mu, c) => {
+            const x = ((Math.sign(mu) * Math.sqrt(Math.min(1, Math.abs(mu))) + 1) / 2) * (W - 2);
+            const i = Math.max(0, Math.min(W - 3, Math.floor(x)));
+            const f = Math.max(0, Math.min(1, x - i));
+            return w[i * 3 + c] * (1 - f) + w[(i + 1) * 3 + c] * f;
+        };
+        const ms = U.sonne.value.y,
+            mm = U.mond.value.y;
+        const m = U.mondE.value,
+            n = U.nachtE.value,
+            t = U.toenung.value;
+        for (let c = 0; c < 3; c++) {
+            const k = c === 0 ? "x" : c === 1 ? "y" : "z";
+            out[c] = U.licht.value * t[k] * (lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
+        }
+        return out;
     }
 
     // Skybox-Uniforms: himmelTint aus skyR/G/B + Wolken-Deckung aus dem Wetter (Cross-Fade über die
@@ -1838,7 +1935,7 @@ class AnazhRealm_bild_himmel {
                 if (st.skyTintStrength * _aK > 0.002) u.himmelTint.value.lerp(st.skyTint, st.skyTintStrength * _aK);
             }
             // DIE TÖNUNG DES PHYSIKALISCHEN HIMMELS (D3): der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre — was
-            // der Tint daneben trägt (Wetter, Welt-Feld, Gefühl, DSL-Tönung), wirkt als Verhältnis zum blanken Tag-Nacht-Stop.
+            // der Tint daneben trägt (Wetter, Welt-Feld, Gefühl, DSL-Tönung), wirkt als Verhältnis zum blanken Himmel des Studios.
             // Ohne all das ist die Tönung 1: der Himmel ist reine Physik.
             const A = st.atmoLut;
             const b = tint && tint.basis;
@@ -1855,15 +1952,13 @@ class AnazhRealm_bild_himmel {
         }
     }
 
-    // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor), das Wetter
-    // dämpft (Wolken); die Uniforms leben in state.starFieldUniforms.
-    _dayNightApplyStarField(t, skyMul) {
+    // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor; der Kanal `grenze` der
+    // EINEN Tag-Achse), das Wetter dämpft (Wolken); die Uniforms leben in state.starFieldUniforms.
+    _dayNightApplyStarField(achse, skyMul) {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
-        const sa = this._sonnenWinkel(t);
-        const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
-        if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
+        if (u.grenze) u.grenze.value = achse.grenze;
         // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
         // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6).
         const sf = this.state.starField;
@@ -1871,39 +1966,31 @@ class AnazhRealm_bild_himmel {
             sf.visible = skyMul > 0 && u.grenze.value - u.hellste + 0.5 > 0;
     }
 
-    // DIE GRENZGRÖSSE des Himmels (scheinbare Helligkeit, ab der ein Punkt sichtbar ist) aus der Sonnenhöhe: die
-    // Dämmerungs-Anker `HIMMEL.grenzgroesse` (Sonnenhöhe in Grad → Größenklasse), linear dazwischen.
-    _himmelGrenzgroesse(sunHeight) {
-        const A = AnazhRealm.HIMMEL.grenzgroesse;
-        const h = (Math.asin(Math.max(-1, Math.min(1, sunHeight))) * 180) / Math.PI;
-        if (h >= A[0][0]) return A[0][1];
-        for (let i = 1; i < A.length; i++) {
-            if (h >= A[i][0]) {
-                const t = (h - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
-                return A[i - 1][1] + (A[i][1] - A[i - 1][1]) * t;
-            }
-        }
-        return A[A.length - 1][1];
-    }
-
-    // Die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1 Tag) aus der Sonnenhöhe — DIE EINE
-    // Himmels-Helligkeit: die Blässe des Mondes liest sie (der Himmel selbst ist die Himmels-Sicht der Atmosphäre, D3).
-    _himmelHell(sunHeight) {
-        let q = (sunHeight + 0.18) / 0.6;
-        q = q < 0 ? 0 : q > 1 ? 1 : q;
-        return 0.045 + 0.955 * q * q * (3 - 2 * q);
+    // DER DURCHLASS ZUM MOND (S7): derselbe Durchlass der EINEN Atmosphäre wie zur Sonne (`ATMO_RECHNUNG.durchlass`, das Medium
+    // jetzt, die Höhe des Auges), in seiner Höhe y = sin(Höhe) relativ zum Zenit — die Eichung des Mondlichts (`MOONLIGHT`) gilt
+    // dem hohen Mond, am Horizont geht er durch die ganze Luft (unter ihm 0). Bis S7 ein eigener Horizont-Fade (smoothstep bis 8°).
+    _mondDurchlass(y) {
+        const R = this._atmoRechnung();
+        const M = this._atmoMediumJetzt();
+        const h = this._atmoAugeKm();
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const T = this._mondT || (this._mondT = [0, 0, 0]);
+        const lum = (t) => 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];
+        const z = lum(R.durchlass(M, h, 1, N, T));
+        return z > 0 ? lum(R.durchlass(M, h, y, N, T)) / z : 0;
     }
 
     // DirectionalLight: Position folgt dem Spieler (Shadow-Frustum zentriert), Target am Spieler-Boden,
     // Color = lightColor × lightMul, Intensity aus dem akkumulierten lightIntensity.
     // Stable Shadow Maps: der Fokus wird auf das Shadow-Texel-Grid gesnappt (Light-Space-Snap unten),
     // sonst „kriecht" das Schatten-Muster bei jeder Sub-Texel-Bewegung über statische Geometrie.
-    _dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm) {
+    _dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
         // Das Richtlicht IST die Sonne, solange sie über dem Horizont steht, sonst der Mond (von oben).
-        // Der Wechsel bei y=0 ist unsichtbar: beide Körper sind dort auf 0 gedimmt (`_celestialHorizonFade`).
+        // Der Wechsel bei y=0 ist unsichtbar: beide Körper erreichen den Horizont durch die ganze Luft (der Durchlass der EINEN
+        // Atmosphäre ist dort ~0, `_atmoSonne` · `_mondDurchlass`).
         // `moonDir` kommt vom Aufrufer (_applyDayNightToScene, dieselbe Formel wie das Mond-Mesh); der
         // −sunDir-Guard deckt nur Diag-Aufrufe ohne dritten Parameter.
         const sunUp = sunDir.y >= 0;
@@ -1962,8 +2049,8 @@ class AnazhRealm_bild_himmel {
             dl.target.position.set(focusX, focusY, focusZ);
             dl.target.updateMatrixWorld();
         }
-        // Sonne (warm) ODER Mond (kühl), je nach stehendem Körper; dessen Helligkeit fadet am Horizont auf 0
-        // (`_celestialHorizonFade`) → der Richtungswechsel bei y=0 ist unsichtbar.
+        // Sonne (warm) ODER Mond (kühl), je nach stehendem Körper; seine Helligkeit ist sein Durchlass durch das EINE Medium —
+        // kein eigener Horizont-Fade (S7: bis dahin dimmte ein smoothstep bis 8° die Physik ein zweites Mal).
         // Farbe: `atm.col` (der Durchlass der EINEN Atmosphäre) × `tint.lightColor` (weiß + Aura/Emotion).
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
         // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
@@ -1974,24 +2061,22 @@ class AnazhRealm_bild_himmel {
                 a.col.g * tint.lightColor.g * tint.lightMul,
                 a.col.b * tint.lightColor.b * tint.lightMul
             );
-            dl.intensity =
-                AnazhRealm.KEY_BASE *
-                AnazhRealm.LEGACY_LICHT *
-                a.lum *
-                tint.lightIntensity *
-                this._celestialHorizonFade(sunDir.y);
+            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity;
         } else {
             const M = AnazhRealm.MOONLIGHT;
-            // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·Horizont-Fade; `atm.col`
+            // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·sein Durchlass; `atm.col`
             // färbt ihn nur (unter dem Horizont lerpt sie zum MOONLIGHT-Hue).
             dl.color.setRGB(a.col.r, a.col.g, a.col.b);
-            // V18.378 — der Fade liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
+            // V18.378 — der Durchlass liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
-            dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(md.y);
+            dl.intensity = M.intensity * tint.lightMul * this._mondDurchlass(md.y);
         }
-        // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es.
+        // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
+        // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet, wie die Belichtung gleitet, vom Tag in die geeichte Nacht (mit
+        // dem Rest der Dämmerung gemessen nahm es der Wiese 0,1–0,2 EV der Dämmerung, und ihr Schritt zur goldenen Stunde riss).
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.nightFactor) {
-            this.state.postProcessingUniforms.nightFactor.value = Math.max(0, Math.min(1, 1 - (sunDir.y + 0.05) / 0.2));
+            const ac = achse || this._tagAchse(sunDir.y);
+            this.state.postProcessingUniforms.nightFactor.value = 1 - ac.tag;
         }
         // Die MeshToonNodeMaterials (lights=true) lesen dl.color/intensity/position direkt über die
         // WebGPU-Lighting-Pipeline — kein eigener Uniform-Sync. Nur die Gras-Translucency braucht die
@@ -2012,48 +2097,58 @@ class AnazhRealm_bild_himmel {
         }
     }
 
-    // DIE EINE TAG-ACHSE der Himmels-Lichter: 0 ab ~15° Sonnenhöhe (Tag), 1 am/unter dem Horizont (Nacht).
-    // Nebel-Erdanteil, Ambient- und Hemi-Nachtboden lesen sie.
-    _nachtAnteil(angle) {
-        return 1 - Math.max(0, Math.min(1, Math.sin(angle) / 0.25));
-    }
-
-    // DIE BELICHTUNG AUS DEM LICHT (V18.507): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV
-    // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
-    // mit E = Sonne/Mond senkrecht (unten) + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
-    // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
-    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die Schulter der Kurve. Die
-    // Nacht bleibt, wie sie geeicht ist (Deckel BELICHTUNG.max — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
-    // DIE KARTE STEHT DER SONNE ZUGEWANDT (D3-N2): die Sonne trifft sie senkrecht, Himmel, Hemi und Ambient von oben — die
-    // Konvention der Belichtungsmessung (Sunny 16: ein Körper im Licht wendet sich der Sonne zu, die Blende folgt dem Durchlass,
-    // nicht dem Sinus der Höhe). Auf der Waagrechten gemessen hob die tiefe Sonne die Belichtung um 1/sin(Höhe): Uhr 0,72
-    // (Sonne 10°) Belichtung 6,2, der Himmel weiß, das Bild Luma 212.
-    // DER DECKEL GILT DER NACHT (D3-N2), nie dem Abend: über ihn hebt die Belichtung nur das Licht des Himmels — die Sonne und
-    // der Himmel der EINEN Atmosphäre, der in der Dämmerung auch sein Sternen-Licht trägt (D3-2) —, im Maß seines Anteils an der
-    // Karte (die Ersatz-Lichter der Nacht, Hemi- und Ambient-Boden, und der Mond sind auf den Deckel geeicht) und der EINEN
-    // Dämmerung (`_daemmerung`: derselbe Anker, der die Grenzgröße der Sterne setzt; heller Tag 1, astronomische Nacht 0).
-    // Dazwischen gleitet sie geometrisch. Im Tag folgt sie dem Licht ganz (Nordstern Ebene 0: mehrere EV Anpassung). Bis D3-N2
-    // deckelte die Lichtmenge selbst: mit der EINEN Atmosphäre fällt das Licht der Wiese um Uhr 0,72 auf E 0,89 (Mittag
-    // 7,58) — der Deckel ließ die Karte 2,6 EV unter Mittelgrau + 1, der Abend sah aus wie Nacht.
-    _dayNightApplyBelichtung(sonneY) {
+    // DIE BELICHTUNG AUS DEM LICHT (V18.507, S7): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV (die Kamera-Konvention
+    // der Profi-Engines, UE5-Belichtungs-Bias +1; `BELICHTUNG.zielKarte` aus der Tonkurve). Die Karte steht der Sonne zugewandt
+    // (D3-N2, Sunny 16: die Blende folgt dem Durchlass, nie dem Sinus der Höhe) und liest L = 0,18/π · E.
+    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`, dieselbe, die das Wasser liest) plus das Richtlicht, das
+    // die Waagrechte nicht nimmt — der Himmel aus der Bestrahlungs-Tafel der EINEN Atmosphäre an der Sonne DIESER Anwendung.
+    // Bis S7 las sie den Himmel aus der zurückgelesenen Umgebung (eine Lesung nach der Malung): nach jedem Sprung der Uhr trug
+    // der erste Frame die Belichtung der vorigen Stunde (bis 0,57 EV, Uhr 0,75); die erste Runde von S7 setzte den Himmel als
+    // Mittags-Anteil fest (ein Zwilling der Bestrahlung: am Horizont fehlten 0,5 EV).
+    // DAS AUGE PASST SICH TEILWEISE AN (S7): um den klaren Mittag (die Zenit-Sonne der klaren Luft, `_belichtungAnker`) folgt die
+    // Belichtung dem Licht mit dem Exponenten `BELICHTUNG.anpassung` — die tiefe Sonne bleibt dunkler und wärmer als der Mittag.
+    // Bis S7 folgte sie ganz (die sonnenzugewandte Karte blieb bei jeder Höhe Mittelgrau + 1): Uhr 0,27 (Sonne 7°) stand die
+    // Belichtung bei 4,4 und das Bild +0,7 … +1,3 EV über dem Mittag.
+    // DER DECKEL GILT DER NACHT (D3-N2): über die Dämmerung gleitet das Auge geometrisch vom Tag-Gesetz in die geeichte Nacht
+    // (`BELICHTUNG.max`; Mond, Sternen-Licht und Hemi-Boden sind auf ihn geeicht), im Maß des Kanals `tag` der EINEN Tag-Achse:
+    // sie beginnt, wo die Ersatz-Lichter der Nacht beginnen (~14,5°), und endet in `BELICHTUNG.nachtGrad` — bis S7 brach die
+    // Gleitung am Horizont zusammen (Wiese Uhr 0,73 → 0,75: −2,1 EV), in der ersten Runde von S7 begann sie erst am Horizont,
+    // wo das Tag-Gesetz schon auf den Nacht-Böden stand (Belichtung 3,2 bei 0°, der Untergang hellte die Mauern +0,7 EV auf).
+    _dayNightApplyBelichtung(achse) {
         const st = this.state;
         const rend = st.renderer;
         const dl = st.directionalLight;
         if (!rend || !dl) return;
         const B = AnazhRealm.BELICHTUNG;
         const e = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
+        if (!e) return;
         // die Waagrechte trägt das Richtlicht mit dem Sinus seiner Höhe (`_belichtungRichtung`, eben dort normiert) — die
-        // Karte nimmt es ganz
+        // Karte der Sonne zugewandt nimmt es ganz
         const dy = Math.max(0, this._belichtungRichtung.y);
         const richt = dl.intensity * (0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b);
         const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2] + richt * (1 - dy);
-        const karte = (0.18 / Math.PI) * E;
-        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
-        const env = this._himmelsIrradianz();
-        const himmel = env ? Math.PI * (0.2126 * env.oben[0] + 0.7152 * env.oben[1] + 0.0722 * env.oben[2]) : 0;
-        const tagAnteil = E > 1e-9 ? Math.min(1, ((sonneY >= 0 ? richt : 0) + himmel) / E) : 0;
-        const nacht = Math.min(B.max, k);
-        rend.toneMappingExposure = Math.max(B.min, nacht * Math.pow(k / nacht, this._daemmerung(sonneY) * tagAnteil));
+        const EA = this._belichtungAnker();
+        if (!EA) return;
+        const tag = (B.zielKarte / ((0.18 / Math.PI) * EA)) * Math.pow(EA / Math.max(E, 1e-6), B.anpassung);
+        rend.toneMappingExposure = Math.max(B.min, B.max * Math.pow(tag / B.max, achse.tag));
+        st._belichtungSteht = true;
+    }
+
+    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
+    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
+    // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
+    // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
+    _belichtungAnker() {
+        if (this._belichtungA) return this._belichtungA;
+        const rend = this.state.renderer;
+        const himmel = rend && rend._isHeadlessNull ? 0 : this._himmelsAnker;
+        if (himmel == null) return null;
+        const G = this._atmoGesetz();
+        const R = this._atmoRechnung();
+        const M = this._atmoMedium(R.betaKlar(G));
+        const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
+        const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
+        return (this._belichtungA = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
@@ -2155,9 +2250,10 @@ class AnazhRealm_bild_himmel {
         return (c.wert = gewicht > 0 ? summe / gewicht : 1);
     }
 
-    // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben
-    // (`_himmelsIrradianz`, E/π) + Hemi + Ambient — dieselben Lichter, die jedes Material liest. EINE Rechnung für
-    // die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum leuchten im Licht des Orts).
+    // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
+    // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
+    // die jedes Material liest. EINE Rechnung für die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum
+    // leuchten im Licht des Orts); null, solange der Himmel des Orts noch nicht steht.
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2173,12 +2269,11 @@ class AnazhRealm_bild_himmel {
             out[2] += c.b * k;
         };
         add(dl.color, dl.intensity * dy);
-        const env = this._himmelsIrradianz(); // liefert E/π (die Antwort einer weißen Lambert-Fläche)
-        if (env) {
-            out[0] += Math.PI * env.oben[0];
-            out[1] += Math.PI * env.oben[1];
-            out[2] += Math.PI * env.oben[2];
-        }
+        const himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        if (!himmel) return null;
+        out[0] += himmel[0];
+        out[1] += himmel[1];
+        out[2] += himmel[2];
         if (st.hemiLight) add(st.hemiLight.color, st.hemiLight.intensity);
         if (st.ambientLight) add(st.ambientLight.color, st.ambientLight.intensity);
         return out;
@@ -2188,7 +2283,7 @@ class AnazhRealm_bild_himmel {
     // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
     // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
     // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden mit Hemi (0,10) das Licht neben dem Mond. Er blendet
-    // mit `_nachtAnteil` (dieselbe Tag-Achse wie der Nebel). joy/awe/sorrow modulieren wie bisher.
+    // mit dem Kanal `nacht` der EINEN Tag-Achse (`_tagAchse`). joy/awe/sorrow modulieren wie bisher.
     // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
     // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
     // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
@@ -2196,10 +2291,10 @@ class AnazhRealm_bild_himmel {
     // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
     // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
-    _dayNightApplyAmbient(angle) {
+    _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = (0.04 + 0.06 * Math.PI) * this._nachtAnteil(angle);
+        const baseAmb = (0.04 + 0.06 * Math.PI) * achse.nacht;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -2296,11 +2391,16 @@ class AnazhRealm_bild_himmel {
     // HemisphereLight (der Nachthimmel-Boden) und die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter.
     // Die In-Streu-Farbe der Luft über Wasser ist der Himmel der EINEN Atmosphäre (`_luftEnsure`); unter Wasser (die KAMERA
     // unter dem Spiegel) trägt dieselbe Extinktion die Wasser-Trübung im Licht des Orts.
-    _dayNightApplyHemiUndLuft(angle, tint) {
+    _dayNightApplyHemiUndLuft(achse, tint) {
         const hl = this.state.hemiLight;
         const pm = this.state.playerMesh;
         if (hl) {
-            hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
+            // die Farbe des Nachthimmel-Bodens ist der Nachthimmel des Gesetzes (`ATMO_GESETZ.nacht.himmel`), getönt wie der Himmel
+            // (Wetter, Feld, Gefühl relativ zum Nenner der Tönung) — bis S7 die Tafel der Uhr (`DAY_NIGHT_STOPS`) × 1,1
+            const N = this._atmoGesetz().nacht.himmel;
+            const b = tint.basis;
+            const q = (x, y) => (y > 1e-4 ? x / y : 1);
+            hl.color.setRGB(N[0] * q(tint.skyR, b.r), N[1] * q(tint.skyG, b.g), N[2] * q(tint.skyB, b.b));
             const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
             // `tint.auraK` gated den Feld-Term des Hemi-BODENS: bei Default auraK=0 ist der Boden rein Tag-Nacht+Wetter;
             // Feld-Tönung nur über `atmosphere.auraTintStrength`.
@@ -2322,7 +2422,7 @@ class AnazhRealm_bild_himmel {
             hl.groundColor.copy(earth);
             // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
             // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
-            hl.intensity = 0.1 * this._nachtAnteil(angle) * tint.lightMul;
+            hl.intensity = 0.1 * achse.nacht * tint.lightMul;
         }
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
@@ -2377,14 +2477,15 @@ class AnazhRealm_bild_himmel {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
-        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung).
+        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung); vor der ersten
+        // Bestrahlungs-Tafel (unter dem Ladeschirm) bleibt der Uniform unberührt.
         const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
         // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
+            if (uniforms.irr && e) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
             // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
             const wu = this.state.windUniforms;
@@ -2397,7 +2498,7 @@ class AnazhRealm_bild_himmel {
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes, gespeist aus _applyDayNightToScene (EINE Quelle).
     // Abstand 380 m (vor der Skybox bei 500 m), sichtbar bei Höhe ≥ 0, Mond gegenüber;
     // emissive-Material leuchtet ohne Licht.
-    _updateCelestialBodies(angle, lightMul) {
+    _updateCelestialBodies(angle, lightMul, achse) {
         const sunDist = AnazhRealm.HIMMEL.koerperAbstandM;
         const sun = this.state.sunMesh;
         const moon = this.state.moonMesh;
@@ -2430,7 +2531,7 @@ class AnazhRealm_bild_himmel {
             // Der Mond am Taghimmel ist BLASS: seine Leuchtdichte gegen die des Himmels (`HIMMEL.mondGegenHimmel`)
             // — nachts fast deckend, am Tag ein heller Schleier.
             if (moon.material) {
-                const hell = this._himmelHell(Math.sin(angle));
+                const hell = (achse || this._tagAchse(this._dayNightSunDirection(angle).y)).hell;
                 moon.material.opacity = 0.98 / (1 + hell / AnazhRealm.HIMMEL.mondGegenHimmel);
             }
         }
@@ -2848,6 +2949,8 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     mehrfach: Object.freeze([32, 32]),
     himmel: Object.freeze([192, 108]),
     umgebung: Object.freeze([128, 64]),
+    bestrahlung: Object.freeze([65, 1]),
+    richtungen: Object.freeze([12, 24]),
     schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
 });
 // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
@@ -2868,7 +2971,20 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // (unter ACES bis F1: 2 · 0,26227 · 0,6 = 0,3147). `max` hält die geeichte Nacht (über ihn hebt nur das Licht des Himmels,
 // D3-N2): die Nacht ist auf die Karte geeicht (Mond, Sternen-Licht, Hemi-Boden) — der Deckel legt sie so weit unter
 // Mittelgrau + 1 wie bis F1 die Belichtung 1,0 unter ACES, 0,44 / 0,3147 = 1,4. `min` ist nur die Wand gegen ein entartetes Licht.
-AnazhRealm.BELICHTUNG = Object.freeze({ kurve: "NeutralToneMapping", zielKarte: 0.44, min: 0.25, max: 1.4 });
+// `anpassung` (S7) ist der Exponent, mit dem das Auge dem Licht um den klaren Mittag folgt (1 = ganz, 0 = nie), `nachtGrad` (S7)
+// die Tiefe der Sonne, in der das Auge die geeichte Nacht erreicht (die Gleitung beginnt am Kanal `nacht` der Tag-Achse, ~14,5°).
+// Gemessen je Seite (Radeon, `werkbank licht --tag`): bei fester Belichtung fällt das Licht von der Sonne in 7° zum Horizont am
+// Spawn um 0,9 (Morgen) und 0,15 EV (Abend) und bleibt darunter bis Mitternacht flach (die Nacht-Böden) — der Morgen verlangt
+// zwischen 7° und 0° mindestens 0,41 EV Öffnung, der Abend höchstens 0,65; die goldene Stunde 0,5–1 EV unter dem Mittag (Mittel)
+// mit jeder Seite darunter legt anpassung 0,34 und nachtGrad −32 fest (Belichtung 1,68 bei 7°, 2,29 am Horizont, 1,4 bei −32°).
+AnazhRealm.BELICHTUNG = Object.freeze({
+    kurve: "NeutralToneMapping",
+    zielKarte: 0.44,
+    min: 0.25,
+    max: 1.4,
+    anpassung: 0.34,
+    nachtGrad: -32,
+});
 // Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
 // Emotions-Cross-Fade driften die Himmelsfarbe, jede Regeneration rendert einen PMREM-Pass (teuer
 // auf schwacher GPU). 6 s deckelt einen 45-s-Cross-Fade auf ~7; der IBL-Nachlauf ist unmerklich.

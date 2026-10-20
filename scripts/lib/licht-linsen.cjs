@@ -1,30 +1,14 @@
-// licht-linsen.cjs — DIE ZWEI LICHT-LINSEN der Werkbank (V18.506, Gebot 10). Beide rendern in ein
-// EIGENES Render-Target: linear, ungetont (r184 tont nur das Ausgabe-Ziel) — hier ist das gewollt.
-//
-// __albedoSicht({ nur, w, h }) — DIE ALBEDO-SICHT: jedes Pixel = die diffuse Albedo, die der Shader
-//   wirklich ausgibt. Licht: nur das Umgebungslicht, weiß, Stärke π (Lambert: albedo/π · π = albedo);
-//   Sonne, Hemi, Himmels-Umgebung und Nebel aus. Emission und eingebackenes Licht fallen über die
-//   Differenz (Umgebungslicht π) − (Umgebungslicht 0) heraus. Eine 18-%-Karte liest 0,180 (Selbst-
-//   Eichung, gemessen 01.10.). Je Täter-Klasse des Stamms (bodenSatz · f:<preset>:L<stufe> · tier:<seele> · …)
-//   ein Schuss aufs nächste Exemplar, Statistik + Bild (sRGB-kodiert, Hintergrund magenta).
-// __albedoSicht({ zeilen }) — DIE ALBEDO-TAFEL DER WELT (S1 W1e, spec/farbe/albedo-tafel.json): je Tafel-Zeile ihr Exemplar
-//   (Architektur, Tier, Spieler, der Boden unter ihm — fehlt es, setzt die Linse es über `spawnArchitecture` · `spawnCreatureAt`
-//   und wartet, bis es gezeichnet ist), sichtbar NUR die Züge seiner Täter-Klasse, deren STOFF dem Wähler der Zeile passt (der
-//   Material-Schlüssel `budgetStoff`: Art · Rauheit · Metall · Klarlack · Seh-Klasse, wie im Labor); Metall auf 0 (die BASIS-
-//   Albedo). Gezählt jeder geschriebene Pixel (Alpha > 0: die Karten-Alpha eines deckenden Stoffs ist kein Loch). Dieselbe
-//   Auswertung wie das Labor (scripts/lib/albedo-tafel.cjs): `albedoAuswerten`, `stoffPasst`.
-// __lichtBilanz() — DIE LICHT-BILANZ: eine 18-%-Karte über dem Kronendach in drei Lagen (oben · zur
-//   Sonne · von der Sonne), je Licht einzeln und alle zusammen; E = π·L/0,18.
-//
-// Drei Fallen, die beide Linsen kennen müssen (gemessen 01.10. und 07.10.):
-// - `readRenderTargetPixelsAsync` liefert die Zeilen auf 256 Byte ausgerichtet (bytesPerRow); bei
-//   W·Bytes ∤ 256 liegt jede Zeile versetzt (eine 8×8-Probe las exakt ¼).
-// - Bei ruhendem Loop schaltet niemand den NODE-FRAME weiter: Licht-Uniforms bleiben auf dem Stand des
-//   ersten Schusses. Vor jedem Render `nodeFrame.update()`. Und: Meshes in einer `BundleGroup` folgen
-//   `visible` erst nach `needsUpdate` (sonst spielt das aufgezeichnete Bündel weiter).
-// - Ein 8-Bit-Ziel quantisiert die LINEARE Albedo in Schritten von 0,0039: ein Lack „Tiefschwarz" (0,006) läge auf
-//   einer oder zwei Stufen. Beide Albedo-Schüsse lesen ein Halb-Float-Ziel (rgba16float, in WebGPU ohne Zusatz
-//   mischbar — rgba32float bräuchte `float32-blendable`).
+// licht-linsen.cjs — DIE LICHT-LINSEN der Werkbank (Gebot 10): je Linse ein Seiten-Teil (`LINSEN_INSTALL`) und ihr reines Urteil.
+// __albedoSicht (`werkbank albedo`) — jedes Pixel die diffuse Albedo, die der Shader ausgibt: nur weißes Umgebungslicht π, die
+//   Differenz (π) − (0) nimmt Emission und eingebackenes Licht heraus, die 18-%-Karte liest 0,180; je Täter-Klasse ein Schuss
+//   aufs nächste Exemplar, mit `zeilen` die Albedo-Tafel der Welt (spec/farbe/albedo-tafel.json, Auswertung wie im Labor).
+// __lichtBilanz (`licht`) — die 18-%-Karte über dem Kronendach in drei Lagen, je Licht und alle; E = π·L/0,18.
+// __nahFernSicht (`albedo --nah-fern`) · __laubGegenlicht (`licht --laub`) · __tagKurve (`licht --tag`): unten je ihr Gesetz.
+// Die Albedo-Linsen rendern in ein EIGENES Ziel (linear, ungetont — r184 tont nur die Ausgabe). Drei Fallen:
+// - `readRenderTargetPixelsAsync` richtet jede Zeile auf 256 Byte aus (bytesPerRow);
+// - bei ruhendem Loop schaltet niemand den NODE-FRAME weiter (vor jedem Render `nodeFrame.update()`), und Meshes einer
+//   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
+// - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -865,6 +849,191 @@ function lichtBilanz() {
         }
         return out;
     })();
+}
+
+// DIE TAG-ACHSE IM BILD (S7, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
+// Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), Luma, Leuchtdichte und
+// R/B der unteren Bildhälfte, das Licht des Orts ohne die Kamera (`licht`, die Karte); ein Spion zählt die Schreiber der Belichtung.
+const TAG_UHREN = [0, 0.15, 0.5, 0.65].flatMap((a) =>
+    a % 0.5 ? Array.from({ length: 11 }, (_, i) => +(a + 0.02 * i).toFixed(2)) : [a]
+);
+// `--kurz` (gate:tag-achse:echt): Mittag, Mitternacht und die Grobschritte um den Horizont
+const TAG_UHREN_KURZ = [0, 0.23, 0.25, 0.27, 0.5, 0.73, 0.75, 0.77];
+function tagKurve(o) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const st = r.state,
+            rend = st.renderer;
+        rend.setAnimationLoop(null);
+        window.__buehne();
+        const schreiber = {};
+        let k = rend.toneMappingExposure;
+        Object.defineProperty(rend, "toneMappingExposure", {
+            configurable: true,
+            enumerable: true,
+            get: () => k,
+            set: (v) => {
+                const s = window.__spielStapel().split(" ← ")[0];
+                if (v !== k) schreiber[s] = (schreiber[s] || 0) + 1;
+                k = v;
+            },
+        });
+        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const W = o.w || 480,
+            H = o.h || 270;
+        const zeilen = [];
+        try {
+            for (const u of o.uhren) {
+                if (st.world) st.world.timeOfDay = u;
+                if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
+                const sofort = k;
+                // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`, wie `werkbank bild --uhr`)
+                for (let i = 0; i < 20 && r._leuchtTakt; i++) {
+                    r._leuchtTakt();
+                    await new Promise((ok) => setTimeout(ok, 50));
+                }
+                await window.__weltStehtWarten();
+                const frisch = k;
+                const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                const s = [0, 0, 0, 0];
+                let n = 0;
+                for (let i = Math.floor(H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
+                    s[0] += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                    for (let c = 0; c < 3; c++) s[c + 1] += lin[u8[i + c]];
+                }
+                const sd = r._sonnenRichtung();
+                const h = r._himmelsIrradianz();
+                const lum = (c, k) => k * (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                const licht = [st.directionalLight, st.hemiLight, st.ambientLight].reduce((E, l) => E + (l ? lum(l.color.toArray(), l.intensity) : 0), h ? lum(h.oben, Math.PI) : NaN);
+                const z = {
+                    uhr: u,
+                    sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2),
+                    licht: +licht.toPrecision(4),
+                    sofort: +sofort.toFixed(4),
+                    frisch: +frisch.toFixed(4),
+                    hell: +(s[0] / n).toFixed(1),
+                    Y: +lum(s.slice(1), 1 / n).toPrecision(4),
+                    warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
+                };
+                if (o.png) {
+                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+                    const ctx = cv.getContext("2d");
+                    const img = ctx.createImageData(W, H);
+                    img.data.set(u8.subarray(0, W * H * 4));
+                    ctx.putImageData(img, 0, 0);
+                    z.png = cv.toDataURL("image/png");
+                }
+                zeilen.push(z);
+            }
+        } finally {
+            delete rend.toneMappingExposure;
+            rend.toneMappingExposure = k;
+        }
+        return { zeilen, schreiber, max: r.constructor.BELICHTUNG.max };
+    })();
+}
+
+// DAS URTEIL DER TAG-ACHSE (rein): die Kamera folgt dem Licht des Orts, nie dem Bild (es trägt den Blick: die Sonne betritt
+// das Vordergras, +2 EV bei fester Belichtung). ROT:
+//   SPRUNG    ein Feinschritt (0,72° Sonne) der Belichtung über dem steilsten des Lichts. DAS GESETZ: das Auge folgt dem Licht
+//             mit p ≤ 1 (`BELICHTUNG.anpassung`), es überholt es nie; der steilste Schritt des Lichts liegt im Aufgang aus der
+//             Horizont-Luft (der Durchlass der Sonne wächst dort um 27 EV, ATMO_RECHNUNG), die Linse tastet dort immer nach;
+//   PUMPE     ein Grobschritt, in dem die Belichtung mit dem Licht (über `tol`) geht oder öffnet und das Bild über den Mittag
+//             hebt (am Scheitel tragen Gleitung und Licht einen Feinschritt gleich weit — die Richtung urteilt der Grobschritt);
+//   EINBRUCH  die Dämmerung unter der Nacht, oder Bild UND Karte (Belichtung × Licht) eines Feinschritts unter beiden Enden;
+//   HELLER die Dämmerung über dem Mittag · NACHT unlesbar oder über der Eichung · GOLD die Sonne nächst 6° nicht im Mittel
+//   `goldEV` oder eine Seite nicht dunkler und wärmer · ASYNC der erste Frame neben dem stehenden Himmel · SCHREIBER nicht EINER.
+const TAG_SOLL = { tol: 0.05, nachtasten: 0.5, nachtLuma: 22, tief: [-18, 15], gold: [3, 10], goldEV: [-1, -0.5], async: 0.05 };
+// die Nachtastung im Feinschritt 0,002: der Grobschritt einer Seite mit dem Bild über `nachtasten` EV und der Aufgang
+function tagFeinUhren(zeilen) {
+    return zeilen.flatMap((a, i) => {
+        const b = zeilen[i + 1];
+        const auf = b && Math.min(Math.abs(a.sonne), Math.abs(b.sonne)) < 0.5 && Math.max(a.sonne, b.sonne) > 0;
+        const tasten = b && b.uhr - a.uhr < 0.021 && a.uhr % 0.5 && b.uhr % 0.5 && (auf || Math.abs(Math.log2(b.Y / a.Y)) > TAG_SOLL.nachtasten);
+        return tasten ? [1, 2, 3, 4, 5, 6, 7, 8, 9].map((j) => +(a.uhr + 0.002 * j).toFixed(3)) : [];
+    });
+}
+function tagKurveUrteil(welt) {
+    const S = TAG_SOLL;
+    const befunde = [],
+        kurven = {};
+    const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
+    const r2 = (v) => v.toFixed(2);
+    for (const [ort, m] of Object.entries(welt)) {
+        const rot = (name, text) => befunde.push(`${name} ${ort}: ${text}`);
+        const z = new Map(((m && m.zeilen) || []).map((x) => [x.uhr, x]));
+        const [mittag, nacht] = [z.get(0.5), z.get(0)];
+        if (!mittag || !nacht) {
+            rot("BLIND", `ohne Mittag und Mitternacht (${(m && m.fehler) || "leer"})`);
+            continue;
+        }
+        const e = (x) => ev(x.Y, mittag.Y);
+        const karte = (x) => ev(x.frisch * x.licht, mittag.frisch * mittag.licht);
+        const tief = (x) => x.sonne > S.tief[0] && x.sonne <= S.tief[1];
+        const grob = m.zeilen.filter((x) => x.uhr % 0.5);
+        const alle = grob.concat((m.fein || []).filter((x) => x.uhr % 0.5)).sort((a, b) => a.uhr - b.uhr);
+        const paare = (l, d) => l.slice(1).map((b, i) => [l[i], b]).filter(([a, b]) => Math.abs(b.uhr - a.uhr - d) < 1e-6);
+        const fein = paare(alle, 0.002);
+        const L = Math.max(...fein.map(([a, b]) => Math.abs(ev(b.licht, a.licht))));
+        kurven[ort] = `Licht steilster Feinschritt ${r2(L)} EV · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}EV/k${x.frisch}/E${x.licht}`).join(" ");
+        if (!(L > 0)) rot("SPRUNG", "ohne Feinschritt blind");
+        for (const [a, b] of fein) if (Math.abs(ev(b.frisch, a.frisch)) > L) rot("SPRUNG", `Uhr ${a.uhr} → ${b.uhr} Belichtung ${r2(ev(b.frisch, a.frisch))} EV, Licht höchstens ${r2(L)}`);
+        const dunkel = Math.min(e(nacht), ...grob.filter((x) => x.sonne <= S.tief[0]).map(e));
+        for (const x of alle) if (tief(x) && e(x) < dunkel - S.tol) rot("EINBRUCH", `Uhr ${x.uhr} ${r2(e(x) - dunkel)} EV unter der Nacht`);
+        for (const [a, b] of paare(grob, 0.02)) {
+            const [dk, dl] = [ev(b.frisch, a.frisch), ev(b.licht, a.licht)];
+            if ((dk * dl > 0 && Math.abs(dl) > S.tol) || (dk > 0 && e(b) > S.tol && e(b) > e(a)))
+                rot("PUMPE", `Uhr ${a.uhr} → ${b.uhr} (Sonne ${b.sonne}°) Belichtung ${r2(dk)} EV, Licht ${r2(dl)} EV, Bild ${r2(e(b))} EV`);
+            for (const x of alle.filter((y) => y.uhr > a.uhr && y.uhr < b.uhr && [e, karte].every((f) => f(y) < Math.min(f(a), f(b)) - S.tol)))
+                rot("EINBRUCH", `Uhr ${x.uhr} ${r2(e(x))} EV im Loch zwischen ${a.uhr} und ${b.uhr}`);
+        }
+        for (const x of grob) if (tief(x) && e(x) > S.tol) rot("HELLER", `Uhr ${x.uhr} ${r2(e(x))} EV über dem Mittag`);
+        if (!(nacht.hell >= S.nachtLuma && nacht.frisch <= m.max + 1e-6)) rot("NACHT", `Luma ${nacht.hell}, Belichtung ${nacht.frisch}`);
+        const g = grob
+            .filter((x) => x.uhr < 0.5 && z.has(+(1 - x.uhr).toFixed(2)))
+            .map((x) => [x, z.get(+(1 - x.uhr).toFixed(2))])
+            .filter(([x, y]) => x.sonne + y.sonne >= 2 * S.gold[0] && x.sonne + y.sonne <= 2 * S.gold[1])
+            .sort(([a, b], [c, d]) => Math.abs(a.sonne + b.sonne - 12) - Math.abs(c.sonne + d.sonne - 12))[0];
+        const gold = g && (e(g[0]) + e(g[1])) / 2;
+        if (!(gold >= S.goldEV[0] && gold <= S.goldEV[1] && g.every((y) => y.warm > mittag.warm && e(y) < 0)))
+            rot("GOLD", g ? `Uhr ${g[0].uhr}/${g[1].uhr} ${r2(gold)} EV (${g.map((y) => r2(e(y)))}), R/B ${g.map((y) => y.warm)} gegen ${mittag.warm}` : "blind");
+        const asy = m.zeilen.concat(m.fein || []).filter((x) => Math.abs(ev(x.sofort, x.frisch)) > S.async);
+        if (asy.length) rot("ASYNC", asy.map((x) => `${x.uhr}: ${r2(ev(x.sofort, x.frisch))} EV`).join(", "));
+        const n = Object.keys(m.schreiber || {});
+        if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
+    }
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
+}
+
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis f5b66780
+// (Belichtung 2,78 → 4,57 mit der Sonne, das Bild 1,34 EV über dem Mittag) und jeder in den Kopf gespielte Täter beim Namen.
+function tagKurveSelbsttest() {
+    const T = require("../../spec/farbe/tag-kurve.json");
+    const grob = (x) => TAG_UHREN.includes(x.uhr);
+    const kurve = (zeilen, fall) => {
+        const alle = zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
+        const z = (u) => alle.find((x) => x.uhr === u);
+        if (fall === "HELLER") z(0.73).Y = 0.3;
+        if (fall === "SPRUNG") z(0.26).frisch *= 1.5;
+        if (fall === "PUMPE") z(0.27).frisch *= 3;
+        if (fall === "EINBRUCH") (z(0.26).Y /= 4), (z(0.26).frisch /= 4);
+        if (fall === "BLICK") z(0.33).Y = 0.5; // die hohe Sonne im Gegenlicht: kein Urteil der Dämmerung
+        if (fall === "NACHT") z(0).hell = 10;
+        if (fall === "GOLD") z(0.27).Y = 0.12;
+        if (fall === "GOLD2") (z(0.27).Y = 0.118), (z(0.73).Y = 0.05); // das Mittel im Fenster, eine Seite über dem Mittag
+        if (fall === "ASYNC") z(0.73).sofort = 3;
+        const m = { zeilen: alle.filter(grob), fein: alle.filter((x) => !grob(x)), schreiber: { _dayNightApplyBelichtung: 1 }, max: 1.4 };
+        if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
+        if (fall === "BLIND") m.zeilen = [];
+        return tagKurveUrteil({ wiese: m });
+    };
+    const faelle = ["HELLER", "SPRUNG", "PUMPE", "EINBRUCH", "NACHT", "GOLD", "GOLD2", "ASYNC", "SCHREIBER", "BLIND"];
+    return [
+        [kurve(T.kopf).urteil, "GRUEN"],
+        [kurve(T.kopf, "BLICK").urteil, "GRUEN"],
+        [kurve(T.basis).befunde.join(), /PUMPE wiese: Uhr 0\.25 → 0\.27 \(Sonne 7\.2°\) Belichtung 0\.72 EV.*PUMPE wiese: Uhr 0\.73 → 0\.75/],
+        ...faelle.map((f) => [kurve(T.kopf, f).befunde.join(" | "), new RegExp(`(^| \\| )${f.replace(/2$/, "")} wiese`)]),
+    ];
 }
 
 // DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): Boden-Satz (nah) und Fern-Ring (fern, er liegt
@@ -1903,6 +2072,11 @@ function kartenEichung(kurve) {
 module.exports = {
     kartenEichung,
     laubLichtUrteil,
+    tagKurveUrteil,
+    tagKurveSelbsttest,
+    tagFeinUhren,
+    TAG_UHREN,
+    TAG_UHREN_KURZ,
     kronenObenUrteil,
     kronenReflexionSoll,
     LINSEN_INSTALL:
@@ -1913,7 +2087,8 @@ module.exports = {
         `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
         `window.__albedoSicht = ${albedoSicht.toString()};` +
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
-        `window.__lichtBilanz = ${lichtBilanz.toString()};`,
+        `window.__lichtBilanz = ${lichtBilanz.toString()};` +
+        `window.__tagKurve = ${tagKurve.toString()};`,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,

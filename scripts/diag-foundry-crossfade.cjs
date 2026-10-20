@@ -1,18 +1,18 @@
-// diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN (Paritäts-Vollendung W5.3+W5.4): das EINE Masken-Gesetz
+// diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN: das EINE Masken-Gesetz
 // `__phytoCore.lodCrossfadeMask` (phyto-core) gegen die Studio-Blende, das Fenster der Instanz-Wahl und die lebende Welt.
 // Teil (a), Node an der GELADENEN Klasse (`stammLib.ladeKlasse`: die Kerne wie index.html, dann der Stamm) — nie ein
-// Quelltext-Zitat (PFLICHT-OFFEN D3):
+// Quelltext-Zitat:
 //   (1) DIE STUDIO-BLENDE LÄUFT: der Fragment-Satz, den foundry-core `injectWind` dem Labor-Stoff einsetzt (Rinde und Laub,
 //       mit der Bindung des Wirts aus `PORTAL_RENDER_CONFIG.lod` wie foundry-bruecke), läuft als JS auf dem 64×64-Raster
 //       × Band × beiden Metriken (vLodDL = vLodD und 1,6·vLodD) × 2 uDitherT-Phasen: der Dither (`lodDitherIGN`) und jedes
 //       keep der Stufen L0/L1 gleichen ihm, Abweichung 0. Ändert das Studio seine Blende, wird die Linse rot.
 //   (2) DIE INVARIANTEN DES GESETZES: Rinde = exakte Partition im Partitions-Band (L1 ∪ Karte im Fern-Band, das Billboard
-//       liegt tiefen-versetzt), Laub = überlappende Rampen (FIX v37: Union lückenlos, ≥ max der Einzel-Deckung, Band-Anfang
+//       liegt tiefen-versetzt), Laub = überlappende Rampen (Union lückenlos, ≥ max der Einzel-Deckung, Band-Anfang
 //       ~100 % L0, Band-Ende ~100 % Karte, monoton — auch bei divergenter Blatt-Metrik).
-//   (3) DAS FENSTER DER INSTANZ-WAHL (W7): die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
+//   (3) DAS FENSTER DER INSTANZ-WAHL: die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
 //       Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz × Distanz-Intervall,
 //       Dither-Raster 256 — kein Loch; der Überschuss steht als Zahl.
-//   (4) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das echte `_instanzFenster` über eine Birke und eine
+//   (4) DIE STUFE OHNE BILD: das echte `_instanzFenster` über eine Birke und eine
 //       Eiche, 0–60 m, je Stufe — keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält, keine
 //       fehlt, die es behält.
 //   (5) DIE ABSENZEN DER BLENDE über den EINEN Helfer `stammLib.fehlt`: kein Maß von der Licht-Kamera, zum Fragment oder
@@ -29,18 +29,12 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
 const KLASSE = stammLib.ladeKlasse(root);
@@ -340,7 +334,7 @@ async function runPartB() {
         while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
         res.foundryReady = !!(f && f.ready);
         if (!res.foundryReady) return res;
-        // ── der Proben-Baum (das V18.218.1-Band-Muster: gewachsener Bauplan, ferner Fix-Spot) ──
+        // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const px = 12345,
             pz = 6789;
@@ -466,7 +460,7 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE DES GESETZBUCHS (K43-3; vorher „die Kette ohne Partner", 06.10. F-D3/V-D3): Wagen und Tor tragen ihre
+        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre
         // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
         // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
         // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
@@ -599,7 +593,7 @@ async function runPartB() {
                     band: Number.isFinite(entry._lodBandLevel) ? entry._lodBandLevel : null,
                 });
             }
-            // ════ DIE STUFEN-WAHRHEIT (04.10.): die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
+            // ════ DIE STUFEN-WAHRHEIT: die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
             // Je Probe: die residenten Stufen (Primär + Band) mit IHREN Fassaden-Stempeln (aH0/aH0L je Slot), die
             // Masken-Distanz roh × Perf-Streck × min(lodRef/Stempel, 1), die Maske __phytoCore.lodCrossfadeMask über
             // 64 Dither-Werte je Rinde/Laub — ein Wert, den KEINE residente Stufe behält, ist ein LOCH (der Spieler
@@ -610,8 +604,8 @@ async function runPartB() {
             const cfgM = { d0: cfg.thresh01, d1: cfg.thresh12, fade: cfg.fade, fade0: cfg.fade0 };
             // Je residentem Slot: der Fassaden-Stempel (aH0/aH0L) und die Maske, die sein Stoff fährt — aLodLevel 1 =
             // L0-Formel · 2 = L1-Formel · 3 = die einzige Nah-Stufe (nur die Fern-Ausblendung f1o) · 0 = frei; das
-            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (seit 04.10. die Höhe der L1; seit dem
-            // Karten-Atlas W6 reist er als |aKarte.w| in der EINEN Atlas-Gruppe).
+            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (die Höhe der L1, als |aKarte.w| in der EINEN
+            // Atlas-Gruppe).
             // Der Schatten-Zwilling (SHADOW_TWIN_LAYER) zählt nicht: die Kamera sieht ihn nie.
             const stempelVon = (ref) => {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
@@ -873,7 +867,7 @@ async function runPartB() {
                     if (op.satzArt) op.gegenSatz = kettenLauf(op, "satz");
                 }
                 const echt = r._lodTreeVisHeight;
-                r._lodTreeVisHeight = () => 0; // die Gegenprobe: der Leser vor dem 04.10.
+                r._lodTreeVisHeight = () => 0; // die Gegenprobe: der alte Leser
                 // voll UND unter Last: der Perf-Streck verdeckt den rohen Leser teilweise (er rückt die Masken näher)
                 const g1 = lochSweep(1);
                 const g2 = lochSweep(fdMin);
@@ -1038,7 +1032,7 @@ async function runPartB() {
                 // Kamera, wie geboren, fern vom Spieler — der kopflose Boot) steht es im Kopf des Spielers; nach der Setzung reist
                 // es mit dem Sprung des Spielers, bis das Rig nachzieht; setzt eine Sonde die Kamera, IST sie das Auge; die Geburt
                 // trägt die Distanz vom Auge (die Verfolger-Kamera 9,6 m hinter dem Spieler). Selbsttest im selben Lauf: das
-                // Auge = die Kamera allein (der Stand d6fd4047) bzw. der Spieler — die Linse MUSS falsche Wahlen zählen.
+                // Auge = die Kamera allein bzw. der Spieler — die Linse MUSS falsche Wahlen zählen.
                 const augeLauf = (gegen) => {
                     const T3 = window.THREE;
                     const o = { proben: 0, falsch: 0, geburten: 0, geburtFalsch: 0, beispiel: [] };
@@ -1119,7 +1113,7 @@ async function runPartB() {
                 // vom Auge. Besucht die Scheibe die Zelle spät (in voller Fahrt 24 m), dithert die Karte ohne verlangten Partner
                 // ins Nichts, wo sie nicht HÄLT (`_scatterMaterializeCell` bandHalt). Ein Sicht-Wechsel allein (9,6 m) erreicht
                 // sie in der Streu (ab 64 m) nie: die Karte weicht erst unter 22 m Wahrnehmung, die Wahl lässt sie ab 29 m ohne
-                // Partner (gemessen 20.10.: 0 Geister ohne Halt in 1706 Zellen). Je Ort die Deckung jeder Foundry-Baum-Zelle am
+                // Partner. Je Ort die Deckung jeder Foundry-Baum-Zelle am
                 // Auge; geurteilt wird die Zelle ohne verlangten Partner, die Zelle mit Partner zählt mit.
                 const streuLauf = (ohneHalt) => {
                     const o = { proben: 0, geister: 0, loecher: 0, orte: 0, mitPartner: 0, mitPartnerGeister: 0, beispiel: null };
@@ -1162,13 +1156,8 @@ async function runPartB() {
             st.architectures = savedArchs;
             r._archLODCursor = savedCursor;
         }
-        // ════ TEIL Z (AUSLÖSCHUNGS-WELLE, Feld B) — DER STUFEN-ZENSUS: bei Studio-
-        // äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der Studio-Wald.
-        // Studio-CPU-Formel (phytogenesis Z.2739-2750): dn = dr·min(HREF/bh, 1)
-        // UNGEDECKELT (kein visStretchMax) · Blatt-Kappe bh_L = min(bh, 24) (Z.2392) —
-        // der Host-`_lodPerceptionDistance`/-Partner MUSS dieselben Zahlen liefern
-        // (Zahl je Distanz-Band × Sichthöhe; vor der Kalibrierung: Deckel 15 m +
-        // Kappe 12 m = doppelt so frühe Demotion, der „nicht wie in der Vorlage"-Riss).
+        // ════ TEIL Z — DER STUFEN-ZENSUS: bei Studio-äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der
+        // Studio-Wald (dn = dr·min(HREF/bh, 1) ungedeckelt · Blatt-Kappe bh_L = min(bh, 24)), je Distanz-Band × Sichthöhe.
         res.zensus = [];
         const hrefZ = cfg.lodRef;
         const stageStudio = (dr, bh) => {
@@ -1216,12 +1205,10 @@ async function runPartB() {
         return res;
     });
 
-    // ── ATTRIBUT-WAND (18.07., Schöpfer-Konsole: „Vertex attribute aH0/aH0L/aLodLevel
-    // not found" im Dauer-Takt): JEDER Konsument eines Masken-Materials (userData.
+    // ── ATTRIBUT-WAND: JEDER Konsument eines Masken-Materials (userData.
     // foundryCrossfade) MUSS die Stempel-Attribute tragen — der Null-Stempel sitzt am
     // EINEN Konversions-Chokepoint (_foundryBuildMesh); der Gruppen-Bau überschreibt
-    // mit echten Stufen. Vor der Wand: 957 ungestempelte Meshes (Kreatur-Ofen +
-    // Direkt-Konsumenten) → three warnte je RenderObject. ──
+    // mit echten Stufen. ──
     const attrWand = await page.evaluate(() => {
         const r = window.anazhRealm;
         let geprueft = 0,
@@ -1239,9 +1226,7 @@ async function runPartB() {
         return { geprueft, verstoesse };
     });
 
-    // ── DIE GNADENFRIST DES LEER-DISPOSE (18.07., zweiter Schöpfer-Trace: +366
-    // Gruppen-Re-Mints in 176 s — Familien oszillieren um liveCount 0, der Sofort-
-    // Reap machte jede Oszillation zum Voll-Dispose + Re-Mint). Vier Sätze:
+    // ── DIE GNADENFRIST DES LEER-DISPOSE (Familien oszillieren um liveCount 0). Vier Sätze:
     // headless reapt SOFORT (byte-alte Gates) · echt hält die Frist die Hülle ·
     // Realloc in der Frist mintet NICHT neu · der Reaper räumt nach Ablauf. ──
     const gnade = await page.evaluate(async () => {
@@ -1285,7 +1270,7 @@ async function runPartB() {
         return o;
     });
 
-    // ── DER KEHRAUS DES WURFS (Gegenprüfung S3 R2, 09.10.): die L0 trägt DIESELBEN Zwillings-Leaves wie ihre Wurf-Stufe
+    // ── DER KEHRAUS DES WURFS: die L0 trägt DIESELBEN Zwillings-Leaves wie ihre Wurf-Stufe
     // (L1) — räumt die L0-Gruppe, fällt keine Geometrie der lebenden L1 (r184 zerstörte sonst die GPU-Puffer des Wurfs
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
@@ -1298,7 +1283,7 @@ async function runPartB() {
         if (!e) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(e);
         // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
-        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr; bis K69 plante die erste Frage am Stück)
+        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr)
         for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) {
             r._tickWaldPlan(Infinity);
             await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
@@ -1507,9 +1492,7 @@ async function main() {
             kehraus.nachL1 === kehraus.geoms,
         kehraus ? JSON.stringify(kehraus) : "Probe lief nicht"
     );
-    // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße: seit dem Budget-Gesetz (W8) faltet der Ofen die
-    // Tier- und Mensch-Gestalt auf ihre Zeile (Tier 13 → 8, Mensch 16 → 8 Meshes) — dieselbe Probe-Welt trägt 69
-    // statt 175 Masken-Meshes.
+    // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße.
     check(
         "ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie",
         attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 50,
@@ -1657,8 +1640,6 @@ async function main() {
         // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
         // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
         // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
-        // Vorher (06.10., „die Kette ohne Partner"): die L0 dithert zu einer L1, die es nicht gibt — GT voll 27 von 27 Proben
-        // mit Loch; bis K43-3 erwartete die Linse Wagen und Tor nur als L0 und las nur Instanz-Gruppen (das Tor: 0 Proben).
         const zk = (o) =>
             o
                 ? `${o.proben} Proben · Löcher ${o.loecher} (leer ${o.leer}) · Satz-Zellen ${o.satzZellen} (fehlt ${o.zelleFehlt}, Ecke≠ ${o.eckeUngleich}) · Stempel≠CPU ${o.stempelUngleich} · Stufen ${JSON.stringify(o.stufen)} · Perf ×${o.perf} · alter Leser ${o.altLoecher} Löcher${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}${o.fehltBeispiel ? " — Zelle fehlt z. B. " + JSON.stringify(o.fehltBeispiel) : ""}`

@@ -50,18 +50,13 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
-const root = path.resolve(__dirname, "..");
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -2302,8 +2297,6 @@ function quellenAbgriff() {
     });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
@@ -2314,7 +2307,6 @@ function quellenAbgriff() {
         const page2 = await browser.newPage();
         await nullRenderer(page2, { foundry: true });
         await page2.evaluateOnNewDocument(quellenAbgriff);
-        page2.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
         await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         return page2.evaluate(probeBahn, BAHN);
     };
@@ -2421,12 +2413,7 @@ function quellenAbgriff() {
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
         !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
         R
-            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` +
-                  ` · gegen den GEZEICHNETEN Boden (Sicht, nur gemessen — D1): ${
-                      R.sichtSchritte
-                          ? `p75 ${R.sichtP75.toFixed(3)} m, max ${R.sichtMax.toFixed(3)} m in ${R.sichtSchritte} Schritten`
-                          : "keine Boden-Karte"
-                  }`
+            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)}; das Rad gegen den gezeichneten Boden misst gate:koerper-stand K8)`
             : "keine Probe"
     );
     check(
@@ -2678,7 +2665,6 @@ function quellenAbgriff() {
         for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);

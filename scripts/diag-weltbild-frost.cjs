@@ -11,11 +11,11 @@
 //      Canvas; headless: das Rücklese-Bild der Welt-GPU)
 // Dann DIE ENTSORGUNG DER BÜHNEN (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen; `_disposeSoulGroup`
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
-//   S1 Ich-Bühne und Welt-Leib wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Durchgänge) entsorgen keine Welt-Geometrie, keinen Welt-Stoff
+//   S1 der Spielerpfad (jede Tetrapoda-Art↔human; der Mitspieler empfängt jede Seele, dann sein Abschied) und die Hof-Bühne
+//      entsorgen keine Welt-Geometrie, keinen Welt-Stoff; je Seele tragen Ich-Bühne und Mitspieler (S4) den Leib der Welt
 //   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
 //      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
-//   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
-//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff (Neubauten deckt S2)
+//   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) entsorgt keine Welt-Geometrie, keinen Welt-Stoff
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
@@ -30,8 +30,7 @@
 // Zwei Wege, derselbe Prüfer:
 //   node scripts/diag-weltbild-frost.cjs          headless (swiftshader, ?holz=kienspan) — CI: der Spiel-Takt ruht, die
 //                                                 Welt-GPU zeichnet die PROBE-BÜHNE:
-//                                                 einen Menschen und ein Tier aus denselben Bauern wie Spieler, Ich- und
-//                                                 Hof-Bühne (`_buildHumanGroup`, `_buildCreatureGroup` — geteilte Vorlagen)
+//                                                 den Welt-Leib des Spielers (jede Seele des Seelenwechsels)
 //   node scripts/diag-weltbild-frost.cjs --echt   sichtbares Chrome auf der echten GPU: der SPIELPFAD (Ankunft · dritte
 //                                                 Person · Werkstatt · Tab · Hof) im laufenden Spiel, das Bild-Paar je Schritt
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
@@ -142,17 +141,27 @@ function geraeteHoerer() {
 }
 
 // Der Prüf-Raum in der Seite: `wurzel` (was die Welt-GPU zeichnet und der Zensus liest), `zeichne(n)` (n Bilder der Welt-
-// GPU), `drehe()` (63° Gier), `leib` (der Mensch, dessen Index der Täter T2 weitet).
+// GPU), `drehe()` (63° Gier), `leib` (der Welt-Leib, dessen Index der Täter T2 weitet), `leibWechsel()` (zeichnet ihn).
 function pruefRaum(echt) {
     const r = window.anazhRealm;
     const T = window.THREE;
     const rend = r.state.renderer;
     const F = (window.__frostWand = { echt });
     r.setCameraMode("third");
+    // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
+    Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
     if (echt) {
         F.wurzel = r.state.scene;
-        // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
-        Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
+        // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
+        F.leibWechsel = async () => {
+            for (let t = performance.now(), fehlt = 1; fehlt && performance.now() - t < 60000; ) {
+                await F.zeichne(1);
+                fehlt = 0;
+                r.state.playerMesh.traverseVisible(
+                    (o) => (fehlt += o.isMesh && r.state.camera.layers.test(o.layers) && !r._erstZeichnung.gezeichnet.get(o))
+                );
+            }
+        };
         F.zeichne = async (n) => {
             const info = rend.info.render;
             const a = info.calls,
@@ -177,19 +186,10 @@ function pruefRaum(echt) {
     scene.add(sonne);
     const pivot = new T.Group();
     scene.add(pivot);
-    const leib = r._buildHumanGroup();
-    pivot.add(leib);
-    // das Tier der Hof-Bühne: das erste Wesen des Hofs, gebaut wie dort (`_hofRefreshFocus` → `_buildCreatureGroup`)
-    let tier = null,
-        seele = null;
-    const c = (r.state.creatures || [])[0];
-    if (c) seele = r._creatureProfile(c).soul;
-    if (seele) tier = r._buildCreatureGroup(seele);
-    if (tier) {
-        // BÜHNE: eigene Szene des Frost-Bilds
-        tier.position.set(1.3, 0, -0.4);
-        pivot.add(tier);
-    }
+    // headless steht der Welt-Leib selbst auf der Probe-Bühne: `applyPlayerSoul` legt den neuen in die Welt-Szene,
+    // `leibWechsel` holt ihn her
+    let traeger = F.leib;
+    pivot.add(traeger);
     // ein Ring farbiger Kisten auf dem Drehteller: die Drehung ändert die Bildmitte sichtbar
     for (let i = 0; i < 8; i++) {
         const k = new T.Mesh(
@@ -200,18 +200,24 @@ function pruefRaum(echt) {
         k.position.set(Math.cos(w) * 1.1, 0.3, Math.sin(w) * 1.1);
         pivot.add(k);
     }
-    pivot.traverse((o) => {
-        if (o.isMesh) {
+    // auch der Welt-Leib vor seinem ersten Spawn (`_worldgenInitPlayerPosition` zeigt ihn erst dann)
+    const zeigeAlles = (g) =>
+        g.traverse((o) => {
             o.visible = true;
             o.frustumCulled = false;
-        }
-    });
+        });
+    zeigeAlles(pivot);
     const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
     // BÜHNE: eigene Szene des Frost-Bilds
     cam.position.set(0, 1.0, 3.0);
     cam.lookAt(0, 0.7, 0);
     F.wurzel = scene;
-    F.leib = leib;
+    F.leibWechsel = () => {
+        pivot.remove(traeger);
+        pivot.add((traeger = F.leib));
+        zeigeAlles(traeger);
+        F.bildSofort();
+    };
     F.zeichne = async (n) => {
         for (let i = 0; i < n; i++) F.bildSofort();
         await rend.backend.device.queue.onSubmittedWorkDone();
@@ -237,7 +243,7 @@ function pruefRaum(echt) {
     };
     F.drehe = () => (pivot.rotation.y += 1.1);
     F.mittag = () => {};
-    return { weg: "probe-buehne", tier: tier ? seele : null };
+    return { weg: "probe-buehne" };
 }
 
 (async () => {
@@ -282,9 +288,10 @@ function pruefRaum(echt) {
                     st &&
                     st.rendererReady &&
                     st.playerMesh &&
+                    !st._deferredAvatarSoul &&
                     st.voxelChunks &&
                     st.voxelChunks.size >= minChunks &&
-                    (st._weltbildDa || !echt)
+                    (st._leibWarm || !echt)
                 )
                     break;
                 await new Promise((res) => setTimeout(res, 300));
@@ -296,6 +303,7 @@ function pruefRaum(echt) {
                 webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
                 chunks: r && r.state.voxelChunks ? r.state.voxelChunks.size : -1,
                 weltbild: r && r.state._weltbildDa ? `${(r.state._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
+                warm: !!(r && r.state._leibWarm),
             };
         },
         { minChunks: ECHT ? 25 : 9, echt: ECHT }
@@ -303,7 +311,7 @@ function pruefRaum(echt) {
     console.log(
         `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
-    if (!boot.bereit || !boot.webgpu || (ECHT && boot.weltbild === "fehlt")) {
+    if (!boot.bereit || !boot.webgpu || (ECHT && !boot.warm)) {
         check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, JSON.stringify(boot));
         await browser.close();
         server.close();
@@ -627,28 +635,6 @@ function pruefRaum(echt) {
                 }
         };
         E.bau = (d) => Object.assign({ module: 0, pipelines: 0 }, d && d.__frostBau);
-        // der Welt-Leib wechselt die Seele: echt der Spieler (applyPlayerSoul), headless der Mensch der Probe-Bühne (die alte
-        // Gestalt fällt über `_disposeSoulGroup`, die neue kommt aus demselben Bauer wie der Spieler)
-        F.leibWechsel = async (s) => {
-            if (echt) {
-                E.im("seelen", () => r.applyPlayerSoul(s));
-                return F.zeichne(2);
-            }
-            const alt = F.leib;
-            const vater = alt.parent;
-            vater.remove(alt);
-            E.im("seelen", () => r._disposeSoulGroup(alt));
-            const neu = s === "human" ? r._buildHumanGroup() : r._buildCreatureGroup(s);
-            neu.traverse((o) => {
-                if (o.isMesh) {
-                    o.visible = true;
-                    o.frustumCulled = false;
-                }
-            });
-            vater.add(neu);
-            F.leib = neu;
-            F.bildSofort();
-        };
         E.warte = async (holen) => {
             const s0 = holen();
             const c0 = s0 && s0.renderer ? s0.renderer.info.render.calls : 0;
@@ -667,41 +653,48 @@ function pruefRaum(echt) {
             `${b.welt} von ${b.alle} Entsorgungen trafen die Welt (${b.geometrien} Geometrien + ${b.stoffe} Stoffe einzeln): ${b.namen.join(" | ")}`
         );
 
-    // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne
-    // 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
+    // S1/S2/S4 — der Seelenwechsel über den Spielerpfad (`applyPlayerSoul` bei offenem Ich: Ich-Bühne UND Welt-Leib, der
+    // Mitspieler empfängt ihn) je Art↔human, Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
     const NEUBAU_MAX = 2;
+    const ICH_TRI_MIN = 10000; // der Block-Zwilling der Bauplan-Teile trägt 5 388
     const seelen = await page.evaluate(
-        async (echt, max) => {
+        async (echt) => {
             const r = window.anazhRealm;
             const F = window.__frostWand;
             const E = window.__frostEntsorgung;
-            let tausch = 0,
-                vorgelegt = 0;
-            // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) im Bericht: der CI-Runner rastert auf wenigen Kernen
-            const ms = { buehne: 0, leib: 0 };
+            let tausch = 0;
             const wechsle = async (holen, zeige) => {
-                const t = performance.now();
                 const alt = holen() && holen().pivot;
                 E.im("seelen", zeige);
-                if (alt && holen().pivot !== alt) {
-                    tausch++;
-                    alt.traverse((o) => o.geometry && vorgelegt++);
-                }
+                if (alt && holen().pivot !== alt) tausch++;
                 await E.warte(holen);
-                ms.buehne += performance.now() - t;
             };
+            // der Leib einer Gruppe gegen den Welt-Leib: sichtbare Meshes (der Peer ist unsichtbar geboren), Geometrien, die er
+            // nicht trägt, Dreiecke
+            const leiber = {};
+            const leib = (pivot) => {
+                const welt = new Set(),
+                    b = [];
+                F.leib.traverse((o) => o.isMesh && welt.add(o.geometry));
+                if (pivot) for (const c of pivot.children) c.traverseVisible((o) => o.isMesh && b.push(o.geometry));
+                const tri = b.reduce((n, g) => n + (g.index || g.attributes.position).count / 3, 0);
+                return { meshe: b.length, fremd: b.filter((g) => !welt.has(g)).length, tri };
+            };
+            // der Mitspieler empfängt jede Seele, wie `_p2pBroadcastSoul` sie sendet (Name, Bauplan-Teile einer eigenen Seele)
+            const peer = { peerId: "frost-peer" };
             const durchgang = async () => {
                 r.toggleInventoryOverlay(true);
-                for (let k = 0; k < 3; k++)
-                    for (const s of ["wolf", "human"]) {
-                        await wechsle(
-                            () => r.state.ichStage,
-                            () => r._ichStageShow(s)
-                        );
-                        const t = performance.now();
-                        await F.leibWechsel(s);
-                        ms.leib += performance.now() - t;
-                    }
+                for (const s of Object.keys(r.constructor.TETRAPODA_SOUL_MAP).flatMap((a) => [a, "human"])) {
+                    await wechsle(
+                        () => r.state.ichStage,
+                        () => r.applyPlayerSoul(s === "human" ? s : "koerper_" + s)
+                    );
+                    peer.soulName = r.state.player.soul;
+                    peer.bodyParts = (r.state.customSouls[peer.soulName] || {}).bodyParts;
+                    E.im("seelen", () => r._p2pApplyPeerSoul(peer));
+                    leiber[s] = { ich: leib(r.state.ichStage.pivot), peer: leib(peer.mesh) };
+                    await F.leibWechsel();
+                }
                 r.toggleInventoryOverlay(false);
                 r.toggleDrawer("kreaturen");
                 for (let k = 0; k < 2; k++)
@@ -721,8 +714,6 @@ function pruefRaum(echt) {
                 hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
             };
             const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
-            // ein Haus, das im Fenster ankommt, kompiliert EINMAL, der Knoten-Bau der Seele bei JEDEM Wechsel: zeigt ein Durchgang
-            // Neubauten, urteilt ein weiterer
             const messe = async () => {
                 const vor = alle();
                 await F.zeichne(echt ? 8 : 2);
@@ -733,42 +724,51 @@ function pruefRaum(echt) {
                     neubau = {},
                     d = (k, g) => nach[k][g] - ruhe[k][g] - (ruhe[k][g] - vor[k][g]);
                 for (const k of Object.keys(devs)) neubau[k] = { module: d(k, "module"), pipelines: d(k, "pipelines") };
-                return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6), offen: r._weltOffen().foundry };
+                return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6) };
             };
-            const erst = await messe();
-            const ueber = Object.values(erst.neubau).some((n) => n.module > max || n.pipelines > max);
-            const { neubau, neu, offen } = ueber ? await messe() : erst;
+            const { neubau, neu } = await messe();
+            const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
+            const programmZwillinge = [r.state.renderer, r.state.ichStage.renderer, r.state.hofStage.renderer].map((x) =>
+                zwillinge([...x._pipelines.programs.vertex.keys()])
+            );
+            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
+            r.state.scene.remove(peer.mesh);
+            E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
+            // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele
+            const zw = r._buildFromBlueprint({ name: "frost-zwilling", parts: r._getSoulDef("bp_koerper_wolf").bodyParts });
+            const selbst = { leer: leib(null), zwilling: leib(zw) };
+            r._disposeSoulGroup(zw);
             return {
                 ...E.bericht("seelen"),
+                programmZwillinge,
+                zwillingSelbst,
+                leiber,
+                selbst,
                 tausch,
-                vorgelegt,
-                ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
                 neubau,
                 neu,
-                erst: ueber
-                    ? `erster Durchgang Welt +${erst.neubau.welt.module}/+${erst.neubau.welt.pipelines} bei ${erst.offen} offenen Foundry-Aufträgen, einmalig`
-                    : null,
-                offen,
             };
         },
-        ECHT,
-        NEUBAU_MAX
+        ECHT
     );
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 500)}`);
-    entsorgtKeineWelt("S1 Seelenwechsel (Ich und Welt-Leib wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
-    // nie vakuös: die Bühnen und der Leib tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
-    check(
-        "S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Durchgang, mit Geometrie)",
-        seelen.tausch >= 20 && seelen.vorgelegt > 0,
-        `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
-    );
+    entsorgtKeineWelt("S1 Seelenwechsel (Ich, Welt-Leib und Mitspieler jede Art↔human, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
+    const leibGut = (u) => u.meshe > 0 && u.fremd === 0 && u.tri >= ICH_TRI_MIN;
+    for (const [s, je] of Object.entries(seelen.leiber))
+        for (const [wer, u] of [["S1 Ich-Bühne", je.ich], ["S4 Mitspieler", je.peer]])
+            check(`${wer} ${s}: der Leib der Welt`, leibGut(u), `${JSON.stringify(u)} (Soll fremd 0, tri ≥ ${ICH_TRI_MIN})`);
+    check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), JSON.stringify(seelen.selbst));
+    // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt (dass sie Geometrie trugen, zeigt der Leib je Seele)
+    check("S1 die Probe wechselt wirklich (Ich ×8 + Hof ×8 je Durchgang)", seelen.tausch >= 24, `${seelen.tausch} Wechsel`);
     // je Device und gemessenem Durchgang
     for (const [k, n] of Object.entries(seelen.neubau))
         check(
             `S2 ${k === "welt" ? "die Welt-GPU" : k === "ich" ? "die Ich-Bühne" : "die Hof-Bühne"} kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)`,
             n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
-            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" ? (seelen.erst ? ` · ${seelen.erst}` : "") + (seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : "") : ""}`
+            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" && seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
         );
+
+    check("S2 je Gestalt EIN Programm (Welt · Ich · Hof: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge.join() === "0,0,0" && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
@@ -807,59 +807,6 @@ function pruefRaum(echt) {
         "S3 die Probe wechselt wirklich (Feed, mit Geometrie)",
         !feed.fehlt && feed.tausch >= 8 && feed.vorgelegt > 0,
         feed.fehlt || `${feed.tausch} Wechsel, ${feed.vorgelegt} Geometrien vorgelegt`
-    );
-
-    // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann ein Peer, der seine Seele
-    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG, Neubauten deckt S2.
-    const peer = await page.evaluate(async (echt) => {
-        const r = window.anazhRealm;
-        const F = window.__frostWand;
-        const E = window.__frostEntsorgung;
-        // headless zeichnet die Welt-GPU nur die Probe-Bühne: der Peer-Leib zieht dorthin um
-        const zeigen = (m) => {
-            if (!m) return;
-            if (!echt) {
-                r.state.scene.remove(m);
-                F.wurzel.add(m);
-            }
-            m.traverse((o) => {
-                if (o.isMesh) o.frustumCulled = false;
-            });
-        };
-        const e = { peerId: "frost-peer", soulName: "human" };
-        E.im("peer", () => r._p2pApplyPeerSoul(e));
-        const erster = e.mesh;
-        let vorgelegt = 0;
-        if (erster) erster.traverse((o) => o.geometry && vorgelegt++);
-        zeigen(erster);
-        await F.zeichne(echt ? 4 : 1);
-        const wechsel = async (s) => {
-            const alt = e.mesh;
-            e.soulName = s;
-            E.im("peer", () => r._p2pApplyPeerSoul(e));
-            if (alt && alt.parent) alt.parent.remove(alt);
-            zeigen(e.mesh);
-            await F.zeichne(echt ? 2 : 1);
-        };
-        await wechsel("human");
-        const zweiter = e.mesh !== erster && !!erster;
-        for (let k = 0; k < 3; k++) {
-            await wechsel("wolf");
-            await wechsel("human");
-        }
-        if (e.mesh) {
-            if (e.mesh.parent) e.mesh.parent.remove(e.mesh);
-            E.im("peer", () => r._disposeSoulGroup(e.mesh));
-        }
-        await E.leeren();
-        return { ...E.bericht("peer"), zweiter, vorgelegt };
-    }, ECHT);
-    console.log(`\n[mitspieler] ${zeit()} · ${JSON.stringify(peer).slice(0, 300)}`);
-    entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel human↔wolf, Abschied)", peer);
-    check(
-        "S4 die Probe gießt den Peer wirklich zweimal (mit Geometrie)",
-        peer.zweiter === true && peer.vorgelegt > 0,
-        `zweiter Guss: ${peer.zweiter}, ${peer.vorgelegt} Geometrien vorgelegt`
     );
 
     // Der JS-Speicher nach erzwungener Sammlung (CDP: HeapProfiler.collectGarbage, Runtime.getHeapUsage) — genau, ohne die

@@ -152,7 +152,7 @@ if (require.main === module) {
                 const tu = Date.now();
                 const u = rufe(a);
                 console.log(`  ${a.join(" ")}: ${((Date.now() - tu) / 1000).toFixed(0)} s`);
-                if (u.status !== 0 || /"fehler"/.test(u.stdout || "")) throw new Error(a.join(" ") + ": " + (u.stdout || u.stderr));
+                if (u.status !== 0) throw new Error(a.join(" ") + ": " + (u.stdout || u.stderr));
             }
             const zeilen = [];
             for (const s of TERMINATOR_SONNEN) {

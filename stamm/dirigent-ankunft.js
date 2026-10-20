@@ -493,8 +493,8 @@ class AnazhRealm_dirigent_ankunft {
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
         // HemisphereLight: skyColor oben, groundColor unten, gemischt über normal.y → Tiefe ohne dynamische
-        // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Sky aus DAY_NIGHT_STOPS,
-        // Ground aus worldFieldAt).
+        // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Farbe der Nachthimmel des
+        // Gesetzes, Ground aus worldFieldAt).
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
@@ -1028,6 +1028,10 @@ class AnazhRealm_dirigent_ankunft {
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
                 luecke("horizont", "der Horizont wird gemalt");
         }
+        // DAS LICHT DES ORTS (S7): die Belichtung steht aus dem Licht erst, wenn die Bestrahlungs-Tafel der EINEN Atmosphäre liegt
+        // (`_belichtungAnker`, `_himmelsBestrahlung`) — bis dahin trüge das erste Bild die Belichtung des Ladens (1,0) und
+        // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht).
+        if (!st._belichtungSteht) luecke("licht", "das Licht des Orts wird gemessen", true);
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);

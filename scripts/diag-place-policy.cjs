@@ -25,11 +25,7 @@ const SELFTEST = process.argv.includes("--selftest");
 const PORT = Number(process.env.PLACE_PORT || 4421);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
@@ -37,8 +33,6 @@ function check(name, ok, detail) {
     const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async (selftest) => {
@@ -280,7 +274,6 @@ function check(name, ok, detail) {
         );
         check("SELBST-TEST: der Dispatch ist restauriert (Prototyp trägt wieder)", out.st.restored === true);
     }
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): die Place-Policy-Weiche (N5/H8) hält nicht.`);

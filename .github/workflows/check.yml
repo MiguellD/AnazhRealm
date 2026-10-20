@@ -1044,10 +1044,11 @@ jobs:
             - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
               if: matrix.gruppe == 7
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
-              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
-              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
-              # Ebene steht auf dem Gesetz, Entscheid D1) · K6 das Tier am Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht
-              # wie daneben (K21, der EINE Boden-Leser). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 der Leib
+              # steht am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden · K6 der
+              # Stand-Leser im Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht wie daneben (K21, der EINE Boden-Leser) ·
+              # K8 (Welt mit Foundry) Fuß, Huf, Rad, Streu-Fuß und Feinform gegen das gezeichnete Mesh an Mess-Wiese und 25°-Hang,
+              # Soll p95 3 cm, Ratsche spec/profiband/ratsche-boden-rolle.json. --selftest: je Defekt die Basis-Zeile → seine Probe rot.
               run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
@@ -1578,6 +1579,12 @@ jobs:
             - name: Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)
               if: ${{ !cancelled() }}
               run: npm run gate:weltbild-frost:echt
+
+            - name: Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)
+              if: ${{ !cancelled() }}
+              # werkbank licht --tag --kurz: Mitternacht, Mittag und die Grobschritte um den Horizont, der Aufgang im Feinschritt
+              # 0,002 (SPRUNG gegen den steilsten Feinschritt des Lichts) — lokal 2,5 min samt Boot (Radeon)
+              run: npm run gate:tag-achse:echt
 
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}

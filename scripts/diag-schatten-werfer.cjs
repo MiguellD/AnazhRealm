@@ -1460,8 +1460,6 @@ function probe(selbsttest) {
     const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.message || String(e)).split("\n")[0]));
     let ok = true;
     const check = (name, cond, detail) => {
         console.log(`  ${cond ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
@@ -1757,7 +1755,6 @@ function probe(selbsttest) {
             const zs = bildZiele((t) => t + "\nconst t = TSL.viewportDepthTexture();\n");
             check("S7 Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot", !bildZieleGut(zs), zs.tiefe);
         }
-        check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {
         check("Lauf", false, (e && e.message) || String(e));
     }

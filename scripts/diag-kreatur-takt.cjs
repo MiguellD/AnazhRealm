@@ -8,13 +8,12 @@
 //   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
 //               dem Grund, der den Täter beim Namen nennt
 "use strict";
-const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, urteil } = require("./lib/kreatur-proben.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
 const opt = (k, d) => {

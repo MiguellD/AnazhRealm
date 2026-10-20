@@ -3203,6 +3203,8 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     const indices = emitQuadIndices(density, cellVert, sampleDimX, sampleDimY, sampleDimZ, hoehle.lab, triZelle);
     laplacianSmoothPositions(positions, indices, 1, sharp);
     cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1, triZelle);
+    // DER BODEN FÄLLT IM GRUND DES HAUSES (S4, gelaende-core `erdbauSchnitt`): vor Normalen, Stoff und Stufen-Ziel
+    G.erdbauSchnitt(state.erdbau, positions, indices, triZelle);
     if (positions.length === 0) return { empty: true };
     const normals = gradientNormals(positions, density, sampleOx, oy, sampleOz, step, Nx, Ny, Nz);
     // V9.91 — positions VOR colors zu Float32 konvertieren. Sonst rechnet

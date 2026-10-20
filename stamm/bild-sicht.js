@@ -1076,7 +1076,7 @@ class AnazhRealm_bild_sicht {
         const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
-        // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
+        // + der Himmel des Orts + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
         // Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
         const uIrr = uniform(new THREE.Color(1, 1, 1));
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
@@ -2410,7 +2410,8 @@ class AnazhRealm_bild_sicht {
     // DIE HIMMELS-IRRADIANZ (diffuse IBL, E/π) für drei Normalen (unten · waagrecht · oben) aus der Umgebung der EINEN
     // Atmosphäre, wie die CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω,
     // die waagrechte Normale gemittelt über vier Azimute (die Umgebung ist azimut-abhängig). Neu gerechnet nur, wenn eine
-    // neue Lesung kam. Leser: der Feld-Pass, die Belichtung, das Wasser.
+    // neue Lesung kam. Leser: der Feld-Pass und die Luft unter Wasser (dieselbe IBL wie die Stoffe); die Belichtung und das
+    // Wasser lesen den Himmel des Orts synchron (`_himmelsBestrahlung`).
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;

@@ -1487,7 +1487,7 @@ class AnazhRealm_siedlung_satz {
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
-        const rand = Math.max(AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        const rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1537,7 +1537,11 @@ class AnazhRealm_siedlung_satz {
                 this._wegeStufeMalen(stufe);
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
+            } else if (stufe.grundNeu) {
+                // ein Haus legte seinen Grund (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
+                this._wegeStufeMalen(stufe);
             }
+            stufe.grundNeu = false;
             if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
             // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
@@ -1654,6 +1658,37 @@ class AnazhRealm_siedlung_satz {
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
             for (const f of sd.formen) this._wegeKarteMale(stufe, f);
         }
+        // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes, deren Boden der Grund ist (boden 0: der Turm, das Rund,
+        // das Pfahlhaus; der Erdbau `grund`, gelaende-core), malt Kanal 0 mit hartem Rand (ein halber Texel) — der Halm des
+        // Boden-Stoffs liest dort Erde statt Wiese; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden (`erdbauSchnitt`),
+        // dort malt keine Box (Radeon kalt: der Neu-Maler 1 → 17 ms, als jede Box malte)
+        const E = this._erdbauLage();
+        if (E && E.gruende)
+            for (const g of E.gruende) {
+                if (Math.abs(g.cx - stufe.mitteX) > h + 64 || Math.abs(g.cz - stufe.mitteZ) > h + 64) continue;
+                for (const b of g.boxen) {
+                    if (b[4]) continue;
+                    const lx = (b[0] + b[1]) / 2;
+                    const lz = (b[2] + b[3]) / 2;
+                    const ax = g.cx + lx * g.c + lz * g.s;
+                    const az = g.cz - lx * g.s + lz * g.c;
+                    const phi = Math.atan2(g.s, g.c);
+                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
+                    this._wegeKarteMale(stufe, {
+                        typ: "kasten",
+                        kanal: 0,
+                        ax,
+                        az,
+                        bx: ax,
+                        bz: az,
+                        ex,
+                        ez,
+                        phi,
+                        halb: 0,
+                        rand: S.texelM / 2,
+                    });
+                }
+            }
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
     }
 
@@ -2313,10 +2348,13 @@ class AnazhRealm_siedlung_satz {
         if (rd.dreht) R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
         R.setPosition(rd.hx, rd.hy, rd.hz);
         out.multiplyMatrices(ewU, rd.welt).multiply(R);
-        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden
+        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden, den
+        // das Auge sieht — der Stand-Leser der Sicht um den Boden des Fahr-Schritts (`_standSicht`, wie Huf und Fuß; die Sim
+        // bleibt auf dem Gesetz). Bis H5 federte das Rad auf das Gesetz: an der Mess-Wiese p95 4,9 cm neben dem Mesh (K8).
         const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
-        const boden = this._fahrBoden(entry)(P.x, P.z);
+        const gesetz = this._fahrBoden(entry)(P.x, P.z);
+        const boden = Number.isFinite(gesetz) ? this._standSicht(P.x, P.z, gesetz, false) : gesetz;
         if (Number.isFinite(boden)) {
             // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
             // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)
@@ -2913,6 +2951,8 @@ class AnazhRealm_siedlung_satz {
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
+        // DER GRUND DES HAUSES (S4) ist Plan-Datum: ein Haus ohne Ort legt ihn beim Setzen, vor dem Bau der Chunks um ihn
+        this._hausGrundSetzen(entry);
         // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung, jeder Bau mit Boxen): was die Natur dort
         // schon geworfen hat, weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Platz, Tore, Spieler, KI
         // und Probe gleich. Nach den Boxen: sie sind der Grundriss eines Baus ohne Haus-Zeile (K52).

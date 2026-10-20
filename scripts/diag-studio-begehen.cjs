@@ -28,12 +28,10 @@
 //   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
-const path = require("path");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
-const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
 
 // DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.

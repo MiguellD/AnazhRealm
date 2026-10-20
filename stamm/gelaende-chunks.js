@@ -128,9 +128,11 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // Der Worker ist erst nutzbar, wenn sein State (Seed, Atlas, voxelEdits) gesetzt
-            // ist; fire-and-forget, das Ready-Flag setzt der init-ack.
-            this._voxelWorkerSyncState({ op: "init" });
+            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Atlas, voxelEdits); jeder Auftrag wartet auf
+            // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
+            // trägt dieser init schon die Welt: der Strom darf ihn fragen.
+            worker.zusage = this._voxelWorkerSyncState({ op: "init" });
+            if (this._voxelWeltWartet) this.state.voxelWorkerWorldgenSynced = true;
             return worker;
         } catch (e) {
             this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
@@ -301,20 +303,36 @@ class AnazhRealm_gelaende_chunks {
         });
     }
 
+    // DER FADEN TRÄGT DEN STAND (B-K2) — das EINE Prädikat des Strom-Wegs: ab dem init (bzw. state-set) mit dem Stand der
+    // Weltgen rechnet der Faden jeden Auftrag an diesem Stand (die Nachrichten eines Ports kommen in ihrer Reihe an); der Ack
+    // ist nur Bestätigung. Bis B-K2 fragte der Strom den Faden erst nach dem Ack (`voxelWorkerReady`) und baute bis dahin
+    // jeden Chunk im Haupt-Faden (GTX kalt: die Sekunde 3–4 ganz der Sync-Bau, 642 ms).
+    _voxelFadenTraegt() {
+        return !!(this.state.voxelWorker && this.state.voxelWorkerWorldgenSynced);
+    }
+
+    // DER EINE AUFTRAG AN DEN VOXEL-FADEN (B-K2): jeder Rechen-Auftrag wartet auf die EINE Zusage des Fadens
+    // (`worker.zusage`, der init seiner Geburt) — nie auf einen neuen init. Bis B-K2 schickte jeder Auftrag vor dem Ack einen
+    // eigenen vollen Stand (`_voxelWorkerSyncState()`: je Auftrag ein Klon der Welt im Haupt-Faden, Lehre 24). Ein Faden
+    // ohne Zusage (von außen gesetzt) trägt seinen Stand seit der Geburt. `msg` bekommt die Rückfrage-Nummer.
+    _voxelFadenAuftrag(worker, msg) {
+        return (worker.zusage || Promise.resolve(true)).then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            msg.requestId = requestId;
+            worker.postMessage(msg);
+            return promise;
+        });
+    }
+
     // Density-Grid im Worker: Promise<Float32Array> mit (dimX+1)·(dimY+1)·(dimZ+1) Floats, Indizierung
     // identisch zu `_voxelSampleDensityGrid`. Test-Pfad: das Determinismus-Band vergleicht bit-identisch.
     _voxelWorkerComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            worker.postMessage({ type: "density-grid", ox, oy, oz, dimX, dimY, dimZ, step, requestId });
-            return promise;
-        });
+        return this._voxelFadenAuftrag(worker, { type: "density-grid", ox, oy, oz, dimX, dimY, dimZ, step });
     }
 
     // Voller Chunk-Mesh im Worker → {empty, positions, indices, normals, colors, waterCells, lod}
@@ -324,16 +342,10 @@ class AnazhRealm_gelaende_chunks {
     _voxelWorkerComputeChunkMesh(cx, cz, lod) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            const saat = this._flutSaat(cx, cz);
-            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, saat, requestId });
-            return promise;
-        });
+        // die Saat am Stand der Bestellung — ändert ein Edit den Stand vor der Antwort, verwirft sie der Stand-Filter
+        // (`_fetchOrRequestChunkMesh`, `_voxelStand`)
+        const saat = this._flutSaat(cx, cz);
+        return this._voxelFadenAuftrag(worker, { type: "chunk-mesh", cx, cz, lod: lod | 0, saat });
     }
 
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
@@ -343,15 +355,7 @@ class AnazhRealm_gelaende_chunks {
     _voxelWorkerSpiegel(auftrag) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            worker.postMessage(Object.assign({ type: "spiegel-feld", requestId }, auftrag));
-            return promise;
-        });
+        return this._voxelFadenAuftrag(worker, Object.assign({ type: "spiegel-feld" }, auftrag));
     }
 
     // DIE NEBEN-FÄDEN DES GESETZES (K60-3, B2): eigene Fäden aus DERSELBEN Quelle wie der Voxel-Faden (`voxel-worker.js`,
@@ -437,15 +441,7 @@ class AnazhRealm_gelaende_chunks {
                 ? Math.round(this.state.atmosphere.waterSheetSmooth)
                 : 4;
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            worker.postMessage({ type: "water-sheet", cx, cz, requestId, smoothPasses, cells });
-            return promise;
-        });
+        return this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells });
     }
 
     // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und
@@ -749,11 +745,16 @@ class AnazhRealm_gelaende_chunks {
         // V18.263 — der Worker LIEFERTE einen fertigen Mesh (der gesunde Pfad);
         // das Perf-Overlay zählt die Rate (0/s beim Laufen ⇒ Worker kommt nicht nach).
         this._perfMark("workerMesh");
+        // DIE BYTES DES FADENS SIND DIE ATTRIBUTE (Lehre 24, B-K2): der Faden überträgt jedes Array (Transfer), die Platte
+        // klont beim Put vor diesem Bau — der Bau übernimmt sie, statt sie zu kopieren (`Float32BufferAttribute` kopiert jedes
+        // Array; bis B-K2 elf Kopien je Chunk). Eine eigene Kopie trägt nur das Morph-Ziel: der Geomorph beschreibt es
+        // (`_applyCrossLodGeomorph`) und setzt es aus `userData.stufeZiel` bzw. der Position zurück.
+        const attr = (a, n) => new THREE.BufferAttribute(a, n);
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(meshData.positions, 3));
-        geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
-        geom.setAttribute("color", new THREE.Float32BufferAttribute(meshData.colors, 3));
-        geom.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+        geom.setAttribute("position", attr(meshData.positions, 3));
+        geom.setAttribute("normal", attr(meshData.normals, 3));
+        geom.setAttribute("color", attr(meshData.colors, 3));
+        geom.setIndex(attr(meshData.indices, 1));
         // DER GEOMORPH DER STUFE (K51-2): das Ziel jedes Vertex auf dem Netz der nächst gröberen Stufe (der Worker baut es,
         // `stufeZiel`), die Stufe im Morph-Code (`_morphCode`) — der Boden-Stoff wandert im Übergangs-Band dorthin.
         // Fail-closed: eine Stufe unter der gröbsten ohne Ziel spränge am Wechsel.
@@ -765,27 +766,19 @@ class AnazhRealm_gelaende_chunks {
             );
         geom.setAttribute(
             "aMorphTarget",
-            new THREE.Float32BufferAttribute(
-                (lod | 0) < 3 ? new Float32Array(meshData.stufeZiel) : new Float32Array(meshData.positions),
-                3
-            )
+            attr(new Float32Array((lod | 0) < 3 ? meshData.stufeZiel : meshData.positions), 3)
         );
-        geom.setAttribute(
-            "aMorphWeight",
-            new THREE.Float32BufferAttribute(new Float32Array(nVm).fill(this._morphCode(lod, 0)), 1)
-        );
+        geom.setAttribute("aMorphWeight", attr(new Float32Array(nVm).fill(this._morphCode(lod, 0)), 1));
         geom.userData.stufeZiel = (lod | 0) < 3 ? meshData.stufeZiel : null;
         // Normale und Stoff-Farbe wandern mit (der Stoff mischt sie mit demselben Faktor) — die gröbste Stufe trägt ihre eigenen
+        // (als eigene Kopie: das Ziel bleibt das Bild des Baus, was immer später an Normale oder Farbe schreibt)
         geom.setAttribute(
             "aNormalZiel",
-            new THREE.Float32BufferAttribute(
-                new Float32Array((lod | 0) < 3 ? meshData.normalZiel : meshData.normals),
-                3
-            )
+            attr((lod | 0) < 3 ? meshData.normalZiel : new Float32Array(meshData.normals), 3)
         );
         geom.setAttribute(
             "aFarbeZiel",
-            new THREE.Float32BufferAttribute(new Float32Array((lod | 0) < 3 ? meshData.farbeZiel : meshData.colors), 3)
+            attr((lod | 0) < 3 ? meshData.farbeZiel : new Float32Array(meshData.colors), 3)
         );
         // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
         // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
@@ -802,8 +795,8 @@ class AnazhRealm_gelaende_chunks {
             throw new Error(
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff (Himmels-Sicht · Schutt)`
             );
-        geom.setAttribute("aHimmel", new THREE.Float32BufferAttribute(meshData.himmel, 1));
-        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(meshData.schutt, 1));
+        geom.setAttribute("aHimmel", attr(meshData.himmel, 1));
+        geom.setAttribute("aSchutt", attr(meshData.schutt, 1));
         if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
@@ -952,14 +945,20 @@ class AnazhRealm_gelaende_chunks {
         if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
         // Hier wird der Voxel-Worker gebootstrappt (NACH dem Hydrosphäre-Build, init-sync mit fertigem
         // Snapshot) — sonst spawnt ihn nichts und jeder Chunk baut sync (~71 ms Main-Block pro Chunk).
-        // Ab voxelWorkerReady baut der Streaming-Pfad async; nur der Spieler-Chunk baut sync (Kollision).
+        // Ab hier fragt der Strom den Faden (`_voxelFadenTraegt`), schon vor dem Ack (B-K2).
+        const neu = !this.state.voxelWorker;
         const worker = this._getVoxelWorker();
-        if (!worker) return; // Browser ohne Worker-Support → voller Sync-Fallback (Stufe 3)
+        if (!worker) {
+            // der Blob-Weg bringt den Faden später: sein init trägt dann diese Welt (`_getVoxelWorker`)
+            this._voxelWeltWartet = true;
+            return;
+        }
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
         // stateGen bumpt in _voxelWorkerSyncState (send-time). worldgenSynced bleibt ab jetzt true — der
-        // Streaming-Pump traut dem Worker; Edits filtern je Chunk (`_voxelStand`).
-        this._voxelWorkerSyncState({ op: "state-set" });
+        // Streaming-Pump traut dem Worker; Edits filtern je Chunk (`_voxelStand`). Ein eben geborener Faden trägt diese Welt
+        // schon in seinem init — ein state-set dahinter wäre derselbe volle Klon ein zweites Mal (Lehre 24, B-K2).
+        if (!neu) this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
     }
 
@@ -1240,9 +1239,10 @@ class AnazhRealm_gelaende_chunks {
             this._perfMark("syncBuild", performance.now() - _t0);
             return _r;
         }
-        // Stufe 1: Worker-Mesh.
+        // Stufe 1: Worker-Mesh — sobald der Faden den Stand trägt, nicht erst nach seinem Ack (B-K2).
+        const faden = this._voxelFadenTraegt();
         let workerMesh;
-        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+        if (faden) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
             if (workerMesh === null) return "pending";
         }
@@ -1257,17 +1257,18 @@ class AnazhRealm_gelaende_chunks {
         // Makro-Spiegel driftet. Käme WebGPU-Density, dann auf dem Renderer-Device (zero-copy).
         let preDensity = null;
         // Stufe 2: Worker-Density (Fallback wenn Worker-Mesh ineligible/down).
-        if (
-            !preDensity &&
-            this.state.voxelWorker &&
-            this.state.voxelWorkerReady &&
-            this.state.voxelWorkerWorldgenSynced
-        ) {
+        if (!preDensity && faden) {
             const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
             if (workerDensity === null) return "pending";
             preDensity = workerDensity;
         }
-        // Stufe 3: Sync-CPU-Build (letzter Fallback, base-gecacht V12.0-perf.b).
+        // Stufe 3: der Chunk-Stoff im Haupt-Faden (base-gecacht V12.0-perf.b) — im Strom nur, wo KEIN Faden den Stand trägt
+        // (kein Worker, ein ausgehängter Faden einer Test-Naht, vor der Weltgen), und dann laut (Lehre 14): bis B-K2 baute
+        // der Strom hier still jeden Chunk bis zum Ack des Fadens (gate:worker-dichte Teil S).
+        if (!faden)
+            this._bruchMelden(
+                "VOXEL-FADEN: der Strom baut Chunk-Stoff im Haupt-Faden — kein Faden trägt den Stand (Lehre 14)"
+            );
         return this._buildVoxelChunkData(cx, cz, lod, preDensity);
     }
 
@@ -1310,6 +1311,7 @@ class AnazhRealm_gelaende_chunks {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
+        this._streuFussNeu(cx, cz); // die Streu über ihm steht auf seiner Karte (Gelände H5)
         // DIE NEUEN ZELLEN TRAGEN DAS GESETZ (F3): Kappe und Quellen des Automaten leiten sich aus ihnen neu ab, und mit der
         // neuen Kappe legt `_ensureWaterCALevel` das Level auf das Gesetz. Bis F3 hielt der Automat die Kappe der alten Zellen,
         // wenn der Neubau nach dem Edit kam (über Budget baut der Fußabdruck im Worker): der Graben zeichnete trocken.
@@ -1595,6 +1597,7 @@ class AnazhRealm_gelaende_chunks {
             );
             entry.surfMap = karte && karte.hoehe;
             entry.gruenMap = karte && karte.gruen;
+            this._streuFussNeu(cx, cz);
         }
         this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`, nahtZiel);
     }
@@ -2043,7 +2046,12 @@ class AnazhRealm_gelaende_chunks {
     // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
     _fieldDensityAt(x, y, z, ctx) {
         const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
-        return base + this._voxelEditDeltaAt(x, y, z);
+        const d = base + this._voxelEditDeltaAt(x, y, z);
+        // der Keller ist hohl (S4, `erdbauHohl`) — dieselbe Dichte wie `_terrainDensityAt`; ob die Spalte über einem Keller
+        // steht, trägt ihr Kontext (`keller`, EINMAL je Spalte gefragt): die Probe des Heiß-Pfads `_voxelSurfaceY` zahlt einen
+        // Blick (gemessen: getTerrainHeightAt 1,40 → 2,10 µs, als jede Probe die Lage des Erdbaus fragte)
+        const K = ctx ? ctx.keller : this._kellerLage(x, z);
+        return K ? globalThis.__gelaendeCore.erdbauHohl(K, x, y, z, d) : d;
     }
 
     _fieldSolid(x, y, z, ctx) {
@@ -2853,7 +2861,7 @@ class AnazhRealm_gelaende_chunks {
         }
         reihe.sort((a, b) => a.d - b.d);
         const st = this.state;
-        const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+        const worker = this._voxelFadenTraegt();
         const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;
         const strom = st._bodenEinbau; // die Ring-Distanz des Einbaus, den der Strom in diesem Frame schon tat
         let einbau = false;

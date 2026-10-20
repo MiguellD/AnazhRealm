@@ -262,6 +262,8 @@
                 // Welle 5: der Hüllen-Abstand des Schuhs (Körper-Einheiten, ~1,5 cm) — mit dem Stoff-Abstand 0,12 (3,5 cm
                 // rundum) stand der Turnschuh als weißer Ballon am Fuß.
                 abstand: 0.05,
+                // Gelände H5: die Sohle liegt flach auf der Unterkante des Fußes (der Ofen schneidet die Hülle dort)
+                sohle: true,
                 rough: shoes === "boot" ? 0.45 : 0.55,
                 webe: shoes === "boot" ? "leather" : "rubber",
             });

@@ -132,13 +132,13 @@ class AnazhRealm_studio_bruecke {
                     f.nachAtlas.push(() => p(meshes));
                 else p(meshes);
             }
-        } else if (m.type === "settlement") {
+        } else if (m.type === "settlement" || m.type === "grund") {
             // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
-            // über die Zweit-Kern-Schleife der Brücke).
+            // über die Zweit-Kern-Schleife der Brücke); der Grund-Plan-Kanal (S4): der Grund eines gesetzten Hauses.
             const ps = f.pending.get(m.reqId);
             if (ps) {
                 f.pending.delete(m.reqId);
-                ps(m.plan || null);
+                ps((m.type === "grund" ? m.grund : m.plan) || null);
             }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
@@ -221,6 +221,8 @@ class AnazhRealm_studio_bruecke {
         if (this._foundry && this._foundry.buchKam) this._foundry.buchKam();
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
+        // die Häuser, die vor dem Buch gesetzt wurden (der Reload mit kaltem Buch), legen ihren Grund, jetzt ist ihr Plan lesbar
+        for (const e of this.state.architectures || []) this._hausGrundSetzen(e);
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
         // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }
@@ -390,9 +392,8 @@ class AnazhRealm_studio_bruecke {
     _foundryIngestWorldParams(params) {
         if (!params || typeof params !== "object") return;
         this.state.studioWorldParams = params;
-        // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX (der Tag/Nacht-Zyklus
-        // rechnet in Hex, nicht linear) → `DAY_NIGHT_STOPS` bindet seinen Mittags-Stop hieran. Additiv:
-        // nur der Mittag folgt dem Studio, der ganze Zyklus bleibt AnazhRealms. Fallback = 0 Regress.
+        // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX → der Himmel-Top ist der Nenner der Tönung
+        // (`_dayNightComputeTint`, S7: EINE Farbe, keine Tafel nach der Uhr). Fallback = die Vorlage 0x6a9ed0.
         const sk = params.sky || {};
         const sky = {};
         if (typeof sk.top === "number") sky.top = sk.top;

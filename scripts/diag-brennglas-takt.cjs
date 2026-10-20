@@ -41,12 +41,10 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
-const root = path.resolve(__dirname, "..");
 
 // DIE QUELL-WAND (AST, wie die Box-Wand in diag-blocker-netz): je Methode die Namen, die am BESTAND hängen (`this.state.architectures`,
 // ein Name für `this.state`, eine Destrukturierung, `|| []`, eine Kopie, `_blockerNetz().liste`), und die Namen, die an einem ZIEL

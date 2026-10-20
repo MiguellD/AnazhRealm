@@ -36,6 +36,15 @@ const FORBIDDEN = [
     { token: "_p2pMsgAura", fiel: "W1c — aura ist dem Dispatcher unbekannt" },
     { token: "_p2pEnsurePeerAura", fiel: "V18.448 — die Avatar-Aura" },
     { token: "_p2pBroadcastAura", fiel: "V18.448" },
+    ...[
+        "_nachtAnteil",
+        "_celestialHorizonFade",
+        "_daemmerung",
+        "_himmelHell",
+        "_himmelGrenzgroesse",
+        "_interpolateDayNight",
+        "DAY_NIGHT_STOPS",
+    ].map((token) => ({ token, fiel: "S7 — die EINE Tag-Achse (_tagAchse)" })),
     { token: "modify_terrain", fiel: "V9.36 — voxel_carve/voxel_fill; KI2 16.10.: der letzte Name in RULE_FORBIDDEN_EFFECT_OPS" },
     { token: "_chunksTouchedByDisc", fiel: "V9.36 — die Heightfield-Schicht von modify_terrain" },
     { token: "_appendChunkDeltaOp", fiel: "V9.36" },
@@ -1048,7 +1057,7 @@ const ZWILLINGE = [
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
-        fingerprint: "Math.sin(phases[j] - phases[i])",
+        fingerprint: "Math.sin(phases[j] - phases[i] - (folge[j] - folge[i]))",
         gesetzbuch: "tetrapoda-core.js",
         verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
@@ -3255,22 +3264,9 @@ function main() {
             process.exit(1);
         }
         // Die Entsorgungs-Wand muss feuern — je Form ein Täter, jeder beim Namen (und ein Kommentar darf sie erzählen):
-        //   A die alte Ich-Schleife (traverse) · B Kind-Schleife for…of mit direktem geometry.dispose() · C children.forEach ·
+        //   A traverse-Schleife · B Kind-Schleife for…of mit direktem geometry.dispose() · C children.forEach ·
         //   D Zwischen-Variable · E reine Stoff-Schleife material.forEach · F for…of über die Stoff-Liste · G der Regel-
         //   Besitzer entsorgt einen Stoff (Stoffe nie) · H eine tote Zeile der Besitzer-Liste
-        const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
-        const kIch = stammLib.kopf(stamm, "_ichStageShow");
-        const iIch = kIch < 0 ? -1 : kIch + 1;
-        const jIch = iIch < 0 ? -1 : stamm.indexOf(ichNeu, iIch);
-        const formA =
-            jIch < 0
-                ? null
-                : stamm.slice(0, jIch) +
-                  "            stage.pivot.traverse((obj) => {\n" +
-                  "                if (obj.geometry) this._queueDispose(obj.geometry);\n" +
-                  "                if (obj.material) this._queueDispose(obj.material);\n" +
-                  "            });\n            stage.pivot = null;" +
-                  stamm.slice(jIch + ichNeu.length);
         const taeter = (name, rumpf) =>
             stammLib.ersetze(stamm, null,
                 "class AnazhRealm {\n",
@@ -3279,7 +3275,7 @@ function main() {
         const regelAnker =
             "            if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);";
         const formen = [
-            ["A", formA, /`_ichStageShow` entsorgt/],
+            ["A", taeter("_frostFormA", "        o.traverse((x) => x.geometry && this._queueDispose(x.geometry));"), /`_frostFormA` entsorgt Geometrie/],
             [
                 "B",
                 taeter("_frostFormB", "        for (const c of o.children) c.geometry.dispose();"),

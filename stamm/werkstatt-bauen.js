@@ -777,7 +777,9 @@ class AnazhRealm_werkstatt_bauen {
         return result;
     }
 
-    removeArchitecture(entry) {
+    // `still`: der Abbau ohne Stimme (das Verblassen am Horizont, `_evictArchitecture`) — kein Ping, kein Journal; alles, was
+    // die Welt für den Bau hält, fällt gleich.
+    removeArchitecture(entry, { still = false } = {}) {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
@@ -788,6 +790,7 @@ class AnazhRealm_werkstatt_bauen {
             const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
             this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
         }
+        this._erdbauGrundFaellt(entry); // und sein Grund (S4): der Boden schließt sich, der Keller füllt sich
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
@@ -819,13 +822,13 @@ class AnazhRealm_werkstatt_bauen {
                 this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r, 0);
             }
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück (klingt nur, wo Wasser ist).
-            this._playWaterReactionPing(blockerFootprints);
+            if (!still) this._playWaterReactionPing(blockerFootprints);
             // Ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/Stau-Felder verwerfen + CA wecken
             // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück).
             if (damm) for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
         }
         // Resonierende Strukturen verstummen beim Abbau mit abklingendem Sinus; stumme bleiben still.
-        this._playArchitectureFarewellPing(entry);
+        if (!still) this._playArchitectureFarewellPing(entry);
         this._cullArchitectureMesh(entry);
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
@@ -833,7 +836,7 @@ class AnazhRealm_werkstatt_bauen {
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
-        if (typeof this.journalAppend === "function") {
+        if (!still && typeof this.journalAppend === "function") {
             this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
                 type: entry.type,
                 id: entry.id,
