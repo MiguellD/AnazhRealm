@@ -983,7 +983,11 @@ async function himmelProbe(page, taub) {
 // Säume fallen: Mitternacht 30,3, Dämmerung 26,1, ohne Sternen-Licht 18,4 (Radeon) — die Schwelle 22 trennt die Nacht mit ihrem
 // Himmels-Licht von der ohne es.
 // DIE DÄMMERUNG (S7): derselbe Boden, die Sonne `daemmerGrad` tief, lesbar wie die Nacht.
-const S0_NACHT = { daemmerGrad: -10, nacht: { luma: 22, schwarz: 0.05 }, daemmerung: { luma: 22, schwarz: 0.05 } };
+const S0_NACHT = {
+    daemmerGrad: -10,
+    nacht: { luma: 22, schwarz: 0.05 },
+    daemmerung: { luma: 22, schwarz: 0.05 },
+};
 function s0NachtUrteil(k, e, soll) {
     const b = [];
     const wann = k === "daemmerung" ? `in der Dämmerung (Uhr ${e.uhr}, Sonne ${S0_NACHT.daemmerGrad}°)` : "um Mitternacht";

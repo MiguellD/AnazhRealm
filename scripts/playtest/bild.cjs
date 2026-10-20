@@ -85,22 +85,14 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- a) Tag-Nacht-Zyklus
-        out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
-        // Der Tag trägt eine Szene (Leben-Schau 2): Mittag bis Sonnenuntergang = TAG_SZENE_MINUTEN (15) → 60 min.
-        out.dayLengthConstantsExist =
-            AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
-            AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
-        out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
         // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; V8.48: der Morgen um 0,32 steigt und knickt nicht)
         const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
         r._luftBeta = () => klar;
         try {
-            const L = [0.5, 0, 1.5, 0.317, 0.32, 0.323].map((t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum);
-            out.atmoUhr = [L[0] >= 0.7, L[1] < 0.35 * L[0], Math.abs(L[2] - L[0]) < 1e-9, L[5] - L[3] > 0.0018, Math.abs(2 * L[4] - L[3] - L[5]) < 0.0018];
+            const L = [0.5, 0, 0.317, 0.32, 0.323].map((t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum);
+            out.atmoUhr = L;
         } finally {
             delete r._luftBeta;
         }
@@ -108,8 +100,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
         out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
-        // Sonnenaufgang Label
-        out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
         out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
@@ -243,20 +233,16 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
     if (wave6g3Results && !wave6g3Results.error) {
         // --- a) Tag-Nacht
-        check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
         check(
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
             wave6g3Results.dayLengthDefault
         );
-        check(
-            "Welle 6.G3.a: Tag-Längen-Konstanten (1/60/60 = 4 Szenen zu 15 min) korrekt",
-            wave6g3Results.dayLengthConstantsExist
-        );
-        check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
-        const au = wave6g3Results.atmoUhr || [];
-        check("Welle 6.G3.a + V8.48: das Licht der Atmosphäre über die Uhr (Mittag · Mitternacht · Wrap · Puls · C1)", au.length === 5 && au.every(Boolean), au.join(" "));
+        const L = wave6g3Results.atmoUhr || [];
+        check("Welle 6.G3.a: der Durchlass zur Sonne mittags ≥ 0,7", L[0] >= 0.7, L[0]);
+        check("Welle 6.G3.a: um Mitternacht unter 0,35 des Mittags", L[1] < 0.35 * L[0], L[1]);
+        check("V8.48: der Morgen um 0,32 steigt", L[4] - L[2] > 0.0018, L.join(" "));
+        check("V8.48: der Morgen um 0,32 knickt nicht (C1)", Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" "));
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
-        check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);

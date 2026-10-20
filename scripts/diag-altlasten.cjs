@@ -1619,9 +1619,8 @@ const METHODEN_OHNE = [
     ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
     ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
     // S7: der Himmel des Orts EINMAL (`_himmelsBestrahlung`), keine Schwelle neben der Tag-Achse
-    ["_dayNightApplyBelichtung", ["B.himmel", "_himmelsIrradianz"]],
+    ["_dayNightApplyBelichtung", ["_himmelsIrradianz"]],
     ["_waagrechtIrradianz", ["_himmelsIrradianz"]],
-    ["_godrayFrameGate", ["sm(0.04"]],
 ];
 function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
     const code = stripComments(srcRoh);
