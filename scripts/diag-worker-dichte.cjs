@@ -112,12 +112,7 @@ async function probe(page, welt, mitAbdruck) {
                     .map((b) => b.toString(16).padStart(2, "0"))
                     .join("");
             };
-            const warteAck = (nachricht) =>
-                new Promise((res, rej) => {
-                    const id = s.voxelWorkerNextRequestId++;
-                    s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-                    s.voxelWorker.postMessage(Object.assign({}, nachricht, { requestId: id }));
-                });
+            const warteAck = (nachricht) => r._voxelFadenAuftrag(s.voxelWorker, nachricht);
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
@@ -557,6 +552,30 @@ async function probe(page, welt, mitAbdruck) {
     );
 }
 
+// TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Ack und Zusage hängen, der Strom fragt den
+// Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt nach dem Ack,
+// und der Boot meldete keinen VOXEL-FADEN-Bruch. `urform` (Selbsttest): Stufe 3 und ein init vor dem Ack, wie bis B-K2.
+const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0";
+async function strom(page, urform) {
+    return page.evaluate(async (urform) => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
+        const zusage = w.zusage;
+        let los;
+        w.zusage = new Promise((res) => (los = res));
+        s.voxelWorkerReady = false;
+        if (urform) r._voxelWorkerSyncState();
+        const a = urform ? r._buildVoxelChunkData(p.cx, p.cz, 3) : r._acquireVoxelChunkBuild(p.cx, p.cz, 3, {});
+        const d = r._voxelWorkerComputeDensity(0, 0, 0, 2, 2, 2, 1.8);
+        [s.voxelWorkerReady, w.zusage] = [ack, zusage];
+        los();
+        const da = (await Promise.race([d, new Promise((res) => setTimeout(res, 9000, []))])).length > 0;
+        const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("VOXEL-FADEN")).length;
+        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch}`;
+    }, urform);
+}
+
 // Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
 // las es seit K16 nicht mehr, der Selbsttest war blind) — die Linse MUSS das beim Ort und Gitter nennen.
 async function verfaelsche(page, an) {
@@ -564,12 +583,8 @@ async function verfaelsche(page, an) {
         const r = window.anazhRealm;
         const s = r.state;
         if (!an) return r._voxelWorkerSyncState({ op: "state-set" });
-        return new Promise((res, rej) => {
-            const id = s.voxelWorkerNextRequestId++;
-            s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-            const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
-            s.voxelWorker.postMessage({ type: "state-update", delta, requestId: id });
-        });
+        const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
+        return r._voxelFadenAuftrag(s.voxelWorker, { type: "state-update", delta });
     }, an);
 }
 
@@ -1662,6 +1677,7 @@ async function gebaut(page, fehler) {
         rot = true;
     }
     let selbst = null;
+    let urform = "";
     for (const welt of WELTEN) {
         let weltArg = welt;
         if (welt === "buehne") {
@@ -1688,6 +1704,16 @@ async function gebaut(page, fehler) {
             continue;
         }
         console.log(`  Boot ${welt}: ${b.ms} ms (Seed ${b.seed})`);
+        if (welt === "standard") {
+            const ist = await strom(page, false);
+            console.log(`    Strom vor dem Ack (Teil S): ${ist}`);
+            if (ist !== STROM_SOLL) {
+                console.log(`  ⛔ STROM: _acquireVoxelChunkBuild vor dem Ack — Soll ${STROM_SOLL}`);
+                rot = true;
+            }
+            if (SELBSTTEST)
+                console.log(`  SELBSTTEST Strom (die Urform, Soll ROT): ${(urform = await strom(page, true))}`);
+        }
         const rep = await probe(page, weltArg, !!ABDRUCK);
         rep.welt = welt;
         rep.bootMs = b.ms;
@@ -1776,7 +1802,14 @@ async function gebaut(page, fehler) {
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
-        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0 && selbst.wald > 0;
+        pass =
+            !rot &&
+            selbst &&
+            selbst.abweichend > 0 &&
+            selbst.ferne > 0 &&
+            selbst.wald > 0 &&
+            urform &&
+            urform !== STROM_SOLL;
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(

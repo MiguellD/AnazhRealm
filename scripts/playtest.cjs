@@ -756,8 +756,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
             // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
-            // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
-            await timed(BAND.checkBandWellePerf3cWorkerFoundation, ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).

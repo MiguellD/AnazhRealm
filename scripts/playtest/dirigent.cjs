@@ -1488,6 +1488,7 @@ async function checkBandGodray(ctx) {
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
         out.gateHigh = r._godrayFrameGate(0.9, 1.0);
         out.gateBelow = r._godrayFrameGate(-0.2, 1.0);
+        out.gateTief = r._godrayFrameGate(0.03, 1.0);
         out.gateStorm = r._godrayFrameGate(0.9, r.constructor.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
@@ -1507,7 +1508,7 @@ async function checkBandGodray(ctx) {
         return out;
     });
     const g = o || {};
-    check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateStorm}`);
+    check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · 1,7° darüber auf (die Tag-Achse, keine eigene Schwelle) · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateTief > 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateTief} · ${g.gateStorm}`);
     check(
         "Godray (B) der Perf-Hebel: headless → MAX, Last → aus, Kopfraum → MAX, klar getrennt",
         g.headlessScale != null && Math.abs(g.headlessScale - g.MAX) < 1e-6 && g.heavyScale < 0.1 && g.lightScale > g.MAX - 0.05 && g.heavyScale < g.lightScale - 0.4,
