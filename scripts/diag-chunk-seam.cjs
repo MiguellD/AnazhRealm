@@ -628,7 +628,6 @@ const server = statikServer();
         if (!nb) return { err: "kein gestreamter Grenz-Nachbar am Spieler-Chunk" };
 
         // Carve-Punkt: exakt auf der gemeinsamen Grenz-Ebene, Mitte der geteilten Kante.
-        const plane = dcx !== 0 ? (dcx === 1 ? (pcx + 1) * span : pcx * span) : (pcz + Math.max(0, dcz)) * span;
         let cx0, cz0;
         if (dcx !== 0) {
             cx0 = dcx === 1 ? (pcx + 1) * span : pcx * span;

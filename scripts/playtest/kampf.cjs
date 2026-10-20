@@ -366,8 +366,7 @@ async function checkBandV1775MakeActCost(ctx) {
         const out = {};
         const p = r.state.player;
         const setMode = (m) => {
-            if (typeof r.setGameMode === "function") r.setGameMode(m);
-            else r.state.worldMeta.gameMode = m;
+            r.setGameMode(m);
         };
 
         // Snapshot
@@ -407,7 +406,7 @@ async function checkBandV1775MakeActCost(ctx) {
         // KÖRPER GANZ (T6): koerper_human ist aus der Sicht (Alt-Doppel) — der Marker wird
         // am STUDIO-Eintrag gemessen (koerper_wolf, un-verkörpert → Kosten-Suffix am Namen).
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_wolf"];
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
         const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "koerper_wolf") : null;
         out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
@@ -434,9 +433,9 @@ async function checkBandV1775MakeActCost(ctx) {
             p.equipped = savedEquip;
         }
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
-        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
-        if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
-        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r._refreshSoulSelect();
+        r.renderInventoryUI();
+        r.recomputePlayerStats();
         return out;
     });
     check("V17.75: _makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);

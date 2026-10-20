@@ -161,57 +161,54 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-        out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
 
         // Build a PBR material directly
-        if (out.pbrBuilderExists) {
-            // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
-            const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
-            out.defaultMatBuilt = !!mDefault;
-            if (mDefault) {
-                out.defaultIsMeshStandard =
-                    mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
-                out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
-                out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
-                out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
-                out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
-                out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
-                if (typeof mDefault.dispose === "function") mDefault.dispose();
-            }
+        // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
+        const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
+        out.defaultMatBuilt = !!mDefault;
+        if (mDefault) {
+            out.defaultIsMeshStandard =
+                mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
+            out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
+            out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
+            out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
+            out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
+            out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
+            if (typeof mDefault.dispose === "function") mDefault.dispose();
+        }
 
-            // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
-            const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
-            if (mEisen) {
-                out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
-                out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
-                if (typeof mEisen.dispose === "function") mEisen.dispose();
-            }
+        // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
+        const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
+        if (mEisen) {
+            out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
+            out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
+            if (typeof mEisen.dispose === "function") mEisen.dispose();
+        }
 
-            // LAUB-Material (lebendig 0.95) → rauh, kein Metall
-            const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
-            if (mLaub) {
-                out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
-                out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
-                if (typeof mLaub.dispose === "function") mLaub.dispose();
-            }
+        // LAUB-Material (lebendig 0.95) → rauh, kein Metall
+        const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
+        if (mLaub) {
+            out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
+            out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
+            if (typeof mLaub.dispose === "function") mLaub.dispose();
+        }
 
-            // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
-            const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
-            if (mStein) {
-                out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
-                out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
-                if (typeof mStein.dispose === "function") mStein.dispose();
-            }
+        // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
+        const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
+        if (mStein) {
+            out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
+            out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
+            if (typeof mStein.dispose === "function") mStein.dispose();
+        }
 
-            // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
-            // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
-            const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
-            if (mGlut) {
-                out.glutEmissive = mGlut.emissiveIntensity > 0;
-                out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
-                if (typeof mGlut.dispose === "function") mGlut.dispose();
-            }
+        // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
+        // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
+        const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
+        if (mGlut) {
+            out.glutEmissive = mGlut.emissiveIntensity > 0;
+            out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
+            if (typeof mGlut.dispose === "function") mGlut.dispose();
         }
 
         // Dispatch-Behavior: Mode auf "pbr" setzen + Toon-Builder rufen → PBR-Material
@@ -233,7 +230,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         return out;
     });
 
-    check("V18.223 (Q1) _buildPbrNodeMaterial Helper existiert", res.pbrBuilderExists === true);
     check(
         "V18.223/234 (Q2) atmosphere.materialMode Default `pbr` (physik-Licht, keine halben Sachen)",
         res.modeFlagDefault === true
@@ -279,7 +275,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const out = {};
 
         // (A) Helfer + gesetzmäßige Konfiguration
-        out.helperExists = typeof r._terrainGeologyAlbedo === "function";
         const G = A.TERRAIN_GEOLOGY;
         out.configFrozen = !!G && Object.isFrozen(G);
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
@@ -298,7 +293,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             Array.isArray(G.mossTint) &&
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
-
 
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
@@ -411,7 +405,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
     check(
@@ -424,7 +417,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         res.tintsAreRgb === true
     );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
-
 
     check("Ω-OPSIS S1 (C1) geoRock-Uniform existiert + endlich", res.geoRockUniform === true);
     check("Ω-OPSIS S1 (C2) geoMoss-Uniform existiert + endlich", res.geoMossUniform === true);
