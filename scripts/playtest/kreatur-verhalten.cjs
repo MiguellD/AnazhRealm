@@ -2962,7 +2962,7 @@ async function checkBandKreaturKosten(ctx) {
             const T3 = window.THREE;
             const R = A.KREATUR_RUHE;
             if (!R)
-                return { fehler: "KREATUR_RUHE/_tickKreaturRuhe fehlt" };
+                return { fehler: "KREATUR_RUHE fehlt" };
             const cam = s.camera;
             const blick = (dx, dz) => {
                 cam.position.set(pm.x, pm.y + 2, pm.z);

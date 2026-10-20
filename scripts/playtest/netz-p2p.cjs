@@ -259,7 +259,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
-        check("Ring 11 V1: alle P2P-Methoden auf der Klasse vorhanden", ring11Results.allMethodsPresent);
+        check("Ring 11 V1: initP2PUI auf der Klasse (die Suite ruft ihn nie)", ring11Results.allMethodsPresent);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
@@ -446,7 +446,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
-        check("W7 P1: alle WebRTC-Methoden auf der Klasse vorhanden", w7Results.w7MethodsPresent);
+        check("W7 P1: _p2pDrainIce auf der Klasse (die Suite ruft ihn nie)", w7Results.w7MethodsPresent);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
         check("W7 P1: RTCPeerConnection im Headless verfügbar", w7Results.rtcAvailable);
@@ -651,7 +651,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     } else {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
-        check("W7 P2: alle Welt-Transfer-Methoden auf der Klasse", w7p2Results.w7p2MethodsPresent);
+        check("W7 P2: _p2pSendChannelTo + _p2pHandleWorldPull auf der Klasse (die Suite ruft sie nie)", w7p2Results.w7p2MethodsPresent);
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
         check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
@@ -1130,7 +1130,7 @@ async function checkBandW16Distribution(ctx) {
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
         );
-        check("W16: alle Mesh-Welt-Methoden auf der Klasse", w16Results.methodsPresent);
+        check("W16: _p2pFetchVendorBundle + meshWorldInitDOM auf der Klasse (die Suite ruft sie nie)", w16Results.methodsPresent);
         check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
         check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
         check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
@@ -2564,7 +2564,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v834Results && !v834Results.error) {
-        check("V8.34 (SYNERGIE): Soul-Sync-Methoden (5 leben, Aura-Paar geschnitten)", v834Results.methodsExist);
+        check("V8.34 (SYNERGIE): das Aura-Paar bleibt geschnitten", v834Results.methodsExist);
         check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
@@ -3170,7 +3170,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
-        // (1) Methoden + Konstanten verdrahtet.
+        // (1) Konstanten verdrahtet.
         out.consts =
             K.PORTAL_CHANNEL_RATE_MAX === 200 &&
             K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
@@ -3202,7 +3202,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R1: Kanal-Bucket + per-Peer-Tor verdrahtet (Methoden + Konstanten)", res.consts);
+    check("G8 R1: Kanal-Bucket + per-Peer-Tor: die Konstanten verdrahtet", res.consts);
     check(
         "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
         res.channelCapsFlood,

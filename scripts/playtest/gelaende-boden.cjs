@@ -1500,7 +1500,7 @@ async function checkBandV18132FerneSeen(ctx) {
         return;
     }
     check(
-        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core kachelSchluessel/_ensure...)",
+        "V18.132 Ferne Seen: gelaende-core kachelSchluessel steht",
         res.machinery
     );
     if (!res.unmeasurable) {
@@ -1665,7 +1665,7 @@ async function checkBandGammaGenese(ctx) {
         try {
             if (!r.state.worldMeta) r.state.worldMeta = {};
             r.state.worldMeta.genVersion = 2;
-            // (1) Struktur: Funktionen da, Konstanten frozen.
+            // (1) Struktur: Konstanten frozen.
             out.struct =
                 Object.isFrozen(A.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
@@ -1776,7 +1776,7 @@ async function checkBandGammaGenese(ctx) {
         }
         return out;
     });
-    check("Γ Struktur: _feuchteAt/_hydroDistAt leben, FEUCHTE frozen", res.struct === true);
+    check("Γ Struktur: FEUCHTE frozen", res.struct === true);
     check(
         `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
         res.bankFound && res.feuchteBank >= 0.62
@@ -1860,7 +1860,7 @@ async function checkBandGammaGenese(ctx) {
     const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : v);
     const f3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
     check(
-        `Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER, _slopeAt + _rockExposureAt leben`,
+        `Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER`,
         resG4.struct === true
     );
     check(

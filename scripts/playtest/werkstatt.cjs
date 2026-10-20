@@ -570,7 +570,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: _installOmnibox + _omniboxSearch existieren", omniResults.methodsExist);
+        check("V18.45 Omnibox: _installOmnibox existiert (die Suite ruft ihn nie)", omniResults.methodsExist);
         check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);

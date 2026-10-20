@@ -940,7 +940,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
         check(
-            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
+            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + Schalter im State",
             wave6hP2eV2Results.hasPhrases &&
             wave6hP2eV2Results.gapPerCreature &&
             wave6hP2eV2Results.gapGlobal &&
@@ -1173,7 +1173,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
+            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + RareEvent-Trigger (die Suite ruft ihn nie) + Takt 600 s",
             wave6hP2eV3Results.hasWhitelist &&
             wave6hP2eV3Results.whitelistSize &&
             wave6hP2eV3Results.hasRareEventTrigger &&

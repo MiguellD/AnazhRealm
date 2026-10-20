@@ -1355,7 +1355,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     if (translatorResults && !translatorResults.error) {
         check(
-            "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
+            "KI-Übersetzer: translatorInitDOM existiert (die Suite ruft ihn nie)",
             translatorResults.methods
         );
         check(
@@ -1595,7 +1595,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     if (transl2Results && !transl2Results.error) {
         check(
-            "KI-Übersetzer P2: _sanitizeWorldScene/_buildSceneTranslatorPrompt/translateWorldScene/buildTranslatedWorld/_runWorldBuild existieren",
+            "KI-Übersetzer P2: _runWorldBuild existiert (die Suite ruft ihn nie)",
             transl2Results.methods
         );
         check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
@@ -1934,7 +1934,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     if (vendorResults && !vendorResults.error) {
         check(
-            "W15 Auto-Vendor: vendorWorldBundle/_vendorSanitizeBundle/_vendorPostBundle/_runVendorDock/vendorInitDOM existieren",
+            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock/vendorInitDOM existieren (die Suite ruft sie nie)",
             vendorResults.methods
         );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
@@ -2104,7 +2104,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     if (vendor2Results && !vendor2Results.error) {
         check(
-            "W15 GitHub-Fetch: vendorWorldFromRepo/_vendorPostRepo/_vendorPostJson/_vendorRegisterWorld/_runVendorRepoDock existieren",
+            "W15 GitHub-Fetch: _vendorPostRepo/_vendorPostJson/_runVendorRepoDock existieren (die Suite ruft sie nie)",
             vendor2Results.methods
         );
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);

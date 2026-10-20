@@ -2205,7 +2205,7 @@ async function checkBandG8R2SovereignWall(ctx) {
         check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen);
+    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte)", res.frozen);
     check(
         "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
         res.notDslOp && res.notBroadcast && res.notComposed
