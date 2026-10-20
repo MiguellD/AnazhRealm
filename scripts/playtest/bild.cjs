@@ -96,6 +96,29 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
         out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
 
+        // setTimeOfDay setzt korrekt
+        r.setTimeOfDay(0.25, "human");
+        out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
+        // Sonnenaufgang Label
+        out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
+        out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
+
+        // tickDayNight schreitet voran
+        r.setTimeOfDay(0.4, "human");
+        const beforeT = r.state.timeOfDay;
+        r.state._lastDayNightTick = 0;
+        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
+        out.tickAdvances = r.state.timeOfDay > beforeT;
+        // setDayLength clamped
+        r.setDayLength(5);
+        out.setDayLength5 = r.state.dayLengthMinutes === 5;
+        r.setDayLength(999); // > max 60
+        out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
+        r.setDayLength(0); // < min 1
+        out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
+        r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
+
+        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
