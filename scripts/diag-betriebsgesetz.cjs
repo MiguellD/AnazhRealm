@@ -71,31 +71,38 @@ function archivBefund(dateien) {
 // 6) WACHSTUMS-WAND (V1 15.10.) + DIE DECKE (PFLICHT-OFFEN D, Schöpfer 16.10.): scripts/ wächst nie — Zeilen und Dateien
 //    sinken oder stehen, eine neue Linse zahlt mit gestrichenen; scripts/ + spec/ zusammen höchstens um die Hälfte des
 //    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige),
-//    als Netto-Differenz `git diff --numstat --no-renames` (hinzu − weg; `git grep -c ''` hing an der git-Version).
+//    aus EINEM Diff (`git diff -U0 --no-renames`): je Datei hinzu − weg im EINEN Maß `deckeMass` je Zeile, dazu neu − weg.
 //    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
 const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 function git(args) {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
 }
-function nettoZeilen(numstat) {
-    return numstat
-        .split("\n")
-        .filter(Boolean)
-        .reduce((s, z) => {
-            const [hinzu, weg] = z.split("\t");
-            return hinzu === "-" ? s : s + Number(hinzu) - Number(weg);
-        }, 0);
+const deckeMass = () => 1;
+// Kopfzeilen (--- / +++) stehen vor dem ersten @@, eine Binärdatei trägt keinen Hunk
+function wachstumAusDiff(text, je = new Map(), datei = new Map()) {
+    let [pfad, hunk] = [null, false];
+    for (const z of text.split("\n")) {
+        if (z.startsWith("diff --git ")) [pfad, hunk] = [z.slice(13, 13 + (z.length - 16) / 2), false];
+        else if (!hunk && /^(new|deleted) file mode/.test(z)) datei.set(pfad, z[0] === "n" ? 1 : -1);
+        else if (z.startsWith("@@")) hunk = true;
+        else if (hunk && (z[0] === "+" || z[0] === "-"))
+            je.set(pfad, (je.get(pfad) || 0) + (z[0] === "+" ? 1 : -1) * deckeMass(z.slice(1)));
+    }
+    return { je, datei };
 }
+const summe = (m, vor = "") => [...m].reduce((s, [p, d]) => (p.startsWith(vor) ? s + d : s), 0);
 function wachstumZwischen(grund, kopf, pfade) {
-    return nettoZeilen(git(["diff", "--numstat", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]));
+    const args = ["-c", "core.quotePath=false", "diff", "-U0", "--no-color", "--no-renames", grund];
+    return wachstumAusDiff(git([...args, ...(kopf ? [kopf] : []), "--", ...pfade]));
 }
-function dateienZwischen(grund, kopf, pfade) {
-    const z = git(["diff", "--name-status", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]).split(
-        "\n"
-    );
-    return z.filter((l) => l.startsWith("A\t")).length - z.filter((l) => l.startsWith("D\t")).length;
-}
+const taeterVon = (je) =>
+    [...je]
+        .filter(([p, d]) => p.startsWith("scripts/") && d > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([p, d]) => `, ${p} +${d}`)
+        .join("");
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
 // ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
 // sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
@@ -111,12 +118,12 @@ function wachstumsStaende(zweig, kopfRev) {
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
 }
-function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0) {
+function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter = "") {
     const erlaubt = Math.floor(Math.max(0, dS) / 2);
     return [
         ...(dSkript > 0 || dDatei > 0
             ? [
-                  `DECKE (${name}): scripts/ wuchs um ${dSkript} Zeilen / ${dDatei} Dateien — sie sinkt nur (PFLICHT-OFFEN D)`,
+                  `DECKE (${name}): scripts/ wuchs um ${dSkript} Zeilen / ${dDatei} Dateien${taeter} — sie sinkt nur (PFLICHT-OFFEN D)`,
               ]
             : []),
         ...(dP > erlaubt
@@ -261,7 +268,11 @@ function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
 //    außerhalb seines Heims ist ROT beim Namen; die Tafel des EINEN (echte Stamm-Zeilen, der Stamm gegen acorn) fährt mit.
 const STRIPPER_MUSTER = [
     ["Block-Kommentar-Regex", /\\\/\\\*\[(?:\\s\\S|\^)\]\*\??\\\*\\\//, "scripts/lib/stamm.cjs"],
-    ["Zeilen-Kommentar-Regex", /\.replace\(\s*\/(?:\((?:\?:)?\^\|\[\^[^\]]*\]\))?\\\/\\\/(?:\.\*|\[\^\\n\]\*)/, "scripts/lib/stamm.cjs"],
+    [
+        "Zeilen-Kommentar-Regex",
+        /\.replace\(\s*\/(?:\((?:\?:)?\^\|\[\^[^\]]*\]\))?\\\/\\\/(?:\.\*|\[\^\\n\]\*)/,
+        "scripts/lib/stamm.cjs",
+    ],
     ["Zeichen-Automat", /===\s*(["'])\/\1\s*&&\s*[\w$.[\]+ ]+?\s*===\s*(["'])[/*]\2/, "scripts/lib/stamm.cjs"],
     ["__codeOf-Einbau", /window\.__codeOf\s*=(?!=)/, "scripts/lib/welt-boot.cjs"],
 ];
@@ -295,14 +306,13 @@ function main() {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
         const staende = grundRev ? [[grundRev, kopfRev, "--grund"]] : wachstumsStaende(zweig, kopfRev);
         for (const [grund, kopf, name] of staende) {
-            const dP = wachstumZwischen(grund, kopf, PRUEF_PFADE);
-            const dS = wachstumZwischen(grund, kopf, SPIEL_PFADE);
-            const dK = wachstumZwischen(grund, kopf, ["scripts"]);
-            const dD = dateienZwischen(grund, kopf, ["scripts"]);
+            const { je, datei } = wachstumZwischen(grund, kopf, PRUEF_PFADE);
+            const [dP, dS] = [summe(je), summe(wachstumZwischen(grund, kopf, SPIEL_PFADE).je)];
+            const [dK, dD] = [summe(je, "scripts/"), summe(datei, "scripts/")];
             gemessen.push(
                 `${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} · scripts ${dK} Z. ${dD} Dat.`
             );
-            errs.push(...wachstumBefund(dP, dS, name, dK, dD));
+            errs.push(...wachstumBefund(dP, dS, name, dK, dD, taeterVon(je)));
         }
         if (!staende.length)
             gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
@@ -359,8 +369,19 @@ function main() {
             .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
         stripperDateien = dateien.length;
         errs.push(...stripperBefund(dateien));
-        errs.push(...dateiDeckeBefund(git(["ls-files", "scripts"]).split("\n").filter(Boolean).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }))));
-        errs.push(...require("./lib/stamm.cjs").stripperTafel(root).map((b) => `STRIPPER-WAND (Tafel): ${b}`));
+        errs.push(
+            ...dateiDeckeBefund(
+                git(["ls-files", "scripts"])
+                    .split("\n")
+                    .filter(Boolean)
+                    .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }))
+            )
+        );
+        errs.push(
+            ...require("./lib/stamm.cjs")
+                .stripperTafel(root)
+                .map((b) => `STRIPPER-WAND (Tafel): ${b}`)
+        );
     } catch (e) {
         errs.push(`STRIPPER-WAND: scripts/ oder die Tafel nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
@@ -444,16 +465,44 @@ function main() {
     const w2 = wachstumBefund(400, 1000).length; // +400 gegen +1000: darf nicht
     const w3 = wachstumBefund(10, -500).length; // die Welt schrumpft, der Apparat wächst: feuert
     const w4 = wachstumBefund(-100, -300).length; // beide schrumpfen: darf nicht
-    // die Zählung ist die Netto-Differenz je Datei; eine Binärdatei trägt keine Zeilen (eine leere Schlusszeile zählt
-    // wie jede Zeile — kein Zählen, das an der git-Version hängt)
-    const w5 = nettoZeilen("512\t0\tscripts/lib/kronen-linse.cjs\n-\t-\tspec/bild.png\n3\t10\tspec/a.json\n");
+    // DER GEPRESSTE MUTANT (f1-rest ada41e38 gegen e93134f4: scripts/ Zeilen −2, Inhalt wächst): eine neue Probe zahlt
+    // nur mit Pressen — Zählschleife als Ein-Zeilen-Summe, push in der for-Bedingung, Anhang an eine Zeile; die Decke nennt
+    // ihn beim Namen, ein echtes Streichen bleibt grün; Kopfzeilen, Binärdatei und Datei-Zahl (neu − weg) aus dem Diff
+    const kopf = (p, m = "") => `diff --git a/${p} b/${p}\n${m}index 1..2\n--- a/${p}\n+++ b/${p}\n@@ -1,6 +1,2 @@\n`;
+    const mutant = wachstumAusDiff(
+        kopf("scripts/lib/x.cjs") +
+            [
+                "-let behalten = 64;",
+                "-for (let j = 0; j < 64; j++) if (!keep(j)) behalten--;",
+                "-summe += behalten / 64;",
+                "-let m = 0;",
+                "-for (let j = 0; j < 33; j++, m = Math.max(m, weg(j))) bild(j);",
+                "-sprung.push(m);",
+                "+for (let j = 0; j < 64; j++) summe += keep(j) ? 1 / 64 : 0;",
+                "+for (let j = 0, m = 0; j < 33 || !sprung.push(m); j++, m = Math.max(m, weg(j))) bild(j); deckung(e, auge);",
+                "diff --git a/spec/b.png b/spec/b.png\nnew file mode 100644\nBinary files /dev/null and b/spec/b.png differ",
+            ].join("\n")
+    );
+    const streichen = wachstumAusDiff(`${kopf("scripts/x.cjs", "deleted file mode 100644\n")}-pruefe(typeof r.ab);`);
+    const w5 = [mutant, streichen].map(({ je, datei }) =>
+        wachstumBefund(-9, 99, "x", summe(je), summe(datei, "scripts/"), taeterVon(je))
+    );
+    const w5ok =
+        String(w5[0]).includes("scripts/lib/x.cjs +") &&
+        !w5[1].length &&
+        !mutant.je.has("spec/b.png") &&
+        mutant.datei.get("spec/b.png") === 1;
     const w6 = [
         wachstumBefund(-9, 99, "x", 1, 0),
         wachstumBefund(-9, 99, "x", -5, 1),
         wachstumBefund(-9, 99, "x", -5, 0),
     ];
-    if (!w1 || w2 || !w3 || w4 || w5 !== 505 || w6.map((w) => w.length).join() !== "1,1,0")
+    if (!w1 || w2 || !w3 || w4 || !w5ok || w6.map((w) => w.length).join() !== "1,1,0")
         errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5} w6=${w6})`);
+    if (!w5ok)
+        errs.push(
+            `der gepresste Mutant (${summe(mutant.je)} je ${deckeMass("x ;")}) bleibt GRÜN — Pressen zahlt die Decke`
+        );
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
         "docs/README.md": "| `docs/README.md` | `docs/a.md` |",
@@ -503,7 +552,10 @@ function main() {
     const S = "\\";
     const sF = (pfad, text) => stripperBefund([{ pfad, text }]).length;
     const zeileRx = "q.replace(/" + S + "/" + S + '/.*$/gm, "");';
-    const s1 = sF("scripts/x.cjs", "q.replace(/" + S + "/" + S + "*[" + S + "s" + S + "S]*?" + S + "*" + S + '//g, "");'); // feuert
+    const s1 = sF(
+        "scripts/x.cjs",
+        "q.replace(/" + S + "/" + S + "*[" + S + "s" + S + "S]*?" + S + "*" + S + '//g, "");'
+    ); // feuert
     const s2 = sF("scripts/x.cjs", zeileRx); // feuert
     const s3 = sF("scripts/x.cjs", "if (c === " + '"/"' + " && d === " + '"*"' + ") {"); // feuert
     const s4 = sF("scripts/x.cjs", "window." + "__codeOf = (f) => String(f);"); // feuert
