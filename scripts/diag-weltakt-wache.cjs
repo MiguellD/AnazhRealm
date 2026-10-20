@@ -272,7 +272,9 @@ async function probe(GESCHICKT) {
             aus.form.push({ op, prog: JSON.stringify([op, ...args]).slice(0, 120), ev, blieb });
         }
     }
-    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, [...K[n]]]));
+    // eine Liste von Op-Namen oder eine Tafel je Op (DSL_WERTE: ihre Schlüssel) — jeder Name muss leben
+    const namen = (x) => (x[Symbol.iterator] ? [...x] : Object.keys(x));
+    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, namen(K[n])]));
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
