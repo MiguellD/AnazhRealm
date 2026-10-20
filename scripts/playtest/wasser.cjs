@@ -243,7 +243,6 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943bResults && !voxelV943bResults.error) {
         const hb = voxelV943bResults;
-        check("Voxel V9.43-b: _computeHydrosphere existiert", hb.methodExists);
         check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
         check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
         check(
@@ -281,10 +280,6 @@ async function checkBandHydrosphere(ctx) {
             hb.waterFieldMatchesNet
         );
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
-        check(
-            "Voxel V9.50-a: `_waterLevelAt` + `_hydroRiverAt` existieren (das Wasser-Level-Feld)",
-            hb.hasWaterLevelAt && hb.hasRiverAt
-        );
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
         check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
         check("K16: der Tarn-Pass ist gefallen (kein `_hydroSeedTarns`, kein state.tarns)", hb.tarnPassTot);
@@ -344,10 +339,6 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943c2 && !voxelV943c2.error) {
         const h2 = voxelV943c2;
-        check(
-            "Voxel V9.43-c.2: _waterLevelAt existiert (war _hydroWaterLevelAt — V18.180-FIX §6.4)",
-            h2.hasWaterLevelAt
-        );
         check("Voxel V9.43-c.2: _waterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
         check(
             "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
@@ -503,7 +494,6 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943d && !voxelV943d.error) {
         const d = voxelV943d;
-        check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
         check(
             "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
