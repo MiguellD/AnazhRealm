@@ -3604,25 +3604,99 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     );
     // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object (Welt-Matrix, Knochen, Stoff-Verweise) und die Stellen der eigenen
     // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
+    // NACH EINGANG (E-Diät, 19.10.): ein FREMDER Verweis (festes Objekt, geteilte Uniform: Schatten-Bias · normalBias · Radius ·
+    // mapSize · Kaskaden des Lichts) trägt EINEN Wert je Render-Abschnitt — der Gang stellt ihn (12), nie das Objekt; ein
+    // STOFF-Verweis, dessen Eigenschaft equals() prüft (r184 `refreshUniforms`), ist gleich, solange der Stoff-Stand seines
+    // Render-Objekts gleich ist (13 `_diaetStoffVerpasst` — equals() merkt je STOFF, nie je Render-Objekt). Die REGUNG ist der Rest (Lage, Knochen, Objekt-Verweise, jeder Knoten ohne Zuordnung). Gemessen am Kopf e93134f4 (Radeon,
+    // Genesis Third, Stand): am Leib 28 Objekt-Knoten je Gang, 11 fremde und 5–9 Stoff-Verweise; 108 fremde Gänge je Frame für
+    // ~12 Uniforms (Diät-Linse: Fremd 96 wiederholt).
     const objekt = nbs.updateNodes.filter((n) => n.getUpdateType() === "object");
+    // Im Schatten-Pass prüft equals() den GETEILTEN Schatten-Stoff (je Objekt umgestellt, je Render EINMAL verglichen): dort
+    // trägt der Stoff-Verweis den Wert seines Objekts nur aus dem Gang — er bleibt Regung.
+    const ru = new Set(
+        (ro.material && ro.material.isShadowPassMaterial !== true && nbs.observer && nbs.observer.refreshUniforms) || []
+    );
+    const fremd = [],
+        regung = [],
+        stoffUniform = new Set();
+    let stoffLiest = false; // (13) das Programm liest eine Stoff-Eigenschaft, die equals() prüft (Wert oder Textur)
+    for (const n of objekt) {
+        const u = n.node && n.node.isUniformNode === true && n.node.isTextureNode !== true ? n.node : null;
+        if (
+            u &&
+            n.isMaterialReferenceNode !== true &&
+            typeof n.getValueFromReference === "function" &&
+            n.object != null &&
+            n.count === null &&
+            u.groupNode &&
+            u.groupNode.shared === true
+        )
+            fremd.push(n);
+        else if (u && n.isMaterialReferenceNode === true && ru.has(n.property)) stoffUniform.add(u);
+        else regung.push(n);
+        if (n.isMaterialReferenceNode === true && ru.has(n.property)) stoffLiest = true;
+    }
+    // VOLL lädt der Vendor eine eigene Gruppe, die mehr trägt als Uniform-Puffer, Texturen und Sampler (Speicher-Puffer)
     const eigen = [];
+    let objektVoll = false;
     ro.getBindings().forEach((g, i) => {
         const b0 = g.bindings && g.bindings[0];
-        if (!(b0 && b0.groupNode && b0.groupNode.shared === true)) eigen.push(i);
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) return;
+        eigen.push(i);
+        for (const b of g.bindings)
+            if (b.isUniformBuffer !== true && b.isSampledTexture !== true && b.isSampler !== true) objektVoll = true;
     });
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei, verweise, objekt, eigen };
+    return {
+        vor,
+        knoten,
+        eigenVor,
+        eigenKnoten,
+        gruppen,
+        texturen,
+        frei,
+        verweise,
+        objekt,
+        eigen,
+        fremd,
+        regung,
+        stoffUniform,
+        stoffLiest,
+        objektVoll,
+    };
 };
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
 // es dafür voll auf (Vorher-Knoten, Geometrie, jeder Knoten, jede Gruppe): an Genesis Third je Bild acht Membranen, der Leib
 // mit Knochen in Bild und Kaskade, Kopf, Plattform und Sonne. Jetzt stellt es seine Objekt-Knoten und lädt seine eigenen Gruppen.
-AnazhRealm._diaetObjektGang = function (rend, ro, k) {
+// NACH EINGANG (E-Diät): es stellt nur die REGUNG und vergleicht je eigenem Uniform-Puffer nur ihre Uniforms — ein Stoff-
+// Verweis behält, was sein Objekt zuletzt lud (sein Stoff-Stand (13) gleich), Texturen und Sampler folgen ihrem Wächter (6). VOLL (der
+// Textur-Grund, eine Gruppe mit Puffer-Speicher) lädt der Vendor jede Bindung und vergleicht jede Uniform gegen den Wert ihres
+// Knotens — darum stellt der volle Gang ALLE Objekt-Knoten (ein Stoff-Verweis trüge sonst den Wert des Render-Objekts, das ihn
+// zuletzt stellte). Gemessen am Kopf e93134f4 (Radeon, Genesis Third, Stand, Profil 200 µs): 0,381 ms je Frame.
+AnazhRealm._diaetObjektGang = function (rend, ro, k, voll) {
     const nf = rend._nodes.getNodeFrameForRender(ro);
     for (const n of k.eigenVor) nf.updateBeforeNode(n);
-    for (const n of k.objekt) nf.updateNode(n);
-    for (const n of k.eigenKnoten) nf.updateNode(n);
     const alle = ro.getBindings();
-    for (const i of k.eigen) rend._bindings._update(alle[i], alle);
+    if (voll === true || k.objektVoll === true) {
+        for (const n of k.objekt) nf.updateNode(n);
+        for (const n of k.eigenKnoten) nf.updateNode(n);
+        for (const i of k.eigen) rend._bindings._update(alle[i], alle);
+        return;
+    }
+    for (const n of k.regung) nf.updateNode(n);
+    for (const n of k.eigenKnoten) nf.updateNode(n);
+    for (const i of k.eigen)
+        for (const b of alle[i].bindings) {
+            if (b.isUniformBuffer !== true) continue;
+            // ein Puffer ohne Uniform-Liste (die Knochen-Matrizen, r184 NodeUniformBuffer) lädt wie im Vendor bei jedem Gang
+            let neu = !b.uniforms && b.update() === true;
+            for (const u of b.uniforms || []) {
+                const n = u.nodeUniform && u.nodeUniform.node;
+                if (!(n && k.stoffUniform.has(n)) && b.updateByType(u) === true) neu = true;
+            }
+            if (neu) rend.backend.updateBinding(b);
+            if (b.updateRanges.length > 0) b.clearUpdateRanges();
+        }
 };
 // (10) Wechselte ein Objekt-Verweis des Programms seit dem letzten Blick dieses Render-Objekts? Ein Wechsel ist der Wert
 // eines Stoffs, kein Bruch: EIN Refresh, kein Melder. Der erste Blick merkt (die Erst-Anlage lud eben hoch).
@@ -3748,6 +3822,16 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
         nf = nf || rend._nodes.getNodeFrameForRender(ro);
         for (const n of k.eigenKnoten) nf.updateNode(n);
     }
+    // (12) DER FREMDE VERWEIS (E-Diät, s. (11)): EIN Wert je Render-Abschnitt, gestempelt an seiner geteilten Uniform (jedes
+    // Programm trägt seinen eigenen Verweis-Knoten auf dieselbe Uniform) — vor den Gruppen, die sie laden. `_schattenBias` und
+    // die Kaskaden-Karten setzen bias · normalBias · mapSize zur Laufzeit: der Wert folgt im nächsten Abschnitt.
+    for (const n of k.fremd) {
+        const u = n.node;
+        if (u._anazhFremdRid === rid && u._anazhFremdRuf === ruf) continue;
+        u._anazhFremdRid = rid;
+        u._anazhFremdRuf = ruf;
+        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+    }
     let alle = null;
     for (const g of k.gruppen) {
         if (g._anazhRid === rid && g._anazhRuf === ruf) continue;
@@ -3763,6 +3847,23 @@ AnazhRealm._diaetGetragen = function (A, a) {
     if (!A || !A.has(a)) return false;
     const v = A.get(a).version;
     return v !== undefined && v >= (a.isInterleavedBufferAttribute ? a.data.version : a.version);
+};
+// (13) DER STOFF JE RENDER-OBJEKT (E-Diät, Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id
+// (`getMaterialData`: `_renderId`, `_equal`), nie je Render-Objekt — wer den Render verpasst, in dem ein anderes Render-Objekt
+// die Änderung verbrauchte (verdeckt, außerhalb des Passes, eine zweite Sicht), hört danach „gleich“, und sein eigener Puffer
+// trägt den alten Wert (am Kopf 783fcdc1: zwei Boxen EINES Stoffs, B verdeckt beim Farbwechsel; ein stehendes Objekt schon an
+// e93134f4). Die Wahrheit sind Render-Ids: der Stoff merkt den Render seines letzten Verbrauchs (`_anazhStoffR` — `vorR`, die
+// Render-Id seiner Daten vor dem Vendor, wechselte und `_equal` steht falsch), das Render-Objekt den Render JEDES Voll-Refreshs
+// (`_anazhVollR`, jeder Ausgang der Diät). Verpasst ist nur, wer den Stoff LIEST (`stoffLiest`, der Schatten-Pass nie) und
+// zuletzt vor dem Verbrauch voll frischte — ein Voll-Refresh im Render des Verbrauchs las den neuen Wert schon. Der Stempel
+// steht am STOFF, nie in seinen Daten: equals() geht jeden Schlüssel der Daten durch und bricht an einem fremden (r184 liest
+// `material[k].isTexture` — am Kopf c7225684 warf jeder Render eines Stoffs nach seinem ersten Wechsel, `_callDepth` wuchs).
+AnazhRealm._diaetStoffVerpasst = function (od, stoff, md, vorR, rid, liest, v) {
+    if (rid === undefined) return v;
+    if (md && md._renderId !== vorR && md._equal === false) stoff._anazhStoffR = rid;
+    if (!v && liest && stoff && stoff._anazhStoffR > (od._anazhVollR === undefined ? -1 : od._anazhVollR)) v = true;
+    if (v) od._anazhVollR = rid;
+    return v;
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
@@ -3830,7 +3931,8 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders || grund) return true;
+        if (anders || grund)
+            return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
         // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
         // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
         // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
@@ -3843,15 +3945,20 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             gd._equal = true;
         }
     }
-    if (grund) return true;
+    if (grund) return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
     const rend = frame && frame.renderer;
+    const md = ro && ro.material ? obs.getMaterialData(ro.material) : null;
     if (
         !rend ||
         !obs.renderObjects.has(ro) ||
         obs.needsVelocity(rend) ||
         ro.getNodeBuilderState().updateAfterNodes.length > 0
-    )
-        return altNR.call(obs, ro, frame);
+    ) {
+        const vorR = md && md._renderId;
+        const v = altNR.call(obs, ro, frame);
+        const od = obs.getRenderObjectData(ro);
+        return AnazhRealm._diaetStoffVerpasst(od, ro && ro.material, md, vorR, frame && frame.renderId, true, v);
+    }
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
         obs.renderId = rid;
@@ -3875,7 +3982,10 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         od.worldMatrix.copy(obj.matrixWorld);
         lage = true;
     }
-    if (obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true) return true;
-    if (lage || verweis || textur || frei || obs.hasAnimation === true) AnazhRealm._diaetObjektGang(rend, ro, gang);
+    const vorR = md && md._renderId;
+    const anders = obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
+    if (AnazhRealm._diaetStoffVerpasst(od, ro.material, md, vorR, rid, gang.stoffLiest, anders)) return true;
+    if (lage || verweis || textur || frei || obs.hasAnimation === true)
+        AnazhRealm._diaetObjektGang(rend, ro, gang, textur);
     return false;
 };

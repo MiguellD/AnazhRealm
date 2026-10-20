@@ -1742,8 +1742,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
             /Schwarm-Welt/.test(c.textContent)
         );
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
         // Aufräumen.
         delete r.state.blueprints["portal_schwarm"];
         for (let i = 0; i < r.state.player.inventory.length; i++) {

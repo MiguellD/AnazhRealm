@@ -1389,7 +1389,7 @@ class AnazhRealm_siedlung_bauten {
     // BEREICH darin. Die Vertex-Bereiche vergibt First-Fit aus einer Freiliste, lebende Bereiche wandern nie: die
     // Chunk-Geometrie trägt subarray-Views auf den Satz (jeder CPU-Leser bleibt byte-gleich, der Geomorph schreibt hinein und
     // markiert seinen Bereich). Ein Bereich zerfällt in ZELLEN (Boden/Wasser: Viertel um die Mitte seiner Lage; Bau: je
-    // Instanz), je Zelle ein Index-Lauf und eine Hülle; der Index (Uint32 — writeBuffer verlangt 4-Byte-Ausrichtung) trägt je
+    // Instanz), je Zelle ein Index-Lauf und eine Hülle; der Index (Uint32) trägt je
     // PASS einen ABSCHNITT: die Zellen, deren Hülle das Frustum der Pass-Kamera schneidet (`_chunkSatzPass` im Haken jedes
     // Passes), Boden nah → fern (Early-Z, wie three's Objekt-Sortierung), Wasser fern → nah (transparent). Befund 05.10.
     // (echte GPU, Mess-Wiese): der Satz zeichnete den ganzen Ring in JEDEM Pass — Hauptbild, Kaskade 0 und Kaskade 1 je
@@ -1829,10 +1829,8 @@ class AnazhRealm_siedlung_bauten {
                 continue;
             }
             if (!AnazhRealm._satzSetze(ga.array, vStart * gis, quelle, 0, L)) continue;
-            // in ganzen Vertices: ein gepacktes Element trägt 1 oder 2 Bytes, `writeBuffer` verlangt Vielfache von 4
-            const v0 = Math.floor(L[0] / gis),
-                v1 = Math.ceil(L[1] / gis);
-            ga.addUpdateRange((vStart + v0) * gis, (v1 - v0) * gis);
+            // genau der Lauf: ein gepacktes Element trägt 1 oder 2 Bytes, die 4-Byte-Wörter rundet die Wort-Schrift
+            ga.addUpdateRange(vStart * gis + L[0], L[1] - L[0]);
             ga.needsUpdate = true;
         }
         const li = geom.index.array;

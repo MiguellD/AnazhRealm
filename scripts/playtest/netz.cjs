@@ -875,9 +875,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     } else {
         check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
-    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
-    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W14 Phase 3 — fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
