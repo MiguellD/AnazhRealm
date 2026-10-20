@@ -19,7 +19,9 @@ v1.0 ist EIN gespielter Pfad, kein Feature-Katalog:
    Welt. GEBAUT (V18.493: `spawn_studio` · `near_water` · Prompt mit den LIVE-Wörtern · Satz
    ohne Schlüssel; Band `checkBandV18493CoSchoepferStudio`); den Lauf mit echtem Modell fährt der
    KI-Korpus ohne Schlüssel (lokal ollama, `node scripts/diag-v1-pfad.cjs --korpus --echt`, 40 Sätze
-   `spec/abnahme/ki-korpus.json`; die CI spielt seinen Mitschnitt ab, `npm run gate:v1-pfad`).
+   `spec/abnahme/ki-korpus.json`; die CI spielt seinen Mitschnitt Satz → Programm ab, `npm run gate:v1-pfad`).
+   Gemessen 21.10. (qwen3:4b-instruct, CPU): gültig 33/40 · Absicht 30/40 · Negativ-Sätze ohne Tat 8/8 · p95 Satz → Welt
+   10,0 s — das Soll 38/34/6 s steht offen.
 5. **Benutzen / teilen** — betreten · fahren · halten · als Bauplan teilen.
 
 **Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf JEDEM Standardgerät — der Richter ist das

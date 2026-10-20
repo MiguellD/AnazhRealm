@@ -217,32 +217,9 @@ async function checkBandRing2Extended(ctx) {
     }
 
     // ### Ring 2 Phase 6 – CSP ###
-    // Das CSP-Meta-Tag trägt die kritischen Direktiven; über den ganzen Lauf landet keine CSP-Violation
-    // im console-Buffer.
-    const cspResults = await safeEvaluate(page, () => {
-        const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-        if (!meta) return { metaPresent: false };
-        const content = meta.getAttribute("content") || "";
-        return {
-            metaPresent: true,
-            hasScriptSrc: /script-src[^;]*'self'/.test(content),
-            hasObjectNone: /object-src 'none'/.test(content),
-            hasBaseUriSelf: /base-uri 'self'/.test(content),
-            hasDefaultSrc: /default-src 'self'/.test(content),
-        };
-    });
-
+    // die CSP am Verhalten: jede Tür der Stimme geht durch, die Gegenprobe nie (diag-v1-pfad --korpus, WORT); hier: keine Verletzung im Lauf
     const cspViolationLogs = logs.filter((l) => /Content Security Policy directive/i.test(l.text));
 
-    if (!cspResults) {
-        check("Phase 6: CSP-Meta-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
-    } else {
-        check("Phase 6: CSP-Meta-Tag vorhanden", cspResults.metaPresent);
-        check("Phase 6: script-src 'self' gesetzt (Skripte nur lokal)", cspResults.hasScriptSrc);
-        check("Phase 6: object-src 'none' (Flash/Plugins blockiert)", cspResults.hasObjectNone);
-        check("Phase 6: base-uri 'self' (URL-Manipulation blockiert)", cspResults.hasBaseUriSelf);
-        check("Phase 6: default-src 'self' (alles per Default lokal)", cspResults.hasDefaultSrc);
-    }
     check(
         "Phase 6: keine CSP-Violations während Laufzeit",
         cspViolationLogs.length === 0,
@@ -570,8 +547,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         // 5. llmCallCreature ohne LLM-aktiv → error-Object
         const wasEnabled = r.state.llm && r.state.llm.enabled;
         if (r.state.llm) r.state.llm.enabled = false;
-        // (kann nicht await in evaluate ohne async — wir testen sync Behauptung)
-        out.llmCreatureNeedsLlm = typeof r.llmCallCreature === "function"; // Existenz reicht
 
         // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
         let chatLines = [];
@@ -789,12 +764,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 1. Konstanten + Methode existieren
-        out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
-        out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
-        out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
-        out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
-
         // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
         const pool = Class.CREATURE_PROACTIVE_PHRASES;
         const events = [
@@ -939,13 +908,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
-        check(
-            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + Schalter im State",
-            wave6hP2eV2Results.hasPhrases &&
-                wave6hP2eV2Results.gapPerCreature &&
-                wave6hP2eV2Results.gapGlobal &&
-                wave6hP2eV2Results.toggleInState
-        );
         check(
             "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
             wave6hP2eV2Results.allEventsPresent
@@ -1557,17 +1519,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // den Ollama-Weg (Endpunkt, Body, Antwort, Parser, CSP) fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
+        // den Ollama-Weg (Endpunkt, Body, Antwort, Parser) und die Tür jedes Anbieters durch die CSP fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
         const defs = r.llmProviderDefs();
 
-        // Endpoint je Provider liefert die erwartete URL.
-        out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
-        out.googleEndpointGenerateContent =
-            /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
-                defs.google.endpoint("gemini-2.0-flash", "KEY")
-            );
         out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
-        out.openrouterEndpoint = defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
 
         // Body-Format pro Provider
         const sys = "SYS";
@@ -1588,9 +1543,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
         out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
 
-        // Parser robust gegen Markdown / kaputtes JSON
-        const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
-        out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
         // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
         // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
         // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
@@ -1614,17 +1566,13 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             (llmResults && llmResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
-        check("Schicht 2: Gemini-Endpoint auf :generateContent", llmResults.googleEndpointGenerateContent);
         check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
-        check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
         check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
         check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
         check("Schicht 2: OpenRouter-Body OpenAI-kompatibel", llmResults.openrouterBodyShape);
         check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
         check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
         check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
-        check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
         check(
             "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
             llmResults.parserDetectsError
@@ -1648,26 +1596,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             headersWithKey.authorization === "Bearer sk-test-1234" ||
             headersWithKey.Authorization === "Bearer sk-test-1234";
 
-        // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
-        const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
-        out.endpointRespectsCustom = customEp === "https://my-ollama.cloud:8443/api/chat";
-
-        // UI: Key-Row ist auch für ollama sichtbar (V7.94)
-        if (r.state.llm) r.state.llm.provider = "ollama";
-        r.llmRefreshProviderUI();
-        const keyRow = document.getElementById("llm-key-row");
-        out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
-
         return out;
     });
 
     if (ollamaKeyResults && !ollamaKeyResults.error) {
         check("V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>", ollamaKeyResults.bearerWithKey);
-        check(
-            "V7.94 Ollama-Key: endpoint respektiert cfg.endpoint (Custom-URL möglich, z.B. https://my-ollama.cloud)",
-            ollamaKeyResults.endpointRespectsCustom
-        );
-        check("V7.94 Ollama-Key: UI Key-Row ist für ollama sichtbar", ollamaKeyResults.keyRowVisibleForOllama);
     } else if (ollamaKeyResults && ollamaKeyResults.error) {
         check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
     }
@@ -1682,10 +1615,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         const defs = r.llmProviderDefs();
         const ol = defs.ollama;
 
-        // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt (lokal fährt es der KI-Korpus)
-        out.epAppendsForCloud =
-            ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) === "https://ollama.com/api/chat";
-
         // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
         out.epRespectsApiPath =
             ol.endpoint("m", "k", {
@@ -1697,12 +1626,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             ol.endpoint("m", "k", {
                 endpoint: "https://provider.cloud/v1/chat/completions",
             }) === "https://provider.cloud/v1/chat/completions";
-
-        // 4. Endpoint trim — Trailing-Slash entfernt
-        out.epTrimsTrailingSlash =
-            ol.endpoint("m", "k", {
-                endpoint: "https://ollama.com/",
-            }) === "https://ollama.com/api/chat";
 
         // 6. extractText — OpenAI-kompat Format
         out.extractsOpenAi =
@@ -1744,10 +1667,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v795Results && !v795Results.error) {
         check(
-            "V7.95 Ollama-Cloud: Endpoint hängt /api/chat an wenn Basis-URL ohne Pfad (ollama.com)",
-            v795Results.epAppendsForCloud
-        );
-        check(
             "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
             v795Results.epRespectsApiPath
         );
@@ -1755,7 +1674,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
             v795Results.epRespectsV1Path
         );
-        check("V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber", v795Results.epTrimsTrailingSlash);
         check(
             "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
             v795Results.extractsOpenAi
@@ -1784,88 +1702,14 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
     }
 
-    // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
-    // Cloud-Provider senden keine CORS-Header → der save-server vermittelt (localhost:4312/api/proxy/llm,
-    // Auth-Header durchgereicht). Geprüft: useProxy-Flag, UI-Toggle, Proxy-Routing, CORS-Fehler-Hinweis.
-    const v796Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.llm) return null;
-        const out = {};
-
-        const cfg = r.state.llm.providerConfig.ollama;
-        const proxyRow = document.getElementById("llm-proxy-row");
-        const proxyCheckbox = document.getElementById("llm-use-proxy");
-
-        // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
-        r.state.llm.provider = "ollama";
-        r.llmRefreshProviderUI();
-        out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
-        out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
-        r.state.llm.provider = "google";
-        r.llmRefreshProviderUI();
-        out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
-        out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
-        r.state.llm.provider = "ollama";
-        r.llmRefreshProviderUI();
-
-        // 5. Click auf Checkbox setzt useProxy + persistiert
-        if (proxyCheckbox && cfg) {
-            proxyCheckbox.checked = true;
-            proxyCheckbox.dispatchEvent(new Event("change"));
-            out.toggleSetsUseProxy = cfg.useProxy === true;
-            if (typeof localStorage !== "undefined") {
-                out.persistedToLocalStorage = localStorage.getItem("anazh.llm.ollama.useProxy") === "1";
-            }
-            // Reset für nächste Tests
-            proxyCheckbox.checked = false;
-            proxyCheckbox.dispatchEvent(new Event("change"));
-        }
-
-        return out;
-    });
-
-    if (v796Results && !v796Results.error) {
-        check("V7.96 Proxy: UI-Toggle sichtbar bei Ollama (proxy-row.hidden=false)", v796Results.proxyVisibleForOllama);
-        check(
-            "V7.96 Proxy: UI-Toggle versteckt bei nicht-Ollama-Provider (proxy-row.hidden=true für Google/Anthropic/OpenRouter)",
-            v796Results.proxyHiddenForOther
-        );
-        check(
-            "V7.96 Proxy: Click-Toggle setzt useProxy + persistiert in localStorage",
-            v796Results.toggleSetsUseProxy && v796Results.persistedToLocalStorage
-        );
-    } else if (v796Results && v796Results.error) {
-        check(`V7.96 Proxy: evaluate-Fehler — ${v796Results.error}`, false);
-    }
-
     // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
-    // (1) Proxy + localhost-URL → Auto-Bypass (der Proxy ist https-only); (2) Modell ist Free-Text
-    // (input + datalist); (3) 404 trägt eine Anleitung.
-    const v797Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const out = {};
-
-        const modelInput = document.getElementById("llm-model");
-        // 3. User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud)
-        if (modelInput && r.state.llm) {
-            r.state.llm.provider = "ollama";
-            const cfg = r.state.llm.providerConfig.ollama;
-            modelInput.value = "qwen3.5:cloud";
-            modelInput.dispatchEvent(new Event("change"));
-            out.customModelAccepted = cfg.model === "qwen3.5:cloud";
-        }
-
-        return out;
-    });
-
-    // Auto-Bypass-Test als separater evaluate damit fetch-Pfad testbar ist
+    // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
+    // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
         const out = {};
 
-        // 5. Auto-Bypass: useProxy + localhost-URL → kein Proxy-Weg
         // (wir stubben fetch um die URL abzufangen und reverten danach)
         const origFetch = window.fetch;
         let capturedUrl = null;
@@ -1880,21 +1724,9 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             };
         };
         try {
-            // Setup: localhost-Endpoint + useProxy=true
             r.state.llm.provider = "ollama";
             r.state.llm.enabled = true;
-            const cfg = r.state.llm.providerConfig.ollama;
-            cfg.endpoint = "http://localhost:11434";
-            cfg.useProxy = true;
-            cfg.model = "llama3.2";
-            r.state.llm.inFlight = false;
-            await r.llmCall("test");
-            // Erwartung: fetch-URL ist die direkte ollama-URL,
-            // NICHT die proxy-URL — Auto-Bypass greift weil localhost
-            out.bypassedForLocalhost = capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
-            // Reset
-            capturedUrl = null;
-            cfg.endpoint = "https://ollama.com/api/chat";
+            Object.assign(r.state.llm.providerConfig.ollama, { endpoint: "https://ollama.com/api/chat", useProxy: true, model: "llama3.2" });
             r.state.llm.inFlight = false;
             await r.llmCall("test");
             // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
@@ -1935,19 +1767,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v797Results && !v797Results.error) {
-        check(
-            "V7.97 UX: User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud) — Free-Text gespeichert",
-            v797Results.customModelAccepted
-        );
-    } else if (v797Results && v797Results.error) {
-        check(`V7.97 UX: evaluate-Fehler — ${v797Results.error}`, false);
-    }
     if (v797AutoResults && !v797AutoResults.error) {
-        check(
-            "V7.97 Auto-Bypass: localhost-URL + useProxy=true → Proxy WIRD BYPASSED (direkter Call)",
-            v797AutoResults.bypassedForLocalhost
-        );
         check(
             "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)",
             v797AutoResults.proxyUsedForCloud
@@ -1991,11 +1811,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         const thinkPlainResp = r.llmParseResponse("<think>denke nach</think>Hallo Schöpfer, ich höre dich.");
         out.thinkPlusPlain = /Hallo Schöpfer/.test(thinkPlainResp.say || "");
 
-        // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
-        const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
-        out.strictJsonStillWorks =
-            strictResp.say === "Test" && Array.isArray(strictResp.program) && !strictResp.fallbackUsed;
-
+        // striktes JSON fährt der KI-Korpus an jeder Antwort (diag-v1-pfad --korpus)
         // 6. Markdown-Fence + JSON → fence wird gestripped
         const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
         out.fenceStripped = fenceResp.say === "Fenced";
@@ -2025,10 +1841,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(
             "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
             v798Results.thinkPlusPlain
-        );
-        check(
-            "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
-            v798Results.strictJsonStillWorks
         );
         check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
         check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);

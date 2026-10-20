@@ -1262,9 +1262,7 @@ async function checkBandV1740LlmRules(ctx) {
         }
         out.llmFires = r.state.weather === "sunny";
 
-        // --- (4) der LLM-Prompt KENNT die Regel-Grammatik (rule-Op + Feld-Bedingung) ---
-        const prompt = r.llmBuildSystemPrompt();
-        out.promptGrammar = /\["rule"/.test(prompt) && /field_below/.test(prompt) && /STEHENDES GESETZ/i.test(prompt);
+        // die Regel-Grammatik im Prompt der KI (rule-Op + Feld-Bedingungen) wacht gate:weltakt-wache (K)
 
         // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
         r.state.worldRules.length = 0;
@@ -1291,7 +1289,6 @@ async function checkBandV1740LlmRules(ctx) {
         res.llmEphemeral
     );
     check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
-    check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
     check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
 }
 

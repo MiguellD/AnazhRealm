@@ -257,7 +257,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 - Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).
 - Die KI ist opt-in; der Co-Schöpfer spricht seit V18.493 die Studio-Rezepte (`spawn_studio`),
   der echte Lauf braucht keinen Schlüssel: der KI-Korpus fährt ein lokales Modell (ollama) über den echten Chat-Pfad
-  (`scripts/diag-v1-pfad.cjs --korpus --echt`).
+  (`scripts/diag-v1-pfad.cjs --korpus --echt`; 21.10.: Absicht 30/40, Negativ-Sätze ohne Tat 8/8, p95 10,0 s auf der CPU).
 - Wasser trägt noch zwei Naturen (statisches `L`-Substrat + CA) — die Vereinigung ist offen.
 
 ---
