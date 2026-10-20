@@ -1017,6 +1017,10 @@ class AnazhRealm_dirigent_takt {
     _dispatchFrameJobs(jobs, budget) {
         const ran = [];
         const sorted = jobs.slice().sort((a, b) => (a.prio || 0) - (b.prio || 0));
+        // DER LADE-TAKT (K60, B-Blick): unter dem Ladeschirm arbeitet jeder Job am Bild der Ankunft (der Ring baut nur, was sie sieht,
+        // `_tickVoxelChunkStreaming`), und keine Drossel des Spiels greift — auch nicht der 4er-Takt der Deko: bis B-Blick nahm der
+        // Strom die Frist, und die Streu im Blick lief in 4 Takten einmal mit 2,5 ms (GTX kalt 5,2 → 7,8 s, p3/n2010/blick/f5.txt).
+        const lade = this._ladeTakt();
         // EXISTENZ-BODEN: auf render-gebundener Maschine ist remainingMs dauerhaft ≤ 0 — ohne Boden wüchsen
         // pendingWaterIso/Scatter/Grass monoton (Heap-Leck, Wasser ohne Oberfläche). Welt-SUBSTANZ (prio 1)
         // bekommt JEDEN Frame einen Zeit-Boden, Deko (prio ≥ 2) jeden 4. Frame einen kleinen — die Queues
@@ -1029,7 +1033,8 @@ class AnazhRealm_dirigent_takt {
             let ms = budget.remainingMs();
             if (!sacred && ms <= 0) {
                 if (prio === 1) ms = AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS;
-                else if (this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
+                // im Lade-Takt greift keine Drossel (K60): die Deko trägt JEDEN Takt ihren Boden, nie nur jeden 4.
+                else if (lade || this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
                 else continue;
             }
             try {
@@ -1154,12 +1159,15 @@ class AnazhRealm_dirigent_takt {
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
+                    // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
                     const lade = this._ladeTakt();
                     const msDeko =
                         st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
-                    const _dl = Number.isFinite(msDeko)
-                        ? performance.now() + (lade ? msDeko : Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS))
-                        : undefined;
+                    const _dl = !Number.isFinite(msDeko)
+                        ? undefined
+                        : lade
+                          ? Math.max(this._ladeFrist(), performance.now() + AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
+                          : performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS);
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);

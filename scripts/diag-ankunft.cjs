@@ -57,20 +57,11 @@ function ladeschirmVerdict(m) {
     const ohne = (k) => `${(m.ohneFall || {})[k] || "die Probe stellte den Fall nicht her und nennt keinen Grund"} (Vorbedingung)`;
     // eine Lücke hält den Ladeschirm und die Stand-Zeile nennt sie
     for (const [k, name, wort] of [
-        ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/],
-        ["baumUngebaut", "mit einem Baum im Blick ohne Gestalt", /Bäume und Bauten/],
-        ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
-        ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/],
-        ["karteOffen", "mit der offenen Karte eines Baums im Blick", /ferne Bäume/],
-        ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
-        ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
-        ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
-        ["pflanzung", "mit einem gepflanzten Baum im Blick, der noch nicht steht", /gepflanzt/],
-        ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
-        ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
-        ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
-        ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
-        ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
+        ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/], ["baumUngebaut", "mit einem Baum im Blick ohne Gestalt", /Bäume und Bauten/], ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
+        ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/], ["karteOffen", "mit der offenen Karte eines Baums im Blick", /ferne Bäume/], ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
+        ["buchZu", "ohne das Buch der Studios", /Buch der Studios/], ["leibFehlt", "ohne den Leib des Spielers", /Leib/], ["pflanzung", "mit einem gepflanzten Baum im Blick, der noch nicht steht", /gepflanzt/],
+        ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/], ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/], ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
+        ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/], ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
     ]) {
         const z = f[k];
         if (!z) out.push(`${name}: ${ohne(k)}`);
@@ -80,7 +71,7 @@ function ladeschirmVerdict(m) {
     // DAS WELTBILD IST DER BLICK (B3d): ein Loch hinter dem Spieler hält das erste Bild nie, der Rang der Foundry-Schlange
     // stellt vor dem Bild den Blick vor die Nähe und danach die Nähe rundum, und gleich nach der Kontrolle zeigt der Rundblick
     // kein Loch
-    for (const [k, name] of [["baumHinten", "mit einem Baum hinter dem Spieler ohne Gestalt"], ["karteHinten", "mit der offenen Karte eines Baums hinter dem Spieler"], ["pflanzungHinten", "mit einem gepflanzten Baum hinter dem Spieler"]])
+    for (const [k, name] of [["bodenHinten", "mit einem Stück Boden hinter dem Spieler"], ["baumHinten", "mit einem Baum hinter dem Spieler ohne Gestalt"], ["karteHinten", "mit der offenen Karte eines Baums hinter dem Spieler"], ["pflanzungHinten", "mit einem gepflanzten Baum hinter dem Spieler"]])
         if (!f[k]) out.push(`${name}: ${ohne(k)}`);
         else if (!f[k].weg) out.push(`${name} hält der Ladeschirm („${f[k].stand}") — das erste Bild wartet auf das, was der Spieler nicht sieht (\`_weltbildLuecken\`)`);
     const rg = m.rang;
@@ -199,6 +190,9 @@ function ladeschirmVerdict(m) {
     const W = m.wald || {};
     if (!(W.ferne > 0) || W.steht !== false || !W.zusage) out.push(`die Zusage des Wald-Plans: kein Fall (ferner Kasten ${W.ferne} Zellen, der Plan am Ort steht ${W.steht}, Zusage ${W.zusage}) (Vorbedingung)`);
     else if (!(W.rest > 0)) out.push(`die Zusage des Wald-Plans kam ${W.kam ? "erst mit der leeren Schlange" : "nicht in 60 s"} — sie wartete auf ${W.ferne} Zellen außerhalb ihres Kastens (\`_waldPlanZusage\`)`);
+    // B-Blick: vor dem Bild wartet die Region nur auf Zusagen im Blick, danach auf jede; die Streu läuft jeden Lade-Takt
+    const [Bl, Tk] = [m.blick || { n: [] }, m.takt || {}];
+    out.push(...[!(Bl.n[0] && Bl.n[1]) && "das Bild der Ankunft: kein Fall (Vorbedingung)", Bl.n[0] && !Bl.vor1 && "das halbe Weltbild: die Streu-Region steht, während Zellen im Blick warten", Bl.vor1 && (!Bl.geweckt || Bl.vor2) && `das Weltbild wartete auf 1 Zusage außer Blick (Region ${Bl.key}, _streuWeckerSpannen)`, Bl.geweckt && !Bl.vor2 && !Bl.nach2 && "der Rundblick vergisst die Zusage außer Blick", !(Tk.lief >= 0) ? "der Lade-Takt: kein Fall (Vorbedingung)" : Tk.lief < 4 && `die Streu setzte im Lade-Takt ${4 - Tk.lief} von 4 Takten aus (_dispatchFrameJobs)`].filter(Boolean));
     // DIE KÖPFE DER ANKUNFT UND DER BILD-RANG (B5): kein Leser im Blick bestellt ortlos, der Leib in der Ego-Sicht nur seine
     // Grobstufe (die feine nach dem Bild, dann der Tausch), das Buch den Export des fälligen Start-Dorfs
     const K = m.koepfe;
@@ -511,6 +505,9 @@ async function probe(arg) {
             // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
             const merkChunk = st.lastPlayerVoxelChunk;
             fall("ohneBoden", () => (st.lastPlayerVoxelChunk = { cx: 9000, cz: 9000 }), () => (st.lastPlayerVoxelChunk = merkChunk));
+            // (1b) B-Blick: ein Stück Boden 2 Spannen hinter dem Spieler fehlt — es hält das erste Bild nie
+            const [spB, pk] = [r._voxelChunkConfig().span, merkChunk && `${merkChunk.cx},${merkChunk.cz + 2}`], eB = pk && st.voxelChunks.get(pk);
+            if (eB) fall("bodenHinten", () => (blicke((merkChunk.cx + 0.5) * spB, (merkChunk.cz + 2.5) * spB, true), st.voxelChunks.delete(pk)), () => (st.voxelChunks.set(pk, eB), blicke()));
             // (2) ein Baum der Mesh-Zone ohne Gestalt (sein Mesh, seine Instanz beiseite), ab 30 m: im Blick hält er das Bild,
             // hinter dem Spieler nie (B3d)
             const pm = st.playerMesh.position;
@@ -844,6 +841,29 @@ async function probe(arg) {
                 if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
                 // bis die Zusage kam, dann bis der ferne Kasten wieder steht (höchstens 60 s)
                 for (const dl = performance.now() + 60000; ((z && !w.kam) || Q.size) && performance.now() < dl; ) await tick(1, 30);
+            }
+            // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) die Streu läuft in jedem Lade-Takt
+            {
+                const [b, P, t, ok] = [(m.blick = { n: [0, 0] }), Object.getPrototypeOf(r), (m.takt = { lief: 0 }), []];
+                const [zV, zH] = [0, 1].map((i) => new Promise((f) => (ok[i] = f)));
+                const [RM, da] = [r.constructor.SCATTER.regionM, st._weltbildDa], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM)];
+                const neu = () => (r._disposeScatterRegion((b.key = `${rx},${rz}`)), r._scatterRegion(rx, rz, pm));
+                const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
+                r._scatterSichtHoehe = function (layer, ...a) {
+                    const v = r._imErstenBlick(a[4].x, a[4].z, 12);
+                    if (layer.kind === "rock" || (v && b.geweckt != null)) return P._scatterSichtHoehe.call(this, layer, ...a);
+                    return b.geweckt == null && b.n[+!v]++, r._streuWartetAuf(v ? zV : zH), null;
+                };
+                try {
+                    const g = ((st._weltbildDa = 0), neu());
+                    [b.vor1] = [r._streuRegionWartet(b.key), ok[0](), await sleep(0)];
+                    b.geweckt = !!g._geweckt; // zuerst: in der zweiten Scheibe stehen die Zellen im Blick
+                    b.vor2 = (neu(), r._streuRegionWartet(b.key));
+                    [b.nach2] = [((st._weltbildDa = 1), r._streuRegionWartet(b.key)), (st._weltbildDa = 0), (st.scatterRegions.get(b.key)._bildWartet = null)];
+                    for (let i = (stumm.forEach((k, j) => (r[k] = () => !j)), 0); i < 4; i++) t.lief += r._dispatchFrameJobs(r._buildDeferrableJobs(pm), { remainingMs: () => 0 }).includes("scatterDeco");
+                } finally {
+                    [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, (st._weltbildDa = da), ok[1](), neu()];
+                }
             }
             await sleep(800);
             if (!st._weltbildDa) r._weltbildSteht();
@@ -1666,24 +1686,12 @@ async function probe(arg) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         const l2aFaelle = {
-            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
-            baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
-            streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
-            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
-            karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
-            ...Object.fromEntries(["baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, { weg: true, stand: "", warn: 0, terme: [] }])),
-            weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] },
-            buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
-            leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
-            pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
-            saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
-            horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
-            dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] },
-            dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] },
-            dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
-            allesSteht: { weg: true, stand: "", warn: 0 },
-            lueckeRuht: { weg: true, stand: "", warn: 1 },
-            lueckeFlackert: { weg: true, stand: "", warn: 1 },
+            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] }, streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
+            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] }, karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] }, ...Object.fromEntries(["bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, { weg: true, stand: "", warn: 0, terme: [] }])),
+            weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] }, buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] }, leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
+            pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] }, saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] }, horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
+            dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] }, dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] }, dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
+            allesSteht: { weg: true, stand: "", warn: 0 }, lueckeRuht: { weg: true, stand: "", warn: 1 }, lueckeFlackert: { weg: true, stand: "", warn: 1 },
             lueckeArbeitet: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
         };
         const faelle = [
@@ -1691,20 +1699,10 @@ async function probe(arg) {
                 "L2a",
                 ladeschirmVerdict,
                 {
-                    gestartet: true,
-                    imHtml: true,
-                    htmlVersteckt: false,
-                    zIndex: 2147483000,
-                    nachBootWeg: true,
-                    tastenHinter: { w: false, enter: "BODY", omnibox: false },
-                    weichtGanz: { hidden: true, display: "none", animationen: 0 },
-                    faelle: l2aFaelle,
-                    terme: l2aTerme,
-                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
-                    rundblick: { N: 240, loecher: 0, erstes: null },
-                    ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
+                    gestartet: true, imHtml: true, htmlVersteckt: false, zIndex: 2147483000, nachBootWeg: true, tastenHinter: { w: false, enter: "BODY", omnibox: false }, weichtGanz: { hidden: true, display: "none", animationen: 0 }, faelle: l2aFaelle, terme: l2aTerme,
+                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } }, rundblick: { N: 240, loecher: 0, erstes: null }, ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
                     koepfe: { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } },
-                    wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
+                    wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 }, blick: { n: [4, 6], key: "0,0", vor1: 1, geweckt: true, vor2: null, nach2: 1 }, takt: { lief: 4 },
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
@@ -1726,6 +1724,7 @@ async function probe(arg) {
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
                     ["die Zusage wartet auf die ganze Schlange (B-Wald vorher, GTX kalt: 4 Wald-Stücke bis 14,8 s, zuletzt auf Zellen in 405–467 m)", { wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans kam erst mit der leeren Schlange"],
                     ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans: kein Fall"],
+                    ...[["B-Blick vorher: das Weltbild wartet außer Blick", { geweckt: false, vor2: 1 }, "das Weltbild wartete auf 1 Zusage außer Blick"], ["das halbe Weltbild", { vor1: null }, "das halbe Weltbild"], ["der vergessene Rundblick", { nach2: null }, "der Rundblick vergisst"], ["ohne Fall", { n: [] }, "das Bild der Ankunft: kein Fall"]].map(([n, b, s]) => [n, { blick: { n: [4, 6], key: "0,0", vor1: 1, geweckt: true, vor2: null, nach2: 1, ...b } }, s]), ["B-Blick vorher: die Streu setzt im Lade-Takt aus", { takt: { lief: 1 } }, "die Streu setzte im Lade-Takt 3 von 4"], ["ohne Lade-Takt", { takt: undefined }, "der Lade-Takt: kein Fall"],
                     [
                         "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
                         {
@@ -1958,6 +1957,7 @@ async function probe(arg) {
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
             (m.wald ? ` · Wald-Zusage ${m.wald.kam ? `kam, ${m.wald.rest} von ${m.wald.ferne} fernen Zellen offen` : "kam nicht"}` : "") +
+            (m.blick ? ` · Bild ${m.blick.n} ${m.blick.geweckt}/${m.blick.vor2}/${m.blick.nach2} · Takt ${m.takt.lief}/4` : "") +
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );

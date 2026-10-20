@@ -2581,6 +2581,8 @@ class AnazhRealm_gelaende_chunks {
         const tStart = performance.now();
         const weiter = () =>
             this._kappeOffen(built, MAX_PER_FRAME) && this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS);
+        const [lade, halb] = [this._ladeTakt(), span * Math.SQRT1_2];
+        let verschoben = 0; // Stücke außer Blick: sie halten den Ring wach, bis die Kontrolle sie freigibt
         outer: for (let r = 0; r <= ringRadius; r++) {
             for (let dz = -r; dz <= r; dz++) {
                 for (let dx = -r; dx <= r; dx++) {
@@ -2588,6 +2590,13 @@ class AnazhRealm_gelaende_chunks {
                     const cx = pcx + dx;
                     const cz = pcz + dz;
                     const key = `${cx},${cz}`;
+                    // DAS BILD DER ANKUNFT (B-Blick): unter dem Ladeschirm baut der Ring, was die Ankunft sieht (`_rangImBild`, das
+                    // Stück mit seiner halben Diagonale wie der Boden-Term) — den Boden dahinter samt seinem Laub (`_tickFoliageGrowth`
+                    // sät nur gebaute Chunks) nach der Kontrolle
+                    if (r && lade && !this._rangImBild({ x: (cx + 0.5) * span, z: (cz + 0.5) * span }, halb)) {
+                        verschoben++;
+                        continue;
+                    }
                     // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
                     // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
                     const existing = this.state.voxelChunks.get(key);
@@ -2615,7 +2624,7 @@ class AnazhRealm_gelaende_chunks {
         }
         this._pruneDistantVoxelChunks(playerPos);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0);
+        this._standMeldet("strom", 1, false, built > 0 || verschoben > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
