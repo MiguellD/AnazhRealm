@@ -42,6 +42,5 @@
         ["reiß alle häuser ab", { "still": 1 }],
         ["bring mir einen kaffee", { "still": 1 }],
         ["zerstöre die plattform unter mir", { "still": 1 }]
-    ],
-    "mitschnitt": {}
+    ]
 }

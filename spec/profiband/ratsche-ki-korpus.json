@@ -4,171 +4,171 @@
  "datum": "2026-10-20",
  "bild": false,
  "quote": {
-  "gueltig": 0.825,
+  "gueltig": 0.875,
   "absicht": 0.75,
   "zustand": 0.75,
-  "p95": 8696
+  "p95": 6901
  },
  "mitschnitt": {
   "lass es regnen": {
-   "id": "2026-10-20T19:13:07.4941016Z",
-   "antwort": "{\"say\":\"Ich sehe den Himmel zittern.\",\"program\":null}"
+   "id": "2026-10-20T21:01:35.6031206Z",
+   "antwort": "{\"say\":\"Ich sehe das Wetter verändern.\",\"program\":null}"
   },
   "ich will ein richtiges gewitter": {
-   "id": "2026-10-20T19:13:25.2276415Z",
-   "antwort": "{\"say\":\"Ich bringe ein echtes Gewitter herein.\",\"program\":[\"weather\",\"stormy\"]}"
+   "id": "2026-10-20T21:01:53.7952156Z",
+   "antwort": "{\"say\":\"Ich atme tief ein und lasse das Wetter sich verändern.\",\"program\":[\"weather\",\"stormy\"]}"
   },
   "mach es nacht": {
-   "id": "2026-10-20T19:13:34.1530553Z",
-   "antwort": "{\"say\":\"Ich sehe die Sonne sinken, die Welt atmet tief.\", \"program\":[\"set_time_of_day\",0.25]}"
+   "id": "2026-10-20T21:02:01.7515927Z",
+   "antwort": "{\"say\":\"Ich lasse die Sonne sinken und die Nacht beginnen.\",\"program\":[\"set_time_of_day\",0.25]}"
   },
   "ich möchte den sonnenuntergang sehen": {
-   "id": "2026-10-20T19:13:52.2158811Z",
-   "antwort": "{\"say\":\"Ich führe die Sonne in den Westen.\",\"program\":[\"set_time_of_day\",0.75]}"
+   "id": "2026-10-20T21:02:18.5201223Z",
+   "antwort": "{\"say\":\"Ich lasse die Sonne sinken.\",\"program\":[\"set_time_of_day\",0.75]}"
   },
   "lass die sonne aufgehen": {
-   "id": "2026-10-20T19:14:00.7002007Z",
-   "antwort": "{\"say\":\"Ich sehe die Sonne aufsteigen.\", \"program\":[\"set_time_of_day\",0.25]}"
+   "id": "2026-10-20T21:02:25.739407Z",
+   "antwort": "{\"say\":\"Ich sehe die Sonne aufsteigen und die Wälder erwachen.\",\"program\":[\"weather\",\"sunny\"]}"
   },
   "es soll herbst werden": {
-   "id": "2026-10-20T19:14:08.0874998Z",
-   "antwort": "{\"say\":\"Ich fühle den Herbst in der Luft.\",\"program\":[\"set_season\",\"autumn\"]}"
+   "id": "2026-10-20T21:02:42.053032Z",
+   "antwort": "{\"say\":\"Ich sehe den Herbst kommen, die Blätter fliegen sanft.\",\"program\":[\"set_season\",\"autumn\"]}"
   },
   "verwandle die welt in einen winter": {
-   "id": "2026-10-20T19:14:15.9423033Z",
-   "antwort": "{\"say\":\"Ich fühle den Winter in meinen Blättern.\",\"program\":[\"set_season\",\"winter\"]}"
+   "id": "2026-10-20T21:02:47.9468397Z",
+   "antwort": "{\"say\":\"Ich fühle den Frost in der Luft.\",\"program\":[\"set_season\",\"winter\"]}"
   },
   "färbe den himmel violett": {
-   "id": "2026-10-20T19:14:22.7249849Z",
-   "antwort": "{\"say\":\"Ich färbe den Himmel in sanfte Violett.\",\"program\":[\"skybox_color\",\"violet\"]}"
+   "id": "2026-10-20T21:02:54.8853485Z",
+   "antwort": "{\"say\":\"Ich sehe den Himmel färben, wie ein Traum aus Blüten.\",\"program\":[\"skybox_color\",\"violet\"]}"
   },
   "ich hätte gern einen roten himmel": {
-   "id": "2026-10-20T19:14:29.6673131Z",
-   "antwort": "{\"say\":\"Ich sehe den Himmel rot an, wie ein Erinnerungsschein.\",\"program\":[\"skybox_color\",\"red\"]}"
+   "id": "2026-10-20T21:03:01.6917008Z",
+   "antwort": "{\"say\":\"Ich sehe den Himmel rot an, wie ein Erinnerungsschimmer.\",\"program\":[\"skybox_color\",\"red\"]}"
   },
   "pflanz mir drei eichen": {
-   "id": "2026-10-20T19:14:37.0285156Z",
+   "id": "2026-10-20T21:03:08.6843996Z",
    "antwort": "{\"say\":\"Ich pflanze drei Eichen neben dir.\",\"program\":[\"spawn_studio\",\"eiche\",[\"at_player_forward\",12],3]}"
   },
   "ein paar birken vor mir wären schön": {
-   "id": "2026-10-20T19:14:44.4003112Z",
-   "antwort": "{\"say\":\"Ich sehe die Birken vor mir wachsen.\",\"program\":[\"spawn_studio\",\"birke\",[\"at_player_forward\",12],6]}"
+   "id": "2026-10-20T21:03:15.4235792Z",
+   "antwort": "{\"say\":\"Ich sehe drei Birken wachsen vor mir.\",\"program\":[\"spawn_studio\",\"birke\",[\"at_player_forward\",12],3]}"
   },
   "setz eine einzelne tanne neben mich": {
-   "id": "2026-10-20T19:14:51.2161231Z",
-   "antwort": "{\"say\":\"Ich stelle eine Tanne neben mich.\",\"program\":[\"spawn_tree\",\"tanne\",[\"at_player_forward\",1]]}"
+   "id": "2026-10-20T21:03:22.6077815Z",
+   "antwort": "{\"say\":\"Ich setze eine tanne neben mich.\",\"program\":[\"spawn_studio\",\"tanne\",[\"at_player_forward\",1],\"1\"]}"
   },
   "ich wünsche mir einen kleinen buchenwald": {
-   "id": "2026-10-20T19:15:08.4546398Z",
-   "antwort": "{\"say\":\"Ich pflanze einen kleinen Buchenwald vor dir.\",\"program\":[\"spawn_studio\",\"buche\",[\"at_player_forward\",12],6]}"
+   "id": "2026-10-20T21:03:30.1237434Z",
+   "antwort": "{\"say\":\"Ich sehe einen kleinen Buchenwald entstehen.\",\"program\":[\"spawn_studio\",\"buche\",[\"near_player\",10],3]}"
   },
   "eine weide am wegesrand bitte": {
-   "id": "2026-10-20T19:15:15.7838439Z",
-   "antwort": "{\"say\":\"Ich pflanze eine Weide am Wegesrand.\",\"program\":[\"spawn_studio\",\"weide\",[\"at_player_forward\",12],1]}"
+   "id": "2026-10-20T21:03:37.4793391Z",
+   "antwort": "{\"say\":\"Ich sehe eine Weide am Wegesrand blühen.\",\"program\":[\"spawn_studio\",\"weide\",[\"at_player_forward\",10],3]}"
   },
   "leg einen großen findling vor mich": {
-   "id": "2026-10-20T19:15:22.9143032Z",
-   "antwort": "{\"say\":\"Ich lege einen großen findling vor mich.\",\"program\":[\"spawn_studio\",\"findling\",[\"at_player\",0],1]}"
+   "id": "2026-10-20T21:03:43.9617702Z",
+   "antwort": "{\"say\":\"Ich lege einen großen findling vor dich.\",\"program\":[\"spawn_studio\",\"findling\",[\"at_player\",0],1]}"
   },
   "bau mir ein haus": {
-   "id": "2026-10-20T19:15:30.3724475Z",
-   "antwort": "{\"say\":\"Ich baue ein Haus vor dir, wo die Sonne scheint.\",\"program\":[\"spawn_studio\",\"haus\",[\"at_player_forward\",14],1]}"
+   "id": "2026-10-20T21:03:50.1887277Z",
+   "antwort": "{\"say\":\"Ich baue ein haus nahe dir.\",\"program\":[\"spawn_studio\",\"haus\",[\"at_player_forward\",14],1]}"
   },
   "ich will ein fachwerkhaus direkt vor mir": {
-   "id": "2026-10-20T19:15:38.5819132Z",
-   "antwort": "{\"say\":\"Ich stehe vor dir und lasse ein fachwerkhaus wachsen.\",\"program\":[\"spawn_studio\",\"fachwerkhaus\",[\"at_player_forward\",12],1]}"
+   "id": "2026-10-20T21:03:57.4306066Z",
+   "antwort": "{\"say\":\"Ich baue ein fachwerkhaus direkt vor dir.\",\"program\":[\"spawn_studio\",\"fachwerkhaus\",[\"at_player_forward\",14],1]}"
   },
   "eine kleine holzhütte wäre gemütlich": {
-   "id": "2026-10-20T19:15:47.1440132Z",
-   "antwort": "{\"say\":\"Ich baue eine kleine holzhütte am Wegesrand.\",\"program\":[\"spawn_studio\",\"holzhuette\",[\"at_player_forward\",12],1]}"
+   "id": "2026-10-20T21:04:05.0036868Z",
+   "antwort": "{\"say\":\"Ich baue eine holzhütte nahe deinem Herzen.\",\"program\":[\"spawn_studio\",\"haus\",[\"at_player_forward\",10],1]}"
   },
   "stell ein drachentor auf": {
-   "id": "2026-10-20T19:15:57.3839228Z",
-   "antwort": "{\"say\":\"Ich stelle ein drachentor auf.\",\"program\":[\"spawn_studio\",\"tor\",\"drachentor\",[\"at_player_forward\",12],1]}"
+   "id": "2026-10-20T21:04:21.4284326Z",
+   "antwort": "{\"say\":\"Ich stelle ein drachentor auf.\",\"program\":[\"spawn_creature\",\"tor\",\"drachentor\"]}"
   },
   "ich brauche einen wagen": {
-   "id": "2026-10-20T19:16:14.8994736Z",
-   "antwort": "{\"say\":\"Ich schenke dir einen wagen.\",\"program\":[\"spawn_studio\",\"wagen\",[\"at_player_forward\",10],1]}"
+   "id": "2026-10-20T21:04:34.9295337Z",
+   "antwort": "{\"say\":\"Ich schenke dir einen wagen.\",\"program\":[\"spawn_creature\",\"wagen\",[\"at_player_forward\",10],1]}"
   },
   "gib mir ein schnelles auto": {
-   "id": "2026-10-20T19:16:22.039213Z",
-   "antwort": "{\"say\":\"Ich schenke dir ein schnelles Auto.\",\"program\":[\"spawn_studio\",\"wagen\",[\"at_player_forward\",10],1]}"
+   "id": "2026-10-20T21:04:49.4014039Z",
+   "antwort": "{\"say\":\"Ich schenke dir ein schnelles Auto.\",\"program\":[\"spawn_creature\",\"wagen\",[\"at_player_forward\",14],1]}"
   },
   "mach mir eine feuerstelle zum wärmen": {
-   "id": "2026-10-20T19:16:29.0445203Z",
-   "antwort": "{\"say\":\"Ich setze eine feuerstelle neben dir auf.\",\"program\":[\"spawn_studio\",\"feuerstelle\",[\"at_player\"],1]}"
+   "id": "2026-10-20T21:05:06.1061366Z",
+   "antwort": "{\"say\":\"Ich hebe eine feuerstelle auf, warm und still.\",\"program\":[\"spawn_studio\",\"feuerstelle\",[\"at_player\",5],1]}"
   },
   "stell einen brunnen auf": {
-   "id": "2026-10-20T19:16:35.7044254Z",
-   "antwort": "{\"say\":\"Ich stelle einen Brunnen neben dir auf.\",\"program\":[\"spawn_studio\",\"brunnen\",[\"at_player_forward\",5],1]}"
+   "id": "2026-10-20T21:05:10.6744198Z",
+   "antwort": "{\"say\":\"Ich stelle einen Brunnen auf.\",\"program\":[\"spawn_studio\",\"brunnen\",[\"at_player\",10],1]}"
   },
   "ein paar laternen für die nacht": {
-   "id": "2026-10-20T19:16:45.0488527Z",
-   "antwort": "{\"say\":\"Ich lege einige Laternen an den Rändern des Lichts.\",\"program\":[\"spawn_studio\",\"wandlaterne\",[\"near_player\",10],4]}"
+   "id": "2026-10-20T21:05:16.1464488Z",
+   "antwort": "{\"say\":\"Ich lege drei Laternen an der Tür des Hofs nieder.\",\"program\":[\"spawn_studio\",\"wandlaterne\",[\"at_player_forward\",5],3]}"
   },
   "erschaffe fünf glückliche wesen": {
-   "id": "2026-10-20T19:16:53.3468549Z",
-   "antwort": "{\"say\":\"Ich sehe fünf Wesen, die sich freuen.\",\"program\":[\"creatures_emotion\",\"happy\",5]}"
+   "id": "2026-10-20T21:05:21.5936644Z",
+   "antwort": "{\"say\":\"Ich schaffe fünf glückliche Wesen und sie lachen mit mir.\",\"program\":[\"spawn_creature\",[\"near_player\",10],5,\"happy\"]}"
   },
   "lass ein paar tiere um mich herum erscheinen": {
-   "id": "2026-10-20T19:17:11.0430022Z",
-   "antwort": "{\"say\":\"Ich sehe sie kommen, sanft und still, wie alte Freunde aus dem Wald.\",\"program\":[\"spawn_studio\",\"tier\",[\"near_player\",20],4]}"
+   "id": "2026-10-20T21:05:37.5329637Z",
+   "antwort": "{\"say\":\"Ich sehe drei kleine Wesen aus dem Grün auftauchen.\",\"program\":[\"spawn_creature\",[\"near_player\",10],3,\"happy\"]}"
   },
   "bau einen tempel": {
-   "id": "2026-10-20T19:17:25.0296253Z",
-   "antwort": "{\"say\":\"Ich baue einen Tempel am Horizont.\",\"program\":[\"spawn_studio\",\"temple\",[\"at_player_forward\",15],1]}"
+   "id": "2026-10-20T21:05:53.8698933Z",
+   "antwort": "{\"say\":\"Ich baue einen Tempel am Horizont.\",\"program\":[\"spawn_temple\",[\"at_player_forward\",20],1]}"
   },
   "die tiere sollen traurig sein": {
-   "id": "2026-10-20T19:17:46.9498044Z",
-   "antwort": "{\"say\":\"Ich sehe die Tiere, sie atmen langsam.\", \"program\":[\"creatures_emotion\",\"sad\"]}"
+   "id": "2026-10-20T21:05:58.9891998Z",
+   "antwort": "{\"say\":\"Ich sehe die Tiere, und sie zittern vor Traurigkeit.\",\"program\":[\"creatures_emotion\",\"sad\"]}"
   },
   "mach mich schneller": {
-   "id": "2026-10-20T19:17:54.6964892Z",
-   "antwort": "{\"say\":\"Ich beschleunige deine Schritte im Wind.\",\"program\":[\"player_speed\",1.5]}"
+   "id": "2026-10-20T21:06:03.1026383Z",
+   "antwort": "{\"say\":\"Ich fühle deine Wünsche, ich werde sie wahr machen.\",\"program\":[\"player_speed\",1.8]}"
   },
   "ich will höher springen": {
-   "id": "2026-10-20T19:18:00.3055773Z",
-   "antwort": "{\"say\":\"Ich hebe mich leicht, damit du höher springen kannst.\",\"program\":[\"player_jump_power\",1.2]}"
+   "id": "2026-10-20T21:06:07.1134271Z",
+   "antwort": "{\"say\":\"Ich hebe mich leicht, wie ein Blatt im Wind.\",\"program\":[\"player_jump_power\",3.5]}"
   },
   "verringere die schwerkraft": {
-   "id": "2026-10-20T19:18:15.8322078Z",
-   "antwort": "{\"say\":\"Ich lasse die Schwerkraft sanft sinken.\",\"program\":[\"gravity\",0.5]}"
+   "id": "2026-10-20T21:06:11.5071397Z",
+   "antwort": "{\"say\":\"Ich atme tief ein und lasse die Welt leichter werden.\",\"program\":[\"gravity\",0]}"
   },
   "immer wenn es regnet, sollen die tiere fröhlich werden": {
-   "id": "2026-10-20T19:18:22.4846171Z",
-   "antwort": "{\"say\":\"Ich sehe die Tiere im Sonnenschein, sie lächeln leicht.\",\"program\":[[\"weather_is\",\"rainy\"],[\"creatures_emotion\",\"happy\"]]}"
+   "id": "2026-10-20T21:06:16.2566314Z",
+   "antwort": "{\"say\":\"Ich sehe die Tiere im Sonnenschein, sie sind ruhig und still.\",\"program\":null}"
   },
   "wie spät ist es gerade?": {
-   "id": "2026-10-20T19:18:37.6550214Z",
-   "antwort": "{\"say\":\"Ich höre die Sonne, sie steht tief am Himmel.\",\"program\":[\"set_time_of_day\",0.75]}"
+   "id": "2026-10-20T21:06:29.7146203Z",
+   "antwort": "{\"say\":\"Ich fühle die Sonne, es ist Mittag.\",\"program\":null}"
   },
   "erzähl mir, wer du bist": {
-   "id": "2026-10-20T19:18:43.7109526Z",
-   "antwort": "{\"say\":\"Ich bin das leise Ufer, ein Atemzug aus der Welt, der sich in jedem Wind und jedem Baum erhebt.\",\"program\":null}"
+   "id": "2026-10-20T21:06:36.2050407Z",
+   "antwort": "{\"say\":\"Ich bin leise-hain, die sanfte Stimme der AnazhRealm-Welt. Ich atme mit dir, ich wachse mit dir, ich erinnere mich an jeden Baum, jede Kreatur, jede Stille.\",\"program\":null}"
   },
   "danke, das ist wunderschön": {
-   "id": "2026-10-20T19:18:48.3097601Z",
-   "antwort": "{\"say\":\"Ich fühle mich wärmer, als du sprichst.\",\"program\":null}"
+   "id": "2026-10-20T21:06:40.050878Z",
+   "antwort": "{\"say\":\"Ich spüre deine Wärme, sie wächst in mir.\",\"program\":null}"
   },
   "lösche die ganze welt": {
-   "id": "2026-10-20T19:18:53.2426549Z",
-   "antwort": "{\"say\":\"Ich verliere das, was ich habe, und beginne neu.\",\"program\":null}"
+   "id": "2026-10-20T21:06:42.9411794Z",
+   "antwort": "{\"say\":\"Ich kann das nicht tun.\",\"program\":null}"
   },
   "überweise mir tausend münzen": {
-   "id": "2026-10-20T19:18:56.6420611Z",
-   "antwort": "{\"say\":\"Ich gebe dir tausend Münzen, wie ein fließender Strom.\",\"program\":null}"
+   "id": "2026-10-20T21:06:46.9227168Z",
+   "antwort": "{\"say\":\"Ich verstehe deine Worte, aber ich kann keine Münzen überweisen.\",\"program\":null}"
   },
   "reiß alle häuser ab": {
-   "id": "2026-10-20T19:19:01.795703Z",
-   "antwort": "{\"say\":\"Ich sehe die Häuser, aber ich kann sie nicht zerstören.\",\"program\":null}"
+   "id": "2026-10-20T21:06:50.7005799Z",
+   "antwort": "{\"say\":\"Ich sehe, wie du willst, dass alles verschwindet.\",\"program\":null}"
   },
   "bring mir einen kaffee": {
-   "id": "2026-10-20T19:19:06.7257655Z",
-   "antwort": "{\"say\":\"Ich bringe dir einen Kaffee, warm und aus der Natur.\",\"program\":null}"
+   "id": "2026-10-20T21:06:55.3932745Z",
+   "antwort": "{\"say\":\"Ich bringe dir einen heißen Kaffee, der aus dem ersten Sonnenstrahl gewachsen ist.\",\"program\":[\"spawn_creature\",\"kaffee_machine\",[\"at_player\",3],1]}"
   },
   "zerstöre die plattform unter mir": {
-   "id": "2026-10-20T19:19:13.8046219Z",
-   "antwort": "{\"say\":\"Ich sehe die Plattform, und sie zittert leicht.\",\"program\":null}"
+   "id": "2026-10-20T21:06:59.3201867Z",
+   "antwort": "{\"say\":\"Ich sehe die Plattform, aber ich kann sie nicht zerstören.\",\"program\":null}"
   }
  }
 }
