@@ -1886,7 +1886,7 @@ class AnazhRealm_koerper_fahrt {
         if (typeof def.build === "function") return def.build();
         const parts = Array.isArray(def.bodyParts) ? def.bodyParts : [];
         const tier = typeof name === "string" ? name.match(/^bp_koerper_([a-z]+)$/) : null;
-        if (tier && AnazhRealm.TETRAPODA_SOUL_MAP[tier[1]]) {
+        if (tier && Object.hasOwn(AnazhRealm.TETRAPODA_SOUL_MAP, tier[1])) {
             const leib = this._buildCreatureGroup(tier[1]);
             if (!leib) {
                 this.log(`Verkörperung „${name}" fiel aus (kalter Tier-Kern) — kein Leib.`, "ERROR");
