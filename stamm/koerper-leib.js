@@ -2539,11 +2539,9 @@ class AnazhRealm_koerper_leib {
             if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
-                // dieselbe EINE Sonnen-Formel (timeOfDay 0.5 = Mittag): tiefe
-                // Nacht = Ruhe; am Tag weiden Pflanzenfresser (diet ≤ weideDiet,
-                // tetrapoda-Dials über die Soul-Karte — einmal je Wesen gemerkt).
-                const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-                const nacht = Math.sin(this._sonnenWinkel(tod)) < SW.nachtSin;
+                // die Sonnenhöhe der EINEN Tag-Achse (`_sonnenRichtung`, sin der Höhe): tiefe Nacht = Ruhe; am Tag weiden
+                // Pflanzenfresser (diet ≤ weideDiet, _kreaturDiet).
+                const nacht = this._sonnenRichtung().y < SW.nachtSin;
                 mood = nacht ? "nacht" : this._kreaturDiet(creature) <= SW.weideDiet ? "tag" : "idle";
             }
         }

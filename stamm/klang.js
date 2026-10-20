@@ -277,7 +277,6 @@ class AnazhRealm_klang {
         const px = pm.position.x;
         const pz = pm.position.z;
         const wf = this._weatherFieldFor(this.state.weather);
-        const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const aura = this.auraAt(px, pz);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
@@ -339,7 +338,7 @@ class AnazhRealm_klang {
             boe: this._windBoeAt(px, pz, this._bildZeit), // die Böe am Ort auf der Bild-Uhr (A9), wie der Wind im Bild
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
-            sonne: Math.sin(this._sonnenWinkel(tod)),
+            sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
             lebendig: Math.max(0, Math.min(1, aura.lebendig)),
             ufer,

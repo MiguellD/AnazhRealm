@@ -252,15 +252,10 @@ async function checkBandV1732SpatialEmotion(ctx) {
             if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
             for (const k of Object.keys(e)) e[k] = 0;
             r.state.emotionField.clear();
-            const mkStop = () => ({
-                sky: new THREE.Color(0.4, 0.5, 0.7),
-                light: new THREE.Color(1, 1, 1),
-                intensity: 1,
-            });
             const sat = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-            const fresh = r._dayNightComputeTint(mkStop());
+            const fresh = r._dayNightComputeTint();
             r._depositEmotion(pm.x, pm.z, { sorrow: 0.8 });
-            const imprinted = r._dayNightComputeTint(mkStop());
+            const imprinted = r._dayNightComputeTint();
             out.tintColors = sat(imprinted.skyColor) < sat(fresh.skyColor) - 1e-4;
             out.freshSat = sat(fresh.skyColor);
             out.imprintedSat = sat(imprinted.skyColor);
