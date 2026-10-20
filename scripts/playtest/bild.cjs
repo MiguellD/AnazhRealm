@@ -614,8 +614,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
-        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
-        // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
+        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
+        // 18-%-Karte am Anker (Mittelgrau + 1 EV unter der Zenit-Sonne, `_belichtungAnker`), nachts am Deckel.
         // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         r.setTimeOfDay(0.5, "human");
         const intensityNoon = r.state.hemiLight.intensity;
@@ -624,11 +624,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
-        // in der Eichung der Tonkurve (BELICHTUNG, F1): die Nacht steht am Deckel, der Mittag darunter
         const B = r.constructor.BELICHTUNG;
-        out.belichtungAusLicht =
-            belichtungMittag / B.max > 0.4 && belichtungMittag / B.max < 0.85 && Math.abs(belichtungNacht - B.max) < 1e-6;
-        out.belichtungZahlen = [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
+        const kAnker = B.zielKarte / ((0.18 / Math.PI) * r._belichtungAnker());
+        out.belichtungAusLicht = Math.abs(belichtungMittag / kAnker - 1) < 0.1 && Math.abs(belichtungNacht - B.max) < 1e-6;
+        out.belichtungZahlen = [belichtungMittag, kAnker, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -711,7 +710,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V18.507: EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
         check(
-            `V18.507: Belichtung aus dem Licht — Mittag < 1, Nacht 1,0 (${v827Results.belichtungZahlen})`,
+            `V18.507: Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
         );
         check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
