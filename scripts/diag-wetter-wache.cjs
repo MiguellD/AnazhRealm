@@ -39,6 +39,8 @@
 //       (`__bildUhren`: Himmel, Wasser, Wind, Böe, Regen, Tor, Fell) steht mit ihr, jede Shader-Zeit zeichnet zu T, sonst steht
 //       er beim Namen; die Leser jeder Welt (Himmel, Wind, Böe — auch im Null-Renderer) stehen in der Liste, und der Loop schrieb
 //       die Bild-Uhr (verweigert);
+//   (Z) SAAT (Wetter H1): der Auto-Zug zieht in 20 min Spiel-Zeit dieselbe Folge, welche Wanduhr gilt, an zwei Orten 3 km
+//       auseinander, eine andere Saat eine andere;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
@@ -77,8 +79,25 @@ if (process.argv.includes("--selftest")) {
         delete vor[ohne];
         return { T: 2, vor, nach: Object.assign({}, vor, { wind: b }), verweigert: n };
     };
-    if (uhrRot(U(2, 3)).length || uhrRot(U(2.5, 3)).length !== 1 || uhrRot(U(2, 0)).length !== 1 || !uhrRot(U(2, 3, "himmel")).length || uhrRot(U(2, 3, "T")).length !== 1)
-        v.push("uhr: die stehende Uhr ist nicht grün, der laufende Leser, der stumme Loop, der fehlende oder der Leser neben T nicht rot");
+    if (
+        uhrRot(U(2, 3)).length ||
+        uhrRot(U(2.5, 3)).length !== 1 ||
+        uhrRot(U(2, 0)).length !== 1 ||
+        !uhrRot(U(2, 3, "himmel")).length ||
+        uhrRot(U(2, 3, "T")).length !== 1
+    )
+        v.push(
+            "uhr: die stehende Uhr ist nicht grün, der laufende Leser, der stumme Loop, der fehlende oder der Leser neben T nicht rot"
+        );
+    const Z = (...f) => ({ zuege: 2, laeufe: f.map((x, i) => [`L${i}`, { folge: x, fade: x.split(" ").length }]) });
+    const [g, s] = ["rainy sunny", "stormy sunny"];
+    if (
+        saatRot(Z(g, g, g, g, s)).length ||
+        saatRot(Z(g, s, g, g, s)).length !== 1 ||
+        saatRot(Z(g, g, g, g, g)).length !== 1 ||
+        saatRot(Z(g, g, "rainy", "rainy", s)).length !== 2
+    )
+        v.push("saat: die Folge der Saat ist nicht grün, die Wanduhr, die blinde Saat oder der stumme Zug nicht rot");
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
@@ -87,7 +106,7 @@ if (process.argv.includes("--selftest")) {
     console.log(
         "✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr, blinder Spion; Nexus an der Uhr, Sprung, lahmer Gang, Zug gegen das " +
             "Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp, das Wesen gegen das Wort, das Wesen schreibt selbst, " +
-            "das Wesen fehlt fallen rot; Bühne, Verweigerung und Wunsch grün."
+            "das Wesen fehlt, die Saat an der Wanduhr, die blinde Saat, der stumme Zug fallen rot; Bühne, Verweigerung und Wunsch grün."
     );
     process.exit(0);
 }
@@ -191,13 +210,70 @@ function probe() {
     return aus;
 }
 
+// (Z) DIE SAAT (Wetter H1): der Auto-Zug über `zuege` Takte Spiel-Zeit (der Sprung der Zug-Uhr um `WETTER_ZUG_SEK`, nie die
+// Wanduhr), je Lauf aus der Sonne frei gegeben — Saat × Ort (3 km) × Wanduhr (steht, oder geht je Takt `uhr` ms wie im Spiel).
+// Die Folge liest das Buch des Spions: jedes Wort, das der Zug über den EINEN Schreiber zog, und ob er überblendet (der Übergang
+// von 45 s endet im Takt von 120 s).
+function saatProbe(o) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const wm = st.worldMeta || (st.worldMeta = {});
+    const [saat0, pn, x0] = [wm.seed, performance.now, st.playerMesh.position.x];
+    const lauf = ([saat, dx, uhr]) => {
+        wm.seed = saat;
+        (wm.bauSame || (wm.bauSame = {})).wetter = 0;
+        st.playerMesh.position.x = x0 + dx;
+        window.__wetterSetzen("sunny");
+        st.weatherEffectTime = 0;
+        r.dslRun(["weather", "frei"], { source: "human" });
+        const s0 = window.__wetterSpion().seq;
+        let fade = 0;
+        for (let i = 0; i < o.zuege; i++) {
+            performance.now = () => pn.call(performance) + uhr * (i + 1);
+            st.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+            r._loopWeatherAndGrowth(0);
+            fade += st.weatherTransition && st.weatherTransition.to === st.weather ? 1 : 0;
+            st.weatherTransition = null;
+        }
+        performance.now = pn;
+        const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
+        return { folge: buch.map((e) => e.zu).join(" "), fade };
+    };
+    const aus = o.laeufe.map((l) => [l.join(" · "), lauf(l)]);
+    [wm.seed, st.playerMesh.position.x] = [saat0, x0];
+    window.__buehne();
+    return { zuege: o.zuege, laeufe: aus };
+}
+
+// (Z) das Urteil der Saat (rein): je Lauf zieht der Zug jedes Wort über `_setWeather` und überblendet; gleiche Saat am selben Ort
+// → dieselbe Folge, welche Wanduhr auch gilt; eine andere Saat → eine andere Folge. Die Läufe: A, A+Uhr, B, B+Uhr, A mit Saat 2.
+function saatRot(Z) {
+    const [a, au, b, bu, c] = Z.laeufe;
+    const rot = Z.laeufe
+        .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== Z.zuege)
+        .map(
+            ([n, f]) =>
+                `(Z) SAAT ${n}: ${f.fade} von ${Z.zuege} Zügen über _setWeather überblendet (${f.folge || "keiner"})`
+        );
+    for (const [x, y] of [
+        [a, au],
+        [b, bu],
+    ])
+        if (x[1].folge !== y[1].folge)
+            rot.push(`(Z) SAAT: die Folge hängt an der Wanduhr — ${x[0]}: ${x[1].folge} ≠ ${y[0]}: ${y[1].folge}`);
+    if (c[1].folge === a[1].folge)
+        rot.push(`(Z) SAAT: die Folge ist blind für die Saat — ${c[0]} = ${a[0]}: ${a[1].folge}`);
+    return rot;
+}
+
 // (U) das Urteil der Uhr-Wache (rein): jeder Leser steht mit der gehaltenen Bild-Uhr, jede Shader-Zeit (Himmel, Wasser, Wind,
 // Fell, Tor) zeichnet zu T; die Leser jeder Welt (der Null-Renderer der CI trägt kein Wasser und keine Knoten-Uhr) stehen in der
 // Liste, und der Loop schrieb die Bild-Uhr (verweigert).
 function uhrRot(U) {
     const rot = [];
     for (const [n, a] of Object.entries(U.vor))
-        if (!Object.is(U.nach[n], a)) rot.push(`(U) UHR ${n} läuft unter der Bühne: ${a} → ${U.nach[n]} (liest nicht die Bild-Uhr)`);
+        if (!Object.is(U.nach[n], a))
+            rot.push(`(U) UHR ${n} läuft unter der Bühne: ${a} → ${U.nach[n]} (liest nicht die Bild-Uhr)`);
         else if (/^(himmel|wasser|wind|fell)$|^tor /.test(n) && !Object.is(a, U.T))
             rot.push(`(U) UHR ${n} zeichnet nicht zur Bild-Uhr: ${a} statt ${U.T}`);
     for (const n of ["himmel", "wind", "böe"])
@@ -367,7 +443,7 @@ function taeterGezaehlt(liste) {
     return [...g.values()];
 }
 
-function urteil(S, H, pageErrors) {
+function urteil(S, H, Z, pageErrors) {
     const rot = [];
     const SOLL_QUELLE = {
         emotion: "emotion:sorrow",
@@ -435,7 +511,7 @@ function urteil(S, H, pageErrors) {
         rot.push(
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
-    rot.push(...uhrRot(S.uhren));
+    rot.push(...uhrRot(S.uhren), ...saatRot(Z));
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
@@ -467,6 +543,17 @@ async function boot(browser, pageErrors) {
     const pageErrors = [];
     const page = await boot(browser, pageErrors);
     const S = await page.evaluate(probe);
+    // (Z) 20 min Spiel-Zeit: Saat × Ort (3 km) × Wanduhr (steht oder geht 120 s je Takt)
+    const Z = await page.evaluate(saatProbe, {
+        zuege: 10,
+        laeufe: [
+            ["saat-a", 0, 0],
+            ["saat-a", 0, 12e4],
+            ["saat-a", 3000, 0],
+            ["saat-a", 3000, 12e4],
+            ["saat-b", 0, 0],
+        ],
+    });
     await page.close();
     // (G)(B)(R)(T) in einer FRISCHEN Welt: die Probe oben hat Gesetze, Bühne und Wort hinterlassen
     const page2 = await boot(browser, pageErrors);
@@ -520,7 +607,8 @@ async function boot(browser, pageErrors) {
     console.log(`  Regler: ${H.regler.text} (${H.regler.wert}) bei Welt ${H.regler.label}`);
     const uz = Object.entries(S.uhren.nach).map(([n, x]) => `${n} ${+(+x).toFixed(4)}`);
     console.log(`  Bild-Uhr ${S.uhren.T}: ${uz.join(" · ")}; verweigert ${S.uhren.verweigert}`);
-    const rot = urteil(S, H, pageErrors);
+    for (const [n, f] of Z.laeufe) console.log(`  Saat ${n.padEnd(22)} ${f.folge} (${f.fade} überblendet)`);
+    const rot = urteil(S, H, Z, pageErrors);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);
         for (const e of rot.slice(0, 60)) console.error("  • " + e);
