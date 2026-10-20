@@ -47,14 +47,13 @@ if (self.status !== 0) {
         await bereit;
         const t1 = Date.now();
         const u = rufe(["umstellen", "--ort", "wiese"]);
-        if (u.status !== 0 || /"fehler"/.test(u.stdout || "")) throw new Error("umstellen --ort wiese: " + (u.stdout || u.stderr));
+        if (u.status !== 0) throw new Error("umstellen --ort wiese: " + (u.stdout || u.stderr));
         const t2 = Date.now();
         const a = rufe(["albedo", "--nah-fern"]);
         process.stdout.write(a.stdout || "");
         process.stderr.write(a.stderr || "");
-        // eine Linse, die mit `fehler` antwortet, hat nicht geurteilt — ROT (bis 14.10. endete die Werkbank dann mit Exit 0, und
-        // das Tor stand grün, während die Linse an `_fernRingTeile` brach)
-        code = a.status === 0 && !/"fehler"/.test(a.stdout || "") ? 0 : 1;
+        // eine Linse, die mit `fehler` antwortet, hat nicht geurteilt — die Werkbank endet dann mit Exit 1
+        code = a.status === 0 ? 0 : 1;
         if (a.status === null) console.log(`❌ diag-nah-fern: die Linse antwortete nicht in ${240} s (${a.signal || "Frist"})`);
         console.log(`diag-nah-fern: Start ${((t1 - t0) / 1000).toFixed(0)} s · Umstellen ${((t2 - t1) / 1000).toFixed(0)} s · Linse ${((Date.now() - t2) / 1000).toFixed(0)} s`);
     } catch (e) {
