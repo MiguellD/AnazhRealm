@@ -844,32 +844,20 @@ class AnazhRealm_kampf {
         return v;
     }
 
-    // Bogen-Auszug (render-seitig): beim Spannen verengt sich die FOV fovRuhe→fovZug über auszugSec,
-    // relativ zur echten Ruhe-FOV (d.fovRest); Abbruch stellt sie wieder her. Kern kalt → No-op.
+    // Bogen-Auszug (render-seitig): beim Spannen wächst der Anteil d.frac über auszugSec — das FOV verengt sich um
+    // (fovZug − fovRuhe) × d.frac im EINEN Schreiber `_kamFov`; der Abbruch löst den Auszug. Kern kalt → No-op.
     _tickBogenZug(nowSec) {
         const p = this.state.player;
         const d = p && p._bogenDraw;
         if (!d) return;
-        const cam = this.state.camera;
         if (!this.state.isPointerLocked || !this._heldBogenRecipe()) {
             p._bogenDraw = null;
-            if (cam && Number.isFinite(d.fovRest)) {
-                cam.fov = d.fovRest;
-                cam.updateProjectionMatrix();
-            }
             this._bogenHudZeige(null);
             return;
         }
-        if (!cam) return;
         const A = AnazhRealm._arenaGesetz().bogen;
-        const frac = Math.max(0, Math.min(1, (nowSec - d.start) / Math.max(0.001, A.auszugSec)));
-        const ruhe = Number.isFinite(d.fovRest) ? d.fovRest : A.fovRuhe;
-        const ziel = ruhe + (A.fovZug - A.fovRuhe) * frac;
-        if (Math.abs(cam.fov - ziel) > 0.01) {
-            cam.fov = ziel;
-            cam.updateProjectionMatrix();
-        }
-        this._bogenHudZeige(frac);
+        d.frac = Math.max(0, Math.min(1, (nowSec - d.start) / Math.max(0.001, A.auszugSec)));
+        this._bogenHudZeige(d.frac);
     }
     // Die vierte Stats-HUD-Row zeigt den Auszug-Anteil frame-genau, nur während des Spannens.
     // frac null = verstecken. DOM lazy-gecacht; ohne DOM No-op.
@@ -894,7 +882,7 @@ class AnazhRealm_kampf {
         if (h.fill) h.fill.setAttribute("width", String(Math.round(166 * frac)));
         if (h.text) h.text.textContent = Math.round(frac * 100) + " %";
     }
-    // Das Lösen: stellt die FOV wieder her und schießt mit dem Auszug-Anteil
+    // Das Lösen: schießt mit dem Auszug-Anteil (das FOV kehrt im EINEN Schreiber `_kamFov` zur Ruhe)
     // (minAuszugFrac deckelt nach unten — ein Zucken ist kein Schuss ins Nichts).
     _bogenRelease() {
         const p = this.state.player;
@@ -903,11 +891,6 @@ class AnazhRealm_kampf {
         p._bogenDraw = null;
         this._bogenHudZeige(null);
         if (!d) return;
-        const cam = this.state.camera;
-        if (cam && Number.isFinite(d.fovRest)) {
-            cam.fov = d.fovRest;
-            cam.updateProjectionMatrix();
-        }
         const rec = this._heldBogenRecipe();
         if (!rec) return;
         const A = AnazhRealm._arenaGesetz().bogen;
@@ -1602,10 +1585,7 @@ class AnazhRealm_kampf {
             if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
             const nowB = performance.now() / 1000;
             if (Number.isFinite(pB._shotCooldownUntil) && nowB < pB._shotCooldownUntil) return false;
-            pB._bogenDraw = {
-                start: nowB,
-                fovRest: this.state.camera && Number.isFinite(this.state.camera.fov) ? this.state.camera.fov : null,
-            };
+            pB._bogenDraw = { start: nowB };
             return true;
         }
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine

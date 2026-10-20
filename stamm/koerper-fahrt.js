@@ -463,6 +463,15 @@ class AnazhRealm_koerper_fahrt {
         });
     }
 
+    // DIE CHASE-CAM EINES BUCHS (H3), fail-closed: sie trägt JEDES Feld des Kern-Satzes `FAHR.kamera` endlich und dist > 0 —
+    // ein Satz ohne die Tempo-Felder rechnete im Rig NaN (vorher prüfte je Leser eine Wand nur el und dist); er bricht laut
+    // (der Fang von `_vehicleProfile` meldet ihn über `_bruchMelden`, gate:fahr-leben T5 laut).
+    _kamSatz(km) {
+        const F = AnazhRealm._fahrSchrittGesetz().vc.FAHR.kamera;
+        if (km.dist > 0 && Object.keys(F).every((n) => Number.isFinite(km[n]))) return km;
+        return AnazhRealm._kernPflichtBruch("vehicle:fahrprofil.kamera (jedes Feld von FAHR.kamera)");
+    }
+
     // Fahr-Profil emergiert aus der SUBSTANZ (kein Typ-Enum): Räder tragen TEMPO (+12 % je Rad, Cap
     // +60 %) und rollen aus (niedriges Brems-k), Beine einen Ritt-Schritt; das Hüll-Volumen
     // (_compoundSizeFactor) macht träge. Am Entry gecacht (die Bauplan-Form ist frozen).
@@ -582,10 +591,8 @@ class AnazhRealm_koerper_fahrt {
                 }
                 // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DENSELBEN Fahr-Schritt wie die Probefahrt
                 // (vehicle-core fahrSchritt, `_fahrSatz`). NaN-Wand: nur mit den tragenden Größen — ohne sie trägt das
-                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-
-                // Elevation/-Distanz/-Eases).
-                const _km = _fp.kamera;
-                if (_km && Number.isFinite(_km.el) && Number.isFinite(_km.dist) && _km.dist > 0) prof.kamera = _km;
+                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, `_kamSatz`).
+                if (_fp.kamera) prof.kamera = this._kamSatz(_fp.kamera);
                 const _zs = _fp.zweispur;
                 if (
                     _zs &&
@@ -605,7 +612,11 @@ class AnazhRealm_koerper_fahrt {
                     prof.zweispur = _zs;
                 }
             }
-        } catch (_e) {}
+        } catch (e) {
+            // FAIL-CLOSED HEISST LAUT (`_kamSatz`, Prüfer R2): ein unlesbarer Satz des Rezepts meldet beim EINEN Melder, das Werk
+            // fährt ohne ihn — vorher schluckte ein leerer Fang den Bruch still
+            this._bruchMelden(`FAHR-PROFIL „${entry.type}": ${(e && e.message) || e}`);
+        }
         // JEDES rädrige Werk fährt DASSELBE Gesetz: ohne Studio-Rezept leitet der Host den P-Vektor aus der
         // eigenen Part-Hülle ab (L/B/H, Rad-Radius, in die Regler-Domäne geklemmt) und ruft DIESELBE
         // exportDrive-Formel. Konsumiert nur Lenkung/Zweispur/Feder/Geometrie/Kamera — Tempo-Identität bleibt
@@ -663,9 +674,7 @@ class AnazhRealm_koerper_fahrt {
                         ) {
                             prof.zweispur = _zs2;
                         }
-                        const _km2 = drv.kamera;
-                        if (_km2 && Number.isFinite(_km2.el) && Number.isFinite(_km2.dist) && _km2.dist > 0)
-                            prof.kamera = _km2;
+                        if (drv.kamera) prof.kamera = this._kamSatz(drv.kamera);
                         if (!prof.spring && drv.spring && Number.isFinite(drv.spring.k) && drv.spring.k > 0)
                             prof.spring = drv.spring;
                         if (!Number.isFinite(prof.cgH) && Number.isFinite(drv.cgH) && drv.cgH > 0) prof.cgH = drv.cgH;
@@ -675,7 +684,9 @@ class AnazhRealm_koerper_fahrt {
                             prof.spur = drv.spur;
                     }
                 }
-            } catch (_e4) {}
+            } catch (e) {
+                this._bruchMelden(`FAHR-PROFIL „${entry.type}" (aus der Hülle): ${(e && e.message) || e}`);
+            }
         }
         entry._vehicleProfile = prof;
         return prof;
@@ -1408,9 +1419,8 @@ class AnazhRealm_koerper_fahrt {
 
     // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
 
-    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
-    // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
-    // setZoomActive(false) stellt den Original-FOV wieder her.
+    // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
+    // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
     // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
     // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
     _alleTastenLos() {
@@ -1421,27 +1431,11 @@ class AnazhRealm_koerper_fahrt {
     }
 
     setZoomActive(active) {
-        const cam = this.state.camera;
-        if (!cam) return false;
-        if (active) {
-            // Erst prüfen ob es ein magnifying-Target im Blick gibt
-            const hasMag = this._hasMagnifyingInSight();
-            if (!hasMag) return false;
-            if (!this.state._zoomActive) {
-                this.state._normalFov = cam.fov;
-                cam.fov = AnazhRealm.ZOOM_FOV_DEG;
-                cam.updateProjectionMatrix();
-                this.state._zoomActive = true;
-            }
-            return true;
-        }
-        // Zoom aus
-        if (this.state._zoomActive && typeof this.state._normalFov === "number") {
-            cam.fov = this.state._normalFov;
-            cam.updateProjectionMatrix();
-            this.state._zoomActive = false;
-        }
-        return false;
+        // das Fernglas setzt nur mit einem magnifying-Target im Blick an und steht dann, bis Z losgelassen wird — idempotent: das
+        // Auto-Repeat von Z kippt es nie (gate:fahr-leben T5 zoom)
+        const st = this.state;
+        st._zoomActive = !!active && !!st.camera && (st._zoomActive === true || this._hasMagnifyingInSight() === true);
+        return st._zoomActive;
     }
 
     // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`): trifft er ein Sub-Mesh einer magnifying-Architektur in
@@ -2232,9 +2226,16 @@ AnazhRealm._fahrSchrittGesetz = function () {
     const S = vc && vc.FAHR && vc.FAHR.schritt;
     if (
         S &&
-        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand", "chaseKamera"].every(
-            (f) => typeof vc[f] === "function"
-        ) &&
+        [
+            "fahrGesetz",
+            "fahrZustand",
+            "fahrEbene",
+            "fahrStand",
+            "fahrKraefte",
+            "fahrAufstand",
+            "chaseKamera",
+            "chaseGreif",
+        ].every((f) => typeof vc[f] === "function") &&
         ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>
             Number.isFinite(S[k])
         )
@@ -2322,6 +2323,7 @@ Object.defineProperties(AnazhRealm, {
 });
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
+AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal), auf die `_kamFov` Tempo und Bogen-Auszug legt
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
 AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
 AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny
