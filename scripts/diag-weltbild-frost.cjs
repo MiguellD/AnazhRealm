@@ -1,12 +1,6 @@
-// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost, 07.10.). Befund (Leben-Schau v1-Pfad, echte GPU, Radeon
-// 890M): nach Werkstatt und Tab stand das Weltbild — drei Bilder gleich, während der Spieler 50 m in den Fluss trieb und die
-// Uhr 00:00 → 12:21 lief; die Konsole: „Index range (count 13884, Uint32) does not fit in index buffer size (27768)" und
-// „Invalid CommandBuffer renderContext_4/5". Wurzel: r184 schreibt beim Anlegen eines Index die geweitete Form in das GETEILTE
-// Attribut zurück (`createAttribute`: `array = new Uint32Array(array)`), und der Draw bindet das Format nach dem Array-Typ.
-// Die Hülle des schmalen Index lag nur an der Welt-Instanz; das Backend der Ich-Bühne (Tab) weitete die Mensch-Vorlage
-// (`sharedGeom`), das der Hof-Bühne die Tier-Vorlagen — die Welt band uint32 auf 16-bit-Puffern, Dawn verwarf jeden
-// Render-Kontext der Welt. Der Schnitt: das Backend-Gesetz an der KLASSE (`_backendGesetz`: schmaler Index · Index-Wache ·
-// GPU-Wache).
+// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost): jede Bühne (Werkstatt · Ich · Hof · Feed) ist ein eigenes
+// WebGPU-Backend, das Geometrie und Stoffe mit der Welt teilt; das Backend-Gesetz (`_backendGesetz`: schmaler Index ·
+// Index-Wache · GPU-Wache) gilt an jedem. Die Chronik der Befunde steht in git.
 //
 // Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne — jede Bühne ein eigenes WebGPU-Backend, das Geometrie mit
 // der Welt teilt) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist für jeden Draw blind):
@@ -22,17 +16,17 @@
 //   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
 //      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
-//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff. S4 prüft die Entsorgung;
-//      Neubauten deckt S2 — der Peer teilt seine Schlüssel mit stehenden Figuren, ein Neubau-Check hätte hier keinen Biss
-//      (an b19ac994 +0, während S2 Welt +45 / Ich +18 / Hof +13 zeigt)
+//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff (Neubauten deckt S2)
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
 //      Leib, der JS-Speicher fällt zurück
+//   P2 ein Index von 3 × Uint16 auf der Ich-Bühne lädt nach neuer Version nach — kein writeBuffer schief, kein Bruch
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
 //      GPU-Wache des Spiels und der eigene Hörer zählen, und die Bild-Probe sagt BILD STEHT
+//   T3 ein writeBuffer von 6 Bytes → WebGPU wirft, die Puffer-Wache nennt Puffer, Länge, Aufrufer
 //
 // Zwei Wege, derselbe Prüfer:
 //   node scripts/diag-weltbild-frost.cjs          headless (swiftshader, ?holz=kienspan) — CI: der Spiel-Takt ruht (ein
@@ -57,7 +51,7 @@ const BILDER = (() => {
     return i >= 0 ? path.resolve(process.argv[i + 1]) : null;
 })();
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
-// Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % (Radeon, 08.10.) — die Schwelle liegt dazwischen mit Abstand.
+// Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % — die Schwelle liegt dazwischen mit Abstand.
 const FOLGT_MIN = 0.05;
 const server = statikServer();
 
@@ -112,6 +106,17 @@ function geraeteHoerer() {
     P.popErrorScope = function () {
         H.bereiche--;
         return zu.call(this);
+    };
+    // DIE PUFFER-WACHE: WebGPU verlangt Versatz und Länge jedes writeBuffer in 4-Byte-Schritten
+    const W = (H.puffer = { schief: [] });
+    const wb = GPUQueue.prototype.writeBuffer;
+    GPUQueue.prototype.writeBuffer = function (buf, off, data, dOff, size) {
+        const bytes = (size ?? (data.length ?? data.byteLength) - (dOff | 0)) * (data.BYTES_PER_ELEMENT || 1);
+        if ((off | 0) % 4 || bytes % 4) {
+            const ruf = String(new Error().stack).split("\n").slice(2, 6).map((z) => z.trim().replace(/^at |\?v=[^:]*|https?:\/\/[^/]+\//g, "")).join(" < ");
+            W.schief.push(`${buf.label} · ${data.constructor.name} · Versatz ${off} · ${bytes} B · ${ruf}`);
+        }
+        return wb.call(this, buf, off, data, dOff, size);
     };
     const rd = GPUAdapter.prototype.requestDevice;
     GPUAdapter.prototype.requestDevice = async function (d) {
@@ -215,10 +220,8 @@ function pruefRaum(echt) {
         scene.updateMatrixWorld(true);
         rend.render(scene, cam);
     };
-    // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8 — eine Zeile
-    // 1 024 B, kein Zeilen-Rand). Der Linux-Runner setzt die WebGPU-Leinwand headless nicht in den Bildschirm-Schuss (CI
-    // 07.10.: zwei Schüsse gleich, obwohl die Welt-GPU zeichnete); der Rücklese-Weg zeigt, was der Pass schrieb — ein
-    // verworfener Befehlspuffer schreibt nichts, das Ziel behält das letzte Bild.
+    // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8, kein
+    // Zeilen-Rand); headless fehlt die WebGPU-Leinwand im Bildschirm-Schuss — ein verworfener Befehlspuffer schreibt nichts.
     const ziel = new T.RenderTarget(256, 144);
     F.bild = async () => {
         scene.updateMatrixWorld(true);
@@ -527,13 +530,9 @@ function pruefRaum(echt) {
         true
     );
 
-    // S — DIE ENTSORGUNG DER BÜHNEN (Nachbesserung 08.10., dieselbe Klasse „geteilte Geometrie und Stoffe über Renderer-
-    // Grenzen"): Ich-, Hof-, Feed-Bühne, Werkstatt-Ofen und Mitspieler-Leib bauen aus denselben Vorlagen wie die Welt und
-    // entsorgten beim Wechsel ALLES, was sie trugen — Gegenprüfung: 3 Wechsel wolf↔human legten 12 Geometrien und 8 Stoffe
-    // der Welt in die Entsorgung (den Kopf des Spieler-Leibs, die Haut), die Welt kompilierte neu; ein zweiter Peer-Guss
-    // „human" dieselben 12 Geometrien; der Ofen hielt jedes Regler-Einzelstück für immer (Werkstatt 2,4 → 50,1 MB nach 20
-    // Werten). Die Probe zählt je Phase jede Welt-Geometrie und jeden Welt-Stoff, den ein Wechsel SELBST in die Entsorgungs-
-    // Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
+    // S — DIE ENTSORGUNG DER BÜHNEN: Ich-, Hof-, Feed-Bühne, Werkstatt-Ofen und Mitspieler-Leib bauen aus denselben Vorlagen
+    // wie die Welt. Die Probe zählt je Phase jede Welt-Geometrie und jeden Welt-Stoff, den ein Wechsel SELBST in die
+    // Entsorgungs-Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
     await page.evaluate((echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
@@ -553,8 +552,7 @@ function pruefRaum(echt) {
         sammle(r.state.scene);
         if (F.wurzel !== r.state.scene) sammle(F.wurzel);
         const E = (window.__frostEntsorgung = { phase: null, je: {}, welt: welt.size });
-        // echt ruht der Spiel-Takt für die Entsorgungs-Proben (Lehre 17: sonst baut die laufende Welt nebenher neu — ein
-        // Lauf am 08.10. zählte +4 Module / +5 Pipelines, die kein Wechsel verursachte); die Welt-GPU zeichnet über
+        // echt ruht der Spiel-Takt für die Entsorgungs-Proben (Lehre 17: sonst baut die laufende Welt nebenher neu); die Welt-GPU zeichnet über
         // `_loopRender` (Bild + Kehraus + die Entsorgungs-Schlange), die Bühnen zeichnen in ihrem eigenen Takt weiter.
         if (echt) {
             r.state.renderer.setAnimationLoop(null);
@@ -659,7 +657,6 @@ function pruefRaum(echt) {
 
     // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne
     // 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
-    // Befund (fünfte Nachbesserung, Radeon): die Lösung eines Leibs warf den Knoten-Bau der nächsten Seele (10 Wechsel: Welt +178 Pipelines).
     const NEUBAU_MAX = 2;
     const seelen = await page.evaluate(async (echt, max) => {
         const r = window.anazhRealm;
@@ -712,7 +709,7 @@ function pruefRaum(echt) {
         };
         const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
         // ein Haus, das im Fenster ankommt, kompiliert EINMAL, der Knoten-Bau der Seele bei JEDEM Wechsel: zeigt ein Durchgang
-        // Neubauten, urteilt ein weiterer (bd74a171, e47ad9f8, 33e0b496: Welt +3/+2, die Foundry baute offen)
+        // Neubauten, urteilt ein weiterer
         const messe = async () => {
             const vor = alle();
             await F.zeichne(echt ? 8 : 2);
@@ -745,13 +742,36 @@ function pruefRaum(echt) {
         seelen.tausch >= 20 && seelen.vorgelegt > 0,
         `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
     );
-    // je Device und gemessenem Durchgang: der Schnitt misst 0/0 (headless und Radeon), der Bruch headless Welt +4, Hof +13
+    // je Device und gemessenem Durchgang
     for (const [k, n] of Object.entries(seelen.neubau))
         check(
             `S2 ${k === "welt" ? "die Welt-GPU" : k === "ich" ? "die Ich-Bühne" : "die Hof-Bühne"} kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)`,
             n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
             `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" ? (seelen.erst ? ` · ${seelen.erst}` : "") + (seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : "") : ""}`
         );
+
+    // P2 — DER ZWANG: ein Index ungerader Länge auf der Ich-Bühne, angelegt, neue Version (wie `_gpuAbschied`), EIN Bild
+    const p2 = await page.evaluate(() => {
+        const r = window.anazhRealm, T = window.THREE, W = window.__frostHoer.puffer, st = r.state.ichStage;
+        const g = new T.BufferGeometry().setIndex([0, 1, 2]);
+        g.index.name = "Ich-Bühne Probe-Index";
+        const m = new T.Mesh(g.setAttribute("position", new T.Float32BufferAttribute(new Array(9).fill(0), 3)));
+        m.frustumCulled = false;
+        st.scene.add(m);
+        const vor = W.schief.length;
+        let bruch = "";
+        try {
+            r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
+            g.index.needsUpdate = true;
+            r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
+        } catch (e) {
+            bruch = e.message;
+        }
+        st.scene.remove(m);
+        g.dispose();
+        return [...W.schief.slice(vor), bruch].filter(Boolean).join(" | ");
+    });
+    check("P2 die Ich-Bühne lädt einen Index ungerader Länge in 4-Byte-Schritten nach", !p2, p2);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
@@ -793,9 +813,7 @@ function pruefRaum(echt) {
     );
 
     // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann ein Peer, der seine Seele
-    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG (Biss: 0c91ceb7
-    // legte 14 Welt-Objekte hinein). Neubauten deckt S2: der Peer teilt seine Schlüssel mit stehenden Figuren — ein
-    // Neubau-Check maß hier an b19ac994 +0, während S2 rot stand; er fiel (sechste Nachbesserung).
+    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG, Neubauten deckt S2.
     const peer = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
@@ -861,11 +879,8 @@ function pruefRaum(echt) {
     };
     // DAS FENSTER OHNE VERDICHTUNG (S5, S6): ein Welt-Satz schrumpft `ruheTakte` Render-Takte nach dem Beginn seiner Frist
     // (`_chunkSatzVerdichten`), die alte Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet — fiel
-    // das ins Fenster, zählte S5 die Welt mit (Sätze 47,0 → 27,2 MB, Welt-Frames ohne Zug +10,4 bis +12,0 MB; OMEN 16.10.,
-    // koordination 1610-s5-taeter). Die Ruhe davor ist keine Basis: eine Verdichtung legt die nächste Frist an (Radeon: Ruhe
-    // erst nach 1 682 Takten, die Lücke so lang wie das Fenster riss nach 297). Darum ruht die Verdichtung der Welt für das
-    // Fenster — wie die Probe `_queueDispose` zählt —, danach nennt die Linse jeden Satz, der doch verdichtete (Lauf F36 nur
-    // mit Welt-Frames, Radeon: +11,0 → +0,3 MB; der Mutant `--s5=halde` +58,8 MB ROT).
+    // das ins Fenster, zählte S5 die Welt mit. Darum ruht die Verdichtung der Welt für das Fenster (wie die Probe
+    // `_queueDispose` zählt), danach nennt die Linse jeden Satz, der doch verdichtete.
     const fenster = (auf) =>
         page.evaluate((auf) => {
             const r = window.anazhRealm, S = [...(r.state.chunkSaetze || new Map()).values()];
@@ -876,10 +891,8 @@ function pruefRaum(echt) {
         }, auf);
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
-    // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers (ihre
-    // Hörer an den geteilten Foundry-Stoffen). Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben
-    // beschränkt — vorher +2 Memo-Einträge und +2,4 MB Grafikspeicher je Wert (dritte Nachbesserung), danach +8 Stoff-Hörer
-    // und +3,2–4,7 MB JS je Wert (vierte).
+    // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers.
+    // Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben beschränkt.
     const ofenStart = await page.evaluate(async (probe) => {
         const r = window.anazhRealm;
         const E = window.__frostEntsorgung;
@@ -1010,7 +1023,7 @@ function pruefRaum(echt) {
     });
 
     // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
-    // async Pipeline-Bau endet (CI 07.10., Linux: später als der Schritt) — 3 s Zeichnen, dann darf kein Wort nachkommen.
+    // async Pipeline-Bau endet — 3 s Zeichnen, dann darf kein Wort nachkommen.
     await page.evaluate(async () => {
         const t = performance.now();
         while (performance.now() - t < 3000) await window.__frostWand.zeichne(1);
@@ -1051,6 +1064,20 @@ function pruefRaum(echt) {
         !!t1 && t1.some((s) => /frost-taeter-bereich/.test(s)),
         JSON.stringify(t1)
     );
+    // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
+    const t3 = await page.evaluate(() => {
+        const W = window.__frostHoer.puffer, dev = window.anazhRealm.state.renderer.backend.device;
+        const buf = dev.createBuffer({ label: "frost-taeter-puffer", size: 8, usage: GPUBufferUsage.COPY_DST });
+        try {
+            dev.queue.writeBuffer(buf, 0, new Uint16Array(3));
+        } catch (e) {
+            return `${W.schief[W.schief.length - 1]} · geworfen: ${e.message}`;
+        } finally {
+            buf.destroy();
+        }
+        return "nicht geworfen";
+    });
+    check("T3 die Puffer-Wache nennt den schiefen writeBuffer beim Namen, WebGPU wirft", /frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B .*geworfen: \S/.test(t3), t3);
     selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     const t2 = await page.evaluate(() => {
         const r = window.anazhRealm;
