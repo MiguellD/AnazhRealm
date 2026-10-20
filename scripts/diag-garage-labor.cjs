@@ -10,12 +10,14 @@
 //                 beim ersten Laden wich vom Modell ab (Federrate 95 gegen 100)        Soll P == DEFAULT_P + Preset + Kultur
 //   G5 kultur   — eine gewählte Kultur ließ sich nicht abwählen (Toro → Limousine trug cEdge 0,9 weiter, kein Weg zurück)
 //                                                                                     Soll: zweiter Klick wählt ab
+//   G7 tempo    — (H3) die Probefahrt las kein Tempo, nach dem Orbit schnappte sie in 0,5 s zurück (tempoVerdict)
 //   G6 lehren   — (0710-2) die Probefahrt erbte die Werkstatt-Ebenen: RADSTAND, ÜH-H, FREI, RAD-Ø … schwebten als Schilder
 //                 über dem fahrenden Wagen                  Soll 0 Schilder in der Fahrt (die Sicht ERGEBNIS), > 0 in der Werkstatt
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
 const { statikServer, starteBrowser, pruefer } = require("./lib/welt-boot.cjs");
+const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const { errs, check } = pruefer();
@@ -118,11 +120,15 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
     await page.mouse.up();
     await page.click("#start");
     await new Promise((r) => setTimeout(r, 300));
+    await page.evaluate(
+        `window.__m7 = (${tempoSpion})(window.__vehicleCore, cam, (z, vm) => z === car && vm === fahrGesetzLab().vmax)`
+    );
     await page.mouse.move(640, 360);
     await page.mouse.down();
     for (let i = 0; i < 10; i++) await page.mouse.move(640 - i * 8, 360);
     await page.mouse.up();
     m.mausFehler = pageErrors.length - fehler0;
+    await page.waitForFunction(() => window.__m7.rueck !== null, { timeout: 30000, polling: 100 }).catch(() => {});
     // G2: der HUD im Fahr-Modus.
     Object.assign(
         m,
@@ -170,6 +176,7 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         )
     );
     await page.keyboard.up("KeyW");
+    m.tempo = await page.evaluate(() => (window.__m7.ende(), Object.assign(window.__m7, { fov: undefined })));
     await page.keyboard.press("Escape");
     await new Promise((r) => setTimeout(r, 200));
     m.schilderWerkstatt = (await schilder()).length;
@@ -229,6 +236,12 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ") || "kein Leck"
     );
     check("G5 die Kultur lässt sich abwählen (zweiter Klick)", m.kulturAb === true);
+    const v7 = tempoVerdict(m.tempo);
+    check(
+        "G7 die Probefahrt atmet das Tempo wie der Ritt: camera.fov = Ruhe + Tempo aus Fahr-Zustand und vmax, Orbit zurück in 1–1,25 s",
+        v7.length === 0,
+        `${JSON.stringify(m.tempo)}${v7.length ? " — Täter: " + v7.join(" · ") : ""}`
+    );
     check(
         "G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück",
         m.schilderFahrt === 0 && m.schilderWerkstatt > 0,

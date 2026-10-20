@@ -539,40 +539,57 @@ class AnazhRealm_vegetation_streu {
     // Schicht-Pässe. Bei erschöpfter Deadline zurück mit stehendem `region._cont`; der nächste Aufruf
     // (finish-first im Streaming-Tick) setzt exakt fort.
     // DIE REGION SAMMELT IHRE ZUSAGEN (K60-2): solange ihre Scheibe läuft, ist sie der Wartende (`_streuSammler`) — jede
-    // Zusage, auf die eine ihrer Zellen wartet (Zug, Buch, Karte: `_streuWartetAuf`), landet in ihrem Satz; vollendet und
-    // aufgeschoben spannt sie ihren Wecker (`_streuWeckerSpannen`).
+    // Zusage, auf die eine ihrer Zellen wartet (Zug, Buch, Karte, Wald-Plan: `_streuWartetAuf`), landet in ihrer Karte mit dem
+    // Rang ihres nächsten wartenden Lesers (die Zelle, `_streuZelleOrt`); vollendet und aufgeschoben spannt sie ihren Wecker
+    // (`_streuWeckerSpannen`).
     _scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos) {
         this._weltRegt(); // jede Scheibe setzt Streu-Zellen: die Stand-Wache weckt die Fege-Takte
-        const vorher = this._streuSammler;
-        this._streuSammler = region._zusagen || (region._zusagen = new Set());
+        const [vorher, ort] = [this._streuSammler, this._streuZelleOrt];
+        this._streuSammler = region._zusagen || (region._zusagen = new Map());
+        this._streuZelleOrt = null;
         try {
             const r = this._scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos);
             if (!region._cont && region._deferredFoundry) this._streuWeckerSpannen(region);
             return r;
         } finally {
-            this._streuSammler = vorher;
+            [this._streuSammler, this._streuZelleOrt] = [vorher, ort];
         }
+    }
+    // Eine Zelle der Scheibe wartet, die Region schiebt sich auf: wartet die Zelle IM BILD der Ankunft (`_rangImBild`) ohne
+    // benannte Zusage (die Wahrheit des Walds, ein Gesetz ohne Zug), hält die Region das Bild (`_bildLuecke`).
+    _streuZelleWartet(region) {
+        region._deferredFoundry = true;
+        if ((this._streuZusagen | 0) === this._streuZelleN && this._rangImBild(this._streuZelleOrt || 0))
+            region._bildLuecke = true;
     }
 
     // DER WECKER DER AUFGESCHOBENEN REGION (K60-2): sie baut neu, wenn JEDE ihrer Zusagen kam (`region._geweckt`) — nie bei
     // jeder fremden Lieferung. Bis K60-2 warf jede Ankunft eines Körpers oder einer Karte jede aufgeschobene Region weg, und
     // die vier Wald-Stücke der Ankunft streuten ab dem Buch bis zum Bild immer neu (Radeon kalt, K602b/s2-1D: Streu 0,1–0,6 s
     // je Sekunde von 3 s bis 17 s). Wartet sie auf nichts Benanntes (die Wahrheit des Walds), weckt sie jede Lieferung wie zuvor.
+    // DAS BILD DER ANKUNFT (B-Blick, `_rangImBild` je Zusage): vor dem ersten Weltbild weckt sie, sobald jede Zusage IM BILD kam —
+    // was außer Blick wartet, hält weder den Wecker noch das Bild (`_bildWartet`); der Neubau hängt es wieder an (der Zug steht
+    // in `f.zuege`, die Karte in ihrer Zelle), und nach dem Bild liegt jede Zusage im Bild. Bis B-Blick wartete jede Region der
+    // Ankunft auf die Züge außer Blick (GTX kalt buche L1 in 66 m, blume L0 in 329 m: gesendet erst 14,4–15,1 s, p3/n1910/kette).
     _streuWeckerSpannen(region) {
         const zusagen = region._zusagen;
         region._zusagen = null;
         region._geweckt = false;
-        if (!zusagen || zusagen.size === 0) {
+        const alle = zusagen ? [...zusagen] : [];
+        const bild = alle.filter(([, rang]) => this._rangImBild(rang));
+        region._bildWartet = bild.length > 0 || !!region._bildLuecke;
+        const warten = bild.length ? bild : alle;
+        if (!warten.length) {
             region._geweckt = true;
             return;
         }
-        let offen = zusagen.size;
+        let offen = warten.length;
         const kam = () => {
             if (--offen > 0) return;
             region._geweckt = true;
             this._scatterRefillPending = true;
         };
-        for (const z of zusagen) z.then(kam, kam);
+        for (const [z] of warten) z.then(kam, kam);
     }
 
     _scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos) {
@@ -728,10 +745,12 @@ class AnazhRealm_vegetation_streu {
                 const variantIndex = h % N;
                 // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
+                // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_streuWartetAuf`).
+                [this._streuZelleOrt, this._streuZelleN] = [tf, this._streuZusagen | 0];
                 const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
                 if (visH === null) {
                     // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
-                    region._deferredFoundry = true;
+                    this._streuZelleWartet(region);
                     continue;
                 }
                 const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
@@ -951,7 +970,7 @@ class AnazhRealm_vegetation_streu {
         const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) : 0;
         const gestalt = foundryPreset && fseed !== null ? this._foundryVariantFor(fseed, foundryPreset) : null;
         if (foundryPreset && gestalt == null) {
-            if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
+            if (!ctxNoDefer) this._streuZelleWartet(region); // Buch kalt → deferrieren wie ein ladendes Asset
             return null;
         }
         if (foundryPreset) {
@@ -1016,7 +1035,7 @@ class AnazhRealm_vegetation_streu {
             } else {
                 // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
                 // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
-                if (!ctxNoDefer) region._deferredFoundry = true;
+                if (!ctxNoDefer) this._streuZelleWartet(region);
                 return null;
             }
         }
@@ -1556,12 +1575,15 @@ class AnazhRealm_vegetation_streu {
 
     // Worauf EINE Streu-Region wartet — die Regel je Region (null: sie steht): sie fehlt (keine Karte oder kein Eintrag),
     // wartet auf ihr Asset (`_deferredFoundry`, der Nachschub baut sie nach der Lieferung neu) oder trägt eine offene
-    // Scheibe (`_cont`). Jeder Leser fragt hier, keiner liest die Marken selbst.
+    // Scheibe (`_cont`). Jeder Leser fragt hier, keiner liest die Marken selbst. Vor dem ersten Weltbild wartet eine
+    // aufgeschobene Region nur, wenn ihr Wecker im Bild der Ankunft wartet (`_bildWartet`, B-Blick) — ihre Lücke außer Blick
+    // füllt der Neubau nach dem Bild.
     _streuRegionWartet(rk) {
         const regionen = this.state.scatterRegions;
         const reg = regionen ? regionen.get(rk) : null;
         if (!reg) return "fehlt";
-        if (reg._deferredFoundry) return "wartet auf ihr Asset";
+        if (reg._deferredFoundry && (reg._bildWartet !== false || this.state._weltbildDa))
+            return "wartet auf ihr Asset";
         if (reg._cont) return "Scheibe offen";
         return null;
     }

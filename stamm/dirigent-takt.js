@@ -1022,6 +1022,10 @@ class AnazhRealm_dirigent_takt {
     _dispatchFrameJobs(jobs, budget) {
         const ran = [];
         const sorted = jobs.slice().sort((a, b) => (a.prio || 0) - (b.prio || 0));
+        // DER LADE-TAKT (K60, B-Blick): unter dem Ladeschirm arbeitet jeder Job zuerst am Bild der Ankunft (der Ring baut, was sie sieht,
+        // `_tickVoxelChunkStreaming`), und keine Drossel des Spiels greift — auch nicht der 4er-Takt der Deko: bis B-Blick nahm der
+        // Strom die Frist, und die Streu im Blick lief in 4 Takten einmal mit 2,5 ms (GTX kalt 5,2 → 7,8 s, p3/n2010/blick/f5.txt).
+        const lade = this._ladeTakt();
         // EXISTENZ-BODEN: auf render-gebundener Maschine ist remainingMs dauerhaft ≤ 0 — ohne Boden wüchsen
         // pendingWaterIso/Scatter/Grass monoton (Heap-Leck, Wasser ohne Oberfläche). Welt-SUBSTANZ (prio 1)
         // bekommt JEDEN Frame einen Zeit-Boden, Deko (prio ≥ 2) jeden 4. Frame einen kleinen — die Queues
@@ -1034,7 +1038,8 @@ class AnazhRealm_dirigent_takt {
             let ms = budget.remainingMs();
             if (!sacred && ms <= 0) {
                 if (prio === 1) ms = AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS;
-                else if (this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
+                // im Lade-Takt greift keine Drossel (K60): die Deko trägt JEDEN Takt ihren Boden, nie nur jeden 4.
+                else if (lade || this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
                 else continue;
             }
             try {
@@ -1103,9 +1108,10 @@ class AnazhRealm_dirigent_takt {
     // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
     // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
     // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
-    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden.
-    _kappeOffen(n, kappe) {
-        return n < kappe || performance.now() < this._ladeFrist();
+    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden. `frist` false: ein
+    // Stück außer dem Bild der Ankunft (B-Blick, der Ring) — es bekommt nur die Kappe, die Frist gehört dem Bild.
+    _kappeOffen(n, kappe, frist = true) {
+        return n < kappe || (frist && performance.now() < this._ladeFrist());
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
@@ -1159,12 +1165,15 @@ class AnazhRealm_dirigent_takt {
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
+                    // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
                     const lade = this._ladeTakt();
                     const msDeko =
                         st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
-                    const _dl = Number.isFinite(msDeko)
-                        ? performance.now() + (lade ? msDeko : Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS))
-                        : undefined;
+                    const _dl = !Number.isFinite(msDeko)
+                        ? undefined
+                        : lade
+                          ? Math.max(this._ladeFrist(), performance.now() + AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
+                          : performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS);
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
