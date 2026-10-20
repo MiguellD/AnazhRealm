@@ -310,6 +310,12 @@ class AnazhRealm_dirigent_takt {
                     }
                 }
             }
+            // die Leiber jeder annehmbaren Seele bauen ihre Programme im Leerlauf (`_leibVorwaermen`, eigenes try/catch wie oben)
+            try {
+                this._leibVorwaermen();
+            } catch (err) {
+                this._loopErrorBoundary(err);
+            }
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
