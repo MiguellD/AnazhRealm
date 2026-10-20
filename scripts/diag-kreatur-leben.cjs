@@ -62,8 +62,8 @@ if (V) {
     check("SELBST-TEST: eine injizierte tote Stimmungs-Aktion fällt auf", stimmungLuecken(tot).join() === "tot:gibtsnicht");
 
     const bekannt = new Set([
-        "freq", "stride", "bodyX", "bodyZ", "headX", "headY", "ear",
-        "tailAmp", "tailRate", "tension", "bob", "sway", "kpMul", "phases",
+        "freq", "bodyX", "bodyZ", "headX", "headY", "ear",
+        "tailAmp", "tailRate", "tension", "bob", "sway", "kpMul",
     ]);
     const fremd = [];
     for (const name in V.aktionen) {

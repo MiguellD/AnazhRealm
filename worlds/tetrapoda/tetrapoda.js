@@ -16,13 +16,24 @@ function PD(kp,kd){this.target=0;this.current=0;this.vel=0;this.kp=kp;this.kd=kd
 PD.prototype.update=function(dt){var f=(this.target-this.current)*this.kp-this.vel*this.kd;this.vel+=f*dt;this.current+=this.vel*dt;return this.current;};
 var cpgPhase=[0,0,0,0],cpgFreq=0;
 var cpgCoupling=__tetrapodaCore.CPG_COUPLING;   // Kern-Quelle (W-A6)
-function updateCPG(dt){/* ULTRAGUSS U4: das Gang-Netz-Gesetz wohnt im Kern. */__tetrapodaCore.cpgStep(cpgPhase,cpgFreq,cpgCoupling,dt);}
+// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3 — Labor = Welt): das Tempo v̂ (der Regler, v = v̂·√(g·L) an der Hüft-Höhe
+// der gezeigten Gestalt, in Metern wie die Welt: MASSSTAB.meterJeEinheit) treibt DASSELBE Gang-Gesetz wie die Welt — tetrapoda
+// gangSchritt wählt Takt, Fußweg und die Fußfolge nach der Froude-Zahl, cpgStep zieht die Beine in die Folge, gangFuss führt
+// jeden Fuß (vor/zurück dz, Hub). Die Stimmung trägt die Haltung, nie den Gang; der Sinus je Gelenk (Stimmungs-Schritt ×
+// Sprint-Faktor) fiel.
+var gangVh=0,gangS=0,gangTast=0.5,gangWinkel=0,gangFolge=null,gangArtIst='stand',gangL=1,gangH=[1,1,1,1];
+function gangTempo(vh){gangVh=Math.max(0,+vh||0);var el=document.getElementById('tempo');if(el&&+el.value!==gangVh)el.value=gangVh;}
+function gangTakt(dt,freqStand){var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,Lm=gangL*mE;var gs=K.gangSchritt(gangVh*Math.sqrt(K.GANG_GESETZ.g*Lm),Lm);
+  if(!gangFolge)for(var i=0;i<4;i++)cpgPhase[i]=gs.folge[i];
+  gangFolge=gs.folge;gangS=gs.S/mE;gangTast=gs.tast;gangWinkel=gangS>0?Math.atan(gangS/(2*gangL)):0;
+  if(gs.art!==gangArtIst){gangArtIst=gs.art;var a=document.getElementById('gangart');if(a)a.textContent=gs.art;}
+  cpgFreq=gangS>0?gs.omega:(freqStand===undefined?0.25:freqStand);K.cpgStep(cpgPhase,cpgFreq,cpgCoupling,dt,gangFolge);return gs;}
 var bodyPhys={y:0,vy:0,vx:0,pitch:0,pitchVel:0};
 function updateBodyPhysics(dt){
   var e=emo.cur;
-  if(e.stride<0.002){bodyPhys.y*=0.6;bodyPhys.vy*=0.5;bodyPhys.vx*=0.8;bodyPhys.pitch*=0.7;bodyPhys.pitchVel*=0.7;return;}
+  if(gangWinkel<0.002){bodyPhys.y*=0.6;bodyPhys.vy*=0.5;bodyPhys.vx*=0.8;bodyPhys.pitch*=0.7;bodyPhys.pitchVel*=0.7;return;}
   var support=0,fwdForce=0;
-  for(var i=0;i<4;i++){var st=Math.max(0,-Math.sin(cpgPhase[i]));support+=st;if(st>0)fwdForce+=st*Math.cos(cpgPhase[i])*e.stride*30;}
+  for(var i=0;i<4;i++){var st=Math.max(0,-Math.sin(cpgPhase[i]));support+=st;if(st>0)fwdForce+=st*Math.cos(cpgPhase[i])*gangWinkel*30;}
   var targetY=-Math.max(0,1.5-support)*0.022*H*e.tension;
   var dy=targetY-bodyPhys.y;
   bodyPhys.vy+=dy*140*dt;bodyPhys.vy*=0.72;bodyPhys.y+=bodyPhys.vy*dt;
@@ -62,13 +73,13 @@ var phys={
   }
 };
 var emo={
-  cur:{freq:0.25,stride:0,bodyX:0,bodyZ:0,headX:-0.01,headY:0,ear:0.15,tailAmp:0.10,tailRate:0.5,tension:0.9,bob:0.002,sway:0.006,kpMul:1.0},
+  cur:{freq:0.25,bodyX:0,bodyZ:0,headX:-0.01,headY:0,ear:0.15,tailAmp:0.10,tailRate:0.5,tension:0.9,bob:0.002,sway:0.006,kpMul:1.0},
   tgt:null,name:'idle',behTimer:0,behType:null,behStart:0,
   presets:__tetrapodaCore.MOTION,   // BEWEGUNGS-PROFILE — das motion-Feld lebt im Kern (W-A6, EINE Quelle; Nachlese-Welle heilte den W-A6-Alias [presets war doppelt geschachtelt -> emo.set warf])
-  set:function(name){this.tgt=this.presets[name];this.name=name;this.behTimer=0;this.behType=null;if(this.tgt.phases)cpgPhase=this.tgt.phases.slice();},
+  set:function(name){this.tgt=this.presets[name];this.name=name;this.behTimer=0;this.behType=null;},
   update:function(dt,t){
     if(!this.tgt)return;var c=this.cur,g=this.tgt,l=0.05;
-    c.freq+=(g.freq-c.freq)*l;c.stride+=(g.stride-c.stride)*l;c.bodyX+=(g.bodyX-c.bodyX)*l;c.bodyZ+=(g.bodyZ-c.bodyZ)*l;c.headX+=(g.headX-c.headX)*l;c.headY+=(g.headY-c.headY)*l;c.ear+=(g.ear-c.ear)*l;c.tailAmp+=(g.tailAmp-c.tailAmp)*l;c.tailRate+=(g.tailRate-c.tailRate)*l;c.tension+=(g.tension-c.tension)*l;c.bob+=(g.bob-c.bob)*l;c.sway+=(g.sway-c.sway)*l;c.kpMul+=(g.kpMul-c.kpMul)*l;
+    c.freq+=(g.freq-c.freq)*l;c.bodyX+=(g.bodyX-c.bodyX)*l;c.bodyZ+=(g.bodyZ-c.bodyZ)*l;c.headX+=(g.headX-c.headX)*l;c.headY+=(g.headY-c.headY)*l;c.ear+=(g.ear-c.ear)*l;c.tailAmp+=(g.tailAmp-c.tailAmp)*l;c.tailRate+=(g.tailRate-c.tailRate)*l;c.tension+=(g.tension-c.tension)*l;c.bob+=(g.bob-c.bob)*l;c.sway+=(g.sway-c.sway)*l;c.kpMul+=(g.kpMul-c.kpMul)*l;
     this.behTimer+=dt;
     if(this.name==='joy'){var jb=['playbow','bound','spin','prance','hop'];if(this.behTimer>2.0+Math.random()*2.0){this.behTimer=0;this.behType=jb[Math.floor(Math.random()*jb.length)];this.behStart=t;}}
     else if(this.name==='hunt'){var hb=['pounce','freeze','stalk','hop','circle'];if(this.behTimer>1.2+Math.random()*1.5){this.behTimer=0;this.behType=hb[Math.floor(Math.random()*hb.length)];this.behStart=t;}}
@@ -201,6 +212,7 @@ function buildAnimal(){
   // DIE SOHLE (die Welt: `_ofenAssembleAsset`): der Stand liest die Haut, nie die Fell-Schalen darunter.
   var sohle=new THREE.Box3();s0.liste.forEach(function(n){if(!n.geometry.attributes.aSchale)sohle.expandByObject(n);});
   [flP,frP,hlP,hrP].forEach(function(p,i){p.getWorldPosition(_fp);pawOffsets[i]=_fp.y-sohle.min.y;});
+  [legFL,legFR,legHL,legHR].forEach(function(b,i){b.getWorldPosition(_fp);gangH[i]=Math.max(1e-3,_fp.y-sohle.min.y);});gangL=gangH[2];gangFolge=null;
   // der Wurf: L0 wirft nach `schatten` der Zeile (1 = die Grobstufe ist ihr Zwilling), L1 mit ihrem Teil `wurf.seh`
   var z1=BZ[STUFEN[1]],seh=z1.wurf&&Array.isArray(z1.wurf.seh)?z1.wurf.seh:null;
   s0.liste.forEach(function(n){n.castShadow=BZ[STUFEN[0]].schatten===STUFEN[0];});
@@ -233,15 +245,15 @@ function init(){
   document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
   document.querySelectorAll('#stufen button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#stufen button').forEach(function(b2){b2.classList.toggle('active',b2===b);});stufeWahl=b.dataset.s;stufeSchalten();});});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
+  var te=document.getElementById("tempo");if(te)te.addEventListener("input",function(){gangTempo(+te.value);});
   animate();
 }
 function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll('#presets button').forEach(function(b){b.classList.toggle('active',!!g&&b.dataset.p===g);});}
 function animate(){
-  requestAnimationFrame(animate);if(!wolf)return;var t=clock.getElapsedTime(),dt=1/60;uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;cpgFreq=(bm.freqOv!==null?bm.freqOv:e.freq);updateCPG(dt);var st=e.stride;updateBodyPhysics(dt);bodyPhys.vy+=bm.impulseY;bodyPhys.vx+=bm.impulseX;var breathing=(st<0.01)?Math.sin(t*0.6)*0.003*H:0;wolf.position.y=bodyPhys.y+bm.pounceY+breathing;
+  requestAnimationFrame(animate);if(!wolf)return;var t=clock.getElapsedTime(),dt=1/60;uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;gangTakt(dt,bm.freqOv!==null?bm.freqOv:e.freq);var st=gangWinkel;updateBodyPhysics(dt);bodyPhys.vy+=bm.impulseY;bodyPhys.vx+=bm.impulseX;var breathing=(st<0.01)?Math.sin(t*0.6)*0.003*H:0;wolf.position.y=bodyPhys.y+bm.pounceY+breathing;
   // Body roll computed early for weight shift
   var bodyRollNow=Math.sin(cpgPhase[0]*2)*e.sway+e.bodyZ+bm.bodyRotZ;
   wolf.rotation.z=bodyRollNow;wolf.rotation.x=bodyPhys.pitch*0.15+e.bodyX+bm.bodyX;wolf.rotation.y=bm.bodyRotY;
-  var sprintMul=(e.stride>0.08)?2.0:(e.stride>0.02?1.4:1.0);
   var legSides=[-1,1,-1,1];
   for(var leg=0;leg<4;leg++){
     var ph=cpgPhase[leg];var override=bm.legOv;var swing=Math.max(0,Math.sin(ph));var stanceA=Math.max(0,-Math.sin(ph));
@@ -251,7 +263,7 @@ function animate(){
       phys.legPDs[legNames[leg][2]].target=Math.max(0,override+0.5)*0.3;
       phys.legPDs[legNames[leg][3]].target=Math.max(0,override+0.8)*0.2;
     }
-    else if(e.stride<0.002){
+    else if(gangWinkel<0.002){
       var wn=Math.sin(t*2.5+leg*1.7)*0.004+Math.sin(t*1.3+leg*2.3)*0.003;
       // Weight shift: body rolls right -> right legs extend, left legs compress
       var wShift=bodyRollNow*legSides[leg]*0.025;
@@ -261,13 +273,17 @@ function animate(){
       phys.legPDs[legNames[leg][3]].target=standPose[leg][3]+wn*0.2;
     }
     else{
-      phys.legPDs[legNames[leg][0]].target=Math.sin(ph)*st*sprintMul;
-      phys.legPDs[legNames[leg][1]].target=Math.sin(ph)*st*0.4*sprintMul;
-      phys.legPDs[legNames[leg][2]].target=swing*0.80+stanceA*0.12+Math.max(0,Math.sin(ph+0.5))*st*0.4;
-      phys.legPDs[legNames[leg][3]].target=swing*0.45+stanceA*0.05+Math.max(0,Math.sin(ph+1.0))*st*0.25;
+      // der Fuß folgt dem Gesetz (gangFuss): vor/zurück um dz unter dem Gelenk, im Schwung gehoben (der Hub des Gesetzes
+      // als Knick, die Pfote faltet um GANG_GESETZ.falte) — die Hüfte schwenkt dorthin
+      var GG=__tetrapodaCore.GANG_GESETZ,F=__tetrapodaCore.gangFuss(ph,gangS,gangTast),hl=gangH[leg];
+      var knick=2*Math.acos(Math.max(-1,1-GG.hub*F.hub));
+      phys.legPDs[legNames[leg][0]].target=standPose[leg][0]-Math.atan2(F.dz,hl)-knick*0.5;
+      phys.legPDs[legNames[leg][1]].target=standPose[leg][1];
+      phys.legPDs[legNames[leg][2]].target=standPose[leg][2]+knick;
+      phys.legPDs[legNames[leg][3]].target=standPose[leg][3]+F.hub*GG.falte;
     }
   }
-  for(var i=0;i<4;i++){var ns=Math.max(0,-Math.sin(cpgPhase[i]));if(phys._prevSt[i]<0.05&&ns>0.15&&e.stride>0.002){bodyPhys.vy-=0.01*e.tension;}phys._prevSt[i]=ns;}
+  for(var i=0;i<4;i++){var ns=Math.max(0,-Math.sin(cpgPhase[i]));if(phys._prevSt[i]<0.05&&ns>0.15&&gangWinkel>0.002){bodyPhys.vy-=0.01*e.tension;}phys._prevSt[i]=ns;}
   for(var name in phys.legPDs){var pd=phys.legPDs[name];pd.kp=Math.max(200,320*e.kpMul);pd.kd=18*e.kpMul;pd.update(dt);}
   legFL.rotation.x=phys.legPDs['legFL'].current;flU.rotation.x=phys.legPDs['flU'].current;flL.rotation.x=phys.legPDs['flL'].current;flP.rotation.x=phys.legPDs['flP'].current;legFR.rotation.x=phys.legPDs['legFR'].current;frU.rotation.x=phys.legPDs['frU'].current;frL.rotation.x=phys.legPDs['frL'].current;frP.rotation.x=phys.legPDs['frP'].current;legHL.rotation.x=phys.legPDs['legHL'].current;hlT.rotation.x=phys.legPDs['hlT'].current;hlC.rotation.x=phys.legPDs['hlC'].current;hlP.rotation.x=phys.legPDs['hlP'].current;legHR.rotation.x=phys.legPDs['legHR'].current;hrT.rotation.x=phys.legPDs['hrT'].current;hrC.rotation.x=phys.legPDs['hrC'].current;hrP.rotation.x=phys.legPDs['hrP'].current;
   phys.shoulderLPD.target=-phys.legPDs['legFL'].current*0.08;phys.shoulderRPD.target=-phys.legPDs['legFR'].current*0.08;phys.shoulderLPD.update(dt);phys.shoulderRPD.update(dt);if(shoulderL)shoulderL.rotation.x=phys.shoulderLPD.current;if(shoulderR)shoulderR.rotation.x=phys.shoulderRPD.current;
@@ -276,7 +292,7 @@ function animate(){
     var minFY=Infinity;var paws=[flP,frP,hlP,hrP];
     for(var i=0;i<paws.length;i++){paws[i].getWorldPosition(_fp);_fp.y-=pawOffsets[i];if(_fp.y<minFY)minFY=_fp.y;}
     if(minFY<0){wolf.position.y-=minFY;}
-    else if(minFY>0.004&&e.stride<0.002){wolf.position.y-=(minFY-0.004)*0.5;}
+    else if(minFY>0.004&&gangWinkel<0.002){wolf.position.y-=(minFY-0.004)*0.5;}
   }
   if(contactShadow){var bodyH=wolf.position.y;contactShadow.material.opacity=0.35*Math.max(0.1,1-bodyH*2);contactShadow.scale.setScalar(H*0.55*Math.max(0.3,1+bodyH*0.5));}
   // Lateral Z: stronger response to body roll for natural compensation

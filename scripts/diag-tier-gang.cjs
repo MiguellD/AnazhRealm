@@ -44,7 +44,7 @@ const LAUF = (k) => {
     const core = window.__tetrapodaCore;
     if (k.stub) {
         window.__gangEcht = core.gangSchritt;
-        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12 });
+        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
     }
     const pm = s.playerMesh.position;
     const x0 = pm.x + 40,
@@ -331,7 +331,7 @@ const LEIB = (k) => {
 // sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen und
 // der des Wolfs im Schritt gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am
 // Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig, ein Trab-Muster neben
-// MOTION.phases im Tier-Gang). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
+// GANG_FOLGE im Tier-Gang). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
     const r = window.anazhRealm,
         s = r.state,
@@ -390,7 +390,7 @@ const SCHWERE = (k) => {
     if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
     if (!window.__fehlt(r._animateTierBaum, /\[\s*0\s*,\s*Math\.PI\s*\*/))
-        o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben MOTION.phases");
+        o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben GANG_FOLGE");
     return o;
 };
 
@@ -491,7 +491,7 @@ const STUDIO = (k) => {
 // Fr = v̂² = v²/(g·L) wählt Schritt (lateral: nach jedem Hinterfuß der Vorderfuß derselben Seite), Trab (die Diagonalen
 // gemeinsam) und Galopp (die Vorderfüße zusammen, die Hinterfüße zusammen, beide Paare getrennt). Je Gattung läuft der Leib
 // bei v̂ = 0,3 · 1,2 · 3,5 geradeaus durch seinen Chokepoint (_animateCompoundMotion → _animateTierBaum), dasselbe Tempo
-// im Labor (worlds/tetrapoda); gemessen werden die Phasen der vier Beine nach 6 s. --selftest: das Muster der Stimmung
+// im Labor (worlds/tetrapoda); gemessen werden die Phasen der vier Beine, gemittelt über die sechste Sekunde. --selftest: das Muster der Stimmung
 // (MOTION.joy, jedes Tempo) → ROT.
 const VH = [0.3, 1.2, 3.5];
 const GANG_SOLL = { 0.3: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
@@ -517,6 +517,21 @@ function gangart(ph) {
     return nach(HL) === FL && nach(HR) === FR ? "schritt-lateral" : "schritt-diagonal";
 }
 const GANG_WELT = (k) => {
+    // die Phasen der Beine gegen das erste, im Kreis gemittelt über die letzte Sekunde (ein Gang ist ein Muster über die Zeit;
+    // ein einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
+    const mittel = () => {
+        const c = [0, 0, 0, 0],
+            s = [0, 0, 0, 0];
+        return {
+            dazu: (ph) => {
+                for (let k = 0; k < 4; k++) {
+                    c[k] += Math.cos(ph[k] - ph[0]);
+                    s[k] += Math.sin(ph[k] - ph[0]);
+                }
+            },
+            ph: () => c.map((x, k) => Math.atan2(s[k], x)),
+        };
+    };
     const r = window.anazhRealm,
         s = r.state;
     const core = window.__tetrapodaCore;
@@ -544,11 +559,13 @@ const GANG_WELT = (k) => {
             const g = Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g;
             const L = tb.beinL * (cr.scale.x || 1);
             const v = vh * Math.sqrt(g * L);
+            const M = mittel();
             for (let i = 0, t = 0; i < 360; i++) {
                 cr.position.x += v / 60;
                 r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
+                if (i >= 300) M.dazu(tb._gang.ph);
             }
-            zeilen.push({ vh, v: +v.toFixed(2), L: +L.toFixed(2), ph: tb._gang.ph.slice() });
+            zeilen.push({ vh, v: +v.toFixed(2), L: +L.toFixed(2), ph: M.ph() });
             r.removeCreature(cr);
         }
     } finally {
@@ -559,6 +576,21 @@ const GANG_WELT = (k) => {
 // das Labor (worlds/tetrapoda): dieselbe Gattung, dasselbe v̂ — der Gang-Takt des Labors (gangTakt) 6 s lang
 const GANG_LABOR = (k) => {
     /* eslint-disable no-undef */
+    // die Phasen der Beine gegen das erste, im Kreis gemittelt über die letzte Sekunde (ein Gang ist ein Muster über die Zeit;
+    // ein einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
+    const mittel = () => {
+        const c = [0, 0, 0, 0],
+            s = [0, 0, 0, 0];
+        return {
+            dazu: (ph) => {
+                for (let k = 0; k < 4; k++) {
+                    c[k] += Math.cos(ph[k] - ph[0]);
+                    s[k] += Math.sin(ph[k] - ph[0]);
+                }
+            },
+            ph: () => c.map((x, k) => Math.atan2(s[k], x)),
+        };
+    };
     if (typeof gangTempo !== "function" || typeof gangTakt !== "function")
         return {
             fehler: "das Labor kennt kein Tempo: die Stimmung wählt den Gang (emo.set → MOTION.phases, der CPG-Sinus)",
@@ -574,8 +606,12 @@ const GANG_LABOR = (k) => {
         document.querySelector('#presets button[data-p="' + k.gattung + '"]').click();
         for (const vh of k.vh) {
             gangTempo(vh);
-            for (let i = 0; i < 360; i++) gangTakt(1 / 60);
-            zeilen.push({ vh, ph: cpgPhase.slice() });
+            const M = mittel();
+            for (let i = 0; i < 360; i++) {
+                gangTakt(1 / 60);
+                if (i >= 300) M.dazu(cpgPhase);
+            }
+            zeilen.push({ vh, ph: M.ph() });
         }
         gangTempo(0);
     } finally {
@@ -604,10 +640,11 @@ const GANG_LABOR = (k) => {
         }
         for (const z of res.zeilen) {
             const ist = gangart(z.ph);
+            const rel = z.ph.map((q) => +(((((q - z.ph[0]) / (2 * Math.PI)) % 1) + 1) % 1).toFixed(2));
             const soll = GANG_SOLL[z.vh];
             const ok = ist === soll;
             console.log(
-                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} (Fr ${(z.vh * z.vh).toFixed(2)}${z.v ? ", " + z.v + " m/s bei L " + z.L + " m" : ""}) · ${ist}${ok ? "" : " — Soll " + soll + ": die Fußfolge folgt nicht dem Tempo"}`
+                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} (Fr ${(z.vh * z.vh).toFixed(2)}${z.v ? ", " + z.v + " m/s bei L " + z.L + " m" : ""}) · ${ist} [${rel.join(" ")}]${ok ? "" : " — Soll " + soll + ": die Fußfolge folgt nicht dem Tempo"}`
             );
             if (!ok) {
                 rot++;
@@ -745,7 +782,6 @@ const GANG_LABOR = (k) => {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,
             });
-            // eslint-disable-next-line no-undef
             await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", {
                 timeout: 180000,
             });

@@ -312,6 +312,7 @@ class AnazhRealm_kreatur_verhalten {
         if (this._creatureTemperament(creature) !== "wild") return null;
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
+        if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -358,6 +359,104 @@ class AnazhRealm_kreatur_verhalten {
         const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
         out.set(dx / d, 0, dz / d);
         return out;
+    }
+
+    // DER KADAVER RUFT (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): ein Tier, das kein Pflanzenfresser ist (diet über
+    // temperament.gattung.pflanzDiet) und nicht satt, wittert die Gefallenen mit Fleisch über das Geruch-Feld (_scentAt an
+    // seiner Nase, Quelle = das Fleisch in kg, in jagd.scentRangeM — dieselbe Nase wie die Jagd), wählt den stärksten Geruch
+    // und geht hin (das Ankunfts-Gesetz; der Halt, wo das Maul am liegenden Leib ist). Dort FRISST es: je Sekunde der
+    // Kreatur-Uhr magenAnteil × die eigene Masse / fressSec, bis der Magen voll oder der Kadaver leer ist (der Zustand
+    // „fressen" senkt den Kopf, _tickKreaturVerhalten). Rückgabe: true, wenn der Kadaver den Weg schrieb (dann zieht kein
+    // Verband). Vorher lag der Riss ohne Zustand, kein Tier sah ihn an, und nach 90 s sank er.
+    _kreaturAasZug(creature, direction, speed, hueftL) {
+        const ud = creature.userData;
+        const L = this.state.leichname;
+        if (!L.length) return ud._motionZustand === "fressen" ? this._kreaturFrisstNicht(creature) : false;
+        const frass = ud._motionZustand === "fressen";
+        const VG = AnazhRealm._verhaltenGesetz();
+        const voll = this._kreaturMagenVoll(creature);
+        const hunger = voll > 0 && this._kreaturMagen(creature) < (frass ? voll : VG.aas.hungerAnteil * voll);
+        if (!hunger || this._kreaturDiet(creature) <= VG.temperament.gattung.pflanzDiet)
+            return this._kreaturFrisstNicht(creature);
+        const R = VG.jagd.scentRangeM;
+        const cx = creature.position.x,
+            cz = creature.position.z;
+        const quelle = this._aasQuelle || (this._aasQuelle = [{ x: 0, z: 0, strength: 1 }]);
+        const t = (performance.now() || 0) / 1000;
+        let best = null,
+            bestS = 0;
+        for (const k of L) {
+            const K = k.userData.kadaver;
+            if (!K || !(K.fleisch > 0)) continue;
+            const dx = k.position.x - cx,
+                dz = k.position.z - cz;
+            if (dx * dx + dz * dz > R * R) continue;
+            quelle[0].x = k.position.x;
+            quelle[0].z = k.position.z;
+            quelle[0].strength = K.fleisch;
+            const w = this._scentAt(cx, cz, quelle, { time: t });
+            if (w > bestS) {
+                bestS = w;
+                best = k;
+            }
+        }
+        if (!best) return this._kreaturFrisstNicht(creature);
+        const lE = this._kreaturLeib(creature, hueftL, this._aasLeibE || (this._aasLeibE = {}));
+        const lK = this._kreaturLeib(best, 0, this._aasLeibK || (this._aasLeibK = {}));
+        const dx = best.position.x - cx,
+            dz = best.position.z - cz;
+        // der Spalt zwischen Maul (die Brust halb + radius vor der Mitte) und dem liegenden Leib; gefressen wird, wo das Maul
+        // ihn irgendwo auf seiner Länge erreicht (± halb um seine Mitte) — am Kadaver drängen sich die Fresser, der Paar-Raum
+        // weicht (kein Anstellen, _kreaturZiel ohne den freien Weg; die Separation hält die Leiber auseinander)
+        const rest = Math.hypot(dx, dz) - lE.halb - lE.radius - lK.radius;
+        const now = this.state.creatureAnimationTime;
+        if (rest > lK.halb) {
+            ud._fressT = null;
+            this._kreaturZustandStempel(creature, null); // wer zum Kadaver geht, jagt nicht (und frisst noch nicht)
+            this._kreaturZiel(direction, dx, dz, rest, speed);
+            return true;
+        }
+        this._kreaturZustandStempel(creature, "fressen");
+        direction.set(0, 0, 0);
+        const dt = Number.isFinite(ud._fressT) ? Math.max(0, Math.min(1, now - ud._fressT)) : 0;
+        ud._fressT = now;
+        const K = best.userData.kadaver;
+        const biss = Math.min(K.fleisch, voll - ud.magen, (voll / VG.aas.fressSec) * dt);
+        if (biss > 0) {
+            K.fleisch -= biss;
+            ud.magen += biss;
+        }
+        return true;
+    }
+    _kreaturFrisstNicht(creature) {
+        const ud = creature.userData;
+        ud._fressT = null;
+        if (ud._motionZustand === "fressen") {
+            this._kreaturZustandStempel(creature, null);
+            if (ud._verhaltenAktion && ud._verhaltenAktion.name === "fressen") ud._verhaltenAktion = null;
+        }
+        return false;
+    }
+    // DER MAGEN (kg, VERHALTEN.aas): so viel frisst ein Tier auf einmal — magenAnteil × die EINE Masse seines Leibs; ein Leib
+    // ohne gemessene Gestalt hat keinen (0). Er leert sich in verdauSec auf der Kreatur-Uhr (gerechnet, wenn ihn einer liest).
+    _kreaturMagenVoll(creature) {
+        const tb = creature.userData && creature.userData._tierBaum;
+        return tb && tb.leibV > 0 ? AnazhRealm._verhaltenGesetz().aas.magenAnteil * this._leibMasse(creature) : 0;
+    }
+    _kreaturMagen(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const dt = Number.isFinite(ud._magenT) ? Math.max(0, now - ud._magenT) : 0;
+        ud._magenT = now;
+        if (!(ud.magen > 0)) return (ud.magen = 0);
+        const voll = this._kreaturMagenVoll(creature);
+        ud.magen = Math.max(0, ud.magen - (voll / AnazhRealm._verhaltenGesetz().aas.verdauSec) * dt);
+        return ud.magen;
+    }
+    // SATT (VERHALTEN.aas.hungerAnteil): wer mehr als diesen Anteil seines Magens trägt, jagt keine Beute und frisst nicht an.
+    _kreaturSatt(creature) {
+        const voll = this._kreaturMagenVoll(creature);
+        return voll > 0 && this._kreaturMagen(creature) >= AnazhRealm._verhaltenGesetz().aas.hungerAnteil * voll;
     }
 
     // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
@@ -2628,6 +2727,10 @@ class AnazhRealm_kreatur_verhalten {
                 const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
                 creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
             }
+            // der leere Kadaver (sein Fleisch ist gefressen, _kreaturAasZug) sinkt jetzt: die Frist endet mit dem Versinken
+            const KF = creature.userData.kadaver;
+            if (KF && !(KF.fleisch > 0) && dying.t >= dying.dauer)
+                dying.nachklang = Math.min(dying.nachklang, dying.t - dying.dauer + dying.sinken);
             // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
             const ende = dying.dauer + dying.nachklang;
             if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
@@ -2961,6 +3064,7 @@ class AnazhRealm_kreatur_verhalten {
                     // JAGD: ein wildes, unverängstigtes Wesen pirscht ZUR Beute (schneller als Schlendern) und beißt in
                     // Reichweite. _creatureHuntDrive prüft fleeThreshold selbst → getroffen fällt es in den Flucht-Zweig.
                     let jagt = false;
+                    let frisst = false;
                     if (this._creatureHuntDrive(creature, wariness)) {
                         jagt = true;
                         // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
@@ -2998,6 +3102,10 @@ class AnazhRealm_kreatur_verhalten {
                             // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
                             this._creatureCharacterWander(creature, direction, speed);
                         }
+                    } else if (this._kreaturAasZug(creature, direction, speed, hueftL)) {
+                        // DER KADAVER (Meisterkarte Tiere H3): Hunger schlägt Neugier und Jagd — ein hungriges Tier frisst,
+                        // was schon liegt; der Weg zum Kadaver ist sein eigener (kein Verband zieht)
+                        frisst = true;
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                         this._kreaturZustandStempel(creature, null);
@@ -3042,7 +3150,7 @@ class AnazhRealm_kreatur_verhalten {
                     // DER VERBAND (S6, tetrapoda verbandZug): EIN Zug für jeden wilden Zweig — Wandern, Flucht, Neugier — auf
                     // den Wunsch, den der Zweig schrieb: die Glieder richten sich aus und halten zusammen. Nur die Jagd folgt
                     // ihrem Ring (rudelPlatz). Vorher zog die Herden-Form allein im Neugier-Zweig, und nur Nachbarn im Fenster.
-                    if (!jagt) this._kreaturVerbandZug(creature, direction, speed, hueftL);
+                    if (!jagt && !frisst) this._kreaturVerbandZug(creature, direction, speed, hueftL);
                 }
                 // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
                 // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.
@@ -3392,6 +3500,10 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
             v.freude &&
             Number.isFinite(v.freude.tempoMul) &&
+            // DER KADAVER (Meisterkarte Tiere H3, Vertrags-Akt 20.10.)
+            v.aas &&
+            Number.isFinite(v.aas.fleischAnteil) &&
+            Number.isFinite(v.aas.verdauSec) &&
             Number.isFinite(v.freude.hopHochM) &&
             Number.isFinite(v.freude.hopBasisM) &&
             Array.isArray(v.groessen) &&

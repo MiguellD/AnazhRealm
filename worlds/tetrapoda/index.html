@@ -25,6 +25,7 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #presets button.active{background:#443311;color:#ffcc88}
 /* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette (Aureus) */
 :root{--h-akzent:#ccaa66;--h-tinte:#ddc89a;--h-matt:#886633;--h-haar:#221100;--h-feld:rgba(14,10,4,.9);--h-knopf:rgba(204,170,102,.12)}
+#gang{margin-top:8px;display:flex;gap:6px;align-items:center;font-family:monospace;font-size:10px;color:#ccaa66}
 #emotions,#stufen{margin-top:8px;display:flex;gap:3px;flex-wrap:wrap;align-items:center}
 #stufeIst{margin-left:6px;color:#886633}
 #emotions button,#stufen button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 8px;font-family:monospace;font-size:10px;cursor:pointer;border-radius:3px}
@@ -57,6 +58,8 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <button data-e="alert">Wachsam</button>
 <button data-e="showcase">Showcase</button>
 </div>
+<!-- DIE GANGART AUS DEM TEMPO (Labor = Welt): v̂ = v/√(g·L), das Gang-Gesetz der Welt wählt Schritt, Trab, Galopp -->
+<div id="gang">Tempo v̂ <input type="range" id="tempo" min="0" max="4" step="0.05" value="0"><span id="gangart">stand</span></div>
 <!-- STUDIO-ÜBERGABE (Auftrag D): nur im AnazhRealm-Portal sichtbar (die W12-Brücke enthüllt ihn) — standalone bleibt die UI byte-alt. -->
 <button id="btnUebergabe" hidden style="width:100%;margin-top:8px">An die Welt übergeben</button>
 <div id="kosten"></div>
