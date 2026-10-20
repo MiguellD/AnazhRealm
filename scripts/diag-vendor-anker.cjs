@@ -207,7 +207,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
     { file: "vendor/three.webgpu.min.js", sub: '"assign"!==e&&(ci.prototype[e]=function(...e){', organ: "Diät (9) die eigenen Felder: das Geerbte am Knoten-Prototyp sind nur Ketten-Methoden (B4, 18.10.: 122 Klassen, 2 324 Felder, 0 Uniform/Knoten/Accessor)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.hasAnimation=!0===e.object.isSkinnedMesh,this.refreshUniforms=", organ: "Diät (11) nach Eingang: der Stoff-Verweis, dessen Eigenschaft equals() prüft (refreshUniforms)" },
-    { file: "vendor/three.webgpu.min.js", sub: "const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;", organ: "Diät (13) der Stoff je Render-Objekt: equals() merkt die Stoff-Daten je STOFF und Render-Id (getMaterialData), nie je Render-Objekt" },
+    { file: "vendor/three.webgpu.min.js", sub: "const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;for(const e in o){const t=o[e],r=i[e];", organ: "Diät (13) der Stoff je Render-Objekt: equals() merkt die Stoff-Daten je STOFF und Render-Id (getMaterialData), nie je Render-Objekt, und geht JEDEN Schlüssel der Daten durch (der Stempel steht am Stoff)" },
     { file: "vendor/three.webgpu.min.js", sub: "clearUpdateRanges(){this._updateRangeCache.clear(),super.clearUpdateRanges()}", organ: "Diät (11) nach Eingang: der eigene Uniform-Puffer lädt seine Bereiche und leert sie (wie Bindings._update)" },
     // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
     // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
@@ -438,12 +438,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);", organ: "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)" },
 ];
 
-// DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm laden (vom ersten
+// DIE DIÄT-PRÜFUNG (wer voll frischt): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
 // Semantik: EIN Beobachter und EINE geteilte Gruppe je Programm, mehrere Objekte je Programm, die Vendor-Bahn
 // (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest tauschen den VERSORGER am geladenen Objekt,
 // nie den Text: "abkuerzung" kürzt jedes bekannte Objekt ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518),
-// "schreiben" nimmt der Diät ihr Schreiben der geteilten Gruppe, "ohneGetragen" macht jede neue Version zum Grund
+// "ohneGetragen" macht jede neue Version zum Grund
 // für jedes Render-Objekt (der Stand vor K71), "getragenImmer" hält jede Version für getragen (ein Attribut, das nur
 // ein Pass liest, lüde nie hoch). Ruft die Diät einen Versorger nicht, bleibt die Manipulation wirkungslos und der
 // Selbsttest wird ROT (Konsum statt Zitat).
@@ -460,228 +460,147 @@ function diaetLaden(manipuliert) {
     if (e < 0) return null;
     const AnazhRealm = {};
     new Function("AnazhRealm", stamm.slice(a, e + 3))(AnazhRealm);
-    if (manipuliert === "schreiben") AnazhRealm._diaetGeteiltSchreiben = () => {};
     if (manipuliert === "ohneGetragen") AnazhRealm._diaetGetragen = () => false;
     if (manipuliert === "getragenImmer") AnazhRealm._diaetGetragen = () => true;
-    if (manipuliert === "ohneStoffStand") AnazhRealm._diaetStoffVerpasst = (obs, ro, md, vorR, v) => v;
+    const verpasst = AnazhRealm._diaetStoffVerpasst;
+    if (manipuliert === "ohneStoffStand") AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, liest, v) => v;
+    if (manipuliert === "stoffBlind")
+        AnazhRealm._diaetStoffVerpasst = (od, s, md, vorR, rid, l, v) => verpasst(od, s, md, vorR, rid, true, v);
     const echt = AnazhRealm._diaetRefresh;
     if (manipuliert === "abkuerzung")
         return (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR));
     return echt;
 }
-function diaetLauf(fn) {
-    const N_PROG = 20,
-        N_OBJ = 50;
-    let geschrieben = null,
-        objektDurchDiaet = 0;
-    const ruhenderStoff = { _renderId: -1, _equal: true };
-    const beobachter = () => ({
+// DER SCHEIN-BEOBACHTER (r184 NodeMaterialObserver) der drei Diät-Proben: Daten je Render-Objekt (die Lage `welt`), die
+// Vendor-Bahn (Kopf → renderId-Wand → equals()), und equals() vergleicht die Stoff-Daten `md` EINMAL je Render-Id
+// (`getMaterialData`: `_renderId`/`_equal`) und geht wie r184 JEDEN Schlüssel der Daten gegen den Stoff durch (ein fremder
+// Schlüssel bricht wie im Vendor an `.isTexture`) — ohne Stoff ruht er.
+function scheinBeobachter(md = { _renderId: -1, _equal: true }, stoff = null) {
+    return {
         renderObjects: new Map(),
         renderId: -1,
         hasNode: false,
         hasAnimation: false,
         getRenderObjectData(ro) {
-            let d = this.renderObjects.get(ro);
-            if (!d) {
-                d = { worldMatrix: { w: ro.object.welt, equals: (m) => m.w === d.worldMatrix.w, copy: (m) => (d.worldMatrix.w = m.w) } };
-                this.renderObjects.set(ro, d);
+            if (!this.renderObjects.has(ro)) {
+                const w = { w: ro.object.welt, equals: (m) => m.w === w.w, copy: (m) => (w.w = m.w) };
+                this.renderObjects.set(ro, { worldMatrix: w });
             }
-            return d;
+            return this.renderObjects.get(ro);
         },
+        getMaterialData: () => md,
+        getGeometryData: () => ({}),
         needsVelocity: () => false,
         getLights: () => [],
-        getMaterialData: () => ruhenderStoff, // der Stoff ruht hier — sein Wechsel ist die Stoff-Probe (stoffLauf)
-        equals(ro) {
-            const d = this.getRenderObjectData(ro);
-            if (d.worldMatrix.w !== ro.object.welt) {
-                d.worldMatrix.w = ro.object.welt;
-                return false;
+        equals(ro, l, rid) {
+            const w = this.getRenderObjectData(ro).worldMatrix;
+            if (w.w !== ro.object.welt) return (w.w = ro.object.welt) === null;
+            if (stoff && md._renderId !== rid) {
+                md._renderId = rid;
+                md._equal = true;
+                for (const k in md) {
+                    if (k === "_renderId" || k === "_equal" || stoff[k].isTexture === true || md[k] === stoff[k]) continue;
+                    md[k] = stoff[k];
+                    md._equal = false;
+                    break;
+                }
             }
-            return true;
+            return md._equal;
         },
-    });
-    // Die r184-Vendor-Bahn eines Beobachters: Kopf (hasNode/Animation/Erst-Init) → renderId-Wand → equals().
-    const altNR = function (ro, frame) {
-        if (this.hasNode || this.hasAnimation || !this.renderObjects.has(ro)) {
-            this.getRenderObjectData(ro);
-            return true;
-        }
-        if (this.renderId !== frame.renderId) {
-            this.renderId = frame.renderId;
-            return true;
-        }
-        return this.equals(ro, [], frame.renderId) !== true;
     };
-    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je GRUPPE (die Diät) und die
-    // Gänge des Knotens je Zeichen-Objekt je Programm. Die Wiederholung zählt je RENDER-ABSCHNITT (r184: jeder betretene
-    // Render zählt `info.calls` hoch, die Render-Id kehrt nach einem verschachtelten Render zurück).
-    let dieDiaet = null,
-        zeichenGaenge = null,
-        knotenGaenge = null,
-        fremdeKamera = 0,
-        fremdeGruppe = 0,
-        aktRid = 0;
-    // Der Wert jedes render-Knotens: welche Kamera er gerade hält. Der Vorher-Knoten des Schattens verschachtelt EINMAL je
-    // Render-Id (r184 updateBeforeMap) einen Render, dessen Werfer ohne Diät jeden geteilten Knoten über die Vendor-Bahn
-    // auf SEINE Kamera stellen — eine danach geladene Gruppe muss die Knoten vorher neu gestellt bekommen.
-    const wert = new Map();
-    const vorGemacht = new Map();
-    const abschnitt = () => aktRid + ":" + rend.info.calls + ":";
-    const frame = {
-        camera: null,
-        ro: null,
-        updateBeforeNode(n) {
-            const k = abschnitt() + "v" + n.id;
-            knotenGaenge.set(k, (knotenGaenge.get(k) || 0) + 1);
-            if (n.verschachtelt && vorGemacht.get(n.id) !== aktRid) {
-                rend.info.calls++;
-                for (const id of wert.keys()) wert.set(id, "schatten");
-                this.camera = "schatten";
-                vorGemacht.set(n.id, aktRid);
-            }
+}
+function scheinVendor(ro, frame) {
+    if (this.hasNode || this.hasAnimation || !this.renderObjects.has(ro)) {
+        this.getRenderObjectData(ro);
+        return true;
+    }
+    if (this.renderId !== frame.renderId) {
+        this.renderId = frame.renderId;
+        return true;
+    }
+    return this.equals(ro, [], frame.renderId) !== true;
+}
+function scheinObjekt(extra) {
+    return Object.assign(
+        {
+            welt: 0,
+            get matrixWorld() {
+                return { w: this.welt };
+            },
         },
+        extra
+    );
+}
+// DIE SCHEIN-DIÄT zählt, WER voll frischt und welche Objekt-Gruppe lädt: 20 Programme mit je EINER geteilten Gruppe (18–19
+// tragen einen Verweis ohne festes Objekt — er liest frame.object, je Programm ein Gang), 50 Senken, der Stein mit freier
+// Uniform. Die Kamera-Treue (jede geteilte Gruppe je Render-Abschnitt geschrieben, kein Gang zweimal, verschachtelte Renders)
+// urteilt der ECHTE Renderer (gate:kamera-treue BILD · STAND · VERSCHACHTELT) — ihr Schein-Zwilling fiel mit (13).
+function diaetLauf(fn) {
+    let objektDurchDiaet = 0,
+        zeichenGaenge = null;
+    const nf = {
+        ro: null,
+        updateBeforeNode() {},
         updateNode(n) {
-            if (this.camera !== "haupt") fremdeKamera++;
             if (n.object === null) zeichenGaenge.add(this.ro.progId);
-            else {
-                const k = abschnitt() + n.id;
-                knotenGaenge.set(k, (knotenGaenge.get(k) || 0) + 1);
-                wert.set(n.id, this.camera);
-            }
         },
     };
     const rend = {
         info: { calls: 0 },
         backend: { updateBinding: () => objektDurchDiaet++ },
-        _nodes: {
-            updateBefore() {},
-            // r184: EIN Node-Frame, getNodeFrameForRender stellt Kamera und Objekt des Render-Objekts. Der Vorher-Knoten
-            // des Schattens verschachtelt einen Render, der den Frame auf SEINE Kamera stellt.
-            getNodeFrameForRender: (ro) => {
-                frame.camera = "haupt";
-                frame.ro = ro;
-                return frame;
-            },
-        },
-        _bindings: {
-            _update(g) {
-                if (g.bindings[0].groupNode.shared === true) {
-                    geschrieben.set(g.id, (geschrieben.get(g.id) || 0) + 1);
-                    const k = abschnitt() + g.id;
-                    dieDiaet.set(k, (dieDiaet.get(k) || 0) + 1);
-                    if (g.knoten.some((id) => wert.get(id) !== "haupt")) fremdeGruppe++;
-                } else objektDurchDiaet++;
-            },
-        },
+        _nodes: { updateBefore() {}, getNodeFrameForRender: (ro) => ((nf.ro = ro), nf) },
+        _bindings: { _update: (g) => g.bindings[0].groupNode.shared === true || objektDurchDiaet++ },
     };
-    // r184-Ids (Knoten · Bindegruppen): Programme 0–9 tragen je ihre EIGENE geteilte Gruppe und ihren eigenen Render-
-    // Knoten (wie vor dem EINEN Knoten je Quelle), 10–17 teilen EINE Gruppe und EINEN Knoten (dieselbe Arbeit), 18–19
-    // teilen sie auch, tragen aber denselben Verweis ohne festes Objekt (er liest frame.object — je Programm ein Gang).
-    // Jede Gruppe kennt die render-Knoten, deren Werte sie lädt.
-    const geteilteGruppe = { id: 500, knoten: [600], bindings: [{ groupNode: { shared: true } }] };
-    const geteilterKnoten = { id: 600, getUpdateType: () => "render" };
     const zeichenKnoten = { id: 700, property: "x", object: null, getUpdateType: () => "render" };
     const objektKnoten = { id: 800, getUpdateType: () => "object" };
-    // Ein Vorher-Knoten aller Programme (wie der Schatten des Lichts): EINMAL je Render.
-    const vorKnoten = { id: 900, verschachtelt: true, getUpdateBeforeType: () => "render" };
-    // DER STEIN (Gegenprüfung 07.10.): ein Diät-Stoff ohne Schatten-Empfang zeichnet ZUERST — er stellt und stempelt den
-    // geteilten Knoten, bevor der Schatten des ersten Empfängers verschachtelt; seine eigene Gruppe lädt nur ihn — und seine
-    // freie Uniform (ein Schreiber setzt `.value`, E1-n1): ihr Wechsel lädt die eigene Gruppe im Objekt-Gang, nie voll.
-    const freiWert = { isUniformNode: true, value: 0, getUpdateType: () => "none" };
-    const steinProg = {
-        id: 20,
-        obs: beobachter(),
-        geteilt: { id: 502, knoten: [600], bindings: [{ groupNode: { shared: true } }] },
-        nbs: { updateNodes: [geteilterKnoten], updateBeforeNodes: [], updateAfterNodes: [] },
-    };
-    // die eigene Gruppe: EIN Uniform-Puffer wie r184 (updateByType vergleicht, updateBinding lädt)
-    const steinEigen = { bindings: [scheinPuffer([{ nodeUniform: { node: freiWert }, getValue: () => freiWert.value }])] };
-    const stein = {
-        prog: steinProg,
-        ro: {
-            progId: 20,
-            object: { material: { _anazhDiaet: true }, welt: 0, get matrixWorld() { return { w: this.welt }; } },
-            material: { _anazhDiaet: true },
-            lightsNode: {},
-            getBindings: () => [steinProg.geteilt, steinEigen],
-            getNodeBuilderState: () => steinProg.nbs,
-        },
-    };
-    const programme = [];
-    for (let p = 0; p < N_PROG; p++) {
-        const eigen = p < 10;
-        programme.push({
-            id: p,
-            obs: beobachter(),
-            geteilt: eigen ? { id: 100 + p, knoten: [200 + p], bindings: [{ groupNode: { shared: true } }] } : geteilteGruppe,
-            nbs: {
-                updateNodes: [
-                    eigen ? { id: 200 + p, getUpdateType: () => "render" } : geteilterKnoten,
-                    objektKnoten,
-                    ...(p >= 18 ? [zeichenKnoten] : []),
-                ],
-                updateBeforeNodes: [vorKnoten],
-                updateAfterNodes: [],
+    // Ein Render-Objekt EINES Programms: die geteilte Gruppe und der Beobachter des Programms, dazu seine eigene Gruppe.
+    const prog = (id, objekt) => {
+        const geteilt = { id: 100 + id, bindings: [{ groupNode: { shared: true } }] };
+        const updateNodes = [{ id: 200 + id, getUpdateType: () => "render" }, ...objekt];
+        const nbs = { updateNodes, updateBeforeNodes: [], updateAfterNodes: [] };
+        const obs = scheinBeobachter();
+        return (object, eigen) => ({
+            obs,
+            ro: {
+                progId: id,
+                object,
+                material: object.material,
+                getBindings: () => [geteilt, eigen],
+                getNodeBuilderState: () => nbs,
             },
         });
-    }
+    };
+    // DER STEIN: seine freie Uniform (ein Schreiber setzt `.value`, E1-n1) lädt im Wechsel die eigene Gruppe im Objekt-Gang,
+    // nie voll; die eigene Gruppe ist EIN Uniform-Puffer wie r184 (updateByType vergleicht, updateBinding lädt).
+    const freiWert = { isUniformNode: true, value: 0, getUpdateType: () => "none" };
+    const steinPuffer = scheinPuffer([{ nodeUniform: { node: freiWert }, getValue: () => freiWert.value }]);
+    const stein = prog(20, [])(scheinObjekt({ material: { _anazhDiaet: true } }), { bindings: [steinPuffer] });
+    const programme = [];
+    for (let p = 0; p < 20; p++) programme.push(prog(p, [objektKnoten, ...(p >= 18 ? [zeichenKnoten] : [])]));
     const objekte = [];
-    for (let i = 0; i < N_OBJ; i++) {
-        const prog = programme[i % N_PROG];
-        const obj = {
+    for (let i = 0; i < 50; i++) {
+        const senke = scheinObjekt({
             isInstancedMesh: true,
             instanceMatrix: { version: 0 },
-            instanceColor: null,
             material: { _anazhDiaet: true },
-            welt: 0, get matrixWorld() { return { w: this.welt }; },
-        };
-        const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
-        objekte.push({
-            prog,
-            ro: {
-                progId: prog.id,
-                object: obj,
-                material: obj.material,
-                lightsNode: {},
-                getBindings: () => [prog.geteilt, objektGruppe],
-                getNodeBuilderState: () => prog.nbs,
-            },
         });
+        objekte.push(programme[i % 20](senke, { bindings: [{ groupNode: { shared: false } }] }));
     }
     const render = (vorher) => {
         // r184: der Render zählt `info.calls` hoch, seine Render-Id ist der Zählerstand.
-        aktRid = ++rend.info.calls;
-        const frame = { renderer: rend, renderId: aktRid };
+        const frame = { renderer: rend, renderId: ++rend.info.calls };
         if (vorher) vorher();
-        geschrieben = new Map();
-        dieDiaet = new Map();
         zeichenGaenge = new Set();
-        knotenGaenge = new Map();
-        fremdeKamera = 0;
-        fremdeGruppe = 0;
         objektDurchDiaet = 0;
         const voll = new Set();
-        const steinVoll = fn(stein.prog.obs, stein.ro, frame, altNR);
-        if (steinVoll) wert.set(600, "haupt");
-        for (let i = 0; i < objekte.length; i++) {
-            const x = objekte[i];
-            // Ein Voll-Refresh schreibt alle Gruppen des Objekts (die Vendor-Bahn), die geteilte eingeschlossen.
-            if (fn(x.prog.obs, x.ro, frame, altNR)) {
+        const steinVoll = fn(stein.obs, stein.ro, frame, scheinVendor);
+        for (let i = 0; i < objekte.length; i++)
+            if (fn(objekte[i].obs, objekte[i].ro, frame, scheinVendor)) {
                 voll.add(i);
-                // Der Voll-Refresh fährt jeden Knoten für SEIN Objekt (die Vendor-Bahn) mit der Kamera dieses Renders.
-                zeichenGaenge.add(x.prog.id);
-                for (const n of x.prog.nbs.updateNodes) if (n.getUpdateType() !== "object" && n.object !== null) wert.set(n.id, "haupt");
-                geschrieben.set(x.prog.geteilt.id, (geschrieben.get(x.prog.geteilt.id) || 0) + 1);
+                zeichenGaenge.add(objekte[i].ro.progId); // der Voll-Refresh fährt jeden Knoten für SEIN Objekt
             }
-        }
-        let fehlt = 0;
-        for (const p of programme) if (!geschrieben.get(p.geteilt.id)) fehlt++;
-        // Die Wiederholung: dieselbe geteilte Gruppe oder derselbe render-Knoten mehr als EINMAL je Render durch die Diät.
-        let wiederholt = 0;
-        for (const n of dieDiaet.values()) if (n > 1) wiederholt += n - 1;
-        for (const n of knotenGaenge.values()) if (n > 1) wiederholt += n - 1;
         const zeichenFehlt = [18, 19].filter((p) => !zeichenGaenge.has(p)).length;
-        return { voll, steinVoll, fehlt, objektDurchDiaet, wiederholt, zeichenFehlt, fremdeKamera, fremdeGruppe };
+        return { voll, steinVoll, objektDurchDiaet, zeichenFehlt };
     };
     const r1 = render();
     const r2 = render();
@@ -705,41 +624,26 @@ function getragenLauf(fn) {
         normale = attr("normale");
     const daten = new Map();
     const A = { has: (a) => daten.has(a), get: (a) => daten.get(a) || (daten.set(a, {}), daten.get(a)) };
-    const rend = { info: { calls: 0 }, _attributes: A, _nodes: { getNodeFrameForRender: () => ({}) }, _bindings: { _update() {} } };
-    const obj = { isInstancedMesh: true, instanceMatrix: im, instanceColor: null, welt: 0 };
+    const rend = {
+        info: { calls: 0 },
+        _attributes: A,
+        _nodes: { getNodeFrameForRender: () => ({}) },
+        _bindings: { _update() {} },
+    };
+    const obj = scheinObjekt({ isInstancedMesh: true, instanceMatrix: im, instanceColor: null });
     const geo = { id: 77, index: null, attributes: { position: lage, normal: normale } };
     const pass = (liest) => {
         const nbs = { updateNodes: [], updateBeforeNodes: [], updateAfterNodes: [] };
-        const obs = {
-            renderObjects: new Map(),
-            renderId: -1,
-            hasAnimation: false,
-            getRenderObjectData(ro) {
-                if (!this.renderObjects.has(ro)) this.renderObjects.set(ro, { worldMatrix: { equals: () => true } });
-                return this.renderObjects.get(ro);
-            },
-            getGeometryData: () => ({}),
-            needsVelocity: () => false,
-            getLights: () => [],
-            equals: () => true,
-        };
         const ro = { object: obj, geometry: geo, getBindings: () => [], getNodeBuilderState: () => nbs };
-        return { obs, ro, liest };
+        return { obs: scheinBeobachter(), ro, liest };
     };
     const paesse = [pass([im, lage]), pass([im, lage, normale])];
-    const altNR = function (ro) {
-        if (!this.renderObjects.has(ro)) {
-            this.getRenderObjectData(ro);
-            return true;
-        }
-        return false;
-    };
     const render = (vorher) => {
         if (vorher) vorher();
         const frame = { renderer: rend, renderId: ++rend.info.calls };
         const voll = [];
         for (const p of paesse)
-            if (fn(p.obs, p.ro, frame, altNR)) {
+            if (fn(p.obs, p.ro, frame, scheinVendor)) {
                 voll.push(p === paesse[0] ? "schatten" : "haupt");
                 // der Voll-Refresh lädt, was dieser Pass liest (r184 `Attributes.update`)
                 for (const a of p.liest) {
@@ -773,44 +677,25 @@ function scheinPuffer(uniforms) {
         uniforms,
     };
 }
-// (13) DER STOFF JE RENDER-OBJEKT (Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id
-// (`getMaterialData`, `_renderId`/`_equal`), der Puffer des Stoff-Verweises liegt je Render-Objekt. Drei Objekte EINES
-// Stoffs in EINEM Programm: A zeichnet immer, B und C fehlen im Render des Farbwechsels (verdeckt), danach bewegt sich B und C
-// steht. Gemessen: welche eigenen Puffer danach den alten Wert tragen (Soll keiner; 783fcdc1 B+C, e93134f4 C).
+// (13) DER STOFF JE RENDER-OBJEKT (Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id, der Puffer
+// des Stoff-Verweises liegt je Render-Objekt. Fünf Objekte EINES Stoffs: D (eine Senke) frischt im Render des Farbwechsels
+// aus eigenem Grund VOR A, A verbraucht ihn, B und C fehlen (verdeckt), E (ein Programm ohne Stoff-Verweis, der Schatten-
+// Pass) fehlt auch; danach bewegt sich B, C steht. Gemessen: welche Puffer danach den alten Wert tragen (`alt`, Soll keiner;
+// 783fcdc1 B+C, e93134f4 C) und wer ohne Änderung voll frischt (`ueber`, Soll keiner; c7225684 D+E — ein Stoff-Stand, der
+// nur zwei Ausgänge der Diät kannte).
 function stoffLauf(fn) {
     const stoff = { farbe: 1 };
-    const md = { _renderId: -1, _equal: false, farbe: 1 };
+    const obs = scheinBeobachter({ _renderId: -1, _equal: false, farbe: 1 }, stoff);
     const wert = { isUniformNode: true, value: 0, getUpdateType: () => "none" };
-    const verweis = { id: 810, isMaterialReferenceNode: true, property: "farbe", node: wert, getUpdateType: () => "object" };
-    const nbs = { updateNodes: [verweis], updateBeforeNodes: [], updateAfterNodes: [], observer: { refreshUniforms: ["farbe"] } };
-    const obs = {
-        renderObjects: new Map(),
-        renderId: -1,
-        hasAnimation: false,
-        getRenderObjectData(ro) {
-            if (!this.renderObjects.has(ro)) {
-                const lage = { w: ro.object.matrixWorld.w, equals: (m) => m.w === lage.w, copy: (m) => (lage.w = m.w) };
-                this.renderObjects.set(ro, { worldMatrix: lage });
-            }
-            return this.renderObjects.get(ro);
-        },
-        getMaterialData: () => md,
-        needsVelocity: () => false,
-        getLights: () => [],
-        // r184 equals(): die Lage prüft die Diät vorher, den Stoff vergleicht der Vendor EINMAL je Render-Id
-        equals(ro, l, rid) {
-            if (md._renderId !== rid) {
-                md._renderId = rid;
-                md._equal = md.farbe === stoff.farbe;
-                md.farbe = stoff.farbe;
-            }
-            return md._equal;
-        },
-    };
-    const altNR = function (ro) {
-        this.getRenderObjectData(ro);
-        return true;
-    };
+    const verweis = { isMaterialReferenceNode: true, property: "farbe", node: wert, getUpdateType: () => "object" };
+    const prog = (updateNodes) => ({
+        updateNodes,
+        updateBeforeNodes: [],
+        updateAfterNodes: [],
+        observer: { refreshUniforms: ["farbe"] },
+    });
+    const nbs = prog([verweis]),
+        nbsOhne = prog([]);
     let akt = null;
     const nf = { updateNode: (n) => n === verweis && (wert.value = akt.material.farbe), updateBeforeNode() {} };
     const rend = {
@@ -820,28 +705,43 @@ function stoffLauf(fn) {
         _bindings: { _update: (g) => g.bindings.forEach((b) => b.uniforms && b.updateByType(b.uniforms[0])) },
     };
     const geteilt = { bindings: [{ groupNode: { shared: true } }] };
-    const ros = ["A", "B", "C"].map((name) => {
+    const ros = ["D", "A", "B", "C", "E"].map((name) => {
         const eigen = { bindings: [scheinPuffer([{ nodeUniform: { node: wert }, getValue: () => wert.value }])] };
-        const object = { matrixWorld: { w: 0 } };
-        return { name, eigen, object, material: stoff, lightsNode: {}, getBindings: () => [geteilt, eigen], getNodeBuilderState: () => nbs };
+        const object = scheinObjekt(
+            name === "D" ? { isInstancedMesh: true, instanceMatrix: { id: 7, version: 0 } } : {}
+        );
+        const n = name === "E" ? nbsOhne : nbs;
+        return {
+            name,
+            eigen,
+            object,
+            material: stoff,
+            getBindings: () => [geteilt, eigen],
+            getNodeBuilderState: () => n,
+        };
     });
     // Ein Voll-Refresh (die Vendor-Bahn) stellt jeden Knoten für SEIN Objekt und lädt jede Gruppe.
     const render = (wer) => {
         const frame = { renderer: rend, renderId: ++rend.info.calls };
+        const voll = [];
         for (const ro of ros)
-            if (wer.includes(ro.name) && fn(obs, ro, frame, altNR)) {
-                rend._nodes.getNodeFrameForRender(ro).updateNode(verweis);
+            if (wer.includes(ro.name) && fn(obs, ro, frame, scheinVendor)) {
+                voll.push(ro.name);
+                if (ro.name !== "E") rend._nodes.getNodeFrameForRender(ro).updateNode(verweis);
                 rend._bindings._update(ro.eigen);
             }
+        return voll;
     };
-    render("ABC");
-    render("ABC");
+    render("DABCE");
+    render("DABCE");
     stoff.farbe = 2;
-    render("A");
-    ros[1].object.matrixWorld = { w: 1 };
-    render("ABC");
-    render("ABC");
-    return ros.filter((ro) => ro.eigen.bindings[0].geladen !== stoff.farbe).map((ro) => ro.name);
+    ros[0].object.instanceMatrix.version++;
+    render("DA");
+    ros[2].object.welt = 1;
+    const ueber = render("DABCE").filter((n) => n !== "B" && n !== "C");
+    ueber.push(...render("DABCE"));
+    const alt = ros.filter((ro) => ro.name !== "E" && ro.eigen.bindings[0].geladen !== stoff.farbe);
+    return { alt: alt.map((ro) => ro.name), ueber };
 }
 function getragenPruefe(g) {
     const f = [];
@@ -866,23 +766,7 @@ function diaetProbe(selftest) {
         const f = [];
         if (z.r1.voll.size !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.voll.size})`);
         for (const [k, r] of Object.entries(z)) {
-            if (r.fehlt)
-                f.push(
-                    `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
-                );
             if (r.objektDurchDiaet !== (k === "r4" || k === "r7" ? 1 : 0)) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (Soll: nur die des bewegten Objekts, sein Objekt-Gang)`);
-            if (r.wiederholt)
-                f.push(
-                    `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
-                );
-            if (r.fremdeKamera)
-                f.push(
-                    `Node-Frame ${k}: ${r.fremdeKamera} Knoten mit der Kamera eines verschachtelten Renders gestellt — der Frame wurde vor dem Vorher-Knoten gemerkt`
-                );
-            if (r.fremdeGruppe)
-                f.push(
-                    `Verschachtelt ${k}: ${r.fremdeGruppe} geteilte Gruppe(n) mit der Kamera eines verschachtelten Renders geladen — ein Stempel überlebte ihn (er muss beim Betreten UND Verlassen jedes Renders wechseln)`
-                );
             if (r.zeichenFehlt)
                 f.push(
                     `Zeichen-Objekt ${k}: ${r.zeichenFehlt} von 2 Programmen mit einem Verweis ohne festes Objekt gingen keinen eigenen Gang — er arbeitete nie für ihr Objekt`
@@ -895,30 +779,42 @@ function diaetProbe(selftest) {
     };
     const z = diaetLauf(fn);
     fehler.push(...pruefe(z));
-    const stoffAlt = (alt) =>
-        alt.length
+    const stoffAlt = ({ alt, ueber }) => [
+        ...(alt.length
             ? [`STOFF: ${alt.join(" + ")} tragen nach einem verpassten Render den alten Stoff-Wert (equals() merkt je Stoff, nie je Render-Objekt)`]
-            : [];
-    fehler.push(...stoffAlt(stoffLauf(fn)));
+            : []),
+        ...(ueber.length
+            ? [`STOFF ÜBERFRISCHT: ${ueber.join(" + ")} frischen ohne Änderung voll auf (ein Voll-Refresh im Render des Verbrauchs, ein Programm ohne Stoff-Verweis)`]
+            : []),
+    ];
+    // ein fremder Schlüssel in den Stoff-Daten bricht equals() (r184 liest `material[k].isTexture`) — der Render wirft
+    const stoffProbe = (f) => {
+        try {
+            return stoffAlt(stoffLauf(f));
+        } catch (e) {
+            return [`STOFF BRUCH: equals() bricht nach dem ersten Stoff-Wechsel (${e.message}) — ein Diät-Stempel in den Stoff-Daten`];
+        }
+    };
+    fehler.push(...stoffProbe(fn));
     const stand = [z.r2, z.r3, z.r6].map((r) => r.voll.size + (r.steinVoll ? 1 : 0));
-    // Die Kamera-Treue kostet im Stand keinen Voll-Refresh: je Programm schreibt die Diät nur die geteilte Gruppe.
+    // Der Stand kostet keinen Voll-Refresh: je Programm schreibt die Diät nur die geteilte Gruppe.
     if (stand.some((n) => n !== 0))
         fehler.push(`Stand: ${stand.join("/")} Voll-Refreshs je Render (Soll 0 — die renderId-Wand refresht jedes Programm voll)`);
     let selbstFeuert = false;
     if (selftest) {
         const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
-        // Die Diät MUSS ihr Schreiben tragen und den Getragen-Wächter fragen: ein stummer Versorger lässt Programme an der
-        // alten Kamera kleben, ein blinder Wächter frischt jede Version auf bzw. lädt die Normale nie.
-        const ohneSchreiben = pruefe(diaetLauf(diaetLaden("schreiben")));
+        // Die Diät MUSS den Getragen-Wächter fragen: ein blinder frischt jede Version auf bzw. lädt die Normale nie.
         const ohneG = getragenPruefe(getragenLauf(diaetLaden("ohneGetragen")));
         const immer = getragenPruefe(getragenLauf(diaetLaden("getragenImmer")));
-        const ohneStand = stoffAlt(stoffLauf(diaetLaden("ohneStoffStand")));
+        const ohneStand = stoffProbe(diaetLaden("ohneStoffStand"));
+        const blind = stoffProbe(diaetLaden("stoffBlind"));
         selbstFeuert =
             ohneStand.length === 1 &&
+            blind.length === 1 &&
+            blind[0].startsWith("STOFF ÜBERFRISCHT: E") &&
             ohneG.some((e) => e.startsWith("GETRAGEN: eine neue Version")) &&
             immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
-            abk.some((e) => e.startsWith("Kamera-Treue")) &&
-            ohneSchreiben.some((e) => e.startsWith("Kamera-Treue"));
+            abk.some((e) => e.startsWith("r4: die Diät schrieb 0"));
     }
     return { fehler, selbstFeuert, stand, getragen };
 }
@@ -970,7 +866,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung oder ein stummer Schreiber lässt Programme an der alten Kamera kleben; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung lässt das bewegte Objekt ohne seinen Gang; ohne Getragen-Wächter frischt jede Version jeden Pass auf, ein blinder lädt die Normale nie; ohne Stoff-Stand trägt ein verpasstes Objekt den alten Stoff, ein blinder frischt ein Programm ohne Stoff-Verweis auf)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         if (errs.length > 1 || !errs.some((e) => e.includes("hasNode"))) for (const e of errs) console.error("   ❌ " + e);
@@ -982,7 +878,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 3 Puffern alt).`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 4 Puffern alt und frischt 0 Objekte ohne Änderung auf).`
     );
 }
 main();

@@ -3619,6 +3619,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     const fremd = [],
         regung = [],
         stoffUniform = new Set();
+    let stoffLiest = false; // (13) das Programm liest eine Stoff-Eigenschaft, die equals() prüft (Wert oder Textur)
     for (const n of objekt) {
         const u = n.node && n.node.isUniformNode === true && n.node.isTextureNode !== true ? n.node : null;
         if (
@@ -3633,6 +3634,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             fremd.push(n);
         else if (u && n.isMaterialReferenceNode === true && ru.has(n.property)) stoffUniform.add(u);
         else regung.push(n);
+        if (n.isMaterialReferenceNode === true && ru.has(n.property)) stoffLiest = true;
     }
     // VOLL lädt der Vendor eine eigene Gruppe, die mehr trägt als Uniform-Puffer, Texturen und Sampler (Speicher-Puffer)
     const eigen = [];
@@ -3658,6 +3660,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         fremd,
         regung,
         stoffUniform,
+        stoffLiest,
         objektVoll,
     };
 };
@@ -3848,18 +3851,19 @@ AnazhRealm._diaetGetragen = function (A, a) {
 // (13) DER STOFF JE RENDER-OBJEKT (E-Diät, Prüfer 19.10.): r184 merkt die Stoff-Daten in equals() je STOFF und Render-Id
 // (`getMaterialData`: `_renderId`, `_equal`), nie je Render-Objekt — wer den Render verpasst, in dem ein anderes Render-Objekt
 // die Änderung verbrauchte (verdeckt, außerhalb des Passes, eine zweite Sicht), hört danach „gleich“, und sein eigener Puffer
-// trägt den alten Wert (am Kopf 783fcdc1: zwei Boxen EINES Stoffs, B verdeckt beim Farbwechsel, danach B-Puffer alt; ein
-// stehendes Objekt schon an e93134f4). Der Stoff zählt jede verbrauchte Änderung (`_anazhStoffV`), jedes Render-Objekt den Stand
-// seines letzten Voll-Refreshs: ein Rückstand frischt EINMAL voll auf. `v` ist das Urteil des Vendors (equals() oder seine
-// Bahn), `vorR` die Render-Id der Stoff-Daten vor ihm — wechselte sie und steht `_equal` falsch, verbrauchte ER eine Änderung.
-AnazhRealm._diaetStoffVerpasst = function (obs, ro, md, vorR, v) {
-    if (!md) return v;
-    if (md._renderId !== vorR && md._equal === false) md._anazhStoffV = (md._anazhStoffV || 0) + 1;
-    const stand = md._anazhStoffV || 0;
-    const d = obs.getRenderObjectData(ro);
-    if ((d._anazhStoffV || 0) === stand) return v;
-    d._anazhStoffV = stand;
-    return true;
+// trägt den alten Wert (am Kopf 783fcdc1: zwei Boxen EINES Stoffs, B verdeckt beim Farbwechsel; ein stehendes Objekt schon an
+// e93134f4). Die Wahrheit sind Render-Ids: der Stoff merkt den Render seines letzten Verbrauchs (`_anazhStoffR` — `vorR`, die
+// Render-Id seiner Daten vor dem Vendor, wechselte und `_equal` steht falsch), das Render-Objekt den Render JEDES Voll-Refreshs
+// (`_anazhVollR`, jeder Ausgang der Diät). Verpasst ist nur, wer den Stoff LIEST (`stoffLiest`, der Schatten-Pass nie) und
+// zuletzt vor dem Verbrauch voll frischte — ein Voll-Refresh im Render des Verbrauchs las den neuen Wert schon. Der Stempel
+// steht am STOFF, nie in seinen Daten: equals() geht jeden Schlüssel der Daten durch und bricht an einem fremden (r184 liest
+// `material[k].isTexture` — am Kopf c7225684 warf jeder Render eines Stoffs nach seinem ersten Wechsel, `_callDepth` wuchs).
+AnazhRealm._diaetStoffVerpasst = function (od, stoff, md, vorR, rid, liest, v) {
+    if (rid === undefined) return v;
+    if (md && md._renderId !== vorR && md._equal === false) stoff._anazhStoffR = rid;
+    if (!v && liest && stoff && stoff._anazhStoffR > (od._anazhVollR === undefined ? -1 : od._anazhVollR)) v = true;
+    if (v) od._anazhVollR = rid;
+    return v;
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
@@ -3927,7 +3931,8 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders || grund) return true;
+        if (anders || grund)
+            return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
         // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
         // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
         // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
@@ -3940,7 +3945,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             gd._equal = true;
         }
     }
-    if (grund) return true;
+    if (grund) return AnazhRealm._diaetStoffVerpasst(d, null, null, null, frame && frame.renderId, false, true);
     const rend = frame && frame.renderer;
     const md = ro && ro.material ? obs.getMaterialData(ro.material) : null;
     if (
@@ -3950,7 +3955,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         ro.getNodeBuilderState().updateAfterNodes.length > 0
     ) {
         const vorR = md && md._renderId;
-        return AnazhRealm._diaetStoffVerpasst(obs, ro, md, vorR, altNR.call(obs, ro, frame));
+        const v = altNR.call(obs, ro, frame);
+        const od = obs.getRenderObjectData(ro);
+        return AnazhRealm._diaetStoffVerpasst(od, ro && ro.material, md, vorR, frame && frame.renderId, true, v);
     }
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
@@ -3977,7 +3984,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     const vorR = md && md._renderId;
     const anders = obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
-    if (AnazhRealm._diaetStoffVerpasst(obs, ro, md, vorR, anders)) return true;
+    if (AnazhRealm._diaetStoffVerpasst(od, ro.material, md, vorR, rid, gang.stoffLiest, anders)) return true;
     if (lage || verweis || textur || frei || obs.hasAnimation === true)
         AnazhRealm._diaetObjektGang(rend, ro, gang, textur);
     return false;
