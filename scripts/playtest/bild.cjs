@@ -95,6 +95,15 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
             AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
         out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
+        // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; V8.48: der Morgen um 0,32 steigt und knickt nicht)
+        const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        r._luftBeta = () => klar;
+        try {
+            const L = [0.5, 0, 1.5, 0.317, 0.32, 0.323].map((t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum);
+            out.atmoUhr = [L[0] >= 0.7, L[1] < 0.35 * L[0], Math.abs(L[2] - L[0]) < 1e-9, L[5] - L[3] > 0.0018, Math.abs(2 * L[4] - L[3] - L[5]) < 0.0018];
+        } finally {
+            delete r._luftBeta;
+        }
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
@@ -244,6 +253,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3Results.dayLengthConstantsExist
         );
         check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
+        const au = wave6g3Results.atmoUhr || [];
+        check("Welle 6.G3.a + V8.48: das Licht der Atmosphäre über die Uhr (Mittag · Mitternacht · Wrap · Puls · C1)", au.length === 5 && au.every(Boolean), au.join(" "));
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
