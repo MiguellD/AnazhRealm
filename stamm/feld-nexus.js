@@ -700,8 +700,10 @@ class AnazhRealm_feld_nexus {
     // nichts.
 
     llmProviderDefs() {
-        const buildUserContent = (system, contextLine, fewShot, userText) =>
-            `${contextLine}\n${fewShot}\nSpieler sagt: ${userText}`;
+        // KEINE EIGENEN PROGRAMME ALS BEISPIEL (KI H1, 20.10.): bis 20.10. stand hier „Letzte erfolgreiche DSL-Programme" (die
+        // fünf besten der KI selbst) — das lokale Modell kopierte sie: „wie spät ist es gerade?" stellte die Uhr wie ein Satz
+        // davor, „zerstöre die plattform" grub (offline am Korpus, qwen3:4b-instruct: Negativ-Sätze mit Tat 0 → 2).
+        const buildUserContent = (system, contextLine, userText) => `${contextLine}\n\nSpieler sagt: ${userText}`;
         return {
             anthropic: {
                 label: "Claude (Anthropic, kostet)",
@@ -969,7 +971,8 @@ class AnazhRealm_feld_nexus {
     // Ops (when · repeat · delay · player_speed … fehlten), Orte und Bedingungen nur aus Beispielen. Wache: gate:weltakt-wache (K).
     _dslVokabular() {
         const W = AnazhRealm.DSL_WERTE;
-        const liste = (eintraege) => eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2]()}]` : ""}`).join(", ");
+        const liste = (eintraege) =>
+            eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2](this)}]` : ""}`).join(", ");
         const ops = Object.entries(this.dslEffects);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
@@ -1031,9 +1034,12 @@ class AnazhRealm_feld_nexus {
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
             '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
-            "    Programmen (mehrere Taten: chain). Beispiel-Antworten:",
+            "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program. Eine Frage,",
+            "    ein Dank, ein Gespräch, ein Wunsch, den kein Verb kann, eine Zerstörung: program null — nur say.",
+            "Beispiel-Antworten:",
             '{"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
             '{"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
+            '{"say":"Drei frohe Wesen erwachen.","program":["spawn_creature",["near_player",10],3,"happy"]}',
             '{"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
             '{"say":"Das kann ich nicht tun.","program":null}',
             ...this._dslVokabular(),
@@ -1041,6 +1047,7 @@ class AnazhRealm_feld_nexus {
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
             '  ["spawn_studio", <wort>, <position>, <anzahl>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1].',
             `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
+            "  <wort> ist genau EIN Wort dieser Liste, nie der Name seiner Gruppe; eine Art der Liste wächst nur über spawn_studio.",
             "  Position: jeder der Orte oben. Anzahl 1–24.",
             "",
             "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
@@ -1049,7 +1056,7 @@ class AnazhRealm_feld_nexus {
             'Effekte SCHREIBEN die reaktive Welt — u.a. ["deposit_life",["at_field_need"]] (trägt Leben dorthin, wo es fehlt), ["deposit_emotion","hope",0.5], ["weather","sunny"], ["creatures_emotion","happy"].',
             'Beispiel-Gesetz: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]],{"everySec":3}] — heilt karge Regionen von selbst.',
             "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
-            "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
+            "Halte Programme klein (Tiefe ≤ 4).",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
             "",
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
@@ -1059,17 +1066,6 @@ class AnazhRealm_feld_nexus {
             moodBgLine,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
         ].join("\n");
-    }
-
-    llmBuildFewShot() {
-        const hist = (this.state.dsl.history || [])
-            .filter((h) => h && Array.isArray(h.program) && typeof h.fitness === "number")
-            .slice(-30)
-            .sort((a, b) => (b.fitness || 0) - (a.fitness || 0))
-            .slice(0, 5);
-        if (hist.length === 0) return "";
-        const lines = hist.map((h) => `- fitness ${h.fitness.toFixed(2)}: ${JSON.stringify(h.program)}`);
-        return `Letzte erfolgreiche DSL-Programme:\n${lines.join("\n")}\n`;
     }
 
     // === Kreatur-Persona-Prompt-Builder ===
