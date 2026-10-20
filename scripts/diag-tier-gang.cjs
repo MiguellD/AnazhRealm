@@ -487,6 +487,104 @@ const STUDIO = (k) => {
     /* eslint-enable no-undef */
 };
 
+// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3): die Fußfolge folgt der Physik, nie der Stimmung — die Froude-Zahl
+// Fr = v̂² = v²/(g·L) wählt Schritt (lateral: nach jedem Hinterfuß der Vorderfuß derselben Seite), Trab (die Diagonalen
+// gemeinsam) und Galopp (die Vorderfüße zusammen, die Hinterfüße zusammen, beide Paare getrennt). Je Gattung läuft der Leib
+// bei v̂ = 0,3 · 1,2 · 3,5 geradeaus durch seinen Chokepoint (_animateCompoundMotion → _animateTierBaum), dasselbe Tempo
+// im Labor (worlds/tetrapoda); gemessen werden die Phasen der vier Beine nach 6 s. --selftest: das Muster der Stimmung
+// (MOTION.joy, jedes Tempo) → ROT.
+const VH = [0.3, 1.2, 3.5];
+const GANG_SOLL = { 0.3: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
+const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
+// die Phasen [FL, FR, HL, HR] (rad) → die Gangart; die Aufsetz-Zeit je Bein τ = −(φ − φ_FL)/2π mod 1 (gangFuss: der Fuß
+// setzt bei Phase π auf, ein größerer Versatz setzt früher)
+function gangart(ph) {
+    const rel = ph.map((p) => ((((p - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
+    const d = (a, b) => {
+        const x = Math.abs(rel[a] - rel[b]) % 1;
+        return Math.min(x, 1 - x);
+    };
+    const [FL, FR, HL, HR] = [0, 1, 2, 3];
+    if (d(FL, HR) < 0.1 && d(FR, HL) < 0.1 && d(FL, FR) > 0.4) return "trab";
+    if (d(FL, HL) < 0.1 && d(FR, HR) < 0.1 && d(FL, FR) > 0.4) return "pass";
+    if (d(FL, FR) < 0.25 && d(HL, HR) < 0.25 && d(FL, HL) >= 0.25 && d(FR, HR) >= 0.25) return "galopp";
+    let getrennt = true;
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) if (d(a, b) < 0.15) getrennt = false;
+    if (!getrennt) return "unbestimmt";
+    const tau = rel.map((x) => (1 - x) % 1);
+    const folge = [0, 1, 2, 3].sort((a, b) => tau[a] - tau[b]);
+    const nach = (bein) => folge[(folge.indexOf(bein) + 1) % 4];
+    return nach(HL) === FL && nach(HR) === FR ? "schritt-lateral" : "schritt-diagonal";
+}
+const GANG_WELT = (k) => {
+    const r = window.anazhRealm,
+        s = r.state;
+    const core = window.__tetrapodaCore;
+    const echt = core.gangSchritt;
+    if (k.stub)
+        core.gangSchritt = function (...a) {
+            return Object.assign(echt.apply(this, a), { folge: k.stimmung });
+        };
+    const pm = s.playerMesh.position;
+    const zeilen = [];
+    try {
+        for (const vh of k.vh) {
+            const saveMax = s.maxCreatures;
+            s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
+            const cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", k.seele, { precise: true, bodySize: 1 });
+            s.maxCreatures = saveMax;
+            if (!cr || !cr.userData._tierBaum) return { fehler: "Spawn " + k.seele };
+            cr.userData.task = { name: "wait", args: {}, since: 0 };
+            cr.userData.emotions = null;
+            cr.rotation.set(0, Math.PI / 2, 0);
+            cr.userData._animFade = 1;
+            const tb = cr.userData._tierBaum;
+            const roles = r._motionRolesForSoul(cr.userData.soul);
+            const Z = r._gangZeile(false);
+            const g = Z && Z.g > 0 ? Z.g : core.GANG_GESETZ.g;
+            const L = tb.beinL * (cr.scale.x || 1);
+            const v = vh * Math.sqrt(g * L);
+            for (let i = 0, t = 0; i < 360; i++) {
+                cr.position.x += v / 60;
+                r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
+            }
+            zeilen.push({ vh, v: +v.toFixed(2), L: +L.toFixed(2), ph: tb._gang.ph.slice() });
+            r.removeCreature(cr);
+        }
+    } finally {
+        core.gangSchritt = echt;
+    }
+    return { zeilen };
+};
+// das Labor (worlds/tetrapoda): dieselbe Gattung, dasselbe v̂ — der Gang-Takt des Labors (gangTakt) 6 s lang
+const GANG_LABOR = (k) => {
+    /* eslint-disable no-undef */
+    if (typeof gangTempo !== "function" || typeof gangTakt !== "function")
+        return {
+            fehler: "das Labor kennt kein Tempo: die Stimmung wählt den Gang (emo.set → MOTION.phases, der CPG-Sinus)",
+        };
+    const core = window.__tetrapodaCore;
+    const echt = core.gangSchritt;
+    if (k.stub)
+        core.gangSchritt = function (...a) {
+            return Object.assign(echt.apply(this, a), { folge: k.stimmung });
+        };
+    const zeilen = [];
+    try {
+        document.querySelector('#presets button[data-p="' + k.gattung + '"]').click();
+        for (const vh of k.vh) {
+            gangTempo(vh);
+            for (let i = 0; i < 360; i++) gangTakt(1 / 60);
+            zeilen.push({ vh, ph: cpgPhase.slice() });
+        }
+        gangTempo(0);
+    } finally {
+        core.gangSchritt = echt;
+    }
+    return { zeilen };
+    /* eslint-enable no-undef */
+};
+
 (async () => {
     await new Promise((res) => server.listen(PORT, res));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -496,6 +594,27 @@ const STUDIO = (k) => {
     await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
+    let gangRot = false;
+    const gangUrteil = (wo, res) => {
+        if (res.fehler) {
+            console.log(`  ❌ Gangart ${wo}: ${res.fehler}`);
+            rot++;
+            gangRot = true;
+            return;
+        }
+        for (const z of res.zeilen) {
+            const ist = gangart(z.ph);
+            const soll = GANG_SOLL[z.vh];
+            const ok = ist === soll;
+            console.log(
+                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} (Fr ${(z.vh * z.vh).toFixed(2)}${z.v ? ", " + z.v + " m/s bei L " + z.L + " m" : ""}) · ${ist}${ok ? "" : " — Soll " + soll + ": die Fußfolge folgt nicht dem Tempo"}`
+            );
+            if (!ok) {
+                rot++;
+                gangRot = true;
+            }
+        }
+    };
     try {
         if (!NUR_STUDIO) {
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -578,6 +697,11 @@ const STUDIO = (k) => {
                     schwereRot = true;
                 }
             }
+            for (const seele of ["wolf", "fuchs", "baer", "wesen"])
+                gangUrteil(
+                    "Welt " + seele,
+                    await page.evaluate(GANG_WELT, { seele, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
+                );
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
@@ -613,6 +737,23 @@ const STUDIO = (k) => {
                 );
                 if (!ok) rot++;
             }
+            // dieselbe Gangart im Labor der Tiere (Labor = Welt)
+            const tp = await sb.newPage();
+            tp.setDefaultTimeout(280000);
+            tp.on("pageerror", (e) => console.log("[TETRAPODA-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+            await tp.goto(`http://127.0.0.1:${PORT}/worlds/tetrapoda/index.html`, {
+                waitUntil: "domcontentloaded",
+                timeout: 240000,
+            });
+            // eslint-disable-next-line no-undef
+            await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", {
+                timeout: 180000,
+            });
+            for (const gattung of ["wolf", "fox", "bear", "deer"])
+                gangUrteil(
+                    "Labor " + gattung,
+                    await tp.evaluate(GANG_LABOR, { gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE })
+                );
         } finally {
             await sb.close();
         }
@@ -629,6 +770,10 @@ const STUDIO = (k) => {
             console.error(
                 "\n❌ SELBST-TEST ROT — die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand ist vakuös."
             );
+            process.exit(1);
+        }
+        if (!gangRot) {
+            console.error("\n❌ SELBST-TEST ROT — das Muster der Stimmung blieb grün: die Gangart-Wand ist vakuös.");
             process.exit(1);
         }
         console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);

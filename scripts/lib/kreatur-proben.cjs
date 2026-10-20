@@ -2023,6 +2023,19 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         if (taeter === "jagd-schritt") schrittJagd();
+        // der Fall ohne Kadaver (der Leib liegt und sinkt, kein Fleisch) und die Nase ohne Aas-Witterung als Täter
+        if (taeter === "jagd-aas")
+            decke(
+                restore,
+                "_kreaturFaellt",
+                (alt) =>
+                    function (c) {
+                        const out = alt.call(this, c);
+                        delete c.userData.kadaver;
+                        return out;
+                    }
+            );
+        if (taeter === "jagd-duft") decke(restore, "_kreaturAasZug", () => () => false);
         // (A) die Kampf-Schau
         const o = frei(50, 50, 25) || land(50, 50);
         pm.set(o.x + 40, pm.y, o.z);
@@ -2117,6 +2130,100 @@ async function kreaturProben(r, T, opts) {
         };
         const rudelBisse = kreis(3, 1, -60, -40);
         const kitzBisse = kreis(1, 0.6, 80, -20);
+        // (D) DER RISS SCHLIESST DEN KREISLAUF (Meisterkarte Tiere H3): dasselbe Rudel gegen einen Hirsch mit ECHTEM Leben —
+        // er fällt (der Riss), sein Leib wird ein Kadaver mit Zustand (Fleisch in kg, Alter), Fressen verbraucht ihn, und sein
+        // Geruch (`_scentAt`) zieht Fuchs und Bär an, die im Moment des Risses 35 m fern stehen.
+        const riss = () => {
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
+            const o4 = frei(-60, 40, 25) || land(-60, 40);
+            // der Spieler steht fern (150 m): nah an ihm jagte das Rudel IHN (jagd.radius), nicht mehr den Hirsch
+            pm.set(o4.x + 150, pm.y, o4.z + 20);
+            const beute = tier({ x: o4.x, y: o4.y, z: o4.z }, "wesen", 1);
+            ruhig(beute);
+            // ein VERWUNDETER Hirsch (ein Zehntel seines echten Lebens): ein gesunder braucht ~20 Bisse, und jeder Biss jagt ihn
+            // in die Flucht (gemessen 20.10.: 6 Bisse in 240 s, 168 → 117 HP) — der Riss selbst geht durch den echten Tod
+            beute.userData.hp = 0.1 * r.computeCreatureStats(beute).stats.hpMax;
+            for (let i = 0; i < 3; i++) {
+                const a = -0.6 + i * 0.6;
+                ruhig(tier({ x: o4.x - Math.cos(a) * 20, y: o4.y, z: o4.z + Math.sin(a) * 20 }, "wolf", 1));
+            }
+            r._kreaturVerbinden(s.creatures.filter((c) => c !== beute));
+            let bisse = 0,
+                rissTakt = null;
+            decke(
+                restore,
+                "damageCreature",
+                (alt) =>
+                    function (c, amount, opt) {
+                        if (c === beute && opt && opt.source === "jagd") bisse++;
+                        return alt.call(this, c, amount, opt);
+                    }
+            );
+            const zuKadaver = (c, K) =>
+                +Math.hypot(c.position.x - K.position.x, c.position.z - K.position.z).toFixed(1);
+            const aas = { riss: false, kadaver: null, fleisch0: null, fleischEnde: null, alterS: null };
+            const gaeste = [];
+            const HATZ = 3600;
+            for (let k = 0; k < HATZ + 2400; k++) {
+                ruhigSpieler();
+                takt(dt);
+                if (rissTakt === null && s.leichname.includes(beute)) {
+                    rissTakt = k;
+                    aas.riss = true;
+                    const K = beute.userData.kadaver;
+                    aas.kadaver = K ? { fleisch: +K.fleisch.toFixed(1) } : null;
+                    aas.fleisch0 = K ? K.fleisch : null;
+                    // Fuchs und Bär 35 m fern, vom Spieler abgewandt (die Witterung reicht jagd.scentRangeM)
+                    const ax = beute.position.x - pm.x,
+                        az = beute.position.z - pm.z;
+                    const al = Math.hypot(ax, az) || 1;
+                    for (const [seele, quer] of [
+                        ["fuchs", 0.5],
+                        ["baer", -0.5],
+                    ]) {
+                        const ux = ax / al + quer * (az / al),
+                            uz = az / al - quer * (ax / al);
+                        const ul = Math.hypot(ux, uz);
+                        const p = land(
+                            beute.position.x + (ux / ul) * 35 - P0.x,
+                            beute.position.z + (uz / ul) * 35 - P0.z
+                        );
+                        const g = tier(p, seele, 1);
+                        ruhig(g);
+                        gaeste.push({ seele, c: g, d0: zuKadaver(g, beute), dMin: Infinity, frass: 0 });
+                    }
+                }
+                if (rissTakt === null && k >= HATZ) break;
+                for (const G of gaeste) {
+                    if (!s.creatures.includes(G.c)) continue;
+                    G.dMin = Math.min(G.dMin, zuKadaver(G.c, beute));
+                    if (G.c.userData._motionZustand === "fressen") G.frass++;
+                }
+                if (rissTakt !== null && k - rissTakt >= 2400) break;
+            }
+            const K = beute.userData.kadaver;
+            if (K) {
+                aas.fleischEnde = +K.fleisch.toFixed(1);
+                aas.alterS = +(beute.userData.dying ? beute.userData.dying.t : 0).toFixed(1);
+            }
+            const out = {
+                rissS: rissTakt === null ? null : +(rissTakt * dt).toFixed(1),
+                bisse,
+                ...aas,
+                fleisch0: aas.fleisch0 === null ? null : +aas.fleisch0.toFixed(1),
+                gaeste: gaeste.map((G) => ({
+                    seele: G.seele,
+                    d0: G.d0,
+                    dMin: Number.isFinite(G.dMin) ? +G.dMin.toFixed(1) : null,
+                    frissS: +(G.frass * dt).toFixed(1),
+                })),
+            };
+            for (const c of s.creatures.slice()) r.removeCreature(c);
+            for (const c of s.leichname.slice()) r.removeCreature(c);
+            return out;
+        };
+        const rissZahl = riss();
         // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn — auf einer freien Bahn aus der Welt
         // (die Länge seines Laufs, der Wolf 6 m dahinter); keine freie Bahn ist ein Fehler, kein Ersatz-Ort
         const sprint = s.sprintSpeed;
@@ -2160,6 +2267,7 @@ async function kreaturProben(r, T, opts) {
         return {
             kampfSchau: A1,
             kreislauf: { rudelGegenHirsch: rudelBisse, wolfGegenKitz: kitzBisse },
+            riss: rissZahl,
             sprinter: {
                 sprintMs: +sprint.toFixed(2),
                 abstand0: +abst0.toFixed(1),
@@ -3036,6 +3144,23 @@ function urteil(name, z) {
             b.abstandEnde < b.abstand0 && b.bisse >= 1,
             `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
         );
+        const R = z.riss;
+        soll(R.riss, `kein Riss: das Rudel fällt den verwundeten Hirsch nicht in 60 s (${R.bisse} Bisse)`);
+        if (R.riss) {
+            soll(
+                R.kadaver !== null && R.fleisch0 > 0,
+                "kein Kadaver: der gerissene Leib trägt kein Fleisch (_kreaturFaellt)"
+            );
+            soll(
+                R.fleischEnde !== null && R.fleischEnde < R.fleisch0,
+                `Fressen verbraucht den Kadaver nicht: Fleisch ${R.fleisch0} → ${R.fleischEnde} kg in 40 s`
+            );
+            for (const G of R.gaeste)
+                soll(
+                    G.frissS > 0,
+                    `kein Geruch: der ${G.seele} folgt dem Kadaver nicht (${G.d0} → nächst ${G.dMin} m, frisst ${G.frissS} s)`
+                );
+        }
     }
     if (name === "rudel") {
         soll(z.nahTakte >= 60, `das Rudel kommt nicht heran (${z.nahTakte} Takte nah, vakuös)`);
@@ -3154,6 +3279,8 @@ const TAETER = {
     jagdkreis: [
         ["jagd-gradient", /läuft nicht zur Beute|steht still|Kreislauf schließt sich nicht/],
         ["jagd-schritt", /Sprinter entkommt/],
+        ["jagd-aas", /kein Kadaver/],
+        ["jagd-duft", /kein Geruch/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],
