@@ -2167,8 +2167,8 @@
     // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
     // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
     // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
-    // steht auf dem Grund. Leser: exportSettlement (der Slot), buildInstance (die Hülle), ortPlan (der Erdbau `grund`,
-    // gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Plan des gesetzten Hauses (`grundPlan`), ortPlan (der
+    // Erdbau `grund`, gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
     // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
     var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
     function grundVon(st) {
@@ -3463,7 +3463,7 @@
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
-            grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot und die Hülle tragen es
+            grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
@@ -3505,6 +3505,7 @@
             dims: plan.H.dims,
             fp: fpVon(plan.H),
             masse: masseVon(plan),
+            grund: grundVon(plan), // das Grund-Datum (S4) — byte-gleich dem Mass-Bau wie die Massen
             hofGap: 2.5,
             meshes: [],
         };
@@ -3512,6 +3513,19 @@
             if (o.geometry) o.geometry.dispose();
         });
         return B;
+    }
+    // DER GRUND AUS DEM PLAN (S4): das Grund-Datum eines Hauses (`grundVon`: der Körper-Satz und der Keller) aus seinem Plan
+    // (`planBau`, ~2 ms statt ~26 ms des Mass-Baus), in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same). Der Wirt legt
+    // damit den Grund des gesetzten Hauses beim Setzen (`_hausGrundSetzen`), vor dem Bau der Chunks um ihn — bis S4-N2 kam er
+    // mit der Hülle des gebauten Hauses (das Vorschau-Haus am Tor: gesetzt bei 2,1 s, die Hülle bei 8,2 s, dann 6 Chunks am
+    // Spawn neu, Radeon kalt). null: kein Haus-Rezept.
+    function grundPlan(rezeptId, seed, ov) {
+        var pre = PRESETS[rezeptId];
+        if (!pre || pre.kind === "ausstattung") return null;
+        var p = hausParams(pre, ov || null);
+        var sd = Number(seed);
+        if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
+        return planBau(p).grund;
     }
 
     // DIE KAMIN-SPITZE (KAMIN-RAUCH .105, die EINE Formel): die Mitte über dem Stapel-AABB, 0,2 m darüber, haus-lokal —
@@ -3639,7 +3653,6 @@
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
-            geoms.__grund = grundVon(st); // das Grund-Datum (S4, ≡ massBau): die Hülle trägt es
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -3670,7 +3683,6 @@
             B.fragStufe = undefined;
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
-            geoms.__grund = B.grund;
         }
         return geoms;
     }
@@ -3748,9 +3760,6 @@
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
         }
-        // DAS GRUND-DATUM REIST MIT DER HÜLLE (S4, additiv, must-ignore): der Körper-Satz und der Keller (`grundVon`) — das
-        // gesetzte Haus (ohne Ort) legt daraus seinen Erdbau (`_hausGrundSetzen`)
-        if (g.userData.__huelle && gm.__grund) g.userData.__huelle.grund = gm.__grund;
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
         if (gm.__fern) {
@@ -6165,6 +6174,7 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
+        grundPlan: grundPlan, // der Grund des gesetzten Hauses aus seinem Plan (S4) — der Wirt legt ihn beim Setzen
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,

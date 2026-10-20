@@ -268,22 +268,34 @@ class AnazhRealm_gelaende_kollision {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) {
-            this._hausGrundSetzen(entry, huelle);
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
             this._grundrissRaeumen(entry);
-        }
     }
 
-    // DER GRUND DES GESETZTEN HAUSES (S4): ein Haus ohne Ort (gesetzt vom Spieler, der KI, einer Probe) legt seinen Erdbau aus
-    // dem Grund-Datum seiner Hülle (`__huelle.grund`, fachwerk `grundVon`) — derselbe Erdbau `grund` wie ein Haus im Ort
-    // (`ortPlan`), auf der Höhe seines Fußes (Position − 0,5, wie `_erdbauAltOrte`); ein Haus auf dem Erdbau eines Orts trägt
-    // ihn schon. Vorher stand das gesetzte Haus ohne Erdbau: Wiese im Anbau, Erde im Keller.
-    _hausGrundSetzen(entry, huelle) {
-        const gd = huelle && huelle.grund;
-        if (!gd || !Array.isArray(gd.boxen) || !gd.boxen.length || !entry.position) return false;
-        const { x, z } = entry.position;
-        if (!this._ortFrei(x, z, 0.01)) return false;
-        const k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
+    // DER GRUND DES GESETZTEN HAUSES (S4) IST PLAN-DATUM: ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau am Tor,
+    // einer Probe) legt seinen Erdbau beim Setzen (`spawnArchitecture`) aus dem Plan seines Gesetzbuchs (fachwerk `grundPlan`:
+    // der Körper-Satz und der Keller, mit der Gestalt, dem Stempel und der Welt-Skala, aus denen der Worker es baut) — derselbe
+    // Erdbau `grund` wie ein Haus im Ort (`ortPlan`), auf der Höhe seines Fußes (Position − 0,5, wie `_erdbauAltOrte`); ein
+    // Haus auf dem Erdbau eines Orts trägt ihn schon. Bis S4-N2 las er die Hülle des GEBAUTEN Hauses: das Vorschau-Haus am Tor
+    // (gesetzt bei 2,1 s, Radeon kalt) legte ihn bei 8,2 s und warf 6 schon gebaute Chunks am Spawn neu — gesetzt beim Setzen
+    // steht er, bevor der erste Chunk um ihn entsteht (4,5 s). Ein Haus, das vor dem Buch gesetzt wurde (der Reload mit kaltem
+    // Buch), legt ihn, sobald sein Plan lesbar ist (`_foundryIngestBook`); ein gelegter Grund reist im Save (`worldMeta.erdbau`).
+    _hausGrundSetzen(entry) {
+        const pos = entry && entry.position;
+        const art = pos ? this._grundrissGesetz(entry.type) : null;
+        if (!art || art.rec.kind !== "haus" || !this._ortFrei(pos.x, pos.z, 0.01)) return false;
+        const { x, z } = pos;
+        const key = `haus:${Math.round(x * 100)},${Math.round(z * 100)}`;
+        const wm = this.state.worldMeta;
+        if (wm && wm.erdbau && wm.erdbau[key]) return false;
+        const gestalt = this._foundryGestaltFor(entry, art.preset);
+        if (gestalt == null) return false; // die Gestalt wartet (Buch kalt): der Plan ist noch nicht lesbar
+        const grundPlan =
+            AnazhRealm.Gesetz("fachwerk:grundPlan", null) || AnazhRealm._kernPflichtBruch("fachwerk:grundPlan");
+        const gd = grundPlan(art.preset, gestalt, this._artifactStudioOv(entry));
+        if (!gd || !gd.boxen.length) return false;
+        const ws = this._foundryWorldScaleMatrix(art.preset);
+        const k = (ws && ws.elements && ws.elements[0]) || 1;
         const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
         const boxen = gd.boxen.map((b) => [b[0] * k, b[1] * k, b[2] * k, b[3] * k, b[4]]);
         let ex = 0;
@@ -304,7 +316,7 @@ class AnazhRealm_gelaende_kollision {
             boxen,
             keller: gd.keller ? gd.keller.map((v) => v * k) : null,
         };
-        return this._erdbauSetzen(`haus:${Math.round(x * 100)},${Math.round(z * 100)}`, [splat]);
+        return this._erdbauSetzen(key, [splat]);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-

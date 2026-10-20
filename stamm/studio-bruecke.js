@@ -221,6 +221,8 @@ class AnazhRealm_studio_bruecke {
         if (this._foundry && this._foundry.buchKam) this._foundry.buchKam();
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
+        // die Häuser, die vor dem Buch gesetzt wurden (der Reload mit kaltem Buch), legen ihren Grund, jetzt ist ihr Plan lesbar
+        for (const e of this.state.architectures || []) this._hausGrundSetzen(e);
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
         // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }

@@ -81,7 +81,7 @@ const BASIS = {
         ],
         // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
         ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
-        ["this._hausGrundSetzen(entry, huelle);\n            this._grundrissRaeumen(entry);", "this._hausGrundSetzen(entry, huelle);"],
+        ["this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);", "this.state.architectures.includes(entry)) void 0;"],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
@@ -130,6 +130,8 @@ const BASIS = {
     grundbueschel: [["            reich: 0.72,", "            reich: 0.17,"]],
     // DER GRUND ÜBERLEBT DEN BAU (W9 Abbau): `removeArchitecture` nimmt den Grund nicht mit — der Boden bleibt geschnitten
     abbau: [["        this._erdbauGrundFaellt(entry);", "        "]],
+    // DER GRUND WARTET AUF DIE HÜLLE (W9 Plan): das gesetzte Haus legt ihn nicht beim Setzen aus seinem Plan
+    grundplan: [["        this._hausGrundSetzen(entry);\n        // DIE EINE RÄUMUNG", "        // DIE EINE RÄUMUNG"]],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
@@ -162,10 +164,6 @@ const BASIS = {
         ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // Der Täter „raster" (die Höhe des Footprints aus der Mitte allein) fiel mit K10: die Welt rechnet keine Haus-Höhe mehr
-    // aus dem Raster, der Plan v2 trägt den Boden y und sein Erdbau den Grund. Die Klasse „Tür im Boden am Hang" wacht dort,
-    // wo ihr Chokepoint lebt: gate:settlement Teil O (Türen erreichbar, Sockel, Selbst-Test V6 „ein Absatz vor der Tür") —
-    // hier blieb das Gift ohne Erdbau blind (die Türen des Plans liegen zum Weg, W1 8/8 auch ohne Erdbau).
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -347,8 +345,10 @@ async function proben(phasen) {
             stell(x, r.getTerrainHeightAt(x, z) + 2, z);
             for (let k = 0; k < 200 && !r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8); k++) await pumpe(5);
             if (!gut(x, z)) continue;
-            const ov = { id, seed: vor.seed, studioOv: vor.studioOv || undefined, rotationY: 0.6 };
+            // ein eigener Körper (der Steuer-Passagier `__w9` trennt den Schlüssel): das Haus wartet auf seinen Bau wie jedes neue
+            const ov = { id, seed: vor.seed, studioOv: Object.assign({}, vor.studioOv, { __w9: id }), rotationY: 0.6 };
             const e = r.spawnArchitecture(vor.type, { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, ov);
+            if (e) e.__w9Plan = ((r._erdbauLage() || {}).gruende || []).filter((g) => Math.hypot(g.cx - e.position.x, g.cz - e.position.z) < 0.05).length; // prettier-ignore
             for (let k = 0; k < 300 && e && !e._hausHuelle; k++) await pumpe(4);
             if (e && e._hausHuelle) return e;
         }
@@ -999,9 +999,7 @@ async function proben(phasen) {
                 }
             // DIE STREU der Lichtung: innerhalb 64 m um den Spieler baut keine Region Streu (`SCATTER.innerM`) — der Spieler
             // steht 120 m daneben, die Regionen über der Plattform bauen neu (durch die Wand). Der Aufbau zählt die lebenden
-            // Zellen dieser neu gebauten Regionen (die Menge, über die die Wand urteilt); der 40-m-Kreis steht als Zahl daneben
-            // (Integration Welle L wasser: dort standen vorher 20 von Soll 20, mit dem Wald nach dem Merge 16 — vier Baum-
-            // Zellen fielen unter die Kronen von vier Wald-Bäumen mehr im 60-m-Kreis, Gelände und Wasser an ihnen gleich).
+            // Zellen dieser neu gebauten Regionen (die Menge, über die die Wand urteilt); der 40-m-Kreis steht als Zahl daneben.
             let keysW8 = null;
             {
                 let fx = null;
@@ -1666,7 +1664,7 @@ async function proben(phasen) {
         const dorf = H.find((e) => (gesetz(e) || {}).cellar) || H[0];
         const gesetzt = sbE || (await setze(dorf, "w9-abbau", ring(dorfMitte, [60, 90, 120, 160])));
         for (const [art, e] of [["dorf", dorf], ["gesetzt", gesetzt]]) {
-            const a = { art };
+            const a = { art, plan: e && e.__w9Plan };
             o.w9.abbau.push(a);
             const Hh = e && gesetz(e);
             if (!Hh || typeof FC.grundVon !== "function") {
@@ -1689,7 +1687,7 @@ async function proben(phasen) {
                     kellerErde: kp ? +(r._terrainDensityAt(kp.x, ky, kp.z) > 0) : null,
                 };
             };
-            // der Boden um das Haus steht neu gebaut (der Grund des gesetzten Hauses kam mit seiner Hülle): 3 ruhige Takte
+            // der Boden um das Haus steht neu gebaut (geschnitten im Grund, der beim Setzen kam): 3 ruhige Takte
             stell(x, e.position.y + 1, z);
             for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
                 await pumpe(5);
@@ -1954,6 +1952,7 @@ function urteil(o) {
         const blind = ab.filter((a) => a.fehler || !(a.vorher.gruende > 0 && a.vorher.offen > 0));
         const bleibt = ab.filter((a) => !a.fehler && (a.nachher.gruende || a.nachher.offen || a.nachher.kellerErde === 0));
         if (ab.length < 2 || blind.length) f.push(`W9 Abbau: blind — ${ab.length < 2 ? "kein Abbau" : blind.map((a) => a.art + " " + (a.fehler || `ohne Grund vor dem Abbau (${a.vorher.gruende} Gründe, ${a.vorher.offen}/${a.boxen} Boxen geschnitten)`)).join(", ")}`); // prettier-ignore
+        if (ab.some((a) => a.art === "gesetzt" && !a.fehler && a.plan !== 1)) f.push(`W9 Plan: das gesetzte Haus trägt beim Setzen ${ab.find((a) => a.art === "gesetzt").plan} Gründe (Soll 1) — sein Grund wartet auf die Hülle des gebauten Hauses, die Chunks um ihn bauen danach neu`); // prettier-ignore
         if (bleibt.length) f.push(`W9 Abbau: der Grund überlebt den Bau — ${bleibt.map((a) => `${a.art}: ${a.nachher.gruende} Gründe, ${a.nachher.offen} von ${a.boxen} Boxen ohne gezeichneten Boden, Keller ${a.nachher.kellerErde === 0 ? "hohl" : "voll"}`).join(" · ")} (ein Loch in der Welt, wo das Haus stand)`); // prettier-ignore
     }
     return f;
@@ -2072,6 +2071,7 @@ function zeile(o) {
                 grundkeller: ["grund", "W9 Dichte", "W9 Keller"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
+                grundplan: ["grund", "W9 Plan"],
             };
             selbst = Object.keys(soll)
                 .filter((k) => !NUR.length || NUR.includes(k))
