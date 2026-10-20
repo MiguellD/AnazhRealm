@@ -571,7 +571,7 @@ const server = statikServer();
                     const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
-                        const r = Math.max(1, a[1] | 0);
+                        const r = a[1] | 0; // die Runde des Gesetzes: 0 Einheiten sind gegangen (`_standRuht`)
                         if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
                             rundeVon[a[0]] = runden[a[0]];
                         runden[a[0]] = r;

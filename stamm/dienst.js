@@ -1409,7 +1409,10 @@ class AnazhRealm_dienst {
             t.stempel = s;
             t.leer = 0;
         }
-        t.runde = Math.max(1, runde | 0); // die Runde, die er geht, ehe er schläft — so lange steht die Welt nicht (`_standGeht`)
+        // die Runde, die er geht, ehe er schläft — so lange steht die Welt nicht (`_standGeht`). Ohne Einheit (0) ist sie
+        // gegangen: bis K-WANDUHR hieß sie 1, ein Gang über 0 Zellen meldete 0 — die Streu einer leeren Bühne ging für immer
+        // „0/1", die Welt stand nie (CI 39510089436 schatten-terminator, der Leib wärmte nie vor)
+        t.runde = runde | 0;
         if (t.leer >= t.runde) {
             t.ruht++;
             return true;

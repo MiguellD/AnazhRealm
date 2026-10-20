@@ -144,10 +144,11 @@ class AnazhRealm_siedlung_bauten {
         if (this._ankunftsFerne() > 1) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
-        if (!Array.isArray(archs) || archs.length === 0) return 0;
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
-        // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang.
-        if (this._standRuht("archLod", archs.length, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return 0;
+        // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
+        // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei.
+        const n = Array.isArray(archs) ? archs.length : 0;
+        if (this._standRuht("archLod", n, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return 0;
         let regung = 0;
         let offen = 0;
         // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei

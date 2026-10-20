@@ -1168,7 +1168,7 @@ class AnazhRealm_vegetation_streu {
     // noch, bleibt die alte Stufe (ctxNoDefer hält die Region aus dem Refill heraus).
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
-        if (!map || map.size === 0 || !playerPos) return 0;
+        if (!map || !playerPos) return 0; // eine leere Karte geht durch die Wache (Runde 0), nie an ihr vorbei
         // in der Ankunft aus der Ferne (B2) folgt der Fernwald der gleitenden Maske im selben Schritt wie die Bauten
         if (this._ankunftsFerne() > 1) {
             maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);

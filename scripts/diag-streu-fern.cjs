@@ -97,17 +97,28 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const bauRing = async (msMax) => {
             let ruhig = 0,
                 letzt = -1;
-            for (const weiter = window.__deckel("die Streu-Zellen", msMax / 40, false); weiter(); ) {
-                r._tickScatterStreaming(pm);
-                const n = zellen();
-                // offen: eine Region in Reichweite steht nicht (die EINE Antwort der Welt, `_streuWartet` — auch eine fehlende),
-                // oder eine Region der Karte wartet noch (`_streuRegionWartet`)
-                const offen = r._streuWartet(pm) > 0 || Array.from(map.keys()).some((k) => r._streuRegionWartet(k));
-                if (n === letzt && !offen) ruhig++;
-                else ruhig = 0;
-                letzt = n;
-                if (ruhig >= 20 && n > 0) break;
-                await sleep(40);
+            const liste = [];
+            try {
+                for (const weiter = window.__deckel("die Streu-Zellen", msMax / 40, false); weiter(); ) {
+                    // DER TAKT DER STREU wie im Spiel (Job `waldPlan` vor `scatterDeco`, wie diag-scatter-lod): ohne die Schlange
+                    // des Walds kommt die Zusage ihrer Bäume nie — der Null-Renderer tickt keinen Loop (K-WANDUHR: 3479 Zellen
+                    // standen, 8 von 8 Regionen warteten 3000 Gänge; mit ihr steht die Streu nach 51)
+                    r._tickWaldPlan(Infinity);
+                    r._tickScatterStreaming(pm);
+                    const n = zellen();
+                    // offen: eine Region in Reichweite steht nicht (die EINE Antwort der Welt, `_streuWartet` — auch eine
+                    // fehlende), oder eine Region der Karte wartet noch (`_streuRegionWartet`); die Liste nennt sie beim Namen
+                    liste.length = 0;
+                    r._streuWartet(pm, liste);
+                    for (const k of map.keys()) if (r._streuRegionWartet(k)) liste.push(`${k} ${r._streuRegionWartet(k)}`);
+                    if (n === letzt && !liste.length) ruhig++;
+                    else ruhig = 0;
+                    letzt = n;
+                    if (ruhig >= 20 && n > 0) break;
+                    await sleep(40);
+                }
+            } catch (e) {
+                throw new Error(`${e.message} — es wartet: ${[...new Set(liste)].slice(0, 8).join(" · ")}`);
             }
         };
         await bauRing(120000);

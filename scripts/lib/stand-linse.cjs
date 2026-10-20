@@ -319,7 +319,7 @@ function standUrteil(b) {
         for (const n of namen) {
             const t = ph && ph.takte[n];
             if (!t || t.runde === undefined) v.push(`LEER: die Treue-Phase ${wo} nennt die Runde von ${n} nicht`);
-            else if (!(t.gang >= Math.max(1, t.runde)))
+            else if (!(t.gang >= t.runde))
                 v.push(
                     `TREUE-LÜCKE: ${n} (${TAKTE[n]}) ging ${wo} ${t.gang} von ${t.runde} Einheiten seiner Runde — die ` +
                         `Treue sah nur einen Teil der Welt`
