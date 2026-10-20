@@ -1780,8 +1780,14 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
-        const M = this._atmoMediumJetzt();
-        if (A.mediumBeta !== this._atmoMBeta) {
+        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`_himmelsAnker`, der Himmel der Karte
+        // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
+        // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
+        const anker = this._himmelsAnker == null && !(st.renderer && st.renderer._isHeadlessNull);
+        const klar = anker ? this._atmoRechnung().betaKlar(this._atmoGesetz()) : 0;
+        const M = anker ? this._atmoMedium(klar) : this._atmoMediumJetzt();
+        const mB = anker ? klar : this._atmoMBeta;
+        if (A.mediumBeta !== mB) {
             U.betaR.value.fromArray(M.betaR);
             U.HR.value = M.HR;
             U.HM.value = M.HM;
@@ -1790,10 +1796,10 @@ class AnazhRealm_bild_himmel {
             U.g.value = M.g;
             U.ozon.value.fromArray(M.ozon);
             U.albedo.value.fromArray(M.albedo);
-            A.mediumBeta = this._atmoMBeta;
+            A.mediumBeta = mB;
             A.tafelnFrisch = false;
         }
-        const h = Math.max(0.001, Math.round(this._atmoAugeKm() * 100) / 100);
+        const h = anker ? 0.001 : Math.max(0.001, Math.round(this._atmoAugeKm() * 100) / 100);
         U.hKm.value = h;
         U.sonne.value.copy(sunDir).normalize();
         U.mond.value.copy(moonDir).normalize();
@@ -1825,6 +1831,8 @@ class AnazhRealm_bild_himmel {
         if (A.tafelSchluessel !== tafel) {
             this._atmoZeichne(A.qBS, A.rtBS);
             A.tafelSchluessel = tafel;
+            // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
+            this._himmelsTafel = null;
             this._himmelsTafelLesen();
         }
         this._horizontKarteTakt();
@@ -1833,9 +1841,9 @@ class AnazhRealm_bild_himmel {
 
     // DIE BESTRAHLUNGS-TAFEL AUF DIE CPU (je Neuzeichnung, EINMAL je Medium und Höhe): je Sonnenhöhe die Bestrahlung einer
     // waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht je Einheit `nachtE`. Eine
-    // spätere Lesung überholt eine frühere. Am klaren Medium und am Boden (der Anker gilt dem Auge auf dem Bezug, `_belichtungAnker`;
-    // höher steht weniger Luft über ihm: 160 m über dem Grund 0,212/0,194, CI Post-Kette) prüft sie den Anker der Belichtung (`BELICHTUNG.himmel`, der Himmel
-    // der Karte unter der Zenit-Sonne): weicht die Tafel mehr als 0,02 davon, bricht es laut beim Namen.
+    // spätere Lesung überholt eine frühere. Die erste Tafel der klaren Luft am Boden (`_atmoTakt` zeichnet sie zuerst) trägt den
+    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`_himmelsAnker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
+    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden).
     _himmelsTafelLesen() {
         const st = this.state;
         const A = st.atmoLut;
@@ -1856,17 +1864,9 @@ class AnazhRealm_bild_himmel {
                     for (let c = 0; c < 3; c++)
                         w[i * 3 + c] = halb ? AnazhRealm._halbZuFloat(px[i * 4 + c]) : px[i * 4 + c];
                 this._himmelsTafel = { W, werte: w };
-                if (klar) {
-                    const lum = (a, i) => 0.2126 * a[i * 3] + 0.7152 * a[i * 3 + 1] + 0.0722 * a[i * 3 + 2];
-                    const s = this._atmoSonne(1);
-                    const anteil = lum(w, W - 2) / (s.lum * (0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b));
-                    this._himmelsAnker = anteil;
-                    if (!(Math.abs(anteil - AnazhRealm.BELICHTUNG.himmel) <= 0.02))
-                        this._bruchMelden(
-                            `STOFF: der Himmel der Karte unter der Zenit-Sonne ist ${anteil.toFixed(3)} der Sonne, der Anker der ` +
-                                `Belichtung trägt ${AnazhRealm.BELICHTUNG.himmel} (BELICHTUNG.himmel)`
-                        );
-                }
+                if (klar && this._himmelsAnker == null)
+                    this._himmelsAnker =
+                        0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
                 return true;
             },
             (e) => {
@@ -2128,21 +2128,27 @@ class AnazhRealm_bild_himmel {
         const richt = dl.intensity * (0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b);
         const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2] + richt * (1 - dy);
         const EA = this._belichtungAnker();
+        if (!EA) return;
         const tag = (B.zielKarte / ((0.18 / Math.PI) * EA)) * Math.pow(EA / Math.max(E, 1e-6), B.anpassung);
         rend.toneMappingExposure = Math.max(B.min, B.max * Math.pow(tag / B.max, achse.tag));
+        st._belichtungSteht = true;
     }
 
-    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × ihr
-    // Durchlass (`ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft) × (1 + Himmel). Eine Konstante des Gesetzes, EINMAL gerechnet.
+    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
+    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
+    // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
+    // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
     _belichtungAnker() {
         if (this._belichtungA) return this._belichtungA;
+        const rend = this.state.renderer;
+        const himmel = rend && rend._isHeadlessNull ? 0 : this._himmelsAnker;
+        if (himmel == null) return null;
         const G = this._atmoGesetz();
         const R = this._atmoRechnung();
         const M = this._atmoMedium(R.betaKlar(G));
         const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
         const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
-        return (this._belichtungA =
-            (1 + AnazhRealm.BELICHTUNG.himmel) * AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * s.lum * l);
+        return (this._belichtungA = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
@@ -2965,9 +2971,6 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // (unter ACES bis F1: 2 · 0,26227 · 0,6 = 0,3147). `max` hält die geeichte Nacht (über ihn hebt nur das Licht des Himmels,
 // D3-N2): die Nacht ist auf die Karte geeicht (Mond, Sternen-Licht, Hemi-Boden) — der Deckel legt sie so weit unter
 // Mittelgrau + 1 wie bis F1 die Belichtung 1,0 unter ACES, 0,44 / 0,3147 = 1,4. `min` ist nur die Wand gegen ein entartetes Licht.
-// `himmel` (S7) ist der Himmel der Karte im ANKER der Anpassung (die Zenit-Sonne der klaren Luft, `_belichtungAnker`), als Anteil
-// der Sonne: eine Eichung, die die Bestrahlungs-Tafel am klaren Medium nachrechnet (0,232, Radeon 890M, 20.10.; weicht sie mehr
-// als 0,02, bricht es laut, `_himmelsTafelLesen`) — das E des Orts liest den Himmel nie aus ihr, sondern aus der Tafel.
 // `anpassung` (S7) ist der Exponent, mit dem das Auge dem Licht um den klaren Mittag folgt (1 = ganz, 0 = nie), `nachtGrad` (S7)
 // die Tiefe der Sonne, in der das Auge die geeichte Nacht erreicht (die Gleitung beginnt am Kanal `nacht` der Tag-Achse, ~14,5°).
 // Gemessen je Seite (Radeon, `werkbank licht --tag`): bei fester Belichtung fällt das Licht von der Sonne in 7° zum Horizont am
@@ -2979,7 +2982,6 @@ AnazhRealm.BELICHTUNG = Object.freeze({
     zielKarte: 0.44,
     min: 0.25,
     max: 1.4,
-    himmel: 0.24,
     anpassung: 0.34,
     nachtGrad: -32,
 });

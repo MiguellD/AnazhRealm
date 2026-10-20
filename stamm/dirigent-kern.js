@@ -1738,7 +1738,7 @@ class AnazhRealm {
     _lichtZeitplan(z) {
         if (!z) return 1;
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const n = this._tagAchse(this._dayNightSunDirection(this._sonnenWinkel(t)).y).nacht;
+        const n = this._tagAchse(this._sonnenRichtung().y).nacht;
         const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
         return n <= 0.5
             ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
@@ -1797,6 +1797,7 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "welt",
     "boden",
     "horizont",
+    "licht",
     "leib",
     "buch",
     "bauten",

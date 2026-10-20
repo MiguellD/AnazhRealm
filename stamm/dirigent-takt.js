@@ -1423,9 +1423,7 @@ class AnazhRealm_dirigent_takt {
         if (this.state.godrayUniforms && this.state.sunMesh && this.state.camera) {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
-            const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            const angle = this._sonnenWinkel(t);
-            const sunDir = this._dayNightSunDirection(angle); // dieselbe Richtungs-Quelle wie Licht/Skybox
+            const sunDir = this._sonnenRichtung(); // dieselbe Richtungs-Quelle wie Licht/Skybox
             // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
                 .copy(this.state.sunMesh.position)
