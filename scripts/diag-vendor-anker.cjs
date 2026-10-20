@@ -534,7 +534,7 @@ function scheinObjekt(extra) {
 // DIE SCHEIN-DIÄT zählt, WER voll frischt und welche Objekt-Gruppe lädt: 20 Programme mit je EINER geteilten Gruppe (18–19
 // tragen einen Verweis ohne festes Objekt — er liest frame.object, je Programm ein Gang), 50 Senken, der Stein mit freier
 // Uniform. Die Kamera-Treue (jede geteilte Gruppe je Render-Abschnitt geschrieben, kein Gang zweimal, verschachtelte Renders)
-// urteilt der ECHTE Renderer (gate:kamera-treue BILD · STAND · VERSCHACHTELT) — ihr Schein-Zwilling fiel mit (13).
+// urteilt der ECHTE Renderer (gate:kamera-treue BILD · STAND · VERSCHACHTELT) — ihr Schein-Zwilling fiel mit (13), samt Stand.
 function diaetLauf(fn) {
     let objektDurchDiaet = 0,
         zeichenGaenge = null;
@@ -779,27 +779,25 @@ function diaetProbe(selftest) {
     };
     const z = diaetLauf(fn);
     fehler.push(...pruefe(z));
-    const stoffAlt = ({ alt, ueber }) => [
-        ...(alt.length
-            ? [`STOFF: ${alt.join(" + ")} tragen nach einem verpassten Render den alten Stoff-Wert (equals() merkt je Stoff, nie je Render-Objekt)`]
-            : []),
-        ...(ueber.length
-            ? [`STOFF ÜBERFRISCHT: ${ueber.join(" + ")} frischen ohne Änderung voll auf (ein Voll-Refresh im Render des Verbrauchs, ein Programm ohne Stoff-Verweis)`]
-            : []),
-    ];
     // ein fremder Schlüssel in den Stoff-Daten bricht equals() (r184 liest `material[k].isTexture`) — der Render wirft
     const stoffProbe = (f) => {
+        const v = [];
         try {
-            return stoffAlt(stoffLauf(f));
+            const { alt, ueber } = stoffLauf(f);
+            if (alt.length)
+                v.push(
+                    `STOFF: ${alt.join(" + ")} tragen nach einem verpassten Render den alten Stoff-Wert (equals() merkt je Stoff, nie je Render-Objekt)`
+                );
+            if (ueber.length)
+                v.push(
+                    `STOFF ÜBERFRISCHT: ${ueber.join(" + ")} frischen ohne Änderung voll auf (ein Voll-Refresh im Render des Verbrauchs, ein Programm ohne Stoff-Verweis)`
+                );
         } catch (e) {
-            return [`STOFF BRUCH: equals() bricht nach dem ersten Stoff-Wechsel (${e.message}) — ein Diät-Stempel in den Stoff-Daten`];
+            v.push(`STOFF BRUCH: equals() bricht nach dem ersten Stoff-Wechsel (${e.message}) — ein Diät-Stempel in den Stoff-Daten`);
         }
+        return v;
     };
     fehler.push(...stoffProbe(fn));
-    const stand = [z.r2, z.r3, z.r6].map((r) => r.voll.size + (r.steinVoll ? 1 : 0));
-    // Der Stand kostet keinen Voll-Refresh: je Programm schreibt die Diät nur die geteilte Gruppe.
-    if (stand.some((n) => n !== 0))
-        fehler.push(`Stand: ${stand.join("/")} Voll-Refreshs je Render (Soll 0 — die renderId-Wand refresht jedes Programm voll)`);
     let selbstFeuert = false;
     if (selftest) {
         const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
@@ -816,7 +814,7 @@ function diaetProbe(selftest) {
             immer.some((e) => e.startsWith("GETRAGEN UPLOAD")) &&
             abk.some((e) => e.startsWith("r4: die Diät schrieb 0"));
     }
-    return { fehler, selbstFeuert, stand, getragen };
+    return { fehler, selbstFeuert, getragen };
 }
 
 function main() {
@@ -878,7 +876,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 4 Puffern alt und frischt 0 Objekte ohne Änderung auf).`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (ein bewegtes Objekt geht nur seinen Objekt-Gang; eine neue Version, die die GPU trägt, frischt ${diaet.getragen.matrix.length} von 2 Pässen auf; ein verpasster Stoff-Wechsel lässt 0 von 4 Puffern alt und frischt 0 Objekte ohne Änderung auf).`
     );
 }
 main();
