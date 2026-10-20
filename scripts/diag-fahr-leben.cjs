@@ -15,7 +15,6 @@
 //     (die Schwellen am Verdikt `WECHSEL`).
 //
 //   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:
-//       K1 der Kern trägt fahrSchritt (Kräfte + Stand), Probefahrt und Stamm rufen ihn, keiner integriert eine Kopie
 //       K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ
 //       K3 Halt: am 21°-Hang ohne Eingabe hält der Wagen; über dem Reibkreis (50°) rutscht er
 //       K4 Querhang: Fahrt längs 35° ohne Lenkung driftet talwärts; am Stand hält 30°, 50° rutscht
@@ -52,7 +51,6 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
@@ -87,7 +85,7 @@ function haltVerdict(m) {
     return out;
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
-// nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05, `chaseKamera` je Third-Bild.
+// nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05.
 const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5 };
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
@@ -107,65 +105,9 @@ function wechselVerdict(m) {
         out.push(`gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`);
     if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
         out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
-    if (!(m.third > 0 && m.gesetz >= m.third)) out.push(`gesetz: ${m.gesetz} von ${m.third} Third-Bildern lesen chaseKamera`);
     if (!Number.isFinite(m.wiederauf)) out.push("wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)");
     else if (!(m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
     return out;
-}
-
-const fehlt = stammLib.fehlt; // der EINE Absenz-Helfer; dass der Ritt im Sim-Schritt sitzt, urteilen T0/T1/T4 am Verhalten
-
-// ── K1 — DIE WAND DES EINEN FAHR-SCHRITTS (Node, der Absenz-Helfer): keiner integriert eine eigene Kopie (die Reifen-
-// Seitenkraft `FlatF` lebt nur im Kern); dass die Welt dem Kern-Schritt folgt, beweist S1 (Welt == Labor) am Verhalten. ──
-function fahrWand(q, garage) {
-    return [
-        ["K1b die Welt integriert keine Kopie des Fahr-Schritts", fehlt(null, /\bFlatF\b/, q), fehlt.wo],
-        ["K1c die Probefahrt integriert keine Kopie", fehlt(null, /\bFlatF\b/, { datei: "worlds/garage/garage.js", wandel: garage }), fehlt.wo],
-    ];
-}
-
-// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, der Absenz-Helfer): EIN fail-closed Leser (`AnazhRealm._fahrSchrittGesetz`
-// → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn — kein stilles null, kein Literal-Zwilling der FAHR.schritt-Zeilen. ──
-const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrzeugStand", "_fahrNachlauf", "_fahrHuelle",
-    "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
-function pflichtWand(q) {
-    // ein Fahr-Leser ohne Definition wirft im Helfer: P1 nennt ihn, seine Absenz zählt nie als grün
-    const tot = new Set();
-    const ohne = (n, re) => {
-        try {
-            return fehlt(n, re, q);
-        } catch {
-            return !tot.add(n);
-        }
-    };
-    const still = ["_fahrSatz", "_rittEbene"].filter((n) => !ohne(n, /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/));
-    // dazu die Ebenen-Klammer als Literal (±0,7 rad = FAHR.schritt.ebeneMax) in Stand und Ritt ohne Fahr-Gesetz
-    const ZWILLING = /__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/;
-    const zwillinge = FAHR_LESER.filter((n) => !ohne(n, ZWILLING) && !tot.has(n));
-    return [
-        ["P1 die Wand kennt jeden Fahr-Leser (den lauten Bruch beweist P4 im Spiel)", tot.size === 0, tot.size ? `ohne Körper: ${[...tot].join(", ")}` : ""],
-        ["P2 kein stiller Ausweg in `_fahrSatz` und `_rittEbene` (kein typeof → null)", still.length === 0, still.join(", ")],
-        [
-            "P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern",
-            zwillinge.length === 0,
-            zwillinge.join(" · "),
-        ],
-    ];
-}
-
-// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, der Absenz-Helfer): die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
-// rufen sie. H6 — EIN LEIB JE TIER (D2): Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`), kein
-// `separation` im Kontakt. Den Konsum beweist der Zähl-Spion im Lauf (Stationen, huelleKonsum), die gedrehte Box (H7, H8)
-// die Fahrten gegen Haus und Mauer an der echten Wand.
-function huelleWand(q) {
-    return [
-        [
-            "H5 EINE Gleit-Schleife (`_wandGleiten`), keine Kopie",
-            fehlt({ ausser: "_wandGleiten" }, /pl < AnazhRealm\.SLIDE_CLIP_PLANES/, q),
-            fehlt.wo,
-        ],
-        ["H6 EIN Leib je Tier (D2): kein zweiter Kreis im Wagen-Kontakt", fehlt("_fahrHuelleKontakt", /\bseparation\b|bodySize/, q), fehlt.wo],
-    ];
 }
 
 // ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
@@ -632,7 +574,7 @@ function stationVerdict(s) {
 
 const server = statikServer();
 
-const { probeLeben } = require("./lib/fahr-proben.cjs");
+const { probeLeben, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
 
 // ════ F — DIE FAHR-BAHN (K12; die Fahr-Bahn-Linse der Leben-Schau 2 geht hier auf) ════ Der Wagen, den die Welt hinstellt,
 // steht auf fahrbarem Grund, kommt rückwärts und nach einem Stoß frei, zeigt sein Tempo und klingt. Eigenes Boot (Takt-Zähler):
@@ -1595,7 +1537,7 @@ function quellenAbgriff() {
             rollt.length === 2 && rollt[0].startsWith("rollt") && rollt[1].startsWith("gier"),
             rollt.join(" · ")
         );
-        const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8], third: 210, gesetz: 210 };
+        const wechsel = { gestartet: true, ort: [1, 2, 20], stufeM: 0.01, band: 90, ego: [76, 77], nach10: [4.1, 3.8] };
         Object.assign(wechsel, { ruckN: 165, ruckP95: 0.02, gleichN: 400, gleichP95: 0.04, hochN: 210, hochP05: 17.4, wiederauf: 0, abV: [9.1, 8.6], abSprung: [0.31, 0.2] });
         check("Selbst-Test T4: der gesunde Wechsel == 0 Täter", wechselVerdict(wechsel).length === 0, wechselVerdict(wechsel).join(" · "));
         for (const [name, bruch, soll] of [
@@ -1607,13 +1549,29 @@ function quellenAbgriff() {
             ["Third ruckt quer (0,14 m)", { ruckP95: 0.14 }, "ruck"],
             ["das Bild läuft 0,9 neben der Physik", { gleichP95: 0.91 }, "gleichlauf"],
             ["bergab −3,3° über der Fahrbahn", { hochP05: -3.3 }, "hoch"],
-            ["die Chase-Cam liest kein Kern-Gesetz", { gesetz: 0 }, "gesetz"],
             ["der Wiederaufstieg zeigt die alte Gier (57°)", { wiederauf: 57 }, "wiederaufstieg"],
             ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ]) {
             const v = wechselVerdict(Object.assign({}, wechsel, bruch));
             check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
+        }
+        // T5 (H3) das Tempo der Kamera: die Täter von integ-probe 20.10. beim Namen
+        const gut5 = { n: 9, quelle: true, fov: { 10: 5.4 }, zeigt: 0, schreiber: ["_kamFov"], orbit: 69, rueck: 1.08, fovMax: 10, arm: 0.2, drift: 9 };
+        check("Selbst-Test T5: das gesunde Tempo == 0 Täter", tempoVerdict(gut5).length === 0, tempoVerdict(gut5).join(" · "));
+        for (const [bruch, soll] of [
+            [{ fovMax: 0 }, "fov"],
+            [{ arm: 0 }, "arm"],
+            [{ drift: 45 }, "drift"],
+            [{ quelle: false }, "quelle"],
+            [{ fov: { 10: 0 } }, "fov"],
+            [{ zeigt: 0.4 }, "zeigt"],
+            [{ schreiber: ["_tickBogenZug", "_bogenRelease", "setZoomActive"] }, "schreiber"],
+            [{ orbit: 0 }, "orbit"],
+            [{ rueck: 0.54 }, "rueck"],
+        ]) {
+            const v = tempoVerdict(Object.assign({}, gut5, bruch));
+            check(`Selbst-Test T5: ${JSON.stringify(bruch)} → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
         }
         // Die Stations-Linse.
         const gutS = {
@@ -2018,70 +1976,6 @@ function quellenAbgriff() {
                 v.join(" · ")
             );
         }
-        const kGruen = fahrWand();
-        check(
-            "Selbst-Test K1: der Arbeitsbaum ist grün",
-            kGruen.every((w) => w[1]),
-            kGruen
-                .filter((w) => !w[1])
-                .map((w) => w[0])
-                .join(" | ")
-        );
-        const kRot = fahrWand(
-            (t) => stammLib.ersetze(t, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
-            (g) => g.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;")
-        );
-        check(
-            "Selbst-Test K1: der Vor-Stand (Kopien in Welt und Labor) → K1b K1c feuern",
-            kRot.filter((w) => !w[1]).length === 2,
-            kRot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 3)}`).join(" ")
-        );
-        const pGruen = pflichtWand();
-        check(
-            "Selbst-Test P: der Arbeitsbaum ist grün",
-            pGruen.every((w) => w[1]),
-            pGruen
-                .filter((w) => !w[1])
-                .map((w) => w[0] + " " + w[2])
-                .join(" | ")
-        );
-        const hGruen = huelleWand();
-        check(
-            "Selbst-Test H5: der Arbeitsbaum ist grün",
-            hGruen.every((w) => w[1]),
-            hGruen.map((w) => w[2]).join(" | ")
-        );
-        const hRot = huelleWand(
-            (t) => stammLib.ersetze(t, null,
-                /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
-                "$1\n        for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) break;"
-            )
-        );
-        check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
-        // der Vor-Stand von D2: der Wagen-Kontakt rechnet den Kreis VERHALTEN.separation × bodySize statt des Leibs
-        const h6Rot = huelleWand(
-            (t) => stammLib.ersetze(t, null,
-                /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
-                "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.raumKugel;"
-            )
-        );
-        check(
-            "Selbst-Test H6: der Vor-Stand (der zweite Kreis im Wagen-Kontakt, D2) → H6 feuert",
-            !h6Rot[1][1],
-            h6Rot[1][2]
-        );
-        const pRot = pflichtWand(
-            (t) => stammLib.ersetze(t, [
-                [null, /(\n {4}_fahrSatz\([^)]*\) \{)/,
-                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'],
-                [null, /(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;"],
-            ])
-        );
-        check(
-            "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",
-            !pRot[1][1] && !pRot[2][1],
-            pRot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
-        );
         {
             // F — DIE FAHR-BAHN (K12): jedes Urteil nennt seinen eingeschmuggelten Täter
             const gutP = {
@@ -2276,16 +2170,12 @@ function quellenAbgriff() {
             process.exit(1);
         }
         console.log(
-            "\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Kopie, Sprung und Querhang beim Namen."
+            "\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Tempo, Sprung und Querhang beim Namen."
         );
         process.exit(0);
     }
 
-    console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
-    for (const [name, ok, detail] of pflichtWand()) check(name, ok, detail);
-    console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): Wand + der Kern selbst (Node) ===");
-    for (const [name, ok, detail] of fahrWand())
-        check(name, ok, detail);
+    console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===");
     require(path.join(root, "vehicle-core.js"));
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
 
@@ -2302,6 +2192,7 @@ function quellenAbgriff() {
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
+    await page.evaluate(`window.__tempoSpion = ${tempoSpion}`);
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
@@ -2361,6 +2252,12 @@ function quellenAbgriff() {
         "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
         vW.length === 0,
         `${JSON.stringify(out.wechsel)}${vW.length ? " — Täter: " + vW.join(" · ") : ""}`
+    );
+    const v5 = tempoVerdict(out.tempo && Object.assign(out.tempo, kernTempo(globalThis.__vehicleCore)));
+    check(
+        "T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s",
+        v5.length === 0,
+        `${JSON.stringify(out.tempo)}${v5.length ? " — Täter: " + v5.join(" · ") : ""}`
     );
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
     const S = out.stationen || {};
@@ -2477,7 +2374,6 @@ function quellenAbgriff() {
             ? `kleinster Abstand zum Teil ${H8.nah.toFixed(3)} m · Eindringen ${H8.tief.toFixed(3)} m · am Ende ${H8.abstand.toFixed(3)} m · ${H8.vorn.toFixed(1)} m gefahren · ${H8.schritte} Schritte`
             : "keine Probe (gedrehte Teil-Box)"
     );
-    for (const [name, ok, detail] of huelleWand()) check(name, ok, detail);
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
     check(
