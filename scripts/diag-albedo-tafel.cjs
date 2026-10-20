@@ -113,8 +113,7 @@ async function messeLabor({ echt, nur, tafel }) {
                 if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
                 return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
             };
-            for (const t0 = Date.now(); !(await page.evaluate(bereit, S)); await new Promise((r) => setTimeout(r, 300)))
-                if (Date.now() - t0 > 180000) throw new Error(`${sid}: die Seite steht nach 180 s nicht bereit`);
+            while (!(await page.evaluate(bereit, S))) await new Promise((r) => setTimeout(r, 300));
             if (!out.geraet)
                 out.geraet = await page.evaluate((S) => {
                     const R = new Function(`return ${S.renderer};`)();
@@ -522,7 +521,7 @@ async function neuMessen(t, ids) {
     console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
     try {
         while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
-            if (w.exitCode != null || Date.now() - t0 > 1200000) throw new Error(`die Werkbank startet nicht (${wlog})`);
+            if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
             await new Promise((r) => setTimeout(r, 2000));
         }
         const gw = t.gemessen.welt || {};

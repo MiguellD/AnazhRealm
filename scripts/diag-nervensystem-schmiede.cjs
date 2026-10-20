@@ -251,8 +251,7 @@ function staticLaws(q) {
                     hm0.children.length > 0 &&
                     !(hm0.userData && hm0.userData.foundryHeld)
                 );
-                const dls = performance.now() + 45000;
-                while (performance.now() < dls) {
+                for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -261,8 +260,7 @@ function staticLaws(q) {
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
                 // (2) WARM: langschwert equipen, auf die Studio-Gestalt warten, Zahlen messen.
                 r.equipHeld("klinge_langschwert");
-                const dlw = performance.now() + 45000;
-                while (performance.now() < dlw) {
+                for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await new Promise((r2) => setTimeout(r2, 150));
@@ -372,8 +370,7 @@ function staticLaws(q) {
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
-                const dlp = performance.now() + 45000;
-                while (probe === "pending" && performance.now() < dlp) {
+                for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
                     await new Promise((r2) => setTimeout(r2, 150));
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }

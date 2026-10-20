@@ -871,8 +871,7 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.ankunft = m;
         await window
-            .__gebautNach("die Genesis-Plattform", { fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"), takt: () => tick(1, 100), max: 600 })
-            .catch(() => {});
+            .__gebautNach("die Genesis-Plattform", { fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"), takt: () => tick(1, 100), max: 600 });
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
         if (!plat) throw new Error("keine Genesis-Plattform");
         const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
@@ -1406,8 +1405,7 @@ async function probe(arg) {
                 fertig: () => !!(ws.preview && ws.preview.currentMesh && !r._wsStudioPending && ws.preview.currentMesh.children.length),
                 takt: () => tick(1, 80),
                 max: 1125,
-            })
-            .catch(() => {});
+            });
         const p = ws.preview;
         if (!p || !p.currentMesh) {
             // Der Zustand beim Namen: liegt der Körper im Cache, schläft die Vorschau; sonst wartet sie auf den Zug.
@@ -1509,7 +1507,7 @@ async function probe(arg) {
         const t0 = performance.now();
         r.selectBlueprintForEdit("baum_eiche");
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
-        await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, { fertig: steht, takt: () => tick(1, 80), max: 275 }).catch(() => {});
+        await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, { fertig: steht, takt: () => tick(1, 80), max: 275 });
         m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
         m.vorschau.imCache = f.cache.has(a.key);
         // (b) die Hand hinter dem Zug der Vorschau: geweckt zählt nur NACH der Ankunft
@@ -1532,8 +1530,7 @@ async function probe(arg) {
                 const erst = r._heldFoundryGroup(klinge);
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
                 await window
-                    .__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, { fertig: () => m.hand.geweckt > 0, takt: () => tick(1, 80), max: 275 })
-                    .catch(() => {});
+                    .__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, { fertig: () => m.hand.geweckt > 0, takt: () => tick(1, 80), max: 275 });
                 m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
                 m.hand.imCache = f.cache.has(b.key);
             } finally {
@@ -1561,7 +1558,7 @@ async function probe(arg) {
                 }
                 const t2 = performance.now();
                 r.selectBlueprintForEdit("baum_eiche");
-                await window.__gebautNach(`die Vorschau-Stufe L${s}`, { fertig: steht, takt: () => tick(1, 80), max: 275 }).catch(() => {});
+                await window.__gebautNach(`die Vorschau-Stufe L${s}`, { fertig: steht, takt: () => tick(1, 80), max: 275 });
                 const z = at ? at.zellen.get(zKey) : null;
                 const box = steht() ? new THREE.Box3().setFromObject(p.currentMesh) : null;
                 m.stufen.push({
@@ -1581,7 +1578,7 @@ async function probe(arg) {
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }).catch(() => {}); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);

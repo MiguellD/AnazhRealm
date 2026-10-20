@@ -489,8 +489,7 @@ const WELT_HAKEN = () => {
 };
 const WELT_MESSEN = async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-    const t00 = performance.now();
-    while (performance.now() - t00 < 60000) {
+    for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
         const r = window.anazhRealm;
         if (r && typeof r._gameLoopTick === "function") {
             try {
@@ -516,8 +515,7 @@ const WELT_MESSEN = async () => {
         }
     };
     await pump(300);
-    const tq = performance.now();
-    while (performance.now() - tq < 240000) {
+    for (const weiter = window.__deckel("die Foundry-Schlange", 600); weiter(); ) {
         await pump(20);
         if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }

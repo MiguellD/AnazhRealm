@@ -490,8 +490,7 @@ async function verdeckungPhase(opts) {
             const bereit = () =>
                 f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
             const tOrt = performance.now();
-            const dlW = performance.now() + (opts.ortMs || 180000);
-            while (performance.now() < dlW && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit())) {
+            for (const weiter = window.__deckel("das Wasser am Ort", (opts.ortMs || 180000) / 20); weiter() && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit()); ) {
                 for (let i = 0; i < 5; i++) takt();
                 await warte(20);
             }
@@ -600,8 +599,8 @@ async function verdeckungPhase(opts) {
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
-    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (≤ 30 s: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
-    for (const t0 = performance.now(); await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && performance.now() - t0 < 30000; );
+    // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus, GTX 16.10.)
+    for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnung.offen.size); );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};

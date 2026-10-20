@@ -78,36 +78,42 @@ async function weltStehtNach(takt, max) {
 // (`_weltOffen`: Foundry, Chunks, Wald): solange sie baut, wartet die Linse auf ihr Ereignis, nie auf die Uhr; steht es danach
 // nicht, wirft sie beim Namen (bis K-WANDUHR fuhr gate:fahr-leben F4 unter Last durch eine Kiefer ohne Körper, CI 39456065212,
 // und 130 Schleifen urteilten nach 3–300 s Wanduhr).
-async function gebautNach(e, { takt, fertig, bau, max } = {}) {
+async function gebautNach(e, { takt, fertig, bau, max, offen } = {}) {
     const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
     const baue = bau || (e && typeof e === "object" ? () => r._rebuildArchitectureMesh(e) : () => {});
     let n = 0;
-    for (let k = 0; !steht() && k < (max || 120); n++) {
-        baue(n);
-        if (steht()) break;
+    for (const weiter = window.__deckel(typeof e === "string" ? e : e ? `${e.type}#${e.id}` : "kein Eintrag", max, offen); (baue(n), !steht()) && weiter(); n++) {
         await (takt || window.__seitenTakt)(n);
         await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
-        const o = r._weltOffen();
-        if (!(o.foundry + o.chunks + o.wald)) k++;
     }
-    if (!steht())
-        throw new Error(
-            `DER BAU STEHT NICHT: ${typeof e === "string" ? e : e ? `${e.type}#${e.id}` : "kein Eintrag"} nach ${n} Takten — die Welt hat nichts mehr offen`
-        );
     return n;
+}
+// DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): je Gang
+// zählt er nur, wenn die Welt nichts offen hat (`_weltOffen`) und die Linse nichts (`offen()`); nach `max` (120) solcher
+// Gänge wirft er beim Namen — die Schleife wartet auf ihr Ereignis, nie auf die Uhr.
+function deckel(name, max, offen) {
+    let n = 0,
+        k = 0;
+    return () => {
+        const r = window.anazhRealm;
+        const o = r && r._weltOffen ? r._weltOffen() : { foundry: 1, chunks: 0, wald: 0 };
+        if (!(o.foundry + o.chunks + o.wald) && !(offen && offen()) && ++k > (max || 120))
+            throw new Error(`DER BAU STEHT NICHT: ${name} nach ${n} Takten — die Welt hat nichts mehr offen`);
+        return ++n > 0;
+    };
 }
 // DIE WELT IST DA (`await window.__weltDa((r) => bedingung)`): bis der Stamm lebt (`_gameLoopTick`) und die Bedingung gilt — ohne
 // Frist: hängt der Boot, nennt ihn die Stall-Akte samt der Bedingung, auf die er wartet (`__weltDaWartet`, im Puls jeder
 // Sekunde; bis K-WANDUHR trug jede Linse ihre Schleife mit 30–300 s Wanduhr, 34×).
 async function weltDa(bed) {
-    window.__weltDaWartet = bed ? String(bed).replace(/s+/g, " ").slice(0, 160) : "den Stamm";
+    window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r))); )
         await new Promise((ok) => setTimeout(ok, 50));
     window.__weltDaWartet = null;
     return window.anazhRealm;
 }
-const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__weltDa = ${weltDa};`;
+const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -668,12 +674,7 @@ async function uferStellen(opts) {
     if (opts.kappe != null) st._holzPixelCap = opts.kappe;
     const [mx, mz] = opts.messort;
     let h = null;
-    for (let i = 0; i < 600; i++) {
-        r._ensureHydroTilesAround(mx, mz, 200);
-        h = r._hydroFor(mx, mz);
-        if (h && h.ready) break;
-        await warte(200);
-    }
+    await window.__weltDa((w) => (w._ensureHydroTilesAround(mx, mz, 200), (h = w._hydroFor(mx, mz)) && h.ready));
     let P = null;
     for (const f of (h && h.rivers) || [])
         f.points.forEach((q, i) => {
@@ -718,8 +719,7 @@ async function uferStellen(opts) {
             fertig: () => steht() && !r._weltbildLuecken(true).some(welt),
             takt: async () => (fern() || r._ensureFarWaterSheet(), await warte(100)),
             max: 600,
-        })
-        .catch(() => {});
+        });
     return { bach: [Math.round(P.x), Math.round(P.z)], wasser: sichtbaresWasser(), fernWasser: fern() ? st.farWater.quads : 0, abbildBreite: abbild() };
 }
 

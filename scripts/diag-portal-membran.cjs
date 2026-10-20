@@ -84,8 +84,7 @@ async function blickProbe(opts) {
             fertig: () => (stand = fensterStand()).fenster >= 3 && !stand.wartend.length,
             takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await warte(250)),
             max: 120,
-        })
-        .catch(() => {});
+        });
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
     if (!stand || stand.fenster < 3 || stand.wartend.length)
         return {

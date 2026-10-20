@@ -2414,7 +2414,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
         };
         for (let i = 0; i < 280; i++) await pumpe(i);
-        await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 }).catch(() => {});
+        await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });
         return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: s.voxelChunks.size };
     });
     const report = (await safeEvaluate(page, async () => {

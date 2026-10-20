@@ -301,8 +301,7 @@ const triasStaticLaws = () => [
         res.l1RingDist = dRing;
         if (dRing > 0) {
             tp(h0b.position.x + dRing, h0b.position.z);
-            const dlServe = performance.now() + 90000;
-            while (performance.now() < dlServe) {
+            for (const weiter = window.__deckel("die Stufe L1 am Haus", 3000); weiter(); ) {
                 await pumpRender(24);
                 if (h0b._lodLevel === 1 && h0b._servedLod === 1) break;
             }
@@ -318,8 +317,7 @@ const triasStaticLaws = () => [
         // Switch UND die Ziel-Stufe muss ggf. erst im Worker backen (L1 einer frischen
         // Kultur|Variante = Sekunden) -> pumpen bis konvergiert, Deadline 150 s.
         tp(anchor.x + 120, anchor.z);
-        const dlConv = performance.now() + 150000;
-        while (performance.now() < dlConv) {
+        for (const weiter = window.__deckel("die Häuser in L2", 5000); weiter(); ) {
             await pumpRender(24);
             const s = hausStats();
             if (s.instanced >= 3 && Object.keys(s.lods).every((k) => k === "2")) break;

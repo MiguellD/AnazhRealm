@@ -45,8 +45,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const A = r.constructor;
         // Worker + Config abwarten (get-render-config folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
-        const dl = performance.now() + 50000;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel("die Render-Konfiguration", 625); weiter(); ) {
             const rc = A._studioRenderConfig;
             if (f && f.ready && rc && rc.placement && rc.placement.scale) break;
             await new Promise((res2) => setTimeout(res2, 80));

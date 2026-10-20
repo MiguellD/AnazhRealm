@@ -2733,8 +2733,7 @@ async function checkBandRezeptKatalog(ctx) {
                     fertig: () => !!(g = r._workshopFoundryPreviewGroup("tor_drachentor")) && g !== "pending",
                     takt: () => sleep(200),
                     max: 225,
-                })
-                .catch(() => {});
+                });
             r._workshopRebuildPreviewMesh = orig;
             res.d.rebuilds = rebuilds;
             res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;

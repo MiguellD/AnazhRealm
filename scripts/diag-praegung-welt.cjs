@@ -106,8 +106,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // ===== (N-WELT) geprägtes Fahrzeug-Entry formt im Welt-Flatten anders =====
         const flatFor = async (entry) => {
             let flat = r._foundryFlattenFor(entry, "gt", 0);
-            const dl = performance.now() + 60000;
-            while (!(flat && flat.leaves) && performance.now() < dl) {
+            for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat && flat.leaves) && weiter(); ) {
                 await sleep(200);
                 flat = r._foundryFlattenFor(entry, "gt", 0);
             }
@@ -175,8 +174,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             delete bp.studioOv;
             const heldFor = async (name) => {
                 let g = r._heldFoundryGroup(name);
-                const dl = performance.now() + 60000;
-                while ((g === "pending" || !g) && performance.now() < dl) {
+                for (const weiter = window.__deckel(`die Hand ${name}`, 300); (g === "pending" || !g) && weiter(); ) {
                     await sleep(200);
                     g = r._heldFoundryGroup(name);
                 }

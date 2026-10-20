@@ -369,8 +369,7 @@ async function runPartB() {
                     },
                     takt: loopTakt,
                     max: 1000,
-                })
-                .catch(() => {});
+                });
         await waerme(`${preset} L0–L2`, entry, preset, [0, 1, 2], warm);
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
@@ -432,8 +431,7 @@ async function runPartB() {
                 },
                 takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
                 max: 500,
-            })
-            .catch(() => {});
+            });
         // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
         // eigener Sweep.

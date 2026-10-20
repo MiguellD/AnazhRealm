@@ -45,9 +45,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // ===== F: der Flatten — Gesetz gegen die Leaves des Wirts =====
         const flatMessen = async (preset, lod) => {
             const entry = { seed: 1, position: { x: 0, y: 0, z: 0 } };
-            const ende = performance.now() + 90000;
             let flat = null;
-            while (performance.now() < ende) {
+            for (const weiter = window.__deckel("das Flat der Sippe", 1500); weiter(); ) {
                 flat = r._foundryFlattenFor(entry, preset, lod);
                 if (flat !== null) break;
                 await sleep(60);

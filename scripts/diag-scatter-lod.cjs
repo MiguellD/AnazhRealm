@@ -85,8 +85,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
         const streuSchritt = async () => (streuTakt(), await new Promise((r2) => setTimeout(r2, 30)));
         await window
-            .__gebautNach("die Streu um den Spieler", { fertig: () => zellen() > 40 && r._streuWartet(pm) === 0, takt: streuSchritt, max: 1500 })
-            .catch(() => {});
+            .__gebautNach("die Streu um den Spieler", { fertig: () => zellen() > 40 && r._streuWartet(pm) === 0, takt: streuSchritt, max: 1500 });
         res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
         // ── P: die Promotion erreicht eine Zelle jenseits der Region-Grenze (nah 0,85·pr in der Nachbar-Region), die ferne
@@ -138,8 +137,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // echten Fern-Baum-Zelle proben — der STÄRKERE Beweis (echter Slot-Tausch).
         let probe = null;
         await window
-            .__gebautNach("eine Fern-Baum-Zelle", { fertig: () => !!(probe = sucheProbe(true)), takt: streuSchritt, max: 170 })
-            .catch(() => {});
+            .__gebautNach("eine Fern-Baum-Zelle", { fertig: () => !!(probe = sucheProbe(true)), takt: streuSchritt, max: 170 });
         if (!probe) probe = sucheProbe(false);
         res.probeGefunden = !!probe;
         if (!probe) return res;
@@ -171,7 +169,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             await new Promise((r2) => setTimeout(r2, 150));
         };
         const gewandelt = () => probe.lod !== lodVorher;
-        await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 }).catch(() => {});
+        await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
         const wandel = gewandelt() ? 1 : 0;
         res.l = {
             lodVorher,
@@ -217,8 +215,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     fertig: zweiNah,
                     takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await new Promise((r2) => setTimeout(r2, 60))),
                     max: 500,
-                })
-                .catch(() => {});
+                });
             // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
             // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
             // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
@@ -252,8 +249,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                                 await new Promise((r2) => setTimeout(r2, 100));
                             },
                             max: 450,
-                        })
-                        .catch(() => {});
+                        });
                     if (kand.lod < 2 && b2Privat(kand)) dz2 = kand;
                 }
             }
@@ -280,7 +276,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         return !g || (g.liveCount | 0) === 0;
                     });
                 const fern2 = () => dz2.lod === 2 && huelleLeer();
-                await window.__gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 }).catch(() => {});
+                await window.__gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
                 dblk.demotet = dz2.lod === 2;
                 // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
                 dblk.slotsFern =
@@ -358,8 +354,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     },
                     takt: () => new Promise((r2) => setTimeout(r2, 100)),
                     max: 300,
-                })
-                .catch(() => {});
+                });
             fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
             if (fern.flat) {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.

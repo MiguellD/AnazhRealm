@@ -89,12 +89,12 @@ const server = statikServer();
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         const sleepT = (ms) => new Promise((rs) => setTimeout(rs, ms));
-        // DER TAKT DES RINGS bis zur Bedingung (höchstens `ms`): je Takt die Zahl der eingehängten Punkte
+        // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
         const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
             let takte = 0;
             let maxD = 0;
             let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
-            for (const dl = performance.now() + ms; performance.now() < dl; await sleepT(16)) {
+            for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleepT(16)) {
                 takt();
                 takte++;
                 const f = r.state.fernRing;
@@ -476,12 +476,11 @@ const server = statikServer();
         // Render-Probe: ein WebGPURenderer zeichnet den Fullscreen-Raymarch —
         // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
         const P8 = r.constructor.FELD_PASS;
-        const dl8 = performance.now() + 90000;
         let fp8 = r.state.feldPass;
         // SCHATTIERUNGS-PERSISTENZ (20.07.): sichtbar erst mit gebackenem
         // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
         // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
-        while ((!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && performance.now() < dl8) {
+        for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
             r._tickFernRing(r.state.playerMesh.position);
             fp8 = r.state.feldPass;
             await sleep7(100);
@@ -623,9 +622,8 @@ const server = statikServer();
             r.state.chunkRingRadius = ziel9;
             r.state._activeRingRadius = ziel9;
             let n9 = -1;
-            let still9 = performance.now();
-            const dl9 = performance.now() + 90000;
-            for (let t = 0; performance.now() < dl9; t++) {
+            let still9 = 0;
+            for (let t = 0, weiter = window.__deckel("die Naht-Stufen im Ring 3", 20000); weiter(); t++) {
                 r.state._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
@@ -636,8 +634,8 @@ const server = statikServer();
                 const n = gebaut9();
                 if (n !== n9) {
                     n9 = n;
-                    still9 = performance.now();
-                } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && performance.now() - still9 > 3000)) break;
+                    still9 = t;
+                } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && t - still9 > 60 && !r._weltOffen().chunks)) break;
             }
             res.nahtStufen = [...r.state.voxelChunks.values()].reduce((a, e) => {
                 if (e && !e.empty && e.mesh) a[e.lod || 0] = (a[e.lod || 0] || 0) + 1;

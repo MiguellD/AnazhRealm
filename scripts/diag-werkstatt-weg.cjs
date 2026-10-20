@@ -317,9 +317,9 @@ async function probe(argW) {
             await sleep(ms || 30);
         }
     };
-    const dlB = performance.now() + 90000;
-    while (
-        performance.now() < dlB &&
+    for (
+        const weiter = window.__deckel("Buch, Leib und Eiche", 900);
+        weiter() &&
         !(
             st.playerMesh &&
             r._foundry &&
@@ -327,7 +327,8 @@ async function probe(argW) {
             st.blueprints &&
             st.blueprints.baum_eiche &&
             r._genesisPlattform()
-        )
+        );
+
     )
         await tick(1, 100);
     await tick(10, 30);

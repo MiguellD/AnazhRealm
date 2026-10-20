@@ -734,20 +734,17 @@ async function probe(A) {
     // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
     const stroemen = async (X, Z, nachlauf) => {
         st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Ort", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             try {
                 frame();
             } catch (_e) {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         for (let i = 0; i < nachlauf; i++) {
@@ -1429,9 +1426,8 @@ async function probe(A) {
                         (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
                     ).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
-                    const dl = performance.now() + A.dorfMs;
                     let echo = "";
-                    while (performance.now() < dl) {
+                    for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
@@ -1804,18 +1800,15 @@ async function dammProbe(A) {
         }
     };
     const stroemen = async (X, Z) => {
-        const t0 = performance.now();
         let last = -1;
-        let still = performance.now();
-        for (;;) {
+        let still = 0;
+        for (const weiter = window.__deckel("der Ring am Strom", 9000); weiter(); ) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             frame();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) {
-                last = n;
-                still = performance.now();
-            }
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await new Promise((res) => setTimeout(res, 0));
         }
         await takte(120);

@@ -1927,12 +1927,11 @@ const FIXTURES = [
                         const hook0 = window.__anazhAutoSettlement;
                         window.__anazhAutoSettlement = true;
                         try {
-                            const t0 = performance.now();
                             for (let still = 0; still <= r.constructor.AUTO_SETTLEMENT.drosselTakte; ) {
                                 const vor = leer();
                                 r._tickAutoSettlement(pm.position);
                                 const q = r._autoSettlementQueue;
-                                if ((cells()[zelle] && !(q && q.cellKey === zelle)) || performance.now() - t0 > 300000) break;
+                                if (cells()[zelle] && !(q && q.cellKey === zelle)) break;
                                 still = vor && leer() ? still + 1 : 0;
                                 await new Promise((ok) => setTimeout(ok, 20));
                             }

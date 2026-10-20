@@ -537,8 +537,7 @@ if (require.main === module) (async () => {
                             await new Promise((resolve) => setTimeout(resolve, 25));
                         },
                         max: 4800,
-                    })
-                    .catch(() => {});
+                    });
                 foundryReadyMs =
                     _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)

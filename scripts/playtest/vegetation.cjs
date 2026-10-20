@@ -2634,8 +2634,7 @@ async function checkBandScatterScheibe(ctx) {
                         fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
                         takt: async () => (r._tickWaldPlan(Infinity), await new Promise((res) => setTimeout(res, 50))),
                         max: 1200,
-                    })
-                    .catch(() => {});
+                    });
                 stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
                 // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
                 // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten

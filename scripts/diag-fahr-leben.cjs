@@ -1037,8 +1037,7 @@ async function probeBahn(B) {
                     if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
                 },
                 max: 3000,
-            })
-            .catch(() => {});
+            });
         return e;
     };
 

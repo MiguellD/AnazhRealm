@@ -63,8 +63,7 @@ const server = statikServer();
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        const s0 = performance.now();
-        while (performance.now() - s0 < 90000) {
+        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter(); ) {
             const r0 = window.anazhRealm;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
@@ -108,8 +107,7 @@ const server = statikServer();
                     await sleep(50);
                     },
                     max: 400,
-                })
-                .catch(() => {});
+                });
         }
 
         // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer

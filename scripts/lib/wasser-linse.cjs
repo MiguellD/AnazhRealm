@@ -644,14 +644,14 @@ function wasserStrom(ort, hoehe) {
         if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
         const worker = st.voxelWorker;
         st.voxelWorker = null;
-        const t0 = performance.now();
-        for (let last = -1, still = t0; ; await new Promise((res) => setTimeout(res, 0))) {
+        for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await new Promise((res) => setTimeout(res, 0))) {
             try {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
-            if (n !== last) ((last = n), (still = performance.now()));
-            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
         }
         st.voxelWorker = worker;
     })();

@@ -81,7 +81,7 @@ const WUERFE = [
 async function boote(page) {
     return page.evaluate(async () => {
         const start = performance.now();
-        while (performance.now() - start < 120000) {
+        for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
@@ -497,8 +497,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             const s = r.state;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
             const takt = async (ms) => {
-                const t0 = performance.now();
-                while (performance.now() - t0 < ms) {
+                for (let i = 0; i * 16 < ms; i++) {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {
@@ -523,8 +522,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                         n = m;
                         },
                         max: 800,
-                    })
-                    .catch(() => {});
+                    });
             }
             const wm = () => s.worldMeta || {};
             // Die Welt-Substanz als Mengen (Identität, nie Länge): der Hort-Deckel des Nexus (MAX_NEXUS_STRUCTURES) lässt
@@ -1088,9 +1086,7 @@ async function lichtLauf() {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
             const id = await page.evaluate(
                 async (json, rest) => {
-                    const t = performance.now();
-                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t < rest)
-                        await new Promise((r) => setTimeout(r, 50));
+                    await window.__weltDa((w) => w.importWorldBeside);
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
                     const res = r.importWorldBeside(json);
@@ -1128,8 +1124,7 @@ async function lichtLauf() {
                     async (st, gestalt, rest) => {
                         const r = window.anazhRealm;
                         const s = r.state;
-                        const fristEnde = performance.now() + rest - 5000; // die Seite nennt, was fehlt, ehe die Uhr reißt
-                        s.renderer.setAnimationLoop(null);
+                                                s.renderer.setAnimationLoop(null);
                         let laengsterTakt = 0; // der längste Takt dieser Phase (ms): hielt ein Takt die Seite an, steht er im Urteil
                         const takt = async (n) => {
                             for (let i = 0; i < n; i++) {
@@ -1155,7 +1150,7 @@ async function lichtLauf() {
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
-                            while (!feuer && performance.now() < fristEnde) {
+                            for (const weiter = window.__deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
                                 const halt = s.weatherEffectTime;
                                 s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
                                 try {
@@ -1184,7 +1179,7 @@ async function lichtLauf() {
                         // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
-                        while (performance.now() < fristEnde) {
+                        for (const weiter = window.__deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
                             const u = window.__s0Gestalt(feuer);
                             if (u.fiel) return `die Feuerstelle fiel aus der Welt (${u.fiel}) — sie wächst nie mehr`;
                             fehlt = u.fehlt;

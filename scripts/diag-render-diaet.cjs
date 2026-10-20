@@ -73,9 +73,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
         const pm = r.state.playerMesh.position;
-        const dl2 = performance.now() + 45000;
         let cells = 0;
-        while (performance.now() < dl2) {
+        for (const weiter = window.__deckel("die Streu-Zellen", 1500); weiter(); ) {
             r._tickScatterStreaming(pm);
             const map = r.state.scatterRegions;
             cells = 0;

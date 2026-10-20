@@ -328,11 +328,10 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             return { radius: Math.round(R), n, ok, riesen, taeter: t };
         };
         const einschwingen = async (msMax) => {
-            const dl = performance.now() + msMax;
             let vor = -1,
                 ruhig = 0,
                 z = formZensus();
-            while (performance.now() < dl) {
+            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter(); ) {
                 await tick(10);
                 z = formZensus();
                 const s = st.architectures.length * 1000 + z.ok;

@@ -315,8 +315,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                     await sleep(6);
                 },
                 max: 2000,
-            })
-            .catch(() => {});
+            });
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !f || f.ready);
@@ -447,8 +446,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
                     await sleep(6);
                 },
                 max: 2000,
-            })
-            .catch(() => {});
+            });
         const r = window.anazhRealm;
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
@@ -554,8 +552,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             await sleep(30);
                         },
                         max: 5000,
-                    })
-                    .catch(() => {});
+                    });
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
                 o.vorratPhase = vorrat();
@@ -659,8 +656,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
                         },
                         max: 200,
-                    })
-                    .catch(() => {});
+                    });
                 o.quieszent = ruhigeBatches >= 2;
                 o.ringOffen = ringWartet();
                 o.baut = baut();

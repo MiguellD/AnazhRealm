@@ -1,66 +1,15 @@
 {
- "Messfenster: die Ankunft in Sekunden ist das Maß (Pflicht-OFFEN B)": {
-  "scripts/diag-boot-stage.cjs": 1
+ "Messfenster, die Zeit ist das Maß: Ankunft (B), Erstarren, Flugschreiber und Hänger-Wache, Klang in Echtzeit, Feld-Alter, die Stille nach dem Wort": {
+  "scripts/diag-boot-stage.cjs": 1,
+  "scripts/diag-erstarren.cjs": 1,
+  "scripts/diag-hitch-telemetrie.cjs": 2,
+  "scripts/diag-klang-zensus.cjs": 3,
+  "scripts/playtest/feld-leben.cjs": 1,
+  "scripts/lib/haenger-linse.cjs": 4,
+  "scripts/lib/gpu-fehler.cjs": 1
  },
- "Messfenster: die Attrappe des Erstarrens (der Haupt-Faden rechnet n ms)": {
-  "scripts/diag-erstarren.cjs": 1
- },
- "Gesetz: der Rejoin-Deckel (REJOIN_DECKEL_S) und der Graben-Nachlauf über das Netz": {
-  "scripts/diag-mp-sync.cjs": 2
- },
- "fremde Welt: die Null-Origin-Welt hat keinen Takt, den die Heimat zählen kann": {
-  "scripts/diag-portal-konformanz.cjs": 2
- },
- "Messfenster: Attrappen eines Hängers (rechnet n ms) und die Bild-Kadenz je rAF": {
-  "scripts/lib/haenger-linse.cjs": 4
- },
- "ANSCHLUSS: `werkbank stand --ruhe` (Sekunden des Werkzeugs), kein Tor": {
-  "scripts/lib/stand-linse.cjs": 1
- },
- "Messfenster: 3 ms Wanduhr altern das Feld (seine Uhr ist die Wanduhr)": {
-  "scripts/playtest/feld-leben.cjs": 1
- },
- "ANSCHLUSS: die Mess-Bühne des Profi-Bands nimmt ihren Deckel in Sekunden (--cap, --ruhe), kein Tor": {
-  "scripts/werkbank.cjs": 7
- },
- "OFFEN: Warten mit Frist, umzustellen auf __gebautNach / __weltDa": {
-  "scripts/diag-ankunft.cjs": 6,
-  "scripts/diag-asset-inventory.cjs": 1,
-  "scripts/diag-beweis-e.cjs": 4,
-  "scripts/diag-chunk-satz.cjs": 1,
-  "scripts/diag-chunk-seam.cjs": 1,
-  "scripts/diag-fenster-wechsel.cjs": 1,
-  "scripts/diag-fern-ring.cjs": 3,
-  "scripts/diag-fernwald.cjs": 1,
-  "scripts/diag-fluss.cjs": 2,
-  "scripts/diag-foundry-impostor.cjs": 1,
-  "scripts/diag-idle-gpu-churn.cjs": 2,
-  "scripts/diag-kamera-laub.cjs": 3,
-  "scripts/diag-nervensystem-schmiede.cjs": 3,
-  "scripts/diag-nervensystem.cjs": 1,
-  "scripts/diag-praegung-welt.cjs": 2,
-  "scripts/diag-pruefbuehne.cjs": 5,
-  "scripts/diag-render-diaet.cjs": 1,
-  "scripts/diag-s4-impostor-workshop.cjs": 1,
-  "scripts/diag-schirm-monotonie.cjs": 1,
-  "scripts/diag-sippen-wirt.cjs": 1,
-  "scripts/diag-streu-fern.cjs": 11,
-  "scripts/diag-studio-huelle.cjs": 1,
-  "scripts/diag-takt-atem.cjs": 2,
-  "scripts/diag-trias.cjs": 2,
-  "scripts/diag-verdeckungs-abfrage.cjs": 2,
-  "scripts/diag-warm-start.cjs": 4,
-  "scripts/diag-weg-boden.cjs": 1,
-  "scripts/diag-weltakt-wache.cjs": 1,
-  "scripts/diag-weltbild-frost.cjs": 7,
-  "scripts/diag-werk-im-wasser.cjs": 1,
-  "scripts/diag-werkstatt-weg.cjs": 1,
-  "scripts/diag-worker-dichte.cjs": 2
- },
- "Messfenster: der Flugschreiber zählt je Wanduhr-Sekunde; OFFEN: das Einschwingen davor": {
-  "scripts/diag-hitch-telemetrie.cjs": 2
- },
- "Messfenster: der Klang läuft in Echtzeit (AudioContext); OFFEN: Glut, Dorf und Quelle davor": {
-  "scripts/diag-klang-zensus.cjs": 5
- }
+ "Scheibe: die Seite antwortet dem Protokoll je 4 s, das Warten geht in der nächsten weiter": { "scripts/diag-idle-gpu-churn.cjs": 1 },
+ "Netz-Gesetz: der Rejoin-Deckel (REJOIN_DECKEL_S)": { "scripts/diag-mp-sync.cjs": 2 },
+ "fremde Welt: das Studio im Rahmen hat keinen zählbaren Takt, die Stille-Probe braucht ihr Fenster": { "scripts/diag-portal-konformanz.cjs": 2 },
+ "ANSCHLUSS: Werkzeug in Sekunden (werkbank --cap/--ruhe, stand --ruhe), kein Tor": { "scripts/werkbank.cjs": 7, "scripts/lib/stand-linse.cjs": 1 }
 }

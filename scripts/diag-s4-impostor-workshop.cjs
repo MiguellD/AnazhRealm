@@ -45,8 +45,7 @@ const server = statikServer();
             if (treeBp) {
                 bps[treeBp]._recipeLod = 2; // die Werkstatt-L2-Stufe
                 let grp = null;
-                const dl2 = performance.now() + 40000;
-                while (performance.now() < dl2) {
+                for (const weiter = window.__deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}

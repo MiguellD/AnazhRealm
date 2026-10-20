@@ -84,14 +84,12 @@ async function installiereBacke(page) {
                 const q = r._impostorBakeQueue || [];
                 if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
                 z._weltNeu = true;
-                const bis = performance.now() + 240000;
-                for (;;) {
+                for (const weiter = window.__deckel(`der Bake von ${z.key}`, 4800); weiter(); ) {
                     if (at.fmt !== "bc" || r._karteRechner()) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
                     }
-                    if (performance.now() > bis) throw new Error(`der Bake von ${z.key} kam nicht (Programme kompilieren nicht)`);
                     await new Promise((ok) => setTimeout(ok, 50));
                 }
             } finally {
@@ -121,8 +119,7 @@ async function driveImpostor(page) {
                 rec2 = null,
                 flat1 = null,
                 flat2 = null;
-            const dl2 = performance.now() + 45000;
-            while (performance.now() < dl2) {
+            for (const weiter = window.__deckel("die Impostor-Rekorde", 1500); weiter(); ) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}

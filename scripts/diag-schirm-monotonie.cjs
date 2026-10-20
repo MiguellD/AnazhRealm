@@ -269,8 +269,7 @@ async function welt() {
         waechst();
         let still = 0,
             stillTakte = 0;
-        const dlStill = performance.now() + 120000;
-        while (still < 3 && performance.now() < dlStill) {
+        for (const weiter = window.__deckel("der stille Schirm", 400); still < 3 && weiter(); ) {
             for (let i = 0; i < 30; i++) {
                 takt();
                 stillTakte++;

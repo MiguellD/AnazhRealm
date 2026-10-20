@@ -47,13 +47,8 @@ async function runJob(page, fn, arg, timeoutMs) {
         fn.toString(),
         arg === undefined ? null : arg
     );
-    const dl = Date.now() + timeoutMs;
-    while (Date.now() < dl) {
-        const out = await page.evaluate(() => (window.__jobDone ? window.__jobOut : null));
-        if (out) return out;
-        await new Promise((r) => setTimeout(r, 400));
-    }
-    return { err: "Job-Timeout nach " + timeoutMs + " ms" };
+    await page.waitForFunction(() => window.__jobDone, { timeout: 0, polling: 400 });
+    return page.evaluate(() => window.__jobOut);
 }
 
 // ===== Die Band-Jobs (laufen 1:1 im Browser; nur `arg` reist hinein) =====
@@ -101,8 +96,7 @@ async function jobKalt() {
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;
-        const dl = performance.now() + ms;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -191,8 +185,7 @@ async function jobWarm(kaltIn) {
     };
     const pumpChunk = async (cx, cz, ms) => {
         const key = cx + "," + cz;
-        const dl = performance.now() + ms;
-        while (performance.now() < dl) {
+        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -229,9 +222,8 @@ async function jobWarm(kaltIn) {
     const added = r._addVoxelEdit(wx, h, wz, 3.5, "fill");
     if (!added) return Object.assign(out, { err: "Voxel-Edit wurde nicht angenommen (_addVoxelEdit false)" });
     const hitABefore = byKey.get(keyA) | 0;
-    const dl = performance.now() + 60000;
     let rebuilt = false;
-    while (performance.now() < dl && !rebuilt) {
+    for (const weiter = window.__deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
         if (!rebuilt) await new Promise((res) => setTimeout(res, 25));
     }
