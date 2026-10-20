@@ -2579,52 +2579,52 @@ class AnazhRealm_gelaende_chunks {
             return 0;
         }
         const tStart = performance.now();
-        const weiter = () =>
-            this._kappeOffen(built, MAX_PER_FRAME) && this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS);
-        const [lade, halb] = [this._ladeTakt(), span * Math.SQRT1_2];
-        let verschoben = 0; // Stücke außer Blick: sie halten den Ring wach, bis die Kontrolle sie freigibt
-        outer: for (let r = 0; r <= ringRadius; r++) {
-            for (let dz = -r; dz <= r; dz++) {
+        // DAS BILD DER ANKUNFT ZUERST (B-Blick): unter dem Ladeschirm geht der Ring erst die Stücke im Bild (`_rangImBild`, mit der
+        // halben Diagonale wie der Boden-Term) mit der Frist des Lade-Frames, danach die übrigen nur mit der Kappe des Spiels (ohne
+        // Frist, `_kappeOffen(…, false)`) — die Frist gehört dem Bild, der Ring steht trotzdem rundum, wie lange der Ladeschirm auch
+        // steht. Bis B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        const weiter = (frist) =>
+            this._kappeOffen(built, MAX_PER_FRAME, frist) &&
+            this._kappeOffen(performance.now() - tStart, FRAME_BUDGET_MS, frist);
+        const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
+        for (let r = 0; r <= ringRadius; r++)
+            for (let dz = -r; dz <= r; dz++)
                 for (let dx = -r; dx <= r; dx++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const cx = pcx + dx;
-                    const cz = pcz + dz;
-                    const key = `${cx},${cz}`;
-                    // DAS BILD DER ANKUNFT (B-Blick): unter dem Ladeschirm baut der Ring, was die Ankunft sieht (`_rangImBild`, das
-                    // Stück mit seiner halben Diagonale wie der Boden-Term) — den Boden dahinter samt seinem Laub (`_tickFoliageGrowth`
-                    // sät nur gebaute Chunks) nach der Kontrolle
-                    if (r && lade && !this._rangImBild({ x: (cx + 0.5) * span, z: (cz + 0.5) * span }, halb)) {
-                        verschoben++;
-                        continue;
-                    }
-                    // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
-                    // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
-                    const existing = this.state.voxelChunks.get(key);
-                    // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
-                    // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
-                    // `existing`) bekommt die reine Band-LOD.
-                    const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-                    const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
-                    if (existing) {
-                        const currentLod = existingLod !== null ? existingLod : 0;
-                        if (currentLod !== desiredLod && !existing.empty) {
-                            this._rebuildVoxelChunk(cx, cz, desiredLod);
-                            built++;
-                            if (!weiter()) break outer;
-                        }
-                        continue;
-                    }
-                    this._ensureVoxelChunkAt(cx, cz, desiredLod);
-                    built++;
-                    // Soft-Budget nach jedem Build (inkl. des letzten `_ensureVoxelChunkAt`): mindestens ein Chunk je
-                    // Frame auch über Budget — sonst friert das Streaming ein.
-                    if (!weiter()) break outer;
+                    const [cx, cz] = [pcx + dx, pcz + dz];
+                    const bild = !lade || !r || this._rangImBild({ x: (cx + 0.5) * span, z: (cz + 0.5) * span }, halb);
+                    zellen.push([cx, cz, bild]);
                 }
+        if (lade) zellen.sort((a, b) => b[2] - a[2]); // stabil: im Bild zuerst, je Hälfte in Ring-Reihe
+        for (const [cx, cz, bild] of zellen) {
+            if (!bild && !weiter(false)) break; // außer Bild nur mit der Kappe des Spiels
+            const key = `${cx},${cz}`;
+            // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
+            // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
+            const existing = this.state.voxelChunks.get(key);
+            // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
+            // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
+            // `existing`) bekommt die reine Band-LOD.
+            const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
+            if (existing) {
+                const currentLod = existingLod !== null ? existingLod : 0;
+                if (currentLod !== desiredLod && !existing.empty) {
+                    this._rebuildVoxelChunk(cx, cz, desiredLod);
+                    built++;
+                    if (!weiter(bild)) break;
+                }
+                continue;
             }
+            this._ensureVoxelChunkAt(cx, cz, desiredLod);
+            built++;
+            // Soft-Budget nach jedem Build (inkl. des letzten `_ensureVoxelChunkAt`): mindestens ein Chunk je
+            // Frame auch über Budget — sonst friert das Streaming ein.
+            if (!weiter(bild)) break;
         }
         this._pruneDistantVoxelChunks(playerPos);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0 || verschoben > 0);
+        this._standMeldet("strom", 1, false, built > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.

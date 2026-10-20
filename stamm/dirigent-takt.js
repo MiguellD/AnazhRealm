@@ -1017,7 +1017,7 @@ class AnazhRealm_dirigent_takt {
     _dispatchFrameJobs(jobs, budget) {
         const ran = [];
         const sorted = jobs.slice().sort((a, b) => (a.prio || 0) - (b.prio || 0));
-        // DER LADE-TAKT (K60, B-Blick): unter dem Ladeschirm arbeitet jeder Job am Bild der Ankunft (der Ring baut nur, was sie sieht,
+        // DER LADE-TAKT (K60, B-Blick): unter dem Ladeschirm arbeitet jeder Job zuerst am Bild der Ankunft (der Ring baut, was sie sieht,
         // `_tickVoxelChunkStreaming`), und keine Drossel des Spiels greift — auch nicht der 4er-Takt der Deko: bis B-Blick nahm der
         // Strom die Frist, und die Streu im Blick lief in 4 Takten einmal mit 2,5 ms (GTX kalt 5,2 → 7,8 s, p3/n2010/blick/f5.txt).
         const lade = this._ladeTakt();
@@ -1103,9 +1103,10 @@ class AnazhRealm_dirigent_takt {
     // Die Kappen schützen den Takt, den der Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und
     // jede Kappe wurde zur Uhr des Bilds (Radeon kalt: die Ort-Wahl rechnete 305 ms in 3-ms-Scheiben über 10,3 s, der Dorf-
     // Zug hob 15 Häuser zu je 2 über 6 s). Leser: Pflanz-Schlange, Ort-Wahl, Dorf-Zug, Cull-Bau (Platz-Uhr, Versuche,
-    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden.
-    _kappeOffen(n, kappe) {
-        return n < kappe || performance.now() < this._ladeFrist();
+    // Budget), Nachwuchs des Laubs, Boden-Strom (Stück und ms, keine eigene Uhr) — gate:takt T9 fährt jeden. `frist` false: ein
+    // Stück außer dem Bild der Ankunft (B-Blick, der Ring) — es bekommt nur die Kappe, die Frist gehört dem Bild.
+    _kappeOffen(n, kappe, frist = true) {
+        return n < kappe || (frist && performance.now() < this._ladeFrist());
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
