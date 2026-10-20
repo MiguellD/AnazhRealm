@@ -99,16 +99,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
             AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
             AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
-        out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
-        // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
-        // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
-        // prüft jetzt ≥7 Stops + monoton steigende t-Werte.
-        out.dayNightStopsSorted =
-            AnazhRealm.DAY_NIGHT_STOPS &&
-            AnazhRealm.DAY_NIGHT_STOPS.length >= 7 &&
-            AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
-            AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
-            AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
         out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
 
         // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
@@ -275,11 +265,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check(
             "Welle 6.G3.a: Tag-Längen-Konstanten (1/60/60 = 4 Szenen zu 15 min) korrekt",
             wave6g3Results.dayLengthConstantsExist
-        );
-        check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
-        check(
-            "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
-            wave6g3Results.dayNightStopsSorted
         );
         check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
         check(
@@ -648,22 +633,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.26 Browser-Bug-Fixes + Polish (17.05.2026) ###
-    // Zwei Browser-Test-Bugs aus V8.25-Session + vier Audit-Polish-
-    // Punkte. Tests sind PERMANENT (nicht nur regression catchers).
+    // ### V8.48 — das Licht des Morgens aus der EINEN Atmosphäre (die Stetigkeit des Tags im Bild: `werkbank licht --tag`) ###
     const v826Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
-        const AnazhRealm = window.AnazhRealm || r.constructor;
-        // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
-        // weil orange→blau noch zu hart war)
-        out.thirteenStops = AnazhRealm.DAY_NIGHT_STOPS.length >= 13;
-        // Stop bei t=0.32 sollte zwischen 0.27 (rotbraun) und 0.38 (orange) liegen
-        const stops = AnazhRealm.DAY_NIGHT_STOPS;
-        const t032 = stops.find((s) => s.t === 0.32);
-        out.intermediateStopExists = !!t032;
 
         // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
         // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
@@ -682,53 +655,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         } finally {
             delete r._luftBeta;
         }
-        // Die Tafel reproduziert ihre Stops EXAKT (Hermite trifft p1 bei u=0): t=0.5 trägt den Himmel des Mittags-Stops.
-        const mittagsStop = new THREE.Color(stops.find((s) => s.t === 0.5).sky);
-        const mittagsHimmel = r._interpolateDayNight(0.5).sky;
-        out.dayNightStopExact =
-            Math.abs(mittagsHimmel.r - mittagsStop.r) +
-                Math.abs(mittagsHimmel.g - mittagsStop.g) +
-                Math.abs(mittagsHimmel.b - mittagsStop.b) <
-            0.001;
-        // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
-        let maxJump = 0;
-        for (let i = 1; i < stops.length; i++) {
-            const a = stops[i - 1].sky;
-            const b = stops[i].sky;
-            const aR = (a >> 16) & 0xff,
-                bR = (b >> 16) & 0xff;
-            const aG = (a >> 8) & 0xff,
-                bG = (b >> 8) & 0xff;
-            const aB = a & 0xff,
-                bB = b & 0xff;
-            const dist = Math.max(Math.abs(aR - bR), Math.abs(aG - bG), Math.abs(aB - bB));
-            if (dist > maxJump) maxJump = dist;
-        }
-        // Max-Differenz pro Komponente sollte < 90 sein (vorher war 124 R)
-        out.noSharpColorJumps = maxJump < 95;
-        out.maxJump = maxJump;
 
         return out;
     });
 
     if (v826Results && !v826Results.error) {
-        check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
-        check(
-            "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
-            v826Results.intermediateStopExists
-        );
         check("V8.48: das Licht des Morgens pulst nicht (Steigung der Atmosphäre an t=0.32 klar positiv)", v826Results.dayNightNoPulse);
         check("V8.48: das Licht der Atmosphäre ist C1-stetig (Steigung vor ≈ nach t=0.32, kein Knick)", v826Results.dayNightC1);
-        check(
-            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → der Himmel des Mittags-Stops)",
-            v826Results.dayNightStopExact
-        );
-        check(
-            `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
-            v826Results.noSharpColorJumps
-        );
     } else {
-        check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
+        check("V8.48: das Licht des Morgens läuft", false, v826Results ? v826Results.error : "no result");
     }
 
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
@@ -751,21 +686,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             atmoU.licht.value > 0 &&
             mE.x + mE.y + mE.z > 0;
 
-        // 2. Hemisphere-skyColor moduliert mit Tageszeit
-        r.setTimeOfDay(0.5, "human");
-        r._applyDayNightToScene();
-        const hemiNoonR = r.state.hemiLight.color.r;
-        const hemiNoonG = r.state.hemiLight.color.g;
-        const hemiNoonB = r.state.hemiLight.color.b;
-        r.setTimeOfDay(0, "human"); // Mitternacht
-        r._applyDayNightToScene();
-        const hemiNightR = r.state.hemiLight.color.r;
-        const hemiNightG = r.state.hemiLight.color.g;
-        const hemiNightB = r.state.hemiLight.color.b;
-        // Bei Mittag heller (Sky-Tint = mehr Blau-Hell), bei Mitternacht dunkler
-        const noonTotal = hemiNoonR + hemiNoonG + hemiNoonB;
-        const nightTotal = hemiNightR + hemiNightG + hemiNightB;
-        out.hemiSkyFollowsDayCycle = noonTotal > nightTotal;
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
@@ -877,10 +797,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
-        );
-        check(
-            "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
-            v827Results.hemiSkyFollowsDayCycle
         );
         check("V18.507: EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
         check(
