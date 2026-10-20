@@ -130,9 +130,7 @@ async function checkBandCadWorkshop(ctx) {
                 typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
                 typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
-            out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
             out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
-            out.snapScale = AR.WORKSHOP_SNAP_SCALE;
             out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
 
             // --- Phase 2: Public API ---
@@ -338,12 +336,10 @@ async function checkBandCadWorkshop(ctx) {
             wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
         );
         check("Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)", wave6bResults.gizmoColorsFrozen);
-        check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
         check(
             "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
             Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
         );
-        check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
         check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
         check(
             "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",

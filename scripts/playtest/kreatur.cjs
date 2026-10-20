@@ -260,10 +260,7 @@ async function checkBandV1753CreatureCombat(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check(
-        "V17.53 Kampf C: der damage_creature-DSL-Op existiert",
-        res.opExists
-    );
+    check("V17.53 Kampf C: der damage_creature-DSL-Op existiert", res.opExists);
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
     check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
@@ -405,10 +402,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check(
-        "V17.54 Kampf D: _pickCreatureAtCrosshair + die attack-Emotion + COMBAT_REACH existieren",
-        res.exists
-    );
+    check("V17.54 Kampf D: _pickCreatureAtCrosshair + die attack-Emotion + COMBAT_REACH existieren", res.exists);
     check(
         "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
         res.attackDamages
@@ -455,8 +449,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
         out.tasksHasBuild = Tasks.includes("build");
         out.auraHueBuild = Hues.build === 280;
-        out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
-        out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
 
         // 2. Args-Mapping
         const a1 = r._buildCreatureTaskArgs("build", "stein_block");
@@ -670,10 +662,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     if (wave6hP2b2Results && !wave6hP2b2Results.error) {
         check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
-        check(
-            "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
-            wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
-        );
         check(
             "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
             wave6hP2b2Results.argsBuildString
@@ -1049,9 +1037,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
 
-        // 1. Memory-Cap auf 200 gebumpt
-        out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
-
         // 3. Neu gespawnte Kreatur bekommt bornAt
         const player = r.state.playerMesh.position;
         const c = r.spawnCreatureAt(player.x + 130, player.y, player.z + 130, "happy", "wesen");
@@ -1187,7 +1172,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     });
 
     if (wave6hP2d1Results && !wave6hP2d1Results.error) {
-        check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
         check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
         check(
             "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",

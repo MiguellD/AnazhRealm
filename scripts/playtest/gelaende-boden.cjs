@@ -645,7 +645,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             `Welle E (E1): ein LOD2- + LOD3-Chunk meshet ohne Crash (grobe dim 6/3)${voxelP2bResults.lod23Err ? " — " + voxelP2bResults.lod23Err : ""}`,
             voxelP2bResults.lod23Builds
         );
-
         check(
             "K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)",
             voxelP2bResults.bandLods === true
@@ -1030,7 +1029,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelV939Results.waterPlaneVoxelOnly
         );
         check(
-            "Voxel V9.39: Voxel-Gras-Pendant lebt weiter (_buildVoxelChunkGrass + state.voxelChunkGrass)",
+            "Voxel V9.39: das Voxel-Gras-Register lebt weiter (state.voxelChunkGrass ist eine Map)",
             voxelV939Results.voxelGrassAlive
         );
     }
@@ -1059,7 +1058,6 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
         out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
-
         // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
         out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
         out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0

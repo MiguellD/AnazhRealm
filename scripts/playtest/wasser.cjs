@@ -633,8 +633,6 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.cellStateWater = STATE && STATE.WATER;
         out.cellStateSolid = STATE && STATE.SOLID;
         out.cellStateFrozen = STATE && Object.isFrozen(STATE);
-        // 2) Methode `_buildVoxelChunkWaterCells` existiert
-
         // 3) Streaming-aktiver Chunk hat waterCells (die LOD wandert pro Chunk — Entry-LOD lesen, nicht
         // den Default-`_voxelChunkConfig()`-Snapshot).
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
@@ -2109,7 +2107,9 @@ async function checkBandWasserWahrheit(ctx) {
         // KONSUM am Ruf: der Welt-Tick holt das Level über diesen Chokepoint und reicht dessen Kappe an den Automaten.
         kappe = null;
         if (!weltTick("_ensureWaterCALevel") || kappe !== capS)
-            fail("F5: _tickWorldWaterCA holt das Level nicht über _ensureWaterCALevel oder reicht dessen Kappe nicht weiter");
+            fail(
+                "F5: _tickWorldWaterCA holt das Level nicht über _ensureWaterCALevel oder reicht dessen Kappe nicht weiter"
+            );
         // Selbst-Test F5: die Kappe eine Zeile über der Ruhe (der alte Raum) → die Deck-Spalte MUSS reißen.
         o.ruheBroken = runRuhe(r._ensureWaterCALevel, true).gerissen;
         if (!(o.ruheBroken > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
@@ -2201,7 +2201,10 @@ async function checkBandWasserWahrheit(ctx) {
         // KONSUM: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt` → `_wasserNetz`.
         // KONSUM am Ruf: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt`, das Bild über das Netz.
         const pm = r.state.playerMesh.position;
-        if (!(window.__consumes(r, "_nassAt", r, "_wasserBildAt", [pm.x, pm.z]) && window.__consumes(r, "_wasserBildAt", r, "_wasserNetz", [pm.x, pm.z])))
+        if (!(
+            window.__consumes(r, "_nassAt", r, "_wasserBildAt", [pm.x, pm.z]) &&
+            window.__consumes(r, "_wasserBildAt", r, "_wasserNetz", [pm.x, pm.z])
+        ))
             fail("F7: _nassAt liest das Netz nicht (über _wasserBildAt)");
         o.netzBroken = runNetz(r._wasserNetz, true).h1;
         if (o.netzBroken === 8) fail("F7-Selbsttest: mit dem gehaltenen View blieb das Netz richtig — Linse blind");

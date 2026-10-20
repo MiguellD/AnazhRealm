@@ -314,11 +314,25 @@ async function checkBandFoundrySpeicherFlach(ctx) {
         const f = r._ensureAssetFoundry();
         const t0 = performance.now(); while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
         // dichten Wald streamen.
-        for (let it = 0; it < 300; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); const pp = r.state.playerMesh && r.state.playerMesh.position; if (pp) r._tickScatterStreaming(pp); } catch (_e) {} await sleep(6); }
+        for (let it = 0; it < 300; it++) {
+            r.state._frameOverBudget = false;
+            try {
+                r._gameLoopTick && r._gameLoopTick(performance.now());
+                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                if (pp) r._tickScatterStreaming(pp);
+            } catch (_e) {}
+            await sleep(6);
+        }
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
-        let maxRefsAtDispose = 0, disposeCalls = 0;
+        let maxRefsAtDispose = 0,
+            disposeCalls = 0;
         const orig = r._disposeFoundryGroupGeom.bind(r);
-        r._disposeFoundryGroupGeom = function (g) { disposeCalls++; const refs = (g && g._liveRefs) || 0; if (refs > maxRefsAtDispose) maxRefsAtDispose = refs; return orig(g); };
+        r._disposeFoundryGroupGeom = function (g) {
+            disposeCalls++;
+            const refs = (g && g._liveRefs) || 0;
+            if (refs > maxRefsAtDispose) maxRefsAtDispose = refs;
+            return orig(g);
+        };
         const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
         // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
         // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.

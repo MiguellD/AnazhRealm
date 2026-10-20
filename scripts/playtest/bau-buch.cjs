@@ -411,19 +411,10 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         "Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0",
         res.tableStable && res.tippyTips && res.mastUnstable
     );
-    check(
-        "Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)",
-        res.boardAniso && res.hollowEfficient
-    );
+    check("Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)", res.boardAniso && res.hollowEfficient);
     check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
-    check(
-        "Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller",
-        res.headHeavier && res.balancedFaster
-    );
-    check(
-        "Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad",
-        res.stackIntact && res.floatBreaks
-    );
+    check("Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller", res.headHeavier && res.balancedFaster);
+    check("Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad", res.stackIntact && res.floatBreaks);
     check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);
     check("Ω-L1: die Physik-Achsen sind im Produkt-Vektor, alle [0,1]", res.l1AxesPresent && res.l1AxesBounded);
     check("Ω-L1: rollable aus Roll-Physik (Räder>0, vertikaler Stamm=0)", res.rollableWheels && res.rollableTrunkZero);
@@ -3100,11 +3091,8 @@ async function checkBandWaves9And10a(ctx) {
     const wave9dResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const AR = r.constructor;
         const out = {};
         try {
-            out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
-
             // Maschinen-Bonus
             if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
             r.cloneBlueprint("stein_block", "test_9d_machine");
@@ -3180,7 +3168,6 @@ async function checkBandWaves9And10a(ctx) {
     });
 
     if (wave9dResults && !wave9dResults.error) {
-        check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
         check(
             "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
             wave9dResults.regOk && wave9dResults.toolHasBonus

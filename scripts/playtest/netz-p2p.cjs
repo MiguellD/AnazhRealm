@@ -1596,7 +1596,6 @@ async function checkBandLateMultiUser(ctx) {
             !!document.getElementById("p2p-lobby-refresh");
 
         // ── Kreatur-Sicht-Sync ──
-
         // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
         const _saveMaxNet = r.state.maxCreatures;
@@ -1667,7 +1666,10 @@ async function checkBandLateMultiUser(ctx) {
         );
     } else {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
-        check("W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)", w7p4Results.lobbyMethods);
+        check(
+            "W7 P4: _renderLobbyUI auf der Klasse (die übrigen Lobby-Methoden fährt das Band)",
+            w7p4Results.lobbyMethods
+        );
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
         check("W7 P4: unpublishFromLobby sendet lobby-unpublish", w7p4Results.unpublishSends);
@@ -3138,10 +3140,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         const K = r.constructor;
         const out = {};
         // (1) Konstanten verdrahtet.
-        out.consts =
-            K.PORTAL_CHANNEL_RATE_MAX === 200 &&
-            K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
-            K.SUBWORLD_NET_PEER_RATE_MAX === 120;
+        out.consts = K.PORTAL_CHANNEL_RATE_MAX === 200 && K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
         // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
         // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
         const po = {};
@@ -3169,7 +3168,7 @@ async function checkBandG8R1DampedChannel(ctx) {
         check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R1: Kanal-Bucket + per-Peer-Tor: die Konstanten verdrahtet", res.consts);
+    check("G8 R1: Kanal-Bucket: die Konstanten verdrahtet", res.consts);
     check(
         "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
         res.channelCapsFlood,

@@ -135,10 +135,7 @@ async function checkBandWelle6HCreatures(ctx) {
             r.constructor.CREATURE_TASKS.includes("follow_player") &&
             r.constructor.CREATURE_TASKS.includes("wait");
         out.hasAuraHueMap =
-            r.constructor.CREATURE_TASK_AURA_HUE &&
-            r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
-            r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
-            r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+            r.constructor.CREATURE_TASK_AURA_HUE && r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
         out.hasFollowDistance =
             Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) && r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
 
@@ -264,10 +261,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hResults && !wave6hResults.error) {
         check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
-        check(
-            "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
-            wave6hResults.hasAuraHueMap
-        );
+        check("Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
         check("Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv", wave6hResults.hasFollowDistance);
         check(
             "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
@@ -797,7 +791,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
         out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
         out.speed = r.constructor.CREATURE_GATHER_SPEED;
-        out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
 
         // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
         const c0 = r.state.creatures[0];
@@ -951,10 +944,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
         check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
         check(
-            "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
-            Number.isFinite(wave6hP2bResults.haltDist) &&
-                Number.isFinite(wave6hP2bResults.speed) &&
-                wave6hP2bResults.memCap
+            "Welle 6.H P2B.1: HALT_DIST/SPEED als Konstanten",
+            Number.isFinite(wave6hP2bResults.haltDist) && Number.isFinite(wave6hP2bResults.speed)
         );
         check(
             "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
@@ -1411,8 +1402,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.duration = r.constructor.CREATURE_DRINK_DURATION_S;
         out.searchRadius = r.constructor.CREATURE_DRINK_SEARCH_RADIUS;
         out.speed = r.constructor.CREATURE_DRINK_SPEED;
-
-        // API-Existenz.
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");

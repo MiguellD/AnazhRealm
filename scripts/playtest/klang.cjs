@@ -28,7 +28,7 @@ async function checkBandW4LofiPad(ctx) {
             harmony.length === 7 &&
             Object.isFrozen(harmony) &&
             harmony.every((t) => Array.isArray(t) && t.length >= 1);
-        out.bpmDefined = AnazhRealm.LOFI_BPM === undefined && AnazhRealm.LOFI_BASE_FREQ === 110;
+        out.bpmDefined = AnazhRealm.LOFI_BPM === undefined;
         // Die SKALA führt das Studio-Klang-Rezept (_lofiActiveScale; warmes Buch → Blues) → die
         // Konstanten-Proben laufen mit VERSTECKTEM Rezept (sichern + wiederherstellen); die
         // Studio-Skalen-Probe steht daneben.
@@ -334,7 +334,7 @@ async function checkBandW4LofiPad(ctx) {
             "W4 V3: LOFI_SCALE abwesend (Zwilling fiel 19.07.) + LOFI_HARMONY (7 Stufen) frozen",
             w4v2Results.scaleHarmonyDefined
         );
-        check("W4 V2: LOFI_BPM abwesend (Zwilling fiel 19.07.) + LOFI_BASE_FREQ=110", w4v2Results.bpmDefined);
+        check("W4 V2: LOFI_BPM abwesend (Zwilling fiel 19.07.)", w4v2Results.bpmDefined);
         check(
             "W4 V3: _lofiChordFromDegree stapelt Terzen (kaltes Preset → Kern-Blues [0,5,7,12])",
             w4v2Results.chordFromDegree

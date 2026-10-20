@@ -1973,7 +1973,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const out = {};
         out.hasMeshCache = "voxelMeshCache" in r.state;
         out.hasMeshPending = "voxelMeshPending" in r.state;
-
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
         // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
         const worker = r._getVoxelWorker();

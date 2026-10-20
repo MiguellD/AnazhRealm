@@ -210,7 +210,6 @@ async function checkBandV1761ForgeImplement(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-
     check(
         "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
         res.precisionModulatesMine
@@ -304,7 +303,6 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-
     check(
         "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
         res.forgedPrecisionPersists
@@ -421,7 +419,6 @@ async function checkBandV1763ForgeArmor(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-
     check(
         "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
         res.forgeArmorRequiresRole && res.markedArmor
@@ -523,7 +520,6 @@ async function checkBandV1765BrewConsumable(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-
     check(
         "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
         res.brewRequiresConsumable && res.markedConsumable
@@ -743,7 +739,6 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-
     check(
         "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
         res.markSetsRole && res.notStationBeforeMark
@@ -3555,11 +3550,11 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
+    check("V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost", res.r5Exists === true);
     check(
-        "V18.209 (K2) R5_STRUCTURE_TEXTURE trägt microBoost",
-        res.r5Exists === true
+        "V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen",
+        res.gammaBogenKomplett === true
     );
-    check("V18.209 (K3) §4.A Γ-BOGEN 2: die Anker des Kerns und der Konstanten stehen", res.gammaBogenKomplett === true);
     check(
         "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
         res.manaMaxFn && res.manaRegenConst

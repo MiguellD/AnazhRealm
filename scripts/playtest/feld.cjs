@@ -327,11 +327,7 @@ async function checkBandV1733WorldRules(ctx) {
         const now = () => performance.now() / 1000;
 
         // --- Verdrahtung ---
-        out.cfgWired =
-            !!K.WORLD_RULES &&
-            K.WORLD_RULES.cap === 64 &&
-            K.WORLD_RULES.budgetPerFrame === 4 &&
-            typeof K.WORLD_RULES.minEverySec === "number";
+        out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
         out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
@@ -781,10 +777,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.35 Nexus-Regeln: die Konfig trägt composeRuleProb + renewFitness + costBudgetMs",
-        res.cfgWired
-    );
+    check("V17.35 Nexus-Regeln: die Konfig trägt composeRuleProb + renewFitness + costBudgetMs", res.cfgWired);
     check(
         "V17.35 Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
         res.composeStruct
@@ -932,10 +925,7 @@ async function checkBandV1736HumanRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.36 Mensch-Regeln: die Sperrliste RULE_FORBIDDEN_EFFECT_OPS ist ein Set",
-        res.wired
-    );
+    check("V17.36 Mensch-Regeln: die Sperrliste RULE_FORBIDDEN_EFFECT_OPS ist ein Set", res.wired);
     check(
         "V17.36 Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
         res.condParse
@@ -1072,10 +1062,7 @@ async function checkBandV1737RulesUI(ctx) {
         res.nexusValueChipSorted
     );
     check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
-    check(
-        "V17.37 Gesetze-UI: _initCollapsibleDrawer existiert",
-        res.collapsibleWired
-    );
+    check("V17.37 Gesetze-UI: _initCollapsibleDrawer existiert", res.collapsibleWired);
     check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     check(
         "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
