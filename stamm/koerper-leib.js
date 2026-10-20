@@ -94,7 +94,22 @@ class AnazhRealm_koerper_leib {
         const f = (8 * AnazhRealm.PLAYER_KH) / 6.0;
         const wrap = this._leibHuelle();
         wrap.scale.setScalar(f);
-        wrap.position.y = oy;
+        // DIE SOHLE STEHT AUF oy (Gelände H5, Labor = Welt): der Kern stellt den Knöchel trochanterY − Bein über den Ursprung der
+        // Vorlage, die Sohle footBelowAnkle darunter — das Labor erdet über footBelowAnkle, die Welt setzt die tiefste Fläche der
+        // Vorlage in der Ruhe-Pose (die flache Sohle des Schuhs) auf oy. Bis H5 stand der Leib mit dem Ursprung auf oy, die
+        // Sohle 2,6 cm unter der Sohle der Kapsel (gate:koerper-stand K8 fuss, Median −1,3 cm an der Wiese).
+        if (!Number.isFinite(t0.sohleY)) {
+            const box = new THREE.Box3();
+            const b = new THREE.Box3();
+            t0.root.updateMatrixWorld(true);
+            t0.root.traverse((n) => {
+                if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+                if (!n.geometry.boundingBox) n.geometry.computeBoundingBox();
+                box.union(b.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld));
+            });
+            t0.sohleY = Number.isFinite(box.min.y) ? box.min.y : 0;
+        }
+        wrap.position.y = oy - f * t0.sohleY;
         wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
         wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
@@ -631,7 +646,26 @@ class AnazhRealm_koerper_leib {
         const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
         leg.hip.rotation.x = res.hip;
         leg.knee.rotation.x = res.knee;
-        leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee); // die Sohle bleibt eben, der rollende Fuß kippt
+        // die Sohle liegt dem Boden an (der rollende Fuß kippt um seine Rolle darüber hinaus)
+        const kipp = this._gaitSohlenKipp(tx, tz, ik.yaw, probe.g);
+        leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee) - kipp.laengs;
+        leg.ankle.rotation.z = kipp.quer;
+    }
+    // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
+    // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang
+    // quer stand ihr bergseitiger Rand im Boden (gate:koerper-stand K8 fuss, Median −1,4 cm).
+    _gaitSohlenKipp(x, z, yaw, g) {
+        const d = 0.12;
+        const [s, c] = [Math.sin(yaw), Math.cos(yaw)];
+        const y = (a, b) => {
+            const v = this._gaitBodenY(x + a, z + b);
+            return Number.isFinite(v) ? v : g;
+        };
+        const w = (dy) => Math.max(-0.45, Math.min(0.45, Math.atan(dy / (2 * d))));
+        const k = this._gaitKippTmp || (this._gaitKippTmp = { laengs: 0, quer: 0 });
+        k.laengs = w(y(d * s, d * c) - y(-d * s, -d * c));
+        k.quer = w(y(d * c, -d * s) - y(-d * c, d * s));
+        return k;
     }
 
     _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions, gait) {
