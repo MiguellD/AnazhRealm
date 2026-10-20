@@ -1,36 +1,24 @@
 class AnazhRealm_feld_dsl {
     // ===== ATLAS · Feld/dsl — DSL-Ops · Sandbox · Welt-Regeln · Chat-Tore =====
-    // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
-    // verwandeln. Bei aktivem LLM kommt eine lebendige Beobachtung; ohne
-    // LLM (oder bei Fehler/Rate-Limit) fällt es auf den Pool zurück. Beide
-    // Pfade respektieren den Standard-Throttle aus grokSpeak.
+    // Ein Journal-Eintrag wird ein Satz der Welt: mit aktiver Stimme spricht NUR das Modell — ein Ruf, der dem Spieler wich,
+    // die Tür besetzt fand oder scheiterte, schweigt (der Fehler steht im LLM-Status); ohne Stimme spricht der Pool. Bis
+    // 20.10. sprang der Pool still ein (KI H1): genau wenn der Spieler sprach, kam eine Konserven-Zeile.
     grokSpeakFromJournal(entry) {
         const grok = this.state.grok;
         const cfg = grok.triggers.journalEvent;
         const now = performance.now() / 1000;
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
-        // LLM-Pfad: nur wenn aktiv und kein Inflight-Call läuft.
-        if (this.state.llm && this.state.llm.enabled && !this.state.llm.inFlight) {
+        if (this.state.llm && this.state.llm.enabled) {
             const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
-            // Async ohne await: das Tick darf nicht blockieren. Erfolg/Fehler
-            // werden im LLM-Status angezeigt; bei narrativer Antwort rendern
-            // wir sie direkt.
-            this.llmCall(prompt, null, { hintergrund: true })
-                .then((reply) => {
-                    if (reply && reply.say) {
-                        grok.lastSpoke = performance.now() / 1000;
-                        if (cfg) cfg.lastFired = performance.now() / 1000;
-                        this.grokRender(reply.say);
-                        this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
-                    } else {
-                        // Stiller Fallback auf Pool, ohne den Cooldown neu zu setzen.
-                        this.grokSpeak("journalEvent");
-                    }
-                })
-                .catch(() => {
-                    this.grokSpeak("journalEvent");
-                });
+            // Async ohne await: das Tick darf nicht blockieren.
+            this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
+                if (!reply || !reply.say) return;
+                grok.lastSpoke = performance.now() / 1000;
+                if (cfg) cfg.lastFired = performance.now() / 1000;
+                this.grokRender(reply.say);
+                this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
+            });
             return true;
         }
         return this.grokSpeak("journalEvent");
@@ -286,13 +274,18 @@ class AnazhRealm_feld_dsl {
         // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
         // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
-        const wert = AnazhRealm.DSL_WERTE[op];
-        if (wert && !wert[1](args[wert[0]])) {
-            ctx.log.push({ event: "invalid_wert", op: String(op), wert: args[wert[0]], grund: `das Gesetz von ${op}: ${wert[2]()}` });
-            return;
-        }
         if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
+            return;
+        }
+        const wert = AnazhRealm.DSL_WERTE[op];
+        if (wert && !wert[1](args[wert[0]], this)) {
+            ctx.log.push({
+                event: "invalid_wert",
+                op: String(op),
+                wert: args[wert[0]],
+                grund: `das Gesetz von ${op}: ${wert[2](this)}`,
+            });
             return;
         }
         ctx.budget.depthLeft--;
@@ -866,7 +859,7 @@ class AnazhRealm_feld_dsl {
             gravity: ([value]) => {
                 // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
                 // (keine Ammo-Welt mehr, die ein setGravity bräuchte).
-                this.state.gravity = c(value, -30, 0);
+                this.state.gravity = Number(value); // das Band hält dslEval (`AnazhRealm.DSL_WERTE`)
             },
             terrain_steepness: ([value]) => {
                 this.state.terrainSteepness = c(value, 0.1, 2.0);
@@ -909,7 +902,7 @@ class AnazhRealm_feld_dsl {
             spawn_creature: ([positionNode, count, emotion], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const n = c(count, 1, 20);
-                const e = emotion === "sad" || emotion === "happy" ? emotion : "happy";
+                const e = emotion || "happy"; // das Gesetz der Werte hält dslEval (`AnazhRealm.DSL_WERTE`)
                 // === Spawn-Harmonie ===
                 // Kreaturen erscheinen im RING um den Ziel-Punkt, nie gestapelt, nie AUF dem Spieler (sonst
                 // clippt es); liegt das Ziel auf dem Spieler (at_player), rückt der Ring nach außen. ctx.rng →
@@ -979,7 +972,7 @@ class AnazhRealm_feld_dsl {
             spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
-                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche";
+                const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche"; // eiche | kiefer: `AnazhRealm.DSL_WERTE`
                 let spawned = 0;
                 const weicht = {};
                 for (let i = 0; i < n; i++) {
@@ -2226,12 +2219,43 @@ AnazhRealm.WORLD_RULES = Object.freeze({
 // DAS GESETZ DER WERTE (KI H1, 20.10.): ein Op mit begrenztem Wert nennt ihn HIER — die KI liest ihn im Prompt
 // (`_dslVokabular`), `dslEval` weist einen Wert außerhalb benannt ab (`invalid_wert`, die Absage nennt das Gesetz). Bis 20.10.
 // verwarfen die Ops ihn still, der Chat sagte „Welt verändert" und nichts geschah (qwen3:4b-instruct am Korpus:
-// ["set_time_of_day","night"], ["weather","thunderstorm"]). Je Op: [Argument, Prüfung, Gesetz in Worten].
-AnazhRealm.DSL_WERTE = Object.freeze({
-    weather: [0, (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v), () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | ")],
-    set_time_of_day: [0, (v) => v != null && v !== "" && Number(v) >= 0 && Number(v) <= 1, () => "0–1 (0 Mitternacht, 0.25 Morgen, 0.5 Mittag, 0.75 Abend)"],
-    creatures_emotion: [0, (v) => v === "happy" || v === "sad", () => "happy | sad"],
-});
+// ["set_time_of_day","night"], ["weather","thunderstorm"]); der Leib und die Schwerkraft klemmten den Wunsch auf den Rand,
+// und der Chat meldete den Wunsch („Sprungkraft auf 1.2"). Je Op: [Argument, Prüfung (Wert, Welt), Gesetz in Worten (Welt)].
+AnazhRealm.DSL_WERTE = (() => {
+    const zahlIn = (v, lo, hi) => v != null && v !== "" && Number(v) >= lo && Number(v) <= hi;
+    // das Band des Leibs (`_koerperGesetzBand`) mit dem Wert von jetzt
+    const leib = (stat) => [
+        0,
+        (v, r) => (({ min, max }) => zahlIn(v, min - 1e-6, max + 1e-6))(r._koerperGesetzBand(stat)),
+        (r) =>
+            (({ min, max }) => `${min.toFixed(2)}–${max.toFixed(2)}, jetzt ${Number(r.state[stat]).toFixed(2)}`)(
+                r._koerperGesetzBand(stat)
+            ),
+    ];
+    return Object.freeze({
+        weather: [
+            0,
+            (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v),
+            () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | "),
+        ],
+        set_time_of_day: [
+            0,
+            (v) => zahlIn(v, 0, 1),
+            () => "0–1 (0 Mitternacht, 0.25 Sonnenaufgang, 0.5 Mittag, 0.75 Sonnenuntergang)",
+        ],
+        creatures_emotion: [0, (v) => v === "happy" || v === "sad", () => "happy | sad"],
+        spawn_creature: [2, (v) => v == null || v === "happy" || v === "sad", () => "emotion: happy | sad"],
+        // die zwei Arten der Grammatik-Bäume; jede andere Art (Birke, Tanne …) wächst aus dem Studio-Buch (spawn_studio)
+        spawn_tree: [
+            2,
+            (v) => v == null || v === "eiche" || v === "kiefer",
+            () => "kind: eiche | kiefer — jede andere Art: spawn_studio",
+        ],
+        gravity: [0, (v) => zahlIn(v, -30, 0), (r) => `-30–0 (Erde -9.81, jetzt ${r.state.gravity})`],
+        player_jump_power: leib("jumpPower"),
+        player_speed: leib("speed"),
+    });
+})();
 AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",
     "spawn_tree",

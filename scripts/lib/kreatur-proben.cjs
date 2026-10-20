@@ -1519,6 +1519,9 @@ async function kreaturProben(r, T, opts) {
         // Die alten Ops als Täter (der Stand vor dem Schnitt, wörtlich): ein absoluter Wert, eine Skala ohne Achse, ein
         // Tempo ohne Leser, die Geburt im Ring um den Ziel-Punkt.
         if (taeter === "nexus-gesetz") {
+            const W = A.DSL_WERTE; // das Band hält dslEval — der Täter nimmt es mit
+            A.DSL_WERTE = { ...W, player_jump_power: null, player_speed: null };
+            restore.push(() => (A.DSL_WERTE = W));
             eff.player_jump_power = ([v]) => {
                 s.jumpPower = r.dslClamp(v, 5, 40);
             };
