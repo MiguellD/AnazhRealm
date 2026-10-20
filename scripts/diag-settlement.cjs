@@ -28,21 +28,16 @@
 // Re-Mint 30.09.2026 (V18.492, begründet): der Export trägt je Slot additiv `chimney`
 //   (die Schornstein-Position, die der Rauch des fachwerk-Gesetzes liest); das Layout
 //   (Kulturen · Anker · Drehung · ov) blieb gegen das alte Golden feld-für-feld gleich.
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Nachlese-Welle — die statische Absenz des Auto-Dorf-Pfads (kommentar-gestrippt, die V18.267-Falle): kein Math.random
@@ -89,10 +84,11 @@ function fingerprint(plan) {
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
 // (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
 // ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
-//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte), Median und Maximum;
+//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte; nie im hohlen Keller `grund.keller`, S4), Median
+//   und Maximum;
 //   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
-//   |Δh| ≤ STUFE, nie durch eine Wand) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
+//   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
 function ortUrteil(v2, hoehe, o) {
     o = o || {};
     const STUFE = o.stufeM || 0.4;
@@ -107,6 +103,12 @@ function ortUrteil(v2, hoehe, o) {
         const dz = z - b.cz;
         return Math.abs(dx * c - dz * s) <= b.ex + m && Math.abs(dx * s + dz * c) <= b.ez + m;
     };
+    const imKeller = (sl, x, z) => {
+        const K = sl.grund && sl.grund.keller; // der Raum des Grund-Datums im Rahmen des Hauses (plan-lokal)
+        const [c, s] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0)];
+        const [u, v] = [(x - sl.x) * c - (z - sl.z) * s, (x - sl.x) * s + (z - sl.z) * c];
+        return !!K && u >= K[0] && u <= K[1] && v >= K[2] && v <= K[3];
+    };
     const sockel = [];
     for (const sl of v2.slots) {
         const ob = sl.obb;
@@ -118,6 +120,7 @@ function ortUrteil(v2, hoehe, o) {
             for (let j = 0; j <= 8; j++) {
                 const lx = ob.ex * (i / 4 - 1);
                 const lz = ob.ez * (j / 4 - 1);
+                if (imKeller(sl, ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) continue;
                 mn = Math.min(mn, hoehe(ox + ob.cx + lx * c + lz * s, oz + ob.cz - lx * s + lz * c));
             }
         sockel.push(Math.max(0, sl.y - mn));
@@ -140,7 +143,7 @@ function ortUrteil(v2, hoehe, o) {
         if (z) return z;
         const x = i * G;
         const zz = j * G;
-        let zu = false;
+        let zu = v2.slots.some((sl) => imKeller(sl, x, zz));
         for (const b of waende)
             if (imRecht(b, x, zz, -0.1)) {
                 zu = true;
@@ -1405,8 +1408,6 @@ const FIXTURES = [
     const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -1669,10 +1670,6 @@ const FIXTURES = [
                 typeof wm.settlementCells[key] === "object" &&
                 isFinite(wm.settlementCells[key].seed)
             );
-            // DORF-ERLEBNIS — Brunnen/Wege heben bei ANKUNFT (deliberat, klein,
-            // budget-frei); die Budget-Wand gilt der HAUS-Materialisierung:
-            // Referenz ist der Stand NACH der Ankunft.
-            const archAnkunft = r.state.architectures.length;
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
             // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
@@ -2103,6 +2100,7 @@ const FIXTURES = [
                             rolle: sl.rolle,
                             tuer: sl.tuer,
                             obb: ob,
+                            grund: sl.grund || null,
                         });
                     }
                     const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
@@ -2354,18 +2352,18 @@ const FIXTURES = [
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                    // marktstand_dorf), auf dem Erdbau eines Orts
+                    // marktstand_dorf), auf dem Erdbau eines Orts — nie das gesetzte Haus auf seinem EIGENEN Grund (`haus:`, S4)
                     let fremd = 0;
-                    if (typeof r._ortFrei === "function")
-                        for (const e of r.state.architectures)
-                            if (
-                                !e.fundament &&
-                                !/_dorf$/.test(e.type) &&
-                                !r._ortFrei(e.position.x, e.position.z, 0.01)
-                            ) {
-                                fremd++;
-                                (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
-                            }
+                    for (const e of r.state.architectures)
+                        if (
+                            !e.fundament &&
+                            !/_dorf$/.test(e.type) &&
+                            !r.state.worldMeta.erdbau[`haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`] &&
+                            !r._ortFrei(e.position.x, e.position.z, 0.01)
+                        ) {
+                            fremd++;
+                            (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
+                        }
                     res.fremdBauten = fremd;
                     // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
                     // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
@@ -2788,7 +2786,6 @@ const FIXTURES = [
         "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser (worldMeta.settlementCells trägt über den Reload)",
         c.idempotent === true
     );
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

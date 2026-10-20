@@ -321,8 +321,6 @@ function urteil(S) {
     const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 90000;
@@ -398,7 +396,6 @@ function urteil(S) {
             );
     }
     const rot = urteil(S);
-    if (pageErrors.length) rot.push("Seiten-Fehler: " + pageErrors[0]);
     if (selbst) {
         console.log(`  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
         console.log(`  Selbsttest: harte Kante → ${selbst.hart}`);

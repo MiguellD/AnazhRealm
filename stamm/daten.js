@@ -411,9 +411,21 @@ class AnazhRealm_daten {
     // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der Büschel, `rand` = Ausdünnungs-Band
     // davor (ein Büschel zeigt sich, solange seine Würfel-Ordnung unter dem Anteil seiner Distanz liegt), `kachel` =
     // Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen aus dem Studio
-    // (understory.grassStep · groundCover.grass · placement.scale.gras).
+    // (understory.grassStep · groundCover.grass · placement.scale.gras). `reich` = die Weite eines Büschels je Skala 1 (m,
+    // die weiteste Halm-Spitze um seinen Fuß, waagrecht): sein Kreis vor dem Grund der Häuser (`erdbauGrund`, S4). Gemessen
+    // 19.10. an der GEZEICHNETEN Vorlage (Geometrie × lokale Matrix des Teils, beide Vorlagen, L1/L2) 0,606–0,683 m, dazu der
+    // Hub im Sturm (WIND_GESETZ 0,035 m); die 0,17 vom 17.10. lasen das Studio-Gras ohne die Matrix — ein Büschel 0,4 m vor der
+    // Wand steckte seine Halme durch sie in den Anbau (gate:haus-welt W9 misst die Weite an der Vorlage).
     static get NAH_WIESE() {
-        return Object.freeze({ kachel: 6, stufe1: 5, stufe1Rand: 0.5, radius: 14, rand: 4, kachelnJeTakt: 1 });
+        return Object.freeze({
+            kachel: 6,
+            stufe1: 5,
+            stufe1Rand: 0.5,
+            radius: 14,
+            rand: 4,
+            kachelnJeTakt: 1,
+            reich: 0.72,
+        });
     }
 
     // DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut): die Studio-Palette PORTAL_GROUND

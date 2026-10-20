@@ -39,19 +39,13 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt (K67),
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
@@ -107,9 +101,8 @@ function check(name, ok, detail) {
             const CELL = AR.FOREST.cell;
             const kr = AR.FOREST.crown.baum_eiche;
             // DIE FRAGE IN BAU-EREIGNISSEN (K69: die Schlange des Walds plant im Takt): wartet die Gestalt einer Eiche auf den Plan
-            // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht — dieselben Zellen, die bis K69 die
-            // erste Frage am Stück plante; jede plant ihre Wahrheit zuerst (`_ensureHydroTilesAround`). Ihr Rechner ist der
-            // Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
+            // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht; jede Zelle plant ihre Wahrheit zuerst
+            // (`_ensureHydroTilesAround`). Ihr Rechner ist der Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
             const frag = async (e) => {
                 let g = r._foundryGestaltFor(e, "eiche");
                 for (let i = 0; g == null && i < 4000; i++) {
@@ -249,13 +242,15 @@ function check(name, ok, detail) {
                 const frischF = (await frischAlle(proben))[proben.indexOf(e)];
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
-                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
-                // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
+                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen), seit
+                // S4 das Haus seinen Grund (Plan-Datum, beim Setzen): die Probe nimmt ihm Grund, Fundament, Hülle und Boxen
+                r._hausGrundSetzen = () => false;
                 const ohne = r.spawnArchitecture(
                     "haus_alemannisch",
                     { x: o.x, y: o.surfaceY, z: o.z },
                     { silent: true }
                 );
+                delete r._hausGrundSetzen; // der Patch lebt nur im Setzen — auch, wenn es fehlschlägt
                 if (ohne) {
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
@@ -716,7 +711,6 @@ function check(name, ok, detail) {
         E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
-    check("P keine Seiten-Fehler", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.join(", ")}`);
         process.exit(1);

@@ -40,11 +40,7 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 
 const PORT = Number(process.env.FERN_RING_PORT || 4464);
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 const server = statikServer();
 
@@ -54,8 +50,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "linse", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -1733,7 +1727,6 @@ const server = statikServer();
                     : "")
         );
     }
-    check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

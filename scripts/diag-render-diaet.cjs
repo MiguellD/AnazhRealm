@@ -46,11 +46,7 @@ const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const RD_FAMILIEN_ANKER = 1;
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     // ── Q: die Quell-Absenz über den EINEN Helfer (Chokepoint-Disziplin, kein Parallelpfad): kein dritter setColorAt-Pfad
@@ -64,8 +60,6 @@ function check(name, ok, detail) {
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
@@ -427,7 +421,6 @@ function check(name, ok, detail) {
             `fremde=${out.welt.fremde} cacheMats=${out.welt.cacheMats} wrappers=${out.welt.wrappers}`
         );
     } else check("W: Welt-Zensus erreicht", false, out.welt && out.welt.err);
-    check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
     server.close();

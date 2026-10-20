@@ -280,8 +280,6 @@ function atem() {
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     let out = null;
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
@@ -354,7 +352,6 @@ function atem() {
         process.exit(1);
     }
     const v = urteil(out);
-    if (pageErrors.length) v.push(`${pageErrors.length} Seiten-Fehler: ${pageErrors[0]}`);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
         for (const s of v) console.log("   • " + s);

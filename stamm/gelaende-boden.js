@@ -616,40 +616,89 @@ class AnazhRealm_gelaende_boden {
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
         const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
         wm.erdbau[key] = splats;
-        this._erdbauStand = (this._erdbauStand || 0) + 1;
-        let x0 = Infinity;
-        let x1 = -Infinity;
-        let z0 = Infinity;
-        let z1 = -Infinity;
-        for (const p of splats) {
-            const flaeche = p.art !== "trasse"; // platte und frei: ein Rechteck um (cx, cz)
-            const r = flaeche ? Math.hypot(p.ex, p.ez) : p.w / 2;
-            const xs = flaeche ? [p.cx] : [p.x0, p.x1];
-            const zs = flaeche ? [p.cz] : [p.z0, p.z1];
-            for (const x of xs) {
-                x0 = Math.min(x0, x - r);
-                x1 = Math.max(x1, x + r);
-            }
-            for (const z of zs) {
-                z0 = Math.min(z0, z - r);
-                z1 = Math.max(z1, z + r);
-            }
+        this._erdbauWirkt(splats, amWasser);
+        return true;
+    }
+    // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
+    // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
+    // `removeArchitecture` nimmt ihn mit, die Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt`). Die Platte des Orts
+    // (seine Fläche) bleibt. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
+    // ein Loch in der Welt, wo das Haus stand.
+    _erdbauGrundFaellt(entry) {
+        const wm = this.state.worldMeta;
+        const p = entry && entry.position;
+        if (!p || !wm || !wm.erdbau || typeof wm.erdbau !== "object") return false;
+        const sein = (q) => q && q.art === "grund" && Math.abs(q.cx - p.x) < 0.05 && Math.abs(q.cz - p.z) < 0.05;
+        const weg = [];
+        for (const k of Object.keys(wm.erdbau)) {
+            const liste = wm.erdbau[k];
+            if (!Array.isArray(liste) || !liste.some(sein)) continue;
+            for (const q of liste) if (sein(q)) weg.push(q);
+            const rest = liste.filter((q) => !sein(q));
+            if (rest.length) wm.erdbau[k] = rest;
+            else delete wm.erdbau[k];
         }
+        if (!weg.length) return false;
+        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)));
+        return true;
+    }
+    // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
+    // der Worker, die Chunks, die Wege-Karte, das Wasser, die Bakes, der Save. DIE WIRKUNG IST DER KASTEN (S4, Lehre 25): je
+    // Splat die Achsen-Box seiner gedrehten Fläche (Platte, Grund, frei) oder seiner Strecke (Trasse) samt der Reichweite des
+    // Terms (`ERDBAU.reichweiteM`: weiter liest weder `erdbauY` noch `erdbauWand` ihn); ein Chunk fällt in der Stufe, deren Gitter
+    // (Probe-Rand und Glätten: 3 Zellen über die Spanne) einen Kasten trifft, gezeichnet wird nur er neu. Bis S4 fiel der Kreis
+    // um den Umkreis-Kreis samt einem Chunk Rand: der Grund des Vorschau-Hauses am Tor (4,1 × 4,9 m) warf beim Boot 16
+    // gezeichnete Chunks um den Spieler, verändert hat er einen.
+    _erdbauWirkt(splats, amWasser) {
+        const G = globalThis.__gelaendeCore;
+        this._erdbauStand = (this._erdbauStand || 0) + 1;
         const R = G.ERDBAU.reichweiteM;
+        const kaesten = splats.map((p) => {
+            if (p.art === "trasse") {
+                const w = p.w / 2;
+                return [
+                    Math.min(p.x0, p.x1) - w,
+                    Math.max(p.x0, p.x1) + w,
+                    Math.min(p.z0, p.z1) - w,
+                    Math.max(p.z0, p.z1) + w,
+                ];
+            }
+            const [c, s] = [Math.abs(Math.cos(p.phi || 0)), Math.abs(Math.sin(p.phi || 0))];
+            const [hx, hz] = [p.ex * c + p.ez * s, p.ex * s + p.ez * c];
+            return [p.cx - hx, p.cx + hx, p.cz - hz, p.cz + hz];
+        });
+        const x0 = Math.min(...kaesten.map((k) => k[0]));
+        const x1 = Math.max(...kaesten.map((k) => k[1]));
+        const z0 = Math.min(...kaesten.map((k) => k[2]));
+        const z1 = Math.max(...kaesten.map((k) => k[3]));
         const { span } = this._voxelChunkConfig();
-        // die Chunks des Umkreises samt einem Chunk Rand (der Mesher liest eine Zelle in den Nachbarn), je Stufe
-        const ka = Math.floor((x0 - R) / span) - 1;
-        const kb = Math.floor((x1 + R) / span) + 1;
-        const la = Math.floor((z0 - R) / span) - 1;
-        const lb = Math.floor((z1 + R) / span) + 1;
+        const rand = [0, 1, 2, 3].map((lod) => 3 * this._voxelChunkConfig(lod).step);
+        // trifft das Gitter des Chunks (a, b) in der Stufe lod die Wirkung eines Splats?
+        const trifft = (a, b, lod) => {
+            const m = R + rand[lod];
+            const [u0, u1, v0, v1] = [a * span - m, (a + 1) * span + m, b * span - m, (b + 1) * span + m];
+            return kaesten.some((k) => k[0] < u1 && k[1] > u0 && k[2] < v1 && k[3] > v0);
+        };
+        const ka = Math.floor((x0 - R - rand[3]) / span);
+        const kb = Math.floor((x1 + R + rand[3]) / span);
+        const la = Math.floor((z0 - R - rand[3]) / span);
+        const lb = Math.floor((z1 + R + rand[3]) / span);
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
         const genKarte = this._erdbauGenKarte || (this._erdbauGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        const gezeichnet = this.state.voxelChunks;
+        if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
         for (let a = ka; a <= kb; a++)
             for (let b = la; b <= lb; b++) {
+                if (!trifft(a, b, 3)) continue;
+                const key = `${a},${b}`;
                 genKarte.set((a + 32768) * 65536 + (b + 32768), this._editGenZaehler);
-                for (const c of caches)
-                    if (c && c.size) for (let lod = 0; lod <= 3; lod++) c.delete(`${a},${b},${lod}`);
+                for (let lod = 0; lod <= 3; lod++)
+                    if (trifft(a, b, lod)) for (const c of caches) if (c && c.size) c.delete(`${key},${lod}`);
+                const ch = gezeichnet && gezeichnet.get(key);
+                if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
+                if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
         this._forestDartsFallen(x0, z0, x1, z1);
         // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
@@ -657,15 +706,17 @@ class AnazhRealm_gelaende_boden {
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
-        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
-        for (let a = Math.floor((cx - rad) / span); a <= Math.floor((cx + rad) / span); a++)
-            for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
-                this.state.grassDirtyChunks.add(`${a},${b}`);
-        this._remeshVoxelChunksAround(cx, cz, rad);
+        // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): die Stufe, deren Fenster er trifft, malt
+        // beim nächsten Takt neu — nur ein Grund mit einer Box, deren Boden der Grund ist, nie jede Platte und Trasse
+        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
+            for (const st of this.state.wegeKarte.stufen) {
+                const h = st.S.fensterM / 2 + R;
+                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)
+                    st.grundNeu = true;
+            }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
-        return true;
     }
     // DAS WASSER DES ERDBAUS (K10): ändert der Erdbau E (die Normalform seiner Splats) den Grund an gezeichnetem Wasser? Die
     // Regel des Zell-Stempels — ein Bau weckt den Automaten nur, wenn er eine Wasser-Zelle berührt (gate:werk-im-wasser R:
@@ -946,6 +997,9 @@ class AnazhRealm_gelaende_boden {
         out.hydroActive = hydroActive;
         out.hydroCarve = hydroCarve;
         out.lake = lake;
+        // DER KELLER DER SPALTE (S4): die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (`erdbauKeller`), sonst null —
+        // EINMAL je Spalte gefragt; das Feld (`_fieldDensityAt`) liest ihn je Probe als einen Blick. Das Gitter liest ihn nie.
+        out.keller = this._kellerLage(x, z);
         return out;
     }
 
@@ -1015,7 +1069,15 @@ class AnazhRealm_gelaende_boden {
         // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
         // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
         // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
-        return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        // DER KELLER IST HOHL (S4, gelaende-core `erdbauHohl`): das Feld trägt den Raum des Hauses, das Gitter des Netzes nicht
+        const d = this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        const K = this._kellerLage(x, z);
+        return K ? globalThis.__gelaendeCore.erdbauHohl(K, x, y, z, d) : d;
+    }
+    // Die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (gelaende-core `erdbauKeller`), sonst null.
+    _kellerLage(x, z) {
+        const E = this._erdbauLage();
+        return E && E.hohl && globalThis.__gelaendeCore.erdbauKeller(E, x, z) ? E : null;
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
@@ -1467,6 +1529,9 @@ class AnazhRealm_gelaende_boden {
         );
         this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle);
+        // DER BODEN FÄLLT IM GRUND DES HAUSES (S4, gelaende-core `erdbauSchnitt`, derselbe Code wie im Voxel-Faden); ein eigener
+        // Sampler (die Schwebe-Insel) ist nicht der Boden
+        if (!densityFn) globalThis.__gelaendeCore.erdbauSchnitt(this._erdbauLage(), positions, indices, triZelle);
         if (positions.length === 0) return null;
         // Gradient-Normals nutzen das geteilte preDensity-Grid (statt ~18k Dichte-Calls);
         // _voxelGradientNormals interpoliert trilinear, Out-of-Bounds → sample().

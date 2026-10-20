@@ -23,7 +23,9 @@
 "use strict";
 
 require("../koerper-core.js");
+require("../phyto-core.js");
 const core = globalThis.__koerperCore;
+const { mulberry32 } = globalThis.__phytoCore; // der Test-Strom ist der Strom des Kerns
 
 // ────────────────────────────────────────────────────────────────────────────
 // ALT — die eingefrorenen Original-Formeln (verbatim, Lab-Stand V18.451).
@@ -73,16 +75,6 @@ function neuMorph(params, parts, base, PROP, labMorphFn) {
 // ────────────────────────────────────────────────────────────────────────────
 const SINGLES = ["ribcage","pelvis","waist","abs","upperBack","chest","neckMain","neckBase","jaw","chin","head"];
 const PAIRED = ["oblique","glute","quad","hamstring","calf","bicep","tricep","uarm","forearm","deltoid","trap","lat","pec","breast","scm","tneck","buccal","cheekbone","masseter","arm"];
-
-function mulberry32(a) {
-    return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
 
 function partNames() {
     const names = SINGLES.slice();

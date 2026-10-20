@@ -2162,6 +2162,30 @@
     function huelleKapsel(a, b, r, farbe) {
         return { art: "kapsel", a: _hr3(a), b: _hr3(b), r: _hr(r), farbe: _hr3(farbe), rolle: "sicht" };
     }
+    // DAS GRUND-DATUM (S4): der Grund eines Baus ist sein KÖRPER-SATZ — je Masse, die auf dem Boden steht (Haupthaus, Anbau,
+    // Flügel, Hof-Arm, Turm, Rund), ihre Box haus-lokal [x0, x1, z0, z1, boden] auf dem Hüllen-Raster; boden 1: das Haus
+    // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
+    // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
+    // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Plan des gesetzten Hauses (`grundPlan`), ortPlan (der
+    // Erdbau `grund`, gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
+    // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
+    var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
+    function grundVon(st) {
+        var H = st && st.H;
+        var M = (H && H.masse) || [];
+        var boxen = [];
+        var arten = [];
+        for (var i = 0; i < M.length; i++) {
+            var m = M[i];
+            if (!Object.prototype.hasOwnProperty.call(GRUND_BODEN, m.art) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
+            var boden = GRUND_BODEN[m.art] && !(m.art === "haupt" && m.y0 > 0.05) ? 1 : 0; // das Pfahlhaus (y0 über Grade) steht über dem Grund
+            boxen.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), boden]);
+            arten.push(m.art);
+        }
+        var k = H && H.cellar;
+        return { boxen: boxen, arten: arten, keller: k ? [_hr(k.x0), _hr(k.x1), _hr(k.z0), _hr(k.z1), _hr(k.floorY - 0.12), 0] : null };
+    }
     // Die Massen eines Stufe-0-Baus (`stapelBau`): die des Hauses, beim Turm-Stapel die des Aufsatzes um `off` gehoben.
     // DER KAMIN (die Spitze des Stapels, `H.chimney` — dieselbe Quelle wie B.chimney des Rauchs) gehört zu den Massen: jeder
     // Leser der Massen (Welt, Labor-Dorf, LOD-Sonde, Vertrag) trägt ihn, ohne B.chimney zu kennen.
@@ -3439,6 +3463,7 @@
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
+            grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
@@ -3480,6 +3505,7 @@
             dims: plan.H.dims,
             fp: fpVon(plan.H),
             masse: masseVon(plan),
+            grund: grundVon(plan), // das Grund-Datum (S4) — byte-gleich dem Mass-Bau wie die Massen
             hofGap: 2.5,
             meshes: [],
         };
@@ -3487,6 +3513,19 @@
             if (o.geometry) o.geometry.dispose();
         });
         return B;
+    }
+    // DER GRUND AUS DEM PLAN (S4): das Grund-Datum eines Hauses (`grundVon`: der Körper-Satz und der Keller) aus seinem Plan
+    // (`planBau`, ~2 ms statt ~26 ms des Mass-Baus), in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same). Der Wirt legt
+    // damit den Grund des gesetzten Hauses beim Setzen (`_hausGrundSetzen`), vor dem Bau der Chunks um ihn — bis S4-N2 kam er
+    // mit der Hülle des gebauten Hauses (das Vorschau-Haus am Tor: gesetzt bei 2,1 s, die Hülle bei 8,2 s, dann 6 Chunks am
+    // Spawn neu, Radeon kalt). null: kein Haus-Rezept.
+    function grundPlan(rezeptId, seed, ov) {
+        var pre = PRESETS[rezeptId];
+        if (!pre || pre.kind === "ausstattung") return null;
+        var p = hausParams(pre, ov || null);
+        var sd = Number(seed);
+        if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
+        return planBau(p).grund;
     }
 
     // DIE KAMIN-SPITZE (KAMIN-RAUCH .105, die EINE Formel): die Mitte über dem Stapel-AABB, 0,2 m darüber, haus-lokal —
@@ -5284,6 +5323,114 @@
         }
         return n;
     }
+    // DER BRUNNEN WEICHT DEM HAUS (S4-N4) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen ihn NACH
+    // dem Snap, VOR den Wandlaternen. Der Brunnen „je 8 Häuser" (`dorfLayout`) steht 0,6 m hinter dem Wegrand vor dem Haus, nach
+    // dem er gezogen wurde — geprüft gegen kein Haus, das später kam, und gegen keinen Gang: am Start-Dorf stand er vor der Tür
+    // des Alpenchalets (die Welt warf das Haus, 17/18, oder ihn, 0/1). Seine Trittfläche (`AUSSTATTUNG.brunnen.tritt.r`) liegt in
+    // keinem Grundriss und auf keinem Gang eines Hauses (Türbreite samt Saum vom Eingang bis an den Weg, `vorplatzFlaeche`), neben
+    // jedem Weg, fern jeder Laterne (2 m), jedes Hof-Baums (3,5 m), jedes Stands und jedes Ackers — die Regeln, nach denen das
+    // Layout sie um ihn stellte. Trifft er eins, rückt er zum nächsten freien Stand am Rand eines Wegs (wie gezogen: 0,6 m hinter
+    // dem Rand, je 0,5 m jedes Wegs, beide Seiten); findet er keinen, fällt er aus dem Plan (gezählt, nie still).
+    // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (brunnen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
+    function brunnenWeicht(dorfB, pl, lay) {
+        var O = ORT_GESETZ,
+            r = AUSSTATTUNG.brunnen.tritt.r,
+            st = AUSSTATTUNG.marktstand.tritt,
+            flaechen = [],
+            neu = [],
+            aus = { gerueckt: 0, gestrichen: 0 },
+            wege = (lay.roads || []).filter(function (rd) {
+                return rd.pts && rd.pts.length > 1;
+            }),
+            a,
+            i,
+            k;
+        // der Fußpunkt auf der Mitte eines Wegs: Abstand d, Bogenlänge s, Seite (+1 links der Laufrichtung)
+        var fuss = function (rd, x, z) {
+            var f = { d: Infinity, s: 0, seite: 1 },
+                s = 0;
+            for (var j = 0; j + 1 < rd.pts.length; j++) {
+                var A = rd.pts[j],
+                    dx = rd.pts[j + 1].x - A.x,
+                    dz = rd.pts[j + 1].z - A.z,
+                    L = Math.hypot(dx, dz);
+                if (!(L > 1e-9)) continue;
+                var t = Math.max(0, Math.min(1, ((x - A.x) * dx + (z - A.z) * dz) / (L * L))),
+                    d = Math.hypot(x - A.x - dx * t, z - A.z - dz * t);
+                if (d < f.d) f = { d: d, s: s + t * L, seite: dx * (z - A.z) - dz * (x - A.x) >= 0 ? 1 : -1 };
+                s += L;
+            }
+            return f;
+        };
+        // der Punkt der Bogenlänge s, um d quer zur Laufrichtung (links positiv); null jenseits der Enden
+        var quer = function (rd, s, d) {
+            if (s < 0) return null;
+            for (var j = 0; j + 1 < rd.pts.length; j++) {
+                var A = rd.pts[j],
+                    dx = rd.pts[j + 1].x - A.x,
+                    dz = rd.pts[j + 1].z - A.z,
+                    L = Math.hypot(dx, dz);
+                if (L > 1e-9 && s <= L) return { x: A.x + ((dx * s) / L) - (dz / L) * d, z: A.z + ((dz * s) / L) + (dx / L) * d };
+                s -= L;
+            }
+            return null;
+        };
+        var aufWeg = function (x, z, saum) {
+            for (var j = 0; j < wege.length; j++) if (fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
+            return false;
+        };
+        // die Flächen der Häuser: der Grundriss und der Gang vom Eingang bis an den Weg (mindestens ORT_GESETZ.vorplatzM)
+        for (i = 0; i < pl.length; i++) {
+            var q = pl[i],
+                B = dorfB[i];
+            if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
+            flaechen.push(q.obb);
+            var tu = B && B.dims && B.dims.tuer;
+            if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) continue;
+            var sl = { x: q.x, z: q.z, phi: q.phi || 0, kultur: B.p && B.p.kultur, ov: B.p || null };
+            sl.tuer = { x: tu.x, z: tu.z, w: tu.w, y: tu.y, W: B.dims.W, D: B.dims.D };
+            var ez = eingangVon(sl).z,
+                c = Math.cos(sl.phi),
+                s2 = Math.sin(sl.phi),
+                tief = O.vorplatzM;
+            for (var t = 0; t <= O.vorplatzM + O.gasseM; t += 0.25)
+                if (aufWeg(q.x + tu.x * c + (ez - t) * s2, q.z - tu.x * s2 + (ez - t) * c, 0)) {
+                    tief = Math.max(O.vorplatzM, t);
+                    break;
+                }
+            flaechen.push(vorplatzFlaeche(sl, tief));
+        }
+        var frei = function (x, z) {
+            if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
+            for (var j = 0; j < flaechen.length; j++) if (distPunktOBB(x, z, flaechen[j]) < r) return false;
+            for (j = 0; j < (lay.felder || []).length; j++) if (distPunktOBB(x, z, lay.felder[j]) < r) return false;
+            var nah = function (L, m) {
+                for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
+                return false;
+            };
+            return !nah(lay.laternen, 2) && !nah(lay.trees, 3.5) && !nah(lay.staende, r + Math.hypot(st.ex, st.ez)) && !nah(neu, 2 * r);
+        };
+        // die Stände am Rand jedes Wegs (je 0,5 m, beide Seiten), der nächste zuerst
+        var raender = [];
+        for (a = 0; a < wege.length; a++)
+            for (var u = 0, p = true; p; u += 0.5)
+                for (var sk = -1; sk <= 1; sk += 2) if ((p = quer(wege[a], u, sk * (wege[a].w / 2 + 0.6)))) raender.push(p);
+        for (k = 0; k < (lay.brunnen || []).length; k++) {
+            var b = lay.brunnen[k],
+                stand = frei(b.x, b.z) ? b : null;
+            if (!stand) {
+                var nach = raender.slice().sort(function (p1, p2) {
+                    return Math.hypot(p1.x - b.x, p1.z - b.z) - Math.hypot(p2.x - b.x, p2.z - b.z);
+                });
+                for (a = 0; !stand && a < nach.length; a++) if (frei(nach[a].x, nach[a].z)) stand = nach[a];
+            }
+            if (stand && stand !== b) aus.gerueckt++;
+            if (stand) neu.push({ x: stand.x, z: stand.z });
+            else aus.gestrichen++;
+        }
+        lay.brunnen = neu;
+        return aus;
+    }
     // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
     // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
     // Brandmauer (der Same erfährt es via hp.brandwand). dorfB: [{dims,q,p}] —
@@ -5403,6 +5550,7 @@
             }),
             plan.norm.gap
         );
+        brunnenWeicht(Bs, lay.pl, lay); // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie buildDorf
         wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
         var slots = [],
             slotVon = {};
@@ -5443,6 +5591,9 @@
                 // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
                 // null wenn massBau kein chimney (ROUND/modern/kuppel).
                 chimney: kaminSpitze(Bs[i].chimney),
+                // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
+                // legt daraus den Erdbau `grund` (gelaende-core)
+                grund: Bs[i].grund,
             });
         }
         return {
@@ -5876,6 +6027,7 @@
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
+            // DIE PLATTE DES HAUSES (K10): seine obb mit Saum — der ganze Umriss (Dach, Treppe, Vordach) steht auf EINER Höhe
             if (ob)
                 hausPlatten.push({
                     art: "platte",
@@ -5886,6 +6038,31 @@
                     ez: r6(ob.ez + O.saumM),
                     y: y,
                 });
+            // DER GRUND DES HAUSES (S4): die Platten aus ALLEN Boxen seines Körper-Satzes samt Keller (`grundVon` im Slot), im
+            // Rahmen des Hauses, auf derselben Höhe — der Erdbau `grund` (gelaende-core) schneidet den gezeichneten Boden, wo das
+            // Haus seinen Boden zeichnet, hält den Keller hohl und nennt der Wiese den Grund; die Höhe trägt er unter der obb nur
+            // mit (ein gesetztes Haus ohne obb trägt sie allein)
+            var gd = sl.grund && sl.grund.boxen && sl.grund.boxen.length ? sl.grund : null;
+            if (gd) {
+                var gex = 0;
+                var gez = 0;
+                for (k = 0; k < gd.boxen.length; k++) {
+                    gex = Math.max(gex, Math.abs(gd.boxen[k][0]), Math.abs(gd.boxen[k][1]));
+                    gez = Math.max(gez, Math.abs(gd.boxen[k][2]), Math.abs(gd.boxen[k][3]));
+                }
+                hausPlatten.push({
+                    art: "grund",
+                    cx: r6(ox + sl.x),
+                    cz: r6(oz + sl.z),
+                    phi: r6(sl.phi || 0),
+                    ex: r6(gex + O.saumM),
+                    ez: r6(gez + O.saumM),
+                    saum: O.saumM,
+                    y: y,
+                    boxen: gd.boxen,
+                    keller: gd.keller || null,
+                });
+            }
             if (hatTuer(sl) && isFinite(tu.w)) {
                 var ein = eingang(sl);
                 // DER VORPLATZ REICHT BIS ZUR GASSE (K10-6): beginnt die Fläche, deren Höhe das Haus trägt, erst hinter dem
@@ -6084,6 +6261,7 @@
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
+        brunnenWeicht: brunnenWeicht,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
@@ -6105,6 +6283,8 @@
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
         massBau: massBau,
+        grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
+        grundPlan: grundPlan, // der Grund des gesetzten Hauses aus seinem Plan (S4) — der Wirt legt ihn beim Setzen
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,

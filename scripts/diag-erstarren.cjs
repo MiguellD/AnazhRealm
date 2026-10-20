@@ -31,19 +31,13 @@ const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./l
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
-const errs = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     let out = null;
     try {
@@ -260,7 +254,6 @@ function check(name, ok, detail) {
         "SELBST-TEST: der injizierte 300-ms-Block wurde als Stall gesehen (die Uhr misst)",
         L.selbstTestGesehen === true
     );
-    check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);

@@ -410,22 +410,76 @@ class AnazhRealm_stoff_material {
         // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
         mat._anazhDiaet = true;
         const alt = mat.setupObserver;
-        mat.setupObserver = function (builder) {
-            const o = alt.call(this, builder);
-            if (!o) return o;
-            o.hasNode = false;
-            // Vendor-Loch: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH
-            // und wären unter der Diät unsichtbar. Der Versions-Wächter prüft sie VOR der Vendor-Bahn (Mutation
-            // → genau EIN Refresh).
-            if (typeof o.needsRefresh === "function") {
-                const altNR = o.needsRefresh;
-                o.needsRefresh = function (ro, frame) {
-                    return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
-                };
-            }
-            return o;
-        };
+        // EIN STOFF, EIN SCHLÜSSEL (B-K1): der Beobachter ist eine NICHT-aufzählbare eigene Eigenschaft. r184 schreibt jede
+        // aufzählbare eigene Eigenschaft in den Bau-Schlüssel (`getMaterialCacheKey`: Object.keys, eine Funktion als Text), und
+        // die Erst-Zeichnung legt das Render-Objekt VOR der Diät an — ein aufzählbarer Beobachter machte dessen Schlüssel alt:
+        // jedes weitere Objekt des Stoffs baute neu, jeder Versions-Sprung baute neu. Linse: gate:kamera-treue (i).
+        Object.defineProperty(mat, "setupObserver", {
+            configurable: true,
+            writable: true,
+            enumerable: false,
+            value: function (builder) {
+                const o = alt.call(this, builder);
+                if (!o) return o;
+                o.hasNode = false;
+                // Vendor-Loch: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH
+                // und wären unter der Diät unsichtbar. Der Versions-Wächter prüft sie VOR der Vendor-Bahn (Mutation
+                // → genau EIN Refresh).
+                if (typeof o.needsRefresh === "function") {
+                    const altNR = o.needsRefresh;
+                    o.needsRefresh = function (ro, frame) {
+                        return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
+                    };
+                }
+                return o;
+            },
+        });
         return mat;
+    }
+
+    // DER WURF OHNE FARBE (B-K1): r184 `_getShadowNodes` hängt je Werfer den Farb-Graphen des Originals in den Schatten-
+    // Stoff (vec4(0, colorNode.a · map.a)) — auch dort, wo diese Alpha nichts schneidet: ein Werfer ohne Ausschnitt wirft
+    // opak (der Stoff setzt seine Alpha auf 1), die Karte trägt keine Farbe (PCF, `transmitted` aus). Gebaut wurde sie
+    // trotzdem: je Farb-Graph ein eigenes Schatten-Programm (Knoten-Bau im Haupt-Faden, eine Pipeline je Graph). Ein Werfer
+    // OHNE Ausschnitt wirft jetzt mit dem Standard-Fragment des Schatten-Stoffs (vec4(0,0,0,1)); Lage (castShadowPositionNode
+    // vor positionNode) und Tiefe (depthNode) bleiben, gemerkt je Paar. Ein Werfer MIT Ausschnitt (alphaTest · alphaTestNode
+    // · alphaHash · alphaMap · Durchsicht · castShadowNode · Masken) wirft byte-alt (Lehre 26: der Schattenpass liest
+    // colorNode.a · map.a · maskShadowNode). Der EINE Rufer: `_configureRenderer`. Linse: gate:kamera-treue (j).
+    _wurfOhneFarbe(renderer) {
+        if (typeof renderer._getShadowNodes !== "function")
+            return this.log("WURF OHNE FARBE: r184-Renderer._getShadowNodes nicht gefunden (Vendor-Drift)", "ERROR");
+        if (renderer.__anazhWurfOhneFarbe) return;
+        const knotenRoh = renderer._getShadowNodes;
+        const knoten = (n) => (n && n.isNode === true ? n : null);
+        const MASKEN = [
+            "alphaTestNode",
+            "transmissionNode",
+            "backdropNode",
+            "castShadowNode",
+            "maskShadowNode",
+            "maskNode",
+        ];
+        const schneidet = (m) =>
+            m.alphaTest > 0 ||
+            m.alphaHash === true ||
+            m.alphaMap != null ||
+            m.transparent === true ||
+            m.transmission > 0 ||
+            MASKEN.some((k) => knoten(m[k]) !== null);
+        const OHNE = {};
+        const paare = new WeakMap();
+        renderer._getShadowNodes = function (m) {
+            if (schneidet(m)) return knotenRoh.call(this, m);
+            const lage = knoten(m.castShadowPositionNode) || knoten(m.positionNode);
+            const tiefe = knoten(m.depthNode);
+            let je = paare.get(lage || OHNE);
+            if (je === undefined) paare.set(lage || OHNE, (je = new WeakMap()));
+            let k = je.get(tiefe || OHNE);
+            if (k === undefined)
+                je.set(tiefe || OHNE, (k = { version: 0, colorNode: null, depthNode: tiefe, positionNode: lage }));
+            return k;
+        };
+        renderer.__anazhWurfOhneFarbe = true;
     }
 
     _ensureAtmoUniforms() {
