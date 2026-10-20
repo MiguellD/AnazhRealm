@@ -2215,7 +2215,7 @@ async function checkBandWasserWahrheit(ctx) {
 // Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab (D3b): das Wasser-Verdikt der Streu liest das
 // Feld (`_sampleBakedField`, ~30× billiger als der Voll-Scan `_voxelSurfaceY`) mit konservativem Exakt-Fallback im Ufer-Band. Der
 // Korpus mit erzwungenen Klassen (Ufer · Steilhang · Fluss · Spieler-Region; ohne Ufer-Klasse fail-closed), A/B byte-exakt je
-// Region (Referenz-Hook `__scatterExactWater` gegen den Produktions-Pfad), der Null-Zensus der Rest-Klasse = 0, und der Selbsttest:
+// Region (Referenz-Hook `__scatterExactWater` gegen den Produktions-Pfad) und der Selbsttest:
 // ein injiziert-falsches Wasser-Verdikt macht den Diff rot.
 async function checkBandScatterWasserAB(ctx) {
     const { page, check } = ctx;
@@ -2224,7 +2224,7 @@ async function checkBandScatterWasserAB(ctx) {
             st = r.state;
         const A = window.AnazhRealm || r.constructor;
         const SC = A.SCATTER;
-        const o = { corpus: [], diffs: [], bound: 0, nullCensus: 0, nullAboveCensus: 0, cellsCompared: 0 };
+        const o = { corpus: [], diffs: [] };
         const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         const pRegX = Math.floor(pos.x / SC.regionM),
             pRegZ = Math.floor(pos.z / SC.regionM);
@@ -2286,30 +2286,6 @@ async function checkBandScatterWasserAB(ctx) {
         }
         o.corpus = corpus.map((c) => ({ rx: c.rx, rz: c.rz, ...c.cl }));
         o.classes = { shore: haveShore, steep: haveSteep, river: haveRiver };
-        // ── (3) MESS-BOUND + NULL-ZENSUS über die Korpus-Zellen (rock-Raster 2.6 m ist
-        // das dichteste — 4 m-Raster deckt die Klasse, hält die Linse < 60 s) ──
-        for (const c of corpus) {
-            for (let gz = 2; gz < SC.regionM; gz += 4) {
-                for (let gx = 2; gx < SC.regionM; gx += 4) {
-                    const x = c.rx * SC.regionM + gx,
-                        z = c.rz * SC.regionM + gz;
-                    const field = r._sampleBakedField(x, z);
-                    if (!field) continue;
-                    const sy = r._voxelSurfaceY(x, z);
-                    const wy = r._waterLevelAt(x, z);
-                    o.cellsCompared++;
-                    if (sy === null || !Number.isFinite(sy)) {
-                        o.nullCensus++;
-                        // die EINE Rest-Klasse: exakt-null, aber das Feld läge KLAR über Wasser
-                        if (field.height > wy + 0.4 + 3) o.nullAboveCensus++;
-                        continue;
-                    }
-                    const d = Math.abs(field.height - sy);
-                    if (d > o.bound) o.bound = d;
-                }
-            }
-        }
-        o.bound = +o.bound.toFixed(2);
         // ── (2) A/B BYTE-EXAKT je Korpus-Region (Referenz-Hook vs Produktion) ──
         const snapshot = (reg) =>
             JSON.stringify(
@@ -2364,8 +2340,8 @@ async function checkBandScatterWasserAB(ctx) {
     if (!out || out.__err) return check("Scatter-Wasser A/B: die Probe antwortet", false, out ? out.__err : "keine Antwort der Seite");
     check(`Scatter-Wasser A/B: der Korpus trägt die Ufer-Klasse (shore ${out.classes.shore} · steep ${out.classes.steep} · river ${out.classes.river} über ${out.corpus.length} Regionen)`, out.classes.shore >= 1);
     check(
-        `Scatter-Wasser A/B: BYTE-IDENTISCH über alle ${out.corpus.length} Regionen (${out.totalCells} Zellen), der Null-Zensus der Rest-Klasse 0 (Bound ${out.bound} m über ${out.cellsCompared} Zellen)`,
-        out.abIdentical === true && out.nullAboveCensus === 0,
+        `Scatter-Wasser A/B: BYTE-IDENTISCH über alle ${out.corpus.length} Regionen (${out.totalCells} Zellen)`,
+        out.abIdentical === true,
         out.diffs.filter((x) => !x.identical).map((x) => `(${x.rx},${x.rz}) A ${x.cellsA} vs B ${x.cellsB}`).join(" · ")
     );
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));

@@ -2348,10 +2348,13 @@ class AnazhRealm_siedlung_satz {
         if (rd.dreht) R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
         R.setPosition(rd.hx, rd.hy, rd.hz);
         out.multiplyMatrices(ewU, rd.welt).multiply(R);
-        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden
+        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden, den
+        // das Auge sieht — der Stand-Leser der Sicht um den Boden des Fahr-Schritts (`_standSicht`, wie Huf und Fuß; die Sim
+        // bleibt auf dem Gesetz). Bis H5 federte das Rad auf das Gesetz: an der Mess-Wiese p95 4,9 cm neben dem Mesh (K8).
         const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
-        const boden = this._fahrBoden(entry)(P.x, P.z);
+        const gesetz = this._fahrBoden(entry)(P.x, P.z);
+        const boden = Number.isFinite(gesetz) ? this._standSicht(P.x, P.z, gesetz, false) : gesetz;
         if (Number.isFinite(boden)) {
             // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
             // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)

@@ -2406,12 +2406,7 @@ function quellenAbgriff() {
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
         !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
         R
-            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` +
-                  ` · gegen den GEZEICHNETEN Boden (Sicht, nur gemessen — D1): ${
-                      R.sichtSchritte
-                          ? `p75 ${R.sichtP75.toFixed(3)} m, max ${R.sichtMax.toFixed(3)} m in ${R.sichtSchritte} Schritten`
-                          : "keine Boden-Karte"
-                  }`
+            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)}; das Rad gegen den gezeichneten Boden misst gate:koerper-stand K8)`
             : "keine Probe"
     );
     check(

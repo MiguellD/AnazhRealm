@@ -485,10 +485,6 @@ async function probeLeben(expected) {
             let lenkHinten = 0;
             let tauchBremse = 0;
             const spalte = [];
-            const spalteSicht = [];
-            // die Boden-Karte des gezeichneten Meshs (der EINE Leser `_bodenSichtAt`, bilinear, am Chunk-Rand die des
-            // Nachbarn); null ohne Karte
-            const sicht = (x, zz) => r._bodenSichtAt(x, zz);
             let phase = "w";
             const P5 = r._stepFixedSim;
             r._stepFixedSim = function (simTime, dt) {
@@ -548,18 +544,12 @@ async function probeLeben(expected) {
                         }
                 }
                 let spalt = 0;
-                let spaltS = -1;
                 for (const p of punkte) {
                     const d = p.y - hh(p.x, p.z);
                     spalt = Math.max(spalt, Math.abs(d));
                     if (phase === "s" && p.front) tauchBremse = Math.max(tauchBremse, -d);
-                    // DIE SICHT (Gegenprüfung 07.10., Entscheid D1: nur messen und benennen — die Sim bleibt auf dem Gesetz):
-                    // derselbe Aufstandspunkt gegen den GEZEICHNETEN Boden (die Boden-Karte des fertigen Meshs, Lehre 22)
-                    const ys = sicht(p.x, p.z);
-                    if (ys !== null) spaltS = Math.max(spaltS, Math.abs(p.y - ys));
                 }
                 spalte.push(spalt);
-                if (spaltS >= 0) spalteSicht.push(spaltS);
             };
             tasten(true, false);
             for (let i = 0; i < 90; i++) frame(i);
@@ -574,7 +564,6 @@ async function probeLeben(expected) {
             tasten(false);
             r._stepFixedSim = P5;
             spalte.sort((a, b) => a - b);
-            spalteSicht.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
                 stehend: steh.length,
@@ -585,9 +574,6 @@ async function probeLeben(expected) {
                 tauchBremse,
                 spaltP75: spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity,
                 spaltMax: spalte.length ? spalte[spalte.length - 1] : Infinity,
-                sichtSchritte: spalteSicht.length,
-                sichtP75: spalteSicht.length ? spalteSicht[Math.floor(spalteSicht.length * 0.75)] : null,
-                sichtMax: spalteSicht.length ? spalteSicht[spalteSicht.length - 1] : null,
             };
             weg(gR);
         }

@@ -787,41 +787,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.voxelMaxHeightZero = r.state.maxHeight === 0;
         out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
 
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): sonst gibt der Test-Spawn
-        // bei vollem Warmup-Cap null → die `if (creature)`-Positionierung wird übersprungen → die
-        // Assertion bleibt undefined → rot. Lokal raise/restore (vor return).
-        const _capG = r.state.maxCreatures;
-        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-
-        // V9.28: updateCreatures ist voxel-aware. Spawne eine
-        // Kreatur an bekannter Position, lasse einen Frame laufen,
-        // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
-        const testX = 5;
-        const testZ = 5;
-        const voxelY = r._voxelSurfaceY(testX, testZ);
-        const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
-        // W-D/M-F1 (V18.170) — falls der Spieler nahe (5,5) steht, klemmt der
-        // Spawn weg; der Test misst den BODEN an (testX,testZ) → re-platzieren.
-        if (creature) creature.position.set(testX, 50, testZ);
-        if (creature && Number.isFinite(voxelY)) {
-            // _creatureGroundY hat ein 20-Scans-Budget je Tick und die Test-Kreatur ist die LETZTE im Array
-            // → ein Tick fiele seed-abhängig auf den Makro-Schätzwert. Drei Ticks erreichen sie
-            // deterministisch (der echte Budget+Cache-Pfad bleibt geprüft, kein Cache-Bypass).
-            r.updateCreatures(0.016);
-            r.updateCreatures(0.016);
-            r.updateCreatures(0.016);
-            // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
-            // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
-            // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
-            const karte = r._bodenSichtAt(testX, testZ);
-            const expected =
-                Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
-            const actual = creature.position.y;
-            out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
-            // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
-            const fallbackY = r.state.terrainBaseHeight || 0;
-            out.creatureNotAtFallback = Math.abs(voxelY - fallbackY) < 1.0 ? true : Math.abs(actual - fallbackY) > 0.5;
-        }
+        // das Tier auf dem sichtbaren Boden misst gate:koerper-stand K8 huf (der Huf gegen das gezeichnete Mesh, 200 Kontakte)
 
         // Selbst wenn ein Test-Setup `voxelTerrain = false` setzt, baut der Welt-Generator keine
         // Heightfield-Chunks (chunkMap bleibt leer) — der `else`-Pfad in `generateTerrainWithParameters`
@@ -836,7 +802,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
-        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
 
@@ -858,14 +823,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
         );
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
-        check(
-            "Voxel V9.28: updateCreatures stellt Kreaturen auf den sichtbaren Boden um _voxelSurfaceY (Stand-Leser der Sicht, Welle L)",
-            voxelP5c1Results.creatureOnVoxelSurface
-        );
-        check(
-            "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y ≠ Fallback-Basis)",
-            voxelP5c1Results.creatureNotAtFallback
-        );
     }
 
     // ### Voxel — Lösch-Beweise: generateChunk + addTerrainPhysics ###
