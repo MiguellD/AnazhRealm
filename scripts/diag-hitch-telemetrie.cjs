@@ -1059,7 +1059,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const bnWeg = (x) =>
         `${x.sichtbar ? "sichtbar" : "UNSICHTBAR"} ${x.framesNachBereit} Frames nach der fertigen Pipeline (bereit nach ${x.bereitMs} ms, ` +
         `${x.frames} Frames, ${x.ms} ms, danach gezeichnet ${x.gezeichnet}×)` +
-        (x.fremd && x.fremd.length ? ` · fremde Marken geschluckt: ${x.fremd.join(" ")}` : "");
+        ` · fremde Marken geschluckt: ${x.fremd?.join(" ") || "keine"}`;
     if (IN(1))
         band(
             bn.stand === true &&
@@ -1074,7 +1074,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         );
     if (IN(2))
         band(
-            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0 && bng.gezeichnet > BUNDLE_FRAMES,
+            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0 && bng.gezeichnet > BUNDLE_FRAMES && bng.fremd?.length > 0,
             "ERST-ZEICHNUNG Bundle-Neubau ohne Anmeldung (der Gegen-Lauf: ohne Anmeldung MUSS der Bürger fehlen)",
             `Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
         );
@@ -1089,7 +1089,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
             fsg.haengt >= 1 &&
             fsg.sichtbar === false &&
             fsg.gezeichnet > BUNDLE_FRAMES &&
-            fsg.bereitMs >= 0,
+            fsg.bereitMs >= 0 &&
+            fsg.fremd?.length > 0,
         `ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
         `popErrorScope hängend ${fs_.haengt}× · ${bnWeg(fs_)} · Ruhe offen ${fs_.ruheOffen} · Gegen-Lauf: hängend ${fsg.haengt}×, ${bnWeg(fsg)}`
     );

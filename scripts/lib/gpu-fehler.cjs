@@ -13,13 +13,13 @@
 
 function gpuFehlerAbgriff() {
     if (typeof GPUDevice === "undefined" || window.__gpuFehler) return;
-    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [], ein: 0, ab: 0 });
-    // jeder Submit zählt, bis sein Gerät ihn abgegeben hat — das Ereignis, an dem `GPU_ABGABE` urteilt
+    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [] });
+    // jeder Submit zählt an SEINER Queue, bis ihr Gerät ihn abgegeben hat — das Ereignis, an dem `GPU_ABGABE` urteilt
     const sub = GPUQueue.prototype.submit;
     GPUQueue.prototype.submit = function (b) {
-        F.ein++;
         const r = sub.call(this, b);
-        this.onSubmittedWorkDone().then(() => F.ab++);
+        this.__ein = (this.__ein || 0) + 1;
+        this.onSubmittedWorkDone().then(() => (this.__ab = (this.__ab || 0) + 1));
         return r;
     };
     const merke = (liste, e) => {
@@ -141,25 +141,45 @@ function gpuFehlerObjekt() {
     return true;
 }
 
-// DIE ABGABE (K6): nach einem Bild wartet `seite` (Page oder Frame), bis jedes Gerät seine Arbeit abgegeben hat — und mit ihr
-// jede Prüfung, die einen Befehl verwarf. Die Uhr ist die Abgabe, nie die Sekunde des Läufers (swiftshader gab dort 30 s
-// nichts ab): gewartet wird, solange frühere Submits abgegeben werden; erst `stillMs` ohne eine Abgabe nennt den Stillstand
-// beim Namen. → die Meldungen der Geräte
+// DIE ABGABE (K6): `seite` (Page oder Frame) wartet auf ein Bild, die Arbeit jedes Geräts (mit ihr jede Prüfung) und das Bild
+// danach, solange ein Gerät Submits von vor der Stufe abgibt; erst `stillMs` ohne Abgabe nennt den Stillstand — jedes Gerät,
+// das seine Arbeit hält (ein zweites verdeckt es nie), sonst die Stufe.
 async function gpuAbgabe(seite, stillMs = 600000) {
     const lies = (neu) =>
-        seite.evaluate(async (neu) => {
-            const F = window.__gpuFehler;
-            if (!F) return { fertig: true, msg: [] };
-            const bild = () => new Promise((r) => requestAnimationFrame(r));
-            if (neu) F.abgabe = bild().then(() => Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone()))).then(bild);
-            const fertig = await Promise.race([F.abgabe.then(() => true), new Promise((r) => setTimeout(r, 1000, false))]);
-            return { fertig, ab: F.ab, ein: F.ein, msg: F.device.map((e) => e.msg.split("\n")[0]) };
-        }, neu);
+        seite.evaluate(
+            async (neu, t) => {
+                const F = window.__gpuFehler;
+                if (!F) return { fertig: true, msg: [] };
+                const G = F.geraete;
+                const A = neu ? (F.abgabe = {}) : F.abgabe;
+                const stufe = (s) => ((A.s = s), (A.soll = G.map((g) => g.queue.__ein || 0)));
+                const bild = (s) => new Promise((r) => (stufe(s), requestAnimationFrame(r)));
+                if (neu)
+                    A.p = bild("vor")
+                        .then(() => (stufe("ab"), Promise.all(G.map((g) => g.queue.onSubmittedWorkDone()))))
+                        .then(() => bild("nach"));
+                const fertig = await Promise.race([
+                    A.p.then(() => true),
+                    new Promise((r) => setTimeout(r, 1000, false)),
+                ]);
+                const offen = A.soll.flatMap((soll, i) => {
+                    const ab = G[i].queue.__ab || 0;
+                    return ab < soll
+                        ? `Gerät ${i + 1} ${G[i].label} gibt ${t} keine Arbeit ab (onSubmittedWorkDone ${ab}/${soll}, ${A.s})`
+                        : [];
+                });
+                const still = offen.length
+                    ? offen
+                    : `${t} ${{ vor: "kein Bild vor der Abgabe", ab: "keine Abgabe", nach: "kein Bild danach" }[A.s]}`;
+                return { fertig, k: A.s + offen, still, msg: F.device.map((e) => e.msg.split("\n")[0]) };
+            },
+            neu,
+            `${stillMs / 1000} s`
+        );
     let s = await lies(true);
-    for (let ab = -1, seit = 0; !s.fertig; s = await lies(false))
-        if (s.ab !== ab) [ab, seit] = [s.ab, Date.now()];
-        else if (Date.now() - seit > stillMs)
-            return s.msg.concat(`ein Gerät gibt ${stillMs / 1000} s keine Arbeit ab (onSubmittedWorkDone, abgegeben ${s.ab} von ${s.ein} Submits)`);
+    for (let k = "", seit = 0; !s.fertig; s = await lies(false))
+        if (s.k !== k) [k, seit] = [s.k, Date.now()];
+        else if (Date.now() - seit > stillMs) return s.msg.concat(s.still);
     return s.msg;
 }
 

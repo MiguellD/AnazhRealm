@@ -1315,9 +1315,6 @@ async function checkBandW12WorldPortal(ctx) {
         const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
         out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         // Overlay-Methoden.
 
         // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
@@ -1427,9 +1424,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
         out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         return out;
     });
 
@@ -1465,9 +1459,6 @@ async function checkBandW12WorldPortal(ctx) {
     const w12p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
@@ -1575,9 +1566,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.bodyClassCleared = !document.body.classList.contains("in-portal");
         if (entry) r.removeArchitecture(entry);
 
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
-
         return out;
     });
 
@@ -1605,9 +1593,6 @@ async function checkBandW12WorldPortal(ctx) {
     const w12terrainResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
@@ -1951,10 +1936,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
-    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
-    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
-
     // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -2035,9 +2016,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
-    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
-    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
-    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 }
 
 // G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
