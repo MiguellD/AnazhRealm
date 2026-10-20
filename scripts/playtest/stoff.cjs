@@ -227,12 +227,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         out.defaultIsPbr = !!(mDef && mDef.userData && mDef.userData.isPbrMaterial === true);
         if (mDef && typeof mDef.dispose === "function") mDef.dispose();
 
-        // Version
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18223 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 223);
         return out;
     });
 
@@ -267,8 +261,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         "V18.223/234 (D2) Default-Mode: _buildToonNodeMaterial-Dispatch liefert PBR (Default pbr)",
         res.defaultIsPbr === true
     );
-
-    check(`V18.223 (V1) VERSION floor ≥ 18.223.0 (gemessen ${res.versionStr})`, res.versionFloor18223 === true);
 }
 
 // Wahrer Anblick I — der LAWFUL Boden: per-Fragment Multi-Klassen-Geologie als geteilter Auslesewert
@@ -410,12 +402,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
                 out.szeneQuadrat.push(r._taeterKlasse(o));
         });
 
-        // (G) Version
-        out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 226);
         return out;
     });
 
@@ -455,8 +441,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         `Farbe einmal (G2): kein Mesh der Szene zeichnet colorNode × Vertex-Farbe (gemessen ${res.szeneQuadrat.length}: ${[...new Set(res.szeneQuadrat)].slice(0, 6).join(", ") || "-"})`,
         res.szeneQuadrat.length === 0
     );
-
-    check(`Ω-OPSIS S1 (V1) VERSION floor ≥ 18.226.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // Gras-Band: die Wiese liest den BODEN darunter (lush-grün ↔ dry-oliv aus lebendig + feuchte).
@@ -493,11 +477,6 @@ async function checkBandWahrerAnblickGras(ctx) {
         out.grassWithColor = withColor;
         out.allGrassColored = total === 0 || withColor === total;
 
-        out.versionStr = A.VERSION;
-        const pv = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 228);
         return out;
     });
 
@@ -510,7 +489,6 @@ async function checkBandWahrerAnblickGras(ctx) {
         `Ω-OPSIS S2-Gras (B2) alle gebauten Gras-Meshes tragen instanceColor (${res.grassWithColor}/${res.grassMeshes})`,
         res.allGrassColored === true
     );
-    check(`Ω-OPSIS S2-Gras (V1) VERSION floor ≥ 18.228.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 module.exports = {

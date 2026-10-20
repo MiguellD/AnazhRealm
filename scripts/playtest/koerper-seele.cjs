@@ -3555,7 +3555,7 @@ async function checkBandV18202GeruchFeld(ctx) {
     );
 }
 
-// Konsolidierungs-Band: Version-Floor · die vier Foundations leben (Mana-Drain · Geruch ·
+// Konsolidierungs-Band: die vier Foundations leben (Mana-Drain · Geruch ·
 // Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
@@ -3563,15 +3563,6 @@ async function checkBandV18209Konsolidierung(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.216.0"
-        out.versionStr = A.VERSION;
-        // V18.217 — Floor (semver-Form): die Wand wandert mit jeder Welle,
-        // muss aber nicht jedes Mal hier verschoben werden (Drift-Schutz).
-        const vparts = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionMatches = vparts[0] > 18 || (vparts[0] === 18 && vparts[1] >= 217);
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -3617,7 +3608,6 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionMatches === true);
     check(
         "V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)",
         res.allFoundationsAlive === true

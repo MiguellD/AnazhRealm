@@ -753,7 +753,7 @@ class AnazhRealm_koerper_fahrt {
         entry._fahrBodenFn = null;
         entry._fahrHuelleKette = null; // die Hülle als Körper (Q5) — je Aufstieg frisch aus dem Gesetz
         entry._rideHeave = 0; // frischer Squat-Zustand je Aufstieg
-        // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen: das neue Rig der Kamera beginnt frei (`_loopCamera`)
+        // N8 — die Chase-Cam richtet sich beim Aufstieg hinter den Wagen, ihr Ort gleitet (`_loopCamera`, `_kamGleiten`)
         // Der SITZ-Punkt des Bauplans (expliziter sitz-Punkt oder oberste flache Fläche) bestimmt, wo der
         // Charakter sitzt; am Entry gecacht, _tickMountedMovement liest ihn.
         const bp = this.state.blueprints && this.state.blueprints[entry.type];

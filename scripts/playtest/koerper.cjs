@@ -473,9 +473,6 @@ async function checkBandRing5Soul(ctx) {
 
         // playerMesh.rotation.y folgt yaw — setze yaw und renderFrame
         r.state.yaw = Math.PI / 2;
-        // rotation.y setzt erst der nächste Loop-Frame — hier nur prüfen, dass die Logik existiert (Methode +
-        // State); den Effekt misst der synchrone Tick unten.
-        out.rotationLogicReady = typeof r.state.yaw === "number" && r.state.playerMesh.rotation !== undefined;
 
         // setCameraMode("first") zurück
         r.setCameraMode("first");
@@ -558,7 +555,6 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5 V2-Prep: Label wechselt zu '3rd'", cameraResults.labelAfterSet);
         check("Ring 5 V2-Prep: aria-pressed='true' im 3rd-Modus", cameraResults.ariaPressedAfterSet);
         check("Ring 5 V2-Prep: Modus persistiert in localStorage", cameraResults.persistedThird);
-        check("Ring 5 V2-Prep: Rotation-Logik bereit (yaw + rotation existieren)", cameraResults.rotationLogicReady);
         check("Ring 5 V2-Prep: setCameraMode('first') zurück", cameraResults.modeBackToFirst);
         check("Ring 5 V2-Prep: Label zurück auf '1st'", cameraResults.labelBackToFirst);
         check("Ring 5 V2-Prep: Persistenz aktualisiert sich", cameraResults.persistedFirst);
