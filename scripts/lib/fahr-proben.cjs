@@ -347,6 +347,16 @@ async function probeLeben(expected) {
                     const f = Object.getOwnPropertyDescriptor(o, k).value;
                     if (typeof f === "function" && !window.__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
                 }
+            // R2: Z wiederholt ohne Ziel im Blick, ein Rezept-Satz ohne Tempo-Felder
+            const [fo, mel, ziel] = [r._foundry, [], [true, false]];
+            Object.assign(r, { _hasMagnifyingInSight: () => ziel.shift(), _bruchMelden: (t) => mel.push(t), _foundryPresetFor: () => "k" });
+            m5.zoom = r.setZoomActive(true) && r.setZoomActive(true);
+            r.setZoomActive(false);
+            r._foundry = { recipes: { k: { fx: { fahrprofil: { kamera: { dist: 1 } } } } } };
+            r._vehicleProfile({ type: "k" });
+            m5.laut = mel.some((t) => /fahrprofil\.kamera/.test(t));
+            for (const k of ["_hasMagnifyingInSight", "_bruchMelden", "_foundryPresetFor"]) delete r[k];
+            r._foundry = fo;
         }
         r.setCameraMode(sicht5);
         // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
@@ -386,7 +396,7 @@ async function probeLeben(expected) {
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
-            let [i, n, q, ausEgo] = [0, 0, [], false];
+            let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
                 const v = st.playerVel ? Math.hypot(st.playerVel.x(), st.playerVel.z()) : 0;
                 [st.keys.w, st.keys.s] = [v < 8, v > 11];
@@ -410,6 +420,7 @@ async function probeLeben(expected) {
                 if (spur.length === 11 && tempo(spur[0], spur[10]) > 1)
                     gleich.push(Math.abs(tempo(spur[4], spur[5]) / tempo(spur[0], spur[10]) - 1));
                 if (st.cameraMode !== "third") return;
+                if (ausEgo) [wf, fv] = [Math.max(wf, Math.abs(st.camera.fov - fv)), st.camera.fov];
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
                 if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
@@ -419,7 +430,7 @@ async function probeLeben(expected) {
                 hoch.push((Math.asin((dx * o.x + dy * o.y + dz * o.z) / Math.hypot(dx, dy, dz)) * 180) / Math.PI);
             };
             const sicht = (s, a, d, k) => {
-                [n, q, ausEgo] = [0, [], st.cameraMode === "first"];
+                [n, q, ausEgo, fv] = [0, [], st.cameraMode === "first", st.camera.fov];
                 r.setCameraMode(s);
                 [st.keys.a, st.keys.d] = [a, d];
                 if (s === "third") for (let j = 0; j < k; j++) bild();
@@ -441,6 +452,7 @@ async function probeLeben(expected) {
                     sicht("third", true, false, 70);
                     sicht("first", false, true);
                     sicht("third", false, true, 70);
+                    w.abFov.push(+wf.toFixed(2)); // der Sicht-Wechsel Ego → Third: das Tempo-FOV gleitet wie beim Abstieg
                     // ABSTEIGEN IN VOLLER FAHRT (F1 b), in Third und (aufgesessen, Ego, neu auf ≥ 8,5 m/s) in Ego: der größte Weg der
                     // Kamera und der größte Schritt ihres Sichtfelds (H3: das Tempo-FOV fällt nie in einem Bild) je Bild, 3 Bilder
                     // vor bis 30 nach dem Abstieg
@@ -2419,6 +2431,9 @@ function tempoVerdict(m) {
         ["orbit", m.orbit >= 20, `orbit ${m.orbit}°: die Maus dreht das Rig nicht`],
         ["rueck", !(m.orbit >= 20) || (m.rueck >= 1 && m.rueck <= 1.25), `rueck ${m.rueck} s nach dem Loslassen (Soll 1–1,25 s)`],
         ["knick", m.knick <= 0.25, `knick: die Drehrate springt nach dem Loslassen um ${m.knick} der Kurve je Bild (Soll ≤ 0,25)`],
+        ["kern", !String(m.kern), `kern: dem Fahr-Kern fehlt ${m.kern}`],
+        ["zoom", m.zoom, "zoom: das Auto-Repeat von Z kippt das Fernglas"],
+        ["laut", m.laut, "laut: _kamSatz bricht still"],
     ];
     return soll.filter(([k, ok]) => k in m && !ok).map((s) => s[2]);
 }
@@ -2450,8 +2465,10 @@ function tempoSpion(VC, cam, quelle) {
     };
     return m;
 }
-// DER KERN (Node): je 5 s Stand und vmax, Drift 45° (vlong = vlat = 8 m/s).
+// DER KERN (Node): je 5 s Stand und vmax, Drift 45° (vlong = vlat = 8 m/s); was ihm fehlt, nennt `kern` (nie ein Wurf).
 function kernTempo(VC) {
+    const kern = ["chaseKamera", "chaseGreif"].filter((n) => !VC[n]);
+    if (kern[0] === "chaseKamera") return { kern };
     const [K, dt, vmax] = [VC.FAHR.kamera, 1 / 60, 16];
     const lauf = (c, n, g, sp, q = 0) => {
         let v;
@@ -2467,14 +2484,15 @@ function kernTempo(VC) {
     // Drehrate je Bild ab dem Loslassen, relativ zur Kurve (vorher 1,0 am Loslassen und 0,9 am Ende der Rückkehr)
     const ck = {};
     let [az, rate, knick] = [0, 0, 0];
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < (kern.length ? 0 : 300); i++) {
         if (i === 120) VC.chaseGreif(ck, 0.5, 0, K);
         lauf(ck, 1, i >= 120 && i < 150 ? NaN : i * dt * 0.5, 8);
         const r = (ck.az - az) / dt;
         if (i >= 150) knick = Math.max(knick, Math.abs(r - rate) / 0.5);
         [az, rate] = [ck.az, r];
     }
-    return { fovMax: +(v1.fovPlus || 0).toFixed(2), arm: +(arm(v1) / arm(v0) - 1).toFixed(3), drift, knick: +knick.toFixed(2) };
+    const m = { kern, fovMax: +(v1.fovPlus || 0).toFixed(2), arm: +(arm(v1) / arm(v0) - 1).toFixed(3), drift };
+    return kern.length ? m : Object.assign(m, { knick: +knick.toFixed(2) });
 }
 
 module.exports = { probeLeben, tempoVerdict, tempoSpion, kernTempo };
