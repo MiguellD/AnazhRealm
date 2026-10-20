@@ -2895,14 +2895,13 @@ async function checkBandPhasenBF(ctx) {
             if (sugg !== "speichere zustand") return `Suggest las die System-Tabelle nicht (${sugg})`;
             return true;
         })();
-        // D5a Wetter-INTENSITÄTS-ACHSE: (a) die Achse extrapoliert (stormy > rainy im Blend-Lerp);
+        // D5a Wetter-INTENSITÄTS-ACHSE: (a) die Achse lerpt (sunny 0, halber Übergang 0,5) und extrapoliert (stormy > rainy);
         // (b) Vokabular-Gate (stormy ja, xyz nein); (c) das Innenleben unterscheidet die Worte (Sturm
-        // fühlt chaos+awe, nicht sorrow); (d) EIN Schreiber: DSL-Op + Auto-Zug rufen _setWeather (Fade).
+        // fühlt chaos+awe, nicht sorrow).
         out.d5aWeather = (() => {
             const saved = {
                 w: r.state.weather,
                 wt: r.state.weatherTransition,
-                wet: r.state.weatherEffectTime,
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
@@ -2914,7 +2913,13 @@ async function checkBandPhasenBF(ctx) {
                 const vRainy = r._weatherBlendedValue(0, 1);
                 r.state.weather = "stormy";
                 const vStormy = r._weatherBlendedValue(0, 1);
-                if (!(Math.abs(vRainy - 1) < 1e-9 && vStormy > 1)) return `Achse: rainy=${vRainy} stormy=${vStormy}`;
+                r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
+                const vMitte = r._weatherBlendedValue(0, 1);
+                r.state.weatherTransition = null;
+                r.state.weather = "sunny";
+                const vSunny = r._weatherBlendedValue(0, 1);
+                if (!(vSunny === 0 && Math.abs(vMitte - 0.5) < 1e-3 && Math.abs(vRainy - 1) < 1e-9 && vStormy > 1))
+                    return `Achse: sunny=${vSunny} mitte=${vMitte} rainy=${vRainy} stormy=${vStormy}`;
                 if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
                 r.state.weatherTransition = null;
                 if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
@@ -2931,32 +2936,11 @@ async function checkBandPhasenBF(ctx) {
                     return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
                 r.state.creatures = saved.creatures;
                 r.state.creatureEmotions = saved.ce;
-                // EIN Schreiber: der Auto-Zug ruft _setWeather, und _setWeather fadet (Transition statt Sprung)
-                const sW = { wort: r.state.wetterWort, wunsch: r.state.wetterWunsch, b: r.state._buehneStand };
-                r.state.wetterWort = null;
-                r.state.wetterWunsch = { wort: "rainy", quelle: "probe" };
-                r.state.weatherTransition = null;
-                r.state.weather = "sunny";
-                r.state._buehneStand = true;
-                r.state.weatherEffectTime = AnazhRealm.WETTER_ZUG_SEK;
-                const zugRuft = window.__consumes(r, "_loopWeatherAndGrowth", r, "_setWeather", [0]);
-                r.state.wetterWunsch = sW.wunsch;
-                r.state._buehneStand = sW.b;
-                r.state.wetterWort = null;
-                r.state.weatherEffectTime = 0;
-                r.state.weatherTransition = null;
-                r.state.weather = "rainy";
-                const gesetzt = r._setWeather("stormy", "auto-zug");
-                const wtF = r.state.weatherTransition;
-                r.state.wetterWort = sW.wort;
-                if (!zugRuft) return "Auto-Zug ruft _setWeather nicht";
-                if (!(gesetzt === true && wtF && wtF.from === "rainy" && wtF.to === "stormy")) return "_setWeather fadet nicht";
                 return true;
             } finally {
                 if (!hatteStrom) delete r._faunaRng;
                 r.state.weather = saved.w;
                 r.state.weatherTransition = saved.wt;
-                r.state.weatherEffectTime = saved.wet;
                 r.state.creatures = saved.creatures;
                 r.state.creatureEmotions = saved.ce;
             }
@@ -3108,7 +3092,7 @@ async function checkBandPhasenBF(ctx) {
         typeof res.e1OneGate === "string" ? res.e1OneGate : undefined
     );
     check(
-        "D5a/V18.128: die Wetter-ACHSE — stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos, EIN Schreiber fadet",
+        "D5a/V18.128: die Wetter-ACHSE — der Übergang lerpt, stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos",
         res.d5aWeather === true,
         typeof res.d5aWeather === "string" ? res.d5aWeather : undefined
     );

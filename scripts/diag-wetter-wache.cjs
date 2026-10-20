@@ -18,8 +18,8 @@
 //       (`_loopWeatherAndGrowth`): das Wetter bleibt „sunny", die Uhr eingefroren, jeder Zug steht im Buch des Wetter-Spions
 //       als verweigert beim Namen seiner Quelle;
 //   (S) SCHARF: ein roher Schreiber am `_setWeather` vorbei (`state.weather = …`) fällt ROT und steht als ROH im Urteil;
-//   (F) FREI: ohne Halt wirkt das Spiel — der Mensch dreht das Wetter, sein Wort hält den Auto-Zug nach 120 s, nach „frei"
-//       zieht der Zug weiter;
+//   (Z) SAAT (Wetter H1): nach „frei" zieht der Auto-Zug in 20 min Spiel-Zeit je Saat dieselbe Folge, welche Wanduhr gilt, an
+//       zwei Orten 3 km auseinander;
 //   (G) GESETZ (eine frische Welt, das Spiel läuft getaktet mit seinem Nexus, `HIMMEL_MIN` Minuten Spiel-Zeit): der Spieler
 //       sagt „setze uhrzeit mittag" und „setze wetter sonnig" (der echte Chat-Pfad); die Täter der Schau schreiben dagegen —
 //       die Nexus-Gesetze auf die Uhr (der Zwilling `time_of_day` und `set_time_of_day`) und auf den Regen, die Würfel des
@@ -39,8 +39,6 @@
 //       (`__bildUhren`: Himmel, Wasser, Wind, Böe, Regen, Tor, Fell) steht mit ihr, jede Shader-Zeit zeichnet zu T, sonst steht
 //       er beim Namen; die Leser jeder Welt (Himmel, Wind, Böe — auch im Null-Renderer) stehen in der Liste, und der Loop schrieb
 //       die Bild-Uhr (verweigert);
-//   (Z) SAAT (Wetter H1): der Auto-Zug zieht in 20 min Spiel-Zeit dieselbe Folge, welche Wanduhr gilt, an zwei Orten 3 km
-//       auseinander, eine andere Saat eine andere;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
@@ -106,7 +104,7 @@ if (process.argv.includes("--selftest")) {
     console.log(
         "✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr, blinder Spion; Nexus an der Uhr, Sprung, lahmer Gang, Zug gegen das " +
             "Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp, das Wesen gegen das Wort, das Wesen schreibt selbst, " +
-            "das Wesen fehlt, die Saat an der Wanduhr, die blinde Saat, der stumme Zug fallen rot; Bühne, Verweigerung und Wunsch grün."
+            "das Wesen fehlt, die Saat an der Wanduhr oder blind, der stumme Zug fallen rot; Bühne, Verweigerung und Wunsch grün."
     );
     process.exit(0);
 }
@@ -114,7 +112,7 @@ if (process.argv.includes("--selftest")) {
 const server = statikServer();
 
 // Die Probe im Seiten-Kontext: jeder Schreiber-Weg des Spiels unter der Bühne, der rohe Schmuggel, die freie Welt.
-function probe() {
+function probe(o) {
     const r = window.anazhRealm;
     const st = r.state;
     const t = () => performance.now() / 1000;
@@ -157,7 +155,7 @@ function probe() {
         // der Auto-Zug: sein Takt läuft (die Uhr zählt weiter), der Zug fällt nie, solange die Uhr unter 0 steht
         autoZug: () => r._loopWeatherAndGrowth(0.016, t()),
     };
-    const aus = { halt: {}, frei: {} };
+    const aus = { halt: {} };
     window.__buehne();
     for (const [n, w] of Object.entries(wege)) aus.halt[n] = fenster(w);
     // die Gesetze, die die Probe registrierte, fallen wieder (die freie Welt prüft nur den Menschen und den Auto-Zug)
@@ -168,15 +166,30 @@ function probe() {
     aus.roh = fenster(() => {
         st.weather = "rainy";
     });
-    window.__wetterSetzen("sunny");
-    // (F) ohne Halt wirkt das Spiel: der Mensch spricht, sein Wort hält den Zug, „frei" gibt ihn frei
-    st.weatherEffectTime = 0;
-    aus.frei.mensch = fenster(wege.mensch);
-    st.weatherEffectTime = 120.5;
-    aus.frei.wortHaelt = fenster(() => r._loopWeatherAndGrowth(0, t()));
-    r.dslRun(["weather", "frei"], { source: "human" });
-    st.weatherEffectTime = 120.5;
-    aus.frei.autoZug = fenster(() => r._loopWeatherAndGrowth(0, t()));
+    // (Z) je Lauf (Saat, Ort dx, Wanduhr-Gang je Takt in ms) `zuege` Sprünge der Zug-Uhr; der Übergang (45 s) endet im Takt
+    const wm = st.worldMeta || (st.worldMeta = {});
+    const [saat0, pn, x0] = [wm.seed, performance.now, st.playerMesh.position.x];
+    const lauf = ([saat, dx, uhr]) => {
+        [wm.seed, st.playerMesh.position.x] = [saat, x0 + dx];
+        (wm.bauSame || (wm.bauSame = {})).wetter = 0;
+        window.__wetterSetzen("sunny");
+        st.weatherEffectTime = 0;
+        r.dslRun(["weather", "frei"], { source: "human" });
+        const s0 = window.__wetterSpion().seq;
+        let fade = 0;
+        for (let i = 0; i < o.zuege; i++) {
+            performance.now = () => pn.call(performance) + uhr * (i + 1);
+            st.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+            r._loopWeatherAndGrowth(0);
+            fade += st.weatherTransition && st.weatherTransition.to === st.weather ? 1 : 0;
+            st.weatherTransition = null;
+        }
+        performance.now = pn;
+        const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
+        return { folge: buch.map((e) => e.zu).join(" "), fade };
+    };
+    aus.saat = { zuege: o.zuege, laeufe: o.laeufe.map((l) => [l.join(" · "), lauf(l)]) };
+    [wm.seed, st.playerMesh.position.x] = [saat0, x0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort
@@ -210,43 +223,7 @@ function probe() {
     return aus;
 }
 
-// (Z) DIE SAAT (Wetter H1): der Auto-Zug über `zuege` Takte Spiel-Zeit (der Sprung der Zug-Uhr um `WETTER_ZUG_SEK`, nie die
-// Wanduhr), je Lauf aus der Sonne frei gegeben — Saat × Ort (3 km) × Wanduhr (steht, oder geht je Takt `uhr` ms wie im Spiel).
-// Die Folge liest das Buch des Spions: jedes Wort, das der Zug über den EINEN Schreiber zog, und ob er überblendet (der Übergang
-// von 45 s endet im Takt von 120 s).
-function saatProbe(o) {
-    const r = window.anazhRealm;
-    const st = r.state;
-    const wm = st.worldMeta || (st.worldMeta = {});
-    const [saat0, pn, x0] = [wm.seed, performance.now, st.playerMesh.position.x];
-    const lauf = ([saat, dx, uhr]) => {
-        wm.seed = saat;
-        (wm.bauSame || (wm.bauSame = {})).wetter = 0;
-        st.playerMesh.position.x = x0 + dx;
-        window.__wetterSetzen("sunny");
-        st.weatherEffectTime = 0;
-        r.dslRun(["weather", "frei"], { source: "human" });
-        const s0 = window.__wetterSpion().seq;
-        let fade = 0;
-        for (let i = 0; i < o.zuege; i++) {
-            performance.now = () => pn.call(performance) + uhr * (i + 1);
-            st.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
-            r._loopWeatherAndGrowth(0);
-            fade += st.weatherTransition && st.weatherTransition.to === st.weather ? 1 : 0;
-            st.weatherTransition = null;
-        }
-        performance.now = pn;
-        const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
-        return { folge: buch.map((e) => e.zu).join(" "), fade };
-    };
-    const aus = o.laeufe.map((l) => [l.join(" · "), lauf(l)]);
-    [wm.seed, st.playerMesh.position.x] = [saat0, x0];
-    window.__buehne();
-    return { zuege: o.zuege, laeufe: aus };
-}
-
-// (Z) das Urteil der Saat (rein): je Lauf zieht der Zug jedes Wort über `_setWeather` und überblendet; gleiche Saat am selben Ort
-// → dieselbe Folge, welche Wanduhr auch gilt; eine andere Saat → eine andere Folge. Die Läufe: A, A+Uhr, B, B+Uhr, A mit Saat 2.
+// (Z) das Urteil der Saat (rein), Läufe A, A+Uhr, B, B+Uhr, A mit Saat 2: jeder Zug schreibt über `_setWeather` und überblendet
 function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
@@ -443,7 +420,7 @@ function taeterGezaehlt(liste) {
     return [...g.values()];
 }
 
-function urteil(S, H, Z, pageErrors) {
+function urteil(S, H, pageErrors) {
     const rot = [];
     const SOLL_QUELLE = {
         emotion: "emotion:sorrow",
@@ -467,16 +444,8 @@ function urteil(S, H, Z, pageErrors) {
         rot.push(
             `(S) SCHARF: der rohe Schreiber fällt nicht rot beim Namen (${roh.urteil}: ${roh.taeter.join(" · ")})`
         );
-    if (S.frei.mensch.nachher !== "rainy")
-        rot.push(`(F) FREI: der Mensch dreht das Wetter ohne Halt nicht (${S.frei.mensch.nachher})`);
-    if (S.frei.wortHaelt.nachher !== S.frei.wortHaelt.vorher)
-        rot.push(
-            `(F) FREI: der Auto-Zug dreht das Wort des Spielers nach 120 s (${S.frei.wortHaelt.vorher} → ${S.frei.wortHaelt.nachher})`
-        );
-    if (S.frei.autoZug.nachher === S.frei.autoZug.vorher)
-        rot.push(`(F) FREI: nach „frei" zieht der Auto-Zug nach 120 s nicht weiter (${S.frei.autoZug.nachher})`);
     if (S.ende.wetter !== "sunny" || !(S.ende.uhr < 0))
-        rot.push(`(F) die Bühne stellt den Halt nicht wieder her (${JSON.stringify(S.ende)})`);
+        rot.push(`(Z) die Bühne stellt den Halt nicht wieder her (${JSON.stringify(S.ende)})`);
     if (S.zwilling) rot.push("(Q) QUELLE: der Zwilling `time_of_day` schreibt die Uhr neben `set_time_of_day`");
     const w = S.wuerfe;
     if (w.atome || w.gesetze || w.mutationen)
@@ -511,7 +480,7 @@ function urteil(S, H, Z, pageErrors) {
         rot.push(
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
-    rot.push(...uhrRot(S.uhren), ...saatRot(Z));
+    rot.push(...uhrRot(S.uhren), ...saatRot(S.saat));
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
@@ -542,9 +511,7 @@ async function boot(browser, pageErrors) {
     const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const pageErrors = [];
     const page = await boot(browser, pageErrors);
-    const S = await page.evaluate(probe);
-    // (Z) 20 min Spiel-Zeit: Saat × Ort (3 km) × Wanduhr (steht oder geht 120 s je Takt)
-    const Z = await page.evaluate(saatProbe, {
+    const S = await page.evaluate(probe, {
         zuege: 10,
         laeufe: [
             ["saat-a", 0, 0],
@@ -577,9 +544,6 @@ async function boot(browser, pageErrors) {
     }
     const roh = wetterUrteil(S.roh);
     console.log(`  Scharf · roh      ${roh.urteil}  ${roh.taeter.join(" · ")}`);
-    console.log(`  Frei · Mensch     ${S.frei.mensch.vorher} → ${S.frei.mensch.nachher}`);
-    console.log(`  Frei · Wort hält  ${S.frei.wortHaelt.vorher} → ${S.frei.wortHaelt.nachher} (Auto-Zug nach 120 s)`);
-    console.log(`  Frei · Auto-Zug   ${S.frei.autoZug.vorher} → ${S.frei.autoZug.nachher} (nach „frei")`);
     console.log(
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );
@@ -607,8 +571,8 @@ async function boot(browser, pageErrors) {
     console.log(`  Regler: ${H.regler.text} (${H.regler.wert}) bei Welt ${H.regler.label}`);
     const uz = Object.entries(S.uhren.nach).map(([n, x]) => `${n} ${+(+x).toFixed(4)}`);
     console.log(`  Bild-Uhr ${S.uhren.T}: ${uz.join(" · ")}; verweigert ${S.uhren.verweigert}`);
-    for (const [n, f] of Z.laeufe) console.log(`  Saat ${n.padEnd(22)} ${f.folge} (${f.fade} überblendet)`);
-    const rot = urteil(S, H, Z, pageErrors);
+    for (const [n, f] of S.saat.laeufe) console.log(`  Saat ${n.padEnd(22)} ${f.folge} (${f.fade} überblendet)`);
+    const rot = urteil(S, H, pageErrors);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);
         for (const e of rot.slice(0, 60)) console.error("  • " + e);

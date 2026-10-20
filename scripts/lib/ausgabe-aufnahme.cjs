@@ -360,16 +360,17 @@ async function weltStehtWarten(max) {
     return takte() - t0;
 }
 
-function buehne() {
+function buehne(o) {
     const r = window.anazhRealm;
     const st = r.state;
     window.__weltaktSpion();
     st.autoSeason = false;
-    if (typeof r.setSeason === "function") r.setSeason("sommer");
+    if (typeof r.setSeason === "function") r.setSeason((o && o.saison) || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
-    // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
-    window.__wetterSetzen("sunny");
+    // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
+    // EINEN Schreiber, dann eingefroren (`__wetterSetzen`)
+    window.__wetterSetzen((o && o.wetter) || "sunny");
     window.__uhrHalten();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;

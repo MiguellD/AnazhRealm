@@ -965,19 +965,16 @@ class AnazhRealm_dirigent_takt {
         ) {
             const wunsch = this.state.wetterWunsch;
             this.state.wetterWunsch = null;
-            let next;
-            if (wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY) next = wunsch.wort;
-            else {
-                const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
-                // Deterministische Wort-Wahl (Math.random-frei): Index aus layered sines der Wall-Clock. Das Wort
-                // lesen Symphonie/Journal/wet-Frage; der Wechsel ist reine Optik/Klang → Fixed-Step/Replay unberührt.
-                const wc = performance.now() / 1000 + this.state.weatherEffectTime;
-                const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
-                let idx = Math.floor(((pick + 3) / 6) * words.length);
-                if (idx < 0) idx = 0;
-                if (idx >= words.length) idx = words.length - 1;
-                next = words[idx];
-            }
+            // DAS WORT DER SAAT (Wetter H1): Wetter = f(Saat, Zug) ⊕ Schreib-Akte, für alle gleich, nie aus der Wanduhr — jeder
+            // Zug zieht den nächsten Samen der Welt (`_bauSame("wetter")`, der Zähler reist im Snapshot und zum Gast), auch der,
+            // der einen Wunsch erfüllt. Bis V18.546.31 wählten drei Sinus über performance.now: dieselbe Saat zog je Boot und
+            // Tempo eine andere Folge (gate:wetter-wache (Z)).
+            const u = this._samenStrom(this._bauSame("wetter"))();
+            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+            const next =
+                wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY
+                    ? wunsch.wort
+                    : words[Math.floor(u * words.length)];
             if (next !== this.state.weather) {
                 this._setWeather(next, "auto-zug");
                 this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
