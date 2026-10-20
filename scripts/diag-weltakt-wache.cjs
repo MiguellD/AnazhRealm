@@ -247,6 +247,8 @@ async function probe(GESCHICKT) {
     const bau = (art, id = r._newArchId()) => art === "number" ? st.architectures.filter((a) => a && typeof a.id === art).pop().id
         : (r.dslRun(["spawn_blueprint", "stein_block", ["far_player", 30, 40], 8, id], { source: "human" }), id);
     const JE = { weather: "rainy", set_season: "herbst", gravity: -9.8, terrain_steepness: 1, player_soul: "wesen", spawn_blueprint: "stein_block" };
+    // der Leib wiegt nur im Band seines Gesetzes (`AnazhRealm.DSL_WERTE`): die Probe nimmt den Rand des Bands
+    for (const [op, stat] of [["player_jump_power", "jumpPower"], ["player_speed", "speed"]]) JE[op] = r._koerperGesetzBand(stat).min;
     const W = (op, n) => ({
         name: JE[op] || (/^define_/.test(op) ? "wache_" + op.slice(7) : rolle(/^equip_/.test(op) ? op.slice(6) : "consumable")),
         value: JE[op] ?? (op === "terrain_base_height" ? st.terrainBaseHeight : 8), blueprintName: /boost/.test(op) ? rolle("consumable") : "wache_blueprint",
