@@ -342,6 +342,15 @@ function rufe(weg, nutzlast) {
         req.end(body);
     });
 }
+// `--eigen`: die Welt als Kind von `start`, bereit, wenn die Steuerung antwortet (erst nach dem Boot)
+async function eigeneWelt() {
+    const k = require("child_process").spawn(process.execPath, [__filename, "start", "--port", String(PORT)], { stdio: "inherit" });
+    for (let t = 0; !(await rufe("/status").then(() => true, () => false)); t++) {
+        if (k.exitCode != null || t > 600) throw new Error(`die eigene Werkbank steht nicht (Exit ${k.exitCode})`);
+        await new Promise((r) => setTimeout(r, 1000));
+    }
+    return () => rufe("/stop");
+}
 
 // Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
@@ -3276,6 +3285,35 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
+    } else if (cmd === "licht" && argv.includes("--tag")) {
+        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
+        // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
+        // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
+        const LL = require("./lib/licht-linsen.cjs");
+        const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
+        const welt = {};
+        if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
+        const kurve = (uhren, png) => rufe("/eval", { code: `return await window.__tagKurve(${JSON.stringify({ uhren, png })});` });
+        try {
+            for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
+                await rufe("/umstellen", { ort, sicht: "ego" });
+                const a = await kurve(argv.includes("--kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
+                const m = (welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" });
+                for (const z of m.zeilen || []) {
+                    if (z.png) fs.writeFileSync(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), Buffer.from(z.png.split(",")[1], "base64"));
+                    delete z.png;
+                }
+                const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
+                if (f) (m.fein = f.zeilen), Object.assign(m.schreiber, f.schreiber);
+            }
+        } finally {
+            if (halt) await halt();
+        }
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(welt, null, 1));
+        const u = LL.tagKurveUrteil(welt);
+        console.log(JSON.stringify(u.kurven, null, 1));
+        console.log(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
         // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
@@ -3329,6 +3367,7 @@ async function starte() {
                 [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.03, A: 0.164, tau: [0.5, 1] } } } }).urteil, "ROT"],
                 [LL.kronenObenUrteil({ welt: { fichte: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
                 [LL.kronenObenUrteil({}).urteil, "ROT"],
+                ...LL.tagKurveSelbsttest(),
             ];
             const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
             console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);

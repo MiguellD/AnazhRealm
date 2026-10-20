@@ -1579,6 +1579,12 @@ jobs:
               if: ${{ !cancelled() }}
               run: npm run gate:weltbild-frost:echt
 
+            - name: Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)
+              if: ${{ !cancelled() }}
+              # werkbank licht --tag --kurz: Mitternacht, Mittag und die Grobschritte um den Horizont, der Aufgang im Feinschritt
+              # 0,002 (SPRUNG gegen den steilsten Feinschritt des Lichts) — lokal 2,5 min samt Boot (Radeon)
+              run: npm run gate:tag-achse:echt
+
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               if: ${{ !cancelled() }}
               run: npm run gate:gpu-fehler

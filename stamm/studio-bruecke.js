@@ -390,9 +390,8 @@ class AnazhRealm_studio_bruecke {
     _foundryIngestWorldParams(params) {
         if (!params || typeof params !== "object") return;
         this.state.studioWorldParams = params;
-        // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX (der Tag/Nacht-Zyklus
-        // rechnet in Hex, nicht linear) → `DAY_NIGHT_STOPS` bindet seinen Mittags-Stop hieran. Additiv:
-        // nur der Mittag folgt dem Studio, der ganze Zyklus bleibt AnazhRealms. Fallback = 0 Regress.
+        // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX → der Himmel-Top ist der Nenner der Tönung
+        // (`_dayNightComputeTint`, S7: EINE Farbe, keine Tafel nach der Uhr). Fallback = die Vorlage 0x6a9ed0.
         const sk = params.sky || {};
         const sky = {};
         if (typeof sk.top === "number") sky.top = sk.top;

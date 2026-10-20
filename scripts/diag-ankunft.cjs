@@ -68,6 +68,7 @@ function ladeschirmVerdict(m) {
         ["pflanzung", "mit einem gepflanzten Baum im Blick, der noch nicht steht", /gepflanzt/],
         ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
+        ["licht", "ohne das Licht des Orts", /Licht des Orts/],
         ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
         ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
         ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
@@ -589,6 +590,8 @@ async function probe(arg) {
             // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
             // ist noch nicht voll gezeichnet (`fr.ready`)
             fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
+            // (4e') die Belichtung schrieb noch nicht aus dem Licht (S7)
+            fallMit("licht", [st, { _belichtungSteht: false }]);
             // (4f) DAS DORF (K60-4): fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
@@ -1664,7 +1667,7 @@ async function probe(arg) {
 (async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
+        const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         const l2aFaelle = {
             ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
             baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
@@ -1678,6 +1681,7 @@ async function probe(arg) {
             pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
             saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
             horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
+            licht: { weg: false, stand: "das Licht des Orts wird gemessen", warn: 0, terme: ["licht"] },
             dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] },
             dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] },
             dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
