@@ -485,38 +485,26 @@ const STUDIO = (k) => {
     /* eslint-enable no-undef */
 };
 
-// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3): die Fußfolge folgt der Physik, nie der Stimmung — die Froude-Zahl
-// Fr = v̂² = v²/(g·L) wählt Schritt (lateral: nach jedem Hinterfuß der Vorderfuß derselben Seite), Trab (die Diagonalen
-// gemeinsam) und Galopp (die Vorderfüße zusammen, die Hinterfüße zusammen, beide Paare getrennt). Je Gattung läuft der Leib
-// bei v̂ = 0,3 · 1,2 · 3,5 geradeaus durch seinen Chokepoint (_animateCompoundMotion → _animateTierBaum), dasselbe Tempo
-// im Labor (worlds/tetrapoda); gemessen werden die Phasen der vier Beine, gemittelt über die sechste Sekunde. --selftest: das Muster der Stimmung
-// (MOTION.joy, jedes Tempo) → ROT.
+// DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3): je Gattung bei v̂ = 0,3 · 1,2 · 3,5 in Welt und Labor die Phasen der
+// Beine [VL, VR, HL, HR] → Schritt lateral (nach dem Hinterfuß der Vorderfuß derselben Seite), Trab (Diagonalen gemeinsam),
+// Galopp (Paare vorn und hinten, getrennt). --selftest: das Muster der Stimmung (MOTION.joy) an jedem Tempo → ROT.
 const VH = [0.3, 1.2, 3.5];
 const GANG_SOLL = { 0.3: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
 const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
-// die Phasen [FL, FR, HL, HR] (rad) → die Gangart; die Aufsetz-Zeit je Bein τ = −(φ − φ_FL)/2π mod 1 (gangFuss: der Fuß
-// setzt bei Phase π auf, ein größerer Versatz setzt früher)
+// Aufsetzen bei Phase π (gangFuss): ein größerer Versatz setzt früher auf
 function gangart(ph) {
-    const rel = ph.map((p) => ((((p - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
-    const d = (a, b) => {
-        const x = Math.abs(rel[a] - rel[b]) % 1;
-        return Math.min(x, 1 - x);
-    };
-    const [FL, FR, HL, HR] = [0, 1, 2, 3];
-    if (d(FL, HR) < 0.1 && d(FR, HL) < 0.1 && d(FL, FR) > 0.4) return "trab";
-    if (d(FL, HL) < 0.1 && d(FR, HR) < 0.1 && d(FL, FR) > 0.4) return "pass";
-    if (d(FL, FR) < 0.25 && d(HL, HR) < 0.25 && d(FL, HL) >= 0.25 && d(FR, HR) >= 0.25) return "galopp";
-    let getrennt = true;
-    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) if (d(a, b) < 0.15) getrennt = false;
-    if (!getrennt) return "unbestimmt";
-    const tau = rel.map((x) => (1 - x) % 1);
-    const folge = [0, 1, 2, 3].sort((a, b) => tau[a] - tau[b]);
+    const rel = ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
+    const d = (a, b) => Math.min(Math.abs(rel[a] - rel[b]), 1 - Math.abs(rel[a] - rel[b]));
+    const aus = (art) => ({ art, rel: rel.map((x) => +x.toFixed(2)) });
+    if (d(0, 3) < 0.1 && d(1, 2) < 0.1 && d(0, 1) > 0.4) return aus("trab");
+    if (d(0, 1) < 0.25 && d(2, 3) < 0.25 && d(0, 2) >= 0.25 && d(1, 3) >= 0.25) return aus("galopp");
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) if (d(a, b) < 0.15) return aus("unbestimmt");
+    const folge = [0, 1, 2, 3].sort((a, b) => ((1 - rel[a]) % 1) - ((1 - rel[b]) % 1));
     const nach = (bein) => folge[(folge.indexOf(bein) + 1) % 4];
-    return nach(HL) === FL && nach(HR) === FR ? "schritt-lateral" : "schritt-diagonal";
+    return aus(nach(2) === 0 && nach(3) === 1 ? "schritt-lateral" : "schritt-diagonal");
 }
-// je Ort (k.labor: worlds/tetrapoda über seinen Gang-Takt gangTakt, sonst die Welt durch _animateCompoundMotion) die Phasen
-// der Beine gegen das erste, im Kreis gemittelt über die sechste Sekunde (ein Gang ist ein Muster über die Zeit; ein
-// einzelner Takt fiele auf den Sprung eines Beins an seiner Grenze)
+// je Ort (k.labor: worlds/tetrapoda über gangTakt, sonst die Welt durch _animateCompoundMotion) die Phasen gegen das erste
+// Bein, im Kreis gemittelt über die sechste Sekunde (ein Takt allein fiele auf den Sprung eines Beins an seiner Grenze)
 const GANG = (k) => {
     /* eslint-disable no-undef */
     const core = window.__tetrapodaCore;
@@ -596,19 +584,11 @@ const GANG = (k) => {
     let schwereRot = false;
     let gangRot = false;
     const gangUrteil = (wo, res) => {
-        if (res.fehler) {
-            console.log(`  ❌ Gangart ${wo}: ${res.fehler}`);
-            rot++;
-            gangRot = true;
-            return;
-        }
-        for (const z of res.zeilen) {
-            const ist = gangart(z.ph);
-            const rel = z.ph.map((q) => +(((((q - z.ph[0]) / (2 * Math.PI)) % 1) + 1) % 1).toFixed(2));
-            const soll = GANG_SOLL[z.vh];
-            const ok = ist === soll;
+        for (const z of res.zeilen || [{ fehler: res.fehler }]) {
+            const g = z.fehler ? { art: z.fehler, rel: [] } : gangart(z.ph);
+            const ok = g.art === GANG_SOLL[z.vh];
             console.log(
-                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} (Fr ${(z.vh * z.vh).toFixed(2)}${z.v ? ", " + z.v + " m/s bei L " + z.L + " m" : ""}) · ${ist} [${rel.join(" ")}]${ok ? "" : " — Soll " + soll + ": die Fußfolge folgt nicht dem Tempo"}`
+                `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${ok ? "" : " — Soll " + GANG_SOLL[z.vh]}`
             );
             if (!ok) {
                 rot++;
