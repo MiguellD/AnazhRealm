@@ -119,10 +119,10 @@ async function checkBandV1778LadderCut(ctx) {
             parts: [{ shape: "box", material: "eisen", opChain: r._defaultPartOpChain() }],
         };
         const prevMode = r.getGameMode();
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        r.setGameMode("schöpfer");
         const ap = r.applyOpToPart("_cut_test", 0, "hände");
         out.stillRefinable = ap.ok === true;
-        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         delete r.state.blueprints["_cut_test"];
         return out;
     });
@@ -833,7 +833,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
-        if (typeof r._isGrownBlueprintReferenced === "function") {
+        {
             // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
             // prüfe dass der referenzierte Bauplan überlebt.
             const testKey = "grown_baum_eiche_testkey";
@@ -888,12 +888,10 @@ async function checkBandV18210Verdrahtung(ctx) {
                 // Signatur = aggregierter Höhe/Krone-Farbe-Hash (kein vollständiger JSON-Vergleich,
                 // weil Position-Jitter durch verschiedenen seedString variiert).
                 let maxY = 0,
-                    totalY = 0,
                     leafColor = 0,
                     leafCount = 0;
                 for (const part of p) {
                     if (part.position.y + part.size.y * 0.5 > maxY) maxY = part.position.y + part.size.y * 0.5;
-                    totalY += part.size.y;
                     if (part.material === "laub" && typeof part.color === "number") {
                         leafColor += part.color;
                         leafCount++;
@@ -910,8 +908,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         const au = r._ensureAtmoUniforms ? r._ensureAtmoUniforms() : null;
         out.a2UniformExists = !!(au && au.r5StructureBoost);
         // (A2c) Setter existiert + setzt Uniform + persistiert
-        out.a2SetterExists = typeof r.setStructureBoost === "function";
-        if (out.a2SetterExists) {
+        {
             const before = au.r5StructureBoost.value;
             r.setStructureBoost(2.0);
             out.a2SetterUpdatesUniform = au.r5StructureBoost.value === 2.0;
@@ -1107,7 +1104,6 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A2 — R5 Live-Slider
     check("V18.210-A2b Live-Uniform r5StructureBoost in atmoUniforms", res.a2UniformExists === true);
-    check("V18.210-A2c setStructureBoost-Setter existiert", res.a2SetterExists === true);
     check("V18.210-A2c2 Setter aktualisiert Uniform live", res.a2SetterUpdatesUniform === true);
     check("V18.210-A2c3 Setter persistiert (atmosphere.r5StructureBoost)", res.a2SetterPersists === true);
     check("V18.210-A2c4 Setter cap-clamp (5.0 → 2.5)", res.a2SetterCapsHi === true);
@@ -1292,8 +1288,6 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         const s = r.state;
         const out = {};
         if (
-            typeof r.replayRun !== "function" ||
-            typeof r._replaySnapshotState !== "function" ||
             !s.playerMesh ||
             !s.playerVel
         )

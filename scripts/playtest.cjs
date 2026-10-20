@@ -43,13 +43,15 @@ function startSaveServer() {
     });
 }
 
-// page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf (Browser-Crash-Pfad);
-// Guards `if (!X)` wie `if (!X || X.error)` zweigen damit korrekt in den Fehler-Zweig.
+// page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf — und der Wurf ist eine verletzte
+// Invariante beim Namen (WUERFE, apparat-diaet 20.10.): bis dahin fiel ein Band mit `if (X && !X.error)` still aus,
+// darum trug jede Probe ihren Existenz-Wächter; jetzt trägt der Aufruf der Methode ihre Existenz.
+const WUERFE = [];
 async function safeEvaluate(page, fn, ...args) {
-    // Fehler LAUT loggen statt still null (V18.456-Lehre: „page.evaluate
-    // fehlgeschlagen" ohne Botschaft kostet eine ganze Diagnose-Runde).
     return await page.evaluate(fn, ...args).catch((e) => {
-        console.log(`    [safeEvaluate] ${String((e && e.message) || e).slice(0, 300)}`);
+        const m = String((e && e.message) || e).slice(0, 300);
+        console.log(`  ❌ [safeEvaluate] ${m}`);
+        WUERFE.push(`[safeEvaluate] ${m.split("\n")[0]}`);
         return null;
     });
 }
@@ -1015,6 +1017,7 @@ if (require.main === module) (async () => {
         await browser.close();
         server.kill();
     }
+    failures.push(...WUERFE);
 
     if (bandTimes.length) {
         const slow = [...bandTimes].sort((a, b) => b[1] - a[1]);

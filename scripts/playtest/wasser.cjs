@@ -4,14 +4,13 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandHydrosphere(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Wasserfälle aus dem Hydrosphären-Netz ###
@@ -81,9 +80,7 @@ async function checkBandHydrosphere(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.methodExists = typeof r._computeHydrosphere === "function";
         out.stateDeclared = "hydrosphere" in r.state;
-        if (!out.methodExists) return out;
         const t0 = performance.now();
         const h1 = r._computeHydrosphere();
         out.perfMs = performance.now() - t0;
@@ -193,11 +190,9 @@ async function checkBandHydrosphere(ctx) {
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
         // V9.50-a — das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
         // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
-        out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
-        out.hasRiverAt = typeof r._hydroRiverAt === "function";
         out.waterLevelOceanOk = false;
         out.waterLevelLakeOk = false;
-        if (out.hasWaterLevelAt) {
+        {
             const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
             const erste = (h, kind) => {
                 const q = h.water.waterKind.indexOf(kind);
@@ -307,9 +302,8 @@ async function checkBandHydrosphere(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
         out.hydroReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-        if (!out.hasWaterLevelAt || !out.hydroReady) return out;
+        if (!out.hydroReady) return out;
         // _waterLevelAt: über einer GERENDERTEN See-Zelle → der See-Level, gemessen an der Kachel des See-Orts
         // (`__wasserOrt`). V9.45-c: absorbierte Seen (level ≤ waterLevel+2) zählen nicht — die Meeres-Plane vertritt sie.
         const seeOrt = window.__wasserOrt("see");
@@ -373,10 +367,9 @@ async function checkBandHydrosphere(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.methodsExist = typeof r._hydrosphereCarveAt === "function" && typeof r._hydroBuildCarveIndex === "function";
         const hydro = r.state.hydrosphere;
         out.hydroReady = !!(hydro && hydro.ready);
-        if (!out.methodsExist || !out.hydroReady) return out;
+        if (!out.hydroReady) return out;
         if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
         // (2) der Carve-Index ist an state.hydrosphere verdrahtet
         out.indexWired =
@@ -738,7 +731,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das gleiche Feld. Die dirty-Queue
         // vorher drainen, sonst trägt testEntry.waterCells einen alten Stempel-Stand und der zweite Build
         // den aktuellen (Stempel-Drift).
-        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        r._drainDirtyVoxelChunks();
         const refreshed = r.state.voxelChunks.get(testKey);
         const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
         const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, 0);
@@ -828,7 +821,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
-        if (typeof r._drainPendingWaterIso === "function") r._drainPendingWaterIso();
+        r._drainPendingWaterIso();
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
         // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
         // null, je nach Wasser-Existenz im Chunk).
@@ -928,11 +921,11 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 if (!r.state.hydroSurfaceMaterial) return false;
                 try {
                     r._koerperWasser = () => -Infinity;
-                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                    r._applyDayNightToScene();
                     return r.state.hydroSurfaceMaterial.side === BACK;
                 } finally {
                     delete r._koerperWasser;
-                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                    r._applyDayNightToScene();
                 }
             })();
             let undersideTris = 0;
@@ -1465,7 +1458,6 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-
         // Empirisch — finde eine Wasser-Spalte im Spawn-Bereich.
         let waterSpot = null;
         const SCAN_RANGE = 120;
@@ -1725,7 +1717,6 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Im Tiefland (≤ 100 m über dem Meer) MUSS Schnee ≈ 0 sein (die Schneegrenze beginnt bei SCHNEE.start).
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
-
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
         // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
         // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
@@ -1735,7 +1726,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
         let waterCellAtWorks = false;
         const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
-        if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
+        if (typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
             // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
             out.hoehlenChunk = window.__wasserChunk("hoehle");
@@ -2295,7 +2286,7 @@ async function checkBandScatterWasserAB(ctx) {
                     if (!r._landAt(x, z, 0.4)) nass++;
                     const sl = r._slopeAt ? r._slopeAt(x, z) : 0;
                     if (sl > 1.2) steep++;
-                    if (typeof r._hydroRiverAt === "function") {
+                    {
                         const rv = r._hydroRiverAt(x, z);
                         if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
                     }
@@ -2452,7 +2443,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
         };
         for (let i = 0; i < 280 || (!steht() && performance.now() - t0 < 60000); i++) {
             try {
-                if (typeof r._tickVoxelChunkStreaming === "function") r._tickVoxelChunkStreaming();
+                r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
                 if (r._drainPendingWaterIso) r._drainPendingWaterIso();
             } catch (_e) {

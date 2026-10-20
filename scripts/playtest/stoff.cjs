@@ -161,11 +161,10 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-        out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
 
         // Build a PBR material directly
-        if (out.pbrBuilderExists) {
+        {
             // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
             const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
             out.defaultMatBuilt = !!mDefault;
@@ -239,7 +238,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         return out;
     });
 
-    check("V18.223 (Q1) _buildPbrNodeMaterial Helper existiert", res.pbrBuilderExists === true);
     check(
         "V18.223/234 (Q2) atmosphere.materialMode Default `pbr` (physik-Licht, keine halben Sachen)",
         res.modeFlagDefault === true
@@ -287,7 +285,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const out = {};
 
         // (A) Helfer + gesetzmäßige Konfiguration
-        out.helperExists = typeof r._terrainGeologyAlbedo === "function";
         const G = A.TERRAIN_GEOLOGY;
         out.configFrozen = !!G && Object.isFrozen(G);
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
@@ -306,7 +303,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             Array.isArray(G.mossTint) &&
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
-
 
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
@@ -425,7 +421,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
     check(
@@ -438,7 +433,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         res.tintsAreRgb === true
     );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
-
 
     check("Ω-OPSIS S1 (C1) geoRock-Uniform existiert + endlich", res.geoRockUniform === true);
     check("Ω-OPSIS S1 (C2) geoMoss-Uniform existiert + endlich", res.geoMossUniform === true);

@@ -4,7 +4,6 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
-const { checkBandPhasenBF } = require("./koerper-seele.cjs");
 
 // Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
 // Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
@@ -24,7 +23,8 @@ async function checkRing2Dsl(ctx) {
             depthBudgetEnforced: false,
             delayScheduled: false,
         };
-        if (!r || !r.state || typeof r.dslRun !== "function") return out;
+        if (!r ||
+            !r.state) return out;
         const m = r.state.worldMeta || {};
         out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
@@ -189,7 +189,7 @@ async function checkBandV1723Harmony(ctx) {
         r.state.skyTintStrength = 0;
         r.dslRun(["skybox_color", "#d4a3ff"], { source: "test" });
         out.skyTintSet = !!r.state.skyTint && r.state.skyTintTarget > 0;
-        if (typeof r._dayNightApplySkybox === "function") {
+        {
             const t0 = r.state.skyTintTarget;
             const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
             for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
@@ -203,7 +203,7 @@ async function checkBandV1723Harmony(ctx) {
         // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
-        if (typeof r._dayNightApplySkybox === "function") {
+        {
             r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
             r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
             const beforeHex = r.state.skyTint.getHex();
@@ -1307,7 +1307,6 @@ async function checkBandV1740LlmRules(ctx) {
         const llmRow = host.querySelector(".ability-row.source-llm");
         out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
 
-
         // restore
         r.state.worldRules = savedRules;
         r.state.weather = savedWeather;
@@ -1550,7 +1549,6 @@ async function checkBandV1743RuleFitness(ctx) {
         ];
         r._evictWorldRule(rr2);
         out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
-
 
         // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
         r.state.worldRules = [];
@@ -2165,7 +2163,6 @@ async function checkBandG8R2SovereignWall(ctx) {
             SA.includes("sign_manifest") &&
             SA.includes("change_identity") &&
             SA.includes("grant_capability");
-        out.helpers = typeof r._isSovereignAction === "function" && typeof r._sovereignGesture === "function";
         // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
         // NON_BROADCASTABLE_OPS, oder im Nexus-Auto-Pool (dslComposeAtomic).
         const effects = r.dslEffects;
@@ -2208,7 +2205,7 @@ async function checkBandG8R2SovereignWall(ctx) {
         check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen && res.helpers);
+    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen);
     check(
         "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
         res.notDslOp && res.notBroadcast && res.notComposed

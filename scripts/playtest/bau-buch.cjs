@@ -827,7 +827,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         delete r.state.blueprints["_v1785_clone"];
         // (#1) removePartOp — die Op rückgängig (Mechanik + Rolle re-emergiert)
         const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer"); // keine Stamina-Kosten
+        r.setGameMode("schöpfer"); // keine Stamina-Kosten
         const savedTools = Array.isArray(r.state.player.tools) ? r.state.player.tools.slice() : [];
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         delete r.state.blueprints["_v1785_undo"];
@@ -864,7 +864,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         delete r.state.blueprints["_t_v1785_spitz"];
         delete r.state.blueprints["_v1785_undo"];
         r.state.player.tools = savedTools;
-        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        r.setGameMode(prevMode);
         return out;
     });
     check(
@@ -930,7 +930,7 @@ async function checkBandV1787UndoRedo(ctx) {
         out.newEditShape = r.state.blueprints["_ur"].parts[1].shape; // sphere, nicht cone
         out.redoCleared = r.canRedoBlueprintEdit("_ur") === false;
         // eine Op anwenden + undo (der opChain-Akt ist auch umkehrbar)
-        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        r.setGameMode("schöpfer");
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.addPartToBlueprint("_ur", { shape: "box", material: "eisen" });
         const idx = parts() - 1;
@@ -943,7 +943,7 @@ async function checkBandV1787UndoRedo(ctx) {
         // Built-in lehnt ab (unveränderlich → keine Geschichte) — lebendes builtIn: Brustpanzer
         out.builtinReject = r.undoBlueprintEdit("ruestung_brustpanzer").ok === false;
         // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
-        const snap = typeof r.buildStateSnapshot === "function" ? r.buildStateSnapshot() : {};
+        const snap = r.buildStateSnapshot();
         out.notPersisted = snap.blueprintEditHistory === undefined;
         delete r.state.blueprints["_ur"];
         if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
@@ -1063,7 +1063,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 4 Phase 1/2/3 — Materialien + Helix + Werkzeuge).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave4(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
@@ -1151,7 +1151,7 @@ async function checkBandWave4(ctx) {
         delete r.state.materials["kupfer"];
         delete r.state.materials["schimmer"];
         delete r.state.blueprints["legacy-test"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -1303,7 +1303,7 @@ async function checkBandWave4(ctx) {
 
         // Aufräumen
         delete r.state.blueprints["test-quarz-orb"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -1519,7 +1519,7 @@ async function checkBandWave4(ctx) {
         delete r.state.blueprints["raw-orb"];
         delete r.state.blueprints["polished-orb"];
         delete r.state.blueprints["mage-pyramid"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -1572,7 +1572,7 @@ async function checkBandWave4(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 5 B/B P2/A/C + Reflexions-Bugfixes).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWave5(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 5 B — räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
@@ -1684,27 +1684,6 @@ async function checkBandWave5(ctx) {
         const labelsBottomPyr = r._classifyPartPosition(noTipBp.parts[1], r._compoundBoundingBox(noTipBp));
         out.bottomNoTipBoost = !labelsBottomPyr.has("at_top");
 
-        // Kontakt-Transfer: Kupfer-Helix berührt Stein-Block →
-        // Stein bekommt Strom über Kontakt.
-        // define_material kupfer mit hohem Strom
-        r.defineMaterial("kupfer-test", 0xb87333, { stromleitung: 0.95 });
-        const contactBp = {
-            parts: [
-                // Stein hat stromleitung 0.05, helix×kupfer hat 3 × 0.95 = 2.85
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "helix",
-                    material: "kupfer-test",
-                    position: { x: 0.9, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 3 },
-                },
-            ],
-        };
         // Kontakt-Transfer (Stein-Slot ← 0.6 × Helix-Kupfer 2.85 = 1.71) ist im MAX-Aggregat unsichtbar
         // (MAX bleibt 2.85) → hier nur at_outside: in einer Dreier-Reihe tragen die äußeren Parts
         // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.
@@ -1735,26 +1714,6 @@ async function checkBandWave5(ctx) {
             r._classifyPartPosition(outsideBp.parts[0], outsideBB).has("at_outside") &&
             r._classifyPartPosition(outsideBp.parts[2], outsideBB).has("at_outside") &&
             !r._classifyPartPosition(outsideBp.parts[1], outsideBB).has("at_outside");
-        // Direkter Transfer-Test: zwei Materialien, beide
-        // mittelmäßig in Strom, eines höher.
-        const transferBp = {
-            parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "kupfer-test",
-                    position: { x: 0.9, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-            ],
-        };
-        // Holz×cylinder 0.15 wird per Kontakt auf 2.85 × 0.6 = 1.71 gehoben, das MAX-Aggregat bleibt 2.85 —
-        // ohne Slot-Einblick nicht messbar; der Transfer wird darum nicht hier, sondern über die UI geprüft.
 
         // UI: räumliche Reihe erscheint bei pointed-am-Rand
         r.state.blueprints["wave5b-test"] = {
@@ -1827,12 +1786,11 @@ async function checkBandWave5(ctx) {
         out.tipMagicExceedsBottom = tipMagic > bottomMagic + 0.1;
 
         // Aufräumen
-        delete r.state.materials["kupfer-test"];
         delete r.state.blueprints["wave5b-test"];
         delete r.state.blueprints["wave5b-atomar"];
         delete r.state.blueprints["wave5b-tip-polished"];
         delete r.state.blueprints["wave5b-bottom-polished"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -2244,17 +2202,15 @@ async function checkBandWave5(ctx) {
         r.selectBlueprintForEdit("w5a-test");
         r._renderWorkshopDOM();
         out.uiConnectMode = !!document.querySelector('#workshop-mode-bar [data-workshop-mode="connect"]');
-        if (typeof r._workshopOpenConnectPopover === "function") {
-            try {
-                r._workshopOpenConnectPopover(0, 1);
-            } catch (e) {
-                void e;
-            }
+        try {
+            r._workshopOpenConnectPopover(0, 1);
+        } catch (e) {
+            void e;
         }
         const connOverlay = document.getElementById("workshop-connect-overlay");
         out.uiConnectPopover = !!connOverlay;
         out.uiConnectTypeButtons = connOverlay ? connOverlay.querySelectorAll("button").length > 1 : false;
-        if (typeof r._workshopCloseConnectPopover === "function") r._workshopCloseConnectPopover();
+        r._workshopCloseConnectPopover();
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
         r.state.blueprints["w5a-weak"] = {
@@ -2290,7 +2246,7 @@ async function checkBandWave5(ctx) {
         delete r.state.blueprints["w5a-test"];
         delete r.state.blueprints["w5a-soft"];
         delete r.state.blueprints["w5a-weak"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -2471,12 +2427,6 @@ async function checkBandWave5(ctx) {
         );
         out.snapshotHasTool = (snap.tools || []).some((t) => t.name === "w5c-lathe" && t.precisionCap === 0.97);
 
-        // Die „Als Werkzeug registrieren“-UI ist entfernt (Prozesse kommen aus platzierten Werkstätten);
-        // die Daten-Methoden bleiben (registerBlueprintAsTool → snapshotHasTool), ein besessenes
-        // registriertes Werkzeug erscheint als ziehbare Karte der WERKZEUGE-Palette.
-        out.toolMethodSurvives =
-            typeof r.registerBlueprintAsTool === "function" && typeof r.setBlueprintToolMeta === "function";
-
         // Cleanup
         delete r.state.tools["w5c-lathe"];
         delete r.state.tools["w5c-bad-lathe"];
@@ -2490,7 +2440,7 @@ async function checkBandWave5(ctx) {
         delete r.state.blueprints["w5c-target2"];
         delete r.state.blueprints["w5c-not-a-tool"];
         delete r.state.blueprints["w5c-dsl-test"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -2525,10 +2475,6 @@ async function checkBandWave5(ctx) {
         check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
         check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
         check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
-        check(
-            "Welle 5 C (V17.91): die Werkzeug-Registrierungs-Methoden überleben (UI von V17.88 abgelöst)",
-            wave5cResults.toolMethodSurvives
-        );
     }
 
     // ### Bugfixes nach Welle-5-Reflexion ###
@@ -2679,7 +2625,7 @@ async function checkBandWave5(ctx) {
         delete r.state.blueprints["bug2-noisy-tool"];
         delete r.state.blueprints["bug1-test"];
         delete r.state.blueprints["bug1-shift"];
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         return out;
     });
 
@@ -2708,7 +2654,7 @@ async function checkBandWave5(ctx) {
 // V9.52-e Sub-Welle e — Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves9And10a(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
@@ -2734,12 +2680,6 @@ async function checkBandWaves9And10a(ctx) {
             out.forgingToolTags = Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
             out.forgingArmorTags = Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
             out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
-
-            // Methoden existieren
-            out.hasComputeDomain = typeof r.computeBlueprintDomain === "function";
-            out.hasComputeRole = typeof r.computeBlueprintRole === "function";
-            out.hasComputeForgingRole = typeof r._computeForgingRole === "function";
-            out.hasRefresh = typeof r._refreshBlueprintRoleEmergent === "function";
 
             // Default-Tools sind alle generic (domain=null)
             const tools = r.state.tools || {};
@@ -2882,13 +2822,6 @@ async function checkBandWaves9And10a(ctx) {
         );
         check("Welle 9a: DEFAULT_BLUEPRINT_ROLE === 'architecture'", wave9aResults.defaultRole);
         check(
-            "Welle 9a: alle 4 Methoden existieren (computeBlueprintDomain/Role + _computeForgingRole + _refreshBlueprintRoleEmergent)",
-            wave9aResults.hasComputeDomain &&
-                wave9aResults.hasComputeRole &&
-                wave9aResults.hasComputeForgingRole &&
-                wave9aResults.hasRefresh
-        );
-        check(
             "Welle 9a/V17.78: hände ist die domain-neutrale Baseline (domain=null) — die generische Leiter ist gefallen",
             wave9aResults.originalToolsGeneric
         );
@@ -3019,7 +2952,7 @@ async function checkBandWaves9And10a(ctx) {
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            if (r) r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -3075,7 +3008,6 @@ async function checkBandWaves9And10a(ctx) {
     const wave9cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
-        const AR = r.constructor;
         const out = {};
         try {
             const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
@@ -3252,7 +3184,7 @@ async function checkBandWaves9And10a(ctx) {
             if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            if (r) r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -3523,7 +3455,6 @@ async function checkBandM2RollenWahrheit(ctx) {
         out.klonIntent = !!kk && kk.role === "workshop-station" && kk.roleManual === true;
         delete blu.__m2_kolbenklon;
 
-
         // (8) kein Regress an den Substanz-Zwillingen: Trank bleibt Trank (klein +
         // lebendig), die Werkstatt-Saaten tragen ihre Designation, Avatar bleibt Seele.
         out.keinRegress =
@@ -3738,8 +3669,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 "baum_erle",
             ].every((k) => tp[k] && !("flare" in tp[k]));
         }
-
-
 
         // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ───
         // genVersion temporär 7, dann (Seed, Spezies)-Kombis probieren, bis ein NICHT-moveable Bauplan

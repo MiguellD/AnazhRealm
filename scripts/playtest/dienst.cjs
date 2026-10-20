@@ -15,7 +15,6 @@ async function checkBandW3UiPuls(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) das Organ + die Registry existieren.
-        out.organExists = typeof r._uiDirty === "function" && typeof r._uiRoomRegistry === "function";
         const reg = r._uiRoomRegistry();
         out.registryRooms = !!reg && !!reg.ich && !!reg.hof;
         // (3) DEDUP: zwei dirty-Rufe in einem Frame → EIN Puls (Set dedupt).
@@ -51,8 +50,8 @@ async function checkBandW3UiPuls(ctx) {
     // `_uiDirty("hof")`, s. hofPfade am Ruf); die Hof-UI selbst rendert ihre Liste weiter direkt.
     const srcOk = stammLib.fehlt(null, /if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/);
     check(
-        "W3 UI-Puls: das EINE Organ (_uiDirty + _uiRoomRegistry mit ich/hof) existiert",
-        res.organExists && res.registryRooms
+        "W3 UI-Puls: das EINE Organ trägt die Räume ich/hof",
+        res.registryRooms
     );
     check(
         "W3 UI-Puls: DEDUP — drei dirty-Rufe in einem Frame → EIN Puls, EIN Raum (Set dedupt; die Boost-Doppel-Krankheit strukturell tot)",

@@ -111,7 +111,7 @@ async function checkBandV1749Adventure(ctx) {
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
@@ -120,7 +120,9 @@ async function checkBandVoxelTerrainCore(ctx) {
     // (Test-Isolation).
     await page.evaluate(() => {
         const r = window.anazhRealm;
-        if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
+        if (r &&
+            r.state &&
+            r.state.voxelChunks) {
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
@@ -128,11 +130,8 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasDensityAt = typeof r._terrainDensityAt === "function";
-        out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
-        out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
 
-        if (out.hasDensityAt) {
+        {
             // Das Feld ist genuin 3D: bei festem (x,z) fällt die Dichte mit der Höhe — über mehrere
             // Stichproben gemittelt, damit das 3D-Noise-Band die Monotonie nicht lokal kippt.
             let lowerSum = 0;
@@ -210,7 +209,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.caveFloorSolid = p4FloorSolid;
         }
 
-        if (out.hasChunkGeometry) {
+        {
             // V14.7: oy straddelt die ECHTE Oberfläche (vorher fix -24; die V14.7-
             // Massive heben surf darüber → ein Tiefband läge ganz unter Grund → 0 Verts).
             const geom = r._voxelChunkGeometry(0, Math.round(r._terrainMacroSurfaceY(18, 18)) - 20, 0, 20, 20, 20, 1.8);
@@ -308,7 +307,7 @@ async function checkBandVoxelTerrainCore(ctx) {
 
         // Die Kollision ist feld-nativ (Dichtefeld), es gibt kein per-Chunk-Kollisions-Artefakt —
         // geprüft wird nur der Mesh-in-Szene-Lebenszyklus von _spawnVoxelTestChunk.
-        if (out.hasSpawnTest && r.state.scene) {
+        if (r.state.scene) {
             const before = r.state.scene.children.length;
             const m1 = r._spawnVoxelTestChunk();
             const afterOne = r.state.scene.children.length;
@@ -328,9 +327,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     });
 
     if (voxelP1Results && !voxelP1Results.error) {
-        check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
-        check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
-        check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
         check("Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)", voxelP1Results.densityIs3D);
         check("Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)", voxelP1Results.densityCanCave);
         check(
@@ -393,15 +389,10 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
-        out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
-        out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
-        out.hasConfig = typeof r._voxelChunkConfig === "function";
-        out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
         // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
         // (state.voxelTerrainActive default true).
 
-        if (out.hasTick) {
+        {
             // Der Game-Loop läuft headless gedrosselt (~1 Hz im Hintergrund-Tab) → den Voxel-Ring hier
             // explizit synchron bauen; im Spiel-Pfad läuft alles asynchron.
             const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
@@ -409,20 +400,18 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Worker temporär „nicht synced“: `_acquireVoxelChunkBuild` baut dann synchron (Stage-3-Fallback).
             const _wgSynced = r.state.voxelWorkerWorldgenSynced;
             r.state.voxelWorkerWorldgenSynced = false;
-            if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+            r._drainDirtyVoxelChunks();
             for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
             r.state.voxelWorkerWorldgenSynced = _wgSynced;
             // Gras ist deferred (enqueue im Finalize, Build ≤1/Frame im Loop): das Streaming enqueued nur,
             // die Test-Naht drainet sofort — sonst sieht der Grass-Check leere Chunks.
-            if (typeof r._drainPendingGrass === "function") r._drainPendingGrass();
+            r._drainPendingGrass();
             out.activated = r.state.voxelTerrainActive === true;
             out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
             // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
             // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
 
             // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
-            out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
-            out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
             let grassEntries = 0;
             let grassBlades = 0;
             if (r.state.voxelChunkGrass) {
@@ -449,9 +438,6 @@ async function checkBandVoxelTerrainCore(ctx) {
                 r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
                 r._terrainDensityAt(12, sy + 0.6, -8) <= 0;
 
-            // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
-            out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
-            out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
             // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
             const ringBefore = r.state.chunkRingRadius;
             const activeBefore = r.state._activeRingRadius;
@@ -638,19 +624,11 @@ async function checkBandVoxelTerrainCore(ctx) {
 
     if (voxelP2bResults && !voxelP2bResults.error) {
         check(
-            "Voxel P2b: alle Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/_voxelChunkConfig)",
-            voxelP2bResults.hasEnsure &&
-                voxelP2bResults.hasTick &&
-                voxelP2bResults.hasPrune &&
-                voxelP2bResults.hasConfig
-        );
-        check(
             "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
             voxelP2bResults.activated && voxelP2bResults.ringFilled
         );
         check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
         check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
-        check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
         check(
             "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
             voxelP2bResults.voxelHasFieldColors
@@ -707,10 +685,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             );
         }
         check(
-            "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
-            voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
-        );
-        check(
             "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
             voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
         );
@@ -718,10 +692,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check(
             "Voxel V9.22 (V18.492): die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
             voxelP2bResults.voxelGrassIsSurface
-        );
-        check(
-            "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
-            voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
         );
         check(
             "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
@@ -840,11 +810,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // V9.28: updateCreatures ist voxel-aware. Spawne eine
         // Kreatur an bekannter Position, lasse einen Frame laufen,
         // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
-        if (
-            typeof r.spawnCreatureAt === "function" &&
-            typeof r._voxelSurfaceY === "function" &&
-            typeof r.updateCreatures === "function"
-        ) {
+        {
             const testX = 5;
             const testZ = 5;
             const voxelY = r._voxelSurfaceY(testX, testZ);
@@ -1456,9 +1422,7 @@ async function checkBandV18132FerneSeen(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.machinery =
-            typeof r._hydroFor === "function" &&
-            typeof window.__gelaendeCore.kachelSchluessel === "function" &&
-            typeof r._ensureHydroTilesAround === "function";
+            typeof window.__gelaendeCore.kachelSchluessel === "function";
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
@@ -1703,8 +1667,6 @@ async function checkBandGammaGenese(ctx) {
             r.state.worldMeta.genVersion = 2;
             // (1) Struktur: Funktionen da, Konstanten frozen.
             out.struct =
-                typeof r._feuchteAt === "function" &&
-                typeof r._hydroDistAt === "function" &&
                 Object.isFrozen(A.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
             // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
@@ -1856,9 +1818,7 @@ async function checkBandGammaGenese(ctx) {
         const out = {};
         out.struct =
             typeof G.grossform === "function" &&
-            Array.isArray(G.LANDFORM_REGLER) &&
-            typeof r._slopeAt === "function" &&
-            typeof r._rockExposureAt === "function";
+            Array.isArray(G.LANDFORM_REGLER);
         out.ankerTot =
             typeof r._macroAnker !== "function" &&
             typeof G.ankerAusSaat !== "function" &&
@@ -2042,7 +2002,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         const A = r.constructor;
         const out = {};
 
-        out.helperExists = typeof r._pathFieldAt === "function";
         // (A) Logik: fern jeden Flusses → kein Pfad
         out.farIsZero = r._pathFieldAt(99999, 99999, 10) === 0;
         // gebunden [0,1]
@@ -2095,7 +2054,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S2-Pfad (A1) _pathFieldAt Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check(
@@ -2791,7 +2749,6 @@ async function checkBandBewegungUnterLast(ctx) {
             s = r.state;
         const mesh = s.playerMesh;
         if (!mesh || !s.playerVel) return { error: "kein Spieler" };
-        if (typeof r._loopFixedStep !== "function") return { error: "Fixed-Timestep fehlt" };
         const span = r._voxelChunkConfig(0).span;
         const tick = (t) => {
             try {

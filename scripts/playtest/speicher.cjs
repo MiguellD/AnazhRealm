@@ -3,7 +3,6 @@
 // 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { spawn } = require("child_process");
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Regel-Persistenz: worldRules überleben den Reload (buildStateSnapshot/loadState: definierende
@@ -130,7 +129,7 @@ async function checkBandV1738RulePersistence(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 8 — Multi-Welt-Verwaltung ###
@@ -650,7 +649,7 @@ async function checkBandRing8(ctx) {
 // V9.52-b Sub-Welle b — Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
@@ -1200,7 +1199,7 @@ async function checkBandRing9to10(ctx) {
         delete r.state.tools["fremder-hammer-import"];
         // Workshop-DOM neu rendern, damit nachfolgende Tests
         // (Ring 6.6) keine Geister-Einträge sehen.
-        if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+        r._renderWorkshopDOM();
         const keepId = r.state.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== keepId) r.deleteWorld(e.worldId);
@@ -1238,7 +1237,7 @@ async function checkBandRing9to10(ctx) {
 // V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+    const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
@@ -1246,10 +1245,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.methods =
-            typeof r._buildTranslatorPrompt === "function" &&
-            typeof r._parseManifestResponse === "function" &&
-            typeof r.translateWorldManifest === "function" &&
-            typeof r.acceptTranslatedManifest === "function" &&
             typeof r.translatorInitDOM === "function";
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
@@ -1435,10 +1430,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.methods =
-            typeof r._sanitizeWorldScene === "function" &&
-            typeof r._buildSceneTranslatorPrompt === "function" &&
-            typeof r.translateWorldScene === "function" &&
-            typeof r.buildTranslatedWorld === "function" &&
             typeof r._runWorldBuild === "function";
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
@@ -1832,8 +1823,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.methods =
-            typeof r.vendorWorldBundle === "function" &&
-            typeof r._vendorSanitizeBundle === "function" &&
             typeof r._vendorPostBundle === "function" &&
             typeof r._runVendorDock === "function" &&
             typeof r.vendorInitDOM === "function";
@@ -2014,10 +2003,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.methods =
-            typeof r.vendorWorldFromRepo === "function" &&
             typeof r._vendorPostRepo === "function" &&
             typeof r._vendorPostJson === "function" &&
-            typeof r._vendorRegisterWorld === "function" &&
             typeof r._runVendorRepoDock === "function";
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
@@ -2407,8 +2394,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
                 A.R5_STRUCTURE_TEXTURE.microBoost > 0 &&
                 A.R5_STRUCTURE_TEXTURE.microBoost < 5;
         }
-
-
 
         return out;
     });
