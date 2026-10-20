@@ -6,41 +6,25 @@
 // `obtainPortalForWorld` → `_buildPortalOverlay`, die übersetzte Welt über `acceptTranslatedManifest` +
 // `buildTranslatedWorld` mit gestubbtem LLM). Gemessen wird nur, was die Heimat KONSUMIERT, und was die Welt sichtbar
 // tut (Journal der Heimat, Zustand der Welt-UI):
-//   K1 ready      die Heimat empfängt die ready-Meldung der Welt (der Handshake schließt); das SOLL des Manifests
-//                 steht in WELTEN (`manifest: true`), nie in der Existenz der Datei: eine Soll-Welt liefert ihr
-//                 worlds/<id>/manifest.json (Form: schemaVersion 1.0 · id · label · dsl) und die Heimat steht danach auf
-//                 Stufe „nativ" mit dem Label und jedem Wort (die Welt las ihr Manifest und meldete es im ready — Konsum
-//                 statt Quelltext-Zitat); fehlt es ihr, ist K1 rot beim Namen, ebenso ein Manifest ohne Soll-Zeile
+//   K1 ready      die Heimat empfängt die ready der Welt (der Handshake schließt); eine Soll-Welt (`manifest: true` in
+//                 WELTEN) steht danach auf Stufe „nativ" mit Label und jedem Wort ihres Manifests — fehlt es, ist K1 rot
+//                 beim Namen, ebenso ein Manifest ohne Soll-Zeile
 //   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready),
-//                 und während der Reise einer SCHLEUSE schickt sie kein enter mehr (kein Urteil der Probe wartet eine
-//                 Uhr ab: eine Marke läuft hinter allem Geschickten durch die Schlange der Welt und zurück, in EINER
-//                 CDP-Rundreise mit der Tat davor und der Lesung danach — `schleuse`)
+//                 und während der Reise einer SCHLEUSE (`schleuse`) kein enter mehr
 //   K3 Quelle     eine FREMDE Seite (Geschwister-Frame der Heimat) schickt der Welt dieselbe Nachricht — die Welt
 //                 nimmt sie nicht an (event.source !== parent), nichts wirkt
 //   K4 wirkt      die Heimat schickt die chain-Form des Worts über ihren echten Weiterleiter (`_portalRouteDsl`): die
 //                 Welt wirkt sichtbar (Journal-Ereignis bzw. Zustand der UI) — bei begegnung der Ko-Präsenz-Eintritt
 //   K5 Esc        Esc in der Welt bringt den Spieler heim (die Heimat schließt das Overlay)
 //   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler, und die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung)
-//   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (W13 V2, der enter-Payload der Heimat): skeleton die
-//                 Seele, das eigene Material als TEXT (Markup im Namen bleibt Text) mit gesäuberter Farbe, das eigene
-//                 Werkzeug und den Vibe-Pass; fluid und terrain den Vibe-Pass am Namen des Reisenden
+//   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (der enter-Payload der Heimat, `MITGEBRACHT`)
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
-//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm? (Synthese §0.1: 7 Studios lasen op[0] je
-//                  Element — aus "gt" wurde "g"; seit der Studio-Hülle K41 liest EIN Adapter das Programm ganz: 0/7)
-//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready (13 Brücken-Kopien, zwei Dialekte — seit der
-//                  Hülle EINE Brücke für 10 Welten, die ready einmal; 0/7)
+//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm?
+//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready
 // Eine Welt, die neu stumm oder neu Echo ist, ist rot; eine geheilte ebenfalls, bis ihre Zeile im selben Commit fällt.
 //
-//   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung,
-//                                                        die Heimat beantwortet JEDE ready und die Brücke der Hülle
-//                                                        spricht wieder den Echo-Dialekt, die Hülle liest op[0] je
-//                                                        Element, skeleton und terrain ohne Manifest — der Server
-//                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
-//                                                        garage trägt eins ohne Soll-Zeile und zerstört beim Neubau das Sprite-Quad) → jede Wand wird rot und
-//                                                        nennt den Täter; die TRÄGE klang (3 s Bau zwischen ihrer
-//                                                        ready und den enter) hält die Ratsche readyEcho — ein
-//                                                        Uhr-Fenster las an der fachwerk „ready 1 · enter 3"
+//   node scripts/diag-portal-konformanz.cjs --selftest     die alten Defekte eingespielt (`selbsttest`) → jede Wand rot beim Täter
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
@@ -48,7 +32,7 @@ const { statikServer, starteBrowser, halteBis } = require("./lib/welt-boot.cjs")
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
+const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -77,7 +61,7 @@ const WELTEN = [
     { id: "begegnung", wort: null },
     { id: "translated", wort: "sturm" },
 ];
-// Das Wort „probefahrt" der Garage (aus smoke-labs übernommen, das mit der Form [[w]] fuhr, die die Heimat nie sendet):
+// Das Wort „probefahrt" der Garage:
 // die Heimat schickt es (chain-Form, der echte Weiterleiter), die Garage schaltet in den Fahr-Modus (HUD sichtbar), W
 // beschleunigt — der Tacho steigt (carPhys + FAHR aus vehicle-core treiben das Labor) —, „werkstatt" schaltet zurück.
 async function probefahrt(page, fr) {
@@ -104,7 +88,7 @@ async function probefahrt(page, fr) {
     return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
 }
 
-// Die Strom-Welt zeichnet (statt der Regex-Probe „densityTexture/addSplat/uBackdrop stehen im Quelltext"): ihre Engine
+// Die Strom-Welt zeichnet: ihre Engine
 // meldet keinen Rückfall (WebGL2 + HalfFloat-Ziele stehen), und das Bild im Portal bewegt sich (zwei Aufnahmen des
 // Overlay-iframe unterscheiden sich).
 async function stromZeichnet(page, fr) {
@@ -121,9 +105,8 @@ async function stromZeichnet(page, fr) {
     return { ok: !rueckfall && bewegt, notiz: `Strom zeichnet: ${rueckfall ? "Rückfall — " + hud : "Engine steht"}, Bild ${bewegt ? "bewegt" : "steht"}` };
 }
 
-// K7 — WAS DER REISENDE MITBRINGT (statt der Regex-Proben „skeleton.js hat renderBrought / textContent / 0xffffff",
-// „index.html trägt das Mitgebracht-Panel", „fluid + phytogenesis zeigen avatar.fingerprint"): nach dem Boot legt die
-// Probe ein eigenes Material (Name mit Markup, Farbe über 24 Bit) und ein eigenes Werkzeug in den Zustand der Heimat;
+// K7 — WAS DER REISENDE MITBRINGT: nach dem Boot legt die Probe ein eigenes Material (Name mit Markup, Farbe über
+// 24 Bit) und ein eigenes Werkzeug in den Zustand der Heimat;
 // der enter-Payload (`_portalEnterPayload`) trägt sie mit dem Vibe-Pass in die Welt, die Welt-UI zeigt sie.
 const MITGEBRACHT = { material: "<b>Konformanz-Glut</b>", farbe: 0x1fabcdef, randSoll: "rgb(171, 205, 239)", werkzeug: "Konformanz-Feile" };
 
@@ -211,15 +194,8 @@ const TAETER = {
     ],
     // das Mitgebrachte als Markup statt als Text → K7 rot
     "worlds/skeleton/skeleton.js": [['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");']],
-    // klang TRÄGE wie die fachwerk auf dem CI-Runner (V18.540, Lauf 38138358932: „fachwerk ready 1 · enter 3", die
-    // Ratsche meldete „readyEcho geheilt"): die Brücke meldet ready, der Boot läuft noch 0,6 s weiter und stellt dann
-    // 3 s Bau in die Schlange (sechs Aufgaben zu 0,5 s) — VOR die enter der Heimat; ein Bild hält das load der Welt 5 s
-    // auf. Die Probe sah die ready, ihr Uhr-Fenster endete im Bau, und ihr Zähler lief zwischen zwei Bau-Aufgaben, vor
-    // der Antwort. Das Echo ist eine Eigenschaft der Welt, kein Urteil der Uhr. (Eingespielt an der LEICHTEN Echo-Welt
-    // klang: die Trägheit ist der Täter, nicht die Welt — die fachwerk kostete den Selbsttest auf dem Runner 54 s, Lauf
-    // 38146486287.)
-    // (Die Brücke der Hülle meldet ihre ready synchron im Aufruf; danach läuft der Boot 0,6 s weiter und stellt den Bau in die
-    // Schlange — das Echo spricht die Brücken-Täterin oben.)
+    // klang TRÄGE wie die fachwerk auf dem Läufer: nach ihrer ready stellt der Boot 3 s Bau in die Schlange (sechs Aufgaben
+    // zu 0,5 s), VOR die enter der Heimat — das Echo ist eine Eigenschaft der Welt, kein Urteil der Uhr
     "worlds/klang/klang.js": [
         [
             'AnazhHuelle.bruecke({\n    welt: "klang",',
@@ -229,8 +205,7 @@ const TAETER = {
     // die garage vor dem Schnitt: ihr Neubau zerstört das EINE Sprite-Quad von three (r184 behält den zerstörten Puffer) → K6 rot
     "worlds/garage/garage.js": [["if(o.geometry&&!o.isSprite)o.geometry.dispose();", "if(o.geometry)o.geometry.dispose();"]],
 };
-// Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
-// Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
+// Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 → K1 rot, die Welt beim Namen.
 const TAETER_WEG = ["worlds/skeleton/manifest.json", "worlds/terrain/manifest.json"];
 // Ein Manifest ohne Soll-Zeile: die garage (kein `manifest` in WELTEN) liefert eins → K1 rot.
 const TAETER_UNTER = { "worlds/garage/manifest.json": { schemaVersion: "1.0", id: "garage", label: "Garage", dsl: ["supersport"] } };
@@ -366,14 +341,11 @@ async function zaehlerAus(page) {
 // (HTML: posted-message task source, FIFO). Die Probe schickt der Welt eine Marke auf dem Weg, den sie prüft (Heimat →
 // Welt bzw. Heimat → fremde Seite → Welt), die Welt reicht sie der Heimat zurück: kommt sie an, hat die Welt alles davor
 // Geschickte gelesen, und was sie dabei der Heimat antwortete, hat die Heimat vor der Marke gelesen — auf jedem Rechner
-// gleich, wie träge der Faden auch ist. (Das Uhr-Fenster von 1,5 s las auf dem Runner „fachwerk ready 1 · enter 3": der
-// Zähler stand in der Schlange vor den Antworten, die Ratsche meldete „readyEcho geheilt".) Die Frist ist der Deckel
-// gegen den Hänger, rot beim Namen, nie die Messung.
+// gleich, wie träge der Faden auch ist. Die Frist ist der Deckel gegen den Hänger, rot beim Namen, nie die Messung.
 // EINE CDP-Rundreise je Schleuse: die Tat, die Marke hin und zurück und die Lesung davor und danach laufen in EINEM
 // page.evaluate der Heimat; was nur die Welt sieht (ihre UI, ihr Esc — das Portal ist ein sandboxed null-origin-iframe),
-// tut ihr Rück-Hörer beim Lesen der Marke, eingehängt einmal je Welt. Jede CDP-Rundreise wartet hinter dem Bild, das die
-// Welt auf demselben Faden rastert: auf dem Runner (swiftshader) trugen sechs je Schleuse den Portal-Schritt von 5:47 auf
-// 14:06 min (Lauf 38143068586); die Zeile jeder Welt nennt ihre Zeit und ihre Schleusen.
+// tut ihr Rück-Hörer beim Lesen der Marke, eingehängt einmal je Welt (jede Rundreise wartet hinter dem Bild, das die
+// Welt auf demselben Faden rastert); die Zeile jeder Welt nennt ihre Zeit und ihre Schleusen.
 const SCHLEUSE_FRIST_MS = 60000;
 let schleuseNr = 0;
 let schleusenZeit = { n: 0, ms: 0 };
@@ -650,8 +622,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         : { type: "peer-join", peerId: "fremd-konformanz", name: "Fremder" };
     // Der Vorher-Zustand der UI-Wände (K3, Einzelwort) wird VOR der Tat gelesen (je EINE CDP-Rundreise): der Rück-Hörer
     // steht in der Hörer-Reihe der Welt HINTER ihrer Brücke (er kommt nach dem load) — las er „vor" beim Eintreffen der
-    // Nachricht, hatte die Brücke schon gewirkt. An der Studio-Hülle gesehen (K41): vor = nach = „Supersport", das
-    // wirkende Einzelwort galt als stumm, und K3 war am UI-Pfad blind (eine fremde chain-Form, die wirkt, las vor = nach).
+    // Nachricht, hatte die Brücke schon gewirkt.
     const vorK3 = await zustand(page, welt);
     const k3 = await schleuse(page, "fremd", welt, { fremd });
     aus.k.K3 = !wirkt(welt, vorK3, k3.nach) && k3.nach.journal === k3.vor.journal;
@@ -684,9 +655,8 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
-    // K6 die GPU (`gpu-fehler`): nach einem Bild meldet jedes Gerät der Welt seine Arbeit — und mit ihr jede Prüfung, die einen Befehl verwarf;
-    // ein Gerät oder Bild, das 30 s nicht kommt, fällt mit seinem Namen (nie die äußere Frist der ganzen Linse)
-    const gpu = fr ? await fr.evaluate(async () => { const F = window.__gpuFehler; if (!F) return []; const frist = (p, wort) => Promise.race([p.then(() => null), new Promise((r) => setTimeout(r, 30000, wort))]); const bild = () => frist(new Promise((r) => requestAnimationFrame(r)), "die Welt zeichnet 30 s kein Bild"); const steht = (await bild()) || (await frist(Promise.all(F.geraete.map((g) => g.queue.onSubmittedWorkDone())), "ein Gerät gibt seine Arbeit 30 s nicht ab (onSubmittedWorkDone)")) || (await bild()); return F.device.map((e) => e.msg.split("\n")[0]).concat(steht ? [steht] : []); }) : []; // prettier-ignore
+    // K6 die GPU: nach einem Bild meldet jedes Gerät der Welt seine Arbeit und mit ihr jede Prüfung, die einen Befehl verwarf
+    const gpu = fr ? await GPU_ABGABE(fr) : [];
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
     const offen = fr ? (await schleuse(page, "esc", null)).offen : true;

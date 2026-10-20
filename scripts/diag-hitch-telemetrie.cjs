@@ -1,33 +1,15 @@
 // diag-hitch-telemetrie.cjs — DIE HITCH-LINSE (das-feld-zeichnet §5.1): beweist
 // KONSUM der vier Flugschreiber-Zähler (LongTasks · GC/Heap-Delta ·
-// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5). Band 7
-// (Welle K): DIE ERST-ZEICHNUNG — die erste Zeichnung eines neuen Stoffs in der
-// Welt-Szene baut seine Knoten im Pass, je Render-Aufruf höchstens einen (weitere nur
-// unter ERST_BAU_MS), und lässt seine Pipeline asynchron entstehen; kein Frame trägt
-// eine synchrone Pipeline der Welt (die Hänger-Klasse: 1,4–4,2 s Warten an der
-// Radeon, „GPU: Pipeline synchron (haupt tier:baer)"). Die Probe stellt drei neue
-// Stoffe vor die Kamera (Konsum: alle drei zeichnen), der Gegen-Lauf derselben Probe
-// auf dem Vendor-Weg MUSS rot sein (synchrone Pipeline, mehrere Bauten in einem
-// Aufruf). Die BUNDLE-BÜRGER: ein Bürger, der in einer Aufnahme nicht zeichnen
-// kann, steht ≤ 2 Frames nach seiner fertigen Pipeline (r184-Zustand) wieder in der
-// Aufnahme — beim Neubau gegen eine offene Pipeline und bei hängendem Fehler-Scope
-// (am Kopf 0febe3ef fehlten beide für immer); mit stummer Anmeldung MUSS er fehlen.
-// Die BEWEIS-AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs) wirft bei einer nie
-// bereiten Pipeline und nennt sie beim Namen, nie ein stilles Bild. Die ABSAGE
-// einer Pipeline (r184 verschluckt sie) meldet sich als ERROR mit dem Stoff-Namen
-// (am Kopf 7a41911b: still); auf WebGL2 meldet sich kein Bürger an.
-// Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
-// KEIN Null-Renderer): der Boot SELBST ist der Konsum-Beweis (die Erst-Zeichnung
-// baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
-// erzeugt LongTasks).
+// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5), und DIE ERST-ZEICHNUNG: kein Frame trägt eine
+// synchrone Pipeline der Welt, ein Bundle-Bürger steht nach seiner fertigen Pipeline wieder in der Aufnahme, Beweis-
+// Aufnahme und Absage nennen ihren Täter — jede Probe mit ihrem Gegen-Lauf, der rot sein MUSS (die Bänder unten). Ein
+// ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
 //
-//   node scripts/diag-hitch-telemetrie.cjs [--teil=1|2]
-//   DIE ZWEI TEILE (K61 CI-Diät): die Proben fuhren in EINER Welt hintereinander, Median 372 s (237–491) am Läufer — der
-//   längste GPU-Schritt der vollen Batterie. Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
+//   node scripts/diag-hitch-telemetrie.cjs --teil=1|2
+//   DIE ZWEI TEILE (je eine Welt, je eine CI-Gruppe): Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
 //   Probe mit ihrem Gegen-Lauf, den Neubau und den Bundle-Neubau; Teil 2 in einer eigenen Welt den Bundle-Gegen-Lauf ohne
 //   Anmeldung, den hängenden Fehler-Scope (er bleibt der letzte Bürger-Test: sein Stummel lässt jedes popErrorScope offen),
-//   die Beweis-Aufnahme, die Absage und die WebGL2-Weiche. Jedes Band urteilt in GENAU einem Teil (KEIN PAGE-ERROR je Welt);
-//   ohne --teil fahren beide Teile in einer Welt wie bisher. Die CI fährt die Teile als zwei Schritte in zwei Gruppen.
+//   die Beweis-Aufnahme, die Absage und die WebGL2-Weiche. Jedes Band urteilt in GENAU einem Teil (KEIN PAGE-ERROR je Welt).
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
@@ -43,10 +25,10 @@ const LAUFZEIT_MS = 15000;
 // 1–292 s je Pipeline), bevor die Wand den GPU-Prozess für hängend erklärt. HITCH_BAU_FRIST_S verkürzt sie für die Probe der
 // Wand selbst (die Summe einer Probe darf jede Frist übersteigen, solange jeder Bau sich erfüllt).
 const BAU_FRIST_MS = Number(process.env.HITCH_BAU_FRIST_S || 600) * 1000;
+const BUNDLE_FRAMES = 2;
 const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
-if (![0, 1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
-// trägt dieser Lauf den Teil t? (ohne --teil beide)
-const IN = (t) => !TEIL || TEIL === t;
+if (![1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
+const IN = (t) => TEIL === t;
 const server = statikServer();
 
 // DIE EINE PRÜF-FUNKTION für die Trace-Struktur — der echte Trace UND der
@@ -73,9 +55,8 @@ function pruefeTraceFelder(trace) {
 
 // DIE BAU-UHR (K25, vor dem ersten Skript der Seite): jeder Pipeline-Bau des Geräts (createRenderPipelineAsync ·
 // createComputePipelineAsync, am Prototyp — auch der Abgriff des Stamms `_erstAbsageWache` ruft ihn) steht im Flug, bis
-// sein Versprechen sich erfüllt oder absagt. Die Uhr der Wand ist dieser Bau, nie die Sekunde des Runners: auf dem CI-
-// Runner übersetzte swiftshader eine Pipeline in 1 s oder in über 120 s (Lauf 38375094658), die alten Fristen (Ruhe 60 s,
-// Sichtbarkeit 120 s) urteilten über das Tempo des Runners statt über die Welt.
+// sein Versprechen sich erfüllt oder absagt. Die Uhr der Wand ist dieser Bau, nie die Sekunde des Runners
+// (swiftshader übersetzt eine Pipeline in 1 s oder in über 120 s).
 function bauUhrInstall() {
     if (typeof GPUDevice === "undefined" || window.__bauUhr) return;
     const U = { imFlug: new Map(), angelegt: 0, gebaut: 0, abgesagt: 0, maxMs: 0, summeMs: 0 };
@@ -110,7 +91,7 @@ function bauUhrInstall() {
 // DIE ERST-ZEICHNUNGS-WAND (Seite): Haken und Proben unter `window.__erstWand`; jede Probe ist ein eigener, benannter
 // Aufruf aus Node. Keine Probe trägt eine Sekunden-Frist: jede wartet auf ihr EREIGNIS (`bisEreignis`) und gibt nur auf,
 // wenn die Erst-Zeichnung still steht — dann kann nichts mehr kommen.
-function erstWandInstall() {
+function erstWandInstall(BUNDLE_FRAMES) {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -163,7 +144,7 @@ function erstWandInstall() {
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
             // der Deckel DIESES Aufrufs, wie ihn der EINE Ort gesetzt hat (`E.deckel`: im Spiel ERST_BAU_MS, unter dem
-            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse (bis K60-3 las sie ERST_BAU_MS und fiel am Lade-Takt)
+            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse
             const E = r._erstZeichnung;
             const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
@@ -201,13 +182,11 @@ function erstWandInstall() {
     // DIE EREIGNIS-FRIST jeder Probe: Bilder schalten, bis `ziel()` gilt — oder bis die Erst-Zeichnung STILL steht:
     // STILL_BILDER Bilder hintereinander ohne einen Pipeline-Bau des Geräts im Flug (die Bau-Uhr), ohne neu angelegten
     // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
-    // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe (bis K25: 60 s und 120 s Wanduhr).
+    // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe.
     const STILL_BILDER = 3;
     // DER GEGENDRUCK DER GPU (K60-N3): jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
-    // (`queue.onSubmittedWorkDone`), bevor das nächste kommt. Ohne ihn schob die Probe alle 20 ms ein Bild in den GPU-Prozess,
-    // gleich wie schnell swiftshader rastert: der Rückstau wuchs über die Probe, und die Rückmeldung jedes asynchronen
-    // Pipeline-Baus wartete hinter ihm (ein unbeleuchteter Würfel 46 s asynchron, derselbe Stoff synchron < 1 s; am Läufer
-    // Probe 222 s und Neubau über 600 s, CI 38670118945). `gpuStau` trägt die längste Wartezeit je Probe.
+    // (`queue.onSubmittedWorkDone`), bevor das nächste kommt — sonst wächst der Rückstau über die Probe, und jeder asynchrone
+    // Pipeline-Bau wartet hinter ihm. `gpuStau` trägt die längste Wartezeit je Probe.
     const gpuStau = { maxMs: 0 };
     const gpuTakt = async () => {
         const d = rend.backend && rend.backend.device;
@@ -255,7 +234,7 @@ function erstWandInstall() {
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
         // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
-        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS (233ccebf) — am Runner steht er beim Einbau der Wand
+        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS — am Runner steht er beim Einbau der Wand
         // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
         const lade = document.getElementById("ladeschirm");
         const ladeVor = lade ? lade.hidden : null;
@@ -267,9 +246,6 @@ function erstWandInstall() {
         const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
         const stamm = rend._renderObjectDirect;
         if (vendor && eigen) delete rend._renderObjectDirect;
-        const cam = r.state.camera;
-        const dir = new window.THREE.Vector3();
-        cam.getWorldDirection(dir);
         const meshes = [];
         const gezeichnet = new Set();
         const drawRoh = rend.backend.draw;
@@ -283,12 +259,8 @@ function erstWandInstall() {
             // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon: haenger --erst)
             const m = new window.THREE.MeshBasicNodeMaterial();
             m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
-            const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.6, 0.6, 0.6), m);
-            mesh.position.copy(cam.position).addScaledVector(dir, 4);
-            mesh.position.x += (i - 1) * 0.8;
-            mesh.frustumCulled = false;
+            const mesh = probeMesh(m, (i - 1) * 0.8, 4);
             mesh.userData.__erstProbe = true;
-            mesh.layers.set(SCHICHT);
             welt.add(mesh);
             meshes.push(mesh);
         }
@@ -373,8 +345,8 @@ function erstWandInstall() {
         return { sofort, neubauN: ESt ? ESt.neubauN - n0 : 0 };
     };
     // DIE BUNDLE-BÜRGER: ein Bürger, der in einer Aufnahme nicht zeichnen kann, meldet sich in der EINEN Warteschlange an
-    // (`_erstWartet`), und sein Bundle nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht. Zwei Täter (die
-    // Gegenprüfung 07.10.): (A) DER NEUBAU BEI OFFENER PIPELINE — B zeichnet in Bundle b2; in EINEM Frame zeichnet A
+    // (`_erstWartet`), und sein Bundle nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht. Zwei Täter:
+    // (A) DER NEUBAU BEI OFFENER PIPELINE — B zeichnet in Bundle b2; in EINEM Frame zeichnet A
     // (derselbe Stoff, ein eigenes Bundle b1 davor) zum ersten Mal und der Stoff wechselt die Variante: A legt die neue
     // Pipeline asynchron an, Bs Neubau trifft sie im Cache noch offen (r184 getForRender: Cache-Treffer → e.pipeline=d).
     // (B) DER HÄNGENDE FEHLER-SCOPE — popErrorScope löst nie auf (auf der Spielseite > 5 s, auf Windows-swiftshader nie): ein
@@ -402,7 +374,17 @@ function erstWandInstall() {
             let je = traegt.get(bundle.bundleGroup);
             if (!je) traegt.set(bundle.bundleGroup, (je = new Map()));
             je.set(rb, new Set((d.renderObjects || []).map((ro) => ro.object)));
+            if (bundle.bundleGroup.userData.probe) bundle.bundleGroup.userData.probe.n++;
             return aus;
+        };
+        const travRoh = welt.traverse;
+        welt.traverse = function () {
+            szeneGang++;
+            try {
+                return travRoh.apply(this, arguments);
+            } finally {
+                szeneGang--;
+            }
         };
         const irRoh = P3.isReady;
         P3.isReady = function (ro) {
@@ -415,6 +397,7 @@ function erstWandInstall() {
         } finally {
             if (eigenRb) rend._renderBundle = rbRoh;
             else delete rend._renderBundle;
+            delete welt.traverse;
             P3.isReady = irRoh;
             traegt.clear();
             wartete.clear();
@@ -432,14 +415,47 @@ function erstWandInstall() {
         m.userData.__bundleProbe = true;
         return m;
     };
-    // bis die Aufnahme des Bundles den Bürger trägt: gezählt die Frames ab der fertigen Pipeline (r184-Zustand); 30 Frames
-    // danach ist er unsichtbar. Bis die Pipeline steht, wartet die Probe auf ihr Ereignis (`bisEreignis`) — steht die
-    // Erst-Zeichnung still, ehe sie bereit ist, wird sie es nie, und der Bürger ist unsichtbar (bis K25: 120 s Wanduhr).
-    const bisSichtbar = async (bg, obj) => {
+    // DAS PROBEN-BÜNDEL zählt jede Zeichnung (`n`) und nimmt nur Marken, die ihm gelten: eine Marke aus dem Gang über die
+    // ganze Szene (`traverse` — `_texturAbschied`, wenn ein Atlas wächst) gilt jedem Bündel, nie seinem Bürger; das Bündel
+    // schluckt sie und nennt ihren Schreiber (`fremd`), das Urteil gilt allein der Anmeldung
+    let szeneGang = 0;
+    const buendel = () => {
+        const bg = new T3.BundleGroup();
+        const P = (bg.userData.probe = { n: 0, fremd: [] });
+        Object.defineProperty(bg, "needsUpdate", {
+            set(v) {
+                if (v !== true) return;
+                if (szeneGang === 0) return void this.version++;
+                const f = String(new Error().stack).match(/\/(stamm\/[^/?:]+\.js)(?:\?[^:]*)?:(\d+)/);
+                P.fremd.push(f ? f[1] + ":" + f[2] : "?");
+            },
+        });
+        return bg;
+    };
+    // DER FREMDE NEUBAU im Gegen-Lauf: ein Atlas wächst (der echte Weg über `initTexture`) im ersten Bild nach der fertigen
+    // Pipeline — am Läufer fiel er in dieses Fenster und spielte den Bürger ohne Anmeldung ins Bündel
+    const atlasWaechst = () => {
+        const t = new T3.DataTexture(new Uint8Array(16), 2, 2);
+        t.needsUpdate = true;
+        rend.initTexture(t);
+        t.image = { data: new Uint8Array(64), width: 4, height: 4 };
+        t.needsUpdate = true;
+        rend.initTexture(t);
+        t.dispose();
+    };
+    // bis die Aufnahme des Bundles den Bürger trägt. Bis seine Pipeline steht (r184-Zustand), wartet die Probe auf ihr
+    // Ereignis (`bisEreignis`) — steht die Erst-Zeichnung still, ehe sie bereit ist, wird sie es nie. Danach endet sie am
+    // Ereignis: der Bürger steht in der Aufnahme, oder r184 zeichnete das Bündel BUNDLE_FRAMES + 1 Bilder ohne ihn (die
+    // Anmeldung nimmt im ersten Bild danach neu auf); ein Bild, das das Bündel nicht zeichnet, zählt nie.
+    const bisSichtbar = async (bg, obj, atlas) => {
         const t0 = performance.now();
+        const P = bg.userData.probe;
+        const f0 = P.fremd.length;
         let frames = 0,
             nachBereit = -1,
-            bereitMs = -1;
+            bereitMs = -1,
+            gezeichnet = 0,
+            leer = 0;
         const bereit = () => {
             const pipe = wartete.get(obj);
             if (!pipe) return false;
@@ -451,10 +467,14 @@ function erstWandInstall() {
             nachBereit = 0;
             bereitMs = Math.round(performance.now() - t0);
         }
-        while (nachBereit >= 0 && nachBereit < 30 && !traegtIn(bg, obj)) {
+        while (nachBereit >= 0 && !traegtIn(bg, obj) && gezeichnet <= BUNDLE_FRAMES && leer < STILL_BILDER) {
+            const n = P.n;
+            if (atlas && nachBereit === 0) atlasWaechst();
             bild();
             frames++;
             nachBereit++;
+            if (P.n === n) leer++;
+            else [leer, gezeichnet] = [0, gezeichnet + 1];
             await gpuTakt();
             await sleep(20);
         }
@@ -464,6 +484,8 @@ function erstWandInstall() {
             framesNachBereit: nachBereit,
             bereitMs,
             ms: Math.round(performance.now() - t0),
+            gezeichnet,
+            fremd: P.fremd.slice(f0),
         };
     };
     const stumm = () => {
@@ -479,10 +501,10 @@ function erstWandInstall() {
         serie++;
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.31, 0.47, 0.12 + 0.0011 * serie);
-        const b2 = new T3.BundleGroup();
+        const b2 = buendel();
         const B = probeMesh(M, 0.45, 4);
         b2.add(B);
-        const b1 = new T3.BundleGroup();
+        const b1 = buendel();
         const A = probeMesh(M, -0.45, 4);
         b1.add(A);
         welt.add(b2);
@@ -502,7 +524,7 @@ function erstWandInstall() {
             const pipeA = wartete.get(A),
                 pipeB = wartete.get(B);
             // (3) bis die Aufnahme von b2 B wieder trägt
-            const nach = await bisSichtbar(b2, B);
+            const nach = await bisSichtbar(b2, B, ohneAnmeldung);
             return {
                 ruheMs,
                 ruheOffen,
@@ -534,13 +556,13 @@ function erstWandInstall() {
         };
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.52, 0.18 + 0.0013 * serie, 0.61);
-        const bg = new T3.BundleGroup();
+        const bg = buendel();
         const C = probeMesh(M, 0, 3.5);
         bg.add(C);
         welt.add(bg);
         if (ohneAnmeldung) stumm();
         try {
-            const nach = await bisSichtbar(bg, C);
+            const nach = await bisSichtbar(bg, C, ohneAnmeldung);
             return { ruheMs, ruheOffen, haengt, ...nach };
         } finally {
             GP.popErrorScope = popRoh;
@@ -551,7 +573,7 @@ function erstWandInstall() {
     };
     // DIE BEWEIS-AUFNAHME bricht LAUT ab (scripts/lib/ausgabe-aufnahme.cjs): eine Pipeline, die nie bereit wird (eine
     // Attrappe in der Warteschlange), lässt die Aufnahme nach ihrer Frist werfen und nennt sie beim Namen; ohne sie liefert
-    // dieselbe Aufnahme ihr Bild mit `erst.offen` 0 (bis 07.10. brach sie nach 60 s still ab, das Bild ohne Marke).
+    // dieselbe Aufnahme ihr Bild mit `erst.offen` 0.
     const aufnahme = () => buehne(() => aufnahmeAufDerBuehne());
     const aufnahmeAufDerBuehne = async () => {
         const ruheMs = await ruhe();
@@ -807,9 +829,7 @@ function erstWandInstall() {
         // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
         // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug
         // ist (der GPU-Prozess hängt: ein Bau, der sich nie erfüllt — er steht beim Namen im Wurf) oder so lange kein Bau-
-        // Ereignis kommt, während die Probe läuft. Bis K60-N3 trug EIN Protokoll-Aufruf die ganze Probe samt ihrer Ruhe:
-        // seine Frist (600 s) urteilte über die Summe der Bauten des Läufers (CI 38670118945: Probe 222 s, der Neubau riss
-        // nach 600 s ohne einen Namen; an 91dff111 mit demselben Code 39 s).
+        // Ereignis kommt, während die Probe läuft.
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
             const sek = () => Math.round((Date.now() - t0) / 1000);
@@ -880,7 +900,7 @@ function erstWandInstall() {
                 );
             return v;
         };
-        await page.evaluate(`(${erstWandInstall.toString()})()`);
+        await page.evaluate(`(${erstWandInstall.toString()})(${BUNDLE_FRAMES})`);
         out.erst = await ruf("Stand", () => window.__erstWand.stand());
         if (IN(1)) {
             out.erst.probe = await ruf("Probe", (v) => window.__erstWand.probe(v), false);
@@ -921,7 +941,6 @@ function erstWandInstall() {
     );
 
     let rot = 0;
-    // je Teil urteilen nur seine Bänder (ohne --teil alle)
     const bandIn = (t) => (IN(t) ? band : () => {});
     const band = (ok, name, detail) => {
         console.log(`${ok ? "✅" : "❌"} ${name} — ${detail}`);
@@ -1033,14 +1052,14 @@ function erstWandInstall() {
         `gezeichnet im nächsten Bild ${nb.sofort} · Neubauten ${nb.neubauN} · Gegen-Lauf ohne Gedächtnis gezeichnet ${nbg.sofort}`
     );
 
-    // Die Bundle-Bürger: nach der fertigen Pipeline trägt die Aufnahme den Bürger in höchstens 2 Frames; der Gegen-Lauf
-    // mit stummer Anmeldung verliert ihn (30 Frames nach der fertigen Pipeline unsichtbar) — sonst wäre die Wand blind.
-    const BUNDLE_FRAMES = 2;
+    // Die Bundle-Bürger: nach der fertigen Pipeline trägt die Aufnahme den Bürger in höchstens BUNDLE_FRAMES Bildern; der
+    // Gegen-Lauf mit stummer Anmeldung verliert ihn (r184 zeichnet das Bündel danach BUNDLE_FRAMES + 1 Bilder ohne ihn).
     const bn = ez.bundleNeubau || {},
         bng = ez.bundleNeubauGegen || {};
     const bnWeg = (x) =>
         `${x.sichtbar ? "sichtbar" : "UNSICHTBAR"} ${x.framesNachBereit} Frames nach der fertigen Pipeline (bereit nach ${x.bereitMs} ms, ` +
-        `${x.frames} Frames, ${x.ms} ms)`;
+        `${x.frames} Frames, ${x.ms} ms, danach gezeichnet ${x.gezeichnet}×)` +
+        ` · fremde Marken geschluckt: ${x.fremd?.join(" ") || "keine"}`;
     if (IN(1))
         band(
             bn.stand === true &&
@@ -1055,7 +1074,7 @@ function erstWandInstall() {
         );
     if (IN(2))
         band(
-            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0,
+            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0 && bng.gezeichnet > BUNDLE_FRAMES && bng.fremd?.length > 0,
             "ERST-ZEICHNUNG Bundle-Neubau ohne Anmeldung (der Gegen-Lauf: ohne Anmeldung MUSS der Bürger fehlen)",
             `Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
         );
@@ -1069,7 +1088,9 @@ function erstWandInstall() {
             fs_.ruheOffen === 0 &&
             fsg.haengt >= 1 &&
             fsg.sichtbar === false &&
-            fsg.bereitMs >= 0,
+            fsg.gezeichnet > BUNDLE_FRAMES &&
+            fsg.bereitMs >= 0 &&
+            fsg.fremd?.length > 0,
         `ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
         `popErrorScope hängend ${fs_.haengt}× · ${bnWeg(fs_)} · Ruhe offen ${fs_.ruheOffen} · Gegen-Lauf: hängend ${fsg.haengt}×, ${bnWeg(fsg)}`
     );
