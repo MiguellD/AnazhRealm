@@ -1,8 +1,9 @@
 class AnazhRealm_vegetation_streu {
     // ===== ATLAS · Vegetation/streu — Gebackene Regionen · Streu-Zellen · Streu-Streaming =====
     // ═══ GPU-FELD-BAKE ═══
-    // Region = 256 × 256 m (16 Voxel-Chunks). Pro Texel: height (voxelSurfaceY) · slope (|∇surface|) ·
-    // moisture (_feuchteAt) · lebendig/glut/magie (worldFieldAt). LRU-Cache (32 Regionen), on demand
+    // Region = 256 × 256 m (16 Voxel-Chunks). Pro Texel: slope (|∇surface|) · moisture (_feuchteAt) ·
+    // lebendig/glut/magie (worldFieldAt) — die Höhe trägt er nicht: der Fuß der Streu liest den gezeichneten Boden
+    // (`_streuFuss`, Gelände H5), kein Leser las den 8-m-Höhen-Kanal mehr. LRU-Cache (32 Regionen), on demand
     // gebaut, bei Edit invalidiert. CPU-First: der Scatter liest die Float32Array direkt.
 
     _bakeRegionConfig() {
@@ -12,7 +13,7 @@ class AnazhRealm_vegetation_streu {
             sizeM: 256, // Welt-Meter pro Region-Kante
             res: 32, // Texel pro Kante (Auflösung)
             texelM: 256 / 32, // = 8 m pro Texel
-            channels: 6, // height/slope/moisture/lebendig/glut/magie
+            channels: 5, // slope/moisture/lebendig/glut/magie
             cacheCap: 32, // LRU
         };
     }
@@ -88,21 +89,20 @@ class AnazhRealm_vegetation_streu {
                 const x = originX + (i + 0.5) * t;
                 const idx = (j * N + i) * cfg.channels;
                 const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : 0;
-                data[idx + 0] = Number.isFinite(sy) ? sy : 0;
                 // Slope: |∇h| über 4-Sample-Cross — V18.351 jetzt durch DIE EINE Formel `_slopeAt`
                 // (getTerrainHeightAt ±2 m als Sampler → byte-gleich zum alten Inline, aber EINE Quelle;
                 // Gras, Scatter-Fallback und dieser Bäcker teilen sie nun statt je eine eigene Regel).
-                data[idx + 1] =
+                data[idx + 0] =
                     typeof this.getTerrainHeightAt === "function"
                         ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
                         : 0;
                 // Moisture: _feuchteAt (mit surf-Argument)
-                data[idx + 2] = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0;
+                data[idx + 1] = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0;
                 // Field-Stimmen (lebendig/glut/magie)
                 const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
-                data[idx + 3] = f ? +f.lebendig || 0 : 0;
-                data[idx + 4] = f ? +f.glut || 0 : 0;
-                data[idx + 5] = f ? +f.magieleitung || 0 : 0;
+                data[idx + 2] = f ? +f.lebendig || 0 : 0;
+                data[idx + 3] = f ? +f.glut || 0 : 0;
+                data[idx + 4] = f ? +f.magieleitung || 0 : 0;
             }
         }
         entry.dirty = false;
@@ -146,8 +146,8 @@ class AnazhRealm_vegetation_streu {
         const idx01 = (j1 * entry.res + i0) * entry.channels;
         const idx11 = (j1 * entry.res + i1) * entry.channels;
         const lerp = (a, b, t) => a + (b - a) * t;
-        const out = { height: 0, slope: 0, moisture: 0, lebendig: 0, glut: 0, magie: 0 };
-        const keys = ["height", "slope", "moisture", "lebendig", "glut", "magie"];
+        const out = { slope: 0, moisture: 0, lebendig: 0, glut: 0, magie: 0 };
+        const keys = ["slope", "moisture", "lebendig", "glut", "magie"];
         for (let c = 0; c < entry.channels; c++) {
             const v00 = entry.data[idx00 + c];
             const v10 = entry.data[idx10 + c];

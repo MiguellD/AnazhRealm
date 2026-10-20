@@ -349,27 +349,14 @@ async function probeLeben(expected) {
         // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
         // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
         const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
-        const w = (res.wechsel = {
-            gestartet: false,
-            ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung],
-        });
+        const w = (res.wechsel = { gestartet: false, ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung] });
         if (steil) {
             const ab = steil.gier + Math.PI;
             const sicht0 = st.cameraMode;
             r.setCameraMode("third");
             const e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
             const ck = VC.chaseKamera;
-            Object.assign(w, {
-                gestartet: !!e,
-                stufeM: 0,
-                band: 0,
-                ego: [],
-                nach10: [],
-                abV: [],
-                abSprung: [],
-                gesetz: 0,
-                third: 0,
-            });
+            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], abV: [], abSprung: [], gesetz: 0, third: 0 });
             if (ck) VC.chaseKamera = (...a) => (w.gesetz++, ck(...a));
             const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
             const [gleich, ruck, hoch, spur] = [[], [], [], []];
@@ -386,11 +373,7 @@ async function probeLeben(expected) {
                 const f0 = r._foundryFlattenFor(e, pr, lod);
                 const reihe = [[e.instSlots, f0, `L${lod}`]];
                 if (e.instSlotsBand && f0 && ++w.band)
-                    reihe.push([
-                        e.instSlotsBand,
-                        r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0),
-                        `L${e._lodBandLevel} (Band)`,
-                    ]);
+                    reihe.push([e.instSlotsBand, r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0), `L${e._lodBandLevel} (Band)`]);
                 for (const [liste, f, wer] of reihe)
                     for (let k = 0; liste && f && f.leaves && k < Math.min(liste.length, f.leaves.length); k++) {
                         const g = !f.leaves[k].rad && st.archInstanceGroups.get(liste[k].key);
@@ -443,12 +426,7 @@ async function probeLeben(expected) {
                             r.setCameraMode(s);
                             Object.assign(st.keys, { a: false, d: false, w: true, s: false });
                         }
-                        for (
-                            let j = 0;
-                            s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5;
-                            j++
-                        )
-                            frame(i++);
+                        for (let j = 0; s === "first" && j < 300 && Math.hypot(st.playerVel.x(), st.playerVel.z()) < 8.5; j++) frame(i++);
                         const [c, p] = [st.camera.position, st.camera.position.clone()];
                         let m = 0;
                         for (let j = 0; j < 33; j++, m = Math.max(m, c.distanceTo(p)), p.copy(c)) {
@@ -479,12 +457,7 @@ async function probeLeben(expected) {
                 r.setCameraMode(sicht0);
             }
             const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
-            Object.assign(w, {
-                ruckN: ruck.length,
-                ruckP95: pq(ruck, 0.95),
-                gleichN: gleich.length,
-                gleichP95: pq(gleich, 0.95),
-            });
+            Object.assign(w, { ruckN: ruck.length, ruckP95: pq(ruck, 0.95), gleichN: gleich.length, gleichP95: pq(gleich, 0.95) });
             Object.assign(w, { hochN: hoch.length, hochP05: pq(hoch, 0.05) });
         }
         // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).
@@ -526,6 +499,10 @@ async function probeLeben(expected) {
             let lenkHinten = 0;
             let tauchBremse = 0;
             const spalte = [];
+            const spalteSicht = [];
+            // die Boden-Karte des gezeichneten Meshs (der EINE Leser `_bodenSichtAt`, bilinear, am Chunk-Rand die des
+            // Nachbarn); null ohne Karte
+            const sicht = (x, zz) => r._bodenSichtAt(x, zz);
             let phase = "w";
             const P5 = r._stepFixedSim;
             r._stepFixedSim = function (simTime, dt) {
@@ -585,12 +562,18 @@ async function probeLeben(expected) {
                         }
                 }
                 let spalt = 0;
+                let spaltS = -1;
                 for (const p of punkte) {
                     const d = p.y - hh(p.x, p.z);
                     spalt = Math.max(spalt, Math.abs(d));
                     if (phase === "s" && p.front) tauchBremse = Math.max(tauchBremse, -d);
+                    // DIE SICHT (Gegenprüfung 07.10., Entscheid D1: nur messen und benennen — die Sim bleibt auf dem Gesetz):
+                    // derselbe Aufstandspunkt gegen den GEZEICHNETEN Boden (die Boden-Karte des fertigen Meshs, Lehre 22)
+                    const ys = sicht(p.x, p.z);
+                    if (ys !== null) spaltS = Math.max(spaltS, Math.abs(p.y - ys));
                 }
                 spalte.push(spalt);
+                if (spaltS >= 0) spalteSicht.push(spaltS);
             };
             tasten(true, false);
             for (let i = 0; i < 90; i++) frame(i);
@@ -605,6 +588,7 @@ async function probeLeben(expected) {
             tasten(false);
             r._stepFixedSim = P5;
             spalte.sort((a, b) => a - b);
+            spalteSicht.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
                 stehend: steh.length,
@@ -615,6 +599,9 @@ async function probeLeben(expected) {
                 tauchBremse,
                 spaltP75: spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity,
                 spaltMax: spalte.length ? spalte[spalte.length - 1] : Infinity,
+                sichtSchritte: spalteSicht.length,
+                sichtP75: spalteSicht.length ? spalteSicht[Math.floor(spalteSicht.length * 0.75)] : null,
+                sichtMax: spalteSicht.length ? spalteSicht[spalteSicht.length - 1] : null,
             };
             weg(gR);
         }
@@ -1127,11 +1114,7 @@ async function probeLeben(expected) {
                     S.huelleKonsum = {
                         gleiten: ruft(() => r._fahrHuelleKontakt(...k), r, "_wandGleiten"),
                         leibWagen: ruft(() => r._fahrHuelleKontakt(...k), r, "_kreaturLeib"),
-                        leibTier: ruft(
-                            () => r._kreaturHuellenKontakt(c, 0, c.position.x, c.position.z),
-                            r,
-                            "_kreaturLeib"
-                        ),
+                        leibTier: ruft(() => r._kreaturHuellenKontakt(c, 0, c.position.x, c.position.z), r, "_kreaturLeib"),
                     };
                     r.removeCreature(c);
                 }
@@ -1906,7 +1889,8 @@ async function probeLeben(expected) {
                         r._gameLoopTick(tMs);
                         const fz = gS._fahr;
                         const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
-                        const d = jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
+                        const d =
+                            jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
                         ruhe = d <= 1e-9 ? ruhe + 1 : 0;
                         if (d > 1e-9 && jetzt && stand) {
                             const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
