@@ -60,9 +60,7 @@
     // ── Die vier Gattungen (byte-treu Lab Z.62): fuenf allometrische Dials je Art ──
     // prettier-ignore
     var GATTUNGEN = {wolf:{size:2.4,neck:0.263,leg:0.22,diet:1.0,build:0.42},fox:{size:1.5,neck:0.290,leg:0.22,diet:1.0,build:0.22},bear:{size:3.2,neck:0.180,leg:0.20,diet:0.5,build:0.70},deer:{size:2.8,neck:0.330,leg:0.28,diet:0.0,build:0.28}};
-    // ── Das CPG-Kopplungsnetz (byte-treu Lab Z.80) + die Stand-Pose (Z.96) ──
-    // prettier-ignore
-    var CPG_COUPLING = [[0,-0.5,0.5,0],[-0.5,0,0,0.5],[0.5,0,0,-0.5],[0,0.5,-0.5,0]];
+    // ── Die Stand-Pose (byte-treu Lab Z.96; das CPG-Kopplungsnetz Z.80 fiel mit dem Pass-Netz, Tiere H3) ──
     // prettier-ignore
     var STAND_POSE = [[0.02,-0.03,0.05,0.02],[0.02,-0.03,0.05,0.02],[-0.02,0.02,0.05,-0.02],[-0.02,0.02,0.05,-0.02]];
     // ── Die Emotions-Bewegungsprofile (byte-treu Lab Z.130–135) — das motion-Feld: die HALTUNG der Stimmung. Die Fußfolge
@@ -371,7 +369,6 @@
                     place: { mode: "none" },
                     motion: {
                         presets: JSON.parse(JSON.stringify(MOTION)),
-                        cpgCoupling: JSON.parse(JSON.stringify(CPG_COUPLING)),
                         standPose: JSON.parse(JSON.stringify(STAND_POSE)),
                     },
                     // KREATUR-LEBEN — die Verhaltens-Seele reist im Rezept (additiv, must-ignore).
@@ -1761,18 +1758,13 @@
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
-    // Galopp in einem verdrehten Zustand stecken). Ohne folge byte-gleich (das alte Netz, sein Gleichgewicht der Pass).
-    function cpgStep(phases, freq, coupling, dt, folge) {
+    // Galopp in einem verdrehten Zustand stecken). Das alte Netz (CPG_COUPLING, sein Gleichgewicht der Pass) fiel ganz.
+    function cpgStep(phases, freq, dt, folge) {
         var d = [0, 0, 0, 0];
         for (var i = 0; i < 4; i++) {
             var c = 0;
-            if (folge) {
-                for (var jf = 0; jf < 4; jf++) if (jf !== i) c += Math.sin(phases[jf] - phases[i] - (folge[jf] - folge[i]));
-                d[i] = freq * (1 + c * GANG_FOLGE.kopplung);
-                continue;
-            }
-            for (var j = 0; j < 4; j++) c += coupling[i][j] * Math.sin(phases[j] - phases[i]);
-            d[i] = freq + c * 0.8;
+            for (var j = 0; j < 4; j++) if (j !== i) c += Math.sin(phases[j] - phases[i] - (folge[j] - folge[i]));
+            d[i] = freq * (1 + c * GANG_FOLGE.kopplung);
         }
         for (var k = 0; k < 4; k++) phases[k] += d[k] * dt;
         return phases;
@@ -3194,7 +3186,6 @@
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GATTUNGEN: GATTUNGEN,
         MOTION: MOTION,
-        CPG_COUPLING: CPG_COUPLING,
         STAND_POSE: STAND_POSE,
         VERHALTEN: VERHALTEN,
         fellStreu: fellStreu,

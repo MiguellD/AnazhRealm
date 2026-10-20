@@ -1605,10 +1605,10 @@ class AnazhRealm_koerper_leib {
         const st = gs.S * fadeMul;
         const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
         const phAlt = g.ph.slice();
-        if (dtTakt > 0 && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
+        if (dtTakt > 0) {
             // der Schritt des Netzes trägt seinen Zug (GANG_FOLGE.kopplung × Takt, vier Beine): höchstens 1/(4·kopplung·Takt)
             const nT = Math.ceil(dtTakt / Math.min(0.1, 1 / (4 * core.GANG_FOLGE.kopplung * Math.max(1e-6, freq))));
-            for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT, folge);
+            for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, dtTakt / nT, folge);
         }
         // DER LEIB WIEGT SICH IM SCHRITT, NIE IM STAND (Welle LF, die Pfoten-IK): Wiegen (sway) und Federn (bob) sind die
         // Gewichts-Verlagerung von Tritt zu Tritt — ihr Anteil folgt dem Schritt des Gang-Gesetzes (eingeblendet in ~0,25 s).
@@ -1626,7 +1626,18 @@ class AnazhRealm_koerper_leib {
             cL += Math.cos(2 * (g.ph[k] - offL[k]));
             sL += Math.sin(2 * (g.ph[k] - offL[k]));
         }
-        const takt2 = Math.atan2(sL, cL) + 2 * offL[0];
+        // DER TAKT ZIEHT NACH (der Wechsel der Gangart): das Muster springt auf die neue Folge, die Beine folgen in etwa
+        // einem Schritt — der Takt des Leibs läuft mit dem doppelten Takt der Beine weiter und zieht den Rest binnen eines
+        // Schritts nach (sprang er mit, ruckte der Rumpf: Roll je Takt bis 2,9 × des ruhigen Gangs)
+        const takt2Roh = Math.atan2(sL, cL) + 2 * offL[0];
+        if (!Number.isFinite(g.leib)) g.leib = takt2Roh;
+        else {
+            const vor = g.leib + 2 * freq * dtTakt;
+            const d = takt2Roh - vor;
+            g.leib =
+                vor + (d - 2 * Math.PI * Math.round(d / (2 * Math.PI))) * (1 - Math.exp((-freq * dtTakt) / Math.PI));
+        }
+        const takt2 = g.leib;
         let roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.

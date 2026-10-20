@@ -15,7 +15,6 @@ var pawOffsets=[0,0,0,0];
 function PD(kp,kd){this.target=0;this.current=0;this.vel=0;this.kp=kp;this.kd=kd;}
 PD.prototype.update=function(dt){var f=(this.target-this.current)*this.kp-this.vel*this.kd;this.vel+=f*dt;this.current+=this.vel*dt;return this.current;};
 var cpgPhase=[0,0,0,0],cpgFreq=0;
-var cpgCoupling=__tetrapodaCore.CPG_COUPLING;   // Kern-Quelle (W-A6)
 // DIE GANGART AUS DEM TEMPO (Meisterkarte Tiere H3 — Labor = Welt): das Tempo v̂ (der Regler, v = v̂·√(g·L) an der Hüft-Höhe
 // der gezeigten Gestalt, in Metern wie die Welt: MASSSTAB.meterJeEinheit) treibt DASSELBE Gang-Gesetz wie die Welt — tetrapoda
 // gangSchritt wählt Takt, Fußweg und die Fußfolge nach der Froude-Zahl, cpgStep zieht die Beine in die Folge, gangFuss führt
@@ -23,11 +22,11 @@ var cpgCoupling=__tetrapodaCore.CPG_COUPLING;   // Kern-Quelle (W-A6)
 // Sprint-Faktor) fiel.
 var gangWerte={tempo:0},gangRegler=null,gangS=0,gangTast=0.5,gangWinkel=0,gangFolge=null,gangArtIst='stand',gangL=1,gangH=[1,1,1,1];
 function gangTempo(vh){gangWerte.tempo=Math.max(0,+vh||0);if(gangRegler)gangRegler.setzen({tempo:gangWerte.tempo},true);}
-function gangTakt(dt,freqStand){var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,Lm=gangL*mE;var gs=K.gangSchritt(gangWerte.tempo*Math.sqrt(K.GANG_GESETZ.g*Lm),Lm);
+function gangTakt(dt,freqStand){var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,Lm=gangL*mE;var gs=K.gangSchritt(gangWerte.tempo*Math.sqrt(K.GANG_GESETZ.g*Lm),Lm,null,gangArtIst);
   if(!gangFolge)for(var i=0;i<4;i++)cpgPhase[i]=gs.folge[i];
   gangFolge=gs.folge;gangS=gs.S/mE;gangTast=gs.tast;gangWinkel=gangS>0?Math.atan(gangS/(2*gangL)):0;
   if(gs.art!==gangArtIst){gangArtIst=gs.art;var a=document.getElementById('gangart');if(a)a.textContent=gs.art;}
-  cpgFreq=gangS>0?gs.omega:(freqStand===undefined?0.25:freqStand);K.cpgStep(cpgPhase,cpgFreq,cpgCoupling,dt,gangFolge);return gs;}
+  cpgFreq=gangS>0?gs.omega:(freqStand===undefined?0.25:freqStand);K.cpgStep(cpgPhase,cpgFreq,dt,gangFolge);return gs;}
 var bodyPhys={y:0,vy:0,vx:0,pitch:0,pitchVel:0};
 function updateBodyPhysics(dt){
   var e=emo.cur;

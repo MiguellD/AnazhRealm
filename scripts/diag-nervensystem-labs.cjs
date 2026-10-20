@@ -82,28 +82,9 @@ function staticLaws(manifestSrc) {
         }
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
         const lofi = f && f.recipes ? f.recipes.lofi : null;
-        const wolf = f && f.recipes ? f.recipes.wolf : null;
-        const mensch = f && f.recipes ? f.recipes.mensch : null;
         res.b.lofiKind = lofi && lofi.kind;
         res.b.lofiBpm = lofi && lofi.fx && lofi.fx.klang ? lofi.fx.klang.bpm : null;
         res.b.lofiScale = lofi && lofi.fx && lofi.fx.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
-        res.b.wolfKind = wolf && wolf.kind;
-        res.b.wolfMotion = !!(
-            wolf &&
-            wolf.fx &&
-            wolf.fx.motion &&
-            wolf.fx.motion.presets &&
-            wolf.fx.motion.presets.flee
-        );
-        res.b.wolfCpg = !!(wolf && wolf.fx && wolf.fx.motion && Array.isArray(wolf.fx.motion.cpgCoupling));
-        res.b.menschKind = mensch && mensch.kind;
-        res.b.menschMotion = !!(
-            mensch &&
-            mensch.fx &&
-            mensch.fx.motion &&
-            mensch.fx.motion.presets &&
-            mensch.fx.motion.presets.run
-        );
         res.b.klangCount =
             f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
         res.b.params =
@@ -130,7 +111,9 @@ function staticLaws(manifestSrc) {
         res.b.noAutoBps = res.b.autoBpOffenders.length === 0;
         // EINE Quelle: die Dial-Karten wohnen in den Gesetzbüchern, der Stamm reicht dieselben Objekte durch (kein Zwilling).
         const A = r.constructor;
-        res.b.dialEins = A.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP && A.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
+        res.b.dialEins =
+            A.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP &&
+            A.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
         // ===== K: DER EINE AUDIO-KONSUMENT (Lofi liest das Studio-Tempo) =====
         try {
             const emo = r.state.player.emotions;
@@ -164,7 +147,8 @@ function staticLaws(manifestSrc) {
             res.k.scaleFallbackKern = JSON.stringify(r._lofiActiveScale()) === "[0,3,5,6,7,10]";
             res.k.semi2Fallback = r._lofiScaleSemitone(2); // A-Moll: 3
             const _c0f = r._lofiChordFromDegree(0);
-            res.k.chord0Fallback = _c0f.length === 3 + _extSoll() ? JSON.stringify(_c0f.slice(0, 4)) : "len" + _c0f.length;
+            res.k.chord0Fallback =
+                _c0f.length === 3 + _extSoll() ? JSON.stringify(_c0f.slice(0, 4)) : "len" + _c0f.length;
             f.recipes.lofi = prev;
             res.k.durRestored = r._lofiChordDurationMs();
             res.k.semi2Restored = r._lofiScaleSemitone(2);
@@ -417,12 +401,17 @@ function staticLaws(manifestSrc) {
                 }
                 return n > 0;
             };
-            res.e.resolver = [durch("_motionStudioProfile", [true, { chaos: 1 }]), durch("_koerperMotionProfile", [false, { sorrow: 1 }])];
+            res.e.resolver = [
+                durch("_motionStudioProfile", [true, { chaos: 1 }]),
+                durch("_koerperMotionProfile", [false, { sorrow: 1 }]),
+            ];
             r._koerperMotionProfile = () => null;
             res.e.resolver.push(durch("_koerperMotionProfile", [false, { sorrow: 1 }]) === false);
             delete r._koerperMotionProfile;
             // VERHALTEN: der Schritt-Takt des Avatars trägt die Emotion als Kadenz (sorrow = das Studio-freq-Verhältnis, neutral 1).
-            const gt = r._gaitTick, pl = r.state.player, em0 = pl.emotions;
+            const gt = r._gaitTick,
+                pl = r.state.player,
+                em0 = pl.emotions;
             const emoF = (emo) => {
                 let fk = null;
                 r._gaitTick = function (...a) {
@@ -439,7 +428,11 @@ function staticLaws(manifestSrc) {
                 return fk;
             };
             const soll = r._koerperMotionProfile(true, { sorrow: 1 }).freq / r._koerperMotionProfile(true, null).freq;
-            res.e.stepBridge = { soll, traurig: emoF({ joy: 0, awe: 0, sorrow: 1, hope: 0, peace: 0, chaos: 0 }), neutral: emoF(null) };
+            res.e.stepBridge = {
+                soll,
+                traurig: emoF({ joy: 0, awe: 0, sorrow: 1, hope: 0, peace: 0, chaos: 0 }),
+                neutral: emoF(null),
+            };
         } catch (e) {
             res.e = res.e || {};
             res.e.err = (e && e.message) || String(e);
@@ -498,14 +491,7 @@ function staticLaws(manifestSrc) {
         `bpm=${out.b.lofiBpm} scale=${out.b.lofiScale}`
     );
     check("B: alle 22 Genesis-Genres im Buch", out.b.klangCount === 22, String(out.b.klangCount));
-    check(
-        'B: wolf als kind "kreatur" mit fx.motion (Profile + CPG)',
-        out.b.wolfKind === "kreatur" && out.b.wolfMotion === true && out.b.wolfCpg === true
-    );
-    check(
-        'B: mensch als kind "koerper" mit fx.motion (10 Profile inkl. run)',
-        out.b.menschKind === "koerper" && out.b.menschMotion === true
-    );
+    // wolf und mensch (Art und fx.motion) hält gate:asset-contract Byte für Byte (recipes-Golden)
     check(
         "B: die B4-Regler-Tabellen reisen (paramsByKind klang=7 · koerper=8 · kreatur=5)",
         !!out.b.params && out.b.params.klang === 7 && out.b.params.koerper === 8 && out.b.params.kreatur === 5,
@@ -516,7 +502,10 @@ function staticLaws(manifestSrc) {
         out.b.noAutoBps === true,
         (out.b.autoBpOffenders || []).join(",")
     );
-    check("B: die Dial-Karten sind die Objekte der Gesetzbücher (koerper + tetrapoda, kein Stamm-Zwilling)", out.b.dialEins === true);
+    check(
+        "B: die Dial-Karten sind die Objekte der Gesetzbücher (koerper + tetrapoda, kein Stamm-Zwilling)",
+        out.b.dialEins === true
+    );
     check(
         "K: _klangStudioPreset liest das Genesis-lofi-Genre (bpm 78)",
         out.k.studio === 78,
@@ -632,8 +621,11 @@ function staticLaws(manifestSrc) {
     );
     check(
         "E: der Schritt-Takt des Avatars trägt die Emotion (sorrow = Studio-Kadenz, neutral 1)",
-        !!out.e && !!out.e.stepBridge && Math.abs(out.e.stepBridge.soll - 1) > 1e-3 &&
-            Math.abs(out.e.stepBridge.traurig - out.e.stepBridge.soll) < 1e-9 && out.e.stepBridge.neutral === 1,
+        !!out.e &&
+            !!out.e.stepBridge &&
+            Math.abs(out.e.stepBridge.soll - 1) > 1e-3 &&
+            Math.abs(out.e.stepBridge.traurig - out.e.stepBridge.soll) < 1e-9 &&
+            out.e.stepBridge.neutral === 1,
         JSON.stringify(out.e && out.e.stepBridge)
     );
     check(
