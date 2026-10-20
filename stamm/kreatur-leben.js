@@ -892,6 +892,13 @@ class AnazhRealm_kreatur_leben {
             baseY: creature.position.y,
             hebe: kipp.hebe,
         };
+        // DER KADAVER (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): der gefallene Leib trägt sein Fleisch (kg: fleischAnteil ×
+        // die EINE Masse des Leibs, _leibMasse), sein Alter ist die Uhr seines Falls (dying.t). Fressen verbraucht es
+        // (_kreaturAasZug), sein Geruch ruft jeden Nicht-Pflanzenfresser, ein leerer Kadaver sinkt (_tickLeichname). Ein Leib
+        // ohne gemessene Gestalt hat keine Masse und kein Fleisch.
+        const tbK = ud._tierBaum;
+        if (tbK && tbK.leibV > 0)
+            ud.kadaver = { fleisch: AnazhRealm._verhaltenGesetz().aas.fleischAnteil * this._leibMasse(creature) };
         this._leibZeichenFrei(creature);
         // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
         // Todes und liegt in state.leichname, wo der Kreatur-Takt seinen Fall treibt (_tickLeichname). Jeder Leser, der Wesen

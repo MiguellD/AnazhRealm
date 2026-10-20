@@ -829,9 +829,9 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   dieselben Tabellen. Editiert der Schöpfer die Tabelle, folgen BEIDE Leser.
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
-  `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],
-standPose?: zahl[][] }` — die Achsen sind Lab-eigene Regler (freq · stride ·
-  tension · kpMul · Gelenk-Ziele …); der Host interpretiert sie NIE als
+  `motion { presets: { <name>: { <achse>: zahl … } }, standPose?: zahl[][] }` —
+  die Achsen sind Lab-eigene Regler (freq · tension · kpMul · Gelenk-Ziele …;
+  die Fußfolge wählt das Tempo, gangSchritt); der Host interpretiert sie NIE als
   zweites Animations-System (M4): der EINE Konsument ist der bestehende
   `_animateCompoundMotion`-/Rig-Bogen (wahrerguss Säule II — der Andock-Punkt
   ist benannt, der Konsum der bewusste Folge-Schritt). Spender heute:
