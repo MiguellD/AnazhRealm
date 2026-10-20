@@ -103,9 +103,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const CELL = AR.FOREST.cell;
             const kr = AR.FOREST.crown.baum_eiche;
             // DIE FRAGE IN BAU-EREIGNISSEN (K69: die Schlange des Walds plant im Takt): wartet die Gestalt einer Eiche auf den Plan
-            // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht — dieselben Zellen, die bis K69 die
-            // erste Frage am Stück plante; jede plant ihre Wahrheit zuerst (`_ensureHydroTilesAround`). Ihr Rechner ist der
-            // Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
+            // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht; jede Zelle plant ihre Wahrheit zuerst
+            // (`_ensureHydroTilesAround`). Ihr Rechner ist der Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
             const frag = async (e) => {
                 let g = r._foundryGestaltFor(e, "eiche");
                 for (let i = 0; g == null && i < 4000; i++) {
@@ -245,14 +244,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 const frischF = (await frischAlle(proben))[proben.indexOf(e)];
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
-                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
-                // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
+                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen), seit
+                // S4 das Haus seinen Grund (Plan-Datum, beim Setzen): die Probe nimmt ihm Grund, Fundament, Hülle und Boxen
+                r._hausGrundSetzen = () => false;
                 const ohne = r.spawnArchitecture(
                     "haus_alemannisch",
                     { x: o.x, y: o.surfaceY, z: o.z },
                     { silent: true }
                 );
                 if (ohne) {
+                    delete r._hausGrundSetzen;
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
                     ohne.blockerAABBs = null;

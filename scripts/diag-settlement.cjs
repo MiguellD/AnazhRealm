@@ -1673,10 +1673,6 @@ const FIXTURES = [
                 typeof wm.settlementCells[key] === "object" &&
                 isFinite(wm.settlementCells[key].seed)
             );
-            // DORF-ERLEBNIS — Brunnen/Wege heben bei ANKUNFT (deliberat, klein,
-            // budget-frei); die Budget-Wand gilt der HAUS-Materialisierung:
-            // Referenz ist der Stand NACH der Ankunft.
-            const archAnkunft = r.state.architectures.length;
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
             // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
