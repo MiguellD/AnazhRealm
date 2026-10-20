@@ -1833,7 +1833,8 @@ class AnazhRealm_bild_himmel {
 
     // DIE BESTRAHLUNGS-TAFEL AUF DIE CPU (je Neuzeichnung, EINMAL je Medium und Höhe): je Sonnenhöhe die Bestrahlung einer
     // waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht je Einheit `nachtE`. Eine
-    // spätere Lesung überholt eine frühere. Am klaren Medium prüft sie den Anker der Belichtung (`BELICHTUNG.himmel`, der Himmel
+    // spätere Lesung überholt eine frühere. Am klaren Medium und am Boden (der Anker gilt dem Auge auf dem Bezug, `_belichtungAnker`;
+    // höher steht weniger Luft über ihm: 160 m über dem Grund 0,212/0,194, CI Post-Kette) prüft sie den Anker der Belichtung (`BELICHTUNG.himmel`, der Himmel
     // der Karte unter der Zenit-Sonne): weicht die Tafel mehr als 0,02 davon, bricht es laut beim Namen.
     _himmelsTafelLesen() {
         const st = this.state;
@@ -1844,7 +1845,7 @@ class AnazhRealm_bild_himmel {
                 "Die Bestrahlung: der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)"
             );
         const W = A.rtBS.width;
-        const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz());
+        const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz()) && A.U.hKm.value < 0.05;
         const nr = (this._himmelsTafelNr = (this._himmelsTafelNr || 0) + 1);
         return r.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then(
             (px) => {
