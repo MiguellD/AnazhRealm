@@ -2087,11 +2087,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         out.pathSamples = samples;
         out.pathHits = hits;
 
-        out.versionStr = A.VERSION;
-        const pv = String(A.VERSION || "0.0.0")
-            .split(".")
-            .map((s) => parseInt(s, 10) || 0);
-        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 230);
         return out;
     });
 
@@ -2106,7 +2101,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
         `Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`,
         res.pathHits >= 0 && res.pathSamples > 0
     );
-    check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-

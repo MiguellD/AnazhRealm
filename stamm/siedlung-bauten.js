@@ -403,7 +403,7 @@ class AnazhRealm_siedlung_bauten {
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;
         if (cur === desired) {
-            this._lodHaltSetzen(entry, false); // der Partner steht (oder keiner ist verlangt): kein Halt
+            this._lodHaltSetzen(entry, cur === null); // der Partner steht: kein Halt — ohne ihn hält die Stufe voll
             return false;
         }
         let geaendert = false;
@@ -413,7 +413,7 @@ class AnazhRealm_siedlung_bauten {
         }
         entry._lodBandLevel = null;
         if (desired === null) {
-            this._lodHaltSetzen(entry, false);
+            this._lodHaltSetzen(entry, true);
             return geaendert;
         }
         const flat = this._foundryFlattenFor(entry, preset, desired);
@@ -427,7 +427,7 @@ class AnazhRealm_siedlung_bauten {
         // wäre das Band ein voll-opaker Doppel-Draw. Flats sind je Stufe gecacht → Identität ist der Test.
         const primFlat = this._foundryFlattenFor(entry, preset, entry._lodLevel | 0);
         if (primFlat && flat === primFlat) {
-            this._lodHaltSetzen(entry, false);
+            this._lodHaltSetzen(entry, false); // die Art trägt keine weitere Stufe: sie blendet nach ihrem Gesetz aus
             return geaendert;
         }
         this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true, bandLod: desired });
@@ -439,8 +439,12 @@ class AnazhRealm_siedlung_bauten {
     // Gesetz ihn zeigt. Steht der Partner nicht (die Karte bäckt, die Stufe lädt, die Art trägt keine), wich die Stufe dem
     // Nichts: die L1 vor der ungebackenen Karte stand halb durchsichtig über der Szene, jenseits des Bands fehlte sie ganz.
     // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die verdeckte Karte (`_lodSlotVoll` → der Slot-
-    // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht. `halt`: false · true (die Lücke,
-    // still) · "wartet" (der Partner lädt: der Tick bleibt wach). true = der Stempel wechselte.
+    // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht — auch wo die Wahl keinen verlangt
+    // (F1, 19.10.): die Wahl misst vom Auge VOR dem Rig, die Maske vom Auge danach; nach Ego → Third (das Auge 0 → 8,8 m) blendete
+    // der GT ein Bild lang zu einem Partner, den die Wahl nie setzte (Richter: gate:foundry-crossfade GEISTER-BAUM sprung,
+    // der gesetzte Bau und die Streu-Zelle). Ohne Partner weicht die Maske nur, wo sie ins Nichts blendete. `halt`: false
+    // (der Partner steht) · true (keiner steht, still) · "wartet" (der Partner lädt: der Tick bleibt wach). true = der
+    // Stempel wechselte.
     _lodHaltSetzen(entry, halt) {
         if (!entry) return false;
         entry._lodHaltWartet = halt === "wartet";
